@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
     drake::systems::plants::model_pose_in_world =
         std::allocate_shared<RigidBodyFrame>(
             Eigen::aligned_allocator<RigidBodyFrame>(),
-            RigidBody::kWorldLinkName,
+            std::string(RigidBodyTree::kWorldLinkName),
             nullptr,  // not used since the robot is attached to the world
             Eigen::Vector3d(std::stod(argv[3]), std::stod(argv[4]),
                             std::stod(argv[5])),  // xyz of the car's root link
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     drake::systems::plants::model_pose_in_world =
         std::allocate_shared<RigidBodyFrame>(
             Eigen::aligned_allocator<RigidBodyFrame>(),
-            RigidBody::kWorldLinkName, nullptr, Eigen::Isometry3d::Identity());
+            std::string(RigidBodyTree::kWorldLinkName), nullptr, Eigen::Isometry3d::Identity());
   }
 
   return RUN_ALL_TESTS();

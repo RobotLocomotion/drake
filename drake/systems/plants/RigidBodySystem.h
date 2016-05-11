@@ -125,14 +125,15 @@ class LoopConstraint : public LinearEqualityConstraint {
 
 };
 */
-}
+}  // namespace RigidBodyConstraints
 
 /**
- * Implements Drake's System concept where state is both joint position
- * and velocity.
+ * @brief Implements the System concept by wrapping the RigidBodyTree algorithms
+ * with additional sensors and actuators/forces.
  *
- * @brief implements the System concept by wrapping the RigidBodyTree algorithms
- * with additional sensors and actuators/forces
+ * Implements the System concept where state is both joint position and
+ * velocity.
+ *
  * @concept{system_concept}
  */
 class DRAKERBSYSTEM_EXPORT RigidBodySystem {
@@ -208,6 +209,18 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   // details. The outputs include both joint state and the number of sensor
   // states. See class overview description for more details.
   size_t getNumOutputs() const;
+
+  /**
+   * An accessor to the number of position states outputted by this rigid body
+   * system.
+   */
+  size_t number_of_positions() const;
+
+  /**
+   * An accessor to the number of velocity states outputted by this rigid body
+   * system.
+   */
+  size_t number_of_velocities() const;
 
   /** dynamics
    * Formulates the forward dynamics of the rigid body system as an optimization
@@ -484,70 +497,91 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   /**
    * Returns the number of points in the image vertically (pitch).
    */
-  virtual size_t get_num_pixel_rows() const;
+  virtual size_t num_pixel_rows() const;
 
   /**
    * Returns the number of points in the image horizontally (yaw).
    */
-  virtual size_t get_num_pixel_cols() const;
+  virtual size_t num_pixel_cols() const;
 
   /**
    * Returns whether this depth sensor scans vertically.
    */
-  virtual bool is_vertical_scanner() const;
+  // virtual bool is_vertical_scanner() const;
 
   /**
    * Returns whether this depth sensor scans horizontally.
    */
-  virtual bool is_horizontal_scanner() const;
+  // virtual bool is_horizontal_scanner() const;
 
   /**
    * Returns minimum pitch of this sensor's FOV in radians.
    */
-  virtual double get_min_pitch() const;
+  virtual double min_pitch() const;
 
   /**
    * Returns maximum pitch of this sensor's FOV in radians.
    */
-  virtual double get_max_pitch() const;
+  virtual double max_pitch() const;
 
   /**
    * Returns the minimum yaw of this sensor's FOV in radians.
    */
-  virtual double get_min_yaw() const;
+  virtual double min_yaw() const;
 
   /**
    * Returns the maximum yaw of this sensor's FOV in radians.
    */
-  virtual double get_max_yaw() const;
+  virtual double max_yaw() const;
 
   /**
    * Returns the minimum range of this sensor in meters.
    */
-  virtual double get_min_range() const;
+  virtual double min_range() const;
 
   /**
    * Returns the maximum range of this sensor in meters.
    */
-  virtual double get_max_range() const;
+  virtual double max_range() const;
 
   Eigen::VectorXd output(
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const override;
 
  private:
-  void cacheRaycastEndpoints();
-  const std::shared_ptr<RigidBodyFrame> frame;
-  double min_pitch;       // minimum pitch of the camera FOV in radians
-  double max_pitch;       // maximum pitch of the camera FOV in radians
-  double min_yaw;         // minimum yaw of the sensor FOV in radians
-  double max_yaw;         // maximum yaw of the sensor FOV in radians
-  size_t num_pixel_rows;  // number of points in the image vertically (pitch)
-  size_t num_pixel_cols;  // number of points in the image horizontally (yaw)
-  double min_range;       // minimum range of the sensor in meters
-  double max_range;       // maximum range of the sensor in meters
 
-  Eigen::Matrix3Xd raycast_endpoints;  // cache to avoid repeated allocation
+  // Ensures that the configuration of this sensor is valid.
+  // Throws an exception if it is not valid.
+  void CheckValidConfiguration();
+  void cacheRaycastEndpoints();
+  const std::shared_ptr<RigidBodyFrame> frame_;
+
+  // The minimum pitch of the camera FOV in radians.
+  double min_pitch_{};
+
+  // The maximum pitch of the camera FOV in radians.
+  double max_pitch_{};
+
+  // The minimum yaw of the sensor FOV in radians.
+  double min_yaw_{};
+
+  // The maximum yaw of the sensor FOV in radians
+  double max_yaw_{};
+
+  // The number of points in the image vertically (pitch).
+  size_t num_pixel_rows_{1};
+
+  // The number of points in the image horizontally (yaw).
+  size_t num_pixel_cols_{1};
+
+  // The minimum range of the sensor in meters.
+  double min_range_{0};
+
+  // The maximum range of the sensor in meters.
+  double max_range_{10};
+
+  // A cache to avoid repeated allocation.
+  Eigen::Matrix3Xd raycast_endpoints;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -14,7 +14,7 @@ int main() {
   tspan << 0, 1;
   int nT = 3;
   double t[3] = {0.0, 0.5, 1.0};
-  MatrixXd q0(rbm.num_positions, nT);
+  MatrixXd q0(rbm.number_of_positions(), nT);
   for (int i = 0; i < nT; i++) {
     q0.col(i) = rbm.getZeroConfiguration();
     q0(3, i) = 0.8;
@@ -27,7 +27,7 @@ int main() {
       new RigidBodyConstraint* [num_constraints];
   constraint_array[0] = com_kc;
   IKoptions ikoptions(&rbm);
-  MatrixXd q_sol(rbm.num_positions, nT);
+  MatrixXd q_sol(rbm.number_of_positions(), nT);
   int* info = new int[nT];
   vector<string> infeasible_constraint;
   inverseKinPointwise(&rbm, nT, t, q0, q0, num_constraints, constraint_array,

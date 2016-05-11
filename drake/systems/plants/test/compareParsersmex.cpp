@@ -46,8 +46,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   // Compute coordinate transform between the two models (in case they are not
   // identical)
-  MatrixXd P = MatrixXd::Zero(cpp_model->num_positions,
-                              matlab_model->num_positions);  // projection from
+  MatrixXd P = MatrixXd::Zero(cpp_model->number_of_positions(),
+                              matlab_model->number_of_positions());  // projection from
                                                              // the coordinates
                                                              // of matlab_model
                                                              // to cpp_model
@@ -63,8 +63,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       }
     }
   }
-  if (!P.isApprox(MatrixXd::Identity(matlab_model->num_positions,
-                                     matlab_model->num_positions))) {
+  if (!P.isApprox(MatrixXd::Identity(matlab_model->number_of_positions(),
+                                     matlab_model->number_of_positions()))) {
     cout << "P = \n" << P << endl;
     mexErrMsgTxt("ERROR: coordinates don't match");
   }
@@ -75,20 +75,20 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   for (int trial = 0; trial < 1; trial++) {
     // generate random q
     VectorXd matlab_q = matlab_model->getRandomConfiguration(generator);
-    VectorXd cpp_q(cpp_model->num_positions);
+    VectorXd cpp_q(cpp_model->number_of_positions());
     cpp_q.noalias() = P * matlab_q;
 
-    if ((matlab_model->num_positions != matlab_model->num_velocities) ||
-        (cpp_model->num_positions != cpp_model->num_velocities)) {
+    if ((matlab_model->number_of_positions() != matlab_model->number_of_velocities()) ||
+        (cpp_model->number_of_positions() != cpp_model->number_of_velocities())) {
       mexErrMsgTxt(
-          "ERROR: num_positions!=num_velocities have to generate another P for "
+          "ERROR: num_positions != num_velocities have to generate another P for "
           "this case");
     }
 
     // generate random v
-    VectorXd matlab_v(matlab_model->num_velocities),
-        cpp_v(cpp_model->num_velocities);
-    for (int i = 0; i < matlab_model->num_velocities; i++)
+    VectorXd matlab_v(matlab_model->number_of_velocities()),
+        cpp_v(cpp_model->number_of_velocities());
+    for (int i = 0; i < matlab_model->number_of_velocities(); i++)
       matlab_v[i] = distribution(generator);
     cpp_v.noalias() = P * matlab_v;
 

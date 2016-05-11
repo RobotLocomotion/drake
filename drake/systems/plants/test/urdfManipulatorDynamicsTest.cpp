@@ -22,21 +22,21 @@ int main(int argc, char* argv[]) {
   // here
   cout << model->bodies.size() << endl;
   for (int i = 0; i < model->bodies.size(); i++) {
-    cout << model->bodies[i]->linkname << endl;
+    cout << model->bodies[i]->name_ << endl;
   }
 
   VectorXd q = model->getZeroConfiguration();
-  VectorXd v = VectorXd::Zero(model->num_velocities);
+  VectorXd v = VectorXd::Zero(model->number_of_velocities());
   int i;
 
-  if (argc >= 2 + model->num_positions) {
-    for (i = 0; i < model->num_positions; i++)
+  if (argc >= 2 + model->number_of_positions()) {
+    for (i = 0; i < model->number_of_positions(); i++)
       sscanf(argv[2 + i], "%lf", &q(i));
   }
 
-  if (argc >= 2 + model->num_positions + model->num_velocities) {
-    for (i = 0; i < model->num_velocities; i++)
-      sscanf(argv[2 + model->num_positions + i], "%lf", &v(i));
+  if (argc >= 2 + model->number_of_positions() + model->number_of_velocities()) {
+    for (i = 0; i < model->number_of_velocities(); i++)
+      sscanf(argv[2 + model->number_of_positions() + i], "%lf", &v(i));
   }
 
   KinematicsCache<double> cache = model->doKinematics(q, v);

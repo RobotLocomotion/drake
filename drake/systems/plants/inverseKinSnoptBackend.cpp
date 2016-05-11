@@ -434,8 +434,8 @@ void inverseKinSnoptBackend(
   model = model_input;
   nT = nT_input;
   t = const_cast<double*>(t_input);
-  nq = model->num_positions;
-  nv = model->num_velocities;
+  nq = model->number_of_positions();
+  nv = model->number_of_velocities();
   q_nom = q_nom_input;
   if (q_seed.rows() != nq || q_seed.cols() != nT || q_nom.rows() != nq ||
       q_nom.cols() != nT) {

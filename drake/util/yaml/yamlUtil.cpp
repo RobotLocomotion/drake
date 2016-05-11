@@ -68,13 +68,13 @@ void loadBodyMotionParams(QPControllerParams& params, const YAML::Node& config,
        ++body_it) {
     try {
       params.body_motion[body_it - robot.bodies.begin()] =
-          get(config, (*body_it)->linkname).as<BodyMotionParams>();
+          get(config, (*body_it)->name_).as<BodyMotionParams>();
     } catch (...) {
       std::cerr << "error converting node: "
-                << get(config, (*body_it)->linkname) << " to BodyMotionParams"
+                << get(config, (*body_it)->name_) << " to BodyMotionParams"
                 << std::endl;
       std::cerr << "config: " << config << std::endl;
-      std::cerr << "linkname: " << (*body_it)->linkname << std::endl;
+      std::cerr << "link_name: " << (*body_it)->name_ << std::endl;
       throw;
     }
   }
@@ -85,7 +85,7 @@ void loadBodyMotionParams(QPControllerParams& params, const YAML::Node& config,
   //   globToRegex((*config_it)["name"].as<std::string>());
   //   for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
   //   ++body_it) {
-  //     if (std::regex_match((*body_it)->linkname, body_regex)) {
+  //     if (std::regex_match((*body_it)->name_, body_regex)) {
   //       params.body_motion[body_it - robot.bodies.begin()] = get(*config_it,
   //       "params").as<BodyMotionParams>();
   //       // loadSingleBodyMotionParams(params.body_motion[body_it -
@@ -130,8 +130,8 @@ void loadSingleJointParams(QPControllerParams& params,
             .as<std::string>();
     for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
          ++body_it) {
-      if (disable_body_name == (*body_it)->linkname) {
-        // if (std::regex_match((*body_it)->linkname, disable_body_regex)) {
+      if (disable_body_name == (*body_it)->name_) {
+        // if (std::regex_match((*body_it)->name_, disable_body_regex)) {
         params.joint_soft_limits.disable_when_body_in_support(position_index) =
             body_it - robot.bodies.begin() + 1;
         // break;
