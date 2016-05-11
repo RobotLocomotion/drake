@@ -542,13 +542,38 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(
     parseScalarValue(range_node, "max", max_range_);
   }
 
+  CheckValidConfiguration();
   cacheRaycastEndpoints();
 }
 
 void RigidBodyDepthSensor::CheckValidConfiguration() {
-  if (!(((min_pitch_ != 0) || (max_pitch_ != 0)) == (num_pixel_rows_ != 0))) {
+  // Verifies that the minimum pitch is less than or equal to the maximum pitch.
+  if (min_pitch_ > max_pitch_) {
     std::stringstream error_msg;
-    error_msg << "ERROR: RigidBodyDepthSensor Configuration problem. "
+    error_msg << "ERROR: RigidBodyDepthSensor: min pitch is greater than max pitch!"
+              << std::endl
+              << "  - min pitch: " << min_pitch_ <<  std::endl
+              << "  - max pitch: " << max_pitch_ << std::endl
+              << std::endl;
+    throw std::runtime_error(error_msg.str());
+  }
+
+  // Verifies that the minimum yaw is less than or equal to the maximum yaw.
+  if (min_yaw_ > max_yaw_) {
+    std::stringstream error_msg;
+    error_msg << "ERROR: RigidBodyDepthSensor: min yaw is greater than max yaw!"
+              << std::endl
+              << "  - min yaw: " << min_yaw_ <<  std::endl
+              << "  - max yaw: " << max_yaw_ << std::endl
+              << std::endl;
+    throw std::runtime_error(error_msg.str());
+  }
+
+  // Verifies that if the min or max pitch is non-zero that there is a non-zero
+  // number of pixels per row.
+  if (((min_pitch_ != 0) || (max_pitch_ != 0)) && (num_pixel_rows_ == 0)) {
+    std::stringstream error_msg;
+    error_msg << "ERROR: RigidBodyDepthSensor: Configuration problem. "
                  "Contradiction between min/max pitch and number of pixels per "
                  "row."
               << std::endl
@@ -560,9 +585,11 @@ void RigidBodyDepthSensor::CheckValidConfiguration() {
     throw std::runtime_error(error_msg.str());
   }
 
-if (!(((min_yaw_ != 0) || (max_yaw_ != 0)) == (num_pixel_cols_ != 0))) {
+  // Verifies that if the min or max yaw is non-zero that there is a non-zero
+  // number of pixels per column.
+  if (((min_yaw_ != 0) || (max_yaw_ != 0)) && (num_pixel_cols_ == 0)) {
     std::stringstream error_msg;
-    error_msg << "ERROR: RigidBodyDepthSensor Configuration problem. "
+    error_msg << "ERROR: RigidBodyDepthSensor: Configuration problem. "
                  "Contradiction between min/max yaw and number of pixels per "
                  "column."
               << std::endl
@@ -636,14 +663,6 @@ size_t RigidBodyDepthSensor::num_pixel_rows() const {
 size_t RigidBodyDepthSensor::num_pixel_cols() const {
   return num_pixel_cols_;
 }
-
-// bool RigidBodyDepthSensor::is_vertical_scanner() const {
-//   return min_pitch != 0 || max_pitch != 0;
-// }
-
-// bool RigidBodyDepthSensor::is_horizontal_scanner() const {
-//   return min_yaw != 0 || max_yaw != 0;
-// }
 
 double RigidBodyDepthSensor::min_pitch() const { return min_pitch_; }
 

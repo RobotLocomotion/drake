@@ -158,8 +158,6 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace
 }  // namespace drake
 
-// clang-format off
 int main(int argc, const char* argv[]) {
   return drake::do_main(argc, argv);
 }
-// clang-format on

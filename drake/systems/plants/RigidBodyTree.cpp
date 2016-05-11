@@ -46,8 +46,8 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
 
 RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
-  RigidBodyTree();
+    const DrakeJoint::FloatingBaseType floating_base_type) :
+    RigidBodyTree() {
   addRobotFromURDF(urdf_filename, floating_base_type);
 }
 

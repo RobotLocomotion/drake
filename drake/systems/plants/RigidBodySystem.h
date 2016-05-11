@@ -505,16 +505,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   virtual size_t num_pixel_cols() const;
 
   /**
-   * Returns whether this depth sensor scans vertically.
-   */
-  // virtual bool is_vertical_scanner() const;
-
-  /**
-   * Returns whether this depth sensor scans horizontally.
-   */
-  // virtual bool is_horizontal_scanner() const;
-
-  /**
    * Returns minimum pitch of this sensor's FOV in radians.
    */
   virtual double min_pitch() const;

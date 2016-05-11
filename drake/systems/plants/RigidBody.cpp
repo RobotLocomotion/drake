@@ -3,8 +3,6 @@
 
 #include <stdexcept>
 
-#include "drake/systems/plants/RigidBodyTree.h"
-
 using Eigen::Isometry3d;
 using Eigen::Matrix;
 using Eigen::Vector3d;
@@ -40,14 +38,8 @@ const DrakeJoint& RigidBody::getJoint() const {
   if (joint) {
     return (*joint);
   } else {
-    if (name_ == std::string(RigidBodyTree::kWorldLinkName)) {
-      throw runtime_error(
-          "ERROR: Attempted to get the world link's joint. "
-          "The world link does not have a joint!");
-    } else {
-      throw runtime_error("Joint of link " + name_ + " in model " +
-                          model_name_ + " is not initialized");
-    }
+    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_
+      + "\" in model " + model_name_ + " does not have a jont!");
   }
 }
 

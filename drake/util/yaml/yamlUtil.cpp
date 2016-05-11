@@ -74,7 +74,7 @@ void loadBodyMotionParams(QPControllerParams& params, const YAML::Node& config,
                 << get(config, (*body_it)->name_) << " to BodyMotionParams"
                 << std::endl;
       std::cerr << "config: " << config << std::endl;
-      std::cerr << "link_name: " << (*body_it)->name_ << std::endl;
+      std::cerr << "body_name: " << (*body_it)->name_ << std::endl;
       throw;
     }
   }
