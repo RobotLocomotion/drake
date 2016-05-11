@@ -10,20 +10,6 @@
 #include "drake/drakeCollision_export.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 
-template <class InputIterator1, class InputIterator2>
-bool have_intersection(InputIterator1 first1, InputIterator1 last1,
-                       InputIterator2 first2, InputIterator2 last2) {
-  while (first1 != last1 && first2 != last2) {
-    if (*first1 < *first2)
-      ++first1;
-    else if (*first2 < *first1)
-      ++first2;
-    else
-      return true;
-  }
-  return false;
-}
-
 // Forward declaration.
 // RigidBody's interface is never used by the collision engine.
 // It is however useful the concept of having a CollisionElement attached to a

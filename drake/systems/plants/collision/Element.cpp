@@ -2,8 +2,11 @@
 
 #include <iostream>
 
+#include "drake/common/algorithms/have_intersection.h"
+
 using namespace Eigen;
 using namespace std;
+using drake::common::algorithms::have_intersection;
 
 namespace DrakeCollision {
 Element::Element(const Isometry3d& T_element_to_local,
