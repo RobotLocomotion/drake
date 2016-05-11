@@ -539,7 +539,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
       const RigidBodySystem::InputVector<double>& u) const override;
 
  private:
-
   // Ensures that the configuration of this sensor is valid.
   // Throws an exception if it is not valid.
   void CheckValidConfiguration();

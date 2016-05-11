@@ -50,7 +50,6 @@ size_t RigidBodySystem::getNumOutputs() const {
   return n;
 }
 
-
 size_t RigidBodySystem::number_of_positions() const {
   return tree->number_of_positions();
 }
@@ -58,7 +57,6 @@ size_t RigidBodySystem::number_of_positions() const {
 size_t RigidBodySystem::number_of_velocities() const {
   return tree->number_of_velocities();
 }
-
 
 void RigidBodySystem::addSensor(std::shared_ptr<RigidBodySensor> s) {
   if (s->isDirectFeedthrough()) {
@@ -300,9 +298,10 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
   mutable KinematicsCache<double> kinsol;
 };
 
-DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double>
-getInitialState(const RigidBodySystem& sys) {
-  VectorXd x0(sys.tree->number_of_positions() + sys.tree->number_of_velocities());
+DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
+    const RigidBodySystem& sys) {
+  VectorXd x0(sys.tree->number_of_positions() +
+              sys.tree->number_of_velocities());
   default_random_engine generator;
   x0 << sys.tree->getRandomConfiguration(generator),
       VectorXd::Random(sys.tree->number_of_velocities());
@@ -502,8 +501,7 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(
 RigidBodyDepthSensor::RigidBodyDepthSensor(
     RigidBodySystem const& sys, const std::string& name,
     std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node)
-    : RigidBodySensor(sys, name),
-      frame_(frame) {
+    : RigidBodySensor(sys, name), frame_(frame) {
   string type(node->Attribute("type"));
 
   if (type.compare("ray") == 0) {
@@ -550,11 +548,12 @@ void RigidBodyDepthSensor::CheckValidConfiguration() {
   // Verifies that the minimum pitch is less than or equal to the maximum pitch.
   if (min_pitch_ > max_pitch_) {
     std::stringstream error_msg;
-    error_msg << "ERROR: RigidBodyDepthSensor: min pitch is greater than max pitch!"
-              << std::endl
-              << "  - min pitch: " << min_pitch_ <<  std::endl
-              << "  - max pitch: " << max_pitch_ << std::endl
-              << std::endl;
+    error_msg
+        << "ERROR: RigidBodyDepthSensor: min pitch is greater than max pitch!"
+        << std::endl
+        << "  - min pitch: " << min_pitch_ << std::endl
+        << "  - max pitch: " << max_pitch_ << std::endl
+        << std::endl;
     throw std::runtime_error(error_msg.str());
   }
 
@@ -563,7 +562,7 @@ void RigidBodyDepthSensor::CheckValidConfiguration() {
     std::stringstream error_msg;
     error_msg << "ERROR: RigidBodyDepthSensor: min yaw is greater than max yaw!"
               << std::endl
-              << "  - min yaw: " << min_yaw_ <<  std::endl
+              << "  - min yaw: " << min_yaw_ << std::endl
               << "  - max yaw: " << max_yaw_ << std::endl
               << std::endl;
     throw std::runtime_error(error_msg.str());
@@ -578,7 +577,7 @@ void RigidBodyDepthSensor::CheckValidConfiguration() {
                  "row."
               << std::endl
               << "  - sensor name: " << name << std::endl
-              << "  - min pitch: " << min_pitch_ <<  std::endl
+              << "  - min pitch: " << min_pitch_ << std::endl
               << "  - max pitch: " << max_pitch_ << std::endl
               << "  - number of pixels per row: " << num_pixel_rows_
               << std::endl;
@@ -594,7 +593,7 @@ void RigidBodyDepthSensor::CheckValidConfiguration() {
                  "column."
               << std::endl
               << "  - sensor name: " << name << std::endl
-              << "  - min yaw: " << min_yaw_ <<  std::endl
+              << "  - min yaw: " << min_yaw_ << std::endl
               << "  - max yaw: " << max_yaw_ << std::endl
               << "  - number of pixels per row: " << num_pixel_cols_
               << std::endl;
@@ -608,13 +607,13 @@ void RigidBodyDepthSensor::cacheRaycastEndpoints() {
     double pitch =
         min_pitch_ +
         (num_pixel_rows_ > 1 ? static_cast<double>(i) / (num_pixel_rows_ - 1)
-                            : 0.0) *
+                             : 0.0) *
             (max_pitch_ - min_pitch_);
     for (size_t j = 0; j < num_pixel_cols_; j++) {
       double yaw =
           min_yaw_ +
           (num_pixel_cols_ > 1 ? static_cast<double>(j) / (num_pixel_cols_ - 1)
-                              : 0.0) *
+                               : 0.0) *
               (max_yaw_ - min_yaw_);
       raycast_endpoints.col(num_pixel_cols_ * i + j) =
           max_range_ *
@@ -656,13 +655,9 @@ size_t RigidBodyDepthSensor::getNumOutputs() const {
   return num_pixel_rows_ * num_pixel_cols_;
 }
 
-size_t RigidBodyDepthSensor::num_pixel_rows() const {
-  return num_pixel_rows_;
-}
+size_t RigidBodyDepthSensor::num_pixel_rows() const { return num_pixel_rows_; }
 
-size_t RigidBodyDepthSensor::num_pixel_cols() const {
-  return num_pixel_cols_;
-}
+size_t RigidBodyDepthSensor::num_pixel_cols() const { return num_pixel_cols_; }
 
 double RigidBodyDepthSensor::min_pitch() const { return min_pitch_; }
 
@@ -773,7 +768,9 @@ void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
           Eigen::aligned_allocator<RigidBodyDepthSensor>(), sys, sensor_name,
           frame, elnode));
     } else {
-      throw std::runtime_error("ERROR: Drake C++ currently does not support sensors of type " + type + ".");
+      throw std::runtime_error(
+          "ERROR: Drake C++ currently does not support sensors of type " +
+          type + ".");
     }
   }
 }

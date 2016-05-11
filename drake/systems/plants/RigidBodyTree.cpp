@@ -17,7 +17,7 @@ using namespace std;
 using namespace Eigen;
 
 const set<int> RigidBodyTree::default_robot_num_set = {0};
-const char* RigidBodyTree::kWorldLinkName = "world";
+const char* const RigidBodyTree::kWorldLinkName = "world";
 
 template <typename T>
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {

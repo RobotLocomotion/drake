@@ -72,7 +72,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * Defines the name of the rigid body within a rigid body tree that represents
    * the world.
    */
-  static const char* kWorldLinkName;
+  static const char* const kWorldLinkName;
 
   RigidBodyTree(const std::string& urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type =
