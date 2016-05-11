@@ -22,6 +22,9 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractSystemInterface {
   /// Returns the name of this System.
   virtual std::string get_name() const = 0;
 
+ protected:
+  AbstractSystemInterface() {}
+
  private:
   // AbstractSystemInterface objects are neither copyable nor moveable.
   AbstractSystemInterface(const AbstractSystemInterface& other) = delete;
@@ -55,6 +58,8 @@ class SystemInterface : public AbstractSystemInterface {
   // in the cache.
   virtual void Output(const Context<T>& context, Cache<T>* cache,
                       SystemOutput<T>* output) const = 0;
+ protected:
+  SystemInterface() {}
 
  private:
   // SystemInterface objects are neither copyable nor moveable.

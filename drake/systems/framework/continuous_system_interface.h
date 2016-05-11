@@ -73,6 +73,9 @@ class ContinuousSystemInterface : public SystemInterface<T> {
       const Context<T>& context, Cache<T>* cache,
       VectorInterface<T>* derivatives) const = 0;
 
+ protected:
+  ContinuousSystemInterface() {}
+
  private:
   // ContinuousSystemInterface objects are neither copyable nor moveable.
   ContinuousSystemInterface(const ContinuousSystemInterface<T>& other) = delete;
