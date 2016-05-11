@@ -142,6 +142,7 @@ Continuous Integration Notes
 
     CDash <https://drake-cdash.csail.mit.edu/index.php?project=Drake>
     jenkins
+    buildcop
 
 IDE and Text Editor Notes
 =========================
@@ -150,7 +151,7 @@ IDE and Text Editor Notes
     :maxdepth: 1
 
     clion
-    `Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>`_
+    Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>
 
 
 Sublime Text
