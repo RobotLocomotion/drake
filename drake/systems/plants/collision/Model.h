@@ -30,7 +30,7 @@ class DRAKECOLLISION_EXPORT Model {
 
   /** @brief Get a pointer to a const collision element in this model.
    * @param id an ElementId corresponding to the desired collision element
-   * @return a read-only pointer to the collision element corresponding to
+   * @return a pointer to a const collision element corresponding to
    * the given id or nullptr if no such collision element is present in the
    * model.
    */
@@ -38,7 +38,7 @@ class DRAKECOLLISION_EXPORT Model {
 
   /** @brief Get a pointer to a mutable collision element in this model.
    * @param id an ElementId corresponding to the desired collision element
-   * @return a read-only pointer to the collision element corresponding to
+   * @return a pointer to a mutable collision element corresponding to
    * the given id or nullptr if no such collision element is present in the
    * model.
    */
