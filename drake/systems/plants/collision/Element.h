@@ -11,16 +11,15 @@
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 
 template <class InputIterator1, class InputIterator2>
-bool have_intersection (InputIterator1 first1, InputIterator1 last1,
-                        InputIterator2 first2, InputIterator2 last2)
-{
-  while (first1!=last1 && first2!=last2)
-  {
-    if (*first1<*first2) ++first1;
-    else if (*first2<*first1) ++first2;
-    else {
+bool have_intersection(InputIterator1 first1, InputIterator1 last1,
+                       InputIterator2 first2, InputIterator2 last2) {
+  while (first1 != last1 && first2 != last2) {
+    if (*first1 < *first2)
+      ++first1;
+    else if (*first2 < *first1)
+      ++first2;
+    else
       return true;
-    }
   }
   return false;
 }
@@ -37,11 +36,13 @@ typedef uintptr_t ElementId;
 class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
  public:
   Element(const Eigen::Isometry3d& T_element_to_local =
-              Eigen::Isometry3d::Identity(), const RigidBody* const body = nullptr);
+              Eigen::Isometry3d::Identity(),
+          const RigidBody* const body = nullptr);
 
   Element(const DrakeShapes::Geometry& geometry,
           const Eigen::Isometry3d& T_element_to_local =
-              Eigen::Isometry3d::Identity(), const RigidBody* const body = nullptr);
+              Eigen::Isometry3d::Identity(),
+          const RigidBody* const body = nullptr);
 
   virtual ~Element() {}
 
@@ -68,7 +69,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
   // TODO(amcastro-tri): getBody() -> get_body()
   const RigidBody& getBody() const;
 
-  bool is_attached_to_body() const { return body_!= nullptr; }
+  bool is_attached_to_body() const { return body_ != nullptr; }
 
   /**
    * @brief Adds this collsion element to collision group group_id
