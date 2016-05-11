@@ -141,10 +141,10 @@ class DRAKERBM_EXPORT RigidBody {
   }
 
   /**
-   * @brief Adds body to a given collision gropu by group id.
+   * @brief Adds body to a given collision group by group id.
    *
    * This call adds each of the collision elements in this body to the provided
-   * collision gropu.
+   * collision group.
    *
    * @param[in] group_id Collision group id. Collision elements in this group
    * do not interact.
