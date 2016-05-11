@@ -18,7 +18,7 @@ struct ContinuousState {
   std::unique_ptr<VectorInterface<T>> generalized_position;
 
   /// Generalized speeds representing System velocity. conventionally denoted
-  /// `u`. These are first-order state variables that the System can linearly
+  /// `v`. These are first-order state variables that the System can linearly
   /// map to time derivatives `qdot` of `q` above.
   std::unique_ptr<VectorInterface<T>> generalized_velocities;
 

@@ -59,7 +59,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
       VectorInterface<T>* derivatives) const = 0;
 
   /// Transforms the given velocity (v) to the derivative of the configuration
-  /// (qdot). The transformation must be linear (qdot = A*v + B), and it must
+  /// (qdot). The transformation must be linear (qdot = N(q) * v), and it must
   /// require no more than O(N) time to compute in the number of generalized
   /// velocity states.
   ///
