@@ -65,17 +65,6 @@ QuasiStaticConstraint::QuasiStaticConstraint(RigidBodyTree* robot,
   this->type = RigidBodyConstraint::QuasiStaticConstraintType;
 }
 
-QuasiStaticConstraint::QuasiStaticConstraint(const QuasiStaticConstraint& rhs)
-    : RigidBodyConstraint(rhs),
-      m_robotnumset(rhs.m_robotnumset),
-      shrinkFactor(rhs.shrinkFactor),
-      active(rhs.active),
-      num_bodies(rhs.num_bodies),
-      num_pts(rhs.num_pts),
-      bodies(rhs.bodies),
-      num_body_pts(rhs.num_body_pts),
-      body_pts(rhs.body_pts) {}
-
 QuasiStaticConstraint::~QuasiStaticConstraint() {}
 
 bool QuasiStaticConstraint::isTimeValid(const double* t) const {
@@ -240,19 +229,6 @@ PostureConstraint::PostureConstraint(RigidBodyTree* robot,
   this->type = RigidBodyConstraint::PostureConstraintType;
 }
 
-PostureConstraint::PostureConstraint(const PostureConstraint& rhs)
-    : RigidBodyConstraint(rhs) {
-  int nq = this->robot->num_positions;
-  this->lb.resize(nq);
-  this->ub.resize(nq);
-  this->joint_limit_min0 = rhs.joint_limit_min0;
-  this->joint_limit_max0 = rhs.joint_limit_max0;
-  for (int i = 0; i < nq; i++) {
-    this->lb[i] = rhs.lb[i];
-    this->ub[i] = rhs.ub[i];
-  }
-}
-
 bool PostureConstraint::isTimeValid(const double* t) const {
   if (t == nullptr) return true;
   return (*t) >= this->tspan[0] && (*t) <= this->tspan[1];
@@ -302,10 +278,6 @@ MultipleTimeLinearPostureConstraint::MultipleTimeLinearPostureConstraint(
     : RigidBodyConstraint(
           RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory,
           robot, tspan) {}
-
-MultipleTimeLinearPostureConstraint::MultipleTimeLinearPostureConstraint(
-    const MultipleTimeLinearPostureConstraint& rhs)
-    : RigidBodyConstraint(rhs) {}
 
 std::vector<bool> MultipleTimeLinearPostureConstraint::isTimeValid(
     const double* t, int n_breaks) const {
@@ -421,17 +393,6 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
   this->type = RigidBodyConstraint::SingleTimeLinearPostureConstraintType;
 }
 
-SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
-    const SingleTimeLinearPostureConstraint& rhs)
-    : RigidBodyConstraint(rhs),
-      iAfun(rhs.iAfun),
-      jAvar(rhs.jAvar),
-      A(rhs.A),
-      lb(rhs.lb),
-      ub(rhs.ub),
-      num_constraint(rhs.num_constraint),
-      A_mat(rhs.A_mat) {}
-
 bool SingleTimeLinearPostureConstraint::isTimeValid(const double* t) const {
   if (t == nullptr) {
     return true;
@@ -516,11 +477,6 @@ SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(
   this->num_constraint = 0;
 }
 
-SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(
-    const SingleTimeKinematicConstraint& rhs)
-    : RigidBodyConstraint(rhs) {
-  this->num_constraint = rhs.num_constraint;
-}
 bool SingleTimeKinematicConstraint::isTimeValid(const double* t) const {
   if (t == nullptr) return true;
   return (*t) >= this->tspan[0] && (*t) <= this->tspan[1];
@@ -542,10 +498,6 @@ MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(
     : RigidBodyConstraint(
           RigidBodyConstraint::MultipleTimeKinematicConstraintCategory, robot,
           tspan) {}
-
-MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(
-    const MultipleTimeKinematicConstraint& rhs)
-    : RigidBodyConstraint(rhs) {}
 
 void MultipleTimeKinematicConstraint::eval(const double* t, int n_breaks,
                                            const MatrixXd& q, VectorXd& c,
@@ -667,15 +619,6 @@ PositionConstraint::PositionConstraint(RigidBodyTree* robot,
       valid_col_idx++;
     }
   }
-}
-
-PositionConstraint::PositionConstraint(const PositionConstraint& rhs)
-    : SingleTimeKinematicConstraint(rhs) {
-  this->n_pts = rhs.n_pts;
-  this->pts = rhs.pts;
-  this->lb = rhs.lb;
-  this->ub = rhs.ub;
-  this->null_constraint_rows = rhs.null_constraint_rows;
 }
 
 void PositionConstraint::eval(const double* t, KinematicsCache<double>& cache,
@@ -987,16 +930,6 @@ EulerConstraint::EulerConstraint(RigidBodyTree* robot, const Vector3d& lb,
   for (int i = 0; i < this->num_constraint; i++) {
     this->avg_rpy[i] = (this->lb[i] + this->ub[i]) / 2.0;
   }
-}
-
-EulerConstraint::EulerConstraint(const EulerConstraint& rhs)
-    : SingleTimeKinematicConstraint(rhs) {
-  this->null_constraint_rows[0] = rhs.null_constraint_rows[0];
-  this->null_constraint_rows[1] = rhs.null_constraint_rows[1];
-  this->null_constraint_rows[2] = rhs.null_constraint_rows[2];
-  this->lb = rhs.lb;
-  this->ub = rhs.ub;
-  this->avg_rpy = rhs.avg_rpy;
 }
 
 void EulerConstraint::eval(const double* t, KinematicsCache<double>& cache,
