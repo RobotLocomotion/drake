@@ -9,14 +9,16 @@
 namespace drake {
 namespace systems {
 
-template <typename ScalarType>
+template <typename T>
 struct ContinuousOutputPort {
-  std::unique_ptr<VectorInterface<ScalarType>> output;
+  std::unique_ptr<VectorInterface<T>> output;
 };
 
-template <typename ScalarType>
+/// A container for all the output of a System.
+/// @tparam T The mathematical type of the output.
+template <typename T>
 struct SystemOutput {
-  std::vector<ContinuousOutputPort<ScalarType>> continuous_ports;
+  std::vector<ContinuousOutputPort<T>> continuous_ports;
 };
 
 }  // namespace systems

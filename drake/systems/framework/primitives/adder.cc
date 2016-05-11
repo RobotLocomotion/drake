@@ -10,42 +10,40 @@
 namespace drake {
 namespace systems {
 
-template <typename ScalarType>
-Adder<ScalarType>::Adder(int num_inputs, int length)
+template <typename T>
+Adder<T>::Adder(int num_inputs, int length)
     : num_inputs_(num_inputs), length_(length) {}
 
-template <typename ScalarType>
-Context<ScalarType> Adder<ScalarType>::CreateDefaultContext() const {
-  Context<ScalarType> context;
+template <typename T>
+Context<T> Adder<T>::CreateDefaultContext() const {
+  Context<T> context;
   context.continuous_inputs.resize(num_inputs_);
   return context;
 }
 
-template <typename ScalarType>
-SystemOutput<ScalarType> Adder<ScalarType>::CreateDefaultOutput() const {
+template <typename T>
+SystemOutput<T> Adder<T>::CreateDefaultOutput() const {
   // An adder has just one output port, a BasicVector of the size specified
   // at construction time.
-  SystemOutput<ScalarType> output;
+  SystemOutput<T> output;
   {
-    ContinuousOutputPort<ScalarType> port;
-    port.output.reset(new BasicVector<ScalarType>(length_));
+    ContinuousOutputPort<T> port;
+    port.output.reset(new BasicVector<T>(length_));
     output.continuous_ports.push_back(std::move(port));
   }
   return output;
 }
 
-template <typename ScalarType>
-void Adder<ScalarType>::Output(const Context<ScalarType>& context,
-                               Cache<ScalarType>* cache,
-                               SystemOutput<ScalarType>* output) const {
+template <typename T>
+void Adder<T>::Output(const Context<T>& context, Cache<T>* cache,
+                      SystemOutput<T>* output) const {
   // Check that the single output port has the correct length, then zero it.
   // Checks on the output structure are assertions, not exceptions,
   // since failures would reflect a bug in the Adder implementation, not
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
   assert(output->continuous_ports.size() == 1);
-  VectorInterface<ScalarType>* output_port =
-      output->continuous_ports[0].output.get();
+  VectorInterface<T>* output_port = output->continuous_ports[0].output.get();
   assert(output_port != nullptr);
   assert(output_port->get_value().rows() == length_);
   for (int i = 0; i < output_port->get_value().rows(); i++) {
@@ -62,7 +60,7 @@ void Adder<ScalarType>::Output(const Context<ScalarType>& context,
   // Sum each input port into the output, after checking that it has the
   // expected length.
   for (int i = 0; i < context.continuous_inputs.size(); i++) {
-    const VectorInterface<ScalarType>* input = context.continuous_inputs[i];
+    const VectorInterface<T>* input = context.continuous_inputs[i];
     if (input == nullptr || input->get_value().rows() != length_) {
       throw std::runtime_error("Input port " + std::to_string(i) +
                                "is nullptr or has incorrect size.");
@@ -73,25 +71,32 @@ void Adder<ScalarType>::Output(const Context<ScalarType>& context,
   }
 }
 
-template <typename ScalarType>
-void Adder<ScalarType>::GetContinuousDerivativesOfGeneralizedVelocity(
-    const Context<ScalarType>& context, Cache<ScalarType>* cache,
-    VectorInterface<ScalarType>* derivatives) const {
-  derivatives->set_value(VectorX<ScalarType>::Zero(0));
+template <typename T>
+void Adder<T>::GetDerivativesOfGeneralizedPosition(
+    const Context<T>& context, Cache<T>* cache,
+    VectorInterface<T>* derivatives) const {
+  derivatives->set_value(VectorX<T>::Zero(0));
 }
 
-template <typename ScalarType>
-void Adder<ScalarType>::GetContinuousDerivativesOfGeneralizedPosition(
-    const Context<ScalarType>& context, Cache<ScalarType>* cache,
-    VectorInterface<ScalarType>* derivatives) const {
-  derivatives->set_value(VectorX<ScalarType>::Zero(0));
+template <typename T>
+void Adder<T>::GetDerivativesOfGeneralizedVelocity(
+    const Context<T>& context, Cache<T>* cache,
+    VectorInterface<T>* derivatives) const {
+  derivatives->set_value(VectorX<T>::Zero(0));
 }
 
-template <typename ScalarType>
-void Adder<ScalarType>::MapVelocityToConfigurationDerivative(
-    const VectorInterface<ScalarType>& generalized_velocity,
-    Cache<ScalarType>* cache, VectorInterface<ScalarType>* derivatives) const {
-  derivatives->set_value(VectorX<ScalarType>::Zero(0));
+template <typename T>
+void Adder<T>::GetDerivativesOfOtherContinuousState(
+    const Context<T>& context, Cache<T>* cache,
+    VectorInterface<T>* derivatives) const {
+  derivatives->set_value(VectorX<T>::Zero(0));
+}
+
+template <typename T>
+void Adder<T>::MapVelocityToConfigurationDerivative(
+    const Context<T>& context, Cache<T>* cache,
+    VectorInterface<T>* derivatives) const {
+  derivatives->set_value(VectorX<T>::Zero(0));
 }
 
 template class DRAKESYSTEMFRAMEWORK_EXPORT Adder<double>;
