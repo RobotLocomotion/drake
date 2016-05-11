@@ -424,8 +424,7 @@ void RigidBodyTree::collisionDetectFromPoints(
     normal.col(i) = n;
     phi[i] = distance;
     const DrakeCollision::Element* elementB =
-        dynamic_cast<const DrakeCollision::Element*>(
-            collision_model->readElement(closest_points[i].getIdB()));
+            collision_model->readElement(closest_points[i].getIdB());
     body_idx.push_back(elementB->getBody().body_index);
   }
 }
@@ -483,8 +482,7 @@ bool RigidBodyTree::collisionDetect(
     normal.col(i) = n;
     phi[i] = distance;
     const DrakeCollision::Element* elementA =
-        dynamic_cast<const DrakeCollision::Element*>(
-            collision_model->readElement(points[i].getIdA()));
+            collision_model->readElement(points[i].getIdA());
     // DEBUG
     // cout << "RigidBodyTree::collisionDetect: points[i].getIdA() = " <<
     // points[i].getIdA() << endl;
@@ -499,8 +497,7 @@ bool RigidBodyTree::collisionDetect(
     // END_DEBUG
     bodyA_idx.push_back(elementA->getBody().body_index);
     const DrakeCollision::Element* elementB =
-        dynamic_cast<const DrakeCollision::Element*>(
-            collision_model->readElement(points[i].getIdB()));
+            collision_model->readElement(points[i].getIdB());
     bodyB_idx.push_back(elementB->getBody().body_index);
   }
   return points_found;
@@ -567,7 +564,7 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                                     Matrix3Xd& xA, Matrix3Xd& xB,
                                     vector<int>& bodyA_idx,
                                     vector<int>& bodyB_idx, bool use_margins) {
-  // TODO(amcastro-tri): Move initialization of ids_to_check this to
+  // TODO(amcastro-tri): Move initialization of ids_to_check to
   // RigidBodyTree::compile since it doesn't change during simulation.
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
@@ -602,11 +599,9 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
 
   for (size_t i = 0; i < num_potential_collisions; i++) {
     const DrakeCollision::Element* elementA =
-        dynamic_cast<const DrakeCollision::Element*>(
-            collision_model->readElement(potential_collisions[i].getIdA()));
+            collision_model->readElement(potential_collisions[i].getIdA());
     const DrakeCollision::Element* elementB =
-        dynamic_cast<const DrakeCollision::Element*>(
-            collision_model->readElement(potential_collisions[i].getIdB()));
+            collision_model->readElement(potential_collisions[i].getIdB());
     potential_collisions[i].getResults(&ptA, &ptB, &n, &distance);
     xA.col(i) = ptA;
     xB.col(i) = ptB;
@@ -653,12 +648,10 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
     xB_in_world.col(i) = ptB;
 
     const DrakeCollision::Element* elementA =
-        dynamic_cast<const DrakeCollision::Element*>(
-            collision_model->readElement(points[i].getIdA()));
+            collision_model->readElement(points[i].getIdA());
     bodyA_idx.push_back(elementA->getBody().body_index);
     const DrakeCollision::Element* elementB =
-        dynamic_cast<const DrakeCollision::Element*>(
-            collision_model->readElement(points[i].getIdB()));
+            collision_model->readElement(points[i].getIdB());
     bodyB_idx.push_back(elementB->getBody().body_index);
   }
   return points_found;
