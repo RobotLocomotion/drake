@@ -5,7 +5,7 @@ namespace systems {
 
 // This is a placeholder.
 // TODO(david-german-tri): Add actual functionality.
-template <typename ScalarType>
+template <typename T>
 class Cache {
  public:
   Cache() {}

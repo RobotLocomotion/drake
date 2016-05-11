@@ -11,16 +11,16 @@ namespace drake {
 namespace systems {
 
 /// BasicVector is a semantics-free wrapper around an Eigen vector that
-/// satisfies VectorInterface.
-template <typename ScalarType>
-class BasicVector : public VectorInterface<ScalarType> {
+/// satisfies VectorInterface. Once constructed, its size is fixed.
+/// @tparam T The type of the vector element.
+template <typename T>
+class BasicVector : public VectorInterface<T> {
  public:
-  explicit BasicVector(int size)
-      : values_(VectorX<ScalarType>::Zero(size, 1 /* column */)) {}
+  explicit BasicVector(int size) : values_(VectorX<T>::Zero(size)) {}
 
   ~BasicVector() override {}
 
-  void set_value(const VectorX<ScalarType>& value) override {
+  void set_value(const VectorX<T>& value) override {
     if (value.rows() != values_.rows()) {
       throw std::runtime_error(
           "Cannot set a BasicVector of size " + std::to_string(values_.rows()) +
@@ -29,15 +29,15 @@ class BasicVector : public VectorInterface<ScalarType> {
     values_ = value;
   }
 
-  const VectorX<ScalarType>& get_value() const override { return values_; }
+  const VectorX<T>& get_value() const override { return values_; }
 
-  Eigen::VectorBlock<VectorX<ScalarType>> get_mutable_value() override {
+  Eigen::VectorBlock<VectorX<T>> get_mutable_value() override {
     return values_.head(values_.rows());
   }
 
  private:
-  // The column vector of ScalarType values.
-  VectorX<ScalarType> values_;
+  // The column vector of T values.
+  VectorX<T> values_;
 };
 
 }  // namespace systems
