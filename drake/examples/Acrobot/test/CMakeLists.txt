@@ -17,5 +17,5 @@ add_matlab_test(NAME examples/Acrobot/test/testManipulatorEquations COMMAND test
 add_matlab_test(NAME examples/Acrobot/test/testMass COMMAND testMass)
 add_matlab_test(NAME examples/Acrobot/test/testTSRB COMMAND testTSRB)
 add_matlab_test(NAME examples/Acrobot/test/testTrajOpt COMMAND testTrajOpt)
-add_matlab_test(NAME examples/Acrobot/test/trigPolyTest COMMAND trigPolyTest)
+add_matlab_test(NAME examples/Acrobot/test/trigPolyTest COMMAND trigPolyTest PROPERTIES TIMEOUT 750)
 add_matlab_test(NAME examples/Acrobot/test/urdfDynamicsTest COMMAND urdfDynamicsTest)
