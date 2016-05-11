@@ -2,6 +2,9 @@ if (LCM_FOUND AND GTEST_FOUND)
   add_executable(acrobotURDFDynamicsTest urdfDynamicsTest.cpp)
   target_link_libraries(acrobotURDFDynamicsTest drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME acrobotURDFDynamicsTest COMMAND acrobotURDFDynamicsTest)
+  add_test(NAME acrobotURDFDynamicsTest.ch COMMAND ${CMAKE_COMMAND}
+    -Dtargetfile=$<TARGET_FILE:acrobotURDFDynamicsTest>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/checktest.cmake)
 endif(LCM_FOUND AND GTEST_FOUND)
 
 add_matlab_test(NAME examples/Acrobot/test/dHtest COMMAND dHtest)
