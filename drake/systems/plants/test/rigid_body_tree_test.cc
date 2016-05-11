@@ -16,40 +16,43 @@ class RigidBodyTreeTest : public ::testing::Test {
     tree.reset(new RigidBodyTree());
 
     // Defines four rigid bodies.
-    r1b1 = std::allocate_shared<RigidBody>(
-      Eigen::aligned_allocator<RigidBody>());
+    r1b1 = new RigidBody();
     r1b1->model_name = "robot1";
     r1b1->linkname = "body1";
 
-    r2b1 = std::allocate_shared<RigidBody>(
-      Eigen::aligned_allocator<RigidBody>());
+    r2b1 = new RigidBody();
     r2b1->model_name = "robot2";
     r2b1->linkname = "body1";
 
-    r3b1 = std::allocate_shared<RigidBody>(
-      Eigen::aligned_allocator<RigidBody>());
+    r3b1 = new RigidBody();
     r3b1->model_name = "robot3";
     r3b1->linkname = "body1";
 
-    r4b1 = std::allocate_shared<RigidBody>(
-      Eigen::aligned_allocator<RigidBody>());
+    r4b1 = new RigidBody();
     r4b1->model_name = "robot4";
     r4b1->linkname = "body1";
   }
 
  public:
+  // TODO(amcastro-tri): A stack object here (preferable to a pointer)
+  // generates build issues on Windows platforms. See git-hub issue #1854.
   std::unique_ptr<RigidBodyTree> tree;
-  std::shared_ptr<RigidBody> r1b1;
-  std::shared_ptr<RigidBody> r2b1;
-  std::shared_ptr<RigidBody> r3b1;
-  std::shared_ptr<RigidBody> r4b1;
+  // TODO(amcastro-tri): these pointers will be replaced by Sherm's
+  // unique_ptr_reference's.
+  RigidBody* r1b1{};
+  RigidBody* r2b1{};
+  RigidBody* r3b1{};
+  RigidBody* r4b1{};
 };
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
   // Adds rigid bodies r1b1 and r2b1 to the rigid body tree and verify they can
   // be found.
-  tree->add_rigid_body(r1b1);
-  tree->add_rigid_body(r2b1);
+
+  // RigidBodyTree takes ownership of these bodies.
+  // User still has access to these bodies through the raw pointers.
+  tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
+  tree->add_rigid_body(std::unique_ptr<RigidBody>(r2b1));
 
   EXPECT_TRUE(tree->findLink("body1", "robot1") != nullptr);
   EXPECT_TRUE(tree->findLink("body1", "robot2") != nullptr);
@@ -74,9 +77,10 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
 }
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
-  // Adds rigid bodies r1b1 and r2b1 to the rigid body tree.
-  tree->add_rigid_body(r1b1);
-  tree->add_rigid_body(r2b1);
+  // TODO(amcastro-tri): these pointers will be replaced by Sherm's
+  // unique_ptr_reference's
+  tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
+  tree->add_rigid_body(std::unique_ptr<RigidBody>(r2b1));
 
   // Adds floating joints that connect r1b1 and r2b1 to the rigid body tree's
   // world link at offset x = 1, y = 1, z = 1.
@@ -110,13 +114,17 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
   // Adds rigid body r1b1 to the rigid body tree and welds it to the world with
   // zero offset. Verifies that it is in the correct place.
-  tree->add_rigid_body(r1b1);
+  // TODO(amcastro-tri): these pointers will be replaced by Sherm's
+  // unique_ptr_reference's
+  tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
 
   tree->AddFloatingJoint(DrakeJoint::QUATERNION, {r1b1->body_index});
 
   // Adds rigid body r2b1 to the rigid body tree and welds it to r1b1 with
   // offset x = 1, y = 1, z = 1. Verifies that it is in the correct place.
-  tree->add_rigid_body(r2b1);
+  // TODO(amcastro-tri): these pointers will be replaced by Sherm's
+  // unique_ptr_reference's
+  tree->add_rigid_body(std::unique_ptr<RigidBody>(r2b1));
 
   Eigen::Isometry3d T_r2_to_r1;
   {
@@ -134,8 +142,10 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   // Adds rigid body r3b1 and r4b1 to the rigid body tree and welds it to r2b1
   // with offset x = 2, y = 2, z = 2. Verifies that it is in the correct place.
-  tree->add_rigid_body(r3b1);
-  tree->add_rigid_body(r4b1);
+  // TODO(amcastro-tri): these pointers will be replaced by Sherm's
+  // unique_ptr_reference's
+  tree->add_rigid_body(std::unique_ptr<RigidBody>(r3b1));
+  tree->add_rigid_body(std::unique_ptr<RigidBody>(r4b1));
 
   Eigen::Isometry3d T_r3_and_r4_to_r2;
   {
