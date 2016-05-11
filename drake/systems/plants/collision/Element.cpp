@@ -20,7 +20,9 @@ Element::Element(const DrakeShapes::Geometry& geometry,
 }
 
 Element::Element(const Element& other)
-    : DrakeShapes::Element(other), id((ElementId) this), body_(other.body_),
+    : DrakeShapes::Element(other),
+      id((ElementId) this),
+      body_(other.body_),
       collision_groups_(other.collision_groups_) {}
 
 Element* Element::clone() const { return new Element(*this); }
@@ -31,7 +33,7 @@ const RigidBody& Element::getBody() const { return *body_; }
 
 bool Element::CollidesWith(const Element* other) const {
   // Do not collide with self
-  if(this == other) return false;
+  if (this == other) return false;
 
   // If collision_groups_.size() = N and other->collision_groups_.size() = M
   // The worst case (no intersection) is O(N+M).
@@ -45,7 +47,9 @@ bool Element::CollidesWith(const Element* other) const {
 // collision elements belong to a same group can be performed in order N.
 // See CollisionElement::CollidesWith
 void Element::add_to_collision_group(int group_id) {
-  auto it = std::lower_bound(collision_groups_.begin(), collision_groups_.end(), group_id);
+  auto it = std::lower_bound(collision_groups_.begin(),
+                             collision_groups_.end(),
+                             group_id);
   if (it == collision_groups_.end() || group_id < *it)
     collision_groups_.insert(it, group_id);
 }
