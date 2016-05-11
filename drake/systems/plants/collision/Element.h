@@ -22,13 +22,13 @@ typedef uintptr_t ElementId;
 class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
  public:
   CollisionElement(const Eigen::Isometry3d& T_element_to_local =
-              Eigen::Isometry3d::Identity(),
-          const RigidBody* const body = nullptr);
+                       Eigen::Isometry3d::Identity(),
+                   const RigidBody* const body = nullptr);
 
   CollisionElement(const DrakeShapes::Geometry& geometry,
-          const Eigen::Isometry3d& T_element_to_local =
-              Eigen::Isometry3d::Identity(),
-          const RigidBody* const body = nullptr);
+                   const Eigen::Isometry3d& T_element_to_local =
+                       Eigen::Isometry3d::Identity(),
+                   const RigidBody* const body = nullptr);
 
   virtual ~CollisionElement() {}
 

@@ -10,14 +10,14 @@ using drake::common::algorithms::have_intersection;
 
 namespace DrakeCollision {
 CollisionElement::CollisionElement(const Isometry3d& T_element_to_local,
-                 const RigidBody* const body)
+                                   const RigidBody* const body)
     : DrakeShapes::Element(T_element_to_local), body_(body) {
   id = (ElementId) this;
 }
 
 CollisionElement::CollisionElement(const DrakeShapes::Geometry& geometry,
-                 const Isometry3d& T_element_to_local,
-                 const RigidBody* const body)
+                                   const Isometry3d& T_element_to_local,
+                                   const RigidBody* const body)
     : DrakeShapes::Element(geometry, T_element_to_local), body_(body) {
   id = (ElementId) this;
 }
