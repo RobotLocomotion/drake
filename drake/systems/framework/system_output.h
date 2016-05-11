@@ -10,7 +10,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-struct ContinuousOutputPort {
+struct OutputPort {
   std::unique_ptr<VectorInterface<T>> output;
 };
 
@@ -18,7 +18,7 @@ struct ContinuousOutputPort {
 /// @tparam T The mathematical type of the output.
 template <typename T>
 struct SystemOutput {
-  std::vector<ContinuousOutputPort<T>> continuous_ports;
+  std::vector<OutputPort<T>> continuous_ports;
 };
 
 }  // namespace systems

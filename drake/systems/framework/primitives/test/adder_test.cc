@@ -29,13 +29,13 @@ class AdderTest : public ::testing::Test {
 
 TEST_F(AdderTest, AddTwoVectors) {
   // Hook up two inputs of the expected size.
-  ASSERT_EQ(2, context_.continuous_inputs.size());
+  ASSERT_EQ(2, context_.input.continuous_ports.size());
   BasicVector<double> input0(3 /* length */);
   BasicVector<double> input1(3 /* length */);
   input0.get_mutable_value() << 1, 2, 3;
   input1.get_mutable_value() << 4, 5, 6;
-  context_.continuous_inputs[0] = &input0;
-  context_.continuous_inputs[1] = &input1;
+  context_.input.continuous_ports[0].input = &input0;
+  context_.input.continuous_ports[1].input = &input1;
 
   adder_->Output(context_, &cache_, &output_);
 
@@ -53,7 +53,7 @@ TEST_F(AdderTest, AddTwoVectors) {
 TEST_F(AdderTest, WrongNumberOfInputPorts) {
   // Hook up just one input.
   BasicVector<double> input0(3 /* length */);
-  context_.continuous_inputs[0] = &input0;
+  context_.input.continuous_ports[0].input = &input0;
 
   EXPECT_THROW(adder_->Output(context_, &cache_, &output_), std::runtime_error);
 }
@@ -62,11 +62,11 @@ TEST_F(AdderTest, WrongNumberOfInputPorts) {
 // are connected.
 TEST_F(AdderTest, WrongSizeOfInputPorts) {
   // Hook up two inputs, but one of them is the wrong size.
-  ASSERT_EQ(2, context_.continuous_inputs.size());
+  ASSERT_EQ(2, context_.input.continuous_ports.size());
   BasicVector<double> input0(3 /* length */);
   BasicVector<double> input1(2 /* length */);
-  context_.continuous_inputs[0] = &input0;
-  context_.continuous_inputs[1] = &input1;
+  context_.input.continuous_ports[0].input = &input0;
+  context_.input.continuous_ports[1].input = &input1;
 
   EXPECT_THROW(adder_->Output(context_, &cache_, &output_), std::runtime_error);
 }
