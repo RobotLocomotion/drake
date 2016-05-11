@@ -153,6 +153,8 @@ TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
   const auto b_var = b.getSimpleVariable();
   const Polynomiald c = Polynomiald("c");
   const auto c_var = c.getSimpleVariable();
+
+  /// Parameter estimation will try to make this Polynomial evaluate to zero:
   const Polynomiald poly = (a * x) + (b * x * x) + (c * y) - z;
 
   { // A very simple test case in which the error is zero.

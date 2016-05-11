@@ -96,7 +96,7 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    * referred to as the "parameters").
    *
    * P in this case is a single polynomial.  A version that takes a vector of
-   * Polynomial is forthcoming (TODO(ggould-tri))
+   * Polynomial is forthcoming (TODO(ggould-tri)).
    *
    * Measured x, y, ... is provided in a list of maps, active_var_values.
    *
