@@ -162,10 +162,7 @@ TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
       {{x_var, 1}, {y_var, 1}, {z_var, 3}},
       {{x_var, 1}, {y_var, 2}, {z_var, 4}},
       {{x_var, 2}, {y_var, 1}, {z_var, 7}},
-       // TODO(ggould-tri) The additional 1e-8 here is to work around an
-       // apparent nlopt bug that sometimes causes it to never terminate if
-       // equality constraints are exactly zero.
-      {{x_var, 2}, {y_var, 2}, {z_var, 8 + 1e-8}}};
+      {{x_var, 2}, {y_var, 2}, {z_var, 8}}};
 
     const SID::PartialEvalType expected_params {
       {a_var, 1}, {b_var, 1}, {c_var, 1}};
