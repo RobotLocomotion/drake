@@ -56,6 +56,9 @@ classdef Constraint
       obj.xdim = xdim;
 
       if (nargin<4), options = struct(); end
+      if(~isstruct(options))
+        error('Drake:Constraint:BadInputs','options should be a struct');
+      end
       if(~isfield(options,'grad_level'))
         options.grad_level = -1;
       end
@@ -63,7 +66,7 @@ classdef Constraint
         options.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
         options.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
       elseif(~isfield(options,'jCvar'))
-        error('Drake:Constraint:BadInputs','jCvar does not exist');
+        error('Drake:Constraint:BadInputs','if you pass in iCfun, then you must pass in jCvar as well');
       end
       obj.grad_level = options.grad_level;
 

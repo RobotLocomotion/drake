@@ -16,7 +16,7 @@ valuecheck(c2,c2_user);
 valuecheck(dc2,dc2_user);
 
 display('Check constructing constraint with function handle and 2nd order gradient');
-cnstr3 = FunctionHandleConstraint([0;1],[0;2],2,@cnstr_userfun3);
+cnstr3 = FunctionHandleConstraint([0;1],[0;2],2,@cnstr_userfun3,struct('grad_level',2));
 [c3,dc3,ddc3] = cnstr3.eval([1;2]);
 [c3_user,dc3_user,ddc3_user] = cnstr_userfun3([1;2]);
 valuecheck(c3,c3_user);
@@ -24,7 +24,8 @@ valuecheck(dc3,dc3_user);
 valuecheck(ddc3,ddc3_user);
 
 display('Check DifferentiableCnostraint with function handle');
-cnstr4 = FunctionHandleConstraint([0;0],[0;1],3,@cnstr_userfun4);
+[iCfun,jCvar] = find([1 1 0;0 1 1]);
+cnstr4 = FunctionHandleConstraint([0;0],[0;1],3,@cnstr_userfun4,struct('iCfun',iCfun,'jCvar',jCvar));
 valuecheck(cnstr4.ceq_idx,1);
 valuecheck(cnstr4.cin_idx,2);
 [c4,dc4] = cnstr4.eval([1;2;0]);
