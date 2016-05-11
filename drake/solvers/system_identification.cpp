@@ -239,10 +239,8 @@ template<typename T>
 std::pair<typename SystemIdentification<T>::PartialEvalType, T>
 SystemIdentification<T>::EstimateParameters(
     const PolyType& poly,
-    const std::vector<PartialEvalType>& active_var_values,
-    const std::vector<T>& result_values) {
+    const std::vector<PartialEvalType>& active_var_values) {
   assert(active_var_values.size() > 0);
-  assert(active_var_values.size() == result_values.size());
   const int num_data = active_var_values.size();
 
   const std::set<VarType> all_vars = poly.getVariables();
@@ -296,7 +294,7 @@ SystemIdentification<T>::EstimateParameters(
     PolyType partial_poly = poly.evaluatePartial(partial_eval_map);
     PolyType constraint_poly = partial_poly + PolyType(1, error_vartypes[i]);
     problem.AddPolynomialConstraint(
-        constraint_poly, problem_vartypes, result_values[i], result_values[i]);
+        constraint_poly, problem_vartypes, 0, 0);
   }
 
   // Create a cost function that is least-squares on the error terms.

@@ -141,55 +141,64 @@ TEST(SystemIdentificationTest, LumpedParameterRewrite) {
 #endif
 
 TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
-  Polynomiald x = Polynomiald("x");
-  auto x_var = x.getSimpleVariable();
-  Polynomiald y = Polynomiald("y");
-  auto y_var = y.getSimpleVariable();
-  Polynomiald a = Polynomiald("a");
-  auto a_var = a.getSimpleVariable();
-  Polynomiald b = Polynomiald("b");
-  auto b_var = b.getSimpleVariable();
-  Polynomiald c = Polynomiald("c");
-  auto c_var = c.getSimpleVariable();
-  Polynomiald poly = (a * x) + (b * x * x) + (c * y);
-
-  std::vector<SID::PartialEvalType> sample_points {
-    {{x_var, 1}, {y_var, 1}},
-    {{x_var, 1}, {y_var, 2}},
-    {{x_var, 2}, {y_var, 1}},
-    {{x_var, 2}, {y_var, 2}}};
+  const Polynomiald x = Polynomiald("x");
+  const auto x_var = x.getSimpleVariable();
+  const Polynomiald y = Polynomiald("y");
+  const auto y_var = y.getSimpleVariable();
+  const Polynomiald z = Polynomiald("z");
+  const auto z_var = z.getSimpleVariable();
+  const Polynomiald a = Polynomiald("a");
+  const auto a_var = a.getSimpleVariable();
+  const Polynomiald b = Polynomiald("b");
+  const auto b_var = b.getSimpleVariable();
+  const Polynomiald c = Polynomiald("c");
+  const auto c_var = c.getSimpleVariable();
+  const Polynomiald poly = (a * x) + (b * x * x) + (c * y) - z;
 
   { // A very simple test case in which the error is zero.
-    std::vector<double> sample_results {3, 4, 7, 8};
-    SID::PartialEvalType expected_params {
+    const std::vector<SID::PartialEvalType> sample_points {
+      {{x_var, 1}, {y_var, 1}, {z_var, 3}},
+      {{x_var, 1}, {y_var, 2}, {z_var, 4}},
+      {{x_var, 2}, {y_var, 1}, {z_var, 7}},
+       // TODO(ggould-tri) The additional 1e-8 here is to work around an
+       // apparent nlopt bug that sometimes causes it to never terminate if
+       // equality constraints are exactly zero.
+      {{x_var, 2}, {y_var, 2}, {z_var, 8 + 1e-8}}};
+
+    const SID::PartialEvalType expected_params {
       {a_var, 1}, {b_var, 1}, {c_var, 1}};
 
     SID::PartialEvalType estimated_params;
     double error;
     std::tie(estimated_params, error) =
-        SID::EstimateParameters(poly, sample_points, sample_results);
+        SID::EstimateParameters(poly, sample_points);
 
     EXPECT_LT(error, 1e-5);
     EXPECT_EQ(estimated_params.size(), 3);
     for (const auto& var : {a_var, b_var, c_var}) {
-      EXPECT_NEAR(estimated_params[var], expected_params[var], 4 * error);
+      EXPECT_NEAR(estimated_params[var], expected_params.at(var), 4 * error);
     }
   }
 
   { // Test with some error injected.
-    std::vector<double> sample_results {3.05, 3.95, 7.05, 8.05};
-    SID::PartialEvalType expected_params {
+    const std::vector<SID::PartialEvalType> sample_points {
+      {{x_var, 1}, {y_var, 1}, {z_var, 3.05}},
+      {{x_var, 1}, {y_var, 2}, {z_var, 3.95}},
+      {{x_var, 2}, {y_var, 1}, {z_var, 7.05}},
+      {{x_var, 2}, {y_var, 2}, {z_var, 8.05}}};
+
+    const SID::PartialEvalType expected_params {
       {a_var, 1}, {b_var, 1}, {c_var, 1}};
 
     SID::PartialEvalType estimated_params;
     double error;
     std::tie(estimated_params, error) =
-        SID::EstimateParameters(poly, sample_points, sample_results);
+        SID::EstimateParameters(poly, sample_points);
 
     EXPECT_LT(error, 0.1);
     EXPECT_EQ(estimated_params.size(), 3);
     for (const auto& var : {a_var, b_var, c_var}) {
-      EXPECT_NEAR(estimated_params[var], expected_params[var], 4 * error);
+      EXPECT_NEAR(estimated_params[var], expected_params.at(var), 4 * error);
     }
   }
 }
@@ -260,6 +269,8 @@ TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   auto v_var = v.getSimpleVariable();
   Polynomiald a = Polynomiald("a");
   auto a_var = a.getSimpleVariable();
+  Polynomiald f = Polynomiald("f");
+  auto f_var = f.getSimpleVariable();
   Polynomiald mass = Polynomiald("m");
   auto mass_var = mass.getSimpleVariable();
   Polynomiald damping = Polynomiald("b");
@@ -269,7 +280,7 @@ TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
 
   // We use a simple equation of motion rather than a manipulator equation
   // here because we are testing the 1D version of parameter estimation.
-  Polynomiald equation_of_motion = (mass * a) + (damping * v) + (spring * x);
+  Polynomiald force_equation = (mass * a) + (damping * v) + (spring * x) - f;
 
   std::default_random_engine noise_generator;
   noise_generator.seed(kNoiseSeed);
@@ -277,22 +288,20 @@ TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   auto noise = std::bind(noise_distribution, noise_generator);
 
   std::vector<State> oracular_data = MakeTestData();
-  std::vector<double> observed_inputs;
-  std::vector<SID::PartialEvalType> observed_outputs;
+  std::vector<SID::PartialEvalType> measurements;
   for (const State& oracular_state : oracular_data) {
-    observed_inputs.push_back(oracular_state.force + noise());
-    SID::PartialEvalType output;
-    output[x_var] = oracular_state.position + noise();
-    output[v_var] = oracular_state.velocity + noise();
-    output[a_var] = oracular_state.acceleration + noise();
-    observed_outputs.push_back(output);
+    SID::PartialEvalType measurement;
+    measurement[x_var] = oracular_state.position + noise();
+    measurement[v_var] = oracular_state.velocity + noise();
+    measurement[a_var] = oracular_state.acceleration + noise();
+    measurement[f_var] = oracular_state.force + noise();
+    measurements.push_back(measurement);
   }
 
   SID::PartialEvalType estimated_params;
   double error;
   std::tie(estimated_params, error) =
-      SID::EstimateParameters(equation_of_motion,
-                              observed_outputs, observed_inputs);
+      SID::EstimateParameters(force_equation, measurements);
 
   // Multiple layers of naive discrete-time numeric integration yields a very
   // high error value here, which almost all lands in the damping constant
@@ -305,7 +314,7 @@ TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   EXPECT_EQ(estimated_params.size(), 3);
   EXPECT_NEAR(estimated_params[mass_var], kMass, kNoise);
   EXPECT_NEAR(estimated_params[damping_var], kDamping,
-              observed_inputs.size() * error);
+              measurements.size() * error);
   EXPECT_NEAR(estimated_params[spring_var], kSpring, kNoise);
 }
 #undef IDENTIFICATION_TEST_NAME
