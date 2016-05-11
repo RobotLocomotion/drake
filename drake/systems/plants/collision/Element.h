@@ -53,7 +53,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
    * body.
    */
   // TODO(amcastro-tri): getBody() -> get_body()
-  const RigidBody& getBody() const;
+  const RigidBody* const getBody() const;
 
   bool is_attached_to_body() const { return body_ != nullptr; }
 

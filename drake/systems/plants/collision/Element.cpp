@@ -34,7 +34,7 @@ CollisionElement* CollisionElement::clone() const {
 
 ElementId CollisionElement::getId() const { return id; }
 
-const RigidBody& CollisionElement::getBody() const { return *body_; }
+const RigidBody* const CollisionElement::getBody() const { return body_; }
 
 bool CollisionElement::CollidesWith(const CollisionElement* other) const {
   // Do not collide with self
