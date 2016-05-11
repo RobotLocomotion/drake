@@ -8,7 +8,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h"
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
 
-#include "CollisionElement.h"
+#include "Element.h"
 #include "Model.h"
 #include "BulletResultCollector.h"
 

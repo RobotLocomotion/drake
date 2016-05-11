@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <bitset>
 
-#include "CollisionElement.h"
+#include "Element.h"
 #include "Model.h"
 #include "drake/drakeCollision_export.h"
 
