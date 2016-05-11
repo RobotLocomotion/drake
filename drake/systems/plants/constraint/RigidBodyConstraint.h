@@ -875,7 +875,6 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedBodyPoseConstraint
  private:
   int body_;
   std::string body_name_;
-
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT AllBodiesClosestDistanceConstraint
