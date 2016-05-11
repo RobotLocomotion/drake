@@ -74,21 +74,21 @@ TEST_F(AdderTest, WrongSizeOfInputPorts) {
 // Tests that Adder allocates no state variables in the context_, and generates
 // no state derivatives.
 TEST_F(AdderTest, AdderIsStateless) {
-  EXPECT_EQ(nullptr, context_.state.continuous_state.generalized_velocity);
+  EXPECT_EQ(nullptr, context_.state.continuous_state.generalized_velocities);
   EXPECT_EQ(nullptr, context_.state.continuous_state.generalized_position);
 
   Cache<double> cache;
   BasicVector<double> derivatives(0 /* length */);
-  adder_->GetContinuousDerivativesOfGeneralizedVelocity(context_, &cache_,
-                                                        &derivatives);
+  adder_->GetDerivativesOfGeneralizedVelocity(context_, &cache_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 
-  adder_->GetContinuousDerivativesOfGeneralizedPosition(context_, &cache_,
-                                                        &derivatives);
+  adder_->GetDerivativesOfGeneralizedPosition(context_, &cache_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 
-  adder_->MapVelocityToConfigurationDerivative(
-      BasicVector<double>(0 /* length */), &cache_, &derivatives);
+  adder_->GetDerivativesOfOtherContinuousState(context_, &cache_, &derivatives);
+  EXPECT_EQ(0, derivatives.get_value().rows());
+
+  adder_->MapVelocityToConfigurationDerivative(context_, &cache_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 }
 

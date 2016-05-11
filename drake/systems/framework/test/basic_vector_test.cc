@@ -11,7 +11,7 @@ namespace {
 GTEST_TEST(BasicVectorTest, Mutate) {
   BasicVector<int> vec(2);
   vec.get_mutable_value() << 1, 2;
-  Eigen::Matrix<int, 2, 1> expected;
+  Eigen::Vector2i expected;
   expected << 1, 2;
   EXPECT_EQ(expected, vec.get_value());
 }
@@ -20,7 +20,7 @@ GTEST_TEST(BasicVectorTest, Mutate) {
 GTEST_TEST(BasicVectorTest, SetWholeVector) {
   BasicVector<int> vec(2);
   vec.get_mutable_value() << 1, 2;
-  Eigen::Matrix<int, 2, 1> next_value;
+  Eigen::Vector2i next_value;
   next_value << 3, 4;
   vec.set_value(next_value);
   EXPECT_EQ(next_value, vec.get_value());
@@ -30,7 +30,7 @@ GTEST_TEST(BasicVectorTest, SetWholeVector) {
 // of a different size.
 GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
   BasicVector<int> vec(2);
-  Eigen::Matrix<int, 3, 1> next_value;
+  Eigen::Vector3i next_value;
   next_value << 3, 4, 5;
   EXPECT_THROW(vec.set_value(next_value), std::runtime_error);
 }

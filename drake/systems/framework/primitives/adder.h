@@ -9,8 +9,10 @@ namespace drake {
 namespace systems {
 
 /// An adder for arbitrarily many inputs of equal length.
-template <typename ScalarType>
-class Adder : public ContinuousSystemInterface<ScalarType> {
+/// @tparam T The type of mathematical object being added.
+/// TODO(david-german-tri): Implement DiscreteSystemInterface.
+template <typename T>
+class Adder : public ContinuousSystemInterface<T> {
  public:
   /// @param num_inputs is the number of input ports to be added.
   /// @param length is the size of each input port.
@@ -19,31 +21,35 @@ class Adder : public ContinuousSystemInterface<ScalarType> {
 
   /// Allocates the number of input ports specified in the constructor.
   /// Allocates no state.
-  Context<ScalarType> CreateDefaultContext() const override;
+  Context<T> CreateDefaultContext() const override;
 
   /// Allocates one output port of the width specified in the constructor.
-  SystemOutput<ScalarType> CreateDefaultOutput() const override;
+  SystemOutput<T> CreateDefaultOutput() const override;
 
   /// Sums the input ports into the output port. If the input ports are not
   /// of number num_inputs_ or size length_, std::runtime_error will be thrown.
-  void Output(const Context<ScalarType>& context, Cache<ScalarType>* cache,
-              SystemOutput<ScalarType>* output) const override;
+  void Output(const Context<T>& context, Cache<T>* cache,
+              SystemOutput<T>* output) const override;
 
   /// Returns an empty vector since this System is stateless.
-  void GetContinuousDerivativesOfGeneralizedVelocity(
-      const Context<ScalarType>& context, Cache<ScalarType>* cache,
-      VectorInterface<ScalarType>* derivatives) const override;
+  void GetDerivativesOfGeneralizedPosition(
+      const Context<T>& context, Cache<T>* cache,
+      VectorInterface<T>* derivatives) const override;
 
   /// Returns an empty vector since this System is stateless.
-  void GetContinuousDerivativesOfGeneralizedPosition(
-      const Context<ScalarType>& context, Cache<ScalarType>* cache,
-      VectorInterface<ScalarType>* derivatives) const override;
+  void GetDerivativesOfGeneralizedVelocity(
+      const Context<T>& context, Cache<T>* cache,
+      VectorInterface<T>* derivatives) const override;
+
+  /// Returns an empty vector since this System is stateless.
+  void GetDerivativesOfOtherContinuousState(
+      const Context<T>& context, Cache<T>* cache,
+      VectorInterface<T>* derivatives) const override;
 
   /// Returns an empty vector since this System is stateless.
   void MapVelocityToConfigurationDerivative(
-      const VectorInterface<ScalarType>& generalized_velocity,
-      Cache<ScalarType>* cache,
-      VectorInterface<ScalarType>* derivatives) const override;
+      const Context<T>& context, Cache<T>* cache,
+      VectorInterface<T>* derivatives) const override;
 
   std::string get_name() const override { return "adder"; }
 
