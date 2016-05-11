@@ -50,10 +50,10 @@ bool OverlapFilterCallback::needBroadphaseCollision(
         reinterpret_cast<btCollisionObject*>(proxy1->m_clientObject);
     if ((bt_collision_object0->getUserPointer() != NULL) &&
         (bt_collision_object1->getUserPointer() != NULL)) {
-      auto element0 =
-          static_cast<CollisionElement*>(bt_collision_object0->getUserPointer());
-      auto element1 =
-          static_cast<CollisionElement*>(bt_collision_object1->getUserPointer());
+      auto element0 = static_cast<CollisionElement*>(
+          bt_collision_object0->getUserPointer());
+      auto element1 = static_cast<CollisionElement*>(
+          bt_collision_object1->getUserPointer());
       collides = collides && element0->CollidesWith(element1);
     }
   }
