@@ -201,7 +201,9 @@ void RigidBodyTree::compile(void) {
     getTerrainContactPoints(body, body.contact_pts);
   }
 
-  // Create collision groups
+  // Create collision groups for the DrakeCollision::Model so that
+  // CollisionElement's in the same RigidBody do not collide. Also groups are
+  // created so that CollisionElement's in adjacent RigidBody's do not collide.
   CreateCollisionGroups();
 
   initialized_ = true;
@@ -346,7 +348,7 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
     body.collision_element_ids.push_back(id);
     body.collision_element_groups[group_name].push_back(id);
     // TODO(amcastro-tri): cleanup API so that we do not need readElement any
-    // more
+    // more.
     body.add_collision_element(collision_model->readElement(id));
   }
   return id;
