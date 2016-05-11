@@ -28,7 +28,9 @@ CollisionElement::CollisionElement(const CollisionElement& other)
       body_(other.body_),
       collision_groups_(other.collision_groups_) {}
 
-CollisionElement* CollisionElement::clone() const { return new CollisionElement(*this); }
+CollisionElement* CollisionElement::clone() const {
+  return new CollisionElement(*this);
+}
 
 ElementId CollisionElement::getId() const { return id; }
 
@@ -50,16 +52,19 @@ bool CollisionElement::CollidesWith(const CollisionElement* other) const {
 // collision elements belong to a same group can be performed in order N.
 // See CollisionElement::CollidesWith
 void CollisionElement::add_to_collision_group(int group_id) {
-  auto it = std::lower_bound(collision_groups_.begin(),
-                             collision_groups_.end(),
+  auto it = std::lower_bound(collision_groups_.begin(), collision_groups_.end(),
                              group_id);
   if (it == collision_groups_.end() || group_id < *it)
     collision_groups_.insert(it, group_id);
 }
 
-int CollisionElement::number_of_groups() const { return collision_groups_.size(); }
+int CollisionElement::number_of_groups() const {
+  return collision_groups_.size();
+}
 
-std::vector<int> CollisionElement::collision_groups() const { return collision_groups_; }
+std::vector<int> CollisionElement::collision_groups() const {
+  return collision_groups_;
+}
 
 ostream& operator<<(ostream& out, const CollisionElement& ee) {
   out << "DrakeCollision::Element:\n"
