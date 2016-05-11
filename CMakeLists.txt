@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 2.8.10)
 project(drake-superbuild)
 
+find_package(Matlab)
+set(working_directory .)
+execute_process(
+        COMMAND "${Matlab_PROGRAM}" -logfile "${Matlab_LOG_FILE}" -r "jenkins_launch_matlab.m"
+        RESULT_VARIABLE res
+        ${test_timeout}
+        OUTPUT_QUIET # we do not want the output twice
+        WORKING_DIRECTORY ${working_directory}
+        ${devnull}
+)
+return()
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
   message(FATAL_ERROR "GCC version must be at least 4.9")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
