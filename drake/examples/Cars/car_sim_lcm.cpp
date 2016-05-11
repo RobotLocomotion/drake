@@ -83,8 +83,8 @@ int do_main(int argc, const char* argv[]) {
     world.addVisualElement(
         DrakeShapes::VisualElement(geom, T_element_to_link, color));
     tree->addCollisionElement(
-        DrakeCollision::CollisionElement(geom, T_element_to_link, &world), world,
-        "terrain");
+        DrakeCollision::CollisionElement(geom, T_element_to_link, &world),
+        world, "terrain");
     tree->updateStaticCollisionElements();
   }
 
