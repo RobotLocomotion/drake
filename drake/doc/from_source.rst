@@ -54,7 +54,7 @@ If so, press enter again and it should prompt you for your username. Enter that,
      cd drake-distro
      ./externals/gurobi/gurobi604/linux64/bin/grbgetkey [key-number]
 
-where ``[key-number]`` is the number you were given when you obtained a license from Gurobi. You should now have a function Gurobi to use with Drake.
+where ``[key-number]`` is the number you were given when you obtained a license from Gurobi. You should now have a functioning Gurobi to use with Drake.
 
 Mandatory platform specific instructions
 ========================================
@@ -131,5 +131,3 @@ To work on the bleeding edge, do::
 	make
 
 This is especially useful if you are ready to contribute your work back to the main repository with a `pull request <https://help.github.com/articles/using-pull-requests/>`_.
-
-
