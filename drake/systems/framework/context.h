@@ -37,6 +37,19 @@ struct State {
 };
 
 template <typename T>
+struct InputPort {
+  VectorInterface<T>* input = nullptr;
+};
+
+/// The Input is a container for pointers to all the data that is connected to
+/// a particular System from other Systems. The input data itself is not owned
+/// by the Input struct.
+template <typename T>
+struct Input {
+  std::vector<InputPort<T>> continuous_ports;
+};
+
+template <typename T>
 struct Time {
   /// The time, in seconds.  For typical T implementations based on
   /// doubles, time precision will gradually degrade as time increases.
@@ -56,11 +69,9 @@ struct Context {
   Time<T> time;
 
   /// The external inputs to the System.
-  /// The inputs are not owned by the Context.
-  std::vector<VectorInterface<T>*> continuous_inputs;
+  Input<T> input;
 
   /// The internal state of the System.
-  // The state is owned by the Context.
   State<T> state;
 };
 

@@ -17,7 +17,7 @@ Adder<T>::Adder(int num_inputs, int length)
 template <typename T>
 Context<T> Adder<T>::CreateDefaultContext() const {
   Context<T> context;
-  context.continuous_inputs.resize(num_inputs_);
+  context.input.continuous_ports.resize(num_inputs_);
   return context;
 }
 
@@ -27,7 +27,7 @@ SystemOutput<T> Adder<T>::CreateDefaultOutput() const {
   // at construction time.
   SystemOutput<T> output;
   {
-    ContinuousOutputPort<T> port;
+    OutputPort<T> port;
     port.output.reset(new BasicVector<T>(length_));
     output.continuous_ports.push_back(std::move(port));
   }
@@ -51,16 +51,16 @@ void Adder<T>::Output(const Context<T>& context, Cache<T>* cache,
   }
 
   // Check that there are the expected number of input ports.
-  if (context.continuous_inputs.size() != num_inputs_) {
-    throw std::runtime_error("Expected " + std::to_string(num_inputs_) +
-                             "input ports, but had " +
-                             std::to_string(context.continuous_inputs.size()));
+  if (context.input.continuous_ports.size() != num_inputs_) {
+    throw std::runtime_error(
+        "Expected " + std::to_string(num_inputs_) + "input ports, but had " +
+        std::to_string(context.input.continuous_ports.size()));
   }
 
   // Sum each input port into the output, after checking that it has the
   // expected length.
-  for (int i = 0; i < context.continuous_inputs.size(); i++) {
-    const VectorInterface<T>* input = context.continuous_inputs[i];
+  for (int i = 0; i < context.input.continuous_ports.size(); i++) {
+    const VectorInterface<T>* input = context.input.continuous_ports[i].input;
     if (input == nullptr || input->get_value().rows() != length_) {
       throw std::runtime_error("Input port " + std::to_string(i) +
                                "is nullptr or has incorrect size.");
