@@ -119,7 +119,8 @@ class DRAKERBM_EXPORT RigidBody {
 
   std::vector<DrakeCollision::ElementId> collision_element_ids;
 
-  typedef std::vector<DrakeCollision::CollisionElement*> CollisionElementsVector;
+  typedef std::vector<DrakeCollision::CollisionElement*>
+      CollisionElementsVector;
   typedef
       typename CollisionElementsVector::iterator collision_elements_iterator;
   typedef typename CollisionElementsVector::const_iterator
