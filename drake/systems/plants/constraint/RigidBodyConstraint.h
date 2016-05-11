@@ -64,19 +64,22 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RigidBodyConstraint {
   RigidBodyConstraint(
       int category, RigidBodyTree* robot,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
-  RigidBodyConstraint(const RigidBodyConstraint& rhs);
-  int getType() const { return this->type; }
-  int getCategory() const { return this->category; }
-  RigidBodyTree* getRobotPointer() const { return this->robot; }
+  int getType() const { return type_; }
+  int getCategory() const { return category_; }
+  RigidBodyTree* getRobotPointer() const { return robot_; }
   virtual ~RigidBodyConstraint(void) = 0;
 
  protected:
   std::string getTimeString(const double* t) const;
+  void set_type(int type) { type_ = type; }
+  void set_robot(RigidBodyTree* robot) { robot_ = robot; }
+  const double* tspan() const { return tspan_; }
 
-  int category;
-  int type;
-  RigidBodyTree* robot;
-  double tspan[2];
+ private:
+  int category_;
+  int type_;
+  RigidBodyTree* robot_;
+  double tspan_[2];
 };
 
 /**
@@ -127,25 +130,25 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT QuasiStaticConstraint
             Eigen::MatrixXd& dc) const;
   void bounds(const double* t, Eigen::VectorXd& lb, Eigen::VectorXd& ub) const;
   void name(const double* t, std::vector<std::string>& name_str) const;
-  bool isActive() const { return this->active; }
-  int getNumWeights() const { return this->num_pts; }
+  bool isActive() const { return active_; }
+  int getNumWeights() const { return num_pts_; }
   void addContact(int num_new_bodies, const int* body,
                   const Eigen::Matrix3Xd* body_pts);
   void setShrinkFactor(double factor);
-  void setActive(bool flag) { this->active = flag; }
+  void setActive(bool flag) { active_ = flag; }
   void updateRobot(RigidBodyTree* robot);
   void updateRobotnum(std::set<int>& robotnumset);
 
  private:
   static const std::set<int> defaultRobotNumSet;
-  std::set<int> m_robotnumset;
-  double shrinkFactor;
-  bool active;
-  int num_bodies;
-  int num_pts;
-  std::vector<int> bodies;
-  std::vector<int> num_body_pts;
-  std::vector<Eigen::Matrix3Xd> body_pts;
+  std::set<int> m_robotnumset_;
+  double shrink_factor_;
+  bool active_;
+  int num_bodies_;
+  int num_pts_;
+  std::vector<int> bodies_;
+  std::vector<int> num_body_pts_;
+  std::vector<Eigen::Matrix3Xd> body_pts_;
 };
 
 /*
@@ -177,10 +180,10 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT PostureConstraint
               Eigen::VectorXd& joint_max) const;
 
  private:
-  Eigen::VectorXd lb;
-  Eigen::VectorXd ub;
-  Eigen::VectorXd joint_limit_min0;
-  Eigen::VectorXd joint_limit_max0;
+  Eigen::VectorXd joint_limit_min0_;
+  Eigen::VectorXd joint_limit_max0_;
+  Eigen::VectorXd lb_;
+  Eigen::VectorXd ub_;
 };
 
 /*
@@ -284,13 +287,13 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT SingleTimeLinearPostureConstraint
   void name(const double* t, std::vector<std::string>& name_str) const;
 
  private:
-  Eigen::VectorXi iAfun;
-  Eigen::VectorXi jAvar;
-  Eigen::VectorXd A;
-  Eigen::VectorXd lb;
-  Eigen::VectorXd ub;
-  int num_constraint;
-  Eigen::SparseMatrix<double> A_mat;
+  Eigen::VectorXi iAfun_;
+  Eigen::VectorXi jAvar_;
+  Eigen::VectorXd A_;
+  Eigen::VectorXd lb_;
+  Eigen::VectorXd ub_;
+  int num_constraint_;
+  Eigen::SparseMatrix<double> A_mat_;
 };
 
 /*
@@ -315,8 +318,13 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT SingleTimeKinematicConstraint
                     std::vector<std::string>& name_str) const = 0;
   virtual void updateRobot(RigidBodyTree* robot);
 
-protected:
-  int num_constraint;
+ protected:
+  void set_num_constraint(int num_constraint) {
+    num_constraint_ = num_constraint;
+  }
+
+ private:
+  int num_constraint_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT MultipleTimeKinematicConstraint
@@ -363,12 +371,15 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT PositionConstraint
                              Eigen::MatrixXd& J) const = 0;
   virtual void evalNames(const double* t,
                          std::vector<std::string>& cnst_names) const = 0;
+  const Eigen::Matrix3Xd& get_pts() const { return pts_; }
+  int get_n_pts() const { return n_pts_; }
 
-  Eigen::VectorXd lb;
-  Eigen::VectorXd ub;
-  std::vector<bool> null_constraint_rows;
-  Eigen::Matrix3Xd pts;
-  int n_pts;
+ private:
+  Eigen::VectorXd lb_;
+  Eigen::VectorXd ub_;
+  std::vector<bool> null_constraint_rows_;
+  Eigen::Matrix3Xd pts_;
+  int n_pts_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldPositionConstraint
@@ -385,9 +396,12 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldPositionConstraint
                              Eigen::Matrix3Xd& pos, Eigen::MatrixXd& J) const;
   virtual void evalNames(const double* t,
                          std::vector<std::string>& cnst_names) const;
+  int get_body() const { return body_; }
+  const std::string& get_body_name() const { return body_name_; }
 
-  int body;
-  std::string body_name;
+ private:
+  int body_;
+  std::string body_name_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldCoMConstraint
@@ -401,16 +415,15 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldCoMConstraint
   void updateRobotnum(const std::set<int>& robotnum);
 
  protected:
-  static const std::set<int> defaultRobotNumSet;
-
-  std::set<int> m_robotnum;
-  int body;
-  std::string body_name;
-
   virtual void evalPositions(KinematicsCache<double>& cache,
                              Eigen::Matrix3Xd& pos, Eigen::MatrixXd& J) const;
   virtual void evalNames(const double* t,
                          std::vector<std::string>& cnst_names) const;
+
+ private:
+  static const std::set<int> defaultRobotNumSet;
+
+  std::set<int> m_robotnum_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativePositionConstraint
@@ -430,11 +443,12 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativePositionConstraint
   virtual void evalNames(const double* t,
                          std::vector<std::string>& cnst_names) const;
 
-  int bodyA_idx;
-  int bodyB_idx;
-  std::string bodyA_name;
-  std::string bodyB_name;
-  Eigen::Isometry3d bpTb;
+ private:
+  int bodyA_idx_;
+  int bodyB_idx_;
+  std::string bodyA_name_;
+  std::string bodyB_name_;
+  Eigen::Isometry3d bpTb_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT QuatConstraint
@@ -453,7 +467,8 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT QuatConstraint
   virtual void evalOrientationProduct(const KinematicsCache<double>& cache,
                                       double& prod,
                                       Eigen::MatrixXd& dprod) const = 0;
-  double tol;
+ private:
+  double tol_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldQuatConstraint
@@ -470,10 +485,10 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldQuatConstraint
   virtual void evalOrientationProduct(const KinematicsCache<double>& cache,
                                       double& prod,
                                       Eigen::MatrixXd& dprod) const;
-
-  int body;
-  std::string body_name;
-  Eigen::Vector4d quat_des;
+ private:
+  int body_;
+  std::string body_name_;
+  Eigen::Vector4d quat_des_;
 
  public:
 #ifndef SWIG
@@ -495,11 +510,12 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeQuatConstraint
   virtual void evalOrientationProduct(const KinematicsCache<double>& cache,
                                       double& prod,
                                       Eigen::MatrixXd& dprod) const;
-  int bodyA_idx;
-  int bodyB_idx;
-  std::string bodyA_name;
-  std::string bodyB_name;
-  Eigen::Vector4d quat_des;
+ private:
+  int bodyA_idx_;
+  int bodyB_idx_;
+  std::string bodyA_name_;
+  std::string bodyB_name_;
+  Eigen::Vector4d quat_des_;
 
  public:
 #ifndef SWIG
@@ -520,14 +536,16 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT EulerConstraint
   virtual void bounds(const double* t, Eigen::VectorXd& lb,
                       Eigen::VectorXd& ub) const;
 
-protected:
+ protected:
   virtual void evalrpy(const KinematicsCache<double>& cache,
                        Eigen::Vector3d& rpy, Eigen::MatrixXd& J) const = 0;
+  bool null_constraint_row(int row) const { return null_constraint_rows_[row]; }
 
-  Eigen::VectorXd ub;
-  Eigen::VectorXd lb;
-  bool null_constraint_rows[3];
-  Eigen::VectorXd avg_rpy;
+ private:
+  Eigen::VectorXd ub_;
+  Eigen::VectorXd lb_;
+  bool null_constraint_rows_[3];
+  Eigen::VectorXd avg_rpy_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldEulerConstraint
@@ -540,12 +558,13 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldEulerConstraint
   virtual ~WorldEulerConstraint();
   virtual void name(const double* t, std::vector<std::string>& name_str) const;
 
-protected:
+ protected:
   virtual void evalrpy(const KinematicsCache<double>& cache,
                        Eigen::Vector3d& rpy, Eigen::MatrixXd& J) const;
 
-  int body;
-  std::string body_name;
+ private:
+  int body_;
+  std::string body_name_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeConstraint
@@ -558,8 +577,12 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeConstraint
   virtual ~GazeConstraint(void) {}
 
  protected:
-  Eigen::Vector3d axis;
-  double conethreshold;
+  double get_conethreshold() const { return conethreshold_; }
+  const Eigen::Vector3d& get_axis() const { return axis_; }
+
+ private:
+  Eigen::Vector3d axis_;
+  double conethreshold_;
 
  public:
 #ifndef SWIG
@@ -584,8 +607,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeOrientConstraint
   virtual void evalOrientation(const KinematicsCache<double>& cache,
                                Eigen::Vector4d& quat,
                                Eigen::MatrixXd& dquat_dq) const = 0;
-  double threshold;
-  Eigen::Vector4d quat_des;
+ private:
+  double threshold_;
+  Eigen::Vector4d quat_des_;
 
  public:
 #ifndef SWIG
@@ -603,12 +627,13 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeOrientConstraint
   virtual ~WorldGazeOrientConstraint() {}
   virtual void name(const double* t, std::vector<std::string>& name_str) const;
 
-protected:
+ protected:
   virtual void evalOrientation(const KinematicsCache<double>& cache,
                                Eigen::Vector4d& quat,
                                Eigen::MatrixXd& dquat_dq) const;
-  int body;
-  std::string body_name;
+ private:
+  int body_;
+  std::string body_name_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeDirConstraint
@@ -623,7 +648,10 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeDirConstraint
                       Eigen::VectorXd& ub) const;
 
  protected:
-  Eigen::Vector3d dir;
+  const Eigen::Vector3d& get_dir() const { return dir_; }
+
+ private:
+  Eigen::Vector3d dir_;
 
  public:
 #ifndef SWIG
@@ -643,9 +671,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeDirConstraint
                     Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
   virtual void name(const double* t, std::vector<std::string>& name_str) const;
 
-protected:
-  int body;
-  std::string body_name;
+ private:
+  int body_;
+  std::string body_name_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeTargetConstraint
@@ -661,8 +689,12 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeTargetConstraint
                       Eigen::VectorXd& ub) const;
 
  protected:
-  Eigen::Vector3d target;
-  Eigen::Vector3d gaze_origin;
+  const Eigen::Vector3d& get_target() const { return target_; }
+  const Eigen::Vector3d& get_gaze_origin() const { return gaze_origin_; }
+
+ private:
+  Eigen::Vector3d target_;
+  Eigen::Vector3d gaze_origin_;
 
  public:
 #ifndef SWIG
@@ -683,9 +715,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeTargetConstraint
                     Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
   virtual void name(const double* t, std::vector<std::string>& name_str) const;
 
-protected:
-  int body;
-  std::string body_name;
+ private:
+  int body_;
+  std::string body_name_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeGazeTargetConstraint
@@ -701,11 +733,11 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeGazeTargetConstraint
                     Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
   virtual void name(const double* t, std::vector<std::string>& name_str) const;
 
- protected:
-  int bodyA_idx;
-  int bodyB_idx;
-  std::string bodyA_name;
-  std::string bodyB_name;
+ private:
+  int bodyA_idx_;
+  int bodyB_idx_;
+  std::string bodyA_name_;
+  std::string bodyB_name_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeGazeDirConstraint
@@ -721,11 +753,11 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeGazeDirConstraint
                     Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
   virtual void name(const double* t, std::vector<std::string>& name_str) const;
 
- protected:
-  int bodyA_idx;
-  int bodyB_idx;
-  std::string bodyA_name;
-  std::string bodyB_name;
+ private:
+  int bodyA_idx_;
+  int bodyB_idx_;
+  std::string bodyA_name_;
+  std::string bodyB_name_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT Point2PointDistanceConstraint
@@ -743,13 +775,13 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT Point2PointDistanceConstraint
   virtual void bounds(const double* t, Eigen::VectorXd& lb,
                       Eigen::VectorXd& ub) const;
 
- protected:
-  int bodyA;
-  int bodyB;
-  Eigen::Matrix3Xd ptA;
-  Eigen::Matrix3Xd ptB;
-  Eigen::VectorXd dist_lb;
-  Eigen::VectorXd dist_ub;
+ private:
+  int bodyA_;
+  int bodyB_;
+  Eigen::Matrix3Xd ptA_;
+  Eigen::Matrix3Xd ptB_;
+  Eigen::VectorXd dist_lb_;
+  Eigen::VectorXd dist_ub_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT Point2LineSegDistConstraint
@@ -767,13 +799,13 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT Point2LineSegDistConstraint
   virtual void bounds(const double* t, Eigen::VectorXd& lb,
                       Eigen::VectorXd& ub) const;
 
- protected:
-  int pt_body;
-  int line_body;
-  Eigen::Vector3d pt;
-  Eigen::Matrix3Xd line_ends;
-  double dist_lb;
-  double dist_ub;
+ private:
+  int pt_body_;
+  Eigen::Vector3d pt_;
+  int line_body_;
+  Eigen::Matrix3Xd line_ends_;
+  double dist_lb_;
+  double dist_ub_;
 
  public:
 #ifndef SWIG
@@ -797,10 +829,10 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedPositionConstraint
   virtual void name(const double* t, int n_breaks,
                     std::vector<std::string>& name_str) const;
 
- protected:
-  int body;
-  std::string body_name;
-  Eigen::Matrix3Xd pts;
+ private:
+  int body_;
+  std::string body_name_;
+  Eigen::Matrix3Xd pts_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedOrientConstraint
@@ -819,9 +851,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedOrientConstraint
   virtual void name(const double* t, int n_breaks,
                     std::vector<std::string>& name_str) const;
 
- protected:
-  int body;
-  std::string body_name;
+ private:
+  int body_;
+  std::string body_name_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedBodyPoseConstraint
@@ -840,9 +872,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedBodyPoseConstraint
   virtual void name(const double* t, int n_breaks,
                     std::vector<std::string>& name_str) const;
 
- protected:
-  int body;
-  std::string body_name;
+ private:
+  int body_;
+  std::string body_name_;
 
 };
 
@@ -862,11 +894,11 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT AllBodiesClosestDistanceConstraint
   virtual void bounds(const double* t, Eigen::VectorXd& lb,
                       Eigen::VectorXd& ub) const;
 
- protected:
-  double ub;
-  double lb;
-  std::vector<int> active_bodies_idx;
-  std::set<std::string> active_group_names;
+ private:
+  double ub_;
+  double lb_;
+  std::vector<int> active_bodies_idx_;
+  std::set<std::string> active_group_names_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT MinDistanceConstraint
@@ -888,10 +920,10 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT MinDistanceConstraint
   virtual void bounds(const double* t, Eigen::VectorXd& lb,
                       Eigen::VectorXd& ub) const;
 
-protected:
-  double min_distance;
-  std::vector<int> active_bodies_idx;
-  std::set<std::string> active_group_names;
+ private:
+  double min_distance_;
+  std::vector<int> active_bodies_idx_;
+  std::set<std::string> active_group_names_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldPositionInFrameConstraint
@@ -910,8 +942,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldPositionInFrameConstraint
   virtual void evalNames(const double* t,
                          std::vector<std::string>& cnst_names) const;
 
-  Eigen::Matrix4d T_world_to_frame;
-  Eigen::Matrix4d T_frame_to_world;
+ private:
+  Eigen::Matrix4d T_world_to_frame_;
+
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -936,14 +969,15 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT PostureChangeConstraint
   virtual void bounds(const double* t, int n_breaks, Eigen::VectorXd& lb,
                       Eigen::VectorXd& ub) const;
 
-protected:
+ protected:
   virtual void setJointChangeBounds(const Eigen::VectorXi& joint_ind,
                                     const Eigen::VectorXd& lb_change,
                                     const Eigen::VectorXd& ub_change);
 
-  Eigen::VectorXi joint_ind;
-  Eigen::VectorXd lb_change;
-  Eigen::VectorXd ub_change;
+ private:
+  Eigen::VectorXi joint_ind_;
+  Eigen::VectorXd lb_change_;
+  Eigen::VectorXd ub_change_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT GravityCompensationTorqueConstraint
@@ -960,8 +994,8 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GravityCompensationTorqueConstraint
   virtual void bounds(const double* t, Eigen::VectorXd& lb,
                       Eigen::VectorXd& ub) const;
 
- protected:
-  Eigen::VectorXi joint_indices;
-  Eigen::VectorXd lb;
-  Eigen::VectorXd ub;
+ private:
+  Eigen::VectorXi joint_indices_;
+  Eigen::VectorXd lb_;
+  Eigen::VectorXd ub_;
 };
