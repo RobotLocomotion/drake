@@ -51,19 +51,22 @@ Additional Rules
   (`#2181 <https://github.com/RobotLocomotion/drake/issues/2181>`_)
 * Always use `in-class member initialization
   <http://www.stroustrup.com/C++11FAQ.html#member-init>`_ for built-in data
-  types that would would otherwise be uninitialized, including numerical types,
-  pointers, and enumerations. The syntax ``int count_{};`` (called `value
-  initialization`) ensures that these types are zero-initialized rather than
-  left as garbage. You may also provide explicit values such as
-  ``bool flag_{false};`` (for clarity) or ``bool uninitialized_{true};``
-  (because zero is the wrong initial value). You should always provide a
-  value for ``enum`` members since zero might not be one of the allowed
-  enumerations. Class objects are responsible for their own construction so
-  do not need to be member-initialized, but you can do so if the default
-  constructor does not provide the behavior you want. Note that fixed-size
-  Eigen objects are intentionally left uninitialized; if you want yours
-  zero-initialized you can member-initialize it by passing an appropriate
-  ``Zero``, for example: ``Eigen::Matrix3d mat_{Eigen::Matrix3d::Zero()};``.
+  types that would would otherwise be uninitialized, including numerical
+  types, pointers, and enumerations. The syntax ``int count_{};`` (called
+  `value initialization
+  <http://en.cppreference.com/w/cpp/language/value_initialization>`_)
+  ensures that these types are zero-initialized rather than left with
+  unpredictable content (informally known as "garbage"). You may also
+  provide explicit values such as ``bool flag_{false};`` (for clarity) or
+  ``bool uninitialized_{true};`` (because zero is the wrong initial value).
+  You should always provide a value for ``enum`` members since zero might
+  not be one of the allowed enumerations. Class objects are responsible
+  for their own construction so they do not need to be member-initialized,
+  but you can do so if the default constructor does not provide the
+  behavior you want. Note that fixed-size Eigen objects are intentionally
+  left uninitialized; if you want yours zero-initialized you can
+  member-initialize it by passing an appropriate ``Zero``, for example:
+  ``Eigen::Matrix3d mat_{Eigen::Matrix3d::Zero()};``.
 
 MATLAB Style
 ============
