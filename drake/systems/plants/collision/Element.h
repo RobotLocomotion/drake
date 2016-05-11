@@ -73,8 +73,8 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   /**
    * A toString method for this class.
    */
-  friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&,
-                                                        const CollisionElement&);
+  friend DRAKECOLLISION_EXPORT std::ostream& operator<<(
+      std::ostream&, const CollisionElement&);
 
  protected:
   CollisionElement(const CollisionElement& other);
