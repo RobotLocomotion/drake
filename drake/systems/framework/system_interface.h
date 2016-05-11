@@ -58,6 +58,7 @@ class SystemInterface : public AbstractSystemInterface {
   // in the cache.
   virtual void Output(const Context<T>& context, Cache<T>* cache,
                       SystemOutput<T>* output) const = 0;
+
  protected:
   SystemInterface() {}
 
