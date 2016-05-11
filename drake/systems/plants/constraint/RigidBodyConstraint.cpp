@@ -92,8 +92,8 @@ void QuasiStaticConstraint::eval(const double* t,
     Vector3d center_pos = Vector3d::Zero();
     MatrixXd dcenter_pos = MatrixXd::Zero(3, nq);
     for (int i = 0; i < num_bodies_; i++) {
-      auto body_contact_pos =
-          getRobotPointer()->transformPoints(cache, body_pts_[i], bodies_[i], 0);
+      auto body_contact_pos = getRobotPointer()->transformPoints(
+          cache, body_pts_[i], bodies_[i], 0);
       auto dbody_contact_pos = getRobotPointer()->transformPointsJacobian(
           cache, body_pts_[i], bodies_[i], 0, true);
 
@@ -382,8 +382,7 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
   iAfun_ = iAfun;
   jAvar_ = jAvar;
   A_ = A;
-  A_mat_.resize(num_constraint_,
-                this->getRobotPointer()->num_positions);
+  A_mat_.resize(num_constraint_, this->getRobotPointer()->num_positions);
   A_mat_.reserve(lenA);
   for (int i = 0; i < lenA; i++) {
     A_mat_.insert(iAfun(i), jAvar(i)) = A(i);
@@ -566,7 +565,6 @@ PositionConstraint::PositionConstraint(RigidBodyTree* robot,
     : SingleTimeKinematicConstraint(robot, tspan),
       n_pts_(static_cast<int>(pts.cols())),
       pts_(pts) {
-
   if (pts_.rows() != 3) {
     throw std::runtime_error("pts must have 3 rows");
   }
@@ -683,8 +681,8 @@ WorldPositionConstraint::~WorldPositionConstraint() {}
 void WorldPositionConstraint::evalPositions(KinematicsCache<double>& cache,
                                             Matrix3Xd& pos, MatrixXd& J) const {
   pos = getRobotPointer()->transformPoints(cache, get_pts(), body_, 0);
-  J = getRobotPointer()->transformPointsJacobian(
-      cache, get_pts(), body_, 0, true);
+  J = getRobotPointer()->transformPointsJacobian(cache, get_pts(), body_, 0,
+                                                 true);
 }
 
 void WorldPositionConstraint::evalNames(
@@ -755,10 +753,11 @@ RelativePositionConstraint::RelativePositionConstraint(
 void RelativePositionConstraint::evalPositions(KinematicsCache<double>& cache,
                                                Matrix3Xd& pos,
                                                MatrixXd& J) const {
-  pos = bpTb_ * getRobotPointer()->transformPoints(
-      cache, get_pts(), bodyA_idx_, bodyB_idx_);
-  J = getRobotPointer()->transformPointsJacobian(
-      cache, get_pts(), bodyA_idx_, bodyB_idx_, true);
+  pos = bpTb_ *
+        getRobotPointer()->transformPoints(cache, get_pts(), bodyA_idx_,
+                                           bodyB_idx_);
+  J = getRobotPointer()->transformPointsJacobian(cache, get_pts(), bodyA_idx_,
+                                                 bodyB_idx_, true);
   for (int i = 0; i < pos.cols(); i++) {
     J.middleRows<3>(3 * i) = bpTb_.linear() * J.middleRows<3>(3 * i);
   }
@@ -781,8 +780,7 @@ RelativePositionConstraint::~RelativePositionConstraint() {}
 
 QuatConstraint::QuatConstraint(RigidBodyTree* robot, double tol,
                                const Vector2d& tspan)
-    : SingleTimeKinematicConstraint(robot, tspan),
-      tol_(tol) {
+    : SingleTimeKinematicConstraint(robot, tspan), tol_(tol) {
   if (tol < 0.0 || tol > M_PI) {
     throw std::runtime_error("tol must be within [0 PI]");
   }
@@ -882,9 +880,8 @@ void RelativeQuatConstraint::name(const double* t,
                                   std::vector<std::string>& name_str) const {
   if (this->isTimeValid(t)) {
     std::string time_str = this->getTimeString(t);
-    std::string tmp_name = bodyA_name_ + " relative to " +
-                           bodyB_name_ + " quaternion constraint" +
-                           time_str;
+    std::string tmp_name = bodyA_name_ + " relative to " + bodyB_name_ +
+                           " quaternion constraint" + time_str;
     const int num_constraint = this->getNumConstraint(t);
     for (int i = 0; i < num_constraint; i++) {
       name_str.push_back(tmp_name);
@@ -1028,8 +1025,7 @@ GazeConstraint::GazeConstraint(RigidBodyTree* robot, const Vector3d& axis,
 GazeOrientConstraint::GazeOrientConstraint(
     RigidBodyTree* robot, const Vector3d& axis, const Vector4d& quat_des,
     double conethreshold, double threshold, const Vector2d& tspan)
-    : GazeConstraint(robot, axis, conethreshold, tspan),
-      threshold_(threshold) {
+    : GazeConstraint(robot, axis, conethreshold, tspan), threshold_(threshold) {
   double len_quat_des = quat_des.norm();
   if (len_quat_des <= 0) {
     throw std::runtime_error("quat_des must be non-zero");
@@ -1055,8 +1051,8 @@ void GazeOrientConstraint::eval(const double* t, KinematicsCache<double>& cache,
     MatrixXd dquat(4, nq);
     this->evalOrientation(cache, quat, dquat);
 
-    auto axis_err_autodiff_args = initializeAutoDiffTuple(quat, quat_des_,
-                                                          get_axis());
+    auto axis_err_autodiff_args =
+        initializeAutoDiffTuple(quat, quat_des_, get_axis());
     auto e_autodiff = quatDiffAxisInvar(get<0>(axis_err_autodiff_args),
                                         get<1>(axis_err_autodiff_args),
                                         get<2>(axis_err_autodiff_args));
@@ -1262,8 +1258,7 @@ void WorldGazeTargetConstraint::name(const double* t,
                                      std::vector<std::string>& name_str) const {
   if (this->isTimeValid(t)) {
     std::string time_str = this->getTimeString(t);
-    name_str.push_back(body_name_ + " conic gaze target constraint" +
-                       time_str);
+    name_str.push_back(body_name_ + " conic gaze target constraint" + time_str);
   }
 }
 
@@ -1291,8 +1286,8 @@ void RelativeGazeTargetConstraint::eval(const double* t,
     auto dtarget_pos = getRobotPointer()->transformPointsJacobian(
         cache, get_target(), bodyB_idx_, 0, true);
 
-    auto origin_pos =
-        getRobotPointer()->transformPoints(cache, get_gaze_origin(), bodyA_idx_, 0);
+    auto origin_pos = getRobotPointer()->transformPoints(
+        cache, get_gaze_origin(), bodyA_idx_, 0);
     auto dorigin_pos = getRobotPointer()->transformPointsJacobian(
         cache, get_gaze_origin(), bodyA_idx_, 0, true);
 
@@ -1361,8 +1356,8 @@ void RelativeGazeDirConstraint::eval(const double* t,
     body_dir_ends.block(0, 1, 3, 1) = get_dir();
     int nq = this->getRobotPointer()->num_positions;
 
-    auto axis_pos =
-        getRobotPointer()->transformPoints(cache, body_axis_ends, bodyA_idx_, 0);
+    auto axis_pos = getRobotPointer()->transformPoints(cache, body_axis_ends,
+                                                       bodyA_idx_, 0);
     auto daxis_pos = getRobotPointer()->transformPointsJacobian(
         cache, body_axis_ends, bodyA_idx_, 0, true);
 
@@ -1417,24 +1412,22 @@ void Point2PointDistanceConstraint::eval(const double* t,
   if (this->isTimeValid(t)) {
     int num_cnst = this->getNumConstraint(t);
     MatrixXd posA(3, ptA_.cols());
-    MatrixXd dposA(3 * ptA_.cols(),
-                   this->getRobotPointer()->num_positions);
+    MatrixXd dposA(3 * ptA_.cols(), this->getRobotPointer()->num_positions);
     if (bodyA_ != 0) {
       posA = getRobotPointer()->transformPoints(cache, ptA_, bodyA_, 0);
-      dposA = getRobotPointer()->transformPointsJacobian(
-          cache, ptA_, bodyA_, 0, true);
+      dposA = getRobotPointer()->transformPointsJacobian(cache, ptA_, bodyA_, 0,
+                                                         true);
     } else {
       posA = ptA_.block(0, 0, 3, ptA_.cols());
       dposA = MatrixXd::Zero(3 * ptA_.cols(),
                              this->getRobotPointer()->num_positions);
     }
     MatrixXd posB(3, ptB_.cols());
-    MatrixXd dposB(3 * ptB_.cols(),
-                   this->getRobotPointer()->num_positions);
+    MatrixXd dposB(3 * ptB_.cols(), this->getRobotPointer()->num_positions);
     if (bodyB_ != 0) {
       posB = getRobotPointer()->transformPoints(cache, ptB_, bodyB_, 0);
-      dposB = getRobotPointer()->transformPointsJacobian(
-          cache, ptB_, bodyB_, 0, true);
+      dposB = getRobotPointer()->transformPointsJacobian(cache, ptB_, bodyB_, 0,
+                                                         true);
     } else {
       posB = ptB_.block(0, 0, 3, ptB_.cols());
       dposB = MatrixXd::Zero(3 * ptB_.cols(),
@@ -1515,8 +1508,8 @@ void Point2LineSegDistConstraint::eval(const double* t,
     int nq = this->getRobotPointer()->num_positions;
 
     auto pt_pos = getRobotPointer()->transformPoints(cache, pt_, pt_body_, 0);
-    auto J_pt =
-        getRobotPointer()->transformPointsJacobian(cache, pt_, pt_body_, 0, true);
+    auto J_pt = getRobotPointer()->transformPointsJacobian(cache, pt_, pt_body_,
+                                                           0, true);
 
     auto line_pos =
         getRobotPointer()->transformPoints(cache, line_ends_, line_body_, 0);
@@ -1570,8 +1563,7 @@ void Point2LineSegDistConstraint::name(
   if (this->isTimeValid(t)) {
     std::string time_str = this->getTimeString(t);
     name_str.push_back(
-        "Distance from " +
-        this->getRobotPointer()->bodies[pt_body_]->linkname +
+        "Distance from " + this->getRobotPointer()->bodies[pt_body_]->linkname +
         " pt to a line on " +
         this->getRobotPointer()->bodies[line_body_]->linkname + time_str);
     name_str.push_back("Fraction of point projection onto line segment " +
@@ -1667,8 +1659,8 @@ void WorldFixedPositionConstraint::name(
   if (num_valid_t >= 2) {
     int n_pts = static_cast<int>(pts_.cols());
     for (int i = 0; i < n_pts; i++) {
-      name_str.push_back("World fixed position constraint for " +
-                         body_name_ + " " + std::to_string(i) + " point");
+      name_str.push_back("World fixed position constraint for " + body_name_ +
+                         " " + std::to_string(i) + " point");
     }
   }
 }
@@ -1748,8 +1740,7 @@ void WorldFixedOrientConstraint::name(
     const double* t, int n_breaks, std::vector<std::string>& name_str) const {
   int num_valid_t = this->numValidTime(t, n_breaks);
   if (num_valid_t >= 2) {
-    name_str.push_back("World fixed orientation constraint for " +
-                       body_name_);
+    name_str.push_back("World fixed orientation constraint for " + body_name_);
   }
 }
 
@@ -1789,8 +1780,8 @@ void WorldFixedBodyPoseConstraint::eval_valid(const double* valid_t,
     pos[i] = getRobotPointer()->transformPoints(cache, origin, body_, 0);
     quat[i] = getRobotPointer()->relativeQuaternion(cache, body_, 0);
     dpos[i].resize(3, nq);
-    dpos[i] = getRobotPointer()->transformPointsJacobian(
-        cache, origin, body_, 0, true);
+    dpos[i] = getRobotPointer()->transformPointsJacobian(cache, origin, body_,
+                                                         0, true);
     dquat[i].resize(4, nq);
     dquat[i] =
         getRobotPointer()->relativeQuaternionJacobian(cache, body_, 0, true);
@@ -1843,10 +1834,10 @@ void WorldFixedBodyPoseConstraint::name(
     const double* t, int n_breaks, std::vector<std::string>& name_str) const {
   int num_valid_t = this->numValidTime(t, n_breaks);
   if (num_valid_t >= 2) {
-    name_str.push_back("World fixed body pose constraint for " +
-                       body_name_ + " position");
-    name_str.push_back("World fixed body pose constraint for " +
-                       body_name_ + " orientation");
+    name_str.push_back("World fixed body pose constraint for " + body_name_ +
+                       " position");
+    name_str.push_back("World fixed body pose constraint for " + body_name_ +
+                       " orientation");
   }
 }
 
@@ -2215,8 +2206,7 @@ void PostureChangeConstraint::feval(const double* t, int n_breaks,
     for (int i = 1; i < num_valid_t; i++) {
       for (int j = 0; j < joint_ind_.size(); j++) {
         c((i - 1) * joint_ind_.size() + j) =
-            q(joint_ind_(j), valid_t_ind(i)) -
-            q(joint_ind_(j), valid_t_ind(0));
+            q(joint_ind_(j), valid_t_ind(i)) - q(joint_ind_(j), valid_t_ind(0));
       }
     }
   } else {
@@ -2270,8 +2260,8 @@ void PostureChangeConstraint::name(const double* t, int n_breaks,
     for (int i = 1; i < num_valid_t; i++) {
       for (int j = 0; j < joint_ind_.size(); j++) {
         name_str.push_back("Posture change for joint " +
-                           std::to_string(joint_ind_[j] + 1) +
-                           " at time " + std::to_string(t[valid_t_ind(i)]));
+                           std::to_string(joint_ind_[j] + 1) + " at time " +
+                           std::to_string(t[valid_t_ind(i)]));
       }
     }
   }
