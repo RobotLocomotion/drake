@@ -1,8 +1,10 @@
 
 #include "drake/systems/plants/RigidBodySystem.h"
+#include <list>
 #include <stdexcept>
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/ConstraintWrappers.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "spruce.hh"
@@ -33,6 +35,10 @@ namespace Drake {
 size_t RigidBodySystem::getNumStates() const {
   return tree->number_of_positions() + tree->number_of_velocities();
 }
+
+// TODO(sam.creasey) This whole file should be in this namespace.
+using Drake::systems::plants::SingleTimeKinematicConstraintWrapper;
+using Drake::systems::plants::KinematicsCacheHelper;
 
 size_t RigidBodySystem::getNumInputs(void) const {
   size_t num = tree->actuators.size();
@@ -263,45 +269,11 @@ std::vector<const RigidBodySensor*> RigidBodySystem::GetSensors() const {
   return result;
 }
 
-// todo: move this to a more central location
-class SingleTimeKinematicConstraintWrapper : public Constraint {
- public:
-  SingleTimeKinematicConstraintWrapper(
-      const shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint)
-      : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
-        rigid_body_constraint(rigid_body_constraint),
-        kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
-    rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
-  }
-  ~SingleTimeKinematicConstraintWrapper() override {}
-
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-            Eigen::VectorXd& y) const override {
-    kinsol.initialize(q);
-    rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
-    MatrixXd dy;
-    rigid_body_constraint->eval(nullptr, kinsol, y, dy);
-  }
-  void eval(const Eigen::Ref<const TaylorVecXd>& tq,
-            TaylorVecXd& ty) const override {
-    kinsol.initialize(autoDiffToValueMatrix(tq));
-    rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
-    VectorXd y;
-    MatrixXd dy;
-    rigid_body_constraint->eval(nullptr, kinsol, y, dy);
-    initializeAutoDiffGivenGradientMatrix(
-        y, (dy * autoDiffToGradientMatrix(tq)).eval(), ty);
-  }
-
- private:
-  shared_ptr<SingleTimeKinematicConstraint> rigid_body_constraint;
-  mutable KinematicsCache<double> kinsol;
-};
-
-DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
-    const RigidBodySystem& sys) {
+DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double>
+getInitialState(const RigidBodySystem& sys) {
   VectorXd x0(sys.tree->number_of_positions() +
               sys.tree->number_of_velocities());
+
   default_random_engine generator;
   x0 << sys.tree->getRandomConfiguration(generator),
       VectorXd::Random(sys.tree->number_of_velocities());
@@ -324,19 +296,23 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
     tspan << -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity();
     Vector3d zero = Vector3d::Zero();
+    KinematicsCacheHelper<double> kin_helper(sys.tree->bodies);
+    std::list<RelativePositionConstraint> constraints;
     for (int i = 0; i < loops.size(); i++) {
-      auto con1 = make_shared<RelativePositionConstraint>(
+      constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index,
-          loops[i].frameB->frame_index, bTbp, tspan);
+          loops[i].frameB->frame_index, bTbp, tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
-          new SingleTimeKinematicConstraintWrapper(con1));
+          new SingleTimeKinematicConstraintWrapper(
+              &constraints.back(), &kin_helper));
       prog.AddGenericConstraint(con1wrapper, {qvar});
-      auto con2 = make_shared<RelativePositionConstraint>(
+      constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis,
           loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp,
-          tspan);
+          tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
-          new SingleTimeKinematicConstraintWrapper(con2));
+          new SingleTimeKinematicConstraintWrapper(
+              &constraints.back(), &kin_helper));
       prog.AddGenericConstraint(con2wrapper, {qvar});
     }
 

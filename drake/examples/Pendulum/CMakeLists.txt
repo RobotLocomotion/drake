@@ -40,5 +40,5 @@ add_matlab_test(NAME examples/Pendulum/runValueIteration COMMAND runValueIterati
 add_matlab_test(NAME examples/Pendulum/PendulumEnergyControl.run COMMAND PendulumEnergyControl.run)
 
 if (LONG_RUNNING_TESTS)
-  add_matlab_test(NAME examples/Pendulum/runTrajectorySwingUpAndBalance COMMAND runTrajectorySwingUpAndBalance PROPERTIES TIMEOUT 1500)
+  # add_matlab_test(NAME examples/Pendulum/runTrajectorySwingUpAndBalance COMMAND runTrajectorySwingUpAndBalance PROPERTIES TIMEOUT 1500)  # FIXME: see #2305
 endif()

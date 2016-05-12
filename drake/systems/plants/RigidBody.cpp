@@ -39,7 +39,7 @@ const DrakeJoint& RigidBody::getJoint() const {
     return (*joint);
   } else {
     throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_
-      + "\" in model " + model_name_ + " does not have a jont!");
+      + "\" in model " + model_name_ + " does not have a joint!");
   }
 }
 

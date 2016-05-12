@@ -21,8 +21,7 @@ int main(int argc, char* argv[]) {
   // Verifies that the RigidBodyDepthSensor accessors return the correct values.
   auto sensors = rigid_body_sys->GetSensors();
   if (sensors.size() != 1) {
-  std:
-    stringstream error_msg;
+    std::stringstream error_msg;
     error_msg << "ERROR: Unexpected number of sensors! Got " << sensors.size()
               << " expected 1.";
     throw std::runtime_error(error_msg.str());
