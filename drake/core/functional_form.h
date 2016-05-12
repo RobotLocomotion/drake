@@ -420,7 +420,7 @@ class
   Variable(std::size_t index);
 
   /** Construct a variable identified by a non-empty string \p name (rvalue). */
-  Variable(std::string&& name);
+  Variable(std::string&& name);  // NOLINT(whitespace/operators) // false-pos
 
   /** Construct a variable identified by a non-empty string \p name (lvalue). */
   Variable(std::string const& name);
@@ -434,7 +434,7 @@ class
   Variable(Variable const& v);
 
   /** Move-construct a variable from an rvalue.  */
-  Variable(Variable&& v);
+  Variable(Variable&& v);  // NOLINT(whitespace/operators) // false-pos
 
   /** Destroy a variable.  */
   ~Variable();
