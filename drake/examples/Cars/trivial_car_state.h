@@ -43,4 +43,4 @@ class TrivialCarState {
   EigenType vector_;
 };
 
-}  // namespace Drake
+}  // namespace drake

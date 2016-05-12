@@ -22,7 +22,8 @@ int main(int argc, const char* argv[]) {
   if (argc == 2) {
     num_extra_cars = atoi(argv[1]);
     if (num_extra_cars < 0) {
-      num_extra_cars = 0;
+      std::cerr << "The number of extra cars must be >=0.\n";
+      std::exit(1);
     }
   }
 
@@ -49,9 +50,9 @@ int main(int argc, const char* argv[]) {
       Eigen::MatrixXd::Zero(outsize, 0), D,
       toEigen(y0));
 
-  const std::string SEDAN_URDF = Drake::getDrakePath() +
+  const std::string kSedanUrdf = Drake::getDrakePath() +
       "/examples/Cars/models/sedan.urdf";
-  const std::string BREADTRUCK_URDF = Drake::getDrakePath() +
+  const std::string kBreadtruckUrdf = Drake::getDrakePath() +
       "/examples/Cars/models/breadtruck.urdf";
 
   // RigidBodyTree for visualization.
@@ -73,7 +74,7 @@ int main(int argc, const char* argv[]) {
   // into a single NArySystem).
 
   // Create one Sedan.
-  world_tree->addRobotFromURDF(SEDAN_URDF,
+  world_tree->addRobotFromURDF(kSedanUrdf,
                                DrakeJoint::ROLLPITCHYAW,
                                nullptr /*weld_to_frame*/);
   // TODO maddog  Hmm... it appears that drake_visualizer wants unique names,
@@ -85,7 +86,7 @@ int main(int argc, const char* argv[]) {
   cars_vis_adapter->addSystem(car_vis_adapter);
 
   // Create one Breadtruck.
-  world_tree->addRobotFromURDF(BREADTRUCK_URDF,
+  world_tree->addRobotFromURDF(kBreadtruckUrdf,
                                DrakeJoint::ROLLPITCHYAW,
                                nullptr /*weld_to_frame*/);
   world_tree->bodies.back()->linkname = "breadtruck1";
@@ -94,7 +95,7 @@ int main(int argc, const char* argv[]) {
   cars_vis_adapter->addSystem(car_vis_adapter);
 
   // Create another Sedan.
-  world_tree->addRobotFromURDF(SEDAN_URDF,
+  world_tree->addRobotFromURDF(kSedanUrdf,
                                DrakeJoint::ROLLPITCHYAW,
                                nullptr /*weld_to_frame*/);
   world_tree->bodies.back()->linkname = "sedan2";
@@ -105,7 +106,7 @@ int main(int argc, const char* argv[]) {
   // Meh, need a lot more cars!
   for (int i = 0; i < num_extra_cars; ++i) {
     world_tree->addRobotFromURDF(
-        (i % 2) ? SEDAN_URDF : BREADTRUCK_URDF,
+        (i % 2) ? kSedanUrdf : kBreadtruckUrdf,
         DrakeJoint::ROLLPITCHYAW,
         nullptr /*weld_to_frame*/);
     std::ostringstream name;
