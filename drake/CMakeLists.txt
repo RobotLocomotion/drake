@@ -5,6 +5,8 @@ option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
 option(RANDOMIZE_MATLAB_TESTS "every matlab unit is started with a new random seed" OFF)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 #cmake_policy(SET CMP0042 NEW)
 if (POLICY CMP0054)
   cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
@@ -187,12 +189,9 @@ include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
-if (GTEST_FOUND)
-  set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
-  if (WIN32)
-    # The following compiler flag is needed to support parameterized Google tests on Windows.
-    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
-  endif()
+if (WIN32)
+  # The following compiler flag is needed to support parameterized Google tests on Windows.
+  SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
 endif()
 
 set(drake_jar_javafiles util/Transform.java)
