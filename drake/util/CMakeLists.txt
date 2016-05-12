@@ -15,9 +15,9 @@ if (LCM_FOUND AND MATLAB_FOUND)
   pods_use_pkg_config_packages(publishLCMLog lcm)
 endif()
 
-add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp SystemIdentification.cpp)
+add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
 pods_install_libraries(drakePolynomial)
-drake_install_headers(Polynomial.h SystemIdentification.h)
+drake_install_headers(Polynomial.h)
 pods_install_pkg_config_file(drakePolynomial
 LIBS -ldrakePolynomial
 REQUIRES

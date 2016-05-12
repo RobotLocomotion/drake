@@ -10,7 +10,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewiseFunction {
   std::vector<double> segment_times;
 
  public:
-  PiecewiseFunction(std::vector<double> const& segment_times);
+  explicit PiecewiseFunction(std::vector<double> const& segment_times);
 
   virtual ~PiecewiseFunction();
 

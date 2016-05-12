@@ -114,7 +114,7 @@ class Gain : public LinearSystem<NullVector, InputVec, OutputVec> {
   using InputVector = InputVec<ScalarType>;
 
   template <typename Derived>
-  Gain(const Eigen::MatrixBase<Derived>& D)
+  explicit Gain(const Eigen::MatrixBase<Derived>& D)
       : LinearSystem<NullVector, InputVec, OutputVec>(
             Eigen::Matrix<double, 0, 0>(), Eigen::Matrix<double, 0, 0>(),
             Eigen::Matrix<double, Eigen::Dynamic, 0>(D.rows(), 0), D) {}

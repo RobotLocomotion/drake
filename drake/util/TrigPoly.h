@@ -45,6 +45,7 @@ class TrigPoly {
   TrigPoly() {}
 
   /// Constructs a constant TrigPoly.
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   TrigPoly(const CoefficientType& scalar) : poly(scalar) {}
 
   /**

@@ -79,7 +79,7 @@ class KinematicsCache {
   bool inertias_cached;
 
  public:
-  KinematicsCache(const std::vector<std::shared_ptr<RigidBody> >& bodies)
+  explicit KinematicsCache(const std::vector<std::shared_ptr<RigidBody> >& bodies)
       : num_positions(getNumPositions(bodies)),
         num_velocities(getNumVelocities(bodies)),
         q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
