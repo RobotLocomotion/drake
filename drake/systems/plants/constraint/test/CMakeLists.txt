@@ -4,8 +4,11 @@ add_matlab_test(NAME systems/plants/constraint/test/RelativeGazeTargetConstraint
 add_matlab_test(NAME systems/plants/constraint/test/RelativePositionConstraintTest COMMAND RelativePositionConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/RelativeQuatConstraintTest COMMAND RelativeQuatConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/WorldPositionInFrameConstraintTest COMMAND WorldPositionInFrameConstraintTest)
-add_matlab_test(NAME systems/plants/constraint/test/testKinCnst COMMAND testKinCnst PROPERTIES TIMEOUT 750)
 add_matlab_test(NAME systems/plants/constraint/test/testMultipleTimeLinearPostureConstraint COMMAND testMultipleTimeLinearPostureConstraint)
 add_matlab_test(NAME systems/plants/constraint/test/testPostureConstraint COMMAND testPostureConstraint)
 add_matlab_test(NAME systems/plants/constraint/test/testQuasiStaticConstraint COMMAND testQuasiStaticConstraint)
 add_matlab_test(NAME systems/plants/constraint/test/testSingleTimeLinearPostureConstraint COMMAND testSingleTimeLinearPostureConstraint)
+
+if (LONG_RUNNING_TESTS)
+  add_matlab_test(NAME systems/plants/constraint/test/testKinCnst COMMAND testKinCnst PROPERTIES TIMEOUT 1500)
+endif()
