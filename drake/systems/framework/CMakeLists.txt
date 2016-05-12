@@ -5,6 +5,7 @@ add_library_with_exports(LIB_NAME drakeSystemFramework
                  named_value_vector.cc named_value_vector.h
                  cache.cc cache.h
                  context.cc context.h
+                 state.cc state.h
                  system_output.cc system_output.h
                  system_interface.cc system_interface.h
                  primitives/adder.cc primitives/adder.h)

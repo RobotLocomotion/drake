@@ -11,31 +11,31 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Adder<T>::Adder(int num_inputs, int length)
+Adder<T>::Adder(size_t num_inputs, size_t length)
     : num_inputs_(num_inputs), length_(length) {}
 
 template <typename T>
-Context<T> Adder<T>::CreateDefaultContext() const {
-  Context<T> context;
-  context.input.continuous_ports.resize(num_inputs_);
+std::unique_ptr<Context<T>> Adder<T>::CreateDefaultContext() const {
+  std::unique_ptr<Context<T>> context(new Context<T>);
+  context->get_mutable_input()->continuous_ports.resize(num_inputs_);
   return context;
 }
 
 template <typename T>
-SystemOutput<T> Adder<T>::CreateDefaultOutput() const {
+std::unique_ptr<SystemOutput<T>> Adder<T>::CreateDefaultOutput() const {
   // An adder has just one output port, a BasicVector of the size specified
   // at construction time.
-  SystemOutput<T> output;
+  std::unique_ptr<SystemOutput<T>> output(new SystemOutput<T>);
   {
     OutputPort<T> port;
     port.output.reset(new BasicVector<T>(length_));
-    output.continuous_ports.push_back(std::move(port));
+    output->continuous_ports.push_back(std::move(port));
   }
   return output;
 }
 
 template <typename T>
-void Adder<T>::Output(const Context<T>& context, Cache<T>* cache,
+void Adder<T>::Output(const Context<T>& context,
                       SystemOutput<T>* output) const {
   // Check that the single output port has the correct length, then zero it.
   // Checks on the output structure are assertions, not exceptions,
@@ -51,16 +51,17 @@ void Adder<T>::Output(const Context<T>& context, Cache<T>* cache,
   }
 
   // Check that there are the expected number of input ports.
-  if (context.input.continuous_ports.size() != num_inputs_) {
+  if (context.get_input().continuous_ports.size() != num_inputs_) {
     throw std::runtime_error(
         "Expected " + std::to_string(num_inputs_) + "input ports, but had " +
-        std::to_string(context.input.continuous_ports.size()));
+        std::to_string(context.get_input().continuous_ports.size()));
   }
 
   // Sum each input port into the output, after checking that it has the
   // expected length.
-  for (int i = 0; i < context.input.continuous_ports.size(); i++) {
-    const VectorInterface<T>* input = context.input.continuous_ports[i].input;
+  for (int i = 0; i < context.get_input().continuous_ports.size(); i++) {
+    const VectorInterface<T>* input =
+        context.get_input().continuous_ports[i].input;
     if (input == nullptr || input->get_value().rows() != length_) {
       throw std::runtime_error("Input port " + std::to_string(i) +
                                "is nullptr or has incorrect size.");
@@ -73,29 +74,25 @@ void Adder<T>::Output(const Context<T>& context, Cache<T>* cache,
 
 template <typename T>
 void Adder<T>::GetDerivativesOfGeneralizedPosition(
-    const Context<T>& context, Cache<T>* cache,
-    VectorInterface<T>* derivatives) const {
+    const Context<T>& context, VectorInterface<T>* derivatives) const {
   derivatives->set_value(VectorX<T>::Zero(0));
 }
 
 template <typename T>
 void Adder<T>::GetDerivativesOfGeneralizedVelocity(
-    const Context<T>& context, Cache<T>* cache,
-    VectorInterface<T>* derivatives) const {
+    const Context<T>& context, VectorInterface<T>* derivatives) const {
   derivatives->set_value(VectorX<T>::Zero(0));
 }
 
 template <typename T>
 void Adder<T>::GetDerivativesOfOtherContinuousState(
-    const Context<T>& context, Cache<T>* cache,
-    VectorInterface<T>* derivatives) const {
+    const Context<T>& context, VectorInterface<T>* derivatives) const {
   derivatives->set_value(VectorX<T>::Zero(0));
 }
 
 template <typename T>
 void Adder<T>::MapVelocityToConfigurationDerivative(
-    const Context<T>& context, Cache<T>* cache,
-    VectorInterface<T>* derivatives) const {
+    const Context<T>& context, VectorInterface<T>* derivatives) const {
   derivatives->set_value(VectorX<T>::Zero(0));
 }
 

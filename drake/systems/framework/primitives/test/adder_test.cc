@@ -22,26 +22,25 @@ class AdderTest : public ::testing::Test {
   }
 
   std::unique_ptr<Adder<double>> adder_;
-  Context<double> context_;
-  SystemOutput<double> output_;
-  Cache<double> cache_;
+  std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<SystemOutput<double>> output_;
 };
 
 TEST_F(AdderTest, AddTwoVectors) {
   // Hook up two inputs of the expected size.
-  ASSERT_EQ(2, context_.input.continuous_ports.size());
+  ASSERT_EQ(2, context_->get_mutable_input()->continuous_ports.size());
   BasicVector<double> input0(3 /* length */);
   BasicVector<double> input1(3 /* length */);
   input0.get_mutable_value() << 1, 2, 3;
   input1.get_mutable_value() << 4, 5, 6;
-  context_.input.continuous_ports[0].input = &input0;
-  context_.input.continuous_ports[1].input = &input1;
+  context_->get_mutable_input()->continuous_ports[0].input = &input0;
+  context_->get_mutable_input()->continuous_ports[1].input = &input1;
 
-  adder_->Output(context_, &cache_, &output_);
+  adder_->Output(*context_, output_.get());
 
-  ASSERT_EQ(1, output_.continuous_ports.size());
+  ASSERT_EQ(1, output_->continuous_ports.size());
   BasicVector<double>* output_port = dynamic_cast<BasicVector<double>*>(
-      output_.continuous_ports[0].output.get());
+      output_->continuous_ports[0].output.get());
   ASSERT_NE(nullptr, output_port);
   Eigen::Matrix<double, 3, 1> expected;
   expected << 5, 7, 9;
@@ -53,42 +52,44 @@ TEST_F(AdderTest, AddTwoVectors) {
 TEST_F(AdderTest, WrongNumberOfInputPorts) {
   // Hook up just one input.
   BasicVector<double> input0(3 /* length */);
-  context_.input.continuous_ports[0].input = &input0;
+  context_->get_mutable_input()->continuous_ports[0].input = &input0;
 
-  EXPECT_THROW(adder_->Output(context_, &cache_, &output_), std::runtime_error);
+  EXPECT_THROW(adder_->Output(*context_, output_.get()), std::runtime_error);
 }
 
 // Tests that std::runtime_error is thrown when input ports of the wrong size
 // are connected.
 TEST_F(AdderTest, WrongSizeOfInputPorts) {
   // Hook up two inputs, but one of them is the wrong size.
-  ASSERT_EQ(2, context_.input.continuous_ports.size());
+  ASSERT_EQ(2, context_->get_mutable_input()->continuous_ports.size());
   BasicVector<double> input0(3 /* length */);
   BasicVector<double> input1(2 /* length */);
-  context_.input.continuous_ports[0].input = &input0;
-  context_.input.continuous_ports[1].input = &input1;
+  context_->get_mutable_input()->continuous_ports[0].input = &input0;
+  context_->get_mutable_input()->continuous_ports[1].input = &input1;
 
-  EXPECT_THROW(adder_->Output(context_, &cache_, &output_), std::runtime_error);
+  EXPECT_THROW(adder_->Output(*context_, output_.get()), std::runtime_error);
 }
 
 // Tests that Adder allocates no state variables in the context_, and generates
 // no state derivatives.
 TEST_F(AdderTest, AdderIsStateless) {
-  EXPECT_EQ(nullptr, context_.state.continuous_state.generalized_velocities);
-  EXPECT_EQ(nullptr, context_.state.continuous_state.generalized_position);
+  EXPECT_EQ(nullptr,
+            context_->get_state().continuous_state.generalized_velocities);
+  EXPECT_EQ(nullptr,
+            context_->get_state().continuous_state.generalized_position);
 
   Cache<double> cache;
   BasicVector<double> derivatives(0 /* length */);
-  adder_->GetDerivativesOfGeneralizedVelocity(context_, &cache_, &derivatives);
+  adder_->GetDerivativesOfGeneralizedVelocity(*context_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 
-  adder_->GetDerivativesOfGeneralizedPosition(context_, &cache_, &derivatives);
+  adder_->GetDerivativesOfGeneralizedPosition(*context_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 
-  adder_->GetDerivativesOfOtherContinuousState(context_, &cache_, &derivatives);
+  adder_->GetDerivativesOfOtherContinuousState(*context_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 
-  adder_->MapVelocityToConfigurationDerivative(context_, &cache_, &derivatives);
+  adder_->MapVelocityToConfigurationDerivative(*context_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 }
 
