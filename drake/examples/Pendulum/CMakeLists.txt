@@ -36,9 +36,9 @@ add_matlab_test(NAME examples/Pendulum/runPassive COMMAND runPassive)
 add_matlab_test(NAME examples/Pendulum/runPassiveURDF COMMAND runPassiveURDF)
 add_matlab_test(NAME examples/Pendulum/runSwingUp COMMAND runSwingUp)
 add_matlab_test(NAME examples/Pendulum/runTrigLQR COMMAND runTrigLQR)
-add_matlab_test(NAME examples/Pendulum/runValueIteration COMMAND runValueIteration)
 add_matlab_test(NAME examples/Pendulum/PendulumEnergyControl.run COMMAND PendulumEnergyControl.run)
 
 if (LONG_RUNNING_TESTS)
   # add_matlab_test(NAME examples/Pendulum/runTrajectorySwingUpAndBalance COMMAND runTrajectorySwingUpAndBalance PROPERTIES TIMEOUT 1500)  # FIXME: see #2305
+  add_matlab_test(NAME examples/Pendulum/runValueIteration COMMAND runValueIteration PROPERTIES TIMEOUT 1500)
 endif()
