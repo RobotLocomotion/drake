@@ -148,7 +148,7 @@ set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
 set(cmake_GIT_TAG abe1a22d0bb767423de4e3bd1123cc2deae1c82a)
-set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
+set(cmake_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
@@ -230,7 +230,7 @@ set(swig_matlab_IS_PUBLIC TRUE)
 set(swig_matlab_IS_CMAKE_POD TRUE)
 set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
 set(textbook_GIT_TAG master)
-set(textbook_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
+set(textbook_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
 set(textbook_BUILD_COMMAND ${PYTHON_EXECUTABLE} extract_examples.py underactuated.html ./examples)
 set(textbook_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
@@ -340,11 +340,8 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	endforeach()
 
 	if (NOT ${proj} STREQUAL "drake")
-		if (NOT ${proj}_GIT_CLONE_DIR)
-			set(${proj}_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/externals/${proj}")
-		endif()
 		if (NOT ${proj}_SOURCE_DIR)
-			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
+			set(${proj}_SOURCE_DIR "${PROJECT_SOURCE_DIR}/externals/${proj}")
 		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
 
@@ -354,7 +351,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
 		if (AUTO_UPDATE_EXTERNALS)
 			ExternalProject_Add(download-${proj}
-					SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
+					SOURCE_DIR ${${proj}_SOURCE_DIR}
 					GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
 					GIT_TAG ${${proj}_GIT_TAG}
 					CONFIGURE_COMMAND ""
@@ -363,7 +360,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					)
 		else()
 			ExternalProject_Add(download-${proj}
-					SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
+					SOURCE_DIR ${${proj}_SOURCE_DIR}
 					GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
 					GIT_TAG ${${proj}_GIT_TAG}
 					UPDATE_COMMAND ""
