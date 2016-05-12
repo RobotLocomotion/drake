@@ -432,7 +432,7 @@ class
   Variable(Variable const& v);
 
   /** Move-construct a variable from an rvalue.  */
-  Variable(Variable&& v) noexcept;
+  Variable(Variable&& v) noexcept;  // NOLINT(whitespace/operators) // false-pos
 
   /** Destroy a variable.  */
   ~Variable();
