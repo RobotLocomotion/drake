@@ -210,5 +210,5 @@ add_matlab_test(NAME systems/plants/test/testdTransformSpatialMotion COMMAND tes
 add_matlab_test(NAME systems/plants/test/timeSteppingRigidBodyManipulatorFramesTest COMMAND timeSteppingRigidBodyManipulatorFramesTest)
 
 if (LONG_RUNNING_TESTS)
-  add_matlab_test(NAME systems/plants/test/testIKtraj COMMAND testIKtraj PROPERTIES TIMEOUT 1500)
+  add_matlab_test(NAME systems/plants/test/testIKtraj COMMAND testIKtraj PROPERTIES TIMEOUT 3000)
 endif()
