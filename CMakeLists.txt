@@ -108,7 +108,6 @@ CMAKE_DEPENDENT_OPTION(WITH_BERTINI "solve polynomial equations; free but pod re
 CMAKE_DEPENDENT_OPTION(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 CMAKE_DEPENDENT_OPTION(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 CMAKE_DEPENDENT_OPTION(WITH_MOSEK "convex optimization solver; free for academics" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-CMAKE_DEPENDENT_OPTION(WITH_OCTOMAP "provides oct-tree data structures" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 CMAKE_DEPENDENT_OPTION(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 CMAKE_DEPENDENT_OPTION(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 CMAKE_DEPENDENT_OPTION(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
@@ -122,6 +121,7 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_AVL			"use w/ AVL to compute aerodynamic coefficients for airfoils")
 	option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
 	option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
+	option(WITH_OCTOMAP "provides oct-tree data structures")
 	option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
 	option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 endif()
