@@ -361,7 +361,6 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
 		if (AUTO_UPDATE_EXTERNALS)
 			ExternalProject_Add(download-${proj}
-					DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
 					SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
 					GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
 					GIT_TAG ${${proj}_GIT_TAG}
@@ -371,7 +370,6 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					)
 		else()
 			ExternalProject_Add(download-${proj}
-					DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
 					SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
 					GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
 					GIT_TAG ${${proj}_GIT_TAG}
