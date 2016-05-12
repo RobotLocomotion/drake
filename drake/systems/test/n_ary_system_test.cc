@@ -21,7 +21,7 @@ using drake::NArySystem;
 template <typename ScalarType>
 class StateQ {
  public:
-  static const int RowsAtCompileTime = 2;
+  static const int RowsAtCompileTime = Eigen::Dynamic;
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
 
   StateQ() {}
@@ -38,6 +38,8 @@ class StateQ {
   friend EigenType toEigen(const StateQ<ScalarType>& s) {
     return s.v;
   }
+
+  std::size_t size() const { return 2; }
 
   EigenType v;
 };

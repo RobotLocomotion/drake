@@ -3,7 +3,7 @@
 #include <cmath>
 
 #include "drake/core/Vector.h"
-#include "drake/examples/Cars/trivial_car_state.h"
+#include "drake/examples/Cars/gen/simple_car_state.h"
 
 namespace drake {
 
@@ -19,7 +19,8 @@ class TrivialCar {
   /// (changing heading) with a period @p period per revolution.
   TrivialCar(const double x, const double y, const double heading,
              const double period)
-      : pose_(x, y, heading), period_(period) {}
+      : pose_((Eigen::VectorXd(4) << x, y, heading, 0.).finished()),
+        period_(period) {}
 
   /// @name Implement the Drake::System concept.
   //@{
@@ -28,7 +29,7 @@ class TrivialCar {
   template <typename ScalarType>
   using InputVector = Drake::NullVector<ScalarType>;
   template <typename ScalarType>
-  using OutputVector = TrivialCarState<ScalarType>;
+  using OutputVector = SimpleCarState<ScalarType>;
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& time,
@@ -41,8 +42,8 @@ class TrivialCar {
   OutputVector<ScalarType> output(const ScalarType& time,
                                   const StateVector<ScalarType>& state,
                                   const InputVector<ScalarType>&) const {
-    typename OutputVector<ScalarType>::EigenType offset;
-    offset << 0., 0., (M_PI * 2. * time / period_);
+    Eigen::VectorXd offset(4);
+    offset << 0., 0., (M_PI * 2. * time / period_), 0.;
     return toEigen(pose_) + offset;
   }
 

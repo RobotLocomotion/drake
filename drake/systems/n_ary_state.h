@@ -18,12 +18,12 @@ class NAryState {
 
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
 
-  NAryState() : count_(unitCountFromRows(0)) {}
+  NAryState() : unit_size_(unit_size()), count_(unitCountFromRows(0)) {}
 
   explicit NAryState(int count)
-      : count_(unitCountFromRows(rowsFromUnitCount(count))),
+      : unit_size_(unit_size()),
+        count_(unitCountFromRows(rowsFromUnitCount(count))),
         combined_vector_(EigenType(rowsFromUnitCount(count), 1)) {}
-
 
   /// Return the count of @param UnitVector units contained.
   ///
@@ -34,45 +34,43 @@ class NAryState {
   /// Append the @param unit to the end of the list of component
   /// @param UnitVectors.
   void append(const UnitVector<ScalarType>& unit) {
-    const std::size_t unit_size = UnitVector<ScalarType>::RowsAtCompileTime;
-    if (unit_size == 0) {
+    if (unit_size_ == 0) {
       // NOP --- in particular, count_ should remain at -1.
       assert(count_ == -1);
       return;
     }
     // Enlarge combined_vector_ by size of the converted unit.
-    combined_vector_.conservativeResize(combined_vector_.rows() + unit_size,
+    combined_vector_.conservativeResize(combined_vector_.rows() + unit_size_,
                                         Eigen::NoChange);
     // Copy unit's Eigen-rep into the tail-end of enlarged combined_vector_.
-    combined_vector_.bottomRows(unit_size) = toEigen(unit);
+    combined_vector_.bottomRows(unit_size_) = toEigen(unit);
     // Keep track of the total unit count.
     ++count_;
   }
 
   UnitVector<ScalarType> get(std::size_t i) const {
-    const std::size_t unit_size = UnitVector<ScalarType>::RowsAtCompileTime;
-    if (!((unit_size == 0) || (i < count_))) {
+    if (!((unit_size_ == 0) || (i < count_))) {
       throw std::out_of_range("");
     }
-    const std::size_t row0 = i * unit_size;
+    const std::size_t row0 = i * unit_size_;
     return UnitVector<ScalarType>(combined_vector_.block(row0, 0,
-                                                         unit_size, 1));
+                                                         unit_size_, 1));
   }
 
   void set(std::size_t i, const UnitVector<ScalarType>& unit) {
-    const std::size_t unit_size = UnitVector<ScalarType>::RowsAtCompileTime;
-    if (!((unit_size == 0) || (i < count_))) {
+    if (!((unit_size_ == 0) || (i < count_))) {
       throw std::out_of_range("");
     }
-    const std::size_t row0 = i * unit_size;
-    combined_vector_.block(row0, 0, unit_size, 1) = toEigen(unit);
+    const std::size_t row0 = i * unit_size_;
+    combined_vector_.block(row0, 0, unit_size_, 1) = toEigen(unit);
   }
 
   // Required by Drake::Vector concept.
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
   explicit NAryState(const Eigen::MatrixBase<Derived>& initial)
-      : count_(unitCountFromRows(initial.rows())),
+      : unit_size_(unit_size()),
+        count_(unitCountFromRows(initial.rows())),
         combined_vector_(initial) {
   }
 
@@ -92,6 +90,11 @@ class NAryState {
     return vec.combined_vector_;
   }
 
+  /// Calculate the size (Eigen row count) of @p UnitVector, which is
+  /// presumed to be fixed for all instances of UnitVector.
+  static
+  std::size_t unit_size() { return UnitVector<ScalarType>().size(); }
+
   /// Determine how many @param UnitVector units will be decoded from
   /// an Eigen column matrix with @param rows rows.  @param rows must
   /// be a multiple of the row count of @param UnitVector.
@@ -103,13 +106,12 @@ class NAryState {
   /// rows is not a multiple of UnitVector::RowsAtCompileTime.
   static
   std::ptrdiff_t unitCountFromRows(std::size_t rows) {
-    static_assert(UnitVector<ScalarType>::RowsAtCompileTime != Eigen::Dynamic,
-                  "Size of component subvector not known at compile time.");
-    if (UnitVector<ScalarType>::RowsAtCompileTime > 0) {
-      if ((rows % UnitVector<ScalarType>::RowsAtCompileTime) != 0) {
+    const std::size_t us { unit_size() };
+    if (us > 0) {
+      if ((rows % us) != 0) {
         throw std::domain_error("Row count not a multiple of non-null unit.");
       }
-      return rows / UnitVector<ScalarType>::RowsAtCompileTime;
+      return rows / us;
     }
     return -1;
   }
@@ -122,18 +124,18 @@ class NAryState {
   /// count is negative and UnitVector is not a null vector.
   static
   std::size_t rowsFromUnitCount(std::ptrdiff_t count) {
-    static_assert(UnitVector<ScalarType>::RowsAtCompileTime != Eigen::Dynamic,
-                  "Size of component subvector not known at compile time.");
+    const std::size_t us { unit_size() };
     if (count >= 0) {
-      return count * UnitVector<ScalarType>::RowsAtCompileTime;
+      return count * us;
     }
-    if (UnitVector<ScalarType>::RowsAtCompileTime != 0) {
+    if (us != 0) {
       throw std::domain_error("Negative count for non-null unit.");
     }
     return 0;
   }
 
  private:
+  std::size_t unit_size_;
   // count_ < 0 indicates "not counted", i.e., UnitVector is a null vector.
   std::ptrdiff_t count_;
   EigenType combined_vector_;
