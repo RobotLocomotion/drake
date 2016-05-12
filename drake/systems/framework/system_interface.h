@@ -48,15 +48,15 @@ class SystemInterface : public AbstractSystemInterface {
   // numbers of concrete input ports and state variables for this System.
   // Since input port pointers are not owned by the Context, they should
   // simply be initialized to nullptr.
-  virtual Context<T> CreateDefaultContext() const = 0;
+  virtual std::unique_ptr<Context<T>> CreateDefaultContext() const = 0;
 
   // Returns a default output, initialized with the correct number of
   // concrete output ports for this System.
-  virtual SystemOutput<T> CreateDefaultOutput() const = 0;
+  virtual std::unique_ptr<SystemOutput<T>> CreateDefaultOutput() const = 0;
 
   // Computes the output for the given context, possibly updating values
   // in the cache.
-  virtual void Output(const Context<T>& context, Cache<T>* cache,
+  virtual void Output(const Context<T>& context,
                       SystemOutput<T>* output) const = 0;
 
  protected:
