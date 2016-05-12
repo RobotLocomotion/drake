@@ -1,5 +1,5 @@
 function testIKtraj()
-% TIMEOUT 1500
+
 rng(0,'twister');
 options.floating = true;
 options.dt = 0.001;
@@ -368,3 +368,5 @@ for i = 1:nargin-4
   end
 end
 end
+
+% TIMEOUT 3000
