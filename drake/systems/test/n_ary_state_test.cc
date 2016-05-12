@@ -18,7 +18,7 @@ using drake::NAryState;
 template <typename ScalarType>
 class VectorQ {
  public:
-  static const int RowsAtCompileTime = 3;
+  static const int RowsAtCompileTime = Eigen::Dynamic;
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
 
   VectorQ() {}
@@ -35,6 +35,8 @@ class VectorQ {
   friend EigenType toEigen(const VectorQ<ScalarType>& vq) {
     return vq.v;
   }
+
+  std::size_t size() const { return 3; }
 
   EigenType v;
 };
@@ -67,12 +69,11 @@ GTEST_TEST(TestNAryState, rowsFromUnitCount) {
 
 
 GTEST_TEST(TestNAryState, DefaultConstructor) {
-  VectorQD vq0 = VectorQD((VectorQD::EigenType() << 1.0, 2.0, 3.0).finished());
-  VectorQD vq1 = VectorQD((VectorQD::EigenType() << 4.0, 6.0, 8.0).finished());
+  VectorQD vq0 = VectorQD((Eigen::VectorXd(3) << 1.0, 2.0, 3.0).finished());
+  VectorQD vq1 = VectorQD((Eigen::VectorXd(3) << 4.0, 6.0, 8.0).finished());
 
   // Test default-constructed instance.
   NAryState<double, VectorQ> dut;
-
   EXPECT_EQ(dut.count(), 0);
   EXPECT_EQ(dut.size(), 0);
   EXPECT_THROW(dut.get(0), std::out_of_range);
@@ -106,8 +107,8 @@ GTEST_TEST(TestNAryState, DefaultConstructor) {
 
 
 GTEST_TEST(TestNAryState, PreAllocated) {
-  VectorQD vq0 = VectorQD((VectorQD::EigenType() << 1.0, 2.0, 3.0).finished());
-  VectorQD vq1 = VectorQD((VectorQD::EigenType() << 4.0, 6.0, 8.0).finished());
+  VectorQD vq0 = VectorQD((Eigen::VectorXd(3) << 1.0, 2.0, 3.0).finished());
+  VectorQD vq1 = VectorQD((Eigen::VectorXd(3) << 4.0, 6.0, 8.0).finished());
 
   // Test construction with pre-allocated size.
   NAryState<double, VectorQ> dut(2);
@@ -127,8 +128,8 @@ GTEST_TEST(TestNAryState, PreAllocated) {
 
 
 GTEST_TEST(TestNAryState, FromEigen) {
-  VectorQD vq0 = VectorQD((VectorQD::EigenType() << 1.0, 2.0, 3.0).finished());
-  VectorQD vq1 = VectorQD((VectorQD::EigenType() << 4.0, 6.0, 8.0).finished());
+  VectorQD vq0 = VectorQD((Eigen::VectorXd(3) << 1.0, 2.0, 3.0).finished());
+  VectorQD vq1 = VectorQD((Eigen::VectorXd(3) << 4.0, 6.0, 8.0).finished());
 
   // Test construction from Eigen type.
   NAryState<double, VectorQ> dut((

@@ -12,11 +12,18 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
+#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
 #include "drake/examples/Cars/trivial_car.h"
-#include "drake/examples/Cars/xyz_rpy.h"
 
+using Drake::AffineSystem;
+using Drake::BotVisualizer;
+using Drake::NullVector;
+using Drake::cascade;
 
-int main(int argc, const char* argv[]) {
+namespace drake {
+namespace {
+
+int do_main(int argc, const char* argv[]) {
 
   int num_extra_cars = 100;
   if (argc == 2) {
@@ -29,26 +36,24 @@ int main(int argc, const char* argv[]) {
 
   // Make a linear system to map NPC car state to the state vector of a
   // floating joint, allowing motion and steering in the x-y plane only.
-  drake::XyzRpy<double> y0(0., 0., 0., 0., 0., M_PI / 2.);
-  const int insize = drake::TrivialCarState<double>::RowsAtCompileTime;
-  const int outsize = drake::XyzRpy<double>::RowsAtCompileTime;
-  Eigen::Matrix<double, outsize, insize> D;
-  D <<
-      1, 0,  0,  // x
-      0, 1,  0,  // y
-      0, 0,  0,  // z
-      0, 0,  0,  // roll
-      0, 0,  0,  // pitch
-      0, 0, -1;  // yaw
+  const int insize = drake::SimpleCarState<double>().size();
+  const int outsize = drake::EulerFloatingJointState<double>().size();
+  Eigen::MatrixXd D;
+  D.setZero(outsize, insize);
+  D(EulerFloatingJointStateIndices::kX, SimpleCarStateIndices::kX) = 1;
+  D(EulerFloatingJointStateIndices::kY, SimpleCarStateIndices::kY) = 1;
+  D(EulerFloatingJointStateIndices::kYaw, SimpleCarStateIndices::kHeading) = 1;
+  EulerFloatingJointState<double> y0;
   auto car_vis_adapter = std::make_shared<
-    Drake::AffineSystem<Drake::NullVector,
-                        drake::TrivialCarState,
-                        drake::XyzRpy> >(
-      Eigen::MatrixXd::Zero(0, 0),
-      Eigen::MatrixXd::Zero(0, insize),
-      Eigen::VectorXd::Zero(0),
-      Eigen::MatrixXd::Zero(outsize, 0), D,
-      toEigen(y0));
+      AffineSystem<
+        NullVector,
+        SimpleCarState,
+        EulerFloatingJointState> >(
+            Eigen::MatrixXd::Zero(0, 0),
+            Eigen::MatrixXd::Zero(0, insize),
+            Eigen::VectorXd::Zero(0),
+            Eigen::MatrixXd::Zero(outsize, 0), D,
+            toEigen(y0));
 
   const std::string kSedanUrdf = Drake::getDrakePath() +
       "/examples/Cars/models/sedan.urdf";
@@ -61,11 +66,11 @@ int main(int argc, const char* argv[]) {
   // NarySystem for car 'physics'.
   //  U: ()
   //  X: ()
-  //  Y: [(xy-position, heading), ...] per TrivialCarState
+  //  Y: [(xy-position, heading, velocity), ...] per SimpleCarState
   auto cars_system = std::make_shared<drake::NArySystem<drake::TrivialCar> >();
   // NarySystem for car visualization.
   // BotVisualizer:
-  //  U: [(xy-position, heading), ...] per TrivialCarState
+  //  U: [(xy-position, heading, velocity), ...] per SimpleCarState
   //  X: ()
   //  Y: [(x, y, z, roll, pitch, yaw), ...] per DrakeJoint::ROLLPITCHYAW per car
   auto cars_vis_adapter = std::make_shared<drake::NArySystem<decltype(car_vis_adapter)::element_type> >();
@@ -141,4 +146,11 @@ int main(int argc, const char* argv[]) {
       options);
 
   return 0;
+}
+
+}  // namespace
+}  // namespace drake
+
+int main(int argc, const char* argv[]) {
+  return drake::do_main(argc, argv);
 }
