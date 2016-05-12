@@ -6,11 +6,11 @@
 #include <Eigen/Geometry>
 
 #include "drake/drakeSimpleCar_export.h"
-#include "drake/examples/SimpleCar/driving_command.h"
-#include "drake/examples/SimpleCar/simple_car_state.h"
+#include "drake/examples/Cars/gen/driving_command.h"
+#include "drake/examples/Cars/gen/simple_car_state.h"
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
-namespace Drake {
+namespace drake {
 
 /// SimpleCar -- model an idealized response to driving commands, neglecting
 /// all physics.
@@ -18,14 +18,17 @@ namespace Drake {
 /// configuration:
 /// * see lcmt_simple_car_config_t
 ///
+/// state vector (planar for now):
+/// * position: x, y, heading;
+///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
+//    heading is defined around the +z axis, so positive-turn-left
+/// * velocity
+///
 /// input vector:
-/// * steering angle (virtual center wheel angle, with some limits)
+/// * steering angle (virtual center wheel angle, with some limits);
+///   a positive angle means a positive change in heading (left turn)
 /// * throttle (0-1)
 /// * brake (0-1)
-///
-/// state vector (planar for now):
-/// * position: x, y, heading
-/// * velocity
 ///
 /// output vector: same as state vector.
 ///
@@ -48,27 +51,27 @@ class DRAKESIMPLECAR_EXPORT SimpleCar {
                                    const InputVector<ScalarType>& input) const {
     // Apply simplistic throttle.
     ScalarType new_velocity =
-        state.velocity + input.throttle * config_.max_acceleration *
+        state.velocity() + input.throttle() * config_.max_acceleration *
         config_.velocity_lookahead_time;
     new_velocity = std::min(new_velocity, config_.max_velocity);
 
     // Apply simplistic brake.
-    new_velocity += input.brake * -config_.max_acceleration *
+    new_velocity += input.brake() * -config_.max_acceleration *
                     config_.velocity_lookahead_time;
     new_velocity = std::max(new_velocity, 0.);
 
     // Apply steering.
     ScalarType sane_steering_angle =
-        std::max(std::min(std::remainder(input.steering_angle, 2 * M_PI),
+        std::max(std::min(std::remainder(input.steering_angle(), 2 * M_PI),
                           config_.max_abs_steering_angle),
                  -config_.max_abs_steering_angle);
     ScalarType curvature = std::tan(sane_steering_angle) / config_.wheelbase;
 
     StateVector<ScalarType> rates;
-    rates.x = state.velocity * std::sin(state.heading);
-    rates.y = state.velocity * std::cos(state.heading);
-    rates.heading = curvature * state.velocity;
-    rates.velocity = (new_velocity - state.velocity) * config_.velocity_kp;
+    rates.set_x(state.velocity() * std::cos(state.heading()));
+    rates.set_y(state.velocity() * std::sin(state.heading()));
+    rates.set_heading(curvature * state.velocity());
+    rates.set_velocity((new_velocity - state.velocity()) * config_.velocity_kp);
     return rates;
   }
 

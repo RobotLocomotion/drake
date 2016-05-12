@@ -250,11 +250,11 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
         getNumVelocities(), 1);
   }
 
-  virtual bool isFloating() const override { return true; }
-  virtual Eigen::VectorXd zeroConfiguration() const override;
-  virtual Eigen::VectorXd randomConfiguration(
+  bool isFloating() const override { return true; }
+  Eigen::VectorXd zeroConfiguration() const override;
+  Eigen::VectorXd randomConfiguration(
       std::default_random_engine &generator) const override;
-  virtual std::string getPositionName(int index) const override;
+  std::string getPositionName(int index) const override;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

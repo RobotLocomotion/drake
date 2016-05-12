@@ -42,10 +42,31 @@ Exceptions
 * No need for a copyright line at the top of every file (this will change soon, see: `issue #1805 <https://github.com/RobotLocomotion/drake/issues/1805>`_).
 * While we encourage you to `Include What You Use (IWYU) <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_ since it improves code transparency and readability, it will not be strictly enforced. Instead, we enforce a "weak include" style that simply requires every symbol referenced within a file be covered by the transitive closure of all `#include` statements in the file. We decided to make this exception because (1) we can always adopt an IWYU rule later, (2) to reduce verbosity, and (3) we don't have a tool to enforce IWYU at this time.
 * We do not follow `The #define Guard <https://google.github.io/styleguide/cppguide.html#The__define_Guard>`_ rule and instead use ``#pragma once``. The advantages of using ``#pragma once`` are (1) it does not need to be updated each time the name of the header file changes, and (2) it prevents silly mistakes that occur when a developer copy-pastes a header file and forgets to update its ``#define`` guard. The known drawbacks of using ``#pragma once``, namely the possibility of lack of compiler support and compiler-dependent-behavior, is mitigated since Drake has a :ref:`limited set of officially supported platform configurations <supported-configurations>` on which correct behavior will be guaranteed. (`#2104 <https://github.com/RobotLocomotion/drake/issues/2104>`_)
+* We have an exception to the `Implicit Conversions <https://google.github.io/styleguide/cppguide.html#Implicit_Conversions>`_ rule.  For readability and consistency with external libraries like Eigen, we allow one-argument constructors without the `explicit` tag (implicit cast operators) if both types involved implement basic arithmetic operators commonly used in arithmetic exceptions (at minimum `+`, both unary and binary `-`, binary `*`, and `==`).  This lets us write concise mathematical expressions using math-like objects without a proliferation of `static_cast<>` statements. (For context, see `#2231 <https://github.com/RobotLocomotion/drake/pull/2231>`_)
 
 Additional Rules
 ----------------
-* Use the ``GTEST`` prefix in unit test declarations.  For instance, use ``GTEST_TEST(Group, Name)`` instead of ``TEST(Group, Name)``. (`#2181 <https://github.com/RobotLocomotion/drake/issues/2181>`_)
+* Use the ``GTEST`` prefix in unit test declarations. For instance, use
+  ``GTEST_TEST(Group, Name)`` instead of ``TEST(Group, Name)``.
+  (`#2181 <https://github.com/RobotLocomotion/drake/issues/2181>`_)
+* Always use `in-class member initialization
+  <http://www.stroustrup.com/C++11FAQ.html#member-init>`_ for built-in data
+  types that would would otherwise be uninitialized, including numerical
+  types, pointers, and enumerations. The syntax ``int count_{};`` (called
+  `value initialization
+  <http://en.cppreference.com/w/cpp/language/value_initialization>`_)
+  ensures that these types are zero-initialized rather than left with
+  unpredictable content (informally known as "garbage"). You may also
+  provide explicit values such as ``bool flag_{false};`` (for clarity) or
+  ``bool uninitialized_{true};`` (because zero is the wrong initial value).
+  You should always provide a value for ``enum`` members since zero might
+  not be one of the allowed enumerations. Class objects are responsible
+  for their own construction so they do not need to be member-initialized,
+  but you can do so if the default constructor does not provide the
+  behavior you want. Note that fixed-size Eigen objects are intentionally
+  left uninitialized; if you want yours zero-initialized you can
+  member-initialize it by passing an appropriate ``Zero``, for example:
+  ``Eigen::Matrix3d mat_{Eigen::Matrix3d::Zero()};``.
 
 MATLAB Style
 ============

@@ -63,11 +63,17 @@ class KinematicsCacheElement {
 template <typename Scalar>
 class KinematicsCache {
  private:
-  std::unordered_map<
-      RigidBody const*, KinematicsCacheElement<Scalar>,
+  typedef KinematicsCacheElement<Scalar> KinematicsCacheElementScalar;
+  typedef std::pair<RigidBody const* const, KinematicsCacheElementScalar>
+      RigidBodyKCacheElementPair;
+  typedef Eigen::aligned_allocator<RigidBodyKCacheElementPair>
+      RigidBodyKCacheElementPairAllocator;
+  typedef std::unordered_map<
+      RigidBody const*, KinematicsCacheElementScalar,
       std::hash<RigidBody const*>, std::equal_to<RigidBody const*>,
-      Eigen::aligned_allocator<std::pair<
-          RigidBody const* const, KinematicsCacheElement<Scalar> > > > elements;
+      RigidBodyKCacheElementPairAllocator> RigidBodyToKCacheElementMap;
+
+  RigidBodyToKCacheElementMap elements;
   std::vector<RigidBody const*> bodies;
   const int num_positions;
   const int num_velocities;
@@ -79,14 +85,15 @@ class KinematicsCache {
   bool inertias_cached;
 
  public:
-  explicit KinematicsCache(const std::vector<std::shared_ptr<RigidBody> >& bodies)
+  explicit KinematicsCache(
+      const std::vector<std::unique_ptr<RigidBody> >& bodies)
       : num_positions(getNumPositions(bodies)),
         num_velocities(getNumVelocities(bodies)),
         q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
         v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_velocities)),
         velocity_vector_valid(false) {
-    for (const auto& body_shared_ptr : bodies) {
-      const RigidBody& body = *body_shared_ptr;
+    for (const auto& body_unique_ptr : bodies) {
+      const RigidBody& body = *body_unique_ptr;
       int num_positions_joint =
           body.hasParent() ? body.getJoint().getNumPositions() : 0;
       int num_velocities_joint =
@@ -212,7 +219,8 @@ class KinematicsCache {
 
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> getX() const {
     if (hasV()) {
-      Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(getNumPositions() + getNumVelocities());
+      Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(getNumPositions() +
+                                                 getNumVelocities());
       x << q, v;
       return x;
     } else {
@@ -241,25 +249,31 @@ class KinematicsCache {
     inertias_cached = false;
   }
 
+  // TODO(amcastro-tri): this method should belong to RigidBodyTree and only be
+  // used on initialization. The RigidBodyTree should have this value stored so
+  // that KinematicsCache can request it when needed. See the KinematicsCache
+  // constructor where this request is made.
+  // See TODO for getNumVelocities.
   static int getNumPositions(
-      const std::vector<std::shared_ptr<RigidBody> >& bodies) {
-    auto add_num_positions =
-        [](int result, std::shared_ptr<RigidBody> body_ptr) -> int {
-          return body_ptr->hasParent()
-                     ? result + body_ptr->getJoint().getNumPositions()
-                     : result;
-        };
+      const std::vector<std::unique_ptr<RigidBody> >& bodies) {
+    auto add_num_positions = [](
+        int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
+      return body_ptr->hasParent()
+                 ? result + body_ptr->getJoint().getNumPositions()
+                 : result;
+    };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
   }
 
+  // TODO(amcastro-tri): See TODO for getNumPositions.
   static int getNumVelocities(
-      const std::vector<std::shared_ptr<RigidBody> >& bodies) {
-    auto add_num_velocities =
-        [](int result, std::shared_ptr<RigidBody> body_ptr) -> int {
-          return body_ptr->hasParent()
-                     ? result + body_ptr->getJoint().getNumVelocities()
-                     : result;
-        };
+      const std::vector<std::unique_ptr<RigidBody> >& bodies) {
+    auto add_num_velocities = [](
+        int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
+      return body_ptr->hasParent()
+                 ? result + body_ptr->getJoint().getNumVelocities()
+                 : result;
+    };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_velocities);
   }
 

@@ -87,8 +87,7 @@ void testOperators() {
     valuecheck(poly1_div.evaluateUnivariate(t),
                poly1.evaluateUnivariate(t) / scalar, 1e-8);
     valuecheck(poly1_times_poly1.evaluateUnivariate(t),
-               poly1.evaluateUnivariate(t) * poly1.evaluateUnivariate(t),
-               1e-8);
+               poly1.evaluateUnivariate(t) * poly1.evaluateUnivariate(t), 1e-8);
   }
 }
 
@@ -122,7 +121,8 @@ void testEvalType() {
   const auto& double_type = typeid(double);  // NOLINT(readability/function)
   valuecheck(typeid(decltype(valueIntInput)) == double_type, true);
 
-  auto valueComplexInput = poly.evaluateUnivariate(std::complex<double>(1.0, 2.0));
+  auto valueComplexInput =
+      poly.evaluateUnivariate(std::complex<double>(1.0, 2.0));
   valuecheck(
       typeid(decltype(valueComplexInput)) == typeid(std::complex<double>),
       true);
@@ -233,7 +233,7 @@ TEST(PolynomialTest, DISABLED_Simplification) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
 
-  { // Test duplicate monomials.
+  {  // Test duplicate monomials.
     std::stringstream test_stream;
     test_stream << ((x * y) + (x * y));
     std::string result;
@@ -241,7 +241,7 @@ TEST(PolynomialTest, DISABLED_Simplification) {
     EXPECT_EQ(result, "2 * x1 * y1");
   }
 
-  { // Test monomials that are duplicates under commutativity.
+  {  // Test monomials that are duplicates under commutativity.
     std::stringstream test_stream;
     test_stream << ((x * y) + (y * x));
     std::string result;

@@ -12,73 +12,96 @@ def put(fileobj, text, newlines_after=0):
     fileobj.write(text.strip('\n') + '\n' * newlines_after)
 
 
-INITIAL_STATE_CTOR_BEGIN = """
-  template <typename Derived>
-  // NOLINTNEXTLINE(runtime/explicit)
-  %(camel)s(const Eigen::MatrixBase<Derived>& initial)
-      : """
-INITIAL_STATE_CTOR_FIELD = "%(field)s(initial(%(k)d))"
-INITIAL_STATE_CTOR_JOIN = """,  // BR
-        """
-INITIAL_STATE_CTOR_END = " {}"
+INDICES_BEGIN = """
+/// Describes the row indices of a %(camel)s.
+struct %(indices)s {
+  /// The total number of rows (coordinates).
+  static const int kNumCoordiates = %(nfields)d;
 
+  // The index of each individual coordinate.
+"""
+INDICES_FIELD = """static const int %(kname)s = %(k)d;"""
+INDICES_END = """
+};
+"""
 
-def generate_initial_state_ctor(context, fields):
-    header = context["header"]
-    put(header, INITIAL_STATE_CTOR_BEGIN % context)
+def to_kname(field):
+    return 'k' + ''.join([
+        word.capitalize()
+        for word in field.split('_')])
+
+def generate_indices(context, fields):
     # pylint: disable=unused-variable
+    header = context["header"]
+    camel = context["camel"]
+    indices = context["indices"]
+    nfields = len(fields)
+    put(header, INDICES_BEGIN % locals(), 1)
     for k, field in enumerate(fields):
-        if k > 0:
-            put(header, INITIAL_STATE_CTOR_JOIN)
-        put(header, INITIAL_STATE_CTOR_FIELD % locals())
-    put(header, INITIAL_STATE_CTOR_END % context, 2)
+        kname = to_kname(field)
+        put(header, INDICES_FIELD % locals(), 1)
+    put(header, INDICES_END % locals(), 2)
 
 
-EIGEN_ASSIGNMENT_BEGIN = """
+DEFAULT_CTOR = """
+  /// Default constructor.  Sets all rows to zero.
+  %(camel)s() : value_(Eigen::Matrix<ScalarType, K::kNumCoordiates, 1>::Zero()) {}
+"""
+
+def generate_default_ctor(context, _):
+    header = context["header"]
+    put(header, DEFAULT_CTOR % context, 2)
+
+
+EIGEN_CTOR = """
+  /// Implicit Eigen::Matrix conversion.
   template <typename Derived>
-  %(camel)s& operator=(const Eigen::MatrixBase<Derived>& rhs) {
+  // NOLINTNEXTLINE(runtime/explicit) per Drake::Vector.
+  %(camel)s(const Eigen::MatrixBase<Derived>& value)
+      : value_(value.segment(0, K::kNumCoordiates)) {}
 """
-EIGEN_ASSIGNMENT_FIELD = """    %(field)s = rhs(%(k)d);
-"""
-EIGEN_ASSIGNMENT_END = """
+
+def generate_eigen_ctor(context, _):
+    header = context["header"]
+    put(header, EIGEN_CTOR % context, 2)
+
+
+EIGEN_ASSIGNMENT = """
+  /// Eigen::Matrix assignment.
+  template <typename Derived>
+  %(camel)s& operator=(const Eigen::MatrixBase<Derived>& value) {
+    value_ = value.segment(0, K::kNumCoordiates);
     return *this;
   }
 """
 
 
-def generate_eigen_assignment(context, fields):
+def generate_eigen_assignment(context, _):
     header = context["header"]
-    put(header, EIGEN_ASSIGNMENT_BEGIN % context, 1)
-    # pylint: disable=unused-variable
-    for k, field in enumerate(fields):
-        put(header, EIGEN_ASSIGNMENT_FIELD % locals(), 1)
-    put(header, EIGEN_ASSIGNMENT_END % context, 2)
+    put(header, EIGEN_ASSIGNMENT % context, 2)
 
 
-TO_EIGEN_BEGIN = """
+TO_EIGEN = """
+  /// Magic conversion specialization back to Eigen.
   friend EigenType toEigen(const %(camel)s<ScalarType>& vec) {
-    EigenType result;
-"""
-TO_EIGEN_END = """
-    return result;
+    return vec.value_;
   }
 """
 
 
-def generate_to_eigen(context, fields):
+def generate_to_eigen(context, _):
     header = context["header"]
-    put(header, TO_EIGEN_BEGIN % context, 1)
-    put(header,
-        "    result << %s;" % ", ".join(["vec.%s" % f for f in fields]), 1)
-    put(header, TO_EIGEN_END % context, 2)
+    put(header, TO_EIGEN % context, 2)
 
 
 COORD_NAMER_BEGIN = """
+  /// Magic pretty names for our coordinates.  (This is an optional
+  /// part of the Drake::Vector concept, but seems worthwhile.)
   friend std::string getCoordinateName(const %(camel)s<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {
 """
-COORD_NAMER_FIELD = """      case %(k)d: return "%(field)s";"""
+COORD_NAMER_FIELD = """      case K::%(kname)s: return "%(field)s";"""
 COORD_NAMER_END = """    }
     throw std::domain_error("unknown coordinate index");
   }
@@ -86,19 +109,39 @@ COORD_NAMER_END = """    }
 
 
 def generate_coord_namer(context, fields):
-    header = context["header"]
-    put(header, COORD_NAMER_BEGIN % context, 1)
     # pylint: disable=unused-variable
+    header = context["header"]
+    indices = context["indices"]
+    put(header, COORD_NAMER_BEGIN % context, 1)
     for k, field in enumerate(fields):
+        kname = to_kname(field)
         put(header, COORD_NAMER_FIELD % locals(), 1)
     put(header, COORD_NAMER_END % context, 2)
 
 
-def generate_members(context, fields):
-    header = context["header"]
-    for field in fields:
-        put(header, "  ScalarType %s = 0;" % field, 1)
+ACCESSOR_BEGIN = """
+  /// @name Getters and Setters
+  //@{
+"""
+ACCESSOR = """
+    const ScalarType& %(field)s() const { return value_(K::%(kname)s); }
+    void set_%(field)s(const ScalarType& %(field)s) {
+      value_(K::%(kname)s) = %(field)s;
+    }
+"""
+ACCESSOR_END = """
+  //@}
+"""
 
+def generate_accessors(context, fields):
+    # pylint: disable=unused-variable
+    header = context["header"]
+    indices = context["indices"]
+    put(header, ACCESSOR_BEGIN % locals(), 1)
+    for field in fields:
+        kname = to_kname(field)
+        put(header, ACCESSOR % locals(), 1)
+    put(header, ACCESSOR_END % locals(), 2)
 
 ENCODE_BEGIN = """
 template <typename ScalarType>
@@ -107,7 +150,7 @@ bool encode(const double& t, const %(camel)s<ScalarType>& wrap,
             drake::lcmt_%(snake)s_t& msg) {
   msg.timestamp = static_cast<int64_t>(t * 1000);
 """
-ENCODE_FIELD = """  msg.%(field)s = wrap.%(field)s;"""
+ENCODE_FIELD = """  msg.%(field)s = wrap.%(field)s();"""
 ENCODE_END = """
   return true;
 }
@@ -132,7 +175,7 @@ bool decode(const drake::lcmt_%(snake)s_t& msg,
             %(camel)s<ScalarType>& wrap) {
   t = static_cast<double>(msg.timestamp) / 1000.0;
 """
-DECODE_FIELD = """  wrap.%(field)s = msg.%(field)s;"""
+DECODE_FIELD = """  wrap.set_%(field)s(msg.%(field)s);"""
 DECODE_END = """
   return true;
 }
@@ -161,27 +204,50 @@ HEADER_PREAMBLE = """
 
 #include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
-namespace Drake {
+namespace drake {
 """
 
 CLASS_BEGIN = """
+/// Models the Drake::LCMVector concept.
 template <typename ScalarType = double>
-class %(camel)s {  // models the Drake::LCMVector concept
+class %(camel)s {
  public:
-  typedef drake::lcmt_%(snake)s_t LCMMessageType;
-  static std::string channel() { return "%(screaming_snake)s"; }
-  static const int RowsAtCompileTime = %(nfields)d;
-  typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
+  // An abbreviation for our row index constants.
+  typedef %(indices)s K;
+"""
 
-  %(camel)s() {}
+DRAKE_VECTOR_BEGIN = """
+  /// @name Implement the Drake::Vector concept.
+  //@{
+
+  // Even though in practice we have a fixed size, we declare
+  // ourselves dynamically sized for compatibility with the
+  // system/framework/vector_interface.h API, and so that we
+  // can avoid the alignment issues that come into play with
+  // a fixed-size Eigen::Matrix member field.
+  static const int RowsAtCompileTime = Eigen::Dynamic;
+  typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
+  size_t size() const { return K::kNumCoordiates; }
+"""
+
+DRAKE_VECTOR_END = """
+  //@}
 """
 
 CLASS_END = """
+  /// @name Implement the LCMVector concept
+  //@{
+  typedef drake::lcmt_%(snake)s_t LCMMessageType;
+  static std::string channel() { return "%(screaming_snake)s"; }
+  //@}
+
+ private:
+  EigenType value_;
 };
 """
 
 HEADER_POSTAMBLE = """
-}  // namespace Drake
+}  // namespace drake
 """
 
 LCMTYPE_PREAMBLE = """
@@ -207,6 +273,7 @@ def generate_code(args):
         os.path.join(drake_dist_dir, ''), '')
     title_phrase = args.title.split()
     camel = ''.join([x.capitalize() for x in title_phrase])
+    indices = camel + 'Indices'
     snake = '_'.join([x.lower() for x in title_phrase])
     screaming_snake = '_'.join([x.upper() for x in title_phrase])
     header_file = os.path.abspath(
@@ -215,15 +282,18 @@ def generate_code(args):
     header = open(header_file, 'w')
     lcmtype = open(
         os.path.join(args.lcmtype_dir, "lcmt_%s_t.lcm" % snake), 'w')
-    nfields = len(args.fields)
 
     put(header, HEADER_PREAMBLE % locals(), 2)
+    generate_indices(locals(), args.fields)
     put(header, CLASS_BEGIN % locals(), 2)
-    generate_initial_state_ctor(locals(), args.fields)
+    generate_accessors(locals(), args.fields)
+    put(header, DRAKE_VECTOR_BEGIN % locals(), 2)
+    generate_default_ctor(locals(), args.fields)
+    generate_eigen_ctor(locals(), args.fields)
     generate_eigen_assignment(locals(), args.fields)
     generate_to_eigen(locals(), args.fields)
     generate_coord_namer(locals(), args.fields)
-    generate_members(locals(), args.fields)
+    put(header, DRAKE_VECTOR_END % locals(), 2)
     put(header, CLASS_END % locals(), 2)
     generate_encode(locals(), args.fields)
     generate_decode(locals(), args.fields)

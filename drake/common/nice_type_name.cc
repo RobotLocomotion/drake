@@ -58,8 +58,9 @@ string drake::common::NiceTypeName::Canonicalize(const string& demangled) {
     // alphanumeric or underscore.)
     SPair(std::regex("(\\w) (\\w)"), "$1!$2"),
     SPair(std::regex(" "), ""),  // Delete unwanted spaces.
-    // OSX clang throws in extra namespaces like "__1". Delete them.
-    SPair(std::regex("\\b__[0-9]+::"), ""),
+    // Some compilers throw in extra namespaces like "__1" or "__cxx11".
+    // Delete them.
+    SPair(std::regex("\\b__[[:alnum:]_]+::"), ""),
     SPair(std::regex("!"), " "),  // Restore wanted spaces.
     // Recognize std::string's full name and abbreviate.
     SPair(std::regex("\\bstd::basic_string<char,std::char_traits<char>,"
@@ -74,6 +75,6 @@ string drake::common::NiceTypeName::Canonicalize(const string& demangled) {
   return canonical;
 }
 
-} // namespace common
-} // namespace drake
+}  // namespace common
+}  // namespace drake
 
