@@ -72,6 +72,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * Defines the name of the rigid body within a rigid body tree that represents
    * the world.
    */
+  // TODO(amcastro-tri): Move the concept of world to an actual world
+  // abstraction. See issue #2318.
   static const char* const kWorldLinkName;
 
   RigidBodyTree(const std::string& urdf_filename,

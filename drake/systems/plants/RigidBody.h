@@ -36,6 +36,7 @@ class DRAKERBM_EXPORT RigidBody {
    *
    * @return The name of the model that this rigid body belongs to.
    */
+  // TODO(amcastro-tri): Move concept of world out of here as per #2318.
   const std::string& model_name() const;
 
   /**

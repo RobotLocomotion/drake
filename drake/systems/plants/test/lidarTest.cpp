@@ -121,4 +121,6 @@ int do_main(int argc, char* argv[]) {
 /**
  * This unit test sets up a LIDAR in a box room and verifies the returns.
  */
-int main(int argc, char* argv[]) { return Drake::do_main(argc, argv); }
+int main(int argc, char* argv[]) {
+  return Drake::do_main(argc, argv);
+}
