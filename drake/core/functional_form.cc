@@ -280,6 +280,7 @@ FunctionalForm::Variable::Variable() : tag_(Tag::kNil) {}
 FunctionalForm::Variable::Variable(std::size_t index)
     : index_(index), tag_(Tag::kIndex) {}
 
+// NOLINTNEXTLINE(whitespace/operators) // false-pos
 FunctionalForm::Variable::Variable(std::string&& name)
     : name_(std::move(name)), tag_(Tag::kNamed) {
   assert(!name_.empty());
