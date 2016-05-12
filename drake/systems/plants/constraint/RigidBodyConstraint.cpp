@@ -163,9 +163,6 @@ void QuasiStaticConstraint::addContact(int num_new_bodies,
                                        const Matrix3Xd* new_body_pts) {
   for (int i = 0; i < num_new_bodies; i++) {
     bool findDuplicateBody = false;
-    if (new_body_pts[i].rows() != 3) {
-      throw std::runtime_error("new_body_pts must all have 3 rows");
-    }
     for (int j = 0; j < num_bodies_; j++) {
       if (bodies_[j] == new_bodies[i]) {
         findDuplicateBody = true;
