@@ -56,6 +56,9 @@ classdef Constraint
       obj.xdim = xdim;
 
       if (nargin<4), options = struct(); end
+      if(isnumeric(options) && numel(options) == 1)
+        options = struct('grad_level',options);
+      end
       if(~isstruct(options))
         error('Drake:Constraint:BadInputs','options should be a struct');
       end
