@@ -802,13 +802,13 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * An accessor to the number of position states outputted by this rigid body
    * system.
    */
-  size_t number_of_positions() const { return num_positions_; }
+  int number_of_positions() const { return num_positions_; }
 
   /**
    * An accessor to the number of velocity states outputted by this rigid body
    * system.
    */
-  size_t number_of_velocities() const { return num_velocities_; }
+  int number_of_velocities() const { return num_velocities_; }
 
 
  public:

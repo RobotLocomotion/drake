@@ -214,13 +214,13 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * An accessor to the number of position states outputted by this rigid body
    * system.
    */
-  size_t number_of_positions() const;
+  int number_of_positions() const;
 
   /**
    * An accessor to the number of velocity states outputted by this rigid body
    * system.
    */
-  size_t number_of_velocities() const;
+  int number_of_velocities() const;
 
   /** dynamics
    * Formulates the forward dynamics of the rigid body system as an optimization

@@ -56,11 +56,11 @@ size_t RigidBodySystem::getNumOutputs() const {
   return n;
 }
 
-size_t RigidBodySystem::number_of_positions() const {
+int RigidBodySystem::number_of_positions() const {
   return tree->number_of_positions();
 }
 
-size_t RigidBodySystem::number_of_velocities() const {
+int RigidBodySystem::number_of_velocities() const {
   return tree->number_of_velocities();
 }
 
