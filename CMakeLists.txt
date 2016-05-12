@@ -399,6 +399,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					)
 			drake_forcebuild(${proj})
 		else() # not a CMake POD
+			if (NOT ${proj}_BINARY_DIR)
+				# In-source build for non-CMake projects.
+				set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}")
+			endif()
 			if (NOT DEFINED ${proj}_BUILD_COMMAND)
 				if(${proj}_NO_BUILD)
 					set(${proj}_BUILD_COMMAND "")
@@ -413,12 +417,11 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 			ExternalProject_Add(${proj}
 					SOURCE_DIR ${${proj}_SOURCE_DIR}
-					#      BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
+					BINARY_DIR ${${proj}_BINARY_DIR}
 					DOWNLOAD_COMMAND ""
 					UPDATE_COMMAND ""
 					CONFIGURE_COMMAND ""
 					BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
-					BUILD_IN_SOURCE 1
 					INSTALL_COMMAND ""
 					DEPENDS download-${proj} ${deps}
 					${${proj}_ADDITIONAL_BUILD_ARGS}
