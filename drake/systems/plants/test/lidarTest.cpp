@@ -80,8 +80,7 @@ int do_main(int argc, char* argv[]) {
 
     if (std::abs(theta) >=
         M_PI / 2 + 0.01) {  // Should not be hitting any wall.
-                            // TODO(amcastro): Get rid of the .05
-                            // artifact (see #1712).
+                            // TODO(amcastro-tri): Solve issue #1712.
       valuecheck(max_range, distances(i));
     } else if (theta <= -M_PI / 4) {  // hitting the right wall
       valuecheck(-1.0 / std::sin(theta), distances(i), tol);
