@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "drake/systems/framework/vector_interface.h"
@@ -22,10 +23,10 @@ class StateVectorInterface {
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual size_t GetSize() const = 0;
+  virtual size_t get_size() const = 0;
 
   /// Returns the element at the given index in the vector. Throws
-  /// std::runtime_error if the index is >= GetSize().
+  /// std::runtime_error if the index is >= get_size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
@@ -42,14 +43,14 @@ class StateVectorInterface {
   virtual const VectorInterface<T>* GetVector() const = 0;
 
   /// Replaces the state at the given index with the value. Throws
-  /// std::runtime_error if the index is >= GetSize().
+  /// std::runtime_error if the index is >= get_size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
   virtual void SetAtIndex(size_t index, const T& value) = 0;
 
   /// Replaces the entire state with the contents of value. Throws
-  /// std::runtime_error if value is not a column vector with GetSize() rows.
+  /// std::runtime_error if value is not a column vector with get_size() rows.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.
@@ -69,26 +70,38 @@ class StateVectorInterface {
 /// SystemStateVector is a concrete class template that implements
 /// StateVectorInterface in a convenient manner for leaf Systems, by owning
 /// and wrapping a VectorInterface<T>.
+///
+/// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
 class SystemStateVector : public StateVectorInterface<T> {
  public:
   explicit SystemStateVector(std::unique_ptr<VectorInterface<T>> vector)
-      : vector_(vector) {}
+      : vector_(std::move(vector)) {}
 
-  size_t GetSize() const override { return vector_->get_value().rows(); }
+  size_t get_size() const override { return vector_->get_value().rows(); }
 
   T GetAtIndex(size_t index) const override {
+    if (index >= get_size()) {
+      throw std::runtime_error("Index " + std::to_string(index) +
+                               "out of bounds for state vector of size " +
+                               std::to_string(get_size()));
+    }
     return vector_->get_value()[index];
   }
 
   const VectorInterface<T>* GetVector() const override { return vector_.get(); }
 
   void SetAtIndex(size_t index, const T& value) override {
+    if (index >= get_size()) {
+      throw std::runtime_error("Index " + std::to_string(index) +
+                               "out of bounds for state vector of size " +
+                               std::to_string(get_size()));
+    }
     vector_->get_mutable_value()[index] = value;
   }
 
   void SetFromVector(const Eigen::VectorBlock<VectorX<T>>& value) override {
-    vector_->get_mutable_value() = value;
+    vector_->set_value(value);
   }
 
  private:
@@ -104,6 +117,8 @@ class SystemStateVector : public StateVectorInterface<T> {
 /// The ContinuousState is a container for all the State variables that are
 /// unique to continuous Systems, i.e. Systems that satisfy
 /// ContinuousSystemInterface and have defined dynamics at all times.
+///
+/// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
 struct ContinuousState {
   /// Generalized coordinates representing System configuration, conventionally
@@ -124,6 +139,8 @@ struct ContinuousState {
 /// a particular System at a particular moment. Any field in the State may be
 /// empty if it is not applicable to the System in question. A System may not
 /// maintain state in any place other than the State object.
+///
+/// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
 struct State {
   ContinuousState<T> continuous_state;
