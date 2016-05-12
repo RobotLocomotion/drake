@@ -20,58 +20,42 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// vector `qdot` will be the same length as
   /// Context.state.continuous_state.generalized_position.
   ///
-  /// @param cache Must never be nullptr. Implementations of this interface are
-  ///              not obliged to check, since this is a performance-sensitive
-  ///              inner loop function.
   /// @param derivatives Must never be nullptr. Implementations of this
   ///                    interface are not obliged to check, since this is a
   ///                    performance-sensitive inner loop function.
   virtual void GetDerivativesOfGeneralizedPosition(
-      const Context<T>& context, Cache<T>* cache,
-      VectorInterface<T>* derivatives) const = 0;
+      const Context<T>& context, VectorInterface<T>* derivatives) const = 0;
 
   /// Produces the derivatives of the generalized velocity v. The derivatives
   /// vector `vdot` (generalized acceleration) will be the same length as
   /// Context.state.continuous_state.generalized_velocity.
   ///
-  /// @param cache Must never be nullptr. Implementations of this interface are
-  ///              not obliged to check, since this is a performance-sensitive
-  ///              inner loop function.
   /// @param derivatives Must never be nullptr. Implementations of this
   ///                    interface are not obliged to check, since this is a
   ///                    performance-sensitive inner loop function.
   virtual void GetDerivativesOfGeneralizedVelocity(
-      const Context<T>& context, Cache<T>* cache,
-      VectorInterface<T>* derivatives) const = 0;
+      const Context<T>& context, VectorInterface<T>* derivatives) const = 0;
 
   /// Produces the derivatives of the other continuous state. The derivatives
   /// vector `zdot` will be the same length as
   /// Context.state.continuous_state.other_continuous_state.
   ///
-  /// @param cache Must never be nullptr. Implementations of this interface are
-  ///              not obliged to check, since this is a performance-sensitive
-  ///              inner loop function.
   /// @param derivatives Must never be nullptr. Implementations of this
   ///                    interface are not obliged to check, since this is a
   ///                    performance-sensitive inner loop function.
   virtual void GetDerivativesOfOtherContinuousState(
-      const Context<T>& context, Cache<T>* cache,
-      VectorInterface<T>* derivatives) const = 0;
+      const Context<T>& context, VectorInterface<T>* derivatives) const = 0;
 
   /// Transforms the given velocity (v) to the derivative of the configuration
   /// (qdot). The transformation must be linear (qdot = N(q) * v), and it must
   /// require no more than O(N) time to compute in the number of generalized
   /// velocity states.
   ///
-  /// @param cache Must never be nullptr. Implementations of this interface are
-  ///              not obliged to check, since this is a performance-sensitive
-  ///              inner loop function.
   /// @param derivatives Must never be nullptr. Implementations of this
   ///                    interface are not obliged to check, since this is a
   ///                    performance-sensitive inner loop function.
   virtual void MapVelocityToConfigurationDerivative(
-      const Context<T>& context, Cache<T>* cache,
-      VectorInterface<T>* derivatives) const = 0;
+      const Context<T>& context, VectorInterface<T>* derivatives) const = 0;
 
  protected:
   ContinuousSystemInterface() {}
