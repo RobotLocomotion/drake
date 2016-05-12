@@ -115,9 +115,11 @@ int do_main(int argc, const char* argv[]) {
                  actuator_name == "left_wheel_joint") {
         auto const& b = tree->actuators[actuator_idx].body;
         Kd(actuator_idx, b->velocity_num_start) = kThrottle;  // throttle
-        map_driving_cmd_to_x_d(tree->number_of_positions() + b->velocity_num_start, 1) =
+        map_driving_cmd_to_x_d(
+            tree->number_of_positions() + b->velocity_num_start, 1) =
             20;  // throttle (velocity) command
-        map_driving_cmd_to_x_d(tree->number_of_positions() + b->velocity_num_start, 2) =
+        map_driving_cmd_to_x_d(
+            tree->number_of_positions() + b->velocity_num_start, 2) =
             -20;  // braking (velocity) command
       }
     }

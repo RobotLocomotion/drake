@@ -103,7 +103,8 @@ int main(int argc, char** argv) {
     drake::systems::plants::model_pose_in_world =
         std::allocate_shared<RigidBodyFrame>(
             Eigen::aligned_allocator<RigidBodyFrame>(),
-            std::string(RigidBodyTree::kWorldLinkName), nullptr, Eigen::Isometry3d::Identity());
+            std::string(RigidBodyTree::kWorldLinkName), nullptr,
+            Eigen::Isometry3d::Identity());
   }
 
   return RUN_ALL_TESTS();

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "drake/systems/controllers/controlUtil.h"
-#include "drake/util/drakeUtil.h"
-#include <vector>
 #include <Eigen/Core>
-#include "drake/systems/plants/RigidBodyTree.h"
+#include <vector>
+#include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/robotInterfaces/Side.h"
+#include "drake/util/drakeUtil.h"
 
 struct QPControllerState {
   double t_prev;
@@ -89,8 +89,8 @@ struct Bounds {
 
 struct JointSoftLimitParams {
   explicit JointSoftLimitParams(const RigidBodyTree& robot)
-      : enabled(
-            Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(robot.number_of_positions())),
+      : enabled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
+            robot.number_of_positions())),
         disable_when_body_in_support(
             Eigen::VectorXi::Zero(robot.number_of_positions())),
         lb(Eigen::VectorXd::Zero(robot.number_of_positions())),
@@ -255,8 +255,7 @@ struct QPControllerParams {
     bool is_equal =
         lhs.whole_body == rhs.whole_body
         // && lhs.body_motion == rhs.body_motion
-        &&
-        lhs.vref_integrator == rhs.vref_integrator &&
+        && lhs.vref_integrator == rhs.vref_integrator &&
         lhs.joint_soft_limits == rhs.joint_soft_limits &&
         lhs.hardware == rhs.hardware && lhs.W_kdot.isApprox(rhs.W_kdot) &&
         lhs.Kp_ang == rhs.Kp_ang && lhs.w_slack == rhs.w_slack &&
@@ -298,7 +297,8 @@ struct QPControllerOutput {
 
 struct QPControllerDebugData {
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>> active_supports;
+              Eigen::aligned_allocator<SupportStateElement>>
+      active_supports;
   int nc;
   Eigen::MatrixXd normals;
   Eigen::MatrixXd B;
@@ -362,4 +362,3 @@ class KinematicModifications {
     // empty
   }
 };
-

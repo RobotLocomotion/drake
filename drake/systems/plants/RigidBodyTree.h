@@ -67,7 +67,6 @@ class DRAKERBM_EXPORT RigidBodyLoop {
 
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
-
   /**
    * Defines the name of the rigid body within a rigid body tree that represents
    * the world.
@@ -839,7 +838,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
  private:
-
   // The number of position states in this rigid body tree.
   int num_positions_{};
 

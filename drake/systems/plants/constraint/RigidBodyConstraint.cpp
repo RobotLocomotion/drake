@@ -272,7 +272,8 @@ void PostureConstraint::setJointLimits(const VectorXi &joint_idx,
 void PostureConstraint::setJointLimits(int num_idx, const int *joint_idx,
                                        const VectorXd &lb, const VectorXd &ub) {
   for (int i = 0; i < num_idx; i++) {
-    if (joint_idx[i] >= this->robot->number_of_positions() || joint_idx[i] < 0) {
+    if (joint_idx[i] >= this->robot->number_of_positions()
+        || joint_idx[i] < 0) {
       std::cerr << "joint_idx[" << i << "] is should be within [0 nq-1]"
                 << std::endl;
     }
@@ -1481,7 +1482,8 @@ void Point2PointDistanceConstraint::eval(const double *t,
       dposA = robot->transformPointsJacobian(cache, ptA, bodyA, 0, true);
     } else {
       posA = this->ptA.block(0, 0, 3, this->ptA.cols());
-      dposA = MatrixXd::Zero(3 * this->ptA.cols(), this->robot->number_of_positions());
+      dposA = MatrixXd::Zero(3 * this->ptA.cols(),
+        this->robot->number_of_positions());
     }
     MatrixXd posB(3, this->ptB.cols());
     MatrixXd dposB(3 * this->ptB.cols(), this->robot->number_of_positions());
@@ -1490,7 +1492,8 @@ void Point2PointDistanceConstraint::eval(const double *t,
       dposB = robot->transformPointsJacobian(cache, ptB, bodyB, 0, true);
     } else {
       posB = this->ptB.block(0, 0, 3, this->ptB.cols());
-      dposB = MatrixXd::Zero(3 * this->ptB.cols(), this->robot->number_of_positions());
+      dposB = MatrixXd::Zero(3 * this->ptB.cols(),
+        this->robot->number_of_positions());
     }
     MatrixXd d = posA - posB;
     MatrixXd dd = dposA - dposB;
@@ -2371,7 +2374,8 @@ void GravityCompensationTorqueConstraint::eval(const double *t,
   typedef AutoDiffScalar<VectorXd> Scalar;
   auto q = cache.getQ().cast<Scalar>().eval();
   gradientMatrixToAutoDiff(
-      MatrixXd::Identity(robot->number_of_positions(), robot->number_of_positions()), q);
+      MatrixXd::Identity(robot->number_of_positions(),
+      robot->number_of_positions()), q);
   KinematicsCache<Scalar> cache_with_gradients = robot->doKinematics(q);
   eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1>>
       f_ext;

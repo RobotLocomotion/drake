@@ -579,7 +579,8 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
     // By default, the robot is welded to the world frame.
     if (weld_to_frame == nullptr) {
       weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-          Eigen::aligned_allocator<RigidBodyFrame>(), std::string(RigidBodyTree::kWorldLinkName),
+          Eigen::aligned_allocator<RigidBodyFrame>(),
+          std::string(RigidBodyTree::kWorldLinkName),
           nullptr,  // Valid since the robot is attached to the world.
           Eigen::Isometry3d::Identity());
     }

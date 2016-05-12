@@ -27,7 +27,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   plhs[0] = mxCreateDoubleMatrix(numJointConstraints, 1, mxREAL);
   plhs[1] =
-      mxCreateDoubleMatrix(numJointConstraints, model->number_of_positions(), mxREAL);
+      mxCreateDoubleMatrix(numJointConstraints, model->number_of_positions(),
+        mxREAL);
 
   Map<VectorXd> phi(mxGetPrSafe(plhs[0]), numJointConstraints);
   Map<MatrixXd> J(mxGetPrSafe(plhs[1]), numJointConstraints,

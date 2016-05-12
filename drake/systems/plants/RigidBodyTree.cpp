@@ -1608,14 +1608,16 @@ RigidBody* RigidBodyTree::findLink(std::string link_name, int robot) const {
         if (match < 0) {                   // it's the first match
           match = i;
         } else {
-          std::cerr << "RigidBodyTree::findLink: ERROR: Found multiple links named " << link_name << "." << std::endl;
+          std::cerr << "RigidBodyTree::findLink: ERROR: Found multiple links "
+                    << "named " << link_name << "." << std::endl;
           return nullptr;
         }
       }
     }
   }
   if (match >= 0) return bodies[match].get();
-  std::cerr << "RigidBodyTree::findLink: ERROR: Could not find any links named " << link_name << "." << std::endl;
+  std::cerr << "RigidBodyTree::findLink: ERROR: Could not find any links named "
+            << link_name << "." << std::endl;
   return nullptr;
 }
 

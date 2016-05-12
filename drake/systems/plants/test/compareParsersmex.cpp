@@ -46,11 +46,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   // Compute coordinate transform between the two models (in case they are not
   // identical)
-  MatrixXd P = MatrixXd::Zero(cpp_model->number_of_positions(),
-                              matlab_model->number_of_positions());  // projection from
-                                                             // the coordinates
-                                                             // of matlab_model
-                                                             // to cpp_model
+  MatrixXd P =
+      MatrixXd::Zero(cpp_model->number_of_positions(),
+                     matlab_model->number_of_positions());  // projection from
+                                                            // the coordinates
+                                                            // of matlab_model
+                                                            // to cpp_model
   for (int i = 0; i < cpp_model->bodies.size(); i++) {
     if (cpp_model->bodies[i]->hasParent() &&
         cpp_model->bodies[i]->getJoint().getNumPositions() > 0) {
@@ -78,10 +79,13 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     VectorXd cpp_q(cpp_model->number_of_positions());
     cpp_q.noalias() = P * matlab_q;
 
-    if ((matlab_model->number_of_positions() != matlab_model->number_of_velocities()) ||
-        (cpp_model->number_of_positions() != cpp_model->number_of_velocities())) {
+    if ((matlab_model->number_of_positions() !=
+         matlab_model->number_of_velocities()) ||
+        (cpp_model->number_of_positions() !=
+         cpp_model->number_of_velocities())) {
       mexErrMsgTxt(
-          "ERROR: num_positions != num_velocities have to generate another P for "
+          "ERROR: num_positions != num_velocities have to generate another P "
+          "for "
           "this case");
     }
 
@@ -100,7 +104,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
     {  // compare H, C, and B
       eigen_aligned_unordered_map<RigidBody const*,
-                                  Matrix<double, TWIST_SIZE, 1>> f_ext;
+                                  Matrix<double, TWIST_SIZE, 1>>
+          f_ext;
 
       auto matlab_H = matlab_model->massMatrix(matlab_cache);
       auto cpp_H = cpp_model->massMatrix(cpp_cache);
