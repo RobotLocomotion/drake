@@ -21,6 +21,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2303][] Added accessors `RigidBody::name()`, `RigidBody::model_name()`, `RigidBodyTree:number_of_positions()`, `RigidBodySystem::number_of_velocitie()`, `RigidBodySystem::number_of_positions()`, `RigidBodySystem::number_of_velocities()`, and `RigidBodySystem::GetSensors()`. Added numerous accessors to `RigidBodyDepthSensor`. Removed direct access to some member variables that are now accessible via the aforementioned accessors. Added static constant `RigidBodyTree:kWorldLinkName`.
  - [#1992][] Matlab tests must now be explicitly listed in CMakeLists.
  - [#1970][] The `drake` pod Makefile now includes the `install` action.
  - [#1953][] Replace `valuecheckMatrix()` with `CompareMatrices()`.
@@ -63,3 +64,4 @@ Changes in version v0.9.11 and before are not provided.
 [#1992]: https://github.com/RobotLocomotion/drake/issues/1992
 [#2008]: https://github.com/RobotLocomotion/drake/issues/2008
 [#2018]: https://github.com/RobotLocomotion/drake/issues/2018
+[#2303]: https://github.com/RobotLocomotion/drake/issues/2303
