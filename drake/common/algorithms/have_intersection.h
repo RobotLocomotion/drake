@@ -11,17 +11,26 @@ namespace algorithms {
  *  @param  last1   End of first range.
  *  @param  first2  Start of second range.
  *  @param  last2   End of second range.
- *  @return True if non-empty intersection between ranges. False otherwise.
+ *  @return `true` if non-empty intersection between ranges. `false` otherwise.
+ *
+ *  Elements are compared using operator< and the ranges must be sorted with
+ *  respect to the same operator.
  *
  *  This algorithm is based upon std::set_intersection. However, instead of
  *  computing the intersection, which is a more expensive operation, this
- *  algorithm returns as soon as a common element is found.
+ *  algorithm returns as soon as a common element is found and the range of
+ *  common elements is not constructed.
+ *
+ *
  *
  *  This algorithm only works on sorted ranges.
  *  For range 1 of size N and range 2 of size M the worst case is Order(N+M).
  *  An example of worst case is given below:
- *  range_1 = (10, 20, 30)
- *  range_2 = (15, 25, 35)
+ *  @verbatim
+    range_1 = (10, 20, 30)
+    range_2 = (15, 25, 35)
+    @endverbatim
+ *
  *
  *  In this case the algorithm needs to scan both arrays from start to end.
  */
