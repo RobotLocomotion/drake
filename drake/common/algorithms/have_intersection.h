@@ -1,5 +1,8 @@
 #pragma once
 
+#include <algorithm>
+using std::set_intersection;
+
 namespace drake {
 namespace common {
 namespace algorithms {
@@ -37,6 +40,14 @@ namespace algorithms {
 template<class InputIterator1, class InputIterator2>
 bool have_intersection(InputIterator1 first1, InputIterator1 last1,
                        InputIterator2 first2, InputIterator2 last2) {
+  // Quick checks first:
+  // Check if any of the ranges is empty:
+  if (first1 == last1 || first2 == last2) return false;
+
+  // Check for non-overlapping ranges:
+  if (*first1 > *(last2 - 1) || *first2 > *(last1 - 1)) return false;
+
+  // Non-empty ranges with elements that overlap.
   while (first1 != last1 && first2 != last2) {
     if (*first1 < *first2)
       ++first1;
