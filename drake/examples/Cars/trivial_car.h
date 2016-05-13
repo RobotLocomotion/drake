@@ -10,7 +10,10 @@ namespace drake {
 /// TrivialCar - no physics, no commands, just sits there --- but it does spin.
 ///
 /// output vector:
-/// * position: x, y, heading
+/// * position: x, y, heading;
+///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
+//    heading is defined around the +z axis, so positive-turn-left
+/// * velocity (always zero)
 ///
 class TrivialCar {
  public:

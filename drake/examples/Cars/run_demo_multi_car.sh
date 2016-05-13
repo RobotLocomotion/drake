@@ -7,6 +7,10 @@
 #
 # To kill all the processes, just kill the script in the console with
 # Control-C.
+#
+# The first command-line argument, if supplied, must be readable as an
+# integer and it sets the number of vehicles to N+3.  (The default N is
+# 100; minimum N is 0.)
 
 set -e
 

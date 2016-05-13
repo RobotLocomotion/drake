@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+#include <cmath>
 #include <stdexcept>
 
 #include <Eigen/Dense>
@@ -7,23 +9,34 @@
 #include "drake/core/Vector.h"
 
 namespace drake {
-using Drake::toEigen; // TODO maddog@tri.global  ...until Drake-->drake fully.
 
+/// NAryState is a Drake::Vector (concept implementation) which is a
+/// container zero or more component Drake::Vector instances.  All
+/// components must be of the same type, @p UnitVector, which naturally
+/// must model the Drake::Vector concept itself.
+///
+/// UnitVectors are assembled into NAryState at run-time as an ordered
+/// list with O(1) access.  The Eigen::Matrix representaion of a
+/// complete NAryState is basically the concatenation of Eigen::Matrix's
+/// of the component UnitVectors.
 template <typename ScalarType,
           template <typename> class UnitVector>
 class NAryState {
  public:
   // Required by Drake::Vector concept.
   static const int RowsAtCompileTime = Eigen::Dynamic;
-
+  // Required by Drake::Vector concept.
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
 
   NAryState() : unit_size_(unit_size()), count_(unitCountFromRows(0)) {}
 
-  explicit NAryState(int count)
+  explicit NAryState(std::ptrdiff_t count)
       : unit_size_(unit_size()),
+        // Ensure correct internal count_ (i.e., -1 if UnitVector's size
+        // is zero).
         count_(unitCountFromRows(rowsFromUnitCount(count))),
-        combined_vector_(EigenType(rowsFromUnitCount(count), 1)) {}
+        combined_vector_(EigenType::Constant(rowsFromUnitCount(count), 1,
+                                             NAN)) {}
 
   /// Return the count of @param UnitVector units contained.
   ///
@@ -43,32 +56,42 @@ class NAryState {
     combined_vector_.conservativeResize(combined_vector_.rows() + unit_size_,
                                         Eigen::NoChange);
     // Copy unit's Eigen-rep into the tail-end of enlarged combined_vector_.
+    using Drake::toEigen;  // TODO(maddog) ...until Drake-->drake fully.
     combined_vector_.bottomRows(unit_size_) = toEigen(unit);
     // Keep track of the total unit count.
     ++count_;
   }
 
+  /// @returns a copy of the component UnitVector at index @p i.
+  ///
+  /// @throws std::out_of_range if UnitVector is a non-NullVector type
+  /// and @p i exceeds count().
   UnitVector<ScalarType> get(std::size_t i) const {
     if (!((unit_size_ == 0) || (i < count_))) {
-      throw std::out_of_range("");
+      throw std::out_of_range("Index i exceeds unit count().");
     }
     const std::size_t row0 = i * unit_size_;
     return UnitVector<ScalarType>(combined_vector_.block(row0, 0,
                                                          unit_size_, 1));
   }
 
+  /// Sets the value of the component UnitVector at index @p i.
+  ///
+  /// @throws std::out_of_range if UnitVector is a non-NullVector type
+  /// and @p i exceeds count().
   void set(std::size_t i, const UnitVector<ScalarType>& unit) {
     if (!((unit_size_ == 0) || (i < count_))) {
-      throw std::out_of_range("");
+      throw std::out_of_range("Index i exceeds unit count().");
     }
     const std::size_t row0 = i * unit_size_;
+    using Drake::toEigen;  // TODO(maddog-tri)  ...until Drake-->drake fully.
     combined_vector_.block(row0, 0, unit_size_, 1) = toEigen(unit);
   }
 
   // Required by Drake::Vector concept.
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
-  explicit NAryState(const Eigen::MatrixBase<Derived>& initial)
+  NAryState(const Eigen::MatrixBase<Derived>& initial)
       : unit_size_(unit_size()),
         count_(unitCountFromRows(initial.rows())),
         combined_vector_(initial) {
@@ -103,7 +126,7 @@ class NAryState {
   /// a NullVector), then the return value is always -1.
   ///
   /// @throws std::domain_error if UnitVector is not a null vector and
-  /// rows is not a multiple of UnitVector::RowsAtCompileTime.
+  /// rows is not a multiple of UnitVector::size().
   static
   std::ptrdiff_t unitCountFromRows(std::size_t rows) {
     const std::size_t us { unit_size() };
@@ -141,4 +164,4 @@ class NAryState {
   EigenType combined_vector_;
 };
 
-} // namespace Drake
+}  // namespace drake

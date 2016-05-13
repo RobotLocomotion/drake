@@ -74,13 +74,15 @@ class SystemQ {
     return OutputVector<ScalarType>(state.v + input.v + output_magic_.v);
   }
 
-  bool isTimeVarying() const { return true; }
+  bool isTimeVarying() const { return time_varying_; }
 
-  bool isDirectFeedthrough() const { return true; }
+  bool isDirectFeedthrough() const { return feedthrough_; }
 
- private:
+ public:
   const StateQ<double> dynamics_magic_;
   const StateQ<double> output_magic_;
+  bool time_varying_ { false };
+  bool feedthrough_ { false };
 };
 
 
@@ -100,8 +102,8 @@ GTEST_TEST(TestNArySystem, BasicOperation) {
   EXPECT_EQ(dut.output(0., state, input).count(), 0);
 
   dut.addSystem(sq1);
-  EXPECT_EQ(dut.isTimeVarying(), true);
-  EXPECT_EQ(dut.isDirectFeedthrough(), true);
+  EXPECT_EQ(dut.isTimeVarying(), false);
+  EXPECT_EQ(dut.isDirectFeedthrough(), false);
   EXPECT_EQ(dut.getNumStates(), 2);
   EXPECT_EQ(dut.getNumInputs(), 2);
   EXPECT_EQ(dut.getNumOutputs(), 2);
@@ -115,6 +117,8 @@ GTEST_TEST(TestNArySystem, BasicOperation) {
   EXPECT_EQ(dut.output(0., state, input).count(), 1);
 
   dut.addSystem(sq2);
+  EXPECT_EQ(dut.isTimeVarying(), false);
+  EXPECT_EQ(dut.isDirectFeedthrough(), false);
   EXPECT_EQ(dut.getNumStates(), 4);
   EXPECT_EQ(dut.getNumInputs(), 4);
   EXPECT_EQ(dut.getNumOutputs(), 4);
@@ -133,6 +137,11 @@ GTEST_TEST(TestNArySystem, BasicOperation) {
   EXPECT_EQ(toEigen(dut.output(0., state, input)),
             Eigen::Vector4d(100. + 1. + 5., 0.,
                             200. + 2. + 6., 0.));
+
+  sq2->time_varying_ = true;
+  sq2->feedthrough_ = true;
+  EXPECT_EQ(dut.isTimeVarying(), true);
+  EXPECT_EQ(dut.isDirectFeedthrough(), true);
 }
 
 

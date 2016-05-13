@@ -69,12 +69,18 @@ class NArySystem {
 
   // Required by Drake::System concept.
   bool isTimeVarying() const {
-    return (systems_.size() > 0) && (systems_[0]->isTimeVarying());
+    for (auto s : systems_) {
+      if (s->isTimeVarying()) { return true; }
+    }
+    return false;
   }
 
   // Required by Drake::System concept.
   bool isDirectFeedthrough() const {
-    return (systems_.size() > 0) && (systems_[0]->isDirectFeedthrough());
+    for (auto s : systems_) {
+      if (s->isDirectFeedthrough()) { return true; }
+    }
+    return false;
   }
 
   // Required by Drake::System concept.
@@ -96,4 +102,4 @@ class NArySystem {
   std::vector<std::shared_ptr<UnitSystem> > systems_;
 };
 
-} // namespace Drake
+}  // namespace Drake

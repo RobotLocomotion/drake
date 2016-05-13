@@ -24,7 +24,6 @@ namespace drake {
 namespace {
 
 int do_main(int argc, const char* argv[]) {
-
   int num_extra_cars = 100;
   if (argc == 2) {
     num_extra_cars = atoi(argv[1]);
@@ -73,7 +72,8 @@ int do_main(int argc, const char* argv[]) {
   //  U: [(xy-position, heading, velocity), ...] per SimpleCarState
   //  X: ()
   //  Y: [(x, y, z, roll, pitch, yaw), ...] per DrakeJoint::ROLLPITCHYAW per car
-  auto cars_vis_adapter = std::make_shared<drake::NArySystem<decltype(car_vis_adapter)::element_type> >();
+  auto cars_vis_adapter = std::make_shared<
+    drake::NArySystem<decltype(car_vis_adapter)::element_type> >();
   // NB:  One could compose the other way as well (i.e., individually cascade
   // each TrivialCar with a car_vis_adapter, and then stack each of those pairs
   // into a single NArySystem).
@@ -82,7 +82,7 @@ int do_main(int argc, const char* argv[]) {
   world_tree->addRobotFromURDF(kSedanUrdf,
                                DrakeJoint::ROLLPITCHYAW,
                                nullptr /*weld_to_frame*/);
-  // TODO maddog  Hmm... it appears that drake_visualizer wants unique names,
+  // TODO(maddog) Hmm... it appears that drake_visualizer wants unique names,
   //              on *links*, otherwise only one of the same-named links will
   //              get updated joint parameters.
   world_tree->bodies.back()->linkname = "sedan1";
@@ -95,7 +95,8 @@ int do_main(int argc, const char* argv[]) {
                                DrakeJoint::ROLLPITCHYAW,
                                nullptr /*weld_to_frame*/);
   world_tree->bodies.back()->linkname = "breadtruck1";
-  auto breadtruck_system = std::make_shared<drake::TrivialCar>(15., 0., 0.7, 10.0);
+  auto breadtruck_system = std::make_shared<drake::TrivialCar>(
+      15., 0., 0.7, 10.0);
   cars_system->addSystem(breadtruck_system);
   cars_vis_adapter->addSystem(car_vis_adapter);
 
@@ -141,7 +142,7 @@ int do_main(int argc, const char* argv[]) {
   Drake::SimulationOptions options;
   options.realtime_factor = 0.;
   runLCM(the_system, lcm,
-      0, std::numeric_limits<double>::infinity(), // timespan
+      0, std::numeric_limits<double>::infinity(),  // timespan
       initial_state,
       options);
 

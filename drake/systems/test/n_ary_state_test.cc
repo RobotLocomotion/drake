@@ -45,25 +45,25 @@ using VectorQD = VectorQ<double>;
 
 
 GTEST_TEST(TestNAryState, unitCountFromRows) {
-  EXPECT_EQ((NAryState<double, VectorQ>::unitCountFromRows( 0)), 0);
+  EXPECT_EQ((NAryState<double, VectorQ>::unitCountFromRows(0)), 0);
   EXPECT_EQ((NAryState<double, VectorQ>::unitCountFromRows(15)), 5);
   EXPECT_THROW((NAryState<double, VectorQ>::unitCountFromRows(17)),
                std::domain_error);
 
-  EXPECT_EQ((NAryState<double, NullVector>::unitCountFromRows( 0)), -1);
+  EXPECT_EQ((NAryState<double, NullVector>::unitCountFromRows(0)), -1);
   EXPECT_EQ((NAryState<double, NullVector>::unitCountFromRows(15)), -1);
 }
 
 
 GTEST_TEST(TestNAryState, rowsFromUnitCount) {
-  EXPECT_EQ((NAryState<double, VectorQ>::rowsFromUnitCount( 0)),  0);
-  EXPECT_EQ((NAryState<double, VectorQ>::rowsFromUnitCount( 1)),  3);
-  EXPECT_EQ((NAryState<double, VectorQ>::rowsFromUnitCount( 5)), 15);
+  EXPECT_EQ((NAryState<double, VectorQ>::rowsFromUnitCount(0)),  0);
+  EXPECT_EQ((NAryState<double, VectorQ>::rowsFromUnitCount(1)),  3);
+  EXPECT_EQ((NAryState<double, VectorQ>::rowsFromUnitCount(5)), 15);
   EXPECT_THROW((NAryState<double, VectorQ>::rowsFromUnitCount(-1)),
                std::domain_error);
 
-  EXPECT_EQ((NAryState<double, NullVector>::rowsFromUnitCount( 1)), 0);
-  EXPECT_EQ((NAryState<double, NullVector>::rowsFromUnitCount( 5)), 0);
+  EXPECT_EQ((NAryState<double, NullVector>::rowsFromUnitCount(1)), 0);
+  EXPECT_EQ((NAryState<double, NullVector>::rowsFromUnitCount(5)), 0);
   EXPECT_EQ((NAryState<double, NullVector>::rowsFromUnitCount(-1)), 0);
 }
 
@@ -203,6 +203,5 @@ GTEST_TEST(TestNAryState, NullUnitVectors) {
   dut2.set(1000, nv);
   EXPECT_EQ(toEigen(dut2), Eigen::VectorXd(0));
 }
-
 
 }  // namespace

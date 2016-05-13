@@ -70,3 +70,21 @@ Ensure that the (very small) `pygame` window has focus, then use your
 arrow keys and/or joystick to drive around.
 
 Use Ctrl-C in your terminal to stop and close the demo.
+
+Running the trivial multiple car simulator
+--------------------------------
+
+The following notes are for Ubuntu Linux and OS X users.
+This is not supported under windows (though you can probably cobble
+together some workarounds by hand if you are motivated).
+
+Run:
+```
+$ drake-distro/drake/examples/Cars/run_demo_multi_car.sh [N]
+```
+
+This will start the demo with N+3 cars; if not supplied, the default
+for N is 100 (and the minimum N is zero).  There are no controls.  The
+cars just spin.
+
+Use Ctrl-C in your terminal to stop and close the demo.
