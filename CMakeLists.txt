@@ -155,12 +155,12 @@ set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
 set(cmake_GIT_TAG abe1a22d0bb767423de4e3bd1123cc2deae1c82a)
-set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
+set(cmake_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG cfc7702bf9278707bca82d0393bba8611513ea15)
-set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
+set(director_BINARY_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
 set(drake_java_args -DJava_JAVA_EXECUTABLE=${Java_JAVA_EXECUTABLE} -DJava_JAVAC_EXECUTABLE=${Java_JAVAC_EXECUTABLE} -DJava_JAVAH_EXECUTABLE=${Java_JAVAH_EXECUTABLE} -DJava_VERSION_STRING=${Java_VERSION_STRING})
 set(drake_ADDITIONAL_CMAKE_CONFIGURE_ARGS ${drake_java_args} -DWITH_PYTHON_3=${WITH_PYTHON_3} -DDISABLE_MATLAB=${DISABLE_MATLAB})
@@ -237,7 +237,7 @@ set(swig_matlab_IS_PUBLIC TRUE)
 set(swig_matlab_IS_CMAKE_POD TRUE)
 set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
 set(textbook_GIT_TAG master)
-set(textbook_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
+set(textbook_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
 set(textbook_BUILD_COMMAND ${PYTHON_EXECUTABLE} extract_examples.py underactuated.html ./examples)
 set(textbook_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
@@ -347,18 +347,8 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	endforeach()
 
 	if (NOT ${proj} STREQUAL "drake")
-		if (NOT ${proj}_GIT_CLONE_DIR)
-			set(${proj}_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/externals/${proj}")
-		endif()
 		if (NOT ${proj}_SOURCE_DIR)
-			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
-		endif()
-		if (NOT ${proj}_BINARY_DIR)
-			if(POD_BUILD)
-				set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}/pod-build")
-			else()
-				set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
-			endif()
+			set(${proj}_SOURCE_DIR "${PROJECT_SOURCE_DIR}/externals/${proj}")
 		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
 
@@ -368,8 +358,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
 		if (AUTO_UPDATE_EXTERNALS)
 			ExternalProject_Add(download-${proj}
-					DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
-					SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
+					SOURCE_DIR ${${proj}_SOURCE_DIR}
 					GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
 					GIT_TAG ${${proj}_GIT_TAG}
 					CONFIGURE_COMMAND ""
@@ -378,8 +367,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					)
 		else()
 			ExternalProject_Add(download-${proj}
-					DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
-					SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
+					SOURCE_DIR ${${proj}_SOURCE_DIR}
 					GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
 					GIT_TAG ${${proj}_GIT_TAG}
 					UPDATE_COMMAND ""
@@ -391,6 +379,13 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 		# now the actual project
 		if (${proj}_IS_CMAKE_POD)
+			if (NOT ${proj}_BINARY_DIR)
+				if(POD_BUILD)
+					set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}/pod-build")
+				else()
+					set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
+				endif()
+			endif()
 			set(PODS_VERBOSE_MAKEFILE "")
 			if (CMAKE_VERBOSE_MAKEFILE)
 			    set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
@@ -408,6 +403,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					)
 			drake_forcebuild(${proj})
 		else() # not a CMake POD
+			if (NOT ${proj}_BINARY_DIR)
+				# In-source build for non-CMake projects.
+				set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}")
+			endif()
 			if (NOT DEFINED ${proj}_BUILD_COMMAND)
 				if(${proj}_NO_BUILD)
 					set(${proj}_BUILD_COMMAND "")
@@ -422,12 +421,11 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 			ExternalProject_Add(${proj}
 					SOURCE_DIR ${${proj}_SOURCE_DIR}
-					#      BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
+					BINARY_DIR ${${proj}_BINARY_DIR}
 					DOWNLOAD_COMMAND ""
 					UPDATE_COMMAND ""
 					CONFIGURE_COMMAND ""
 					BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
-					BUILD_IN_SOURCE 1
 					INSTALL_COMMAND ""
 					DEPENDS download-${proj} ${deps}
 					${${proj}_ADDITIONAL_BUILD_ARGS}
