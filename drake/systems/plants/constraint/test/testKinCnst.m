@@ -423,4 +423,4 @@ kinsol = doKinematics(constraint.robot,q,false,false);
 c = constraint.eval(t,kinsol);
 end
 
-% TIMEOUT 3000
+% TIMEOUT 1500
