@@ -84,7 +84,17 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   // Collision groups in Drake are represented simply by an integer.
   // Collision elements in the same group do not collide.
   // A collision element can belong to more than one group.
-  // Vector collision_groups_ is kept sorted.
+  // Conceptually it would seem like std::set is the right fit for
+  // CollisionElement::collision_groups_. However, std::set is really good for
+  // dynamically adding elements to a set that needs to change.
+  // Once you are done adding elements to your set, access time is poor when
+  // compared to a simple std::vector (nothing faster than scanning a vector of
+  // adjacent entries in memory).
+  // Here adding elements to the groups vector only happens during problem
+  // setup by the user or from a URDF/SDF file. What we really want is that once
+  // this vector is setup, we can query it very fast during simulation.
+  // This is done in CollisionElement::CollidesWith which to be Order(N)
+  // requires the entries in CollisionElement::collision_groups_ to be sorted.
   std::vector<int> collision_groups_;
 
  public:
