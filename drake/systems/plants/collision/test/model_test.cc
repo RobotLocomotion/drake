@@ -101,7 +101,7 @@ TEST(ModelTest, ClosestPointsAllToAll) {
 TEST(ModelTest, CollisionGroups) {
   CollisionElement element_1, element_2, element_3;
 
-  // Add to a number of collision groups in random order
+  // Add element 1 to its own set of groups.
   element_1.add_to_collision_group(2);
   element_1.add_to_collision_group(23);
   element_1.add_to_collision_group(11);
@@ -109,7 +109,11 @@ TEST(ModelTest, CollisionGroups) {
   element_1.add_to_collision_group(9);
   std::vector<int> element_1_set = std::vector<int>({2, 9, 11, 15, 23});
 
-  // Some additions might be repeated
+  // Tests the situation where the same collision groups are added to a
+  // collision element multiple times.
+  // If a collision element is added to a group it already belongs to, the
+  // addition has no effect. This is tested by asserting the total number of
+  // elements in the test below.
   element_1.add_to_collision_group(11);
   element_1.add_to_collision_group(23);
 
@@ -132,7 +136,7 @@ TEST(ModelTest, CollisionGroups) {
   EXPECT_EQ(std::vector<int>({9, 11, 13}), element_2.collision_groups());
   EXPECT_EQ(std::vector<int>({1, 8, 13}), element_3.collision_groups());
 
-  // Groups cannot be repeated. Therefore expect 5 groups (instead of 7).
+  // Groups cannot be repeated. Therefore expect 5 groups instead of 7.
   ASSERT_EQ(5, element_1.number_of_groups());
 
   // Groups cannot be repeated for element_2 either.
@@ -147,10 +151,10 @@ TEST(ModelTest, CollisionGroups) {
   // element_2 does not collide with element_3 (group 13 in common).
   EXPECT_FALSE(element_2.CollidesWith(&element_3));
 
-  // element_3 does collide with element_1 (no groups in common)
+  // element_3 does collide with element_1 (no groups in common).
   EXPECT_TRUE(element_3.CollidesWith(&element_1));
 
-  // element_3 does not collide with element_2 (group 13 in common)
+  // element_3 does not collide with element_2 (group 13 in common).
   EXPECT_FALSE(element_3.CollidesWith(&element_2));
 }
 
