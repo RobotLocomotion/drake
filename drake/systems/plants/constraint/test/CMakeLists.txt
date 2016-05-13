@@ -10,5 +10,5 @@ add_matlab_test(NAME systems/plants/constraint/test/testQuasiStaticConstraint CO
 add_matlab_test(NAME systems/plants/constraint/test/testSingleTimeLinearPostureConstraint COMMAND testSingleTimeLinearPostureConstraint)
 
 if (LONG_RUNNING_TESTS)
-  add_matlab_test(NAME systems/plants/constraint/test/testKinCnst COMMAND testKinCnst PROPERTIES TIMEOUT 3000)
+  # add_matlab_test(NAME systems/plants/constraint/test/testKinCnst COMMAND testKinCnst PROPERTIES TIMEOUT 1500)  # FIXME: see #2339
 endif()
