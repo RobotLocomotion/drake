@@ -663,17 +663,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   void warnOnce(const std::string& id, const std::string& msg);
 
-  RigidBody* findLink(std::string link_name, int robot) const;
+  RigidBody* findLink(std::string name, int robot) const;
 
-  RigidBody* findLink(std::string link_name, std::string model_name = "") const;
+  RigidBody* findLink(std::string name, std::string model_name = "") const;
 
-  int findLinkId(const std::string& link_name, int robot = -1) const;
+  int findLinkId(const std::string& name, int robot = -1) const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
   RigidBody* findJoint(std::string jointname, int robot = -1) const;
 
-  int findJointId(const std::string& link_name, int robot = -1) const;
+  int findJointId(const std::string& joint_name, int robot = -1) const;
 
   // @param robot the index of the robot. robot = -1 means to look at
   // all the robots

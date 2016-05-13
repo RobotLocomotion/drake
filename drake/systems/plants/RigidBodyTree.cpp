@@ -1590,8 +1590,8 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   return ret;
 }
 
-RigidBody* RigidBodyTree::findLink(std::string link_name, int robot) const {
-  std::transform(link_name.begin(), link_name.end(), link_name.begin(),
+RigidBody* RigidBodyTree::findLink(std::string name, int robot) const {
+  std::transform(name.begin(), name.end(), name.begin(),
                  ::tolower);  // convert to lower case
 
   int match = -1;
@@ -1602,14 +1602,14 @@ RigidBody* RigidBodyTree::findLink(std::string link_name, int robot) const {
     std::transform(lower_link_name.begin(), lower_link_name.end(),
                    lower_link_name.begin(),
                    ::tolower);                    // convert to lower case
-    if (lower_link_name.compare(link_name) == 0) {  // the names match
+    if (lower_link_name.compare(name) == 0) {  // the names match
       if (robot == -1 ||
           bodies[i]->robotnum == robot) {  // it's the right robot
         if (match < 0) {                   // it's the first match
           match = i;
         } else {
           std::cerr << "RigidBodyTree::findLink: ERROR: Found multiple links "
-                    << "named " << link_name << "." << std::endl;
+                    << "named " << name << "." << std::endl;
           return nullptr;
         }
       }
@@ -1617,13 +1617,13 @@ RigidBody* RigidBodyTree::findLink(std::string link_name, int robot) const {
   }
   if (match >= 0) return bodies[match].get();
   std::cerr << "RigidBodyTree::findLink: ERROR: Could not find any links named "
-            << link_name << "." << std::endl;
+            << name << "." << std::endl;
   return nullptr;
 }
 
-RigidBody* RigidBodyTree::findLink(std::string link_name,
+RigidBody* RigidBodyTree::findLink(std::string name,
                                    std::string model_name) const {
-  std::transform(link_name.begin(), link_name.end(), link_name.begin(),
+  std::transform(name.begin(), name.end(), name.begin(),
                  ::tolower);  // convert to lower case
   std::transform(model_name.begin(), model_name.end(), model_name.begin(),
                  ::tolower);  // convert to lower case
@@ -1636,7 +1636,7 @@ RigidBody* RigidBodyTree::findLink(std::string link_name,
     std::transform(lower_link_name.begin(), lower_link_name.end(),
                    lower_link_name.begin(),
                    ::tolower);                    // convert to lower case
-    if (lower_link_name.compare(link_name) == 0) {  // the names match
+    if (lower_link_name.compare(name) == 0) {  // the names match
       string lower_model_name = bodies[i]->model_name_;
       std::transform(lower_model_name.begin(), lower_model_name.end(),
                      lower_model_name.begin(), ::tolower);
@@ -1645,14 +1645,15 @@ RigidBody* RigidBodyTree::findLink(std::string link_name,
         if (match < 0) {                                // it's the first match
           match = i;
         } else {
-          cerr << "found multiple links named " << link_name << endl;
+          cerr << "RigidBodyTree::findLink: ERROR: Found multiple links named "
+               << name << endl;
           return nullptr;
         }
       }
     }
   }
   if (match >= 0) return bodies[match].get();
-  cerr << "could not find any links named " << link_name << endl;
+  cerr << "could not find any links named " << name << endl;
   return nullptr;
 }
 
@@ -1740,10 +1741,10 @@ RigidBody* RigidBodyTree::findJoint(std::string jointname, int robot) const {
   }
 }
 
-int RigidBodyTree::findJointId(const std::string& name, int robot) const {
-  RigidBody* link = findJoint(name, robot);
+int RigidBodyTree::findJointId(const std::string& joint_name, int robot) const {
+  RigidBody* link = findJoint(joint_name, robot);
   if (link == nullptr)
-    throw std::runtime_error("could not find joint id: " + name);
+    throw std::runtime_error("could not find joint id: " + joint_name);
   return link->body_index;
 }
 

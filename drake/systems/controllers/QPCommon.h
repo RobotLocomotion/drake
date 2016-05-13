@@ -1,7 +1,9 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <vector>
+
+#include <Eigen/Core>
+
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/RigidBodyTree.h"

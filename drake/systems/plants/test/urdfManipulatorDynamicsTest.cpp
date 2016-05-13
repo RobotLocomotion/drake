@@ -1,6 +1,7 @@
+#include <iostream>
 
 #include <Eigen/Dense>
-#include <iostream>
+
 #include "drake/systems/plants/RigidBodyTree.h"
 
 using namespace std;
