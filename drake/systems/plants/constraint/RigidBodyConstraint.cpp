@@ -857,8 +857,8 @@ RelativeQuatConstraint::RelativeQuatConstraint(RigidBodyTree* robot,
     : QuatConstraint(robot, tol, tspan),
       bodyA_idx_(bodyA_idx),
       bodyB_idx_(bodyB_idx),
-      bodyA_name_(robot->bodies[bodyA_idx]->linkname),
-      bodyB_name_(robot->bodies[bodyB_idx]->linkname) {
+      bodyA_name_(robot->bodies[bodyA_idx]->name()),
+      bodyB_name_(robot->bodies[bodyB_idx]->name()) {
   const double quat_norm = quat_des.norm();
   quat_des_ = quat_des / quat_norm;
   set_type(RigidBodyConstraint::RelativeQuatConstraintType);
@@ -1270,8 +1270,8 @@ RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(
                            tspan),
       bodyA_idx_(bodyA_idx),
       bodyB_idx_(bodyB_idx),
-      bodyA_name_(robot->bodies[bodyA_idx]->linkname),
-      bodyB_name_(robot->bodies[bodyB_idx]->linkname) {
+      bodyA_name_(robot->bodies[bodyA_idx]->name()),
+      bodyB_name_(robot->bodies[bodyB_idx]->name()) {
   set_type(RigidBodyConstraint::RelativeGazeTargetConstraintType);
 }
 
@@ -1338,8 +1338,8 @@ RelativeGazeDirConstraint::RelativeGazeDirConstraint(
     : GazeDirConstraint(robot, axis, dir, conethreshold, tspan),
       bodyA_idx_(bodyA_idx),
       bodyB_idx_(bodyB_idx),
-      bodyA_name_(robot->bodies[bodyA_idx]->linkname),
-      bodyB_name_(robot->bodies[bodyB_idx]->linkname) {
+      bodyA_name_(robot->bodies[bodyA_idx]->name()),
+      bodyB_name_(robot->bodies[bodyB_idx]->name()) {
   set_type(RigidBodyConstraint::RelativeGazeDirConstraintType);
 }
 
@@ -1460,13 +1460,13 @@ void Point2PointDistanceConstraint::name(
     for (int i = 0; i < num_cnst; i++) {
       std::string bodyA_name;
       if (bodyA_ != 0) {
-        bodyA_name = this->getRobotPointer()->bodies[bodyA_]->linkname;
+        bodyA_name = this->getRobotPointer()->bodies[bodyA_]->name();
       } else {
         bodyA_name = std::string(RigidBodyTree::kWorldLinkName);
       }
       std::string bodyB_name;
       if (bodyB_ != 0) {
-        bodyB_name = this->getRobotPointer()->bodies[bodyB_]->linkname;
+        bodyB_name = this->getRobotPointer()->bodies[bodyB_]->name();
       } else {
         bodyB_name = std::string(RigidBodyTree::kWorldLinkName);
       }
@@ -1565,9 +1565,9 @@ void Point2LineSegDistConstraint::name(
   if (this->isTimeValid(t)) {
     std::string time_str = this->getTimeString(t);
     name_str.push_back(
-        "Distance from " + this->getRobotPointer()->bodies[pt_body_]->linkname +
+        "Distance from " + this->getRobotPointer()->bodies[pt_body_]->name() +
         " pt to a line on " +
-        this->getRobotPointer()->bodies[line_body_]->linkname + time_str);
+        this->getRobotPointer()->bodies[line_body_]->name() + time_str);
     name_str.push_back("Fraction of point projection onto line segment " +
                        time_str);
   }
