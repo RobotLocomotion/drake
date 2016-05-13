@@ -33,3 +33,9 @@ browser.
 Note that if you're building Drake in-source (i.e., within the ``pod-build``
 directory), the ``[build artifacts directory]`` is typically
 ``[drake distro]/drake/pod-build/``.
+
+To disable documentation generation, execute::
+
+    $ cd [build artifacts directory]
+    $ cmake -DBUILD_DOCUMENTATION=OFF ..
+    $ make
