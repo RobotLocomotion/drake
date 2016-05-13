@@ -144,6 +144,14 @@ Continuous Integration Notes
     jenkins
     buildcop
 
+Documentation Instructions
+==========================
+.. toctree::
+    :maxdepth: 1
+
+    doxygen_instructions
+    sphinx_instructions
+
 IDE and Text Editor Notes
 =========================
 
