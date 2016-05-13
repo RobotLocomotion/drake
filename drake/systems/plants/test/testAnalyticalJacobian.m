@@ -30,21 +30,21 @@ while testNumber < nTests
   q = getRandomConfiguration(robot);
   v = randn(nv, 1);
   kinsol = robot.doKinematics(q,false,false, v);
-  
+
   base = 1;
   endEffector = randi(bodyRange);
   if base ~= endEffector
     nPoints = randi([1, 10]);
     points = randn(3, nPoints);
-    
+
     tic
     J = robot.analyticalJacobian(kinsol, base, endEffector, points, rotationType);
     analyticalJacobianTime = analyticalJacobianTime + toc * 1e3;
-    
+
     tic
     [~, JForwardKin] = robot.forwardKin(kinsol, endEffector, points, rotationType);
     forwardKinTime = forwardKinTime + toc * 1e3;
-    
+
     valuecheck(J, JForwardKin, 1e-8);
     testNumber = testNumber + 1;
   end
@@ -59,3 +59,5 @@ if displayComputationTime
   fprintf('\n');
 end
 end
+
+% TIMEOUT 1500

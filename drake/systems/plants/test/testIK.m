@@ -1,5 +1,4 @@
 function testIK
-% TIMEOUT 750
 
 % Some rng seeds may cause the major iteration limit to be reached.
 % See e.g. https://github.com/RobotLocomotion/drake/pull/1588 and https://github.com/RobotLocomotion/drake/pull/1383
@@ -572,5 +571,7 @@ for i = 1:nargin-3
   else
     error('The constraint is not supported');
   end
-end  
 end
+end
+
+% TIMEOUT 1500
