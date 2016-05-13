@@ -101,7 +101,7 @@ TEST(ModelTest, ClosestPointsAllToAll) {
 TEST(ModelTest, CollisionGroups) {
   CollisionElement element_1, element_2, element_3;
 
-  // Add element 1 to its own set of groups.
+  // Adds element 1 to its own set of groups.
   element_1.add_to_collision_group(2);
   element_1.add_to_collision_group(23);
   element_1.add_to_collision_group(11);
@@ -117,21 +117,21 @@ TEST(ModelTest, CollisionGroups) {
   element_1.add_to_collision_group(11);
   element_1.add_to_collision_group(23);
 
-  // Add element 2 to its own set of groups.
+  // Adds element 2 to its own set of groups.
   element_2.add_to_collision_group(11);
   element_2.add_to_collision_group(9);
   element_2.add_to_collision_group(13);
   element_2.add_to_collision_group(13);
   element_2.add_to_collision_group(11);
 
-  // Add element 3 to its own set of groups.
+  // Adds element 3 to its own set of groups.
   element_3.add_to_collision_group(1);
   element_3.add_to_collision_group(13);
   element_3.add_to_collision_group(13);
   element_3.add_to_collision_group(8);
   element_3.add_to_collision_group(1);
 
-  // Check the correctness of each element's collision groups set.
+  // Checks the correctness of each element's collision groups set.
   EXPECT_EQ(std::vector<int>({2, 9, 11, 15, 23}), element_1.collision_groups());
   EXPECT_EQ(std::vector<int>({9, 11, 13}), element_2.collision_groups());
   EXPECT_EQ(std::vector<int>({1, 8, 13}), element_3.collision_groups());
