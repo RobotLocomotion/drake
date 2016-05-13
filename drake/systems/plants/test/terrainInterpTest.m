@@ -26,7 +26,7 @@ if (1)
   tf = 10;
   traj = simulate(r,[0 tf],x0);
   v.playback(traj);
-  
+
   xf = traj.eval(tf);
   kinsol = doKinematics(r,xf(1:getNumPositions(r)));
   [phi,~,~,~,~,~,~,~,dphidq] = contactConstraints(r,kinsol);
@@ -62,3 +62,5 @@ xlabel('x');ylabel('y');zlabel('z');
 v.draw(0,.1*randn(6,1)+[0;0;4;0;0;0]);
 
 end
+
+% TIMEOUT 1500
