@@ -55,8 +55,6 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   // TODO(amcastro-tri): getBody() -> get_body()
   const RigidBody* const getBody() const;
 
-  bool is_attached_to_body() const { return body_ != nullptr; }
-
   /**
    * @brief Adds this collsion element to collision group group_id
    *
