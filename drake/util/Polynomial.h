@@ -252,6 +252,19 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     return value;
   }
 
+  /// Substitute values for some but not necessarily all variables of a
+  /// polynomial.
+  /**
+   * Analogous to evaluateMultivariate, but:
+   *  (1) Restricted to CoefficientType, and
+   *  (2) Need not map every variable in var_values.
+   *
+   * Returns a Polynomial in which each variable in var_values has been
+   * replaced with its value and constants appropriately combined.
+   */
+  Polynomial evaluatePartial(
+      const std::map<VarType, CoefficientType>& var_values) const;
+
   /// Replaces all instances of variable orig with replacement.
   void subs(const VarType& orig, const VarType& replacement);
 
