@@ -76,7 +76,7 @@ int do_main(int argc, char* argv[]) {
   for (int i = 0; i < distances.size(); i++) {
     double theta = min_yaw + (max_yaw - min_yaw) * i / (distances.size() - 1);
 
-    // We've implicitly hard-coded the box geometry from the sdf for the
+    // We've implicitly hard-coded the box geometry from the SDF for the
     // computation of the analytical distances.
     if (std::abs(theta) >=
         M_PI / 2.0 + tol) {  // Should not be hitting any wall.

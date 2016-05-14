@@ -543,17 +543,18 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   // Throws an exception if it is not valid.
   void CheckValidConfiguration();
 
-  // Depth sensor will ray cast a ray with its start point at (0,0,0) (in the
-  // sensor's frame (RigidBodyDepthSensor::frame). Its end, in the sensor's
+  // The depth sensor will cast a ray with its start point at (0,0,0) in the
+  // sensor's frame (RigidBodyDepthSensor::frame_). Its end, in the sensor's
   // frame, is computed by this method and stored in raycast_endpoints at the
   // moment of construction. raycast_endpoints is only computed once at
   // construction since the end points are constant in the frame of the sensor.
-  // The end points are coputed by scanning in the yaw (pitch) direction
+  // The end points are computed by scanning in the yaw (pitch) direction
   // discretizing the yaw (pitch) range in num_pixel_cols (num_pixel_rows).
   // The final 3D end point then corresponds to a ray that starts at zero, with
   // length max_range, at the specific yaw (pitch) angle.
   void cacheRaycastEndpoints();
 
+  // The sensor's frame.
   const std::shared_ptr<RigidBodyFrame> frame_;
 
   // The minimum pitch of the camera FOV in radians.
