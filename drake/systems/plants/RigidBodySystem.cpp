@@ -607,11 +607,14 @@ Eigen::VectorXd RigidBodyDepthSensor::output(
   const size_t num_distances = num_pixel_cols_ * num_pixel_rows_;
   VectorXd distances(num_distances);
 
+  // Computes the origin of the rays (at [0,0,0] in the frame of the sensor) in
+  // the world frame.
   Vector3d origin = sys.getRigidBodyTree()->transformPoints(
       rigid_body_state, Vector3d::Zero(), frame_->frame_index, 0);
 
-  auto raycast_endpoints_world = sys.getRigidBodyTree()->transformPoints(
-      rigid_body_state, raycast_endpoints, frame_->frame_index, 0);
+  // Computes the end of the casted rays in the world frame.
+  Matrix3Xd raycast_endpoints_world = sys.getRigidBodyTree()->transformPoints(
+      rigid_body_state, raycast_endpoints, frame->frame_index, 0);
 
   sys.getRigidBodyTree()->collisionRaycast(rigid_body_state, origin,
                                            raycast_endpoints_world, distances);
