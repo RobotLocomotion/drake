@@ -48,6 +48,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
  *
  * @param[out] sim_options A pointer to where the simulation options should
  * be saved.
+ * @throws A std::runtime_error if parameter \p sim_options is a nullptr.
  */
 void SetSimulationOptions(SimulationOptions* sim_options);
 

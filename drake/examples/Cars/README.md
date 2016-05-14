@@ -61,9 +61,9 @@ $ python steering_command_driver.py
 Start the Drake Simulator
 -------------------------
 
-There are two version of Drake's cars simulator, one that integrates only
-LCM-powered components (e.g., the Drake Visualizer) and a second that that
-integrates both LCM-powered components and ROS-powered components (e.g., RViz).
+There are two versions of Drake's cars simulator, one that integrates only
+LCM-based components (e.g., the Drake Visualizer) and a second that that
+integrates both LCM-based components and ROS-based components (e.g., RViz).
 
 ### Simulation Using Drake + LCM
 

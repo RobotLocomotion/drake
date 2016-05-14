@@ -170,7 +170,7 @@ class SensorVisualizerLidar {
                               const InputVector<double> &u) {
     // Checks whether enough time has elapsed since the last transmission.
     // Aborts if insufficient time has passed. This is to prevent flooding ROS
-    // topic /tf.
+    // sensor topics.
     ros::Time current_time = ros::Time::now();
     if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
       return u;

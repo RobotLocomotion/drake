@@ -35,7 +35,12 @@ int do_main(int argc, const char* argv[]) {
 
   // Initializes the simulation options.
   SimulationOptions options;
-  drake::SetSimulationOptions(&options);
+  try {
+    drake::SetSimulationOptions(&options);
+  } catch(std::runtime_error error) {
+    std::cerr << "ERROR: Simulation options is a nullptr!" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   // Starts the simulation.
   Drake::runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(),
