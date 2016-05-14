@@ -605,9 +605,35 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
     btVector3 ray_to_world(ray_endpoints(0, i), ray_endpoints(1, i),
                            ray_endpoints(2, i));
 
+    // ClosestRayResultCallback inherits from RayResultCallback.
     btCollisionWorld::ClosestRayResultCallback ray_callback(ray_from_world,
                                                             ray_to_world);
 
+    // The user can specify options by setting the flag
+    // RayResultCallback::m_flags.
+    // This is demonstrated in the RaytestDemo
+    // (bullet3/examplex/Raycast/RaytestDemo.cpp) part of Bullet's
+    // ExampleBrowser.
+    //
+    // Possible options are defined in the enum
+    // btTriangleRaycastCallback::EFlags.
+    // From the comments in this enum (btRaycastCallback.h) we know
+    // (quoting those comments):
+    // - SubSimplexConvexCastRaytest is the default.
+    // - SubSimplexConvexCastRaytest uses an approximate but faster ray versus
+    //   convex intersection algorithm.
+    // We now know that SubSimplexConvexCastRaytest is an iterative algorithm
+    // with a quite large hardcoded tolerance for convergence, see discussions
+    // on Drake's github repository issue #1712 and fix in PR #2354.
+    //
+    // When using SubSimplexConvexCastRaytest the ray test finally gets resolved
+    // with the call to btSubsimplexConvexCast::calcTimeOfImpact() (this is the
+    // iterative method with the hardcoded tolerance.
+    // A nice discussion (an probably the only one out there) is referenced at
+    // the top of the file, quote:
+    // Typically the conservative advancement reaches solution in a few
+    // iterations, clip it to 32 for degenerate cases. See discussion about this
+    // here http://continuousphysics.com/Bullet/phpBB2/viewtopic.php?t=565
     ray_callback.m_flags |=
         btTriangleRaycastCallback::kF_UseGjkConvexCastRaytest;
 
