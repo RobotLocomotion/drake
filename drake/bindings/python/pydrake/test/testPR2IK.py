@@ -6,7 +6,7 @@ from pydrake.solvers import ik
 robot = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(), "examples/PR2/pr2.urdf"))
 
 # Make sure attribute access works on bodies
-assert robot.world().linkname == "world"
+assert robot.world().name() == "world"
 
 constraints = [ik.WorldPositionConstraint(robot, 1,
                                           np.zeros((3,)),

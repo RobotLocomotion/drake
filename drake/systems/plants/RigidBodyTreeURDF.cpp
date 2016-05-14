@@ -7,18 +7,35 @@
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "drake/systems/plants/xmlUtil.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace tinyxml2;
+using Eigen::Isometry3d;
+using Eigen::Matrix;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
+using std::allocate_shared;
+using std::cerr;
+using std::endl;
+using std::max;
+using std::numeric_limits;
+using std::runtime_error;
+using std::ostream;
+using std::string;
+using std::stringstream;
+using std::unique_ptr;
+using std::vector;
+
+using tinyxml2::XMLDocument;
+using tinyxml2::XMLElement;
 
 namespace {
 
 // todo: rectify this with findLinkId in the class (which makes more
 // assumptions)
-int findLinkIndex(RigidBodyTree* model, string linkname) {
+int findLinkIndex(RigidBodyTree* model, string link_name) {
   int index = -1;
   for (unsigned int i = 0; i < model->bodies.size(); i++) {
-    if (linkname.compare(model->bodies[i]->linkname) == 0) {
+    if (link_name.compare(model->bodies[i]->name_) == 0) {
       index = i;
       break;
     }
@@ -208,13 +225,13 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
-    throw runtime_error("ERROR: Link " + body->linkname +
+    throw runtime_error("ERROR: Link " + body->name_ +
                         " has a visual element without geometry.");
 
   DrakeShapes::VisualElement element(T_element_to_link);
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse visual element in link " +
-                        body->linkname + ".");
+                        body->name_ + ".");
 
   XMLElement* material_node = node->FirstChildElement("material");
   if (material_node) {
@@ -270,13 +287,13 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
-    throw runtime_error("ERROR: Link " + body->linkname +
+    throw runtime_error("ERROR: Link " + body->name_ +
                         " has a collision element without geometry");
 
   RigidBody::CollisionElement element(T_element_to_link, body);
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
-                        body->linkname + ".");
+                        body->name_ + ".");
 
   if (element.hasGeometry()) {
     model->addCollisionElement(element, *body, group_name);
@@ -291,13 +308,13 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
 
   RigidBody* body{nullptr};
   std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
-  body->model_name = robot_name;
+  body->model_name_ = robot_name;
 
   attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
 
-  body->linkname = attr;
-  if (body->linkname == "world")
+  body->name_ = attr;
+  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName))
     throw runtime_error(
         "ERROR: do not name a link 'world', it is a reserved name");
 
@@ -623,10 +640,10 @@ namespace systems {
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     const RigidBodyTree& model, const tinyxml2::XMLElement* link,
     const tinyxml2::XMLElement* pose, const std::string& name) {
-  std::string linkname = link->Attribute("link");
-  RigidBody* body = model.findLink(linkname);
+  std::string link_name = link->Attribute("link");
+  RigidBody* body = model.findLink(link_name);
   if (body == nullptr) {
-    throw runtime_error("couldn't find link " + linkname +
+    throw runtime_error("couldn't find link " + link_name +
                         " referenced in frame " + name);
   }
 

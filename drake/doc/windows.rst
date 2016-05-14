@@ -87,7 +87,7 @@ Open a ``git`` bash shell. Then clone the master branch of Drake's official repo
     $ cd [source code directory]
     $ git clone https://github.com/RobotLocomotion/drake.git drake-distro
 
-At this point, we recommend you update your ``git`` remotes to avoid accidentally pushing to Drake's official repository as described :ref:`here <git-remote-config>`.
+At this point, we recommend you update your ``git remotes`` to avoid accidentally pushing to Drake's official repository as described :ref:`here <git-remote-config>`.
 
 .. _windows-build-directory:
 
