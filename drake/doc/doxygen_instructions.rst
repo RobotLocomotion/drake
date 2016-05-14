@@ -4,14 +4,14 @@
 Doxygen Instructions
 ********************
 
-This section constains instructions on how to use Doxygen with Drake.
+This section contains instructions on how to use `Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_ with Drake.
 
 .. _doxygen-style-guide:
 
 Doxygen Style Guide
 ===================
 
-Comming soon. See issue
+Coming soon. See issue
 `#2051 <https://github.com/RobotLocomotion/drake/issues/2051>`_.
 
 .. _doxygen-generation:
