@@ -608,6 +608,9 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
     btCollisionWorld::ClosestRayResultCallback ray_callback(ray_from_world,
                                                             ray_to_world);
 
+    ray_callback.m_flags |=
+        btTriangleRaycastCallback::kF_UseGjkConvexCastRaytest;
+
     bt_world.bt_collision_world->rayTest(ray_from_world, ray_to_world,
                                          ray_callback);
 
