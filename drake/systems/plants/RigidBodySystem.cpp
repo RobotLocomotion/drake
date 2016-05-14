@@ -614,7 +614,7 @@ Eigen::VectorXd RigidBodyDepthSensor::output(
 
   // Computes the end of the casted rays in the world frame.
   Matrix3Xd raycast_endpoints_world = sys.getRigidBodyTree()->transformPoints(
-      rigid_body_state, raycast_endpoints, frame->frame_index, 0);
+      rigid_body_state, raycast_endpoints, frame_->frame_index, 0);
 
   sys.getRigidBodyTree()->collisionRaycast(rigid_body_state, origin,
                                            raycast_endpoints_world, distances);
