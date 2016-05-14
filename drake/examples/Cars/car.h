@@ -31,6 +31,7 @@ namespace drake {
  * @param[in] argv An array of command line arguments.
  * @return A shared pointer to a rigid body system.
  */
+DRAKECAR_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
                                                        const char* argv[]);
 
@@ -42,6 +43,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
  * @param[in] rigid_body_sys The rigid body system.
  * @return The resulting vehicle system.
  */
+DRAKECAR_EXPORT
 std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
@@ -57,6 +59,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
  * @param[in] timeout_seconds The final time of the simulation in seconds.
  * @throws A std::runtime_error if parameter \p sim_options is a nullptr.
  */
+DRAKECAR_EXPORT
 void SetSimulationOptions(SimulationOptions* sim_options,
   double initial_step_size = 5e-3,
   double timeout_seconds = std::numeric_limits<double>::infinity());
@@ -67,6 +70,7 @@ void SetSimulationOptions(SimulationOptions* sim_options,
  * @param[in] rigid_body_sys The rigid body system being simulated.
  * @return The initial state of the system.
  */
+DRAKECAR_EXPORT
 Eigen::VectorXd GetInitialState(
     std::shared_ptr<RigidBodySystem> rigid_body_sys);
 
