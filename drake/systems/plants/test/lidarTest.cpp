@@ -79,8 +79,7 @@ int do_main(int argc, char* argv[]) {
     double theta = min_yaw + (max_yaw - min_yaw) * i / (distances.size() - 1);
 
     if (std::abs(theta) >=
-        M_PI / 2 + 0.01) {  // Should not be hitting any wall.
-                            // TODO(amcastro-tri): Solve issue #1712.
+        M_PI / 2.0 + tol) {  // Should not be hitting any wall.
       valuecheck(max_range, distances(i));
     } else if (theta <= -M_PI / 4) {  // hitting the right wall
       valuecheck(-1.0 / std::sin(theta), distances(i), tol);
