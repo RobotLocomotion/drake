@@ -20,6 +20,7 @@ if (LCM_FOUND)
   target_link_libraries(simple_car_demo drakeSimpleCar drakeRBSystem drakeLCMSystem)
 
   add_library_with_exports(LIB_NAME drakeCar SOURCE_FILES car.cc)
+  target_link_libraries(drakeCar drakeRBSystem drakeShapes)
   pods_install_libraries(drakeCar)
   drake_install_headers(
     car.h
