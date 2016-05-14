@@ -17,6 +17,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
+using Eigen::Matrix3Xd;
 
 using std::allocate_shared;
 using std::default_random_engine;
