@@ -2,15 +2,6 @@
 
 #include <stdlib.h>
 
-// bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
-//             DrivingCommand<double>& x) {
-//   t = double(msg.timestamp) / 1000.0;
-//   x.steering_angle = msg.steering_angle;
-//   x.throttle = msg.throttle_value;
-//   x.brake = msg.brake_value;
-//   return true;
-// }
-
 using Eigen::MatrixXd;
 using Eigen::Matrix;
 using Eigen::VectorXd;
@@ -73,7 +64,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
     }
   }
 
-  // If no environment was specified, adds a flat terrain.
+  // If no environment is specified, the following code adds a flat terrain.
   if (argc < 3) {
     double box_width = 1000;
     double box_depth = 10;
@@ -113,7 +104,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(
       tree->number_of_positions() + tree->number_of_velocities(), 3);
 
-  // Sets up PD controller for throttle and steering
+  // Sets up PD controllers for throttle and steering.
   double kpSteering = 400, kdSteering = 80, kThrottle = 100;
   Kp.setZero();
   Kd.setZero();
@@ -154,12 +145,13 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   return vehicle_sys;
 }
 
-void SetSimulationOptions(SimulationOptions* sim_options) {
+void SetSimulationOptions(SimulationOptions* sim_options,
+    double initial_step_size, double timeout_seconds) {
   if (sim_options == nullptr)
     throw std::runtime_error("ERROR: Simulation options are null!");
   *sim_options = Drake::default_simulation_options;
-  sim_options->initial_step_size = 5e-3;
-  sim_options->timeout_seconds = std::numeric_limits<double>::infinity();
+  sim_options->initial_step_size = initial_step_size;
+  sim_options->timeout_seconds = timeout_seconds;
 }
 
 VectorXd GetInitialState(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
