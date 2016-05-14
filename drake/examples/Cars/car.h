@@ -1,17 +1,17 @@
 #pragma once
 
-#include <string>
 #include <memory>
+#include <string>
 
 #include <Eigen/Geometry>
 
 #include "drake/drakeCar_export.h"
-#include "drake/systems/pd_control_system.h"
-#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/examples/Cars/gen/driving_command.h"
-#include "drake/systems/cascade_system.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
+#include "drake/systems/cascade_system.h"
+#include "drake/systems/pd_control_system.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 
 using Drake::RigidBodySystem;
 using Drake::PDControlSystem;
@@ -29,7 +29,8 @@ namespace drake {
  * @param[in] argv an array of command line arguments.
  * @return A shared pointer to a rigid body system.
  */
-std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc, const char* argv[]);
+std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
+                                                       const char* argv[]);
 
 /**
  * Creates a vehicle system by instantiating a PD controller and cascading it

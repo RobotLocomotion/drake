@@ -7,7 +7,6 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
-#include "drake/examples/Cars/gen/driving_command.h"
 
 using Drake::BotVisualizer;
 using Drake::Gain;
