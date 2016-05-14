@@ -44,7 +44,7 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   tspan << 0, 1;
 
   // Default Atlas v5 posture:
-  VectorXd qstar(model.num_positions);
+  VectorXd qstar(model.number_of_positions());
   qstar << -0.0260, 0, 0.8440, 0, 0, 0, 0, 0, 0, 0.2700, 0, 0.0550, -0.5700,
       1.1300, -0.5500, -0.0550, -1.3300, 2.1530, 0.5000, 0.0985, 0, 0.0008,
       -0.2700, 0, -0.0550, -0.5700, 1.1300, -0.5500, 0.0550, 1.3300, 2.1530,
@@ -175,7 +175,7 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   constraint_array.push_back(&kc_posture_back);
 
   IKoptions ikoptions(&model);
-  VectorXd q_sol(model.num_positions);
+  VectorXd q_sol(model.number_of_positions());
   int info;
   vector<string> infeasible_constraint;
   inverseKin(&model, qstar, qstar, constraint_array.size(),

@@ -8,8 +8,8 @@ import os.path
 class TestRBMForwardKin(unittest.TestCase):
     def test_value(self):
         r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
-        self.assertEqual(r.num_positions, 7)
-        self.assertEqual(r.num_velocities, 7)
+        self.assertEqual(r.number_of_positions(), 7)
+        self.assertEqual(r.number_of_velocities(), 7)
 
         kinsol = r.doKinematics(np.zeros((7,1)), np.zeros((7,1)))
 

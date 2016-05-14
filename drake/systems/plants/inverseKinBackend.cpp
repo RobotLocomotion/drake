@@ -36,7 +36,7 @@ class InverseKinObjective : public Constraint {
  public:
   // All references are aliased for the life of the objective.
   InverseKinObjective(RigidBodyTree* model, const MatrixXd& Q)
-      : Constraint(model->num_positions),
+      : Constraint(model->number_of_positions()),
         model_(model),
         Q_(Q) {}
 
@@ -132,7 +132,7 @@ void inverseKinMode1(
                          ikoptions.getIterationsLimit());
 
     DecisionVariableView vars =
-        prog.AddContinuousVariables(model->num_positions);
+        prog.AddContinuousVariables(model->number_of_positions());
 
     MatrixXd Q;
     ikoptions.getQ(Q);
@@ -185,7 +185,7 @@ void inverseKinMode1(
 
         Eigen::SparseMatrix<double> A_sparse(
             st_lpc->getNumConstraint(&t[t_index]),
-            model->num_positions);
+            model->number_of_positions());
         A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
         prog.AddLinearConstraint(MatrixXd(A_sparse), lb, ub, {vars});
       } else if (constraint_category ==
@@ -263,8 +263,8 @@ void inverseKinBackend(
     int* INFO, std::vector<std::string>* infeasible_constraint) {
 
   // Validate some basic parameters of the input.
-  if (q_seed.rows() != model->num_positions || q_seed.cols() != nT ||
-      q_nom.rows() != model->num_positions || q_nom.cols() != nT) {
+  if (q_seed.rows() != model->number_of_positions() || q_seed.cols() != nT ||
+      q_nom.rows() != model->number_of_positions() || q_nom.cols() != nT) {
     throw std::runtime_error(
         "Drake::inverseKinBackend: q_seed and q_nom must be of size "
         "nq x nT");
