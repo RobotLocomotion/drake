@@ -634,8 +634,10 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
     // Typically the conservative advancement reaches solution in a few
     // iterations, clip it to 32 for degenerate cases. See discussion about this
     // here http://continuousphysics.com/Bullet/phpBB2/viewtopic.php?t=565
-    ray_callback.m_flags |=
-        btTriangleRaycastCallback::kF_UseGjkConvexCastRaytest;
+    if(ray_cast_algorithm_ == GjkConvexCast) {
+      ray_callback.m_flags |=
+          btTriangleRaycastCallback::kF_UseGjkConvexCastRaytest;
+    }
 
     bt_world.bt_collision_world->rayTest(ray_from_world, ray_to_world,
                                          ray_callback);

@@ -121,6 +121,12 @@ class BulletModel : public Model {
       const std::vector<Eigen::Vector3d>& points,
       double collision_threshold) override;
 
+  // Possible ray casting algorithms for Bullet.
+  enum RayCastAlgorithm {
+    SubSimplexConvexCast,
+    GjkConvexCast
+  };
+
  private:
   /**
    * \brief Finds the points where elements A and B are closest.
@@ -150,6 +156,10 @@ class BulletModel : public Model {
   std::vector<std::unique_ptr<btCollisionShape>> bt_collision_shapes_;
   BulletCollisionWorldWrapper bullet_world_;
   BulletCollisionWorldWrapper bullet_world_no_margin_;
+
+  // The Bullet algorithm to bse used for ray casting.
+  // See notes in BulletModel::collisionRaycast.
+  RayCastAlgorithm ray_cast_algorithm_{GjkConvexCast};
 
   static constexpr double kSmallMargin = 1e-9;
   static constexpr double kLargeMargin = 0.05;
