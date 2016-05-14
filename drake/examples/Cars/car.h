@@ -58,8 +58,8 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
  * @throws A std::runtime_error if parameter \p sim_options is a nullptr.
  */
 void SetSimulationOptions(SimulationOptions* sim_options,
-	double initial_step_size = 5e-3,
-	double timeout_seconds = std::numeric_limits<double>::infinity());
+  double initial_step_size = 5e-3,
+  double timeout_seconds = std::numeric_limits<double>::infinity());
 
 /**
  * Obtains a valid initial state of the system being simulated.
