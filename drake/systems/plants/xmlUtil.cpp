@@ -12,16 +12,19 @@ using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
 
-bool parse_three_vector_value(const char* strval, Eigen::Vector3d& val) {
+bool ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
+  if (val == nullptr)
+    throw std::runtime_error(
+        "ERROR: ParseThreeVectorValue: parameter val is nullptr!");
   if (strval) {
     std::stringstream ss(strval);
     // supports a single scalar value or 3-vector value.
-    ss >> val[0];
+    ss >> (*val)[0];
     if (ss.good()) {
-      ss >> val[1] >> val[2];
+      ss >> (*val)[1] >> (*val)[2];
     } else {
-      val[1] = val[0];
-      val[2] = val[0];
+      (*val)[1] = (*val)[0];
+      (*val)[2] = (*val)[0];
     }
     return true;
   } else {
@@ -29,21 +32,22 @@ bool parse_three_vector_value(const char* strval, Eigen::Vector3d& val) {
   }
 }
 
-bool parse_three_vector_value(tinyxml2::XMLElement* node, Eigen::Vector3d& val) {
+bool ParseThreeVectorValue(tinyxml2::XMLElement* node, Eigen::Vector3d* val) {
   if (node)
-    return parse_three_vector_value(node->FirstChild()->Value(), val);
+    return ParseThreeVectorValue(node->FirstChild()->Value(), val);
   else
     return false;
 }
 
-bool parse_three_vector_value(tinyxml2::XMLElement* node, const char* element_name,
-                           Eigen::Vector3d& val) {
-  return parse_three_vector_value(node->FirstChildElement(element_name), val);
+bool ParseThreeVectorValue(tinyxml2::XMLElement* node, const char* element_name,
+                           Eigen::Vector3d* val) {
+  return ParseThreeVectorValue(node->FirstChildElement(element_name), val);
 }
 
-bool parse_three_vector_attribute(tinyxml2::XMLElement* node,
-                               const char* element_name, Eigen::Vector3d& val) {
-  return parse_three_vector_value(node->Attribute(element_name), val);
+bool ParseThreeVectorAttribute(tinyxml2::XMLElement* node,
+                               const char* attribute_name,
+                               Eigen::Vector3d* val) {
+  return ParseThreeVectorValue(node->Attribute(attribute_name), val);
 }
 
 // only writes values if they exist
