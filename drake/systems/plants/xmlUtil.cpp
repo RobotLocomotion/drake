@@ -12,7 +12,7 @@ using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
 
-bool parseThreeVectorValue(const char* strval, Eigen::Vector3d& val) {
+bool parse_three_vector_value(const char* strval, Eigen::Vector3d& val) {
   if (strval) {
     std::stringstream ss(strval);
     // supports a single scalar value or 3-vector value.
@@ -29,21 +29,21 @@ bool parseThreeVectorValue(const char* strval, Eigen::Vector3d& val) {
   }
 }
 
-bool parseThreeVectorValue(tinyxml2::XMLElement* node, Eigen::Vector3d& val) {
+bool parse_three_vector_value(tinyxml2::XMLElement* node, Eigen::Vector3d& val) {
   if (node)
-    return parseThreeVectorValue(node->FirstChild()->Value(), val);
+    return parse_three_vector_value(node->FirstChild()->Value(), val);
   else
     return false;
 }
 
-bool parseThreeVectorValue(tinyxml2::XMLElement* node, const char* element_name,
+bool parse_three_vector_value(tinyxml2::XMLElement* node, const char* element_name,
                            Eigen::Vector3d& val) {
-  return parseThreeVectorValue(node->FirstChildElement(element_name), val);
+  return parse_three_vector_value(node->FirstChildElement(element_name), val);
 }
 
-bool parseThreeVectorAttribute(tinyxml2::XMLElement* node,
+bool parse_three_vector_attribute(tinyxml2::XMLElement* node,
                                const char* element_name, Eigen::Vector3d& val) {
-  return parseThreeVectorValue(node->Attribute(element_name), val);
+  return parse_three_vector_value(node->Attribute(element_name), val);
 }
 
 // only writes values if they exist

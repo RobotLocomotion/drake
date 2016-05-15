@@ -41,17 +41,17 @@ bool parseScalarAttribute(tinyxml2::XMLElement* node,
 }
 
 /**
- * Parses a three vector value from a pointer to a character array. It also
- * supports a single scalar value, which it automatically converts to a three
- * vector.
+ * Parses a three vector value from parameter \p strval. If \p strval points to
+ * a single scalar value, it automatically converts it into a three vector by
+ * using the same scalar value for all three dimensions.
  *
- * @param[in] strval A pointer to the string containing the three vector or
- * scalar value.
+ * @param[in] strval A pointer to the character array describing a three vector
+ * or a scalar value.
  * @param[out] val The three vector into which the results should be stored.
- * @return Whether the three vector was successfully parsed from strval.
+ * @return Whether the three vector was successfully parsed from \p strval.
  */
 DRAKEXMLUTIL_EXPORT
-bool parseThreeVectorValue(const char* strval, Eigen::Vector3d& val);
+bool parse_three_vector_value(const char* strval, Eigen::Vector3d& val);
 
 /**
  * Parses a three vector value from an XML node. It also supports a single
@@ -64,7 +64,7 @@ bool parseThreeVectorValue(const char* strval, Eigen::Vector3d& val);
  * node.
  */
 DRAKEXMLUTIL_EXPORT
-bool parseThreeVectorValue(tinyxml2::XMLElement* node, Eigen::Vector3d& val);
+bool parse_three_vector_value(tinyxml2::XMLElement* node, Eigen::Vector3d& val);
 
 /**
  * Parses a three vector value from an XML node that contains a child XML node,
@@ -80,8 +80,8 @@ bool parseThreeVectorValue(tinyxml2::XMLElement* node, Eigen::Vector3d& val);
  * node.
  */
 DRAKEXMLUTIL_EXPORT
-bool parseThreeVectorValue(tinyxml2::XMLElement* node, const char* element_name,
-                           Eigen::Vector3d& val);
+bool parse_three_vector_value(tinyxml2::XMLElement* node,
+  const char* element_name, Eigen::Vector3d& val);
 
 /**
  * Parses a three vector value from an XML node's attribute. It also supports a
@@ -96,7 +96,7 @@ bool parseThreeVectorValue(tinyxml2::XMLElement* node, const char* element_name,
  * node.
  */
 DRAKEXMLUTIL_EXPORT
-bool parseThreeVectorAttribute(tinyxml2::XMLElement* node,
+bool parse_three_vector_attribute(tinyxml2::XMLElement* node,
                                const char* element_name, Eigen::Vector3d& val);
 
 // only writes values if they exist
