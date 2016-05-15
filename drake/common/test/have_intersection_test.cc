@@ -23,28 +23,28 @@ GTEST_TEST(TestHaveIntersection, StdVectors) {
   vector<int> set3 = vector<int>({1, 8, 13});
 
   // set1 intersects set2 (elements 9 and 11 in common).
-  EXPECT_TRUE(HaveIntersection(set1.begin(),set1.end(),
-                               set2.begin(),set2.end()));
+  EXPECT_TRUE(HaveIntersection(set1.begin(), set1.end(),
+                               set2.begin(), set2.end()));
 
   // set2 intersects set1 (commutative).
-  EXPECT_TRUE(HaveIntersection(set2.begin(),set2.end(),
-                               set1.begin(),set1.end()));
+  EXPECT_TRUE(HaveIntersection(set2.begin(), set2.end(),
+                               set1.begin(), set1.end()));
 
   // set1 does not intersect set3 (no elements in common).
-  EXPECT_FALSE(HaveIntersection(set1.begin(),set1.end(),
-                                set3.begin(),set3.end()));
+  EXPECT_FALSE(HaveIntersection(set1.begin(), set1.end(),
+                                set3.begin(), set3.end()));
 
   // set3 does not intersect set1 (commutative).
-  EXPECT_FALSE(HaveIntersection(set3.begin(),set3.end(),
-                                set1.begin(),set1.end()));
+  EXPECT_FALSE(HaveIntersection(set3.begin(), set3.end(),
+                                set1.begin(), set1.end()));
 
   // set2 intersects set3 (element 13 in common).
-  EXPECT_TRUE(HaveIntersection(set2.begin(),set2.end(),
-                               set3.begin(),set3.end()));
+  EXPECT_TRUE(HaveIntersection(set2.begin(), set2.end(),
+                               set3.begin(), set3.end()));
 
   // set3 intersects set2 (commutative).
-  EXPECT_TRUE(HaveIntersection(set3.begin(),set3.end(),
-                               set2.begin(),set2.end()));
+  EXPECT_TRUE(HaveIntersection(set3.begin(), set3.end(),
+                               set2.begin(), set2.end()));
 }
 
 // Test using std::set
@@ -62,31 +62,31 @@ GTEST_TEST(TestHaveIntersection, StdSets) {
   set1.insert(23);
 
   // Elements cannot be repeated. Therefore expect 5 groups instead of 7.
-  EXPECT_EQ(5,set1.size());
+  EXPECT_EQ(5, set1.size());
 
   // set1 intersects set2 (elements 9 and 11 in common).
-  EXPECT_TRUE(HaveIntersection(set1.begin(),set1.end(),
-                               set2.begin(),set2.end()));
+  EXPECT_TRUE(HaveIntersection(set1.begin(), set1.end(),
+                               set2.begin(), set2.end()));
 
   // set2 intersects set1 (commutative).
-  EXPECT_TRUE(HaveIntersection(set2.begin(),set2.end(),
-                               set1.begin(),set1.end()));
+  EXPECT_TRUE(HaveIntersection(set2.begin(), set2.end(),
+                               set1.begin(), set1.end()));
 
   // set1 does not intersect set3 (no elements in common).
-  EXPECT_FALSE(HaveIntersection(set1.begin(),set1.end(),
-                                set3.begin(),set3.end()));
+  EXPECT_FALSE(HaveIntersection(set1.begin(), set1.end(),
+                                set3.begin(), set3.end()));
 
   // set3 does not intersect set1 (commutative).
-  EXPECT_FALSE(HaveIntersection(set3.begin(),set3.end(),
-                                set1.begin(),set1.end()));
+  EXPECT_FALSE(HaveIntersection(set3.begin(), set3.end(),
+                                set1.begin(), set1.end()));
 
   // set2 intersects set3 (element 13 in common).
-  EXPECT_TRUE(HaveIntersection(set2.begin(),set2.end(),
-                               set3.begin(),set3.end()));
+  EXPECT_TRUE(HaveIntersection(set2.begin(), set2.end(),
+                               set3.begin(), set3.end()));
 
   // set3 intersects set2 (commutative).
-  EXPECT_TRUE(HaveIntersection(set3.begin(),set3.end(),
-                               set2.begin(),set2.end()));
+  EXPECT_TRUE(HaveIntersection(set3.begin(), set3.end(),
+                               set2.begin(), set2.end()));
 }
 
 }  // namespace
