@@ -14,15 +14,17 @@ namespace drake {
  *  Elements are compared using operator< and the ranges must be sorted with
  *  respect to the same operator.
  *
- *  This algorithm is based upon std::set_intersection. However, instead of
- *  computing the intersection, which is a more expensive operation, this
- *  algorithm returns as soon as a common element is found and the range of
- *  common elements is not constructed.
- *
- *
+ *  This algorithm is based upon `std::set_intersection`. However,
+ *  instead of constructing the intersection this returns a yes/no result,
+ *  which can be done much faster.
+ *  Unlike the STL implementation, this algorithm does not offer the user the
+ *  possibility to provide a custom binary comparison function.
+ *  There is no execution policy as with the STL `std::set_intersection` to be
+ *  introduced in C++17.
  *
  *  This algorithm only works on sorted ranges.
- *  For range 1 of size N and range 2 of size M the worst case is Order(N+M).
+ *  For range 1 of size N and range 2 of size M the complexity is at most
+ *  Order(N+M). The algorithm executes in constant time for disjoint ranges.
  *  An example of worst case is given below:
  *  @verbatim
     range_1 = (10, 20, 30)
