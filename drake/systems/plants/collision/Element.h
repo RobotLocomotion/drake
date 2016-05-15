@@ -46,7 +46,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   virtual bool CollidesWith(const CollisionElement* other) const;
 
   /**
-   * @brief Returns a const reference to the body to which this
+   * @brief Returns a pointer to the const RigidBody to which this
    * CollisionElement is attached.
    *
    * @throws A std::runtime_error if the CollisionElement is not attached to a
