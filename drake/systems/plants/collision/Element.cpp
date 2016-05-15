@@ -6,7 +6,7 @@
 
 using namespace Eigen;
 using namespace std;
-using drake::have_intersection;
+using drake::HaveIntersection;
 
 namespace DrakeCollision {
 CollisionElement::CollisionElement(const Isometry3d& T_element_to_local,
@@ -42,9 +42,9 @@ bool CollisionElement::CollidesWith(const CollisionElement* other) const {
 
   // If collision_groups_.size() = N and other->collision_groups_.size() = M
   // The worst case (no intersection) is O(N+M).
-  return !have_intersection(collision_groups_.begin(), collision_groups_.end(),
-                            other->collision_groups_.begin(),
-                            other->collision_groups_.end());
+  return !HaveIntersection(collision_groups_.begin(), collision_groups_.end(),
+                           other->collision_groups_.begin(),
+                           other->collision_groups_.end());
 }
 
 // Order(N) insertion.

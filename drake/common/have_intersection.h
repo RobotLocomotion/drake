@@ -32,8 +32,8 @@ An example of worst case is given below:
 
 In this case the algorithm needs to scan both arrays from start to end. **/
 template<class InputIterator1, class InputIterator2>
-bool have_intersection(InputIterator1 first1, InputIterator1 last1,
-                       InputIterator2 first2, InputIterator2 last2) {
+bool HaveIntersection(InputIterator1 first1, InputIterator1 last1,
+                      InputIterator2 first2, InputIterator2 last2) {
   // Quick checks first:
   // Check if any of the ranges is empty:
   if (first1 == last1 || first2 == last2) return false;
