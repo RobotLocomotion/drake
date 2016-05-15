@@ -43,14 +43,20 @@ bool have_intersection(InputIterator1 first1, InputIterator1 last1,
   if (*first1 > *(last2 - 1) || *first2 > *(last1 - 1)) return false;
 
   // Non-empty ranges with elements that overlap.
-  while (first1 != last1 && first2 != last2) {
-    if (*first1 < *first2)
+  while (true) {
+    // Increments the range with the smaller first element.
+    if (*first1 < *first2) {
       ++first1;
-    else if (*first2 < *first1)
+      if (first1 == last1) break;
+    } else if (*first2 < *first1) {
       ++first2;
-    else
+      if (first2 == last2) break;
+    } else {
+      // Found matching element.
       return true;
+    }
   }
+  // One of the ranges run out of elements before a match was found.
   return false;
 }
 
