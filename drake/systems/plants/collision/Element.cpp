@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "drake/common/algorithms/have_intersection.h"
+#include "drake/common/have_intersection.h"
 
 using namespace Eigen;
 using namespace std;
