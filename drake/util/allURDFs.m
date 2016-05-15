@@ -8,7 +8,8 @@ if nargin < 1, rootdir = getDrakePath(); end
 
 urdfs = {};
 
-% Creates a command that finds all URDFs within [drake-distro]
+% Creates a command that finds all URDFs within [drake-distro]. It uses the
+% `find` program, which is assumed to be available.
 command = ['find -L ', rootdir, ' -iname "*.urdf" '];
 
 % Updates the above command to blacklist any URDF inside a dev/ subdirectory.
