@@ -612,7 +612,7 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
     // The user can specify options by setting the flag
     // RayResultCallback::m_flags.
     // This is demonstrated in the RaytestDemo
-    // (bullet3/examplex/Raycast/RaytestDemo.cpp) part of Bullet's
+    // (bullet3/examples/Raycast/RaytestDemo.cpp) part of Bullet's
     // ExampleBrowser.
     //
     // Possible options are defined in the enum
