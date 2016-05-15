@@ -14,11 +14,11 @@ command = ['find -L ', rootdir, ' -iname "*.urdf" '];
 % Updates the above command to blacklist any URDF inside a dev/ subdirectory.
 command = [command, '-not -path "', rootdir, '/*/dev/*" '];
 
-% Updates the above command to blacklist a URDF containing the string
+% Updates the above command to blacklist any URDF containing the string
 % "irb_140_convhull".
 command = [command, '-not -path "', rootdir, '/*irb_140_convhull*" '];
 
-% Finds all URDF files satisfying the above command's specification.
+% Finds URDF files using the previously defined command.
 [info, p] = system(command);
 
 if info == 0
@@ -28,7 +28,9 @@ if info == 0
     p = regexprep(p, [pt, '.*\n'], '', 'dotexceptnewline');
     urdfs = vertcat(urdfs, pt);
   end
-else  % if find fails for some reason (windows?), then do it the hard way...
+else
+  % If the `find` program fails for some reason (windows?), then print an error
+  % message.
   error_msg = ['ERROR: drake/util/allURDFs.m: Failed to find any URDFs! '];
   error_msg = [error_msg, 'Ensure program `find` is installed and available.'];
   error(error_msg);
