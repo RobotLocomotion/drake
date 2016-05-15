@@ -123,8 +123,8 @@ class BulletModel : public Model {
 
   // Possible ray casting algorithms for Bullet.
   enum RayCastAlgorithm {
-    SubSimplexConvexCast,
-    GjkConvexCast
+    kSubSimplexConvexCast,
+    kGjkConvexCast
   };
 
  private:
@@ -157,9 +157,9 @@ class BulletModel : public Model {
   BulletCollisionWorldWrapper bullet_world_;
   BulletCollisionWorldWrapper bullet_world_no_margin_;
 
-  // The Bullet algorithm to bse used for ray casting.
+  // The Bullet algorithm to be used for ray casting.
   // See notes in BulletModel::collisionRaycast.
-  RayCastAlgorithm ray_cast_algorithm_{GjkConvexCast};
+  RayCastAlgorithm ray_cast_algorithm_{kGjkConvexCast};
 
   static constexpr double kSmallMargin = 1e-9;
   static constexpr double kLargeMargin = 0.05;

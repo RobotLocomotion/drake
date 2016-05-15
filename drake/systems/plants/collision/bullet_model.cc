@@ -623,18 +623,18 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
     // - SubSimplexConvexCastRaytest uses an approximate but faster ray versus
     //   convex intersection algorithm.
     // We now know that SubSimplexConvexCastRaytest is an iterative algorithm
-    // with a quite large hardcoded tolerance for convergence, see discussions
+    // with a very large hardcoded tolerance for convergence, see discussions
     // on Drake's github repository issue #1712 and fix in PR #2354.
     //
     // When using SubSimplexConvexCastRaytest the ray test finally gets resolved
     // with the call to btSubsimplexConvexCast::calcTimeOfImpact() (this is the
-    // iterative method with the hardcoded tolerance.
-    // A nice discussion (an probably the only one out there) is referenced at
+    // iterative method with the hardcoded tolerance).
+    // A nice discussion (and probably the only one out there) is referenced at
     // the top of the file, quote:
     // Typically the conservative advancement reaches solution in a few
     // iterations, clip it to 32 for degenerate cases. See discussion about this
     // here http://continuousphysics.com/Bullet/phpBB2/viewtopic.php?t=565
-    if (ray_cast_algorithm_ == GjkConvexCast) {
+    if (ray_cast_algorithm_ == kGjkConvexCast) {
       ray_callback.m_flags |=
           btTriangleRaycastCallback::kF_UseGjkConvexCastRaytest;
     }
