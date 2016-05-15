@@ -17,3 +17,5 @@ r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
 r.runBalancingDemo(sim_options);
+
+% TIMEOUT 1500

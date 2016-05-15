@@ -70,7 +70,7 @@ TEST(CompareRigidBodySystemsTest, TestAll) {
 }  // namespace systems
 }  // namespace drake
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   std::cout << "Running main() from compareRigidBodySystems.cpp" << std::endl;
   // ::testing::GTEST_FLAG(output) = "xml:hello.xml";
 
@@ -93,7 +93,8 @@ int main(int argc, char **argv) {
   if (argc > 3) {
     drake::systems::plants::model_pose_in_world =
         std::allocate_shared<RigidBodyFrame>(
-            Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+            Eigen::aligned_allocator<RigidBodyFrame>(),
+            std::string(RigidBodyTree::kWorldLinkName),
             nullptr,  // not used since the robot is attached to the world
             Eigen::Vector3d(std::stod(argv[3]), std::stod(argv[4]),
                             std::stod(argv[5])),  // xyz of the car's root link
@@ -101,7 +102,8 @@ int main(int argc, char **argv) {
   } else {
     drake::systems::plants::model_pose_in_world =
         std::allocate_shared<RigidBodyFrame>(
-            Eigen::aligned_allocator<RigidBodyFrame>(), "world", nullptr,
+            Eigen::aligned_allocator<RigidBodyFrame>(),
+            std::string(RigidBodyTree::kWorldLinkName), nullptr,
             Eigen::Isometry3d::Identity());
   }
 

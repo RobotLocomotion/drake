@@ -39,7 +39,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
   SingleTimeLinearPostureConstraint* stlpc =
       (SingleTimeLinearPostureConstraint*)getDrakeMexPointer(prhs[0]);
-  int nq = stlpc->getRobotPointer()->num_positions;
+  int nq = stlpc->getRobotPointer()->number_of_positions();
   if (!mxIsNumeric(prhs[1]) || mxGetN(prhs[1]) != 1 || mxGetM(prhs[1]) != nq) {
     mexErrMsgIdAndTxt(
         "Drake:testSingleTimeLinearPostureConstraintmex:BadInputs",

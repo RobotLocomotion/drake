@@ -105,3 +105,5 @@ comf = getCOM(r, kinsol);
 
 % Make sure we're still standing
 rangecheck(comf, [-0.02; -0.02; 0.9], [0.02; 0.02; inf]);
+
+% TIMEOUT 1500
