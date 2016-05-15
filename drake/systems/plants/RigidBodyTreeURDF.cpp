@@ -7,18 +7,35 @@
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "drake/systems/plants/xmlUtil.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace tinyxml2;
+using Eigen::Isometry3d;
+using Eigen::Matrix;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
+using std::allocate_shared;
+using std::cerr;
+using std::endl;
+using std::max;
+using std::numeric_limits;
+using std::runtime_error;
+using std::ostream;
+using std::string;
+using std::stringstream;
+using std::unique_ptr;
+using std::vector;
+
+using tinyxml2::XMLDocument;
+using tinyxml2::XMLElement;
 
 namespace {
 
 // todo: rectify this with findLinkId in the class (which makes more
 // assumptions)
-int findLinkIndex(RigidBodyTree* model, string linkname) {
+int findLinkIndex(RigidBodyTree* model, string link_name) {
   int index = -1;
   for (unsigned int i = 0; i < model->bodies.size(); i++) {
-    if (linkname.compare(model->bodies[i]->linkname) == 0) {
+    if (link_name.compare(model->bodies[i]->name_) == 0) {
       index = i;
       break;
     }
@@ -38,8 +55,7 @@ int findLinkIndexByJointName(RigidBodyTree* model, string jointname) {
   return index;
 }
 
-void parseInertial(shared_ptr<RigidBody> body, XMLElement* node,
-                   RigidBodyTree* model) {
+void parseInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model) {
   Isometry3d T = Isometry3d::Identity();
 
   XMLElement* origin = node->FirstChildElement("origin");
@@ -197,9 +213,9 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
-void parseVisual(shared_ptr<RigidBody> body, XMLElement* node,
-                 RigidBodyTree* model, const MaterialMap& materials,
-                 const PackageMap& package_map, const string& root_dir) {
+void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+                 const MaterialMap& materials, const PackageMap& package_map,
+                 const string& root_dir) {
   // DEBUG
   // cout << "parseVisual: START" << endl;
   // END_DEBUG
@@ -209,13 +225,13 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node,
 
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
-    throw runtime_error("ERROR: Link " + body->linkname +
+    throw runtime_error("ERROR: Link " + body->name_ +
                         " has a visual element without geometry.");
 
   DrakeShapes::VisualElement element(T_element_to_link);
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse visual element in link " +
-                        body->linkname + ".");
+                        body->name_ + ".");
 
   XMLElement* material_node = node->FirstChildElement("material");
   if (material_node) {
@@ -253,9 +269,8 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node,
   // END_DEBUG
 }
 
-void parseCollision(shared_ptr<RigidBody> body, XMLElement* node,
-                    RigidBodyTree* model, const PackageMap& package_map,
-                    const string& root_dir) {
+void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+                    const PackageMap& package_map, const string& root_dir) {
   Isometry3d T_element_to_link = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) originAttributesToTransform(origin, T_element_to_link);
@@ -272,13 +287,13 @@ void parseCollision(shared_ptr<RigidBody> body, XMLElement* node,
 
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
-    throw runtime_error("ERROR: Link " + body->linkname +
+    throw runtime_error("ERROR: Link " + body->name_ +
                         " has a collision element without geometry");
 
   RigidBody::CollisionElement element(T_element_to_link, body);
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
-                        body->linkname + ".");
+                        body->name_ + ".");
 
   if (element.hasGeometry()) {
     model->addCollisionElement(element, *body, group_name);
@@ -291,16 +306,17 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  shared_ptr<RigidBody> body(new RigidBody());
-  body->model_name = robot_name;
+  RigidBody* body{nullptr};
+  std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
+  body->model_name_ = robot_name;
 
   attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
 
-  body->linkname = attr;
-
   // World links are handled by parseWorldJoint().
-  if (body->linkname == "world") return false;
+  body->name_ = attr;
+  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName))
+    return false;
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node) parseInertial(body, inertial_node, model);
@@ -316,7 +332,7 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
     parseCollision(body, collision_node, model, package_map, root_dir);
   }
 
-  model->add_rigid_body(body);
+  model->add_rigid_body(std::move(owned_body));
   *index = body->body_index;
   return true;
 }
@@ -409,7 +425,7 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
   // Checks if this joint connects to the world and, if so, terminates this
   // method call. This is because joints that connect to the world are processed
   // separately.
-  if (parent_name == "world") return;
+  if (parent_name == std::string(RigidBodyTree::kWorldLinkName)) return;
 
   int parent_index = findLinkIndex(model, parent_name);
   if (parent_index < 0)
@@ -462,7 +478,7 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   model->bodies[child_index]->setJoint(move(joint_unique_ptr));
-  model->bodies[child_index]->parent = model->bodies[parent_index];
+  model->bodies[child_index]->parent = model->bodies[parent_index].get();
 }
 
 void parseTransmission(RigidBodyTree* model, XMLElement* node) {
@@ -521,8 +537,9 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
     parseScalarAttribute(limit_node, "effort_max", effort_max);
   }
 
-  model->actuators.push_back(RigidBodyActuator(
-      actuator_name, model->bodies[body_index], gain, effort_min, effort_max));
+  model->actuators.push_back(RigidBodyActuator(actuator_name,
+                                               model->bodies[body_index].get(),
+                                               gain, effort_min, effort_max));
 }
 
 void parseLoop(RigidBodyTree* model, XMLElement* node) {
@@ -564,9 +581,10 @@ void parseFrame(RigidBodyTree* model, XMLElement* node) {
 }
 
 /**
- * Searches for a joint that connects the URDF model to a link called "world".
- * If it finds such a joint, it updates the weld_to_frame parameter with the
- * offset specified by the joint.
+ * Searches for a joint that connects the URDF model to a link with a name equal
+ * to the string defined by RigidBodyTree::kWorldLinkName. If it finds such a
+ * joint, it updates the weld_to_frame parameter with the offset specified by
+ * the joint.
  *
  * An exception is thrown if no such joint is found, or if multiple
  * world-connecting joints are found.
@@ -591,7 +609,7 @@ void parseWorldJoint(XMLElement* node,
     parseJointKeyParams(joint_node, joint_name, joint_type, parent_name,
                         child_name);
 
-    if (parent_name == "world") {
+    if (parent_name == std::string(RigidBodyTree::kWorldLinkName)) {
       // Ensures only one joint connects the model to the world.
       if (found_world_joint)
         throw runtime_error(
@@ -609,7 +627,7 @@ void parseWorldJoint(XMLElement* node,
 
       if (weld_to_frame == nullptr) weld_to_frame.reset(new RigidBodyFrame());
 
-      weld_to_frame->name = "world";
+      weld_to_frame->name = std::string(RigidBodyTree::kWorldLinkName);
       weld_to_frame->transform_to_body = transform_to_parent_body;
 
       if (joint_type == "fixed") {
@@ -668,7 +686,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
       const char* name_attr = link_node->Attribute("name");
       if (!name_attr)
         throw runtime_error("ERROR: link tag is missing name attribute");
-      if (std::string(name_attr) == "world") {
+      if (std::string(name_attr) == std::string(RigidBodyTree::kWorldLinkName)) {
         // A world link was specified within the URDF. The following code
         // verifies that parameter weld_to_frame is not specified. It throws an
         // exception if it is since the model being added is connected to the
@@ -752,10 +770,10 @@ namespace systems {
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     const RigidBodyTree& model, const tinyxml2::XMLElement* link,
     const tinyxml2::XMLElement* pose, const std::string& name) {
-  std::string linkname = link->Attribute("link");
-  std::shared_ptr<RigidBody> body = model.findLink(linkname);
+  std::string link_name = link->Attribute("link");
+  RigidBody* body = model.findLink(link_name);
   if (body == nullptr) {
-    throw runtime_error("couldn't find link " + linkname +
+    throw runtime_error("couldn't find link " + link_name +
                         " referenced in frame " + name);
   }
 

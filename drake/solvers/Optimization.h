@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <list>
+#include <map>
 #include <memory>
 #include <initializer_list>
 #include <Eigen/Core>
@@ -223,14 +224,14 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+    void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                       Eigen::VectorXd& y) const override {
       y.resize(FunctionTraits<F>::numOutputs(f_));
       assert(x.rows() == FunctionTraits<F>::numInputs(f_));
       assert(y.rows() == FunctionTraits<F>::numOutputs(f_));
       FunctionTraits<F>::eval(f_, x, y);
     }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+    void eval(const Eigen::Ref<const TaylorVecXd>& x,
                       TaylorVecXd& y) const override {
       y.resize(FunctionTraits<F>::numOutputs(f_));
       assert(x.rows() == FunctionTraits<F>::numInputs(f_));
@@ -639,6 +640,42 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   }
 
   /**
+   * Set an option for a particular solver.  This interface does not
+   * do any verification of solver parameters beyond what an
+   * individual solver does for itself.  It does not even verify that
+   * the specifed solver exists.  Use this only when you have
+   * particular knowledge of what solver is being invoked, and exactly
+   * what tuning is required.
+   *
+   * Supported solver names/options:
+   *
+   * "SNOPT" -- Paramater names and values as specified in SNOPT
+   * User's Guide section 7.7 "Description ofthe optional parameters",
+   * used as described in section 7.5 for snSet().
+   */
+  void SetSolverOption(const std::string& solver_name,
+                       const std::string& solver_option,
+                       double option_value) {
+    solver_options_double_[solver_name][solver_option] = option_value;
+  }
+
+  void SetSolverOption(const std::string& solver_name,
+                       const std::string& solver_option,
+                       int option_value) {
+    solver_options_int_[solver_name][solver_option] = option_value;
+  }
+
+  const std::map<std::string, double>& GetSolverOptionsDouble(
+      const std::string& solver_name) {
+    return solver_options_double_[solver_name];
+  }
+
+  const std::map<std::string, int>& GetSolverOptionsInt(
+      const std::string& solver_name) {
+    return solver_options_int_[solver_name];
+  }
+
+  /**
    * Get the name and result code of the particular solver which was
    * used to solve this OptimizationProblem.  The solver names and
    * results are not documented here as this function is only intended
@@ -731,6 +768,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   std::shared_ptr<MathematicalProgramInterface> problem_type_;
   std::string solver_name_;
   int solver_result_;
+  std::map<std::string, std::map<std::string, double>> solver_options_double_;
+  std::map<std::string, std::map<std::string, int>> solver_options_int_;
 };
 
 }  // end namespace Drake

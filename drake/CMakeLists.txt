@@ -5,6 +5,8 @@ option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
 option(RANDOMIZE_MATLAB_TESTS "every matlab unit is started with a new random seed" OFF)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 #cmake_policy(SET CMP0042 NEW)
 if (POLICY CMP0054)
   cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
@@ -187,12 +189,9 @@ include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
-if (GTEST_FOUND)
-  set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
-  if (WIN32)
-    # The following compiler flag is needed to support parameterized Google tests on Windows.
-    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
-  endif()
+if (WIN32)
+  # The following compiler flag is needed to support parameterized Google tests on Windows.
+  SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
 endif()
 
 set(drake_jar_javafiles util/Transform.java)
@@ -313,10 +312,6 @@ find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(ffmpeg ffmpeg)
 
-# todo: build doxygen here (and remove it from the Makefile)
-# http://majewsky.wordpress.com/2010/08/14/tip-of-the-day-cmake-and-doxygen/
-
-
 # write some additional information to the CMake cache
 set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
 
@@ -335,6 +330,12 @@ if (MATLAB_FOUND)
   	COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
     PROPERTIES TIMEOUT 300)
+endif()
+
+option(BUILD_DOCUMENTATION "Build Doxygen and Sphinx documentation." OFF)
+
+if(BUILD_DOCUMENTATION)
+  add_subdirectory(doc)
 endif()
 
 if(IS_DIRECTORY doc/textbook)

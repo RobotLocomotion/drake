@@ -132,6 +132,8 @@ passes CI. You may click it to merge your PR. If you do not have write access,
 or if you believe that status checks are failing for inconsequential reasons,
 ask your platform reviewer to perform the merge for you.
 
+**After Merge.** If your PR breaks continuous integration, the :doc:`buildcop`
+will contact you to work out a resolution.
 
 Continuous Integration Notes
 ============================
@@ -140,6 +142,7 @@ Continuous Integration Notes
 
     CDash <https://drake-cdash.csail.mit.edu/index.php?project=Drake>
     jenkins
+    buildcop
 
 IDE and Text Editor Notes
 =========================
@@ -148,7 +151,7 @@ IDE and Text Editor Notes
     :maxdepth: 1
 
     clion
-    `Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>`_
+    Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>
 
 
 Sublime Text

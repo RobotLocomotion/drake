@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-require "doc/DoxygenMatlab/preprocess.pl";
+require "DoxygenMatlab/preprocess.pl";
 
 if ($#ARGV != 0)
 {
