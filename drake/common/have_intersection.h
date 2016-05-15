@@ -39,7 +39,7 @@ bool HaveIntersection(InputIterator1 first1, InputIterator1 last1,
   if (first1 == last1 || first2 == last2) return false;
 
   // Check for non-overlapping ranges:
-  if (*first1 > *(last2 - 1) || *first2 > *(last1 - 1)) return false;
+  if (*first1 > *(--InputIterator2(last2)) || *first2 > *(--InputIterator1(last1))) return false;
 
   // Non-empty ranges with elements that overlap.
   while (true) {
