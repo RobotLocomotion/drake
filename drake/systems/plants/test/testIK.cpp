@@ -31,7 +31,7 @@ TEST(testIK, simpleIK) {
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&com_kc);
   IKoptions ikoptions(&model);
-  VectorXd q_sol(model.num_positions);
+  VectorXd q_sol(model.number_of_positions());
   int info;
   vector<string> infeasible_constraint;
   inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),

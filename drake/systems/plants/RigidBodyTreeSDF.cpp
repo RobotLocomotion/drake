@@ -142,14 +142,14 @@ void parseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   */
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
-    throw runtime_error("ERROR: Link " + body->linkname +
+    throw runtime_error("ERROR: Link " + body->name_ +
                         " has a visual element without geometry.");
 
   DrakeShapes::VisualElement element(transform_parent_to_model.inverse() *
                                      transform_to_model);
   if (!parseSDFGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse visual element in link " +
-                        body->linkname + ".");
+                        body->name_ + ".");
 
   XMLElement* material_node = node->FirstChildElement("material");
   if (material_node) {
@@ -188,14 +188,14 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
-    throw runtime_error("ERROR: Link " + body->linkname +
+    throw runtime_error("ERROR: Link " + body->name_ +
                         " has a collision element without geometry.");
 
   RigidBody::CollisionElement element(
       transform_parent_to_model.inverse() * transform_to_model, body);
   if (!parseSDFGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
-                        body->linkname + ".");
+                        body->name_ + ".");
 
   if (element.hasGeometry()) {
     model->addCollisionElement(element, *body, group_name);
@@ -210,13 +210,13 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
 
   RigidBody* body{nullptr};
   std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
-  body->model_name = model_name;
+  body->model_name_ = model_name;
 
   attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
-  body->linkname = attr;
+  body->name_ = attr;
 
-  if (body->linkname == "world")
+  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName))
     throw runtime_error(
         "ERROR: do not name a link 'world', it is a reserved name");
 
@@ -225,7 +225,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   if (pose) {
     poseValueToTransform(pose, pose_map, transform_to_model);
     pose_map.insert(
-        std::pair<string, Isometry3d>(body->linkname, transform_to_model));
+        std::pair<string, Isometry3d>(body->name_, transform_to_model));
   }
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
@@ -579,7 +579,8 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
     // By default, the robot is welded to the world frame.
     if (weld_to_frame == nullptr) {
       weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-          Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+          Eigen::aligned_allocator<RigidBodyFrame>(),
+          std::string(RigidBodyTree::kWorldLinkName),
           nullptr,  // Valid since the robot is attached to the world.
           Eigen::Isometry3d::Identity());
     }
@@ -624,11 +625,12 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
         "ERROR: This xml file does not contain an sdf tag");
 
   // If we have a world, load it.
-  XMLElement* world_node = node->FirstChildElement("world");
+  XMLElement* world_node =
+      node->FirstChildElement(RigidBodyTree::kWorldLinkName);
   if (world_node) {
     // If we have more than one world, it is ambiguous which one the user
     // wishes.
-    if (world_node->NextSiblingElement("world")) {
+    if (world_node->NextSiblingElement(RigidBodyTree::kWorldLinkName)) {
       throw runtime_error("ERROR: Multiple worlds in file, ambiguous.");
     }
     parseWorld(model, world_node, package_map, root_dir, floating_base_type,

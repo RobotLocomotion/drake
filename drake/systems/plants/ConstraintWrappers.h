@@ -100,7 +100,7 @@ class QuasiStaticConstraintWrapper : public Constraint {
             Eigen::VectorXd& y) const override {
     auto& kinsol = kin_helper_->UpdateKinematics(
         q.head(
-            rigid_body_constraint_->getRobotPointer()->num_positions),
+            rigid_body_constraint_->getRobotPointer()->number_of_positions()),
             rigid_body_constraint_->getRobotPointer());
     auto weights = q.tail(rigid_body_constraint_->getNumWeights());
     Eigen::MatrixXd dy;
@@ -111,7 +111,7 @@ class QuasiStaticConstraintWrapper : public Constraint {
     Eigen::VectorXd q = autoDiffToValueMatrix(tq);
     auto& kinsol = kin_helper_->UpdateKinematics(
         q.head(
-            rigid_body_constraint_->getRobotPointer()->num_positions),
+            rigid_body_constraint_->getRobotPointer()->number_of_positions()),
         rigid_body_constraint_->getRobotPointer());
 
     Eigen::VectorXd y;

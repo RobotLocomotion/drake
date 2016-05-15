@@ -1,9 +1,17 @@
 
 #include "RigidBody.h"
+
 #include <stdexcept>
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Isometry3d;
+using Eigen::Matrix;
+using Eigen::Vector3d;
+
+using std::ostream;
+using std::runtime_error;
+using std::string;
+using std::stringstream;
+using std::vector;
 
 RigidBody::RigidBody()
     : parent(nullptr),
@@ -18,6 +26,10 @@ RigidBody::RigidBody()
   I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
 }
 
+const std::string& RigidBody::name() const { return name_; }
+
+const std::string& RigidBody::model_name() const { return model_name_; }
+
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
   this->joint = move(new_joint);
 }
@@ -26,7 +38,8 @@ const DrakeJoint& RigidBody::getJoint() const {
   if (joint) {
     return (*joint);
   } else {
-    throw runtime_error("Joint is not initialized");
+    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_
+      + "\" in model " + model_name_ + " does not have a joint!");
   }
 }
 
@@ -118,7 +131,7 @@ ostream& operator<<(ostream& out, const RigidBody& b) {
   collision_element_str << "]";
 
   out << "RigidBody\n"
-      << "  - link name: " << b.linkname << "\n"
+      << "  - link name: " << b.name_ << "\n"
       << "  - parent joint: " << parent_joint_name << "\n"
       << "  - Collision elements IDs: " << collision_element_str.str();
 

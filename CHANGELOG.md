@@ -21,6 +21,8 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2303][] The following member variables should now be accessed via accessor methods: `RigidBody::linkname`, `RigidBody::model_name`, `RigidBodyTree::num_positions`, and `RigidBodyTree::num_velocities`.
+ - [#2325][] The following member variable should now be accessed via an accessor method: `RigidBodyConstraint::robot`.
  - [#1992][] Matlab tests must now be explicitly listed in CMakeLists.
  - [#1970][] The `drake` pod Makefile now includes the `install` action.
  - [#1953][] Replace `valuecheckMatrix()` with `CompareMatrices()`.
@@ -63,3 +65,5 @@ Changes in version v0.9.11 and before are not provided.
 [#1992]: https://github.com/RobotLocomotion/drake/issues/1992
 [#2008]: https://github.com/RobotLocomotion/drake/issues/2008
 [#2018]: https://github.com/RobotLocomotion/drake/issues/2018
+[#2303]: https://github.com/RobotLocomotion/drake/issues/2303
+[#2325]: https://github.com/RobotLocomotion/drake/issues/2325
