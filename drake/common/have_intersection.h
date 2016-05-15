@@ -1,8 +1,5 @@
 #pragma once
 
-#include <algorithm>
-using std::set_intersection;
-
 namespace drake {
 
 /**
