@@ -6,7 +6,7 @@
 
 using namespace Eigen;
 using namespace std;
-using drake::common::algorithms::have_intersection;
+using drake::have_intersection;
 
 namespace DrakeCollision {
 CollisionElement::CollisionElement(const Isometry3d& T_element_to_local,

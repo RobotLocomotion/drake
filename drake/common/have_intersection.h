@@ -4,8 +4,6 @@
 using std::set_intersection;
 
 namespace drake {
-namespace common {
-namespace algorithms {
 
 /**
  *  @brief Checks for non-empty intersection of two sorted ranges.
@@ -59,6 +57,4 @@ bool have_intersection(InputIterator1 first1, InputIterator1 last1,
   return false;
 }
 
-}  // namespace algorithms
-}  // namespace common
 }  // namespace drake
