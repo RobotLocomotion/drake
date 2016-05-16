@@ -9,6 +9,7 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <iosfwd>
 #include <memory>
 #include <type_traits>
@@ -18,40 +19,73 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 
 namespace drake {
 
-/** @brief A `unique_ptr` that retains a non-owned reference pointer to the
-original object after ownership is transferred elsewhere.
+/** A `unique_ptr` that retains a non-owned reference pointer to the original 
+object after ownership is transferred elsewhere.
 
-This smart pointer is identical to `std::unique_ptr`in that it does not permit
-shared ownership of the managed object. The API here is modeled as closely as
-possible on the C++17 `std::unique_ptr` API except:
+@tparam T   The type of the contained object, which must not be an array type.
+
+This smart pointer handles ownership identically to `std::unique_ptr` -- it does 
+not permit shared ownership of the managed object. The API here is modeled as 
+closely as possible on the C++17 `std::unique_ptr` API except:
 - it always uses a default deleter, and
 - there is no specialization for array types.
 
-Other differences are due to the additional functionality.
-Unlike `std::unique_ptr`, `drake::unique_ptr_ref` continues to provide access to
-the previously-managed object after ownership has been transferred. This is
-particularly useful when used during construction of a complex object composed
-of many elements (for example, a tree of articulated bodies and joints), where
-the complex object should own its elements. A caller creates an owned, concrete
-element (a body or joint, say) using `unique_ptr_ref` and then transfers
-ownership to the larger object, but retains a reference to the
-concrete object. That pointer can be used later for accessing the concrete
-element, without a lookup or downcast.
+Other differences are due to the additional functionality. Unlike
+`std::unique_ptr`, `%drake::unique_ptr_ref` continues to provide access to
+the previously-managed object after ownership has been transferred. Unlike
+`std::shared_ptr`, that retained reference does not extend the managed object's
+lifetime, which is always limited by the lifetime of its unique owner.
 
-Also unlike `std::unique_ptr`, this class supports copy construction and
+This is particularly useful to provide a clean API for construction of a complex
+object composed of many elements (for example, a tree of articulated bodies and
+joints). The caller creates an owned, concrete element (a body or joint, say) 
+using `%drake::unique_ptr_ref` and then transfers ownership to the larger 
+object, but retains a reference to the concrete object. That pointer can be used
+later for accessing the concrete element, without a lookup or downcast. Usage 
+example: @code{.cc}
+  // Assume:
+  class PinJoint : public Joint {};
+  class SliderJoint : public Joint {};
+  class Tree {
+    // ...
+    void AddJoint(std::unique_ptr<Joint> joint);
+  };
+  Tree tree;
+
+  auto pin    = drake::make_unique_ref<PinJoint>(pin_axis);
+  auto slider = drake::make_unique_ref<SlidingJoint>(slider_axis);
+
+  // At this point pin and slider own the managed objects; early termination
+  // or failure to add these to a Tree would clean up with no leaks.
+
+  // Transfer ownership to tree; pin and slider will be deleted when tree is.
+  tree.AddJoint(pin.move());
+  tree.AddJoint(slider.move());
+
+  // Can still reference concrete class methods (as long as tree exists).
+  pin.GetAngle();
+  slider.GetDisplacement();
+@endcode{.cc}
+
+Details
+-------
+Unlike `std::unique_ptr`, this class supports copy construction and
 assignment, but only a non-owned reference is copied, so there is still a
 unique owner of the managed object after copy or assign. Move construction and
 assignment transfers ownership but the source retains an unowned reference.
-A `unique_ptr_ref` can also be moved to an `std::unique_ptr` in which case
+A `%unique_ptr_ref` can also be moved to an `std::unique_ptr` in which case
 the destination has ownership and the source retains a reference.
 
 This class is entirely inline and has no computational overhead. Space overhead
 is one boolean to remember whether we have ownership of the managed object.
-Because of alignment requirements, the actual space used by `unique_ptr_ref`
+Because of alignment requirements, the actual space used by `%unique_ptr_ref`
 will typically be the size of two pointers.
 
-@tparam T   The type of the contained object, which must not be an array type.
-**/
+Specializations are provided for method `drake::swap<unique_ptr_ref>()` and
+class `std::hash<drake::unique_ptr_ref>` with behavior defined similarly to
+the corresponding specializations for `std::unique_ptr`.
+
+@see drake::make_unique_ref() **/
 template <class T>
 class unique_ptr_ref {
   /** @cond **/  // static_assert confuses doxygen.
@@ -67,36 +101,38 @@ class unique_ptr_ref {
   /** @name                    Constructors **/
   /**@{**/
 
-  /** Default constructor stores a `nullptr`. No heap allocation is performed.
-  The `empty()` method will return `true` when called on a default-constructed
-  %unique_ptr_ref. The `is_owner()` method will return `false`. **/
+  /** Default constructor stores a `nullptr`.
+  No heap allocation is performed. The `empty()` method will return `true` when
+  called on a default-constructed %unique_ptr_ref. The `is_owner()` method will
+  return `false`. **/
   constexpr unique_ptr_ref() noexcept {}
 
   /** Constructor from `nullptr` is the same as the default constructor.
-  This is an implicit conversion that allows `nullptr` to be used to
-  initialize a %unique_ptr_ref. **/
+  This is an implicit conversion that allows `nullptr` to be used to initialize
+  a %unique_ptr_ref. **/
   constexpr unique_ptr_ref(std::nullptr_t) noexcept : unique_ptr_ref() {}
 
   /** Given a pointer to a writable heap-allocated object, take over
   ownership of that object. **/
   explicit unique_ptr_ref(T* p) noexcept : p_{p}, is_owner_{true} {}
 
-  /** Copy constructor copies the pointer but the new %unique_ptr_ref object
-  does not have ownership, regardless of whether the source object did. If the
-  source container is empty this one will be empty also. **/
-  unique_ptr_ref(const unique_ptr_ref& source) : p_{source.get()} {}
+  /** Copy constructor copies the pointer but the new %unique_ptr_ref
+  object does not have ownership, regardless of whether the source object did.
+  If the source container is empty this one will be empty also. **/
+  unique_ptr_ref(const unique_ptr_ref& source) : p_{source.p_} {}
 
-  /** Copy construction from a compatible %unique_ptr_ref. Type `U*` must be
-  implicitly convertible to type `T*`. Ownership is not transferred, but the
-  new `%unique_ptr_ref` will have a pointer to the object that is managed by
-  @p source. **/
+  /** Copy construction from a compatible %unique_ptr_ref.
+  Type `U*` must be implicitly convertible to type `T*`. Ownership is not
+  transferred, but the new `%unique_ptr_ref` will have a pointer to the object
+  that is managed by @p source. **/
   template <typename U>
-  unique_ptr_ref(const unique_ptr_ref<U>& source) : p_{source.get()} {}
+  unique_ptr_ref(const unique_ptr_ref<U>& source) : p_{source.p_} {}
 
-  /** Copy construction from a compatible `std::unique_ptr` with a default
-  deleter. Type `U*` must be implicitly convertible to type `T*`. Ownership is
-  not transferred but the `%unique_ptr_ref` will have a pointer to the
-  managed object. **/
+  /** Copy construction from a compatible `std::unique_ptr` with a
+  default deleter.
+  Type `U*` must be implicitly convertible to type `T*`. Ownership is not
+  transferred but the `%unique_ptr_ref` will have a pointer to the managed
+  object. **/
   template <typename U>
   unique_ptr_ref(const std::unique_ptr<U>& source) : p_{source.get()} {}
 
@@ -119,13 +155,13 @@ class unique_ptr_ref {
     source.is_owner_ = false;
   }
 
-  /** Move construction from a compatible `std::unique_ptr` rvalue reference. 
-  Type `U*` must be implicitly convertible to type `T*`. Ownership is 
+  /** Move construction from a compatible `std::unique_ptr` rvalue reference.
+  Type `U*` must be implicitly convertible to type `T*`. Ownership is
   transferred from the source source to the new `%unique_ptr_ref`. If the source
   was empty this will be empty also. No heap activity occurs. **/
   template <class U>
   unique_ptr_ref(std::unique_ptr<U>&& source) noexcept
-      : p_{source.release()}, is_owner_{p_!=nullptr} {}
+      : p_{source.release()}, is_owner_{p_ != nullptr} {}
 
   /**@}**/
 
@@ -138,33 +174,33 @@ class unique_ptr_ref {
   Nothing happens if the source and destination manage the same pointer. **/
   unique_ptr_ref& operator=(const unique_ptr_ref& source) {
     if (source.p_ != p_) {
-      reset(); // now null, unowned
+      reset();  // now null, unowned
       p_ = source.p_;
     }
     return *this;
   }
 
   /** Copy assignment from a compatible %unique_ptr_ref. Type `U*` must be
-  implicitly convertible to type `T*`. The currently-held object (if any) is 
+  implicitly convertible to type `T*`. The currently-held object (if any) is
   deleted if owned. If the source container is empty this one will be empty also
-  after assignment. Nothing happens if the source and destination manage the 
+  after assignment. Nothing happens if the source and destination manage the
   same pointer. **/
   template <class U>
   unique_ptr_ref& operator=(const unique_ptr_ref<U>& source) noexcept {
     if (source.p_ != p_) {
-      reset(); // now null, unowned
+      reset();  // now null, unowned
       p_ = source.p_;
     }
     return *this;
   }
 
   /** Move assignment replaces the currently-held object by the source object,
-  and transfers ownership if the source owned the object. The currently-held 
+  and transfers ownership if the source owned the object. The currently-held
   object (if any) is deleted. If source and this manage the same pointer, only
   the ownership changes. **/
   unique_ptr_ref& operator=(unique_ptr_ref&& source) noexcept {
     if (source.p_ != p_) {
-      reset(); // now null, unowned
+      reset();  // now null, unowned
       p_ = source.p_;
     }
     is_owner_ = source.is_owner_;
@@ -174,14 +210,14 @@ class unique_ptr_ref {
 
   /** Move assignment from a compatible %unique_ptr_ref. Type `U*` must be
   implicitly convertible to type `T*`. Replaces the currently-held object by the
-  source object, and transfers ownership if the source owned the object. The 
+  source object, and transfers ownership if the source owned the object. The
   currently-held object (if any) is deleted. The source is left with the same
-  pointer, but loses ownership if it had it. If source and `this` manage the 
+  pointer, but loses ownership if it had it. If source and `this` manage the
   same pointer, only the ownership changes. **/
   template <class U>
   unique_ptr_ref& operator=(unique_ptr_ref<U>&& src) noexcept {
     if (source.p_ != p_) {
-      reset(); // now null, unowned
+      reset();  // now null, unowned
       p_ = source.p_;
     }
     is_owner_ = source.is_owner_;
@@ -246,9 +282,9 @@ class unique_ptr_ref {
 
   /** Replace the contents of this container with the supplied heap-allocated
   object, taking over ownership of that object and deleting the current one
-  first if necessary. If the supplied pointer is the same as the one already 
+  first if necessary. If the supplied pointer is the same as the one already
   being managed, then no delete occurs but this container takes over ownership
-  if it didn't have ownership before. If the supplied pointer is null this 
+  if it didn't have ownership before. If the supplied pointer is null this
   container is restored to its default-constucted state. **/
   void reset(T* p) noexcept {
     if (p_ != p) {
@@ -279,8 +315,8 @@ class unique_ptr_ref {
 
   /** If this container owns the object to which it refers, this method returns
   the pointer and transfers ownership to the caller. Otherwise it returns
-  `nullptr`, even if it contains a non-null (but unowned) pointer. No object 
-  destruction occurs. The pointer is retained for future reference, but 
+  `nullptr`, even if it contains a non-null (but unowned) pointer. No object
+  destruction occurs. The pointer is retained for future reference, but
   `is_owner()` will return `false` after this method is called. **/
   T* release() noexcept {
     if (is_owner_) {
@@ -290,7 +326,7 @@ class unique_ptr_ref {
     return nullptr;
   }
 
-  /** Transfer ownership to a temporary (rvalue) `std::unique_ptr` which can be 
+  /** Transfer ownership to a temporary (rvalue) `std::unique_ptr` which can be
   moved into a retained `std::unique_ptr` via move construction or assignment.
   If this container does not have ownership, the returned `std::unique_ptr` will
   be empty. **/
@@ -302,7 +338,7 @@ class unique_ptr_ref {
   template <typename U>
   friend class unique_ptr_ref;
 
-  T*   p_{nullptr};
+  T* p_{nullptr};
   bool is_owner_{false};
 };
 
@@ -313,6 +349,22 @@ class unique_ptr_ref {
 // "Koenig lookup" which examines the arguments' namespaces first.
 // See Herb Sutter's discussion here:
 // http://www.gotw.ca/publications/mill08.htm.
+
+/** Convenience method for creating a `drake::unique_ptr_ref` without
+repetition of the managed type. Typical use: @code{.cc}
+  auto myObj = drake::make_unique_ref<Object>(a1,a2);
+  drake::unique_ptr_ref<Object> myObj(new Object(a1,a2)); // equivalent
+@endcode
+where `a1,a2` can be any arguments to be passed to one of Object's constructors.
+In general, this method is equivalent to @code{.cc}
+  drake::unique_ptr_ref<T> myObj(new T(std::forward<Args>(args)...))
+@endcode
+@see std::make_unique()
+@relates unique_ptr_ref **/
+template <class T, class... Args>
+unique_ptr_ref<T> make_unique_ref(Args&&... args) {
+  return unique_ptr_ref<T>(new T(std::forward<Args>(args)...));
+}
 
 /** This is an overload of the STL std::swap() algorithm which uses the
 cheap built-in swap() member of the unique_ptr_ref class. (This method
@@ -477,3 +529,27 @@ inline bool operator<=(std::nullptr_t, const unique_ptr_ref<T>& rhs) {
 
 }  // namespace drake
 
+//==============================================================================
+//             std::hash<drake::unique_ptr_ref<T>> specialization
+//==============================================================================
+/* Adding this specialization to namespace std is permitted by the standard and
+makes `std::unordered_map<unique_ptr_ref<T>>` work properly. See stackoverflow
+discussion here: http://stackoverflow.com/questions/8157937/
+  how-to-specialize-stdhashkeyoperator-for-user-defined-type-in-unordered
+and cppreference: http://en.cppreference.com/w/cpp/utility/hash. */
+
+namespace std {
+
+/** Specializes `std::hash` for `drake::unique_ptr_ref<T>`. Note that this
+specialization is added to the `std::` namespace. **/
+template <class T>
+class hash<::drake::unique_ptr_ref<T>> {
+ public:
+  /** Returns a hash of the contained pointer. 
+  @relates drake::unique_ptr_ref **/
+  size_t operator()(const ::drake::unique_ptr_ref<T>& p) const {
+    return hash<typename ::drake::unique_ptr_ref<T>::pointer>()(p.get());
+  }
+};
+
+}  // namespace std

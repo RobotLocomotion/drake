@@ -3,6 +3,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_map>
 
 #include "gtest/gtest.h"
 
@@ -49,8 +50,8 @@ class Mechanism {
 };
 
 GTEST_TEST(UniquePtrRefTest, APITest) {
-  unique_ptr_ref<PinJoint> pj(new PinJoint());
-  unique_ptr_ref<SlidingJoint> sj(new SlidingJoint());
+  auto pj = make_unique_ref<PinJoint>();
+  auto sj = make_unique_ref<SlidingJoint>();
 
   // Verify that we initially have ownership.
   EXPECT_TRUE(pj.is_owner());
@@ -82,10 +83,13 @@ GTEST_TEST(UniquePtrRefTest, APITest) {
 }
 
 GTEST_TEST(UniquePtrRefTest, Construction) {
+  // These should be equivalent.
   unique_ptr_ref<int> ip(new int(5));
+  auto ip2 = make_unique_ref<int>(5);
+  EXPECT_EQ(*ip, *ip2);
 
-  unique_ptr_ref<PinJoint> pj(new PinJoint());
-  unique_ptr_ref<SlidingJoint> sj(new SlidingJoint());
+  auto pj = make_unique_ref<PinJoint>();
+  auto sj = make_unique_ref<SlidingJoint>();
 
   unique_ptr_ref<AbstractJoint> aj(pj);
   EXPECT_TRUE(pj.is_owner());
@@ -111,6 +115,25 @@ GTEST_TEST(UniquePtrRefTest, Construction) {
   EXPECT_TRUE(upri2.is_owner());
   EXPECT_TRUE(upri2);
 
+}
+
+GTEST_TEST(UniquePtrRefTest, Hash) {
+    // Hash result should be the same as the built-in hash of the contained
+    // pointer.
+    auto toBeHashed = make_unique_ref<SlidingJoint>();
+    EXPECT_EQ(std::hash<unique_ptr_ref<SlidingJoint>>()(toBeHashed), 
+              std::hash<SlidingJoint*>()(toBeHashed.get()));
+
+    // Should be possible to store in an unordered map using the default
+    // hash function (since the specialization is in std:: namespace).
+    auto i1 = make_unique_ref<int>(5);
+    auto i2 = make_unique_ref<int>(10);
+
+    std::unordered_map<unique_ptr_ref<int>,std::string> map;
+    map[i1] = "i1";
+    map[i2] = "i2";
+    EXPECT_EQ(map[i1], "i1");
+    EXPECT_EQ(map[i2], "i2");
 }
 
 }  // namespace
