@@ -149,7 +149,7 @@ void RigidBodyTree::compile(void) {
     }
   }
 
-  // Counts the number of position and velocitie there are in this rigid body
+  // Counts the number of position and velocities there are in this rigid body
   // tree. Notice bodies here are accessed in the sorted vector RBT::bodies.
   // This then determines the numbering in position_num_start and
   // in velocity_num_start.
