@@ -18,7 +18,7 @@ class Adder : public SystemInterface<T> {
   /// @param num_inputs is the number of input ports to be added.
   /// @param length is the size of each input port.
   Adder(size_t num_inputs, size_t length);
-  virtual ~Adder() {}
+  ~Adder() override {}
 
   /// Allocates the number of input ports specified in the constructor.
   /// Allocates no state.
@@ -32,6 +32,7 @@ class Adder : public SystemInterface<T> {
   void Output(const Context<T>& context,
               SystemOutput<T>* output) const override;
 
+  /// TODO(david-german-tri): Make this configurable in the constructor.
   std::string get_name() const override { return "adder"; }
 
  private:

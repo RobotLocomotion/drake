@@ -46,9 +46,7 @@ void Adder<T>::Output(const Context<T>& context,
   VectorInterface<T>* output_port = output->continuous_ports[0].output.get();
   assert(output_port != nullptr);
   assert(output_port->get_value().rows() == length_);
-  for (int i = 0; i < output_port->get_value().rows(); i++) {
-    output_port->get_mutable_value()[i] = 0;
-  }
+  output_port->get_mutable_value() = VectorX<T>::Zero(length_);
 
   // Check that there are the expected number of input ports.
   if (context.get_input().continuous_ports.size() != num_inputs_) {
@@ -66,13 +64,11 @@ void Adder<T>::Output(const Context<T>& context,
       throw std::runtime_error("Input port " + std::to_string(i) +
                                "is nullptr or has incorrect size.");
     }
-    for (int j = 0; j < input->get_value().rows(); j++) {
-      output_port->get_mutable_value()[j] += input->get_value()[j];
-    }
+    output_port->get_mutable_value() += input->get_value();
   }
 }
 
 template class DRAKESYSTEMFRAMEWORK_EXPORT Adder<double>;
 
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake

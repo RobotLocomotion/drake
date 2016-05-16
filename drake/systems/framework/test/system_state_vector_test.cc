@@ -24,14 +24,14 @@ class SystemStateVectorTest : public ::testing::Test {
 };
 
 TEST_F(SystemStateVectorTest, Access) {
-  EXPECT_EQ(kLength, state_vector_->get_size());
+  EXPECT_EQ(kLength, state_vector_->size());
   EXPECT_EQ(1, state_vector_->GetAtIndex(0));
   EXPECT_EQ(2, state_vector_->GetAtIndex(1));
   EXPECT_THROW(state_vector_->GetAtIndex(2), std::runtime_error);
 
   Eigen::Vector2i expected;
   expected << 1, 2;
-  EXPECT_EQ(expected, state_vector_->GetVector()->get_value());
+  EXPECT_EQ(expected, state_vector_->GetVectorIfLeaf()->get_value());
 }
 
 TEST_F(SystemStateVectorTest, InvalidAccess) {
@@ -43,7 +43,7 @@ TEST_F(SystemStateVectorTest, Mutation) {
 
   Eigen::Vector2i expected;
   expected << 42, 2;
-  EXPECT_EQ(expected, state_vector_->GetVector()->get_value());
+  EXPECT_EQ(expected, state_vector_->GetVectorIfLeaf()->get_value());
 }
 
 TEST_F(SystemStateVectorTest, SetFromVector) {
@@ -51,7 +51,7 @@ TEST_F(SystemStateVectorTest, SetFromVector) {
   next_value << 1, 2;
 
   state_vector_->SetFromVector(next_value.head(kLength));
-  EXPECT_EQ(next_value, state_vector_->GetVector()->get_value());
+  EXPECT_EQ(next_value, state_vector_->GetVectorIfLeaf()->get_value());
 }
 
 TEST_F(SystemStateVectorTest, InvalidMutation) {
