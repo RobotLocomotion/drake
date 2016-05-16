@@ -17,20 +17,20 @@ class RigidBodyTreeTest : public ::testing::Test {
 
     // Defines four rigid bodies.
     r1b1 = new RigidBody();
-    r1b1->model_name = "robot1";
-    r1b1->linkname = "body1";
+    r1b1->model_name_ = "robot1";
+    r1b1->name_ = "body1";
 
     r2b1 = new RigidBody();
-    r2b1->model_name = "robot2";
-    r2b1->linkname = "body1";
+    r2b1->model_name_ = "robot2";
+    r2b1->name_ = "body1";
 
     r3b1 = new RigidBody();
-    r3b1->model_name = "robot3";
-    r3b1->linkname = "body1";
+    r3b1->model_name_ = "robot3";
+    r3b1->name_ = "body1";
 
     r4b1 = new RigidBody();
-    r4b1->model_name = "robot4";
-    r4b1->linkname = "body1";
+    r4b1->model_name_ = "robot4";
+    r4b1->name_ = "body1";
   }
 
  public:

@@ -1,21 +1,44 @@
 
 #include "drake/systems/plants/RigidBodySystem.h"
+#include <list>
 #include <stdexcept>
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/ConstraintWrappers.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "spruce.hh"
 #include "xmlUtil.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace Drake;
-using namespace tinyxml2;
+using Eigen::Isometry3d;
+using Eigen::Matrix;
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+
+using std::allocate_shared;
+using std::default_random_engine;
+using std::make_shared;
+using std::numeric_limits;
+using std::runtime_error;
+using std::shared_ptr;
+using std::string;
+
+using tinyxml2::XMLDocument;
+using tinyxml2::XMLElement;
+using tinyxml2::XML_SUCCESS;
+
+namespace Drake {
 
 size_t RigidBodySystem::getNumStates() const {
-  return tree->num_positions + tree->num_velocities;
+  return tree->number_of_positions() + tree->number_of_velocities();
 }
+
+// TODO(sam.creasey) This whole file should be in this namespace.
+using Drake::systems::plants::SingleTimeKinematicConstraintWrapper;
+using Drake::systems::plants::KinematicsCacheHelper;
 
 size_t RigidBodySystem::getNumInputs(void) const {
   size_t num = tree->actuators.size();
@@ -31,6 +54,14 @@ size_t RigidBodySystem::getNumOutputs() const {
     n += s->getNumOutputs();
   }
   return n;
+}
+
+int RigidBodySystem::number_of_positions() const {
+  return tree->number_of_positions();
+}
+
+int RigidBodySystem::number_of_velocities() const {
+  return tree->number_of_velocities();
 }
 
 void RigidBodySystem::addSensor(std::shared_ptr<RigidBodySensor> s) {
@@ -49,8 +80,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
   // todo: make kinematics cache once and re-use it (but have to make one per
   // type)
-  auto nq = tree->num_positions;
-  auto nv = tree->num_velocities;
+  auto nq = tree->number_of_positions();
+  auto nv = tree->number_of_velocities();
   auto num_actuators = tree->actuators.size();
   auto q = x.topRows(nq);
   auto v = x.bottomRows(nv);
@@ -214,8 +245,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 RigidBodySystem::OutputVector<double> RigidBodySystem::output(
     const double& t, const RigidBodySystem::StateVector<double>& x,
     const RigidBodySystem::InputVector<double>& u) const {
-  auto kinsol = tree->doKinematics(x.topRows(tree->num_positions),
-                                   x.bottomRows(tree->num_velocities));
+  auto kinsol = tree->doKinematics(x.topRows(tree->number_of_positions()),
+                                   x.bottomRows(tree->number_of_velocities()));
   Eigen::VectorXd y(getNumOutputs());
 
   assert(getNumStates() == x.size());
@@ -230,52 +261,22 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
   return y;
 }
 
-const std::vector<std::shared_ptr<RigidBodySensor>>&
-RigidBodySystem::GetSensors() const {
-  return sensors;
+std::vector<const RigidBodySensor*> RigidBodySystem::GetSensors() const {
+  std::vector<const RigidBodySensor*> result;
+  for (size_t ii = 0; ii < sensors.size(); ii++) {
+    result.push_back(sensors[ii].get());
+  }
+  return result;
 }
 
-// todo: move this to a more central location
-class SingleTimeKinematicConstraintWrapper : public Constraint {
- public:
-  SingleTimeKinematicConstraintWrapper(
-      const shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint)
-      : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
-        rigid_body_constraint(rigid_body_constraint),
-        kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
-    rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
-  }
-  ~SingleTimeKinematicConstraintWrapper() override {}
-
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-            Eigen::VectorXd& y) const override {
-    kinsol.initialize(q);
-    rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
-    MatrixXd dy;
-    rigid_body_constraint->eval(nullptr, kinsol, y, dy);
-  }
-  void eval(const Eigen::Ref<const TaylorVecXd>& tq,
-            TaylorVecXd& ty) const override {
-    kinsol.initialize(autoDiffToValueMatrix(tq));
-    rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
-    VectorXd y;
-    MatrixXd dy;
-    rigid_body_constraint->eval(nullptr, kinsol, y, dy);
-    initializeAutoDiffGivenGradientMatrix(
-        y, (dy * autoDiffToGradientMatrix(tq)).eval(), ty);
-  }
-
- private:
-  shared_ptr<SingleTimeKinematicConstraint> rigid_body_constraint;
-  mutable KinematicsCache<double> kinsol;
-};
-
 DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double>
-Drake::getInitialState(const RigidBodySystem& sys) {
-  VectorXd x0(sys.tree->num_positions + sys.tree->num_velocities);
+getInitialState(const RigidBodySystem& sys) {
+  VectorXd x0(sys.tree->number_of_positions() +
+              sys.tree->number_of_velocities());
+
   default_random_engine generator;
   x0 << sys.tree->getRandomConfiguration(generator),
-      VectorXd::Random(sys.tree->num_velocities);
+      VectorXd::Random(sys.tree->number_of_velocities());
 
   // todo: implement joint limits, etc.
 
@@ -286,7 +287,7 @@ Drake::getInitialState(const RigidBodySystem& sys) {
     std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> const&
         loops = sys.tree->loops;
 
-    int nq = sys.tree->num_positions;
+    int nq = sys.tree->number_of_positions();
     auto qvar = prog.AddContinuousVariables(nq);
 
     Matrix<double, 7, 1> bTbp = Matrix<double, 7, 1>::Zero();
@@ -295,19 +296,23 @@ Drake::getInitialState(const RigidBodySystem& sys) {
     tspan << -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity();
     Vector3d zero = Vector3d::Zero();
+    KinematicsCacheHelper<double> kin_helper(sys.tree->bodies);
+    std::list<RelativePositionConstraint> constraints;
     for (int i = 0; i < loops.size(); i++) {
-      auto con1 = make_shared<RelativePositionConstraint>(
+      constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index,
-          loops[i].frameB->frame_index, bTbp, tspan);
+          loops[i].frameB->frame_index, bTbp, tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
-          new SingleTimeKinematicConstraintWrapper(con1));
+          new SingleTimeKinematicConstraintWrapper(
+              &constraints.back(), &kin_helper));
       prog.AddGenericConstraint(con1wrapper, {qvar});
-      auto con2 = make_shared<RelativePositionConstraint>(
+      constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis,
           loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp,
-          tspan);
+          tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
-          new SingleTimeKinematicConstraintWrapper(con2));
+          new SingleTimeKinematicConstraintWrapper(
+              &constraints.back(), &kin_helper));
       prog.AddGenericConstraint(con2wrapper, {qvar});
     }
 
@@ -315,7 +320,7 @@ Drake::getInitialState(const RigidBodySystem& sys) {
     prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
     prog.Solve();
 
-    x0 << qvar.value(), VectorXd::Zero(sys.tree->num_velocities);
+    x0 << qvar.value(), VectorXd::Zero(sys.tree->number_of_velocities());
   }
   return x0;
 }
@@ -460,88 +465,134 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(
     const std::shared_ptr<RigidBodyFrame> frame, std::size_t samples,
     double min_angle, double max_angle, double range)
     : RigidBodySensor(sys, name),
-      frame(frame),
-      min_pitch(0.0),
-      max_pitch(0.0),
-      min_yaw(min_angle),
-      max_yaw(max_angle),
-      num_pixel_rows(1),
-      num_pixel_cols(samples),
-      min_range(0.0),
-      max_range(range) {
+      frame_(frame),
+      min_yaw_(min_angle),
+      max_yaw_(max_angle),
+      num_pixel_cols_(samples),
+      max_range_(range) {
+  CheckValidConfiguration();
   cacheRaycastEndpoints();
 }
 
 RigidBodyDepthSensor::RigidBodyDepthSensor(
     RigidBodySystem const& sys, const std::string& name,
     std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node)
-    : RigidBodySensor(sys, name),
-      frame(frame),
-      min_pitch(0.0),
-      max_pitch(0.0),
-      min_yaw(0.0),
-      max_yaw(0.0),
-      num_pixel_rows(1),
-      num_pixel_cols(1),
-      min_range(0.0),
-      max_range(10.0) {
+    : RigidBodySensor(sys, name), frame_(frame) {
   string type(node->Attribute("type"));
 
   if (type.compare("ray") == 0) {
     XMLElement* ray_node = node->FirstChildElement("ray");
     if (!ray_node)
-      throw std::runtime_error("ray sensor does not have a ray element");
+      throw std::runtime_error("Ray sensor does not have a ray element");
     XMLElement* scan_node = ray_node->FirstChildElement("scan");
     if (!scan_node)
-      throw std::runtime_error("ray element does not have a scan element");
+      throw std::runtime_error("Ray element does not have a scan element");
 
     XMLElement* horizontal_node = scan_node->FirstChildElement("horizontal");
     if (horizontal_node) {  // it's required by the xml spec, but don't actually
                             // require it here
-      parseScalarValue(horizontal_node, "samples", num_pixel_cols);
-      parseScalarValue(horizontal_node, "min_angle", min_yaw);
-      parseScalarValue(horizontal_node, "max_angle", max_yaw);
+      parseScalarValue(horizontal_node, "samples", num_pixel_cols_);
+      parseScalarValue(horizontal_node, "min_angle", min_yaw_);
+      parseScalarValue(horizontal_node, "max_angle", max_yaw_);
       double resolution;
       parseScalarValue(horizontal_node, "resolution", resolution);
-      num_pixel_cols = static_cast<int>(resolution * num_pixel_cols);
+      num_pixel_cols_ = static_cast<int>(resolution * num_pixel_cols_);
     }
 
     XMLElement* vertical_node = scan_node->FirstChildElement("vertical");
     if (vertical_node) {
-      parseScalarValue(vertical_node, "samples", num_pixel_rows);
-      parseScalarValue(vertical_node, "min_angle", min_pitch);
-      parseScalarValue(vertical_node, "max_angle", max_pitch);
+      parseScalarValue(vertical_node, "samples", num_pixel_rows_);
+      parseScalarValue(vertical_node, "min_angle", min_pitch_);
+      parseScalarValue(vertical_node, "max_angle", max_pitch_);
       double resolution;
       parseScalarValue(vertical_node, "resolution", resolution);
-      num_pixel_rows = static_cast<int>(resolution * num_pixel_rows);
+      num_pixel_rows_ = static_cast<int>(resolution * num_pixel_rows_);
     }
 
     XMLElement* range_node = ray_node->FirstChildElement("range");
     if (!range_node)
       throw std::runtime_error("ray sensor does not have a range element");
-    parseScalarValue(range_node, "min", min_range);
-    parseScalarValue(range_node, "max", max_range);
+    parseScalarValue(range_node, "min", min_range_);
+    parseScalarValue(range_node, "max", max_range_);
   }
 
+  CheckValidConfiguration();
   cacheRaycastEndpoints();
 }
 
+void RigidBodyDepthSensor::CheckValidConfiguration() {
+  // Verifies that the minimum pitch is less than or equal to the maximum pitch.
+  if (min_pitch_ > max_pitch_) {
+    std::stringstream error_msg;
+    error_msg
+        << "ERROR: RigidBodyDepthSensor: min pitch is greater than max pitch!"
+        << std::endl
+        << "  - min pitch: " << min_pitch_ << std::endl
+        << "  - max pitch: " << max_pitch_ << std::endl
+        << std::endl;
+    throw std::runtime_error(error_msg.str());
+  }
+
+  // Verifies that the minimum yaw is less than or equal to the maximum yaw.
+  if (min_yaw_ > max_yaw_) {
+    std::stringstream error_msg;
+    error_msg << "ERROR: RigidBodyDepthSensor: min yaw is greater than max yaw!"
+              << std::endl
+              << "  - min yaw: " << min_yaw_ << std::endl
+              << "  - max yaw: " << max_yaw_ << std::endl
+              << std::endl;
+    throw std::runtime_error(error_msg.str());
+  }
+
+  // Verifies that if the min or max pitch is non-zero that there is a non-zero
+  // number of pixels per row.
+  if (((min_pitch_ != 0) || (max_pitch_ != 0)) && (num_pixel_rows_ == 0)) {
+    std::stringstream error_msg;
+    error_msg << "ERROR: RigidBodyDepthSensor: Configuration problem. "
+                 "Contradiction between min/max pitch and number of pixels per "
+                 "row."
+              << std::endl
+              << "  - sensor name: " << name << std::endl
+              << "  - min pitch: " << min_pitch_ << std::endl
+              << "  - max pitch: " << max_pitch_ << std::endl
+              << "  - number of pixels per row: " << num_pixel_rows_
+              << std::endl;
+    throw std::runtime_error(error_msg.str());
+  }
+
+  // Verifies that if the min or max yaw is non-zero that there is a non-zero
+  // number of pixels per column.
+  if (((min_yaw_ != 0) || (max_yaw_ != 0)) && (num_pixel_cols_ == 0)) {
+    std::stringstream error_msg;
+    error_msg << "ERROR: RigidBodyDepthSensor: Configuration problem. "
+                 "Contradiction between min/max yaw and number of pixels per "
+                 "column."
+              << std::endl
+              << "  - sensor name: " << name << std::endl
+              << "  - min yaw: " << min_yaw_ << std::endl
+              << "  - max yaw: " << max_yaw_ << std::endl
+              << "  - number of pixels per row: " << num_pixel_cols_
+              << std::endl;
+    throw std::runtime_error(error_msg.str());
+  }
+}
+
 void RigidBodyDepthSensor::cacheRaycastEndpoints() {
-  raycast_endpoints.resize(3, num_pixel_rows * num_pixel_cols);
-  for (size_t i = 0; i < num_pixel_rows; i++) {
+  raycast_endpoints.resize(3, num_pixel_rows_ * num_pixel_cols_);
+  for (size_t i = 0; i < num_pixel_rows_; i++) {
     double pitch =
-        min_pitch +
-        (num_pixel_rows > 1 ? static_cast<double>(i) / (num_pixel_rows - 1)
-                            : 0.0) *
-            (max_pitch - min_pitch);
-    for (size_t j = 0; j < num_pixel_cols; j++) {
+        min_pitch_ +
+        (num_pixel_rows_ > 1 ? static_cast<double>(i) / (num_pixel_rows_ - 1)
+                             : 0.0) *
+            (max_pitch_ - min_pitch_);
+    for (size_t j = 0; j < num_pixel_cols_; j++) {
       double yaw =
-          min_yaw +
-          (num_pixel_cols > 1 ? static_cast<double>(j) / (num_pixel_cols - 1)
-                              : 0.0) *
-              (max_yaw - min_yaw);
-      raycast_endpoints.col(num_pixel_cols * i + j) =
-          max_range *
+          min_yaw_ +
+          (num_pixel_cols_ > 1 ? static_cast<double>(j) / (num_pixel_cols_ - 1)
+                               : 0.0) *
+              (max_yaw_ - min_yaw_);
+      raycast_endpoints.col(num_pixel_cols_ * i + j) =
+          max_range_ *
           Vector3d(
               cos(yaw) * cos(pitch), sin(yaw),
               -cos(yaw) *
@@ -553,23 +604,23 @@ void RigidBodyDepthSensor::cacheRaycastEndpoints() {
 Eigen::VectorXd RigidBodyDepthSensor::output(
     const double& t, const KinematicsCache<double>& rigid_body_state,
     const RigidBodySystem::InputVector<double>& u) const {
-  const size_t num_distances = num_pixel_cols * num_pixel_rows;
+  const size_t num_distances = num_pixel_cols_ * num_pixel_rows_;
   VectorXd distances(num_distances);
 
   Vector3d origin = sys.getRigidBodyTree()->transformPoints(
-      rigid_body_state, Vector3d::Zero(), frame->frame_index, 0);
+      rigid_body_state, Vector3d::Zero(), frame_->frame_index, 0);
 
   auto raycast_endpoints_world = sys.getRigidBodyTree()->transformPoints(
-      rigid_body_state, raycast_endpoints, frame->frame_index, 0);
+      rigid_body_state, raycast_endpoints, frame_->frame_index, 0);
 
   sys.getRigidBodyTree()->collisionRaycast(rigid_body_state, origin,
                                            raycast_endpoints_world, distances);
 
   for (size_t i = 0; i < num_distances; i++) {
-    if (distances[i] < 0.0 || distances[i] > max_range) {
-      distances[i] = max_range;
-    } else if (distances[i] < min_range) {
-      distances[i] = min_range;
+    if (distances[i] < 0.0 || distances[i] > max_range_) {
+      distances[i] = max_range_;
+    } else if (distances[i] < min_range_) {
+      distances[i] = min_range_;
     }
   }
 
@@ -577,36 +628,24 @@ Eigen::VectorXd RigidBodyDepthSensor::output(
 }
 
 size_t RigidBodyDepthSensor::getNumOutputs() const {
-  return num_pixel_rows * num_pixel_cols;
+  return num_pixel_rows_ * num_pixel_cols_;
 }
 
-size_t RigidBodyDepthSensor::get_num_pixel_rows() const {
-  return num_pixel_rows;
-}
+size_t RigidBodyDepthSensor::num_pixel_rows() const { return num_pixel_rows_; }
 
-size_t RigidBodyDepthSensor::get_num_pixel_cols() const {
-  return num_pixel_cols;
-}
+size_t RigidBodyDepthSensor::num_pixel_cols() const { return num_pixel_cols_; }
 
-bool RigidBodyDepthSensor::is_vertical_scanner() const {
-  return min_pitch != 0 || max_pitch != 0;
-}
+double RigidBodyDepthSensor::min_pitch() const { return min_pitch_; }
 
-bool RigidBodyDepthSensor::is_horizontal_scanner() const {
-  return min_yaw != 0 || max_yaw != 0;
-}
+double RigidBodyDepthSensor::max_pitch() const { return max_pitch_; }
 
-double RigidBodyDepthSensor::get_min_pitch() const { return min_pitch; }
+double RigidBodyDepthSensor::min_yaw() const { return min_yaw_; }
 
-double RigidBodyDepthSensor::get_max_pitch() const { return max_pitch; }
+double RigidBodyDepthSensor::max_yaw() const { return max_yaw_; }
 
-double RigidBodyDepthSensor::get_min_yaw() const { return min_yaw; }
+double RigidBodyDepthSensor::min_range() const { return min_range_; }
 
-double RigidBodyDepthSensor::get_max_yaw() const { return max_yaw; }
-
-double RigidBodyDepthSensor::get_min_range() const { return min_range; }
-
-double RigidBodyDepthSensor::get_max_range() const { return max_range; }
+double RigidBodyDepthSensor::max_range() const { return max_range_; }
 
 void parseForceElement(RigidBodySystem& sys, XMLElement* node) {
   string name = node->Attribute("name");
@@ -673,7 +712,7 @@ void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
   if (pose) {
     poseValueToTransform(pose, pose_map, transform_link_to_model);
     pose_map.insert(
-        std::pair<string, Isometry3d>(body->linkname, transform_link_to_model));
+        std::pair<string, Isometry3d>(body->name_, transform_link_to_model));
   }
 
   // Processes each sensor element within the link.
@@ -704,6 +743,10 @@ void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
       sys.addSensor(allocate_shared<RigidBodyDepthSensor>(
           Eigen::aligned_allocator<RigidBodyDepthSensor>(), sys, sensor_name,
           frame, elnode));
+    } else {
+      throw std::runtime_error(
+          "ERROR: Drake C++ currently does not support sensors of type " +
+          type + ".");
     }
   }
 }
@@ -808,22 +851,18 @@ void RigidBodySystem::addRobotFromFile(
     throw runtime_error("unknown file extension: " + ext);
 }
 
-namespace Drake {
-
 Eigen::VectorXd spatialForceInFrameToJointTorque(
     const RigidBodyTree* tree, const KinematicsCache<double>& rigid_body_state,
-    const RigidBodyFrame* frame, const Eigen::Matrix<double, 6, 1>& force) {
+    const RigidBodyFrame* frame, const Eigen::Matrix<double, 6, 1>& wrench) {
   auto T_frame_to_world =
       tree->relativeTransform(rigid_body_state, 0, frame->frame_index);
-  auto force_in_world = transformSpatialForce(T_frame_to_world, force);
+  auto force_in_world = transformSpatialForce(T_frame_to_world, wrench);
   std::vector<int> v_indices;
   auto J = tree->geometricJacobian(rigid_body_state, 0, frame->frame_index, 0,
                                    false, &v_indices);
-  Eigen::VectorXd tau = Eigen::VectorXd::Zero(tree->num_velocities);
+  Eigen::VectorXd tau = Eigen::VectorXd::Zero(tree->number_of_velocities());
   for (int i = 0; i < v_indices.size(); i++) {
     tau(v_indices[i]) = J.col(i).dot(force_in_world);
-    //      std::cout << " f_" << tree->getVelocityName(v_indices[i]) << " = "
-    //      << tau(v_indices[i]) << std::endl;
   }
   return tau;
 }
