@@ -4,7 +4,8 @@
 Doxygen Instructions
 ********************
 
-This section contains instructions on how to use `Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_ with Drake.
+This section contains instructions on how to use
+`Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_ with Drake.
 
 .. _doxygen-style-guide:
 
@@ -12,7 +13,8 @@ Doxygen Style Guide
 ===================
 
 Coming soon. See issue
-`#2051 <https://github.com/RobotLocomotion/drake/issues/2051>`_.
+`#2051 <https://github.com/RobotLocomotion/drake/issues/2051>`_ and PR
+`#2359 <https://github.com/RobotLocomotion/drake/pull/2359>`_.
 
 .. _doxygen-generation:
 
@@ -30,12 +32,17 @@ The generated website will be in
 To view the generated website, open ``index.html`` using your favorite web
 browser.
 
-Note that if you're building Drake in-source (i.e., within the ``pod-build``
+**Note 1:** If you're building Drake in-source (i.e., within the ``pod-build``
 directory), the ``[build artifacts directory]`` is typically
 ``[drake distro]/drake/pod-build/``.
+
+** Note 2:** By enabling the ``BUILD_DOCUMENTATION`` cmake option, the
+documentation will be build *every* time you compile Drake. To stop this, see
+instructions below on how to disable documentation generation.
 
 To disable documentation generation, execute::
 
     $ cd [build artifacts directory]
     $ cmake -DBUILD_DOCUMENTATION=OFF ..
     $ make
+
