@@ -154,8 +154,10 @@ class unique_ptr_ref {
   transferred from the source source to the new `%unique_ptr_ref`. If the source
   was empty this will be empty also. **/
   template <class U>
-  unique_ptr_ref(std::unique_ptr<U>&& source) noexcept
-      : p_{source.release()}, is_owner_{p_ != nullptr} {}
+  unique_ptr_ref(
+      std::unique_ptr<U>&& source) noexcept  // NOLINT(runtime/explicit)
+      : p_{source.release()},
+        is_owner_{p_ != nullptr} {}
   /**@}**/
 
   /** @name                   Assignment **/

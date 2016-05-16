@@ -115,7 +115,7 @@ GTEST_TEST(UniquePtrRefTest, Hash) {
     // Hash result should be the same as the built-in hash of the contained
     // pointer.
     auto toBeHashed = make_unique_ref<SlidingJoint>();
-    EXPECT_EQ(std::hash<unique_ptr_ref<SlidingJoint>>()(toBeHashed), 
+    EXPECT_EQ(std::hash<unique_ptr_ref<SlidingJoint>>()(toBeHashed),
               std::hash<SlidingJoint*>()(toBeHashed.get()));
 
     // Should be possible to store in an unordered map using the default
@@ -123,7 +123,7 @@ GTEST_TEST(UniquePtrRefTest, Hash) {
     auto i1 = make_unique_ref<int>(5);
     auto i2 = make_unique_ref<int>(10);
 
-    std::unordered_map<unique_ptr_ref<int>,std::string> map;
+    std::unordered_map<unique_ptr_ref<int>, std::string> map;
     map[i1] = "i1";
     map[i2] = "i2";
     EXPECT_EQ(map[i1], "i1");
