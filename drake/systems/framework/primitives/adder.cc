@@ -73,25 +73,25 @@ void Adder<T>::Output(const Context<T>& context,
 }
 
 template <typename T>
-void Adder<T>::GetDerivativesOfGeneralizedPosition(
+void Adder<T>::GetTimeDerivativesOfGeneralizedPosition(
     const Context<T>& context, VectorInterface<T>* derivatives) const {
   derivatives->set_value(VectorX<T>::Zero(0));
 }
 
 template <typename T>
-void Adder<T>::GetDerivativesOfGeneralizedVelocity(
+void Adder<T>::GetTimeDerivativesOfGeneralizedVelocity(
     const Context<T>& context, VectorInterface<T>* derivatives) const {
   derivatives->set_value(VectorX<T>::Zero(0));
 }
 
 template <typename T>
-void Adder<T>::GetDerivativesOfOtherContinuousState(
+void Adder<T>::GetTimeDerivativesOfOtherContinuousState(
     const Context<T>& context, VectorInterface<T>* derivatives) const {
   derivatives->set_value(VectorX<T>::Zero(0));
 }
 
 template <typename T>
-void Adder<T>::MapVelocityToConfigurationDerivative(
+void Adder<T>::MapVelocityToConfigurationDerivatives(
     const Context<T>& context, VectorInterface<T>* derivatives) const {
   derivatives->set_value(VectorX<T>::Zero(0));
 }

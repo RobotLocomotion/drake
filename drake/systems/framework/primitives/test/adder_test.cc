@@ -80,16 +80,16 @@ TEST_F(AdderTest, AdderIsStateless) {
 
   Cache<double> cache;
   BasicVector<double> derivatives(0 /* length */);
-  adder_->GetDerivativesOfGeneralizedVelocity(*context_, &derivatives);
+  adder_->GetTimeDerivativesOfGeneralizedVelocity(*context_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 
-  adder_->GetDerivativesOfGeneralizedPosition(*context_, &derivatives);
+  adder_->GetTimeDerivativesOfGeneralizedPosition(*context_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 
-  adder_->GetDerivativesOfOtherContinuousState(*context_, &derivatives);
+  adder_->GetTimeDerivativesOfOtherContinuousState(*context_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 
-  adder_->MapVelocityToConfigurationDerivative(*context_, &derivatives);
+  adder_->MapVelocityToConfigurationDerivatives(*context_, &derivatives);
   EXPECT_EQ(0, derivatives.get_value().rows());
 }
 
