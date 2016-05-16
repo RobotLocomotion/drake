@@ -15,6 +15,7 @@ Sphinx Website Generation
 To generate Drake's wiki, follow the same commands as in the
 :ref:`Doxygen Instructions<doxygen-instructions>`.
 
-The generated website will be in ``[build artifacts directory]/doc/sphinx/``.
-To view the generated website, open ``index.html`` using your favorite web
-browser.
+To view the generated Sphinx website, open the following file using your favorite web
+browser::
+
+    [build artifacts directory]/doc/sphinx/index.html
