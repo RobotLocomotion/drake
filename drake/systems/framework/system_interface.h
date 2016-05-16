@@ -37,8 +37,9 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractSystemInterface {
 /// A superclass template for systems that receive input, maintain state, and
 /// produce output of a given mathematical type T.
 ///
-/// Do not write concrete classes that inherit directly from SystemInterface.
-/// Instead, use a more specific interface in the *SystemInterface family.
+/// Concrete systems with no state should inherit directly from this interface.
+/// Concrete systems with state should use a more specific interface in the
+/// SystemInterface family.
 template <typename T>
 class SystemInterface : public AbstractSystemInterface {
  public:
