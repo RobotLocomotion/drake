@@ -23,14 +23,14 @@ class StateVectorInterface {
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual size_t get_size() const = 0;
+  virtual size_t size() const = 0;
 
   /// Returns the element at the given index in the vector. Throws
-  /// std::runtime_error if the index is >= get_size().
+  /// std::runtime_error if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual T GetAtIndex(size_t index) const = 0;
+  virtual const T& GetAtIndex(size_t index) const = 0;
 
   /// Returns the VectorInterface for the state, or nullptr if this state is
   /// not a leaf state (and thus does not have a contiguous vector form).
@@ -40,17 +40,17 @@ class StateVectorInterface {
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual const VectorInterface<T>* GetVector() const = 0;
+  virtual const VectorInterface<T>* GetVectorIfLeaf() const = 0;
 
   /// Replaces the state at the given index with the value. Throws
-  /// std::runtime_error if the index is >= get_size().
+  /// std::runtime_error if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
   virtual void SetAtIndex(size_t index, const T& value) = 0;
 
   /// Replaces the entire state with the contents of value. Throws
-  /// std::runtime_error if value is not a column vector with get_size() rows.
+  /// std::runtime_error if value is not a column vector with size() rows.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.
@@ -78,24 +78,26 @@ class SystemStateVector : public StateVectorInterface<T> {
   explicit SystemStateVector(std::unique_ptr<VectorInterface<T>> vector)
       : vector_(std::move(vector)) {}
 
-  size_t get_size() const override { return vector_->get_value().rows(); }
+  size_t size() const override { return vector_->get_value().rows(); }
 
-  T GetAtIndex(size_t index) const override {
-    if (index >= get_size()) {
+  const T& GetAtIndex(size_t index) const override {
+    if (index >= size()) {
       throw std::runtime_error("Index " + std::to_string(index) +
                                "out of bounds for state vector of size " +
-                               std::to_string(get_size()));
+                               std::to_string(size()));
     }
     return vector_->get_value()[index];
   }
 
-  const VectorInterface<T>* GetVector() const override { return vector_.get(); }
+  const VectorInterface<T>* GetVectorIfLeaf() const override {
+    return vector_.get();
+  }
 
   void SetAtIndex(size_t index, const T& value) override {
-    if (index >= get_size()) {
+    if (index >= size()) {
       throw std::runtime_error("Index " + std::to_string(index) +
                                "out of bounds for state vector of size " +
-                               std::to_string(get_size()));
+                               std::to_string(size()));
     }
     vector_->get_mutable_value()[index] = value;
   }
