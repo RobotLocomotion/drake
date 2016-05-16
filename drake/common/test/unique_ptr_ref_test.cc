@@ -101,20 +101,14 @@ GTEST_TEST(UniquePtrRefTest, Construction) {
   EXPECT_TRUE(aj2.is_owner());
   EXPECT_EQ(aj2.get(), pj.get());
 
-  // Copy construction from a unique_ptr should copy the pointer but 
-  // not take ownership.
-  std::unique_ptr<int> upi(new int(10));
-  unique_ptr_ref<int> upri(upi);
-  EXPECT_FALSE(upri.is_owner());
-  EXPECT_EQ(upri.get(), upi.get());
-
+  // Copy construction from a unique_ptr is not permitted.
   // Move construction from a unique_ptr should take ownership and leave
   // the source empty.
+  std::unique_ptr<int> upi(new int(10));
   unique_ptr_ref<int> upri2(std::move(upi));
   EXPECT_FALSE(upi);
   EXPECT_TRUE(upri2.is_owner());
   EXPECT_TRUE(upri2);
-
 }
 
 GTEST_TEST(UniquePtrRefTest, Hash) {
