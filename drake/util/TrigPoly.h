@@ -16,6 +16,9 @@
  * constructors); attempting to, e.g., use sin(x) without first creating a
  * SinCosMap mapping for 'x' will result in an exception.
  *
+ * The same variable may not appear more than once in the sin_cos_map,
+ * regardless of position.
+ *
  * For example:
  * \code
  * Polynomial base_x("x"), s("s"), c("c");
@@ -48,7 +51,7 @@ class TrigPoly {
 
   template <typename Rhs, typename Lhs>
   struct Product {
-    typedef decltype((Rhs)0 * (Lhs)0) type;
+    typedef decltype(static_cast<Rhs>(0) * static_cast<Lhs>(0)) type;
   };
 
   /// Constructs a vacuous TrigPoly.
@@ -66,10 +69,17 @@ class TrigPoly {
       : poly(p), sin_cos_map(_sin_cos_map) {
     // The provided _sin_cos_map might have extraneous entries; clip them.
     std::set<VarType> vars_in_use = p.getVariables();
+    std::set<VarType> vars_seen_in_map;
     for (const auto& sin_cos_entry : _sin_cos_map) {
       if (!vars_in_use.count(sin_cos_entry.first)) {
         sin_cos_map.erase(sin_cos_entry.first);
       }
+      assert(!vars_seen_in_map.count(sin_cos_entry.first));
+      assert(!vars_seen_in_map.count(sin_cos_entry.second.s));
+      assert(!vars_seen_in_map.count(sin_cos_entry.second.c));
+      vars_seen_in_map.insert(sin_cos_entry.first);
+      vars_seen_in_map.insert(sin_cos_entry.second.s);
+      vars_seen_in_map.insert(sin_cos_entry.second.c);
     }
   }
 
@@ -186,7 +196,7 @@ class TrigPoly {
     return cos(a) * cos(b) - sin(a) * sin(b);
   }
 
-  /// Return all of the base (non-sin/cos) variables in this TrigPoly.
+  /// Returns all of the base (non-sin/cos) variables in this TrigPoly.
   std::set<VarType> getVariables() const {
     std::set<VarType> vars = poly.getVariables();
     for (const auto& sin_cos_item : sin_cos_map) {
@@ -196,7 +206,7 @@ class TrigPoly {
     return vars;
   }
 
-  /// Given a value for every variable in this expression, evaluate it.
+  /// Given a value for every variable in this expression, evaluates it.
   /**
    * By analogy with Polynomial::evaluateMultivariate().  Values must be
    * supplied for all base variables; supplying values for sin/cos variables
@@ -217,7 +227,7 @@ class TrigPoly {
     return poly.evaluateMultivariate(all_var_values);
   }
 
-  /// Partially evaluate this expression, returning the resulting expression.
+  /// Partially evaluates this expression, returning the resulting expression.
   /**
    * By analogy with Polynomial::evaluatePartial.  Values must be supplied for
    * all base variables only; supplying values for sin/cos variables is an
@@ -240,7 +250,7 @@ class TrigPoly {
     return TrigPoly(poly.evaluatePartial(var_values_with_sincos), sin_cos_map);
   }
 
-  /// Compare two TrigPolys for equality.
+  /// Compares two TrigPolys for equality.
   /**
    * Note that the question of equality of TrigPolys is a bit subtle.  It is
    * not immediately clear if two TrigPolys whose poly and sin_cos_map members
