@@ -22,12 +22,11 @@ using std::string;
 #endif
 
 namespace drake {
-namespace common {
 
 // On gcc and clang typeid(T).name() returns an indecipherable mangled string
 // that requires processing to become human readable. Microsoft returns a
 // reasonable name directly.
-string drake::common::NiceTypeName::Demangle(const char* typeid_name) {
+string drake::NiceTypeName::Demangle(const char* typeid_name) {
 #if defined(__GNUG__)
   int status = -100;  // just in case it doesn't get set
   char* ret = abi::__cxa_demangle(typeid_name, NULL, NULL, &status);
@@ -44,7 +43,7 @@ string drake::common::NiceTypeName::Demangle(const char* typeid_name) {
 // Given a demangled string, attempt to canonicalize it for platform
 // indpendence. We'll remove Microsoft's "class ", "struct ", etc.
 // designations, and get rid of all unnecessary spaces.
-string drake::common::NiceTypeName::Canonicalize(const string& demangled) {
+string drake::NiceTypeName::Canonicalize(const string& demangled) {
   using SPair = std::pair<std::regex, string>;
   // These are applied in this order.
   const std::array<SPair, 8> subs{
@@ -75,6 +74,5 @@ string drake::common::NiceTypeName::Canonicalize(const string& demangled) {
   return canonical;
 }
 
-}  // namespace common
 }  // namespace drake
 
