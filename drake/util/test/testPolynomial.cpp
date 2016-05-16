@@ -1,9 +1,13 @@
+#include "drake/util/Polynomial.h"
+
+#include <cstddef>
 #include <sstream>
 #include <map>
 
-#include "drake/util/Polynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
+
+#include <Eigen/Dense>
 #include "gtest/gtest.h"
 
 using drake::util::MatrixCompareType;
@@ -150,15 +154,15 @@ void testPolynomialMatrix() {
   auto sum = A + C;
 
   uniform_real_distribution<double> uniform;
-  for (size_t row = 0; row < A.rows(); ++row) {
-    for (size_t col = 0; col < A.cols(); ++col) {
+  for (std::ptrdiff_t row = 0; row < A.rows(); ++row) {
+    for (std::ptrdiff_t col = 0; col < A.cols(); ++col) {
       double t = uniform(generator);
       EXPECT_NEAR(sum(row, col).evaluateUnivariate(t),
                   A(row, col).evaluateUnivariate(t) +
                   C(row, col).evaluateUnivariate(t), 1e-8);
 
       double expected_product = 0.0;
-      for (size_t i = 0; i < A.cols(); i++) {
+      for (std::ptrdiff_t i = 0; i < A.cols(); ++i) {
         expected_product += A(row, i).evaluateUnivariate(t) *
                             B(i, col).evaluateUnivariate(t);
       }
