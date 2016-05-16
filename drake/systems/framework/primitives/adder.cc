@@ -72,30 +72,6 @@ void Adder<T>::Output(const Context<T>& context,
   }
 }
 
-template <typename T>
-void Adder<T>::GetTimeDerivativesOfGeneralizedPosition(
-    const Context<T>& context, VectorInterface<T>* derivatives) const {
-  derivatives->set_value(VectorX<T>::Zero(0));
-}
-
-template <typename T>
-void Adder<T>::GetTimeDerivativesOfGeneralizedVelocity(
-    const Context<T>& context, VectorInterface<T>* derivatives) const {
-  derivatives->set_value(VectorX<T>::Zero(0));
-}
-
-template <typename T>
-void Adder<T>::GetTimeDerivativesOfOtherContinuousState(
-    const Context<T>& context, VectorInterface<T>* derivatives) const {
-  derivatives->set_value(VectorX<T>::Zero(0));
-}
-
-template <typename T>
-void Adder<T>::MapVelocityToConfigurationDerivatives(
-    const Context<T>& context, VectorInterface<T>* derivatives) const {
-  derivatives->set_value(VectorX<T>::Zero(0));
-}
-
 template class DRAKESYSTEMFRAMEWORK_EXPORT Adder<double>;
 
 }  // namespace systems

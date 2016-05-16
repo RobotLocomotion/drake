@@ -70,27 +70,12 @@ TEST_F(AdderTest, WrongSizeOfInputPorts) {
   EXPECT_THROW(adder_->Output(*context_, output_.get()), std::runtime_error);
 }
 
-// Tests that Adder allocates no state variables in the context_, and generates
-// no state derivatives.
+// Tests that Adder allocates no state variables in the context_.
 TEST_F(AdderTest, AdderIsStateless) {
   EXPECT_EQ(nullptr,
             context_->get_state().continuous_state.generalized_velocities);
   EXPECT_EQ(nullptr,
             context_->get_state().continuous_state.generalized_position);
-
-  Cache<double> cache;
-  BasicVector<double> derivatives(0 /* length */);
-  adder_->GetTimeDerivativesOfGeneralizedVelocity(*context_, &derivatives);
-  EXPECT_EQ(0, derivatives.get_value().rows());
-
-  adder_->GetTimeDerivativesOfGeneralizedPosition(*context_, &derivatives);
-  EXPECT_EQ(0, derivatives.get_value().rows());
-
-  adder_->GetTimeDerivativesOfOtherContinuousState(*context_, &derivatives);
-  EXPECT_EQ(0, derivatives.get_value().rows());
-
-  adder_->MapVelocityToConfigurationDerivatives(*context_, &derivatives);
-  EXPECT_EQ(0, derivatives.get_value().rows());
 }
 
 }  // namespace
