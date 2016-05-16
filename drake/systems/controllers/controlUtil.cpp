@@ -103,7 +103,7 @@ int contactConstraintsBV(
                 Eigen::aligned_allocator<SupportStateElement>> &supp,
     MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv,
     MatrixXd &normals) {
-  int j, k = 0, nq = r.num_positions;
+  int j, k = 0, nq = r.number_of_positions();
 
   B.resize(3, nc * 2 * m_surface_tangents);
   JB.resize(nq, nc * 2 * m_surface_tangents);

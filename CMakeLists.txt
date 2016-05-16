@@ -59,7 +59,9 @@ option(WITH_ALL_PUBLIC_EXTERNALS "enable all externals available to public acade
 option(WITH_ALL_SUPPORTED_EXTERNALS "enable all externals available for your platform (includes private git repositories)" OFF)
 option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" OFF)
 
-# ON by default:
+##########################################
+# External Projects that are ON by default
+##########################################
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_GOOGLETEST "required c++ unit test library.  only disable if you have it already." ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
@@ -71,9 +73,16 @@ if (WIN32)
 else()
 	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
+	option(WITH_NLOPT 		"nonlinear optimization solver"  ON)
 	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
+option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
+option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
+
+##############################################################
+# External Projects that are only needed when MATLAB is in use
+##############################################################
 include(CMakeDependentOption)
 option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
 if (DISABLE_MATLAB)
@@ -87,40 +96,38 @@ else()
 	endif(matlab)
 endif (DISABLE_MATLAB)
 
-# If DISABLE_MATLAB is set or matlab is not found, WITH_SPOTLESS is hidden and default OFF.
-# Otherwise, WITH_SPOTLESS is visible and default ON.
+
+## The following projects are default ON when MATLAB is present and enabled.
+## Otherwise, they are hidden and default OFF.
 CMAKE_DEPENDENT_OPTION(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB;matlab" OFF)
 
-option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
+## The following projects are default OFF when MATLAB is present and enabled.
+## Otherwise, they are hidden and default OFF.
+## Some of them may also be hidden on Windows regardless of the status of MATLAB.
+CMAKE_DEPENDENT_OPTION(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+CMAKE_DEPENDENT_OPTION(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+CMAKE_DEPENDENT_OPTION(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+CMAKE_DEPENDENT_OPTION(WITH_MOSEK "convex optimization solver; free for academics" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+CMAKE_DEPENDENT_OPTION(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+CMAKE_DEPENDENT_OPTION(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+CMAKE_DEPENDENT_OPTION(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 
-option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
-
-# OFF by default:
+###########################################
+# External Projects that are OFF by default
+###########################################
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
 
 if (NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
-	option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
-	option(WITH_IRIS		"fast approximate convex segmentation")
-	option(WITH_OCTOMAP 	"provides oct-tree data structures")
-	option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
-	option(WITH_MOSEK 		"convex optimization solver; free for academics")
-	option(WITH_NLOPT 		"nonlinear optimization solver"  ON)
-	option(WITH_YALMIP 		"free optimization front-end for MATLAB")
-	option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
-	option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
-	option(WITH_SEDUMI		"semi-definite programming solver")
-	option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
-	#  include(CMakeDetermineFortranCompiler) # this didn't do the trick, and enable_language(Fortran OPTIONAL) simply fails if not found (optional is a placeholder option that doesn't work yet)
-	#  if (CMAKE_Fortran_COMPILER)
 	option(WITH_AVL			"use w/ AVL to compute aerodynamic coefficients for airfoils")
-	option(WITH_XFOIL		"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
-	#  endif()
+	option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
 	option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
+	option(WITH_OCTOMAP "provides oct-tree data structures")
+	option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
+	option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 endif()
 
 if (WITH_TEXTBOOK OR WITH_ALL_SUPPORTED_EXTERNALS OR WITH_ALL_PUBLIC_EXTERNALS)
-#  find_package(PythonInterp)
-  find_program(PYTHON_EXECUTABLE NAMES python2.7 python2.6) # PythonInterp finds a symlink on cygwin, which then fails in the execute process below
+  find_package(PythonInterp)
 	if (NOT PYTHON_EXECUTABLE)
 		message(FATAL_ERROR "could not find python, which is required for the the textbook examples")
 	endif()
@@ -148,12 +155,12 @@ set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
 set(cmake_GIT_TAG b4c6cdd3ca1ee7bf2c3e14f9392a04434e0aff35)
-set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
+set(cmake_GIT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG cfc7702bf9278707bca82d0393bba8611513ea15)
-set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
+set(director_BINARY_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
 set(drake_java_args -DJava_JAVA_EXECUTABLE=${Java_JAVA_EXECUTABLE} -DJava_JAVAC_EXECUTABLE=${Java_JAVAC_EXECUTABLE} -DJava_JAVAH_EXECUTABLE=${Java_JAVAH_EXECUTABLE} -DJava_VERSION_STRING=${Java_VERSION_STRING})
 set(drake_ADDITIONAL_CMAKE_CONFIGURE_ARGS ${drake_java_args} -DWITH_PYTHON_3=${WITH_PYTHON_3} -DDISABLE_MATLAB=${DISABLE_MATLAB})
@@ -230,7 +237,7 @@ set(swig_matlab_IS_PUBLIC TRUE)
 set(swig_matlab_IS_CMAKE_POD TRUE)
 set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
 set(textbook_GIT_TAG master)
-set(textbook_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
+set(textbook_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
 set(textbook_BUILD_COMMAND ${PYTHON_EXECUTABLE} extract_examples.py underactuated.html ./examples)
 set(textbook_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
@@ -340,18 +347,8 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	endforeach()
 
 	if (NOT ${proj} STREQUAL "drake")
-		if (NOT ${proj}_GIT_CLONE_DIR)
-			set(${proj}_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/externals/${proj}")
-		endif()
 		if (NOT ${proj}_SOURCE_DIR)
-			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
-		endif()
-		if (NOT ${proj}_BINARY_DIR)
-			if(POD_BUILD)
-				set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}/pod-build")
-			else()
-				set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
-			endif()
+			set(${proj}_SOURCE_DIR "${PROJECT_SOURCE_DIR}/externals/${proj}")
 		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
 
@@ -361,8 +358,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
 		if (AUTO_UPDATE_EXTERNALS)
 			ExternalProject_Add(download-${proj}
-					DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
-					SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
+					SOURCE_DIR ${${proj}_SOURCE_DIR}
 					GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
 					GIT_TAG ${${proj}_GIT_TAG}
 					CONFIGURE_COMMAND ""
@@ -371,8 +367,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					)
 		else()
 			ExternalProject_Add(download-${proj}
-					DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
-					SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
+					SOURCE_DIR ${${proj}_SOURCE_DIR}
 					GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
 					GIT_TAG ${${proj}_GIT_TAG}
 					UPDATE_COMMAND ""
@@ -384,6 +379,13 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 		# now the actual project
 		if (${proj}_IS_CMAKE_POD)
+			if (NOT ${proj}_BINARY_DIR)
+				if(POD_BUILD)
+					set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}/pod-build")
+				else()
+					set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
+				endif()
+			endif()
 			set(PODS_VERBOSE_MAKEFILE "")
 			if (CMAKE_VERBOSE_MAKEFILE)
 			    set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
@@ -401,6 +403,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					)
 			drake_forcebuild(${proj})
 		else() # not a CMake POD
+			if (NOT ${proj}_BINARY_DIR)
+				# In-source build for non-CMake projects.
+				set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}")
+			endif()
 			if (NOT DEFINED ${proj}_BUILD_COMMAND)
 				if(${proj}_NO_BUILD)
 					set(${proj}_BUILD_COMMAND "")
@@ -415,12 +421,11 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 			ExternalProject_Add(${proj}
 					SOURCE_DIR ${${proj}_SOURCE_DIR}
-					#      BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
+					BINARY_DIR ${${proj}_BINARY_DIR}
 					DOWNLOAD_COMMAND ""
 					UPDATE_COMMAND ""
 					CONFIGURE_COMMAND ""
 					BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
-					BUILD_IN_SOURCE 1
 					INSTALL_COMMAND ""
 					DEPENDS download-${proj} ${deps}
 					${${proj}_ADDITIONAL_BUILD_ARGS}

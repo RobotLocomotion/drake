@@ -135,7 +135,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   // whole body data
   auto q_des = settings.q_traj.value(t_plan);
   qp_input.whole_body_data.timestamp = 0;
-  qp_input.whole_body_data.num_positions = robot.num_positions;
+  qp_input.whole_body_data.num_positions = robot.number_of_positions();
   eigenVectorToStdVector(q_des, qp_input.whole_body_data.q_des);
   qp_input.whole_body_data.constrained_dofs =
       settings.constrained_position_indices;
