@@ -39,12 +39,19 @@ TEST_F(SystemStateVectorTest, InvalidAccess) {
 }
 
 TEST_F(SystemStateVectorTest, Mutation) {
-  EXPECT_EQ(kLength, state_vector_->get_size());
   state_vector_->SetAtIndex(0, 42);
 
   Eigen::Vector2i expected;
   expected << 42, 2;
   EXPECT_EQ(expected, state_vector_->GetVector()->get_value());
+}
+
+TEST_F(SystemStateVectorTest, SetFromVector) {
+  Eigen::VectorXi next_value(kLength);
+  next_value << 1, 2;
+
+  state_vector_->SetFromVector(next_value.head(kLength));
+  EXPECT_EQ(next_value, state_vector_->GetVector()->get_value());
 }
 
 TEST_F(SystemStateVectorTest, InvalidMutation) {
