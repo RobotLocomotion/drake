@@ -150,8 +150,8 @@ void testPolynomialMatrix() {
   auto sum = A + C;
 
   uniform_real_distribution<double> uniform;
-  for (int row = 0; row < A.rows(); ++row) {
-    for (int col = 0; col < A.cols(); ++col) {
+  for (size_t row = 0; row < A.rows(); ++row) {
+    for (size_t col = 0; col < A.cols(); ++col) {
       double t = uniform(generator);
       EXPECT_NEAR(sum(row, col).evaluateUnivariate(t),
                   A(row, col).evaluateUnivariate(t) +
