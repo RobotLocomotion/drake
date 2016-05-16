@@ -4,11 +4,10 @@
 #include <stdexcept>
 
 #include <Eigen/Dense>
+#include "gtest/gtest.h"
 
 #include "drake/core/Vector.h"
 #include "drake/systems/cascade_system.h"
-
-#include "gtest/gtest.h"
 
 namespace {
 
@@ -19,8 +18,7 @@ using drake::NArySystem;
 
 // Vector-concept class for exercising composition.
 template <typename ScalarType>
-class StateQ {
- public:
+struct StateQ {
   static const int RowsAtCompileTime = Eigen::Dynamic;
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
 
@@ -47,8 +45,7 @@ class StateQ {
 using StateQD = StateQ<double>;
 
 // System-concept class for exercising composition.
-class SystemQ {
- public:
+struct SystemQ {
   template <typename ScalarType>
   using StateVector = StateQ<ScalarType>;
   template <typename ScalarType>
@@ -78,13 +75,11 @@ class SystemQ {
 
   bool isDirectFeedthrough() const { return feedthrough_; }
 
- public:
   const StateQ<double> dynamics_magic_;
   const StateQ<double> output_magic_;
   bool time_varying_ { false };
   bool feedthrough_ { false };
 };
-
 
 GTEST_TEST(TestNArySystem, BasicOperation) {
   std::shared_ptr<SystemQ> sq1 = std::make_shared<SystemQ>(10., 100.);
@@ -93,6 +88,7 @@ GTEST_TEST(TestNArySystem, BasicOperation) {
   NArySystem<SystemQ> dut;
   NAryState<double, StateQ> state;
   NAryState<double, StateQ> input;
+
   EXPECT_EQ(dut.isTimeVarying(), false);
   EXPECT_EQ(dut.isDirectFeedthrough(), false);
   EXPECT_EQ(dut.getNumStates(), 0);
@@ -101,7 +97,7 @@ GTEST_TEST(TestNArySystem, BasicOperation) {
   EXPECT_EQ(dut.dynamics(0., state, input).count(), 0);
   EXPECT_EQ(dut.output(0., state, input).count(), 0);
 
-  dut.addSystem(sq1);
+  dut.AddSystem(sq1);
   EXPECT_EQ(dut.isTimeVarying(), false);
   EXPECT_EQ(dut.isDirectFeedthrough(), false);
   EXPECT_EQ(dut.getNumStates(), 2);
@@ -111,12 +107,12 @@ GTEST_TEST(TestNArySystem, BasicOperation) {
   EXPECT_THROW(dut.output(0., state, input), std::invalid_argument);
   StateQ<double> s1(Eigen::Vector2d(1., 0.));
   StateQ<double> i1(Eigen::Vector2d(5., 0.));
-  state.append(s1);
-  input.append(i1);
+  state.Append(s1);
+  input.Append(i1);
   EXPECT_EQ(dut.dynamics(0., state, input).count(), 1);
   EXPECT_EQ(dut.output(0., state, input).count(), 1);
 
-  dut.addSystem(sq2);
+  dut.AddSystem(sq2);
   EXPECT_EQ(dut.isTimeVarying(), false);
   EXPECT_EQ(dut.isDirectFeedthrough(), false);
   EXPECT_EQ(dut.getNumStates(), 4);
@@ -126,8 +122,8 @@ GTEST_TEST(TestNArySystem, BasicOperation) {
   EXPECT_THROW(dut.output(0., state, input), std::invalid_argument);
   StateQ<double> s2(Eigen::Vector2d(2., 0.));
   StateQ<double> i2(Eigen::Vector2d(6., 0.));
-  state.append(s2);
-  input.append(i2);
+  state.Append(s2);
+  input.Append(i2);
   EXPECT_EQ(dut.dynamics(0., state, input).count(), 2);
   EXPECT_EQ(dut.output(0., state, input).count(), 2);
 

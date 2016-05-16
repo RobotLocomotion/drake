@@ -30,3 +30,5 @@ sleep 1  # Wait, to be sure drake-visualizer sees the load_robot message.
 $DRAKE/pod-build/bin/demo_multi_car $1 &
 
 wait
+
+# TODO(jwnimmer) Consolidate this script with simple_car_demo.sh.

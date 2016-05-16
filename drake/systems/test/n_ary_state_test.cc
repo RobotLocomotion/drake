@@ -3,10 +3,9 @@
 #include <stdexcept>
 
 #include <Eigen/Dense>
+#include "gtest/gtest.h"
 
 #include "drake/core/Vector.h"
-
-#include "gtest/gtest.h"
 
 namespace {
 
@@ -16,8 +15,7 @@ using drake::NAryState;
 
 // Vector-concept class for exercising composition.
 template <typename ScalarType>
-class VectorQ {
- public:
+struct VectorQ {
   static const int RowsAtCompileTime = Eigen::Dynamic;
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
 
@@ -44,27 +42,27 @@ class VectorQ {
 using VectorQD = VectorQ<double>;
 
 
-GTEST_TEST(TestNAryState, unitCountFromRows) {
-  EXPECT_EQ((NAryState<double, VectorQ>::unitCountFromRows(0)), 0);
-  EXPECT_EQ((NAryState<double, VectorQ>::unitCountFromRows(15)), 5);
-  EXPECT_THROW((NAryState<double, VectorQ>::unitCountFromRows(17)),
+GTEST_TEST(TestNAryState, UnitCountFromRows) {
+  EXPECT_EQ((NAryState<double, VectorQ>::UnitCountFromRows(0)), 0);
+  EXPECT_EQ((NAryState<double, VectorQ>::UnitCountFromRows(15)), 5);
+  EXPECT_THROW((NAryState<double, VectorQ>::UnitCountFromRows(17)),
                std::domain_error);
 
-  EXPECT_EQ((NAryState<double, NullVector>::unitCountFromRows(0)), -1);
-  EXPECT_EQ((NAryState<double, NullVector>::unitCountFromRows(15)), -1);
+  EXPECT_EQ((NAryState<double, NullVector>::UnitCountFromRows(0)), -1);
+  EXPECT_EQ((NAryState<double, NullVector>::UnitCountFromRows(15)), -1);
 }
 
 
-GTEST_TEST(TestNAryState, rowsFromUnitCount) {
-  EXPECT_EQ((NAryState<double, VectorQ>::rowsFromUnitCount(0)),  0);
-  EXPECT_EQ((NAryState<double, VectorQ>::rowsFromUnitCount(1)),  3);
-  EXPECT_EQ((NAryState<double, VectorQ>::rowsFromUnitCount(5)), 15);
-  EXPECT_THROW((NAryState<double, VectorQ>::rowsFromUnitCount(-1)),
+GTEST_TEST(TestNAryState, RowsFromUnitCount) {
+  EXPECT_EQ((NAryState<double, VectorQ>::RowsFromUnitCount(0)),  0);
+  EXPECT_EQ((NAryState<double, VectorQ>::RowsFromUnitCount(1)),  3);
+  EXPECT_EQ((NAryState<double, VectorQ>::RowsFromUnitCount(5)), 15);
+  EXPECT_THROW((NAryState<double, VectorQ>::RowsFromUnitCount(-1)),
                std::domain_error);
 
-  EXPECT_EQ((NAryState<double, NullVector>::rowsFromUnitCount(1)), 0);
-  EXPECT_EQ((NAryState<double, NullVector>::rowsFromUnitCount(5)), 0);
-  EXPECT_EQ((NAryState<double, NullVector>::rowsFromUnitCount(-1)), 0);
+  EXPECT_EQ((NAryState<double, NullVector>::RowsFromUnitCount(1)), 0);
+  EXPECT_EQ((NAryState<double, NullVector>::RowsFromUnitCount(5)), 0);
+  EXPECT_EQ((NAryState<double, NullVector>::RowsFromUnitCount(-1)), 0);
 }
 
 
@@ -80,13 +78,13 @@ GTEST_TEST(TestNAryState, DefaultConstructor) {
   EXPECT_THROW(dut.set(0, VectorQD()), std::out_of_range);
   EXPECT_EQ(toEigen(dut), (Eigen::Matrix<double, 0, 1>()));
 
-  dut.append(vq0);
+  dut.Append(vq0);
   EXPECT_EQ(dut.count(), 1);
   EXPECT_EQ(dut.size(), 3);
   EXPECT_EQ(dut.get(0).v, vq0.v);
   EXPECT_EQ(toEigen(dut), vq0.v);
 
-  dut.append(vq1);
+  dut.Append(vq1);
   EXPECT_EQ(dut.count(), 2);
   EXPECT_EQ(dut.size(), 6);
   EXPECT_EQ(dut.get(0).v, vq0.v);
@@ -174,7 +172,7 @@ GTEST_TEST(TestNAryState, NullUnitVectors) {
   EXPECT_EQ(toEigen(dut), Eigen::VectorXd(0));
 
   // Appending nothing to nothing should not change nothing.
-  dut.append(nv);
+  dut.Append(nv);
   EXPECT_EQ(dut.count(), -1);
   EXPECT_EQ(dut.size(), 0);
   EXPECT_EQ(dut.get(0), nv);
@@ -202,6 +200,25 @@ GTEST_TEST(TestNAryState, NullUnitVectors) {
   dut2.set(0, nv);
   dut2.set(1000, nv);
   EXPECT_EQ(toEigen(dut2), Eigen::VectorXd(0));
+
+  // Test construction with pre-allocated size.
+  NAryState<double, NullVector> dut3(7);
+  EXPECT_EQ(dut3.count(), -1);
+  EXPECT_EQ(dut3.size(), 0);
+  EXPECT_EQ(dut3.get(0), nv);
+  EXPECT_EQ(dut3.get(1000), nv);
+  dut3.set(0, nv);
+  dut3.set(1000, nv);
+  EXPECT_EQ(toEigen(dut3), Eigen::VectorXd(0));
+
+  NAryState<double, NullVector> dut4(-1);
+  EXPECT_EQ(dut4.count(), -1);
+  EXPECT_EQ(dut4.size(), 0);
+  EXPECT_EQ(dut4.get(0), nv);
+  EXPECT_EQ(dut4.get(1000), nv);
+  dut4.set(0, nv);
+  dut4.set(1000, nv);
+  EXPECT_EQ(toEigen(dut4), Eigen::VectorXd(0));
 }
 
 }  // namespace

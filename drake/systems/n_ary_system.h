@@ -27,7 +27,10 @@ class NArySystem {
   NArySystem() {}
 
   /// Add @param system to the end of the NArySystem's list of UnitSystems.
-  void addSystem(std::shared_ptr<UnitSystem> system) {
+  // TODO(maddog) shared_ptr is not strictly necessary here; we are using it
+  //              to be compatible with cascade().  At some point, neither
+  //              should use a shared_ptr interface.
+  void AddSystem(std::shared_ptr<UnitSystem> system) {
     systems_.push_back(system);
   }
 
@@ -85,21 +88,21 @@ class NArySystem {
 
   // Required by Drake::System concept.
   std::size_t getNumStates() const {
-    return StateVector<double>::rowsFromUnitCount(systems_.size());
+    return StateVector<double>::RowsFromUnitCount(systems_.size());
   }
 
   // Required by Drake::System concept.
   std::size_t getNumInputs() const {
-    return InputVector<double>::rowsFromUnitCount(systems_.size());
+    return InputVector<double>::RowsFromUnitCount(systems_.size());
   }
 
   // Required by Drake::System concept.
   std::size_t getNumOutputs() const {
-    return OutputVector<double>::rowsFromUnitCount(systems_.size());
+    return OutputVector<double>::RowsFromUnitCount(systems_.size());
   }
 
  private:
   std::vector<std::shared_ptr<UnitSystem> > systems_;
 };
 
-}  // namespace Drake
+}  // namespace drake

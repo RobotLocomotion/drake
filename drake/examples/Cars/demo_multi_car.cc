@@ -87,8 +87,8 @@ int do_main(int argc, const char* argv[]) {
   //              get updated joint parameters.
   world_tree->bodies.back()->linkname = "sedan1";
   auto sedan_system = std::make_shared<drake::TrivialCar>(0., 5., 0.3, 2.0);
-  cars_system->addSystem(sedan_system);
-  cars_vis_adapter->addSystem(car_vis_adapter);
+  cars_system->AddSystem(sedan_system);
+  cars_vis_adapter->AddSystem(car_vis_adapter);
 
   // Create one Breadtruck.
   world_tree->addRobotFromURDF(kBreadtruckUrdf,
@@ -97,8 +97,8 @@ int do_main(int argc, const char* argv[]) {
   world_tree->bodies.back()->linkname = "breadtruck1";
   auto breadtruck_system = std::make_shared<drake::TrivialCar>(
       15., 0., 0.7, 10.0);
-  cars_system->addSystem(breadtruck_system);
-  cars_vis_adapter->addSystem(car_vis_adapter);
+  cars_system->AddSystem(breadtruck_system);
+  cars_vis_adapter->AddSystem(car_vis_adapter);
 
   // Create another Sedan.
   world_tree->addRobotFromURDF(kSedanUrdf,
@@ -106,8 +106,8 @@ int do_main(int argc, const char* argv[]) {
                                nullptr /*weld_to_frame*/);
   world_tree->bodies.back()->linkname = "sedan2";
   auto sedan2_system = std::make_shared<drake::TrivialCar>(-5., 0., -0.3, -2.0);
-  cars_system->addSystem(sedan2_system);
-  cars_vis_adapter->addSystem(car_vis_adapter);
+  cars_system->AddSystem(sedan2_system);
+  cars_vis_adapter->AddSystem(car_vis_adapter);
 
   // Meh, need a lot more cars!
   for (int i = 0; i < num_extra_cars; ++i) {
@@ -124,8 +124,8 @@ int do_main(int argc, const char* argv[]) {
         ((i + 11) % 23 - 11) * 10.,
         0.0,
         ((i % 10) - 5) * 2.0);
-    cars_system->addSystem(system);
-    cars_vis_adapter->addSystem(car_vis_adapter);
+    cars_system->AddSystem(system);
+    cars_vis_adapter->AddSystem(car_vis_adapter);
   }
 
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();

@@ -30,3 +30,5 @@ $DRAKE/pod-build/bin/simple_car_demo &
 $mydir/steering_command_driver.py &
 
 wait
+
+# TODO(jwnimmer) Consolidate this script with run_demo_multi_car.sh.

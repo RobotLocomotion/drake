@@ -58,4 +58,4 @@ class TrivialCar {
   const OutputVector<double> pose_;
   const double period_;
 };
-}
+}  // namespace drake
