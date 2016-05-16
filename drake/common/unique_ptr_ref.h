@@ -105,12 +105,13 @@ class unique_ptr_ref {
   No heap allocation is performed. The `empty()` method will return `true` when
   called on a default-constructed %unique_ptr_ref. The `is_owner()` method will
   return `false`. **/
-  constexpr unique_ptr_ref() noexcept {}
+  constexpr unique_ptr_ref() noexcept : p_{nullptr}, is_owner_{false} {}
 
   /** Constructor from `nullptr` is the same as the default constructor.
   This is an implicit conversion that allows `nullptr` to be used to initialize
   a %unique_ptr_ref. **/
-  constexpr unique_ptr_ref(std::nullptr_t) noexcept : unique_ptr_ref() {}
+  constexpr unique_ptr_ref(std::nullptr_t) noexcept
+      : p_{nullptr}, is_owner_{false} {}
 
   /** Given a pointer to a writable heap-allocated object, take over
   ownership of that object. Prefer `make_unique_ref()` rather than
@@ -210,7 +211,7 @@ class unique_ptr_ref {
   the same pointer, but loses ownership if it had it. If source and `this`
   manage the same pointer, only the ownership changes. **/
   template <class U>
-  unique_ptr_ref& operator=(unique_ptr_ref<U>&& src) noexcept {
+  unique_ptr_ref& operator=(unique_ptr_ref<U>&& source) noexcept {
     if (source.p_ != p_) {
       reset();  // now null, unowned
       p_ = source.p_;
@@ -345,7 +346,7 @@ repetition of the managed type. Typical use: @code{.cc}
 
   drake::unique_ptr_ref<Object> myObj(new Object(a1,a2)); // equivalent
 @endcode
-where `a1,a2` represent any number of arguments to be passed to one of Object's 
+where `a1,a2` represent any number of arguments to be passed to one of Object's
 constructors. In general, this method is equivalent to @code{.cc}
   drake::unique_ptr_ref<T> myObj(new T(std::forward<Args>(args)...))
 @endcode
