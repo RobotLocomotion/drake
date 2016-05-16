@@ -12,9 +12,8 @@ namespace systems {
 
 /// An adder for arbitrarily many inputs of equal length.
 /// @tparam T The type of mathematical object being added.
-/// TODO(david-german-tri): Implement DiscreteSystemInterface.
 template <typename T>
-class Adder : public ContinuousSystemInterface<T> {
+class Adder : public SystemInterface<T> {
  public:
   /// @param num_inputs is the number of input ports to be added.
   /// @param length is the size of each input port.
@@ -32,26 +31,6 @@ class Adder : public ContinuousSystemInterface<T> {
   /// of number num_inputs_ or size length_, std::runtime_error will be thrown.
   void Output(const Context<T>& context,
               SystemOutput<T>* output) const override;
-
-  /// Returns an empty vector since this System is stateless.
-  void GetTimeDerivativesOfGeneralizedPosition(
-      const Context<T>& context,
-      VectorInterface<T>* derivatives) const override;
-
-  /// Returns an empty vector since this System is stateless.
-  void GetTimeDerivativesOfGeneralizedVelocity(
-      const Context<T>& context,
-      VectorInterface<T>* derivatives) const override;
-
-  /// Returns an empty vector since this System is stateless.
-  void GetTimeDerivativesOfOtherContinuousState(
-      const Context<T>& context,
-      VectorInterface<T>* derivatives) const override;
-
-  /// Returns an empty vector since this System is stateless.
-  void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context,
-      VectorInterface<T>* derivatives) const override;
 
   std::string get_name() const override { return "adder"; }
 
