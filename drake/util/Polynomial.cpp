@@ -1,6 +1,8 @@
 #include "drake/util/Polynomial.h"
-#include <stdexcept>
+
 #include <cstring>
+#include <set>
+#include <stdexcept>
 
 using namespace std;
 using namespace Eigen;
@@ -294,9 +296,13 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::operator==(
     const Polynomial<CoefficientType>& other) const {
-  const std::set<Monomial> this_monomials(monomials.begin(), monomials.end());
-  const std::set<Monomial> other_monomials(other.monomials.begin(),
-                                           other.monomials.end());
+  // Comparison of unsorted vectors is faster copying them into std::set
+  // btrees rather than using std::is_permutation().
+  // TODO(#2216) switch from multiset to set for further performance gains.
+  const std::multiset<Monomial> this_monomials(monomials.begin(),
+                                               monomials.end());
+  const std::multiset<Monomial> other_monomials(other.monomials.begin(),
+                                                other.monomials.end());
   return this_monomials == other_monomials;
 }
 
