@@ -8,7 +8,7 @@ if nargin < 1, rootdir = getDrakePath(); end
 
 urdfs = {};
 
-% Creates a command that finds all URDFs within [drake-distro]. It uses the
+% Creates a command that finds all URDFs within rootdir. It uses the
 % `find` program, which is assumed to be available.
 command = ['find -L ', rootdir, ' -iname "*.urdf" '];
 
@@ -34,6 +34,6 @@ else
   % message.
   error_msg = ['ERROR: drake/util/allURDFs.m: Failed to find any URDFs! '];
   error_msg = [error_msg, 'Ensure program `find` is installed and available.'];
-  error(error_msg);
+  error('Drake:MissingDependency:find', error_msg);
 end
 
