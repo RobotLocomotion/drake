@@ -1,4 +1,4 @@
-#include "drake/examples/Cars/car.h"
+#include "drake/examples/Cars/car_simulation.h"
 
 #include <stdlib.h>
 

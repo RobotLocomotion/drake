@@ -1,8 +1,8 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="drake_prius_linked_to_world" >
     <!-- RViz uses package:// for the model path. -->
-    <property name="modelPath" value="package://drake_cars_examples/models/drake_prius" />
+    <property name="modelPath" value="package://drake_examples_cars/models/drake_prius" />
 
-    <xacro:include filename="$(find drake_cars_examples)/models/drake_prius/xacro/drake_prius_base.xacro" />
+    <xacro:include filename="$(find drake_examples_cars)/models/drake_prius/xacro/drake_prius_base.xacro" />
 
     <link name="world">
         <!-- Virtual Link -->
