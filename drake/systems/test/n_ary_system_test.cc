@@ -86,8 +86,8 @@ GTEST_TEST(TestNArySystem, BasicOperation) {
   std::shared_ptr<SystemQ> sq2 = std::make_shared<SystemQ>(20., 200.);
 
   NArySystem<SystemQ> dut;
-  NAryState<double, StateQ> state;
-  NAryState<double, StateQ> input;
+  NAryState<StateQ<double> > state;
+  NAryState<StateQ<double> > input;
 
   EXPECT_EQ(dut.isTimeVarying(), false);
   EXPECT_EQ(dut.isDirectFeedthrough(), false);

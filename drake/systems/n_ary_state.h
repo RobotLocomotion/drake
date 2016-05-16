@@ -3,12 +3,15 @@
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
+#include <type_traits>
 
 #include <Eigen/Dense>
 
 #include "drake/core/Vector.h"
 
 namespace drake {
+
+using Drake::toEigen;  // TODO(maddog) ...until Drake-->drake fully.
 
 /// NAryState is a Drake::Vector (concept implementation) which is a
 /// container of zero or more component Drake::Vector instances.  All
@@ -19,14 +22,19 @@ namespace drake {
 /// list with O(1) access.  The Eigen::Matrix representaion of a
 /// complete NAryState is basically the concatenation of Eigen::Matrix's
 /// of the component UnitVectors.
-template <typename ScalarType,
-          template <typename> class UnitVector>
+template <class UnitVector>
 class NAryState {
  public:
+  // The Drake::Vector concept has no explicit way of recovering the
+  // ScalarType upon which the template was specialized, but through
+  // the miracle of decltype(), it can be done.  std::decay<> is used
+  // to strip any CV or reference qualifiers off the type.
+  using UnitScalar =
+      typename std::decay<decltype(toEigen(UnitVector())(0))>::type;
   // Required by Drake::Vector concept.
   static const int RowsAtCompileTime = Eigen::Dynamic;
   // Required by Drake::Vector concept.
-  typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
+  typedef Eigen::Matrix<UnitScalar, RowsAtCompileTime, 1> EigenType;
 
   NAryState() : unit_size_(unit_size()), count_(UnitCountFromRows(0)) {}
 
@@ -47,7 +55,7 @@ class NAryState {
 
   /// Append the @param unit to the end of the list of component
   /// @param UnitVectors.
-  void Append(const UnitVector<ScalarType>& unit) {
+  void Append(const UnitVector& unit) {
     if (unit_size_ == 0) {
       // NOP --- in particular, count_ should remain at -1.
       assert(count_ == -1);
@@ -57,7 +65,6 @@ class NAryState {
     combined_vector_.conservativeResize(combined_vector_.rows() + unit_size_,
                                         Eigen::NoChange);
     // Copy unit's Eigen-rep into the tail-end of enlarged combined_vector_.
-    using Drake::toEigen;  // TODO(maddog) ...until Drake-->drake fully.
     combined_vector_.bottomRows(unit_size_) = toEigen(unit);
     // Keep track of the total unit count.
     ++count_;
@@ -67,25 +74,24 @@ class NAryState {
   ///
   /// @throws std::out_of_range if UnitVector is a non-NullVector type
   /// and @p pos exceeds count().
-  UnitVector<ScalarType> get(std::size_t pos) const {
+  UnitVector get(std::size_t pos) const {
     if (!((unit_size_ == 0) || (pos < count_))) {
       throw std::out_of_range("Position pos exceeds unit count().");
     }
     const std::size_t row0 = pos * unit_size_;
-    return UnitVector<ScalarType>(combined_vector_.block(row0, 0,
-                                                         unit_size_, 1));
+    return UnitVector(combined_vector_.block(row0, 0,
+                                             unit_size_, 1));
   }
 
   /// Sets the value of the component UnitVector at position @p pos.
   ///
   /// @throws std::out_of_range if UnitVector is a non-NullVector type
   /// and @p pos exceeds count().
-  void set(std::size_t pos, const UnitVector<ScalarType>& unit) {
+  void set(std::size_t pos, const UnitVector& unit) {
     if (!((unit_size_ == 0) || (pos < count_))) {
       throw std::out_of_range("Position pos exceeds unit count().");
     }
     const std::size_t row0 = pos * unit_size_;
-    using Drake::toEigen;  // TODO(maddog-tri)  ...until Drake-->drake fully.
     combined_vector_.block(row0, 0, unit_size_, 1) = toEigen(unit);
   }
 
@@ -110,14 +116,14 @@ class NAryState {
   std::size_t size() const { return combined_vector_.rows(); }
 
   // Required by Drake::Vector concept.
-  friend EigenType toEigen(const NAryState<ScalarType, UnitVector>& vec) {
+  friend EigenType toEigen(const NAryState<UnitVector>& vec) {
     return vec.combined_vector_;
   }
 
   /// Calculate the size (Eigen row count) of @p UnitVector, which is
   /// presumed to be fixed for all instances of UnitVector.
   static
-  std::size_t unit_size() { return UnitVector<ScalarType>().size(); }
+  std::size_t unit_size() { return UnitVector().size(); }
 
   /// Determine how many @param UnitVector units will be decoded from
   /// an Eigen column matrix with @param rows rows.  @param rows must
