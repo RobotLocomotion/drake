@@ -11,7 +11,7 @@
 namespace drake {
 
 /// NAryState is a Drake::Vector (concept implementation) which is a
-/// container zero or more component Drake::Vector instances.  All
+/// container of zero or more component Drake::Vector instances.  All
 /// components must be of the same type, @p UnitVector, which naturally
 /// must model the Drake::Vector concept itself.
 ///
@@ -28,17 +28,18 @@ class NAryState {
   // Required by Drake::Vector concept.
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
 
-  NAryState() : unit_size_(unit_size()), count_(unitCountFromRows(0)) {}
+  NAryState() : unit_size_(unit_size()), count_(UnitCountFromRows(0)) {}
 
   explicit NAryState(std::ptrdiff_t count)
       : unit_size_(unit_size()),
         // Ensure correct internal count_ (i.e., -1 if UnitVector's size
         // is zero).
-        count_(unitCountFromRows(rowsFromUnitCount(count))),
-        combined_vector_(EigenType::Constant(rowsFromUnitCount(count), 1,
+        count_(UnitCountFromRows(RowsFromUnitCount(count))),
+        combined_vector_(EigenType::Constant(RowsFromUnitCount(count), 1,
                                              NAN)) {}
 
-  /// Return the count of @param UnitVector units contained.
+  /// @return the count of @param UnitVector units contained within this
+  /// NAryState object.
   ///
   /// If UnitVector is a null vector (zero rows), then the count is
   /// indeterminate and the return value is always < 0.
@@ -46,7 +47,7 @@ class NAryState {
 
   /// Append the @param unit to the end of the list of component
   /// @param UnitVectors.
-  void append(const UnitVector<ScalarType>& unit) {
+  void Append(const UnitVector<ScalarType>& unit) {
     if (unit_size_ == 0) {
       // NOP --- in particular, count_ should remain at -1.
       assert(count_ == -1);
@@ -62,28 +63,28 @@ class NAryState {
     ++count_;
   }
 
-  /// @returns a copy of the component UnitVector at index @p i.
+  /// @return a copy of the component UnitVector at position @p pos.
   ///
   /// @throws std::out_of_range if UnitVector is a non-NullVector type
-  /// and @p i exceeds count().
-  UnitVector<ScalarType> get(std::size_t i) const {
-    if (!((unit_size_ == 0) || (i < count_))) {
-      throw std::out_of_range("Index i exceeds unit count().");
+  /// and @p pos exceeds count().
+  UnitVector<ScalarType> get(std::size_t pos) const {
+    if (!((unit_size_ == 0) || (pos < count_))) {
+      throw std::out_of_range("Position pos exceeds unit count().");
     }
-    const std::size_t row0 = i * unit_size_;
+    const std::size_t row0 = pos * unit_size_;
     return UnitVector<ScalarType>(combined_vector_.block(row0, 0,
                                                          unit_size_, 1));
   }
 
-  /// Sets the value of the component UnitVector at index @p i.
+  /// Sets the value of the component UnitVector at position @p pos.
   ///
   /// @throws std::out_of_range if UnitVector is a non-NullVector type
-  /// and @p i exceeds count().
-  void set(std::size_t i, const UnitVector<ScalarType>& unit) {
-    if (!((unit_size_ == 0) || (i < count_))) {
-      throw std::out_of_range("Index i exceeds unit count().");
+  /// and @p pos exceeds count().
+  void set(std::size_t pos, const UnitVector<ScalarType>& unit) {
+    if (!((unit_size_ == 0) || (pos < count_))) {
+      throw std::out_of_range("Position pos exceeds unit count().");
     }
-    const std::size_t row0 = i * unit_size_;
+    const std::size_t row0 = pos * unit_size_;
     using Drake::toEigen;  // TODO(maddog-tri)  ...until Drake-->drake fully.
     combined_vector_.block(row0, 0, unit_size_, 1) = toEigen(unit);
   }
@@ -93,14 +94,14 @@ class NAryState {
   // NOLINTNEXTLINE(runtime/explicit)
   NAryState(const Eigen::MatrixBase<Derived>& initial)
       : unit_size_(unit_size()),
-        count_(unitCountFromRows(initial.rows())),
+        count_(UnitCountFromRows(initial.rows())),
         combined_vector_(initial) {
   }
 
   // Required by Drake::Vector concept.
   template <typename Derived>
   NAryState& operator=(const Eigen::MatrixBase<Derived>& rhs) {
-    count_ = unitCountFromRows(rhs.rows());
+    count_ = UnitCountFromRows(rhs.rows());
     combined_vector_ = rhs;
     return *this;
   }
@@ -128,7 +129,7 @@ class NAryState {
   /// @throws std::domain_error if UnitVector is not a null vector and
   /// rows is not a multiple of UnitVector::size().
   static
-  std::ptrdiff_t unitCountFromRows(std::size_t rows) {
+  std::ptrdiff_t UnitCountFromRows(std::size_t rows) {
     const std::size_t us { unit_size() };
     if (us > 0) {
       if ((rows % us) != 0) {
@@ -142,11 +143,11 @@ class NAryState {
   /// Determine how many Eigen matrix rows will be needed to represent
   /// @param count instances of @param UnitVector.
   ///
-  /// To complement unitCountFromRows(), if @param count is negative,
+  /// To complement UnitCountFromRows(), if @param count is negative,
   /// the return value is zero.  However, @throws std::domain_error if
   /// count is negative and UnitVector is not a null vector.
   static
-  std::size_t rowsFromUnitCount(std::ptrdiff_t count) {
+  std::size_t RowsFromUnitCount(std::ptrdiff_t count) {
     const std::size_t us { unit_size() };
     if (count >= 0) {
       return count * us;

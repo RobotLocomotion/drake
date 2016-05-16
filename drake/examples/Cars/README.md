@@ -58,7 +58,7 @@ Running the simple car simulator
 --------------------------------
 
 The following notes are for Ubuntu Linux and OS X users.
-This is not supported under windows (though you can probably cobble
+This is not supported under Windows (though you can probably cobble
 together some workarounds by hand if you are motivated).
 
 Run:
@@ -72,10 +72,10 @@ arrow keys and/or joystick to drive around.
 Use Ctrl-C in your terminal to stop and close the demo.
 
 Running the trivial multiple car simulator
---------------------------------
+------------------------------------------
 
 The following notes are for Ubuntu Linux and OS X users.
-This is not supported under windows (though you can probably cobble
+This is not supported under Windows (though you can probably cobble
 together some workarounds by hand if you are motivated).
 
 Run:
