@@ -146,12 +146,10 @@ void testPolynomialMatrix() {
                                                                rows_B, cols_B);
   auto C = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients,
                                                                rows_A, cols_A);
-
-  uniform_real_distribution<double> uniform;
-
   auto product = A * B;
   auto sum = A + C;
 
+  uniform_real_distribution<double> uniform;
   for (int row = 0; row < A.rows(); ++row) {
     for (int col = 0; col < A.cols(); ++col) {
       double t = uniform(generator);
