@@ -121,17 +121,6 @@ class BulletModel : public Model {
       const std::vector<Eigen::Vector3d>& points,
       double collision_threshold) override;
 
-  /** Possible ray casting algorithms for Bullet. **/
-  enum RayCastAlgorithm {
-    /** Approximate but faster ray versus convex intersection algorithm.
-     *  Implements Gino van den Bergens' paper "Ray Casting against General
-     *  Convex Objects with Application to Continuous Collision Detection" */
-    kSubSimplexConvexCast,
-    /** Performs a raycast on a convex object using support mapping.
-     *  The default. */
-    kGjkConvexCast
-  };
-
  private:
   /**
    * \brief Finds the points where elements A and B are closest.
@@ -161,6 +150,17 @@ class BulletModel : public Model {
   std::vector<std::unique_ptr<btCollisionShape>> bt_collision_shapes_;
   BulletCollisionWorldWrapper bullet_world_;
   BulletCollisionWorldWrapper bullet_world_no_margin_;
+
+  // Possible ray casting algorithms for Bullet.
+  enum RayCastAlgorithm {
+    // Approximate but faster ray versus convex intersection algorithm.
+    // Implements Gino van den Bergens' paper "Ray Casting against General
+    // Convex Objects with Application to Continuous Collision Detection"
+    kSubSimplexConvexCast,
+    // Performs a raycast on a convex object using support mapping.
+    // The default.
+    kGjkConvexCast
+  };
 
   // The Bullet algorithm to be used for ray casting.
   // See notes in BulletModel::collisionRaycast.
