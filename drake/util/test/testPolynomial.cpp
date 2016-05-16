@@ -4,11 +4,11 @@
 #include <sstream>
 #include <map>
 
-#include "drake/util/eigen_matrix_compare.h"
-#include "drake/util/testUtil.h"
-
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
+
+#include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
 
 using drake::util::MatrixCompareType;
 using Eigen::VectorXd;
