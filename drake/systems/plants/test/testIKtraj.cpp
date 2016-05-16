@@ -18,8 +18,8 @@ int main() {
   }
   Vector2d tspan;
   tspan << 0, 1;
-  int l_hand;
-  int r_hand;
+  int l_hand{};
+  int r_hand{};
   // int l_foot;
   // int r_foot;
   for (int i = 0; i < model->bodies.size(); i++) {
