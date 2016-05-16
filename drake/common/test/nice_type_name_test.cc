@@ -11,11 +11,10 @@
 using std::string;
 
 namespace drake {
-namespace common {
 
 // Need a non-anonymous namespace here for testing; can't canonicalize
 // names in anonymous namespaces.
-namespace test_nice_type_name {
+namespace nice_type_name_test {
 enum class Color { Red, Green, Blue };
 
 struct ForTesting {
@@ -27,7 +26,7 @@ struct ForTesting {
 namespace {
 // Can't test much of NiceTypeName::Demangle because its behavior is compiler-
 // and platform-specific. Everyone should agree on simple types though.
-GTEST_TEST(TestNiceTypeName, Demangle) {
+GTEST_TEST(NiceTypeNameTest, Demangle) {
   EXPECT_EQ(NiceTypeName::Demangle(typeid(bool).name()), "bool");
   EXPECT_EQ(NiceTypeName::Demangle(typeid(int).name()), "int");
   EXPECT_EQ(NiceTypeName::Demangle(typeid(unsigned).name()), "unsigned int");
@@ -35,7 +34,7 @@ GTEST_TEST(TestNiceTypeName, Demangle) {
 
 // Standalone tests of the method that is used by NiceTypeName::Get<T>::Get()
 // to clean up the demangled names on various platforms.
-GTEST_TEST(TestNiceTypeName, Canonicalize) {
+GTEST_TEST(NiceTypeNameTest, Canonicalize) {
   // Get rid of extra spaces and useless names like "class".
   EXPECT_EQ(NiceTypeName::Canonicalize("class std :: vector < double   >"),
             "std::vector<double>");
@@ -50,7 +49,7 @@ GTEST_TEST(TestNiceTypeName, Canonicalize) {
             "std::my__1::resigned char");
 }
 
-GTEST_TEST(TestNiceTypeName, BuiltIns) {
+GTEST_TEST(NiceTypeNameTest, BuiltIns) {
   EXPECT_EQ(NiceTypeName::Get<bool>(), "bool");
   EXPECT_EQ(NiceTypeName::Get<signed char>(), "signed char");
   EXPECT_EQ(NiceTypeName::Get<unsigned char>(), "unsigned char");
@@ -79,7 +78,7 @@ GTEST_TEST(TestNiceTypeName, BuiltIns) {
             "std::complex<long double>");
 }
 
-GTEST_TEST(TestNiceTypeName, StdClasses) {
+GTEST_TEST(NiceTypeNameTest, StdClasses) {
   EXPECT_EQ(NiceTypeName::Get<std::string>(), "std::string");
   EXPECT_EQ(NiceTypeName::Get<string>(), "std::string");
 
@@ -101,7 +100,7 @@ GTEST_TEST(TestNiceTypeName, StdClasses) {
             "std::vector<unsigned int,std::allocator<unsigned int>>");
 }
 
-GTEST_TEST(TestNiceTypeName, Eigen) {
+GTEST_TEST(NiceTypeNameTest, Eigen) {
   EXPECT_EQ(NiceTypeName::Get<Eigen::Matrix3f>(),
             "Eigen::Matrix<float,3,3,0,3,3>");
 
@@ -111,23 +110,22 @@ GTEST_TEST(TestNiceTypeName, Eigen) {
             "Eigen::Matrix<double,3,1,0,3,1>>");
 }
 
-GTEST_TEST(TestNiceTypeName, Enum) {
-  EXPECT_EQ(NiceTypeName::Get<test_nice_type_name::Color>(),
-            "drake::common::test_nice_type_name::Color");
-  EXPECT_EQ(NiceTypeName::Get<test_nice_type_name::ForTesting>(),
-            "drake::common::test_nice_type_name::ForTesting");
-  EXPECT_EQ(NiceTypeName::Get<test_nice_type_name::ForTesting::MyEnum>(),
-            "drake::common::test_nice_type_name::ForTesting::MyEnum");
-  EXPECT_EQ(NiceTypeName::Get<test_nice_type_name::ForTesting::MyEnumClass>(),
-            "drake::common::test_nice_type_name::ForTesting::MyEnumClass");
+GTEST_TEST(NiceTypeNameTest, Enum) {
+  EXPECT_EQ(NiceTypeName::Get<nice_type_name_test::Color>(),
+            "drake::nice_type_name_test::Color");
+  EXPECT_EQ(NiceTypeName::Get<nice_type_name_test::ForTesting>(),
+            "drake::nice_type_name_test::ForTesting");
+  EXPECT_EQ(NiceTypeName::Get<nice_type_name_test::ForTesting::MyEnum>(),
+            "drake::nice_type_name_test::ForTesting::MyEnum");
+  EXPECT_EQ(NiceTypeName::Get<nice_type_name_test::ForTesting::MyEnumClass>(),
+            "drake::nice_type_name_test::ForTesting::MyEnumClass");
 
-  EXPECT_EQ(NiceTypeName::Get<decltype(test_nice_type_name::ForTesting::One)>(),
-            "drake::common::test_nice_type_name::ForTesting::MyEnum");
+  EXPECT_EQ(NiceTypeName::Get<decltype(nice_type_name_test::ForTesting::One)>(),
+            "drake::nice_type_name_test::ForTesting::MyEnum");
   EXPECT_EQ(NiceTypeName::Get<decltype(
-                test_nice_type_name::ForTesting::MyEnumClass::Four)>(),
-            "drake::common::test_nice_type_name::ForTesting::MyEnumClass");
+                nice_type_name_test::ForTesting::MyEnumClass::Four)>(),
+            "drake::nice_type_name_test::ForTesting::MyEnumClass");
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace drake
