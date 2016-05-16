@@ -16,13 +16,16 @@ class NArySystem {
  public:
   // Required by Drake::System concept.
   template <typename ScalarType>
-  using StateVector = NAryState<ScalarType, UnitSystem::template StateVector>;
+  using StateVector = NAryState<
+    typename UnitSystem::template StateVector<ScalarType> >;
   // Required by Drake::System concept.
   template <typename ScalarType>
-  using InputVector = NAryState<ScalarType, UnitSystem::template InputVector>;
+  using InputVector = NAryState<
+    typename UnitSystem::template InputVector<ScalarType> >;
   // Required by Drake::System concept.
   template <typename ScalarType>
-  using OutputVector = NAryState<ScalarType, UnitSystem::template OutputVector>;
+  using OutputVector = NAryState<
+    typename UnitSystem::template OutputVector<ScalarType> >;
 
   NArySystem() {}
 
