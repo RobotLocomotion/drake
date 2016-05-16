@@ -1,14 +1,50 @@
 function compareParsers(urdfs)
 
 if nargin<1 || isempty(urdfs)
-  urdfs = allURDFs();
+  % The following line was commented out because it does not work on
+  % Ubuntu or OSX. See: https://github.com/RobotLocomotion/drake/issues/2194
+  % urdfs = allURDFs();
+
+  urdfs = {'ActuatedPendulum.urdf';
+           'ball.urdf';
+           'block_offset.urdf';
+           'brick1.urdf';
+           'brick2.urdf';
+           'brick3.urdf';
+           'brick4.urdf';
+           'brick_point_contact.urdf';
+           'Capsule.urdf';
+           'Cylinder.urdf';
+           'DoublePendWBiceptSpring.urdf';
+           'FallingBrickBetterCollisionGeometry.urdf';
+           'FallingBrickContactPoints.urdf';
+           'FallingBrick.urdf';
+           'fixedJointTest.urdf';
+           'FloatingMassSpringDamper.urdf';
+           'ground_plane.urdf';
+           'MassSpringDamperThrust.urdf';
+           'MassSpringDamper.urdf';
+           'PointMass.urdf';
+           'ShiftedPointMass.urdf';
+           'snake.urdf';
+           'SpringPendulum.urdf';
+           'testRigidBodyBluffBody.urdf';
+           'testRigidBodyPropellor.urdf';
+           'testRigidBodyWingChangingParams.urdf';
+           'testRigidBodyWingWithControlSurfaceOnlyControlSurface.urdf';
+           'testRigidBodyWingWithControlSurface.urdf';
+           'testThrust.urdf';
+           'TestWing.urdf';
+           'TorsionalSpring.urdf';
+           'valve_task_wall.urdf'}
+
 elseif ~iscell(urdfs)
   urdfs = {urdfs};
 end
 
 for urdf=urdfs'
   urdffile = GetFullPath(urdf{1});
-  
+
   fprintf(1,'testing %s\n', urdffile);
   w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
