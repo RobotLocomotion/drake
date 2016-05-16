@@ -73,14 +73,14 @@ class SensorVisualizerLidar {
 
     // Creates a ROS topic publisher for each LIDAR sensor in the rigid body
     // system.
-    for (auto &sensor : rigid_body_system->GetSensors()) {
+    for (auto sensor : rigid_body_system->GetSensors()) {
       // Attempts to cast the RigidBodySensor pointer to a RigidBodyDepthSensor
       // pointer. This actually does two things simultaneously. First it
       // determines whether the pointer in fact points to a
       // RigidBodyDepthSensor. Second, if true, it also povides a pointer to the
       // RigidBodyDepthSensor that can be used later in this method.
-      RigidBodyDepthSensor *depth_sensor =
-          dynamic_cast<RigidBodyDepthSensor *>(sensor.get());
+      const RigidBodyDepthSensor *depth_sensor =
+          dynamic_cast<const RigidBodyDepthSensor *>(sensor);
 
       if (depth_sensor != nullptr) {
         // If the dynamic cast was successful, that means the sensor is in fact
@@ -121,17 +121,17 @@ class SensorVisualizerLidar {
                 "only scan within a 2D plane!");
 
           if (is_horizontal_scanner) {
-            message->angle_min = depth_sensor->get_min_yaw();
-            message->angle_max = depth_sensor->get_max_yaw();
+            message->angle_min = depth_sensor->min_yaw();
+            message->angle_max = depth_sensor->max_yaw();
             message->angle_increment =
-                (depth_sensor->get_max_yaw() - depth_sensor->get_min_yaw()) /
-                depth_sensor->get_num_pixel_cols();
+                (depth_sensor->max_yaw() - depth_sensor->min_yaw()) /
+                depth_sensor->num_pixel_cols();
           } else {
-            message->angle_min = depth_sensor->get_min_pitch();
-            message->angle_max = depth_sensor->get_max_pitch();
-            message->angle_increment = (depth_sensor->get_max_pitch() -
-                                        depth_sensor->get_min_pitch()) /
-                                       depth_sensor->get_num_pixel_rows();
+            message->angle_min = depth_sensor->min_pitch();
+            message->angle_max = depth_sensor->max_pitch();
+            message->angle_increment = (depth_sensor->max_pitch() -
+                                        depth_sensor->min_pitch()) /
+                                       depth_sensor->num_pixel_rows();
           }
 
           // Since the RigidBodyDepthSensor does not include this information
@@ -144,8 +144,8 @@ class SensorVisualizerLidar {
           message->time_increment = 0;
           message->scan_time = 0;
 
-          message->range_min = depth_sensor->get_min_range();
-          message->range_max = depth_sensor->get_max_range();
+          message->range_min = depth_sensor->min_range();
+          message->range_max = depth_sensor->max_range();
           message->ranges.resize(depth_sensor->getNumOutputs());
           message->intensities.resize(depth_sensor->getNumOutputs());
 
@@ -177,7 +177,7 @@ class SensorVisualizerLidar {
 
     previous_send_time_ = current_time;
 
-    const std::vector<std::shared_ptr<RigidBodySensor>> &sensor_vector =
+    std::vector<const RigidBodySensor*> sensor_vector =
         rigid_body_system_->GetSensors();
 
     // This variable is for tracking where in the output of rigid body system
@@ -188,7 +188,7 @@ class SensorVisualizerLidar {
     // Iterates through each sensor in the rigid body system. If the sensor is
     // a LIDAR sensor, store the range measurements in a ROS message and publish
     // it on the appropriate ROS topic.
-    for (auto &sensor : sensor_vector) {
+    for (auto sensor : sensor_vector) {
       if (output_index + sensor->getNumOutputs() >
           rigid_body_system_->getNumOutputs()) {
         std::stringstream buff;
@@ -201,8 +201,8 @@ class SensorVisualizerLidar {
         throw std::runtime_error(buff.str());
       }
 
-      RigidBodyDepthSensor *depth_sensor =
-          dynamic_cast<RigidBodyDepthSensor *>(sensor.get());
+      const RigidBodyDepthSensor *depth_sensor =
+          dynamic_cast<const RigidBodyDepthSensor *>(sensor);
 
       if (depth_sensor != nullptr) {
         size_t sensor_data_index_ = output_index;

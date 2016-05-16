@@ -148,7 +148,8 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
 void SetSimulationOptions(SimulationOptions* sim_options,
     double initial_step_size, double timeout_seconds) {
   if (sim_options == nullptr)
-    throw std::runtime_error("ERROR: Simulation options are null!");
+    throw std::runtime_error("ERROR: drake::SetSimulationOptions(): "
+      "Simulation options are null!");
   *sim_options = Drake::default_simulation_options;
   sim_options->initial_step_size = initial_step_size;
   sim_options->timeout_seconds = timeout_seconds;

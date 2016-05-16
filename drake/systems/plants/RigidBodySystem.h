@@ -495,6 +495,16 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   size_t getNumOutputs() const override;
 
   /**
+   * Returns true if this sensor scans horizontally.
+   */
+  virtual bool is_horizontal_scanner() const;
+
+  /**
+   * Returns true if this sensor scans vertically.
+   */
+  virtual bool is_vertical_scanner() const;
+
+  /**
    * Returns the number of points in the image vertically (pitch).
    */
   virtual size_t num_pixel_rows() const;

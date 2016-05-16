@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(drake_cars_examples)
+project(drake_examples_cars)
 
 
 ## Find catkin macros and libraries
