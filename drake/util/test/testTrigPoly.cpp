@@ -1,10 +1,11 @@
+#include "drake/util/TrigPoly.h"
+
 #include <sstream>
 #include <map>
 
 #include "gtest/gtest.h"
 
 #include "drake/util/Polynomial.h"
-#include "drake/util/TrigPoly.h"
 
 using namespace Eigen;
 using namespace std;
@@ -16,7 +17,7 @@ namespace {
 typedef std::map<TrigPolyd::VarType, double> MapType;
 const double kPi = 3.1415926535897;
 
-void test_serialization(TrigPolyd dut, std::string expect) {
+void TestSerialization(TrigPolyd dut, std::string expect) {
   std::stringstream test_stream;
   test_stream << dut;
   EXPECT_EQ(test_stream.str(), expect);
@@ -35,11 +36,15 @@ TEST(TrigPolyTest, SmokeTest) {
 
   TrigPolyd p(q, s, c);
 
-  test_serialization(p, "q1");
-  test_serialization(sin(p), "s1");
-  test_serialization(cos(p), "c1");
-  test_serialization(sin(p) * p * p + cos(p), "s1*q1^2+c1");
-  test_serialization(sin(p + p), "s1*c1+c1*s1");
+  TestSerialization(p, "q1");
+  TestSerialization(sin(p), "s1");
+  TestSerialization(cos(p), "c1");
+
+  // The following results could reasonably change if Polynomial changes its
+  // monomial sorting or fixes #2216.  They are retained here to catch any
+  // inadvertent changes to this behaviour.
+  TestSerialization(sin(p) * p * p + cos(p), "s1*q1^2+c1");
+  TestSerialization(sin(p + p), "s1*c1+c1*s1");
 }
 
 TEST(TrigPolyTest, EvaluateMultivariateTest) {
@@ -99,5 +104,5 @@ TEST(TrigPolyTest, EvaluatePartialTest) {
 }
 
 }  // anonymous namespace
-}  // namespace test
+}  // namespace util
 }  // namespace drake
