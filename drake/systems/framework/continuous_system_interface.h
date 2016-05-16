@@ -16,34 +16,34 @@ class ContinuousSystemInterface : public SystemInterface<T> {
  public:
   virtual ~ContinuousSystemInterface() {}
 
-  /// Produces the derivatives of the generalized position q. The derivatives
-  /// vector `qdot` will be the same length as
+  /// Produces the derivatives of the generalized position q with respect to
+  /// time. The derivatives vector `qdot` will be the same length as
   /// Context.state.continuous_state.generalized_position.
   ///
   /// @param derivatives Must never be nullptr. Implementations of this
   ///                    interface are not obliged to check, since this is a
   ///                    performance-sensitive inner loop function.
-  virtual void GetDerivativesOfGeneralizedPosition(
+  virtual void GetTimeDerivativesOfGeneralizedPosition(
       const Context<T>& context, VectorInterface<T>* derivatives) const = 0;
 
-  /// Produces the derivatives of the generalized velocity v. The derivatives
-  /// vector `vdot` (generalized acceleration) will be the same length as
-  /// Context.state.continuous_state.generalized_velocity.
+  /// Produces the derivatives of the generalized velocity v with respect to
+  /// time. The derivatives vector `vdot` (generalized acceleration) will be
+  /// the same length as Context.state.continuous_state.generalized_velocity.
   ///
   /// @param derivatives Must never be nullptr. Implementations of this
   ///                    interface are not obliged to check, since this is a
   ///                    performance-sensitive inner loop function.
-  virtual void GetDerivativesOfGeneralizedVelocity(
+  virtual void GetTimeDerivativesOfGeneralizedVelocity(
       const Context<T>& context, VectorInterface<T>* derivatives) const = 0;
 
-  /// Produces the derivatives of the other continuous state. The derivatives
-  /// vector `zdot` will be the same length as
+  /// Produces the derivatives of the other continuous state `z` with respect
+  /// to time. The derivatives vector `zdot` will be the same length as
   /// Context.state.continuous_state.other_continuous_state.
   ///
   /// @param derivatives Must never be nullptr. Implementations of this
   ///                    interface are not obliged to check, since this is a
   ///                    performance-sensitive inner loop function.
-  virtual void GetDerivativesOfOtherContinuousState(
+  virtual void GetTimeDerivativesOfOtherContinuousState(
       const Context<T>& context, VectorInterface<T>* derivatives) const = 0;
 
   /// Transforms the given velocity (v) to the derivative of the configuration
@@ -54,7 +54,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// @param derivatives Must never be nullptr. Implementations of this
   ///                    interface are not obliged to check, since this is a
   ///                    performance-sensitive inner loop function.
-  virtual void MapVelocityToConfigurationDerivative(
+  virtual void MapVelocityToConfigurationDerivatives(
       const Context<T>& context, VectorInterface<T>* derivatives) const = 0;
 
  protected:

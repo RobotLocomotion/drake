@@ -34,22 +34,22 @@ class Adder : public ContinuousSystemInterface<T> {
               SystemOutput<T>* output) const override;
 
   /// Returns an empty vector since this System is stateless.
-  void GetDerivativesOfGeneralizedPosition(
+  void GetTimeDerivativesOfGeneralizedPosition(
       const Context<T>& context,
       VectorInterface<T>* derivatives) const override;
 
   /// Returns an empty vector since this System is stateless.
-  void GetDerivativesOfGeneralizedVelocity(
+  void GetTimeDerivativesOfGeneralizedVelocity(
       const Context<T>& context,
       VectorInterface<T>* derivatives) const override;
 
   /// Returns an empty vector since this System is stateless.
-  void GetDerivativesOfOtherContinuousState(
+  void GetTimeDerivativesOfOtherContinuousState(
       const Context<T>& context,
       VectorInterface<T>* derivatives) const override;
 
   /// Returns an empty vector since this System is stateless.
-  void MapVelocityToConfigurationDerivative(
+  void MapVelocityToConfigurationDerivatives(
       const Context<T>& context,
       VectorInterface<T>* derivatives) const override;
 
