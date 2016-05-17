@@ -85,7 +85,7 @@ int do_main(int argc, const char* argv[]) {
   // TODO(maddog) Hmm... it appears that drake_visualizer wants unique names,
   //              on *links*, otherwise only one of the same-named links will
   //              get updated joint parameters.
-  world_tree->bodies.back()->linkname = "sedan1";
+  world_tree->bodies.back()->name_ = "sedan1";
   auto sedan_system = std::make_shared<drake::TrivialCar>(0., 5., 0.3, 2.0);
   cars_system->AddSystem(sedan_system);
   cars_vis_adapter->AddSystem(car_vis_adapter);
@@ -94,7 +94,7 @@ int do_main(int argc, const char* argv[]) {
   world_tree->addRobotFromURDF(kBreadtruckUrdf,
                                DrakeJoint::ROLLPITCHYAW,
                                nullptr /*weld_to_frame*/);
-  world_tree->bodies.back()->linkname = "breadtruck1";
+  world_tree->bodies.back()->name_ = "breadtruck1";
   auto breadtruck_system = std::make_shared<drake::TrivialCar>(
       15., 0., 0.7, 10.0);
   cars_system->AddSystem(breadtruck_system);
@@ -104,7 +104,7 @@ int do_main(int argc, const char* argv[]) {
   world_tree->addRobotFromURDF(kSedanUrdf,
                                DrakeJoint::ROLLPITCHYAW,
                                nullptr /*weld_to_frame*/);
-  world_tree->bodies.back()->linkname = "sedan2";
+  world_tree->bodies.back()->name_ = "sedan2";
   auto sedan2_system = std::make_shared<drake::TrivialCar>(-5., 0., -0.3, -2.0);
   cars_system->AddSystem(sedan2_system);
   cars_vis_adapter->AddSystem(car_vis_adapter);
@@ -117,7 +117,7 @@ int do_main(int argc, const char* argv[]) {
         nullptr /*weld_to_frame*/);
     std::ostringstream name;
     name << "car-" << i;
-    world_tree->bodies.back()->linkname = name.str();
+    world_tree->bodies.back()->name_ = name.str();
     auto system = std::make_shared<drake::TrivialCar>(
         // Hackery to spread them around a little on the plane.
         (i % 19 - 10) * 10.,
