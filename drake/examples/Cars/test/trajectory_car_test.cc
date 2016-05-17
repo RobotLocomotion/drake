@@ -1,5 +1,6 @@
 #include "drake/examples/Cars/trajectory_car.h"
 
+#include <stdexcept>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -22,12 +23,6 @@ GTEST_TEST(TrajectoryCarTest, StationaryTest) {
   const Curve2d empty_curve{empty_waypoints};
   const double speed{99.0};
   EXPECT_THROW((TrajectoryCar{empty_curve, speed}), std::exception);
-
-  const std::vector<Point2d> single_waypoint{
-    Point2d{1.0, 2.0},
-  };
-  const Curve2d single_point_curve{single_waypoint};
-  EXPECT_THROW((TrajectoryCar{single_point_curve, speed}), std::exception);
 }
 
 // Check the car's progress along some simple paths.  We just want to
@@ -57,8 +52,8 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
     { 0.125 * M_PI, 1.0, 0.1},
   };
 
-  for (auto it : cases) {
-    // Choose an arbitray start point, then add just one segment
+  for (const auto& it : cases) {
+    // Choose an arbitrary start point, then add just one segment
     // leaving the start point, based on the parameters in the Case.
     const Point2d start{20.0, 30.0};
     const Point2d heading_vector{std::cos(it.heading), std::sin(it.heading)};
@@ -70,7 +65,8 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
     const TrajectoryCar dut{curve, it.speed};
 
     // Check that the systems' outputs over time are correct over the
-    // entire duration of the trajectory.
+    // entire duration of the trajectory, but also including some time
+    // before and after the start and end of the trajectory.
     const double finish_time = it.distance / it.speed;
     for (double time = -1.0; time <= (finish_time + 1.0); time += 0.1) {
       const double fractional_progress =

@@ -1,13 +1,14 @@
 #pragma once
 
 #include <cmath>
+#include <stdexcept>
 #include <vector>
 
 #include <Eigen/Dense>
 
 namespace drake {
 
-/// Curve2 -- a path through two-dimensional cartesian space.
+/// Curve2 -- a path through two-dimensional Cartesian space.
 ///
 /// Given a list of waypoints, traces a path between them.
 ///
@@ -19,20 +20,24 @@ namespace drake {
 template <typename T>
 class Curve2 {
  public:
-  /// A two-dimensional cartesian point that is alignment-safe.
+  /// A two-dimensional Cartesian point that is alignment-safe.
   typedef Eigen::Matrix<T, 2, 1, Eigen::DontAlign> Point2;
 
   /// Constructor that traces through the given @p waypoints in order.
+  /// Throws an error if @p waypoints.size() == 1.
   explicit Curve2(const std::vector<Point2>& waypoints)
       : waypoints_(waypoints), path_length_(GetLength(waypoints_)) {
     // TODO(jwnimmer-tri) We should reject duplicate adjacent
-    // waypoints (deriviate problems); this will probably come for
+    // waypoints (derivative problems); this will probably come for
     // free as part of the spline refactoring.
   }
 
   // Copyable.
   Curve2(const Curve2&) = default;
   Curve2& operator=(const Curve2&) = default;
+  // Not moveable.
+  Curve2(Curve2&&) = delete;
+  Curve2& operator=(Curve2&&) = delete;
 
   /// @return the length of this curve (the total distance traced).
   T path_length() const { return path_length_; }
@@ -43,13 +48,21 @@ class Curve2 {
     Point2 position_dot{Point2::Zero()};
   };
 
-  /// Return the Curve's position at @p path_distance, along with its
-  /// first derivative with respect to @p path_distance.  At the first
-  /// and last waypoint, the derivative is the one-sided result coming
-  /// from the path side (in other words, ignoring that the path
-  /// ends).  A negative @p path_distance will return the first
-  /// waypoint.  A @p path_distance that exceeds the length of the
-  /// curve will return the last waypoint.
+  /// Returns the Curve's @p PositionResult::position at @p path_distance,
+  /// as well as its first derivative @p PositionResult::position_dot with
+  /// respect to @p path_distance.
+  ///
+  /// The @p path_distance is clipped to the ends of the curve:
+  /// - A negative @p path_distance is interpreted as a @p path_distance
+  ///   of zero.
+  /// - A @p path_distance that exceeds the @p path_length() of the curve
+  ///   is interpreted as a @p path_distance equal to the @p path_length().
+  ///
+  /// The @p position_dot derivative, when evaluated exactly at a waypoint,
+  /// will be congruent with the direction of one of the (max two) segments
+  /// that neighbor the waypoint.  (At the first and last waypoints, there
+  /// is only one neighboring segment.)  TODO(jwnimmer-tri) This will no
+  /// longer be true once this class uses a spline.
   PositionResult GetPosition(const T& path_distance) const {
     // TODO(jwnimmer-tri) This implementation is slow (linear search)
     // and incorrect (discontinuous; not a spline).  But it will do
@@ -79,10 +92,9 @@ class Curve2 {
     }
 
     // Oops, we ran out of waypoints; return the final one.
-    result.position = waypoints_.back();
-    // The position_dot is not well defined here, but for now at least
-    // returning the left-side approach is more useful for calling code.
+    // The position_dot is congruent with the final segment.
     {
+      result.position = waypoints_.back();
       Point2 ultimate = waypoints_.back();
       Point2 penultimate = waypoints_.at(waypoints_.size() - 2);
       const Point2 relative_step{ultimate - penultimate};
@@ -98,8 +110,11 @@ class Curve2 {
   // sum-segment-length, once this class uses a spline.
   static T GetLength(const std::vector<Point2>& waypoints) {
     T result{0.0};
-    if (waypoints.size() < 2) {
+    if (waypoints.empty()) {
       return result;
+    }
+    if (waypoints.size() == 1) {
+      throw std::invalid_argument{"single waypoint"};
     }
     for (auto point0 = waypoints.begin(), point1 = point0 + 1;
          point1 != waypoints.end();  // BR
