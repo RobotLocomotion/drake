@@ -24,6 +24,9 @@ struct StateQ {
 
   StateQ() {}
 
+  StateQ(const double a, const double b)
+      : v((Eigen::VectorXd(2) << a, b).finished()) {}
+
   template <typename Derived>
   explicit StateQ(const Eigen::MatrixBase<Derived>& initial)
       : v(initial) {}
@@ -54,8 +57,8 @@ struct SystemQ {
   using OutputVector = StateQ<ScalarType>;
 
   SystemQ(const double dynamics_magic, const double output_magic) :
-      dynamics_magic_(Eigen::Vector2d(dynamics_magic, 0.)),
-      output_magic_(Eigen::Vector2d(output_magic, 0.)) {}
+      dynamics_magic_(dynamics_magic, 0.),
+      output_magic_(output_magic, 0.) {}
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& time,
@@ -81,6 +84,13 @@ struct SystemQ {
   bool feedthrough_ { false };
 };
 
+
+// Conveniently makes a 4-d VectorXd.
+Eigen::VectorXd Make4d(double c1, double c2, double c3, double c4) {
+  return (Eigen::VectorXd(4) << c1, c2, c3, c4).finished();
+}
+
+
 GTEST_TEST(TestNArySystem, BasicOperation) {
   std::shared_ptr<SystemQ> sq1 = std::make_shared<SystemQ>(10., 100.);
   std::shared_ptr<SystemQ> sq2 = std::make_shared<SystemQ>(20., 200.);
@@ -105,8 +115,8 @@ GTEST_TEST(TestNArySystem, BasicOperation) {
   EXPECT_EQ(dut.getNumOutputs(), 2);
   EXPECT_THROW(dut.dynamics(0., state, input), std::invalid_argument);
   EXPECT_THROW(dut.output(0., state, input), std::invalid_argument);
-  StateQ<double> s1(Eigen::Vector2d(1., 0.));
-  StateQ<double> i1(Eigen::Vector2d(5., 0.));
+  StateQ<double> s1(1., 0.);
+  StateQ<double> i1(5., 0.);
   state.Append(s1);
   input.Append(i1);
   EXPECT_EQ(dut.dynamics(0., state, input).count(), 1);
@@ -120,19 +130,19 @@ GTEST_TEST(TestNArySystem, BasicOperation) {
   EXPECT_EQ(dut.getNumOutputs(), 4);
   EXPECT_THROW(dut.dynamics(0., state, input), std::invalid_argument);
   EXPECT_THROW(dut.output(0., state, input), std::invalid_argument);
-  StateQ<double> s2(Eigen::Vector2d(2., 0.));
-  StateQ<double> i2(Eigen::Vector2d(6., 0.));
+  StateQ<double> s2(2., 0.);
+  StateQ<double> i2(6., 0.);
   state.Append(s2);
   input.Append(i2);
   EXPECT_EQ(dut.dynamics(0., state, input).count(), 2);
   EXPECT_EQ(dut.output(0., state, input).count(), 2);
 
   EXPECT_EQ(toEigen(dut.dynamics(0., state, input)),
-            Eigen::Vector4d(10. + 1. + 5., 0.,
-                            20. + 2. + 6., 0.));
+            Make4d(10. + 1. + 5., 0.,
+                   20. + 2. + 6., 0.));
   EXPECT_EQ(toEigen(dut.output(0., state, input)),
-            Eigen::Vector4d(100. + 1. + 5., 0.,
-                            200. + 2. + 6., 0.));
+            Make4d(100. + 1. + 5., 0.,
+                   200. + 2. + 6., 0.));
 
   sq2->time_varying_ = true;
   sq2->feedthrough_ = true;
