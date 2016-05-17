@@ -29,7 +29,7 @@ class NArySystem {
 
   NArySystem() {}
 
-  /// Add @param system to the end of the NArySystem's list of UnitSystems.
+  /// Adds @param system to the end of the NArySystem's list of UnitSystems.
   // TODO(maddog) shared_ptr is not strictly necessary here; we are using it
   //              to be compatible with cascade().  At some point, neither
   //              should use a shared_ptr interface.

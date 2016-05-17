@@ -53,7 +53,7 @@ class NAryState {
   /// indeterminate and the return value is always < 0.
   std::ptrdiff_t count() const { return count_; }
 
-  /// Append the @param unit to the end of the list of component
+  /// Appends the @param unit to the end of the list of component
   /// @param UnitVectors.
   void Append(const UnitVector& unit) {
     if (unit_size_ == 0) {
@@ -73,10 +73,12 @@ class NAryState {
   /// @return a copy of the component UnitVector at position @p pos.
   ///
   /// @throws std::out_of_range if UnitVector is a non-NullVector type
-  /// and @p pos exceeds count().
-  UnitVector get(std::size_t pos) const {
-    if (!((unit_size_ == 0) || (pos < count_))) {
-      throw std::out_of_range("Position pos exceeds unit count().");
+  /// and @p pos exceeds the range [0, count()].
+  UnitVector get(std::ptrdiff_t pos) const {
+    if (unit_size_ > 0) {
+      if ((pos < 0) || (pos >= count_)) {
+        throw std::out_of_range("Position pos exceeds range [0, count()].");
+      }
     }
     const std::size_t row0 = pos * unit_size_;
     return UnitVector(combined_vector_.block(row0, 0,
@@ -86,10 +88,12 @@ class NAryState {
   /// Sets the value of the component UnitVector at position @p pos.
   ///
   /// @throws std::out_of_range if UnitVector is a non-NullVector type
-  /// and @p pos exceeds count().
+  /// and @p pos exceeds the range [0, count()].
   void set(std::size_t pos, const UnitVector& unit) {
-    if (!((unit_size_ == 0) || (pos < count_))) {
-      throw std::out_of_range("Position pos exceeds unit count().");
+    if (unit_size_ > 0) {
+      if ((pos < 0) || (pos >= count_)) {
+        throw std::out_of_range("Position pos exceeds range [0, count()].");
+      }
     }
     const std::size_t row0 = pos * unit_size_;
     combined_vector_.block(row0, 0, unit_size_, 1) = toEigen(unit);
@@ -120,12 +124,12 @@ class NAryState {
     return vec.combined_vector_;
   }
 
-  /// Calculate the size (Eigen row count) of @p UnitVector, which is
+  /// Calculates the size (Eigen row count) of @p UnitVector, which is
   /// presumed to be fixed for all instances of UnitVector.
   static
   std::size_t unit_size() { return UnitVector().size(); }
 
-  /// Determine how many @param UnitVector units will be decoded from
+  /// Determines how many @param UnitVector units will be decoded from
   /// an Eigen column matrix with @param rows rows.  @param rows must
   /// be a multiple of the row count of @param UnitVector.
   ///
@@ -146,7 +150,7 @@ class NAryState {
     return -1;
   }
 
-  /// Determine how many Eigen matrix rows will be needed to represent
+  /// Determines how many Eigen matrix rows will be needed to represent
   /// @param count instances of @param UnitVector.
   ///
   /// To complement UnitCountFromRows(), if @param count is negative,

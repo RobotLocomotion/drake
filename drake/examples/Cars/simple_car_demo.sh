@@ -31,4 +31,4 @@ $mydir/steering_command_driver.py &
 
 wait
 
-# TODO(jwnimmer) Consolidate this script with run_demo_multi_car.sh.
+# TODO(jwnimmer-tri) Consolidate this script with run_demo_multi_car.sh.

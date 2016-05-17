@@ -31,4 +31,4 @@ $DRAKE/pod-build/bin/demo_multi_car $1 &
 
 wait
 
-# TODO(jwnimmer) Consolidate this script with simple_car_demo.sh.
+# TODO(jwnimmer-tri) Consolidate this script with simple_car_demo.sh.

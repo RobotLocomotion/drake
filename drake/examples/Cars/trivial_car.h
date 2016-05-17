@@ -17,7 +17,7 @@ namespace drake {
 ///
 class TrivialCar {
  public:
-  /// Construct a TrivialCar system that locates the car at position
+  /// Constructs a TrivialCar system that locates the car at position
   /// (@p x, @p y) with initial heading @p heading.  The car will rotate
   /// (changing heading) with a period @p period per revolution.
   TrivialCar(const double x, const double y, const double heading,
