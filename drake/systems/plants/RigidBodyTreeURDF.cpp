@@ -321,7 +321,8 @@ bool parseLink(RigidBodyTree* model, string robot_name, XMLElement* node,
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
-    parseVisual(body.get(), visual_node, model, materials, package_map, root_dir);
+    parseVisual(body.get(), visual_node, model, materials, package_map,
+                root_dir);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision");

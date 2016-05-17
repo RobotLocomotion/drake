@@ -58,11 +58,11 @@ GTEST_TEST(UniquePtrRefTest, APITest) {
   auto pj = make_unique_ref<PinJoint>();
   auto sj = make_unique_ref<SlidingJoint>();
 
-  // Verify that we initially have ownership.
+  // Verifies that we initially have ownership.
   EXPECT_TRUE(pj.is_owner());
   EXPECT_TRUE(sj.is_owner());
 
-  // Transfer ownership to compound class object, but retain references.
+  // Transfers ownership to compound class object, but retain references.
   Mechanism mech;
   mech.addJoint(pj.move());
   mech.addJoint(sj.move());
@@ -75,7 +75,7 @@ GTEST_TEST(UniquePtrRefTest, APITest) {
   EXPECT_EQ(pj->get_joint_num(), 0);
   EXPECT_EQ(sj->get_joint_num(), 1);
 
-  // Check that the original object got moved into Mechanism.
+  // Checks that the original object got moved into Mechanism.
   EXPECT_EQ(mech.get_joint(0), pj.get());
   EXPECT_EQ(mech.get_joint(1), sj.get());
 

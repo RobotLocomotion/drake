@@ -219,8 +219,8 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   }
 }
 
-bool parseSDFLink(RigidBodyTree* model, string model_name,
-                  XMLElement* node, const PackageMap& package_map,
+bool parseSDFLink(RigidBodyTree* model, string model_name, XMLElement* node,
+                  const PackageMap& package_map, 
                   PoseMap& pose_map, const string& root_dir, int* index) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
@@ -246,7 +246,7 @@ bool parseSDFLink(RigidBodyTree* model, string model_name,
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node)
-    parseSDFInertial(body.get(), inertial_node, model, pose_map, 
+    parseSDFInertial(body.get(), inertial_node, model, pose_map,
                      transform_to_model);
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
@@ -293,8 +293,7 @@ void setSDFDynamics(RigidBodyTree* model, XMLElement* node,
   }
 }
 
-void parseSDFFrame(RigidBodyTree* model, string model_name,
-                   XMLElement* node) {
+void parseSDFFrame(RigidBodyTree* model, string model_name, XMLElement* node) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
 
@@ -332,8 +331,8 @@ void parseSDFFrame(RigidBodyTree* model, string model_name,
   model->addFrame(frame);
 }
 
-void parseSDFJoint(RigidBodyTree* model, string model_name,
-                   XMLElement* node, PoseMap& pose_map) {
+void parseSDFJoint(RigidBodyTree* model, string model_name, XMLElement* node,
+                   PoseMap& pose_map) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
 
@@ -393,7 +392,8 @@ void parseSDFJoint(RigidBodyTree* model, string model_name,
     // The child link is not in the pose map. Thus, this joint actually defines
     // the pose of a previously-unspecified link frame. Adds this link's
     // transform to the model coordinate frame to the pose map.
-    pose_map.insert(std::pair<string, Isometry3d>(child_name, transform_to_model));
+    pose_map.insert(
+        std::pair<string, Isometry3d>(child_name, transform_to_model));
   }
 
   Vector3d axis;
@@ -442,8 +442,7 @@ void parseSDFJoint(RigidBodyTree* model, string model_name,
     }
 
     // Get the loop point in the parent's reference frame.
-    Vector3d loop_point_model =
-        transform_child_to_model * loop_point_child;
+    Vector3d loop_point_model = transform_child_to_model * loop_point_child;
 
     Vector3d loop_point_parent =
         transform_parent_to_model.inverse() * loop_point_model;
