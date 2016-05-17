@@ -25,9 +25,10 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(
 
   const mxArray* dim_mex = mxGetFieldSafe(pp, "dim");
   int num_dims_mex = mxGetNumberOfElements(dim_mex);
-  if (num_dims_mex == 0 | num_dims_mex > 2)
-    throw runtime_error("case not handled");  // because PiecewisePolynomial
-                                              // can't currently handle it
+  if ((num_dims_mex == 0) || (num_dims_mex > 2)) {
+    // PiecewisePolynomial can't currently handle it.
+    throw runtime_error("case not handled");
+  }
   const int kNumDims = 2;
   mwSize dims[kNumDims];
   if (!mxIsDouble(dim_mex))

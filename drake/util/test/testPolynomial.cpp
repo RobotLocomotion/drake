@@ -1,10 +1,14 @@
+#include "drake/util/Polynomial.h"
+
+#include <cstddef>
 #include <sstream>
 #include <map>
 
-#include "drake/util/Polynomial.h"
+#include <Eigen/Dense>
+#include "gtest/gtest.h"
+
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
-#include "gtest/gtest.h"
 
 using drake::util::MatrixCompareType;
 using Eigen::VectorXd;
@@ -150,16 +154,24 @@ void testPolynomialMatrix() {
                                                                rows_B, cols_B);
   auto C = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients,
                                                                rows_A, cols_A);
-  auto product = A * B;  // just verify that this is possible without crashing
+  auto product = A * B;
   auto sum = A + C;
 
   uniform_real_distribution<double> uniform;
-  for (int row = 0; row < A.rows(); ++row) {
-    for (int col = 0; col < A.cols(); ++col) {
+  for (std::ptrdiff_t row = 0; row < A.rows(); ++row) {
+    for (std::ptrdiff_t col = 0; col < A.cols(); ++col) {
       double t = uniform(generator);
-      valuecheck(sum(row, col).evaluateUnivariate(t),
-                 A(row, col).evaluateUnivariate(t) +
-                 C(row, col).evaluateUnivariate(t), 1e-8);
+      EXPECT_NEAR(sum(row, col).evaluateUnivariate(t),
+                  A(row, col).evaluateUnivariate(t) +
+                  C(row, col).evaluateUnivariate(t), 1e-8);
+
+      double expected_product = 0.0;
+      for (std::ptrdiff_t i = 0; i < A.cols(); ++i) {
+        expected_product += A(row, i).evaluateUnivariate(t) *
+                            B(i, col).evaluateUnivariate(t);
+      }
+      EXPECT_NEAR(product(row, col).evaluateUnivariate(t),
+                  expected_product, 1e-8);
     }
   }
 
