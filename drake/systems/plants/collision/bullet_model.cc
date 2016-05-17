@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
 using Eigen::Isometry3d;
