@@ -58,7 +58,7 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
   };
 
   for (auto it : cases) {
-    // Choose an arbitray start point, then add just one segment
+    // Choose an arbitrary start point, then add just one segment
     // leaving the start point, based on the parameters in the Case.
     const Point2d start{20.0, 30.0};
     const Point2d heading_vector{std::cos(it.heading), std::sin(it.heading)};

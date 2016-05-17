@@ -26,7 +26,7 @@ namespace drake {
 ///
 class DRAKECARS_EXPORT TrajectoryCar {
  public:
-  /// Construct a TrajectoryCar system that traces the given @p curve,
+  /// Constructs a TrajectoryCar system that traces the given @p curve,
   /// at the given constant @p speed.  Throws an error if the curve
   /// cannot be used for a trajectory (e.g., empty).
   TrajectoryCar(const Curve2<double>& curve, double speed)
