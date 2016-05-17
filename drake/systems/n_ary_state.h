@@ -89,7 +89,7 @@ class NAryState {
   ///
   /// @throws std::out_of_range if UnitVector is a non-NullVector type
   /// and @p pos exceeds the range [0, count()].
-  void set(std::size_t pos, const UnitVector& unit) {
+  void set(std::ptrdiff_t pos, const UnitVector& unit) {
     if (unit_size_ > 0) {
       if ((pos < 0) || (pos >= count_)) {
         throw std::out_of_range("Position pos exceeds range [0, count()].");
