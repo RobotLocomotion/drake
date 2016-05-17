@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <package format="2">
-	<name>drake_cars_examples</name>
+	<name>drake_examples_cars</name>
 
     <version>0.0.0</version>
 
     <description>
-        Contains files related to Drake's Cars examples.
+        Contains files that constitute Drake's car examples.
     </description>
 
     <maintainer email="liang.fok@tri.global">Chien-Liang Fok</maintainer>
@@ -14,7 +14,7 @@
 
     <license>MIT</license>
 
-    <url>http://ros.org/wiki/drake_cars_examples</url>
+    <url>http://ros.org/wiki/drake_examples/cars</url>
 
     <!-- The *_depend tags are used to specify dependencies -->
     <!-- Dependencies can be catkin packages or system dependencies -->

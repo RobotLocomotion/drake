@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<launch>
+    <!-- Load the robot description parameter-->
+    <param name="robot_description"
+        command="$(find xacro)/xacro.py '$(find drake_examples_cars)/models/drake_prius/xacro/drake_prius_rviz.xacro'" />
+
+    <!-- Start RViz -->
+    <include file="$(find drake_examples_cars)/launch/rviz.xml">
+        <arg name="RVizConfigFile" value="$(find drake_examples_cars)/rviz/drake_examples_cars.rviz" />
+    </include>
+</launch>

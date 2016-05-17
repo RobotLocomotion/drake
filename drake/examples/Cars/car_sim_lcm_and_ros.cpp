@@ -1,4 +1,4 @@
-#include "drake/examples/Cars/car.h"
+#include "drake/examples/Cars/car_simulation.h"
 #include "drake/examples/Cars/gen/driving_command.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
@@ -47,12 +47,7 @@ int do_main(int argc, const char* argv[]) {
 
   // Initializes the simulation options.
   SimulationOptions options;
-  try {
-    drake::SetSimulationOptions(&options);
-  } catch(std::runtime_error error) {
-    std::cerr << "ERROR: Simulation options is a nullptr!" << std::endl;
-    return EXIT_FAILURE;
-  }
+  SetSimulationOptions(&options);
 
   // Obtains the duration of the simulation
   double duration = std::numeric_limits<double>::infinity();
