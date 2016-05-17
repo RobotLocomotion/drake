@@ -635,6 +635,15 @@ size_t RigidBodyDepthSensor::getNumOutputs() const {
   return num_pixel_rows_ * num_pixel_cols_;
 }
 
+bool RigidBodyDepthSensor::is_horizontal_scanner() const {
+  return num_pixel_cols_ > 1;
+}
+
+
+bool RigidBodyDepthSensor::is_vertical_scanner() const {
+  return num_pixel_rows_ > 1;
+}
+
 size_t RigidBodyDepthSensor::num_pixel_rows() const { return num_pixel_rows_; }
 
 size_t RigidBodyDepthSensor::num_pixel_cols() const { return num_pixel_cols_; }

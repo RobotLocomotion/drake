@@ -34,6 +34,14 @@ int do_main(int argc, char* argv[]) {
         "ERROR: Unable to obtain pointer to the LIDAR sensor.");
   }
 
+  if (!lidar_sensor->is_horizontal_scanner())
+    throw std::runtime_error(
+      "ERROR: LIDAR scanner says it is not horizontal but it is!");
+
+  if (lidar_sensor->is_vertical_scanner())
+    throw std::runtime_error(
+      "ERROR: LIDAR scanner says it is vertical but is not!");
+
   valuecheck(static_cast<size_t>(1), lidar_sensor->num_pixel_rows(),
              std::string("Problems with num_pixel_rows(). "));
   valuecheck(static_cast<size_t>(640), lidar_sensor->num_pixel_cols(),
