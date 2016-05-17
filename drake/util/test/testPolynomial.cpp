@@ -88,6 +88,10 @@ void testOperators() {
                poly1.evaluateUnivariate(t) / scalar, 1e-8);
     valuecheck(poly1_times_poly1.evaluateUnivariate(t),
                poly1.evaluateUnivariate(t) * poly1.evaluateUnivariate(t), 1e-8);
+
+    // Check the '==' operator.
+    EXPECT_TRUE(poly1 + poly2 == sum);
+    EXPECT_FALSE(poly1 == sum);
   }
 }
 
@@ -294,6 +298,56 @@ TEST(PolynomialTest, Conversion) {
   Polynomial<double> z = 3;
 }
 
+TEST(PolynomialTest, EvaluatePartial) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+  Polynomiald dut = (5 * x * x * x) + (3 * x * y) + (2 * y) + 1;
+
+  const std::map<Polynomiald::VarType, double> eval_point_null;
+  const std::map<Polynomiald::VarType, double> eval_point_x = {
+    {x.getSimpleVariable(), 7}};
+  const std::map<Polynomiald::VarType, double> eval_point_y = {
+    {y.getSimpleVariable(), 11}};
+  const std::map<Polynomiald::VarType, double> eval_point_xy = {
+    {x.getSimpleVariable(), 7},
+    {y.getSimpleVariable(), 11}};
+
+  // Test a couple of straightforward explicit cases.
+  EXPECT_EQ(dut.evaluatePartial(eval_point_null).getMonomials(),
+            dut.getMonomials());
+  // TODO(#2216) These fail due to a known drake bug:
+#if 0
+  EXPECT_EQ(dut.evaluatePartial(eval_point_x).getMonomials(),
+            ((23 * y) + 1716).getMonomials());
+  EXPECT_EQ(dut.evaluatePartial(eval_point_y).getMonomials(),
+            ((5 * x * x * x) + (33 * x) + 23).getMonomials());
+#endif
+
+  // Test that every order of partial and then complete evaluation gives the
+  // same answer.
+  const double expected_result = dut.evaluateMultivariate(eval_point_xy);
+  EXPECT_EQ(
+      dut.evaluatePartial(eval_point_null).evaluateMultivariate(eval_point_xy),
+      expected_result);
+  EXPECT_EQ(
+      dut.evaluatePartial(eval_point_xy).evaluateMultivariate(eval_point_null),
+      expected_result);
+  EXPECT_EQ(
+      dut.evaluatePartial(eval_point_x).evaluateMultivariate(eval_point_y),
+      expected_result);
+  EXPECT_EQ(
+      dut.evaluatePartial(eval_point_y).evaluateMultivariate(eval_point_x),
+      expected_result);
+
+  // Test that zeroing out one term gives a sensible result.
+  EXPECT_EQ(dut.evaluatePartial(
+      std::map<Polynomiald::VarType, double>{{x.getSimpleVariable(), 0}}),
+            (2 * y) + 1);
+  EXPECT_EQ(dut.evaluatePartial(
+      std::map<Polynomiald::VarType, double>{{y.getSimpleVariable(), 0}}),
+            (5 * x * x * x) + 1);
 }
+
+}  // anonymous namespace
 }  // namespace test
 }  // namespace drake

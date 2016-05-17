@@ -6,6 +6,8 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
+
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
@@ -21,7 +23,40 @@ class DRAKERBM_EXPORT RigidBody {
  public:
   RigidBody();
 
+  /**
+   * @brief Name of the body.
+   *
+   * An accessor for the name of the body that this rigid body represents.
+   *
+   * @return The name of the body that's modeled by this rigid body.
+   */
+  const std::string& name() const;
+
+  /**
+   * An accessor for the name of the model or robot that this rigid body is
+   * a part of.
+   *
+   * @return The name of the model that this rigid body belongs to.
+   */
+  // TODO(amcastro-tri): Move concept of world out of here as per #2318.
+  const std::string& model_name() const;
+
+  /**
+   * Sets the parent joint through which this rigid body connects to its parent
+   * rigid body.
+   *
+   * @param[in] joint The parent joint of this rigid body. Note that this
+   * rigid body assumes ownership of this joint.
+   */
   void setJoint(std::unique_ptr<DrakeJoint> joint);
+
+  /**
+   * An accessor to this rigid body's parent joint. By "parent joint" we
+   * mean the joint through which this rigid body connects to its parent rigid
+   * body in the rigid body tree.
+   *
+   * @return The parent joint of this rigid body.
+   */
   const DrakeJoint& getJoint() const;
 
   bool hasParent() const;
@@ -102,15 +137,27 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:
-  std::string linkname;
-  std::string model_name;  // todo: replace robotnum w/ model_name
-  int robotnum;            // uses 0-index. starts from 0
+  /**
+   * The name of the body that this rigid body represents.
+   */
+  std::string name_;
+
+  /**
+   * The name of the model two which this rigid body belongs.
+   */
+  std::string model_name_;
+
+  /**
+   * A unique ID for each model. It uses 0-index, starts from 0.
+   */
+  int robotnum;
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
 
   // TODO(amcastro-tri): Make it private and change to parent_.
   RigidBody* parent;
+
   int body_index;
   int position_num_start;
   int velocity_num_start;

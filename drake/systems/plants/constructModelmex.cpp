@@ -81,7 +81,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     std::unique_ptr<RigidBody> b(new RigidBody());
     b->body_index = i;
 
-    b->linkname = mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname"));
+    b->name_ = mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname"));
 
     pm = mxGetPropertySafe(pBodies, i, "robotnum");
     b->robotnum = (int)mxGetScalar(pm) - 1;

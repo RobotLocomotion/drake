@@ -16,11 +16,11 @@ int main(int argc, char* argv[]) {
 
   // run kinematics with second derivatives 100 times
   Eigen::VectorXd q = model->getZeroConfiguration();
-  Eigen::VectorXd v = Eigen::VectorXd::Zero(model->num_velocities);
+  Eigen::VectorXd v = Eigen::VectorXd::Zero(model->number_of_velocities());
   int i;
 
-  if (argc >= 2 + model->num_positions) {
-    for (i = 0; i < model->num_positions; i++)
+  if (argc >= 2 + model->number_of_positions()) {
+    for (i = 0; i < model->number_of_positions(); i++)
       sscanf(argv[2 + i], "%lf", &q(i));
   }
 
@@ -39,9 +39,9 @@ int main(int argc, char* argv[]) {
     auto rpy = model->relativeRollPitchYaw(cache, i, 0);
     Eigen::Matrix<double, 6, 1> x;
     x << pt, rpy;
-    //    cout << i << ": forward kin: " << model->bodies[i].linkname << " is at
+    //    cout << i << ": forward kin: " << model->bodies[i].name_ << " is at
     //    " << pt.transpose() << endl;
-    cout << model->bodies[i]->linkname << " ";
+    cout << model->bodies[i]->name_ << " ";
     cout << x.transpose() << endl;
     //    for (int j=0; j<pt.size(); j++)
     //        cout << pt(j) << " ";

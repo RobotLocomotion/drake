@@ -1,6 +1,8 @@
 #include "drake/util/Polynomial.h"
-#include <stdexcept>
+
 #include <cstring>
+#include <set>
+#include <stdexcept>
 
 using namespace std;
 using namespace Eigen;
@@ -199,6 +201,26 @@ Polynomial<CoefficientType>::getVariables() const {
 }
 
 template <typename CoefficientType>
+Polynomial<CoefficientType> Polynomial<CoefficientType>::evaluatePartial(
+    const std::map<VarType, CoefficientType>& var_values) const {
+  std::vector<Monomial> new_monomials;
+  for (const Monomial& monomial : monomials) {
+    CoefficientType new_coefficient = monomial.coefficient;
+    std::vector<Term> new_terms;
+    for (const Term& term : monomial.terms) {
+      if (var_values.count(term.var)) {
+        new_coefficient *= std::pow(var_values.at(term.var), term.power);
+      } else {
+        new_terms.push_back(term);
+      }
+    }
+    Monomial new_monomial = {new_coefficient, new_terms};
+    new_monomials.push_back(new_monomial);
+  }
+  return Polynomial(new_monomials.begin(), new_monomials.end());
+}
+
+template <typename CoefficientType>
 void Polynomial<CoefficientType>::subs(const VarType& orig,
                                        const VarType& replacement) {
   for (typename vector<Monomial>::iterator iter = monomials.begin();
@@ -269,6 +291,19 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(
   ret.is_univariate = true;
   ret.monomials.push_back(m);
   return ret;
+}
+
+template <typename CoefficientType>
+bool Polynomial<CoefficientType>::operator==(
+    const Polynomial<CoefficientType>& other) const {
+  // Comparison of unsorted vectors is faster copying them into std::set
+  // btrees rather than using std::is_permutation().
+  // TODO(#2216) switch from multiset to set for further performance gains.
+  const std::multiset<Monomial> this_monomials(monomials.begin(),
+                                               monomials.end());
+  const std::multiset<Monomial> other_monomials(other.monomials.begin(),
+                                                other.monomials.end());
+  return this_monomials == other_monomials;
 }
 
 template <typename CoefficientType>
@@ -523,6 +558,10 @@ template <typename CoefficientType>
 void Polynomial<CoefficientType>::makeMonomialsUnique(void) {
   VarType unique_var = 0;  // also update the univariate flag
   for (ptrdiff_t i = monomials.size() - 1; i >= 0; i--) {
+    if (monomials[i].coefficient == 0) {
+      monomials.erase(monomials.begin() + i);
+      continue;
+    }
     Monomial& mi = monomials[i];
     if (!mi.terms.empty()) {
       if (mi.terms.size() > 1) is_univariate = false;

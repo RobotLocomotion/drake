@@ -28,8 +28,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyActuator {
  public:
   RigidBodyActuator(
-      const std::string& name, const RigidBody* body,
-      double reduction = 1.0,
+      const std::string& name, const RigidBody* body, double reduction = 1.0,
       double effort_limit_min = -std::numeric_limits<double>::infinity(),
       double effort_limit_max = std::numeric_limits<double>::infinity())
       : name(name),
@@ -68,6 +67,14 @@ class DRAKERBM_EXPORT RigidBodyLoop {
 
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
+  /**
+   * Defines the name of the rigid body within a rigid body tree that represents
+   * the world.
+   */
+  // TODO(amcastro-tri): Move the concept of world to an actual world
+  // abstraction. See issue #2318.
+  static const char* const kWorldLinkName;
+
   RigidBodyTree(const std::string& urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type =
                     DrakeJoint::ROLLPITCHYAW);
@@ -656,17 +663,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   void warnOnce(const std::string& id, const std::string& msg);
 
-  RigidBody* findLink(std::string linkname, int robot) const;
+  RigidBody* findLink(std::string name, int robot) const;
 
-  RigidBody* findLink(std::string linkname, std::string model_name = "") const;
+  RigidBody* findLink(std::string name, std::string model_name = "") const;
 
-  int findLinkId(const std::string& linkname, int robot = -1) const;
+  int findLinkId(const std::string& name, int robot = -1) const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
   RigidBody* findJoint(std::string jointname, int robot = -1) const;
 
-  int findJointId(const std::string& linkname, int robot = -1) const;
+  int findJointId(const std::string& joint_name, int robot = -1) const;
 
   // @param robot the index of the robot. robot = -1 means to look at
   // all the robots
@@ -718,7 +725,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
      * reconstruct the full Jacobian on all joints, then we should call this
      * method.
      */
-    int ncols = in_terms_of_qdot ? num_positions : num_velocities;
+    int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                   Eigen::Dynamic> full(compact.rows(), ncols);
     full.setZero();
@@ -792,11 +799,22 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   const RigidBody& world() const { return *bodies[0]; }
 
+  /**
+   * An accessor to the number of position states outputted by this rigid body
+   * system.
+   */
+  int number_of_positions() const { return num_positions_; }
+
+  /**
+   * An accessor to the number of velocity states outputted by this rigid body
+   * system.
+   */
+  int number_of_velocities() const { return num_velocities_; }
+
+
  public:
   static const std::set<int> default_robot_num_set;
 
-  int num_positions{};
-  int num_velocities{};
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
 
@@ -820,6 +838,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
  private:
+  // The number of position states in this rigid body tree.
+  int num_positions_{};
+
+  // The number of velocity states in this rigid body tree.
+  int num_velocities_{};
+
   // helper functions for contactConstraints
   template <typename Scalar>
   void accumulateContactJacobian(

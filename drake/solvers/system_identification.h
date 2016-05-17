@@ -88,6 +88,28 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
       const PolyType& poly,
       const LumpingMapType& lumped_parameters);
 
+  /// Estimate some parameters of a polynomial based on empirical data.
+  /**
+   * Given a polynomial equation P(a, b, ... x, y, ...) = 0, and measured
+   * values of some its arguments (x, y, ..., referred to as the "active
+   * variables"), estimate values for the remaining arguments (a, b, ...,
+   * referred to as the "parameters").
+   *
+   * P in this case is a single polynomial.  A version that takes a vector of
+   * Polynomial is forthcoming (TODO(ggould-tri)).
+   *
+   * Measured x, y, ... is provided in a list of maps, active_var_values.
+   *
+   * The return value is a pair, {estimates, error}, where:
+   *   * estimates is a map of polynomial VarTypes (a, b, ...) to their
+   *     estimated values, suitable as input for Polynomial::evaluatePartial.
+   *   * error is the root-mean-square error of the estimates.
+   */
+  typedef std::map<VarType, CoefficientType> PartialEvalType;
+  static std::pair<PartialEvalType, CoefficientType> EstimateParameters(
+      const PolyType& poly,
+      const std::vector<PartialEvalType>& active_var_values);
+
  private:
   /// This class is not constructable.
   SystemIdentification() {}
@@ -136,8 +158,10 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
   static std::pair<CoefficientType, PolyType>
   CanonicalizePolynomial(const PolyType& poly);
 
-  /// Obtain a new lumped variable ID not already in vars_in_use.
-  static VarType CreateLumpVar(const std::set<VarType>& vars_in_use);
+  /// Obtain a new variable ID not already in vars_in_use.  The string part of
+  /// the variable's name will be prefix.
+  static VarType CreateUnusedVar(const std::string& prefix,
+                                 const std::set<VarType>& vars_in_use);
 };
 }  // namespace solvers
 }  // namespace drake

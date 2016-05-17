@@ -18,21 +18,21 @@ int main() {
   }
   Vector2d tspan;
   tspan << 0, 1;
-  int l_hand;
-  int r_hand;
+  int l_hand{};
+  int r_hand{};
   // int l_foot;
   // int r_foot;
   for (int i = 0; i < model->bodies.size(); i++) {
-    if (model->bodies[i]->linkname.compare(string("l_hand"))) {
+    if (model->bodies[i]->name_.compare(string("l_hand"))) {
       l_hand = i;
-    } else if (model->bodies[i]->linkname.compare(string("r_hand"))) {
+    } else if (model->bodies[i]->name_.compare(string("r_hand"))) {
       r_hand = i;
     }
-    // else if (model->bodies[i].linkname.compare(string("l_foot")))
+    // else if (model->bodies[i].name_.compare(string("l_foot")))
     //{
     //  l_foot = i;
     //}
-    // else if (model->bodies[i].linkname.compare(string("r_foot")))
+    // else if (model->bodies[i].name_.compare(string("r_foot")))
     //{
     //  r_foot = i;
     //}
@@ -52,7 +52,7 @@ int main() {
     t[i] = dt * i;
   }
   MatrixXd q0 = qstar.replicate(1, nT);
-  VectorXd qdot0 = VectorXd::Zero(model->num_velocities);
+  VectorXd qdot0 = VectorXd::Zero(model->number_of_velocities());
   Vector3d com_lb = com0;
   com_lb(0) = std::numeric_limits<double>::quiet_NaN();
   com_lb(1) = std::numeric_limits<double>::quiet_NaN();
@@ -77,9 +77,9 @@ int main() {
   constraint_array[0] = com_kc;
   constraint_array[1] = kc_rhand;
   IKoptions ikoptions(model);
-  MatrixXd q_sol(model->num_positions, nT);
-  MatrixXd qdot_sol(model->num_velocities, nT);
-  MatrixXd qddot_sol(model->num_positions, nT);
+  MatrixXd q_sol(model->number_of_positions(), nT);
+  MatrixXd qdot_sol(model->number_of_velocities(), nT);
+  MatrixXd qddot_sol(model->number_of_positions(), nT);
   int info = 0;
   vector<string> infeasible_constraint;
   inverseKinTraj(model, nT, t, qdot0, q0, q0, num_constraints, constraint_array,

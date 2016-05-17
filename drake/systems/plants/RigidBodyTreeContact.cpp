@@ -192,7 +192,7 @@ void RigidBodyTree::computeContactJacobians(
     Ref<const VectorXi> const &idxB, Ref<const Matrix3Xd> const &xA,
     Ref<const Matrix3Xd> const &xB, Matrix<Scalar, Dynamic, Dynamic> &J) const {
   std::vector<int> bodyInds;
-  const size_t nq = num_positions;
+  const size_t nq = num_positions_;
   const size_t numContactPairs = xA.cols();
 
   typedef Matrix<Scalar, Dynamic, Dynamic> MatrixX;

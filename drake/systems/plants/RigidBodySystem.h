@@ -125,11 +125,15 @@ class LoopConstraint : public LinearEqualityConstraint {
 
 };
 */
-}
+}  // namespace RigidBodyConstraints
 
-/** RigidBodySystem
- * @brief implements the System concept by wrapping the RigidBodyTree algorithms
- * with additional sensors and actuators/forces
+/**
+ * @brief Implements the System concept by wrapping the RigidBodyTree algorithms
+ * with additional sensors and actuators/forces.
+ *
+ * Implements the System concept where state is both joint position and
+ * velocity.
+ *
  * @concept{system_concept}
  */
 class DRAKERBSYSTEM_EXPORT RigidBodySystem {
@@ -192,11 +196,31 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
     return tree;
   }
 
-  size_t getNumStates() const {
-    return tree->num_positions + tree->num_velocities;
-  }
+  // This class overrides the System method. See System's documentation for more
+  // details. The state includes both joint position and velocity values. See
+  // class overview description.
+  size_t getNumStates() const;
+
+  // This class overrides the System getNumInputs() method. See System's
+  // documentation for more details.
   size_t getNumInputs() const;
+
+  // This class overrides the System method. See System's documentation for more
+  // details. The outputs include both joint state and the number of sensor
+  // states. See class overview description for more details.
   size_t getNumOutputs() const;
+
+  /**
+   * An accessor to the number of position states outputted by this rigid body
+   * system.
+   */
+  int number_of_positions() const;
+
+  /**
+   * An accessor to the number of velocity states outputted by this rigid body
+   * system.
+   */
+  int number_of_velocities() const;
 
   /** dynamics
    * Formulates the forward dynamics of the rigid body system as an optimization
@@ -233,6 +257,16 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
 
   friend DRAKERBSYSTEM_EXPORT StateVector<double> getInitialState(
       const RigidBodySystem& sys);
+
+  /**
+   * An accessor to the sensors within this rigid body system. This is useful
+   * for downstream components to understand the meaning of the output signal
+   * of this system.
+   *
+   * @return a const reference to the sensors vector within this rigid body
+   * system.
+   */
+  std::vector<const RigidBodySensor*> GetSensors() const;
 
   // some parameters defining the contact
   bool use_multi_contact;
@@ -281,21 +315,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
  */
 Eigen::VectorXd spatialForceInFrameToJointTorque(
     const RigidBodyTree* tree, const KinematicsCache<double>& rigid_body_state,
-    const RigidBodyFrame* frame, const Eigen::Matrix<double, 6, 1>& force) {
-  auto T_frame_to_world =
-      tree->relativeTransform(rigid_body_state, 0, frame->frame_index);
-  auto force_in_world = transformSpatialForce(T_frame_to_world, force);
-  std::vector<int> v_indices;
-  auto J = tree->geometricJacobian(rigid_body_state, 0, frame->frame_index, 0,
-                                   false, &v_indices);
-  Eigen::VectorXd tau = Eigen::VectorXd::Zero(tree->num_velocities);
-  for (int i = 0; i < v_indices.size(); i++) {
-    tau(v_indices[i]) = J.col(i).dot(force_in_world);
-    //      std::cout << " f_" << tree->getVelocityName(v_indices[i]) << " = "
-    //      << tau(v_indices[i]) << std::endl;
-  }
-  return tau;
-}
+    const RigidBodyFrame* frame, const Eigen::Matrix<double, 6, 1>& force);
 
 // todo: insert a RigidBodyForceImpl with CRTP here once I go back and template
 // these methods
@@ -449,6 +469,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
   virtual Eigen::VectorXd output(
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const = 0;
+  const std::string& get_name() const { return name; }
 
  protected:
   RigidBodySystem const& sys;
@@ -471,26 +492,97 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
 
   ~RigidBodyDepthSensor() override {}
 
-  size_t getNumOutputs() const override {
-    return num_pixel_rows * num_pixel_cols;
-  }
+  size_t getNumOutputs() const override;
+
+  /**
+   * Returns the number of points in the image vertically (pitch).
+   */
+  virtual size_t num_pixel_rows() const;
+
+  /**
+   * Returns the number of points in the image horizontally (yaw).
+   */
+  virtual size_t num_pixel_cols() const;
+
+  /**
+   * Returns minimum pitch of this sensor's FOV in radians.
+   */
+  virtual double min_pitch() const;
+
+  /**
+   * Returns maximum pitch of this sensor's FOV in radians.
+   */
+  virtual double max_pitch() const;
+
+  /**
+   * Returns the minimum yaw of this sensor's FOV in radians.
+   */
+  virtual double min_yaw() const;
+
+  /**
+   * Returns the maximum yaw of this sensor's FOV in radians.
+   */
+  virtual double max_yaw() const;
+
+  /**
+   * Returns the minimum range of this sensor in meters.
+   */
+  virtual double min_range() const;
+
+  /**
+   * Returns the maximum range of this sensor in meters.
+   */
+  virtual double max_range() const;
+
   Eigen::VectorXd output(
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const override;
 
  private:
-  void cacheRaycastEndpoints();
-  const std::shared_ptr<RigidBodyFrame> frame;
-  double min_pitch;       // minimum pitch of the camera FOV in radians
-  double max_pitch;       // maximum pitch of the camera FOV in radians
-  double min_yaw;         // minimum yaw of the sensor FOV in radians
-  double max_yaw;         // maximum yaw of the sensor FOV in radians
-  size_t num_pixel_rows;  // number of points in the image vertically (pitch)
-  size_t num_pixel_cols;  // number of points in the image horizontally (yaw)
-  double min_range;       // minimum range of the sensor in meters
-  double max_range;       // maximum range of the sensor in meters
+  // Ensures that the configuration of this sensor is valid.
+  // Throws an exception if it is not valid.
+  void CheckValidConfiguration();
 
-  Eigen::Matrix3Xd raycast_endpoints;  // cache to avoid repeated allocation
+  // The depth sensor will cast a ray with its start point at (0,0,0) in the
+  // sensor's frame (RigidBodyDepthSensor::frame_). Its end, in the sensor's
+  // frame, is computed by this method and stored in raycast_endpoints at the
+  // moment of construction. raycast_endpoints is only computed once at
+  // construction since the end points are constant in the frame of the sensor.
+  // The end points are computed by scanning in the yaw (pitch) direction
+  // discretizing the yaw (pitch) range in num_pixel_cols (num_pixel_rows).
+  // The final 3D end point then corresponds to a ray that starts at zero, with
+  // length max_range, at the specific yaw (pitch) angle.
+  void cacheRaycastEndpoints();
+
+  // The sensor's frame.
+  const std::shared_ptr<RigidBodyFrame> frame_;
+
+  // The minimum pitch of the camera FOV in radians.
+  double min_pitch_{};
+
+  // The maximum pitch of the camera FOV in radians.
+  double max_pitch_{};
+
+  // The minimum yaw of the sensor FOV in radians.
+  double min_yaw_{};
+
+  // The maximum yaw of the sensor FOV in radians
+  double max_yaw_{};
+
+  // The number of points in the image vertically (pitch).
+  size_t num_pixel_rows_{1};
+
+  // The number of points in the image horizontally (yaw).
+  size_t num_pixel_cols_{1};
+
+  // The minimum range of the sensor in meters.
+  double min_range_{0};
+
+  // The maximum range of the sensor in meters.
+  double max_range_{10};
+
+  // A cache to avoid repeated allocation.
+  Eigen::Matrix3Xd raycast_endpoints;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -581,5 +673,4 @@ class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
   const std::shared_ptr<RigidBodyFrame> frame;
 };
 
-// end namespace Drake
-}
+}  // end namespace Drake
