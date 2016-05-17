@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.10)
 project(drake-superbuild)
 
+include(CTest)
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
   message(FATAL_ERROR "GCC version must be at least 4.9")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
