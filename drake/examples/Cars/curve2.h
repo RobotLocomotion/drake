@@ -43,13 +43,21 @@ class Curve2 {
     Point2 position_dot{Point2::Zero()};
   };
 
-  /// Returns the Curve's position at @p path_distance, along with its
-  /// first derivative with respect to @p path_distance.  At the first
-  /// and last waypoint, the derivative is the one-sided result coming
-  /// from the path side (in other words, ignoring that the path
-  /// ends).  A negative @p path_distance will return the first
-  /// waypoint.  A @p path_distance that exceeds the length of the
-  /// curve will return the last waypoint.
+  /// Returns the Curve's @p PositionResult::position at @p path_distance,
+  /// as well as its first derivative @p PositionResult::position_dot with
+  /// respect to @p path_distance.
+  ///
+  /// The @p path_distance is clipped to the ends of the curve:
+  /// - A negative @p path_distance is interpreted as a @p path_distance
+  ///   of zero.
+  /// - A @p path_distance that exceeds the @p path_length() of the curve
+  ///   is interpreted as a @p path_distance equal to the @p path_length().
+  ///
+  /// The @p position_dot derivative, when evaluated exactly at a waypoint,
+  /// will be congruent with the direction of one of the (max two) segments
+  /// that neighbor the waypoint.  (At the first and last waypoints, there
+  /// is only way neighboring segment.)  TODO(jwnimmer-tri) This will no
+  /// longer be true once this class uses a spline.
   PositionResult GetPosition(const T& path_distance) const {
     // TODO(jwnimmer-tri) This implementation is slow (linear search)
     // and incorrect (discontinuous; not a spline).  But it will do
