@@ -616,7 +616,10 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
     // ExampleBrowser.
     //
     // Possible options are defined in the enum
-    // btTriangleRaycastCallback::EFlags.
+    // btTriangleRaycastCallback::EFlags:
+    // 1. kF_UseSubSimplexConvexCastRaytest
+    // 2. kF_UseGjkConvexCastRaytest
+    //
     // From the comments in this enum (btRaycastCallback.h) we know
     // (quoting those comments):
     // - SubSimplexConvexCastRaytest is the default.
@@ -625,6 +628,7 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
     // We now know that SubSimplexConvexCastRaytest is an iterative algorithm
     // with a very large hardcoded tolerance for convergence, see discussions
     // on Drake's github repository issue #1712 and fix in PR #2354.
+    // Erwin Coumans himself comments about this in Bullet's issue #34.
     //
     // When using SubSimplexConvexCastRaytest the ray test finally gets resolved
     // with the call to btSubsimplexConvexCast::calcTimeOfImpact() (this is the
@@ -634,10 +638,8 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
     // Typically the conservative advancement reaches solution in a few
     // iterations, clip it to 32 for degenerate cases. See discussion about this
     // here http://continuousphysics.com/Bullet/phpBB2/viewtopic.php?t=565
-    if (ray_cast_algorithm_ == kGjkConvexCast) {
-      ray_callback.m_flags |=
-          btTriangleRaycastCallback::kF_UseGjkConvexCastRaytest;
-    }
+    ray_callback.m_flags |=
+        btTriangleRaycastCallback::kF_UseGjkConvexCastRaytest;
 
     bt_world.bt_collision_world->rayTest(ray_from_world, ray_to_world,
                                          ray_callback);

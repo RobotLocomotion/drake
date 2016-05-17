@@ -151,21 +151,6 @@ class BulletModel : public Model {
   BulletCollisionWorldWrapper bullet_world_;
   BulletCollisionWorldWrapper bullet_world_no_margin_;
 
-  // Possible ray casting algorithms for Bullet.
-  enum RayCastAlgorithm {
-    // Approximate but faster ray versus convex intersection algorithm.
-    // Implements Gino van den Bergens' paper "Ray Casting against General
-    // Convex Objects with Application to Continuous Collision Detection"
-    kSubSimplexConvexCast,
-    // Performs a raycast on a convex object using support mapping.
-    // The default.
-    kGjkConvexCast
-  };
-
-  // The Bullet algorithm to be used for ray casting.
-  // See notes in BulletModel::collisionRaycast.
-  RayCastAlgorithm ray_cast_algorithm_{kGjkConvexCast};
-
   static constexpr double kSmallMargin = 1e-9;
   static constexpr double kLargeMargin = 0.05;
 
