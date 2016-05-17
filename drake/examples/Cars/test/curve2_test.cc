@@ -1,5 +1,6 @@
 #include "drake/examples/Cars/curve2.h"
 
+#include <stdexcept>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -18,6 +19,14 @@ GTEST_TEST(Curve2Test, EmptyTest) {
   const std::vector<Point2d> empty_waypoints{};
   const Curve2d empty_curve{empty_waypoints};
   EXPECT_DOUBLE_EQ(empty_curve.path_length(), 0.0);
+}
+
+// A single waypoint.
+GTEST_TEST(Curve2Test, SingleWaypointTest) {
+  const std::vector<Point2d> single_waypoint{
+    Point2d{1.0, 2.0},
+  };
+  EXPECT_THROW(Curve2d{single_waypoint}, std::exception);
 }
 
 // A single segment.
