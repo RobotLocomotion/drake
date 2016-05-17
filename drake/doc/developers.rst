@@ -10,9 +10,7 @@ own Github account and then push your changes into a branch on your fork. Once
 you believe your code is ready to be merged into Drake's primary repository,
 open a `pull request <https://help.github.com/articles/using-pull-requests/>`_
 via the Github website. Your code will then undergo an interactive review
-process before it is merged into Drake's primary repository. Please read on for
-more information on testing, supported platforms, code review, required code
-style, etc.
+process before it is merged into Drake's primary repository.
 
 We would like to hear about your success stories if you've used Drake in your
 own projects.  Please consider contributing to our :doc:`gallery` by editing

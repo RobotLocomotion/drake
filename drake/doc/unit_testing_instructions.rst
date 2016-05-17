@@ -45,9 +45,9 @@ For out-of-source builds, the build artifacts directory is typically
 Enabling Long Running Unit Tests
 ================================
 
-Drake by default disables a number of long running unit tests to avoid
-overloading its build servers. To enable these long-running unit tests,
-execute::
+Drake disables a number of long-running unit tests by default. To reduce
+continuous integration turnaround time, these tests run on the build servers
+post-submit, but not pre-submit. To run these tests locally, execute::
 
     $ cd [drake build artifacts directory]
     $ cmake -DLONG_RUNNING_TESTS=ON ..
