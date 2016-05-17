@@ -7,7 +7,7 @@
 
 namespace drake {
 
-/// Curve2 -- a path through two-dimensional cartesian space.
+/// Curve2 -- a path through two-dimensional Cartesian space.
 ///
 /// Given a list of waypoints, traces a path between them.
 ///
@@ -19,14 +19,14 @@ namespace drake {
 template <typename T>
 class Curve2 {
  public:
-  /// A two-dimensional cartesian point that is alignment-safe.
+  /// A two-dimensional Cartesian point that is alignment-safe.
   typedef Eigen::Matrix<T, 2, 1, Eigen::DontAlign> Point2;
 
   /// Constructor that traces through the given @p waypoints in order.
   explicit Curve2(const std::vector<Point2>& waypoints)
       : waypoints_(waypoints), path_length_(GetLength(waypoints_)) {
     // TODO(jwnimmer-tri) We should reject duplicate adjacent
-    // waypoints (deriviate problems); this will probably come for
+    // waypoints (derivative problems); this will probably come for
     // free as part of the spline refactoring.
   }
 
@@ -43,7 +43,7 @@ class Curve2 {
     Point2 position_dot{Point2::Zero()};
   };
 
-  /// Return the Curve's position at @p path_distance, along with its
+  /// Returns the Curve's position at @p path_distance, along with its
   /// first derivative with respect to @p path_distance.  At the first
   /// and last waypoint, the derivative is the one-sided result coming
   /// from the path side (in other words, ignoring that the path
