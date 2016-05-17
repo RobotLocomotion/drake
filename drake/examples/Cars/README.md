@@ -63,7 +63,7 @@ together some workarounds by hand if you are motivated).
 
 Run:
 ```
-$ drake-distro/drake/examples/SimpleCar/simple_car_demo.sh
+$ drake-distro/drake/examples/Cars/simple_car_demo.sh
 ```
 
 Ensure that the (very small) `pygame` window has focus, then use your
