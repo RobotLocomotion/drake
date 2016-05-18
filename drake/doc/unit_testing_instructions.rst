@@ -87,10 +87,11 @@ Running a Specific Test
 
 Once you know the unit tests' name, you can run it by issuing a::
 
-  ctest -VV -R [test name]
+  ctest -VV -C [build mode] -R [test name]
 
-where ``[test name]`` is the name of the test exactly as printed by
-``ctest -N`` including, if any, the entire path to the test as printed on the
+where: ``[build mode]`` is the build model, e.g., ``Debug``, ``RelWithDebInfo``,
+or ``Release``, and ``[test name]`` is the name of the test exactly as printed
+by ``ctest -N`` including, if any, the entire path to the test as printed on the
 screen.
 
 .. _example-running-unit-test:
@@ -105,5 +106,5 @@ Find test::
 
 Run the test::
 
-  $ ctest -VV -R cascade_system_test
+  $ ctest -VV -C RelWithDebInfo -R cascade_system_test
 
