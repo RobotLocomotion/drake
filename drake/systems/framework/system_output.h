@@ -28,4 +28,4 @@ struct SystemOutput {
 };
 
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake
