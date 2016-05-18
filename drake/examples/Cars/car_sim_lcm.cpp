@@ -42,9 +42,18 @@ int do_main(int argc, const char* argv[]) {
     return EXIT_FAILURE;
   }
 
+  // Obtains the desired duration of the simulation.
+  double duration = std::numeric_limits<double>::infinity();
+  for (int i = 2; i < argc; i++) {
+    if (std::string(argv[i]) == "--duration") {
+      duration = atof(argv[++i]);
+    }
+  }
+
   // Starts the simulation.
-  Drake::runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(),
-                drake::GetInitialState(rigid_body_sys), options);
+  Drake::runLCM(sys, lcm, 0, duration,
+                drake::GetInitialState(*(rigid_body_sys.get())), options);
+
   return 0;
 }
 

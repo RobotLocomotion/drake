@@ -5,7 +5,7 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/drakeCarSimLib_export.h"
+#include "drake/drakeCars_export.h"
 #include "drake/examples/Cars/gen/driving_command.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
@@ -27,11 +27,17 @@ namespace drake {
  * model file followed by an arbitrary number of model files representing things
  * the vehicle's environment.
  *
+ * Note: This method will call `::exit(EXIT_FAILURE)` if it encounters a problem
+ * parsing the input parameters.
+ *
+ * Note: If no flat terrain is specified by the input parameters, a flat
+ * terrain is added automatically.
+ *
  * @param[in] argc The number of command line arguments.
  * @param[in] argv An array of command line arguments.
  * @return A shared pointer to a rigid body system.
  */
-DRAKECARSIMLIB_EXPORT
+DRAKECARS_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
                                                        const char* argv[]);
 
@@ -43,7 +49,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
  * @param[in] rigid_body_sys The rigid body system.
  * @return The resulting vehicle system.
  */
-DRAKECARSIMLIB_EXPORT
+DRAKECARS_EXPORT
 std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
@@ -59,10 +65,10 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
  * @param[in] timeout_seconds The final time of the simulation in seconds.
  * @throws A std::runtime_error if parameter \p sim_options is a nullptr.
  */
-DRAKECARSIMLIB_EXPORT
-void SetSimulationOptions(SimulationOptions* sim_options,
-  double initial_step_size = 5e-3,
-  double timeout_seconds = std::numeric_limits<double>::infinity());
+DRAKECARS_EXPORT
+void SetSimulationOptions(
+    SimulationOptions* sim_options, double initial_step_size = 5e-3,
+    double timeout_seconds = std::numeric_limits<double>::infinity());
 
 /**
  * Obtains a valid initial state of the system being simulated.
@@ -70,8 +76,7 @@ void SetSimulationOptions(SimulationOptions* sim_options,
  * @param[in] rigid_body_sys The rigid body system being simulated.
  * @return The initial state of the system.
  */
-DRAKECARSIMLIB_EXPORT
-Eigen::VectorXd GetInitialState(
-    std::shared_ptr<RigidBodySystem> rigid_body_sys);
+DRAKECARS_EXPORT
+Eigen::VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys);
 
 }  // namespace drake

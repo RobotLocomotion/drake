@@ -1,6 +1,6 @@
 #include "drake/examples/Cars/car_simulation.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 using Eigen::MatrixXd;
 using Eigen::Matrix;
@@ -12,7 +12,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
                                                        const char* argv[]) {
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " vehicle_model [world sdf files ...]"
-              << std::endl;
+              << " --duration [duration in seconds]" << std::endl;
     exit(EXIT_FAILURE);
   }
 
@@ -50,12 +50,13 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
       Eigen::Vector3d(0, 0, 0));
 
   // Instantiates a rigid body system and adds the robot to it.
-  auto rigid_body_sys = std::make_shared<RigidBodySystem>();
+  auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
+      Eigen::aligned_allocator<RigidBodySystem>());
   rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION,
                                    weld_to_frame);
 
   // Adds the environment to the rigid body tree.
-  auto const& tree = rigid_body_sys->getRigidBodyTree();
+  const auto& tree = rigid_body_sys->getRigidBodyTree();
   for (int i = 2; i < argc; i++) {
     if (std::string(argv[i]) == "--duration") {
       i++;  // skip the next flag
@@ -96,18 +97,19 @@ std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
 CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
-  auto const& tree = rigid_body_sys->getRigidBodyTree();
+  const auto& tree = rigid_body_sys->getRigidBodyTree();
+
+  // Sets up PD controllers for throttle and steering.
+  const double kpSteering = 400, kdSteering = 80, kThrottle = 100;
 
   MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->number_of_positions());
+  Kp.setZero();
+
   MatrixXd Kd(getNumInputs(*rigid_body_sys), tree->number_of_velocities());
+  Kd.setZero();
 
   Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(
       tree->number_of_positions() + tree->number_of_velocities(), 3);
-
-  // Sets up PD controllers for throttle and steering.
-  double kpSteering = 400, kdSteering = 80, kThrottle = 100;
-  Kp.setZero();
-  Kd.setZero();
   map_driving_cmd_to_x_d.setZero();
 
   for (int actuator_idx = 0; actuator_idx < tree->actuators.size();
@@ -115,30 +117,49 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
     const std::string& actuator_name = tree->actuators[actuator_idx].name;
 
     if (actuator_name == "steering") {
-      auto const& b = tree->actuators[actuator_idx].body;
-      Kp(actuator_idx, b->position_num_start) = kpSteering;  // steering
-      Kd(actuator_idx, b->velocity_num_start) = kdSteering;  // steeringdot
-      map_driving_cmd_to_x_d(b->position_num_start, 0) = 1;  // steering command
+      // Obtains the rigid body to which the actuator is attached.
+      const auto& rigid_body = tree->actuators[actuator_idx].body;
+
+      // Sets the steering actuator's Kp gain.
+      Kp(actuator_idx, rigid_body->position_num_start) = kpSteering;
+
+      // Sets the steering actuator's Kd gain.
+      Kd(actuator_idx, rigid_body->velocity_num_start) = kdSteering;
+
+      // Saves the mapping between the driving command and the steering command.
+      map_driving_cmd_to_x_d(rigid_body->position_num_start,
+                             DrivingCommandIndices::kSteeringAngle) =
+          1;  // steering command
 
     } else if (actuator_name == "right_wheel_joint" ||
                actuator_name == "left_wheel_joint") {
-      auto const& b = tree->actuators[actuator_idx].body;
-      Kd(actuator_idx, b->velocity_num_start) = kThrottle;  // throttle
+      // Obtains the rigid body to which the actuator is attached.
+      const auto& rigid_body = tree->actuators[actuator_idx].body;
+
+      // Sets the throttle Kd gain.
+      Kd(actuator_idx, rigid_body->velocity_num_start) = kThrottle;
+
+      // Saves the mapping between the driving command and the throttle command.
       map_driving_cmd_to_x_d(
-          tree->number_of_positions() + b->velocity_num_start, 1) =
-          20;  // throttle (velocity) command
+          tree->number_of_positions() + rigid_body->velocity_num_start,
+          DrivingCommandIndices::kThrottle) = 20;
+
+      // Saves the mapping between the driving command and the braking command.
       map_driving_cmd_to_x_d(
-          tree->number_of_positions() + b->velocity_num_start, 2) =
-          -20;  // braking (velocity) command
+          tree->number_of_positions() + rigid_body->velocity_num_start,
+          DrivingCommandIndices::kBrake) = -20;
     }
   }
 
-  auto vehicle_with_pd = std::make_shared<PDControlSystem<RigidBodySystem>>(
+  auto vehicle_with_pd = std::allocate_shared<PDControlSystem<RigidBodySystem>>(
+      Eigen::aligned_allocator<PDControlSystem<RigidBodySystem>>(),
       rigid_body_sys, Kp, Kd);
 
   auto vehicle_sys = cascade(
-      std::make_shared<
+      std::allocate_shared<
           Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>>(
+          Eigen::aligned_allocator<Gain<
+              DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>>(),
           map_driving_cmd_to_x_d),
       vehicle_with_pd);
 
@@ -146,19 +167,21 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
 }
 
 void SetSimulationOptions(SimulationOptions* sim_options,
-    double initial_step_size, double timeout_seconds) {
-  if (sim_options == nullptr)
-    throw std::runtime_error("ERROR: drake::SetSimulationOptions(): "
-      "Simulation options are null!");
+                          double initial_step_size, double timeout_seconds) {
+  if (sim_options == nullptr) {
+    throw std::runtime_error(
+        "ERROR: drake::SetSimulationOptions(): "
+        "Simulation options are null!");
+  }
   *sim_options = Drake::default_simulation_options;
   sim_options->initial_step_size = initial_step_size;
   sim_options->timeout_seconds = timeout_seconds;
 }
 
-VectorXd GetInitialState(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
-  auto const& tree = rigid_body_sys->getRigidBodyTree();
+VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys) {
+  const auto& tree = rigid_body_sys.getRigidBodyTree();
 
-  VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
+  VectorXd x0 = VectorXd::Zero(rigid_body_sys.getNumStates());
   x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
   return x0;
 }
