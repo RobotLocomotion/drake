@@ -507,7 +507,6 @@ foreach(example IN ITEMS LittleDog)
   if(EXAMPLES_${example_upper})
     message(STATUS "Installation will include extra example: ${example}")
     ExternalProject_Add(download-${example}
-      DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
       SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
       GIT_REPOSITORY ${${example}_GIT_REPOSITORY}
       GIT_TAG ${${example}_GIT_TAG}
