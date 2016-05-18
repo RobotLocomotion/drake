@@ -28,7 +28,7 @@ std::unique_ptr<SystemOutput<T>> Adder<T>::CreateDefaultOutput() const {
   std::unique_ptr<SystemOutput<T>> output(new SystemOutput<T>);
   {
     OutputPort<T> port;
-    port.output.reset(new BasicVector<T>(length_));
+    port.vector_output.reset(new BasicVector<T>(length_));
     output->ports.push_back(std::move(port));
   }
   return output;
@@ -43,7 +43,7 @@ void Adder<T>::Output(const Context<T>& context,
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
   assert(output->ports.size() == 1);
-  VectorInterface<T>* output_port = output->ports[0].output.get();
+  VectorInterface<T>* output_port = output->ports[0].vector_output.get();
   assert(output_port != nullptr);
   assert(output_port->get_value().rows() == length_);
   output_port->get_mutable_value() = VectorX<T>::Zero(length_);
@@ -59,7 +59,7 @@ void Adder<T>::Output(const Context<T>& context,
   // expected length.
   for (int i = 0; i < context.get_input().ports.size(); i++) {
     const VectorInterface<T>* input =
-        context.get_input().ports[i].input;
+        context.get_input().ports[i].vector_input;
     if (input == nullptr || input->get_value().rows() != length_) {
       throw std::runtime_error("Input port " + std::to_string(i) +
                                "is nullptr or has incorrect size.");

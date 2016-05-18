@@ -13,7 +13,7 @@ template <typename T>
 struct OutputPort {
   /// The port data, if the port is vector-valued.
   /// TODO(david-german-tri): Add abstract-valued ports.
-  std::unique_ptr<VectorInterface<T>> output;
+  std::unique_ptr<VectorInterface<T>> vector_output;
 
   /// The rate at which this port produces output, in seconds.
   /// If zero, the port is continuous.

@@ -33,14 +33,14 @@ TEST_F(AdderTest, AddTwoVectors) {
   BasicVector<double> input1(3 /* length */);
   input0.get_mutable_value() << 1, 2, 3;
   input1.get_mutable_value() << 4, 5, 6;
-  context_->get_mutable_input()->ports[0].input = &input0;
-  context_->get_mutable_input()->ports[1].input = &input1;
+  context_->get_mutable_input()->ports[0].vector_input = &input0;
+  context_->get_mutable_input()->ports[1].vector_input = &input1;
 
   adder_->Output(*context_, output_.get());
 
   ASSERT_EQ(1, output_->ports.size());
   BasicVector<double>* output_port = dynamic_cast<BasicVector<double>*>(
-      output_->ports[0].output.get());
+      output_->ports[0].vector_output.get());
   ASSERT_NE(nullptr, output_port);
   Eigen::Matrix<double, 3, 1> expected;
   expected << 5, 7, 9;
@@ -52,7 +52,7 @@ TEST_F(AdderTest, AddTwoVectors) {
 TEST_F(AdderTest, WrongNumberOfInputPorts) {
   // Hook up just one input.
   BasicVector<double> input0(3 /* length */);
-  context_->get_mutable_input()->ports[0].input = &input0;
+  context_->get_mutable_input()->ports[0].vector_input = &input0;
 
   EXPECT_THROW(adder_->Output(*context_, output_.get()), std::runtime_error);
 }
@@ -64,8 +64,8 @@ TEST_F(AdderTest, WrongSizeOfInputPorts) {
   ASSERT_EQ(2, context_->get_mutable_input()->ports.size());
   BasicVector<double> input0(3 /* length */);
   BasicVector<double> input1(2 /* length */);
-  context_->get_mutable_input()->ports[0].input = &input0;
-  context_->get_mutable_input()->ports[1].input = &input1;
+  context_->get_mutable_input()->ports[0].vector_input = &input0;
+  context_->get_mutable_input()->ports[1].vector_input = &input1;
 
   EXPECT_THROW(adder_->Output(*context_, output_.get()), std::runtime_error);
 }
