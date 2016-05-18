@@ -113,8 +113,24 @@ class BulletModel : public Model {
    */
   std::vector<PointPair> potentialCollisionPoints(bool use_margins) override;
 
-  bool collidingPointsCheckOnly(const std::vector<Eigen::Vector3d>& points,
-                                double collision_threshold) override;
+  // @brief Tests if any of the points supplied in input_points collides with
+  // any part of the model within a given threshold.
+  //
+  // In other words, this method tests if any of the spheres of radius
+  // collision_threshold located at input_points[i] collides with any part of
+  // the model. This method returns as soon as any of these spheres collides
+  // with the model.
+  //
+  // @param input_points The list of points to check for collisions against the
+  // model.
+  // @param collision_threshold The radius of a control sphere around each point
+  // used to check for collisions with the model.
+  //
+  // @return `true` if any of the points positively checks for collision.
+  // `false` otherwise.
+  bool collidingPointsCheckOnly(
+      const std::vector<Eigen::Vector3d>& input_points,
+      double collision_threshold) override;
 
   std::vector<size_t> collidingPoints(
       const std::vector<Eigen::Vector3d>& points,
