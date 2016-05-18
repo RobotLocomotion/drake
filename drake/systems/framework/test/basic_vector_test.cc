@@ -1,11 +1,62 @@
 #include "drake/systems/framework/basic_vector.h"
 
+#include <cmath>
+
+#include <Eigen/Dense>
+#include <unsupported/Eigen/AutoDiff>
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
+
+#include "drake/core/functional_form.h"
+#include "drake/util/Polynomial.h"
+#include "drake/util/eigen_matrix_compare.h"
+
+using Eigen::AutoDiffScalar;
+using drake::util::CompareMatrices;
+using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace systems {
 namespace {
+
+// Tests that the BasicVector<double> is initialized to NaN.
+GTEST_TEST(BasicVectorTest, DoubleInitiallyNaN) {
+  BasicVector<double> vec(3);
+  Eigen::Vector3d expected;
+  expected << NAN, NAN, NAN;
+  EXPECT_TRUE(CompareMatrices(expected, vec.get_value(),
+                              Eigen::NumTraits<double>::epsilon(),
+                              MatrixCompareType::absolute));
+}
+
+// Tests that the BasicVector<AutoDiffScalar<double>> is initialized to zero.
+GTEST_TEST(BasicVectorTest, AutoDiffInitiallyZero) {
+  BasicVector<AutoDiffScalar<VectorX<double>>> vec(3);
+  EXPECT_EQ(0, vec.get_value()(0).value());
+  EXPECT_EQ(0, vec.get_value()(1).value());
+  EXPECT_EQ(0, vec.get_value()(2).value());
+}
+
+// Tests that the BasicVector<int> is initialized to zero.
+GTEST_TEST(BasicVectorTest, IntInitiallyZero) {
+  BasicVector<int> vec(3);
+  Eigen::Vector3i expected;
+  expected << 0, 0, 0;
+  EXPECT_EQ(expected, vec.get_value());
+}
+
+// Tests that the BasicVector<Polynomiald> is initialized to zero.
+GTEST_TEST(BasicVectorTest, PolynomialInitiallyZero) {
+  BasicVector<Polynomiald> vec(1);
+  EXPECT_TRUE(vec.get_value()[0].isApprox(Polynomiald(0.0),
+                                          Eigen::NumTraits<double>::epsilon()));
+}
+
+// Tests that the BasicVector<FunctionalForm> is initialized to undefined.
+GTEST_TEST(BasicVectorTest, FunctionalFormInitiallyUndefined) {
+  BasicVector<FunctionalForm> vec(1);
+  EXPECT_TRUE(vec.get_value()[0].IsUndefined());
+}
 
 // Tests that the BasicVector can be mutated in-place.
 GTEST_TEST(BasicVectorTest, Mutate) {

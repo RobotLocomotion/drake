@@ -40,6 +40,9 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractSystemInterface {
 /// Concrete systems with no state should inherit directly from this interface.
 /// Concrete systems with state should use a more specific interface in the
 /// SystemInterface family.
+///
+/// TODO(david-german-tri): Add static_asserts on T.
+/// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
 class SystemInterface : public AbstractSystemInterface {
  public:

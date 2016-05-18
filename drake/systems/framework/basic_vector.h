@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -12,11 +13,16 @@ namespace systems {
 
 /// BasicVector is a semantics-free wrapper around an Eigen vector that
 /// satisfies VectorInterface. Once constructed, its size is fixed.
-/// @tparam T The type of the vector element.
+/// The BasicVector is initialized to the quiet_NaN of the Eigen scalar.
+///
+/// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
 class BasicVector : public VectorInterface<T> {
  public:
-  explicit BasicVector(int size) : values_(VectorX<T>::Zero(size)) {}
+  explicit BasicVector(int size)
+      : values_(VectorX<T>::Constant(
+            size, std::numeric_limits<
+                      typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
 
   ~BasicVector() override {}
 
