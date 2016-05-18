@@ -12,7 +12,13 @@ namespace systems {
 
 template <typename T>
 struct InputPort {
+  /// The port data, if the port is vector-valued.
+  /// TODO(david-german-tri): Add abstract-valued ports.
   VectorInterface<T>* input = nullptr;
+
+  /// The rate at which this port is sampled, in seconds.
+  /// If zero, the port is continuous.
+  double sample_time_sec;
 };
 
 /// The Input is a container for pointers to all the data that is connected to
@@ -20,7 +26,7 @@ struct InputPort {
 /// by the Input struct.
 template <typename T>
 struct Input {
-  std::vector<InputPort<T>> continuous_ports;
+  std::vector<InputPort<T>> ports;
 };
 
 template <typename T>
