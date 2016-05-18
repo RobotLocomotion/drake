@@ -72,7 +72,7 @@ To show ``*.sdf`` files in the side bar::
 Note that the above list does not include ``*.sdf``. This is expected since by
 default ``*.sdf`` does show up in the list.
 
-Automatically show an 80-character Ruler
+Automatically Show an 80-character Ruler
 ----------------------------------------
 
 To view an 80 character-wide ruler::
