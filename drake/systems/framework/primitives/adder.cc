@@ -17,7 +17,7 @@ Adder<T>::Adder(size_t num_inputs, size_t length)
 template <typename T>
 std::unique_ptr<Context<T>> Adder<T>::CreateDefaultContext() const {
   std::unique_ptr<Context<T>> context(new Context<T>);
-  context->get_mutable_input()->continuous_ports.resize(num_inputs_);
+  context->get_mutable_input()->ports.resize(num_inputs_);
   return context;
 }
 
@@ -29,7 +29,7 @@ std::unique_ptr<SystemOutput<T>> Adder<T>::CreateDefaultOutput() const {
   {
     OutputPort<T> port;
     port.output.reset(new BasicVector<T>(length_));
-    output->continuous_ports.push_back(std::move(port));
+    output->ports.push_back(std::move(port));
   }
   return output;
 }
@@ -42,24 +42,24 @@ void Adder<T>::Output(const Context<T>& context,
   // since failures would reflect a bug in the Adder implementation, not
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
-  assert(output->continuous_ports.size() == 1);
-  VectorInterface<T>* output_port = output->continuous_ports[0].output.get();
+  assert(output->ports.size() == 1);
+  VectorInterface<T>* output_port = output->ports[0].output.get();
   assert(output_port != nullptr);
   assert(output_port->get_value().rows() == length_);
   output_port->get_mutable_value() = VectorX<T>::Zero(length_);
 
   // Check that there are the expected number of input ports.
-  if (context.get_input().continuous_ports.size() != num_inputs_) {
+  if (context.get_input().ports.size() != num_inputs_) {
     throw std::runtime_error(
         "Expected " + std::to_string(num_inputs_) + "input ports, but had " +
-        std::to_string(context.get_input().continuous_ports.size()));
+        std::to_string(context.get_input().ports.size()));
   }
 
   // Sum each input port into the output, after checking that it has the
   // expected length.
-  for (int i = 0; i < context.get_input().continuous_ports.size(); i++) {
+  for (int i = 0; i < context.get_input().ports.size(); i++) {
     const VectorInterface<T>* input =
-        context.get_input().continuous_ports[i].input;
+        context.get_input().ports[i].input;
     if (input == nullptr || input->get_value().rows() != length_) {
       throw std::runtime_error("Input port " + std::to_string(i) +
                                "is nullptr or has incorrect size.");
