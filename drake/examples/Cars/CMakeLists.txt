@@ -6,6 +6,7 @@ if (LCM_FOUND)
   pods_install_libraries(drakeCars)
   drake_install_headers(
     simple_car.h
+    trivial_car.h
     gen/driving_command.h
     gen/euler_floating_joint_state.h
     gen/simple_car_state.h
@@ -22,4 +23,8 @@ if (LCM_FOUND)
   add_executable(car_sim_lcm car_sim_lcm.cpp)
   add_dependencies(car_sim_lcm drake_lcmtypes lcmtype_agg_hpp)
   target_link_libraries(car_sim_lcm drakeRBSystem drakeLCMSystem)
+
+  add_executable(demo_multi_car demo_multi_car.cc)
+  target_link_libraries(demo_multi_car drakeRBSystem drakeLCMSystem)
+
 endif (LCM_FOUND)
