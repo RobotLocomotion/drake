@@ -19,6 +19,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     z_inactive_guess_tol = .01;
     multiple_contacts = false;
     gurobi_present = false;
+    % convex stuff below
+    update_convex = true;
+    phi_max = 0.1; % m, max contact force distance
+    active_threshold = 0.1; % height below which contact forces are calculated
+    contact_threshold = 1e-3; % threshold where force penalties are eliminated (modulo regularization)
   end
 
   methods
@@ -56,6 +61,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if isfield(options, 'multiple_contacts')
         typecheck(options.multiple_contacts, 'logical');
         obj.multiple_contacts = options.multiple_contacts;
+      end
+      
+      if isfield(options, 'update_convex')
+        typecheck(options.update_convex, 'logical');
+        obj.update_convex = options.update_convex;
       end
 
       if ~isfield(options,'enable_fastqp')
@@ -197,6 +207,28 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
     end
 
+    
+    function [phiC,normal,V,n,xA,xB,idxA,idxB] = getContactTerms(obj,q,kinsol)
+     
+      if nargin<3
+        kinsol = doKinematics(obj, q);
+      end
+
+      [phiC,normal,d,xA,xB,idxA,idxB,mu,n] = contactConstraints(obj,kinsol,obj.multiple_contacts);
+
+      % TODO: clean up
+      nk = length(d);  
+      V = cell(1,2*nk);
+      muI = sparse(diag(mu));
+      norm_mat = sparse(diag(1./sqrt(1 + mu.^2)));
+      for k=1:nk,
+        V{k} = (normal + d{k}*muI)*norm_mat;
+        V{nk+k} = (normal - d{k}*muI)*norm_mat;
+      end
+           
+    end
+    
+    
     function [xdn,df] = update(obj,t,x,u)
       if (nargout>1)
         [obj,z,Mvn,wvn,dz,dMvn,dwvn] = solveLCP(obj,t,x,u);
