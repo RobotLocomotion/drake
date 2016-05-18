@@ -21,7 +21,7 @@ int do_main(int argc, const char* argv[]) {
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
-  // Instantiate a duration variable that will be set by the call to
+  // Instantiates a duration variable that will be set by the call to
   // drake::CreateRigidBodySystem() below.
   double duration;
 
