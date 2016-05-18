@@ -85,9 +85,9 @@ to look at the ``CMakeLists.txt`` that adds the unit test to the build system.
 Running a Specific Test
 =======================
 
-Once you know the unit tests' name, you can run it by issuing a::
+Once you know the unit tests' name, you can run it by executing::
 
-  ctest -VV -C [build mode] -R [test name]
+  $ ctest -VV -C [build mode] -R [test name]
 
 where: ``[build mode]`` is the build model, e.g., ``Debug``, ``RelWithDebInfo``,
 or ``Release``, and ``[test name]`` is the name of the test exactly as printed
