@@ -166,12 +166,17 @@ The compilation process generates a bunch of shared ``.dll`` libraries. You need
 Test Compilation Results
 ------------------------
 
-To verify Drake was successfully compiled, run some unit tests::
+To verify Drake was successfully compiled, run the unit tests::
 
     $ cd [build artifacts directory]
     $ ctest -VV -C [build mode]
 
-For more details on how to run unit tests, see :ref:`here <unit-test-instructions>`.
+You can also run a specific unit test::
+
+    $ cd [build artifacts directory]
+    $ ctest -VV -C [build mode] -R [name of unit test]
+
+For more details on unit testing, see :ref:`here <unit-test-instructions>`.
 
 
 .. When you're done with these platform-specific steps, return to :doc:`from_source` to complete and test your installation.
