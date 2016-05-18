@@ -14,7 +14,7 @@ template <typename T>
 struct InputPort {
   /// The port data, if the port is vector-valued.
   /// TODO(david-german-tri): Add abstract-valued ports.
-  VectorInterface<T>* input = nullptr;
+  VectorInterface<T>* vector_input = nullptr;
 
   /// The rate at which this port is sampled, in seconds.
   /// If zero, the port is continuous.
