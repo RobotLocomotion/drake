@@ -12,6 +12,7 @@ namespace systems {
 
 /// BasicVector is a semantics-free wrapper around an Eigen vector that
 /// satisfies VectorInterface. Once constructed, its size is fixed.
+/// The BasicVector is zero-initialized.
 /// @tparam T The type of the vector element.
 template <typename T>
 class BasicVector : public VectorInterface<T> {

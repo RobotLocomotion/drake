@@ -7,6 +7,14 @@ namespace drake {
 namespace systems {
 namespace {
 
+// Tests that the BasicVector is initialized to zero.
+GTEST_TEST(BasicVectorTest, InitiallyZero) {
+  BasicVector<double> vec(3);
+  Eigen::Vector3d expected;
+  expected << 0, 0, 0;
+  EXPECT_EQ(expected, vec.get_value());
+}
+
 // Tests that the BasicVector can be mutated in-place.
 GTEST_TEST(BasicVectorTest, Mutate) {
   BasicVector<int> vec(2);
