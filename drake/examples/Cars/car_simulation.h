@@ -35,11 +35,17 @@ namespace drake {
  *
  * @param[in] argc The number of command line arguments.
  * @param[in] argv An array of command line arguments.
+ * @param[out] duration The duration over which the simulation should run. The
+ * simulation runs from time zero seconds to time \p duration seconds. If no
+ * duration is specified in \p argv, this \p duration is set to be infinity.
+ * A duration is specified in \p argv by the string "--duration" followed by a
+ * floating point value.
  * @return A shared pointer to a rigid body system.
  */
 DRAKECARS_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
-                                                       const char* argv[]);
+                                                       const char* argv[],
+                                                       double* duration);
 
 /**
  * Creates a vehicle system by instantiating PD controllers for the actuators

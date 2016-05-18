@@ -21,8 +21,12 @@ int do_main(int argc, const char* argv[]) {
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
+  // Instantiate a duration variable that will be set by the call to
+  // drake::CreateRigidBodySystem() below.
+  double duration;
+
   // Initializes the rigid body system.
-  auto rigid_body_sys = drake::CreateRigidBodySystem(argc, argv);
+  auto rigid_body_sys = drake::CreateRigidBodySystem(argc, argv, &duration);
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
   // Initializes and cascades all of the other systems.
@@ -35,14 +39,6 @@ int do_main(int argc, const char* argv[]) {
 
   // Initializes the simulation options.
   SimulationOptions options = GetCarSimulationDefaultOptions();
-
-  // Obtains the desired duration of the simulation.
-  double duration = std::numeric_limits<double>::infinity();
-  for (int i = 2; i < argc; i++) {
-    if (std::string(argv[i]) == "--duration") {
-      duration = atof(argv[++i]);
-    }
-  }
 
   // Starts the simulation.
   Drake::runLCM(sys, lcm, 0, duration,

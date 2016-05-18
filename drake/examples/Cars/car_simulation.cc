@@ -9,7 +9,8 @@ using Eigen::VectorXd;
 namespace drake {
 
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
-                                                       const char* argv[]) {
+                                                       const char* argv[],
+                                                       double* duration) {
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " vehicle_model [world sdf files ...]"
               << " --duration [duration in seconds]" << std::endl;
@@ -55,11 +56,19 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
   rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION,
                                    weld_to_frame);
 
+  // Initializes duration to be infinity.
+  *duration = std::numeric_limits<double>::infinity();
+
   // Adds the environment to the rigid body tree.
   const auto& tree = rigid_body_sys->getRigidBodyTree();
   for (int i = 2; i < argc; i++) {
     if (std::string(argv[i]) == "--duration") {
-      i++;  // skip the next flag
+      if (++i == argc) {
+        throw std::runtime_error(
+            "ERROR: Command line option \"--duration\" is not followed by a "
+            "value!");
+      }
+      *duration = atof(argv[i]);
     } else {
       tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);
     }
