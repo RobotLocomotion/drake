@@ -34,13 +34,7 @@ int do_main(int argc, const char* argv[]) {
   auto sys = cascade(vehicle_sys, visualizer);
 
   // Initializes the simulation options.
-  SimulationOptions options;
-  try {
-    drake::SetSimulationOptions(&options);
-  } catch (std::runtime_error error) {
-    std::cerr << "ERROR: Simulation options is a nullptr!" << std::endl;
-    return EXIT_FAILURE;
-  }
+  SimulationOptions options = GetCarSimulationDefaultOptions();
 
   // Obtains the desired duration of the simulation.
   double duration = std::numeric_limits<double>::infinity();

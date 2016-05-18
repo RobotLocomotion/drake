@@ -166,16 +166,11 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   return vehicle_sys;
 }
 
-void SetSimulationOptions(SimulationOptions* sim_options,
-                          double initial_step_size, double timeout_seconds) {
-  if (sim_options == nullptr) {
-    throw std::runtime_error(
-        "ERROR: drake::SetSimulationOptions(): "
-        "Simulation options are null!");
-  }
-  *sim_options = Drake::default_simulation_options;
-  sim_options->initial_step_size = initial_step_size;
-  sim_options->timeout_seconds = timeout_seconds;
+SimulationOptions GetCarSimulationDefaultOptions() {
+  SimulationOptions result = Drake::default_simulation_options;
+  result.initial_step_size = 5e-3;
+  result.timeout_seconds = std::numeric_limits<double>::infinity();
+  return result;
 }
 
 VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys) {

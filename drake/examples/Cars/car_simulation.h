@@ -56,19 +56,13 @@ std::shared_ptr<CascadeSystem<
 CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
 
 /**
- * Sets the simulation options. It uses the default simulation options modulo
- * the input parameters.
+ * Returns the default simulation options for car simulations. The default
+ * options include an initial step size of 5e-3 and a timeout of infinity.
  *
- * @param[out] sim_options A pointer to where the simulation options should
- * be saved.
- * @param[in] initial step size The initial simulation step size in seconds.
- * @param[in] timeout_seconds The final time of the simulation in seconds.
- * @throws A std::runtime_error if parameter \p sim_options is a nullptr.
+ * @return The default car simulation options.
  */
 DRAKECARS_EXPORT
-void SetSimulationOptions(
-    SimulationOptions* sim_options, double initial_step_size = 5e-3,
-    double timeout_seconds = std::numeric_limits<double>::infinity());
+SimulationOptions GetCarSimulationDefaultOptions();
 
 /**
  * Obtains a valid initial state of the system being simulated.
