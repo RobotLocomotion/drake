@@ -41,4 +41,4 @@ class Adder : public SystemInterface<T> {
 };
 
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake
