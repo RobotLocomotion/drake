@@ -84,17 +84,6 @@ Additional Rules
   `stackoverflow <http://stackoverflow.com/questions/5813700/difference-between-size-t-and-stdsize-t>`_
   and Drake issue `#2374 <https://github.com/RobotLocomotion/drake/issues/2374>`_.
 
-.. _code-style-guide-cpp-addon-recommendations:
-
-Additional Recommendations
---------------------------
-
-* When writing unit tests, use a local variable named ``dut``, which stands for
-  "device under test", to distinguish what `is` being tested versus what
-  `is not` being tested. This is particularly useful in large tests that involve
-  huge amounts of helper code just to build up to the point where the ``dut``
-  can be tested.
-
 .. _code-style-guide-matlab:
 
 MATLAB Style
