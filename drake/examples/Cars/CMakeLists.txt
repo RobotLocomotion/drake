@@ -14,7 +14,6 @@ if (LCM_FOUND)
     car_simulation.h
     simple_car.h
     trajectory_car.h
-    trivial_car.h
     gen/driving_command.h
     gen/euler_floating_joint_state.h
     gen/simple_car_state.h
