@@ -1726,12 +1726,10 @@ RigidBody* RigidBodyTree::findJoint(std::string jointname, int robot) const {
     }
   }
   // Unlike the MATLAB implementation, I am not handling the fixed joints
-  size_t num_match = 0;
   size_t ind_match = 0;
   bool match_found = false;
   for (size_t i = 0; i < this->bodies.size(); i++) {
     if (name_match[i]) {
-      num_match++;
       ind_match = i;
       match_found = true;
     }
