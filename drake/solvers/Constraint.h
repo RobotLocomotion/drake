@@ -130,7 +130,7 @@ class PolynomialConstraint : public Constraint {
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     double_evaluation_point_.clear();
-    for (int i = 0; i < poly_vars_.size(); i++) {
+    for (size_t i = 0; i < poly_vars_.size(); i++) {
       double_evaluation_point_[poly_vars_[i]] = x[i];
     }
     y.resize(num_constraints());
@@ -140,7 +140,7 @@ class PolynomialConstraint : public Constraint {
   void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     taylor_evaluation_point_.clear();
-    for (int i = 0; i < poly_vars_.size(); i++) {
+    for (size_t i = 0; i < poly_vars_.size(); i++) {
       taylor_evaluation_point_[poly_vars_[i]] = x[i];
     }
     y.resize(num_constraints());
