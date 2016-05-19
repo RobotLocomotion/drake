@@ -129,44 +129,48 @@ class DRAKECOLLISION_EXPORT Model {
     return std::vector<PointPair>();
   }
 
-  // @brief Given a vector of points in world coordinates, returns the indices
-  // of those points within a specified distance of any collision geometry in
-  // the model.
-  //
-  // In other words, this method tests if a sphere of radius
-  // collision_threshold located at input_points[i] collides with any part of
-  // the model. The result is returned as a vector of indexes in input_points
-  // that do collide with the model.
-  //
-  // @param input_points The list of points to check for collisions against the
-  // model.
-  // @param collision_threshold The radius of a control sphere around each point
-  // used to check for collisions with the model.
-  //
-  // @return A vector with indexes in input_points of all those points that do
-  // collide with the model within the specified threshold.
-  //
-  // @see systems/plants/test/collidingPointsTest.m for a Matlab test.
+  /** Given a vector of points in world coordinates, returns the indices
+  of those points within a specified distance of any collision geometry in
+  the model.
+
+  In other words, this method tests if a sphere of radius
+  collision_threshold located at input_points[i] collides with any part of
+  the model. The result is returned as a vector of indexes in input_points
+  that do collide with the model.
+  Points are not checked against one another but only against the existing
+  model.
+
+  @param input_points The list of points to check for collisions against the
+  model.
+  @param collision_threshold The radius of a control sphere around each point
+  used to check for collisions with the model.
+
+  @return A vector with indexes in input_points of all those points that do
+  collide with the model within the specified threshold.
+
+  @see systems/plants/test/collidingPointsTest.m for a Matlab test. **/
   virtual std::vector<size_t> collidingPoints(
       const std::vector<Eigen::Vector3d>& points, double collision_threshold) {
     return std::vector<size_t>();
   }
 
-  // @brief Tests if any of the points supplied in input_points collides with
-  // any part of the model within a given threshold.
-  //
-  // In other words, this method tests if any of the spheres of radius
-  // collision_threshold located at input_points[i] collides with any part of
-  // the model. This method returns as soon as any of these spheres collides
-  // with the model.
-  //
-  // @param input_points The list of points to check for collisions against the
-  // model.
-  // @param collision_threshold The radius of a control sphere around each point
-  // used to check for collisions with the model.
-  //
-  // @return `true` if any of the points positively checks for collision.
-  // `false` otherwise.
+  /** Tests if any of the points supplied in input_points collides with
+  any part of the model within a given threshold.
+
+  In other words, this method tests if any of the spheres of radius
+  collision_threshold located at input_points[i] collides with any part of
+  the model. This method returns as soon as any of these spheres collides
+  with the model.
+  Points are not checked against one another but only against the existing
+  model.
+
+  @param input_points The list of points to check for collisions against the
+  model.
+  @param collision_threshold The radius of a control sphere around each point
+  used to check for collisions with the model.
+
+  @return `true` if any of the points positively checks for collision.
+  `false` otherwise. **/
   virtual bool collidingPointsCheckOnly(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) {
