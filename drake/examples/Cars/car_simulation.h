@@ -20,6 +20,8 @@ using Drake::Gain;
 using Drake::SimulationOptions;
 
 namespace drake {
+namespace examples {
+namespace cars {
 
 /**
  * Parses the command line arguments and creates the rigid body system to be
@@ -79,4 +81,6 @@ SimulationOptions GetCarSimulationDefaultOptions();
 DRAKECARS_EXPORT
 Eigen::VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys);
 
+}  // namespace cars
+}  // namespace examples
 }  // namespace drake

@@ -77,7 +77,7 @@ $ ../../pod-build/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1
 
 ### Simulation Using Drake + LCM + ROS
 
-*Comming Soon!*
+*Coming Soon!*
 
 Additional Simulation Notes
 ---------------------------

@@ -7,6 +7,8 @@ using Eigen::Matrix;
 using Eigen::VectorXd;
 
 namespace drake {
+namespace examples {
+namespace cars {
 
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
                                                        const char* argv[],
@@ -190,4 +192,6 @@ VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys) {
   return x0;
 }
 
+}  // namespace cars
+}  // namespace examples
 }  // namespace drake
