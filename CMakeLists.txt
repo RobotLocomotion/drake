@@ -272,6 +272,8 @@ else()
   set(PODS_MAKE_COMMAND ${MAKE_EXECUTABLE})
 endif()
 
+set(LittleDog_SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/examples/LittleDog)
+
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
@@ -304,7 +306,24 @@ foreach(proj IN ITEMS
   swig_matlab
   yaml_cpp
   nlopt
+  LittleDog
   drake)
+  if(${proj}_GIT_REPOSITORY)
+    if (NOT ${proj}_SOURCE_DIR)
+      set(${proj}_SOURCE_DIR "${PROJECT_SOURCE_DIR}/externals/${proj}")
+    endif()
+    file(MAKE_DIRECTORY ${${proj}_SOURCE_DIR})
+    file(RELATIVE_PATH submodule_path ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_SOURCE_DIR})
+    execute_process(COMMAND git config -f .gitmodules "submodule.${submodule_path}.path" "${submodule_path}"
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    execute_process(COMMAND git config -f .gitmodules "submodule.${submodule_path}.url"  "${${proj}_GIT_REPOSITORY}"
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    execute_process(COMMAND git update-index --add --cacheinfo "160000,${${proj}_GIT_TAG},${submodule_path}"
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    execute_process(COMMAND git add .gitmodules
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  endif()
+  continue()
   string(TOUPPER ${proj} proj_upper)
   if(${proj} STREQUAL "drake" OR
     ${proj} STREQUAL "cmake" OR
@@ -321,6 +340,7 @@ foreach(proj IN ITEMS
     execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
   endif()
 endforeach()
+return()
 
 set(COMMON_CMAKE_ARGS
   CMAKE_GENERATOR ${CMAKE_GENERATOR}
