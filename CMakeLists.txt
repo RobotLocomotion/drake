@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.10)
 project(drake-superbuild)
 
+include(CTest)
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
   message(FATAL_ERROR "GCC version must be at least 4.9")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
@@ -154,7 +156,7 @@ set(bullet_GIT_TAG f7cfcf6a24977b57dc832593743c770548799e45)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
-set(cmake_GIT_TAG abe1a22d0bb767423de4e3bd1123cc2deae1c82a)
+set(cmake_GIT_TAG b4c6cdd3ca1ee7bf2c3e14f9392a04434e0aff35)
 set(cmake_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)

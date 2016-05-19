@@ -67,6 +67,15 @@ Additional Rules
   left uninitialized; if you want yours zero-initialized you can
   member-initialize it by passing an appropriate ``Zero``, for example:
   ``Eigen::Matrix3d mat_{Eigen::Matrix3d::Zero()};``.
+* After including ``<cstddef>``, assume that ``size_t`` and ``ptrdiff_t``
+  are defined in the global namespace. Do not preface them with ``std::``
+  and do not write ``using std::size_t`` or ``using std::ptrdiff_t`` in
+  your code. There is a hypothetical possibility that this won't work on
+  some compiler someday but we deem the risk acceptable in trade for
+  allowing this common, clutter-reducing practice. For discussion, see
+  `stackoverflow <http://stackoverflow.com/questions/5813700/difference-between-size-t-and-stdsize-t>`_
+  and Drake issue `#2374 <https://github.com/RobotLocomotion/drake/issues/2374>`_.
+
 
 MATLAB Style
 ============
