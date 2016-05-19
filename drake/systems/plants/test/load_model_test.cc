@@ -313,6 +313,7 @@ TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
   // Verifies that the transform between the robot's root node and the world is
   // as expected.
 
+  // Defines the expected model-to-world transform.
   {
     Eigen::Vector3d xyz, rpy;
     xyz << params.x_, params.y_, params.z_;
@@ -322,14 +323,24 @@ TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
 
   auto link1_body = rbs.getRigidBodyTree()->findLink(params.root_link_name_);
   EXPECT_TRUE(link1_body != nullptr);
-  EXPECT_TRUE(
-      link1_body->getJoint().getTransformToParentBody().matrix().isApprox(
-          T_model_to_world.matrix(), 1e-10))
-      << "Incorrect transform from the link1's frame to Drake's world frame."
-      << "Got:\n"
-      << link1_body->getJoint().getTransformToParentBody().matrix() << "\n"
-      << "Expected:\n"
-      << T_model_to_world.matrix();
+
+  // Note: The following two local variables are necessary to avoid a transient
+  // "unknown file" error on 32-bit Windows platforms. For more information,
+  // see:
+  //
+  // https://github.com/robotlocomotion/drake/pull/2171#issuecomment-219770037
+  auto actual_matrix =
+    link1_body->getJoint().getTransformToParentBody().matrix();
+
+  auto expected_matrix = T_model_to_world.matrix();
+
+  EXPECT_TRUE(actual_matrix.isApprox(expected_matrix, 1e-10))
+    << "ERROR: "
+    << "Incorrect transform from the link1's frame to Drake's world frame.\n"
+    << "Got:\n"
+    << actual_matrix << "\n"
+    << "Expected:\n"
+    << expected_matrix;
 }
 
 INSTANTIATE_TEST_CASE_P(
