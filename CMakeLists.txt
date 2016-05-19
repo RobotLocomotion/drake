@@ -31,6 +31,20 @@ endif()
 message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 
 include(ExternalProject)
+find_package(Git REQUIRED)
+
+function(drake_forceupdate proj)
+  # CMake < 3.6 forget to mark the update step as "ALWAYS" when an explicit
+  # UPDATE_COMMAND is used.  Add our own "ALWAYS" step to force updates.
+  if(AUTO_UPDATE_EXTERNALS AND CMAKE_VERSION VERSION_LESS 3.6)
+    ExternalProject_Add_Step(${proj} forceupdate
+      DEPENDEES download
+      DEPENDERS update
+      ALWAYS 1
+      )
+  endif()
+endfunction()
+
 function(drake_forcebuild proj)
   if(CMAKE_CONFIGURATION_TYPES)
     set(build_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/${proj}-prefix/src/${proj}-stamp/${CMAKE_CFG_INTDIR}/${proj}-build")
@@ -295,26 +309,40 @@ foreach(proj ${EXTERNAL_PROJECTS})
 
     message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
+    # Compute the path to the submodule for this external.
+    file(RELATIVE_PATH ${proj}_GIT_SUBMODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_SOURCE_DIR})
+
+    # Download externals as Git submodules.
+    set(${proj}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${${proj}_GIT_SUBMODULE_PATH})
+
     # separate download target so I can make the download-all custom command as recommended in:
     #   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
     if(AUTO_UPDATE_EXTERNALS)
+      set(${proj}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_DOWNLOAD_COMMAND})
       ExternalProject_Add(download-${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
-        GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
-        GIT_TAG ${${proj}_GIT_TAG}
+        DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
+        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+        UPDATE_COMMAND ${${proj}_UPDATE_COMMAND}
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         INSTALL_COMMAND "")
+      drake_forceupdate(download-${proj})
     else()
+      set(${proj}_UPDATE_COMMAND "")
       ExternalProject_Add(download-${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
-        GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
-        GIT_TAG ${${proj}_GIT_TAG}
+        DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
+        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
         UPDATE_COMMAND ""
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         INSTALL_COMMAND "")
     endif()
+
+    # Initialize the submodule configuration now so parallel downloads do not conflict later.
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- ${${proj}_GIT_SUBMODULE_PATH}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
     # now the actual project
     if(${proj}_IS_CMAKE_POD)
@@ -449,15 +477,30 @@ foreach(example IN ITEMS LittleDog)
   string(TOUPPER ${example} example_upper)
   if(EXAMPLES_${example_upper})
     message(STATUS "Installation will include extra example: ${example}")
+
+    # Download examples as Git submodules.
+    set(${example}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- drake/examples/${example})
+    if(AUTO_UPDATE_EXTERNALS)
+      set(${example}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${example}_DOWNLOAD_COMMAND})
+    else()
+      set(${example}_UPDATE_COMMAND "")
+    endif()
+
     ExternalProject_Add(download-${example}
       SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
-      GIT_REPOSITORY ${${example}_GIT_REPOSITORY}
-      GIT_TAG ${${example}_GIT_TAG}
+      DOWNLOAD_COMMAND ${${example}_DOWNLOAD_COMMAND}
+      DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+      UPDATE_COMMAND ${${example}_UPDATE_COMMAND}
       CONFIGURE_COMMAND ""
       BUILD_COMMAND ""
       INSTALL_COMMAND "")
+    drake_forceupdate(download-${example})
     add_dependencies(drake download-${example})
     add_dependencies(download-all download-${example})
+
+    # Initialize the submodule configuration now so parallel downloads do not conflict later.
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- drake/examples/${example}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
 endforeach()
 

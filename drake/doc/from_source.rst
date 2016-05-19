@@ -134,6 +134,7 @@ To work on the bleeding edge, do::
 	cd drake-distro
 	git checkout master
 	git pull
+	git submodule update --recursive
 	make
 
 This is especially useful if you are ready to contribute your work back to the main repository with a `pull request <https://help.github.com/articles/using-pull-requests/>`_.
