@@ -23,7 +23,7 @@ int do_main(int argc, const char* argv[]) {
 
   // Instantiates a duration variable that will be set by the call to
   // drake::CreateRigidBodySystem() below.
-  double duration;
+  double duration = std::numeric_limits<double>::infinity();
 
   // Initializes the rigid body system.
   auto rigid_body_sys = drake::CreateRigidBodySystem(argc, argv, &duration);
