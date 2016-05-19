@@ -134,7 +134,7 @@ SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
 
   // Assert that the available LCPs cover the program and no two LCPs cover
   // the same variable.
-  for (int i = 0; i < prog.num_vars(); i++) {
+  for (size_t i = 0; i < prog.num_vars(); i++) {
     int coverings = 0;
     for (const auto& binding : bindings) {
       if (binding.covers(i)) {

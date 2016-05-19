@@ -673,11 +673,11 @@ bool BulletModel::closestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, const bool use_margins,
     std::vector<PointPair>& closest_points) {
   std::vector<ElementIdPair> id_pairs;
-  for (int i = 0; i < ids_to_check.size(); ++i) {
+  for (size_t i = 0; i < ids_to_check.size(); ++i) {
     ElementId id_a = ids_to_check[i];
     const Element* element_a = readElement(id_a);
     if (element_a != nullptr) {
-      for (int j = i + 1; j < ids_to_check.size(); ++j) {
+      for (size_t j = i + 1; j < ids_to_check.size(); ++j) {
         ElementId id_b = ids_to_check[j];
         const Element* element_b = readElement(id_b);
         if (element_b != nullptr && element_a->CollidesWith(element_b)) {
