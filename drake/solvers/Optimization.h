@@ -652,6 +652,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * "SNOPT" -- Paramater names and values as specified in SNOPT
    * User's Guide section 7.7 "Description ofthe optional parameters",
    * used as described in section 7.5 for snSet().
+   *
+   * "IPOPT" -- Paramater names and values as specified in IPOPT users
+   * guide section "Options Reference"
+   * http://www.coin-or.org/Ipopt/documentation/node40.html
    */
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option,
