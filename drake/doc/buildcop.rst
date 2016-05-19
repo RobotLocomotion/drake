@@ -44,35 +44,35 @@ Revert Template
 When creating a revert PR, the build cop will assign that PR to the original
 author, and include the following template in the PR description.
 
-``
-Dear $AUTHOR,
+::
 
-The oncall build cop, $BUILD_COP, believes that your PR $NUMBER may have broken
-the Drake continuous integration build. It is possible to break the build even
-if your PR passed continuous integration on presubmit, because additional
-platforms and tests are built in postsubmit.
+ Dear $AUTHOR,
 
-The specific build failures under investigation are:
-$LINK_TO_JENKINS
-$LINK_TO_JENKINS
-...
+ The oncall build cop, $BUILD_COP, believes that your PR $NUMBER may have broken
+ the Drake continuous integration build. It is possible to break the build even
+ if your PR passed continuous integration on presubmit, because additional
+ platforms and tests are built in postsubmit.
 
-Therefore, the build cop has created this revert PR and started a complete
-postsubmit build. If you do nothing, this PR will be merged if that build
-passes, no sooner than 60 minutes from now. You can then fix the problem at
-your leisure, and send a new PR to reinstate your change.
+ The specific build failures under investigation are:
+ $LINK_TO_JENKINS
+ $LINK_TO_JENKINS
+ ...
 
-If you believe your original PR did not actually break the build, please
-explain on this thread.
+ Therefore, the build cop has created this revert PR and started a complete
+ postsubmit build. If you do nothing, this PR will be merged if that build
+ passes, no sooner than 60 minutes from now. You can then fix the problem at
+ your leisure, and send a new PR to reinstate your change.
 
-If you believe you can fix the break promptly in lieu of revert, please 
-explain on this thread, and send a PR to the build cop for review ASAP.
+ If you believe your original PR did not actually break the build, please
+ explain on this thread.
 
-If you believe your original PR definitely did break the build and should be
-reverted, please review and LGTM this PR. This allows the build cop to merge
-without waiting for CI results.
+ If you believe you can fix the break promptly in lieu of revert, please 
+ explain on this thread, and send a PR to the build cop for review ASAP.
 
-Thanks!
-Your Friendly Oncall Buildcop
-``
+ If you believe your original PR definitely did break the build and should be
+ reverted, please review and LGTM this PR. This allows the build cop to merge
+ without waiting for CI results.
+
+ Thanks!
+ Your Friendly Oncall Buildcop
 
