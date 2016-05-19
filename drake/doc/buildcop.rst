@@ -55,7 +55,7 @@ author, and include the following template in the PR description.
  Dear $AUTHOR,
 
  The oncall build cop, $BUILD_COP, believes that your PR $NUMBER may have broken
- Drake's continuous integration build. [1] It is possible to break the build
+ Drake's continuous integration build [1]. It is possible to break the build
  even if your PR passed continuous integration on presubmit, because additional
  platforms and tests are built in postsubmit.
 
