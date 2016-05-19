@@ -1,12 +1,14 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "spruce.hh"
 
+#include "drake/common/unique_ptr_ref.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/thirdParty/tinyxml2/tinyxml2.h"
-#include "joints/DrakeJoints.h"
 
 #include "drake/Path.h"
 #include "xmlUtil.h"
@@ -21,9 +23,23 @@
 #define PCLOSE pclose
 #endif
 
-using namespace std;
-using namespace Eigen;
-using namespace tinyxml2;
+using Eigen::Isometry3d;
+using Eigen::Matrix;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
+using std::allocate_shared;
+using std::cerr;
+using std::endl;
+using std::numeric_limits;
+using std::runtime_error;
+using std::string;
+using std::stringstream;
+using std::unique_ptr;
+
+using tinyxml2::XMLDocument;
+using tinyxml2::XMLElement;
 
 void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                       PoseMap& pose_map, const Isometry3d& T_link) {
@@ -78,7 +94,8 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
       cerr << "ERROR parsing sphere element radius" << endl;
       return false;
     }
-    element.setGeometry(DrakeShapes::Sphere(max(DrakeShapes::MIN_RADIUS, r)));
+    element.setGeometry(
+        DrakeShapes::Sphere(std::max(DrakeShapes::MIN_RADIUS, r)));
   } else if ((shape_node = node->FirstChildElement("cylinder"))) {
     double r = 0, l = 0;
     if (!parseScalarValue(shape_node, "radius", r)) {
@@ -202,21 +219,20 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   }
 }
 
-bool parseSDFLink(RigidBodyTree* model, std::string model_name,
-                  XMLElement* node, const PackageMap& package_map,
+bool parseSDFLink(RigidBodyTree* model, string model_name, XMLElement* node,
+                  const PackageMap& package_map, 
                   PoseMap& pose_map, const string& root_dir, int* index) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  RigidBody* body{nullptr};
-  std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
+  auto body = drake::make_unique_ref<RigidBody>();
   body->model_name_ = model_name;
 
   attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
   body->name_ = attr;
 
-  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName))
+  if (body->name_ == string(RigidBodyTree::kWorldLinkName))
     throw runtime_error(
         "ERROR: do not name a link 'world', it is a reserved name");
 
@@ -230,22 +246,23 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node)
-    parseSDFInertial(body, inertial_node, model, pose_map, transform_to_model);
+    parseSDFInertial(body.get(), inertial_node, model, pose_map,
+                     transform_to_model);
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
-    parseSDFVisual(body, visual_node, model, package_map, root_dir, pose_map,
-                   transform_to_model);
+    parseSDFVisual(body.get(), visual_node, model, package_map, root_dir,
+                   pose_map, transform_to_model);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision");
        collision_node;
        collision_node = collision_node->NextSiblingElement("collision")) {
-    parseSDFCollision(body, collision_node, model, package_map, root_dir,
+    parseSDFCollision(body.get(), collision_node, model, package_map, root_dir,
                       pose_map, transform_to_model);
   }
 
-  model->add_rigid_body(std::move(owned_body));
+  model->add_rigid_body(body.move());
   *index = body->body_index;
   return true;
 }
@@ -276,8 +293,7 @@ void setSDFDynamics(RigidBodyTree* model, XMLElement* node,
   }
 }
 
-void parseSDFFrame(RigidBodyTree* model, std::string model_name,
-                   XMLElement* node) {
+void parseSDFFrame(RigidBodyTree* model, string model_name, XMLElement* node) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
 
@@ -299,12 +315,12 @@ void parseSDFFrame(RigidBodyTree* model, std::string model_name,
     throw runtime_error("ERROR: frame \"" + name +
                         "\" is missing its pose tag");
 
-  Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-  Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+  Vector3d rpy = Vector3d::Zero();
+  Vector3d xyz = Vector3d::Zero();
 
   const char* strval = pose->FirstChild()->Value();
   if (strval) {
-    std::stringstream s(strval);
+    stringstream s(strval);
     s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
   }
 
@@ -315,8 +331,8 @@ void parseSDFFrame(RigidBodyTree* model, std::string model_name,
   model->addFrame(frame);
 }
 
-void parseSDFJoint(RigidBodyTree* model, std::string model_name,
-                   XMLElement* node, PoseMap& pose_map) {
+void parseSDFJoint(RigidBodyTree* model, string model_name, XMLElement* node,
+                   PoseMap& pose_map) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
 
@@ -376,7 +392,8 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     // The child link is not in the pose map. Thus, this joint actually defines
     // the pose of a previously-unspecified link frame. Adds this link's
     // transform to the model coordinate frame to the pose map.
-    pose_map.insert(pair<string, Isometry3d>(child_name, transform_to_model));
+    pose_map.insert(
+        std::pair<string, Isometry3d>(child_name, transform_to_model));
   }
 
   Vector3d axis;
@@ -412,11 +429,11 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     // standard specifies that the joint's reference frame is defined by the
     // child link's reference frame, the loop point in the joint's reference
     // frame is simply the pose of the joint.
-    Eigen::Vector3d loop_point_child = Eigen::Vector3d::Zero();
+    Vector3d loop_point_child = Vector3d::Zero();
     {
       const char* strval = pose->FirstChild()->Value();
       if (strval) {
-        std::stringstream s(strval);
+        stringstream s(strval);
         s >> loop_point_child(0) >> loop_point_child(1) >> loop_point_child(2);
       } else {
         throw runtime_error("ERROR: Unable to construct loop joint \"" + name +
@@ -425,10 +442,9 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     }
 
     // Get the loop point in the parent's reference frame.
-    Eigen::Vector3d loop_point_model =
-        transform_child_to_model * loop_point_child;
+    Vector3d loop_point_model = transform_child_to_model * loop_point_child;
 
-    Eigen::Vector3d loop_point_parent =
+    Vector3d loop_point_parent =
         transform_parent_to_model.inverse() * loop_point_model;
 
     std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(
@@ -453,7 +469,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     for (const auto& c : child->collision_element_ids) {
       if (!model->transformCollisionFrame(
               c, transform_to_model.inverse() * transform_child_to_model)) {
-        std::stringstream ss;
+        stringstream ss;
         ss << "RigidBodyTreeSDF::parseSDFJoint: Collision element with ID " << c
            << " not found! Cannot update its local frame to be that of joint.";
         throw std::runtime_error(ss.str());
@@ -471,16 +487,16 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     }
 
     // construct the actual joint (based on its type)
-    DrakeJoint* joint = nullptr;
+    unique_ptr<DrakeJoint> joint;
 
     if (type.compare("revolute") == 0 || type.compare("gearbox") == 0) {
-      FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
-          new RevoluteJoint(name, transform_to_parent_body, axis);
+      unique_ptr<FixedAxisOneDoFJoint<RevoluteJoint>> fjoint(
+          new RevoluteJoint(name, transform_to_parent_body, axis));
       if (axis_node) {
-        setSDFDynamics(model, axis_node, fjoint);
-        setSDFLimits(axis_node, fjoint);
+        setSDFDynamics(model, axis_node, fjoint.get());
+        setSDFLimits(axis_node, fjoint.get());
 
-        double effort_limit = std::numeric_limits<double>::infinity();
+        double effort_limit = numeric_limits<double>::infinity();
 
         XMLElement* limit_node = axis_node->FirstChildElement("limit");
         if (limit_node) parseScalarValue(limit_node, "effort", effort_limit);
@@ -492,19 +508,19 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
         }
       }
 
-      joint = fjoint;
+      joint = std::move(fjoint);
 
     } else if (type.compare("fixed") == 0) {
-      joint = new FixedJoint(name, transform_to_parent_body);
+      joint.reset(new FixedJoint(name, transform_to_parent_body));
     } else if (type.compare("prismatic") == 0) {
-      FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
-          new PrismaticJoint(name, transform_to_parent_body, axis);
+      unique_ptr<FixedAxisOneDoFJoint<PrismaticJoint>> fjoint(
+          new PrismaticJoint(name, transform_to_parent_body, axis));
       if (axis_node) {
-        setSDFDynamics(model, axis_node, fjoint);
-        setSDFLimits(axis_node, fjoint);
+        setSDFDynamics(model, axis_node, fjoint.get());
+        setSDFLimits(axis_node, fjoint.get());
       }
-      joint = fjoint;
-      double effort_limit = std::numeric_limits<double>::infinity();
+      joint = std::move(fjoint);
+      double effort_limit = numeric_limits<double>::infinity();
       XMLElement* limit_node = axis_node->FirstChildElement("limit");
       if (limit_node) parseScalarValue(limit_node, "effort", effort_limit);
       if (effort_limit != 0.0) {
@@ -513,13 +529,13 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
         model->actuators.push_back(actuator);
       }
     } else if (type.compare("floating") == 0) {
-      joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+      joint.reset(
+          new RollPitchYawFloatingJoint(name, transform_to_parent_body));
     } else {
       throw runtime_error("ERROR: Unrecognized joint type: " + type);
     }
 
-    unique_ptr<DrakeJoint> joint_unique_ptr(joint);
-    child->setJoint(move(joint_unique_ptr));
+    child->setJoint(std::move(joint));
     child->parent = parent;
   }
 }
@@ -578,11 +594,11 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
     // Sets a default value for weld_to_frame if none was set.
     // By default, the robot is welded to the world frame.
     if (weld_to_frame == nullptr) {
-      weld_to_frame = std::allocate_shared<RigidBodyFrame>(
+      weld_to_frame = allocate_shared<RigidBodyFrame>(
           Eigen::aligned_allocator<RigidBodyFrame>(),
-          std::string(RigidBodyTree::kWorldLinkName),
+          string(RigidBodyTree::kWorldLinkName),
           nullptr,  // Valid since the robot is attached to the world.
-          Eigen::Isometry3d::Identity());
+          Isometry3d::Identity());
     }
 
     // Obtains the transform from the frame of the model's root link to the

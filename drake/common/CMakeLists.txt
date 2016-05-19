@@ -9,7 +9,8 @@ set(sources
 # List headers that should be installed with Drake so that they
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
-    nice_type_name.h)
+    nice_type_name.h
+    unique_ptr_ref.h)
 
 # List headers that are needed by code here but should not
 # be exposed anywhere else.

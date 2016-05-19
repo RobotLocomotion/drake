@@ -1,7 +1,9 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <utility>
 
+#include "drake/common/unique_ptr_ref.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/material_map.h"
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
@@ -13,17 +15,13 @@ using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 
-using std::allocate_shared;
 using std::cerr;
 using std::endl;
-using std::max;
 using std::numeric_limits;
 using std::runtime_error;
-using std::ostream;
 using std::string;
 using std::stringstream;
 using std::unique_ptr;
-using std::vector;
 
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
@@ -145,7 +143,8 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
       cerr << "ERROR parsing sphere element radius" << endl;
       return false;
     }
-    element.setGeometry(DrakeShapes::Sphere(max(DrakeShapes::MIN_RADIUS, r)));
+    element.setGeometry(
+        DrakeShapes::Sphere(std::max(DrakeShapes::MIN_RADIUS, r)));
   } else if ((shape_node = node->FirstChildElement("cylinder"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
@@ -300,39 +299,39 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   }
 }
 
-bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
+bool parseLink(RigidBodyTree* model, string robot_name, XMLElement* node,
                const MaterialMap& materials, const PackageMap& package_map,
                const string& root_dir, int* index) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  RigidBody* body{nullptr};
-  std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
+  auto body = drake::make_unique_ref<RigidBody>();
   body->model_name_ = robot_name;
 
   attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
 
   body->name_ = attr;
-  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName))
+  if (body->name_ == string(RigidBodyTree::kWorldLinkName))
     throw runtime_error(
         "ERROR: do not name a link 'world', it is a reserved name");
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
-  if (inertial_node) parseInertial(body, inertial_node, model);
+  if (inertial_node) parseInertial(body.get(), inertial_node, model);
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
-    parseVisual(body, visual_node, model, materials, package_map, root_dir);
+    parseVisual(body.get(), visual_node, model, materials, package_map,
+                root_dir);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision");
        collision_node;
        collision_node = collision_node->NextSiblingElement("collision")) {
-    parseCollision(body, collision_node, model, package_map, root_dir);
+    parseCollision(body.get(), collision_node, model, package_map, root_dir);
   }
 
-  model->add_rigid_body(std::move(owned_body));
+  model->add_rigid_body(body.move());
   *index = body->body_index;
   return true;
 }
@@ -423,30 +422,29 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
   }
 
   // now construct the actual joint (based on it's type)
-  DrakeJoint* joint = nullptr;
+  unique_ptr<DrakeJoint> joint;
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
-    FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
-        new RevoluteJoint(name, transform_to_parent_body, axis);
-    setDynamics(node, fjoint);
-    setLimits(node, fjoint);
-    joint = fjoint;
+    unique_ptr<FixedAxisOneDoFJoint<RevoluteJoint>> fjoint(
+        new RevoluteJoint(name, transform_to_parent_body, axis));
+    setDynamics(node, fjoint.get());
+    setLimits(node, fjoint.get());
+    joint = std::move(fjoint);
   } else if (type.compare("fixed") == 0) {
-    joint = new FixedJoint(name, transform_to_parent_body);
+    joint.reset(new FixedJoint(name, transform_to_parent_body));
   } else if (type.compare("prismatic") == 0) {
-    FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
-        new PrismaticJoint(name, transform_to_parent_body, axis);
-    setDynamics(node, fjoint);
-    setLimits(node, fjoint);
-    joint = fjoint;
+    unique_ptr<FixedAxisOneDoFJoint<PrismaticJoint>> fjoint(
+        new PrismaticJoint(name, transform_to_parent_body, axis));
+    setDynamics(node, fjoint.get());
+    setLimits(node, fjoint.get());
+    joint = std::move(fjoint);
   } else if (type.compare("floating") == 0) {
-    joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+    joint.reset(new RollPitchYawFloatingJoint(name, transform_to_parent_body));
   } else {
     throw runtime_error("ERROR: Unrecognized joint type: " + type);
   }
 
-  unique_ptr<DrakeJoint> joint_unique_ptr(joint);
-  model->bodies[child_index]->setJoint(move(joint_unique_ptr));
+  model->bodies[child_index]->setJoint(std::move(joint));
   model->bodies[child_index]->parent = model->bodies[parent_index].get();
 }
 
@@ -639,8 +637,8 @@ namespace systems {
 
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     const RigidBodyTree& model, const tinyxml2::XMLElement* link,
-    const tinyxml2::XMLElement* pose, const std::string& name) {
-  std::string link_name = link->Attribute("link");
+    const tinyxml2::XMLElement* pose, const string& name) {
+  string link_name = link->Attribute("link");
   RigidBody* body = model.findLink(link_name);
   if (body == nullptr) {
     throw runtime_error("couldn't find link " + link_name +
@@ -652,7 +650,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     parseVectorAttribute(pose, "xyz", xyz);
     parseVectorAttribute(pose, "rpy", rpy);
   }
-  return allocate_shared<RigidBodyFrame>(
+  return std::allocate_shared<RigidBodyFrame>(
       Eigen::aligned_allocator<RigidBodyFrame>(), name, body, xyz, rpy);
 }
 
