@@ -86,7 +86,7 @@ Additional Rules
 
 .. _code-style-guide-cpp-addon-recommendations:
 
-Additional Recommentations
+Additional Recommendations
 --------------------------
 
 * When writing unit tests, use a local variable named ``dut``, which stands for
