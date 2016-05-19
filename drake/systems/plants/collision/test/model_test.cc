@@ -7,6 +7,7 @@
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
+using Eigen::AngleAxisd;
 
 namespace DrakeCollision {
 namespace {
@@ -45,8 +46,9 @@ TEST(ModelTest, closestPointsAllToAll) {
   T_elem2_to_body.setIdentity();
   T_elem2_to_body.translation() << 1, 0, 0;
   T_body3_to_world.translation() << 2, 2, 0;
-  T_body3_to_world.matrix().block<2, 2>(0, 0) << 0, -1, 1,
-      0;  // rotate 90 degrees in z
+  // rotate 90 degrees in z
+  T_body3_to_world.linear() =
+      AngleAxisd(M_PI_2,Vector3d::UnitZ()).toRotationMatrix();
 
   const double tolerance = 1.0e-6;
 
