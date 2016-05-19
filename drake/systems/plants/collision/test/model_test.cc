@@ -51,7 +51,9 @@ TEST(ModelTest, closestPointsAllToAll) {
       AngleAxisd(M_PI_2,Vector3d::UnitZ()).toRotationMatrix();
 
   // Numerical precision tolerance to perform floating point comparisons.
-  const double tolerance = 1.0e-6;
+  // For these very simple setup tests are expected to pass to machine
+  // precision. More complex geometries might require a looser tolerance.
+  const double tolerance = Eigen::NumTraits<double>::epsilon();
 
   DrakeShapes::Box geometry_1(Vector3d(1, 1, 1));
   DrakeShapes::Sphere geometry_2(0.5);
