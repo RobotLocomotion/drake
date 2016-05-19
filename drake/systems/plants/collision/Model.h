@@ -150,7 +150,8 @@ class DRAKECOLLISION_EXPORT Model {
 
   @see systems/plants/test/collidingPointsTest.m for a Matlab test. **/
   virtual std::vector<size_t> collidingPoints(
-      const std::vector<Eigen::Vector3d>& points, double collision_threshold) {
+      const std::vector<Eigen::Vector3d>& input_points,
+      double collision_threshold) {
     return std::vector<size_t>();
   }
 
