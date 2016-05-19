@@ -153,8 +153,7 @@ Run:
 $ drake-distro/drake/examples/Cars/run_demo_multi_car.sh [N]
 ```
 
-This will start the demo with N+3 cars; if not supplied, the default
-for N is 100 (and the minimum N is zero).  There are no controls.  The
-cars just spin.
+This will start the demo with N cars; if not supplied, the default for
+N is 100 (and the minimum N is 1).  There are no controls.
 
 Use Ctrl-C in your terminal to stop and close the demo.

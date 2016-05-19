@@ -12,8 +12,9 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
+#include "drake/examples/Cars/curve2.h"
 #include "drake/examples/Cars/gen/euler_floating_joint_state.h"
-#include "drake/examples/Cars/trivial_car.h"
+#include "drake/examples/Cars/trajectory_car.h"
 
 using Drake::AffineSystem;
 using Drake::BotVisualizer;
@@ -23,20 +24,65 @@ using Drake::cascade;
 namespace drake {
 namespace {
 
+/// A figure-eight.  One loop has a radius of @p radius - @p inset,
+/// the other loop has a radius of @p radius + @p inset.
+Curve2<double> MakeCurve(double radius, double inset) {
+  // TODO(jwnimmer-tri) This function will be rewritten once we have
+  // proper splines.  Don't try too hard to understand it.  Run the
+  // demo to see it first, and only then try to understand the code.
+
+  typedef Curve2<double>::Point2 Point2d;
+  std::vector<Point2d> waypoints;
+
+  // Start (0, +i).
+  // Straight right to (+r, +i).
+  // Loop around (+i, +r).
+  // Straight back to (+i, 0).
+  waypoints.push_back({0.0, inset});
+  for (int theta_deg = -90; theta_deg <= 180; ++theta_deg) {
+    const Point2d center{radius, radius};
+    const double theta = theta_deg * M_PI / 180.0;
+    const Point2d direction{std::cos(theta), std::sin(theta)};
+    waypoints.push_back(center + (direction * (radius - inset)));
+  }
+  waypoints.push_back({inset, 0.0});
+
+  // Start (+i, 0).
+  // Straight down to (+i, -r).
+  // Loop around (-r, +i).
+  // Straight back to start (implicitly via segment to waypoints[0]).
+  for (int theta_deg = 0; theta_deg >= -270; --theta_deg) {
+    const Point2d center{-radius, -radius};
+    const double theta = theta_deg * M_PI / 180.0;
+    const Point2d direction{std::cos(theta), std::sin(theta)};
+    waypoints.push_back(center + (direction * (radius + inset)));
+  }
+
+  // Many copies.
+  std::vector<Point2d> looped_waypoints;
+  for (int copies = 0; copies < 100; ++copies) {
+    std::copy(waypoints.begin(), waypoints.end(),
+              std::back_inserter(looped_waypoints));
+  }
+  looped_waypoints.push_back(waypoints.front());
+
+  return Curve2<double>(looped_waypoints);
+}
+
 int do_main(int argc, const char* argv[]) {
-  int num_extra_cars = 100;
+  int num_cars = 100;
   if (argc == 2) {
-    num_extra_cars = atoi(argv[1]);
-    if (num_extra_cars < 0) {
-      std::cerr << "The number of extra cars must be >=0.\n";
+    num_cars = atoi(argv[1]);
+    if (num_cars < 1) {
+      std::cerr << "The number of cars must be >= 1.\n";
       std::exit(1);
     }
   }
 
   // Make a linear system to map NPC car state to the state vector of a
   // floating joint, allowing motion and steering in the x-y plane only.
-  const int insize = drake::SimpleCarState<double>().size();
-  const int outsize = drake::EulerFloatingJointState<double>().size();
+  const int insize = SimpleCarState<double>().size();
+  const int outsize = EulerFloatingJointState<double>().size();
   Eigen::MatrixXd D;
   D.setZero(outsize, insize);
   D(EulerFloatingJointStateIndices::kX, SimpleCarStateIndices::kX) = 1;
@@ -47,7 +93,7 @@ int do_main(int argc, const char* argv[]) {
       AffineSystem<
         NullVector,
         SimpleCarState,
-        EulerFloatingJointState> >(
+        EulerFloatingJointState>>(
             Eigen::MatrixXd::Zero(0, 0),
             Eigen::MatrixXd::Zero(0, insize),
             Eigen::VectorXd::Zero(0),
@@ -66,72 +112,51 @@ int do_main(int argc, const char* argv[]) {
   //  U: ()
   //  X: ()
   //  Y: [(xy-position, heading, velocity), ...] per SimpleCarState
-  auto cars_system = std::make_shared<drake::NArySystem<drake::TrivialCar> >();
+  auto cars_system = std::make_shared<NArySystem<TrajectoryCar>>();
   // NarySystem for car visualization.
   // BotVisualizer:
   //  U: [(xy-position, heading, velocity), ...] per SimpleCarState
   //  X: ()
   //  Y: [(x, y, z, roll, pitch, yaw), ...] per DrakeJoint::ROLLPITCHYAW per car
   auto cars_vis_adapter = std::make_shared<
-    drake::NArySystem<decltype(car_vis_adapter)::element_type> >();
+    NArySystem<decltype(car_vis_adapter)::element_type>>();
   // NB:  One could compose the other way as well (i.e., individually cascade
-  // each TrivialCar with a car_vis_adapter, and then stack each of those pairs
-  // into a single NArySystem).
+  // each TrajectoryCar with a car_vis_adapter, and then stack each of those
+  // pairs into a single NArySystem).
 
-  // Create one Sedan.
-  world_tree->addRobotFromURDF(kSedanUrdf,
-                               DrakeJoint::ROLLPITCHYAW,
-                               nullptr /*weld_to_frame*/);
-  // TODO(maddog) Hmm... it appears that drake_visualizer wants unique names,
-  //              on *links*, otherwise only one of the same-named links will
-  //              get updated joint parameters.
-  world_tree->bodies.back()->name_ = "sedan1";
-  auto sedan_system = std::make_shared<drake::TrivialCar>(0., 5., 0.3, 2.0);
-  cars_system->AddSystem(sedan_system);
-  cars_vis_adapter->AddSystem(car_vis_adapter);
+  // The possible curves to trace (lanes).
+  const std::vector<Curve2<double>> curves{
+    MakeCurve(40.0, 0.0),  // BR
+    MakeCurve(40.0, 4.0),  // BR
+    MakeCurve(40.0, 8.0),
+  };
 
-  // Create one Breadtruck.
-  world_tree->addRobotFromURDF(kBreadtruckUrdf,
-                               DrakeJoint::ROLLPITCHYAW,
-                               nullptr /*weld_to_frame*/);
-  world_tree->bodies.back()->name_ = "breadtruck1";
-  auto breadtruck_system = std::make_shared<drake::TrivialCar>(
-      15., 0., 0.7, 10.0);
-  cars_system->AddSystem(breadtruck_system);
-  cars_vis_adapter->AddSystem(car_vis_adapter);
-
-  // Create another Sedan.
-  world_tree->addRobotFromURDF(kSedanUrdf,
-                               DrakeJoint::ROLLPITCHYAW,
-                               nullptr /*weld_to_frame*/);
-  world_tree->bodies.back()->name_ = "sedan2";
-  auto sedan2_system = std::make_shared<drake::TrivialCar>(-5., 0., -0.3, -2.0);
-  cars_system->AddSystem(sedan2_system);
-  cars_vis_adapter->AddSystem(car_vis_adapter);
-
-  // Meh, need a lot more cars!
-  for (int i = 0; i < num_extra_cars; ++i) {
-    world_tree->addRobotFromURDF(
-        (i % 2) ? kSedanUrdf : kBreadtruckUrdf,
-        DrakeJoint::ROLLPITCHYAW,
-        nullptr /*weld_to_frame*/);
+  // Add all of the desired cars.
+  for (int i = 0; i < num_cars; ++i) {
+    world_tree->addRobotFromURDF((i % 5) ? kSedanUrdf : kBreadtruckUrdf,
+                                 DrakeJoint::ROLLPITCHYAW,
+                                 nullptr /*weld_to_frame*/);
+    // TODO(maddog) Hmm... it appears that drake_visualizer wants unique names,
+    //              on *links*, otherwise only one of the same-named links will
+    //              get updated joint parameters.
     std::ostringstream name;
     name << "car-" << i;
     world_tree->bodies.back()->name_ = name.str();
-    auto system = std::make_shared<drake::TrivialCar>(
-        // Hackery to spread them around a little on the plane.
-        (i % 19 - 10) * 10.,
-        ((i + 11) % 23 - 11) * 10.,
-        0.0,
-        ((i % 10) - 5) * 2.0);
+
+    // Magic car placement to make a good visual demo.
+    const auto& curve = curves[i % curves.size()];
+    const double start_time = (i / curves.size()) * 0.8;
+    const double kSpeed = 8.0;
+    auto system = std::make_shared<TrajectoryCar>(curve, kSpeed, start_time);
     cars_system->AddSystem(system);
     cars_vis_adapter->AddSystem(car_vis_adapter);
   }
 
+  // Add LCM support, for visualization.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
   auto visualizer =
       std::make_shared<Drake::BotVisualizer<
-        decltype(cars_vis_adapter)::element_type::OutputVector> >(
+        decltype(cars_vis_adapter)::element_type::OutputVector>>(
             lcm, world_tree);
 
   // Compose the system together from the parts.
@@ -140,11 +165,10 @@ int do_main(int argc, const char* argv[]) {
 
   decltype(the_system)::element_type::StateVector<double> initial_state;
   Drake::SimulationOptions options;
-  options.realtime_factor = 0.;
-  runLCM(the_system, lcm,
-      0, std::numeric_limits<double>::infinity(),  // timespan
-      initial_state,
-      options);
+  options.realtime_factor = 0.0;
+  const double t0 = 0.0;
+  const double tf = std::numeric_limits<double>::infinity();
+  runLCM(the_system, lcm, t0, tf, initial_state, options);
 
   return 0;
 }
