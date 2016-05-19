@@ -48,7 +48,7 @@ TEST(ModelTest, closestPointsAllToAll) {
   T_body3_to_world.translation() << 2, 2, 0;
   // rotate 90 degrees in z
   T_body3_to_world.linear() =
-      AngleAxisd(M_PI_2,Vector3d::UnitZ()).toRotationMatrix();
+      AngleAxisd(M_PI_2, Vector3d::UnitZ()).toRotationMatrix();
 
   // Numerical precision tolerance to perform floating point comparisons.
   // For these very simple setup tests are expected to pass to machine
@@ -92,18 +92,23 @@ TEST(ModelTest, closestPointsAllToAll) {
   // Check the closest point between object 1 and object 3.
   EXPECT_EQ(id1, points[1].getIdA());
   EXPECT_EQ(id3, points[1].getIdB());
-  EXPECT_NEAR(1.6213203435596428, points[1].getDistance(), tolerance);
+  // exact_distance =
+  // distance_between_centers -
+  // box_center_to_corner_distance -
+  // sphere_center_to_surface_distance =
+  // = sqrt(8.0) - 1.0/sqrt(2.0) - 1/2.
+  double exact_distance = sqrt(8.0) - 1.0 / sqrt(2.0) - 0.5;
+  EXPECT_NEAR(exact_distance, points[1].getDistance(), tolerance);
   // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
-  EXPECT_TRUE(points[1].getNormal().isApprox(
-      Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0)));
-  EXPECT_TRUE(points[1].getPtA().isApprox(
-      Vector3d(0.5, 0.5, 0)));
+  EXPECT_TRUE(
+      points[1].getNormal().isApprox(Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0)));
+  EXPECT_TRUE(points[1].getPtA().isApprox(Vector3d(0.5, 0.5, 0)));
   // Notice the y component is positive given that the body's frame is rotated
   // 90 degrees around the z axis.
   // Therefore x_body = y_world, y_body=-x_world and z_body=z_world
-  EXPECT_TRUE(points[1].getPtB().isApprox(
-      Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0)));
+  EXPECT_TRUE(
+      points[1].getPtB().isApprox(Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0)));
 
   // Check the closest point between object 2 and object 3.
   EXPECT_EQ(id2, points[2].getIdA());
