@@ -17,10 +17,14 @@ a pull request.
    :depth: 3
    :local:
 
+.. _code-style-guide-cpp:
+
 C++ Style
 =========
 
 Drake strictly follows the `Google C++ Style Guide <https://google.github.io/styleguide/cppguide.html>`_  except for the specific clarifications, exceptions, and additional rules noted below.
+
+.. _code-style-guide-cpp-clarifications:
 
 Clarifications
 --------------
@@ -35,6 +39,8 @@ Clarifications
 * The `Function Names <https://google.github.io/styleguide/cppguide.html#Function_Names>`_ rule specifies that the names of "very cheap" methods may be all lower-case with underscores between words. It defines "very cheap" as a method that you wouldn't hesitate calling from within a loop. We clarify that this method should have a time complexity of O(1) and be less than 5 lines long.
 * The test file for the library declarations in ``drake/foo/bar.h`` should be ``drake/foo/test/bar_test.cc``.  (`#2182 <https://github.com/RobotLocomotion/drake/issues/2182>`_)
 
+.. _code-style-guide-cpp-exceptions:
+
 Exceptions
 ----------
 
@@ -43,6 +49,8 @@ Exceptions
 * While we encourage you to `Include What You Use (IWYU) <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_ since it improves code transparency and readability, it will not be strictly enforced. Instead, we enforce a "weak include" style that simply requires every symbol referenced within a file be covered by the transitive closure of all `#include` statements in the file. We decided to make this exception because (1) we can always adopt an IWYU rule later, (2) to reduce verbosity, and (3) we don't have a tool to enforce IWYU at this time.
 * We do not follow `The #define Guard <https://google.github.io/styleguide/cppguide.html#The__define_Guard>`_ rule and instead use ``#pragma once``. The advantages of using ``#pragma once`` are (1) it does not need to be updated each time the name of the header file changes, and (2) it prevents silly mistakes that occur when a developer copy-pastes a header file and forgets to update its ``#define`` guard. The known drawbacks of using ``#pragma once``, namely the possibility of lack of compiler support and compiler-dependent-behavior, is mitigated since Drake has a :ref:`limited set of officially supported platform configurations <supported-configurations>` on which correct behavior will be guaranteed. (`#2104 <https://github.com/RobotLocomotion/drake/issues/2104>`_)
 * We have an exception to the `Implicit Conversions <https://google.github.io/styleguide/cppguide.html#Implicit_Conversions>`_ rule.  For readability and consistency with external libraries like Eigen, we allow one-argument constructors without the `explicit` tag (implicit cast operators) if both types involved implement basic arithmetic operators commonly used in arithmetic exceptions (at minimum `+`, both unary and binary `-`, binary `*`, and `==`).  This lets us write concise mathematical expressions using math-like objects without a proliferation of `static_cast<>` statements. (For context, see `#2231 <https://github.com/RobotLocomotion/drake/pull/2231>`_)
+
+.. _code-style-guide-cpp-addon-rules:
 
 Additional Rules
 ----------------
@@ -76,6 +84,18 @@ Additional Rules
   `stackoverflow <http://stackoverflow.com/questions/5813700/difference-between-size-t-and-stdsize-t>`_
   and Drake issue `#2374 <https://github.com/RobotLocomotion/drake/issues/2374>`_.
 
+.. _code-style-guide-cpp-addon-recommendations:
+
+Additional Recommentations
+--------------------------
+
+* When writing unit tests, use a local variable named ``dut``, which stands for
+  "device under test", to distinguish what `is` being tested versus what
+  `is not` being tested. This is particularly useful in large tests that involve
+  huge amounts of helper code just to build up to the point where the ``dut``
+  can be tested.
+
+.. _code-style-guide-matlab:
 
 MATLAB Style
 ============
@@ -89,6 +109,7 @@ MATLAB Style
 * All methods (including mex) should treat `nargout==0` as if we received `nargout==1`
 * The `codeCheck` utility will run `mlint` on the code with appropriate warnings disabled.  Eventually, the code should pass this check (but we're still far from it)
 
+.. _code-style-guide-java:
 
 Java Style
 ==========
@@ -99,6 +120,8 @@ We also strictly follow the `Google Java Style Guide` <https://google.github.io/
 * All Java classes should be in packages relative to the Drake root,
    e.g.: package drake.examples.Pendulum
 
+.. _code-style-guide-lcm:
+
 
 LCM Style
 =========
@@ -106,12 +129,15 @@ LCM Style
 * LCM types are under_scored with a leading `lcmt_` added. If the type is specific to a particular robot, then it begins with `lcmt_robotname_`.
 * Variable names in LCM types follow the rules above.
 
+.. _code-style-guide-shell-script:
 
 Shell Script Style
 ==================
 
 We follow the `Google Shell Style Guide` <https://google.github.io/styleguide/shell.xml>`_.
 
+
+.. _code-style-guide-version-numbers:
 
 Version numbers
 ===============
