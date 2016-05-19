@@ -31,6 +31,8 @@ endif()
 message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 
 include(ExternalProject)
+find_package(Git REQUIRED)
+
 function(drake_forcebuild proj)
   if(CMAKE_CONFIGURATION_TYPES)
     set(build_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/${proj}-prefix/src/${proj}-stamp/${CMAKE_CFG_INTDIR}/${proj}-build")
@@ -50,9 +52,6 @@ include(UseJava)
 
 # menu of extra examples
 option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF)
-
-## External dependencies
-option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
 
 # Choose your python (major) version
 option(WITH_PYTHON_3 "Force Drake to use python 3 instead of python 2" OFF)
@@ -295,26 +294,16 @@ foreach(proj ${EXTERNAL_PROJECTS})
 
     message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
-    # separate download target so I can make the download-all custom command as recommended in:
-    #   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
-    if(AUTO_UPDATE_EXTERNALS)
-      ExternalProject_Add(download-${proj}
-        SOURCE_DIR ${${proj}_SOURCE_DIR}
-        GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
-        GIT_TAG ${${proj}_GIT_TAG}
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND "")
-    else()
-      ExternalProject_Add(download-${proj}
-        SOURCE_DIR ${${proj}_SOURCE_DIR}
-        GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
-        GIT_TAG ${${proj}_GIT_TAG}
-        UPDATE_COMMAND ""
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND "")
-    endif()
+    # compute the path to the project submodule (source tree)
+    file(RELATIVE_PATH ${proj}_GIT_SUBMODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_SOURCE_DIR})
+    ExternalProject_Add(download-${proj}
+      SOURCE_DIR ${${proj}_SOURCE_DIR}
+      DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive ${${proj}_GIT_SUBMODULE_PATH}
+      DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      INSTALL_COMMAND ""
+      )
 
     # now the actual project
     if(${proj}_IS_CMAKE_POD)
@@ -451,8 +440,8 @@ foreach(example IN ITEMS LittleDog)
     message(STATUS "Installation will include extra example: ${example}")
     ExternalProject_Add(download-${example}
       SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
-      GIT_REPOSITORY ${${example}_GIT_REPOSITORY}
-      GIT_TAG ${${example}_GIT_TAG}
+      DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive drake/examples/${example}
+      DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
       CONFIGURE_COMMAND ""
       BUILD_COMMAND ""
       INSTALL_COMMAND "")
