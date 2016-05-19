@@ -81,7 +81,7 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_EQ(id1, points[0].getIdA());
   EXPECT_EQ(id2, points[0].getIdB());
   EXPECT_NEAR(1.0, points[0].getDistance(), tolerance);
-  // Normal is on body B.
+  // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(-1, 0, 0)));
   EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.5, 0, 0)));
@@ -91,12 +91,15 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_EQ(id1, points[1].getIdA());
   EXPECT_EQ(id3, points[1].getIdB());
   EXPECT_NEAR(1.6213203435596428, points[1].getDistance(), tolerance);
-  // Normal is on body B.
+  // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
   EXPECT_TRUE(points[1].getNormal().isApprox(
       Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0)));
   EXPECT_TRUE(points[1].getPtA().isApprox(
       Vector3d(0.5, 0.5, 0)));
+  // Notice the y component is positive given that the body's frame is rotated
+  // 90 degrees around the z axis.
+  // Therefore x_body = y_world, y_body=-x_world and z_body=z_world
   EXPECT_TRUE(points[1].getPtB().isApprox(
       Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0)));
 
@@ -104,7 +107,7 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_EQ(id2, points[2].getIdA());
   EXPECT_EQ(id3, points[2].getIdB());
   EXPECT_NEAR(1.0, points[2].getDistance(), tolerance);
-  // Normal is on body B.
+  // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
   EXPECT_TRUE(points[2].getNormal().isApprox(Vector3d(0, -1, 0)));
   EXPECT_TRUE(points[2].getPtA().isApprox(Vector3d(1, 0.5, 0)));
