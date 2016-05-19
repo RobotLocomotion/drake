@@ -113,11 +113,12 @@ class BulletModel : public Model {
    */
   std::vector<PointPair> potentialCollisionPoints(bool use_margins) override;
 
-  bool collidingPointsCheckOnly(const std::vector<Eigen::Vector3d>& points,
-                                double collision_threshold) override;
+  bool collidingPointsCheckOnly(
+      const std::vector<Eigen::Vector3d>& input_points,
+      double collision_threshold) override;
 
   std::vector<size_t> collidingPoints(
-      const std::vector<Eigen::Vector3d>& points,
+      const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;
 
  private:

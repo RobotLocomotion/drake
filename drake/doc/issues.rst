@@ -77,16 +77,17 @@ Priority
 The ``emergency`` priority indicates that the owning team should not work
 on anything else until the issue is resolved. A postmortem document should be
 opened at the same time as the ``emergency`` issue, linked in the description,
-and updated as the situation evolves.
+and updated as the situation evolves. Exception: broken builds are emergencies,
+but a postmortem document is not required.
 
-The ``high``, ``medium``, ``low``, and ``trivial`` priority levels have
+The ``high``, ``medium``, ``low``, and ``backlog`` priority levels have
 semantics determined by the owning team. The following rules of thumb may be
 useful:
 
 * high-priority issues are planned to receive attention within the month.
 * medium-priority issues are planned to receive attention within the quarter.
 * low-priority issues may be planned for a subsequent quarter.
-* trivial-priority issues will be handled on an ad-hoc basis, as time permits.
+* backlog-priority issues will be handled on an ad-hoc basis, as time permits.
 
 Configuration
 =============
