@@ -176,7 +176,7 @@ void RigidBodyTree::compile(void) {
       num_positions_, -std::numeric_limits<double>::infinity());
   joint_limit_max = VectorXd::Constant(num_positions_,
                                        std::numeric_limits<double>::infinity());
-  for (int i = 0; i < bodies.size(); i++) {
+  for (size_t i = 0; i < bodies.size(); i++) {
     auto& body = bodies[i];
     if (body->hasParent()) {
       const DrakeJoint& joint = body->getJoint();
@@ -391,7 +391,7 @@ void RigidBodyTree::collisionDetectFromPoints(
 
   Vector3d ptA, ptB, n;
   double distance;
-  for (int i = 0; i < closest_points.size(); ++i) {
+  for (size_t i = 0; i < closest_points.size(); ++i) {
     closest_points[i].getResults(&ptA, &ptB, &n, &distance);
     x.col(i) = ptB;
     body_x.col(i) = ptA;
@@ -450,7 +450,7 @@ bool RigidBodyTree::collisionDetect(
 
   Vector3d ptA, ptB, n;
   double distance;
-  for (int i = 0; i < points.size(); ++i) {
+  for (size_t i = 0; i < points.size(); ++i) {
     points[i].getResults(&ptA, &ptB, &n, &distance);
     xA.col(i) = ptA;
     xB.col(i) = ptB;
@@ -619,7 +619,7 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
 
   Vector3d ptA, ptB, n;
   double distance;
-  for (int i = 0; i < points.size(); ++i) {
+  for (size_t i = 0; i < points.size(); ++i) {
     points[i].getResults(&ptA, &ptB, &n, &distance);
     xA_in_world.col(i) = ptA;
     xB_in_world.col(i) = ptB;
@@ -811,7 +811,7 @@ bool RigidBodyTree::isBodyPartOfRobot(const RigidBody& body,
 
 double RigidBodyTree::getMass(const std::set<int>& robotnum) const {
   double total_mass = 0.0;
-  for (int i = 0; i < bodies.size(); i++) {
+  for (size_t i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (isBodyPartOfRobot(body, robotnum)) {
       total_mass += body.mass;
@@ -829,7 +829,7 @@ Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyTree::centerOfMass(
   com.setZero();
   double m = 0.0;
 
-  for (int i = 0; i < bodies.size(); i++) {
+  for (size_t i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (isBodyPartOfRobot(body, robotnum)) {
       if (body.mass > 0) {
@@ -1218,7 +1218,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 
   updateCompositeRigidBodyInertias(cache);
 
-  for (int i = 0; i < bodies.size(); i++) {
+  for (size_t i = 0; i < bodies.size(); i++) {
     RigidBody& body_i = *bodies[i];
     if (body_i.hasParent()) {
       const auto& element_i = cache.getElement(body_i);
@@ -1279,7 +1279,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
                                                           bodies.size());
   net_wrenches.col(0).setZero();
 
-  for (int i = 0; i < bodies.size(); i++) {
+  for (size_t i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
       const auto& element = cache.getElement(body);
@@ -1596,7 +1596,7 @@ RigidBody* RigidBodyTree::findLink(std::string name, int robot) const {
                  ::tolower);  // convert to lower case
 
   int match = -1;
-  for (int i = 0; i < bodies.size(); i++) {
+  for (size_t i = 0; i < bodies.size(); i++) {
     // Note: unlike the MATLAB implementation, I don't have to handle the fixed
     // joint names
     string lower_link_name = bodies[i]->name_;
@@ -1630,7 +1630,7 @@ RigidBody* RigidBodyTree::findLink(std::string name,
                  ::tolower);  // convert to lower case
 
   int match = -1;
-  for (int i = 0; i < bodies.size(); i++) {
+  for (size_t i = 0; i < bodies.size(); i++) {
     // Note: unlike the MATLAB implementation, I don't have to handle the fixed
     // joint names
     string lower_link_name = bodies[i]->name_;
@@ -1666,7 +1666,7 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
                  ::tolower);  // convert to lower case
 
   int match = -1;
-  for (int i = 0; i < frames.size(); i++) {
+  for (size_t i = 0; i < frames.size(); i++) {
     string frame_name_lower = frames[i]->name;
     std::transform(frame_name_lower.begin(), frame_name_lower.end(),
                    frame_name_lower.begin(),
@@ -1705,7 +1705,7 @@ RigidBody* RigidBodyTree::findJoint(std::string jointname, int robot) const {
 
   vector<bool> name_match;
   name_match.resize(this->bodies.size());
-  for (int i = 0; i < this->bodies.size(); i++) {
+  for (size_t i = 0; i < this->bodies.size(); i++) {
     if (bodies[i]->hasParent()) {
       string lower_jointname = this->bodies[i]->getJoint().getName();
       std::transform(lower_jointname.begin(), lower_jointname.end(),
@@ -1719,22 +1719,24 @@ RigidBody* RigidBodyTree::findJoint(std::string jointname, int robot) const {
     }
   }
   if (robot != -1) {
-    for (int i = 0; i < this->bodies.size(); i++) {
+    for (size_t i = 0; i < this->bodies.size(); i++) {
       if (name_match[i]) {
         name_match[i] = this->bodies[i]->robotnum == robot;
       }
     }
   }
   // Unlike the MATLAB implementation, I am not handling the fixed joints
-  int num_match = 0;
-  int ind_match = -1;
-  for (int i = 0; i < this->bodies.size(); i++) {
+  size_t num_match = 0;
+  size_t ind_match = 0;
+  bool match_found = false;
+  for (size_t i = 0; i < this->bodies.size(); i++) {
     if (name_match[i]) {
       num_match++;
       ind_match = i;
+      match_found = true;
     }
   }
-  if (num_match != 1) {
+  if (!match_found) {
     cerr << "couldn't find unique joint " << jointname << endl;
     return (nullptr);
   } else {
@@ -1834,13 +1836,13 @@ void RigidBodyTree::jointLimitConstraints(MatrixBase<DerivedA> const& q,
 
   phi = VectorXd::Zero(numFiniteMin + numFiniteMax);
   J = MatrixXd::Zero(phi.size(), num_positions_);
-  for (int i = 0; i < numFiniteMin; i++) {
+  for (size_t i = 0; i < numFiniteMin; i++) {
     const int fi = finite_min_index[i];
     phi[i] = q[fi] - joint_limit_min[fi];
     J(i, fi) = 1.0;
   }
 
-  for (int i = 0; i < numFiniteMax; i++) {
+  for (size_t i = 0; i < numFiniteMax; i++) {
     const int fi = finite_max_index[i];
     phi[i + numFiniteMin] = joint_limit_max[fi] - q[fi];
     J(i + numFiniteMin, fi) = -1.0;
