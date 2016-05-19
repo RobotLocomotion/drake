@@ -50,6 +50,7 @@ TEST(ModelTest, closestPointsAllToAll) {
   T_body3_to_world.linear() =
       AngleAxisd(M_PI_2,Vector3d::UnitZ()).toRotationMatrix();
 
+  // Numerical precision tolerance to perform floating point comparisons.
   const double tolerance = 1.0e-6;
 
   DrakeShapes::Box geometry_1(Vector3d(1, 1, 1));
@@ -81,6 +82,7 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_EQ(id2, points[0].getIdB());
   EXPECT_NEAR(1.0, points[0].getDistance(), tolerance);
   // Normal is on body B.
+  // Points are in the local frame of the body.
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(-1, 0, 0)));
   EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.5, 0, 0)));
   EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.5, 0, 0)));
@@ -90,6 +92,7 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_EQ(id3, points[1].getIdB());
   EXPECT_NEAR(1.6213203435596428, points[1].getDistance(), tolerance);
   // Normal is on body B.
+  // Points are in the local frame of the body.
   EXPECT_TRUE(points[1].getNormal().isApprox(
       Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0)));
   EXPECT_TRUE(points[1].getPtA().isApprox(
@@ -102,6 +105,7 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_EQ(id3, points[2].getIdB());
   EXPECT_NEAR(1.0, points[2].getDistance(), tolerance);
   // Normal is on body B.
+  // Points are in the local frame of the body.
   EXPECT_TRUE(points[2].getNormal().isApprox(Vector3d(0, -1, 0)));
   EXPECT_TRUE(points[2].getPtA().isApprox(Vector3d(1, 0.5, 0)));
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
