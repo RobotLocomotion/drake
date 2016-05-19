@@ -9,6 +9,9 @@ using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::AngleAxisd;
 
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 namespace DrakeCollision {
 namespace {
 
@@ -51,7 +54,9 @@ TEST(ModelTest, closestPointsAllToAll) {
       AngleAxisd(M_PI_2,Vector3d::UnitZ()).toRotationMatrix();
 
   // Numerical precision tolerance to perform floating point comparisons.
-  const double tolerance = 1.0e-6;
+  // For these very simple setup tests are expected to pass to machine
+  // precision. More complex geometries might require a looser tolerance.
+  const double tolerance = Eigen::NumTraits<double>::epsilon();
 
   DrakeShapes::Box geometry_1(Vector3d(1, 1, 1));
   DrakeShapes::Sphere geometry_2(0.5);
@@ -113,6 +118,79 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_TRUE(points[2].getPtA().isApprox(Vector3d(1, 0.5, 0)));
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
+
+TEST(ModelTest, collisionPointsAllToAll_Box_vs_Sphere) {
+  // Numerical precision tolerance to perform floating point comparisons.
+  // For these very simple setup tests are expected to pass to machine
+  // precision. More complex geometries might require a looser tolerance.
+  const double tolerance = 2.0e-9; //Eigen::NumTraits<double>::epsilon();
+
+  DrakeShapes::Box box(Vector3d(1.0, 1.0, 1.0));
+  DrakeShapes::Sphere sphere(0.5);
+
+  Element colliding_box(box);
+  Element colliding_sphere(sphere);
+
+  // Populate the model.
+  std::unique_ptr<Model> model(newModel());
+  ElementId box_id = model->addElement(colliding_box);
+  ElementId sphere_id = model->addElement(colliding_sphere);
+
+  // Body 1 pose
+  Isometry3d box_pose;
+  box_pose.setIdentity();
+  box_pose.translation() = Vector3d(0.0,0.5,0.0);
+  model->updateElementWorldTransform(box_id, box_pose);
+
+  // Body 2 pose
+  Isometry3d sphere_pose;
+  sphere_pose.setIdentity();
+  //sphere_pose.linear() = AngleAxisd(M_PI_2,Vector3d::UnitZ()).toRotationMatrix();
+  sphere_pose.translation() = Vector3d(0.0,1.25,0.0);
+  model->updateElementWorldTransform(sphere_id, sphere_pose);
+
+  // Compute collision points.
+  std::vector<PointPair> points;
+
+  // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
+  // looks like the margins are not appropriatelysubtracted.
+  model->collisionPointsAllToAll(false, points);
+  //const std::vector<ElementId> ids_to_check = {box_id, sphere_id};
+  //model->closestPointsAllToAll(ids_to_check, true, points);
+
+  // Only one contact point is expected when colliding with a sphere.
+  ASSERT_EQ(1, points.size());
+
+  // Check the closest point between object 2 and object 3.
+  EXPECT_EQ(box_id, points[0].getIdA());
+  EXPECT_EQ(sphere_id, points[0].getIdB());
+  EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
+  // Points are in the world frame on the surface of the corresponding body.
+  // That is why getPtA() is generally different from getPtB(), unless there is
+  // an exact non-penetrating collision.
+  // WARNING:
+  // This convention is different from the one used by closestPointsAllToAll
+  // which computes points in the local frame of the body.
+  // TODO(amcastro-tri): make these two conventions match? does this interfere
+  // with any Matlab functionality?
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.0, 1.0, 0.0)));
+  EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.0, 0.75, 0.0)));
+
+  for(auto& pt_pair: points) {
+    // Normal is on body B.
+    PRINT_VAR(pt_pair.getNormal().transpose());
+    PRINT_VAR(pt_pair.getDistance());
+
+    PRINT_VAR(pt_pair.getIdA());
+    PRINT_VAR(pt_pair.getPtA().transpose());
+
+    PRINT_VAR(pt_pair.getIdB());
+    PRINT_VAR(pt_pair.getPtB().transpose());
+  }
+
+}
+
 
 }  // namespace
 }  // namespace DrakeCollision
