@@ -123,7 +123,7 @@ TEST(ModelTest, collisionPointsAllToAll_Box_vs_Sphere) {
   // Numerical precision tolerance to perform floating point comparisons.
   // For these very simple setup tests are expected to pass to machine
   // precision. More complex geometries might require a looser tolerance.
-  const double tolerance = 2.0e-9; //Eigen::NumTraits<double>::epsilon();
+  const double tolerance = 2.0e-9;
 
   DrakeShapes::Box box(Vector3d(1.0, 1.0, 1.0));
   DrakeShapes::Sphere sphere(0.5);
@@ -145,7 +145,6 @@ TEST(ModelTest, collisionPointsAllToAll_Box_vs_Sphere) {
   // Body 2 pose
   Isometry3d sphere_pose;
   sphere_pose.setIdentity();
-  //sphere_pose.linear() = AngleAxisd(M_PI_2,Vector3d::UnitZ()).toRotationMatrix();
   sphere_pose.translation() = Vector3d(0.0,1.25,0.0);
   model->updateElementWorldTransform(sphere_id, sphere_pose);
 
@@ -191,6 +190,72 @@ TEST(ModelTest, collisionPointsAllToAll_Box_vs_Sphere) {
 
 }
 
+TEST(ModelTest, collisionPointsAllToAll_SmallBoxSittingOnLargeBox) {
+  // Numerical precision tolerance to perform floating point comparisons.
+  // For these very simple setup tests are expected to pass to machine
+  // precision. More complex geometries might require a looser tolerance.
+  const double tolerance = 2.0e-9; //Eigen::NumTraits<double>::epsilon();
+
+  DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
+  DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
+
+  Element colliding_large_box(large_box);
+  Element colliding_small_box(small_box);
+
+  // Populate the model.
+  std::unique_ptr<Model> model(newModel());
+  ElementId large_box_id = model->addElement(colliding_large_box);
+  ElementId small_box_id = model->addElement(colliding_small_box);
+
+  // Large body pose
+  Isometry3d large_box_pose;
+  large_box_pose.setIdentity();
+  large_box_pose.translation() = Vector3d(0.0,2.5,0.0);
+  model->updateElementWorldTransform(large_box_id, large_box_pose);
+
+  // Small body pose
+  Isometry3d small_box_pose;
+  small_box_pose.setIdentity();
+  small_box_pose.translation() = Vector3d(0.0,5.4,0.0);
+  model->updateElementWorldTransform(small_box_id, small_box_pose);
+
+  // Compute collision points.
+  std::vector<PointPair> points;
+
+  // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
+  // looks like the margins are not appropriately subtracted.
+  model->collisionPointsAllToAll(false, points);
+
+  // Unfortunately Bullet's manifold has one point for this case.
+  // Best for physics simulations would be Bullet to return at least the four
+  // corners of the smaller box. However it randomly picks one corner.
+  ASSERT_EQ(1, points.size());
+
+  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+
+  // Bullet randomly picks one corner. Therefore it is impossible to assert
+  // if that choice would change with future releases (say just because
+  // tolerances changed).
+  // Commented out below are the results from a previous run:
+  //EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.5, 5.0, 0.5)));
+  //EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.5, 4.9, 0.5)));
+
+  std::cout << "Small box sitting on large box" << std::endl;
+  for(auto& pt_pair: points) {
+    // Normal is on body B.
+    PRINT_VAR(pt_pair.getNormal().transpose());
+    PRINT_VAR(pt_pair.getDistance());
+
+    PRINT_VAR(pt_pair.getIdA());
+    PRINT_VAR(pt_pair.getPtA().transpose());
+
+    PRINT_VAR(pt_pair.getIdB());
+    PRINT_VAR(pt_pair.getPtB().transpose());
+  }
+
+}
 
 }  // namespace
 }  // namespace DrakeCollision
