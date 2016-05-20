@@ -45,6 +45,31 @@ GTEST_TEST(TestHaveIntersection, StdVectors) {
   // set3 intersects set2 (commutative).
   EXPECT_TRUE(HaveIntersection(set3.begin(), set3.end(),
                                set2.begin(), set2.end()));
+
+  // Empty sets.
+  vector<int> set4;
+  vector<int> set5;
+  // Two empty sets.
+  EXPECT_FALSE(HaveIntersection(set4.begin(), set4.end(),
+                                set5.begin(), set5.end()));
+
+  // First non-empty against second empty.
+  EXPECT_FALSE(HaveIntersection(set1.begin(), set1.end(),
+                                set4.begin(), set4.end()));
+
+  // First empty against second non-empty.
+  EXPECT_FALSE(HaveIntersection(set4.begin(), set4.end(),
+                                set1.begin(), set1.end()));
+
+  // Disjoint sets.
+  vector<int> set6 = vector<int>({30, 35, 50});
+  // set1 entries are all smaller than set6 first entry.
+  EXPECT_FALSE(HaveIntersection(set1.begin(), set1.end(),
+                                set6.begin(), set6.end()));
+
+  // Tests if the above is commutative.
+  EXPECT_FALSE(HaveIntersection(set6.begin(), set6.end(),
+                                set1.begin(), set1.end()));
 }
 
 // Test with std::vector specific SortedVectorsHaveIntersection.
@@ -75,6 +100,26 @@ GTEST_TEST(TestHaveIntersection, SortedVectorsHaveIntersection) {
 
   // set3 intersects set2 (commutative).
   EXPECT_TRUE(SortedVectorsHaveIntersection(set3, set2));
+
+  // Empty sets.
+  vector<int> set4;
+  vector<int> set5;
+  // Two empty sets.
+  EXPECT_FALSE(SortedVectorsHaveIntersection(set4, set5));
+
+  // First non-empty against second empty.
+  EXPECT_FALSE(SortedVectorsHaveIntersection(set1, set4));
+
+  // First empty against second non-empty.
+  EXPECT_FALSE(SortedVectorsHaveIntersection(set4, set1));
+
+  // Disjoint sets.
+  vector<int> set6 = vector<int>({30, 35, 50});
+  // set1 entries are all smaller than set6 first entry.
+  EXPECT_FALSE(SortedVectorsHaveIntersection(set1, set6));
+
+  // Tests if the above is commutative.
+  EXPECT_FALSE(SortedVectorsHaveIntersection(set6, set1));
 }
 
 // Test using std::set
@@ -117,6 +162,31 @@ GTEST_TEST(TestHaveIntersection, StdSets) {
   // set3 intersects set2 (commutative).
   EXPECT_TRUE(HaveIntersection(set3.begin(), set3.end(),
                                set2.begin(), set2.end()));
+
+  // Empty sets.
+  set<int> set4;
+  set<int> set5;
+  // Two empty sets.
+  EXPECT_FALSE(HaveIntersection(set4.begin(), set4.end(),
+                                set5.begin(), set5.end()));
+
+  // First non-empty against second empty.
+  EXPECT_FALSE(HaveIntersection(set1.begin(), set1.end(),
+                                set4.begin(), set4.end()));
+
+  // First empty against second non-empty.
+  EXPECT_FALSE(HaveIntersection(set4.begin(), set4.end(),
+                                set1.begin(), set1.end()));
+
+  // Disjoint sets.
+  set<int> set6 = set<int>({30, 35, 50});
+  // set1 entries are all smaller than set6 first entry.
+  EXPECT_FALSE(HaveIntersection(set1.begin(), set1.end(),
+                                set6.begin(), set6.end()));
+
+  // Tests if the above is commutative.
+  EXPECT_FALSE(HaveIntersection(set6.begin(), set6.end(),
+                                set1.begin(), set1.end()));
 }
 
 }  // namespace
