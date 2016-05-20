@@ -12,4 +12,19 @@ if(GTEST_FOUND)
   target_link_libraries(basic_vector_test drakeSystemFramework drakePolynomial
     drakeCore ${GTEST_BOTH_LIBRARIES})
   add_test(NAME basic_vector_test COMMAND basic_vector_test)
+
+  add_executable(basic_state_vector_test basic_state_vector_test.cc)
+  target_link_libraries(basic_state_vector_test drakeSystemFramework
+                        ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME basic_state_vector_test COMMAND basic_state_vector_test)
+
+  add_executable(state_subvector_test state_subvector_test.cc)
+  target_link_libraries(state_subvector_test drakeSystemFramework
+                        ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME state_subvector_test COMMAND state_subvector_test)
+
+  add_executable(state_test state_test.cc)
+  target_link_libraries(state_test drakeSystemFramework
+                        ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME state_test COMMAND state_test)
 endif()
