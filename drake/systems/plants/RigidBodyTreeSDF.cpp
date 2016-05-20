@@ -213,12 +213,18 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   body->model_name_ = model_name;
 
   attr = node->Attribute("name");
-  if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
+  if (!attr) {
+    throw runtime_error(
+      "RigidBodyTreeSDF.cpp: parseSDFLink: ERROR: "
+      "Link tag is missing name attribute");
+  }
   body->name_ = attr;
 
-  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName))
+  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName)) {
     throw runtime_error(
-        "ERROR: do not name a link 'world', it is a reserved name");
+        "RigidBodyTreeSDF.cpp: parseSDFLink: ERROR: Do not name a link 'world',"
+        " it is a reserved name");
+  }
 
   Isometry3d transform_to_model = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");

@@ -814,16 +814,17 @@ void RigidBodySystem::addRobotFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  // first add the urdf to the rigid body tree
+  // Adds the URDF to the rigid body tree.
   tree->addRobotFromURDF(urdf_filename, floating_base_type, weld_to_frame);
 
-  // now parse additional tags understood by rigid body system (actuators,
-  // sensors, etc)
+  // Parses additional tags understood by rigid body system (e.g., actuators,
+  // sensors, etc).
   XMLDocument xml_doc;
   xml_doc.LoadFile(urdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
-    throw std::runtime_error("failed to parse xml in file " + urdf_filename +
-                             "\n" + xml_doc.ErrorName());
+    throw std::runtime_error(
+      "RigidBodySystem::addRobotFromURDF: ERROR: Failed to parse xml in file "
+      + urdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseURDF(*this, &xml_doc);
 }
@@ -840,8 +841,9 @@ void RigidBodySystem::addRobotFromSDF(
   XMLDocument xml_doc;
   xml_doc.LoadFile(sdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
-    throw std::runtime_error("failed to parse xml in file " + sdf_filename +
-                             "\n" + xml_doc.ErrorName());
+    throw std::runtime_error(
+      "RigidBodySystem::addRobotFromSDF: ERROR: Failed to parse xml in file "
+      + sdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseSDF(*this, &xml_doc);
 }
@@ -856,12 +858,15 @@ void RigidBodySystem::addRobotFromFile(
   // Converts the file extension to be all lower case.
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-  if (ext == ".urdf")
+  if (ext == ".urdf") {
     addRobotFromURDF(filename, floating_base_type, weld_to_frame);
-  else if (ext == ".sdf")
+  } else if (ext == ".sdf") {
     addRobotFromSDF(filename, floating_base_type, weld_to_frame);
-  else
-    throw runtime_error("unknown file extension: " + ext);
+  } else {
+    throw runtime_error(
+      "RigidBodySystem::addRobotFromFile: ERROR: Unknown file extension: "
+      + ext);
+  }
 }
 
 Eigen::VectorXd spatialForceInFrameToJointTorque(

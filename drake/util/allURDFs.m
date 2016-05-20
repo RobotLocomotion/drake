@@ -19,6 +19,14 @@ command = [command, '-not -path "', rootdir, '/*/dev/*" '];
 % "irb_140_convhull".
 command = [command, '-not -path "', rootdir, '/*irb_140_convhull*" '];
 
+% Updates the above command to blacklist any URDF whose full path contains the
+% string "fixed_to_world".
+% command = [command, '-not -path "', rootdir, '*fixed_to_world*" '];
+
+% Updates the above command to blacklist any URDF whose full path contains the
+% string "floating_in_world".
+% command = [command, '-not -path "', rootdir, '*floating_in_world*" '];
+
 % Finds URDF files using the previously defined command.
 [info, p] = system(command);
 
