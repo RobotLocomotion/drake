@@ -4,7 +4,7 @@
 
 namespace drake {
 
-/** @brief Checks for non-empty intersection of two sorted vectors.
+/** Checks for non-empty intersection of two sorted vectors.
 
 @param  a  First vector.
 @param  b  Second vector.
@@ -62,12 +62,12 @@ bool SortedVectorsHaveIntersection(const std::vector<T> &a,
   return false;
 }
 
-/** @brief Checks for non-empty intersection of two sorted ranges.
+/** Checks for non-empty intersection of two sorted ranges.
 
 @param  first1  Start of first range.
-@param  last1   End of first range.
+@param  last1   End of first range. Points to entry after last element.
 @param  first2  Start of second range.
-@param  last2   End of second range.
+@param  last2   End of second range. Points to entry after last element.
 @return `true` if non-empty intersection between ranges. `false` otherwise.
 
 Elements are compared using operator< and the ranges must be sorted with
