@@ -251,6 +251,7 @@ SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
   // should be made configurable when #1879 is fixed.
   const double constraint_tol = 1e-6;
   const double xtol_rel = 1e-6;
+  const double xtol_abs = 1e-6;
 
   std::list<WrappedConstraint> wrapped_list;
 
@@ -309,7 +310,7 @@ SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
   }
 
   opt.set_xtol_rel(xtol_rel);
-
+  opt.set_xtol_abs(xtol_abs);
 
   SolutionResult result = SolutionResult::kSolutionFound;
   nlopt::result nlopt_result = nlopt::FAILURE;

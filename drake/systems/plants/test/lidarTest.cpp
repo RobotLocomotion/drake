@@ -34,6 +34,16 @@ int do_main(int argc, char* argv[]) {
         "ERROR: Unable to obtain pointer to the LIDAR sensor.");
   }
 
+  if (!lidar_sensor->is_horizontal_scanner()) {
+    throw std::runtime_error(
+      "ERROR: LIDAR scanner says it is not horizontal but it is!");
+  }
+
+  if (lidar_sensor->is_vertical_scanner()) {
+    throw std::runtime_error(
+      "ERROR: LIDAR scanner says it is vertical but is not!");
+  }
+
   valuecheck(static_cast<size_t>(1), lidar_sensor->num_pixel_rows(),
              std::string("Problems with num_pixel_rows(). "));
   valuecheck(static_cast<size_t>(640), lidar_sensor->num_pixel_cols(),
@@ -68,19 +78,18 @@ int do_main(int argc, char* argv[]) {
   valuecheck(640, static_cast<int>(distances.size()),
              std::string("Problem with number of distances. "));
 
-  // These parameters must match the SDF. We've also implicitly hard-coded the
-  // box geometry from the sdf.
-  const double min_yaw = -1.7;
-  const double max_yaw = 1.7;
-  const double max_range = 25.0;
-  const double tol = 0.01;
+  const double min_yaw = lidar_sensor->min_yaw();
+  const double max_yaw = lidar_sensor->max_yaw();
+  const double max_range = lidar_sensor->max_range();
+  const double tol = 1.0e-6;
 
   for (int i = 0; i < distances.size(); i++) {
     double theta = min_yaw + (max_yaw - min_yaw) * i / (distances.size() - 1);
 
+    // We've implicitly hard-coded the box geometry from the SDF for the
+    // computation of the analytical distances.
     if (std::abs(theta) >=
-        M_PI / 2 + 0.01) {  // Should not be hitting any wall.
-                            // TODO(amcastro-tri): Solve issue #1712.
+        M_PI / 2.0 + tol) {  // Should not be hitting any wall.
       valuecheck(max_range, distances(i));
     } else if (theta <= -M_PI / 4) {  // hitting the right wall
       valuecheck(-1.0 / std::sin(theta), distances(i), tol);

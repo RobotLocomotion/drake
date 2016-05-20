@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/drakeRBSystem_export.h"
+#include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/RigidBody.h"
 
 namespace tinyxml2 {

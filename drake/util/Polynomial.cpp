@@ -102,7 +102,7 @@ template <typename CoefficientType>
 int Polynomial<CoefficientType>::Monomial::getDegree() const {
   if (terms.empty()) return 0;
   int degree = terms[0].power;
-  for (int i = 1; i < terms.size(); i++) degree *= terms[i].power;
+  for (size_t i = 1; i < terms.size(); i++) degree *= terms[i].power;
   return degree;
 }
 
@@ -327,9 +327,9 @@ Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator*=(
       Monomial m;
       m.coefficient = iter->coefficient * other_iter->coefficient;
       m.terms = iter->terms;
-      for (int i = 0; i < other_iter->terms.size(); i++) {
+      for (size_t i = 0; i < other_iter->terms.size(); i++) {
         bool new_var = true;
-        for (int j = 0; j < m.terms.size(); j++) {
+        for (size_t j = 0; j < m.terms.size(); j++) {
           if (m.terms[j].var == other_iter->terms[i].var) {
             m.terms[j].power += other_iter->terms[i].power;
             new_var = false;
@@ -494,7 +494,7 @@ template <typename CoefficientType>
 bool Polynomial<CoefficientType>::isValidVariableName(const string name) {
   size_t len = name.length();
   if (len < 1) return false;
-  for (int i = 0; i < len; i++)
+  for (size_t i = 0; i < len; i++)
     if (!strchr(kNameChars, name[i])) return false;
   return true;
 }

@@ -153,12 +153,12 @@ void RigidBodyTree::accumulateContactJacobian(
   auto J_tmp = transformPointsJacobian(cache, bodyPoints, bodyInd, 0, true);
 
   // add contributions from points in xA
-  for (int x = 0; x < numCA; x++) {
+  for (size_t x = 0; x < numCA; x++) {
     J.block(3 * cindA[x], 0, 3, nq) += J_tmp.block(3 * x, 0, 3, nq);
   }
 
   // subtract contributions from points in xB
-  for (int x = 0; x < numCB; x++) {
+  for (size_t x = 0; x < numCB; x++) {
     J.block(3 * cindB[x], 0, 3, nq) -= J_tmp.block(offset + 3 * x, 0, 3, nq);
   }
 }
