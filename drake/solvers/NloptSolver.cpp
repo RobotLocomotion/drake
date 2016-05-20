@@ -96,6 +96,14 @@ struct WrappedConstraint {
   const VariableList* variable_list;
   bool force_bounds;
   bool force_upper;
+  // TODO(sam.creasey) It might be desirable to have a cache for the
+  // result of evaluatinf the constraints if NLopt were being used in
+  // a situation where constraints were frequently being wrapped in
+  // such a way as to result in multiple evaluations.  As this is a
+  // speculative case, and since NLopt's roundoff issues with
+  // duplicate constraints preclude it from being used in some
+  // scenarios, I'm not implementing such a cache at this time.
+  std::set<size_t> active_constraints;
 };
 
 double ApplyConstraintBounds(double result, double lb, double ub) {
@@ -119,48 +127,12 @@ double ApplyConstraintBounds(double result, double lb, double ub) {
     result -= ub;
   } else {
     if (lb == -std::numeric_limits<double>::infinity()) {
+      std::cerr << "Unable to handle constraint with no bounds." << std::endl;
       throw std::runtime_error(
           "Unable to handle constraint with no bounds.");
     }
     result *= -1;
     result += lb;
-  }
-  return result;
-}
-
-// This function meets the signature of nlopt::vfunc (yes, same
-// signature as a cost function, but with different semantics) as
-// described in
-// http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#Nonlinear_constraints
-// and
-// http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Nonlinear_constraints
-double EvaluateScalarConstraint(const std::vector<double>& x,
-                                std::vector<double>& grad,
-                                void* f_data) {
-  const WrappedConstraint* wrapped =
-      reinterpret_cast<WrappedConstraint*>(f_data);
-
-  Eigen::VectorXd xvec = MakeEigenVector(x);
-
-  const Constraint* c = wrapped->constraint;
-  assert(c->num_constraints() == 1);
-
-  TaylorVecXd ty(1);
-  TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_list));
-  c->eval(this_x, ty);
-  const double result = ApplyConstraintBounds(
-      ty(0).value(), c->lower_bound()(0), c->upper_bound()(0));
-
-  if (!grad.empty()) {
-    grad.assign(grad.size(), 0);
-    const double grad_sign =
-        (c->upper_bound()(0) ==
-         std::numeric_limits<double>::infinity()) ? -1 : 1;
-    for (const DecisionVariableView& v : *(wrapped->variable_list)) {
-      for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-        grad[j] = ty(0).derivatives()(j) * grad_sign;
-      }
-    }
   }
   return result;
 }
@@ -189,32 +161,41 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
 
   const Constraint* c = wrapped->constraint;
   const size_t num_constraints = c->num_constraints();
-  assert(num_constraints == m);
+  assert(num_constraints >= m);
+  assert(wrapped->active_constraints.size() == m);
 
-  TaylorVecXd ty(m);
+  TaylorVecXd ty(num_constraints);
   TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_list));
   c->eval(this_x, ty);
 
   const Eigen::VectorXd& lower_bound = c->lower_bound();
   const Eigen::VectorXd& upper_bound = c->upper_bound();
+  size_t result_idx = 0;
   for (size_t i = 0; i < num_constraints; i++) {
-    if (wrapped->force_bounds && wrapped->force_upper) {
-      result[i] = ApplyConstraintBounds(
+    if (!wrapped->active_constraints.count(i)) { continue; }
+    if (wrapped->force_bounds && wrapped->force_upper &&
+        (upper_bound(i) != std::numeric_limits<double>::infinity())) {
+      result[result_idx] = ApplyConstraintBounds(
           ty(i).value(), -std::numeric_limits<double>::infinity(),
           upper_bound(i));
-    } else if (wrapped->force_bounds && !wrapped->force_upper) {
-      result[i] = ApplyConstraintBounds(
+    } else if (wrapped->force_bounds && !wrapped->force_upper &&
+               (lower_bound(i) != std::numeric_limits<double>::infinity())) {
+      result[result_idx] = ApplyConstraintBounds(
           ty(i).value(), lower_bound(i),
           std::numeric_limits<double>::infinity());
     } else {
-      result[i] = ApplyConstraintBounds(
+      result[result_idx] = ApplyConstraintBounds(
           ty(i).value(), lower_bound(i), upper_bound(i));
     }
+    result_idx++;
+    assert(result_idx <= m);
   }
 
   if (grad) {
     for (const DecisionVariableView& v : *(wrapped->variable_list)) {
+      result_idx = 0;
       for (size_t i = 0; i < num_constraints; i++) {
+        if (!wrapped->active_constraints.count(i)) { continue; }
         double grad_sign = 1;
         if (c->upper_bound()(i) ==
             std::numeric_limits<double>::infinity()) {
@@ -223,9 +204,12 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
           grad_sign = -1;
         }
         for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-           grad[(i * n) + j] = ty(i).derivatives()(j) * grad_sign;
-         }
+          grad[(result_idx * n) + j] = ty(i).derivatives()(j) * grad_sign;
+        }
+        result_idx++;
+        assert(result_idx <= m);
       }
+      assert(result_idx == m);
     }
   }
 }
@@ -235,48 +219,56 @@ void WrapConstraint(const OptimizationProblem::Binding<C>& binding,
                     double constraint_tol,
                     nlopt::opt* opt,
                     std::list<WrappedConstraint>* wrapped_list) {
-  WrappedConstraint wrapped(binding.constraint().get(),
-                            &binding.variable_list());
-  wrapped_list->push_back(wrapped);
+  WrappedConstraint wrapped_eq(binding.constraint().get(),
+                               &binding.variable_list());
+  WrappedConstraint wrapped_in(binding.constraint().get(),
+                               &binding.variable_list());
 
   bool is_pure_inequality = true;
   const Eigen::VectorXd& lower_bound = binding.constraint()->lower_bound();
   const Eigen::VectorXd& upper_bound = binding.constraint()->upper_bound();
   assert(lower_bound.size() == upper_bound.size());
   for (size_t i = 0; i < lower_bound.size(); i++) {
-    if ((lower_bound(i) != -std::numeric_limits<double>::infinity()) &&
-        (upper_bound(i) != std::numeric_limits<double>::infinity())) {
-      is_pure_inequality = false;
-      break;
+    if (lower_bound(i) == upper_bound(i)) {
+      wrapped_eq.active_constraints.insert(i);
+    } else {
+      if ((lower_bound(i) != -std::numeric_limits<double>::infinity()) &&
+          (upper_bound(i) != std::numeric_limits<double>::infinity())) {
+        is_pure_inequality = false;
+      }
+      wrapped_in.active_constraints.insert(i);
     }
   }
 
-  if ((binding.constraint()->lower_bound() ==
-       binding.constraint()->upper_bound()) &&
-      binding.constraint()->num_constraints() == 1) {
-    opt->add_equality_constraint(
-        EvaluateScalarConstraint, &wrapped_list->back(), constraint_tol);
-  } else if (is_pure_inequality) {
-    std::vector<double> tol(binding.constraint()->num_constraints(),
+  if (wrapped_eq.active_constraints.size()) {
+    wrapped_list->push_back(wrapped_eq);
+    std::vector<double> tol(wrapped_eq.active_constraints.size(),
                             constraint_tol);
-    opt->add_inequality_mconstraint(
-        EvaluateVectorConstraint, &wrapped_list->back(), tol);
-  } else {
-    wrapped_list->back().force_bounds = true;
-    wrapped_list->back().force_upper = true;
-    std::vector<double> tol(binding.constraint()->num_constraints(),
-                            constraint_tol);
-    opt->add_inequality_mconstraint(
-        EvaluateVectorConstraint, &wrapped_list->back(), tol);
-
-    wrapped_list->push_back(WrappedConstraint(binding.constraint().get(),
-                                              &binding.variable_list()));
-    wrapped_list->back().force_bounds = true;
-    wrapped_list->back().force_upper = false;
-    opt->add_inequality_mconstraint(
+    opt->add_equality_mconstraint(
         EvaluateVectorConstraint, &wrapped_list->back(), tol);
   }
-}
+
+  if (wrapped_in.active_constraints.size()) {
+    std::vector<double> tol(wrapped_in.active_constraints.size(),
+                            constraint_tol);
+    wrapped_list->push_back(wrapped_in);
+    if (is_pure_inequality) {
+      opt->add_inequality_mconstraint(
+          EvaluateVectorConstraint, &wrapped_list->back(), tol);
+    } else {
+      wrapped_list->back().force_bounds = true;
+      wrapped_list->back().force_upper = true;
+      opt->add_inequality_mconstraint(
+          EvaluateVectorConstraint, &wrapped_list->back(), tol);
+
+      wrapped_list->push_back(wrapped_in);
+      wrapped_list->back().force_bounds = true;
+      wrapped_list->back().force_upper = false;
+      opt->add_inequality_mconstraint(
+          EvaluateVectorConstraint, &wrapped_list->back(), tol);
+    }
+  }
+  }
 
 }  // anonymous namespace
 
@@ -333,22 +325,8 @@ SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
     WrapConstraint(c, constraint_tol, &opt, &wrapped_list);
   }
 
-  // sam.creasey: The initial implementation of this code used
-  // add_equality_mconstraint to handle constraints with multiple
-  // outputs as a vector constraint.  This did not seem to work.  The
-  // version below breaks out the problem into multiple constraints.
-  std::list<LinearEqualityConstraint> equalities;
   for (const auto& c : prog.linear_equality_constraints()) {
-    const size_t num_constraints = c.constraint()->num_constraints();
-    const auto& A = c.constraint()->A();
-    const auto& b = c.constraint()->lower_bound();
-    for (size_t i = 0; i < num_constraints; i++) {
-      equalities.push_back(LinearEqualityConstraint(A.row(i), b.row(i)));
-      WrappedConstraint wrapped(&equalities.back(), &c.variable_list());
-      wrapped_list.push_back(wrapped);
-      opt.add_equality_constraint(
-          EvaluateScalarConstraint, &wrapped_list.back(), constraint_tol);
-    }
+    WrapConstraint(c, constraint_tol, &opt, &wrapped_list);
   }
 
   // TODO(sam.creasey): Missing test coverage for linear constraints
