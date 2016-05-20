@@ -28,7 +28,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
                    const Eigen::Isometry3d& T_element_to_local =
                        Eigen::Isometry3d::Identity());
 
-  virtual ~CollisionElement() {}
+  ~CollisionElement() override {}
 
   CollisionElement* clone() const override;
 
