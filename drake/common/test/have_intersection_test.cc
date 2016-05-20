@@ -59,6 +59,18 @@ GTEST_TEST(TestHaveIntersection, SortedVectorsHaveIntersection) {
 
   // Tests if the above is commutative.
   EXPECT_FALSE(SortedVectorsHaveIntersection(set6, set1));
+
+  // Sets with repeated entries
+  vector<int> set7 = vector<int>({2, 9, 9, 11, 15, 15, 23});
+  vector<int> set8 = vector<int>({9, 11, 11, 13});
+  vector<int> set9 = vector<int>({1, 1, 8, 13});
+
+  // set7 intersects set8 (elements 9 and 11 in common).
+  EXPECT_TRUE(SortedVectorsHaveIntersection(set7, set8));
+  // set7 does not intersect set9 (no elements in common).
+  EXPECT_FALSE(SortedVectorsHaveIntersection(set7, set9));
+  // set8 intersects set9 (element 13 in common).
+  EXPECT_TRUE(SortedVectorsHaveIntersection(set8, set9));
 }
 
 }  // namespace

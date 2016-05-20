@@ -4,7 +4,7 @@
 
 namespace drake {
 
-/** Checks for non-empty intersection of two sorted vectors.
+/** Checks for non-empty intersection of two sorted `std::vector`'s.
 
 @param  a  First vector.
 @param  b  Second vector.
@@ -15,12 +15,9 @@ respect to the same operator.
 
 This algorithm only works on std::vector's to take advantage of their fast and
 random access.
-Unlike STL implementations, this algorithm does not offer the user the
-possibility to provide a custom binary comparison function.
-There is no execution policy as with the STL `std::set_intersection` to be
-introduced in C++17.
 
-This algorithm only works on sorted vectors.
+This algorithm only works on sorted vectors. Entries can be repeated as long as
+they are sorted.
 For vector a of size Na and vector b of size Nb the complexity is at most
 Order(Na+Nb). The algorithm executes in constant time for vectors with disjoint
 entries.
