@@ -47,6 +47,36 @@ GTEST_TEST(TestHaveIntersection, StdVectors) {
                                set2.begin(), set2.end()));
 }
 
+// Test with std::vector specific SortedVectorsHaveIntersection.
+GTEST_TEST(TestHaveIntersection, SortedVectorsHaveIntersection) {
+  // In order for drake::SortedVectorsHaveIntersection to work vectors must:
+  // 1. Not have repeated elements.
+  // 2. Be sorted.
+  // An std::vector can have non sorted repeated elements. Therefore the user
+  // must ensure that the previous conditions are met.
+  vector<int> set1 = vector<int>({2, 9, 11, 15, 23});
+  vector<int> set2 = vector<int>({9, 11, 13});
+  vector<int> set3 = vector<int>({1, 8, 13});
+
+  // set1 intersects set2 (elements 9 and 11 in common).
+  EXPECT_TRUE(SortedVectorsHaveIntersection(set1, set2));
+
+  // set2 intersects set1 (commutative).
+  EXPECT_TRUE(SortedVectorsHaveIntersection(set2, set1));
+
+  // set1 does not intersect set3 (no elements in common).
+  EXPECT_FALSE(SortedVectorsHaveIntersection(set1, set3));
+
+  // set3 does not intersect set1 (commutative).
+  EXPECT_FALSE(SortedVectorsHaveIntersection(set3, set1));
+
+  // set2 intersects set3 (element 13 in common).
+  EXPECT_TRUE(SortedVectorsHaveIntersection(set2, set3));
+
+  // set3 intersects set2 (commutative).
+  EXPECT_TRUE(SortedVectorsHaveIntersection(set3, set2));
+}
+
 // Test using std::set
 GTEST_TEST(TestHaveIntersection, StdSets) {
   // In order for drake::HaveIntersection to work sets must:
