@@ -207,20 +207,22 @@ TEST(ModelTest, Box_vs_Sphere) {
   EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.0, -0.5, 0.0)));
 }
 
-/** This test seeks to find out whether Bullet can report collision manifolds.
-To this end, a small cube with unit length sides is placed on top of a large
-cube with sides of length 5.0. The smaller cube is placed such that it
-intersects the large box. Therefore the intersection between the two boxes is
-not just a single point but the (squared) perimeter all around the smaller box
-(the manifold).
-Unfortunatelly these tests show that Bullet only reports a single (randomly
-chosen) point at one of the smaller box corners.
- **/
+/** This test seeks to find out whether DrakeCollision::Model can report
+collision manifolds. To this end, a small cube with unit length sides is placed
+on top of a large cube with sides of length 5.0. The smaller cube is placed
+such that it intersects the large box. Therefore the intersection between the
+two boxes is not just a single point but the (squared) perimeter all around the
+smaller box (the manifold).
+
+Unfortunately these tests show that DrakeCollision::Model only reports a single
+(randomly chosen) point at one of the smaller box corners. In previous runs
+this was the corner at (0.5, 0.5, z) where z = 5.0 for the top of the large box
+and z = 4.9 for the bottom of the smaller box. **/
 TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
-  // succesfully pass.
-  const double tolerance = 2.0e-9; //Eigen::NumTraits<double>::epsilon();
+  // successfully pass.
+  const double tolerance = 2.0e-9;
 
   // Boxes centered around the origin in their local frames.
   DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
@@ -249,9 +251,9 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // List of collision points.
   std::vector<PointPair> points;
 
-  // Unfortunately Bullet is randomly selecting one of the small box's corners
-  // instead of reporting a manifold describing the perimeter of the square
-  // where both boxes intersect.
+  // Unfortunately DrakeCollision::Model is randomly selecting one of the small
+  // box's corners instead of reporting a manifold describing the perimeter of
+  // the square where both boxes intersect.
   // Therefore it is impossible to assert if that choice would change with
   // future releases (say just because tolerances changed).
   // What we can test for sure is:
@@ -272,7 +274,109 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   EXPECT_NEAR(points[0].getPtA().y(),  2.5, tolerance);
   EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
 
-  std::cout << "Small box sitting on large box: closestPointsAllToAll" << std::endl;
+  // Collision test performed with Model::collisionPointsAllToAll.
+  // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
+  // looks like the margins are not appropriately subtracted.
+  points.clear();
+  model->collisionPointsAllToAll(false, points);
+
+  // Unfortunately DrakeCollision::Model's manifold has one point for this case.
+  // Best for physics simulations would be DrakeCollision::Model to return at
+  // least the four
+  // corners of the smaller box. However it randomly picks one corner.
+  ASSERT_EQ(1, points.size());
+  EXPECT_EQ(large_box_id, points[0].getIdA());
+  EXPECT_EQ(small_box_id, points[0].getIdB());
+  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+  // Collision points are reported in the world's frame.
+  // Only test for vertical position.
+  EXPECT_NEAR(points[0].getPtA().y(),  5.0, tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(),  4.9, tolerance);
+
+  // Collision test performed with Model::potentialCollisionPoints.
+  points.clear();
+  points = model->potentialCollisionPoints(false);
+
+  ASSERT_EQ(1, points.size());
+  EXPECT_EQ(large_box_id, points[0].getIdA());
+  EXPECT_EQ(small_box_id, points[0].getIdB());
+  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  // Collision points are reported on each of the respective bodies' frames.
+  // This is consistent with the return by Model::closestPointsAllToAll.
+  // Only test for vertical position.
+  EXPECT_NEAR(points[0].getPtA().y(),  2.5, tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
+}
+
+/** This test seeks to find out whether DrakeCollision::Model can report
+collision manifolds. To this end two unit length boxes are placed on top of one
+another. The box sitting on top is rotated by 45 degrees so that the contact
+area would consist of an octagon. If DrakeCollision::Model can report manifolds,
+the manifold would consist of the perimeter of this octagon.
+
+Unfortunately these tests show that DrakeCollision::Model only reports a single
+(randomly chosen) point within this octagonal contact area. **/
+TEST(ModelTest, NonAlignedBoxes) {
+  // Numerical precision tolerance to perform floating point comparisons.
+  // Its magnitude was chosen to be the minimum value for which these tests can
+  // successfully pass.
+  const double tolerance = 3.0e-9;
+
+  // Boxes centered around the origin in their local frames.
+  DrakeShapes::Box box1(Vector3d(1.0, 1.0, 1.0));
+  DrakeShapes::Box box2(Vector3d(1.0, 1.0, 1.0));
+
+  Element colliding_box1(box1);
+  Element colliding_box2(box2);
+
+  // Populate the model.
+  std::unique_ptr<Model> model(newModel());
+  ElementId box1_id = model->addElement(colliding_box1);
+  ElementId box2_id = model->addElement(colliding_box1);
+
+  // Box 1 pose.
+  Isometry3d box1_pose;
+  box1_pose.setIdentity();
+  box1_pose.translation() = Vector3d(0.0, 0.5, 0.0);
+  model->updateElementWorldTransform(box1_id, box1_pose);
+
+  // Box 2 pose.
+  // Rotate box 2 45 degrees around the y axis so that it does not alight with
+  // box 1.
+  Isometry3d box2_pose;
+  box2_pose.setIdentity();
+  box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
+  box2_pose.linear() =
+      AngleAxisd(M_PI_4,Vector3d::UnitY()).toRotationMatrix();
+  model->updateElementWorldTransform(box2_id, box2_pose);
+
+  // List of collision points.
+  std::vector<PointPair> points;
+
+  // Unfortunately DrakeCollision::Model is randomly selecting one of the small
+  // box's corners instead of reporting a manifold describing the perimeter of
+  // the square where both boxes intersect.
+  // Therefore it is impossible to assert if that choice would change with
+  // future releases (say just because tolerances changed).
+  // What we can test for sure is:
+  // 1. The penetration depth.
+  // 2. The vertical position of the collision point (since for any of the four
+  //    corners of the small box is the same.
+  // Collision test performed with Model::closestPointsAllToAll.
+  const std::vector<ElementId> ids_to_check = {box1_id, box2_id};
+  model->closestPointsAllToAll(ids_to_check, true, points);
+  ASSERT_EQ(1, points.size());
+  EXPECT_EQ(box1_id, points[0].getIdA());
+  EXPECT_EQ(box2_id, points[0].getIdB());
+  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  // Collision points are reported on each of the respective bodies' frames.
+  // Only test for vertical position.
+  EXPECT_NEAR(points[0].getPtA().y(),  0.5, tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
+
+  std::cout << "Non-aligned boxes: closestPointsAllToAll" << std::endl;
   for(auto& pt_pair: points) {
     // Normal is on body B.
     PRINT_VAR(pt_pair.getNormal().transpose());
@@ -290,18 +394,19 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // looks like the margins are not appropriately subtracted.
   points.clear();
   model->collisionPointsAllToAll(false, points);
-
-  // Unfortunately Bullet's manifold has one point for this case.
-  // Best for physics simulations would be Bullet to return at least the four
-  // corners of the smaller box. However it randomly picks one corner.
+  // Unfortunately DrakeCollision::Model's manifold has one point for this case.
+  // Best for physics simulations would be DrakeCollision::Model to return at
+  // least the four corners of the smaller box. However it randomly picks one
+  // corner.
   ASSERT_EQ(1, points.size());
-  EXPECT_EQ(large_box_id, points[0].getIdA());
-  EXPECT_EQ(small_box_id, points[0].getIdB());
+  EXPECT_EQ(box1_id, points[0].getIdA());
+  EXPECT_EQ(box2_id, points[0].getIdB());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported in the world's frame.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),  5.0, tolerance);
-  EXPECT_NEAR(points[0].getPtB().y(),  4.9, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(),  1.0, tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(),  0.9, tolerance);
 
   std::cout << "Small box sitting on large box: collisionPointsAllToAll" << std::endl;
   for(auto& pt_pair: points) {
@@ -319,29 +424,16 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
   points = model->potentialCollisionPoints(false);
-
   ASSERT_EQ(1, points.size());
-  EXPECT_EQ(large_box_id, points[0].getIdA());
-  EXPECT_EQ(small_box_id, points[0].getIdB());
+  EXPECT_EQ(box1_id, points[0].getIdA());
+  EXPECT_EQ(box2_id, points[0].getIdB());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // This is consistent with the return by Model::closestPointsAllToAll.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),  2.5, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(),  0.5, tolerance);
   EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
-
-#if 0
-  ASSERT_EQ(1, points.size());
-  EXPECT_EQ(large_box_id, points[0].getIdA());
-  EXPECT_EQ(small_box_id, points[0].getIdB());
-  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
-  // Collision points are reported on each of the respective bodies' frames.
-  // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),  2.5, tolerance);
-  EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
-#endif
 
   std::cout << "Small box sitting on large box: potentialCollisionPoints" << std::endl;
   PRINT_VAR(points.size());
