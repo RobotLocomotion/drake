@@ -1,8 +1,6 @@
 #include "drake/util/Polynomial.h"
-
-#include <cstring>
-#include <set>
 #include <stdexcept>
+#include <cstring>
 
 using namespace std;
 using namespace Eigen;
@@ -104,7 +102,7 @@ template <typename CoefficientType>
 int Polynomial<CoefficientType>::Monomial::getDegree() const {
   if (terms.empty()) return 0;
   int degree = terms[0].power;
-  for (int i = 1; i < terms.size(); i++) degree *= terms[i].power;
+  for (size_t i = 1; i < terms.size(); i++) degree *= terms[i].power;
   return degree;
 }
 
@@ -294,19 +292,6 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(
 }
 
 template <typename CoefficientType>
-bool Polynomial<CoefficientType>::operator==(
-    const Polynomial<CoefficientType>& other) const {
-  // Comparison of unsorted vectors is faster copying them into std::set
-  // btrees rather than using std::is_permutation().
-  // TODO(#2216) switch from multiset to set for further performance gains.
-  const std::multiset<Monomial> this_monomials(monomials.begin(),
-                                               monomials.end());
-  const std::multiset<Monomial> other_monomials(other.monomials.begin(),
-                                                other.monomials.end());
-  return this_monomials == other_monomials;
-}
-
-template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator+=(
     const Polynomial<CoefficientType>& other) {
   for (typename vector<Monomial>::const_iterator iter = other.monomials.begin();
@@ -342,9 +327,9 @@ Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator*=(
       Monomial m;
       m.coefficient = iter->coefficient * other_iter->coefficient;
       m.terms = iter->terms;
-      for (int i = 0; i < other_iter->terms.size(); i++) {
+      for (size_t i = 0; i < other_iter->terms.size(); i++) {
         bool new_var = true;
-        for (int j = 0; j < m.terms.size(); j++) {
+        for (size_t j = 0; j < m.terms.size(); j++) {
           if (m.terms[j].var == other_iter->terms[i].var) {
             m.terms[j].power += other_iter->terms[i].power;
             new_var = false;
@@ -509,7 +494,7 @@ template <typename CoefficientType>
 bool Polynomial<CoefficientType>::isValidVariableName(const string name) {
   size_t len = name.length();
   if (len < 1) return false;
-  for (int i = 0; i < len; i++)
+  for (size_t i = 0; i < len; i++)
     if (!strchr(kNameChars, name[i])) return false;
   return true;
 }
@@ -558,10 +543,6 @@ template <typename CoefficientType>
 void Polynomial<CoefficientType>::makeMonomialsUnique(void) {
   VarType unique_var = 0;  // also update the univariate flag
   for (ptrdiff_t i = monomials.size() - 1; i >= 0; i--) {
-    if (monomials[i].coefficient == 0) {
-      monomials.erase(monomials.begin() + i);
-      continue;
-    }
     Monomial& mi = monomials[i];
     if (!mi.terms.empty()) {
       if (mi.terms.size() > 1) is_univariate = false;

@@ -143,7 +143,7 @@ class DRAKERBM_EXPORT RigidBody {
   std::string name_;
 
   /**
-   * The name of the model two which this rigid body belongs.
+   * The name of the model to which this rigid body belongs.
    */
   std::string model_name_;
 
