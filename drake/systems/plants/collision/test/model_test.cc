@@ -119,12 +119,6 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
 
-/** Tests the number of collision points returned by different algorithms in
-a model composed by multiple collision elements. **/
-TEST(ModelTest, NumberOfCollisionPoints) {
-  EXPECT_TRUE(true);
-}
-
 /** A sphere of diameter 1.0 is placed on top of a box with sides of length 1.0.
 The sphere overlaps with the box with its deepest penetration point (the bottom)
 0.25 units into the box (negative distance). Only one contact point is expected
@@ -376,19 +370,6 @@ TEST(ModelTest, NonAlignedBoxes) {
   EXPECT_NEAR(points[0].getPtA().y(),  0.5, tolerance);
   EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
 
-  std::cout << "Non-aligned boxes: closestPointsAllToAll" << std::endl;
-  for(auto& pt_pair: points) {
-    // Normal is on body B.
-    PRINT_VAR(pt_pair.getNormal().transpose());
-    PRINT_VAR(pt_pair.getDistance());
-
-    PRINT_VAR(pt_pair.getIdA());
-    PRINT_VAR(pt_pair.getPtA().transpose());
-
-    PRINT_VAR(pt_pair.getIdB());
-    PRINT_VAR(pt_pair.getPtB().transpose());
-  }
-
   // Collision test performed with Model::collisionPointsAllToAll.
   // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
   // looks like the margins are not appropriately subtracted.
@@ -408,19 +389,6 @@ TEST(ModelTest, NonAlignedBoxes) {
   EXPECT_NEAR(points[0].getPtA().y(),  1.0, tolerance);
   EXPECT_NEAR(points[0].getPtB().y(),  0.9, tolerance);
 
-  std::cout << "Small box sitting on large box: collisionPointsAllToAll" << std::endl;
-  for(auto& pt_pair: points) {
-    // Normal is on body B.
-    PRINT_VAR(pt_pair.getNormal().transpose());
-    PRINT_VAR(pt_pair.getDistance());
-
-    PRINT_VAR(pt_pair.getIdA());
-    PRINT_VAR(pt_pair.getPtA().transpose());
-
-    PRINT_VAR(pt_pair.getIdB());
-    PRINT_VAR(pt_pair.getPtB().transpose());
-  }
-
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
   points = model->potentialCollisionPoints(false);
@@ -434,20 +402,6 @@ TEST(ModelTest, NonAlignedBoxes) {
   // Only test for vertical position.
   EXPECT_NEAR(points[0].getPtA().y(),  0.5, tolerance);
   EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
-
-  std::cout << "Small box sitting on large box: potentialCollisionPoints" << std::endl;
-  PRINT_VAR(points.size());
-  for(auto& pt_pair: points) {
-    // Normal is on body B.
-    PRINT_VAR(pt_pair.getNormal().transpose());
-    PRINT_VAR(pt_pair.getDistance());
-
-    PRINT_VAR(pt_pair.getIdA());
-    PRINT_VAR(pt_pair.getPtA().transpose());
-
-    PRINT_VAR(pt_pair.getIdB());
-    PRINT_VAR(pt_pair.getPtB().transpose());
-  }
 }
 
 }  // namespace
