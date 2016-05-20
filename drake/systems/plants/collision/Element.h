@@ -30,7 +30,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
 
   virtual ~CollisionElement() {}
 
-  virtual CollisionElement* clone() const;
+  CollisionElement* clone() const override;
 
   ElementId getId() const;
 
@@ -43,20 +43,15 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
    */
   virtual bool CollidesWith(const CollisionElement* other) const;
 
-  /**
-   * @brief Returns a pointer to the const RigidBody to which this
-   * CollisionElement is attached.
-   *
-   * @throws A std::runtime_error if the CollisionElement is not attached to a
-   * body.
-   */
+  /** Returns a pointer to the const RigidBody to which this CollisionElement
+  is attached. **/
   // TODO(amcastro-tri): getBody() -> get_body()
   const RigidBody* const getBody() const;
 
   void set_rigid_body(const RigidBody* body);
 
   /**
-   * @brief Adds this collsion element to collision group group_id
+   * @brief Adds this collision element to collision group group_id
    *
    * CollisionElement's within a group do not collide.
    * Calling this method to add an element to a group it already belongs to does
@@ -66,7 +61,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
 
   int number_of_groups() const;
 
-  std::vector<int> collision_groups() const;
+  const std::vector<int>& collision_groups() const;
 
   /**
    * A toString method for this class.

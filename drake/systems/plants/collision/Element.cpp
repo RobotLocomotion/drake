@@ -62,7 +62,7 @@ int CollisionElement::number_of_groups() const {
   return collision_groups_.size();
 }
 
-std::vector<int> CollisionElement::collision_groups() const {
+const std::vector<int>& CollisionElement::collision_groups() const {
   return collision_groups_;
 }
 
