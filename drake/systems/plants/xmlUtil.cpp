@@ -13,12 +13,13 @@ using namespace Eigen;
 using namespace tinyxml2;
 
 bool ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
-  if (val == nullptr)
+  if (val == nullptr) {
     throw std::runtime_error(
         "ERROR: ParseThreeVectorValue: parameter val is nullptr!");
+  }
   if (strval) {
     std::stringstream ss(strval);
-    // supports a single scalar value or 3-vector value.
+    // Supports a single scalar value or 3-vector value.
     ss >> (*val)[0];
     if (ss.good()) {
       ss >> (*val)[1] >> (*val)[2];
