@@ -296,14 +296,7 @@ foreach(proj ${EXTERNAL_PROJECTS})
 
     # compute the path to the project submodule (source tree)
     file(RELATIVE_PATH ${proj}_GIT_SUBMODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_SOURCE_DIR})
-    ExternalProject_Add(download-${proj}
-      SOURCE_DIR ${${proj}_SOURCE_DIR}
-      DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive ${${proj}_GIT_SUBMODULE_PATH}
-      DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
-      CONFIGURE_COMMAND ""
-      BUILD_COMMAND ""
-      INSTALL_COMMAND ""
-      )
+    set(${proj}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive ${${proj}_GIT_SUBMODULE_PATH})
 
     # Initialize the submodule configuration now so parallel downloads do not conflict later.
     execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- ${${proj}_GIT_SUBMODULE_PATH}
@@ -324,10 +317,11 @@ foreach(proj ${EXTERNAL_PROJECTS})
       endif()
       ExternalProject_Add(${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
-        DOWNLOAD_COMMAND ""
-        UPDATE_COMMAND ""
         BINARY_DIR ${${proj}_BINARY_DIR}
-        DEPENDS download-${proj} ${deps}
+        DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
+        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+        INDEPENDENT_STEP_TARGETS download
+        DEPENDS ${deps}
         ${COMMON_CMAKE_ARGS}
         ${PODS_VERBOSE_MAKEFILE}
         ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
@@ -356,12 +350,13 @@ foreach(proj ${EXTERNAL_PROJECTS})
       ExternalProject_Add(${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
         BINARY_DIR ${${proj}_BINARY_DIR}
-        DOWNLOAD_COMMAND ""
-        UPDATE_COMMAND ""
+        DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
+        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+        INDEPENDENT_STEP_TARGETS download
         CONFIGURE_COMMAND ""
         BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
         INSTALL_COMMAND ""
-        DEPENDS download-${proj} ${deps}
+        DEPENDS ${deps}
         ${${proj}_ADDITIONAL_BUILD_ARGS})
       if(${proj}_BUILD_COMMAND)
         drake_forcebuild(${proj})
@@ -404,8 +399,8 @@ add_custom_target(status)
 set(PROJECT_LIST)
 foreach(proj ${EXTERNAL_PROJECTS})
   if(NOT ${proj} STREQUAL "drake")
-    add_dependencies(download-all download-${proj})
-    ExternalProject_Get_Property(download-${proj} SOURCE_DIR)
+    add_dependencies(download-all ${proj}-download)
+    ExternalProject_Get_Property(${proj} SOURCE_DIR)
     add_custom_target(status-${proj}
       COMMAND ${GIT_EXECUTABLE} status
       WORKING_DIRECTORY ${SOURCE_DIR})
