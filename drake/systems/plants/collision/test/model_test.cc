@@ -1,5 +1,6 @@
 #include <cmath>
 #include <vector>
+#include <unordered_map>
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/collision/Model.h"
@@ -11,6 +12,22 @@ using Eigen::AngleAxisd;
 
 namespace DrakeCollision {
 namespace {
+
+// Structure used to hold the analytical solution of the tests.
+// It stores the collision point on the surface of a collision body in both
+// world and body frames.
+struct SurfacePoint {
+  SurfacePoint() {}
+  SurfacePoint(Vector3d wf, Vector3d bf) : world_frame(wf), body_frame(bf) {}
+  Vector3d world_frame{};
+  Vector3d body_frame{};
+};
+
+// Solutions are accessed by collision element id using an std::unordered_set.
+// This is to avoid this checks depending on the particular order in which id's
+// are returned by the different contact algorithms
+typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
+    ElementToSurfacePointMap;
 
 /*
  * Three bodies (cube (1 m edges) and two spheres (0.5 m radii) arranged like
@@ -142,6 +159,14 @@ TEST(ModelTest, Box_vs_Sphere) {
   ElementId box_id = model->addElement(colliding_box);
   ElementId sphere_id = model->addElement(colliding_sphere);
 
+  // Access the analytical solution to the contact point on the surface of each
+  // collision element by element id.
+  // Solutions are expressed in world and body frames.
+  ElementToSurfacePointMap solution = {
+      /*             world frame  ,    body frame  */
+      {box_id,    {{0.0,  1.0, 0.0}, {0.0,  0.5, 0.0}}},
+      {sphere_id, {{0.0, 0.75, 0.0}, {0.0, -0.5, 0.0}}}};
+
   // Body 1 pose
   Isometry3d box_pose;
   box_pose.setIdentity();
@@ -161,13 +186,13 @@ TEST(ModelTest, Box_vs_Sphere) {
   const std::vector<ElementId> ids_to_check = {box_id, sphere_id};
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
-  EXPECT_EQ(box_id, points[0].getIdA());
-  EXPECT_EQ(sphere_id, points[0].getIdB());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
   // Points are in the bodies' frame on the surface of the corresponding body.
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
-  EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.0, 0.5, 0.0)));
-  EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.0, -0.5, 0.0)));
+  EXPECT_TRUE(
+      points[0].getPtA().isApprox(solution[points[0].getIdA()].body_frame));
+  EXPECT_TRUE(
+      points[0].getPtB().isApprox(solution[points[0].getIdB()].body_frame));
 
   // Collision test performed with Model::collisionPointsAllToAll.
   // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
@@ -175,8 +200,6 @@ TEST(ModelTest, Box_vs_Sphere) {
   points.clear();
   model->collisionPointsAllToAll(false, points);
   ASSERT_EQ(1, points.size());
-  EXPECT_EQ(box_id, points[0].getIdA());
-  EXPECT_EQ(sphere_id, points[0].getIdB());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
   // Points are in the world frame on the surface of the corresponding body.
   // That is why getPtA() is generally different from getPtB(), unless there is
@@ -187,20 +210,22 @@ TEST(ModelTest, Box_vs_Sphere) {
   // TODO(amcastro-tri): make these two conventions match? does this interfere
   // with any Matlab functionality?
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
-  EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.0, 1.0, 0.0)));
-  EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.0, 0.75, 0.0)));
+  EXPECT_TRUE(
+      points[0].getPtA().isApprox(solution[points[0].getIdA()].world_frame));
+  EXPECT_TRUE(
+      points[0].getPtB().isApprox(solution[points[0].getIdB()].world_frame));
 
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
   points = model->potentialCollisionPoints(false);
   ASSERT_EQ(1, points.size());
-  EXPECT_EQ(box_id, points[0].getIdA());
-  EXPECT_EQ(sphere_id, points[0].getIdB());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
   // Points are in the bodies' frame on the surface of the corresponding body.
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
-  EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.0, 0.5, 0.0)));
-  EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.0, -0.5, 0.0)));
+  EXPECT_TRUE(
+      points[0].getPtA().isApprox(solution[points[0].getIdA()].body_frame));
+  EXPECT_TRUE(
+      points[0].getPtB().isApprox(solution[points[0].getIdB()].body_frame));
 }
 
 /** This test seeks to find out whether DrakeCollision::Model can report
@@ -278,8 +303,8 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
 
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
-  // least the four
-  // corners of the smaller box. However it randomly picks one corner.
+  // least the four corners of the smaller box. However it randomly picks one
+  // corner.
   ASSERT_EQ(1, points.size());
   EXPECT_EQ(large_box_id, points[0].getIdA());
   EXPECT_EQ(small_box_id, points[0].getIdB());
