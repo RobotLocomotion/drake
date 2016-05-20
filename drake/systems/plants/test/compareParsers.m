@@ -40,5 +40,11 @@ for urdf=urdfs'
     continue;
   end
   
+  % Black lists any URDF containing a world link.
+  if r.hasWorldLink()
+    disp(' this model has a world link. Skipping it!')
+    continue;
+  end
+
   compareParsersmex(r.mex_model_ptr,urdffile,'rpy');
 end
