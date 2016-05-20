@@ -3,7 +3,6 @@
 #include <cmath>
 
 #include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
@@ -11,7 +10,6 @@
 #include "drake/util/Polynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 
-using Eigen::AutoDiffScalar;
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
@@ -27,14 +25,6 @@ GTEST_TEST(BasicVectorTest, DoubleInitiallyNaN) {
   EXPECT_TRUE(CompareMatrices(expected, vec.get_value(),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
-}
-
-// Tests that the BasicVector<AutoDiffScalar<double>> is initialized to zero.
-GTEST_TEST(BasicVectorTest, AutoDiffInitiallyZero) {
-  BasicVector<AutoDiffScalar<VectorX<double>>> vec(3);
-  EXPECT_EQ(0, vec.get_value()(0).value());
-  EXPECT_EQ(0, vec.get_value()(1).value());
-  EXPECT_EQ(0, vec.get_value()(2).value());
 }
 
 // Tests that the BasicVector<int> is initialized to zero.

@@ -14,6 +14,8 @@ namespace systems {
 /// BasicVector is a semantics-free wrapper around an Eigen vector that
 /// satisfies VectorInterface. Once constructed, its size is fixed.
 /// The BasicVector is initialized to the quiet_NaN of the Eigen scalar.
+/// If numeric_limits is not specialized on the Eigen scalar, the BasicVector
+/// will be initialized with the scalar's default constructor.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
