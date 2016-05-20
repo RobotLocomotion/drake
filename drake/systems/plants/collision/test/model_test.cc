@@ -92,7 +92,13 @@ TEST(ModelTest, closestPointsAllToAll) {
   // Check the closest point between object 1 and object 3.
   EXPECT_EQ(id1, points[1].getIdA());
   EXPECT_EQ(id3, points[1].getIdB());
-  EXPECT_NEAR(1.6213203435596428, points[1].getDistance(), tolerance);
+  // exact_distance =
+  // distance_between_centers -
+  // box_center_to_corner_distance -
+  // sphere_center_to_surface_distance =
+  // = sqrt(8.0) - 1.0/sqrt(2.0) - 1/2.
+  double exact_distance = sqrt(8.0) - 1.0 / sqrt(2.0) - 0.5;
+  EXPECT_NEAR(exact_distance, points[1].getDistance(), tolerance);
   // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
   EXPECT_TRUE(
@@ -122,7 +128,7 @@ when colliding with a sphere. **/
 TEST(ModelTest, Box_vs_Sphere) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
-  // succesfully pass.
+  // successfully pass.
   const double tolerance = 2.0e-9;
 
   DrakeShapes::Box box(Vector3d(1.0, 1.0, 1.0));

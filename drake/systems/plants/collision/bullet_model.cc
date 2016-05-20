@@ -322,8 +322,8 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
   return c.getResults();
 }
 
-bool BulletModel::collidingPointsCheckOnly(const std::vector<Vector3d>& points,
-                                           double collision_threshold) {
+bool BulletModel::collidingPointsCheckOnly(
+    const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
 
@@ -335,12 +335,12 @@ bool BulletModel::collidingPointsCheckOnly(const std::vector<Vector3d>& points,
   btT.setIdentity();
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(false);
 
-  for (size_t i = 0; i < points.size(); ++i) {
+  for (size_t i = 0; i < input_points.size(); ++i) {
     BinaryContactResultCallback c;
 
-    btVector3 pos(static_cast<btScalar>(points[i](0)),
-                  static_cast<btScalar>(points[i](1)),
-                  static_cast<btScalar>(points[i](2)));
+    btVector3 pos(static_cast<btScalar>(input_points[i](0)),
+                  static_cast<btScalar>(input_points[i](1)),
+                  static_cast<btScalar>(input_points[i](2)));
     btT.setOrigin(pos);
     bt_obj.setWorldTransform(btT);
 
@@ -355,7 +355,7 @@ bool BulletModel::collidingPointsCheckOnly(const std::vector<Vector3d>& points,
 }
 
 std::vector<size_t> BulletModel::collidingPoints(
-    const std::vector<Vector3d>& points, double collision_threshold) {
+    const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
 
@@ -368,12 +368,12 @@ std::vector<size_t> BulletModel::collidingPoints(
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(false);
   std::vector<size_t> in_collision_indices;
 
-  for (size_t i = 0; i < points.size(); ++i) {
+  for (size_t i = 0; i < input_points.size(); ++i) {
     BinaryContactResultCallback c;
 
-    btVector3 pos(static_cast<btScalar>(points[i](0)),
-                  static_cast<btScalar>(points[i](1)),
-                  static_cast<btScalar>(points[i](2)));
+    btVector3 pos(static_cast<btScalar>(input_points[i](0)),
+                  static_cast<btScalar>(input_points[i](1)),
+                  static_cast<btScalar>(input_points[i](2)));
     btT.setOrigin(pos);
     bt_obj.setWorldTransform(btT);
 
@@ -673,11 +673,11 @@ bool BulletModel::closestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, const bool use_margins,
     std::vector<PointPair>& closest_points) {
   std::vector<ElementIdPair> id_pairs;
-  for (int i = 0; i < ids_to_check.size(); ++i) {
+  for (size_t i = 0; i < ids_to_check.size(); ++i) {
     ElementId id_a = ids_to_check[i];
     const Element* element_a = readElement(id_a);
     if (element_a != nullptr) {
-      for (int j = i + 1; j < ids_to_check.size(); ++j) {
+      for (size_t j = i + 1; j < ids_to_check.size(); ++j) {
         ElementId id_b = ids_to_check[j];
         const Element* element_b = readElement(id_b);
         if (element_b != nullptr && element_a->CollidesWith(element_b)) {
