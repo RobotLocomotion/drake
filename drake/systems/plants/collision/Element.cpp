@@ -9,16 +9,14 @@ using namespace std;
 using drake::HaveIntersection;
 
 namespace DrakeCollision {
-CollisionElement::CollisionElement(const Isometry3d& T_element_to_local,
-                                   const RigidBody* const body)
-    : DrakeShapes::Element(T_element_to_local), body_(body) {
+CollisionElement::CollisionElement(const Isometry3d& T_element_to_local)
+    : DrakeShapes::Element(T_element_to_local) {
   id = (ElementId) this;
 }
 
 CollisionElement::CollisionElement(const DrakeShapes::Geometry& geometry,
-                                   const Isometry3d& T_element_to_local,
-                                   const RigidBody* const body)
-    : DrakeShapes::Element(geometry, T_element_to_local), body_(body) {
+                                   const Isometry3d& T_element_to_local)
+    : DrakeShapes::Element(geometry, T_element_to_local) {
   id = (ElementId) this;
 }
 
@@ -35,6 +33,8 @@ CollisionElement* CollisionElement::clone() const {
 ElementId CollisionElement::getId() const { return id; }
 
 const RigidBody* const CollisionElement::getBody() const { return body_; }
+
+void CollisionElement::set_rigid_body(const RigidBody* body) { body_ = body; }
 
 bool CollisionElement::CollidesWith(const CollisionElement* other) const {
   // Do not collide with self

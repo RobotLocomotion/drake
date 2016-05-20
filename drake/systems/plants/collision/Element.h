@@ -12,8 +12,8 @@
 
 // Forward declaration.
 // RigidBody's interface is never used by the collision engine.
-// It is however useful the concept of having a CollisionElement attached to a
-// Body.
+// It is however useful for the concept of having a CollisionElement attached
+// to a Body.
 class RigidBody;
 
 namespace DrakeCollision {
@@ -22,13 +22,11 @@ typedef uintptr_t ElementId;
 class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
  public:
   CollisionElement(const Eigen::Isometry3d& T_element_to_local =
-                       Eigen::Isometry3d::Identity(),
-                   const RigidBody* const body = nullptr);
+                       Eigen::Isometry3d::Identity());
 
   CollisionElement(const DrakeShapes::Geometry& geometry,
                    const Eigen::Isometry3d& T_element_to_local =
-                       Eigen::Isometry3d::Identity(),
-                   const RigidBody* const body = nullptr);
+                       Eigen::Isometry3d::Identity());
 
   virtual ~CollisionElement() {}
 
@@ -55,6 +53,8 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   // TODO(amcastro-tri): getBody() -> get_body()
   const RigidBody* const getBody() const;
 
+  void set_rigid_body(const RigidBody* body);
+
   /**
    * @brief Adds this collsion element to collision group group_id
    *
@@ -79,7 +79,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
 
  private:
   ElementId id;
-  const RigidBody* const body_{};
+  const RigidBody* body_{};
 
   // Collision groups in Drake are represented simply by an integer.
   // Collision elements in the same group do not collide.
