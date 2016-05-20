@@ -1,5 +1,3 @@
-cmake_minimum_required (VERSION 2.6)
-
 pods_find_pkg_config(bullet)
 
 if (MATLAB_FOUND)
