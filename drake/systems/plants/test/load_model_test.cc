@@ -300,15 +300,21 @@ class ModelToWorldTransformTestParams {
  */
 class ModelToWorldTransformTest
     : public ::testing::TestWithParam<ModelToWorldTransformTestParams> {
+ public:
+  ModelToWorldTransformTest() :
+    rbs(new RigidBodySystem()) {
+  }
+
  protected:
-  RigidBodySystem rbs;
+  // Stores the rigid body system on the heap to ensure it is 16-bit aligned.
+  std::unique_ptr<RigidBodySystem> rbs;
   Eigen::Isometry3d T_model_to_world;
 };
 
 TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
   ModelToWorldTransformTestParams params = GetParam();
 
-  rbs.addRobotFromFile(params.urdf_path_);
+  rbs->addRobotFromFile(params.urdf_path_);
 
   // Verifies that the transform between the robot's root node and the world is
   // as expected.
@@ -321,7 +327,7 @@ TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
     T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto link1_body = rbs.getRigidBodyTree()->findLink(params.root_link_name_);
+  auto link1_body = rbs->getRigidBodyTree()->findLink(params.root_link_name_);
   EXPECT_TRUE(link1_body != nullptr);
 
   // Note: The following two local variables are necessary to avoid a transient
@@ -336,7 +342,7 @@ TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
 
   EXPECT_TRUE(actual_matrix.isApprox(expected_matrix, 1e-10))
     << "ERROR: "
-    << "Incorrect transform from the link1's frame to Drake's world frame.\n"
+    << "Incorrect transform from link1's frame to Drake's world frame.\n"
     << "Got:\n"
     << actual_matrix << "\n"
     << "Expected:\n"
