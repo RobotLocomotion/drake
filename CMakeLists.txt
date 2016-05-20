@@ -315,29 +315,10 @@ foreach(proj ${EXTERNAL_PROJECTS})
     # Download externals as Git submodules.
     set(${proj}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${${proj}_GIT_SUBMODULE_PATH})
 
-    # separate download target so I can make the download-all custom command as recommended in:
-    #   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
     if(AUTO_UPDATE_EXTERNALS)
       set(${proj}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_DOWNLOAD_COMMAND})
-      ExternalProject_Add(download-${proj}
-        SOURCE_DIR ${${proj}_SOURCE_DIR}
-        DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
-        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
-        UPDATE_COMMAND ${${proj}_UPDATE_COMMAND}
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND "")
-      drake_forceupdate(download-${proj})
     else()
       set(${proj}_UPDATE_COMMAND "")
-      ExternalProject_Add(download-${proj}
-        SOURCE_DIR ${${proj}_SOURCE_DIR}
-        DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
-        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
-        UPDATE_COMMAND ""
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND "")
     endif()
 
     # Initialize the submodule configuration now so parallel downloads do not conflict later.
@@ -359,14 +340,17 @@ foreach(proj ${EXTERNAL_PROJECTS})
       endif()
       ExternalProject_Add(${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
-        DOWNLOAD_COMMAND ""
-        UPDATE_COMMAND ""
         BINARY_DIR ${${proj}_BINARY_DIR}
-        DEPENDS download-${proj} ${deps}
+        DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
+        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+        UPDATE_COMMAND ${${proj}_UPDATE_COMMAND}
+        INDEPENDENT_STEP_TARGETS update
+        DEPENDS ${deps}
         ${COMMON_CMAKE_ARGS}
         ${PODS_VERBOSE_MAKEFILE}
         ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
         ${${proj}_ADDITIONAL_BUILD_ARGS})
+      drake_forceupdate(${proj})
       drake_forcebuild(${proj})
     else() # not a CMake POD
       if(NOT ${proj}_BINARY_DIR)
@@ -391,13 +375,16 @@ foreach(proj ${EXTERNAL_PROJECTS})
       ExternalProject_Add(${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
         BINARY_DIR ${${proj}_BINARY_DIR}
-        DOWNLOAD_COMMAND ""
-        UPDATE_COMMAND ""
+        DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
+        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+        UPDATE_COMMAND ${${proj}_UPDATE_COMMAND}
+        INDEPENDENT_STEP_TARGETS update
         CONFIGURE_COMMAND ""
         BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
         INSTALL_COMMAND ""
-        DEPENDS download-${proj} ${deps}
+        DEPENDS ${deps}
         ${${proj}_ADDITIONAL_BUILD_ARGS})
+      drake_forceupdate(${proj})
       if(${proj}_BUILD_COMMAND)
         drake_forcebuild(${proj})
       endif()
@@ -439,8 +426,8 @@ add_custom_target(status)
 set(PROJECT_LIST)
 foreach(proj ${EXTERNAL_PROJECTS})
   if(NOT ${proj} STREQUAL "drake")
-    add_dependencies(download-all download-${proj})
-    ExternalProject_Get_Property(download-${proj} SOURCE_DIR)
+    add_dependencies(download-all ${proj}-update)
+    ExternalProject_Get_Property(${proj} SOURCE_DIR)
     add_custom_target(status-${proj}
       COMMAND ${GIT_EXECUTABLE} status
       WORKING_DIRECTORY ${SOURCE_DIR})
