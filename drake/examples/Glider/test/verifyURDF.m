@@ -4,6 +4,9 @@ function verifyURDF()
 % exactly match the physical glider used--they were initially picked with
 % a known working system so the dynamics would match
 
+% note: this test is known to fail with small probability
+% see https://github.com/RobotLocomotion/drake/issues/583
+
   % state:  
   %  x(1) - x position
   %  x(2) - z position

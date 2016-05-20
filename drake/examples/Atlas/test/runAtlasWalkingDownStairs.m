@@ -99,7 +99,7 @@ lcmgl.switchBuffers();
 % v.playback(ytraj, struct('slider', true));
 % keyboard()
 
-[ytraj, com, rms_com] = r.simulateWalking(walking_plan);
+[ytraj, com, rms_com] = r.simulateWalking(walking_plan, struct('urdf_modifications_file', fullfile(getDrakePath(), 'examples', 'Atlas', 'config', 'urdf_modifications_robotiq_weight.yaml')));
 
 v.playback(ytraj, struct('slider', true));
 

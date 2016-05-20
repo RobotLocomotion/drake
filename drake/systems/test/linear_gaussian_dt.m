@@ -12,3 +12,6 @@ fnplt(xtraj);
 
 % check that I'm actually getting the variance i expect
 valuecheck(2,var(eval(xtraj,getBreaks(xtraj))),.2);
+
+% note that this test is currently known to fail with small probability
+% https://github.com/RobotLocomotion/drake/issues/366

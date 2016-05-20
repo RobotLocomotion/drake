@@ -26,3 +26,5 @@ kinsol = robot.doKinematics(q, false, false);
 inertias_world = robot.inertiasInWorldFrame(kinsol);
 inertia_world = inertias_world{i};
 end
+
+% TIMEOUT 1500

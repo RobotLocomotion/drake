@@ -9,11 +9,16 @@ ifeq "$(BUILD_TYPE)" ""
   BUILD_TYPE="Release"
 endif
 CMAKE_FLAGS+=-DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+CMAKE_FLAGS+=-DPOD_BUILD=TRUE
 CMAKE_CONFIG=--config $(BUILD_TYPE)
 
 .PHONY: all
 all: configure
+ifeq ($(OS),Windows_NT)
 	cmake --build pod-build $(CMAKE_CONFIG)
+else
+	$(MAKE) -C pod-build
+endif
 
 pod-build:
 	cmake -E make_directory pod-build
@@ -39,7 +44,7 @@ clean:
 
 # other (custom) targets are passed through to the cmake-generated Makefile
 %:: 
-	cmake --build pod-build $(CMAKE_CONFIG) --target $@
+	$(MAKE) -C pod-build $@
 
 # Default to a less-verbose build.  If you want all the gory compiler output,
 # run "make VERBOSE=1"
@@ -56,7 +61,6 @@ download-all : configure
 .PHONY: release_filelist
 release_filelist: configure
 # note: the following will not work in windows cmd shells
-	echo "drake/.UNITTEST"
 	echo ".mlintopts"
 	find * -type f | grep -v "pod-build" | grep -v "\.valgrind" | grep -v "\.viewer-prefs" | grep -v "\.out" | grep -v "\.autosave" | grep -v "\.git" | grep -v "\.tmp" | grep -v "drake_config\.mat" | grep -v "DoxygenMatlab" | grep -v "\.aux" | grep -v "\.d" | grep -v "\.log" | grep -v "\.bib"
 	find drake/pod-build/lib -type f

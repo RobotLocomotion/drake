@@ -51,7 +51,6 @@ addpath(fullfile(root,'util','visualization'));
 addpath(fullfile(root,'thirdParty'));
 addpath(fullfile(root,'thirdParty','psm'));
 addpath(fullfile(root,'thirdParty','path'));
-addpath(fullfile(root,'thirdParty','spatial'));
 addpath(fullfile(root,'thirdParty','cprintf'));
 addpath(fullfile(root,'thirdParty','GetFullPath'));
 addpath(fullfile(root,'thirdParty','plotregion'));
@@ -87,7 +86,7 @@ if (strcmp(computer('arch'),'maci64'))
   end
 end
 
-if ispc 
+if ispc
   setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(root,'pod-build','lib','Release'),';',fullfile(root,'pod-build','lib')]);
 end
 
@@ -99,10 +98,10 @@ end
 % we instead just add all available .jars to the classpath at startup. See
 % also https://github.com/mitdrc/drc/issues/2100
 jarfiledir = fullfile(pods_get_base_path(), 'share', 'java');
-if exist(jarfiledir, 'dir') 
+if exist(jarfiledir, 'dir')
  javaaddpathIfNew(jarfiledir);
- for jarfile = dir(fullfile(jarfiledir, '*.jar'))'; 
-   javaaddpathIfNew(fullfile(jarfiledir, jarfile.name)); 
+ for jarfile = dir(fullfile(jarfiledir, '*.jar'))';
+   javaaddpathIfNew(fullfile(jarfiledir, jarfile.name));
  end
 end
 

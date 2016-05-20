@@ -25,7 +25,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function obj=TimeSteppingRigidBodyManipulator(manipulator_or_urdf_filename,timestep,options)
       if (nargin<3) options=struct(); end
       if ~isfield(options,'twoD') options.twoD = false; end
-
+      
+      if ispc
+        error('Drake:MissingDependency:PathLCP','PathLCP is known to fail on windows.  See https://github.com/RobotLocomotion/drake/issues/569');
+      end
+        
       typecheck(timestep,'double');
       sizecheck(timestep,1);
 
@@ -500,8 +504,18 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           z = [];
           Mvn = [];
           wvn = v + h*(H\tau);
+          obj.LCP_cache.data.z = z;
+          obj.LCP_cache.data.Mqdn = Mvn;
+          obj.LCP_cache.data.wqdn = wvn;
           if (nargout>4)
-            error('need to implement this case');
+            Hinv = inv(H);
+            dz = zeros(0,1+obj.num_x+obj.num_u);
+            dwvn = [zeros(num_v,1+num_q),eye(num_v),zeros(num_v,obj.num_u)] + ...
+              h*Hinv*dtau - [zeros(num_v,1),h*Hinv*matGradMult(dH(:,1:num_q),Hinv*tau),zeros(num_v,num_q),zeros(num_v,obj.num_u)];
+            dMvn = zeros(0,1+obj.num_x+obj.num_u);
+            obj.LCP_cache.data.dz = dz;
+            obj.LCP_cache.data.dMqdn = dMvn;
+            obj.LCP_cache.data.dwqdn = dwvn;
           end
           return;
         end

@@ -5,14 +5,15 @@ endif()
 
 if (LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
-  add_dependencies(drakeLCMSystem lcmtype_agg_hpp)
-  target_link_libraries(drakeLCMSystem drake_lcmtypes)
+  add_dependencies(drakeLCMSystem drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(drakeLCMSystem lcm)
 
+  pods_install_libraries(drakeLCMSystem)
   drake_install_headers(LCMSystem.h)
 endif()
 
 add_subdirectory(frames)
+add_subdirectory(framework)
 add_subdirectory(plants)
 add_subdirectory(trajectories)
 add_subdirectory(controllers)

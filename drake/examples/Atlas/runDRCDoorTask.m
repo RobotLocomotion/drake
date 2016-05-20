@@ -1,5 +1,8 @@
 function runDRCDoorTask
-% Plan a walking trajectory to pass through a simulated doorframe. 
+% Plan a walking trajectory to pass through a simulated doorframe.
+
+% note: this test is known to fail with small probability
+% see https://github.com/RobotLocomotion/drake/issues/854
 
 checkDependency('iris');
 checkDependency('mosek');
@@ -29,7 +32,7 @@ region_args = {r.getFootstepPlanningCollisionModel(), ...
    'xy_bounds', iris.Polyhedron.fromBounds([-1,-.5], [3, .5]),...
    'debug', false};
 
-i = 1;  
+i = 1;
 options.safe_regions = region_server.findSafeTerrainRegions(1, region_args{:}, 'seeds', [1;0;0;0;0;pi/2]);
 
 combined_xtraj = [];

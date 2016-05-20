@@ -1,4 +1,4 @@
-function distance = collisionRaycast(obj, kinsol, origins, ray_endpoints, ...
+function [distance, normal] = collisionRaycast(obj, kinsol, origins, ray_endpoints, ...
   use_margins)
 % function distance = collisionRaycast(obj,kinsol, origin, point_on_ray)
 %
@@ -18,6 +18,8 @@ function distance = collisionRaycast(obj, kinsol, origins, ray_endpoints, ...
 %   numerical stability of contact gradient. Default true.
 %
 % @retval distance distance to the nearest hit on the ray, or -1 on no
+%    colliion.
+% @retval normal normal vector at collision surface, or [0;0;0] if no
 %    collision.
 
 if (nargin < 5)
@@ -41,4 +43,4 @@ if (kinsol.mex ~= true)
     'Call doKinematics using mex before proceeding (got kinsol.mex ~= true).');
 end
 
-distance = collisionRaycastmex(obj.mex_model_ptr, kinsol.mex_ptr, origins, ray_endpoints, use_margins);
+[distance, normal] = collisionRaycastmex(obj.mex_model_ptr, kinsol.mex_ptr, origins, ray_endpoints, use_margins);

@@ -1,0 +1,11 @@
+
+add_subdirectory(@AcrobotPlantCpp)
+add_subdirectory(test)
+
+add_matlab_test(NAME examples/Acrobot/runLQR COMMAND runLQR)
+add_matlab_test(NAME examples/Acrobot/runMaxROA COMMAND runMaxROA)
+add_matlab_test(NAME examples/Acrobot/runPassive COMMAND runPassive)
+add_matlab_test(NAME examples/Acrobot/runPassiveURDF COMMAND runPassiveURDF)
+add_matlab_test(NAME examples/Acrobot/runSwingUp COMMAND runSwingUp)
+add_matlab_test(NAME examples/Acrobot/runTrigLQR COMMAND runTrigLQR)
+add_matlab_test(NAME examples/Acrobot/runWProcessNoise COMMAND runWProcessNoise)

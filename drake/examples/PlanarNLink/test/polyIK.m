@@ -43,3 +43,5 @@ clf;
 draw(v,0,q);
 
 path(oldpath);
+
+% TIMEOUT 3000

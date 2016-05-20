@@ -1,24 +1,22 @@
-#ifndef DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEFUNCTION_H_
-#define DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEFUNCTION_H_
+#pragma once
 
 #include <Eigen/Core>
 #include <vector>
 #include <random>
 #include "drake/drakeTrajectories_export.h"
 
-class DRAKETRAJECTORIES_EXPORT PiecewiseFunction
-{
-protected:
+class DRAKETRAJECTORIES_EXPORT PiecewiseFunction {
+ protected:
   std::vector<double> segment_times;
 
-public:
-  PiecewiseFunction(std::vector<double> const & segment_times);
+ public:
+  explicit PiecewiseFunction(std::vector<double> const& segment_times);
 
   virtual ~PiecewiseFunction();
 
-  virtual Eigen::DenseIndex rows() const = 0;
+  virtual Eigen::Index rows() const = 0;
 
-  virtual Eigen::DenseIndex cols() const = 0;
+  virtual Eigen::Index cols() const = 0;
 
   int getNumberOfSegments() const;
 
@@ -38,14 +36,13 @@ public:
 
   void segmentNumberRangeCheck(int segment_number) const;
 
-  static std::vector<double> randomSegmentTimes(int num_segments, std::default_random_engine& generator);
+  static std::vector<double> randomSegmentTimes(
+      int num_segments, std::default_random_engine& generator);
 
-protected:
+ protected:
   bool segmentTimesEqual(const PiecewiseFunction& b, double tol) const;
 
   void checkScalarValued() const;
 
   PiecewiseFunction();
 };
-
-#endif /* DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEFUNCTION_H_ */

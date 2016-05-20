@@ -1,8 +1,11 @@
-cmake_minimum_required(VERSION 2.8.6) # for UseJava.cmake
+cmake_minimum_required(VERSION 2.8.10)
 
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
-option(RANDOMIZE_UNIT_TESTS "every matlab unit is started with a new random seed" OFF)
+option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
+option(RANDOMIZE_MATLAB_TESTS "every matlab unit is started with a new random seed" OFF)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #cmake_policy(SET CMP0042 NEW)
 if (POLICY CMP0054)
@@ -15,8 +18,8 @@ if (NOT DEFINED CMAKE_MACOSX_RPATH)
   set(CMAKE_MACOSX_RPATH ON)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
+# prepend module path so we can override FindMatlab.cmake
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
   find_package(PythonInterp 3)
@@ -60,7 +63,13 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
 
 if (CMAKE_COMPILER_IS_GNUCC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+  # TODO(#2372) These are warnings that we can't handle yet.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
 
   execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
   if (NOT (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7))
@@ -69,7 +78,7 @@ if (CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wreturn-type -Wuninitialized -Wunused-variable")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   if (APPLE)  # this was a step towards getting things to work with
@@ -111,17 +120,9 @@ elseif (MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj") # after receiving RigidBodyTree.cpp : fatal error C1128: number of sections exceeded object file format limit: compile with /bigobj
+
+  add_definitions(-D_USE_MATH_DEFINES) # to get math constants on MSVC (see https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx)
 endif()
-
-# set up matlab build
-include(cmake/mex.cmake)
-mex_setup()
-
-# frustratingly, this didn't seem to work, so instead I've added a -C argument to both the Makefile and the drake-admin/runUnitTests scripts
-#if (NOT CTEST_CONFIGURATION_TYPE)
-#   set(CTEST_CONFIGURATION_TYPE ${CMAKE_BUILD_TYPE})
-#   message("Setting CTEST Configuration Type to ${CTEST_CONFIGURATION_TYPE}")
-#endif()
 
 # similar to the export headers, any other generated headers will be installed to build/include/drake, but will be created in ${PROJECT_BINARY_DIR}/exports/drake
 # These headers can be included as drake/bla.h
@@ -131,16 +132,73 @@ configure_file(core/Path.h.in ${drake_path_header})
 install(FILES ${drake_path_header} DESTINATION include/drake/)
 include_directories(BEFORE ${generated_dir})
 
-find_package( Perl )
-if ( PERL_FOUND )
-  if (MATLAB_FOUND)
-    file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake
-   	      "set(CTEST_CUSTOM_PRE_TEST \"${PERL_EXECUTABLE} ${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR}\")\n")
+# set up matlab build
+include(cmake/mex.cmake)
+if (DISABLE_MATLAB)
+	message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
+else()
+	# Search for MATLAB and configure various MEX options.
+	# If MATLAB is found, MATLAB_FOUND is set.
+	mex_setup()
+        # if matlab is in the PATH then use cmake find_package to find it
+        # along with what is needed to use matlab_add_unit_test
+        if(MATLAB_FOUND)
+          find_package(Matlab COMPONENTS MAIN_PROGRAM)
+        endif()
+
+endif (DISABLE_MATLAB)
+
+# add ctest for a matlab string
+# add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
+#         [CONFIGURATIONS <config>...]
+#         [WORKING_DIRECTORY <dir>]
+#         [PROPERTIES <prop1> <value1> ...])
+# note: default working directory is CMAKE_CURRENT_SOURCE_DIR
+# note: properties are set internally using set_tests_properties ( <testname> PROPERTIES <prop1> <value1> ...)
+function(add_matlab_test)
+  # no matlab no tests
+  if(NOT MATLAB_FOUND)
+    return()
   endif()
-endif()
+  set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
+  set(multiValueArgs PROPERTIES)
+  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+  string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in matlab
+  if (NOT parsed_args_WORKING_DIRECTORY)
+    set(parsed_args_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  endif()
+
+  set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
+  set(additional_paths "${CMAKE_INSTALL_PREFIX}/matlab;${parsed_args_WORKING_DIRECTORY};")
+  set(cmd_to_run_before_test "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
+  set(custom_Matlab_test_command "try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
+
+  if (RANDOMIZE_MATLAB_TESTS)
+    set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
+  endif()
+
+  matlab_add_unit_test(NAME ${parsed_args_NAME}
+    ADDITIONAL_PATH ${additional_paths}
+    UNITTEST_PRECOMMAND ${cmd_to_run_before_test}
+    CUSTOM_TEST_COMMAND \"${custom_Matlab_test_command}\"
+    WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY}
+    TIMEOUT -1) # use an infinite timeout and rely on add_test ctest timeout
+
+  if (parsed_args_PROPERTIES)
+    set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
+  endif()
+endfunction()
 
 enable_testing()
 include(CTest)
+set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
+find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
+if (WIN32)
+  # The following compiler flag is needed to support parameterized Google tests on Windows.
+  SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
+endif()
 
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)
@@ -192,13 +250,13 @@ pods_install_pkg_config_file(drake-java
     REQUIRES ${drake_jar_requires}
     VERSION 0.0.1)
 
-pods_find_pkg_config(eigen3 3.2)
+pods_find_pkg_config(eigen3 3.2.92)
 
 if (eigen3_FOUND)
    pods_use_pkg_config_includes( eigen3 )
 else()
    # then use the traditional approach to finding Eigen3
-   find_package( Eigen3 3.2 )
+   find_package( Eigen3 3.2.92 )
    if (EIGEN3_FOUND)
       set(eigen3_FOUND 1)
       include_directories( ${EIGEN3_INCLUDE_DIR} )
@@ -207,9 +265,19 @@ else()
    endif()
 endif()
 
+# Setup ROS if it is available on the local system
+find_package(roscpp QUIET)
+if(roscpp_FOUND)
+  message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
+  include_directories(${roscpp_INCLUDE_DIRS})
+else()
+  message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
+endif()
+
 include_directories(thirdParty/spruce/include)
 include_directories(thirdParty/cimg)
 
+add_subdirectory(common)
 add_subdirectory(core)
 add_subdirectory(util)
 add_subdirectory(solvers)
@@ -224,7 +292,7 @@ add_subdirectory(bindings)
 include(cmake/matlab_pods.cmake)
 pods_configure_matlab_paths()
 
-get_relative_path("${CMAKE_INSTALL_PREFIX}/matlab" "${CMAKE_CURRENT_SOURCE_DIR}" relpath)
+file(RELATIVE_PATH relpath ${CMAKE_INSTALL_PREFIX}/matlab ${CMAKE_CURRENT_SOURCE_DIR})
 
 message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab")
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
@@ -250,10 +318,6 @@ find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(ffmpeg ffmpeg)
 
-# todo: build doxygen here (and remove it from the Makefile)
-# http://majewsky.wordpress.com/2010/08/14/tip-of-the-day-cmake-and-doxygen/
-
-
 # write some additional information to the CMake cache
 set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
 
@@ -268,8 +332,18 @@ else()
 endif()
 
 if (MATLAB_FOUND)
-  add_test(NAME "RigidBodyManipulatorMemoryTest"
-  	COMMAND "matlab" #"${PROJECT_SOURCE_DIR}/cmake/matlab_clean.pl"
-  	"-nosplash" "-nodisplay" "-wait" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; cd('${PROJECT_SOURCE_DIR}/examples/Acrobot'); try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); force_close_system; exit(1); end; force_close_system; exit(0)")
-  set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 300)
+  add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
+  	COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
+    PROPERTIES TIMEOUT 300)
+endif()
+
+option(BUILD_DOCUMENTATION "Build Doxygen and Sphinx documentation." OFF)
+
+if(BUILD_DOCUMENTATION)
+  add_subdirectory(doc)
+endif()
+
+if(IS_DIRECTORY doc/textbook)
+  add_subdirectory(doc/textbook)
 endif()

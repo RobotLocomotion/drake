@@ -68,7 +68,7 @@ settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-control = bipedControllers.InstantaneousQPController(r, [], struct());
+control = bipedControllers.InstantaneousQPController(r.getManipulator().urdf{1}, r.control_config_file);
 planeval = bipedControllers.BipedPlanEval(r, standing_plan);
 plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 
@@ -105,3 +105,5 @@ comf = getCOM(r, kinsol);
 
 % Make sure we're still standing
 rangecheck(comf, [-0.02; -0.02; 0.9], [0.02; 0.02; inf]);
+
+% TIMEOUT 1500

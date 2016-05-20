@@ -61,7 +61,7 @@ settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-control = bipedControllers.InstantaneousQPController(r, [], struct());
+control = bipedControllers.InstantaneousQPController(r.getManipulator().urdf{1}, r.control_config_file, fullfile(getDrakePath(), 'examples', 'Atlas', 'config', 'urdf_modifications_no_hands.yaml'));
 control.quiet = example_options.quiet;
 planeval = bipedControllers.BipedPlanEval(r, standing_plan);
 

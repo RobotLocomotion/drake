@@ -107,7 +107,7 @@ end
 
 walking_plan = r.planWalkingZMP(x0(1:nq), footstep_plan);
 
-[ytraj, com, rms_com] = r.simulateWalking(walking_plan);
+[ytraj, com, rms_com] = r.simulateWalking(walking_plan, struct('urdf_modifications_file', fullfile(getDrakePath(), 'examples', 'Atlas', 'config', 'urdf_modifications_robotiq_weight.yaml')));
 
 v.playback(ytraj, struct('slider', true));
 
@@ -125,4 +125,4 @@ function [A, b] = convert_to_cspace(A, b)
   b = [b; 0; 0];
 end
 
-% TIMEOUT 1000
+% TIMEOUT 1500
