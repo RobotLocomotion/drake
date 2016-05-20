@@ -36,7 +36,7 @@ const RigidBody* const CollisionElement::getBody() const { return body_; }
 
 void CollisionElement::set_rigid_body(const RigidBody* body) { body_ = body; }
 
-bool CollisionElement::CollidesWith(const CollisionElement* other) const {
+bool CollisionElement::CanCollideWith(const CollisionElement *other) const {
   // Do not collide with self
   if (this == other) return false;
 
@@ -49,7 +49,7 @@ bool CollisionElement::CollidesWith(const CollisionElement* other) const {
 // Order(N) insertion.
 // Member CollisionElement::collision_cliques_ is sorted so that checking if two
 // collision elements belong to a same group can be performed in order N.
-// See CollisionElement::CollidesWith
+// See CollisionElement::CanCollideWith
 void CollisionElement::add_to_collision_clique(int clique_id) {
   auto it = std::lower_bound(collision_cliques_.begin(),
                              collision_cliques_.end(), clique_id);

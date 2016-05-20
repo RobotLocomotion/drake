@@ -36,12 +36,10 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
 
   virtual bool isStatic() const { return false; }
 
-  /**
-   * Returns true if this element should be checked for collisions
-   * with the other object.  CollidesWith should be symmetric: if
-   * A collides with B, B collides with A.
-   */
-  virtual bool CollidesWith(const CollisionElement* other) const;
+  /** Returns `true` if this element should be checked for collisions
+  with the other object.  CanCollideWith should be symmetric: if
+  A collides with B, B collides with A. **/
+  virtual bool CanCollideWith(const CollisionElement *other) const;
 
   /** Returns a pointer to the const RigidBody to which this CollisionElement
   is attached. **/
@@ -87,7 +85,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   // Here adding elements to the cliques vector only happens during problem
   // setup by the user or from a URDF/SDF file. What we really want is that once
   // this vector is setup, we can query it very fast during simulation.
-  // This is done in CollisionElement::CollidesWith which to be Order(N)
+  // This is done in CollisionElement::CanCollideWith which to be Order(N)
   // requires the entries in CollisionElement::collision_cliques_ to be sorted.
   std::vector<int> collision_cliques_;
 

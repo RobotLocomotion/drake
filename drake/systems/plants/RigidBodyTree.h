@@ -867,7 +867,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // a RigidBody do not collide.
   // - There is one group per pair of RigidBodies that are not meant to collide.
   // For instance, adjacent bodies. These are created by querying the
-  // information provided by RigidBody::CollidesWith.
+  // information provided by RigidBody::CanCollideWith.
   //
   // Notice that collision groups provide a more general functionality that
   // could be exploited in the future. For instance, in a robot arm we could

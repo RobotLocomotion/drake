@@ -55,7 +55,7 @@ bool OverlapFilterCallback::needBroadphaseCollision(
           bt_collision_object0->getUserPointer());
       auto element1 = static_cast<CollisionElement*>(
           bt_collision_object1->getUserPointer());
-      collides = collides && element0->CollidesWith(element1);
+      collides = collides && element0->CanCollideWith(element1);
     }
   }
   return collides;
@@ -685,7 +685,7 @@ bool BulletModel::closestPointsAllToAll(
       for (size_t j = i + 1; j < ids_to_check.size(); ++j) {
         ElementId id_b = ids_to_check[j];
         const CollisionElement* element_b = readElement(id_b);
-        if (element_b != nullptr && element_a->CollidesWith(element_b)) {
+        if (element_b != nullptr && element_a->CanCollideWith(element_b)) {
           id_pairs.push_back(std::make_pair(id_a, id_b));
         }
       }

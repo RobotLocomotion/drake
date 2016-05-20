@@ -155,7 +155,8 @@ TEST(ModelTest, CollisionGroups) {
   element_3.add_to_collision_clique(1);
 
   // Checks the correctness of each element's collision groups set.
-  EXPECT_EQ(std::vector<int>({2, 9, 11, 15, 23}), element_1.collision_cliques());
+  EXPECT_EQ(std::vector<int>({2, 9, 11, 15, 23}),
+            element_1.collision_cliques());
   EXPECT_EQ(std::vector<int>({9, 11, 13}), element_2.collision_cliques());
   EXPECT_EQ(std::vector<int>({1, 8, 13}), element_3.collision_cliques());
 
@@ -169,16 +170,16 @@ TEST(ModelTest, CollisionGroups) {
   ASSERT_EQ(3, element_3.number_of_cliques());
 
   // element_2 does not collide with element_1 (groups 9 and 11 in common).
-  EXPECT_FALSE(element_2.CollidesWith(&element_1));
+  EXPECT_FALSE(element_2.CanCollideWith(&element_1));
 
   // element_2 does not collide with element_3 (group 13 in common).
-  EXPECT_FALSE(element_2.CollidesWith(&element_3));
+  EXPECT_FALSE(element_2.CanCollideWith(&element_3));
 
   // element_3 does collide with element_1 (no groups in common).
-  EXPECT_TRUE(element_3.CollidesWith(&element_1));
+  EXPECT_TRUE(element_3.CanCollideWith(&element_1));
 
   // element_3 does not collide with element_2 (group 13 in common).
-  EXPECT_FALSE(element_3.CollidesWith(&element_2));
+  EXPECT_FALSE(element_3.CanCollideWith(&element_2));
 }
 
 }  // namespace
