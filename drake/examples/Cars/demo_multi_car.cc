@@ -59,8 +59,9 @@ Curve2<double> MakeCurve(double radius, double inset) {
   }
 
   // Many copies.
+  const int kNumCopies = 100;
   std::vector<Point2d> looped_waypoints;
-  for (int copies = 0; copies < 100; ++copies) {
+  for (int copies = 0; copies < kNumCopies; ++copies) {
     std::copy(waypoints.begin(), waypoints.end(),
               std::back_inserter(looped_waypoints));
   }
@@ -136,7 +137,7 @@ int do_main(int argc, const char* argv[]) {
     world_tree->addRobotFromURDF((i % 5) ? kSedanUrdf : kBreadtruckUrdf,
                                  DrakeJoint::ROLLPITCHYAW,
                                  nullptr /*weld_to_frame*/);
-    // TODO(maddog) Hmm... it appears that drake_visualizer wants unique names,
+    // TODO(maddog) Hmm... it appears that drake_visualizer wants unique names
     //              on *links*, otherwise only one of the same-named links will
     //              get updated joint parameters.
     std::ostringstream name;
