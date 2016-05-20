@@ -8,7 +8,8 @@ namespace drake {
 
 @param  a  First vector.
 @param  b  Second vector.
-@return `true` if non-empty intersection between vectors. `false` otherwise.
+@returns true if there is a non-empty intersection between vectors;
+false otherwise.
 
 Elements are compared using operator< and the vectors must be sorted with
 respect to the same operator.
@@ -45,11 +46,9 @@ bool SortedVectorsHaveIntersection(const std::vector<T> &a,
   while (true) {
     // Increments the range with the smaller first element.
     if (*ai < *bi) {
-      ++ai;
-      if (ai == a.end()) break;
+      if (++ai == a.end()) break;
     } else if (*bi < *ai) {
-      ++bi;
-      if (bi == b.end()) break;
+      if (++bi == b.end()) break;
     } else {
       // Found matching element.
       return true;
