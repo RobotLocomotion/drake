@@ -341,6 +341,24 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
+    function has_world_link = hasWorldLink(rbm)
+      % has_world_link = hasWorldLink(rmb) returns true if the specified
+      % rigid body system has a world link and false otherwise.
+      %
+      % @param rbm - The RigidBodyManipulator object.
+      %
+      % @retval had_world_link - A boolean value indicating whether the
+      % specified rigid body manipulator has a world link.
+      %
+      % @ingroup Kinematic Tree
+      has_world_link = false;
+      for index = 1:length(rbm.body)
+        if strcmp(rbm.body(index).linkname, 'world')
+          has_world_link = true;
+        end
+      end
+    end
+
     function obj = setGravity(obj,grav)
       sizecheck(grav,size(obj.gravity));
       obj.gravity = grav;
