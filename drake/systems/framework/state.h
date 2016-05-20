@@ -4,10 +4,114 @@
 #include <string>
 #include <vector>
 
+#include "drake/systems/framework/state_subvector.h"
+#include "drake/systems/framework/state_vector_interface.h"
 #include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
 namespace systems {
+
+/// The ContinuousState is a container for all the State variables that are
+/// unique to continuous Systems, i.e. Systems that satisfy
+/// ContinuousSystemInterface and have defined dynamics at all times.
+///
+/// @tparam T A mathematical type compatible with Eigen's Scalar.
+template <typename T>
+class ContinuousState {
+ public:
+  /// Constructs a ContinuousState that does not expose second-order structure:
+  /// All of the state is misc_continuous_state_.
+  explicit ContinuousState(std::unique_ptr<StateVectorInterface<T>> state) {
+    state_ = std::move(state);
+    generalized_position_.reset(new StateSubvector<T>(state_.get()));
+    generalized_velocity_.reset(new StateSubvector<T>(state_.get()));
+    misc_continuous_state_.reset(
+        new StateSubvector<T>(state_.get(), 0, state_.size()));
+  }
+
+  /// Constructs a ContinuousState that exposes second-order structure.
+  /// The contents of @p state must be laid out as follows:
+  ///
+  /// (index 0)|--q--|--v--|--z--|(index state.size() - 1)
+  ///
+  /// Where q is generalized position
+  ///       v is generalized velocity
+  ///       z is other continuous state
+  ///
+  /// @param num_q The number of position variables.
+  /// @param num_v the number of velocity variables.
+  ContinuousState(std::unique_ptr<StateVectorInterface<T>> state, size_t num_q,
+                  size_t num_v) {
+    state_ = std::move(state);
+    generalized_position_.reset(new StateSubvector<T>(state_.get(), 0, num_q));
+    generalized_velocity_.reset(
+        new StateSubvector<T>(state_.get(), num_q, num_v));
+    misc_continuous_state_.reset(new StateSubvector<T>(
+        state_.get(), num_q + num_v, state->size() - (num_q + num_v)));
+  }
+
+  // TODO(david-german-tri): Add a suitable constructor for the continuous
+  // state of a Diagram, using StateSupervectors.
+
+  /// Returns the entire state vector.
+  const StateVectorInterface<T>& get_state() { return *state_; }
+
+  /// Returns a mutable pointer to the entire state vector, never null.
+  StateVectorInterface<T>* get_mutable_state() { return state_.get(); }
+
+  /// Returns the subset of the state vector that is generalized position `q`.
+  const StateVectorInterface<T>& get_generalized_position() {
+    return *generalized_position_;
+  }
+
+  /// Returns a mutable pointer to the subset of the state vector that is
+  /// generalized position `q`.
+  StateVectorInterface<T>* get_mutable_generalized_position() {
+    return generalized_position_.get();
+  }
+
+  /// Returns the subset of the state vector that is generalized velocity `v`.
+  const StateVectorInterface<T>& get_generalized_velocity() {
+    return *generalized_velocity_;
+  }
+
+  /// Returns a mutable pointer to the subset of the state vector that is
+  /// generalized velocity `v`.
+  StateVectorInterface<T>* get_mutable_generalized_velocity() {
+    return generalized_velocity_.get();
+  }
+
+  /// Returns the subset of the state vector that is other continuous state `z`.
+  const StateVectorInterface<T>& get_misc_continuous_state() {
+    return *misc_continuous_state_;
+  }
+
+  /// Returns a mutable pointer to the subset of the state vector that is
+  /// other continuous state `z`.
+  StateVectorInterface<T>* get_mutable_misc_continuous_state() {
+    return misc_continuous_state_.get();
+  }
+
+ private:
+  /// The entire state vector.  May or may not own the underlying data.
+  std::unique_ptr<StateVectorInterface<T>> state_;
+
+  /// Generalized coordinates representing System configuration, conventionally
+  /// denoted `q`. These are second-order state variables.
+  /// This is a subset of state_ and does not own the underlying data.
+  std::unique_ptr<StateVectorInterface<T>> generalized_position_;
+
+  /// Generalized speeds representing System velocity. Conventionally denoted
+  /// `v`. These are first-order state variables that the System can linearly
+  /// map to time derivatives `qdot` of `q` above.
+  /// This is a subset of state_ and does not own the underlying data.
+  std::unique_ptr<StateVectorInterface<T>> generalized_velocity_;
+
+  /// Additional continuous, first-order state variables not representing
+  /// multibody system motion.  Conventionally denoted `z`.
+  /// This is a subset of state_ and does not own the underlying data.
+  std::unique_ptr<StateVectorInterface<T>> misc_continuous_state_;
+};
 
 /// The State is a container for all the data comprising the complete state of
 /// a particular System at a particular moment. Any field in the State may be
@@ -17,7 +121,7 @@ namespace systems {
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
 struct State {
-  // TODO(david-german-tri): Add state.
+  std::unique_ptr<ContinuousState<T>> continuous_state;
 };
 
 }  // namespace systems
