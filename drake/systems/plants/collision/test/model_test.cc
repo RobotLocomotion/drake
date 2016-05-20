@@ -194,6 +194,17 @@ TEST(ModelTest, Box_vs_Sphere) {
   EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.0, 1.0, 0.0)));
   EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.0, 0.75, 0.0)));
 
+  // Collision test performed with Model::potentialCollisionPoints.
+  points.clear();
+  points = model->potentialCollisionPoints(false);
+  ASSERT_EQ(1, points.size());
+  EXPECT_EQ(box_id, points[0].getIdA());
+  EXPECT_EQ(sphere_id, points[0].getIdB());
+  EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
+  // Points are in the bodies' frame on the surface of the corresponding body.
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.0, 0.5, 0.0)));
+  EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.0, -0.5, 0.0)));
 }
 
 /** This test seeks to find out whether Bullet can report collision manifolds.
@@ -211,6 +222,7 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // succesfully pass.
   const double tolerance = 2.0e-9; //Eigen::NumTraits<double>::epsilon();
 
+  // Boxes centered around the origin in their local frames.
   DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
   DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
 
@@ -304,6 +316,46 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
     PRINT_VAR(pt_pair.getPtB().transpose());
   }
 
+  // Collision test performed with Model::potentialCollisionPoints.
+  points.clear();
+  points = model->potentialCollisionPoints(false);
+
+  ASSERT_EQ(1, points.size());
+  EXPECT_EQ(large_box_id, points[0].getIdA());
+  EXPECT_EQ(small_box_id, points[0].getIdB());
+  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  // Collision points are reported on each of the respective bodies' frames.
+  // This is consistent with the return by Model::closestPointsAllToAll.
+  // Only test for vertical position.
+  EXPECT_NEAR(points[0].getPtA().y(),  2.5, tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
+
+#if 0
+  ASSERT_EQ(1, points.size());
+  EXPECT_EQ(large_box_id, points[0].getIdA());
+  EXPECT_EQ(small_box_id, points[0].getIdB());
+  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  // Collision points are reported on each of the respective bodies' frames.
+  // Only test for vertical position.
+  EXPECT_NEAR(points[0].getPtA().y(),  2.5, tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
+#endif
+
+  std::cout << "Small box sitting on large box: potentialCollisionPoints" << std::endl;
+  PRINT_VAR(points.size());
+  for(auto& pt_pair: points) {
+    // Normal is on body B.
+    PRINT_VAR(pt_pair.getNormal().transpose());
+    PRINT_VAR(pt_pair.getDistance());
+
+    PRINT_VAR(pt_pair.getIdA());
+    PRINT_VAR(pt_pair.getPtA().transpose());
+
+    PRINT_VAR(pt_pair.getIdB());
+    PRINT_VAR(pt_pair.getPtB().transpose());
+  }
 }
 
 }  // namespace
