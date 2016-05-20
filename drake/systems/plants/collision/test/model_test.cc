@@ -119,10 +119,20 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
 
-TEST(ModelTest, collisionPointsAllToAll_Box_vs_Sphere) {
+/** Tests the number of collision points returned by different algorithms in
+a model composed by multiple collision elements. **/
+TEST(ModelTest, NumberOfCollisionPoints) {
+  EXPECT_TRUE(true);
+}
+
+/** A sphere of diameter 1.0 is placed on top of a box with sides of length 1.0.
+The sphere overlaps with the box with its deepest penetration point (the bottom)
+0.25 units into the box (negative distance). Only one contact point is expected
+when colliding with a sphere. **/
+TEST(ModelTest, Box_vs_Sphere) {
   // Numerical precision tolerance to perform floating point comparisons.
-  // For these very simple setup tests are expected to pass to machine
-  // precision. More complex geometries might require a looser tolerance.
+  // Its magnitude was chosen to be the minimum value for which these tests can
+  // succesfully pass.
   const double tolerance = 2.0e-9;
 
   DrakeShapes::Box box(Vector3d(1.0, 1.0, 1.0));
@@ -148,19 +158,27 @@ TEST(ModelTest, collisionPointsAllToAll_Box_vs_Sphere) {
   sphere_pose.translation() = Vector3d(0.0,1.25,0.0);
   model->updateElementWorldTransform(sphere_id, sphere_pose);
 
-  // Compute collision points.
+  // List of collision points.
   std::vector<PointPair> points;
 
-  // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
-  // looks like the margins are not appropriatelysubtracted.
-  model->collisionPointsAllToAll(false, points);
-  //const std::vector<ElementId> ids_to_check = {box_id, sphere_id};
-  //model->closestPointsAllToAll(ids_to_check, true, points);
-
-  // Only one contact point is expected when colliding with a sphere.
+  // Collision test performed with Model::closestPointsAllToAll.
+  const std::vector<ElementId> ids_to_check = {box_id, sphere_id};
+  model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
+  EXPECT_EQ(box_id, points[0].getIdA());
+  EXPECT_EQ(sphere_id, points[0].getIdB());
+  EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
+  // Points are in the bodies' frame on the surface of the corresponding body.
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.0, 0.5, 0.0)));
+  EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.0, -0.5, 0.0)));
 
-  // Check the closest point between object 2 and object 3.
+  // Collision test performed with Model::collisionPointsAllToAll.
+  // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
+  // looks like the margins are not appropriately subtracted.
+  points.clear();
+  model->collisionPointsAllToAll(false, points);
+  ASSERT_EQ(1, points.size());
   EXPECT_EQ(box_id, points[0].getIdA());
   EXPECT_EQ(sphere_id, points[0].getIdB());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
@@ -176,24 +194,21 @@ TEST(ModelTest, collisionPointsAllToAll_Box_vs_Sphere) {
   EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.0, 1.0, 0.0)));
   EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.0, 0.75, 0.0)));
 
-  for(auto& pt_pair: points) {
-    // Normal is on body B.
-    PRINT_VAR(pt_pair.getNormal().transpose());
-    PRINT_VAR(pt_pair.getDistance());
-
-    PRINT_VAR(pt_pair.getIdA());
-    PRINT_VAR(pt_pair.getPtA().transpose());
-
-    PRINT_VAR(pt_pair.getIdB());
-    PRINT_VAR(pt_pair.getPtB().transpose());
-  }
-
 }
 
-TEST(ModelTest, collisionPointsAllToAll_SmallBoxSittingOnLargeBox) {
+/** This test seeks to find out whether Bullet can report collision manifolds.
+To this end, a small cube with unit length sides is placed on top of a large
+cube with sides of length 5.0. The smaller cube is placed such that it
+intersects the large box. Therefore the intersection between the two boxes is
+not just a single point but the (squared) perimeter all around the smaller box
+(the manifold).
+Unfortunatelly these tests show that Bullet only reports a single (randomly
+chosen) point at one of the smaller box corners.
+ **/
+TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // Numerical precision tolerance to perform floating point comparisons.
-  // For these very simple setup tests are expected to pass to machine
-  // precision. More complex geometries might require a looser tolerance.
+  // Its magnitude was chosen to be the minimum value for which these tests can
+  // succesfully pass.
   const double tolerance = 2.0e-9; //Eigen::NumTraits<double>::epsilon();
 
   DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
@@ -219,30 +234,64 @@ TEST(ModelTest, collisionPointsAllToAll_SmallBoxSittingOnLargeBox) {
   small_box_pose.translation() = Vector3d(0.0,5.4,0.0);
   model->updateElementWorldTransform(small_box_id, small_box_pose);
 
-  // Compute collision points.
+  // List of collision points.
   std::vector<PointPair> points;
 
+  // Unfortunately Bullet is randomly selecting one of the small box's corners
+  // instead of reporting a manifold describing the perimeter of the square
+  // where both boxes intersect.
+  // Therefore it is impossible to assert if that choice would change with
+  // future releases (say just because tolerances changed).
+  // What we can test for sure is:
+  // 1. The penetration depth.
+  // 2. The vertical position of the collision point (since for any of the four
+  //    corners of the small box is the same.
+
+  // Collision test performed with Model::closestPointsAllToAll.
+  const std::vector<ElementId> ids_to_check = {large_box_id, small_box_id};
+  model->closestPointsAllToAll(ids_to_check, true, points);
+  ASSERT_EQ(1, points.size());
+  EXPECT_EQ(large_box_id, points[0].getIdA());
+  EXPECT_EQ(small_box_id, points[0].getIdB());
+  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  // Collision points are reported on each of the respective bodies' frames.
+  // Only test for vertical position.
+  EXPECT_NEAR(points[0].getPtA().y(),  2.5, tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
+
+  std::cout << "Small box sitting on large box: closestPointsAllToAll" << std::endl;
+  for(auto& pt_pair: points) {
+    // Normal is on body B.
+    PRINT_VAR(pt_pair.getNormal().transpose());
+    PRINT_VAR(pt_pair.getDistance());
+
+    PRINT_VAR(pt_pair.getIdA());
+    PRINT_VAR(pt_pair.getPtA().transpose());
+
+    PRINT_VAR(pt_pair.getIdB());
+    PRINT_VAR(pt_pair.getPtB().transpose());
+  }
+
+  // Collision test performed with Model::collisionPointsAllToAll.
   // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
   // looks like the margins are not appropriately subtracted.
+  points.clear();
   model->collisionPointsAllToAll(false, points);
 
   // Unfortunately Bullet's manifold has one point for this case.
   // Best for physics simulations would be Bullet to return at least the four
   // corners of the smaller box. However it randomly picks one corner.
   ASSERT_EQ(1, points.size());
-
+  EXPECT_EQ(large_box_id, points[0].getIdA());
+  EXPECT_EQ(small_box_id, points[0].getIdB());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+  // Collision points are reported in the world's frame.
+  // Only test for vertical position.
+  EXPECT_NEAR(points[0].getPtA().y(),  5.0, tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(),  4.9, tolerance);
 
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
-
-  // Bullet randomly picks one corner. Therefore it is impossible to assert
-  // if that choice would change with future releases (say just because
-  // tolerances changed).
-  // Commented out below are the results from a previous run:
-  //EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.5, 5.0, 0.5)));
-  //EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.5, 4.9, 0.5)));
-
-  std::cout << "Small box sitting on large box" << std::endl;
+  std::cout << "Small box sitting on large box: collisionPointsAllToAll" << std::endl;
   for(auto& pt_pair: points) {
     // Normal is on body B.
     PRINT_VAR(pt_pair.getNormal().transpose());
