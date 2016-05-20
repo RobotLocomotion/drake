@@ -9,9 +9,6 @@ using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::AngleAxisd;
 
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-
 namespace DrakeCollision {
 namespace {
 
@@ -51,7 +48,7 @@ TEST(ModelTest, closestPointsAllToAll) {
   T_body3_to_world.translation() << 2, 2, 0;
   // rotate 90 degrees in z
   T_body3_to_world.linear() =
-      AngleAxisd(M_PI_2,Vector3d::UnitZ()).toRotationMatrix();
+      AngleAxisd(M_PI_2, Vector3d::UnitZ()).toRotationMatrix();
 
   // Numerical precision tolerance to perform floating point comparisons.
   // For these very simple setup tests are expected to pass to machine
@@ -98,15 +95,14 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_NEAR(1.6213203435596428, points[1].getDistance(), tolerance);
   // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
-  EXPECT_TRUE(points[1].getNormal().isApprox(
-      Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0)));
-  EXPECT_TRUE(points[1].getPtA().isApprox(
-      Vector3d(0.5, 0.5, 0)));
+  EXPECT_TRUE(
+      points[1].getNormal().isApprox(Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0)));
+  EXPECT_TRUE(points[1].getPtA().isApprox(Vector3d(0.5, 0.5, 0)));
   // Notice the y component is positive given that the body's frame is rotated
   // 90 degrees around the z axis.
   // Therefore x_body = y_world, y_body=-x_world and z_body=z_world
-  EXPECT_TRUE(points[1].getPtB().isApprox(
-      Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0)));
+  EXPECT_TRUE(
+      points[1].getPtB().isApprox(Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0)));
 
   // Check the closest point between object 2 and object 3.
   EXPECT_EQ(id2, points[2].getIdA());
@@ -143,13 +139,13 @@ TEST(ModelTest, Box_vs_Sphere) {
   // Body 1 pose
   Isometry3d box_pose;
   box_pose.setIdentity();
-  box_pose.translation() = Vector3d(0.0,0.5,0.0);
+  box_pose.translation() = Vector3d(0.0, 0.5, 0.0);
   model->updateElementWorldTransform(box_id, box_pose);
 
   // Body 2 pose
   Isometry3d sphere_pose;
   sphere_pose.setIdentity();
-  sphere_pose.translation() = Vector3d(0.0,1.25,0.0);
+  sphere_pose.translation() = Vector3d(0.0, 1.25, 0.0);
   model->updateElementWorldTransform(sphere_id, sphere_pose);
 
   // List of collision points.
@@ -233,13 +229,13 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // Large body pose
   Isometry3d large_box_pose;
   large_box_pose.setIdentity();
-  large_box_pose.translation() = Vector3d(0.0,2.5,0.0);
+  large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
   model->updateElementWorldTransform(large_box_id, large_box_pose);
 
   // Small body pose
   Isometry3d small_box_pose;
   small_box_pose.setIdentity();
-  small_box_pose.translation() = Vector3d(0.0,5.4,0.0);
+  small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
   model->updateElementWorldTransform(small_box_id, small_box_pose);
 
   // List of collision points.
@@ -265,7 +261,7 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),  2.5, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(), 2.5, tolerance);
   EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
 
   // Collision test performed with Model::collisionPointsAllToAll.
@@ -284,8 +280,8 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
   // Collision points are reported in the world's frame.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),  5.0, tolerance);
-  EXPECT_NEAR(points[0].getPtB().y(),  4.9, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(), 5.0, tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(), 4.9, tolerance);
 
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
@@ -299,7 +295,7 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // Collision points are reported on each of the respective bodies' frames.
   // This is consistent with the return by Model::closestPointsAllToAll.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),  2.5, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(), 2.5, tolerance);
   EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
 }
 
@@ -341,8 +337,7 @@ TEST(ModelTest, NonAlignedBoxes) {
   Isometry3d box2_pose;
   box2_pose.setIdentity();
   box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
-  box2_pose.linear() =
-      AngleAxisd(M_PI_4,Vector3d::UnitY()).toRotationMatrix();
+  box2_pose.linear() = AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
   model->updateElementWorldTransform(box2_id, box2_pose);
 
   // List of collision points.
@@ -367,7 +362,7 @@ TEST(ModelTest, NonAlignedBoxes) {
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),  0.5, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(), 0.5, tolerance);
   EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
 
   // Collision test performed with Model::collisionPointsAllToAll.
@@ -386,8 +381,8 @@ TEST(ModelTest, NonAlignedBoxes) {
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported in the world's frame.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),  1.0, tolerance);
-  EXPECT_NEAR(points[0].getPtB().y(),  0.9, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(), 1.0, tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(), 0.9, tolerance);
 
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
@@ -400,7 +395,7 @@ TEST(ModelTest, NonAlignedBoxes) {
   // Collision points are reported on each of the respective bodies' frames.
   // This is consistent with the return by Model::closestPointsAllToAll.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),  0.5, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(), 0.5, tolerance);
   EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
 }
 
