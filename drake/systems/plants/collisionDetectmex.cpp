@@ -81,7 +81,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   const mxArray* collision_groups =
-      mxGetField(active_collision_options, 0, "collision_groups");
+      mxGetField(active_collision_options, 0, "collision_cliques");
 
   if (collision_groups != NULL) {
     size_t num_collision_groups =

@@ -198,7 +198,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
       // Then get the group names for which to compute distances
       const mxArray* collision_groups =
-          mxGetField(active_collision_options, 0, "collision_groups");
+          mxGetField(active_collision_options, 0, "collision_cliques");
       if (collision_groups != NULL) {
         size_t num = mxGetNumberOfElements(collision_groups);
         for (int i = 0; i < num; i++) {
@@ -1144,7 +1144,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
       // Then get the group names for which to compute distances
       const mxArray* collision_groups =
-          mxGetField(active_collision_options, 0, "collision_groups");
+          mxGetField(active_collision_options, 0, "collision_cliques");
       if (collision_groups != NULL) {
         size_t num = mxGetNumberOfElements(collision_groups);
         for (int i = 0; i < num; i++) {

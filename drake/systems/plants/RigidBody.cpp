@@ -52,7 +52,7 @@ void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element) {
 void RigidBody::add_to_collision_group(int group_id) {
   for (auto eit = collision_elements_begin();
        eit != collision_elements_end(); ++eit) {
-    (*eit)->add_to_collision_group(group_id);
+    (*eit)->add_to_collision_clique(group_id);
   }
 }
 

@@ -50,18 +50,18 @@ bool CollisionElement::CollidesWith(const CollisionElement* other) const {
 // Member CollisionElement::collision_cliques_ is sorted so that checking if two
 // collision elements belong to a same group can be performed in order N.
 // See CollisionElement::CollidesWith
-void CollisionElement::add_to_collision_group(int group_id) {
+void CollisionElement::add_to_collision_clique(int clique_id) {
   auto it = std::lower_bound(collision_cliques_.begin(),
-                             collision_cliques_.end(), group_id);
-  if (it == collision_cliques_.end() || group_id < *it)
-    collision_cliques_.insert(it, group_id);
+                             collision_cliques_.end(), clique_id);
+  if (it == collision_cliques_.end() || clique_id < *it)
+    collision_cliques_.insert(it, clique_id);
 }
 
-int CollisionElement::number_of_groups() const {
+int CollisionElement::number_of_cliques() const {
   return collision_cliques_.size();
 }
 
-const std::vector<int>& CollisionElement::collision_groups() const {
+const std::vector<int>& CollisionElement::collision_cliques() const {
   return collision_cliques_;
 }
 

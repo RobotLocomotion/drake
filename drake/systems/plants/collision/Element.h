@@ -50,18 +50,16 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
 
   void set_rigid_body(const RigidBody* body);
 
-  /**
-   * @brief Adds this collision element to collision group group_id
-   *
-   * CollisionElement's within a group do not collide.
-   * Calling this method to add an element to a group it already belongs to does
-   * not have any effect.
-   */
-  void add_to_collision_group(int group_id);
+  /** Adds this collision element to collision clique clique_id.
 
-  int number_of_groups() const;
+  CollisionElement's within a clique do not collide.
+  Calling this method to add an element to a clique it already belongs to
+  does not have any effect. **/
+  void add_to_collision_clique(int clique_id);
 
-  const std::vector<int>& collision_groups() const;
+  int number_of_cliques() const;
+
+  const std::vector<int>& collision_cliques() const;
 
   /**
    * A toString method for this class.
@@ -76,16 +74,17 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   ElementId id;
   const RigidBody* body_{};
 
-  // Collision groups in Drake are represented simply by an integer.
-  // Collision elements in the same group do not collide.
-  // A collision element can belong to more than one group.
+  // Collision cliques are defined as a group of collision elements that do not
+  // collide.
+  // Collision cliques in Drake are represented simply by an integer.
+  // A collision element can belong to more than one clique.
   // Conceptually it would seem like std::set is the right fit for
   // CollisionElement::collision_cliques_. However, std::set is really good for
   // dynamically adding elements to a set that needs to change.
   // Once you are done adding elements to your set, access time is poor when
   // compared to a simple std::vector (nothing faster than scanning a vector of
   // adjacent entries in memory).
-  // Here adding elements to the groups vector only happens during problem
+  // Here adding elements to the cliques vector only happens during problem
   // setup by the user or from a URDF/SDF file. What we really want is that once
   // this vector is setup, we can query it very fast during simulation.
   // This is done in CollisionElement::CollidesWith which to be Order(N)
