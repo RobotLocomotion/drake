@@ -80,7 +80,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   // Collision elements in the same group do not collide.
   // A collision element can belong to more than one group.
   // Conceptually it would seem like std::set is the right fit for
-  // CollisionElement::collision_groups_. However, std::set is really good for
+  // CollisionElement::collision_cliques_. However, std::set is really good for
   // dynamically adding elements to a set that needs to change.
   // Once you are done adding elements to your set, access time is poor when
   // compared to a simple std::vector (nothing faster than scanning a vector of
@@ -89,8 +89,8 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   // setup by the user or from a URDF/SDF file. What we really want is that once
   // this vector is setup, we can query it very fast during simulation.
   // This is done in CollisionElement::CollidesWith which to be Order(N)
-  // requires the entries in CollisionElement::collision_groups_ to be sorted.
-  std::vector<int> collision_groups_;
+  // requires the entries in CollisionElement::collision_cliques_ to be sorted.
+  std::vector<int> collision_cliques_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

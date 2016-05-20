@@ -6,7 +6,7 @@
 
 using namespace Eigen;
 using namespace std;
-using drake::HaveIntersection;
+using drake::SortedVectorsHaveIntersection;
 
 namespace DrakeCollision {
 CollisionElement::CollisionElement(const Isometry3d& T_element_to_local)
@@ -24,7 +24,7 @@ CollisionElement::CollisionElement(const CollisionElement& other)
     : DrakeShapes::Element(other),
       id((ElementId) this),
       body_(other.body_),
-      collision_groups_(other.collision_groups_) {}
+      collision_cliques_(other.collision_cliques_) {}
 
 CollisionElement* CollisionElement::clone() const {
   return new CollisionElement(*this);
@@ -40,30 +40,29 @@ bool CollisionElement::CollidesWith(const CollisionElement* other) const {
   // Do not collide with self
   if (this == other) return false;
 
-  // If collision_groups_.size() = N and other->collision_groups_.size() = M
+  // If collision_cliques_.size() = N and other->collision_cliques_.size() = M
   // The worst case (no intersection) is O(N+M).
-  return !HaveIntersection(collision_groups_.begin(), collision_groups_.end(),
-                           other->collision_groups_.begin(),
-                           other->collision_groups_.end());
+  return !SortedVectorsHaveIntersection(collision_cliques_,
+                                        other->collision_cliques_);
 }
 
 // Order(N) insertion.
-// Member CollisionElement::collision_groups_ is sorted so that checking if two
+// Member CollisionElement::collision_cliques_ is sorted so that checking if two
 // collision elements belong to a same group can be performed in order N.
 // See CollisionElement::CollidesWith
 void CollisionElement::add_to_collision_group(int group_id) {
-  auto it = std::lower_bound(collision_groups_.begin(), collision_groups_.end(),
-                             group_id);
-  if (it == collision_groups_.end() || group_id < *it)
-    collision_groups_.insert(it, group_id);
+  auto it = std::lower_bound(collision_cliques_.begin(),
+                             collision_cliques_.end(), group_id);
+  if (it == collision_cliques_.end() || group_id < *it)
+    collision_cliques_.insert(it, group_id);
 }
 
 int CollisionElement::number_of_groups() const {
-  return collision_groups_.size();
+  return collision_cliques_.size();
 }
 
 const std::vector<int>& CollisionElement::collision_groups() const {
-  return collision_groups_;
+  return collision_cliques_;
 }
 
 ostream& operator<<(ostream& out, const CollisionElement& ee) {

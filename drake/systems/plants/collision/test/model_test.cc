@@ -130,7 +130,7 @@ TEST(ModelTest, CollisionGroups) {
   element_1.add_to_collision_group(11);
   element_1.add_to_collision_group(15);
   element_1.add_to_collision_group(9);
-  std::vector<int> element_1_set = std::vector<int>({2, 9, 11, 15, 23});
+  std::vector<int> element_1_set = std::vector<int>{2, 9, 11, 15, 23};
 
   // Tests the situation where the same collision groups are added to a
   // collision element multiple times.
