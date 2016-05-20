@@ -37,6 +37,20 @@ Or, Clang 3.7::
     sudo apt-get upgrade
     sudo apt-get install clang-3.7
 
+CMake
+-----
+
+CMake 3.5 or higher is required.
+
+On Ubuntu 16.04 LTS (Xenial) and higher one may use the system package::
+
+    sudo apt-get install cmake cmake-curses-gui
+
+On older Ubuntu versions please visit the `CMake Download Page`_ to obtain
+a binary.  Extract it and add the ``bin`` directory to your ``PATH``.
+
+.. _`CMake Download Page`: https://cmake.org/download/
+
 Other Prerequisites
 -------------------
 
@@ -44,7 +58,7 @@ Other prerequisites may be installed as follows::
 
     sudo apt-get update
     sudo apt-get install --no-install-recommends autoconf automake bison \
-      ccache cmake cmake-curses-gui default-jdk doxygen flex freeglut3-dev git \
+      ccache default-jdk doxygen flex freeglut3-dev git \
       graphviz libgtk2.0-dev libhtml-form-perl libjpeg-dev libmpfr-dev \
       libwww-perl libpng-dev libqt4-dev libqt4-opengl-dev libqwt-dev \
       libterm-readkey-perl libtool libvtk-java libvtk5-dev libvtk5-qt4-dev \
@@ -63,6 +77,10 @@ If not using the system compiler, specify the compiler in the environment::
 Or, precede every call to ``make`` with environment settings::
 
     env CXX=g++-4.9 CC=gcc-4.9 make ...
+
+If not using a system-installed `CMake`_, ensure that it is in the ``PATH``::
+
+    export PATH=/path/to/cmake-binary/bin
 
 External Source Dependencies
 ============================

@@ -39,13 +39,21 @@ Download and install `Java's JDK <http://www.oracle.com/technetwork/java/javase/
 
 CMake
 -----
-Download and install `CMake <http://www.cmake.org/cmake/resources/software.html>`_ (binary version). Say yes when the CMake installer offers to add itself to your system path. Verify that ``C:\Program Files (x86)\CMake\bin`` is added to your system path. This can be done by opening a command prompt by typing::
+
+CMake 3.5 or higher is required.
+
+Please visit the `CMake Download Page`_ to obtain a Windows binary.
+Say yes when the CMake installer offers to add itself to your system path.
+Verify that ``C:\Program Files (x86)\CMake\bin`` is added to your path.
+This can be done by opening a command prompt by typing::
 
     $ cmd
 
 and executing::
 
-    $ echo %path%
+    $ echo %PATH%
+
+.. _`CMake Download Page`: https://cmake.org/download/
 
 .. _windows-installation-gnu:
 
