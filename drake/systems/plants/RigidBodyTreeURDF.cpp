@@ -586,10 +586,18 @@ void parseFrame(RigidBodyTree* model, XMLElement* node) {
  * An exception is thrown if no such joint is found, or if multiple
  * world-connecting joints are found.
  *
+ * Multiple world-connecting joints cannot exist in a single URDF file because
+ * each URDF file describes one robot using a tree of links connected by joints.
+ * Thus, the only way for a URDF to contain multiple world-connecting joints is
+ * if the URDF describes more than one robot. This is a violation of the
+ * one-robot-per-URDF rule.
+ *
  * @param[in] node A pointer to the XML node that is parsing the URDF model.
  * @param[out] floating_base_type A reference to where the floating_base_type
  * should be saved.
- * @param[out] weld_to_frame The parameter to modify.
+ * @param[out] weld_to_frame The parameter to modify. If this parameter is
+ * `nullptr`, a new `RigidBodyFrame` is constructed and stored in the shared
+ * pointer.
  */
 void parseWorldJoint(XMLElement* node,
                      DrakeJoint::FloatingBaseType& floating_base_type,
@@ -622,6 +630,8 @@ void parseWorldJoint(XMLElement* node,
         originAttributesToTransform(origin, transform_to_parent_body);
       }
 
+      // Creates a new rigid body frame if the weld_to_frame parameter contains
+      // a nullptr.
       if (weld_to_frame == nullptr) weld_to_frame.reset(new RigidBodyFrame());
 
       weld_to_frame->name = "world";
