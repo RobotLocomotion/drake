@@ -64,7 +64,7 @@ class FeedbackSystem {
     OutputVector<ScalarType> y1;
     InputVector<ScalarType> y2;
     InputVector<ScalarType> u1;
-    subsystemOutputs(t, x1, x2, u, &y1, &y2, &u1);
+    subsystemOutputs(t, x1, x2, u, true, &y1, &y2, &u1);
     return util::combine(
         sys1->dynamics(t, x1, u1),
         sys2->dynamics(t, x2, y1));
@@ -79,7 +79,7 @@ class FeedbackSystem {
     OutputVector<ScalarType> y1;
     InputVector<ScalarType> y2;
     InputVector<ScalarType> u1;
-    subsystemOutputs(t, x1, x2, u, &y1, &y2, &u1);
+    subsystemOutputs(t, x1, x2, u, false, &y1, &y2, &u1);
     return y1;
   }
 
@@ -107,25 +107,31 @@ class FeedbackSystem {
   // x1 is sys1 state.
   // x2 is sys2 state.
   // u  is the feedback_system's input.
+  ///
   // y1 is sys1's output.
   // y2 is sys2's output.
   // u1 is the input to sys1 (u + y2).
+  //
+  // If want_y2_u1 is not set, y2 and u1 may or may not be computed.
   template <typename ScalarType>
   void subsystemOutputs(const ScalarType& t,
                         const StateVector1<ScalarType>& x1,
                         const StateVector2<ScalarType>& x2,
                         const InputVector<ScalarType>& u,
+                        bool want_y2_u1,
                         OutputVector<ScalarType>* y1,
                         InputVector<ScalarType>* y2,
                         InputVector<ScalarType>* u1) const {
     if (!sys1->isDirectFeedthrough()) {
       // sys1->output doesn't use u1, so it's okay that it isn't filled in yet.
       *y1 = sys1->output(t, x1, *u1);
-      *y2 = sys2->output(t, x2, *y1);
-      *u1 = static_cast<InputVector<ScalarType>>(toEigen(*y2) + toEigen(u));
+      if (want_y2_u1) {
+        *y2 = sys2->output(t, x2, *y1);
+        *u1 = static_cast<InputVector<ScalarType>>(toEigen(*y2) + toEigen(u));
+      }
     } else {
       assert(!sys2->isDirectFeedthrough());  // Per our constructor.
-      // sys2->output doesn't use y1, so it's okat that it isn't filled in yet.
+      // sys2->output doesn't use y1, so it's okay that it isn't filled in yet.
       *y2 = sys2->output(t, x2, *y1);
       *u1 = static_cast<InputVector<ScalarType>>(toEigen(*y2) + toEigen(u));
       *y1 = sys1->output(t, x1, *u1);
