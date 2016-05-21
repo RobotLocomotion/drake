@@ -433,7 +433,8 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   Vector3d axis;
   axis << 1, 0, 0;
   XMLElement* axis_node = node->FirstChildElement("axis");
-  if (axis_node && type == "fixed" && type == "floating") {
+  if (axis_node && type.compare("fixed") != 0 &&
+      type.compare("floating") != 0) {
     parseVectorValue(axis_node, "xyz", axis);
     if (axis.norm() < 1e-8) {
       throw runtime_error(std::string(__FILE__) + ": " + __func__ +
@@ -529,7 +530,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     // construct the actual joint (based on its type)
     DrakeJoint* joint = nullptr;
 
-    if (type == "revolute" || type == "gearbox") {
+    if (type.compare("revolute") == 0 || type.compare("gearbox") == 0) {
       FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
           new RevoluteJoint(name, transform_to_parent_body, axis);
       if (axis_node) {
@@ -550,9 +551,9 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
       joint = fjoint;
 
-    } else if (type == "fixed") {
+    } else if (type.compare("fixed") == 0) {
       joint = new FixedJoint(name, transform_to_parent_body);
-    } else if (type == "prismatic") {
+    } else if (type.compare("prismatic") == 0) {
       FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
           new PrismaticJoint(name, transform_to_parent_body, axis);
       if (axis_node) {
@@ -568,7 +569,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                                    effort_limit);
         model->actuators.push_back(actuator);
       }
-    } else if (type == "floating") {
+    } else if (type.compare("floating") == 0) {
       joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
     } else {
       throw runtime_error(std::string(__FILE__) + ": " + __func__ +
