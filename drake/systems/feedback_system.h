@@ -112,7 +112,8 @@ class FeedbackSystem {
   // y2 is sys2's output.
   // u1 is the input to sys1 (u + y2).
   //
-  // If want_y2_u1 is not set, y2 and u1 may or may not be computed.
+  // If want_y2_u1 is true, y2 and u1 are always computed.
+  // If want_y2_u1 is false, y2 and u1 may or may not be computed.
   template <typename ScalarType>
   void subsystemOutputs(const ScalarType& t,
                         const StateVector1<ScalarType>& x1,

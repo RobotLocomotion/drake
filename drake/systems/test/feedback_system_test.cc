@@ -32,7 +32,7 @@ MakeFeedbackLoopOfAffineSystems(size_t num_states_1, size_t num_inputs_1,
 // Tests that, if the number of inputs and outputs for each system in the
 // feedback loop is fixed at compile time, the number of states, inputs, and
 // outputs for the combined system matches up.
-TEST(FeedbackSystemTest, ConstantSizes) {
+GTEST_TEST(FeedbackSystemTest, ConstantSizes) {
   auto combined =
       MakeFeedbackLoopOfAffineSystems<4, 2, 3, 5>(4, 2, 3, 5, true, false);
   EXPECT_EQ(4 + 5, getNumStates(*combined));
@@ -44,7 +44,7 @@ TEST(FeedbackSystemTest, ConstantSizes) {
 // Tests that, if the number of inputs and outputs for each system in the
 // feedback loop is determined at construction, the number of states, inputs,
 // and outputs for the combined system matches up.
-TEST(FeedbackSystemTest, DynamicSizes) {
+GTEST_TEST(FeedbackSystemTest, DynamicSizes) {
   auto combined =
       MakeFeedbackLoopOfAffineSystems<Dynamic, Dynamic, Dynamic, Dynamic>(
           4, 2, 3, 5, false, true);
@@ -55,7 +55,7 @@ TEST(FeedbackSystemTest, DynamicSizes) {
 }
 
 // Tests that algebraic loops are rejected.
-TEST(FeedbackSystemTest, AlgebraicLoop) {
+GTEST_TEST(FeedbackSystemTest, AlgebraicLoop) {
   EXPECT_THROW(
       (MakeFeedbackLoopOfAffineSystems<1, 1, 1, 1>(1, 1, 1, 1, true, true)),
       std::exception);
