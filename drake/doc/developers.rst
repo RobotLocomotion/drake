@@ -1,6 +1,15 @@
+.. _developer_notes:
+
 **************
 For Developers
 **************
+
+.. contents:: `Table of contents`
+   :depth: 3
+   :local:
+
+Introduction
+============
 
 If you have improvements to Drake, send us your pull requests!
 
@@ -27,7 +36,12 @@ agreeing to do so under those same terms.
 Testing
 =======
 
-See :doc:`unit_testing_instructions`
+.. toctree::
+    :maxdepth: 1
+
+    unit_testing_instructions
+
+.. See :doc:`unit_testing_instructions`
 
 .. _supported-configurations:
 
@@ -72,6 +86,9 @@ Official support for MATLAB on Windows and OS X is planned for 2016 Q2.
 
 Code Review
 ===========
+
+Review Process
+--------------
 
 For complex changes, especially those that will span multiple PRs, please
 open a GitHub issue and solicit design feedback before you invest a lot of
@@ -118,6 +135,14 @@ ask your platform reviewer to perform the merge for you.
 
 **After Merge.** If your PR breaks continuous integration, the :doc:`buildcop`
 will contact you to work out a resolution.
+
+Review Process Tooling
+----------------------
+
+.. toctree::
+    :maxdepth: 1
+
+    reviewable
 
 Continuous Integration Notes
 ============================
