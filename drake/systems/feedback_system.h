@@ -49,42 +49,37 @@ class FeedbackSystem {
       "System 1 input vector must match System 2 output vector");
 
   FeedbackSystem(const System1Ptr& _sys1, const System2Ptr& _sys2)
-      : sys1(_sys1), sys2(_sys2) {}
+      : sys1(_sys1), sys2(_sys2) {
+    if (sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough()) {
+      throw std::runtime_error("Algebraic loop in FeedbackSystem");
+    }
+  }
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& t,
                                    const StateVector<ScalarType>& x,
                                    const InputVector<ScalarType>& u) const {
+    const auto& x1 = util::first(x);
+    const auto& x2 = util::second(x);
     OutputVector<ScalarType> y1;
     InputVector<ScalarType> y2;
-    auto x1 = util::first(x);
-    auto x2 = util::second(x);
-    subsystemOutputs(t, x1, x2, u, &y1, &y2);
-
-    StateVector<ScalarType> xdot = util::combine(
-        sys1->dynamics(t, x1, static_cast<InputVector<ScalarType>>(toEigen(y2) +
-                                                                   toEigen(u))),
+    InputVector<ScalarType> u1;
+    subsystemOutputs(t, x1, x2, u, &y1, &y2, &u1);
+    return util::combine(
+        sys1->dynamics(t, x1, u1),
         sys2->dynamics(t, x2, y1));
-    return xdot;
   }
 
   template <typename ScalarType>
   OutputVector<ScalarType> output(const ScalarType& t,
                                   const StateVector<ScalarType>& x,
                                   const InputVector<ScalarType>& u) const {
+    const auto& x1 = util::first(x);
+    const auto& x2 = util::second(x);
     OutputVector<ScalarType> y1;
-    auto x1 = util::first(x);
-    if (!sys1->isDirectFeedthrough()) {
-      y1 = sys1->output(t, x1,
-                        u);  // then don't need u+y2 here, u will be ignored
-    } else {
-      InputVector<ScalarType> y2;
-      auto x2 = util::second(x);
-      y2 = sys2->output(
-          t, x2, y1);  // y1 might be uninitialized junk, but has to be ok
-      y1 = sys1->output(t, x1, static_cast<InputVector<ScalarType>>(
-                                   toEigen(y2) + toEigen(u)));
-    }
+    InputVector<ScalarType> y2;
+    InputVector<ScalarType> u1;
+    subsystemOutputs(t, x1, x2, u, &y1, &y2, &u1);
     return y1;
   }
 
@@ -109,21 +104,31 @@ class FeedbackSystem {
   }
 
  private:
+  // x1 is sys1 state.
+  // x2 is sys2 state.
+  // u  is the feedback_system's input.
+  // y1 is sys1's output.
+  // y2 is sys2's output.
+  // u1 is the input to sys1 (u + y2).
   template <typename ScalarType>
-  void subsystemOutputs(const ScalarType& t, const StateVector1<ScalarType>& x1,
+  void subsystemOutputs(const ScalarType& t,
+                        const StateVector1<ScalarType>& x1,
                         const StateVector2<ScalarType>& x2,
                         const InputVector<ScalarType>& u,
                         OutputVector<ScalarType>* y1,
-                        InputVector<ScalarType>* y2) const {
+                        InputVector<ScalarType>* y2,
+                        InputVector<ScalarType>* u1) const {
     if (!sys1->isDirectFeedthrough()) {
-      *y1 = sys1->output(t, x1, u);  // output does not depend on u (so it's ok
-                                    // that we're not passing u+y2)
+      // sys1->output doesn't use u1, so it's okay that it isn't filled in yet.
+      *y1 = sys1->output(t, x1, *u1);
       *y2 = sys2->output(t, x2, *y1);
+      *u1 = static_cast<InputVector<ScalarType>>(toEigen(*y2) + toEigen(u));
     } else {
-      *y2 = sys2->output(
-          t, x2, *y1);  // y1 might be uninitialized junk, but has to be ok
-      *y1 = sys1->output(t, x1, static_cast<InputVector<ScalarType>>(
-                                   toEigen(*y2) + toEigen(u)));
+      assert(!sys2->isDirectFeedthrough());  // Per our constructor.
+      // sys2->output doesn't use y1, so it's okat that it isn't filled in yet.
+      *y2 = sys2->output(t, x2, *y1);
+      *u1 = static_cast<InputVector<ScalarType>>(toEigen(*y2) + toEigen(u));
+      *y1 = sys1->output(t, x1, *u1);
     }
   }
 
