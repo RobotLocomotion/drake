@@ -13,7 +13,7 @@ using namespace Eigen;
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
-TEST(testIKpointwise, simpleIKpointwise) {
+GTEST_TEST(testIKpointwise, simpleIKpointwise) {
   RigidBodyTree rbm("examples/Atlas/urdf/atlas_minimal_contact.urdf");
   Vector2d tspan;
   tspan << 0, 1;
