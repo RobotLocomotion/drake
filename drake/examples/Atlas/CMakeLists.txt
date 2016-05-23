@@ -23,9 +23,15 @@ if (LONG_RUNNING_TESTS)
   add_matlab_test(NAME examples/Atlas/runAtlasBalancingWithContactSensor COMMAND runAtlasBalancingWithContactSensor PROPERTIES TIMEOUT 1500)
   add_matlab_test(NAME examples/Atlas/runAtlasHandControl COMMAND runAtlasHandControl PROPERTIES TIMEOUT 3000)
   add_matlab_test(NAME examples/Atlas/runAtlasManip COMMAND runAtlasManip PROPERTIES TIMEOUT 1500)
-  add_matlab_test(NAME examples/Atlas/runAtlasWalking COMMAND runAtlasWalking PROPERTIES TIMEOUT 1500)
+
+  # Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
+  # add_matlab_test(NAME examples/Atlas/runAtlasWalking COMMAND runAtlasWalking PROPERTIES TIMEOUT 1500)
+
+add_matlab_test(NAME examples/Atlas/runRobotiqTendons COMMAND runRobotiqTendons PROPERTIES TIMEOUT 1500)
+
+  # Deactivated due to excessive timeouts.
   # add_matlab_test(NAME examples/Atlas/runDRCPracticeTerrain COMMAND runDRCPracticeTerrain PROPERTIES TIMEOUT 3000)  # FIXME
-  add_matlab_test(NAME examples/Atlas/runRobotiqTendons COMMAND runRobotiqTendons PROPERTIES TIMEOUT 1500)
+
 endif()
 
 add_subdirectory(test)
