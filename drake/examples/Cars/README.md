@@ -131,6 +131,9 @@ The following notes are for Ubuntu Linux and OS X users.
 This is not supported under Windows (though you can probably cobble
 together some workarounds by hand if you are motivated).
 
+TODO(jwnimmer-tri) OS X `readlink -f` doesn't work, so the demo script
+fails.  Fix and test the demo script on OS X.
+
 Run:
 ```
 $ drake-distro/drake/examples/Cars/simple_car_demo.sh
@@ -148,13 +151,15 @@ The following notes are for Ubuntu Linux and OS X users.
 This is not supported under Windows (though you can probably cobble
 together some workarounds by hand if you are motivated).
 
+TODO(jwnimmer-tri) OS X `readlink -f` doesn't work, so the demo script
+fails.  Fix and test the demo script on OS X.
+
 Run:
 ```
 $ drake-distro/drake/examples/Cars/run_demo_multi_car.sh [N]
 ```
 
-This will start the demo with N+3 cars; if not supplied, the default
-for N is 100 (and the minimum N is zero).  There are no controls.  The
-cars just spin.
+This will start the demo with N cars; if N is not supplied, the
+default is 100 (and the minimum N is 1).  There are no controls.
 
 Use Ctrl-C in your terminal to stop and close the demo.
