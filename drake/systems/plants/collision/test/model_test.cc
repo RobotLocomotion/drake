@@ -163,7 +163,7 @@ TEST(ModelTest, Box_vs_Sphere) {
   // collision element by element id.
   // Solutions are expressed in world and body frames.
   ElementToSurfacePointMap solution = {
-      /*             world frame  ,    body frame  */
+      /*           world frame     , body frame  */
       {box_id,    {{0.0,  1.0, 0.0}, {0.0,  0.5, 0.0}}},
       {sphere_id, {{0.0, 0.75, 0.0}, {0.0, -0.5, 0.0}}}};
 
@@ -261,7 +261,7 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // collision element by element id.
   // Solutions are expressed in world and body frames.
   ElementToSurfacePointMap solution = {
-      /*             world frame  ,    body frame  */
+      /*              world frame    , body frame  */
       {large_box_id, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
       {small_box_id, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
 
@@ -364,6 +364,14 @@ TEST(ModelTest, NonAlignedBoxes) {
   ElementId box1_id = model->addElement(colliding_box1);
   ElementId box2_id = model->addElement(colliding_box1);
 
+  // Access the analytical solution to the contact point on the surface of each
+  // collision element by element id.
+  // Solutions are expressed in world and body frames.
+  ElementToSurfacePointMap solution = {
+      /*         world frame    , body frame  */
+      {box1_id, {{0.0, 1.0, 0.0}, {0.0,  0.5, 0.0}}},
+      {box2_id, {{0.0, 0.9, 0.0}, {0.0, -0.5, 0.0}}}};
+
   // Box 1 pose.
   Isometry3d box1_pose;
   box1_pose.setIdentity();
@@ -395,14 +403,14 @@ TEST(ModelTest, NonAlignedBoxes) {
   const std::vector<ElementId> ids_to_check = {box1_id, box2_id};
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
-  EXPECT_EQ(box1_id, points[0].getIdA());
-  EXPECT_EQ(box2_id, points[0].getIdB());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(), 0.5, tolerance);
-  EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(),
+              solution[points[0].getIdA()].body_frame.y(), tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(),
+              solution[points[0].getIdB()].body_frame.y(), tolerance);
 
   // Collision test performed with Model::collisionPointsAllToAll.
   // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
@@ -414,28 +422,28 @@ TEST(ModelTest, NonAlignedBoxes) {
   // least the four corners of the smaller box. However it randomly picks one
   // corner.
   ASSERT_EQ(1, points.size());
-  EXPECT_EQ(box1_id, points[0].getIdA());
-  EXPECT_EQ(box2_id, points[0].getIdB());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported in the world's frame.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(), 1.0, tolerance);
-  EXPECT_NEAR(points[0].getPtB().y(), 0.9, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(),
+              solution[points[0].getIdA()].world_frame.y(), tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(),
+              solution[points[0].getIdB()].world_frame.y(), tolerance);
 
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
   points = model->potentialCollisionPoints(false);
   ASSERT_EQ(1, points.size());
-  EXPECT_EQ(box1_id, points[0].getIdA());
-  EXPECT_EQ(box2_id, points[0].getIdB());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // This is consistent with the return by Model::closestPointsAllToAll.
   // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(), 0.5, tolerance);
-  EXPECT_NEAR(points[0].getPtB().y(), -0.5, tolerance);
+  EXPECT_NEAR(points[0].getPtA().y(),
+              solution[points[0].getIdA()].body_frame.y(), tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(),
+              solution[points[0].getIdB()].body_frame.y(), tolerance);
 }
 
 }  // namespace
