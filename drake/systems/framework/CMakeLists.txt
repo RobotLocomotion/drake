@@ -18,6 +18,7 @@ set(installed_headers
     cache.h
     context.h
     named_value_vector.h
+    state.h
     system_interface.h
     system_output.h
     value.h
