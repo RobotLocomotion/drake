@@ -10,7 +10,7 @@ pods_install_pkg_config_file(drake-atlas-util
   VERSION 0.0.1)
 
 if (LCM_FOUND)
-  add_executable(runAtlasDynamics runAtlasDynamics.cpp)
+  add_executable(runAtlasDynamics runAtlasDynamics.cpp atlas_system.cc)
   target_link_libraries(runAtlasDynamics drakeRBSystem drakeLCMSystem)
   add_dependencies(runAtlasDynamics drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(runAtlasDynamics lcm)
