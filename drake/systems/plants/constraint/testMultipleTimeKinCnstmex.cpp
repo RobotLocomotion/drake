@@ -23,17 +23,18 @@
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 3 || nlhs != 7) {
-    mexErrMsgIdAndTxt("Drake:testMultipleTimeKinCnstmex:BadInputs",
-                      "Usage "
-                      "[type, num_cnst, cnst_val, dcnst_val, cnst_name, lb, ub] = "
-                      "testMultipleTimeKinCnstmex(kinCnst, q, t)");
+    mexErrMsgIdAndTxt(
+        "Drake:testMultipleTimeKinCnstmex:BadInputs",
+        "Usage "
+        "[type, num_cnst, cnst_val, dcnst_val, cnst_name, lb, ub] = "
+        "testMultipleTimeKinCnstmex(kinCnst, q, t)");
   }
   MultipleTimeKinematicConstraint* cnst =
       (MultipleTimeKinematicConstraint*)getDrakeMexPointer(prhs[0]);
   int n_breaks = static_cast<int>(mxGetNumberOfElements(prhs[2]));
   double* t_ptr = new double[n_breaks];
   memcpy(t_ptr, mxGetPrSafe(prhs[2]), sizeof(double) * n_breaks);
-  int nq = cnst->getRobotPointer()->num_positions;
+  int nq = cnst->getRobotPointer()->number_of_positions();
   Eigen::MatrixXd q(nq, n_breaks);
   if (mxGetM(prhs[1]) != nq || mxGetN(prhs[1]) != n_breaks) {
     mexErrMsgIdAndTxt("Drake:testMultipleTimeKinCnstmex:BadInputs",

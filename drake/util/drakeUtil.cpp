@@ -39,7 +39,7 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(
     const Eigen::MatrixBase<DerivedForce>& force,
     const Eigen::MatrixBase<DerivedNormal>& normal,
     const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane) {
-  // TODO: implement multi-column version
+  // TODO(tkoolen): implement multi-column version
   using namespace Eigen;
 
   if (abs(normal.squaredNorm() - 1.0) > 1e-12) {

@@ -31,7 +31,7 @@ TEST(testIK, simpleIK) {
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&com_kc);
   IKoptions ikoptions(&model);
-  VectorXd q_sol(model.num_positions);
+  VectorXd q_sol(model.number_of_positions());
   int info;
   vector<string> infeasible_constraint;
   inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),
@@ -41,7 +41,7 @@ TEST(testIK, simpleIK) {
 
   KinematicsCache<double> cache = model.doKinematics(q_sol);
   Vector3d com = model.centerOfMass(cache);
-  printf("%5.2f\n%5.2f\n%5.2f\n", com(0), com(1), com(2));
+  printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
   EXPECT_TRUE(
       CompareMatrices(com, Vector3d(0, 0, 1), 1e-6,
                       MatrixCompareType::absolute));

@@ -25,9 +25,10 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(
 
   const mxArray* dim_mex = mxGetFieldSafe(pp, "dim");
   int num_dims_mex = mxGetNumberOfElements(dim_mex);
-  if (num_dims_mex == 0 | num_dims_mex > 2)
-    throw runtime_error("case not handled");  // because PiecewisePolynomial
-                                              // can't currently handle it
+  if ((num_dims_mex == 0) || (num_dims_mex > 2)) {
+    // PiecewisePolynomial can't currently handle it.
+    throw runtime_error("case not handled");
+  }
   const int kNumDims = 2;
   mwSize dims[kNumDims];
   if (!mxIsDouble(dim_mex))
@@ -284,7 +285,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs == 1) {
     // By convention, calling the constructor with just one argument (the
     // pointer) should delete the pointer
-    // TODO: make this not depend on number of arguments
+    // TODO(tkoolen): make this not depend on number of arguments
     if (isa(prhs[0], "DrakeMexPointer")) {
       destroyDrakeMexPointer<QPLocomotionPlan*>(prhs[0]);
       return;

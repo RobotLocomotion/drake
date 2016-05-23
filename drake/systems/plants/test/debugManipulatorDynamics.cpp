@@ -10,7 +10,7 @@ int main() {
 
   default_random_engine generator;
   VectorXd q = model.getRandomConfiguration(generator);
-  VectorXd v = VectorXd::Random(model.num_velocities);
+  VectorXd v = VectorXd::Random(model.number_of_velocities());
   KinematicsCache<double> cache = model.doKinematics(q, v);
 
   auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
@@ -20,20 +20,18 @@ int main() {
                                          base_or_frame_ind);
 
   auto M = model.massMatrix<double>(cache);
-  cout << M << endl
-       << endl;
+  cout << M << endl << endl;
 
   eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> >
       f_ext;
   Matrix<double, TWIST_SIZE, 1> f_ext_r_foot;
   f_ext_r_foot.setRandom();
-  f_ext.insert({model.findLink("r_foot").get(), f_ext_r_foot});
+  f_ext.insert({model.findLink("r_foot"), f_ext_r_foot});
 
-  Matrix<double, Eigen::Dynamic, 1> vd(model.num_velocities);
+  Matrix<double, Eigen::Dynamic, 1> vd(model.number_of_velocities());
   vd.setRandom();
 
   auto C = model.inverseDynamics(cache, f_ext, vd);
-  cout << C << endl
-       << endl;
+  cout << C << endl << endl;
   return 0;
 }

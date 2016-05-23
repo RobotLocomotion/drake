@@ -10,6 +10,8 @@
 #include "drake/core/Gradient.h"
 #include "drake/solvers/Optimization.h"
 
+using drake::solvers::SolutionResult;
+
 namespace Drake {
 namespace {
 Eigen::VectorXd MakeEigenVector(const std::vector<double>& x) {
@@ -95,15 +97,16 @@ double ApplyConstraintBounds(double result, double lb, double ub) {
   // For upper bounds rewrite as: f(x) - ub <= 0
   // For lower bounds rewrite as: -f(x) + lb <= 0
   //
+  // If both upper and lower bounds are set, default to evaluating the
+  // upper bound, and switch to the lower bound only if it's being
+  // exceeded.
+  //
   // See
   // http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Nonlinear_constraints
   // for more detail on how NLopt interprets return values.
 
-  if (ub != std::numeric_limits<double>::infinity()) {
-    if ((lb != -std::numeric_limits<double>::infinity()) && (lb != ub)) {
-      throw std::runtime_error(
-          "Constraints with different upper and lower bounds not implemented.");
-    }
+  if ((ub != std::numeric_limits<double>::infinity()) &&
+      ((result >= lb) || (lb == ub))) {
     result -= ub;
   } else {
     if (lb == -std::numeric_limits<double>::infinity()) {
@@ -163,7 +166,16 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   Eigen::VectorXd xvec(n);
   for (size_t i = 0; i < n; i++) {
     xvec[i] = x[i];
-    if (grad) { grad[i] = 0; }
+  }
+
+  // http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Vector-valued_constraints
+  // explicity tells us that it's allocated m * n array elements
+  // before invoking this function.  It does not seem to have been
+  // zeroed, and not all constraints will store gradients for all
+  // decision variables (so don't leave junk in the other array
+  // elements).
+  if (grad) {
+    memset(grad, 0, sizeof(double) * m * n);
   }
 
   const Constraint* c = wrapped->constraint;
@@ -188,7 +200,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
             (c->upper_bound()(i) ==
              std::numeric_limits<double>::infinity()) ? -1 : 1;
          for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-           grad[j] += ty(i).derivatives()(j) * grad_sign;
+           grad[(i * n) + j] = ty(i).derivatives()(j) * grad_sign;
          }
       }
     }
@@ -200,7 +212,7 @@ bool NloptSolver::available() const {
   return true;
 }
 
-bool NloptSolver::Solve(OptimizationProblem &prog) const {
+SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
   int nx = prog.num_vars();
 
   // Load the algo to use and the size.
@@ -239,6 +251,7 @@ bool NloptSolver::Solve(OptimizationProblem &prog) const {
   // should be made configurable when #1879 is fixed.
   const double constraint_tol = 1e-6;
   const double xtol_rel = 1e-6;
+  const double xtol_abs = 1e-6;
 
   std::list<WrappedConstraint> wrapped_list;
 
@@ -248,10 +261,21 @@ bool NloptSolver::Solve(OptimizationProblem &prog) const {
     WrappedConstraint wrapped = { c.constraint().get(),
                                   &c.variable_list() };
     wrapped_list.push_back(wrapped);
-    std::vector<double> tol(c.constraint()->num_constraints(),
-                            constraint_tol);
-    opt.add_inequality_mconstraint(
-        EvaluateVectorConstraint, &wrapped_list.back(), tol);
+    if (c.constraint()->lower_bound() == c.constraint()->upper_bound()) {
+      if (c.constraint()->num_constraints() != 1) {
+        // (sam.creasey) I've gotten incorrect results using
+        // EvaluateVectorConstraint with add_equality_constraint.
+        throw std::runtime_error("Generic equality constraints only supported "
+                                 "with num_constraints == 1");
+      }
+      opt.add_equality_constraint(
+          EvaluateScalarConstraint, &wrapped_list.back(), constraint_tol);
+    } else {
+      std::vector<double> tol(c.constraint()->num_constraints(),
+                              constraint_tol);
+      opt.add_inequality_mconstraint(
+          EvaluateVectorConstraint, &wrapped_list.back(), tol);
+    }
   }
 
   // sam.creasey: The initial implementation of this code used
@@ -286,9 +310,24 @@ bool NloptSolver::Solve(OptimizationProblem &prog) const {
   }
 
   opt.set_xtol_rel(xtol_rel);
+  opt.set_xtol_abs(xtol_abs);
 
-  double minf = 0;
-  opt.optimize(x, minf);
+  SolutionResult result = SolutionResult::kSolutionFound;
+  nlopt::result nlopt_result = nlopt::FAILURE;
+  try {
+    double minf = 0;
+    nlopt_result = opt.optimize(x, minf);
+  } catch (std::invalid_argument&) {
+    result = SolutionResult::kInvalidInput;
+  } catch (std::bad_alloc&) {
+    result = SolutionResult::kUnknownError;
+  } catch (nlopt::roundoff_limited) {
+    result = SolutionResult::kUnknownError;
+  } catch (nlopt::forced_stop) {
+    result = SolutionResult::kUnknownError;
+  } catch (std::runtime_error&) {
+    result = SolutionResult::kUnknownError;
+  }
 
   Eigen::VectorXd sol(x.size());
   for (int i = 0; i < nx; i++) {
@@ -296,6 +335,7 @@ bool NloptSolver::Solve(OptimizationProblem &prog) const {
   }
 
   prog.SetDecisionVariableValues(sol);
-  return true;
+  prog.SetSolverResult("NLopt", nlopt_result);
+  return result;
 }
 }

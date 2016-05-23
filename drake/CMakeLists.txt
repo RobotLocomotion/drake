@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 2.8.10)
 
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
-option(RANDOMIZE_UNIT_TESTS "every matlab unit is started with a new random seed" OFF)
+option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
+option(RANDOMIZE_MATLAB_TESTS "every matlab unit is started with a new random seed" OFF)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #cmake_policy(SET CMP0042 NEW)
 if (POLICY CMP0054)
@@ -60,7 +63,13 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
 
 if (CMAKE_COMPILER_IS_GNUCC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+  # TODO(#2372) These are warnings that we can't handle yet.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
 
   execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
   if (NOT (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7))
@@ -69,7 +78,7 @@ if (CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wreturn-type -Wuninitialized -Wunused-variable")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   if (APPLE)  # this was a step towards getting things to work with
@@ -165,7 +174,7 @@ function(add_matlab_test)
   set(cmd_to_run_before_test "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
   set(custom_Matlab_test_command "try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
 
-  if (RANDOMIZED_UNIT_TESTS)
+  if (RANDOMIZE_MATLAB_TESTS)
     set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
   endif()
 
@@ -186,12 +195,9 @@ include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
-if (GTEST_FOUND)
-  set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
-  if (WIN32)
-    # The following compiler flag is needed to support parameterized Google tests on Windows.
-    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
-  endif()
+if (WIN32)
+  # The following compiler flag is needed to support parameterized Google tests on Windows.
+  SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
 endif()
 
 set(drake_jar_javafiles util/Transform.java)
@@ -271,6 +277,7 @@ endif()
 include_directories(thirdParty/spruce/include)
 include_directories(thirdParty/cimg)
 
+add_subdirectory(common)
 add_subdirectory(core)
 add_subdirectory(util)
 add_subdirectory(solvers)
@@ -311,10 +318,6 @@ find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(ffmpeg ffmpeg)
 
-# todo: build doxygen here (and remove it from the Makefile)
-# http://majewsky.wordpress.com/2010/08/14/tip-of-the-day-cmake-and-doxygen/
-
-
 # write some additional information to the CMake cache
 set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
 
@@ -333,6 +336,12 @@ if (MATLAB_FOUND)
   	COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
     PROPERTIES TIMEOUT 300)
+endif()
+
+option(BUILD_DOCUMENTATION "Build Doxygen and Sphinx documentation." OFF)
+
+if(BUILD_DOCUMENTATION)
+  add_subdirectory(doc)
 endif()
 
 if(IS_DIRECTORY doc/textbook)

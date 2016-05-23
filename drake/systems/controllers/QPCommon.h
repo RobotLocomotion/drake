@@ -1,12 +1,14 @@
 #pragma once
 
-#include "drake/systems/controllers/controlUtil.h"
-#include "drake/util/drakeUtil.h"
 #include <vector>
+
 #include <Eigen/Core>
-#include "drake/systems/plants/RigidBodyTree.h"
+
+#include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/robotInterfaces/Side.h"
+#include "drake/util/drakeUtil.h"
 
 struct QPControllerState {
   double t_prev;
@@ -58,9 +60,9 @@ struct VRefIntegratorParams {
 };
 
 struct IntegratorParams {
-  IntegratorParams(const RigidBodyTree& robot)
-      : gains(Eigen::VectorXd::Zero(robot.num_positions)),
-        clamps(Eigen::VectorXd::Zero(robot.num_positions)),
+  explicit IntegratorParams(const RigidBodyTree& robot)
+      : gains(Eigen::VectorXd::Zero(robot.number_of_positions())),
+        clamps(Eigen::VectorXd::Zero(robot.number_of_positions())),
         eta(0.0) {}
 
   Eigen::VectorXd gains;
@@ -88,17 +90,17 @@ struct Bounds {
 };
 
 struct JointSoftLimitParams {
-  JointSoftLimitParams(const RigidBodyTree& robot)
-      : enabled(
-            Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(robot.num_positions)),
+  explicit JointSoftLimitParams(const RigidBodyTree& robot)
+      : enabled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
+            robot.number_of_positions())),
         disable_when_body_in_support(
-            Eigen::VectorXi::Zero(robot.num_positions)),
-        lb(Eigen::VectorXd::Zero(robot.num_positions)),
-        ub(Eigen::VectorXd::Zero(robot.num_positions)),
-        kp(Eigen::VectorXd::Zero(robot.num_positions)),
-        kd(Eigen::VectorXd::Zero(robot.num_positions)),
-        weight(Eigen::VectorXd::Zero(robot.num_positions)),
-        k_logistic(Eigen::VectorXd::Zero(robot.num_positions)) {}
+            Eigen::VectorXi::Zero(robot.number_of_positions())),
+        lb(Eigen::VectorXd::Zero(robot.number_of_positions())),
+        ub(Eigen::VectorXd::Zero(robot.number_of_positions())),
+        kp(Eigen::VectorXd::Zero(robot.number_of_positions())),
+        kd(Eigen::VectorXd::Zero(robot.number_of_positions())),
+        weight(Eigen::VectorXd::Zero(robot.number_of_positions())),
+        k_logistic(Eigen::VectorXd::Zero(robot.number_of_positions())) {}
 
   Eigen::Matrix<bool, Eigen::Dynamic, 1> enabled;
   Eigen::VectorXi disable_when_body_in_support;
@@ -122,13 +124,13 @@ struct JointSoftLimitParams {
 };
 
 struct WholeBodyParams {
-  WholeBodyParams(const RigidBodyTree& robot)
-      : Kp(Eigen::VectorXd::Zero(robot.num_positions)),
-        Kd(Eigen::VectorXd::Zero(robot.num_positions)),
-        w_qdd(Eigen::VectorXd::Zero(robot.num_velocities)),
+  explicit WholeBodyParams(const RigidBodyTree& robot)
+      : Kp(Eigen::VectorXd::Zero(robot.number_of_positions())),
+        Kd(Eigen::VectorXd::Zero(robot.number_of_positions())),
+        w_qdd(Eigen::VectorXd::Zero(robot.number_of_velocities())),
         integrator(robot),
-        qdd_bounds(Eigen::VectorXd::Zero(robot.num_velocities),
-                   Eigen::VectorXd::Zero(robot.num_velocities)) {}
+        qdd_bounds(Eigen::VectorXd::Zero(robot.number_of_velocities()),
+                   Eigen::VectorXd::Zero(robot.number_of_velocities())) {}
 
   Eigen::VectorXd Kp;
   Eigen::VectorXd Kd;
@@ -166,7 +168,7 @@ struct BodyMotionParams {
 };
 
 struct HardwareGains {
-  HardwareGains(const RigidBodyTree& robot)
+  explicit HardwareGains(const RigidBodyTree& robot)
       : k_f_p(Eigen::VectorXd::Zero(robot.actuators.size())),
         k_q_p(Eigen::VectorXd::Zero(robot.actuators.size())),
         k_q_i(Eigen::VectorXd::Zero(robot.actuators.size())),
@@ -197,7 +199,7 @@ struct HardwareGains {
 };
 
 struct HardwareParams {
-  HardwareParams(const RigidBodyTree& robot)
+  explicit HardwareParams(const RigidBodyTree& robot)
       : gains(robot),
         joint_is_force_controlled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
             robot.actuators.size())),
@@ -217,7 +219,7 @@ struct HardwareParams {
 };
 
 struct QPControllerParams {
-  QPControllerParams(const RigidBodyTree& robot)
+  explicit QPControllerParams(const RigidBodyTree& robot)
       : whole_body(robot),
         body_motion(robot.bodies.size()),
         vref_integrator(),
@@ -255,8 +257,7 @@ struct QPControllerParams {
     bool is_equal =
         lhs.whole_body == rhs.whole_body
         // && lhs.body_motion == rhs.body_motion
-        &&
-        lhs.vref_integrator == rhs.vref_integrator &&
+        && lhs.vref_integrator == rhs.vref_integrator &&
         lhs.joint_soft_limits == rhs.joint_soft_limits &&
         lhs.hardware == rhs.hardware && lhs.W_kdot.isApprox(rhs.W_kdot) &&
         lhs.Kp_ang == rhs.Kp_ang && lhs.w_slack == rhs.w_slack &&
@@ -298,7 +299,8 @@ struct QPControllerOutput {
 
 struct QPControllerDebugData {
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>> active_supports;
+              Eigen::aligned_allocator<SupportStateElement>>
+      active_supports;
   int nc;
   Eigen::MatrixXd normals;
   Eigen::MatrixXd B;
@@ -362,4 +364,3 @@ class KinematicModifications {
     // empty
   }
 };
-
