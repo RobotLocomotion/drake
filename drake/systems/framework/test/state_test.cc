@@ -29,7 +29,7 @@ class ContinuousStateTest : public ::testing::Test {
     state_vector.reset(new SystemStateVector<int>(std::move(vec)));
 
     continuous_state_.reset(new ContinuousState<int>(
-      std::move(state_vector), kPositionLength, kVelocityLength));
+        std::move(state_vector), kPositionLength, kVelocityLength));
   }
 
   std::unique_ptr<ContinuousState<int>> continuous_state_;
@@ -38,20 +38,15 @@ class ContinuousStateTest : public ::testing::Test {
 TEST_F(ContinuousStateTest, Access) {
   EXPECT_EQ(kPositionLength,
             continuous_state_->get_generalized_position().size());
-  EXPECT_EQ(1,
-            continuous_state_->get_generalized_position().GetAtIndex(0));
+  EXPECT_EQ(1, continuous_state_->get_generalized_position().GetAtIndex(0));
 
   EXPECT_EQ(kVelocityLength,
             continuous_state_->get_generalized_velocity().size());
-  EXPECT_EQ(2,
-            continuous_state_->get_generalized_velocity().GetAtIndex(0));
-  EXPECT_EQ(3,
-            continuous_state_->get_generalized_velocity().GetAtIndex(1));
+  EXPECT_EQ(2, continuous_state_->get_generalized_velocity().GetAtIndex(0));
+  EXPECT_EQ(3, continuous_state_->get_generalized_velocity().GetAtIndex(1));
 
-  EXPECT_EQ(kMiscLength,
-            continuous_state_->get_misc_continuous_state().size());
-  EXPECT_EQ(4,
-            continuous_state_->get_misc_continuous_state().GetAtIndex(0));
+  EXPECT_EQ(kMiscLength, continuous_state_->get_misc_continuous_state().size());
+  EXPECT_EQ(4, continuous_state_->get_misc_continuous_state().GetAtIndex(0));
 }
 
 TEST_F(ContinuousStateTest, Mutation) {

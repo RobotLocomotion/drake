@@ -47,7 +47,7 @@ class ContinuousState {
     generalized_velocity_.reset(
         new StateSubvector<T>(state_.get(), num_q, num_v));
     misc_continuous_state_.reset(new StateSubvector<T>(
-        state_.get(), num_q + num_v, state->size() - (num_q + num_v)));
+        state_.get(), num_q + num_v, state_->size() - (num_q + num_v)));
   }
 
   // TODO(david-german-tri): Add a suitable constructor for the continuous
