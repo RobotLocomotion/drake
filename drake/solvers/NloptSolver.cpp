@@ -94,10 +94,12 @@ struct WrappedConstraint {
 
   const Constraint* constraint;
   const VariableList* variable_list;
-  bool force_bounds;
-  bool force_upper;
+  bool force_bounds; ///< force usage of only upper or lower bounds
+  bool force_upper; ///< Only used if force_bounds is set.  Selects
+                    ///< which bounds are being tested (lower bound
+                    ///< vs. upper bound).
   // TODO(sam.creasey) It might be desirable to have a cache for the
-  // result of evaluatinf the constraints if NLopt were being used in
+  // result of evaluating the constraints if NLopt were being used in
   // a situation where constraints were frequently being wrapped in
   // such a way as to result in multiple evaluations.  As this is a
   // speculative case, and since NLopt's roundoff issues with
@@ -127,7 +129,6 @@ double ApplyConstraintBounds(double result, double lb, double ub) {
     result -= ub;
   } else {
     if (lb == -std::numeric_limits<double>::infinity()) {
-      std::cerr << "Unable to handle constraint with no bounds." << std::endl;
       throw std::runtime_error(
           "Unable to handle constraint with no bounds.");
     }
@@ -179,7 +180,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
           ty(i).value(), -std::numeric_limits<double>::infinity(),
           upper_bound(i));
     } else if (wrapped->force_bounds && !wrapped->force_upper &&
-               (lower_bound(i) != std::numeric_limits<double>::infinity())) {
+               (lower_bound(i) != -std::numeric_limits<double>::infinity())) {
       result[result_idx] = ApplyConstraintBounds(
           ty(i).value(), lower_bound(i),
           std::numeric_limits<double>::infinity());
@@ -219,8 +220,15 @@ void WrapConstraint(const OptimizationProblem::Binding<C>& binding,
                     double constraint_tol,
                     nlopt::opt* opt,
                     std::list<WrappedConstraint>* wrapped_list) {
+  // Version of the wrapped constraint which refers only to equality
+  // constraints (if any), and will be used with
+  // add_equality_mconstraint.
   WrappedConstraint wrapped_eq(binding.constraint().get(),
                                &binding.variable_list());
+
+  // Version of the wrapped constraint which refers only to inequality
+  // constraints (if any), and will be used with
+  // add_equality_mconstraint.
   WrappedConstraint wrapped_in(binding.constraint().get(),
                                &binding.variable_list());
 
