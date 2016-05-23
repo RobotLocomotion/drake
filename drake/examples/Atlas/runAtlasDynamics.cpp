@@ -41,14 +41,14 @@ int main(int argc, char* argv[]) {
     Isometry3d T_element_to_link = Isometry3d::Identity();
     T_element_to_link.translation() << 0, 0,
         -box_depth / 2;  // top of the box is at z=0
-    auto& world = tree->bodies[0];
+    RigidBody& world = tree->world();
     Vector4d color;
     color << 0.9297, 0.7930, 0.6758,
         1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
-    world->addVisualElement(
+    world.addVisualElement(
         DrakeShapes::VisualElement(geom, T_element_to_link, color));
     tree->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, world), *world,
+        RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
         "terrain");
     tree->updateStaticCollisionElements();
   }
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
       make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
-  x0.head(tree->num_positions) = tree->getZeroConfiguration();
+  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
   // magic numbers are initial conditions used in runAtlasWalking.m
   x0(2) = 0.844;    // base z
   x0(10) = 0.27;    // l_arm_shz
