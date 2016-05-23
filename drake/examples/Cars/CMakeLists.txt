@@ -14,7 +14,6 @@ if (LCM_FOUND)
     car_simulation.h
     simple_car.h
     trajectory_car.h
-    trivial_car.h
     gen/driving_command.h
     gen/euler_floating_joint_state.h
     gen/simple_car_state.h
@@ -33,5 +32,5 @@ if (LCM_FOUND)
   target_link_libraries(car_sim_lcm drakeCars drakeRBSystem drakeLCMSystem)
 
   add_executable(demo_multi_car demo_multi_car.cc)
-  target_link_libraries(demo_multi_car drakeRBSystem drakeLCMSystem)
+  target_link_libraries(demo_multi_car drakeCars drakeRBSystem drakeLCMSystem)
 endif (LCM_FOUND)
