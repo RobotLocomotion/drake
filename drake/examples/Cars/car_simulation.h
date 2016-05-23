@@ -50,6 +50,17 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
                                                        double* duration);
 
 /**
+ * Adds a terrain to the specified rigid body tree.
+ *
+ * @param rigid_body_tree The rigid body tree.
+ * @param box_width
+ * @param box_depth
+ */
+DRAKECARS_EXPORT
+void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
+	double box_width = 1000, double box_depth = 10);
+
+/**
  * Creates a vehicle system by instantiating PD controllers for the actuators
  * in the model and cascading it with a rigid body system. The expected names
  * of the actuators are "steering", "right_wheel_joint", "left_wheel_joint".

@@ -764,7 +764,7 @@ void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
   }
 }
 
-void parseSDFModel(RigidBodySystem& sys, XMLElement* node) {
+void parseSDFModel(RigidBodySystem& sys, const std::string* model_name_postfix, XMLElement* node) {
   // A pose map is necessary since SDF specifies almost everything in the
   // global coordinate frame. The pose map contains transforms from a link's
   // coordinate frame to the model's coordinate frame.
@@ -774,6 +774,8 @@ void parseSDFModel(RigidBodySystem& sys, XMLElement* node) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your model must have a name attribute");
   string model_name = node->Attribute("name");
+  if (model_name_postfix != nullptr)
+    model_name = model_name + *model_name_postfix;
 
   // Parses each link element within the model.
   for (XMLElement* elnode = node->FirstChildElement("link"); elnode;
@@ -786,14 +788,14 @@ void parseSDFModel(RigidBodySystem& sys, XMLElement* node) {
     parseSDFJoint(sys, model_name, elnode, pose_map);
 }
 
-void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
+void parseSDF(RigidBodySystem& sys, const std::string* model_name_postfix, XMLDocument* xml_doc) {
   XMLElement* node = xml_doc->FirstChildElement("sdf");
   if (!node)
     throw std::runtime_error(
         "ERROR: This xml file does not contain an sdf tag");
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
        elnode = node->NextSiblingElement("model"))
-    parseSDFModel(sys, elnode);
+    parseSDFModel(sys, model_name_postfix, elnode);
 }
 
 void RigidBodySystem::addRobotFromURDFString(
@@ -830,10 +832,12 @@ void RigidBodySystem::addRobotFromURDF(
 
 void RigidBodySystem::addRobotFromSDF(
     const string& sdf_filename,
+    const string* model_name_postfix,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   // Adds the robot to the rigid body tree.
-  tree->addRobotFromSDF(sdf_filename, floating_base_type, weld_to_frame);
+  tree->addRobotFromSDF(sdf_filename, model_name_postfix, floating_base_type,
+    weld_to_frame);
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).
@@ -843,11 +847,19 @@ void RigidBodySystem::addRobotFromSDF(
     throw std::runtime_error("failed to parse xml in file " + sdf_filename +
                              "\n" + xml_doc.ErrorName());
   }
-  parseSDF(*this, &xml_doc);
+  parseSDF(*this, model_name_postfix, &xml_doc);
 }
 
 void RigidBodySystem::addRobotFromFile(
     const std::string& filename,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+  addRobotFromFile(filename, nullptr, floating_base_type, weld_to_frame);
+}
+
+void RigidBodySystem::addRobotFromFile(
+    const std::string& filename,
+    const std::string* model_name_postfix,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   spruce::path p(filename);
@@ -857,9 +869,9 @@ void RigidBodySystem::addRobotFromFile(
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
   if (ext == ".urdf")
-    addRobotFromURDF(filename, floating_base_type, weld_to_frame);
+    addRobotFromURDF(filename, floating_base_type, weld_to_frame);  // TODO(liang): Add support for model name postfix
   else if (ext == ".sdf")
-    addRobotFromSDF(filename, floating_base_type, weld_to_frame);
+    addRobotFromSDF(filename, model_name_postfix, floating_base_type, weld_to_frame);
   else
     throw runtime_error("unknown file extension: " + ext);
 }

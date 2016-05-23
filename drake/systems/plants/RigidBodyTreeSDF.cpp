@@ -205,6 +205,7 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 bool parseSDFLink(RigidBodyTree* model, std::string model_name,
                   XMLElement* node, const PackageMap& package_map,
                   PoseMap& pose_map, const string& root_dir, int* index) {
+
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
@@ -528,6 +529,11 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
  * Parses a model and adds it to the rigid body tree.
  *
  * @param model A pointer to the rigid body tree to which to add the model.
+ * @param node The XML node containing the model information.
+ * @param model_name_postfix A postfix to add to the end of the model name.
+ * This can be nullptr, in which case the model name as specified by the SDF
+ * remains unchanged. It is useful to allow multiple cars to be added based on
+ * the same underlying SDF model.
  * @param package_map A map containing information about the ROS workspace
  * in which to search for meshes.
  * @param root_dir The root directory from which to search for mesh files.
@@ -537,6 +543,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
  * relative to the link to which the robot is being welded.
  */
 void parseModel(RigidBodyTree* model, XMLElement* node,
+                const std::string* model_name_postfix,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -545,8 +552,12 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
                      // coordinates.  sigh...
 
   if (!node->Attribute("name"))
-    throw runtime_error("Error: your model must have a name attribute");
+      throw runtime_error("Error: your model must have a name attribute");
   string model_name = node->Attribute("name");
+
+  if (model_name_postfix != nullptr) {
+    model_name = model_name + *model_name_postfix;
+  }
 
   // Maintains a list of links that were added to the rigid body tree.
   // This is iterated over by method AddFloatingJoint() to determine where
@@ -608,12 +619,13 @@ void parseWorld(RigidBodyTree* model, XMLElement* node,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
-    parseModel(model, model_node, package_map, root_dir, floating_base_type,
-               weld_to_frame);
+    parseModel(model, model_node, nullptr, // model name postfix
+      package_map, root_dir, floating_base_type, weld_to_frame);
   }
 }
 
 void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
+              const std::string * model_name_postfix,
               PackageMap& package_map, const string& root_dir,
               const DrakeJoint::FloatingBaseType floating_base_type,
               std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -640,14 +652,22 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
   // Load all models not in a world.
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model"))
-    parseModel(model, model_node, package_map, root_dir, floating_base_type,
-               weld_to_frame);
+    parseModel(model, model_node, model_name_postfix, package_map, root_dir,
+      floating_base_type, weld_to_frame);
 
   model->compile();
 }
 
 void RigidBodyTree::addRobotFromSDF(
     const string& urdf_filename,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+  addRobotFromSDF(urdf_filename, nullptr, floating_base_type, weld_to_frame);
+}
+
+void RigidBodyTree::addRobotFromSDF(
+    const string& urdf_filename,
+    const string* model_name_postfix,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
@@ -665,6 +685,6 @@ void RigidBodyTree::addRobotFromSDF(
     root_dir = urdf_filename.substr(0, found);
   }
 
-  parseSDF(this, &xml_doc, package_map, root_dir, floating_base_type,
-           weld_to_frame);
+  parseSDF(this, &xml_doc, model_name_postfix, package_map, root_dir,
+    floating_base_type, weld_to_frame);
 }

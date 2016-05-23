@@ -104,6 +104,8 @@ void RigidBodyTree::SortTree() {
 void RigidBodyTree::compile(void) {
   SortTree();
 
+  std::map<std::string, int> model_name_to_robotnum;
+
   // Welds joints for links that have zero inertia and no children (as seen in
   // pr2.urdf)
   // TODO(amcastro-tri): this is O(n^2). RigidBody should contain a list of
@@ -116,6 +118,16 @@ void RigidBodyTree::compile(void) {
   //   RigidBodyTree::downwards_body_iterator: travels the tree downwards from
   //   the root towards the last leaf.
   for (size_t i = 0; i < bodies.size(); i++) {
+
+    auto robotnum_itr = model_name_to_robotnum.find(bodies[i]->model_name());
+    if (robotnum_itr != model_name_to_robotnum.end()) {
+      bodies[i]->robotnum = robotnum_itr->second;
+    } else {
+      int robotnum = model_name_to_robotnum.size();
+      model_name_to_robotnum[bodies[i]->model_name()] = robotnum;
+      bodies[i]->robotnum = robotnum;
+    }
+
     if (bodies[i]->hasParent() && bodies[i]->I.isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); j++) {
@@ -1592,6 +1604,7 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
 }
 
 RigidBody* RigidBodyTree::findLink(std::string name, int robot) const {
+
   std::transform(name.begin(), name.end(), name.begin(),
                  ::tolower);  // convert to lower case
 
@@ -1654,7 +1667,7 @@ RigidBody* RigidBodyTree::findLink(std::string name,
     }
   }
   if (match >= 0) return bodies[match].get();
-  cerr << "could not find any links named " << name << endl;
+  cerr << "RigidBodyTree::findLink: ERROR: Could not find any links named " << name << " in model " << model_name << endl;
   return nullptr;
 }
 

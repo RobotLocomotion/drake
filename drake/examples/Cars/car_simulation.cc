@@ -78,22 +78,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
 
   // If no environment is specified, the following code adds a flat terrain.
   if (argc < 3) {
-    double box_width = 1000;
-    double box_depth = 10;
-    DrakeShapes::Box geom(Eigen::Vector3d(box_width, box_width, box_depth));
-    Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-    T_element_to_link.translation() << 0, 0,
-        -box_depth / 2;  // top of the box is at z=0
-    RigidBody& world = tree->world();
-    Eigen::Vector4d color;
-    color << 0.9297, 0.7930, 0.6758,
-        1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
-    world.addVisualElement(
-        DrakeShapes::VisualElement(geom, T_element_to_link, color));
-    tree->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
-        "terrain");
-    tree->updateStaticCollisionElements();
+    AddFlatTerrain(tree);
   }
 
   rigid_body_sys->penetration_stiffness = 5000.0;
@@ -102,6 +87,24 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
 
   return rigid_body_sys;
+}
+
+void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
+    double box_width, double box_depth) {
+  DrakeShapes::Box geom(Eigen::Vector3d(box_width, box_width, box_depth));
+  Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
+  T_element_to_link.translation() << 0, 0,
+      -box_depth / 2;  // top of the box is at z=0
+  RigidBody& world = rigid_body_tree->world();
+  Eigen::Vector4d color;
+  color << 0.9297, 0.7930, 0.6758,
+      1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
+  world.addVisualElement(
+      DrakeShapes::VisualElement(geom, T_element_to_link, color));
+  rigid_body_tree->addCollisionElement(
+      RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
+      "terrain");
+  rigid_body_tree->updateStaticCollisionElements();
 }
 
 std::shared_ptr<CascadeSystem<
