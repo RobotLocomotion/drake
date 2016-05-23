@@ -1,17 +1,14 @@
 
 #include <iostream>
 
-#include "drake/Path.h"
-#include "drake/systems/LCMSystem.h"
-#include "drake/systems/LinearSystem.h"
-#include "drake/systems/cascade_system.h"
+#include "atlas_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/drakeAppUtil.h"
 
 using namespace std;
 using namespace Drake;
 using namespace Eigen;
+
+using drake::AtlasSystem;
 
 int main(int argc, char* argv[]) {
   SimulationOptions options;
@@ -23,10 +20,9 @@ int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if (!lcm->good()) return 1;
 
-  auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(
-      getDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
-      DrakeJoint::QUATERNION);
+  // Unfortunately Drake::cascade takes std::shared_ptr's as arguments.
+  std::shared_ptr<AtlasSystem> rigid_body_sys = std::make_shared<AtlasSystem>();
+
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
   rigid_body_sys->penetration_stiffness = 1500.0;
