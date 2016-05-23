@@ -14,8 +14,8 @@ namespace drake {
 Elements are compared using operator< and the vectors must be sorted with
 respect to the same operator.
 
-This algorithm only works on `std::vector`'s to take advantage of their fast and
-random access.
+This algorithm only works on `std::vector`'s to take advantage of their fast
+ and random access.
 
 This algorithm only works on sorted vectors. Entries can be repeated as long as
 they are sorted.
