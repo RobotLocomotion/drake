@@ -84,7 +84,7 @@ class NonlinearProgram : public MathematicalProgram {
 
   SolutionResult Solve(OptimizationProblem& prog) const override {
     if (snopt_solver.available()) {
-      return snopt_solver.Solve(prog);
+      // return snopt_solver.Solve(prog);
     }
     if (ipopt_solver.available()) {
       return ipopt_solver.Solve(prog);
