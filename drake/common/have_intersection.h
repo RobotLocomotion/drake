@@ -8,13 +8,13 @@ namespace drake {
 
 @param  a  First vector.
 @param  b  Second vector.
-@returns true if there is a non-empty intersection between vectors;
-false otherwise.
+@returns `true` if there is a non-empty intersection between vectors;
+`false` otherwise.
 
 Elements are compared using operator< and the vectors must be sorted with
 respect to the same operator.
 
-This algorithm only works on std::vector's to take advantage of their fast and
+This algorithm only works on `std::vector`'s to take advantage of their fast and
 random access.
 
 This algorithm only works on sorted vectors. Entries can be repeated as long as
@@ -29,9 +29,9 @@ An example of worst case is given below:
 @endverbatim
 
 In this case the algorithm needs to scan both vectors from start to end. **/
-template<typename T>
-bool SortedVectorsHaveIntersection(const std::vector<T> &a,
-                                   const std::vector<T> &b) {
+template <typename T>
+bool SortedVectorsHaveIntersection(const std::vector<T>& a,
+                                   const std::vector<T>& b) {
   typename std::vector<T>::const_iterator ai = a.begin();
   typename std::vector<T>::const_iterator bi = b.begin();
   // Quick checks first:
@@ -39,8 +39,7 @@ bool SortedVectorsHaveIntersection(const std::vector<T> &a,
   if (ai == a.end() || bi == b.end()) return false;
 
   // Check for non-overlapping ranges:
-  if (a.front() > b.back() ||
-      b.front() > a.back()) return false;
+  if (a.front() > b.back() || b.front() > a.back()) return false;
 
   // Non-empty ranges with elements that overlap.
   while (true) {
