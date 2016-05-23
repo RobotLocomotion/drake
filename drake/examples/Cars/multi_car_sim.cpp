@@ -28,9 +28,11 @@ int do_main(int argc, const char* argv[]) {
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
+  // Adds a multiple copies of the same SDF into the same rigid body system.
   const int kNumCarsPerRow = 3;
-  for (int ii = 0; ii < 12; ii++) {
+  const int kNumTotalCars = 12;
 
+  for (int ii = 0; ii < kNumTotalCars; ii++) {
     int x_coord = ii % kNumCarsPerRow;
     int y_coord = ii - x_coord * kNumCarsPerRow;
 
@@ -52,6 +54,8 @@ int do_main(int argc, const char* argv[]) {
         // root link in the world's frame.
         Eigen::Vector3d(0, 0, 0));
 
+    // Ensure each copy of the car has a unique model name. This is done by
+    // selecting a unique postfix for the model name.
     std::stringstream postfix_buff;
     postfix_buff << "_" << ii;
     std::string postfix = postfix_buff.str();
