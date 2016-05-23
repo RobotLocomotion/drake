@@ -8,7 +8,7 @@ namespace util {
 namespace {
 
 // Tests the ability for two identical matrices to be compared.
-TEST(MatrixCompareTest, CompareIdentical) {
+GTEST_TEST(MatrixCompareTest, CompareIdentical) {
   Eigen::MatrixXd m1(2, 2);
   m1 << 0, 1, 2, 3;
 
@@ -35,7 +35,7 @@ TEST(MatrixCompareTest, CompareIdentical) {
 }
 
 // Tests absolute tolerance with real numbers.
-TEST(MatrixCompareTest, AbsoluteCompare) {
+GTEST_TEST(MatrixCompareTest, AbsoluteCompare) {
   Eigen::MatrixXd m1(2, 2);
   m1 << 0, 1, 2, 3;
 
@@ -68,7 +68,7 @@ TEST(MatrixCompareTest, AbsoluteCompare) {
 }
 
 // Tests absolute tolerance with NaN values
-TEST(MatrixCompareTest, AbsoluteNaNCompare) {
+GTEST_TEST(MatrixCompareTest, AbsoluteNaNCompare) {
   Eigen::MatrixXd m1(2, 2);
   m1 << 0, 1, std::numeric_limits<double>::quiet_NaN(), 3;
 
@@ -101,7 +101,7 @@ TEST(MatrixCompareTest, AbsoluteNaNCompare) {
 }
 
 // Tests absolute tolerance with real numbers.
-TEST(MatrixCompareTest, RelativeCompare) {
+GTEST_TEST(MatrixCompareTest, RelativeCompare) {
   Eigen::MatrixXd m1(2, 2);
   m1 << 100, 100, 100, 100;
 
@@ -127,7 +127,7 @@ TEST(MatrixCompareTest, RelativeCompare) {
 }
 
 // Tests ability to not specify an error message parameter
-TEST(MatrixCompareTest, NoMessageParam) {
+GTEST_TEST(MatrixCompareTest, NoMessageParam) {
   Eigen::MatrixXd m1(2, 2);
   m1 << 1, 2, 3, 4;
 

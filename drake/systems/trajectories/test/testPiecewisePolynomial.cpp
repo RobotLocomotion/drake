@@ -142,7 +142,7 @@ void testValueOutsideOfRange() {
                               1e-10, MatrixCompareType::absolute));
 }
 
-TEST(testPiecewisePolynomial, AllTests) {
+GTEST_TEST(testPiecewisePolynomial, AllTests) {
   testIntegralAndDerivative<double>();
   testBasicFunctionality<double>();
   testValueOutsideOfRange<double>();

@@ -66,7 +66,7 @@ struct Unique {
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
-TEST(testOptimizationProblem, testAddFunction) {
+GTEST_TEST(testOptimizationProblem, testAddFunction) {
   OptimizationProblem prog;
   prog.AddContinuousVariables(1);
 
@@ -104,7 +104,7 @@ void RunNonlinearProgram(OptimizationProblem& prog,
   }
 }
 
-TEST(testOptimizationProblem, trivialLeastSquares) {
+GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
   OptimizationProblem prog;
 
   auto const& x = prog.AddContinuousVariables(4);
@@ -153,7 +153,7 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
     });
 }
 
-TEST(testOptimizationProblem, trivialLinearEquality) {
+GTEST_TEST(testOptimizationProblem, trivialLinearEquality) {
   OptimizationProblem prog;
 
   auto vars = prog.AddContinuousVariables(2);
@@ -187,7 +187,7 @@ class TestProblem1Objective {
   }
 };
 
-TEST(testOptimizationProblem, testProblem1) {
+GTEST_TEST(testOptimizationProblem, testProblem1) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(5);
   prog.AddCost(TestProblem1Objective());
@@ -257,7 +257,7 @@ class LowerBoundTestConstraint : public Constraint {
   int i2_;
 };
 
-TEST(testOptimizationProblem, lowerBoundTest) {
+GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(6);
   prog.AddCost(LowerBoundTestObjective());
@@ -328,7 +328,7 @@ class SixHumpCamelObjective {
   }
 };
 
-TEST(testOptimizationProblem, sixHumpCamel) {
+GTEST_TEST(testOptimizationProblem, sixHumpCamel) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(2);
   auto objective = prog.AddCost(SixHumpCamelObjective());
@@ -393,7 +393,7 @@ class GloptipolyConstrainedExampleConstraint
  * Which is from section 3.5 in
  *   Handbook of Test Problems in Local and Global Optimization
  */
-TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
+GTEST_TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
   OptimizationProblem prog;
 
   // This test is run twice on different collections of continuous
@@ -445,7 +445,7 @@ TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
  * Test that the eval() method of LinearComplementarityConstraint correctly
  * returns the slack.
  */
-TEST(testOptimizationProblem, simpleLCPConstraintEval) {
+GTEST_TEST(testOptimizationProblem, simpleLCPConstraintEval) {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
 
@@ -475,7 +475,7 @@ TEST(testOptimizationProblem, simpleLCPConstraintEval) {
  * this case; tests of the correctness of the Moby LCP solver itself live in
  * testMobyLCP.
  */
-TEST(testOptimizationProblem, simpleLCP) {
+GTEST_TEST(testOptimizationProblem, simpleLCP) {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
 
@@ -498,7 +498,7 @@ TEST(testOptimizationProblem, simpleLCP) {
  * @brief Just two copies of the simpleLCP example, to make sure that the
  * write-through of LCP results to the solution vector works correctly.
  */
-TEST(testOptimizationProblem, multiLCP) {
+GTEST_TEST(testOptimizationProblem, multiLCP) {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
 
@@ -533,7 +533,7 @@ TEST(testOptimizationProblem, multiLCP) {
 #endif
 
 /** Simple test of polynomial constraints. */
-TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
+GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   static const double kInf = std::numeric_limits<double>::infinity();
   // Generic constraints in nlopt require a very generous epsilon.
   static const double kEpsilon = 1e-4;

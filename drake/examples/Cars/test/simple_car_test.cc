@@ -77,7 +77,7 @@ class HistorySystem {
   mutable std::map<double, InputVector<double>> states_;
 };
 
-TEST(SimpleCarTest, ZerosIn) {
+GTEST_TEST(SimpleCarTest, ZerosIn) {
   SimpleCar dut;
   SimpleCarState<double> state_zeros;
   DrivingCommand<double> input_zeros;
@@ -90,7 +90,7 @@ TEST(SimpleCarTest, ZerosIn) {
                               tolerance, MatrixCompareType::absolute));
 }
 
-TEST(SimpleCarTest, Accelerating) {
+GTEST_TEST(SimpleCarTest, Accelerating) {
   DrivingCommand<double> max_throttle;
   max_throttle.set_throttle(1.);
 
@@ -136,7 +136,7 @@ TEST(SimpleCarTest, Accelerating) {
               SimpleCar::kDefaultConfig.max_velocity, 1e-5);
 }
 
-TEST(SimpleCarTest, Braking) {
+GTEST_TEST(SimpleCarTest, Braking) {
   DrivingCommand<double> max_brake;
   max_brake.set_brake(1.);
 
@@ -179,7 +179,7 @@ TEST(SimpleCarTest, Braking) {
   EXPECT_NEAR(history_system->states_[max_time].velocity(), 0., 1e-5);
 }
 
-TEST(SimpleCarTest, Steering) {
+GTEST_TEST(SimpleCarTest, Steering) {
   DrivingCommand<double> left(Eigen::Vector3d(M_PI / 2, 0., 0.));
 
   auto car = std::make_shared<SimpleCar>();

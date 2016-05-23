@@ -15,7 +15,7 @@ using Drake::toEigen;
 namespace drake {
 namespace test {
 
-TEST(testMassSpringDamper, AllTests) {
+GTEST_TEST(testMassSpringDamper, AllTests) {
   auto sys = make_shared<RigidBodySystem>();
   sys->addRobotFromFile(
       getDrakePath() + "/systems/plants/test/MassSpringDamper.urdf",

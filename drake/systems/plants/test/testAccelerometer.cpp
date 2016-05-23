@@ -30,7 +30,7 @@ Vector3d getAccelerometerOutput(shared_ptr<RigidBodySystem> const& sys,
   return system_output.tail<3>();
 }
 
-TEST(testAccelerometer, AllTests) {
+GTEST_TEST(testAccelerometer, AllTests) {
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->addRobotFromFile(

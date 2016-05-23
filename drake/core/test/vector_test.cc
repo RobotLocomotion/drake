@@ -21,7 +21,7 @@ namespace test {
 namespace {
 
 // Tests the ability to set a PendulumState equal to a vector and vice versa.
-TEST(VectorTest, ValueAssignment) {
+GTEST_TEST(VectorTest, ValueAssignment) {
   Eigen::Vector2d x;
   x << 0.2, 0.4;
 
@@ -49,7 +49,7 @@ TEST(VectorTest, ValueAssignment) {
 }
 
 // Tests the ability to set a CombinedVector's value
-TEST(VectorTest, CombinedVector) {
+GTEST_TEST(VectorTest, CombinedVector) {
   Eigen::Vector3d abc;
   abc << 1, 2, 3;
 
@@ -62,7 +62,7 @@ TEST(VectorTest, CombinedVector) {
 }
 
 // Tests the ability to use a CombinedVectorUtil
-TEST(VectorTest, CombinedVectorUtil) {
+GTEST_TEST(VectorTest, CombinedVectorUtil) {
   Eigen::Vector3d abc;
   abc << 1, 2, 3;
 
@@ -75,7 +75,7 @@ TEST(VectorTest, CombinedVectorUtil) {
 
 // Verify that combining a vector with an unused or empty vector returns the
 // original type
-TEST(VectorTest, CombineVectorCornerCases) {
+GTEST_TEST(VectorTest, CombineVectorCornerCases) {
   CombinedVectorUtil<PendulumState, NullVector>::type<double> test1;
   EXPECT_TRUE((is_same<PendulumState<double>, decltype(test1)>::value))
       << "combined vector builder returned " +
@@ -88,20 +88,20 @@ TEST(VectorTest, CombineVectorCornerCases) {
 }
 
 // Tests the RowsAtCompileTime
-TEST(VectorTest, RowsAtCompileTime) {
+GTEST_TEST(VectorTest, RowsAtCompileTime) {
   EXPECT_EQ((Eigen::Matrix<double, 2, 1>::RowsAtCompileTime), 2)
       << "failed to evaluate RowsAtCompileTime";
 }
 
 // Tests the InputOutputRelation. Verify that linear is a polynomial.
-TEST(VectorTest, InputOutputRelationLinearIsPolynomial) {
+GTEST_TEST(VectorTest, InputOutputRelationLinearIsPolynomial) {
   EXPECT_TRUE((InputOutputRelation::isA(InputOutputRelation::Form::LINEAR,
                                         InputOutputRelation::Form::POLYNOMIAL)))
       << "linear is polynomial";
 }
 
 // Tests the InputOutputRelation. Verify that zero is arbitrary.
-TEST(VectorTest, InputOutputRelationZeroIsArbitrary) {
+GTEST_TEST(VectorTest, InputOutputRelationZeroIsArbitrary) {
   EXPECT_TRUE((InputOutputRelation::isA(InputOutputRelation::Form::ZERO,
                                         InputOutputRelation::Form::ARBITRARY)))
       << "zero is arbitrary";
@@ -109,7 +109,7 @@ TEST(VectorTest, InputOutputRelationZeroIsArbitrary) {
 
 // Verifies that the least common ancestor of the I/O relations
 // AFFINE, LINEAR, AND POLYNOMIAL is polynomial.
-TEST(VectorTest, InputOutputRelationLeastCommonAncestor) {
+GTEST_TEST(VectorTest, InputOutputRelationLeastCommonAncestor) {
   EXPECT_TRUE((
       InputOutputRelation::leastCommonAncestor(
           {InputOutputRelation::Form::AFFINE, InputOutputRelation::Form::LINEAR,
@@ -119,7 +119,7 @@ TEST(VectorTest, InputOutputRelationLeastCommonAncestor) {
 }
 
 // Verifies that compositions of I/O relations are as expected
-TEST(VectorTest, InputOutputRelationCompositionTests) {
+GTEST_TEST(VectorTest, InputOutputRelationCompositionTests) {
   InputOutputRelation g(InputOutputRelation::Form::LINEAR);
   InputOutputRelation f(InputOutputRelation::Form::POLYNOMIAL);
 
@@ -131,7 +131,7 @@ TEST(VectorTest, InputOutputRelationCompositionTests) {
 }
 
 // Verify that combinations of I/O relations are as expected
-TEST(VectorTest, InputOutputRelationCombinationTests) {
+GTEST_TEST(VectorTest, InputOutputRelationCombinationTests) {
   InputOutputRelation g(InputOutputRelation::Form::LINEAR);
   InputOutputRelation f(InputOutputRelation::Form::POLYNOMIAL);
 

@@ -21,7 +21,7 @@ namespace {
 std::string model_file_1, model_file_2;
 std::shared_ptr<RigidBodyFrame> model_pose_in_world;
 
-TEST(CompareRigidBodySystemsTest, TestAll) {
+GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
   auto r1 = make_shared<RigidBodySystem>();
   r1->addRobotFromFile(model_file_1, DrakeJoint::QUATERNION);
 

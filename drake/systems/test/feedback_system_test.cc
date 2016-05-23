@@ -31,7 +31,7 @@ MakeFeedbackLoopOfAffineSystems(size_t num_states_1, size_t num_inputs_1,
 // Tests that, if the number of inputs and outputs for each system in the
 // feedback loop is fixed at compile time, the number of states, inputs, and
 // outputs for the combined system matches up.
-TEST(FeedbackSystemTest, ConstantSizes) {
+GTEST_TEST(FeedbackSystemTest, ConstantSizes) {
   auto combined = MakeFeedbackLoopOfAffineSystems<4, 2, 3, 5>(4, 2, 3, 5);
   EXPECT_EQ(4 + 5, getNumStates(*combined));
   EXPECT_EQ(4 + 5, createStateVector<double>(*combined).size());
@@ -42,7 +42,7 @@ TEST(FeedbackSystemTest, ConstantSizes) {
 // Tests that, if the number of inputs and outputs for each system in the
 // feedback loop is determined at construction, the number of states, inputs,
 // and outputs for the combined system matches up.
-TEST(FeedbackSystemTest, DynamicSizes) {
+GTEST_TEST(FeedbackSystemTest, DynamicSizes) {
   auto combined =
       MakeFeedbackLoopOfAffineSystems<Dynamic, Dynamic, Dynamic, Dynamic>(4, 2,
                                                                           3, 5);

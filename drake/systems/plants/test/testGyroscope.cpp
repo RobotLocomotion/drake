@@ -30,7 +30,7 @@ Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys,
   return output.segment<3>(13);
 }
 
-TEST(testGyroscope, AllTests) {
+GTEST_TEST(testGyroscope, AllTests) {
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->addRobotFromFile(

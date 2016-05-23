@@ -17,7 +17,7 @@ namespace examples {
 namespace quadrotor {
 namespace {
 
-TEST(urdfDynamicsTest, AllTests) {
+GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto rbsys = RigidBodySystem();
   rbsys.addRobotFromFile(getDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
                          DrakeJoint::ROLLPITCHYAW);
