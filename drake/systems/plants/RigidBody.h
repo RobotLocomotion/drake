@@ -169,17 +169,17 @@ class DRAKERBM_EXPORT RigidBody {
   typedef std::vector<DrakeCollision::CollisionElement*>
       CollisionElementsVector;
   typedef
-      typename CollisionElementsVector::iterator collision_elements_iterator;
+      typename CollisionElementsVector::iterator CollisionElementsIterator;
   typedef typename CollisionElementsVector::const_iterator
-      const_collision_elements_iterator;
+      CollisionElementsConstIterator;
   std::map<std::string, std::vector<DrakeCollision::ElementId> >
       collision_element_groups;
 
-  collision_elements_iterator collision_elements_begin() {
+  CollisionElementsIterator collision_elements_begin() {
     return collision_elements_.begin();
   }
 
-  collision_elements_iterator collision_elements_end() {
+  CollisionElementsIterator collision_elements_end() {
     return collision_elements_.end();
   }
 
