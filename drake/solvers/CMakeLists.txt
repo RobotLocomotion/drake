@@ -60,11 +60,12 @@ pods_install_pkg_config_file(drake-optimization
   VERSION 0.0.1)
 
 if (ipopt_FOUND)
-  # IPOPT's pkgconfig file adds flags which don't actually work.
-  # Since the superbuild installed the includes and libraries to
-  # locations already in the correct path, just specify that we want
-  # the library.
-  target_link_libraries(drakeOptimization ipopt)
+  pods_use_pkg_config_packages(drakeOptimization ipopt)
+  # This should probably be a test for the GNU linker instead of a platform.
+  if (NOT (APPLE OR WIN32))
+    set(CMAKE_SHARED_LINKER_FLAGS
+      "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
+  endif(NOT WIN32)
 endif(ipopt_FOUND)
 if (nlopt_FOUND)
   pods_use_pkg_config_packages(drakeOptimization nlopt)

@@ -7,8 +7,8 @@
 
 // TODO(sam.creasey) figure out how to get the real pkgconfig cflags
 #define HAVE_CSTDDEF
-#include <coin/IpIpoptApplication.hpp>
-#include <coin/IpTNLP.hpp>
+#include <IpIpoptApplication.hpp>
+#include <IpTNLP.hpp>
 #undef HAVE_CSTDDEF
 
 #include "drake/core/Gradient.h"
