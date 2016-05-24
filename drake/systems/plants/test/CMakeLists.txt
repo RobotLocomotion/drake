@@ -199,7 +199,6 @@ add_matlab_test(NAME systems/plants/test/testWingForceGradients COMMAND testWing
 add_matlab_test(NAME systems/plants/test/testdHomogTrans COMMAND testdHomogTrans)
 add_matlab_test(NAME systems/plants/test/testdTransformSpatialMotion COMMAND testdTransformSpatialMotion)
 add_matlab_test(NAME systems/plants/test/timeSteppingRigidBodyManipulatorFramesTest COMMAND timeSteppingRigidBodyManipulatorFramesTest)
-add_matlab_test(NAME systems/plants/test/world_link_test COMMAND world_link_test)
 
 if (LONG_RUNNING_TESTS)
   add_matlab_test(NAME systems/plants/test/doublePendWBiceptSpring COMMAND doublePendWBiceptSpring PROPERTIES TIMEOUT 1500)
