@@ -56,7 +56,8 @@ drake_install_headers(MathematicalProgram.h Optimization.h system_identification
 pods_install_libraries(drakeOptimization)
 if (ipopt_FOUND)
   pods_use_pkg_config_packages(drakeOptimization ipopt)
-  if (NOT WIN32)
+  # This should probably be a test for the GNU linker instead of a platform.
+  if (NOT (APPLE OR WIN32))
     set(CMAKE_SHARED_LINKER_FLAGS
       "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
   endif(NOT WIN32)
