@@ -26,7 +26,7 @@ namespace {
 
 void testExpmap2quat(const Vector4d &quat);
 
-TEST(DrakeGeometryUtilTest, RotationConversionFunctions) {
+GTEST_TEST(DrakeGeometryUtilTest, RotationConversionFunctions) {
   int ntests = 1;
   default_random_engine generator;
   // quat2axis, axis2quat
@@ -91,7 +91,7 @@ TEST(DrakeGeometryUtilTest, RotationConversionFunctions) {
       CompareMatrices(R_expected, R_eigen, 1e-6, MatrixCompareType::absolute));
 }
 
-TEST(DrakeGeometryUtilTest, DHomogTrans) {
+GTEST_TEST(DrakeGeometryUtilTest, DHomogTrans) {
   const int ntests = 1;
   Isometry3d T;
   std::default_random_engine generator;
@@ -120,7 +120,7 @@ TEST(DrakeGeometryUtilTest, DHomogTrans) {
   }
 }
 
-TEST(DrakeGeometryUtilTest, DHomogTransInv) {
+GTEST_TEST(DrakeGeometryUtilTest, DHomogTransInv) {
   const int ntests = 1;
   const bool check = true;
   Isometry3d T;
@@ -156,7 +156,7 @@ TEST(DrakeGeometryUtilTest, DHomogTransInv) {
   }
 }
 
-TEST(DrakeGeometryUtilTest, DTransformAdjoint) {
+GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjoint) {
   const int ntests = 1;
   const int nv = 6;
   const int nq = 34;
@@ -179,7 +179,7 @@ TEST(DrakeGeometryUtilTest, DTransformAdjoint) {
   }
 }
 
-TEST(DrakeGeometryUtilTest, DTransformAdjointTranspose) {
+GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjointTranspose) {
   const int ntests = 1;
   const int nv = 6;
   const int nq = 34;
@@ -202,7 +202,7 @@ TEST(DrakeGeometryUtilTest, DTransformAdjointTranspose) {
   }
 }
 
-TEST(DrakeGeometryUtilTest, NormalizeVec) {
+GTEST_TEST(DrakeGeometryUtilTest, NormalizeVec) {
   const int ntests = 1;
   const int x_rows = 4;
 
@@ -225,7 +225,7 @@ TEST(DrakeGeometryUtilTest, NormalizeVec) {
   }
 }
 
-TEST(DrakeGeometryUtilTest, SpatialCrossProduct) {
+GTEST_TEST(DrakeGeometryUtilTest, SpatialCrossProduct) {
   auto a = (Matrix<double, TWIST_SIZE, 1>::Random()).eval();
   auto b = (Matrix<double, TWIST_SIZE, TWIST_SIZE>::Identity()).eval();
   auto a_crm_b = crossSpatialMotion(a, b);
@@ -234,7 +234,7 @@ TEST(DrakeGeometryUtilTest, SpatialCrossProduct) {
                               MatrixCompareType::absolute));
 }
 
-TEST(DrakeGeometryUtilTest, drpy2rotmat) {
+GTEST_TEST(DrakeGeometryUtilTest, drpy2rotmat) {
   default_random_engine generator;
   Vector3d rpy = uniformlyRandomRPY(generator);
   Matrix3d R = rpy2rotmat(rpy);

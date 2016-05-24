@@ -19,7 +19,7 @@ namespace {
 // is done by loading random state and input values into the models and
 // verifying
 // that their dynamics are identical.
-TEST(AcrobotDynamicsTest, ValueAssignment) {
+GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
   // Create three Acrobot models
   auto r = Acrobot();
 
