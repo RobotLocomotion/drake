@@ -57,7 +57,7 @@ void Adder<T>::Output(const Context<T>& context,
 
   // Sum each input port into the output, after checking that it has the
   // expected length.
-  for (int i = 0; i < context.get_input().ports.size(); i++) {
+  for (size_t i = 0; i < context.get_input().ports.size(); i++) {
     const VectorInterface<T>* input =
         context.get_input().ports[i].vector_input;
     if (input == nullptr || input->get_value().rows() != length_) {

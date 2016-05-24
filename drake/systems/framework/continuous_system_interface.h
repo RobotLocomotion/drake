@@ -14,7 +14,7 @@ namespace systems {
 template <typename T>
 class ContinuousSystemInterface : public SystemInterface<T> {
  public:
-  virtual ~ContinuousSystemInterface() {}
+  ~ContinuousSystemInterface() override  {}
 
   // TODO(david-german-tri): Add state derivatives.
 
