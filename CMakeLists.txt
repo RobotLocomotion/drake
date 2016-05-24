@@ -76,6 +76,7 @@ else()
 	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
 	option(WITH_NLOPT 		"nonlinear optimization solver"  ON)
+	option(WITH_IPOPT 		"nonlinear optimization solver"  ON)
 	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
@@ -547,4 +548,31 @@ if (WITH_SNOPT_PRECOMPILED)
 		INSTALL_COMMAND "")
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
+endif()
+
+if (WITH_IPOPT)
+  set(ipopt_SOURCE_DIR "${PROJECT_SOURCE_DIR}/externals/ipopt")
+  set(ipopt_BINARY_DIR "${PROJECT_SOURCE_DIR}/externals/ipopt")
+  ExternalProject_Add(download-ipopt
+    SOURCE_DIR ${ipopt_SOURCE_DIR}
+    SVN_REPOSITORY "https://projects.coin-or.org/svn/Ipopt/stable/3.12"
+    SVN_TRUST_CERT 1
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+    )
+  ExternalProject_Add(ipopt
+    SOURCE_DIR ${ipopt_SOURCE_DIR}
+    DOWNLOAD_COMMAND ""
+    UPDATE_COMMAND ""
+    BINARY_DIR ${ipopt_BINARY_DIR}
+    CONFIGURE_COMMAND cd ThirdParty/ASL && ./get.ASL && cd ../Blas && ./get.Blas && cd ../Lapack && ./get.Lapack && cd ../Metis && ./get.Metis && cd ../Mumps && ./get.Mumps && cd ../..
+    BUILD_COMMAND ./configure --with-blas=BUILD --with-lapack=BUILD --prefix=${CMAKE_INSTALL_PREFIX} --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt && make install
+    INSTALL_COMMAND ""
+    )
+  drake_forcebuild(ipopt)
+  add_dependencies(download-all download-ipopt)
+  add_dependencies(ipopt download-ipopt)
+  add_dependencies(drake download-ipopt)
+  add_dependencies(drake ipopt)
 endif()
