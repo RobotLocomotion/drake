@@ -146,11 +146,11 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   using OutputVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
   explicit RigidBodySystem(std::shared_ptr<RigidBodyTree> rigid_body_tree)
-      : tree(rigid_body_tree),
-        use_multi_contact(false),
+      : use_multi_contact(false),
         penetration_stiffness(150.0),
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
+        tree(rigid_body_tree),
         direct_feedthrough(false) {}
 
   RigidBodySystem()
