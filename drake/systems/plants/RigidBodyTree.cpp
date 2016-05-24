@@ -611,8 +611,8 @@ void RigidBodyTree::FindAndComputeContactPoints(
 
   for (size_t i = 0; i < num_contact_points; i++) {
     contact_points[i].getResults(&ptA, &ptB, &n, &distance);
-    xA.col(i) = ptA;
-    xB.col(i) = ptB;
+
+    // Normal is in the world's frame.
     normal.col(i) = n;
     phi[i] = distance;
 
@@ -625,6 +625,27 @@ void RigidBodyTree::FindAndComputeContactPoints(
             collision_model->readElement(contact_points[i].getIdB()));
     bodyA_idx.push_back(elementA->getBody().body_index);
     bodyB_idx.push_back(elementB->getBody().body_index);
+
+    // Get bodies' transforms.
+    const RigidBody& bodyA = elementA->getBody();
+    Isometry3d TA;
+    if (bodyA.hasParent()) { // body is dynamic.
+      TA = cache.getElement(bodyA).transform_to_world;
+    } else { // body is static.
+      TA = Isometry3d::Identity();
+    }
+
+    const RigidBody& bodyB = elementB->getBody();
+    Isometry3d TB;
+    if (bodyB.hasParent()) { // body is dynamic.
+      TB = cache.getElement(bodyB).transform_to_world;
+    } else { // body is static.
+      TB = Isometry3d::Identity();
+    }
+
+    // Transform to bodies' frames.
+    xA.col(i) = TA.inverse() * ptA;
+    xB.col(i) = TB.inverse() * ptB;
   }
 }
 
