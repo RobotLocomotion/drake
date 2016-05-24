@@ -34,6 +34,10 @@ include(cmake/pods.cmake)
 find_package(Java REQUIRED)
 include(UseJava)
 
+if(WIN32)
+  set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)  # See #2442.
+endif()
+
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
   pods_install_headers(${ARGV} DESTINATION drake/${rel_path})
