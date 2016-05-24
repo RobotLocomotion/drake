@@ -175,28 +175,30 @@ class DRAKERBM_EXPORT RigidBody {
   std::map<std::string, std::vector<DrakeCollision::ElementId> >
       collision_element_groups;
 
-  CollisionElementsIterator collision_elements_begin() {
+  CollisionElementsIterator CollisionElementsBegin() {
     return collision_elements_.begin();
   }
 
-  CollisionElementsIterator collision_elements_end() {
+  CollisionElementsIterator CollisionElementsEnd() {
     return collision_elements_.end();
   }
 
-  void add_collision_element(DrakeCollision::CollisionElement* e) {
+  /** Adds collision element `e` to this rigid body.
+  @param e The collision element being added to this body. **/
+  void AddCollisionElement(DrakeCollision::CollisionElement *e) {
     collision_elements_.push_back(e);
   }
 
-  /**
-   * @brief Adds body to a given collision group by group id.
-   *
-   * This call adds each of the collision elements in this body to the provided
-   * collision group.
-   *
-   * @param[in] group_id Collision group id. Collision elements in this group
-   * do not interact.
-   */
-  void add_to_collision_group(int group_id);
+  /** Adds body to a given collision clique by clique id.
+
+  This call adds each of the collision elements in this body to the provided
+  collision clique.
+
+  @param[in] clique_id Collision clique id. Collision elements in this clique
+  do not interact.
+
+  @see CollisionElement::AddToCollisionClique. **/
+  void AddToCollisionClique(int clique_id);
 
   Eigen::Matrix3Xd contact_pts;
 

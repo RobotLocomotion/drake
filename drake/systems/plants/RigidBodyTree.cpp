@@ -210,15 +210,15 @@ void RigidBodyTree::CreateCollisionGroups() {
   int ncol_groups = 0;
   // 1) For collision elements in the same body
   for (auto& body : bodies) {
-    body->add_to_collision_group(ncol_groups++);
+    body->AddToCollisionClique(ncol_groups++);
   }
 
   // 2) For collision elements in different bodies
   for (int i = 0; i < bodies.size(); ++i)
     for (int j = i + 1; j < bodies.size(); ++j)
       if (!bodies[i]->CollidesWith(*bodies[j])) {
-        bodies[i]->add_to_collision_group(ncol_groups);
-        bodies[j]->add_to_collision_group(ncol_groups);
+        bodies[i]->AddToCollisionClique(ncol_groups);
+        bodies[j]->AddToCollisionClique(ncol_groups);
         ++ncol_groups;
       }
 }
@@ -346,7 +346,7 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
     body.collision_element_groups[group_name].push_back(id);
     // TODO(amcastro-tri): cleanup API so that we do not need readElement any
     // more.
-    body.add_collision_element(collision_model->readElement(id));
+    body.AddCollisionElement(collision_model->readElement(id));
   }
   return id;
 }

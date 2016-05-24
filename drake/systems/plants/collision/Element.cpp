@@ -50,7 +50,7 @@ bool CollisionElement::CanCollideWith(const CollisionElement *other) const {
 // Member CollisionElement::collision_cliques_ is sorted so that checking if two
 // collision elements belong to a same group can be performed in order N.
 // See CollisionElement::CanCollideWith
-void CollisionElement::add_to_collision_clique(int clique_id) {
+void CollisionElement::AddToCollisionClique(int clique_id) {
   auto it = std::lower_bound(collision_cliques_.begin(),
                              collision_cliques_.end(), clique_id);
   if (it == collision_cliques_.end() || clique_id < *it)

@@ -53,7 +53,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   CollisionElement's within a clique do not collide.
   Calling this method to add an element to a clique it already belongs to
   does not have any effect. **/
-  void add_to_collision_clique(int clique_id);
+  void AddToCollisionClique(int clique_id);
 
   int number_of_cliques() const;
 

@@ -125,11 +125,11 @@ TEST(ModelTest, CollisionGroups) {
   CollisionElement element_1, element_2, element_3;
 
   // Adds element 1 to its own set of groups.
-  element_1.add_to_collision_clique(2);
-  element_1.add_to_collision_clique(23);
-  element_1.add_to_collision_clique(11);
-  element_1.add_to_collision_clique(15);
-  element_1.add_to_collision_clique(9);
+  element_1.AddToCollisionClique(2);
+  element_1.AddToCollisionClique(23);
+  element_1.AddToCollisionClique(11);
+  element_1.AddToCollisionClique(15);
+  element_1.AddToCollisionClique(9);
   std::vector<int> element_1_set = std::vector<int>{2, 9, 11, 15, 23};
 
   // Tests the situation where the same collision groups are added to a
@@ -137,22 +137,22 @@ TEST(ModelTest, CollisionGroups) {
   // If a collision element is added to a group it already belongs to, the
   // addition has no effect. This is tested by asserting the total number of
   // elements in the test below.
-  element_1.add_to_collision_clique(11);
-  element_1.add_to_collision_clique(23);
+  element_1.AddToCollisionClique(11);
+  element_1.AddToCollisionClique(23);
 
   // Adds element 2 to its own set of groups.
-  element_2.add_to_collision_clique(11);
-  element_2.add_to_collision_clique(9);
-  element_2.add_to_collision_clique(13);
-  element_2.add_to_collision_clique(13);
-  element_2.add_to_collision_clique(11);
+  element_2.AddToCollisionClique(11);
+  element_2.AddToCollisionClique(9);
+  element_2.AddToCollisionClique(13);
+  element_2.AddToCollisionClique(13);
+  element_2.AddToCollisionClique(11);
 
   // Adds element 3 to its own set of groups.
-  element_3.add_to_collision_clique(1);
-  element_3.add_to_collision_clique(13);
-  element_3.add_to_collision_clique(13);
-  element_3.add_to_collision_clique(8);
-  element_3.add_to_collision_clique(1);
+  element_3.AddToCollisionClique(1);
+  element_3.AddToCollisionClique(13);
+  element_3.AddToCollisionClique(13);
+  element_3.AddToCollisionClique(8);
+  element_3.AddToCollisionClique(1);
 
   // Checks the correctness of each element's collision groups set.
   EXPECT_EQ(std::vector<int>({2, 9, 11, 15, 23}),
