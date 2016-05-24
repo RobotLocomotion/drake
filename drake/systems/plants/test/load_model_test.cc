@@ -29,10 +29,10 @@ class LoadModelTest : public ::testing::TestWithParam<const char*> {
 TEST_P(LoadModelTest, TestNoOffset) {
   // Loads the SDF model with zero offset between the model's root frame and
   // the world frame.
-  rbs.addRobotFromFile(Drake::getDrakePath() +
-                           "/systems/plants/test/cylindrical_1dof_robot." +
-                           GetParam(),
-                       DrakeJoint::QUATERNION);
+  rbs.addRobotFromFile(
+      Drake::getDrakePath() +
+          "/systems/plants/test/models/cylindrical_1dof_robot." + GetParam(),
+      DrakeJoint::QUATERNION);
 
   // Verifies that RigidBodyTree cannot find a link thatn does not exist.
   auto nonexistent_body = rbs.getRigidBodyTree()->findLink("not_a_link");
@@ -92,10 +92,10 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
       nullptr,  // not used since the robot is attached to the world
       T_model_to_world);
 
-  rbs.addRobotFromFile(Drake::getDrakePath() +
-                           "/systems/plants/test/cylindrical_1dof_robot." +
-                           GetParam(),
-                       DrakeJoint::QUATERNION, weld_to_frame);
+  rbs.addRobotFromFile(
+      Drake::getDrakePath() +
+          "/systems/plants/test/models/cylindrical_1dof_robot." + GetParam(),
+      DrakeJoint::QUATERNION, weld_to_frame);
 
   // Gets the link whose parent joint is called "base".
   auto link1_body = rbs.getRigidBodyTree()->findJoint("base");
@@ -132,10 +132,10 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
 TEST_P(LoadModelTest, TestWeld) {
   // Loads a one-DOF SDF model with zero offset between the model's
   // root frame and the world frame.
-  rbs.addRobotFromFile(Drake::getDrakePath() +
-                           "/systems/plants/test/cylindrical_1dof_robot." +
-                           GetParam(),
-                       DrakeJoint::QUATERNION);
+  rbs.addRobotFromFile(
+      Drake::getDrakePath() +
+          "/systems/plants/test/models/cylindrical_1dof_robot." + GetParam(),
+      DrakeJoint::QUATERNION);
 
   // Loads a zero-DOF SDF robot model and weld it to the end of the
   // one DOF robot's link 2.
@@ -153,10 +153,10 @@ TEST_P(LoadModelTest, TestWeld) {
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
       Eigen::aligned_allocator<RigidBodyFrame>(), "joint2", link2_body,
       T_model2_to_link2);
-  rbs.addRobotFromFile(Drake::getDrakePath() +
-                           "/systems/plants/test/cylindrical_0dof_robot." +
-                           GetParam(),
-                       DrakeJoint::FIXED, weld_to_frame);
+  rbs.addRobotFromFile(
+      Drake::getDrakePath() +
+          "/systems/plants/test/models/cylindrical_0dof_robot." + GetParam(),
+      DrakeJoint::FIXED, weld_to_frame);
 
   // Verifies that the newly added link exists and is in the correct location.
   auto link_body = rbs.getRigidBodyTree()->findLink("link");
@@ -168,14 +168,14 @@ TEST_P(LoadModelTest, TestWeld) {
 INSTANTIATE_TEST_CASE_P(LOAD_SDF_AND_URF_TESTS, LoadModelTest,
                         ::testing::Values("urdf", "sdf"));
 
-TEST(LoadSDFTest, TestInternalOffset) {
+GTEST_TEST(LoadSDFTest, TestInternalOffset) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 offset between the model's root and the model's world
   //   2. Zero offset between the model's world and Drake's world
   RigidBodySystem rbs;
   rbs.addRobotFromFile(
       Drake::getDrakePath() +
-          "/systems/plants/test/cylindrical_1dof_robot_offset_z1.sdf",
+          "/systems/plants/test/models/cylindrical_1dof_robot_offset_z1.sdf",
       DrakeJoint::QUATERNION);
 
   // Verifies that the transform between the robot's root node
@@ -194,7 +194,7 @@ TEST(LoadSDFTest, TestInternalOffset) {
               T_model_to_world.matrix());
 }
 
-TEST(LoadSDFTest, TestDualOffset1) {
+GTEST_TEST(LoadSDFTest, TestDualOffset1) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 offset between the model's root and the model's world
   //   2. An X = 2 offset between the model's world and Drake's world
@@ -214,7 +214,7 @@ TEST(LoadSDFTest, TestDualOffset1) {
   RigidBodySystem rbs;
   rbs.addRobotFromFile(
       Drake::getDrakePath() +
-          "/systems/plants/test/cylindrical_1dof_robot_offset_z1.sdf",
+          "/systems/plants/test/models/cylindrical_1dof_robot_offset_z1.sdf",
       DrakeJoint::QUATERNION, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
@@ -233,7 +233,7 @@ TEST(LoadSDFTest, TestDualOffset1) {
               T_model_to_world.matrix());
 }
 
-TEST(LoadSDFTest, TestDualOffset2) {
+GTEST_TEST(LoadSDFTest, TestDualOffset2) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 and Roll = 90 degree offset between the model's root link's
   //      frame and the model's world frame.
@@ -255,10 +255,10 @@ TEST(LoadSDFTest, TestDualOffset2) {
       T_model_world_to_drake_world);
 
   RigidBodySystem rbs;
-  rbs.addRobotFromFile(
-      Drake::getDrakePath() +
-          "/systems/plants/test/cylindrical_1dof_robot_offset_z1_r90.sdf",
-      DrakeJoint::QUATERNION, weld_to_frame);
+  rbs.addRobotFromFile(Drake::getDrakePath() +
+                           "/systems/plants/test/models/"
+                           "cylindrical_1dof_robot_offset_z1_r90.sdf",
+                       DrakeJoint::QUATERNION, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to identity.
@@ -273,6 +273,101 @@ TEST(LoadSDFTest, TestDualOffset2) {
       << "Expected:\n"
       << Eigen::Isometry3d::Identity().matrix();
 }
+
+class ModelToWorldTransformTestParams {
+ public:
+  ModelToWorldTransformTestParams(std::string urdf_path,
+                                  std::string root_link_name, double x,
+                                  double y, double z, double roll, double pitch,
+                                  double yaw)
+      : urdf_path_(urdf_path),
+        root_link_name_(root_link_name),
+        x_(x),
+        y_(y),
+        z_(z),
+        roll_(roll),
+        pitch_(pitch),
+        yaw_(yaw) {}
+
+  std::string urdf_path_, root_link_name_;
+  double x_, y_, z_, roll_, pitch_, yaw_;
+};
+
+/**
+ * Defines a class that extends Google Test's ::testing::TestWithParam
+ * class, which enables parameterized Google Tests. In this case, the parameter
+ * is a ModelToWorldTransformTestParams.
+ */
+class ModelToWorldTransformTest
+    : public ::testing::TestWithParam<ModelToWorldTransformTestParams> {
+ public:
+  ModelToWorldTransformTest() :
+    rbs(new RigidBodySystem()) {
+  }
+
+ protected:
+  // Stores the rigid body system on the heap to ensure it is 16-bit aligned.
+  std::unique_ptr<RigidBodySystem> rbs;
+  Eigen::Isometry3d T_model_to_world;
+};
+
+TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
+  ModelToWorldTransformTestParams params = GetParam();
+
+  rbs->addRobotFromFile(params.urdf_path_);
+
+  // Verifies that the transform between the robot's root node and the world is
+  // as expected.
+
+  // Defines the expected model-to-world transform.
+  {
+    Eigen::Vector3d xyz, rpy;
+    xyz << params.x_, params.y_, params.z_;
+    rpy << params.roll_, params.pitch_, params.yaw_;
+    T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  }
+
+  auto link1_body = rbs->getRigidBodyTree()->findLink(params.root_link_name_);
+  EXPECT_TRUE(link1_body != nullptr);
+
+  // Note: The following two local variables are necessary to avoid a transient
+  // "unknown file" error on 32-bit Windows platforms. For more information,
+  // see:
+  //
+  // https://github.com/robotlocomotion/drake/pull/2171#issuecomment-219770037
+  auto actual_matrix =
+    link1_body->getJoint().getTransformToParentBody().matrix();
+
+  auto expected_matrix = T_model_to_world.matrix();
+
+  EXPECT_TRUE(actual_matrix.isApprox(expected_matrix, 1e-10))
+    << "ERROR: "
+    << "Incorrect transform from link1's frame to Drake's world frame.\n"
+    << "Got:\n"
+    << actual_matrix << "\n"
+    << "Expected:\n"
+    << expected_matrix;
+}
+
+INSTANTIATE_TEST_CASE_P(
+    MODEL_TO_WORLD_TRANSFORM_TESTS, ModelToWorldTransformTest,
+    ::testing::Values(
+
+        // Evaluates the ability to load a URDF model that's connected to the
+        // world via a fixed joint.
+        ModelToWorldTransformTestParams(
+            Drake::getDrakePath() +
+                std::string("/systems/plants/test/models/"
+                            "cylindrical_1dof_robot_fixed_to_world.urdf"),
+            std::string("link1"), 1, 2, 3, 0.1, 0.5, 1.8),
+
+        // Evaluates the ability to load a URDF model that's connected to the
+        // world via a floating joint.
+        ModelToWorldTransformTestParams(
+            Drake::getDrakePath() +
+                std::string("/systems/plants/test/models/"
+                            "cylindrical_1dof_robot_floating_in_world.urdf"),
+            std::string("link1"), 3, 2, 1, 0.2, 0.9, -1.57)));
 
 }  // namespace
 }  // namespace test
