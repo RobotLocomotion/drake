@@ -23,7 +23,7 @@ void TestSerialization(TrigPolyd dut, std::string expect) {
   EXPECT_EQ(test_stream.str(), expect);
 }
 
-TEST(TrigPolyTest, SmokeTest) {
+GTEST_TEST(TrigPolyTest, SmokeTest) {
   // Confirm that these conversions compile okay.
   TrigPolyd x(1.0);
   TrigPolyd y = 2.0;
@@ -47,7 +47,7 @@ TEST(TrigPolyTest, SmokeTest) {
   TestSerialization(sin(p + p), "s1*c1+c1*s1");
 }
 
-TEST(TrigPolyTest, EvaluateMultivariateTest) {
+GTEST_TEST(TrigPolyTest, EvaluateMultivariateTest) {
   const TrigPolyd theta(Polynomiald("th"),
                         Polynomiald("sth"), Polynomiald("cth"));
   const TrigPolyd::VarType theta_var =
@@ -82,7 +82,7 @@ TEST(TrigPolyTest, EvaluateMultivariateTest) {
   }
 }
 
-TEST(TrigPolyTest, EvaluatePartialTest) {
+GTEST_TEST(TrigPolyTest, EvaluatePartialTest) {
   const TrigPolyd theta(Polynomiald("th"),
                         Polynomiald("sth"), Polynomiald("cth"));
   const TrigPolyd::VarType theta_var =
