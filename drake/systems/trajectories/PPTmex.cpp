@@ -38,9 +38,9 @@ class PPTrajectory {
                int d2)
       : m_breaks(breaks),
         m_coefs(coefs),
-        m_order(order),
         m_d1(d1),
         m_d2(d2),
+        m_order(order),
         m_cached_idx(-1) {}
 
   int d1() { return m_d1; }
