@@ -562,8 +562,8 @@ PositionConstraint::PositionConstraint(RigidBodyTree* robot,
                                        const Matrix3Xd& pts, MatrixXd lb,
                                        MatrixXd ub, const Vector2d& tspan)
     : SingleTimeKinematicConstraint(robot, tspan),
-      n_pts_(static_cast<int>(pts.cols())),
-      pts_(pts) {
+      pts_(pts),
+      n_pts_(static_cast<int>(pts.cols())) {
   if (pts_.rows() != 3) {
     throw std::runtime_error("pts must have 3 rows");
   }
@@ -1849,8 +1849,8 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
     const std::vector<int>& active_bodies_idx,
     const std::set<std::string>& active_group_names, const Vector2d& tspan)
     : SingleTimeKinematicConstraint(robot, tspan),
-      lb_(lb),
       ub_(ub),
+      lb_(lb),
       active_bodies_idx_(active_bodies_idx),
       active_group_names_(active_group_names) {
   set_type(RigidBodyConstraint::AllBodiesClosestDistanceConstraintType);
@@ -2294,9 +2294,9 @@ GravityCompensationTorqueConstraint::GravityCompensationTorqueConstraint(
     RigidBodyTree* robot, const VectorXi& joint_indices, const VectorXd& lb,
     const VectorXd& ub, const Vector2d& tspan)
     : SingleTimeKinematicConstraint(robot, tspan),
+      joint_indices_(joint_indices),
       lb_(lb),
-      ub_(ub),
-      joint_indices_(joint_indices) {
+      ub_(ub) {
   set_num_constraint(static_cast<int>(joint_indices.size()));
   set_type(RigidBodyConstraint::GravityCompensationTorqueConstraintType);
 }

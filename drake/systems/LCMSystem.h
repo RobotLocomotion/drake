@@ -207,7 +207,7 @@ class DRAKELCMSYSTEM_EXPORT LCMLoop {
   bool stop;
   lcm::LCM &lcm;
 
-  explicit LCMLoop(lcm::LCM &_lcm) : lcm(_lcm), stop(false) {}
+  explicit LCMLoop(lcm::LCM &_lcm) : stop(false), lcm(_lcm) {}
 
   void loopWithSelect();
 };

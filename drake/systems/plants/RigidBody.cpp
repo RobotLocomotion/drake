@@ -14,9 +14,9 @@ using std::stringstream;
 using std::vector;
 
 RigidBody::RigidBody()
-    : parent(nullptr),
-      collision_filter_group(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores(DrakeCollision::NONE_MASK) {
+    : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
+      collision_filter_ignores(DrakeCollision::NONE_MASK),
+      parent(nullptr) {
   robotnum = 0;
   position_num_start = 0;
   velocity_num_start = 0;
