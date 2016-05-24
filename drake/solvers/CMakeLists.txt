@@ -55,11 +55,11 @@ target_link_libraries(drakeOptimization drakePolynomial)
 drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h)
 pods_install_libraries(drakeOptimization)
 if (ipopt_FOUND)
-  # IPOPT's pkgconfig file adds flags which don't actually work.
-  # Since the superbuild installed the includes and libraries to
-  # locations already in the correct path, just specify that we want
-  # the library.
-  target_link_libraries(drakeOptimization ipopt)
+  pods_use_pkg_config_packages(drakeOptimization ipopt)
+  if (NOT WIN32)
+    set(CMAKE_SHARED_LINKER_FLAGS
+      "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
+  endif(NOT WIN32)
 endif(ipopt_FOUND)
 if (nlopt_FOUND)
   pods_use_pkg_config_packages(drakeOptimization nlopt)
