@@ -310,6 +310,7 @@ foreach(proj IN ITEMS
 		swigmake
 		swig_matlab
 		yaml_cpp
+		ipopt
 		nlopt
 		drake)
 	string(TOUPPER ${proj} proj_upper)
@@ -555,30 +556,3 @@ if (WITH_SNOPT_PRECOMPILED)
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
 endif()
-
-# if (WITH_IPOPT)
-#   set(ipopt_SOURCE_DIR "${PROJECT_SOURCE_DIR}/externals/ipopt")
-#   set(ipopt_BINARY_DIR "${PROJECT_SOURCE_DIR}/externals/ipopt")
-#   ExternalProject_Add(download-ipopt
-#     SOURCE_DIR ${ipopt_SOURCE_DIR}
-#     SVN_REPOSITORY "https://projects.coin-or.org/svn/Ipopt/stable/3.12"
-#     SVN_TRUST_CERT 1
-#     CONFIGURE_COMMAND ""
-#     BUILD_COMMAND ""
-#     INSTALL_COMMAND ""
-#     )
-#   ExternalProject_Add(ipopt
-#     SOURCE_DIR ${ipopt_SOURCE_DIR}
-#     DOWNLOAD_COMMAND ""
-#     UPDATE_COMMAND ""
-#     BINARY_DIR ${ipopt_BINARY_DIR}
-#     CONFIGURE_COMMAND cd ThirdParty/ASL && ./get.ASL && cd ../Blas && ./get.Blas && cd ../Lapack && ./get.Lapack && cd ../Metis && ./get.Metis && cd ../Mumps && ./get.Mumps && cd ../..
-#     BUILD_COMMAND ./configure --with-blas=BUILD --with-lapack=BUILD --prefix=${CMAKE_INSTALL_PREFIX} --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt && make install
-#     INSTALL_COMMAND ""
-#     )
-#   drake_forcebuild(ipopt)
-#   add_dependencies(download-all download-ipopt)
-#   add_dependencies(ipopt download-ipopt)
-#   add_dependencies(drake download-ipopt)
-#   add_dependencies(drake ipopt)
-# endif()
