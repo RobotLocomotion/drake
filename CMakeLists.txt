@@ -186,6 +186,12 @@ set(gloptipoly_IS_PUBLIC FALSE)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG fbbdbbc0152ddb37df209d221aff37448b8ff29f)
 set(gurobi_IS_PUBLIC FALSE)
+set(ipopt_GIT_REPOSITORY http://github.com/sammy-tri/ipopt-wrapper.git)
+set(ipopt_GIT_TAG f553e9d457701f383aa01803e00a86497aa91930)
+set(ipopt_IS_PUBLIC TRUE)
+# TODO(sam.creasey) add an alternate build command for WIN32 which
+# downloads the precopiled binary and installs that.
+set(ipopt_BUILD_COMMAND ./build.sh ${CMAKE_INSTALL_PREFIX})
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG 1533f20cff57504a46773f01e1730f11931d0ea6)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
@@ -304,6 +310,7 @@ foreach(proj IN ITEMS
 		swigmake
 		swig_matlab
 		yaml_cpp
+		ipopt
 		nlopt
 		drake)
 	string(TOUPPER ${proj} proj_upper)
@@ -548,31 +555,4 @@ if (WITH_SNOPT_PRECOMPILED)
 		INSTALL_COMMAND "")
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
-endif()
-
-if (WITH_IPOPT)
-  set(ipopt_SOURCE_DIR "${PROJECT_SOURCE_DIR}/externals/ipopt")
-  set(ipopt_BINARY_DIR "${PROJECT_SOURCE_DIR}/externals/ipopt")
-  ExternalProject_Add(download-ipopt
-    SOURCE_DIR ${ipopt_SOURCE_DIR}
-    SVN_REPOSITORY "https://projects.coin-or.org/svn/Ipopt/stable/3.12"
-    SVN_TRUST_CERT 1
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND ""
-    )
-  ExternalProject_Add(ipopt
-    SOURCE_DIR ${ipopt_SOURCE_DIR}
-    DOWNLOAD_COMMAND ""
-    UPDATE_COMMAND ""
-    BINARY_DIR ${ipopt_BINARY_DIR}
-    CONFIGURE_COMMAND cd ThirdParty/ASL && ./get.ASL && cd ../Blas && ./get.Blas && cd ../Lapack && ./get.Lapack && cd ../Metis && ./get.Metis && cd ../Mumps && ./get.Mumps && cd ../..
-    BUILD_COMMAND ./configure --with-blas=BUILD --with-lapack=BUILD --prefix=${CMAKE_INSTALL_PREFIX} --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt && make install
-    INSTALL_COMMAND ""
-    )
-  drake_forcebuild(ipopt)
-  add_dependencies(download-all download-ipopt)
-  add_dependencies(ipopt download-ipopt)
-  add_dependencies(drake download-ipopt)
-  add_dependencies(drake ipopt)
 endif()
