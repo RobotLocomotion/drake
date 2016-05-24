@@ -744,7 +744,8 @@ bool BulletModel::collisionPointsAllToAll(
         const btVector3& ptB = pt.getPositionWorldOnB() - normalOnB * marginB;
         c.addSingleResult(elementA->getId(), elementB->getId(), toVector3d(ptA),
                           toVector3d(ptB), toVector3d(normalOnB),
-                          static_cast<double>(pt.getDistance()));
+                          static_cast<double>(
+                              pt.getDistance() + marginA + marginB));
       }
     }
   }
