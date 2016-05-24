@@ -1,4 +1,4 @@
-#include "drake/common/have_intersection.h"
+#include "drake/common/sorted_vectors_have_intersection.h"
 
 #include <vector>
 #include <set>

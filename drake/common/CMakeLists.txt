@@ -10,7 +10,7 @@ set(sources
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
     nice_type_name.h
-    have_intersection.h)
+    sorted_vectors_have_intersection.h)
 
 # List headers that are needed by code here but should not
 # be exposed anywhere else.
