@@ -174,19 +174,19 @@ void testPolynomialMatrix() {
   C.setZero();  // this was a problem before
 }
 
-TEST(PolynomialTest, IntegralAndDerivative) {
+GTEST_TEST(PolynomialTest, IntegralAndDerivative) {
   testIntegralAndDerivative<double>();
 }
 
-TEST(PolynomialTest, Operators) { testOperators<double>(); }
+GTEST_TEST(PolynomialTest, Operators) { testOperators<double>(); }
 
-TEST(PolynomialTest, Roots) { testRoots<double>(); }
+GTEST_TEST(PolynomialTest, Roots) { testRoots<double>(); }
 
-TEST(PolynomialTest, EvalType) { testEvalType(); }
+GTEST_TEST(PolynomialTest, EvalType) { testEvalType(); }
 
-TEST(PolynomialTest, PolynomialMatrix) { testPolynomialMatrix<double>(); }
+GTEST_TEST(PolynomialTest, PolynomialMatrix) { testPolynomialMatrix<double>(); }
 
-TEST(PolynomialTest, VariableIdGeneration) {
+GTEST_TEST(PolynomialTest, VariableIdGeneration) {
   // Probe the outer edge cases of variable ID generation.
 
   // There is no documented maximum ID, but empirically it is 2325.  What we
@@ -214,7 +214,7 @@ TEST(PolynomialTest, VariableIdGeneration) {
   EXPECT_EQ(result, "x1");
 }
 
-TEST(PolynomialTest, GetVariables) {
+GTEST_TEST(PolynomialTest, GetVariables) {
   Polynomiald x = Polynomiald("x");
   Polynomiald::VarType x_var = x.getSimpleVariable();
   Polynomiald y = Polynomiald("y");
@@ -241,7 +241,7 @@ TEST(PolynomialTest, GetVariables) {
 
 // TODO(ggould-tri) -- This test does not pass, which is a misfeature or
 // bug in Polynomial.
-TEST(PolynomialTest, DISABLED_Simplification) {
+GTEST_TEST(PolynomialTest, DISABLED_Simplification) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
 
@@ -262,7 +262,7 @@ TEST(PolynomialTest, DISABLED_Simplification) {
   }
 }
 
-TEST(PolynomialTest, MonomialFactor) {
+GTEST_TEST(PolynomialTest, MonomialFactor) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
 
@@ -287,7 +287,7 @@ TEST(PolynomialTest, MonomialFactor) {
   EXPECT_EQ(m_x2y.factor(m_y), m_x2);
 }
 
-TEST(PolynomialTest, MultivariateValue) {
+GTEST_TEST(PolynomialTest, MultivariateValue) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
   const std::map<Polynomiald::VarType, double> eval_point = {
@@ -299,14 +299,14 @@ TEST(PolynomialTest, MultivariateValue) {
   EXPECT_EQ((x * x + x * y).evaluateMultivariate(eval_point), 3);
 }
 
-TEST(PolynomialTest, Conversion) {
+GTEST_TEST(PolynomialTest, Conversion) {
   // Confirm that these conversions compile okay.
   Polynomial<double> x(1.0);
   Polynomial<double> y = 2.0;
   Polynomial<double> z = 3;
 }
 
-TEST(PolynomialTest, EvaluatePartial) {
+GTEST_TEST(PolynomialTest, EvaluatePartial) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
   Polynomiald dut = (5 * x * x * x) + (3 * x * y) + (2 * y) + 1;
