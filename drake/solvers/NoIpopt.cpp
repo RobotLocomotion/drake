@@ -8,7 +8,7 @@ bool drake::solvers::IpoptSolver::available() const {
 }
 
 drake::solvers::SolutionResult drake::solvers::IpoptSolver::Solve(
-    OptimizationProblem &prog) const {
+    Drake::OptimizationProblem &prog) const {
   throw std::runtime_error(
       "The IPOPT bindings were not compiled.  You'll need to use a different "
       "solver.");
