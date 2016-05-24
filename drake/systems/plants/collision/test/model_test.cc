@@ -212,7 +212,7 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
   // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
   // looks like the margins are not appropriately subtracted.
   points.clear();
-  model->collisionPointsAllToAll(false, points);
+  model->collisionPointsAllToAll(true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
   // Points are in the world frame on the surface of the corresponding body.
@@ -321,7 +321,7 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
   // looks like the margins are not appropriately subtracted.
   points.clear();
-  model->collisionPointsAllToAll(false, points);
+  model->collisionPointsAllToAll(true, points);
 
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
@@ -338,7 +338,14 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
 
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
+  //model->updateModel();
   points = model->potentialCollisionPoints(false);
+
+  for(int i=0;i<points.size();++i){
+    std::cout << "Point: " << i << std::endl;
+    std::cout << "ptA: " << points[i].getPtA().transpose() << std::endl;
+    std::cout << "ptB: " << points[i].getPtB().transpose() << std::endl;
+  }
 
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
@@ -430,7 +437,7 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
   // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
   // looks like the margins are not appropriately subtracted.
   points.clear();
-  model->collisionPointsAllToAll(false, points);
+  model->collisionPointsAllToAll(true, points);
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
   // least the four corners of the smaller box. However it randomly picks one
