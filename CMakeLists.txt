@@ -187,7 +187,7 @@ set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG fbbdbbc0152ddb37df209d221aff37448b8ff29f)
 set(gurobi_IS_PUBLIC FALSE)
 set(ipopt_GIT_REPOSITORY http://github.com/sammy-tri/ipopt-wrapper.git)
-set(ipopt_GIT_TAG 3ff05649f0fb660c78bd73d933415d7f3dbceac6)
+set(ipopt_GIT_TAG 06f02421e20133b3870753093af245d34d188e34)
 set(ipopt_IS_PUBLIC TRUE)
 # TODO(sam.creasey) add an alternate build command for WIN32 which
 # downloads the precopiled binary and installs that.
