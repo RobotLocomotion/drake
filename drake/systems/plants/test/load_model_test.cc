@@ -168,7 +168,7 @@ TEST_P(LoadModelTest, TestWeld) {
 INSTANTIATE_TEST_CASE_P(LOAD_SDF_AND_URF_TESTS, LoadModelTest,
                         ::testing::Values("urdf", "sdf"));
 
-TEST(LoadSDFTest, TestInternalOffset) {
+GTEST_TEST(LoadSDFTest, TestInternalOffset) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 offset between the model's root and the model's world
   //   2. Zero offset between the model's world and Drake's world
@@ -194,7 +194,7 @@ TEST(LoadSDFTest, TestInternalOffset) {
               T_model_to_world.matrix());
 }
 
-TEST(LoadSDFTest, TestDualOffset1) {
+GTEST_TEST(LoadSDFTest, TestDualOffset1) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 offset between the model's root and the model's world
   //   2. An X = 2 offset between the model's world and Drake's world
@@ -233,7 +233,7 @@ TEST(LoadSDFTest, TestDualOffset1) {
               T_model_to_world.matrix());
 }
 
-TEST(LoadSDFTest, TestDualOffset2) {
+GTEST_TEST(LoadSDFTest, TestDualOffset2) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 and Roll = 90 degree offset between the model's root link's
   //      frame and the model's world frame.
