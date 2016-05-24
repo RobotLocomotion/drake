@@ -193,6 +193,8 @@ include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_FAIL=1")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_SUCCEED=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
 if (WIN32)
   # The following compiler flag is needed to support parameterized Google tests on Windows.
