@@ -19,13 +19,27 @@ namespace {
 struct SurfacePoint {
   SurfacePoint() {}
   SurfacePoint(Vector3d wf, Vector3d bf) : world_frame(wf), body_frame(bf) {}
-  Vector3d world_frame{};
-  Vector3d body_frame{};
+  // Eigen variables are left uninitalized by default.
+  Vector3d world_frame;
+  Vector3d body_frame;
 };
 
 // Solutions are accessed by collision element id using an std::unordered_set.
-// This is to avoid this checks depending on the particular order in which id's
-// are returned by the different contact algorithms
+// DrakeCollision::Model returns the collision detection results as a vector of
+// DrakeCollision::PointPair entries. Each entry holds a references to the pair
+// of collision elements taking part in the collision. Collision elements are
+// referenced by their id.
+// The order in which the pair of elements is stored in a PointPair cannot
+// be guaranteed, and therefore we cannot guarantee the return of
+// PointPair::getIdA() and PointPair::getIdB() in our tests.
+// This means we cannot guarantee that future versions of the underlying
+// implementation (say Bullet, FCL) won't change this order (since unfortunately
+// id's are merely a memory address cast to an integer).
+// The user only has access to collision elements by id.
+// To provide a unique mapping between id's and the analytical solution to the
+// contact point on a specific element here we use an `std::unordered_set` to
+// map id's to a `SurfacePoint` structure holding the analytical solution on
+// both body and world frames.
 typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
     ElementToSurfacePointMap;
 
@@ -52,7 +66,7 @@ typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
  *          |                    |
  *
  */
-TEST(ModelTest, closestPointsAllToAll) {
+GTEST_TEST(ModelTest, closestPointsAllToAll) {
   // Set up the geometry.
   Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
       T_elem2_to_body;
@@ -138,11 +152,11 @@ TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
 
-/** A sphere of diameter 1.0 is placed on top of a box with sides of length 1.0.
-The sphere overlaps with the box with its deepest penetration point (the bottom)
-0.25 units into the box (negative distance). Only one contact point is expected
-when colliding with a sphere. **/
-TEST(ModelTest, Box_vs_Sphere) {
+// A sphere of diameter 1.0 is placed on top of a box with sides of length 1.0.
+// The sphere overlaps with the box with its deepest penetration point (the
+// bottom) 0.25 units into the box (negative distance). Only one contact point
+// is expected when colliding with a sphere.
+GTEST_TEST(ModelTest, Box_vs_Sphere) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
@@ -228,18 +242,18 @@ TEST(ModelTest, Box_vs_Sphere) {
       points[0].getPtB().isApprox(solution[points[0].getIdB()].body_frame));
 }
 
-/** This test seeks to find out whether DrakeCollision::Model can report
-collision manifolds. To this end, a small cube with unit length sides is placed
-on top of a large cube with sides of length 5.0. The smaller cube is placed
-such that it intersects the large box. Therefore the intersection between the
-two boxes is not just a single point but the (squared) perimeter all around the
-smaller box (the manifold).
-
-Unfortunately these tests show that DrakeCollision::Model only reports a single
-(randomly chosen) point at one of the smaller box corners. In previous runs
-this was the corner at (0.5, 0.5, z) where z = 5.0 for the top of the large box
-and z = 4.9 for the bottom of the smaller box. **/
-TEST(ModelTest, SmallBoxSittingOnLargeBox) {
+// This test seeks to find out whether DrakeCollision::Model can report
+// collision manifolds. To this end, a small cube with unit length sides is
+// placed on top of a large cube with sides of length 5.0. The smaller cube is
+// placed such that it intersects the large box. Therefore the intersection
+// between the two boxes is not just a single point but the (squared) perimeter
+// all around the smaller box (the manifold).
+//
+// Unfortunately these tests show that DrakeCollision::Model only reports a
+// single (randomly chosen) point at one of the smaller box corners. In previous
+// runs this was the corner at (0.5, 0.5, z) where z = 5.0 for the top of the
+// large box and z = 4.9 for the bottom of the smaller box.
+GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
@@ -338,15 +352,15 @@ TEST(ModelTest, SmallBoxSittingOnLargeBox) {
               solution[points[0].getIdB()].body_frame.y(), tolerance);
 }
 
-/** This test seeks to find out whether DrakeCollision::Model can report
-collision manifolds. To this end two unit length boxes are placed on top of one
-another. The box sitting on top is rotated by 45 degrees so that the contact
-area would consist of an octagon. If DrakeCollision::Model can report manifolds,
-the manifold would consist of the perimeter of this octagon.
+// This test seeks to find out whether DrakeCollision::Model can report
+// collision manifolds. To this end two unit length boxes are placed on top of
+// one another. The box sitting on top is rotated by 45 degrees so that the
+// contact area would consist of an octagon. If DrakeCollision::Model can report
+// manifolds, the manifold would consist of the perimeter of this octagon.
 
-Unfortunately these tests show that DrakeCollision::Model only reports a single
-(randomly chosen) point within this octagonal contact area. **/
-TEST(ModelTest, NonAlignedBoxes) {
+// Unfortunately these tests show that DrakeCollision::Model only reports a
+// single (randomly chosen) point within this octagonal contact area.
+GTEST_TEST(ModelTest, NonAlignedBoxes) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
