@@ -4,7 +4,6 @@
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
-#include "gmock/gmock.h"
 
 #include "drake/core/functional_form.h"
 #include "drake/util/Polynomial.h"

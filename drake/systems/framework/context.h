@@ -18,7 +18,7 @@ struct InputPort {
 
   /// The rate at which this port is sampled, in seconds.
   /// If zero, the port is continuous.
-  double sample_time_sec;
+  double sample_time_sec{};
 };
 
 /// The Input is a container for pointers to all the data that is connected to
@@ -34,7 +34,7 @@ struct Time {
   /// The time, in seconds.  For typical T implementations based on
   /// doubles, time precision will gradually degrade as time increases.
   /// TODO(sherm1): Consider whether this is sufficiently robust.
-  T time_sec;
+  T time_sec{};
 };
 
 /// The Context is a container for all of the data necessary to compute the

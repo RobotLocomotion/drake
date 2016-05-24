@@ -8,7 +8,7 @@
 
 namespace {
 
-TEST(testXmlUtil, testPopulatePackageMap) {
+GTEST_TEST(testXmlUtil, testPopulatePackageMap) {
   PackageMap package_map;
   populatePackageMap(package_map);
 

@@ -35,7 +35,7 @@ namespace {
  *          |                    |
  *
  */
-TEST(ModelTest, closestPointsAllToAll) {
+GTEST_TEST(ModelTest, closestPointsAllToAll) {
   // Set up the geometry.
   Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
       T_elem2_to_body;
