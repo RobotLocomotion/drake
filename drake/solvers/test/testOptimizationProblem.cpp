@@ -405,7 +405,7 @@ TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
   // variables to make sure that the solvers correctly handle mapping
   // variables to constraints/objectives.
   auto x = prog.AddContinuousVariables(3);
-   auto y = prog.AddContinuousVariables(3);
+  auto y = prog.AddContinuousVariables(3);
   prog.AddCost(GloptipolyConstrainedExampleObjective(), {x});
   prog.AddCost(GloptipolyConstrainedExampleObjective(), {y});
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
