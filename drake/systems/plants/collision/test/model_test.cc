@@ -212,7 +212,7 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
   // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
   // looks like the margins are not appropriately subtracted.
   points.clear();
-  model->collisionPointsAllToAll(true, points);
+  model->collisionPointsAllToAll(false, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
   // Points are in the world frame on the surface of the corresponding body.
@@ -318,10 +318,9 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
               solution[points[0].getIdB()].body_frame.y(), tolerance);
 
   // Collision test performed with Model::collisionPointsAllToAll.
-  // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
-  // looks like the margins are not appropriately subtracted.
+  // Not using margins.
   points.clear();
-  model->collisionPointsAllToAll(true, points);
+  model->collisionPointsAllToAll(false, points);
 
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
@@ -336,9 +335,73 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   EXPECT_NEAR(points[0].getPtB().y(),
               solution[points[0].getIdB()].world_frame.y(), tolerance);
 
-  // Collision test performed with Model::potentialCollisionPoints.
+  // Collision test performed with Model::collisionPointsAllToAll.
+  // Using margins.
   points.clear();
-  //model->updateModel();
+  model->collisionPointsAllToAll(true, points);
+
+  ASSERT_EQ(1, points.size());
+  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+  // Collision points are reported in the world's frame.
+  // Only test for vertical position.
+  EXPECT_NEAR(points[0].getPtA().y(),
+              solution[points[0].getIdA()].world_frame.y(), tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(),
+              solution[points[0].getIdB()].world_frame.y(), tolerance);
+}
+
+// This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
+// The difference is that a multi-contact algorithm is being used.
+GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox_multi) {
+  // Numerical precision tolerance to perform floating point comparisons.
+  // Its magnitude was chosen to be the minimum value for which these tests can
+  // successfully pass.
+  const double tolerance = 2.0e-9;
+
+  // Boxes centered around the origin in their local frames.
+  DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
+  DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
+
+  Element colliding_large_box(large_box);
+  Element colliding_small_box(small_box);
+
+  // Populate the model.
+  std::unique_ptr<Model> model(newModel());
+  ElementId large_box_id = model->addElement(colliding_large_box);
+  ElementId small_box_id = model->addElement(colliding_small_box);
+
+  // Access the analytical solution to the contact point on the surface of each
+  // collision element by element id.
+  // Solutions are expressed in world and body frames.
+  ElementToSurfacePointMap solution = {
+      /*              world frame    , body frame  */
+      {large_box_id, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
+      {small_box_id, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
+
+  // Large body pose
+  Isometry3d large_box_pose;
+  large_box_pose.setIdentity();
+  large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
+  model->updateElementWorldTransform(large_box_id, large_box_pose);
+
+  // Small body pose
+  Isometry3d small_box_pose;
+  small_box_pose.setIdentity();
+  small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
+  model->updateElementWorldTransform(small_box_id, small_box_pose);
+
+  // List of collision points.
+  std::vector<PointPair> points;
+
+  // Unfortunately DrakeCollision::Model is randomly selecting the contact
+  // points. It is not even clear at this stage how many points in the manifold
+  // we should expect.
+  // What we can test for sure is:
+  // 1. The penetration depth.
+  // 2. The vertical position of the collision point (since for any of the four
+  //    corners of the small box is the same.
+
+  // Collision test performed with Model::potentialCollisionPoints.
   points = model->potentialCollisionPoints(false);
 
   for(int i=0;i<points.size();++i){
@@ -347,16 +410,17 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
     std::cout << "ptB: " << points[i].getPtB().transpose() << std::endl;
   }
 
-  ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
-  // Collision points are reported on each of the respective bodies' frames.
-  // This is consistent with the return by Model::closestPointsAllToAll.
-  // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),
-              solution[points[0].getIdA()].body_frame.y(), tolerance);
-  EXPECT_NEAR(points[0].getPtB().y(),
-              solution[points[0].getIdB()].body_frame.y(), tolerance);
+  for(int i=0;i<points.size();++i) {
+    EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance);
+    EXPECT_TRUE(points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+    // Collision points are reported on each of the respective bodies' frames.
+    // This is consistent with the return by Model::closestPointsAllToAll.
+    // Only test for vertical position.
+    EXPECT_NEAR(points[i].getPtA().y(),
+                solution[points[i].getIdA()].body_frame.y(), tolerance);
+    EXPECT_NEAR(points[i].getPtB().y(),
+                solution[points[i].getIdB()].body_frame.y(), tolerance);
+  }
 }
 
 // This test seeks to find out whether DrakeCollision::Model can report
@@ -437,7 +501,7 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
   // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
   // looks like the margins are not appropriately subtracted.
   points.clear();
-  model->collisionPointsAllToAll(true, points);
+  model->collisionPointsAllToAll(false, points);
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
   // least the four corners of the smaller box. However it randomly picks one
