@@ -14,7 +14,9 @@ namespace drake {
 namespace examples {
 
 /// The state of a one-dimensional spring-mass system, consisting of the
-/// position and velocity of the mass, in meters.
+/// position and velocity of the mass, in meters. Because it implements both
+/// VectorInterface and StateVectorInterface, it can be used as both a state
+/// vector and an I/O port.
 class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
     : public systems::BasicVector<double>,
       public systems::StateVectorInterface<double> {
