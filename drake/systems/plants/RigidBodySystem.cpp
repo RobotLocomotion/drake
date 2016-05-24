@@ -150,6 +150,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     else
       tree->collisionDetect(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
 
+#if 0
     // Here call collisionPointsAllToAll (with use_margins=false because of bug)
     // and in RBT::PerformCollisionDetection transform points to local bodie's
     // frame of reference (since Model::collisionPointsAllToAll returns points
@@ -157,6 +158,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     // This should be enought to re-test Prius example and if succesful then
     // load the PA loop.
     tree->FindAndComputeContactPoints(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
+#endif
 
     for (int i = 0; i < phi.rows(); i++) {
       if (phi(i) < 0.0) {  // then i have contact
