@@ -13,65 +13,69 @@
 
 namespace DrakeCollision {
 
-fcl::BVHModel<fcl::OBBRSS>* FCLModel::newFCLBoxShape(
+std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLBoxShape(
     const DrakeShapes::Box& geometry, bool use_margins) {
   // NOTE:  Ignore margins for now.
   use_margins = use_margins;
 
   fcl::Box shape(geometry.size(0), geometry.size(1), geometry.size(2));
-  fcl::BVHModel<fcl::OBBRSS>* bvh_shape = new fcl::BVHModel<fcl::OBBRSS>();
+  std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> bvh_shape(
+    new fcl::BVHModel<fcl::OBBRSS>());
   fcl::generateBVHModel(*bvh_shape, shape, fcl::Transform3f());
 
-  return bvh_shape;
+  return std::move(bvh_shape);
 }
 
-fcl::BVHModel<fcl::OBBRSS>* FCLModel::newFCLSphereShape(
+std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLSphereShape(
     const DrakeShapes::Sphere& geometry, bool use_margins) {
   // NOTE:  Ignore margins for now.
   use_margins = use_margins;
 
   fcl::Sphere shape(geometry.radius);
-  fcl::BVHModel<fcl::OBBRSS>* bvh_shape = new fcl::BVHModel<fcl::OBBRSS>();
+  std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> bvh_shape(
+    new fcl::BVHModel<fcl::OBBRSS>());
   int numLong = 10;
   int numLat = 8;
   fcl::generateBVHModel(*bvh_shape, shape, fcl::Transform3f(), numLong, numLat);
 
-  return bvh_shape;
+  return std::move(bvh_shape);
 }
 
-fcl::BVHModel<fcl::OBBRSS>* FCLModel::newFCLCylinderShape(
+std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLCylinderShape(
     const DrakeShapes::Cylinder& geometry, bool use_margins) {
   // NOTE:  Ignore margins for now.
   use_margins = use_margins;
 
   fcl::Cylinder shape(geometry.radius, geometry.length);
-  fcl::BVHModel<fcl::OBBRSS>* bvh_shape = new fcl::BVHModel<fcl::OBBRSS>();
+  std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> bvh_shape(
+    new fcl::BVHModel<fcl::OBBRSS>());
   int numLength = 1;
   int numTheta = 10;
   fcl::generateBVHModel(*bvh_shape, shape, fcl::Transform3f(), numTheta,
                         numLength);
 
-  return bvh_shape;
+  return std::move(bvh_shape);
 }
 
-fcl::BVHModel<fcl::OBBRSS>* FCLModel::newFCLCapsuleShape(
+std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLCapsuleShape(
     const DrakeShapes::Capsule& geometry, bool use_margins) {
   // NOTE:  Ignore margins for now.
   use_margins = use_margins;
 
   fcl::Capsule shape(geometry.radius, geometry.length);
-  fcl::BVHModel<fcl::OBBRSS>* bvh_shape = new fcl::BVHModel<fcl::OBBRSS>();
+  std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> bvh_shape(
+    new fcl::BVHModel<fcl::OBBRSS>());
 
   // fcl does not have a method to generate a capsule mesh.
   // TODO(law12019): Make one.
   // fcl::generateBVHModel(*bvh_shape, shape, Transform3f(), numTheta,
   // numLength);
 
-  return bvh_shape;
+  return std::move(bvh_shape);
 }
 
 // TODO(law12019): Figure out how to convert mesh verts to fcl mesh.
-fcl::BVHModel<fcl::OBBRSS>* FCLModel::newFCLMeshShape(
+std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLMeshShape(
     const DrakeShapes::Mesh& geometry, bool use_margins) {
   Eigen::Matrix3Xd vertices;
   if (geometry.extractMeshVertices(vertices)) {
@@ -87,7 +91,7 @@ ElementId FCLModel::addElement(const Element& element) {
   ElementId id = Model::addElement(element);
 
   if (id != 0) {
-    fcl::BVHModel<fcl::OBBRSS>* bvh_shape = 0;
+    std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> bvh_shape;
     switch (elements[id]->getShape()) {
       case DrakeShapes::BOX: {
         const auto box =
@@ -114,8 +118,7 @@ ElementId FCLModel::addElement(const Element& element) {
         break;
     }
     if (bvh_shape) {
-      this->fclElements.insert(std::make_pair(
-          id, std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>>(bvh_shape)));
+      this->fclElements.insert(std::make_pair(id, std::move(bvh_shape)));
     }
   }
   return id;
