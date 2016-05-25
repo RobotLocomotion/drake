@@ -42,13 +42,6 @@ class FCLModel : public Model {
                         bool use_margins, Eigen::VectorXd& distances,
                         Eigen::Matrix3Xd& normals) override;
 
-  /** \brief Compute the set of potential collision points for all
-   * eligible pairs of collision geometries in this model. This includes
-   * the points of closest approach, but may also include additional points
-   * that are "close" to being in contact. This can be useful when
-   * simulating scenarios in which two collision elements have more than
-   * one point of contact.
-   */
   std::vector<PointPair> potentialCollisionPoints(bool use_margins) override;
 
   bool collidingPointsCheckOnly(
@@ -70,7 +63,7 @@ class FCLModel : public Model {
       const ElementId elemA, const ElementId elemB, const bool use_margins,
       std::unique_ptr<ResultCollector>& c);
 
-  // Helper methods to create meshes from baskic shapes.
+  // Helper methods to create meshes from basic shapes.
   static std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> newFCLBoxShape(
       const DrakeShapes::Box& geometry, bool use_margins);
   static std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> newFCLSphereShape(
