@@ -1,6 +1,6 @@
 if (fcl_FOUND)
   set(Boost_DEBUG TRUE)
-  add_executable( fcl_model_test FCLModelTest.cpp)
+  add_executable( fcl_model_test fcl_model_test.cc)
   target_link_libraries(fcl_model_test drakeCollision)
 endif()
 
