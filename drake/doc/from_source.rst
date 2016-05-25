@@ -114,9 +114,9 @@ fun ones to get you started:
 For an exhaustive test (which can take more than an hour to run if you have all
 of the solvers enabled), execute the following::
 
-    $ cd [drake distro]/drake/pod-build
-    $ cmake -DLONG_RUNNING_TESTS=ON ..
-    $ ctest -VV
+    cd drake-distro/drake/pod-build
+    cmake -DLONG_RUNNING_TESTS=ON ..
+    ctest -VV
 
 Running the full suite of unit tests takes a very long time because it starts a
 fresh instance of MATLAB for every individual test. However, it is the most
