@@ -2,7 +2,6 @@ set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp point_pair.cc Model.
 find_package(fcl)
 
 if (fcl_FOUND)
-  #add_definitions( -DBULLET_COLLISION -DBT_USE_DOUBLE_PRECISION )
   set( drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} fcl_model.cc )
   set(fcl "yes" CACHE STRING "yes" )
 endif()
