@@ -111,17 +111,13 @@ fun ones to get you started:
 * ``RimlessWheelPlant.run()`` in the ``examples/RimlessWheel`` directory
 * ``StateMachineControl.run()`` in the ``examples/PlanarMonopodHopper`` directory
 
-For an exhaustive test (which can take more than an hour to run if you have all
-of the solvers enabled), execute the following::
+To run some unit tests, execute the following::
 
     cd drake-distro/drake/pod-build
-    cmake -DLONG_RUNNING_TESTS=ON ..
     ctest -VV
 
-Running the full suite of unit tests takes a very long time because it starts a
-fresh instance of MATLAB for every individual test. However, it is the most
-robust way to test for issues that can potentially crash MATLAB. For more
-details, see the instructions here: :doc:`unit_testing_instructions`.
+For more details on how to run Drake's unit tests, see the instructions
+here: :ref:`unit-test-instructions`.
 
 If you have problems, please check the :doc:`faq`.  If the solution is not
 there, or if you discover something missing from our installation instructions
