@@ -12,6 +12,23 @@
 #include "drake/systems/System.h"
 #include "drake/systems/cascade_system.h"
 
+namespace drake {
+
+bool decode(const ackermann_msgs::AckermannDriveStamped& msg,
+            drake::DrivingCommand<double>& x) {
+  x.set_steering_angle(msg.drive.steering_angle);
+  if (msg.drive.speed > 0) {
+    x.set_throttle(msg.drive.speed);
+    x.set_brake(0);
+  } else {
+    x.set_throttle(0);
+    x.set_brake(-1 * msg.drive.speed);
+  }
+  return true;
+}
+
+};  // namespace drake
+
 namespace Drake {
 
 /** \brief Adds support for ackermann_msgs/AckermannDriveStamped commands.
@@ -42,11 +59,13 @@ class ROSAckermannCommandReceiverSystem {
 
     // Instantiates a ROS topic subscriber that receives vehicle driving
     // commands.
-    subscriber_ = nh.subscribe("ackermann_cmd", kSubscriberQueueSize,
-      &ROSAckermannCommandReceiverSystem::commandCallback, this);
+    subscriber_ =
+        nh.subscribe("ackermann_cmd", kSubscriberQueueSize,
+                     &ROSAckermannCommandReceiverSystem::commandCallback, this);
 
     // Instantiates a child thread for receiving ROS messages.
-    // See: http://wiki.ros.org/roscpp/Overview/Callbacks%20and%20Spinning#Multi-threaded_Spinning
+    // See:
+    // http://wiki.ros.org/roscpp/Overview/Callbacks%20and%20Spinning#Multi-threaded_Spinning
     // ros::AsyncSpinner spinner(1); // Use 1 thread
     spinner_.start();
   }
@@ -59,13 +78,13 @@ class ROSAckermannCommandReceiverSystem {
     data_mutex_.unlock();
   }
 
-  StateVector<double> dynamics(const double &t, const StateVector<double> &x,
-                               const InputVector<double> &u) const {
+  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
+                               const InputVector<double>& u) const {
     return StateVector<double>();
   }
 
-  OutputVector<double> output(const double &t, const StateVector<double> &x,
-                              const InputVector<double> &u) const {
+  OutputVector<double> output(const double& t, const StateVector<double>& x,
+                              const InputVector<double>& u) const {
     data_mutex_.lock();
     OutputVector<double> y = data_;  // make a copy of the data
     data_mutex_.unlock();
@@ -73,7 +92,6 @@ class ROSAckermannCommandReceiverSystem {
   }
 
  private:
-
   ros::Subscriber subscriber_;
 
   mutable std::mutex data_mutex_;
@@ -103,19 +121,19 @@ class ROSAckermannCommandReceiverSystem {
  * @param[in] options The simulation options.
  */
 template <typename System>
-void run_ros_vehicle_sim(std::shared_ptr<System> sys, double t0,
-  double tf, const typename System::template StateVector<double> &x0,
-  const SimulationOptions &options = default_simulation_options) {
-
+void run_ros_vehicle_sim(
+    std::shared_ptr<System> sys, double t0, double tf,
+    const typename System::template StateVector<double>& x0,
+    const SimulationOptions& options = default_simulation_options) {
   auto ros_ackermann_input =
       std::make_shared<internal::ROSAckermannCommandReceiverSystem<
-        System::template InputVector>>();
+          System::template InputVector>>();
 
   auto ros_sys = cascade(ros_ackermann_input, sys);
 
   SimulationOptions sim_options = options;
   if (sim_options.realtime_factor < 0.0) sim_options.realtime_factor = 1.0;
-    simulate(*ros_sys, t0, tf, x0, sim_options);
+  simulate(*ros_sys, t0, tf, x0, sim_options);
 }
 
 /**
@@ -134,7 +152,7 @@ void run_ros_vehicle_sim(std::shared_ptr<System> sys, double t0,
  * @param[in] tf The final simulation time.
  */
 template <typename System>
-void run_ros_vehicle_sim(const System &sys, double t0, double tf) {
+void run_ros_vehicle_sim(const System& sys, double t0, double tf) {
   run_ros_vehicle_sim(sys, t0, tf, getInitialState(*sys));
 }
 
