@@ -52,7 +52,7 @@ Exceptions
 * The `Self-contained headers
   <https://google.github.io/styleguide/cppguide.html#Self_contained_Headers>`_
   rule may be disobeyed when implementing the
-  :ref:`C++ *-.inl files <cxx-inl-files>` pattern in its exact form.
+  :ref:`C++ *-inl.h files <cxx-inl-files>` pattern in its exact form.
 
 .. _code-style-guide-cpp-addon-rules:
 

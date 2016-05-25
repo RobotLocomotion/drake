@@ -34,6 +34,6 @@ SimpleCar::OutputVector<ScalarType> drake::SimpleCar::output(   \
 DRAKE_INSTANTIATE(double)
 // TODO(jwnimmer-tri) Add support for additional types.
 
-#undef DRAKE_CARS_INSTANTIATE_SCALAR_TYPE
+#undef DRAKE_INSTANTIATE
 
 }  // namespace drake
