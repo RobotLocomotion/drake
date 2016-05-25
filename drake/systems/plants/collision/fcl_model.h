@@ -71,15 +71,15 @@ class FCLModel : public Model {
       fclElements;
 
   // Helper methods to create meshes from baskic shapes.
-  static fcl::BVHModel<fcl::OBBRSS>* newFCLBoxShape(
+  static std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> newFCLBoxShape(
       const DrakeShapes::Box& geometry, bool use_margins);
-  static fcl::BVHModel<fcl::OBBRSS>* newFCLSphereShape(
+  static std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> newFCLSphereShape(
       const DrakeShapes::Sphere& geometry, bool use_margins);
-  static fcl::BVHModel<fcl::OBBRSS>* newFCLCylinderShape(
+  static std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> newFCLCylinderShape(
       const DrakeShapes::Cylinder& geometry, bool use_margins);
-  static fcl::BVHModel<fcl::OBBRSS>* newFCLCapsuleShape(
+  static std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> newFCLCapsuleShape(
       const DrakeShapes::Capsule& geometry, bool use_margins);
-  static fcl::BVHModel<fcl::OBBRSS>* newFCLMeshShape(
+  static std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> newFCLMeshShape(
       const DrakeShapes::Mesh& geometry, bool use_margins);
 
   class unknownShapeException : public std::exception {
