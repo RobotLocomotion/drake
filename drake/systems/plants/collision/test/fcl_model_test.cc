@@ -15,7 +15,7 @@
 #include "fcl/shape/geometric_shape_to_BVH_model.h"
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
-#include "drake/systems/plants/collision/FCLModel.h"
+#include "drake/systems/plants/collision/fcl_model.h"
 
 using namespace DrakeCollision;
 using namespace std;

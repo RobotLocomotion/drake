@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "FCLModel.h"
+#include "fcl_model.h"
 
 #include "fcl/shape/geometric_shapes.h"
 #include "fcl/collision_data.h"
