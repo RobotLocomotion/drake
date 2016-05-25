@@ -162,7 +162,7 @@ void FCLModel::updateModel() {
   throw std::logic_error("FCLModel::updateModel is not implemented yet");
 }
 
-bool FCLModel::findClosestPointsBtwElements(
+bool FCLModel::findClosestPointsBetweenElements(
     const ElementId idA, const ElementId idB, const bool use_margins,
     std::unique_ptr<ResultCollector>& c) {
   // For FCL we are converting basic shapes into meshes.
@@ -317,8 +317,8 @@ bool FCLModel::closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
   std::unique_ptr<ResultCollector> c(new ResultCollector());
   for (auto id_pair_iter = id_pairs.begin(); id_pair_iter != id_pairs.end();
        ++id_pair_iter) {
-    findClosestPointsBtwElements(id_pair_iter->first, id_pair_iter->second,
-                                 use_margins, c);
+    findClosestPointsBetweenElements(id_pair_iter->first, id_pair_iter->second,
+                                     use_margins, c);
   }
 
   closest_points = c->getResults();

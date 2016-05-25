@@ -12,41 +12,35 @@ class FCLModel : public Model {
  public:
   FCLModel() {}
 
-  virtual ~FCLModel() {}
+  ~FCLModel() override {}
 
   // Required member functions for Model interface
-  virtual void updateModel();
+  void updateModel() override;
 
-  virtual void resize(int num_bodies) {}
+  ElementId addElement(const Element& element) override;
 
-  virtual ElementId addElement(const Element& element);
+  bool updateElementWorldTransform(
+      const ElementId, const Eigen::Isometry3d& T_local_to_world) override;
 
-  virtual bool updateElementWorldTransform(
-      const ElementId, const Eigen::Isometry3d& T_local_to_world);
+  bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
+                             const bool use_margins,
+                             std::vector<PointPair>& closest_points) override;
 
-  virtual bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                                     const bool use_margins,
-                                     std::vector<PointPair>& closest_points);
+  bool collisionPointsAllToAll(const bool use_margins,
+                               std::vector<PointPair>& points) override;
 
-  virtual bool collisionPointsAllToAll(const bool use_margins,
-                                       std::vector<PointPair>& points);
+  bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
+                             const bool use_margins,
+                             std::vector<PointPair>& closest_points) override;
 
-  virtual bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     const bool use_margins,
-                                     std::vector<PointPair>& closest_points);
-
-  virtual bool findClosestPointsBtwElements(
-      const ElementId elemA, const ElementId elemB, const bool use_margins,
-      std::unique_ptr<ResultCollector>& c);
-
-  virtual void collisionDetectFromPoints(
+  void collisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      std::vector<PointPair>& closest_points);
+      std::vector<PointPair>& closest_points) override;
 
-  virtual bool collisionRaycast(const Eigen::Matrix3Xd& origins,
-                                const Eigen::Matrix3Xd& ray_endpoints,
-                                bool use_margins, Eigen::VectorXd& distances,
-                                Eigen::Matrix3Xd& normals);
+  bool collisionRaycast(const Eigen::Matrix3Xd& origins,
+                        const Eigen::Matrix3Xd& ray_endpoints,
+                        bool use_margins, Eigen::VectorXd& distances,
+                        Eigen::Matrix3Xd& normals) override;
 
   /** \brief Compute the set of potential collision points for all
    * eligible pairs of collision geometries in this model. This includes
@@ -55,13 +49,15 @@ class FCLModel : public Model {
    * simulating scenarios in which two collision elements have more than
    * one point of contact.
    */
-  virtual std::vector<PointPair> potentialCollisionPoints(bool use_margins);
+  std::vector<PointPair> potentialCollisionPoints(bool use_margins) override;
 
-  virtual bool collidingPointsCheckOnly(
-      const std::vector<Eigen::Vector3d>& points, double collision_threshold);
+  bool collidingPointsCheckOnly(
+      const std::vector<Eigen::Vector3d>& points,
+      double collision_threshold) override;
 
-  virtual std::vector<size_t> collidingPoints(
-      const std::vector<Eigen::Vector3d>& points, double collision_threshold);
+  std::vector<size_t> collidingPoints(
+      const std::vector<Eigen::Vector3d>& points,
+      double collision_threshold) override;
 
   // END Required member functions
 
@@ -69,6 +65,10 @@ class FCLModel : public Model {
   // FCL elements that were created from the drake elements.
   std::unordered_map<ElementId, std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>>>
       fclElements;
+
+  virtual bool findClosestPointsBetweenElements(
+      const ElementId elemA, const ElementId elemB, const bool use_margins,
+      std::unique_ptr<ResultCollector>& c);
 
   // Helper methods to create meshes from baskic shapes.
   static std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> newFCLBoxShape(
