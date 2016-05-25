@@ -94,10 +94,10 @@ struct WrappedConstraint {
 
   const Constraint* constraint;
   const VariableList* variable_list;
-  bool force_bounds; ///< force usage of only upper or lower bounds
-  bool force_upper; ///< Only used if force_bounds is set.  Selects
-                    ///< which bounds are being tested (lower bound
-                    ///< vs. upper bound).
+  bool force_bounds;  ///< force usage of only upper or lower bounds
+  bool force_upper;  ///< Only used if force_bounds is set.  Selects
+                     ///< which bounds are being tested (lower bound
+                     ///< vs. upper bound).
   // TODO(sam.creasey) It might be desirable to have a cache for the
   // result of evaluating the constraints if NLopt were being used in
   // a situation where constraints were frequently being wrapped in
