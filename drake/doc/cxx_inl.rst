@@ -27,7 +27,7 @@ meets your needs you should prefer it to the ``*-inl.h`` pattern shown
 below.
 
 The case for ``*-inl.h`` files appears when we wish to provide the
-opportunity for calling code to use template types other than those
+opportunity for calling code to use template types other than
 the ones instantiated in our ``*.cc`` file.  The problem is that
 method bodies only exist in the ``*.cc`` file, so there is no
 mechanism for calling code to instantiate them with different types.
