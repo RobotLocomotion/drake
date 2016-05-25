@@ -112,12 +112,22 @@ fun ones to get you started:
 * ``StateMachineControl.run()`` in the ``examples/PlanarMonopodHopper`` directory
 
 For an exhaustive test (which can take more than an hour to run if you have all
-of the backend solvers enabled), see the instructions here:
-:doc:`unit_testing_instructions`.
+of the solvers enabled), execute the following::
 
-Running the full suite of unit tests takes a very long time because it starts a fresh instance of MATLAB for every individual test. However, it is the most robust way to test for issues that can potentially crash MATLAB.
+    $ cd [drake distro]/drake/pod-build
+    $ cmake -DLONG_RUNNING_TESTS=ON ..
+    $ ctest -VV
 
-If you have problems, please check the :doc:`faq`.  If the solution is not there, or if you discover something missing from our installation instructions or lists of prerequisites, then please `file an issue <https://github.com/RobotLocomotion/drake/issues/new>`_ and label it as *installation*.
+Running the full suite of unit tests takes a very long time because it starts a
+fresh instance of MATLAB for every individual test. However, it is the most
+robust way to test for issues that can potentially crash MATLAB. For more
+details, see the instructions here: :doc:`unit_testing_instructions`.
+
+If you have problems, please check the :doc:`faq`.  If the solution is not
+there, or if you discover something missing from our installation instructions
+or lists of prerequisites, then please
+`file an issue <https://github.com/RobotLocomotion/drake/issues/new>`_ and label
+it as *installation*.
 
 Stay up to date
 ===============
