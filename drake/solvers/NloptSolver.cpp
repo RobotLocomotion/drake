@@ -215,8 +215,10 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 }
 
-template <typename C>
-void WrapConstraint(const OptimizationProblem::Binding<C>& binding,
+// We can't declare a variable of type OptimizationProblem::Binding,
+// since that's private and clang gets annoyed.
+template <typename _Binding>
+void WrapConstraint(const _Binding& binding,
                     double constraint_tol,
                     nlopt::opt* opt,
                     std::list<WrappedConstraint>* wrapped_list) {
