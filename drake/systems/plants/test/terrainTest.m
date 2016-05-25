@@ -12,3 +12,5 @@ v.draw(0,x0);
 
 traj = simulate(r,[0 5],x0);
 v.playback(traj);
+
+% TIMEOUT 1500

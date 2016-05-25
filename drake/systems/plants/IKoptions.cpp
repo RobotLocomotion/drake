@@ -36,7 +36,7 @@ IKoptions::~IKoptions() {}
 
 void IKoptions::setDefaultParams(RigidBodyTree *robot) {
   this->robot = robot;
-  this->nq = this->robot->num_positions;
+  this->nq = this->robot->number_of_positions();
   this->Q = MatrixXd::Identity(this->nq, this->nq);
   this->Qa = 0.1 * MatrixXd::Identity(this->nq, this->nq);
   this->Qv = MatrixXd::Zero(this->nq, this->nq);
@@ -259,7 +259,7 @@ void IKoptions::getAdditionaltSamples(RowVectorXd &t_samples) const {
 void IKoptions::updateRobot(RigidBodyTree *new_robot) {
   this->robot = new_robot;
   int nq_cache = this->nq;
-  this->nq = this->robot->num_positions;
+  this->nq = this->robot->number_of_positions();
   if (nq_cache != nq) {
     this->setDefaultParams(new_robot);
   }

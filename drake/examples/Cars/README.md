@@ -30,7 +30,8 @@ Start the Steering Command Driver
 The Steering Command Driver provides a Graphical User Interface (GUI) for users
 to issue driving commands to the car in the simulation. Note that running this
 is not strictly necessary since it's possible to issue driving commands directly
-from the command line (this will be desribed later in this document).
+from the command line. To run the simulation without `pygame`, use `--mode=one-time`
+as described below.
 
 The Steering Command Driver is based on `pygame`, which can be installed by
 executing the following:
@@ -54,15 +55,16 @@ Then execute:
 
 ```
 $ cd [drake-distro]/drake/examples/Cars
-$ python SteeringCommandDriver.py
+$ python steering_command_driver.py
 ```
 
 Start the Drake Simulator
 -------------------------
 
-There are two version of Drake's cars simulator, one that integrates only
-LCM-powered components (e.g., the Drake Visualizer) and a second that that
-integrates both LCM-powered components and ROS-powered components (e.g., RViz).
+There is currently one version of Drake's cars simulator. It integrates only
+LCM-based components (e.g., the Drake Visualizer). In the future, a second version
+will be added that integrates both LCM-based components and ROS-based components
+(e.g., RViz).
 
 ### Simulation Using Drake + LCM
 
@@ -70,7 +72,7 @@ To start the simulation, open a new terminal and execute the following:
 
 ```
 $ cd [drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/carSimLCM models/prius/prius.urdf models/stata_garage_p1.sdf
+$ ../../pod-build/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1.sdf
 ```
 
 ### Simulation Using Drake + LCM + ROS
@@ -155,8 +157,8 @@ If you are unable to run the Steering Command Driver, you can generate simple
 throttle and steering commands using the command line:
 
 ```
-$ cd [drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/publishDrivingCommand [throttle_value] [steering_value]
+$ cd [path to drake-distro]/drake/examples/Cars
+$ python steering_command_driver.py --mode=one-time --throttle=[throttle_value] --steering-angle=[steering_value]
 ```
 where the values in square brackets should be replaced with desired values.
 
@@ -164,10 +166,58 @@ For example:
 
 ```
 $ cd [path to drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/publishDrivingCommand 1.0 .4
+$ python steering_command_driver.py --mode=one-time --throttle=1.0 --steering-angle=0.4
 ```
 
 Every time that you run the command above, it sends one LCM message.
+
+Adjustments for Windows
+-----------------------
+- Insert the configuration directory (e.g. `Release/`) after `bin/` in paths to
+the executables.
+- When running from the Windows Command Prompt you'll need to use backslashes in
+place of forward slashes.
+- To run a command in the background use `start cmdline` in place of `cmdline &`.
+
+Running the simple car simulator
+--------------------------------
+
+The following notes are for Ubuntu Linux and OS X users.
+This is not supported under Windows (though you can probably cobble
+together some workarounds by hand if you are motivated).
+
+TODO(jwnimmer-tri) OS X `readlink -f` doesn't work, so the demo script
+fails.  Fix and test the demo script on OS X.
+
+Run:
+```
+$ drake-distro/drake/examples/Cars/simple_car_demo.sh
+```
+
+Ensure that the (very small) `pygame` window has focus, then use your
+arrow keys and/or joystick to drive around.
+
+Use Ctrl-C in your terminal to stop and close the demo.
+
+Running the trivial multiple car simulator
+------------------------------------------
+
+The following notes are for Ubuntu Linux and OS X users.
+This is not supported under Windows (though you can probably cobble
+together some workarounds by hand if you are motivated).
+
+TODO(jwnimmer-tri) OS X `readlink -f` doesn't work, so the demo script
+fails.  Fix and test the demo script on OS X.
+
+Run:
+```
+$ drake-distro/drake/examples/Cars/run_demo_multi_car.sh [N]
+```
+
+This will start the demo with N cars; if N is not supplied, the
+default is 100 (and the minimum N is 1).  There are no controls.
+
+Use Ctrl-C in your terminal to stop and close the demo.
 
 ### Troubleshooting
 
@@ -186,16 +236,3 @@ This is often because the terminal was in a directory that was removed and
 replaced with another identically-named directory, possibly due to switching git
 branches. To fix this problem, simply change back to your `[drake distro]`
 directory and then navigate back to `[drake distro]/examples/Cars`.
-
-Adjustments for Windows
------------------------
-- Insert the configuration directory (e.g. `Release/`) after `bin/` in paths to
-the executables.
-- When running from the Windows Command Prompt you'll need to use backslashes in
-place of forward slashes.
-- To run a command in the background use `start cmdline` in place of `cmdline &`.
-
-Running the simple car simulator
---------------------------------
-
-Run `./simple_car_demo.sh`.

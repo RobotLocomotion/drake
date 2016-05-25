@@ -49,7 +49,7 @@ TEST_P(LoadModelTest, TestNoOffset) {
   // Gets the link whose parent joint is called "base".
   auto link1_body = rbs.getRigidBodyTree()->findJoint("base");
   EXPECT_TRUE(link1_body != nullptr);
-  EXPECT_EQ(link1_body->linkname, "link1");
+  EXPECT_EQ(link1_body->name_, "link1");
 
   // Verifies that the transformation from link1's frame to the world's frame
   // is correct. Since the model was not offset from the world, we expect
@@ -60,7 +60,7 @@ TEST_P(LoadModelTest, TestNoOffset) {
   // Gets the link whose parent joint is called "joint1".
   auto link2_body = rbs.getRigidBodyTree()->findJoint("joint1");
   EXPECT_TRUE(link2_body != nullptr);
-  EXPECT_EQ(link2_body->linkname, "link2");
+  EXPECT_EQ(link2_body->name_, "link2");
 
   // Verifies that the transformation from link2's frame to link1's frame is
   // correct. From the SDF, the transformation is expected to be
@@ -100,7 +100,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
   // Gets the link whose parent joint is called "base".
   auto link1_body = rbs.getRigidBodyTree()->findJoint("base");
   EXPECT_TRUE(link1_body != nullptr);
-  EXPECT_EQ(link1_body->linkname, "link1");
+  EXPECT_EQ(link1_body->name_, "link1");
 
   // Verifies that the transformation from link1's frame to the world's frame
   // is correct. Since the model was offset from the world frame, we expect the
@@ -112,7 +112,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
   // Gets the link whose parent joint is called "joint1".
   auto link2_body = rbs.getRigidBodyTree()->findJoint("joint1");
   EXPECT_TRUE(link2_body != nullptr);
-  EXPECT_EQ(link2_body->linkname, "link2");
+  EXPECT_EQ(link2_body->name_, "link2");
 
   // Verifies that the transformation from link2's frame to link1's frame is
   // correct. From the SDF, the transformation is expected to be
@@ -168,7 +168,7 @@ TEST_P(LoadModelTest, TestWeld) {
 INSTANTIATE_TEST_CASE_P(LOAD_SDF_AND_URF_TESTS, LoadModelTest,
                         ::testing::Values("urdf", "sdf"));
 
-TEST(LoadSDFTest, TestInternalOffset) {
+GTEST_TEST(LoadSDFTest, TestInternalOffset) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 offset between the model's root and the model's world
   //   2. Zero offset between the model's world and Drake's world
@@ -194,7 +194,7 @@ TEST(LoadSDFTest, TestInternalOffset) {
               T_model_to_world.matrix());
 }
 
-TEST(LoadSDFTest, TestDualOffset1) {
+GTEST_TEST(LoadSDFTest, TestDualOffset1) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 offset between the model's root and the model's world
   //   2. An X = 2 offset between the model's world and Drake's world
@@ -233,7 +233,7 @@ TEST(LoadSDFTest, TestDualOffset1) {
               T_model_to_world.matrix());
 }
 
-TEST(LoadSDFTest, TestDualOffset2) {
+GTEST_TEST(LoadSDFTest, TestDualOffset2) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 and Roll = 90 degree offset between the model's root link's
   //      frame and the model's world frame.

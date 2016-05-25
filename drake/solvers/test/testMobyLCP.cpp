@@ -118,7 +118,7 @@ void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   RunRegularizedLcp(M, q, expected_z_in, expect_fast_pass);
 }
 
-TEST(testMobyLCP, testTrivial) {
+GTEST_TEST(testMobyLCP, testTrivial) {
   Eigen::Matrix<double, 9, 9> M;
   // clang-format off
   M <<
@@ -144,7 +144,7 @@ TEST(testMobyLCP, testTrivial) {
   RunRegularizedLcp(M, q, empty_z, true);
 }
 
-TEST(testMobyLCP, testProblem1) {
+GTEST_TEST(testMobyLCP, testProblem1) {
   // Problem from example 10.2.1 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 16, 16> M;
@@ -164,7 +164,7 @@ TEST(testMobyLCP, testProblem1) {
   runLCP(M, q, z, false);
 }
 
-TEST(testMobyLCP, testProblem2) {
+GTEST_TEST(testMobyLCP, testProblem2) {
   // Problem from example 10.2.2 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 2, 2> M;
@@ -180,7 +180,7 @@ TEST(testMobyLCP, testProblem2) {
   runLCP(M, q, z, true);
 }
 
-TEST(testMobyLCP, testProblem3) {
+GTEST_TEST(testMobyLCP, testProblem3) {
   // Problem from example 10.2.3 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 3, 3> M;
@@ -201,7 +201,7 @@ TEST(testMobyLCP, testProblem3) {
   runLCP(M, q, z, true);
 }
 
-TEST(testMobyLCP, testProblem4) {
+GTEST_TEST(testMobyLCP, testProblem4) {
   // Problem from example 10.2.4 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 4, 4> M;
@@ -239,7 +239,7 @@ TEST(testMobyLCP, testProblem4) {
   EXPECT_FALSE(result);
 }
 
-TEST(testMobyLCP, testProblem6) {
+GTEST_TEST(testMobyLCP, testProblem6) {
   // Problem from example 10.2.9 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 4, 4> M;
@@ -282,7 +282,7 @@ TEST(testMobyLCP, testProblem6) {
   runLCP(M, q, z, true);
 }
 
-TEST(testMobyLCP, testEmpty) {
+GTEST_TEST(testMobyLCP, testEmpty) {
   Eigen::MatrixXd empty_M(0, 0);
   Eigen::VectorXd empty_q(0);
   Eigen::VectorXd z;

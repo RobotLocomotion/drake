@@ -7,6 +7,7 @@
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
+using Eigen::AngleAxisd;
 
 namespace DrakeCollision {
 namespace {
@@ -34,7 +35,7 @@ namespace {
  *          |                    |
  *
  */
-TEST(ModelTest, ClosestPointsAllToAll) {
+GTEST_TEST(ModelTest, closestPointsAllToAll) {
   // Set up the geometry.
   Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
       T_elem2_to_body;
@@ -45,8 +46,14 @@ TEST(ModelTest, ClosestPointsAllToAll) {
   T_elem2_to_body.setIdentity();
   T_elem2_to_body.translation() << 1, 0, 0;
   T_body3_to_world.translation() << 2, 2, 0;
-  T_body3_to_world.matrix().block<2, 2>(0, 0) << 0, -1, 1,
-      0;  // rotate 90 degrees in z
+  // rotate 90 degrees in z
+  T_body3_to_world.linear() =
+      AngleAxisd(M_PI_2, Vector3d::UnitZ()).toRotationMatrix();
+
+  // Numerical precision tolerance to perform floating point comparisons.
+  // For these very simple setup tests are expected to pass to machine
+  // precision. More complex geometries might require a looser tolerance.
+  const double tolerance = Eigen::NumTraits<double>::epsilon();
 
   DrakeShapes::Box geometry_1(Vector3d(1, 1, 1));
   DrakeShapes::Sphere geometry_2(0.5);
@@ -75,27 +82,43 @@ TEST(ModelTest, ClosestPointsAllToAll) {
   // they are available.
   EXPECT_EQ(id1, points[0].getIdA());
   EXPECT_EQ(id2, points[0].getIdB());
-  EXPECT_EQ(1.0, points[0].getDistance());
-  EXPECT_EQ(Vector3d(-1, 0, 0), points[0].getNormal());
-  EXPECT_TRUE((Vector3d(0.5, 0, 0) - points[0].getPtA()).isZero());
-  EXPECT_TRUE((Vector3d(0.5, 0, 0) - points[0].getPtB()).isZero());
+  EXPECT_NEAR(1.0, points[0].getDistance(), tolerance);
+  // Normal is on body B expressed in the world's frame.
+  // Points are in the local frame of the body.
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.5, 0, 0)));
+  EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.5, 0, 0)));
 
   // Check the closest point between object 1 and object 3.
   EXPECT_EQ(id1, points[1].getIdA());
   EXPECT_EQ(id3, points[1].getIdB());
-  EXPECT_EQ(1.6213203435596428, points[1].getDistance());
-  EXPECT_EQ(Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0), points[1].getNormal());
-  EXPECT_TRUE((Vector3d(0.5, 0.5, 0) - points[1].getPtA()).isZero());
+  // exact_distance =
+  // distance_between_centers -
+  // box_center_to_corner_distance -
+  // sphere_center_to_surface_distance =
+  // = sqrt(8.0) - 1.0/sqrt(2.0) - 1/2.
+  double exact_distance = sqrt(8.0) - 1.0 / sqrt(2.0) - 0.5;
+  EXPECT_NEAR(exact_distance, points[1].getDistance(), tolerance);
+  // Normal is on body B expressed in the world's frame.
+  // Points are in the local frame of the body.
   EXPECT_TRUE(
-      (Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0) - points[1].getPtB()).isZero());
+      points[1].getNormal().isApprox(Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0)));
+  EXPECT_TRUE(points[1].getPtA().isApprox(Vector3d(0.5, 0.5, 0)));
+  // Notice the y component is positive given that the body's frame is rotated
+  // 90 degrees around the z axis.
+  // Therefore x_body = y_world, y_body=-x_world and z_body=z_world
+  EXPECT_TRUE(
+      points[1].getPtB().isApprox(Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0)));
 
   // Check the closest point between object 2 and object 3.
   EXPECT_EQ(id2, points[2].getIdA());
   EXPECT_EQ(id3, points[2].getIdB());
-  EXPECT_EQ(1.0, points[2].getDistance());
-  EXPECT_EQ(Vector3d(0, -1, 0), points[2].getNormal());
-  EXPECT_TRUE((Vector3d(1, 0.5, 0) - points[2].getPtA()).isZero());
-  EXPECT_TRUE((Vector3d(-0.5, 0, 0) - points[2].getPtB()).isZero());
+  EXPECT_NEAR(1.0, points[2].getDistance(), tolerance);
+  // Normal is on body B expressed in the world's frame.
+  // Points are in the local frame of the body.
+  EXPECT_TRUE(points[2].getNormal().isApprox(Vector3d(0, -1, 0)));
+  EXPECT_TRUE(points[2].getPtA().isApprox(Vector3d(1, 0.5, 0)));
+  EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
 
 }  // namespace

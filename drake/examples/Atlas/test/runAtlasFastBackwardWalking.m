@@ -6,4 +6,4 @@ runAtlasWalking([], struct('navgoal', [-2;0;0;0;0;0],...
                                 'nom_forward_step', 0.3));
 end
 
-% TIMEOUT 1000
+% TIMEOUT 1500

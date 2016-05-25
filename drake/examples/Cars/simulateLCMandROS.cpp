@@ -1,4 +1,4 @@
-#include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
+#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
@@ -16,7 +16,7 @@ using namespace Drake;
 template <typename ScalarType = double>
 class DrivingCommand {
  public:
-  typedef drake::lcmt_driving_control_cmd_t LCMMessageType;
+  typedef drake::lcmt_driving_command_t LCMMessageType;
   static std::string channel() { return "DRIVING_COMMAND"; }
 
   DrivingCommand(void) : throttle(0), brake(0), steering_angle(0) {}
@@ -154,17 +154,17 @@ int main(int argc, char* argv[]) {
     world->addVisualElement(
         DrakeShapes::VisualElement(geom, T_element_to_link, color));
     tree->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, world), *world,
+        RigidBody::CollisionElement(geom, T_element_to_link, world.get()), *world,
         "terrain");
     tree->updateStaticCollisionElements();
   }
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
 
-  MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->num_positions),
-      Kd(getNumInputs(*rigid_body_sys), tree->num_velocities);
+  MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->number_of_positions()),
+      Kd(getNumInputs(*rigid_body_sys), tree->number_of_velocities());
   Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(
-      tree->num_positions + tree->num_velocities, 3);
+      tree->number_of_positions() + tree->number_of_velocities(), 3);
   {  // setup PD controller for throttle and steering
     double kpSteering = 400, kdSteering = 80, kThrottle = 100;
     Kp.setZero();
@@ -186,9 +186,9 @@ int main(int argc, char* argv[]) {
                  actuator_name == "left_wheel_joint") {
         auto const& b = tree->actuators[actuator_idx].body;
         Kd(actuator_idx, b->velocity_num_start) = kThrottle;  // throttle
-        map_driving_cmd_to_x_d(tree->num_positions + b->velocity_num_start, 1) =
+        map_driving_cmd_to_x_d(tree->number_of_positions() + b->velocity_num_start, 1) =
             20;  // throttle (velocity) command
-        map_driving_cmd_to_x_d(tree->num_positions + b->velocity_num_start, 2) =
+        map_driving_cmd_to_x_d(tree->number_of_positions() + b->velocity_num_start, 2) =
             -20;  // braking (velocity) command
       }
     }
@@ -226,7 +226,7 @@ int main(int argc, char* argv[]) {
   options.timeout_seconds = numeric_limits<double>::infinity();
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
-  x0.head(tree->num_positions) = tree->getZeroConfiguration();
+  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
   // todo:  call getInitialState instead?  (but currently, that would require
   // snopt).  needs #1627
   // I'm getting away without it, but might be generating large internal forces

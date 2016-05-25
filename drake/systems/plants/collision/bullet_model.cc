@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
 using Eigen::Isometry3d;
@@ -321,8 +322,8 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
   return c.getResults();
 }
 
-bool BulletModel::collidingPointsCheckOnly(const std::vector<Vector3d>& points,
-                                           double collision_threshold) {
+bool BulletModel::collidingPointsCheckOnly(
+    const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
 
@@ -334,12 +335,12 @@ bool BulletModel::collidingPointsCheckOnly(const std::vector<Vector3d>& points,
   btT.setIdentity();
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(false);
 
-  for (size_t i = 0; i < points.size(); ++i) {
+  for (size_t i = 0; i < input_points.size(); ++i) {
     BinaryContactResultCallback c;
 
-    btVector3 pos(static_cast<btScalar>(points[i](0)),
-                  static_cast<btScalar>(points[i](1)),
-                  static_cast<btScalar>(points[i](2)));
+    btVector3 pos(static_cast<btScalar>(input_points[i](0)),
+                  static_cast<btScalar>(input_points[i](1)),
+                  static_cast<btScalar>(input_points[i](2)));
     btT.setOrigin(pos);
     bt_obj.setWorldTransform(btT);
 
@@ -354,7 +355,7 @@ bool BulletModel::collidingPointsCheckOnly(const std::vector<Vector3d>& points,
 }
 
 std::vector<size_t> BulletModel::collidingPoints(
-    const std::vector<Vector3d>& points, double collision_threshold) {
+    const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
 
@@ -367,12 +368,12 @@ std::vector<size_t> BulletModel::collidingPoints(
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(false);
   std::vector<size_t> in_collision_indices;
 
-  for (size_t i = 0; i < points.size(); ++i) {
+  for (size_t i = 0; i < input_points.size(); ++i) {
     BinaryContactResultCallback c;
 
-    btVector3 pos(static_cast<btScalar>(points[i](0)),
-                  static_cast<btScalar>(points[i](1)),
-                  static_cast<btScalar>(points[i](2)));
+    btVector3 pos(static_cast<btScalar>(input_points[i](0)),
+                  static_cast<btScalar>(input_points[i](1)),
+                  static_cast<btScalar>(input_points[i](2)));
     btT.setOrigin(pos);
     bt_obj.setWorldTransform(btT);
 
@@ -605,8 +606,41 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
     btVector3 ray_to_world(ray_endpoints(0, i), ray_endpoints(1, i),
                            ray_endpoints(2, i));
 
+    // ClosestRayResultCallback inherits from RayResultCallback.
     btCollisionWorld::ClosestRayResultCallback ray_callback(ray_from_world,
                                                             ray_to_world);
+
+    // The user can specify options by setting the flag
+    // RayResultCallback::m_flags.
+    // This is demonstrated in the RaytestDemo
+    // (bullet3/examples/Raycast/RaytestDemo.cpp) part of Bullet's
+    // ExampleBrowser.
+    //
+    // Possible options are defined in the enum
+    // btTriangleRaycastCallback::EFlags:
+    // 1. kF_UseSubSimplexConvexCastRaytest
+    // 2. kF_UseGjkConvexCastRaytest
+    //
+    // From the comments in this enum (btRaycastCallback.h) we know
+    // (quoting those comments):
+    // - SubSimplexConvexCastRaytest is the default.
+    // - SubSimplexConvexCastRaytest uses an approximate but faster ray versus
+    //   convex intersection algorithm.
+    // We now know that SubSimplexConvexCastRaytest is an iterative algorithm
+    // with a very large hardcoded tolerance for convergence, see discussions
+    // on Drake's github repository issue #1712 and fix in PR #2354.
+    // Erwin Coumans himself comments about this in Bullet's issue #34.
+    //
+    // When using SubSimplexConvexCastRaytest the ray test finally gets resolved
+    // with the call to btSubsimplexConvexCast::calcTimeOfImpact() (this is the
+    // iterative method with the hardcoded tolerance).
+    // A nice discussion (and probably the only one out there) is referenced at
+    // the top of the file, quote:
+    // Typically the conservative advancement reaches solution in a few
+    // iterations, clip it to 32 for degenerate cases. See discussion about this
+    // here http://continuousphysics.com/Bullet/phpBB2/viewtopic.php?t=565
+    ray_callback.m_flags |=
+        btTriangleRaycastCallback::kF_UseGjkConvexCastRaytest;
 
     bt_world.bt_collision_world->rayTest(ray_from_world, ray_to_world,
                                          ray_callback);
@@ -639,11 +673,11 @@ bool BulletModel::closestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, const bool use_margins,
     std::vector<PointPair>& closest_points) {
   std::vector<ElementIdPair> id_pairs;
-  for (int i = 0; i < ids_to_check.size(); ++i) {
+  for (size_t i = 0; i < ids_to_check.size(); ++i) {
     ElementId id_a = ids_to_check[i];
     const Element* element_a = readElement(id_a);
     if (element_a != nullptr) {
-      for (int j = i + 1; j < ids_to_check.size(); ++j) {
+      for (size_t j = i + 1; j < ids_to_check.size(); ++j) {
         ElementId id_b = ids_to_check[j];
         const Element* element_b = readElement(id_b);
         if (element_b != nullptr && element_a->CollidesWith(element_b)) {
