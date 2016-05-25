@@ -53,6 +53,9 @@ add_library_with_exports(LIB_NAME drakeZMPUtil SOURCE_FILES zmpUtil.cpp)
 target_link_libraries(drakeZMPUtil drakeTrajectories)
 pods_install_libraries(drakeZMPUtil)
 drake_install_headers(zmpUtil.h)
-
+  pods_install_pkg_config_file(drake-zmp-util
+    LIBS -ldrakeZMPUtil
+    REQUIRES
+    VERSION 0.0.1)
 
 add_subdirectory(test)

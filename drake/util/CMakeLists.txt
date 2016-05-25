@@ -18,10 +18,10 @@ endif()
 add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
 pods_install_libraries(drakePolynomial)
 drake_install_headers(Polynomial.h)
-pods_install_pkg_config_file(drakePolynomial
-LIBS -ldrakePolynomial
-REQUIRES
-VERSION 0.0.2)
+pods_install_pkg_config_file(drake-polynomial
+  LIBS -ldrakePolynomial
+  REQUIRES
+  VERSION 0.0.2)
 
 add_library_with_exports(LIB_NAME drakeUtil SOURCE_FILES drakeUtil.cpp)
 drake_install_headers(drakeUtil.h )
@@ -54,6 +54,10 @@ if (LCM_FOUND)
   target_link_libraries(drakeLCMUtil drakeTrajectories)
   drake_install_headers(lcmUtil.h)
   pods_install_libraries(drakeLCMUtil)
+  pods_install_pkg_config_file(drake-lcm-util
+    LIBS -ldrakeLCMUtil
+    REQUIRES
+    VERSION 0.0.1)
 endif()
 
 drake_install_headers(drakeGradientUtil.h)
