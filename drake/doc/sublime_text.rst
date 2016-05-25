@@ -1,6 +1,17 @@
+.. _sublime_text_notes:
+
 *****************************************
 Sublime Text Notes
 *****************************************
+
+.. contents:: `Table of contents`
+   :depth: 3
+   :local:
+
+.. _sublime-intro:
+
+Introduction
+============
 
 This page contains notes on how to use
 `Sublime Text <https://www.sublimetext.com>`_ with Drake.
@@ -41,8 +52,8 @@ To display the current file's full path in the title bar on OSX::
 
     "show_full_path": true,
 
-Show *.sdf Files in Side Bar
-----------------------------
+Show \*.sdf Files in Side Bar
+-----------------------------
 
 To show ``*.sdf`` files in the side bar::
 
