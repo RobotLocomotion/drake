@@ -5,37 +5,56 @@ C++ `*-inl.h` files
 *******************
 
 This section explains the "what, why, and how" of Drake's use of the
-`*-inl.h` pattern for templated C++ code.
+`*-inl.h` pattern for templated C++ code.  (The word `inl` here is an
+abbreviation for `inline`.)
 
 .. contents:: `Table of contents`
    :depth: 3
    :local:
 
-Motivation
-==========
+Explicit template instantiation
+===============================
 
 Compiling templated code can take a long time, but in many cases only
 a small set of concrete types are ever instantiated.  By moving
-template method bodies out of the header file and using explicit
-template instantiation, we can drastically speed up compile times.
+template method bodies out of the header file and using
+`explicit template instantiation
+<http://en.cppreference.com/w/cpp/language/class_template#Explicit_instantiation>`_,
+we can drastically speed up compile times.
 
-The conventional approach to explicit template instantiation uses only
+(Note that *implicit* template instantiation is still allowed, and
+indeed encouraged when appropriate; this document only covers the
+rules for *explicit* instantiation.)
+
+Drake uses two approaches for explicit template instantiation; each
+one is described immediately below.  We prefer the first "traditional"
+approach when possible, because it is simpler.  The second "`*-.inl`
+pattern" approach may be used when required.
+
+Two-file, traditional approach
+------------------------------
+
+The traditional approach to explicit template instantiation uses only
 an ``*.h`` file and ``*.cc`` file.  The declarations go in the
-``*.h``, and the definitions and instantiations go in the ``*.cc``.
+``*.h`` file, and their definitions and instantiations go in the ``*.cc`` file.
+
 This two-file solution is straightforward and well-known, so if it
-meets your needs you should prefer it to the ``*-inl.h`` pattern shown
-below.
+meets your needs you should prefer it.
+
+Three-file, `-inl.h` pattern approach
+-------------------------------------
 
 The case for ``*-inl.h`` files appears when we wish to provide the
-opportunity for calling code to use template types other than those
-the ones instantiated in our ``*.cc`` file.  The problem is that
+opportunity for calling code to use template types other than
+the ones instantiated in our ``*.cc`` file.
+The problem with the traditional approach is that
 method bodies only exist in the ``*.cc`` file, so there is no
 mechanism for calling code to instantiate them with different types.
 
 The ``*-inl.h`` pattern works around this problem by placing the
-method bodies in a third file, named ``*-inl.h``.  Code that only uses
-standard types can includes the ``*.h`` file like normal.  Code that
-requires a non-standard type instead includes the ``*-inl.h`` file.
+method bodies in a third file named ``*-inl.h``.  Code that only uses
+standard types should only include the ``*.h`` file.  Code that
+requires a non-standard type should instead include only the ``*-inl.h`` file.
 
 
 Example of the `*-inl.h` pattern
@@ -88,8 +107,8 @@ The inl file defines the templated methods::
 ``my_class.cc``
 ---------------
 
-The cc explicitly instantiates the templates (asks the compiler to
-emit object code for some pre-defined types)::
+The implementation file explicitly instantiates the templates
+(it instructs the compiler to emit object code for some pre-defined types)::
 
   #include "my_class-inl.h"
 
@@ -98,19 +117,39 @@ emit object code for some pre-defined types)::
 ``main.cc``
 -----------
 
-Calling code uses the header, not the inl::
+Calling code uses the `*.h` header, not the `*-inl.h` header::
 
   #include "my_class.h"
 
   int main() {
-    MyClass<double> die;
-    std::cerr << die.get_random_number() << std::endl;
+    MyClass<double> dice;
+    std::cerr << dice.get_random_number() << std::endl;
   }
+
+This works for all of the supported types listed in the `my_class.h` header.
+
+``non-standard_main.cc``
+------------------------
+
+Unusual calling code uses the `*-inl.h` header, not the `*.h` header::
+
+  #include "functional_form.h"
+  #include "my_class-inl.h"
+
+  int main() {
+    MyClass<FunctionalForm> dice;
+    std::cerr << dice.get_random_number() << std::endl;
+  }
+
+This is used for types not already listed in the `my_class.h` header.
+This performs *implicit* instantiation (so is often slower to compile).
+Whenever possible, prefer to add more explicitly-supported types to
+`MyClass`'s API for everyone to use, rather than use this implicit form.
 
 
 Rules
 =====
 
-1. The file names must be ``.h`` and ``-inl.h`` and ``.cc``.
+1. The file names must end with ``.h`` and ``-inl.h`` and ``.cc``.
 2. The comments in each of the two header files must cite this page.
 3. The class must document which types are pre-instantiated.
