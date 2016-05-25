@@ -121,7 +121,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
 
-TEST(ModelTest, CollisionGroups) {
+GTEST_TEST(ModelTest, CollisionGroups) {
   CollisionElement element_1, element_2, element_3;
 
   // Adds element 1 to its own set of groups.
