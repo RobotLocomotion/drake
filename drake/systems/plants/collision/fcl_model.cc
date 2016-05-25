@@ -59,6 +59,7 @@ std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLCylinderShape(
 
 std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLCapsuleShape(
     const DrakeShapes::Capsule& geometry, bool use_margins) {
+  /*
   // NOTE:  Ignore margins for now.
   use_margins = use_margins;
 
@@ -72,6 +73,8 @@ std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLCapsuleShape(
   // numLength);
 
   return std::move(bvh_shape);
+  */
+  throw std::logic_error("FCLModel::newFCLCapsuleShape is not implemented yet");
 }
 
 // TODO(law12019): Figure out how to convert mesh verts to fcl mesh.
@@ -82,9 +85,7 @@ std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLMeshShape(
     // geometry.getPoints(Eigen::Matrix3Xd &points) const;
   }
   // TODO(law12019): What about traingle indexes?
-  std::cerr << "Warning: FCLModel::newMeshShape is not implemented."
-            << std::endl;
-  throw std::runtime_error("not implemented yet");
+  throw std::logic_error("FCLModel::newFCLMeshShape is not implemented yet");
 }
 
 ElementId FCLModel::addElement(const Element& element) {
@@ -112,9 +113,9 @@ ElementId FCLModel::addElement(const Element& element) {
       case DrakeShapes::MESH_POINTS:  // not implemented yet
       case DrakeShapes::CAPSULE:      // not implemented yet
       default:
-        std::cerr << "Warning: Collision elements[id] has an unknown type "
-                  << elements[id]->getShape() << std::endl;
-        throw unknownShapeException(elements[id]->getShape());
+        std::ostringstream ostr;
+        ostr << "Unknown collision shape: " << elements[id]->getShape();
+        throw std::logic_error(ostr.str());
         break;
     }
     if (bvh_shape) {
@@ -127,24 +128,20 @@ ElementId FCLModel::addElement(const Element& element) {
 std::vector<PointPair> FCLModel::potentialCollisionPoints(bool use_margins) {
   ResultCollector c;
   // TODO(law12019): Not Implemented
-  std::cerr << "Warning: FCLModel::potentialCollisionPoints not implemented."
-            << std::endl;
-  throw std::runtime_error("not implemented yet");
+  throw std::logic_error(
+    "FCLModel::potentialCollisionPoints is not implemented yet");
 }
 
 bool FCLModel::collidingPointsCheckOnly(
     const std::vector<Eigen::Vector3d>& points, double collision_threshold) {
   // TODO(law12019): Not Implemented
-  std::cerr << "Warning: FCLModel::collisionPointsCheckOnly not implemented."
-            << std::endl;
-  throw std::runtime_error("not implemented yet");
+  throw std::logic_error(
+    "FCLModel::collisionPointsCheckOnly is not implemented yet");
 }
 
 std::vector<size_t> FCLModel::collidingPoints(
     const std::vector<Eigen::Vector3d>& points, double collision_threshold) {
-  std::cerr << "Warning: FCLModel::collidingPoints not implemented."
-            << std::endl;
-  throw std::runtime_error("not implemented yet");
+  throw std::logic_error("FCLModel::collidingPoints is not implemented yet");
 }
 
 bool FCLModel::updateElementWorldTransform(
@@ -159,11 +156,10 @@ bool FCLModel::updateElementWorldTransform(
 
 void FCLModel::updateModel() {
   // I am not sure if this needs to be implemented.
-  std::cerr << "Warning: FCLModel::updateModel not implemented." << std::endl;
   // NOTE: ccl: I am not sure what changes I have to accommodate.
   // Should I rebuild the fclModels?
   // TODO(law12019): Test this.
-  throw std::runtime_error("not implemented yet");
+  throw std::logic_error("FCLModel::updateModel is not implemented yet");
 }
 
 bool FCLModel::findClosestPointsBtwElements(
@@ -274,9 +270,8 @@ void FCLModel::collisionDetectFromPoints(
                                   Eigen::Vector3d(), 0.0));
   Eigen::VectorXd phi(points.cols());
 
-  std::cerr << "Warning: FCLModel::collisionDetectFromPoints not implemented."
-            << std::endl;
-  throw std::runtime_error("not implemented yet");
+  throw std::logic_error(
+    "FCLModel::collisionDetectFromPoints is not implemented yet");
 }
 
 bool FCLModel::collisionRaycast(const Eigen::Matrix3Xd& origins,
@@ -286,9 +281,7 @@ bool FCLModel::collisionRaycast(const Eigen::Matrix3Xd& origins,
   distances.resize(origins.cols());
   normals.resize(3, origins.cols());
 
-  std::cerr << "Warning: FCLModel::collisionRaycast not implemented."
-            << std::endl;
-  throw std::runtime_error("not implemented yet");
+  throw std::logic_error("FCLModel::collisionRaycast is not implemented yet");
 }
 
 // This is the same implementation as in bullet.
@@ -341,17 +334,5 @@ bool FCLModel::collisionPointsAllToAll(
   //...
   collision_points = c.getResults();
   return c.pts.size() > 0;
-}
-
-FCLModel::unknownShapeException::unknownShapeException(
-    DrakeShapes::Shape shape) {
-  std::ostringstream ostr;
-  ostr << shape;
-  this->shape_str = ostr.str();
-}
-
-const char* FCLModel::unknownShapeException::what() const throw() {
-  return ("Unknown collision shape: " + shape_str +
-          ". Ignoring this collision element").c_str();
 }
 }

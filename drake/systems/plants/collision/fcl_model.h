@@ -82,16 +82,6 @@ class FCLModel : public Model {
   static std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> newFCLMeshShape(
       const DrakeShapes::Mesh& geometry, bool use_margins);
 
-  class unknownShapeException : public std::exception {
-   public:
-    explicit unknownShapeException(DrakeShapes::Shape shape);
-    virtual const char* what() const throw();
-    virtual ~unknownShapeException() throw() {}
-
-   protected:
-    std::string shape_str;
-  };
-
  private:
   FCLModel(const FCLModel&) {}
   FCLModel& operator=(const FCLModel&) { return *this; }
