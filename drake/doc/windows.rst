@@ -168,12 +168,12 @@ Test Compilation Results
 
 To verify Drake was successfully compiled, run the unit tests::
 
-    $ cd [build artifacts directory]
+    $ cd [build artifacts directory]/drake
     $ ctest -VV -C [build mode]
 
 You can also run a specific unit test::
 
-    $ cd [build artifacts directory]
+    $ cd [build artifacts directory]/drake
     $ ctest -VV -C [build mode] -R [name of unit test]
 
 For more details on unit testing, see :ref:`here <unit-test-instructions>`.
