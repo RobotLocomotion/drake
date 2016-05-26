@@ -10,6 +10,7 @@ set(private_headers
 add_library_with_exports(LIB_NAME drakeSpringMassSystem
     SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
 add_dependencies(drakeSpringMassSystem drakeSystemFramework)
+target_link_libraries(drakeSpringMassSystem drakeSystemFramework)
 
 pods_install_libraries(drakeSpringMassSystem)
 pods_install_pkg_config_file(drakeSpringMassSystem
