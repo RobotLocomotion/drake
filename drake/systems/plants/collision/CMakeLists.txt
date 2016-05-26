@@ -17,6 +17,7 @@ endif()
 add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_SRC_FILES})
 
 if (fcl_FOUND)
+  target_compile_definitions(drakeCollision PRIVATE FCL_COLLISION)
   target_link_libraries(drakeCollision fcl)
 endif()
 
