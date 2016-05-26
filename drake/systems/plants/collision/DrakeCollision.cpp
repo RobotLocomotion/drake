@@ -6,6 +6,9 @@
 #ifdef BULLET_COLLISION
 #include "drake/systems/plants/collision/bullet_model.h"
 #endif
+#ifdef FCL_COLLISION
+#include "drake/systems/plants/collision/fcl_model.h"
+#endif
 
 using namespace std;
 using namespace Eigen;
@@ -16,21 +19,28 @@ const bitmask ALL_MASK(bitmask(0).set());
 const bitmask NONE_MASK(0);
 const bitmask DEFAULT_GROUP(1);
 
-enum DRAKECOLLISION_EXPORT ModelType { NONE, AUTO, BULLET };
-
 unique_ptr<Model> newModel(ModelType model_type) {
   switch (model_type) {
     case NONE:
       return unique_ptr<Model>(new Model());
-      break;
+    case AUTO:
+      return newModel();
     case BULLET:
 #ifdef BULLET_COLLISION
       return unique_ptr<Model>(new BulletModel());
 #else
-      cerr << "Recompile with Bullet enabled (-DBULLET_COLLISION) to use "
-              "Bullet collision models." << endl;
-#endif
+      cerr << "Recompile with Bullet enabled (-DBULLET_COLLISION) "
+              "to use Bullet collision models." << endl;
       break;
+#endif
+    case FCL:
+#ifdef FCL_COLLISION
+      return unique_ptr<Model>(new FCLModel());
+#else
+      cerr << "Recompile with FCL enabled (-DFCL_COLLISION) "
+              "to use FCL collision models." << endl;
+      break;
+#endif
     default:
       cerr << model_type << " is not a recognized collision model type."
            << endl;
