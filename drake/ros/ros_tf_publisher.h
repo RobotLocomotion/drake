@@ -31,7 +31,6 @@ namespace ros {
  *
  * For convenience, the input is passed directly through as an output.
  */
-
 template <template <typename> class RobotStateVector>
 class DrakeRosTfPublisher {
  private:

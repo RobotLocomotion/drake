@@ -6,9 +6,9 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
-#include "drake/ros/drake_ros_tf_publisher.h"
+#include "drake/ros/ros_tf_publisher.h"
 #include "drake/ros/ros_vehicle_system.h"
-#include "drake/ros/sensor_visualizer_lidar.h"
+#include "drake/ros/ros_sensor_publisher_lidar.h"
 
 using Drake::BotVisualizer;
 using Drake::SimulationOptions;
@@ -44,13 +44,12 @@ int do_main(int argc, const char* argv[]) {
   auto visualizer =
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
-  auto lidar_visualizer =
-      std::make_shared<::drake::ros::SensorVisualizerLidar<
-          RigidBodySystem::StateVector>>(rigid_body_sys);
+  auto lidar_visualizer = std::make_shared<
+      ::drake::ros::SensorVisualizerLidar<RigidBodySystem::StateVector>>(
+      rigid_body_sys);
 
-  auto tf_publisher =
-      std::make_shared<::drake::ros::DrakeRosTfPublisher<
-          RigidBodySystem::StateVector>>(tree);
+  auto tf_publisher = std::make_shared<
+      ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree);
 
   auto sys =
       cascade(cascade(cascade(vehicle_sys, visualizer), lidar_visualizer),
