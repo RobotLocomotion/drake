@@ -70,6 +70,8 @@ option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ 
 option(WITH_BULLET 		"used for collision detection" 	ON)
 option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
 option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
+option(WITH_LIBCCD 		"Required for FCL" 	        ON)
+option(WITH_FCL 		"Fast Collision Library" 	ON)
 if (WIN32)
 	option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
 else()
@@ -142,7 +144,8 @@ set(bot_core_lcmtypes_dependencies lcm)
 set(director_dependencies lcm bot_core_lcmtypes libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp nlopt)
+set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet libccd fcl octomap snopt gurobi swig_matlab swigmake yaml_cpp nlopt)
+set(fcl_dependencies libccd)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -155,6 +158,16 @@ set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
 set(bullet_GIT_TAG f7cfcf6a24977b57dc832593743c770548799e45)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
+set(libccd_GIT_REPOSITORY https://github.com/danfis/libccd.git)
+set(libccd_GIT_TAG v2.0)
+set(libccd_IS_PUBLIC TRUE)
+set(libccd_IS_CMAKE_POD TRUE)
+set(fcl_GIT_REPOSITORY https://github.com/flexible-collision-library/fcl.git)
+set(fcl_GIT_TAG 0cd30df40797f5908c295c3458a4c0344b2fc57c)
+#set(fcl_GIT_TAG 0.5.0)
+set(fcl_IS_PUBLIC TRUE)
+set(fcl_IS_CMAKE_POD TRUE)
+
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
 set(cmake_GIT_TAG abe1a22d0bb767423de4e3bd1123cc2deae1c82a)
 set(cmake_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
@@ -285,6 +298,8 @@ foreach(proj IN ITEMS
 		bot_core_lcmtypes
 		libbot
 		bullet
+		libccd
+		fcl
 		spotless
 		director
 		signalscope
