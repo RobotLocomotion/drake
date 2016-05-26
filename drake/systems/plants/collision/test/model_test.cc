@@ -94,7 +94,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   Element element_3(geometry_3);
 
   // Populate the model.
-  std::shared_ptr<Model> model = newModel();
+  std::shared_ptr<Model> model = newModel(MODELTYPE);
   ElementId id1 = model->addElement(element_1);
   ElementId id2 = model->addElement(element_2);
   ElementId id3 = model->addElement(element_3);
