@@ -31,9 +31,9 @@ class SpringMassSystemTest : public ::testing::Test {
   void SetUp() override {
     // Construct the system I/O objects.
     system_.reset(new SpringMassSystem("test_system", kSpring, kMass));
-    context_ = std::move(system_->CreateDefaultContext());
-    system_output_ = std::move(system_->CreateDefaultOutput());
-    erased_derivatives_ = std::move(system_->CreateDefaultStateDerivatives());
+    context_ = system_->CreateDefaultContext();
+    system_output_ = system_->CreateDefaultOutput();
+    erased_derivatives_ = system_->CreateDefaultStateDerivatives();
 
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector*>(
