@@ -31,6 +31,12 @@ endif()
 
 set(optimization_files)
 list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp system_identification.cpp)
+pods_find_pkg_config(ipopt)
+if (ipopt_FOUND)
+  list(APPEND optimization_files IpoptSolver.cpp)
+else()
+  list(APPEND optimization_files NoIpopt.cpp)
+endif(ipopt_FOUND)
 pods_find_pkg_config(nlopt)
 if (nlopt_FOUND)
   list(APPEND optimization_files NloptSolver.cpp)
@@ -43,6 +49,7 @@ if (snopt_c_FOUND)
 else()
   list(APPEND optimization_files NoSnopt.cpp)
 endif(snopt_c_FOUND)
+
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakePolynomial)
 drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h)
@@ -51,6 +58,15 @@ pods_install_pkg_config_file(drake-optimization
   LIBS -ldrakeOptimization
   REQUIRES
   VERSION 0.0.1)
+
+if (ipopt_FOUND)
+  pods_use_pkg_config_packages(drakeOptimization ipopt)
+  # This should probably be a test for the GNU linker instead of a platform.
+  if (NOT (APPLE OR WIN32))
+    set(CMAKE_SHARED_LINKER_FLAGS
+      "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
+  endif(NOT WIN32)
+endif(ipopt_FOUND)
 if (nlopt_FOUND)
   pods_use_pkg_config_packages(drakeOptimization nlopt)
 endif(nlopt_FOUND)

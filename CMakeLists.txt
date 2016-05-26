@@ -76,6 +76,7 @@ else()
 	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
 	option(WITH_NLOPT 		"nonlinear optimization solver"  ON)
+	option(WITH_IPOPT 		"nonlinear optimization solver"  ON)
 	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
@@ -142,7 +143,7 @@ set(bot_core_lcmtypes_dependencies lcm)
 set(director_dependencies lcm bot_core_lcmtypes libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp nlopt)
+set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp nlopt ipopt)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -185,6 +186,12 @@ set(gloptipoly_IS_PUBLIC FALSE)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG fbbdbbc0152ddb37df209d221aff37448b8ff29f)
 set(gurobi_IS_PUBLIC FALSE)
+set(ipopt_GIT_REPOSITORY http://github.com/sammy-tri/ipopt-wrapper.git)
+set(ipopt_GIT_TAG ddd394f8689fb514815c08b4be9df3c7aa0b8064)
+set(ipopt_IS_PUBLIC TRUE)
+# TODO(sam.creasey) add an alternate build command for WIN32 which
+# downloads the precopiled binary and installs that.
+set(ipopt_BUILD_COMMAND ./build.sh ${CMAKE_INSTALL_PREFIX})
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG 1533f20cff57504a46773f01e1730f11931d0ea6)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
@@ -221,7 +228,7 @@ set(signalscope_GIT_REPOSITORY https://github.com/mitdrc/signal-scope.git)
 set(signalscope_GIT_TAG f22243169381f99f29e534931014557b50b4af95)
 set(signalscope_IS_PUBLIC TRUE)
 set(snopt_GIT_REPOSITORY git@github.com:RobotLocomotion/snopt.git)
-set(snopt_GIT_TAG 95d908275156f2665ef3941f08cb89c767480a6e)
+set(snopt_GIT_TAG e9a9712c8a336174429753bde47cfa4943aa1451)
 set(snopt_IS_CMAKE_POD TRUE)
 set(snopt_IS_PUBLIC FALSE)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
@@ -303,6 +310,7 @@ foreach(proj IN ITEMS
 		swigmake
 		swig_matlab
 		yaml_cpp
+		ipopt
 		nlopt
 		drake)
 	string(TOUPPER ${proj} proj_upper)
