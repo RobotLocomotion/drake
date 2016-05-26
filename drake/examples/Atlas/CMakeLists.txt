@@ -14,10 +14,7 @@ add_matlab_test(NAME examples/Atlas/runAtlasJumping COMMAND runAtlasJumping)
 add_matlab_test(NAME examples/Atlas/runAtlasSagittalDynamics COMMAND runAtlasSagittalDynamics)
 add_matlab_test(NAME examples/Atlas/runAtlasWalkingPlanning COMMAND runAtlasWalkingPlanning)
 add_matlab_test(NAME examples/Atlas/runCOMFixedPointSearch COMMAND runCOMFixedPointSearch)
-
-# Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
-# add_matlab_test(NAME examples/Atlas/runDRCDoorTask COMMAND runDRCDoorTask)
-
+add_matlab_test(NAME examples/Atlas/runDRCDoorTask COMMAND runDRCDoorTask)
 add_matlab_test(NAME examples/Atlas/runRobotiqPDControl COMMAND runRobotiqPDControl)
 
 if (LONG_RUNNING_TESTS)
