@@ -47,6 +47,10 @@ add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_
 target_link_libraries(drakeOptimization drakePolynomial)
 drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h)
 pods_install_libraries(drakeOptimization)
+pods_install_pkg_config_file(drake-optimization
+  LIBS -ldrakeOptimization
+  REQUIRES
+  VERSION 0.0.1)
 if (nlopt_FOUND)
   pods_use_pkg_config_packages(drakeOptimization nlopt)
 endif(nlopt_FOUND)

@@ -10,6 +10,10 @@ if (LCM_FOUND)
 
   pods_install_libraries(drakeLCMSystem)
   drake_install_headers(LCMSystem.h)
+  pods_install_pkg_config_file(drake-lcm-system
+    LIBS -ldrakeLCMSystem
+    REQUIRES lcm
+    VERSION 0.0.1)
 endif()
 
 add_subdirectory(frames)
