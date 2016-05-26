@@ -5,6 +5,11 @@
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
+
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
+
 using Eigen::Isometry3d;
 using Eigen::Matrix3Xd;
 using Eigen::MatrixXd;
@@ -748,6 +753,74 @@ bool BulletModel::collisionPointsAllToAll(
                               pt.getDistance() + marginA + marginB));
       }
     }
+  }
+  collision_points = c.getResults();
+  return c.pts.size() > 0;
+}
+
+bool BulletModel::ComputeMaximumDepthCollisionPoints(
+    const bool use_margins, std::vector<PointPair>& collision_points) {
+  BulletResultCollector c;
+  BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+
+  bt_world.bt_collision_world->performDiscreteCollisionDetection();
+  int numManifolds =
+      bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
+
+  PRINT_VAR(numManifolds);
+
+  Element *elementA, *elementB;
+  double distance, min_distance;
+  int j_min;
+
+  for (int i = 0; i < numManifolds; i++) {
+    btPersistentManifold* contactManifold =
+        bt_world.bt_collision_world->getDispatcher()
+            ->getManifoldByIndexInternal(i);
+
+    const btCollisionObject* obA = contactManifold->getBody0();
+    const btCollisionObject* obB = contactManifold->getBody1();
+    elementA = static_cast<Element*>(obA->getUserPointer());
+    elementB = static_cast<Element*>(obB->getUserPointer());
+    DrakeShapes::Shape shapeA = elementA->getShape();
+    DrakeShapes::Shape shapeB = elementB->getShape();
+    double marginA = 0;
+    double marginB = 0;
+    if (shapeA == DrakeShapes::MESH || shapeA == DrakeShapes::MESH_POINTS ||
+        shapeA == DrakeShapes::BOX) {
+      marginA = obA->getCollisionShape()->getMargin();
+    }
+    if (shapeB == DrakeShapes::MESH || shapeB == DrakeShapes::MESH_POINTS ||
+        shapeB == DrakeShapes::BOX) {
+      marginB = obB->getCollisionShape()->getMargin();
+    }
+
+    int numContacts = contactManifold->getNumContacts();
+    // Initialize min_distance.
+    min_distance = distance =
+        contactManifold->getContactPoint(0).getDistance() + marginA + marginB;
+    j_min = 0;
+
+    // Find maximum penetration depth point in manifold.
+    for (int j = 1; j < numContacts; j++) {
+      distance =
+          contactManifold->getContactPoint(j).getDistance() + marginA + marginB;
+      if (distance < min_distance) {
+        min_distance = distance;
+        j_min = j;
+      }
+    }
+
+    // Gather info for maximum penetration point.
+    btManifoldPoint& pt = contactManifold->getContactPoint(j_min);
+    const btVector3& normalOnB = pt.m_normalWorldOnB;
+    const btVector3& ptA = pt.getPositionWorldOnA() + normalOnB * marginA;
+    const btVector3& ptB = pt.getPositionWorldOnB() - normalOnB * marginB;
+
+    // One result per manifold.
+    c.addSingleResult(elementA->getId(), elementB->getId(),
+                      toVector3d(ptA), toVector3d(ptB),
+                      toVector3d(normalOnB), distance);
   }
   collision_points = c.getResults();
   return c.pts.size() > 0;
