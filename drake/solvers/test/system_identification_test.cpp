@@ -170,7 +170,8 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     SID::PartialEvalType estimated_params;
     double error;
     std::tie(estimated_params, error) =
-        SID::EstimateParameters(poly, sample_points);
+        SID::EstimateParameters(VectorXpoly::Constant(1, 1, poly),
+                                sample_points);
 
     EXPECT_LT(error, 1e-5);
     EXPECT_EQ(estimated_params.size(), 3);
@@ -192,7 +193,8 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     SID::PartialEvalType estimated_params;
     double error;
     std::tie(estimated_params, error) =
-        SID::EstimateParameters(poly, sample_points);
+        SID::EstimateParameters(VectorXpoly::Constant(1, 1, poly),
+                                sample_points);
 
     EXPECT_LT(error, 0.1);
     EXPECT_EQ(estimated_params.size(), 3);
@@ -268,6 +270,7 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   auto v_var = v.getSimpleVariable();
   Polynomiald a = Polynomiald("a");
   auto a_var = a.getSimpleVariable();
+  Polynomiald j = Polynomiald("j");  //< for completeness; vanishes in equation.
   Polynomiald f = Polynomiald("f");
   auto f_var = f.getSimpleVariable();
   Polynomiald mass = Polynomiald("m");
@@ -277,9 +280,19 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   Polynomiald spring = Polynomiald("k");
   auto spring_var = spring.getSimpleVariable();
 
-  // We use a simple equation of motion rather than a manipulator equation
-  // here because we are testing the 1D version of parameter estimation.
-  Polynomiald force_equation = (mass * a) + (damping * v) + (spring * x) - f;
+  // Code style violations here:
+  // * Vector initializations use two statements on one line for clarity.
+  // * The short names and upper/lower case here are conventional within the
+  //   discipline and correspond to the manipulator formulation at:
+  //    * http://underactuated.csail.mit.edu/underactuated.html?chapter=23
+  VectorXpoly q(2, 1); q << x, v;
+  VectorXpoly qdot(2, 1); qdot << v, a;
+  VectorXpoly qdotdot(2, 1); qdotdot << a, j;
+  VectorXpoly H(1, 2); H << mass, 0;
+  VectorXpoly C(1, 2); C << 0, 0;
+  VectorXpoly g(1, 1); g << (spring * q[0]) - (damping * q[1]);
+  VectorXpoly B(1, 1); B << 1;
+  VectorXpoly manipulator = (H * qdotdot) + (C * qdot) + g;
 
   std::default_random_engine noise_generator;
   noise_generator.seed(kNoiseSeed);
@@ -300,7 +313,7 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   SID::PartialEvalType estimated_params;
   double error;
   std::tie(estimated_params, error) =
-      SID::EstimateParameters(force_equation, measurements);
+      SID::EstimateParameters(manipulator - (B * f), measurements);
 
   // Multiple layers of naive discrete-time numeric integration yields a very
   // high error value here, which almost all lands in the damping constant

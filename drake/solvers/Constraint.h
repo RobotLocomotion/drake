@@ -102,10 +102,10 @@ class QuadraticConstraint : public Constraint {
 };
 
 /** PolynomialConstraint
- * @brief lb <= P(x, y...) <= ub where P is a multivariate polynomial
- *  in x, y...
+ * @brief lb[i] <= P[i](x, y...) <= ub[i], where each P[i] is a multivariate
+ *  polynomial in x, y...
  *
- * A constraint on the value of a multivariate polynomial.
+ * A constraint on the values of multivariate polynomials.
  *
  * The Polynomial class uses a different variable naming scheme; thus the
  * caller must provide a list of Polynomial::VarType variables that correspond
@@ -114,41 +114,42 @@ class QuadraticConstraint : public Constraint {
  */
 class PolynomialConstraint : public Constraint {
  public:
-  static const int kNumConstraints = 1;
-
   PolynomialConstraint(
-      const Polynomiald& polynomial,
+      const VectorXpoly& polynomials,
       const std::vector<Polynomiald::VarType>& poly_vars,
-      double lb, double ub)
-      : Constraint(kNumConstraints,
-                   Vector1d::Constant(lb), Vector1d::Constant(ub)),
-        polynomial_(polynomial),
+      Eigen::VectorXd lb, Eigen::VectorXd ub)
+      : Constraint(polynomials.rows(), lb, ub),
+        polynomials_(polynomials),
         poly_vars_(poly_vars) {}
 
   ~PolynomialConstraint() override {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    Eigen::VectorXd& y) const override {
+            Eigen::VectorXd& y) const override {
     double_evaluation_point_.clear();
     for (size_t i = 0; i < poly_vars_.size(); i++) {
       double_evaluation_point_[poly_vars_[i]] = x[i];
     }
     y.resize(num_constraints());
-    y[0] = polynomial_.evaluateMultivariate(double_evaluation_point_);
+    for (int i = 0; i < num_constraints(); i++) {
+      y[i] = polynomials_[i].evaluateMultivariate(double_evaluation_point_);
+    }
   }
 
   void eval(const Eigen::Ref<const TaylorVecXd>& x,
-                    TaylorVecXd& y) const override {
+            TaylorVecXd& y) const override {
     taylor_evaluation_point_.clear();
     for (size_t i = 0; i < poly_vars_.size(); i++) {
       taylor_evaluation_point_[poly_vars_[i]] = x[i];
     }
     y.resize(num_constraints());
-    y[0] = polynomial_.evaluateMultivariate(taylor_evaluation_point_);
+    for (int i = 0; i < num_constraints(); i++) {
+      y[i] = polynomials_[i].evaluateMultivariate(taylor_evaluation_point_);
+    }
   }
 
  private:
-  const Polynomiald polynomial_;
+  const VectorXpoly polynomials_;
   const std::vector<Polynomiald::VarType> poly_vars_;
 
   /// To avoid repeated allocation, reuse a map for the evaluation point.
