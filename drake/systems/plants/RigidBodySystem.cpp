@@ -148,7 +148,11 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
       tree->potentialCollisions(kinsol, phi, normal, xA, xB, bodyA_idx,
                                 bodyB_idx);
     else
-      tree->collisionDetect(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
+      tree->ComputeMaximumDepthCollisionPoints(
+          kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
+    //tree->collisionDetect(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
+
+
 
 #if 0
     // Here call collisionPointsAllToAll (with use_margins=false because of bug)
