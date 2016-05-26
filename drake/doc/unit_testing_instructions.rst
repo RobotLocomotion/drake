@@ -47,19 +47,27 @@ Enabling Long Running Unit Tests
 
 Drake disables a number of long-running unit tests by default. To reduce
 continuous integration turnaround time, these tests run on the build servers
-post-submit, but not pre-submit. To run these tests locally, execute::
+post-submit, but not pre-submit. To enable these tests locally, execute::
 
     $ cd [drake build artifacts directory]
     $ cmake -DLONG_RUNNING_TESTS=ON ..
-    $ make
 
-Note that the final ``make`` command is requires to apply the changes. It
-results in your new build option being saved into
+The last command above saves your new build option in
 ``[drake build artifacts directory]/CMakeCache.txt``.
 
 See :ref:`Defining the Build Artifacts Directory
 <define-build-artifacts-directory>` above for the definition of
 ``[drake build artifacts directory]``.
+
+.. _run-all-unit-tests:
+
+Running Every Unit Test
+=======================
+
+To run every enabled unit test, execute::
+
+    $ cd [drake build artifacts directory]
+    $ ctest -VV
 
 .. _list-all-unit-tests:
 
@@ -89,7 +97,7 @@ Once you know the unit tests' name, you can run it by executing::
 
   $ ctest -VV -C [build mode] -R [test name]
 
-where: ``[build mode]`` is the build model, e.g., ``Debug``, ``RelWithDebInfo``,
+where: ``[build mode]`` is the build mode, e.g., ``Debug``, ``RelWithDebInfo``,
 or ``Release``, and ``[test name]`` is the name of the test exactly as printed
 by ``ctest -N`` including, if any, the entire path to the test as printed on the
 screen.
