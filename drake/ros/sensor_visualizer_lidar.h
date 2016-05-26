@@ -16,8 +16,7 @@ using Drake::RigidBodySystem;
 using Drake::RigidBodyDepthSensor;
 
 namespace drake {
-namespace systems {
-namespace plants {
+namespace ros {
 
 /** SensorVisualizerLidar<RobotStateVector>
  * @brief A system that takes the system state as the input,
@@ -69,7 +68,7 @@ class SensorVisualizerLidar {
     // Instantiates a ROS node handle, which is necessary to interact with ROS.
     // For more information, see:
     // http://wiki.ros.org/roscpp/Overview/NodeHandles
-    ros::NodeHandle nh;
+    ::ros::NodeHandle nh;
 
     // Creates a ROS topic publisher for each LIDAR sensor in the rigid body
     // system.
@@ -93,7 +92,7 @@ class SensorVisualizerLidar {
         if (lidar_publishers_.find(depth_sensor->get_name()) ==
             lidar_publishers_.end()) {
           std::string topic_name = "drake/lidar/" + depth_sensor->get_name();
-          lidar_publishers_.insert(std::pair<std::string, ros::Publisher>(
+          lidar_publishers_.insert(std::pair<std::string, ::ros::Publisher>(
               depth_sensor->get_name(),
               nh.advertise<sensor_msgs::LaserScan>(topic_name, 1)));
         } else {
@@ -171,7 +170,7 @@ class SensorVisualizerLidar {
     // Checks whether enough time has elapsed since the last transmission.
     // Aborts if insufficient time has passed. This is to prevent flooding ROS
     // topic /tf.
-    ros::Time current_time = ros::Time::now();
+    ::ros::Time current_time = ::ros::Time::now();
     if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
       return u;
 
@@ -248,7 +247,7 @@ class SensorVisualizerLidar {
    * Maintains a set of ROS topic publishers for publishing LIDAR messages.
    * The key is the name of the sensor. The value is the ROS topic publisher.
    */
-  std::map<std::string, ros::Publisher> lidar_publishers_;
+  std::map<std::string, ::ros::Publisher> lidar_publishers_;
 
   /**
    * Maintains a set of ROS sensor_msgs::LaserScan messages for use by the
@@ -261,9 +260,8 @@ class SensorVisualizerLidar {
   /**
    * The previous time the LIDAR messages were sent.
    */
-  ros::Time previous_send_time_;
+  ::ros::Time previous_send_time_;
 };
 
-}  // end namespace plants
-}  // end namespace systems
+}  // end namespace ros
 }  // end namespace drake

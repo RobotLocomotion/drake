@@ -6,9 +6,9 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
-#include "drake/systems/plants/drake_ros_tf_publisher.h"
-#include "drake/systems/ros_vehicle_system.h"
-#include "drake/systems/plants/sensor_visualizer_lidar.h"
+#include "drake/ros/drake_ros_tf_publisher.h"
+#include "drake/ros/ros_vehicle_system.h"
+#include "drake/ros/sensor_visualizer_lidar.h"
 
 using Drake::BotVisualizer;
 using Drake::SimulationOptions;
@@ -25,7 +25,7 @@ namespace {
  * Usage:  simulateLCM vehicle_model_file [world_model files ...]
  */
 int do_main(int argc, const char* argv[]) {
-  ros::init(argc, const_cast<char**>(argv), "car_sim_lcm_and_ros");
+  ::ros::init(argc, const_cast<char**>(argv), "car_sim_lcm_and_ros");
 
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
@@ -45,11 +45,11 @@ int do_main(int argc, const char* argv[]) {
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
   auto lidar_visualizer =
-      std::make_shared<drake::systems::plants::SensorVisualizerLidar<
+      std::make_shared<::drake::ros::SensorVisualizerLidar<
           RigidBodySystem::StateVector>>(rigid_body_sys);
 
   auto tf_publisher =
-      std::make_shared<drake::systems::plants::DrakeRosTfPublisher<
+      std::make_shared<::drake::ros::DrakeRosTfPublisher<
           RigidBodySystem::StateVector>>(tree);
 
   auto sys =
@@ -66,7 +66,7 @@ int do_main(int argc, const char* argv[]) {
   // Defines the start time of the simulation.
   const double kStartTime = 0;
 
-  run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
+  ::drake::ros::run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
 
   return 0;
 }

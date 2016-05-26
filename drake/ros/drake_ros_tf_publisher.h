@@ -18,8 +18,7 @@ using Drake::RigidBodySystem;
 using Drake::RigidBodyDepthSensor;
 
 namespace drake {
-namespace systems {
-namespace plants {
+namespace ros {
 
 /** DrakeRosTfPublisher<RobotStateVector>
  * @brief A system that takes the current state of Drake and publishes the
@@ -163,7 +162,7 @@ class DrakeRosTfPublisher {
     // Checks whether enough time has elapsed since the last transmission.
     // Aborts if insufficient time has passed. This is to prevent flooding ROS
     // topic /tf.
-    ros::Time current_time = ros::Time::now();
+    ::ros::Time current_time = ::ros::Time::now();
     if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
       return u;
 
@@ -283,9 +282,8 @@ class DrakeRosTfPublisher {
   /**
    * The previous time the transform messages were sent.
    */
-  ros::Time previous_send_time_;
+  ::ros::Time previous_send_time_;
 };
 
-}  // end namespace plants
-}  // end namespace systems
+}  // end namespace ros
 }  // end namespace drake

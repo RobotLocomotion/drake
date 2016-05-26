@@ -13,6 +13,7 @@
 #include "drake/systems/cascade_system.h"
 
 namespace drake {
+namespace ros {
 
 bool decode(const ackermann_msgs::AckermannDriveStamped& msg,
             drake::DrivingCommand<double>& x) {
@@ -26,10 +27,6 @@ bool decode(const ackermann_msgs::AckermannDriveStamped& msg,
   }
   return true;
 }
-
-};  // namespace drake
-
-namespace Drake {
 
 /** \brief Adds support for ackermann_msgs/AckermannDriveStamped commands.
  *
@@ -55,7 +52,7 @@ class ROSAckermannCommandReceiverSystem {
   // static const bool has_lcm_input = true;
 
   explicit ROSAckermannCommandReceiverSystem() : spinner_(1) {
-    ros::NodeHandle nh;
+    ::ros::NodeHandle nh;
 
     // Instantiates a ROS topic subscriber that receives vehicle driving
     // commands.
@@ -92,13 +89,13 @@ class ROSAckermannCommandReceiverSystem {
   }
 
  private:
-  ros::Subscriber subscriber_;
+  ::ros::Subscriber subscriber_;
 
   mutable std::mutex data_mutex_;
 
   OutputVector<double> data_;
 
-  ros::AsyncSpinner spinner_;
+  ::ros::AsyncSpinner spinner_;
 };
 
 }  // namespace internal
@@ -124,7 +121,7 @@ template <typename System>
 void run_ros_vehicle_sim(
     std::shared_ptr<System> sys, double t0, double tf,
     const typename System::template StateVector<double>& x0,
-    const SimulationOptions& options = default_simulation_options) {
+    const SimulationOptions& options = Drake::default_simulation_options) {
   auto ros_ackermann_input =
       std::make_shared<internal::ROSAckermannCommandReceiverSystem<
           System::template InputVector>>();
@@ -133,7 +130,7 @@ void run_ros_vehicle_sim(
 
   SimulationOptions sim_options = options;
   if (sim_options.realtime_factor < 0.0) sim_options.realtime_factor = 1.0;
-  simulate(*ros_sys, t0, tf, x0, sim_options);
+  Drake::simulate(*ros_sys, t0, tf, x0, sim_options);
 }
 
 /**
@@ -156,4 +153,5 @@ void run_ros_vehicle_sim(const System& sys, double t0, double tf) {
   run_ros_vehicle_sim(sys, t0, tf, getInitialState(*sys));
 }
 
-}  // end namespace Drake
+}  // end namespace ros
+}  // end namespace drake
