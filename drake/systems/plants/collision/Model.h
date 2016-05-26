@@ -224,8 +224,8 @@ class DRAKECOLLISION_EXPORT Model {
   std::unordered_map<ElementId, std::unique_ptr<Element>> elements;
 
  private:
-  Model(const Model&) {}
-  Model& operator=(const Model&) { return *this; }
+  Model(const Model&) = delete;
+  Model& operator=(const Model&) = delete;
 };
 
 }  // namespace DrakeCollision

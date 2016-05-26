@@ -154,8 +154,8 @@ class BulletModel : public Model {
   static constexpr double kSmallMargin = 1e-9;
   static constexpr double kLargeMargin = 0.05;
 
-  BulletModel(const BulletModel&) {}
-  BulletModel& operator=(const BulletModel&) { return *this; }
+  BulletModel(const BulletModel&) = delete;
+  BulletModel& operator=(const BulletModel&) = delete;
 };
 
 }  // namespace DrakeCollision
