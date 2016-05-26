@@ -652,13 +652,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
                            std::vector<int>& bodyB_idx,
                            bool use_margins = true);
 
-  void FindAndComputeContactPoints(const KinematicsCache<double>& cache,
-                                   Eigen::VectorXd& phi,
-                                   Eigen::Matrix3Xd& normal,
-                                   Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
-                                   std::vector<int>& bodyA_idx,
-                                   std::vector<int>& bodyB_idx,
-                                   bool use_margins = true);
+  void ComputeMaximumDepthCollisionPoints(const KinematicsCache<double> &cache,
+                                          Eigen::VectorXd &phi,
+                                          Eigen::Matrix3Xd &normal,
+                                          Eigen::Matrix3Xd &xA,
+                                          Eigen::Matrix3Xd &xB,
+                                          std::vector<int> &bodyA_idx,
+                                          std::vector<int> &bodyB_idx,
+                                          bool use_margins = true);
 
   virtual bool collidingPointsCheckOnly(
       const KinematicsCache<double>& cache,

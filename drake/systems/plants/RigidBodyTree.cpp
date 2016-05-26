@@ -13,6 +13,9 @@
 #include <fstream>
 #include <iostream>
 
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 using namespace std;
 using namespace Eigen;
 
@@ -153,11 +156,15 @@ void RigidBodyTree::compile(void) {
   num_velocities_ = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
+    PRINT_VAR(body.name());
+    PRINT_VAR(body.hasParent());
     if (body.hasParent()) {
       body.position_num_start = num_positions_;
       num_positions_ += body.getJoint().getNumPositions();
       body.velocity_num_start = num_velocities_;
       num_velocities_ += body.getJoint().getNumVelocities();
+      PRINT_VAR(body.getJoint().getName());
+      PRINT_VAR(body.getJoint().getNumPositions());
     } else {
       body.position_num_start = 0;
       body.velocity_num_start = 0;
@@ -589,13 +596,14 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   }
 }
 
-void RigidBodyTree::FindAndComputeContactPoints(
-    const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
-    Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
-    vector<int>& bodyB_idx, bool use_margins) {
+void RigidBodyTree::ComputeMaximumDepthCollisionPoints(
+    const KinematicsCache<double> &cache, VectorXd &phi, Matrix3Xd &normal,
+    Matrix3Xd &xA, Matrix3Xd &xB, vector<int> &bodyA_idx,
+    vector<int> &bodyB_idx, bool use_margins) {
   updateDynamicCollisionElements(cache);
   vector<DrakeCollision::PointPair> contact_points;
-  collision_model->collisionPointsAllToAll(use_margins, contact_points);
+  collision_model->ComputeMaximumDepthCollisionPoints(
+      use_margins, contact_points);
   size_t num_contact_points = contact_points.size();
 
   phi = VectorXd::Zero(num_contact_points);
@@ -608,6 +616,8 @@ void RigidBodyTree::FindAndComputeContactPoints(
 
   Vector3d ptA, ptB, n;
   double distance;
+
+  PRINT_VAR(num_contact_points);
 
   for (size_t i = 0; i < num_contact_points; i++) {
     contact_points[i].getResults(&ptA, &ptB, &n, &distance);
