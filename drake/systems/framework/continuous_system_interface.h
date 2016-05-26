@@ -14,7 +14,7 @@ namespace systems {
 template <typename T>
 class ContinuousSystemInterface : public SystemInterface<T> {
  public:
-  ~ContinuousSystemInterface() override  {}
+  ~ContinuousSystemInterface() override {}
 
   /// Returns a vector of the same size as the continuous_state allocated in
   /// CreateDefaultContext. Solvers will provide this vector as the output
