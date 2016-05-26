@@ -78,12 +78,15 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
 
   // If no environment is specified, the following code adds a flat terrain.
   if (argc < 3) {
-    double box_width = 1000;
-    double box_depth = 10;
-    DrakeShapes::Box geom(Eigen::Vector3d(box_width, box_width, box_depth));
+    //double box_width = 1000;
+    //double box_depth = 10;
+    DrakeShapes::Mesh geom("DrivingSurface_simpler_allTris.obj", "/home/amcastro/Documents/NvidiaTerrain/DrivingSurface_simpler_allTris.obj");
     Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-    T_element_to_link.translation() << 0, 0,
-        -box_depth / 2;  // top of the box is at z=0
+    T_element_to_link.linear() = Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitX()).toRotationMatrix();
+    //DrakeShapes::Box geom(Eigen::Vector3d(box_width, box_width, box_depth));
+    //Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
+    //T_element_to_link.translation() << 0, 0,
+    //    -box_depth / 2;  // top of the box is at z=0
     RigidBody& world = tree->world();
     Eigen::Vector4d color;
     color << 0.9297, 0.7930, 0.6758,
