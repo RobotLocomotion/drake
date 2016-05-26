@@ -16,12 +16,14 @@ hand_frame_id = robot.findFrame("r_hand_frame").frame_index
 base_body_id = robot.findLink('base_footprint').body_index
 
 constraints = [
-               # These three constriants ensure that the base of the robot is
+               # These three constraints ensure that the base of the robot is
                # at z = 0 and has no pitch or roll. Instead of directly
                # constraining orientation, we just require that the points at
                # [0, 0, 0], [1, 0, 0], and [0, 1, 0] in the robot's base's
-               # frame must a all be at z = 0 in world frame. NaN values
-               # indicate that we do not care about x or y here.
+               # frame must all be at z = 0 in world frame.
+               # We don't care about the x or y position of the robot's base,
+               # so we use NaN values to tell the IK solver not to apply a
+               # constraint along those dimensions.
                ik.WorldPositionConstraint(robot, base_body_id,
                                           np.zeros((3,)),
                                           np.array([np.nan, np.nan, 0]),
