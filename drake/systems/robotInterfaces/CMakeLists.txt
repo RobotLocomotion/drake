@@ -14,10 +14,10 @@ if (LCM_FOUND)
   pods_install_libraries(drakeQPLocomotionPlan)
   drake_install_headers(QPLocomotionPlan.h BodyMotionData.h)
   pods_install_pkg_config_file(drake-qp-locomotion-plan
-  LIBS -ldrakeQPLocomotionPlan
-  CFLAGS -I\${prefix}/include/lcmtypes
-  REQUIRES
-  VERSION 0.0.1)
+    LIBS -ldrakeQPLocomotionPlan
+    CFLAGS -I\${prefix}/include/lcmtypes
+    REQUIRES lcm
+    VERSION 0.0.1)
 endif()
 
 if (MATLAB_FOUND)

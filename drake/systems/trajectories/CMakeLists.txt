@@ -7,11 +7,10 @@ add_library_with_exports(LIB_NAME drakeTrajectories SOURCE_FILES PiecewiseFuncti
 target_link_libraries(drakeTrajectories drakePolynomial)
 pods_install_libraries(drakeTrajectories)
 drake_install_headers(PiecewiseFunction.h PiecewisePolynomial.h PiecewisePolynomialBase.h ExponentialPlusPiecewisePolynomial.h)
-pods_install_pkg_config_file(drakeTrajectories
-LIBS -ldrakeTrajectories
-REQUIRES
-VERSION 0.0.3)
-
+pods_install_pkg_config_file(drake-trajectories
+  LIBS -ldrakeTrajectories
+  REQUIRES
+  VERSION 0.0.3)
 
 pods_find_pkg_config(snopt_c)
 pods_find_pkg_config(bullet)
