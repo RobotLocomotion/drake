@@ -10,6 +10,8 @@
 #include "spruce.hh"
 #include "xmlUtil.h"
 
+#include <unistd.h>
+
 using Eigen::Isometry3d;
 using Eigen::Matrix;
 using Eigen::MatrixXd;
@@ -30,6 +32,10 @@ using std::string;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 using tinyxml2::XML_SUCCESS;
+
+
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
 
 namespace Drake {
 
@@ -164,6 +170,10 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     tree->FindAndComputeContactPoints(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
 #endif
 
+   // std::cin.get();
+    //usleep(5000);
+    PRINT_VAR(phi.rows());
+
     for (int i = 0; i < phi.rows(); i++) {
       if (phi(i) < 0.0) {  // then i have contact
         // todo: move this entire block to a shared an updated "contactJacobian"
@@ -173,6 +183,45 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         auto JB = tree->transformPointsJacobian(kinsol, xB.col(i), bodyB_idx[i],
                                                 0, false);
         Vector3d this_normal = normal.col(i);
+
+        PRINT_VAR(phi(i));
+        PRINT_VAR(this_normal.transpose());
+        PRINT_VAR(xA.col(i).transpose());
+        PRINT_VAR(xB.col(i).transpose());
+        PRINT_VAR(tree->bodies[bodyA_idx[i]]->name());
+        PRINT_VAR(tree->bodies[bodyB_idx[i]]->name());
+        const RigidBody& bodyA = *(tree->bodies[bodyA_idx[i]].get());
+        const RigidBody& bodyB = *(tree->bodies[bodyB_idx[i]].get());
+
+        Isometry3d TA;
+        if (bodyA.hasParent()) { // body is dynamic.
+          TA = kinsol.getElement(bodyA).transform_to_world;
+        } else { // body is static.
+          TA = Isometry3d::Identity();
+        }
+
+        Isometry3d TB;
+        if (bodyB.hasParent()) { // body is dynamic.
+          TB = kinsol.getElement(bodyB).transform_to_world;
+        } else { // body is static.
+          TB = Isometry3d::Identity();
+        }
+
+        PRINT_VAR(TA.translation().transpose());
+        PRINT_VAR(TB.translation().transpose());
+
+        Vector3d pc; // the contact point on the world (the box)
+        if(bodyA_idx[i]==0)
+          pc = xA.col(i);
+        else
+          pc = xB.col(i);
+
+#ifdef COLLISION_DEBUG_WITH_LCM_GL
+        // LCMGL sphere at contact point on box.
+        bot_lcmgl_color3f(lcmgl_, 1.0, 0.0, 0.0);
+        double xyz[] = {pc.x(), pc.y(), pc.z()};
+        bot_lcmgl_sphere(lcmgl_, xyz, .05, 36, 36);
+#endif
 
         // compute the surface tangent basis
         Vector3d tangent1;
@@ -211,12 +260,36 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
                       (relative_velocity.head(2).norm() + EPSILON)) *
               relative_velocity.head(2);  // epsilon to avoid divide by zero
 
+          PRINT_VAR(fA.transpose());
+          PRINT_VAR(fA.norm());
+
+#ifdef COLLISION_DEBUG_WITH_LCM_GL
+          // LCMGL the force on xB
+          bot_lcmgl_color3f(lcmgl_, 1.0, 0.0, 1.0);
+          bot_lcmgl_push_matrix(lcmgl_);
+          double arrow_length = fA.norm()/5.0;
+          double angle = -acos(fA.x()/(fA.norm()+1.0e-16))*180/M_PI;
+          Vector3d axis = fA.normalized().cross(Vector3d::UnitX());
+          PRINT_VAR(angle);
+          PRINT_VAR(axis.transpose());
+          bot_lcmgl_rotated(lcmgl_,
+                            angle, axis.x(), axis.y(), axis.z());
+          bot_lcmgl_translated(lcmgl_, xyz[0], xyz[1], xyz[2]);
+          bot_lcmgl_translated(lcmgl_, arrow_length/2.0, 0.0, 0.0);
+          bot_lcmgl_draw_arrow_3d (lcmgl_, arrow_length, 0.015, 4*0.015, 0.005);
+          bot_lcmgl_pop_matrix(lcmgl_);
+#endif
+
           // equal and opposite: fB = -fA.
           // tau = (R*JA)^T fA + (R*JB)^T fB = J^T fA
           C -= J.transpose() * fA;
         }
       }
     }
+#ifdef COLLISION_DEBUG_WITH_LCM_GL
+    bot_lcmgl_switch_buffer(lcmgl_);
+#endif
+    //if(phi.rows()>1) std::cin.get();
   }
 
   if (tree->getNumPositionConstraints()) {
