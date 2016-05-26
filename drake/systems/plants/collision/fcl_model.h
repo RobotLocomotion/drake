@@ -76,7 +76,7 @@ class FCLModel : public Model {
       const DrakeShapes::Mesh& geometry, bool use_margins);
 
  private:
-  FCLModel(const FCLModel&) {}
-  FCLModel& operator=(const FCLModel&) { return *this; }
+  FCLModel(const FCLModel&) = delete;
+  FCLModel& operator=(const FCLModel&) = delete;
 };
 }
