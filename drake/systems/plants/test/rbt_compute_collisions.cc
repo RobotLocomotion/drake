@@ -56,7 +56,7 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   Matrix3Xd normal, xA, xB;
   std::vector<int> bodyA_idx, bodyB_idx;
 
-  tree_.FindAndComputeContactPoints(
+  tree_.ComputeMaximumDepthCollisionPoints(
       kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx, false);
 
 #if 0
