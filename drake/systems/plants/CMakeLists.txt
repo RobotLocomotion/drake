@@ -5,6 +5,10 @@
 add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
 target_link_libraries(drakeXMLUtil tinyxml2 spruce)
 pods_install_libraries(drakeXMLUtil)
+pods_install_pkg_config_file(drake-xml-util
+  LIBS -ldrakeXMLUtil
+  REQUIRES
+  VERSION 0.0.1)
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeSDF.cpp RigidBodyTreeContact.cpp)
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
@@ -144,14 +148,14 @@ endif(MATLAB_FOUND)
 if (LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
   target_link_libraries(drakeRBSystem drakeRBM drakeLCMSystem drakeOptimization drakeRigidBodyConstraint)
+
+  drake_install_headers(RigidBodySystem.h)
+  pods_install_libraries(drakeRBSystem)
   pods_install_pkg_config_file(drake-rbsystem
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
     LIBS -ldrakeRBSystem -ldrakeRBM -ldrakeLCMSystem -ldrakeOptimization -ldrakeRigidBodyConstraint
     REQUIRES lcm
     VERSION 0.0.1)
-
-  drake_install_headers(RigidBodySystem.h)
-  pods_install_libraries(drakeRBSystem)
 
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
   target_link_libraries(rigidBodyLCMNode drakeRBSystem)
