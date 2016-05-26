@@ -15,7 +15,7 @@ void testSimpleCase() {
   typedef ExponentialPlusPiecewisePolynomial<CoefficientType>
       ExponentialPlusPiecewisePolynomialType;
   typedef typename ExponentialPlusPiecewisePolynomialType::MatrixX MatrixX;
-  typedef typename ExponentialPlusPiecewisePolynomialType::VectorX VectorX;
+
   int num_coefficients = 5;
   int num_segments = 1;
 

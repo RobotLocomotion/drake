@@ -367,7 +367,6 @@ GTEST_TEST(FunctionalFormTest, Stream) {
 }
 
 GTEST_TEST(FunctionalFormTest, Add) {
-  using Variable = FunctionalForm::Variable;
   {
     FunctionalForm f = FunctionalForm::Zero() + FunctionalForm::Linear({"x"});
     EXPECT_TRUE(f.IsLinear());
@@ -416,7 +415,6 @@ GTEST_TEST(FunctionalFormTest, Add) {
 }
 
 GTEST_TEST(FunctionalFormTest, Subtract) {
-  using Variable = FunctionalForm::Variable;
   {
     FunctionalForm f = FunctionalForm::Zero() - FunctionalForm::Linear({"x"});
     EXPECT_TRUE(f.IsLinear());
@@ -465,7 +463,6 @@ GTEST_TEST(FunctionalFormTest, Subtract) {
 }
 
 GTEST_TEST(FunctionalFormTest, Multiply) {
-  using Variable = FunctionalForm::Variable;
   {
     FunctionalForm f = FunctionalForm::Zero() * FunctionalForm::Linear({"x"});
     EXPECT_TRUE(f.IsZero());
@@ -514,7 +511,6 @@ GTEST_TEST(FunctionalFormTest, Multiply) {
 }
 
 GTEST_TEST(FunctionalFormTest, Divide) {
-  using Variable = FunctionalForm::Variable;
   {
     FunctionalForm f = FunctionalForm::Zero() / FunctionalForm::Linear({"x"});
     EXPECT_TRUE(f.IsZero());
@@ -569,8 +565,6 @@ GTEST_TEST(FunctionalFormTest, Divide) {
 }
 
 GTEST_TEST(FunctionalFormTest, Functions) {
-  using Variable = FunctionalForm::Variable;
-
   {
     FunctionalForm f = abs(FunctionalForm::Linear({"x"}));
     EXPECT_TRUE(f.IsDifferentiable());

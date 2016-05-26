@@ -46,7 +46,6 @@ void testSizes(size_t num_states, size_t num_inputs, size_t num_outputs) {
                                OutputsAtCompileTime>(num_states, num_inputs,
                                                      num_outputs);
   const auto& sys = *sys_ptr;
-  using SysType = typename remove_reference<decltype(sys)>::type;
 
   valuecheck(num_states, sys.getNumStates(), "Wrong number of states.");
   valuecheck(num_inputs, sys.getNumInputs(), "Wrong number of inputs.");
