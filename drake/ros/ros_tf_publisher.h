@@ -167,14 +167,15 @@ class DrakeRosTfPublisher {
 
     previous_send_time_ = current_time;
 
-    // The input vector u contains the delta model state values.
+    // The input vector u contains the change in the model state values.
     // The following code obtains the absolute model state values.
     auto uvec = Drake::toEigen(u);
     auto q = uvec.head(rigid_body_tree_->number_of_positions());
     KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q);
 
-    for (auto &rigid_body : rigid_body_tree_->bodies) {
-      // Skips the world link since the world link.
+    // Publishes the transform for each rigid body in the rigid body tree.
+    for (auto const& rigid_body : rigid_body_tree_->bodies) {
+      // Skips the world link since everything is relative to it.
       if (rigid_body->name() == RigidBodyTree::kWorldLinkName) continue;
 
       // Skips links that do not have parents.

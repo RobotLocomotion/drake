@@ -9,6 +9,7 @@
 #include "drake/ros/ros_tf_publisher.h"
 #include "drake/ros/ros_vehicle_system.h"
 #include "drake/ros/ros_sensor_publisher_lidar.h"
+#include "drake/ros/ros_sensor_publisher_odometry.h"
 
 using Drake::BotVisualizer;
 using Drake::SimulationOptions;
@@ -22,7 +23,7 @@ namespace cars {
 namespace {
 
 /** Driving Simulator
- * Usage:  simulateLCM vehicle_model_file [world_model files ...]
+ * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
  */
 int do_main(int argc, const char* argv[]) {
   ::ros::init(argc, const_cast<char**>(argv), "car_sim_lcm_and_ros");
@@ -44,16 +45,20 @@ int do_main(int argc, const char* argv[]) {
   auto visualizer =
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
-  auto lidar_visualizer = std::make_shared<
-      ::drake::ros::SensorVisualizerLidar<RigidBodySystem::StateVector>>(
+  auto lidar_publisher = std::make_shared<
+      ::drake::ros::SensorPublisherLidar<RigidBodySystem::StateVector>>(
+      rigid_body_sys);
+
+  auto odometry_publisher = std::make_shared<
+      ::drake::ros::SensorPublisherOdometry<RigidBodySystem::StateVector>>(
       rigid_body_sys);
 
   auto tf_publisher = std::make_shared<
       ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree);
 
   auto sys =
-      cascade(cascade(cascade(vehicle_sys, visualizer), lidar_visualizer),
-              tf_publisher);
+      cascade(cascade(cascade(cascade(vehicle_sys, visualizer), lidar_publisher),
+              odometry_publisher), tf_publisher);
 
   // Initializes the simulation options.
   SimulationOptions options = GetCarSimulationDefaultOptions();

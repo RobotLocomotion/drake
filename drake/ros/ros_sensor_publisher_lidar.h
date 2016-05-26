@@ -18,24 +18,24 @@ using Drake::RigidBodyDepthSensor;
 namespace drake {
 namespace ros {
 
-/** SensorVisualizerLidar<RobotStateVector>
+/**
  * @brief A system that takes the system state as the input,
  * saves LIDAR data in to a sensor_msgs::LaserScan message,
- * and then publish the message onto a ROS topic.
+ * and then publishes the message onto a ROS topic.
  *
  * @concept{system_concept}
  *
- * The resulting system has no internal state; the publish command is executed
- * on every call to the output method.
+ * The resulting system has no internal state; the publish command is throttled
+ * by kMinTransmitPeriod_.
  *
- * For convenience, the input is passed directly through as an output.
+ * For convenience, the input is passed directly through as an output. This
+ * enables other systems to be cascaded after this system.
  */
-
 template <template <typename> class RobotStateVector>
-class SensorVisualizerLidar {
+class SensorPublisherLidar {
  private:
-  // Specifies that the LIDAR messages should be transmitted at most 20 times
-  // per second.
+  // Specifies that the LIDAR messages should be transmitted with a minimum
+  // period of 0.05 seconds.
   //
   // TODO(liangfok): Modify sensor model to include scan frequency and time
   // between scan measurements. See:
@@ -57,15 +57,18 @@ class SensorVisualizerLidar {
    *
    * Ideally, the output of the rigid body system should be self-descriptive.
    * See: https://github.com/RobotLocomotion/drake/issues/2152
+   *
+   * @param[in] rigid_body_system The rigid body system whose output contains
+   * the odometry information.
    */
-  explicit SensorVisualizerLidar(
+  explicit SensorPublisherLidar(
       std::shared_ptr<RigidBodySystem> rigid_body_system)
       : rigid_body_system_(rigid_body_system) {
     // Initializes the time stamp of the previous transmission to be zero.
     previous_send_time_.sec = 0;
     previous_send_time_.nsec = 0;
 
-    // Instantiates a ROS node handle, which is necessary to interact with ROS.
+    // Instantiates a ROS node handle through which we can interact with ROS.
     // For more information, see:
     // http://wiki.ros.org/roscpp/Overview/NodeHandles
     ::ros::NodeHandle nh;
@@ -82,19 +85,29 @@ class SensorVisualizerLidar {
           dynamic_cast<const RigidBodyDepthSensor*>(sensor);
 
       if (depth_sensor != nullptr) {
-        // If the dynamic cast was successful, that means the sensor is in fact
-        // a RigidBodyDepth sensor. The following code creates a ROS topic
+        // If the dynamic cast is successful, the sensor is in fact a
+        // RigidBodyDepthSensor. The following code creates a ROS topic
         // publisher that will be used to publish the data contained in the
-        // sensor's output. The ROS topic is "drake/lidar/[name of sensor]/".
+        // sensor's output. The ROS topic is
+        // "drake/lidar/[name of robot]/[name of sensor]/".
         // It then creates a sensor_msgs::LaserScan message for each publisher.
 
+        // TODO(liangfok): Replace model name with the actual model name once
+        // #2462 is merged. See:
+        // https://github.com/RobotLocomotion/drake/pull/2462
+        const std::string& model_name = "model_name";
+          // depth_sensor->frame_->body->model_name();
+
+        const std::string key = model_name + "_" + depth_sensor->get_name();
+
         // Creates the ROS topic publisher for the current LIDAR sensor.
-        if (lidar_publishers_.find(depth_sensor->get_name()) ==
-            lidar_publishers_.end()) {
-          std::string topic_name = "drake/lidar/" + depth_sensor->get_name();
+        if (lidar_publishers_.find(key) == lidar_publishers_.end()) {
+
+          const std::string topic_name = "drake/lidar/" + model_name + "/" +
+            depth_sensor->get_name();
+
           lidar_publishers_.insert(std::pair<std::string, ::ros::Publisher>(
-              depth_sensor->get_name(),
-              nh.advertise<sensor_msgs::LaserScan>(topic_name, 1)));
+              key, nh.advertise<sensor_msgs::LaserScan>(topic_name, 1)));
         } else {
           throw std::runtime_error(
               "ERROR: Multiple sensors with name " + depth_sensor->get_name() +
@@ -150,7 +163,7 @@ class SensorVisualizerLidar {
 
           lidar_messages_.insert(
               std::pair<std::string, std::unique_ptr<sensor_msgs::LaserScan>>(
-                  depth_sensor->get_name(), std::move(message)));
+                  key, std::move(message)));
         } else {
           throw std::runtime_error(
               "ERROR: Multiple sensors with name " + depth_sensor->get_name() +
@@ -167,9 +180,8 @@ class SensorVisualizerLidar {
 
   OutputVector<double> output(const double &t, const StateVector<double> &x,
                               const InputVector<double> &u) {
-    // Checks whether enough time has elapsed since the last transmission.
-    // Aborts if insufficient time has passed. This is to prevent flooding ROS
-    // topic /tf.
+    // Aborts if insufficient time has passed since the last transmission. This
+    // is to avoid flooding the ROS topics.
     ::ros::Time current_time = ::ros::Time::now();
     if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
       return u;
@@ -206,11 +218,19 @@ class SensorVisualizerLidar {
       if (depth_sensor != nullptr) {
         size_t sensor_data_index_ = output_index;
 
-        auto message_in_map = lidar_messages_.find(depth_sensor->get_name());
+        // TODO(liangfok): Replace model name with the actual model name once
+        // #2462 is merged. See:
+        // https://github.com/RobotLocomotion/drake/pull/2462
+        const std::string& model_name = "model_name";
+          // depth_sensor->frame_->body->model_name();
+
+        const std::string key = model_name + "_" + depth_sensor->get_name();
+
+        auto message_in_map = lidar_messages_.find(key);
         if (message_in_map == lidar_messages_.end())
           throw std::runtime_error(
               "Could not find ROS message for LIDAR sensor " +
-              depth_sensor->get_name());
+              depth_sensor->get_name() + " in robot " + model_name + ".");
 
         sensor_msgs::LaserScan *message = message_in_map->second.get();
 
@@ -221,11 +241,11 @@ class SensorVisualizerLidar {
 
         // Publishes the ROS message containing the new range measurements.
         auto publisher_in_map =
-            lidar_publishers_.find(depth_sensor->get_name());
+            lidar_publishers_.find(key);
         if (publisher_in_map == lidar_publishers_.end())
           throw std::runtime_error(
               "ERROR: Failed to find ROS topic publisher for LIDAR sensor " +
-              depth_sensor->get_name());
+              depth_sensor->get_name() + " in robot " + model_name + ".");
 
         publisher_in_map->second.publish(*message);
       }
