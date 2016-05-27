@@ -20,17 +20,17 @@ class FCLModel : public Model {
   ElementId addElement(const Element& element) override;
 
   bool updateElementWorldTransform(
-      const ElementId, const Eigen::Isometry3d& T_local_to_world) override;
+      ElementId, const Eigen::Isometry3d& T_local_to_world) override;
 
   bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                             const bool use_margins,
+                             bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
   bool collisionPointsAllToAll(const bool use_margins,
                                std::vector<PointPair>& points) override;
 
   bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             const bool use_margins,
+                             bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
   void collisionDetectFromPoints(
@@ -60,7 +60,7 @@ class FCLModel : public Model {
       fclElements;
 
   virtual bool findClosestPointsBetweenElements(
-      const ElementId elemA, const ElementId elemB, const bool use_margins,
+      ElementId elemA, ElementId elemB, bool use_margins,
       std::unique_ptr<ResultCollector>& c);
 
   // Helper methods to create meshes from basic shapes.
