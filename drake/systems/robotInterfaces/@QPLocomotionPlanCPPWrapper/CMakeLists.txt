@@ -5,7 +5,7 @@ if (MATLAB_FOUND)
       target_link_libraries(${ARGV} drakeQPLocomotionPlan drakeMexUtil)
     endmacro()
 
-    add_qplocomotionplan_mex(getQPControllerInput) 
+    add_qplocomotionplan_mex(getQPControllerInput)
     add_qplocomotionplan_mex(start_time)
     add_qplocomotionplan_mex(setStartTime)
     add_qplocomotionplan_mex(getLastQPInput)

@@ -22,14 +22,14 @@ if (PYTHON_EXECUTABLE)
 
   add_swig_python_module(rbtPython rbtree.i
                        CPLUSPLUS
-                       LINK_LIBRARIES drakeRBM 
+                       LINK_LIBRARIES drakeRBM
                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
                        DESTINATION ${python_install_subdir})
 
   if (snopt_c_FOUND)
   add_swig_python_module(ikPython ik.i
                          CPLUSPLUS
-                         LINK_LIBRARIES drakeIK 
+                         LINK_LIBRARIES drakeIK
                          SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
                          DESTINATION ${python_install_subdir})
   endif()
@@ -44,20 +44,20 @@ if (MATLAB_FOUND)
     include(SwigMatlab)
     add_swig_matlab_module(autodiffMatlab autodiffutils_matlab.i
                            CPLUSPLUS
-                           INCLUDE_DIRS 
+                           INCLUDE_DIRS
                            SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
                            DESTINATION ${matlab_install_subdir})
 
     add_swig_matlab_module(rbtMatlab rbtree_matlab.i
                            CPLUSPLUS
-                     LINK_LIBRARIES drakeRBM 
+                     LINK_LIBRARIES drakeRBM
                      SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
                      DESTINATION ${matlab_install_subdir})
 
     if (snopt_c_FOUND)
       add_swig_matlab_module(ikMatlab ik_matlab.i
                              CPLUSPLUS
-                             LINK_LIBRARIES drakeIK 
+                             LINK_LIBRARIES drakeIK
                              SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
                              DESTINATION ${matlab_install_subdir})
     endif()

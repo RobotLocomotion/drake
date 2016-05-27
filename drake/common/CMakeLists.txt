@@ -3,7 +3,7 @@
 #
 
 # List all source files used to build libdrakeCommon.
-set(sources 
+set(sources
     nice_type_name.cc)
 
 # List headers that should be installed with Drake so that they
@@ -13,7 +13,7 @@ set(installed_headers
 
 # List headers that are needed by code here but should not
 # be exposed anywhere else.
-set(private_headers 
+set(private_headers
     )
 
 # Create the library target and note its dependencies. Also generates

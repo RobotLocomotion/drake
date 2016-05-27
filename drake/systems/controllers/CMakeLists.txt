@@ -21,7 +21,7 @@ if (gurobi_FOUND AND LCM_FOUND AND yaml-cpp_FOUND)
     CFLAGS -I\${prefix}/include/lcmtypes
     REQUIRES drake-control-util
     VERSION 0.0.1)
-    
+   
   pods_find_pkg_config(bot2-lcmgl-client)
   if (bot2-lcmgl-client_FOUND)
     add_executable(zmpCoMObserverStateVisualizer zmpCoMObserverStateVisualizer.cpp)
@@ -45,7 +45,7 @@ if (MATLAB_FOUND)
   endif()
 
   add_mex(supportDetectmex supportDetectmex.cpp)
-  target_link_libraries(supportDetectmex drakeRBM drakeControlUtil) 
+  target_link_libraries(supportDetectmex drakeRBM drakeControlUtil)
 
 endif(MATLAB_FOUND)
 
