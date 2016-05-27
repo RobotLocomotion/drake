@@ -36,7 +36,7 @@ using test_func_t =
 // OBB: collide works.
 // OBB: distance works.
 
-void testBoxFCLDistance(float tx, float ty, float tz) {
+void testBoxFCLDistance(double tx, double ty, double tz) {
   fcl::Box s1(20, 40, 60);
   fcl::Box s2(10, 10, 10);
 
@@ -71,7 +71,7 @@ void testBoxFCLDistance(float tx, float ty, float tz) {
 }
 
 template <typename BV>
-void testBoxFCLCollideNode(float tx, float ty, float tz,
+void testBoxFCLCollideNode(double tx, double ty, double tz,
                            fcl::SplitMethodType split_method) {
   std::cout << "testBoxFCLCollideNode " << tx << ", " << ty << ", " << tz
             << std::endl;
@@ -124,7 +124,7 @@ void testBoxFCLCollideNode(float tx, float ty, float tz,
   }
 }
 
-void testBoxFCLCollide(float tx, float ty, float tz) {
+void testBoxFCLCollide(double tx, double ty, double tz) {
   fcl::Box s1(10, 10, 10);
   fcl::Box s2(10, 10, 10);
 
@@ -323,7 +323,8 @@ void testFCLMultiPoint() {
 // DrakeCollision stuff
 
 // Pass in either a BulletModel or an FCLModel
-void testBoxModel(DrakeCollision::Model& model, float tx, float ty, float tz) {
+void testBoxModel(DrakeCollision::Model& model,
+                  double tx, double ty, double tz) {
   std::cout << "Box Model " << tx << ", " << ty << ", " << tz
             << "   -------------\n";
 
@@ -363,8 +364,8 @@ void testBoxModel(DrakeCollision::Model& model, float tx, float ty, float tz) {
 }
 
 // Pass in either a BulletModel or an FCLModel
-void testSphereModel(DrakeCollision::Model& model, float tx, float ty,
-                     float tz) {
+void testSphereModel(DrakeCollision::Model& model,
+                     double tx, double ty, double tz) {
   std::cout << "Box Model " << tx << ", " << ty << ", " << tz
             << "   -------------" << std::endl;
 
