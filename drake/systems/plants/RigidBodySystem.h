@@ -472,7 +472,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
    * to which the sensor is attached.
    */
   RigidBodySensor(const RigidBodySystem& sys, const std::string& name,
-    std::shared_ptr<RigidBodyFrame> frame)
+                  std::shared_ptr<RigidBodyFrame> frame)
       : sys_(sys), name_(name), frame_(frame) {}
 
   virtual ~RigidBodySensor() {}

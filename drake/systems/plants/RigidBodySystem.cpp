@@ -270,8 +270,8 @@ std::vector<const RigidBodySensor*> RigidBodySystem::GetSensors() const {
   return result;
 }
 
-DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double>
-getInitialState(const RigidBodySystem& sys) {
+DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
+    const RigidBodySystem& sys) {
   VectorXd x0(sys.tree->number_of_positions() +
               sys.tree->number_of_velocities());
 
@@ -304,16 +304,16 @@ getInitialState(const RigidBodySystem& sys) {
           sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index,
           loops[i].frameB->frame_index, bTbp, tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
-          new SingleTimeKinematicConstraintWrapper(
-              &constraints.back(), &kin_helper));
+          new SingleTimeKinematicConstraintWrapper(&constraints.back(),
+                                                   &kin_helper));
       prog.AddGenericConstraint(con1wrapper, {qvar});
       constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis,
           loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp,
           tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
-          new SingleTimeKinematicConstraintWrapper(
-              &constraints.back(), &kin_helper));
+          new SingleTimeKinematicConstraintWrapper(&constraints.back(),
+                                                   &kin_helper));
       prog.AddGenericConstraint(con2wrapper, {qvar});
     }
 
@@ -632,11 +632,12 @@ Eigen::VectorXd RigidBodyDepthSensor::output(
       rigid_body_state, Vector3d::Zero(), get_frame().frame_index, 0);
 
   // Computes the end of the casted rays in the world frame.
-  Matrix3Xd raycast_endpoints_world = get_rigid_body_system().getRigidBodyTree()->transformPoints(
-      rigid_body_state, raycast_endpoints, get_frame().frame_index, 0);
+  Matrix3Xd raycast_endpoints_world =
+      get_rigid_body_system().getRigidBodyTree()->transformPoints(
+          rigid_body_state, raycast_endpoints, get_frame().frame_index, 0);
 
-  get_rigid_body_system().getRigidBodyTree()->collisionRaycast(rigid_body_state, origin,
-                                           raycast_endpoints_world, distances);
+  get_rigid_body_system().getRigidBodyTree()->collisionRaycast(
+      rigid_body_state, origin, raycast_endpoints_world, distances);
 
   for (size_t i = 0; i < num_distances; i++) {
     if (distances[i] < 0.0 || distances[i] > max_range_) {
@@ -656,7 +657,6 @@ size_t RigidBodyDepthSensor::getNumOutputs() const {
 bool RigidBodyDepthSensor::is_horizontal_scanner() const {
   return num_pixel_cols_ > 1;
 }
-
 
 bool RigidBodyDepthSensor::is_vertical_scanner() const {
   return num_pixel_rows_ > 1;
