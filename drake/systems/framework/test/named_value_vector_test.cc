@@ -18,6 +18,7 @@ GTEST_TEST(NamedValueVectorTest, Access) {
       std::vector<std::pair<std::string, int>>{{"foo", 1}, {"bar", 2}});
   EXPECT_EQ(1, *vector.get_named_value("foo"));
   EXPECT_EQ(2, *vector.get_named_value("bar"));
+  EXPECT_EQ(2, vector.size());
   Eigen::Matrix<int, 2, 1> expected;
   expected << 1, 2;
   EXPECT_EQ(expected, vector.get_value());

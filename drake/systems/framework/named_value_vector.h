@@ -40,10 +40,14 @@ class NamedValueVector : public VectorInterface<T> {
 
   ~NamedValueVector() override {}
 
+  ptrdiff_t size() const override {
+    return values_.rows();
+  }
+
   void set_value(const VectorX<T>& value) override {
-    if (value.rows() != values_.rows()) {
+    if (value.rows() != size()) {
       throw std::out_of_range("Cannot set a NamedValueVector of size " +
-                              std::to_string(values_.rows()) +
+                              std::to_string(size()) +
                               " with a value of size " +
                               std::to_string(value.rows()));
     }
@@ -51,11 +55,11 @@ class NamedValueVector : public VectorInterface<T> {
   }
 
   const Eigen::VectorBlock<const VectorX<T>> get_value() const override {
-    return values_.head(values_.rows());
+    return values_.head(size());
   }
 
   Eigen::VectorBlock<VectorX<T>> get_mutable_value() override {
-    return values_.head(values_.rows());
+    return values_.head(size());
   }
 
   bool has_named_value(const std::string& name) const {

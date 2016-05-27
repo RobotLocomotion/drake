@@ -25,6 +25,10 @@ template <typename T> class VectorInterface {
   VectorInterface(VectorInterface<T>&& other) = delete;
   VectorInterface& operator=(VectorInterface<T>&& other) = delete;
 
+  /// Returns the size of the vector, which must be equal to the number of rows
+  /// in get_value().
+  virtual ptrdiff_t size() const = 0;
+
   /// Sets the vector to the given value. After a.set_value(b.get_value()), a
   /// must be identical to b.
   /// May throw std::out_of_range if the new value has different dimensions
