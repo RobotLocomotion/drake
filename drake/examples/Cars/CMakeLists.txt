@@ -33,4 +33,4 @@ if(LCM_FOUND)
 
   add_executable(demo_multi_car demo_multi_car.cc)
   target_link_libraries(demo_multi_car drakeCars drakeRBSystem drakeLCMSystem)
-endif(LCM_FOUND)
+endif()

@@ -16,7 +16,7 @@ if(MATLAB_FOUND)
 
   add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
   target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil drakeMexUtil)
-endif(MATLAB_FOUND)
+endif()
 
 if(LCM_FOUND)
 add_executable(testLCMUtil testLCMUtil.cpp)
@@ -43,7 +43,7 @@ if(GTEST_FOUND)
   add_executable(eigen_matrix_compare_test eigen_matrix_compare_test.cc)
   target_link_libraries(eigen_matrix_compare_test ${GTEST_BOTH_LIBRARIES})
   add_test(NAME eigen_matrix_compare_test COMMAND eigen_matrix_compare_test)
-endif(GTEST_FOUND)
+endif()
 
 add_matlab_test(NAME util/test/PassByValueMapTest COMMAND PassByValueMapTest)
 add_matlab_test(NAME util/test/angleDiffTest COMMAND angleDiffTest)

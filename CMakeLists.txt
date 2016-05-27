@@ -95,8 +95,8 @@ else()
     message(STATUS "Found MATLAB at " ${matlab})
   else()
     message(STATUS "Looked for MATLAB but could not find it.")
-  endif(matlab)
-endif(DISABLE_MATLAB)
+  endif()
+endif()
 
 ## The following projects are default ON when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
@@ -460,7 +460,7 @@ foreach(proj ${EXTERNAL_PROJECTS})
         ${${proj}_ADDITIONAL_BUILD_ARGS}
         )
     drake_forcebuild(${proj})
-  endif(NOT ${proj} STREQUAL "drake")
+  endif()
 
 endforeach()
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/drake_external_source_dirs.txt ${EXTERNAL_SOURCE_DIRS})

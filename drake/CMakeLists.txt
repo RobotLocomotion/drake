@@ -162,7 +162,7 @@ else()
           find_package(Matlab COMPONENTS MAIN_PROGRAM)
         endif()
 
-endif(DISABLE_MATLAB)
+endif()
 
 # add ctest for a matlab string
 # add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>

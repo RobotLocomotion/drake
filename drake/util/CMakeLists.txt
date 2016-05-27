@@ -155,7 +155,7 @@ file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
 install(FILES ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
         PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-endif(0) #NOT WIN32)
+endif() #NOT WIN32)
 
 add_subdirectory(yaml)
 add_subdirectory(geometry/test)
