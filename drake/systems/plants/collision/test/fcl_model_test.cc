@@ -17,23 +17,18 @@
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/collision/fcl_model.h"
 
-using namespace DrakeCollision;
-using namespace std;
-using namespace fcl;
-using namespace Eigen;
-
 using test_func_t =
-    bool (*)(const Transform3f&,
-             const std::vector<Vec3f>&, const std::vector<Triangle>&,
-             const std::vector<Vec3f>&, const std::vector<Triangle>&,
-             SplitMethodType, bool);
+    bool (*)(const fcl::Transform3f&,
+             const std::vector<fcl::Vec3f>&, const std::vector<fcl::Triangle>&,
+             const std::vector<fcl::Vec3f>&, const std::vector<fcl::Triangle>&,
+             fcl::SplitMethodType, bool);
 
 // FCL only stuff to explore its behavior.
 
 // Basic shapes (tested box-box)
 // distance goes negative when in collision, but closest points are wrong.
 // Collision point and penetration depth are wrong/ not computed.
-// Distance works with negative depth, but closest point is wrond when in
+// Distance works with negative depth, but closest point is wrong when in
 // collision.
 // Closest point computed individually. The two are not the closest pair.
 
@@ -42,64 +37,69 @@ using test_func_t =
 // OBB: distance works.
 
 void testBoxFCLDistance(float tx, float ty, float tz) {
-  Box s1(20, 40, 60);
-  Box s2(10, 10, 10);
+  fcl::Box s1(20, 40, 60);
+  fcl::Box s2(10, 10, 10);
 
-  BVHModel<OBBRSS> s1_rss;
-  BVHModel<OBBRSS> s2_rss;
+  fcl::BVHModel<fcl::OBBRSS> s1_rss;
+  fcl::BVHModel<fcl::OBBRSS> s2_rss;
 
-  generateBVHModel(s1_rss, s1, Transform3f());
-  generateBVHModel(s2_rss, s2, Transform3f());
+  fcl::generateBVHModel(s1_rss, s1, fcl::Transform3f());
+  fcl::generateBVHModel(s2_rss, s2, fcl::Transform3f());
 
-  DistanceRequest request;
+  fcl::DistanceRequest request;
   request.enable_nearest_points = true;
-  DistanceResult res;
+  fcl::DistanceResult res;
 
-  Transform3f pose;
+  fcl::Transform3f pose;
 
-  pose.setTranslation(Vec3f(tx, ty, tz));
+  pose.setTranslation(fcl::Vec3f(tx, ty, tz));
 
   res.clear();
-  distance(&s1_rss, Transform3f(), &s2_rss, pose, request, res);
+  fcl::distance(&s1_rss, fcl::Transform3f(), &s2_rss, pose, request, res);
 
-  cout << "distance" << endl;
-  cout << "translate (" << tx << "," << ty << "," << tz
-       << "): " << res.min_distance << endl;
-  cout << "     (" << res.nearest_points[0][0] << ", "
-       << res.nearest_points[0][1] << ", " << res.nearest_points[0][2] << "), ";
-  cout << "(" << res.nearest_points[1][0] << ", " << res.nearest_points[1][1]
-       << ", " << res.nearest_points[1][2] << ")\n";
+  std::cout << "distance" << std::endl;
+  std::cout << "translate (" << tx << "," << ty << "," << tz
+            << "): " << res.min_distance << std::endl;
+  std::cout << "     ("
+            << res.nearest_points[0][0] << ", "
+            << res.nearest_points[0][1] << ", "
+            << res.nearest_points[0][2] << "), ";
+  std::cout << "("
+            << res.nearest_points[1][0] << ", "
+            << res.nearest_points[1][1] << ", "
+            << res.nearest_points[1][2] << ")" << std::endl;
 }
 
 template <typename BV>
 void testBoxFCLCollideNode(float tx, float ty, float tz,
-                           SplitMethodType split_method) {
-  cout << "testBoxFCLCollideNode " << tx << ", " << ty << ", " << tz << endl;
+                           fcl::SplitMethodType split_method) {
+  std::cout << "testBoxFCLCollideNode " << tx << ", " << ty << ", " << tz
+            << std::endl;
 
-  Box s1(20, 20, 20);
-  Box s2(10, 10, 10);
+  fcl::Box s1(20, 20, 20);
+  fcl::Box s2(10, 10, 10);
 
-  BVHModel<BV> s1_bv;
-  BVHModel<BV> s2_bv;
+  fcl::BVHModel<BV> s1_bv;
+  fcl::BVHModel<BV> s2_bv;
 
-  generateBVHModel(s1_bv, s1, Transform3f());
-  generateBVHModel(s2_bv, s2, Transform3f());
-  s1_bv.bv_splitter.reset(new BVSplitter<BV>(split_method));
-  s2_bv.bv_splitter.reset(new BVSplitter<BV>(split_method));
+  fcl::generateBVHModel(s1_bv, s1, fcl::Transform3f());
+  fcl::generateBVHModel(s2_bv, s2, fcl::Transform3f());
+  s1_bv.bv_splitter.reset(new fcl::BVSplitter<BV>(split_method));
+  s2_bv.bv_splitter.reset(new fcl::BVSplitter<BV>(split_method));
 
-  Transform3f pose1;
-  Transform3f pose2;
-  pose2.setTranslation(Vec3f(tx, ty, tz));
+  fcl::Transform3f pose1;
+  fcl::Transform3f pose2;
+  pose2.setTranslation(fcl::Vec3f(tx, ty, tz));
 
-  CollisionResult res;
+  fcl::CollisionResult res;
   int num_max_contacts = std::numeric_limits<int>::max();
   bool enable_contact = true;
-  CollisionRequest request(num_max_contacts, enable_contact);
-  MeshCollisionTraversalNode<BV> node;
+  fcl::CollisionRequest request(num_max_contacts, enable_contact);
+  fcl::MeshCollisionTraversalNode<BV> node;
 
-  if (!initialize<BV>(node, s1_bv, pose1, s2_bv, pose2,
-                      CollisionRequest(num_max_contacts, enable_contact),
-                      res)) {
+  if (!fcl::initialize<BV>(
+           node, s1_bv, pose1, s2_bv, pose2,
+           fcl::CollisionRequest(num_max_contacts, enable_contact), res)) {
     std::cout << "initialize error" << std::endl;
   }
 
@@ -111,12 +111,12 @@ void testBoxFCLCollideNode(float tx, float ty, float tz,
     std::cout << "in collision " << res.numContacts() << ": " << std::endl;
     std::cout << "  ";
     for (int i = 0; i < res.numContacts(); ++i) {
-      Contact c = res.getContact(i);
+      fcl::Contact c = res.getContact(i);
       std::cout << i << ":p=(" << c.pos[0] << "," << c.pos[1] << "," << c.pos[2]
                 << ")";
       std::cout << "n=(" << c.normal[0] << "," << c.normal[1] << ","
                 << c.normal[2] << ")";
-      std::cout << "d=" << c.penetration_depth << ",  " << endl;
+      std::cout << "d=" << c.penetration_depth << ",  " << std::endl;
     }
     std::cout << "\n";
   } else {
@@ -125,48 +125,49 @@ void testBoxFCLCollideNode(float tx, float ty, float tz,
 }
 
 void testBoxFCLCollide(float tx, float ty, float tz) {
-  Box s1(10, 10, 10);
-  Box s2(10, 10, 10);
+  fcl::Box s1(10, 10, 10);
+  fcl::Box s2(10, 10, 10);
 
-  BVHModel<OBBRSS> s1_rss;
-  BVHModel<OBBRSS> s2_rss;
+  fcl::BVHModel<fcl::OBBRSS> s1_rss;
+  fcl::BVHModel<fcl::OBBRSS> s2_rss;
 
-  generateBVHModel(s1_rss, s1, Transform3f());
-  generateBVHModel(s2_rss, s2, Transform3f());
+  fcl::generateBVHModel(s1_rss, s1, fcl::Transform3f());
+  fcl::generateBVHModel(s2_rss, s2, fcl::Transform3f());
 
-  CollisionRequest request(4, true);
-  CollisionResult res;
+  fcl::CollisionRequest request(4, true);
+  fcl::CollisionResult res;
 
-  Transform3f pose;
+  fcl::Transform3f pose;
 
-  pose.setTranslation(Vec3f(tx, ty, tz));
+  pose.setTranslation(fcl::Vec3f(tx, ty, tz));
 
   res.clear();
-  collide(&s1_rss, Transform3f(), &s2_rss, pose, request, res);
+  fcl::collide(&s1_rss, fcl::Transform3f(), &s2_rss, pose, request, res);
 
-  cout << "collide" << endl;
+  std::cout << "collide" << std::endl;
   int num = res.numContacts();
-  cout << "translate (" << tx << "," << ty << "," << tz << "): " << num << endl;
+  std::cout << "translate (" << tx << "," << ty << "," << tz << "): " << num
+            << std::endl;
   for (int i = 0; i < num; ++i) {
-    Contact c = res.getContact(i);
-    // Let's see if we can get bothe collision points out of this structure?
-    cout << "(" << c.pos[0] << "," << c.pos[1] << "," << c.pos[2] << "),"
-         << "(" << c.normal[0] << "," << c.normal[1] << "," << c.normal[2]
-         << ") : " << c.penetration_depth << endl;
+    fcl::Contact c = res.getContact(i);
+    // Let's see if we can get both collision points out of this structure?
+    std::cout << "(" << c.pos[0] << "," << c.pos[1] << "," << c.pos[2] << "),"
+              << "(" << c.normal[0] << "," << c.normal[1] << "," << c.normal[2]
+              << ") : " << c.penetration_depth << std::endl;
   }
 }
 
 template <typename BV>
-bool fcl_collide_test(const Transform3f& tf,
-                      const std::vector<Vec3f>& vertices1,
-                      const std::vector<Triangle>& triangles1,
-                      const std::vector<Vec3f>& vertices2,
-                      const std::vector<Triangle>& triangles2,
-                      SplitMethodType split_method, bool verbose) {
-  BVHModel<BV> m1;
-  BVHModel<BV> m2;
-  m1.bv_splitter.reset(new BVSplitter<BV>(split_method));
-  m2.bv_splitter.reset(new BVSplitter<BV>(split_method));
+bool fcl_collide_test(const fcl::Transform3f& tf,
+                      const std::vector<fcl::Vec3f>& vertices1,
+                      const std::vector<fcl::Triangle>& triangles1,
+                      const std::vector<fcl::Vec3f>& vertices2,
+                      const std::vector<fcl::Triangle>& triangles2,
+                      fcl::SplitMethodType split_method, bool verbose) {
+  fcl::BVHModel<BV> m1;
+  fcl::BVHModel<BV> m2;
+  m1.bv_splitter.reset(new fcl::BVSplitter<BV>(split_method));
+  m2.bv_splitter.reset(new fcl::BVSplitter<BV>(split_method));
 
   m1.beginModel();
   m1.addSubModel(vertices1, triangles1);
@@ -176,17 +177,18 @@ bool fcl_collide_test(const Transform3f& tf,
   m2.addSubModel(vertices2, triangles2);
   m2.endModel();
 
-  Transform3f pose1(tf), pose2;
+  fcl::Transform3f pose1(tf), pose2;
 
-  CollisionResult local_result;
-  MeshCollisionTraversalNode<BV> node;
+  fcl::CollisionResult local_result;
+  fcl::MeshCollisionTraversalNode<BV> node;
 
   int num_max_contacts = std::numeric_limits<int>::max();
   bool enable_contact = true;
 
-  if (!initialize<BV>(node, m1, pose1, m2, pose2,
-                      CollisionRequest(num_max_contacts, enable_contact),
-                      local_result)) {
+  if (!fcl::initialize<BV>(
+           node, m1, pose1, m2, pose2,
+           fcl::CollisionRequest(num_max_contacts, enable_contact),
+           local_result)) {
     std::cout << "initialize error" << std::endl;
   }
 
@@ -210,7 +212,7 @@ bool fcl_collide_test(const Transform3f& tf,
                 << std::endl;
       std::cout << "  ";
       for (int i = 0; i < local_result.numContacts(); ++i) {
-        Contact c = local_result.getContact(i);
+        fcl::Contact c = local_result.getContact(i);
         std::cout << "p=(" << c.pos[0] << "," << c.pos[1] << "," << c.pos[2]
                   << ")";
         std::cout << "n=(" << c.normal[0] << "," << c.normal[1] << ","
@@ -237,51 +239,51 @@ bool fcl_collide_test(const Transform3f& tf,
 
 void testFCLMultiPoint(test_func_t test_func) {
   std::cout << "------------------------------------------------\n";
-  std::vector<Vec3f> p1(8), p2(6);
-  std::vector<Triangle> t1(12), t2(8);
+  std::vector<fcl::Vec3f> p1(8), p2(6);
+  std::vector<fcl::Triangle> t1(12), t2(8);
 
   // A box z = 0 surface
-  p1[0] = Vec3f(-100, -100, 0);
-  p1[1] = Vec3f(+100, -100, 0);
-  p1[2] = Vec3f(-100, +100, 0);
-  p1[3] = Vec3f(+100, +100, 0);
-  p1[4] = Vec3f(-100, -100, -20);
-  p1[5] = Vec3f(+100, -100, -20);
-  p1[6] = Vec3f(-100, +100, -20);
-  p1[7] = Vec3f(+100, +100, -20);
+  p1[0] = fcl::Vec3f(-100, -100, 0);
+  p1[1] = fcl::Vec3f(+100, -100, 0);
+  p1[2] = fcl::Vec3f(-100, +100, 0);
+  p1[3] = fcl::Vec3f(+100, +100, 0);
+  p1[4] = fcl::Vec3f(-100, -100, -20);
+  p1[5] = fcl::Vec3f(+100, -100, -20);
+  p1[6] = fcl::Vec3f(-100, +100, -20);
+  p1[7] = fcl::Vec3f(+100, +100, -20);
   // xy
-  t1[0] = Triangle(0, 1, 3);
-  t1[1] = Triangle(0, 3, 2);
-  t1[2] = Triangle(4, 7, 5);
-  t1[3] = Triangle(4, 6, 7);
+  t1[0] = fcl::Triangle(0, 1, 3);
+  t1[1] = fcl::Triangle(0, 3, 2);
+  t1[2] = fcl::Triangle(4, 7, 5);
+  t1[3] = fcl::Triangle(4, 6, 7);
   // xz
-  t1[4] = Triangle(0, 5, 1);
-  t1[5] = Triangle(0, 4, 5);
-  t1[6] = Triangle(2, 3, 7);
-  t1[7] = Triangle(2, 7, 6);
+  t1[4] = fcl::Triangle(0, 5, 1);
+  t1[5] = fcl::Triangle(0, 4, 5);
+  t1[6] = fcl::Triangle(2, 3, 7);
+  t1[7] = fcl::Triangle(2, 7, 6);
   // yz
-  t1[8] = Triangle(0, 2, 6);
-  t1[9] = Triangle(0, 6, 4);
-  t1[10] = Triangle(1, 7, 3);
-  t1[11] = Triangle(1, 5, 7);
+  t1[8] = fcl::Triangle(0, 2, 6);
+  t1[9] = fcl::Triangle(0, 6, 4);
+  t1[10] = fcl::Triangle(1, 7, 3);
+  t1[11] = fcl::Triangle(1, 5, 7);
 
   // Double pyramid pointing down. (tips at (-1,0,0), (1,0,0))
-  p2[0] = Vec3f(-1, 0, 0);
-  p2[1] = Vec3f(+1, 0, 0);
-  p2[2] = Vec3f(-5, 0, 10);
-  p2[3] = Vec3f(+5, 0, 10);
-  p2[4] = Vec3f(0, -5, 10);
-  p2[5] = Vec3f(0, +5, 10);
+  p2[0] = fcl::Vec3f(-1, 0, 0);
+  p2[1] = fcl::Vec3f(+1, 0, 0);
+  p2[2] = fcl::Vec3f(-5, 0, 10);
+  p2[3] = fcl::Vec3f(+5, 0, 10);
+  p2[4] = fcl::Vec3f(0, -5, 10);
+  p2[5] = fcl::Vec3f(0, +5, 10);
   // base
-  t2[0] = Triangle(2, 4, 5);
-  t2[1] = Triangle(3, 5, 4);
+  t2[0] = fcl::Triangle(2, 4, 5);
+  t2[1] = fcl::Triangle(3, 5, 4);
   // pyramid 1
-  t2[2] = Triangle(0, 2, 5);
-  t2[3] = Triangle(0, 5, 4);
-  t2[4] = Triangle(0, 4, 3);
-  t2[5] = Triangle(1, 3, 4);
-  t2[6] = Triangle(1, 4, 5);
-  t2[7] = Triangle(1, 5, 3);
+  t2[2] = fcl::Triangle(0, 2, 5);
+  t2[3] = fcl::Triangle(0, 5, 4);
+  t2[4] = fcl::Triangle(0, 4, 3);
+  t2[5] = fcl::Triangle(1, 3, 4);
+  t2[6] = fcl::Triangle(1, 4, 5);
+  t2[7] = fcl::Triangle(1, 5, 3);
 
   // boost::filesystem::path path(TEST_RESOURCES_DIR);
   // loadOBJFile((path / "env.obj").string().c_str(), p1, t1);
@@ -297,109 +299,115 @@ void testFCLMultiPoint(test_func_t test_func) {
   // eulerToMatrix(0, 0, 0, R);
   R.setValue(1, 0, 0, 0, 1, 0, 0, 0, 1);
   // Vec3f T(0, 0, -1); // collision free
-  Vec3f T(0, 0, 0.25);  // works but reports 6 contacts
+  fcl::Vec3f T(0, 0, 0.25);  // works but reports 6 contacts
   // Vec3f T(0, 0, 0.5); // bug
   transform1.setTransform(R, T);
 
-  test_func(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  test_func(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  test_func(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
+  test_func(transform1, p1, t1, p2, t2, fcl::SPLIT_METHOD_MEAN, verbose);
+  test_func(transform1, p1, t1, p2, t2, fcl::SPLIT_METHOD_BV_CENTER, verbose);
+  test_func(transform1, p1, t1, p2, t2, fcl::SPLIT_METHOD_MEDIAN, verbose);
 }
 
 void testFCLMultiPoint() {
   std::cout << "------------------------------------------------\n";
-  testFCLMultiPoint(&fcl_collide_test<OBB>);
-  testFCLMultiPoint(&fcl_collide_test<RSS>);
-  testFCLMultiPoint(&fcl_collide_test<AABB>);
-  testFCLMultiPoint(&fcl_collide_test<KDOP<24> >);
-  testFCLMultiPoint(&fcl_collide_test<KDOP<18> >);
-  testFCLMultiPoint(&fcl_collide_test<KDOP<16> >);
-  testFCLMultiPoint(&fcl_collide_test<kIOS>);
-  testFCLMultiPoint(&fcl_collide_test<OBBRSS>);
+  testFCLMultiPoint(&fcl_collide_test<fcl::OBB>);
+  testFCLMultiPoint(&fcl_collide_test<fcl::RSS>);
+  testFCLMultiPoint(&fcl_collide_test<fcl::AABB>);
+  testFCLMultiPoint(&fcl_collide_test<fcl::KDOP<24> >);
+  testFCLMultiPoint(&fcl_collide_test<fcl::KDOP<18> >);
+  testFCLMultiPoint(&fcl_collide_test<fcl::KDOP<16> >);
+  testFCLMultiPoint(&fcl_collide_test<fcl::kIOS>);
+  testFCLMultiPoint(&fcl_collide_test<fcl::OBBRSS>);
 }
 
 // DrakeCollision stuff
 
 // Pass in either a BulletModel or an FCLModel
-void testBoxModel(Model& model, float tx, float ty, float tz) {
-  cout << "Box Model " << tx << ", " << ty << ", " << tz
-       << "   -------------\n";
+void testBoxModel(DrakeCollision::Model& model, float tx, float ty, float tz) {
+  std::cout << "Box Model " << tx << ", " << ty << ", " << tz
+            << "   -------------\n";
 
-  Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
+  Eigen::Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
       T_elem2_to_body;
   T_body1_to_world.setIdentity();
   T_body1_to_world.translation() << 0, 0, 100;
   T_body2_to_world.setIdentity();
   T_body2_to_world.translation() << tx, ty, (100 + tz);
 
-  ElementId id1, id2;
-  id1 = model.addElement(Element(DrakeShapes::Box(Vector3d(20, 20, 20))));
-  id2 = model.addElement(Element(DrakeShapes::Box(Vector3d(10, 10, 10))));
+  DrakeCollision::ElementId id1, id2;
+  id1 = model.addElement(
+      DrakeCollision::Element(DrakeShapes::Box(Eigen::Vector3d(20, 20, 20))));
+  id2 = model.addElement(
+      DrakeCollision::Element(DrakeShapes::Box(Eigen::Vector3d(10, 10, 10))));
   model.updateElementWorldTransform(id1, T_body1_to_world);
   model.updateElementWorldTransform(id2, T_body2_to_world);
 
-  vector<PointPair> points;
-  vector<ElementId> ids_to_check;
+  std::vector<DrakeCollision::PointPair> points;
+  std::vector<DrakeCollision::ElementId> ids_to_check;
   ids_to_check.push_back(id1);
   ids_to_check.push_back(id2);
 
   model.closestPointsAllToAll(ids_to_check, true, points);
   int num = points.size();
-  cout << "NumPoints: " << num << endl;
+  std::cout << "NumPoints: " << num << std::endl;
   for (int i = 0; i < num; ++i) {
-    PointPair p = points[i];
-    cout << "  distance: " << p.getDistance() << endl;
-    Vector3d pta = p.getPtA();
-    cout << "  pointA : \n" << pta << endl;
-    Vector3d ptb = p.getPtB();
-    cout << "  pointB : \n" << ptb << endl;
-    Vector3d normal = p.getNormal();
-    cout << "  normal : \n" << normal << endl;
+    auto const& p = points[i];
+    std::cout << "  distance: " << p.getDistance() << std::endl;
+    Eigen::Vector3d pta = p.getPtA();
+    std::cout << "  pointA : \n" << pta << std::endl;
+    Eigen::Vector3d ptb = p.getPtB();
+    std::cout << "  pointB : \n" << ptb << std::endl;
+    Eigen::Vector3d normal = p.getNormal();
+    std::cout << "  normal : \n" << normal << std::endl;
   }
 }
 
 // Pass in either a BulletModel or an FCLModel
-void testSphereModel(Model& model, float tx, float ty, float tz) {
-  cout << "Box Model " << tx << ", " << ty << ", " << tz
-       << "   -------------\n";
+void testSphereModel(DrakeCollision::Model& model, float tx, float ty,
+                     float tz) {
+  std::cout << "Box Model " << tx << ", " << ty << ", " << tz
+            << "   -------------" << std::endl;
 
-  Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
+  Eigen::Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
       T_elem2_to_body;
   T_body1_to_world.setIdentity();
   T_body1_to_world.translation() << 0, 0, 100;
   T_body2_to_world.setIdentity();
   T_body2_to_world.translation() << tx, ty, (100 + tz);
 
-  ElementId id1, id2;
-  id1 = model.addElement(Element(DrakeShapes::Sphere(20)));
-  id2 = model.addElement(Element(DrakeShapes::Sphere(10)));
+  DrakeCollision::ElementId id1, id2;
+  id1 = model.addElement(DrakeCollision::Element(DrakeShapes::Sphere(20)));
+  id2 = model.addElement(DrakeCollision::Element(DrakeShapes::Sphere(10)));
   model.updateElementWorldTransform(id1, T_body1_to_world);
   model.updateElementWorldTransform(id2, T_body2_to_world);
 
-  vector<PointPair> points;
-  vector<ElementId> ids_to_check;
+  std::vector<DrakeCollision::PointPair> points;
+  std::vector<DrakeCollision::ElementId> ids_to_check;
   ids_to_check.push_back(id1);
   ids_to_check.push_back(id2);
 
   model.closestPointsAllToAll(ids_to_check, true, points);
   int num = points.size();
-  cout << "NumPoints: " << num << endl;
+  std::cout << "NumPoints: " << num << std::endl;
   for (int i = 0; i < num; ++i) {
-    PointPair p = points[i];
-    cout << "  distance: " << p.getDistance() << endl;
-    Vector3d pta = p.getPtA();
-    cout << "  pointA : \n" << pta << endl;
-    Vector3d ptb = p.getPtB();
-    cout << "  pointB : \n" << ptb << endl;
-    Vector3d normal = p.getNormal();
-    cout << "  normal : \n" << normal << endl;
+    auto const& p = points[i];
+    std::cout << "  distance: " << p.getDistance() << std::endl;
+    Eigen::Vector3d pta = p.getPtA();
+    std::cout << "  pointA : \n" << pta << std::endl;
+    Eigen::Vector3d ptb = p.getPtB();
+    std::cout << "  pointB : \n" << ptb << std::endl;
+    Eigen::Vector3d normal = p.getNormal();
+    std::cout << "  normal : \n" << normal << std::endl;
   }
 }
 
 int main() {
-  // Default is BulletModel
-  std::unique_ptr<Model> bullet_model{newModel(DrakeCollision::BULLET)};
-  std::unique_ptr<Model> fcl_model{newModel(DrakeCollision::FCL)};
+  using DrakeCollision::newModel;
+
+  std::unique_ptr<DrakeCollision::Model> bullet_model{
+      newModel(DrakeCollision::BULLET)};
+  std::unique_ptr<DrakeCollision::Model> fcl_model{
+      newModel(DrakeCollision::FCL)};
   // testBoxModel(model, 14,14,14);
   // Just out of collision
   testSphereModel(*bullet_model, 18, 18, 18);
