@@ -321,7 +321,7 @@ void testFCLMultiPoint() {
 // DrakeCollision stuff
 
 // Pass in either a BulletModel or an FCLModel
-void testBoxModel(shared_ptr<Model> model, float tx, float ty, float tz) {
+void testBoxModel(Model& model, float tx, float ty, float tz) {
   cout << "Box Model " << tx << ", " << ty << ", " << tz
        << "   -------------\n";
 
@@ -333,17 +333,17 @@ void testBoxModel(shared_ptr<Model> model, float tx, float ty, float tz) {
   T_body2_to_world.translation() << tx, ty, (100 + tz);
 
   ElementId id1, id2;
-  id1 = model->addElement(Element(DrakeShapes::Box(Vector3d(20, 20, 20))));
-  id2 = model->addElement(Element(DrakeShapes::Box(Vector3d(10, 10, 10))));
-  model->updateElementWorldTransform(id1, T_body1_to_world);
-  model->updateElementWorldTransform(id2, T_body2_to_world);
+  id1 = model.addElement(Element(DrakeShapes::Box(Vector3d(20, 20, 20))));
+  id2 = model.addElement(Element(DrakeShapes::Box(Vector3d(10, 10, 10))));
+  model.updateElementWorldTransform(id1, T_body1_to_world);
+  model.updateElementWorldTransform(id2, T_body2_to_world);
 
   vector<PointPair> points;
   vector<ElementId> ids_to_check;
   ids_to_check.push_back(id1);
   ids_to_check.push_back(id2);
 
-  model->closestPointsAllToAll(ids_to_check, true, points);
+  model.closestPointsAllToAll(ids_to_check, true, points);
   int num = points.size();
   cout << "NumPoints: " << num << endl;
   for (int i = 0; i < num; ++i) {
@@ -359,7 +359,7 @@ void testBoxModel(shared_ptr<Model> model, float tx, float ty, float tz) {
 }
 
 // Pass in either a BulletModel or an FCLModel
-void testSphereModel(shared_ptr<Model> model, float tx, float ty, float tz) {
+void testSphereModel(Model& model, float tx, float ty, float tz) {
   cout << "Box Model " << tx << ", " << ty << ", " << tz
        << "   -------------\n";
 
@@ -371,17 +371,17 @@ void testSphereModel(shared_ptr<Model> model, float tx, float ty, float tz) {
   T_body2_to_world.translation() << tx, ty, (100 + tz);
 
   ElementId id1, id2;
-  id1 = model->addElement(Element(DrakeShapes::Sphere(20)));
-  id2 = model->addElement(Element(DrakeShapes::Sphere(10)));
-  model->updateElementWorldTransform(id1, T_body1_to_world);
-  model->updateElementWorldTransform(id2, T_body2_to_world);
+  id1 = model.addElement(Element(DrakeShapes::Sphere(20)));
+  id2 = model.addElement(Element(DrakeShapes::Sphere(10)));
+  model.updateElementWorldTransform(id1, T_body1_to_world);
+  model.updateElementWorldTransform(id2, T_body2_to_world);
 
   vector<PointPair> points;
   vector<ElementId> ids_to_check;
   ids_to_check.push_back(id1);
   ids_to_check.push_back(id2);
 
-  model->closestPointsAllToAll(ids_to_check, true, points);
+  model.closestPointsAllToAll(ids_to_check, true, points);
   int num = points.size();
   cout << "NumPoints: " << num << endl;
   for (int i = 0; i < num; ++i) {
@@ -398,15 +398,15 @@ void testSphereModel(shared_ptr<Model> model, float tx, float ty, float tz) {
 
 int main() {
   // Default is BulletModel
-  shared_ptr<Model> bullet_model = newModel();
-  shared_ptr<Model> fcl_model(new FCLModel);
+  std::unique_ptr<Model> bullet_model{newModel(DrakeCollision::BULLET)};
+  std::unique_ptr<Model> fcl_model{newModel(DrakeCollision::FCL)};
   // testBoxModel(model, 14,14,14);
   // Just out of collision
-  testSphereModel(bullet_model, 18, 18, 18);
-  testSphereModel(fcl_model, 18, 18, 18);
+  testSphereModel(*bullet_model, 18, 18, 18);
+  testSphereModel(*fcl_model, 18, 18, 18);
   // Just in collision.
-  testSphereModel(bullet_model, 16, 16, 16);
-  testSphereModel(fcl_model, 16, 16, 16);
+  testSphereModel(*bullet_model, 16, 16, 16);
+  testSphereModel(*fcl_model, 16, 16, 16);
 
   // Compare bullet and FCL
   // testBoxBulletModel(14, 14, 14);
