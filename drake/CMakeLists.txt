@@ -1,5 +1,22 @@
 cmake_minimum_required(VERSION 3.5)
 
+# Create a cache variable that contains the
+# max number of concurent link jobs that can be run
+# in a ninja build, if the value is 0 then let ninja
+# use as many as it wants.
+set(CMAKE_NINJA_LINK_POOL_SIZE 0 CACHE STRING
+  "Number of concurent link jobs that can be run with ninja build tool")
+# if the link pool is non-zero then set the property
+# on all the targets in drake
+if(CMAKE_NINJA_LINK_POOL_SIZE GREATER 0)
+  # Ninja: Configure a job pool to limit simultaneous linking.
+ set_property(GLOBAL PROPERTY JOB_POOLS
+    link_pool=${CMAKE_NINJA_LINK_POOL_SIZE})
+  # Ninja: Assign all linking to our link job pool.
+  set(CMAKE_JOB_POOL_LINK link_pool)
+endif()
+
+
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
@@ -64,29 +81,24 @@ include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
 
-if (CMAKE_COMPILER_IS_GNUCC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all")
-  # TODO(#2372) These are warnings that we can't handle yet.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
-
-  execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-  if (NOT (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7))
-    message(FATAL_ERROR "requires gcc version >= 4.7")  # to support the c++0x flag below
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
+    message(FATAL_ERROR "GCC version must be at least 4.7")
   endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all")
-  # TODO(#2372) These are warnings that we can't handle yet.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedef")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all")
+
+  # TODO(#2372) These are warnings that we can't handle yet.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
+  endif()
+
   if (APPLE)  # this was a step towards getting things to work with
   #   clang on mac, but ultimately we didn't get there...   (but I would
   #   be worried about sharing pointers between objects compiled against

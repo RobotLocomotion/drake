@@ -36,10 +36,10 @@ Eigen::Matrix<typename Derived1::Scalar, 4, 1> quatProduct(
     const Eigen::MatrixBase<Derived1>& q1,
     const Eigen::MatrixBase<Derived2>& q2) {
   using namespace Eigen;
-  using Scalar = typename Derived1::Scalar;
   static_assert(Derived1::SizeAtCompileTime == 4, "Wrong size.");
   static_assert(Derived2::SizeAtCompileTime == 4, "Wrong size.");
 
+  // using Scalar = typename Derived1::Scalar;
   // Scalar w1 = q1(0);
   // Scalar w2 = q2(0);
   // auto v1 = q1.template tail<3>();
@@ -66,7 +66,6 @@ Eigen::Matrix<typename DerivedV::Scalar, 3, 1> quatRotateVec(
     const Eigen::MatrixBase<DerivedQ>& q,
     const Eigen::MatrixBase<DerivedV>& v) {
   using namespace Eigen;
-  using Scalar = typename DerivedQ::Scalar;
   static_assert(DerivedQ::SizeAtCompileTime == 4, "Wrong size.");
   static_assert(DerivedV::SizeAtCompileTime == 3, "Wrong size.");
 
