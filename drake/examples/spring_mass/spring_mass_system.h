@@ -71,7 +71,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
 
   /// Allocates state derivatives of type SpringMassStateVector.
   std::unique_ptr<systems::StateVectorInterface<double>>
-  CreateDefaultStateDerivatives() const override;
+  AllocateStateDerivatives() const override;
 
   void Output(const systems::Context<double>& context,
               systems::SystemOutput<double>* output) const override;

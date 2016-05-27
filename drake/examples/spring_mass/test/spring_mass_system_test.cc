@@ -33,7 +33,7 @@ class SpringMassSystemTest : public ::testing::Test {
     system_.reset(new SpringMassSystem("test_system", kSpring, kMass));
     context_ = system_->CreateDefaultContext();
     system_output_ = system_->CreateDefaultOutput();
-    erased_derivatives_ = system_->CreateDefaultStateDerivatives();
+    erased_derivatives_ = system_->AllocateStateDerivatives();
 
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector*>(
@@ -116,6 +116,9 @@ TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
   // The derivative of velocity is force over mass.
   EXPECT_NEAR(-kSpring * -0.1 / kMass, derivatives_->get_velocity(), 1e-8);
 }
+
+// TODO(david-german-tri, sherm1): Add a test case using Solver 2.0 when
+// it is available.
 
 }  // namespace
 }  // namespace examples

@@ -20,7 +20,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// CreateDefaultContext. Solvers will provide this vector as the output
   /// argument to GetStateDerivatives.
   virtual std::unique_ptr<StateVectorInterface<T>>
-  CreateDefaultStateDerivatives() const = 0;
+  AllocateStateDerivatives() const = 0;
 
   /// Produces the derivatives of the continuous state xc with respect to time.
   /// The @p derivatives vector will correspond placewise with the state vector

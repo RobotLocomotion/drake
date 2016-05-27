@@ -81,7 +81,7 @@ std::unique_ptr<SystemOutput<double>> SpringMassSystem::CreateDefaultOutput()
 }
 
 std::unique_ptr<StateVectorInterface<double>>
-SpringMassSystem::CreateDefaultStateDerivatives() const {
+SpringMassSystem::AllocateStateDerivatives() const {
   return std::unique_ptr<StateVectorInterface<double>>(
       new SpringMassStateVector(0, 0));
 }
