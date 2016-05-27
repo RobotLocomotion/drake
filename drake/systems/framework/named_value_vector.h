@@ -42,10 +42,10 @@ class NamedValueVector : public VectorInterface<T> {
 
   void set_value(const VectorX<T>& value) override {
     if (value.rows() != values_.rows()) {
-      throw std::runtime_error("Cannot set a NamedValueVector of size " +
-                               std::to_string(values_.rows()) +
-                               " with a value of size " +
-                               std::to_string(value.rows()));
+      throw std::out_of_range("Cannot set a NamedValueVector of size " +
+                              std::to_string(values_.rows()) +
+                              " with a value of size " +
+                              std::to_string(value.rows()));
     }
     values_ = value;
   }

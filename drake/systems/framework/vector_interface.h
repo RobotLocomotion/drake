@@ -27,7 +27,7 @@ template <typename T> class VectorInterface {
 
   /// Sets the vector to the given value. After a.set_value(b.get_value()), a
   /// must be identical to b.
-  /// May throw std::runtime_error if the new value has different dimensions
+  /// May throw std::out_of_range if the new value has different dimensions
   /// than expected by the concrete class implementing VectorInterface.
   virtual void set_value(const VectorX<T>& value) = 0;
 

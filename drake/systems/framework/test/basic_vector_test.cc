@@ -72,7 +72,7 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
   BasicVector<int> vec(2);
   Eigen::Vector3i next_value;
   next_value << 3, 4, 5;
-  EXPECT_THROW(vec.set_value(next_value), std::runtime_error);
+  EXPECT_THROW(vec.set_value(next_value), std::out_of_range);
 }
 
 }  // namespace

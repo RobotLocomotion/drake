@@ -70,7 +70,7 @@ GTEST_TEST(NamedValueVectorTest, ReinitializeInvalid) {
       std::vector<std::pair<std::string, int>>{{"foo", 1}, {"bar", 2}});
   Eigen::Matrix<int, 3, 1> next_value;
   next_value << 3, 4, 5;
-  EXPECT_THROW(vector.set_value(next_value), std::runtime_error);
+  EXPECT_THROW(vector.set_value(next_value), std::out_of_range);
 }
 
 // Tests that an error is thrown when there are multiple identically

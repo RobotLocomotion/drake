@@ -25,7 +25,7 @@ class Adder : public SystemInterface<T> {
   std::unique_ptr<Context<T>> CreateDefaultContext() const override;
 
   /// Allocates one output port of the width specified in the constructor.
-  std::unique_ptr<SystemOutput<T>> CreateDefaultOutput() const override;
+  std::unique_ptr<SystemOutput<T>> AllocateOutput() const override;
 
   /// Sums the input ports into the output port. If the input ports are not
   /// of number num_inputs_ or size length_, std::runtime_error will be thrown.

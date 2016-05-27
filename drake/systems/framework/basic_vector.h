@@ -30,7 +30,7 @@ class BasicVector : public VectorInterface<T> {
 
   void set_value(const VectorX<T>& value) override {
     if (value.rows() != values_.rows()) {
-      throw std::runtime_error(
+      throw std::out_of_range(
           "Cannot set a BasicVector of size " + std::to_string(values_.rows()) +
           " with a value of size " + std::to_string(value.rows()));
     }
