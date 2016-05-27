@@ -36,7 +36,7 @@ using test_func_t =
 // OBB: collide works.
 // OBB: distance works.
 
-void testBoxFCLDistance(double tx, double ty, double tz) {
+void TestBoxFCLDistance(double tx, double ty, double tz) {
   fcl::Box s1(20, 40, 60);
   fcl::Box s2(10, 10, 10);
 
@@ -71,7 +71,7 @@ void testBoxFCLDistance(double tx, double ty, double tz) {
 }
 
 template <typename BV>
-void testBoxFCLCollideNode(double tx, double ty, double tz,
+void TestBoxFCLCollideNode(double tx, double ty, double tz,
                            fcl::SplitMethodType split_method) {
   std::cout << "testBoxFCLCollideNode " << tx << ", " << ty << ", " << tz
             << std::endl;
@@ -124,7 +124,7 @@ void testBoxFCLCollideNode(double tx, double ty, double tz,
   }
 }
 
-void testBoxFCLCollide(double tx, double ty, double tz) {
+void TestBoxFCLCollide(double tx, double ty, double tz) {
   fcl::Box s1(10, 10, 10);
   fcl::Box s2(10, 10, 10);
 
@@ -158,12 +158,12 @@ void testBoxFCLCollide(double tx, double ty, double tz) {
 }
 
 template <typename BV>
-bool fcl_collide_test(const fcl::Transform3f& tf,
-                      const std::vector<fcl::Vec3f>& vertices1,
-                      const std::vector<fcl::Triangle>& triangles1,
-                      const std::vector<fcl::Vec3f>& vertices2,
-                      const std::vector<fcl::Triangle>& triangles2,
-                      fcl::SplitMethodType split_method, bool verbose) {
+bool FCLCollideTest(const fcl::Transform3f& tf,
+                    const std::vector<fcl::Vec3f>& vertices1,
+                    const std::vector<fcl::Triangle>& triangles1,
+                    const std::vector<fcl::Vec3f>& vertices2,
+                    const std::vector<fcl::Triangle>& triangles2,
+                    fcl::SplitMethodType split_method, bool verbose) {
   fcl::BVHModel<BV> m1;
   fcl::BVHModel<BV> m2;
   m1.bv_splitter.reset(new fcl::BVSplitter<BV>(split_method));
@@ -237,7 +237,7 @@ bool fcl_collide_test(const fcl::Transform3f& tf,
   }
 }
 
-void testFCLMultiPoint(test_func_t test_func) {
+void TestFCLMultiPoint(test_func_t test_func) {
   std::cout << "------------------------------------------------\n";
   std::vector<fcl::Vec3f> p1(8), p2(6);
   std::vector<fcl::Triangle> t1(12), t2(8);
@@ -308,22 +308,22 @@ void testFCLMultiPoint(test_func_t test_func) {
   test_func(transform1, p1, t1, p2, t2, fcl::SPLIT_METHOD_MEDIAN, verbose);
 }
 
-void testFCLMultiPoint() {
+void TestFCLMultiPoint() {
   std::cout << "------------------------------------------------\n";
-  testFCLMultiPoint(&fcl_collide_test<fcl::OBB>);
-  testFCLMultiPoint(&fcl_collide_test<fcl::RSS>);
-  testFCLMultiPoint(&fcl_collide_test<fcl::AABB>);
-  testFCLMultiPoint(&fcl_collide_test<fcl::KDOP<24> >);
-  testFCLMultiPoint(&fcl_collide_test<fcl::KDOP<18> >);
-  testFCLMultiPoint(&fcl_collide_test<fcl::KDOP<16> >);
-  testFCLMultiPoint(&fcl_collide_test<fcl::kIOS>);
-  testFCLMultiPoint(&fcl_collide_test<fcl::OBBRSS>);
+  TestFCLMultiPoint(&FCLCollideTest<fcl::OBB>);
+  TestFCLMultiPoint(&FCLCollideTest<fcl::RSS>);
+  TestFCLMultiPoint(&FCLCollideTest<fcl::AABB>);
+  TestFCLMultiPoint(&FCLCollideTest<fcl::KDOP<24> >);
+  TestFCLMultiPoint(&FCLCollideTest<fcl::KDOP<18> >);
+  TestFCLMultiPoint(&FCLCollideTest<fcl::KDOP<16> >);
+  TestFCLMultiPoint(&FCLCollideTest<fcl::kIOS>);
+  TestFCLMultiPoint(&FCLCollideTest<fcl::OBBRSS>);
 }
 
 // DrakeCollision stuff
 
 // Pass in either a BulletModel or an FCLModel
-void testBoxModel(DrakeCollision::Model& model,
+void TestBoxModel(DrakeCollision::Model& model,
                   double tx, double ty, double tz) {
   std::cout << "Box Model " << tx << ", " << ty << ", " << tz
             << "   -------------\n";
@@ -364,7 +364,7 @@ void testBoxModel(DrakeCollision::Model& model,
 }
 
 // Pass in either a BulletModel or an FCLModel
-void testSphereModel(DrakeCollision::Model& model,
+void TestSphereModel(DrakeCollision::Model& model,
                      double tx, double ty, double tz) {
   std::cout << "Box Model " << tx << ", " << ty << ", " << tz
             << "   -------------" << std::endl;
@@ -411,48 +411,48 @@ int main() {
       newModel(DrakeCollision::FCL)};
   // testBoxModel(model, 14,14,14);
   // Just out of collision
-  testSphereModel(*bullet_model, 18, 18, 18);
-  testSphereModel(*fcl_model, 18, 18, 18);
+  TestSphereModel(*bullet_model, 18, 18, 18);
+  TestSphereModel(*fcl_model, 18, 18, 18);
   // Just in collision.
-  testSphereModel(*bullet_model, 16, 16, 16);
-  testSphereModel(*fcl_model, 16, 16, 16);
+  TestSphereModel(*bullet_model, 16, 16, 16);
+  TestSphereModel(*fcl_model, 16, 16, 16);
 
   // Compare bullet and FCL
-  // testBoxBulletModel(14, 14, 14);
-  // testBoxFCLModel(14, 14, 14);
-  // testBoxFCLCollideNode<OBBRSS>(14, 14, 14, SPLIT_METHOD_MEAN);
+  // TestBoxBulletModel(14, 14, 14);
+  // TestBoxFCLModel(14, 14, 14);
+  // TestBoxFCLCollideNode<OBBRSS>(14, 14, 14, SPLIT_METHOD_MEAN);
 
   /*
-  testBoxFCLDistance(10, 20, 30);
-  testBoxFCLDistance(14, 24, 34);
-  testBoxFCLDistance(16, 26, 36);
-  testBoxFCLDistance(20, 30, 40);
+  TestBoxFCLDistance(10, 20, 30);
+  TestBoxFCLDistance(14, 24, 34);
+  TestBoxFCLDistance(16, 26, 36);
+  TestBoxFCLDistance(20, 30, 40);
   */
 
   // compare the two
-  // testBoxBulletModel(10, 20, 30);
-  // testBoxBulletModel(19, 19, 19);
-  // testBoxBulletModel(15, 25, 35);
-  // testBoxBulletModel(16, 26, 36);
-  // testBoxBulletModel(20, 30, 40);
+  // TestBoxBulletModel(10, 20, 30);
+  // TestBoxBulletModel(19, 19, 19);
+  // TestBoxBulletModel(15, 25, 35);
+  // TestBoxBulletModel(16, 26, 36);
+  // TestBoxBulletModel(20, 30, 40);
   /*
   cout << "FCLModel\n";
-  // testBoxFCLModel(10, 20, 30);
-  testBoxFCLModel(14, 24, 34);
-  testBoxFCLModel(15, 25, 35);
-  testBoxFCLModel(16, 26, 36);
-  // testBoxFCLModel(20, 30, 40);
+  // TestBoxFCLModel(10, 20, 30);
+  TestBoxFCLModel(14, 24, 34);
+  TestBoxFCLModel(15, 25, 35);
+  TestBoxFCLModel(16, 26, 36);
+  // TestBoxFCLModel(20, 30, 40);
   */
 
   /* I cannot get the second collision point of the pair
      and the normal / depth is not the max.
-  testBoxFCLCollide(10, 20, 30);
-  testBoxFCLCollide(14, 24, 34);
-  testBoxFCLCollide(16, 26, 36);
-  testBoxFCLCollide(20, 30, 40);
+  TestBoxFCLCollide(10, 20, 30);
+  TestBoxFCLCollide(14, 24, 34);
+  TestBoxFCLCollide(16, 26, 36);
+  TestBoxFCLCollide(20, 30, 40);
   */
 
-  // testBoxFCLCollide2<OBBRSS>(10, 20, 30, SPLIT_METHOD_MEAN);
+  // TestBoxFCLCollide2<OBBRSS>(10, 20, 30, SPLIT_METHOD_MEAN);
 
-  // testFCLMultiPoint();
+  // TestFCLMultiPoint();
 }
