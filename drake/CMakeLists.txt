@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.5)
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+  message(FATAL_ERROR "GCC version must be at least 4.9")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
+  message(FATAL_ERROR "Clang version must be at least 3.7")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
+  message(FATAL_ERROR "MSVC version must be at least 14")
+endif()
+
 # Create a cache variable that contains the
 # max number of concurent link jobs that can be run
 # in a Ninja build, if the value is 0 then let Ninja
@@ -20,18 +28,12 @@ option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
 option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random seed" OFF)
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# cmake_policy(SET CMP0042 NEW)
-if(POLICY CMP0054)
-  cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
-endif()
-
-# Set a consistent MACOSX_RPATH default across all CMake versions.
-# When CMake 3.0.0 is required, remove this block (see CMP0042).
-if(NOT DEFINED CMAKE_MACOSX_RPATH)
-  set(CMAKE_MACOSX_RPATH ON)
-endif()
+cmake_policy(SET CMP0042 NEW)
+cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
 
 # prepend module path so we can override FindMatlab.cmake
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -69,20 +71,13 @@ function(add_library_with_exports)
 
   add_library(${parsed_args_LIB_NAME} SHARED ${parsed_args_SOURCE_FILES})
   set(exports_abs_path ${PROJECT_BINARY_DIR}/exports/drake/${parsed_args_LIB_NAME}_export.h)
-  # work around https://cmake.org/Bug/view.php?id=12645 (fixed in 2.8.8):
-  file(RELATIVE_PATH exports_rel_path ${CMAKE_CURRENT_BINARY_DIR}/ ${exports_abs_path})
-  generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${exports_rel_path})
+  generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${exports_abs_path})
   install(FILES ${exports_abs_path} DESTINATION include/drake/)
 endfunction()
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
-    message(FATAL_ERROR "GCC version must be at least 4.7")
-  endif()
-
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all")
 
   # TODO(#2372) These are warnings that we can't handle yet.
@@ -93,23 +88,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
   endif()
-
-  if(APPLE)  # this was a step towards getting things to work with
-    # clang on OS X, but ultimately we didn't get there... (but I would
-    # be worried about sharing pointers between objects compiled against
-    # different c++ libs, so removing it)
-    #   http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-  endif()
 elseif(MSVC)
-  if(NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 19.00.00)
-    # version number decoder ring at https://en.wikipedia.org/wiki/Visual_C%2B%2B
-    message(FATAL_ERROR "requires MS VC++ 14.0 or greater (Visual Studio >= 2015). download for free at http://visualstudio.com")
-  endif()
-
-  # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
-  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2 /openmp")
-
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
   # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
   # followed by template linking errors. After reading, e.g.:
