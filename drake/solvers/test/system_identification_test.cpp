@@ -263,16 +263,19 @@ std::vector<State> MakeTestData() {
 #define IDENTIFICATION_TEST_NAME DISABLED_SpringMassIdentification
 #endif
 
+// TODO(ggould-tri) It is likely that much of the logic below will be
+// boilerplate shared by all manipulator identification; it should eventually
+// be pulled into a function of its own inside of system_identification.
+
 GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
-  Polynomiald x = Polynomiald("x");
-  auto x_var = x.getSimpleVariable();
-  Polynomiald v = Polynomiald("v");
-  auto v_var = v.getSimpleVariable();
-  Polynomiald a = Polynomiald("a");
-  auto a_var = a.getSimpleVariable();
-  Polynomiald j = Polynomiald("j");  //< for completeness; vanishes in equation.
-  Polynomiald f = Polynomiald("f");
-  auto f_var = f.getSimpleVariable();
+  Polynomiald pos = Polynomiald("pos");
+  auto pos_var = pos.getSimpleVariable();
+  Polynomiald velocity = Polynomiald("vel");
+  auto velocity_var = velocity.getSimpleVariable();
+  Polynomiald acceleration = Polynomiald("acc");
+  auto acceleration_var = acceleration.getSimpleVariable();
+  Polynomiald input_force = Polynomiald("f_in");
+  auto input_force_var = input_force.getSimpleVariable();
   Polynomiald mass = Polynomiald("m");
   auto mass_var = mass.getSimpleVariable();
   Polynomiald damping = Polynomiald("b");
@@ -282,38 +285,45 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
 
   // Code style violations here:
   // * Vector initializations use two statements on one line for clarity.
-  // * The short names and upper/lower case here are conventional within the
-  //   discipline and correspond to the manipulator formulation at:
-  //    * http://underactuated.csail.mit.edu/underactuated.html?chapter=23
-  VectorXPoly q(2, 1); q << x, v;
-  VectorXPoly qdot(2, 1); qdot << v, a;
-  VectorXPoly qdotdot(2, 1); qdotdot << a, j;
-  VectorXPoly H(1, 2); H << mass, 0;
-  VectorXPoly C(1, 2); C << 0, 0;
-  VectorXPoly g(1, 1); g << (spring * q[0]) - (damping * q[1]);
+  // * The short names and upper/lower case here are conventional in the
+  //   manipulator formulation.
+  //
+  // We write the manipulator as:
+  //   H*vdot + C*v + g = B*u + f
+  // Where f embodies any dissipative forces not appropriate to C.
+  VectorXPoly v(1, 1); v << velocity;
+  VectorXPoly vdot(1, 1); vdot << acceleration;
+  VectorXPoly H(1, 1); H << mass;
+  VectorXPoly C(1, 1); C << 0;
+  VectorXPoly g(1, 1); g << (spring * pos);
+  VectorXPoly f(1, 1); f << (velocity * damping);
   VectorXPoly B(1, 1); B << 1;
-  VectorXPoly manipulator = (H * qdotdot) + (C * qdot) + g;
+  VectorXPoly u(1, 1); u << input_force;
+
+  const VectorXPoly manipulator_left = (H * vdot) + (C * v) + g;
+  const VectorXPoly manipulator_right = (B * u) + f;
 
   std::default_random_engine noise_generator;
   noise_generator.seed(kNoiseSeed);
   std::uniform_real_distribution<double> noise_distribution(-kNoise, kNoise);
   auto noise = std::bind(noise_distribution, noise_generator);
 
-  std::vector<State> oracular_data = MakeTestData();
+  const std::vector<State> oracular_data = MakeTestData();
   std::vector<SID::PartialEvalType> measurements;
   for (const State& oracular_state : oracular_data) {
     SID::PartialEvalType measurement;
-    measurement[x_var] = oracular_state.position + noise();
-    measurement[v_var] = oracular_state.velocity + noise();
-    measurement[a_var] = oracular_state.acceleration + noise();
-    measurement[f_var] = oracular_state.force + noise();
+    measurement[pos_var] = oracular_state.position + noise();
+    measurement[velocity_var] = oracular_state.velocity + noise();
+    measurement[acceleration_var] = oracular_state.acceleration + noise();
+    measurement[input_force_var] = oracular_state.force + noise();
     measurements.push_back(measurement);
   }
 
   SID::PartialEvalType estimated_params;
   double error;
   std::tie(estimated_params, error) =
-      SID::EstimateParameters(manipulator - (B * f), measurements);
+      SID::EstimateParameters(manipulator_left - manipulator_right,
+                              measurements);
 
   // Multiple layers of naive discrete-time numeric integration yields a very
   // high error value here, which almost all lands in the damping constant
