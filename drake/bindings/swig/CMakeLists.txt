@@ -11,6 +11,11 @@ set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w315,-401")
 # Ignore SWIG errors about not being able to wrap operator <<
 set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w503")
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # The autodiff.i in swig has for-loop variable warnings.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+endif()
+
 if(PYTHON_EXECUTABLE)
   include(SwigPython)
   set(python_install_subdir lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages ${CMAKE_CURRENT_SOURCE_DIR}/../python)
