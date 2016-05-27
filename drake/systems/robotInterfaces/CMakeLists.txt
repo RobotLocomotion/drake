@@ -2,10 +2,10 @@ add_library_with_exports(LIB_NAME drakeSide SOURCE_FILES Side.cpp)
 drake_install_headers(Side.h)
 pods_install_libraries(drakeSide)
 pods_install_pkg_config_file(drake-side
-	LIBS -ldrakeSide
-	CFLAGS
-	REQUIRES
-	VERSION 0.0.1)
+  LIBS -ldrakeSide
+  CFLAGS
+  REQUIRES
+  VERSION 0.0.1)
 
 if (LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeQPLocomotionPlan SOURCE_FILES QPLocomotionPlan.cpp BodyMotionData.cpp) # TODO: move BodyMotionData to a better place

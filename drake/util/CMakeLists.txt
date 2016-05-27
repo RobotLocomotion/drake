@@ -116,7 +116,7 @@ target_link_libraries(drake_debug_mex drakeMexUtil -ldl)
 
 message(STATUS "Writing drake_debug_mex.sh")
 file(WRITE ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
-	   "#!/bin/bash\n"
+     "#!/bin/bash\n"
      "\n"
      "# Usage:\n"
      "#   % drake_debug_mex.sh [args]\n"

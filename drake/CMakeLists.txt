@@ -153,11 +153,11 @@ include_directories(BEFORE ${generated_dir})
 # set up matlab build
 include(cmake/mex.cmake)
 if (DISABLE_MATLAB)
-	message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
+  message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
 else()
-	# Search for MATLAB and configure various MEX options.
-	# If MATLAB is found, MATLAB_FOUND is set.
-	mex_setup()
+  # Search for MATLAB and configure various MEX options.
+  # If MATLAB is found, MATLAB_FOUND is set.
+  mex_setup()
         # if matlab is in the PATH then use cmake find_package to find it
         # along with what is needed to use matlab_add_unit_test
         if(MATLAB_FOUND)
@@ -236,10 +236,10 @@ if (LCM_FOUND)
 
   list(APPEND drake_jar_javafiles
         util/MyLCMTypeDatabase.java
-	util/MessageMonitor.java
-	util/CoordinateFrameData.java
-	util/LCMCoder.java
-	)
+  util/MessageMonitor.java
+  util/CoordinateFrameData.java
+  util/LCMCoder.java
+  )
   list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 
   # add lcmgl
@@ -250,7 +250,7 @@ if (LCM_FOUND)
   else ()
     string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
     find_jar(LCMGL_JAR_FILE bot2-lcmgl
-  		PATHS "${LCMGL_BUILD_DIR}/share/java/")
+      PATHS "${LCMGL_BUILD_DIR}/share/java/")
     if (NOT LCMGL_JAR_FILE)
        message(FATAL_ERROR "\n\n----- ERROR: bot2-lcmgl not found")
     else()
@@ -258,8 +258,8 @@ if (LCM_FOUND)
     endif()
     set(CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE})
     list(APPEND drake_jar_javafiles
- 	util/BotLCMGLClient.java
-	)
+   util/BotLCMGLClient.java
+  )
   endif()
 
 endif()
@@ -317,21 +317,21 @@ file(RELATIVE_PATH relpath ${CMAKE_INSTALL_PREFIX}/matlab ${CMAKE_CURRENT_SOURCE
 
 message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab")
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
-	   "function addpath_drake()\n"
-	   "  mfiledir = fileparts(which(mfilename));\n"
-	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
-	   "  addpath_drake();\n"
-	   "  cd(wd);\n"
+     "function addpath_drake()\n"
+     "  mfiledir = fileparts(which(mfilename));\n"
+     "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
+     "  addpath_drake();\n"
+     "  cd(wd);\n"
      "end\n"
      "\n"
     )
 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
-	   "function rmpath_drake()\n"
-	   "  mfiledir = fileparts(which(mfilename));\n"
-	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
-	   "  rmpath_drake();\n"
-	   "  cd(wd);\n"
+     "function rmpath_drake()\n"
+     "  mfiledir = fileparts(which(mfilename));\n"
+     "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
+     "  rmpath_drake();\n"
+     "  cd(wd);\n"
     )
 
 
@@ -354,7 +354,7 @@ endif()
 
 if (MATLAB_FOUND)
   add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
-  	COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
+    COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
     PROPERTIES TIMEOUT 300)
 endif()
