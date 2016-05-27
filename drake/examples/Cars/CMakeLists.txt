@@ -16,8 +16,7 @@ if(LCM_FOUND)
     trajectory_car.h
     gen/driving_command.h
     gen/euler_floating_joint_state.h
-    gen/simple_car_state.h
-  )
+    gen/simple_car_state.h)
   pods_install_pkg_config_file(drake-cars
     LIBS -ldrakeCars
     REQUIRES

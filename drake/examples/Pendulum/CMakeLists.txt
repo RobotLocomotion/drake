@@ -12,17 +12,16 @@ if(LCM_FOUND)
   add_test(NAME runPendulumLQR COMMAND runPendulumLQR --non-realtime)
 
 #  write_procman(Pendulum.pmd
-#      GROUP "Simulate"
-#        NAME "dynamics (cpp)" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumDynamics'"
-#      ENDGROUP
-#      GROUP "LCM Controllers"
-#        NAME "energy shaping (cpp)" COMMAND "${CMAKE_BINARY_DIR}/bin/runPendulumEnergyShaping"
-#      ENDGROUP
-#      GROUP "Controllers+Simulation In One"
-#        NAME "LQR (cpp)" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumLQR'"
-#      ENDGROUP
-#      NAME "viewer" COMMAND "${CMAKE_INSTALL_PREFIX}/bin/drake-visualizer"
-#  )
+#    GROUP "Simulate"
+#      NAME "dynamics (cpp)" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumDynamics'"
+#    ENDGROUP
+#    GROUP "LCM Controllers"
+#      NAME "energy shaping (cpp)" COMMAND "${CMAKE_BINARY_DIR}/bin/runPendulumEnergyShaping"
+#    ENDGROUP
+#    GROUP "Controllers+Simulation In One"
+#      NAME "LQR (cpp)" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumLQR'"
+#    ENDGROUP
+#    NAME "viewer" COMMAND "${CMAKE_INSTALL_PREFIX}/bin/drake-visualizer")
 endif()
 
 add_subdirectory(test)
