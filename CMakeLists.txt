@@ -64,22 +64,22 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 ##########################################
 # External Projects that are ON by default
 ##########################################
-option(WITH_EIGEN    "required c++ matrix library.  only disable if you have it already."    ON)
+option(WITH_EIGEN "required c++ matrix library.  only disable if you have it already." ON)
 option(WITH_GOOGLETEST "required c++ unit test library.  only disable if you have it already." ON)
-option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
-option(WITH_BULLET     "used for collision detection"   ON)
-option(WITH_LCM     "interprocess communications protocol for visualizers, etc" ON)
+option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
+option(WITH_BULLET "used for collision detection" ON)
+option(WITH_LCM "interprocess communications protocol for visualizers, etc" ON)
 option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
 if(WIN32)
-  option(WITH_GTK     "precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
+  option(WITH_GTK "precompiled gtk binaries/headers for Windows" ON)  # needed for lcm on windows
 else()
-  option(WITH_DIRECTOR  "vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
-  option(WITH_LIBBOT     "simple open-gl visualizer + lcmgl for director"  ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
-  option(WITH_NLOPT     "nonlinear optimization solver"  ON)
+  option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
+  option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
+  option(WITH_NLOPT "nonlinear optimization solver" ON)
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
-option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
+option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)" ON)
 option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
 
 ##############################################################
@@ -116,14 +116,14 @@ CMAKE_DEPENDENT_OPTION(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficie
 ###########################################
 # External Projects that are OFF by default
 ###########################################
-option(WITH_SNOPT     "nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
+option(WITH_SNOPT "nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
 
 if(NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
-  option(WITH_AVL      "use w/ AVL to compute aerodynamic coefficients for airfoils")
-  option(WITH_GUROBI     "convex/integer optimization solver; free for academics (will prompt you for login bits)")
+  option(WITH_AVL "use w/ AVL to compute aerodynamic coefficients for airfoils")
+  option(WITH_GUROBI "convex/integer optimization solver; free for academics (will prompt you for login bits)")
   option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
   option(WITH_OCTOMAP "provides oct-tree data structures")
-  option(WITH_SIGNALSCOPE  "live plotting tool for lcm messages")
+  option(WITH_SIGNALSCOPE "live plotting tool for lcm messages")
   option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 endif()
 
