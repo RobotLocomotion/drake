@@ -342,7 +342,7 @@ void TestBoxModel(DrakeCollision::Model& model,
 // Pass in either a BulletModel or an FCLModel
 void TestSphereModel(DrakeCollision::Model& model,
                      double tx, double ty, double tz) {
-  std::cout << "Box Model " << tx << ", " << ty << ", " << tz
+  std::cout << "Sphere Model " << tx << ", " << ty << ", " << tz
             << "   -------------" << std::endl;
 
   Eigen::Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
