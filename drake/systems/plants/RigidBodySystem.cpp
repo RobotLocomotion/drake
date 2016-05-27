@@ -256,8 +256,8 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
                                    x.bottomRows(tree->number_of_velocities()));
   Eigen::VectorXd y(getNumOutputs());
 
-  DRAKE_ASSERT(getNumStates() == x.size());
-  DRAKE_ASSERT(getNumInputs() == u.size());
+  DRAKE_ASSERT(static_cast<int>(getNumStates()) == x.size());
+  DRAKE_ASSERT(static_cast<int>(getNumInputs()) == u.size());
 
   y.segment(0, getNumStates()) << x;
   size_t index = getNumStates();
@@ -305,17 +305,17 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
     Vector3d zero = Vector3d::Zero();
     KinematicsCacheHelper<double> kin_helper(sys.tree->bodies);
     std::list<RelativePositionConstraint> constraints;
-    for (int i = 0; i < loops.size(); i++) {
+    for (const auto& loop : loops) {
       constraints.push_back(RelativePositionConstraint(
-          sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index,
-          loops[i].frameB->frame_index, bTbp, tspan));
+          sys.tree.get(), zero, zero, zero, loop.frameA->frame_index,
+          loop.frameB->frame_index, bTbp, tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
                                                    &kin_helper));
       prog.AddGenericConstraint(con1wrapper, {qvar});
       constraints.push_back(RelativePositionConstraint(
-          sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis,
-          loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp,
+          sys.tree.get(), loop.axis, loop.axis, loop.axis,
+          loop.frameA->frame_index, loop.frameB->frame_index, bTbp,
           tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
@@ -975,7 +975,7 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
   auto J = tree->geometricJacobian(rigid_body_state, 0, frame->frame_index, 0,
                                    false, &v_indices);
   Eigen::VectorXd tau = Eigen::VectorXd::Zero(tree->number_of_velocities());
-  for (int i = 0; i < v_indices.size(); i++) {
+  for (size_t i = 0; i < v_indices.size(); i++) {
     tau(v_indices[i]) = J.col(i).dot(force_in_world);
   }
   return tau;
