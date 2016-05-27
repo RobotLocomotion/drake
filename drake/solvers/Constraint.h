@@ -117,7 +117,7 @@ class PolynomialConstraint : public Constraint {
   PolynomialConstraint(
       const VectorXPoly& polynomials,
       const std::vector<Polynomiald::VarType>& poly_vars,
-      Eigen::VectorXd lb, Eigen::VectorXd ub)
+      const Eigen::VectorXd& lb, const Eigen::VectorXd& ub)
       : Constraint(polynomials.rows(), lb, ub),
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}

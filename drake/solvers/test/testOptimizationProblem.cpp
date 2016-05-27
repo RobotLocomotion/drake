@@ -540,10 +540,11 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
 
   // Given a degenerate polynomial, get the trivial solution.
   {
-    Polynomiald x("x");
+    const Polynomiald x("x");
     OptimizationProblem problem;
-    auto x_var = problem.AddContinuousVariables(1);
-    std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
+    const auto x_var = problem.AddContinuousVariables(1);
+    const std::vector<Polynomiald::VarType> var_mapping = {
+      x.getSimpleVariable() };
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, 1, x),
                                     var_mapping,
                                     Eigen::VectorXd::Constant(1, 1, 2),
@@ -557,11 +558,12 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
 
   // Given a small univariate polynomial, find a low point.
   {
-    Polynomiald x("x");
-    Polynomiald poly = (x - 1) * (x - 1);
+    const Polynomiald x("x");
+    const Polynomiald poly = (x - 1) * (x - 1);
     OptimizationProblem problem;
-    auto x_var = problem.AddContinuousVariables(1);
-    std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
+    const auto x_var = problem.AddContinuousVariables(1);
+    const std::vector<Polynomiald::VarType> var_mapping = {
+      x.getSimpleVariable() };
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, 1, poly),
                                     var_mapping,
                                     Eigen::VectorXd::Constant(1, 1, 0),
@@ -574,12 +576,12 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
 
   // Given a small multivariate polynomial, find a low point.
   {
-    Polynomiald x("x");
-    Polynomiald y("y");
-    Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
+    const Polynomiald x("x");
+    const Polynomiald y("y");
+    const Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
     OptimizationProblem problem;
-    auto xy_var = problem.AddContinuousVariables(2);
-    std::vector<Polynomiald::VarType> var_mapping = {
+    const auto xy_var = problem.AddContinuousVariables(2);
+    const std::vector<Polynomiald::VarType> var_mapping = {
       x.getSimpleVariable(),
       y.getSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, 1, poly),
@@ -600,12 +602,13 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   {
     // (x^4 - x^2 + 0.2 has two minima, one at 0.5 and the other at -0.5;
     // constrain x < 0 and EXPECT that the solver finds the negative one.)
-    Polynomiald x("x");
-    Polynomiald poly = x * x * x * x - x * x + 0.2;
+    const Polynomiald x("x");
+    const Polynomiald poly = x * x * x * x - x * x + 0.2;
     OptimizationProblem problem;
-    auto x_var = problem.AddContinuousVariables(1);
+    const auto x_var = problem.AddContinuousVariables(1);
     problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
-    std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
+    const std::vector<Polynomiald::VarType> var_mapping = {
+      x.getSimpleVariable() };
     VectorXPoly polynomials_vec(2, 1);
     polynomials_vec << poly, x;
     problem.AddPolynomialConstraint(polynomials_vec,

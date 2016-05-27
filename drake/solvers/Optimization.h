@@ -564,7 +564,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       AddPolynomialConstraint(
           const VectorXPoly& polynomials,
           const std::vector<Polynomiald::VarType>& poly_vars,
-          Eigen::VectorXd lb, Eigen::VectorXd ub,
+          const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
           const VariableList& vars) {
     // TODO(ggould-tri) We treat polynomial constraints as generic for now,
     // but that need not be so.  Polynomials of degree 1 are linear
@@ -590,7 +590,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       AddPolynomialConstraint(
           const VectorXPoly& polynomials,
           const std::vector<Polynomiald::VarType>& poly_vars,
-          Eigen::VectorXd lb, Eigen::VectorXd ub) {
+          const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
     return AddPolynomialConstraint(
         polynomials, poly_vars, lb, ub, variable_views_);
   }
