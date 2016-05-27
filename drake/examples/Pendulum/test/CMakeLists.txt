@@ -10,7 +10,7 @@ add_matlab_test(NAME examples/Pendulum/test/polyFeedback COMMAND polyFeedback)
 add_matlab_test(NAME examples/Pendulum/test/runPendLCMControl COMMAND runPendLCMControl)
 add_matlab_test(NAME examples/Pendulum/test/testFeedback COMMAND testFeedback)
 add_matlab_test(NAME examples/Pendulum/test/testFrictionModel COMMAND testFrictionModel)
-# add_matlab_test(NAME examples/Pendulum/test/testLCMPlant COMMAND testLCMPlant) # see #310
+# add_matlab_test(NAME examples/Pendulum/test/testLCMPlant COMMAND testLCMPlant)  # FIXME: see #310
 # set_tests_properties(examples/Pendulum/test/testLCMPlant PROPERTIES RUN_SERIAL)  # asked kitware about this
 add_matlab_test(NAME examples/Pendulum/test/trigPolyTest COMMAND trigPolyTest)
 add_matlab_test(NAME examples/Pendulum/test/tvlqrRestartTest COMMAND tvlqrRestartTest)
