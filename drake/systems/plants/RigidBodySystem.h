@@ -492,7 +492,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
   const std::string& get_model_name() const;
 
   /// Returns the frame to which thi sensor is attached.
-  const std::shared_ptr<RigidBodyFrame> get_frame() const;
+  const RigidBodyFrame& get_frame() const;
 
   /// Returns the rigid body system to which this sensor attaches.
   const RigidBodySystem& get_rigid_body_system() const;
