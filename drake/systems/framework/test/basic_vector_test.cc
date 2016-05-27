@@ -47,6 +47,12 @@ GTEST_TEST(BasicVectorTest, FunctionalFormInitiallyUndefined) {
   EXPECT_TRUE(vec.get_value()[0].IsUndefined());
 }
 
+// Tests that the BasicVector has a size as soon as it is constructed.
+GTEST_TEST(BasicVectorTest, Size) {
+  BasicVector<int> vec(5);
+  EXPECT_EQ(5, vec.size());
+}
+
 // Tests that the BasicVector can be mutated in-place.
 GTEST_TEST(BasicVectorTest, Mutate) {
   BasicVector<int> vec(2);
