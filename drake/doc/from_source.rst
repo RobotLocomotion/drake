@@ -95,7 +95,7 @@ To include all symbols and get details about the actual compiler and linker comm
     BUILD_TYPE=Debug make VERBOSE=true
 
 
-Test your installation
+Test Your Installation
 ======================
 
 Start MATLAB, then at the MATLAB prompt do::
@@ -103,21 +103,27 @@ Start MATLAB, then at the MATLAB prompt do::
 	cd drake-distro/drake
 	addpath_drake
 
-Then `cd` into the examples directories and try some things out.  Here are a few fun ones to get you started:
+Then ``cd`` into the examples directories and try some things out.  Here are a few
+fun ones to get you started:
 
 * ``runLQR`` in the ``examples/CartPole`` directory
 * ``runLQR`` in the ``examples/Quadrotor2D`` directory
 * ``RimlessWheelPlant.run()`` in the ``examples/RimlessWheel`` directory
 * ``StateMachineControl.run()`` in the ``examples/PlanarMonopodHopper`` directory
 
-For an exhaustive test (which can take more than an hour to run if you have all of the backend solvers enabled), consider running the following from the system terminal (not the MATLAB terminal) command line::
+To run some unit tests, execute the following::
 
-	cd drake-distro/drake
-	make test
+    cd drake-distro/drake/pod-build
+    ctest -VV
 
-Note that this is slow -- it starts a fresh instance of MATLAB for every individual test -- but it is the most robust way to test for issues that can potentially crash MATLAB.  Currently, the make test script is setup to send a summary of the success / failures to our continuous integration server after it finishes all of the jobs.  This was our internal setup, and has been left there for now so that we can help you debug your installations.
+For more details on how to run Drake's unit tests, see the instructions
+here: :ref:`unit-test-instructions`.
 
-If you have problems, please check the :doc:`faq`.  If the solution is not there, or if you discover something missing from our installation instructions or lists of prerequisites, then please `file an issue <https://github.com/RobotLocomotion/drake/issues/new>`_ and label it as *installation*.
+If you have problems, please check the :doc:`faq`.  If the solution is not
+there, or if you discover something missing from our installation instructions
+or lists of prerequisites, then please
+`file an issue <https://github.com/RobotLocomotion/drake/issues/new>`_ and label
+it as *installation*.
 
 Stay up to date
 ===============

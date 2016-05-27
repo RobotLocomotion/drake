@@ -1,4 +1,3 @@
-
 add_matlab_test(NAME examples/CubicPolynomialExample.findFixedPointTest COMMAND CubicPolynomialExample.findFixedPointTest)
 add_matlab_test(NAME examples/CubicPolynomialExample.animate COMMAND CubicPolynomialExample.animate)
 add_matlab_test(NAME examples/CubicPolynomialExample.sosExample COMMAND CubicPolynomialExample.sosExample)
@@ -6,7 +5,6 @@ add_matlab_test(NAME examples/CubicPolynomialExample.run COMMAND CubicPolynomial
 add_matlab_test(NAME examples/DoubleIntegrator.runDircol COMMAND DoubleIntegrator.runDircol)
 add_matlab_test(NAME examples/DoubleIntegrator.runDirtran COMMAND DoubleIntegrator.runDirtran)
 add_matlab_test(NAME examples/DoubleIntegrator.runConvexDirtran COMMAND DoubleIntegrator.runConvexDirtran)
-
 
 add_matlab_test(NAME examples/GridWorld.runValueIteration COMMAND GridWorld.runValueIteration)
 add_matlab_test(NAME examples/GridWorld.drawBoard COMMAND GridWorld.drawBoard)
@@ -17,14 +15,13 @@ add_matlab_test(NAME examples/SineSys.runTaylor COMMAND SineSys.runTaylor)
 add_matlab_test(NAME examples/SineSys.runTrigPolyVectorFields COMMAND SineSys.runTrigPolyVectorFields)
 add_matlab_test(NAME examples/SineSys.run COMMAND SineSys.run)
 
-
 add_matlab_test(NAME examples/VanDerPol.runDircol COMMAND VanDerPol.runDircol)
 add_matlab_test(NAME examples/VanDerPol.phasePortrait COMMAND VanDerPol.phasePortrait)
 add_matlab_test(NAME examples/VanDerPol.run COMMAND VanDerPol.run)
 
 add_matlab_test(NAME examples/commonLyapunovForLinearSystems COMMAND commonLyapunovForLinearSystems)
 
-if (LONG_RUNNING_TESTS)
+if(LONG_RUNNING_TESTS)
   add_matlab_test(NAME examples/DoubleIntegrator.runValueIteration COMMAND DoubleIntegrator.runValueIteration PROPERTIES TIMEOUT 1500)
   add_matlab_test(NAME examples/VanDerPol.particleDemo COMMAND VanDerPol.particleDemo PROPERTIES TIMEOUT 1500)
 endif()

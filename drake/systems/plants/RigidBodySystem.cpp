@@ -399,7 +399,7 @@ RigidBodyMagnetometer::RigidBodyMagnetometer(
 RigidBodyAccelerometer::RigidBodyAccelerometer(
     RigidBodySystem const& sys, const std::string& name,
     const std::shared_ptr<RigidBodyFrame> frame)
-    : RigidBodySensor(sys, name), frame(frame), gravity_compensation(false) {}
+    : RigidBodySensor(sys, name), gravity_compensation(false), frame(frame) {}
 
 Eigen::VectorXd RigidBodyAccelerometer::output(
     const double& t, const KinematicsCache<double>& rigid_body_state,

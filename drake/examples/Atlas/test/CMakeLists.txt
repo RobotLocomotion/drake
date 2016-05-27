@@ -1,5 +1,4 @@
-
-if (LONG_RUNNING_TESTS)
+if(LONG_RUNNING_TESTS)
   add_matlab_test(NAME examples/Atlas/test/multiRobotTest COMMAND multiRobotTest PROPERTIES TIMEOUT 1500)
 
   # Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
@@ -11,8 +10,8 @@ if (LONG_RUNNING_TESTS)
   # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingStairs COMMAND runAtlasWalkingStairs PROPERTIES TIMEOUT 1500)
   # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingTestWraparound COMMAND runAtlasWalkingTestWraparound PROPERTIES TIMEOUT 1500)
   # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingTiltedBlocks COMMAND runAtlasWalkingTiltedBlocks PROPERTIES TIMEOUT 1500)
+  # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingDownStairs COMMAND runAtlasWalkingDownStairs PROPERTIES TIMEOUT 1500)
 
-  add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingDownStairs COMMAND runAtlasWalkingDownStairs PROPERTIES TIMEOUT 1500)
   add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingHeelSupport COMMAND runAtlasWalkingHeelSupport PROPERTIES TIMEOUT 1500)
 endif()
 

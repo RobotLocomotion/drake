@@ -1,4 +1,3 @@
-
 add_matlab_test(NAME examples/CartPole/CartPoleEnergyControl.run COMMAND CartPoleEnergyControl.run)
 add_matlab_test(NAME examples/CartPole/CartPoleEnergyShaping.run COMMAND CartPoleEnergyShaping.run)
 add_matlab_test(NAME examples/CartPole/runHinf COMMAND runHinf)

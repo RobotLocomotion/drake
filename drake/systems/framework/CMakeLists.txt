@@ -1,5 +1,5 @@
 # Source files used to build drakeSystemFramework.
-set(sources 
+set(sources
     basic_vector.cc
     cache.cc
     context.cc
@@ -27,7 +27,7 @@ set(installed_headers
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.
-set(private_headers 
+set(private_headers
     )
 
 add_library_with_exports(LIB_NAME drakeSystemFramework
