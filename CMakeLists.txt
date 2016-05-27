@@ -39,8 +39,7 @@ function(drake_forcebuild proj)
     COMMAND ${CMAKE_COMMAND} -E remove ${build_stamp_file}
     COMMENT "Forcing build step for '${proj}'"
     DEPENDEES build
-    ALWAYS 1
-    )
+    ALWAYS 1)
 endfunction()
 
 # Require Java at the super-build level so libbot cannot configure without finding Java
@@ -100,18 +99,18 @@ endif()
 
 ## The following projects are default ON when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
-CMAKE_DEPENDENT_OPTION(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB;matlab" OFF)
+cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB;matlab" OFF)
 
 ## The following projects are default OFF when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
 ## Some of them may also be hidden on Windows regardless of the status of MATLAB.
-CMAKE_DEPENDENT_OPTION(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-CMAKE_DEPENDENT_OPTION(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-CMAKE_DEPENDENT_OPTION(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-CMAKE_DEPENDENT_OPTION(WITH_MOSEK "convex optimization solver; free for academics" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-CMAKE_DEPENDENT_OPTION(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-CMAKE_DEPENDENT_OPTION(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-CMAKE_DEPENDENT_OPTION(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_MOSEK "convex optimization solver; free for academics" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 
 ###########################################
 # External Projects that are OFF by default
@@ -178,7 +177,7 @@ set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
 set(gtk_GIT_TAG 4730a7d3274a35280f1c2c6337eb182935c87fc2)
 set(gtk_IS_CMAKE_POD TRUE)
 set(gtk_IS_PUBLIC TRUE)
-set(gloptipoly_GIT_REPOSITORY git@github.com:RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
+set(gloptipoly_GIT_REPOSITORY git@github.com:RobotLocomotion/gloptipoly3.git)  # TODO: rename that repo
 set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gloptipoly_IS_PUBLIC FALSE)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
@@ -275,41 +274,41 @@ endif()
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
 foreach(proj IN ITEMS
-    cmake
-    textbook
-    eigen
-    googletest
-    gtk
-    lcm
-    bot_core_lcmtypes
-    libbot
-    bullet
-    spotless
-    director
-    signalscope
-    octomap
-    snopt
-    gurobi
-    mosek
-    iris
-    yalmip
-    gloptipoly
-    bertini
-    sedumi
-    avl
-    xfoil
-    meshconverters
-    swigmake
-    swig_matlab
-    yaml_cpp
-    nlopt
-    drake)
+  cmake
+  textbook
+  eigen
+  googletest
+  gtk
+  lcm
+  bot_core_lcmtypes
+  libbot
+  bullet
+  spotless
+  director
+  signalscope
+  octomap
+  snopt
+  gurobi
+  mosek
+  iris
+  yalmip
+  gloptipoly
+  bertini
+  sedumi
+  avl
+  xfoil
+  meshconverters
+  swigmake
+  swig_matlab
+  yaml_cpp
+  nlopt
+  drake)
   string(TOUPPER ${proj} proj_upper)
-  if( ${proj} STREQUAL "drake" OR
-      ${proj} STREQUAL "cmake" OR
-      WITH_${proj_upper} OR
-  (WITH_ALL_SUPPORTED_EXTERNALS AND DEFINED WITH_${proj_upper}) OR
-  (WITH_ALL_PUBLIC_EXTERNALS AND ${proj}_IS_PUBLIC AND DEFINED WITH_${proj_upper}) )
+  if(${proj} STREQUAL "drake" OR
+    ${proj} STREQUAL "cmake" OR
+    WITH_${proj_upper} OR
+    (WITH_ALL_SUPPORTED_EXTERNALS AND DEFINED WITH_${proj_upper}) OR
+    (WITH_ALL_PUBLIC_EXTERNALS AND ${proj}_IS_PUBLIC AND DEFINED WITH_${proj_upper}))
     list(APPEND EXTERNAL_PROJECTS ${proj})
   elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
     message(STATUS "removing unused project: ${proj}")
@@ -334,8 +333,7 @@ set(COMMON_CMAKE_ARGS
   -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}
   -DCMAKE_MODULE_LINKER_FLAGS=${CMAKE_MODULE_LINKER_FLAGS}
   -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-  -DCMAKE_STATIC_LINKER_FLAGS=${CMAKE_STATIC_LINKER_FLAGS}
-)
+  -DCMAKE_STATIC_LINKER_FLAGS=${CMAKE_STATIC_LINKER_FLAGS})
 
 set(EXTERNAL_SOURCE_DIRS)
 foreach(proj ${EXTERNAL_PROJECTS})
@@ -359,23 +357,21 @@ foreach(proj ${EXTERNAL_PROJECTS})
     #   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
     if(AUTO_UPDATE_EXTERNALS)
       ExternalProject_Add(download-${proj}
-          SOURCE_DIR ${${proj}_SOURCE_DIR}
-          GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
-          GIT_TAG ${${proj}_GIT_TAG}
-          CONFIGURE_COMMAND ""
-          BUILD_COMMAND ""
-          INSTALL_COMMAND ""
-          )
+        SOURCE_DIR ${${proj}_SOURCE_DIR}
+        GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
+        GIT_TAG ${${proj}_GIT_TAG}
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND "")
     else()
       ExternalProject_Add(download-${proj}
-          SOURCE_DIR ${${proj}_SOURCE_DIR}
-          GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
-          GIT_TAG ${${proj}_GIT_TAG}
-          UPDATE_COMMAND ""
-          CONFIGURE_COMMAND ""
-          BUILD_COMMAND ""
-          INSTALL_COMMAND ""
-          )
+        SOURCE_DIR ${${proj}_SOURCE_DIR}
+        GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
+        GIT_TAG ${${proj}_GIT_TAG}
+        UPDATE_COMMAND ""
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND "")
     endif()
 
     # now the actual project
@@ -389,19 +385,18 @@ foreach(proj ${EXTERNAL_PROJECTS})
       endif()
       set(PODS_VERBOSE_MAKEFILE "")
       if(CMAKE_VERBOSE_MAKEFILE)
-          set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
+        set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
       endif()
       ExternalProject_Add(${proj}
-          SOURCE_DIR ${${proj}_SOURCE_DIR}
-          DOWNLOAD_COMMAND ""
-          UPDATE_COMMAND ""
-          BINARY_DIR ${${proj}_BINARY_DIR}
-          DEPENDS download-${proj} ${deps}
-          ${COMMON_CMAKE_ARGS}
-          ${PODS_VERBOSE_MAKEFILE}
-          ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
-          ${${proj}_ADDITIONAL_BUILD_ARGS}
-          )
+        SOURCE_DIR ${${proj}_SOURCE_DIR}
+        DOWNLOAD_COMMAND ""
+        UPDATE_COMMAND ""
+        BINARY_DIR ${${proj}_BINARY_DIR}
+        DEPENDS download-${proj} ${deps}
+        ${COMMON_CMAKE_ARGS}
+        ${PODS_VERBOSE_MAKEFILE}
+        ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
+        ${${proj}_ADDITIONAL_BUILD_ARGS})
       drake_forcebuild(${proj})
     else() # not a CMake POD
       if(NOT ${proj}_BINARY_DIR)
@@ -414,34 +409,33 @@ foreach(proj ${EXTERNAL_PROJECTS})
         else() # then use the PODS gnu make system
           set(PODS_VERBOSE_MAKEFILE "")
           if(CMAKE_VERBOSE_MAKEFILE)
-              set(PODS_VERBOSE_MAKEFILE "V=1 VERBOSE=1")
+            set(PODS_VERBOSE_MAKEFILE "V=1 VERBOSE=1")
           endif()
-          set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} ${PODS_VERBOSE_MAKEFILE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> )
+          set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} ${PODS_VERBOSE_MAKEFILE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION>)
         endif()
       endif()
 
       ExternalProject_Add(${proj}
-          SOURCE_DIR ${${proj}_SOURCE_DIR}
-          BINARY_DIR ${${proj}_BINARY_DIR}
-          DOWNLOAD_COMMAND ""
-          UPDATE_COMMAND ""
-          CONFIGURE_COMMAND ""
-          BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
-          INSTALL_COMMAND ""
-          DEPENDS download-${proj} ${deps}
-          ${${proj}_ADDITIONAL_BUILD_ARGS}
-          )
+        SOURCE_DIR ${${proj}_SOURCE_DIR}
+        BINARY_DIR ${${proj}_BINARY_DIR}
+        DOWNLOAD_COMMAND ""
+        UPDATE_COMMAND ""
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
+        INSTALL_COMMAND ""
+        DEPENDS download-${proj} ${deps}
+        ${${proj}_ADDITIONAL_BUILD_ARGS})
       if(${proj}_BUILD_COMMAND)
         drake_forcebuild(${proj})
       endif()
-      #    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
+      # message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
     endif()
 
   else()
     message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
     set(PODS_VERBOSE_MAKEFILE "")
     if(CMAKE_VERBOSE_MAKEFILE)
-        set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
+      set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
     endif()
     if(POD_BUILD)
       set(drake_BINARY_DIR "${PROJECT_SOURCE_DIR}/drake/pod-build")
@@ -449,23 +443,22 @@ foreach(proj ${EXTERNAL_PROJECTS})
       set(drake_BINARY_DIR "${PROJECT_BINARY_DIR}/drake")
     endif()
     ExternalProject_Add(${proj}
-        SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
-        DOWNLOAD_COMMAND ""
-        UPDATE_COMMAND ""
-        BINARY_DIR ${drake_BINARY_DIR}
-        DEPENDS ${deps}
-        ${COMMON_CMAKE_ARGS}
-        ${PODS_VERBOSE_MAKEFILE}
-        ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
-        ${${proj}_ADDITIONAL_BUILD_ARGS}
-        )
+      SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
+      DOWNLOAD_COMMAND ""
+      UPDATE_COMMAND ""
+      BINARY_DIR ${drake_BINARY_DIR}
+      DEPENDS ${deps}
+      ${COMMON_CMAKE_ARGS}
+      ${PODS_VERBOSE_MAKEFILE}
+      ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
+      ${${proj}_ADDITIONAL_BUILD_ARGS})
     drake_forcebuild(${proj})
   endif()
 
 endforeach()
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/drake_external_source_dirs.txt ${EXTERNAL_SOURCE_DIRS})
 
-# todo: add a custom target for release_filelist
+# TODO: add a custom target for release_filelist
 
 add_custom_target(download-all)
 add_custom_target(clean-all)
@@ -476,8 +469,8 @@ foreach(proj ${EXTERNAL_PROJECTS})
     add_dependencies(download-all download-${proj})
     ExternalProject_Get_Property(download-${proj} SOURCE_DIR)
     add_custom_target(status-${proj}
-        COMMAND ${GIT_EXECUTABLE} status
-        WORKING_DIRECTORY ${SOURCE_DIR})
+      COMMAND ${GIT_EXECUTABLE} status
+      WORKING_DIRECTORY ${SOURCE_DIR})
     add_dependencies(status status-${proj})
   endif()
 
@@ -498,8 +491,8 @@ foreach(proj ${EXTERNAL_PROJECTS})
       add_dependencies(clean-all clean-${proj})
     else()
       add_custom_target(clean-${proj}
-          COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
-          WORKING_DIRECTORY ${SOURCE_DIR})
+        COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
+        WORKING_DIRECTORY ${SOURCE_DIR})
       add_dependencies(clean-all clean-${proj})
     endif()
   endif()
@@ -507,20 +500,18 @@ foreach(proj ${EXTERNAL_PROJECTS})
 endforeach()
 
 # process optional examples
-foreach(example IN ITEMS
-    LittleDog)
+foreach(example IN ITEMS LittleDog)
   string(TOUPPER ${example} example_upper)
   if(EXAMPLES_${example_upper})
     message(STATUS "Installation will include extra example: ${example}")
     ExternalProject_Add(download-${example}
-        DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
-        GIT_REPOSITORY ${${example}_GIT_REPOSITORY}
-        GIT_TAG ${${example}_GIT_TAG}
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND ""
-        )
+      DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
+      SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
+      GIT_REPOSITORY ${${example}_GIT_REPOSITORY}
+      GIT_TAG ${${example}_GIT_TAG}
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      INSTALL_COMMAND "")
     add_dependencies(drake download-${example})
     add_dependencies(download-all download-${example})
   endif()
@@ -531,7 +522,7 @@ add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
 
 ## grab and install precompiled snopt
 
-# todo: look for snopt_c
+# TODO: look for snopt_c
 if(snopt_c_FOUND OR WITH_SNOPT)
   set(WITH_SNOPT_PRECOMPILED OFF)
 endif()

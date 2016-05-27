@@ -24,14 +24,14 @@ endif()
 macro(add_ik_cpp)
   add_executable(${ARGV} ${ARGV}.cpp)
   target_link_libraries(${ARGV} drakeRigidBodyConstraint drakeIK)
-  add_test( NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
+  add_test(NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
 endmacro()
 
 macro(add_ik_gtest)
   add_executable(${ARGV} ${ARGV}.cpp)
   target_link_libraries(${ARGV} drakeRigidBodyConstraint drakeIK
     ${GTEST_BOTH_LIBRARIES})
-  add_test( NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
+  add_test(NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
 endmacro()
 
 if(gurobi_FOUND)
