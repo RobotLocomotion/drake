@@ -27,11 +27,11 @@ TEST_F(BasicStateVectorTest, Access) {
   EXPECT_EQ(kLength, state_vector_->size());
   EXPECT_EQ(1, state_vector_->GetAtIndex(0));
   EXPECT_EQ(2, state_vector_->GetAtIndex(1));
-  EXPECT_THROW(state_vector_->GetAtIndex(2), std::runtime_error);
+  EXPECT_THROW(state_vector_->GetAtIndex(2), std::out_of_range);
 }
 
 TEST_F(BasicStateVectorTest, InvalidAccess) {
-  EXPECT_THROW(state_vector_->GetAtIndex(kLength), std::runtime_error);
+  EXPECT_THROW(state_vector_->GetAtIndex(kLength), std::out_of_range);
 }
 
 TEST_F(BasicStateVectorTest, Mutation) {
@@ -50,7 +50,7 @@ TEST_F(BasicStateVectorTest, SetFromVector) {
 }
 
 TEST_F(BasicStateVectorTest, InvalidMutation) {
-  EXPECT_THROW(state_vector_->SetAtIndex(kLength, 42), std::runtime_error);
+  EXPECT_THROW(state_vector_->SetAtIndex(kLength, 42), std::out_of_range);
 }
 
 }  // namespace

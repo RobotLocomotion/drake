@@ -24,18 +24,18 @@ class BasicStateVector : public StateVectorInterface<T> {
 
   const T GetAtIndex(size_t index) const override {
     if (index >= size()) {
-      throw std::runtime_error("Index " + std::to_string(index) +
-                               "out of bounds for state vector of size " +
-                               std::to_string(size()));
+      throw std::out_of_range("Index " + std::to_string(index) +
+                              "out of bounds for state vector of size " +
+                              std::to_string(size()));
     }
     return vector_->get_value()[index];
   }
 
   void SetAtIndex(size_t index, const T& value) override {
     if (index >= size()) {
-      throw std::runtime_error("Index " + std::to_string(index) +
-                               "out of bounds for state vector of size " +
-                               std::to_string(size()));
+      throw std::out_of_range("Index " + std::to_string(index) +
+                              "out of bounds for state vector of size " +
+                              std::to_string(size()));
     }
     vector_->get_mutable_value()[index] = value;
   }

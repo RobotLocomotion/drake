@@ -24,14 +24,14 @@ class StateVectorInterface {
   virtual size_t size() const = 0;
 
   /// Returns the element at the given index in the vector. Throws
-  /// std::runtime_error if the index is >= size().
+  /// std::out_of_range if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
   virtual const T GetAtIndex(size_t index) const = 0;
 
   /// Replaces the state at the given index with the value. Throws
-  /// std::runtime_error if the index is >= size().
+  /// std::out_of_range if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
