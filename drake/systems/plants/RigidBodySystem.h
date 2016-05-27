@@ -471,8 +471,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
    * @param[in] frame The frame within the rigid body system's rigid body tree
    * to which the sensor is attached.
    */
-  RigidBodySensor(RigidBodySystem const& sys, const std::string& name,
-    const std::shared_ptr<RigidBodyFrame> frame)
+  RigidBodySensor(const RigidBodySystem& sys, const std::string& name,
+    std::shared_ptr<RigidBodyFrame> frame)
       : sys_(sys), name_(name), frame_(frame) {}
 
   virtual ~RigidBodySensor() {}
@@ -485,30 +485,26 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const = 0;
 
-  /**
-   * Returns the name of the sensor.
-   */
+  /// Returns the name of the sensor.
   const std::string& get_name() const { return name_; }
 
-  /**
-   * Returns the name of the model (i.e., robot) that owns this sensor.
-   */
+  /// Returns the name of the model (i.e., robot) that owns this sensor.
   const std::string& get_model_name() const;
 
- protected:
-  /**
-   * The rigid body tree to which the sensor is attached.
-   */
-  RigidBodySystem const& sys_;
+  /// Returns the frame to which thi sensor is attached.
+  const std::shared_ptr<RigidBodyFrame> get_frame() const;
 
-  /**
-   * The sensor's name.
-   */
-  std::string name_;
+  /// Returns the rigid body system to which this sensor attaches.
+  const RigidBodySystem& get_rigid_body_system() const;
 
-  /**
-   * The frame within the rigid body tree to which this sensor is attached.
-   */
+ private:
+  /// The rigid body tree to which the sensor is attached.
+  const RigidBodySystem& sys_;
+
+  /// The sensor's name.
+  const std::string name_;
+
+  /// The frame within the rigid body tree to which this sensor is attached.
   const std::shared_ptr<RigidBodyFrame> frame_;
 };
 
