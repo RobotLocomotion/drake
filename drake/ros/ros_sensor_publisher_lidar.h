@@ -92,10 +92,10 @@ class SensorPublisherLidar {
         // "drake/lidar/[name of robot]/[name of sensor]/".
         // It then creates a sensor_msgs::LaserScan message for each publisher.
 
-        // TODO(liangfok): Replace model name with the actual model name once
+        // TODO(liangfok): Replace "prius_1" with the actual model name once
         // #2462 is merged. See:
         // https://github.com/RobotLocomotion/drake/pull/2462
-        const std::string& model_name = "model_name";
+        const std::string& model_name = "prius_1";
           // depth_sensor->frame_->body->model_name();
 
         const std::string key = model_name + "_" + depth_sensor->get_name();
@@ -103,7 +103,7 @@ class SensorPublisherLidar {
         // Creates the ROS topic publisher for the current LIDAR sensor.
         if (lidar_publishers_.find(key) == lidar_publishers_.end()) {
 
-          const std::string topic_name = "drake/lidar/" + model_name + "/" +
+          const std::string topic_name = "drake/" + model_name + "/lidar/" +
             depth_sensor->get_name();
 
           lidar_publishers_.insert(std::pair<std::string, ::ros::Publisher>(
@@ -221,7 +221,7 @@ class SensorPublisherLidar {
         // TODO(liangfok): Replace model name with the actual model name once
         // #2462 is merged. See:
         // https://github.com/RobotLocomotion/drake/pull/2462
-        const std::string& model_name = "model_name";
+        const std::string& model_name = "prius_1";
           // depth_sensor->frame_->body->model_name();
 
         const std::string key = model_name + "_" + depth_sensor->get_name();

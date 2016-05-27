@@ -92,7 +92,7 @@ class SensorPublisherOdometry {
       const std::string& key = rigid_body->model_name();
 
       if (odometry_messages_.find(key) == odometry_messages_.end()) {
-        const std::string topic_name = "drake/odometry/" + key;
+        const std::string topic_name = "drake/" + key + "/odometry";
 
         odometry_publishers_.insert(std::pair<std::string, ::ros::Publisher>(
           key, nh.advertise<nav_msgs::Odometry>(topic_name, 1)));
@@ -103,8 +103,9 @@ class SensorPublisherOdometry {
         // TODO(liangfok): Replace model name with the actual model name once
         // #2462 is merged. See:
         // https://github.com/RobotLocomotion/drake/pull/2462
-        message->child_frame_id = std::string("model_name") + std::string("_")
-          + rigid_body->name();
+        // message->child_frame_id = std::string("model_name") + std::string("_")
+        //   + rigid_body->name();
+        message->child_frame_id = rigid_body->name();
 
         odometry_messages_.insert(std::pair<std::string,
           std::unique_ptr<nav_msgs::Odometry>>(
@@ -132,17 +133,20 @@ class SensorPublisherOdometry {
 
     previous_send_time_ = current_time;
 
+    const std::shared_ptr<RigidBodyTree>& rigid_body_tree = rigid_body_system_->getRigidBodyTree();
+
     // The input vector u contains the change in the model state values.
     // The following code obtains the absolute model state values.
     auto uvec = Drake::toEigen(u);
-    auto q = uvec.head(rigid_body_system_->getRigidBodyTree()->number_of_positions());
-    KinematicsCache<double> cache = rigid_body_system_->getRigidBodyTree()->doKinematics(q);
+    auto q = uvec.head(rigid_body_tree->number_of_positions());   // position
+    auto v = uvec.tail(rigid_body_tree->number_of_velocities());  // velocity
+    KinematicsCache<double> cache = rigid_body_tree->doKinematics(q, v);
 
     // Obtains a reference to the world link in the rigid body tree.
-    const RigidBody& world = rigid_body_system_->getRigidBodyTree()->world();
+    const RigidBody& world = rigid_body_tree->world();
 
     // Publishes the transform for each rigid body in the rigid body tree.
-    for (auto const& rigid_body : rigid_body_system_->getRigidBodyTree()->bodies) {
+    for (auto const& rigid_body : rigid_body_tree->bodies) {
 
       // Skips the current rigid body if it does not have the world as the
       // parent.
@@ -179,25 +183,36 @@ class SensorPublisherOdometry {
 
       nav_msgs::Odometry *message = message_in_map->second.get();
 
-      // TODO!
+      // Updates the odometry information in the odometry message.
+      auto transform = rigid_body_tree->relativeTransform(cache,
+          rigid_body_tree->findLinkId(rigid_body->parent->name()),
+          rigid_body_tree->findLinkId(rigid_body->name()));
+      auto translation = transform.translation();
+      auto quat = rotmat2quat(transform.linear());
 
-      // Updates the transform only if the joint is not fixed.
-      // if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
-      //   auto transform = rigid_body_tree_->relativeTransform(
-      //       cache, rigid_body_tree_->findLinkId(rigid_body->parent->name()),
-      //       rigid_body_tree_->findLinkId(rigid_body->name()));
-      //   auto translation = transform.translation();
-      //   auto quat = rotmat2quat(transform.linear());
+      // Saves the robot's position and orientation in the world.
+      message->pose.pose.position.x = translation(0);
+      message->pose.pose.position.y = translation(1);
+      message->pose.pose.position.z = translation(2);
 
-      //   message->transform.translation.x = translation(0);
-      //   message->transform.translation.y = translation(1);
-      //   message->transform.translation.z = translation(2);
+      message->pose.pose.orientation.w = quat(0);
+      message->pose.pose.orientation.x = quat(1);
+      message->pose.pose.orientation.y = quat(2);
+      message->pose.pose.orientation.z = quat(3);
 
-      //   message->transform.rotation.w = quat(0);
-      //   message->transform.rotation.x = quat(1);
-      //   message->transform.rotation.y = quat(2);
-      //   message->transform.rotation.z = quat(3);
-      // }
+      // Saves the robot's linear and angular velocities in the world.
+      auto twist = rigid_body_tree->relativeTwist(cache,
+          rigid_body_tree->findLinkId(rigid_body->parent->name()),
+          rigid_body_tree->findLinkId(rigid_body->name()),
+          rigid_body_tree->findLinkId(RigidBodyTree::kWorldLinkName));
+
+      message->twist.twist.linear.x = twist(0);
+      message->twist.twist.linear.y = twist(1);
+      message->twist.twist.linear.z = twist(2);
+
+      message->twist.twist.angular.x = twist(3);
+      message->twist.twist.angular.y = twist(4);
+      message->twist.twist.angular.z = twist(5);
 
       // Updates the time stamp in the transform message.
       message->header.stamp = current_time;
