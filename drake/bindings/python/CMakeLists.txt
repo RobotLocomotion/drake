@@ -1,4 +1,3 @@
-
 pods_install_python_packages(${CMAKE_CURRENT_SOURCE_DIR}/pydrake)
 
 file(RELATIVE_PATH path_from_python_install_to_drake ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages/pydrake ${CMAKE_CURRENT_SOURCE_DIR}/../..)
@@ -10,9 +9,9 @@ function(add_python_test module_name)
   add_test(NAME test_python_${module_name}
     COMMAND ${PYTHON_EXECUTABLE} -m unittest ${module_name}
     WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
-endfunction(add_python_test)
+endfunction()
 
-if (snopt_c_FOUND)
+if(snopt_c_FOUND)
   add_python_test(pydrake.test.testRBTIK)
   add_python_test(pydrake.test.testPR2IK)
 endif()

@@ -1,4 +1,3 @@
-
 add_matlab_test(NAME examples/SimpleDoublePendulum/DoublePendPlant.run COMMAND DoublePendPlant.run)
 add_matlab_test(NAME examples/SimpleDoublePendulum/runEndPointJac COMMAND runEndPointJac)
 add_matlab_test(NAME examples/SimpleDoublePendulum/runPDtest COMMAND runPDtest)
