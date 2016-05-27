@@ -29,8 +29,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
   size_t size() const override;
   const double GetAtIndex(size_t index) const override;
   void SetAtIndex(size_t index, const double& value) override;
-  void SetFromVector(
-      const Eigen::VectorBlock<systems::VectorX<double>>& value) override;
+  void SetFromVector(const systems::VectorX<double>& value) override;
 
   /// Returns the position of the mass in meters, where zero is the point
   /// where the spring exerts no force.

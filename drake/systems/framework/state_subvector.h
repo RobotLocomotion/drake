@@ -61,7 +61,7 @@ class StateSubvector : public StateVectorInterface<T> {
     vector_->SetAtIndex(first_element_ + index, value);
   }
 
-  virtual void SetFromVector(const Eigen::VectorBlock<VectorX<T>>& value) {
+  virtual void SetFromVector(const VectorX<T>& value) {
     for (int i = 0; i < value.rows(); ++i) {
       SetAtIndex(i, value[i]);
     }

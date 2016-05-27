@@ -41,10 +41,10 @@ TEST_F(BasicStateVectorTest, Mutation) {
 }
 
 TEST_F(BasicStateVectorTest, SetFromVector) {
-  Eigen::VectorXi next_value(kLength);
+  Eigen::Vector2i next_value(kLength);
   next_value << 3, 4;
 
-  state_vector_->SetFromVector(next_value.head(kLength));
+  state_vector_->SetFromVector(next_value);
   EXPECT_EQ(3, state_vector_->GetAtIndex(0));
   EXPECT_EQ(4, state_vector_->GetAtIndex(1));
 }

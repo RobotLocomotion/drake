@@ -37,8 +37,7 @@ void SpringMassStateVector::SetAtIndex(size_t index, const double& value) {
   get_mutable_value()[index] = value;
 }
 
-void SpringMassStateVector::SetFromVector(
-    const Eigen::VectorBlock<VectorX<double>>& value) {
+void SpringMassStateVector::SetFromVector(const VectorX<double>& value) {
   set_value(value);
 }
 

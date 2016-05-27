@@ -42,7 +42,7 @@ class StateVectorInterface {
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.
-  virtual void SetFromVector(const Eigen::VectorBlock<VectorX<T>>& value) = 0;
+  virtual void SetFromVector(const VectorX<T>& value) = 0;
 
  protected:
   StateVectorInterface() {}

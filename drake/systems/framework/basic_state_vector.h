@@ -40,7 +40,7 @@ class BasicStateVector : public StateVectorInterface<T> {
     vector_->get_mutable_value()[index] = value;
   }
 
-  void SetFromVector(const Eigen::VectorBlock<VectorX<T>>& value) override {
+  void SetFromVector(const VectorX<T>& value) override {
     vector_->set_value(value);
   }
 
