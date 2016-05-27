@@ -1579,7 +1579,7 @@ void inverseKinSnoptBackend(
       // memcpy(Flow+nf_cum, Cmin_array[j].data(), sizeof(double)*nc_array[j]);
       // memcpy(Fupp+nf_cum, Cmax_array[j].data(), sizeof(double)*nc_array[j]);
       if (debug_mode) {
-        for (int k = 0; k < Cname_array[j].size(); k++) {
+        for (int k = 0; k < static_cast<int>(Cname_array[j].size()); k++) {
           Fname[nf_cum + k] = Cname_array[j][k];
         }
       }

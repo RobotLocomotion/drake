@@ -165,7 +165,7 @@ bool isConvertibleFromMex(
     return false;
   }
 
-  auto num_derivs = mxGetN(df);
+  Eigen::Index num_derivs = mxGetN(df);
   if ((DerType::MaxRowsAtCompileTime != Dynamic &&
        num_derivs > DerType::MaxRowsAtCompileTime) ||
       (DerType::RowsAtCompileTime != Dynamic &&
