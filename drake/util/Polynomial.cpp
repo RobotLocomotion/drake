@@ -243,7 +243,8 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::derivative(
 
   for (typename vector<Monomial>::const_iterator iter = monomials.begin();
        iter != monomials.end(); iter++) {
-    if (!iter->terms.empty() && iter->terms[0].power >= derivative_order) {
+    if (!iter->terms.empty() && (
+            iter->terms[0].power >= static_cast<PowerType>(derivative_order))) {
       Monomial m = *iter;
       for (unsigned int k = 0; k < derivative_order;
            k++) {  // take the remaining derivatives
@@ -544,7 +545,7 @@ string Polynomial<CoefficientType>::idToVariableName(const VarType id) {
                                                    (int)(kNameLength - 1));
   char name[kNameLength + 1];
   int j = 0;
-  for (int i = 0; i < kNameLength; i++) {
+  for (int i = 0; i < static_cast<int>(kNameLength); i++) {
     unsigned int name_ind = (name_part / multiplier) % (kNumNameChars + 1);
     if (name_ind > 0) name[j++] = kNameChars[name_ind - 1];
     multiplier /= kNumNameChars + 1;
