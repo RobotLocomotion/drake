@@ -75,7 +75,7 @@ void findContactIndexes(VectorXi const &idxList, const size_t bodyIdx,
   size_t m = idxList.size();
   contactIdx.clear();
   for (size_t i = 0; i < m; i++) {
-    if (idxList[i] == bodyIdx) {
+    if (idxList[i] == static_cast<int>(bodyIdx)) {
       contactIdx.push_back(i);  // zero-based index
     }
   }
