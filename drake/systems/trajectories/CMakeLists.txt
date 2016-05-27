@@ -1,4 +1,4 @@
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   add_mex(PPTmex PPTmex.cpp)
   add_mex(ExpPlusPPTrajectoryEvalmex ExpPlusPPTrajectoryEvalmex.cpp)
 endif()

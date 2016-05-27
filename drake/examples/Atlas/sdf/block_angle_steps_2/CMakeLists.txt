@@ -1,5 +1,5 @@
 set(MODEL_NAME block_level_steps)
-set (files
+set(files
   model.sdf
   model.config
 )

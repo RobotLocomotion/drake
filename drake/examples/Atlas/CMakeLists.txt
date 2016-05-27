@@ -20,7 +20,7 @@ add_matlab_test(NAME examples/Atlas/runCOMFixedPointSearch COMMAND runCOMFixedPo
 
 add_matlab_test(NAME examples/Atlas/runRobotiqPDControl COMMAND runRobotiqPDControl)
 
-if (LONG_RUNNING_TESTS)
+if(LONG_RUNNING_TESTS)
   add_matlab_test(NAME examples/Atlas/runAtlasBalancing COMMAND runAtlasBalancing PROPERTIES TIMEOUT 1500)
   add_matlab_test(NAME examples/Atlas/runAtlasBalancingPerturb COMMAND runAtlasBalancingPerturb PROPERTIES TIMEOUT 1500)
   add_matlab_test(NAME examples/Atlas/runAtlasBalancingWithContactSensor COMMAND runAtlasBalancingWithContactSensor PROPERTIES TIMEOUT 1500)

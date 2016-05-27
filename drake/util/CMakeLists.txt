@@ -1,11 +1,11 @@
-if (simulink_FOUND)
+if(simulink_FOUND)
   add_mex(realtime realtime.cpp)
 endif()
 
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
-if (LCM_FOUND AND MATLAB_FOUND)
-  if (simulink_FOUND)
+if(LCM_FOUND AND MATLAB_FOUND)
+  if(simulink_FOUND)
     add_mex(lcmLogger lcmLogger.cpp)
     pods_use_pkg_config_packages(lcmLogger lcm)
   endif()
@@ -30,7 +30,7 @@ pods_install_pkg_config_file(drake-util
   REQUIRES
   VERSION 0.0.1)
 
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
   target_link_libraries(drakeMexUtil drakePolynomial)
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
@@ -44,7 +44,7 @@ if (MATLAB_FOUND)
     VERSION 0.0.1)
 endif()
 
-if (LCM_FOUND)
+if(LCM_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
   # we only need methods that are templated and defined in the header
 
@@ -77,7 +77,7 @@ pods_install_pkg_config_file(drake-convex-hull
   REQUIRES
   VERSION 0.0.1)
 
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
   target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
@@ -108,7 +108,7 @@ endif()
 add_subdirectory(test)
 
 # Mex debugging tools:
-if (0) #NOT WIN32)
+if(0) #NOT WIN32)
 add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
 target_link_libraries(drake_debug_mex drakeMexUtil -ldl)
 
@@ -134,7 +134,7 @@ file(WRITE ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
      "\n"
     )
 
-if (APPLE)
+if(APPLE)
   file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
        "export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:${MATLAB_ROOT}/bin/${MATLAB_CPU}\n"
        "export DYLD_FORCE_FLAT_NAMESPACE=1\n"

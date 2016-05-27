@@ -24,13 +24,13 @@ option(RANDOMIZE_MATLAB_TESTS "every matlab unit is started with a new random se
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #cmake_policy(SET CMP0042 NEW)
-if (POLICY CMP0054)
+if(POLICY CMP0054)
   cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
 endif()
 
 # Set a consistent MACOSX_RPATH default across all CMake versions.
 # When CMake 3.0.0 is required, remove this block (see CMP0042).
-if (NOT DEFINED CMAKE_MACOSX_RPATH)
+if(NOT DEFINED CMAKE_MACOSX_RPATH)
   set(CMAKE_MACOSX_RPATH ON)
 endif()
 
@@ -79,8 +79,8 @@ endfunction()
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
     message(FATAL_ERROR "GCC version must be at least 4.7")
   endif()
 
@@ -90,22 +90,22 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 
   # TODO(#2372) These are warnings that we can't handle yet.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
   endif()
 
-  if (APPLE)  # this was a step towards getting things to work with
+  if(APPLE)  # this was a step towards getting things to work with
   #   clang on mac, but ultimately we didn't get there...   (but I would
   #   be worried about sharing pointers between objects compiled against
   #   different c++ libs, so removing it)
   #    # http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
   endif()
-elseif (MSVC)
-   if (NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 19.00.00)
+elseif(MSVC)
+   if(NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 19.00.00)
      # version number decoder ring at https://en.wikipedia.org/wiki/Visual_C%2B%2B
      message(FATAL_ERROR "requires MS VC++ 14.0 or greater (Visual Studio >= 2015).  download for free at http://visualstudio.com")
    endif()
@@ -150,7 +150,7 @@ include_directories(BEFORE ${generated_dir})
 
 # set up matlab build
 include(cmake/mex.cmake)
-if (DISABLE_MATLAB)
+if(DISABLE_MATLAB)
   message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
 else()
   # Search for MATLAB and configure various MEX options.
@@ -162,7 +162,7 @@ else()
           find_package(Matlab COMPONENTS MAIN_PROGRAM)
         endif()
 
-endif (DISABLE_MATLAB)
+endif(DISABLE_MATLAB)
 
 # add ctest for a matlab string
 # add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
@@ -181,7 +181,7 @@ function(add_matlab_test)
   cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in matlab
-  if (NOT parsed_args_WORKING_DIRECTORY)
+  if(NOT parsed_args_WORKING_DIRECTORY)
     set(parsed_args_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
 
@@ -190,7 +190,7 @@ function(add_matlab_test)
   set(cmd_to_run_before_test "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
   set(custom_Matlab_test_command "try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
 
-  if (RANDOMIZE_MATLAB_TESTS)
+  if(RANDOMIZE_MATLAB_TESTS)
     set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
   endif()
 
@@ -201,7 +201,7 @@ function(add_matlab_test)
     WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY}
     TIMEOUT -1) # use an infinite timeout and rely on add_test ctest timeout
 
-  if (parsed_args_PROPERTIES)
+  if(parsed_args_PROPERTIES)
     set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
   endif()
 endfunction()
@@ -214,7 +214,7 @@ include_directories(${GTEST_INCLUDE_DIRS})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_FAIL=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_SUCCEED=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
-if (WIN32)
+if(WIN32)
   # The following compiler flag is needed to support parameterized Google tests on Windows.
   SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
 endif()
@@ -227,7 +227,7 @@ include(cmake/procman.cmake)  # helper script for writing procman files
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
 
-if (LCM_FOUND)
+if(LCM_FOUND)
   #add_subdirectory(lcmtypes)
   lcmtypes_build()
   pods_use_pkg_config_classpath(lcm-java)
@@ -243,13 +243,13 @@ if (LCM_FOUND)
   # add lcmgl
   # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
   execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
-  if (NOT LCMGL_BUILD_DIR)
+  if(NOT LCMGL_BUILD_DIR)
      message(WARNING "\n\n----- WARNING: bot2-lcmgl not found")
-  else ()
+  else()
     string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
     find_jar(LCMGL_JAR_FILE bot2-lcmgl
       PATHS "${LCMGL_BUILD_DIR}/share/java/")
-    if (NOT LCMGL_JAR_FILE)
+    if(NOT LCMGL_JAR_FILE)
        message(FATAL_ERROR "\n\n----- ERROR: bot2-lcmgl not found")
     else()
        message(STATUS "Found bot2-lcmgl")
@@ -271,12 +271,12 @@ pods_install_pkg_config_file(drake-java
 
 pods_find_pkg_config(eigen3 3.2.92)
 
-if (eigen3_FOUND)
+if(eigen3_FOUND)
    pods_use_pkg_config_includes( eigen3 )
 else()
    # then use the traditional approach to finding Eigen3
    find_package( Eigen3 3.2.92 )
-   if (EIGEN3_FOUND)
+   if(EIGEN3_FOUND)
       set(eigen3_FOUND 1)
       include_directories( ${EIGEN3_INCLUDE_DIR} )
    else()
@@ -339,7 +339,7 @@ find_program(ffmpeg ffmpeg)
 # write some additional information to the CMake cache
 set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
 
-if (APPLE)
+if(APPLE)
   set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
   set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
   mark_as_advanced(DYLD_LIBRARY_PATH)
@@ -349,7 +349,7 @@ else()
   mark_as_advanced(LD_LIBRARY_PATH)
 endif()
 
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot

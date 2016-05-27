@@ -3,17 +3,17 @@ project(drake-superbuild)
 
 include(CTest)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
   message(FATAL_ERROR "GCC version must be at least 4.9")
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
   message(FATAL_ERROR "Clang version must be at least 3.7")
 endif()
 
 # PODs out-of-source build logic
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   if(POD_BUILD)
     find_file(_build_dir build PATHS ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.. ${PROJECT_SOURCE_DIR}/../.. ${PROJECT_SOURCE_DIR}/../../.. ${PROJECT_SOURCE_DIR}/../../../..)
-    if (_build_dir)
+    if(_build_dir)
       set(CMAKE_INSTALL_PREFIX "${_build_dir}" CACHE STRING
         "Prefix for installation of sub-packages (note: required during build!)" FORCE)
     else()
@@ -70,7 +70,7 @@ option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ 
 option(WITH_BULLET     "used for collision detection"   ON)
 option(WITH_LCM     "interprocess communications protocol for visualizers, etc" ON)
 option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
-if (WIN32)
+if(WIN32)
   option(WITH_GTK     "precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
 else()
   option(WITH_DIRECTOR  "vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
@@ -87,16 +87,16 @@ option(WITH_YAML_CPP "library for reading and writing yaml configuration files" 
 ##############################################################
 include(CMakeDependentOption)
 option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
-if (DISABLE_MATLAB)
+if(DISABLE_MATLAB)
   message(STATUS "MATLAB is disabled.")
 else()
   find_program(matlab matlab)
-  if (matlab)
+  if(matlab)
     message(STATUS "Found MATLAB at " ${matlab})
-  else ()
+  else()
     message(STATUS "Looked for MATLAB but could not find it.")
   endif(matlab)
-endif (DISABLE_MATLAB)
+endif(DISABLE_MATLAB)
 
 ## The following projects are default ON when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
@@ -118,7 +118,7 @@ CMAKE_DEPENDENT_OPTION(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficie
 ###########################################
 option(WITH_SNOPT     "nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
 
-if (NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
+if(NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
   option(WITH_AVL      "use w/ AVL to compute aerodynamic coefficients for airfoils")
   option(WITH_GUROBI     "convex/integer optimization solver; free for academics (will prompt you for login bits)")
   option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
@@ -127,9 +127,9 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
   option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 endif()
 
-if (WITH_TEXTBOOK OR WITH_ALL_SUPPORTED_EXTERNALS OR WITH_ALL_PUBLIC_EXTERNALS)
+if(WITH_TEXTBOOK OR WITH_ALL_SUPPORTED_EXTERNALS OR WITH_ALL_PUBLIC_EXTERNALS)
   find_package(PythonInterp)
-  if (NOT PYTHON_EXECUTABLE)
+  if(NOT PYTHON_EXECUTABLE)
     message(FATAL_ERROR "could not find python, which is required for the the textbook examples")
   endif()
 endif()
@@ -248,7 +248,7 @@ set(yaml_cpp_GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git)
 set(yaml_cpp_GIT_TAG 57805dfd6a741e55477ea8d4d5b3b6f0272d1f0e)
 set(yaml_cpp_IS_PUBLIC TRUE)
 set(yaml_cpp_IS_CMAKE_POD TRUE)
-if (APPLE OR WIN32)
+if(APPLE OR WIN32)
   set(yaml_cpp_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=OFF)
 else()
   set(yaml_cpp_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON)
@@ -262,10 +262,10 @@ set(LittleDog_GIT_REPOSITORY https://github.com/RobotLocomotion/LittleDog.git)
 set(LittleDog_GIT_TAG b1e2740a183afdcb8c27bbdee461b8ada1c3550e)
 
 find_program(MAKE_EXECUTABLE make)
-if (NOT MAKE_EXECUTABLE)
+if(NOT MAKE_EXECUTABLE)
   message(WARNING "couldn't find gnu make")
 endif()
-if (${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
   set(PODS_MAKE_COMMAND "$(MAKE)")   # so we can pass through commandline arguments.
 else()
   set(PODS_MAKE_COMMAND ${MAKE_EXECUTABLE})
@@ -305,7 +305,7 @@ foreach(proj IN ITEMS
     nlopt
     drake)
   string(TOUPPER ${proj} proj_upper)
-  if ( ${proj} STREQUAL "drake" OR
+  if( ${proj} STREQUAL "drake" OR
       ${proj} STREQUAL "cmake" OR
       WITH_${proj_upper} OR
   (WITH_ALL_SUPPORTED_EXTERNALS AND DEFINED WITH_${proj_upper}) OR
@@ -313,7 +313,7 @@ foreach(proj IN ITEMS
     list(APPEND EXTERNAL_PROJECTS ${proj})
   elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
     message(STATUS "removing unused project: ${proj}")
-    if (NOT ${proj}_NO_BUILD)
+    if(NOT ${proj}_NO_BUILD)
       execute_process(COMMAND ${MAKE_EXECUTABLE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
           WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
     endif()
@@ -338,17 +338,17 @@ set(COMMON_CMAKE_ARGS
 )
 
 set(EXTERNAL_SOURCE_DIRS)
-foreach (proj ${EXTERNAL_PROJECTS})
+foreach(proj ${EXTERNAL_PROJECTS})
   set(deps)
   foreach(dep ${${proj}_dependencies})
     list(FIND EXTERNAL_PROJECTS ${dep} find_result)
-    if (${dep} STREQUAL "drake" OR NOT find_result EQUAL -1)
+    if(${dep} STREQUAL "drake" OR NOT find_result EQUAL -1)
       list(APPEND deps ${dep})
     endif()
   endforeach()
 
-  if (NOT ${proj} STREQUAL "drake")
-    if (NOT ${proj}_SOURCE_DIR)
+  if(NOT ${proj} STREQUAL "drake")
+    if(NOT ${proj}_SOURCE_DIR)
       set(${proj}_SOURCE_DIR "${PROJECT_SOURCE_DIR}/externals/${proj}")
     endif()
     set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
@@ -357,7 +357,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
     # separate download target so I can make the download-all custom command as recommended in:
     #   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
-    if (AUTO_UPDATE_EXTERNALS)
+    if(AUTO_UPDATE_EXTERNALS)
       ExternalProject_Add(download-${proj}
           SOURCE_DIR ${${proj}_SOURCE_DIR}
           GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
@@ -379,8 +379,8 @@ foreach (proj ${EXTERNAL_PROJECTS})
     endif()
 
     # now the actual project
-    if (${proj}_IS_CMAKE_POD)
-      if (NOT ${proj}_BINARY_DIR)
+    if(${proj}_IS_CMAKE_POD)
+      if(NOT ${proj}_BINARY_DIR)
         if(POD_BUILD)
           set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}/pod-build")
         else()
@@ -388,7 +388,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
         endif()
       endif()
       set(PODS_VERBOSE_MAKEFILE "")
-      if (CMAKE_VERBOSE_MAKEFILE)
+      if(CMAKE_VERBOSE_MAKEFILE)
           set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
       endif()
       ExternalProject_Add(${proj}
@@ -404,16 +404,16 @@ foreach (proj ${EXTERNAL_PROJECTS})
           )
       drake_forcebuild(${proj})
     else() # not a CMake POD
-      if (NOT ${proj}_BINARY_DIR)
+      if(NOT ${proj}_BINARY_DIR)
         # In-source build for non-CMake projects.
         set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}")
       endif()
-      if (NOT DEFINED ${proj}_BUILD_COMMAND)
+      if(NOT DEFINED ${proj}_BUILD_COMMAND)
         if(${proj}_NO_BUILD)
           set(${proj}_BUILD_COMMAND "")
         else() # then use the PODS gnu make system
           set(PODS_VERBOSE_MAKEFILE "")
-          if (CMAKE_VERBOSE_MAKEFILE)
+          if(CMAKE_VERBOSE_MAKEFILE)
               set(PODS_VERBOSE_MAKEFILE "V=1 VERBOSE=1")
           endif()
           set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} ${PODS_VERBOSE_MAKEFILE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> )
@@ -431,7 +431,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
           DEPENDS download-${proj} ${deps}
           ${${proj}_ADDITIONAL_BUILD_ARGS}
           )
-      if (${proj}_BUILD_COMMAND)
+      if(${proj}_BUILD_COMMAND)
         drake_forcebuild(${proj})
       endif()
       #    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
@@ -440,7 +440,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
   else()
     message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
     set(PODS_VERBOSE_MAKEFILE "")
-    if (CMAKE_VERBOSE_MAKEFILE)
+    if(CMAKE_VERBOSE_MAKEFILE)
         set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
     endif()
     if(POD_BUILD)
@@ -471,8 +471,8 @@ add_custom_target(download-all)
 add_custom_target(clean-all)
 add_custom_target(status)
 set(PROJECT_LIST)
-foreach (proj ${EXTERNAL_PROJECTS})
-  if (NOT ${proj} STREQUAL "drake")
+foreach(proj ${EXTERNAL_PROJECTS})
+  if(NOT ${proj} STREQUAL "drake")
     add_dependencies(download-all download-${proj})
     ExternalProject_Get_Property(download-${proj} SOURCE_DIR)
     add_custom_target(status-${proj}
@@ -483,11 +483,11 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
   ExternalProject_Get_Property(${proj} SOURCE_DIR)
   # Handle pods-style 'make clean' cleaning of external projects/pods
-  if (NOT ${proj}_NO_BUILD)
-    if (${proj}_IS_CMAKE_POD)
+  if(NOT ${proj}_NO_BUILD)
+    if(${proj}_IS_CMAKE_POD)
       ExternalProject_Get_Property(${proj} BINARY_DIR)
       # if _NO_CLEAN is set, don't attempt to run `make clean`, just wipe the build folder
-      if (${proj}_NO_CLEAN)
+      if(${proj}_NO_CLEAN)
         add_custom_target(clean-${proj}
           COMMAND ${CMAKE_COMMAND} -E remove_directory ${BINARY_DIR})
       else()
@@ -507,10 +507,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 endforeach()
 
 # process optional examples
-foreach (example IN ITEMS
+foreach(example IN ITEMS
     LittleDog)
   string(TOUPPER ${example} example_upper)
-  if (EXAMPLES_${example_upper})
+  if(EXAMPLES_${example_upper})
     message(STATUS "Installation will include extra example: ${example}")
     ExternalProject_Add(download-${example}
         DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
@@ -532,10 +532,10 @@ add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
 ## grab and install precompiled snopt
 
 # todo: look for snopt_c
-if (snopt_c_FOUND OR WITH_SNOPT)
+if(snopt_c_FOUND OR WITH_SNOPT)
   set(WITH_SNOPT_PRECOMPILED OFF)
 endif()
-if (WITH_SNOPT_PRECOMPILED)
+if(WITH_SNOPT_PRECOMPILED)
   message(STATUS "Preparing to install precompiled snopt")
   ExternalProject_Add(download-snopt-precompiled
     URL "https://s3.amazonaws.com/drake-provisioning/drakeSnopt.zip"

@@ -1,7 +1,7 @@
 add_executable(testAffineSystem testAffineSystem.cpp)
 add_test(NAME testAffineSystem COMMAND testAffineSystem)
 
-if (GTEST_FOUND)
+if(GTEST_FOUND)
   add_executable(cascade_system_test cascade_system_test.cc)
   target_link_libraries(cascade_system_test ${GTEST_BOTH_LIBRARIES})
   add_test(NAME cascade_system_test COMMAND cascade_system_test)

@@ -21,7 +21,7 @@ add_matlab_test(NAME examples/VanDerPol.run COMMAND VanDerPol.run)
 
 add_matlab_test(NAME examples/commonLyapunovForLinearSystems COMMAND commonLyapunovForLinearSystems)
 
-if (LONG_RUNNING_TESTS)
+if(LONG_RUNNING_TESTS)
   add_matlab_test(NAME examples/DoubleIntegrator.runValueIteration COMMAND DoubleIntegrator.runValueIteration PROPERTIES TIMEOUT 1500)
   add_matlab_test(NAME examples/VanDerPol.particleDemo COMMAND VanDerPol.particleDemo PROPERTIES TIMEOUT 1500)
 endif()
