@@ -41,7 +41,7 @@ bool CollisionElement::CanCollideWith(const CollisionElement *other) const {
   if (this == other) return false;
 
   // If collision_cliques_.size() = N and other->collision_cliques_.size() = M
-  // The worst case (no intersection) is O(N+M).
+  // The worst case (overlapping elements without intersection) is O(N+M).
   return !SortedVectorsHaveIntersection(collision_cliques_,
                                         other->collision_cliques_);
 }

@@ -17,7 +17,7 @@ bool Model::removeElement(const ElementId& id) {
   return elements.erase(id) > 0;
 }
 
-const CollisionElement* Model::readElement(ElementId id) const {
+const CollisionElement* Model::FindElement(ElementId id) const {
   auto element_iter = elements.find(id);
   if (element_iter != elements.end()) {
     return element_iter->second.get();
@@ -26,7 +26,7 @@ const CollisionElement* Model::readElement(ElementId id) const {
   }
 }
 
-CollisionElement* Model::readElement(ElementId id) {
+CollisionElement* Model::FindElement(ElementId id) {
   auto element_iter = elements.find(id);
   if (element_iter != elements.end()) {
     return element_iter->second.get();

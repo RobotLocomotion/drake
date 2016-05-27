@@ -121,7 +121,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
 
-GTEST_TEST(ModelTest, CollisionGroups) {
+GTEST_TEST(ModelTest, CollisionCliques) {
   CollisionElement element_1, element_2, element_3;
 
   // Adds element 1 to its own set of groups.
@@ -130,55 +130,55 @@ GTEST_TEST(ModelTest, CollisionGroups) {
   element_1.AddToCollisionClique(11);
   element_1.AddToCollisionClique(15);
   element_1.AddToCollisionClique(9);
-  std::vector<int> element_1_set = std::vector<int>{2, 9, 11, 15, 23};
 
-  // Tests the situation where the same collision groups are added to a
+  // Tests the situation where the same collision cliques are added to a
   // collision element multiple times.
-  // If a collision element is added to a group it already belongs to, the
+  // If a collision element is added to a clique it already belongs to, the
   // addition has no effect. This is tested by asserting the total number of
   // elements in the test below.
   element_1.AddToCollisionClique(11);
   element_1.AddToCollisionClique(23);
 
-  // Adds element 2 to its own set of groups.
+  // Cliques cannot be repeated. Therefore expect 5 cliques instead of 7.
+  ASSERT_EQ(5, element_1.number_of_cliques());
+  // Checks the correctness of the entire set.
+  EXPECT_EQ(std::vector<int>({2, 9, 11, 15, 23}),
+            element_1.collision_cliques());
+
+  // Adds element 2 to its own set of cliques.
   element_2.AddToCollisionClique(11);
   element_2.AddToCollisionClique(9);
   element_2.AddToCollisionClique(13);
   element_2.AddToCollisionClique(13);
   element_2.AddToCollisionClique(11);
 
-  // Adds element 3 to its own set of groups.
+  // Cliques cannot be repeated. Therefore expect 3 cliques instead of 5.
+  ASSERT_EQ(3, element_2.number_of_cliques());
+  // Checks the correctness of the entire set.
+  EXPECT_EQ(std::vector<int>({9, 11, 13}), element_2.collision_cliques());
+
+  // Adds element 3 to its own set of cliques.
   element_3.AddToCollisionClique(1);
   element_3.AddToCollisionClique(13);
   element_3.AddToCollisionClique(13);
   element_3.AddToCollisionClique(8);
   element_3.AddToCollisionClique(1);
 
-  // Checks the correctness of each element's collision groups set.
-  EXPECT_EQ(std::vector<int>({2, 9, 11, 15, 23}),
-            element_1.collision_cliques());
-  EXPECT_EQ(std::vector<int>({9, 11, 13}), element_2.collision_cliques());
+  // Cliques cannot be repeated. Therefore expect 3 cliques instead of 5.
+  ASSERT_EQ(3, element_3.number_of_cliques());
+  // Checks the correctness of the entire set.
   EXPECT_EQ(std::vector<int>({1, 8, 13}), element_3.collision_cliques());
 
-  // Groups cannot be repeated. Therefore expect 5 groups instead of 7.
-  ASSERT_EQ(5, element_1.number_of_cliques());
-
-  // Groups cannot be repeated for element_2 either.
-  ASSERT_EQ(3, element_2.number_of_cliques());
-
-  // Groups cannot be repeated for element_3 either.
-  ASSERT_EQ(3, element_3.number_of_cliques());
-
-  // element_2 does not collide with element_1 (groups 9 and 11 in common).
+  // element_2 does not collide with element_1 (cliques 9 and 11 in common).
   EXPECT_FALSE(element_2.CanCollideWith(&element_1));
 
-  // element_2 does not collide with element_3 (group 13 in common).
+  // element_2 does not collide with element_3 (clique 13 in common).
   EXPECT_FALSE(element_2.CanCollideWith(&element_3));
 
-  // element_3 does collide with element_1 (no groups in common).
+  // element_3 does collide with element_1 (no cliques in common).
   EXPECT_TRUE(element_3.CanCollideWith(&element_1));
 
-  // element_3 does not collide with element_2 (group 13 in common).
+  // element_3 does not collide with element_2 (clique 13 in common).
   EXPECT_FALSE(element_3.CanCollideWith(&element_2));
 }
 

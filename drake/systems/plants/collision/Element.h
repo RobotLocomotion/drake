@@ -55,8 +55,11 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   does not have any effect. **/
   void AddToCollisionClique(int clique_id);
 
+  /** Returns the number of cliques this collision element belongs to. **/
   int number_of_cliques() const;
 
+  /** Returns a reference to the list (an `std::vector`) of the collision
+  cliques this collision element belongs to. **/
   const std::vector<int>& collision_cliques() const;
 
   /**

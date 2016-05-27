@@ -201,12 +201,12 @@ void RigidBodyTree::compile(void) {
   // Create collision groups for the DrakeCollision::Model so that
   // CollisionElement's in the same RigidBody do not collide. Also groups are
   // created so that CollisionElement's in adjacent RigidBody's do not collide.
-  CreateCollisionGroups();
+  CreateCollisionCliques();
 
   initialized_ = true;
 }
 
-void RigidBodyTree::CreateCollisionGroups() {
+void RigidBodyTree::CreateCollisionCliques() {
   int ncol_groups = 0;
   // 1) For collision elements in the same body
   for (auto& body : bodies) {
@@ -216,7 +216,7 @@ void RigidBodyTree::CreateCollisionGroups() {
   // 2) For collision elements in different bodies
   for (int i = 0; i < bodies.size(); ++i)
     for (int j = i + 1; j < bodies.size(); ++j)
-      if (!bodies[i]->CollidesWith(*bodies[j])) {
+      if (!bodies[i]->CanCollideWith(*bodies[j])) {
         bodies[i]->AddToCollisionClique(ncol_groups);
         bodies[j]->AddToCollisionClique(ncol_groups);
         ++ncol_groups;
@@ -344,9 +344,9 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
   if (id != 0) {
     body.collision_element_ids.push_back(id);
     body.collision_element_groups[group_name].push_back(id);
-    // TODO(amcastro-tri): cleanup API so that we do not need readElement any
+    // TODO(amcastro-tri): cleanup API so that we do not need FindElement any
     // more.
-    body.AddCollisionElement(collision_model->readElement(id));
+    body.AddCollisionElement(collision_model->FindElement(id));
   }
   return id;
 }
@@ -424,7 +424,7 @@ void RigidBodyTree::collisionDetectFromPoints(
     normal.col(i) = n;
     phi[i] = distance;
     const CollisionElement* elementB =
-        collision_model->readElement(closest_points[i].getIdB());
+        collision_model->FindElement(closest_points[i].getIdB());
     body_idx.push_back(elementB->getBody()->body_index);
   }
 }
@@ -482,22 +482,22 @@ bool RigidBodyTree::collisionDetect(
     normal.col(i) = n;
     phi[i] = distance;
     const CollisionElement* elementA =
-        collision_model->readElement(points[i].getIdA());
+        collision_model->FindElement(points[i].getIdA());
     // DEBUG
     // cout << "RigidBodyTree::collisionDetect: points[i].getIdA() = " <<
     // points[i].getIdA() << endl;
     // cout << "RigidBodyTree::collisionDetect:
-    // collision_model->readElement(points[i].getIdA()) = " <<
-    // collision_model->readElement(points[i].getIdA()) << endl;
+    // collision_model->FindElement(points[i].getIdA()) = " <<
+    // collision_model->FindElement(points[i].getIdA()) << endl;
     // cout << "RigidBodyTree::collisionDetect:
-    // collision_model->readElement(points[i].getIdA())->getId() = " <<
-    // collision_model->readElement(points[i].getIdA())->getId() << endl;
+    // collision_model->FindElement(points[i].getIdA())->getId() = " <<
+    // collision_model->FindElement(points[i].getIdA())->getId() << endl;
     // cout << "RigidBodyTree::collisionDetect: elementA = " << elementA <<
     // endl;
     // END_DEBUG
     bodyA_idx.push_back(elementA->getBody()->body_index);
     const CollisionElement* elementB =
-        collision_model->readElement(points[i].getIdB());
+        collision_model->FindElement(points[i].getIdB());
     bodyB_idx.push_back(elementB->getBody()->body_index);
   }
   return points_found;
@@ -599,9 +599,9 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
 
   for (size_t i = 0; i < num_potential_collisions; i++) {
     const CollisionElement* elementA =
-        collision_model->readElement(potential_collisions[i].getIdA());
+        collision_model->FindElement(potential_collisions[i].getIdA());
     const CollisionElement* elementB =
-        collision_model->readElement(potential_collisions[i].getIdB());
+        collision_model->FindElement(potential_collisions[i].getIdB());
     potential_collisions[i].getResults(&ptA, &ptB, &n, &distance);
     xA.col(i) = ptA;
     xB.col(i) = ptB;
@@ -648,10 +648,10 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
     xB_in_world.col(i) = ptB;
 
     const CollisionElement* elementA =
-        collision_model->readElement(points[i].getIdA());
+        collision_model->FindElement(points[i].getIdA());
     bodyA_idx.push_back(elementA->getBody()->body_index);
     const CollisionElement* elementB =
-        collision_model->readElement(points[i].getIdB());
+        collision_model->FindElement(points[i].getIdB());
     bodyB_idx.push_back(elementB->getBody()->body_index);
   }
   return points_found;
