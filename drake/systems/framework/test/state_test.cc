@@ -5,9 +5,9 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/state_vector_interface.h"
-#include "drake/systems/framework/system_state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -26,7 +26,7 @@ class ContinuousStateTest : public ::testing::Test {
     vec->get_mutable_value() << 1, 2, 3, 4;
 
     std::unique_ptr<StateVectorInterface<int>> state_vector;
-    state_vector.reset(new SystemStateVector<int>(std::move(vec)));
+    state_vector.reset(new BasicStateVector<int>(std::move(vec)));
 
     continuous_state_.reset(new ContinuousState<int>(
         std::move(state_vector), kPositionLength, kVelocityLength));

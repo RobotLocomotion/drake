@@ -5,9 +5,9 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/state_vector_interface.h"
-#include "drake/systems/framework/system_state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -22,7 +22,7 @@ class StateSubvectorTest : public ::testing::Test {
     std::unique_ptr<VectorInterface<int>> vec;
     vec.reset(new BasicVector<int>(kLength));
     vec->get_mutable_value() << 1, 2, 3, 4;
-    state_vector_.reset(new SystemStateVector<int>(std::move(vec)));
+    state_vector_.reset(new BasicStateVector<int>(std::move(vec)));
   }
 
   std::unique_ptr<StateVectorInterface<int>> state_vector_;

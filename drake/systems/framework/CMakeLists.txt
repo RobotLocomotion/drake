@@ -7,9 +7,9 @@ set(sources
     state.cc
     state_subvector.cc
     state_vector_interface.cc
+    basic_state_vector.cc
     system_interface.cc
     system_output.cc
-    system_state_vector.cc
     value.cc
     vector_interface.cc
     primitives/adder.cc)
@@ -24,9 +24,9 @@ set(installed_headers
     state.h
     state_subvector.h
     state_vector_interface.h
+    basic_state_vector.h
     system_interface.h
     system_output.h
-    system_state_vector.h
     value.h
     vector_interface.h
     primitives/adder.h)

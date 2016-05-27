@@ -1,4 +1,4 @@
-#include "drake/systems/framework/system_state_vector.h"
+#include "drake/systems/framework/basic_state_vector.h"
 
 #include "gtest/gtest.h"
 
@@ -11,36 +11,36 @@ namespace {
 
 const size_t kLength = 2;
 
-class SystemStateVectorTest : public ::testing::Test {
+class BasicStateVectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
     std::unique_ptr<VectorInterface<int>> vec;
     vec.reset(new BasicVector<int>(kLength));
     vec->get_mutable_value() << 1, 2;
-    state_vector_.reset(new SystemStateVector<int>(std::move(vec)));
+    state_vector_.reset(new BasicStateVector<int>(std::move(vec)));
   }
 
   std::unique_ptr<StateVectorInterface<int>> state_vector_;
 };
 
-TEST_F(SystemStateVectorTest, Access) {
+TEST_F(BasicStateVectorTest, Access) {
   EXPECT_EQ(kLength, state_vector_->size());
   EXPECT_EQ(1, state_vector_->GetAtIndex(0));
   EXPECT_EQ(2, state_vector_->GetAtIndex(1));
   EXPECT_THROW(state_vector_->GetAtIndex(2), std::runtime_error);
 }
 
-TEST_F(SystemStateVectorTest, InvalidAccess) {
+TEST_F(BasicStateVectorTest, InvalidAccess) {
   EXPECT_THROW(state_vector_->GetAtIndex(kLength), std::runtime_error);
 }
 
-TEST_F(SystemStateVectorTest, Mutation) {
+TEST_F(BasicStateVectorTest, Mutation) {
   state_vector_->SetAtIndex(0, 42);
   EXPECT_EQ(42, state_vector_->GetAtIndex(0));
   EXPECT_EQ(2, state_vector_->GetAtIndex(1));
 }
 
-TEST_F(SystemStateVectorTest, SetFromVector) {
+TEST_F(BasicStateVectorTest, SetFromVector) {
   Eigen::VectorXi next_value(kLength);
   next_value << 3, 4;
 
@@ -49,7 +49,7 @@ TEST_F(SystemStateVectorTest, SetFromVector) {
   EXPECT_EQ(4, state_vector_->GetAtIndex(1));
 }
 
-TEST_F(SystemStateVectorTest, InvalidMutation) {
+TEST_F(BasicStateVectorTest, InvalidMutation) {
   EXPECT_THROW(state_vector_->SetAtIndex(kLength, 42), std::runtime_error);
 }
 

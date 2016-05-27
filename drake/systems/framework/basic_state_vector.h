@@ -9,15 +9,15 @@
 namespace drake {
 namespace systems {
 
-/// SystemStateVector is a concrete class template that implements
+/// BasicStateVector is a concrete class template that implements
 /// StateVectorInterface in a convenient manner for Systems that have no
 /// component Systems, by owning and wrapping a VectorInterface<T>.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
-class SystemStateVector : public StateVectorInterface<T> {
+class BasicStateVector : public StateVectorInterface<T> {
  public:
-  explicit SystemStateVector(std::unique_ptr<VectorInterface<T>> vector)
+  explicit BasicStateVector(std::unique_ptr<VectorInterface<T>> vector)
       : vector_(std::move(vector)) {}
 
   size_t size() const override { return vector_->get_value().rows(); }
@@ -45,11 +45,11 @@ class SystemStateVector : public StateVectorInterface<T> {
   }
 
  private:
-  // SystemStateVector objects are neither copyable nor moveable.
-  SystemStateVector(const SystemStateVector& other) = delete;
-  SystemStateVector& operator=(const SystemStateVector& other) = delete;
-  SystemStateVector(SystemStateVector&& other) = delete;
-  SystemStateVector& operator=(SystemStateVector&& other) = delete;
+  // BasicStateVector objects are neither copyable nor moveable.
+  BasicStateVector(const BasicStateVector& other) = delete;
+  BasicStateVector& operator=(const BasicStateVector& other) = delete;
+  BasicStateVector(BasicStateVector&& other) = delete;
+  BasicStateVector& operator=(BasicStateVector&& other) = delete;
 
   std::unique_ptr<VectorInterface<T>> vector_;
 };
