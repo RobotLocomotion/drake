@@ -16,7 +16,6 @@ namespace DrakeCollision {
 std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLBoxShape(
     const DrakeShapes::Box& geometry, bool use_margins) {
   // NOTE:  Ignore margins for now.
-  use_margins = use_margins;
 
   fcl::Box shape(geometry.size(0), geometry.size(1), geometry.size(2));
   std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> bvh_shape(
@@ -29,7 +28,6 @@ std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLBoxShape(
 std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLSphereShape(
     const DrakeShapes::Sphere& geometry, bool use_margins) {
   // NOTE:  Ignore margins for now.
-  use_margins = use_margins;
 
   fcl::Sphere shape(geometry.radius);
   std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> bvh_shape(
@@ -44,7 +42,6 @@ std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLSphereShape(
 std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLCylinderShape(
     const DrakeShapes::Cylinder& geometry, bool use_margins) {
   // NOTE:  Ignore margins for now.
-  use_margins = use_margins;
 
   fcl::Cylinder shape(geometry.radius, geometry.length);
   std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> bvh_shape(
@@ -61,7 +58,6 @@ std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> FCLModel::newFCLCapsuleShape(
     const DrakeShapes::Capsule& geometry, bool use_margins) {
   /*
   // NOTE:  Ignore margins for now.
-  use_margins = use_margins;
 
   fcl::Capsule shape(geometry.radius, geometry.length);
   std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>> bvh_shape(
