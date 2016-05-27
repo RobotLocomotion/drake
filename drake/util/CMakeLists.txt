@@ -1,4 +1,3 @@
-
 if (simulink_FOUND)
   add_mex(realtime realtime.cpp)
 endif()
@@ -107,7 +106,6 @@ if (MATLAB_FOUND)
 endif()
 
 add_subdirectory(test)
-
 
 # Mex debugging tools:
 if (0) #NOT WIN32)

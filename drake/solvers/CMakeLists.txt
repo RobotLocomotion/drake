@@ -1,4 +1,3 @@
-
 # todo: still build something useful if gurobi does not exist
 
 pods_find_pkg_config(gurobi)

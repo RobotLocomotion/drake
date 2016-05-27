@@ -1,4 +1,3 @@
-
 if (LONG_RUNNING_TESTS)
   # Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
   # add_matlab_test(NAME examples/Valkyrie/test/runValkyrieFastWalking COMMAND runValkyrieFastWalking PROPERTIES TIMEOUT 1500)

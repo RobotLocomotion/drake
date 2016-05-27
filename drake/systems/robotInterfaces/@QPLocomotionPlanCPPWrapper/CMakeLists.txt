@@ -15,4 +15,3 @@ if (MATLAB_FOUND)
     add_subdirectory(private)
   endif()
 endif()
-

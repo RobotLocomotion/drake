@@ -1,4 +1,3 @@
-
 pods_install_python_packages(${CMAKE_CURRENT_SOURCE_DIR}/pydrake)
 
 file(RELATIVE_PATH path_from_python_install_to_drake ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages/pydrake ${CMAKE_CURRENT_SOURCE_DIR}/../..)

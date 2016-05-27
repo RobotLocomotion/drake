@@ -65,4 +65,3 @@ if (MATLAB_FOUND)
     message("Could NOT find Swig with Matlab support; not generating Matlab bindings")
   endif()
 endif()
-

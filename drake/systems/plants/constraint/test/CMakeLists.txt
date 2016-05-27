@@ -1,4 +1,3 @@
-
 add_matlab_test(NAME systems/plants/constraint/test/AllBodiesClosestDistanceConstraintTest COMMAND AllBodiesClosestDistanceConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/RelativeGazeTargetConstraintTest COMMAND RelativeGazeTargetConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/RelativePositionConstraintTest COMMAND RelativePositionConstraintTest)

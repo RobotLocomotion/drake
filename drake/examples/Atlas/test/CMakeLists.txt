@@ -1,4 +1,3 @@
-
 if (LONG_RUNNING_TESTS)
   add_matlab_test(NAME examples/Atlas/test/multiRobotTest COMMAND multiRobotTest PROPERTIES TIMEOUT 1500)
 

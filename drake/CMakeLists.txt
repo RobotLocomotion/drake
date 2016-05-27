@@ -16,7 +16,6 @@ if(CMAKE_NINJA_LINK_POOL_SIZE GREATER 0)
   set(CMAKE_JOB_POOL_LINK link_pool)
 endif()
 
-
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
@@ -79,7 +78,6 @@ function(add_library_with_exports)
 endfunction()
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
-
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
@@ -333,7 +331,6 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
      "  rmpath_drake();\n"
      "  cd(wd);\n"
     )
-
 
 find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )

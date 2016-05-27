@@ -1,4 +1,3 @@
-
 if (simulink_FOUND)
   add_mex(DCSFunction DCSFunction.cpp)
 endif()
