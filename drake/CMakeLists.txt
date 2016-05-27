@@ -1,20 +1,35 @@
-cmake_minimum_required(VERSION 2.8.10)
+cmake_minimum_required(VERSION 3.5)
+
+# Create a cache variable that contains the
+# max number of concurent link jobs that can be run
+# in a Ninja build, if the value is 0 then let Ninja
+# use as many as it wants.
+set(CMAKE_NINJA_LINK_POOL_SIZE 0 CACHE STRING
+  "Number of concurent link jobs that can be run with Ninja build tool")
+# if the link pool is non-zero then set the property
+# on all the targets in drake
+if(CMAKE_NINJA_LINK_POOL_SIZE GREATER 0)
+  # Ninja: Configure a job pool to limit simultaneous linking.
+  set_property(GLOBAL PROPERTY JOB_POOLS link_pool=${CMAKE_NINJA_LINK_POOL_SIZE})
+  # Ninja: Assign all linking to our link job pool.
+  set(CMAKE_JOB_POOL_LINK link_pool)
+endif()
 
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
-option(RANDOMIZE_MATLAB_TESTS "every matlab unit is started with a new random seed" OFF)
+option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random seed" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-#cmake_policy(SET CMP0042 NEW)
-if (POLICY CMP0054)
+# cmake_policy(SET CMP0042 NEW)
+if(POLICY CMP0054)
   cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
 endif()
 
 # Set a consistent MACOSX_RPATH default across all CMake versions.
 # When CMake 3.0.0 is required, remove this block (see CMP0042).
-if (NOT DEFINED CMAKE_MACOSX_RPATH)
+if(NOT DEFINED CMAKE_MACOSX_RPATH)
   set(CMAKE_MACOSX_RPATH ON)
 endif()
 
@@ -48,10 +63,9 @@ endfunction()
 # This means that export headers can be included as drake/bla_export.h
 include(GenerateExportHeader)
 function(add_library_with_exports)
-#  set(options)
   set(oneValueArgs LIB_NAME)
   set(multiValueArgs SOURCE_FILES)
-  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   add_library(${parsed_args_LIB_NAME} SHARED ${parsed_args_SOURCE_FILES})
   set(exports_abs_path ${PROJECT_BINARY_DIR}/exports/drake/${parsed_args_LIB_NAME}_export.h)
@@ -63,49 +77,42 @@ endfunction()
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-
-if (CMAKE_COMPILER_IS_GNUCC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all")
-  # TODO(#2372) These are warnings that we can't handle yet.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
-
-  execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-  if (NOT (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7))
-    message(FATAL_ERROR "requires gcc version >= 4.7")  # to support the c++0x flag below
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
+    message(FATAL_ERROR "GCC version must be at least 4.7")
   endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all")
-  # TODO(#2372) These are warnings that we can't handle yet.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedef")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-  if (APPLE)  # this was a step towards getting things to work with
-  #   clang on mac, but ultimately we didn't get there...   (but I would
-  #   be worried about sharing pointers between objects compiled against
-  #   different c++ libs, so removing it)
-  #    # http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all")
+
+  # TODO(#2372) These are warnings that we can't handle yet.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
+  endif()
+
+  if(APPLE)  # this was a step towards getting things to work with
+    # clang on OS X, but ultimately we didn't get there... (but I would
+    # be worried about sharing pointers between objects compiled against
+    # different c++ libs, so removing it)
+    #   http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
   endif()
-elseif (MSVC)
-   if (NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 19.00.00)
-     # version number decoder ring at https://en.wikipedia.org/wiki/Visual_C%2B%2B
-     message(FATAL_ERROR "requires MS VC++ 14.0 or greater (Visual Studio >= 2015).  download for free at http://visualstudio.com")
-   endif()
+elseif(MSVC)
+  if(NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 19.00.00)
+    # version number decoder ring at https://en.wikipedia.org/wiki/Visual_C%2B%2B
+    message(FATAL_ERROR "requires MS VC++ 14.0 or greater (Visual Studio >= 2015). download for free at http://visualstudio.com")
+  endif()
 
-#  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
-#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2 /openmp")
+  # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
+  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2 /openmp")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
   # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
-  # followed by template linking errors.  After reading, e.g.:
+  # followed by template linking errors. After reading, e.g.:
   #   https://connect.microsoft.com/VisualStudio/feedback/details/696593/vc-10-vs-2010-basic-string-exports
   # I think we're not being sufficiently careful with our library interfaces (on other platforms as well) - Russ
 
@@ -124,7 +131,6 @@ elseif (MSVC)
   # the constructors are callable in your program.
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
-
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj") # after receiving RigidBodyTree.cpp : fatal error C1128: number of sections exceeded object file format limit: compile with /bigobj
 
   add_definitions(-D_USE_MATH_DEFINES) # to get math constants on MSVC (see https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx)
@@ -140,27 +146,27 @@ include_directories(BEFORE ${generated_dir})
 
 # set up matlab build
 include(cmake/mex.cmake)
-if (DISABLE_MATLAB)
-	message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
+if(DISABLE_MATLAB)
+  message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
 else()
-	# Search for MATLAB and configure various MEX options.
-	# If MATLAB is found, MATLAB_FOUND is set.
-	mex_setup()
-        # if matlab is in the PATH then use cmake find_package to find it
-        # along with what is needed to use matlab_add_unit_test
-        if(MATLAB_FOUND)
-          find_package(Matlab COMPONENTS MAIN_PROGRAM)
-        endif()
+  # Search for MATLAB and configure various MEX options.
+  # If MATLAB is found, MATLAB_FOUND is set.
+  mex_setup()
 
-endif (DISABLE_MATLAB)
+  # if MATLAB is in the PATH then use cmake find_package to find it
+  # along with what is needed to use matlab_add_unit_test
+  if(MATLAB_FOUND)
+    find_package(Matlab COMPONENTS MAIN_PROGRAM)
+  endif()
+endif()
 
-# add ctest for a matlab string
+# add ctest for a MATLAB string
 # add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
-#         [CONFIGURATIONS <config>...]
-#         [WORKING_DIRECTORY <dir>]
-#         [PROPERTIES <prop1> <value1> ...])
+#   [CONFIGURATIONS <config>...]
+#   [WORKING_DIRECTORY <dir>]
+#   [PROPERTIES <prop1> <value1> ...])
 # note: default working directory is CMAKE_CURRENT_SOURCE_DIR
-# note: properties are set internally using set_tests_properties ( <testname> PROPERTIES <prop1> <value1> ...)
+# note: properties are set internally using set_tests_properties (<testname> PROPERTIES <prop1> <value1> ...)
 function(add_matlab_test)
   # no matlab no tests
   if(NOT MATLAB_FOUND)
@@ -168,10 +174,10 @@ function(add_matlab_test)
   endif()
   set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
   set(multiValueArgs PROPERTIES)
-  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-  string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in matlab
-  if (NOT parsed_args_WORKING_DIRECTORY)
+  string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in MATLAB
+  if(NOT parsed_args_WORKING_DIRECTORY)
     set(parsed_args_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
 
@@ -180,7 +186,7 @@ function(add_matlab_test)
   set(cmd_to_run_before_test "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
   set(custom_Matlab_test_command "try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
 
-  if (RANDOMIZE_MATLAB_TESTS)
+  if(RANDOMIZE_MATLAB_TESTS)
     set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
   endif()
 
@@ -191,7 +197,7 @@ function(add_matlab_test)
     WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY}
     TIMEOUT -1) # use an infinite timeout and rely on add_test ctest timeout
 
-  if (parsed_args_PROPERTIES)
+  if(parsed_args_PROPERTIES)
     set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
   endif()
 endfunction()
@@ -204,9 +210,9 @@ include_directories(${GTEST_INCLUDE_DIRS})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_FAIL=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_SUCCEED=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
-if (WIN32)
+if(WIN32)
   # The following compiler flag is needed to support parameterized Google tests on Windows.
-  SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1")
 endif()
 
 set(drake_jar_javafiles util/Transform.java)
@@ -217,61 +223,56 @@ include(cmake/procman.cmake)  # helper script for writing procman files
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
 
-if (LCM_FOUND)
+if(LCM_FOUND)
   #add_subdirectory(lcmtypes)
   lcmtypes_build()
   pods_use_pkg_config_classpath(lcm-java)
 
   list(APPEND drake_jar_javafiles
-        util/MyLCMTypeDatabase.java
-	util/MessageMonitor.java
-	util/CoordinateFrameData.java
-	util/LCMCoder.java
-	)
+    util/MyLCMTypeDatabase.java
+    util/MessageMonitor.java
+    util/CoordinateFrameData.java
+    util/LCMCoder.java)
   list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 
   # add lcmgl
   # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
   execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
-  if (NOT LCMGL_BUILD_DIR)
-     message(WARNING "\n\n----- WARNING: bot2-lcmgl not found")
-  else ()
+  if(NOT LCMGL_BUILD_DIR)
+    message(WARNING "\n\n----- WARNING: bot2-lcmgl not found")
+  else()
     string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
-    find_jar(LCMGL_JAR_FILE bot2-lcmgl
-  		PATHS "${LCMGL_BUILD_DIR}/share/java/")
-    if (NOT LCMGL_JAR_FILE)
-       message(FATAL_ERROR "\n\n----- ERROR: bot2-lcmgl not found")
+    find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${LCMGL_BUILD_DIR}/share/java/")
+    if(NOT LCMGL_JAR_FILE)
+      message(FATAL_ERROR "\n\n----- ERROR: bot2-lcmgl not found")
     else()
-       message(STATUS "Found bot2-lcmgl")
+      message(STATUS "Found bot2-lcmgl")
     endif()
     set(CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE})
-    list(APPEND drake_jar_javafiles
- 	util/BotLCMGLClient.java
-	)
+    list(APPEND drake_jar_javafiles util/BotLCMGLClient.java)
   endif()
-
 endif()
 
 add_jar(drake SOURCES ${drake_jar_javafiles})
 install_jar(drake share/java)
 pods_install_pkg_config_file(drake-java
-    CLASSPATH drake
-    REQUIRES ${drake_jar_requires}
-    VERSION 0.0.1)
+  CLASSPATH drake
+  REQUIRES ${drake_jar_requires}
+  VERSION 0.0.1)
 
 pods_find_pkg_config(eigen3 3.2.92)
 
-if (eigen3_FOUND)
-   pods_use_pkg_config_includes( eigen3 )
+if(eigen3_FOUND)
+  pods_use_pkg_config_includes(eigen3)
 else()
-   # then use the traditional approach to finding Eigen3
-   find_package( Eigen3 3.2.92 )
-   if (EIGEN3_FOUND)
-      set(eigen3_FOUND 1)
-      include_directories( ${EIGEN3_INCLUDE_DIR} )
-   else()
-      message(FATAL_ERROR "Could not find eigen, which is a required depedency")
-   endif()
+  # then use the traditional approach to finding Eigen3
+  find_package(Eigen3 3.2.92)
+  if(EIGEN3_FOUND)
+    set(eigen3_FOUND 1)
+    include_directories(${EIGEN3_INCLUDE_DIR})
+  else()
+    message(FATAL_ERROR "Could not find eigen, which is a required depedency")
+  endif()
 endif()
 
 # Setup ROS if it is available on the local system
@@ -297,7 +298,7 @@ add_subdirectory(thirdParty/tinyxml2)
 add_subdirectory(examples)
 add_subdirectory(bindings)
 
-# setup matlab pods-compliance
+# setup MATLAB pods-compliance
 include(cmake/matlab_pods.cmake)
 pods_configure_matlab_paths()
 
@@ -305,32 +306,29 @@ file(RELATIVE_PATH relpath ${CMAKE_INSTALL_PREFIX}/matlab ${CMAKE_CURRENT_SOURCE
 
 message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab")
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
-	   "function addpath_drake()\n"
-	   "  mfiledir = fileparts(which(mfilename));\n"
-	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
-	   "  addpath_drake();\n"
-	   "  cd(wd);\n"
-     "end\n"
-     "\n"
-    )
+  "function addpath_drake()\n"
+  "  mfiledir = fileparts(which(mfilename));\n"
+  "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
+  "  addpath_drake();\n"
+  "  cd(wd);\n"
+  "end\n"
+  "\n")
 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
-	   "function rmpath_drake()\n"
-	   "  mfiledir = fileparts(which(mfilename));\n"
-	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
-	   "  rmpath_drake();\n"
-	   "  cd(wd);\n"
-    )
+  "function rmpath_drake()\n"
+  "  mfiledir = fileparts(which(mfilename));\n"
+  "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
+  "  rmpath_drake();\n"
+  "  cd(wd);\n")
 
-
-find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin )
-find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )
+find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin)
+find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin)
 find_program(ffmpeg ffmpeg)
 
 # write some additional information to the CMake cache
 set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
 
-if (APPLE)
+if(APPLE)
   set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
   set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
   mark_as_advanced(DYLD_LIBRARY_PATH)
@@ -340,9 +338,9 @@ else()
   mark_as_advanced(LD_LIBRARY_PATH)
 endif()
 
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
-  	COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
+    COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
     PROPERTIES TIMEOUT 300)
 endif()

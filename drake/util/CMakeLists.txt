@@ -1,12 +1,11 @@
-
-if (simulink_FOUND)
+if(simulink_FOUND)
   add_mex(realtime realtime.cpp)
 endif()
 
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
-if (LCM_FOUND AND MATLAB_FOUND)
-  if (simulink_FOUND)
+if(LCM_FOUND AND MATLAB_FOUND)
+  if(simulink_FOUND)
     add_mex(lcmLogger lcmLogger.cpp)
     pods_use_pkg_config_packages(lcmLogger lcm)
   endif()
@@ -18,24 +17,24 @@ endif()
 add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
 pods_install_libraries(drakePolynomial)
 drake_install_headers(Polynomial.h)
-pods_install_pkg_config_file(drakePolynomial
-LIBS -ldrakePolynomial
-REQUIRES
-VERSION 0.0.2)
+pods_install_pkg_config_file(drake-polynomial
+  LIBS -ldrakePolynomial
+  REQUIRES
+  VERSION 0.0.2)
 
 add_library_with_exports(LIB_NAME drakeUtil SOURCE_FILES drakeUtil.cpp)
-drake_install_headers(drakeUtil.h )
+drake_install_headers(drakeUtil.h)
 pods_install_libraries(drakeUtil)
 pods_install_pkg_config_file(drake-util
   LIBS -ldrakeUtil
   REQUIRES
   VERSION 0.0.1)
 
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
   target_link_libraries(drakeMexUtil drakePolynomial)
-  # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
-  #add_mex(drakeUtil OBJECT drakeUtil.cpp)
+  # TODO: use this again once I can assume everyone has CMAKE version >= 2.8.8
+  # add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
   drake_install_headers(drakeMexUtil.h MexWrapper.h TrigPoly.h)
   pods_install_libraries(drakeMexUtil)
@@ -45,7 +44,7 @@ if (MATLAB_FOUND)
     VERSION 0.0.1)
 endif()
 
-if (LCM_FOUND)
+if(LCM_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
   # we only need methods that are templated and defined in the header
 
@@ -54,6 +53,10 @@ if (LCM_FOUND)
   target_link_libraries(drakeLCMUtil drakeTrajectories)
   drake_install_headers(lcmUtil.h)
   pods_install_libraries(drakeLCMUtil)
+  pods_install_pkg_config_file(drake-lcm-util
+    LIBS -ldrakeLCMUtil
+    REQUIRES
+    VERSION 0.0.1)
 endif()
 
 drake_install_headers(drakeGradientUtil.h)
@@ -74,7 +77,7 @@ pods_install_pkg_config_file(drake-convex-hull
   REQUIRES
   VERSION 0.0.1)
 
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
   target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
@@ -104,56 +107,51 @@ endif()
 
 add_subdirectory(test)
 
-
 # Mex debugging tools:
-if (0) #NOT WIN32)
-add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
-target_link_libraries(drake_debug_mex drakeMexUtil -ldl)
+if(0)  # NOT WIN32
+  add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
+  target_link_libraries(drake_debug_mex drakeMexUtil -ldl)
 
-message(STATUS "Writing drake_debug_mex.sh")
-file(WRITE ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
-	   "#!/bin/bash\n"
-     "\n"
-     "# Usage:\n"
-     "#   % drake_debug_mex.sh [args]\n"
-     "# will set up the environment and then run:\n"
-     "#   % args pod-build/bin/drake-debug-mex\n"
-     "#\n"
-     "# For example,\n"
-     "#   % drake_debug_mex.sh\n"
-     "# will simply run the executable,\n"
-     "#   % drake_debug_mex.sh gdb\n"
-     "# will run gdb on drake-debug-mex, and\n"
-     "#   % drake_debug_mex.sh valgrind --leak-check=full --dsymutil=yes --track-origins=yes --xml=yes\n"
-     "# will run valgrind with the appropriate arguments passed in.\n"
-     "#\n"
-     "# It's not pretty, but seems to work for the use\n"
-     "# cases I've imagined so far. - RussT\n"
-     "\n"
-    )
+  message(STATUS "Writing drake_debug_mex.sh")
+  file(WRITE ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
+    "#!/bin/bash\n"
+    "\n"
+    "# Usage:\n"
+    "#   % drake_debug_mex.sh [args]\n"
+    "# will set up the environment and then run:\n"
+    "#   % args pod-build/bin/drake-debug-mex\n"
+    "#\n"
+    "# For example,\n"
+    "#   % drake_debug_mex.sh\n"
+    "# will simply run the executable,\n"
+    "#   % drake_debug_mex.sh gdb\n"
+    "# will run gdb on drake-debug-mex, and\n"
+    "#   % drake_debug_mex.sh valgrind --leak-check=full --dsymutil=yes --track-origins=yes --xml=yes\n"
+    "# will run valgrind with the appropriate arguments passed in.\n"
+    "#\n"
+    "# It's not pretty, but seems to work for the use\n"
+    "# cases I've imagined so far. - RussT\n"
+    "\n")
 
-if (APPLE)
+  if(APPLE)
+    file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
+      "export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:${MATLAB_ROOT}/bin/${MATLAB_CPU}\n"
+      "export DYLD_FORCE_FLAT_NAMESPACE=1\n"
+      "export DYLD_INSERT_LIBRARIES=${CMAKE_BINARY_DIR}/lib/libdebugMex.dylib\n")
+  else()
+    file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
+      "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${MATLAB_ROOT}/bin/${MATLAB_CPU}\n"
+      "export LD_PRELOAD=${CMAKE_BINARY_DIR}/lib/libdebugMex.so\n")
+  endif()
+
   file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
-       "export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:${MATLAB_ROOT}/bin/${MATLAB_CPU}\n"
-       "export DYLD_FORCE_FLAT_NAMESPACE=1\n"
-       "export DYLD_INSERT_LIBRARIES=${CMAKE_BINARY_DIR}/lib/libdebugMex.dylib\n"
-      )
-else()
-  file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
-       "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${MATLAB_ROOT}/bin/${MATLAB_CPU}\n"
-       "export LD_PRELOAD=${CMAKE_BINARY_DIR}/lib/libdebugMex.so\n"
-      )
-endif()
+    "\n"
+    "\"\$@\" ${CMAKE_BINARY_DIR}/bin/drake_debug_mex\n")
 
-file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
-     "\n"
-     "\"\$@\" ${CMAKE_BINARY_DIR}/bin/drake_debug_mex\n"
-    )
-
-install(FILES ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-        PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-endif(0) #NOT WIN32)
+  install(FILES ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+    PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+endif()  # NOT WIN32
 
 add_subdirectory(yaml)
 add_subdirectory(geometry/test)
