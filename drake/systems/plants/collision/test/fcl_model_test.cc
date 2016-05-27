@@ -197,15 +197,6 @@ bool FCLCollideTest(const fcl::Transform3f& tf,
   fcl::collide(&node);
 
   if (local_result.numContacts() > 0) {
-    // std::vector<Contact> global_pairs;
-    // global_pairs.clear();
-
-    // local_result.getContacts(global_pairs);
-    // std::sort(global_pairs.begin(), global_pairs.end());
-    // for(std::size_t j = 0; j < global_pairs.size(); ++j) {
-    //   cout << global_pairs[j].b1;
-    //   cout << global_pairs[j].b2;
-    // }
 
     if (verbose) {
       std::cout << "in collision " << local_result.numContacts() << ": "
@@ -222,17 +213,9 @@ bool FCLCollideTest(const fcl::Transform3f& tf,
       std::cout << "\n";
     }
 
-    // if(verbose) {
-    //   std::cout << node.num_bv_tests << " " << node.num_leaf_tests
-    //             << std::endl;
-    // }
     return true;
   } else {
     if (verbose) std::cout << "collision free " << std::endl;
-    // if(verbose) {
-    //   std::cout << node.num_bv_tests << " " << node.num_leaf_tests
-    //             << std::endl;
-    // }
     return false;
   }
 }
@@ -285,18 +268,11 @@ void TestFCLMultiPoint(test_func_t test_func) {
   t2[6] = fcl::Triangle(1, 4, 5);
   t2[7] = fcl::Triangle(1, 5, 3);
 
-  // boost::filesystem::path path(TEST_RESOURCES_DIR);
-  // loadOBJFile((path / "env.obj").string().c_str(), p1, t1);
-  // loadOBJFile((path / "rob.obj").string().c_str(), p2, t2);
-  // std::vector<Transform3f> transforms;
-  // FCL_REAL extents[] = {-3000, -3000, 0, 3000, 3000, 3000};
-  // std::size_t n = 10;
   bool verbose = true;
 
   // collision
   fcl::Transform3f transform1;
   fcl::Matrix3f R;
-  // eulerToMatrix(0, 0, 0, R);
   R.setValue(1, 0, 0, 0, 1, 0, 0, 0, 1);
   // Vec3f T(0, 0, -1); // collision free
   fcl::Vec3f T(0, 0, 0.25);  // works but reports 6 contacts
