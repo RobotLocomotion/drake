@@ -104,7 +104,7 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    */
   typedef std::map<VarType, CoefficientType> PartialEvalType;
   static std::pair<PartialEvalType, CoefficientType> EstimateParameters(
-      const VectorXpoly& polys,
+      const VectorXPoly& polys,
       const std::vector<PartialEvalType>& active_var_values);
 
  private:

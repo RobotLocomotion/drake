@@ -238,7 +238,7 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
 template<typename T>
 std::pair<typename SystemIdentification<T>::PartialEvalType, T>
 SystemIdentification<T>::EstimateParameters(
-    const VectorXpoly& polys,
+    const VectorXPoly& polys,
     const std::vector<PartialEvalType>& active_var_values) {
   assert(active_var_values.size() > 0);
   const int num_data = active_var_values.size();
@@ -295,7 +295,7 @@ SystemIdentification<T>::EstimateParameters(
 
   // For each datum, build a constraint with an error term.
   for (int datum_num = 0; datum_num < num_data; datum_num++) {
-    VectorXpoly constraint_polys(polys.rows(), 1);
+    VectorXPoly constraint_polys(polys.rows(), 1);
     const PartialEvalType& partial_eval_map = active_var_values[datum_num];
     for (int poly_num = 0; poly_num < polys.rows(); poly_num++) {
       PolyType partial_poly = polys[poly_num].evaluatePartial(partial_eval_map);

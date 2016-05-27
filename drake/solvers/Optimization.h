@@ -562,7 +562,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(
-          const VectorXpoly& polynomials,
+          const VectorXPoly& polynomials,
           const std::vector<Polynomiald::VarType>& poly_vars,
           Eigen::VectorXd lb, Eigen::VectorXd ub,
           const VariableList& vars) {
@@ -588,7 +588,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(
-          const VectorXpoly& polynomials,
+          const VectorXPoly& polynomials,
           const std::vector<Polynomiald::VarType>& poly_vars,
           Eigen::VectorXd lb, Eigen::VectorXd ub) {
     return AddPolynomialConstraint(

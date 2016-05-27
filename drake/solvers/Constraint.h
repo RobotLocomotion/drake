@@ -115,7 +115,7 @@ class QuadraticConstraint : public Constraint {
 class PolynomialConstraint : public Constraint {
  public:
   PolynomialConstraint(
-      const VectorXpoly& polynomials,
+      const VectorXPoly& polynomials,
       const std::vector<Polynomiald::VarType>& poly_vars,
       Eigen::VectorXd lb, Eigen::VectorXd ub)
       : Constraint(polynomials.rows(), lb, ub),
@@ -149,7 +149,7 @@ class PolynomialConstraint : public Constraint {
   }
 
  private:
-  const VectorXpoly polynomials_;
+  const VectorXPoly polynomials_;
   const std::vector<Polynomiald::VarType> poly_vars_;
 
   /// To avoid repeated allocation, reuse a map for the evaluation point.

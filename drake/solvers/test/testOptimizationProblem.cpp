@@ -544,7 +544,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     auto x_var = problem.AddContinuousVariables(1);
     std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(VectorXpoly::Constant(1, 1, x),
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, 1, x),
                                     var_mapping,
                                     Eigen::VectorXd::Constant(1, 1, 2),
                                     Eigen::VectorXd::Constant(1, 1, 2));
@@ -562,7 +562,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     auto x_var = problem.AddContinuousVariables(1);
     std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(VectorXpoly::Constant(1, 1, poly),
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, 1, poly),
                                     var_mapping,
                                     Eigen::VectorXd::Constant(1, 1, 0),
                                     Eigen::VectorXd::Constant(1, 1, 0));
@@ -582,7 +582,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     std::vector<Polynomiald::VarType> var_mapping = {
       x.getSimpleVariable(),
       y.getSimpleVariable()};
-    problem.AddPolynomialConstraint(VectorXpoly::Constant(1, 1, poly),
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, 1, poly),
                                     var_mapping,
                                     Eigen::VectorXd::Constant(1, 1, 0),
                                     Eigen::VectorXd::Constant(1, 1, 0));
@@ -606,7 +606,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     auto x_var = problem.AddContinuousVariables(1);
     problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
     std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    VectorXpoly polynomials_vec(2, 1);
+    VectorXPoly polynomials_vec(2, 1);
     polynomials_vec << poly, x;
     problem.AddPolynomialConstraint(polynomials_vec,
                                     var_mapping,

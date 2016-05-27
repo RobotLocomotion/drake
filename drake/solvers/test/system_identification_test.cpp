@@ -170,7 +170,7 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     SID::PartialEvalType estimated_params;
     double error;
     std::tie(estimated_params, error) =
-        SID::EstimateParameters(VectorXpoly::Constant(1, 1, poly),
+        SID::EstimateParameters(VectorXPoly::Constant(1, 1, poly),
                                 sample_points);
 
     EXPECT_LT(error, 1e-5);
@@ -193,7 +193,7 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     SID::PartialEvalType estimated_params;
     double error;
     std::tie(estimated_params, error) =
-        SID::EstimateParameters(VectorXpoly::Constant(1, 1, poly),
+        SID::EstimateParameters(VectorXPoly::Constant(1, 1, poly),
                                 sample_points);
 
     EXPECT_LT(error, 0.1);
@@ -285,14 +285,14 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   // * The short names and upper/lower case here are conventional within the
   //   discipline and correspond to the manipulator formulation at:
   //    * http://underactuated.csail.mit.edu/underactuated.html?chapter=23
-  VectorXpoly q(2, 1); q << x, v;
-  VectorXpoly qdot(2, 1); qdot << v, a;
-  VectorXpoly qdotdot(2, 1); qdotdot << a, j;
-  VectorXpoly H(1, 2); H << mass, 0;
-  VectorXpoly C(1, 2); C << 0, 0;
-  VectorXpoly g(1, 1); g << (spring * q[0]) - (damping * q[1]);
-  VectorXpoly B(1, 1); B << 1;
-  VectorXpoly manipulator = (H * qdotdot) + (C * qdot) + g;
+  VectorXPoly q(2, 1); q << x, v;
+  VectorXPoly qdot(2, 1); qdot << v, a;
+  VectorXPoly qdotdot(2, 1); qdotdot << a, j;
+  VectorXPoly H(1, 2); H << mass, 0;
+  VectorXPoly C(1, 2); C << 0, 0;
+  VectorXPoly g(1, 1); g << (spring * q[0]) - (damping * q[1]);
+  VectorXPoly B(1, 1); B << 1;
+  VectorXPoly manipulator = (H * qdotdot) + (C * qdot) + g;
 
   std::default_random_engine noise_generator;
   noise_generator.seed(kNoiseSeed);
