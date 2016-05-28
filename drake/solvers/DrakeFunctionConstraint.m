@@ -26,9 +26,7 @@ classdef DrakeFunctionConstraint < Constraint
       if(any(iCfun<1) || any(iCfun>obj.num_cnstr) || any(jCvar<1) || any(jCvar>obj.xdim))
         error('Drake:Constraint:WrongSparseStructure','iCfun or jCvar has incorrect index');
       end
-      obj.iCfun = iCfun;
-      obj.jCvar = jCvar;
-      obj.nnz = numel(iCfun);
+      obj = setSparseStructure@Constraint(obj,iCfun,jCvar);
     end
   end
 
