@@ -71,8 +71,8 @@ class SensorPublisherOdometry {
     const RigidBody& world = rigid_body_system->getRigidBodyTree()->world();
 
     // Creates a ROS topic publisher for each robot in the rigid body system.
-    // A robot is defined by any link that's connected via a non-fixed joint to
-    // the world link.
+    // A robot is defined by any link that's connected to the world via a
+    // non-fixed joint.
     for (auto const& rigid_body : rigid_body_system->getRigidBodyTree()->bodies) {
 
       // Skips the current rigid body if it does not have the world as the
