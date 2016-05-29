@@ -175,8 +175,6 @@ class DrakeRosTfPublisher {
 
     // Publishes the transform for each rigid body in the rigid body tree.
     for (auto const& rigid_body : rigid_body_tree_->bodies) {
-      // Skips the world link since everything is relative to it.
-      // if (rigid_body->name() == RigidBodyTree::kWorldLinkName) continue;
 
       // Skips parent-less links. This includes the world.
       if (!rigid_body->hasParent()) continue;
