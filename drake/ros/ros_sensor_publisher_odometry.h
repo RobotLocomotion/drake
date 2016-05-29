@@ -133,19 +133,23 @@ class SensorPublisherOdometry {
 
     previous_send_time_ = current_time;
 
-    const std::shared_ptr<RigidBodyTree>& rigid_body_tree = rigid_body_system_->getRigidBodyTree();
+    const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
+      rigid_body_system_->getRigidBodyTree();
 
-    // The input vector u contains the change in the model state values.
-    // The following code obtains the absolute model state values.
+    // The input vector u contains the entire system's state. The following
+    // The following code extracts the position and velocity values from it
+    // and computes the kinematic properties of the system.
     auto uvec = Drake::toEigen(u);
-    auto q = uvec.head(rigid_body_tree->number_of_positions());   // position
-    auto v = uvec.tail(rigid_body_tree->number_of_velocities());  // velocity
+    auto q = uvec.head(rigid_body_tree->number_of_positions());    // position
+    auto v = uvec.segment(rigid_body_tree->number_of_positions(),  // velocity
+      rigid_body_tree->number_of_velocities());
     KinematicsCache<double> cache = rigid_body_tree->doKinematics(q, v);
 
     // Obtains a reference to the world link in the rigid body tree.
     const RigidBody& world = rigid_body_tree->world();
 
-    // Publishes the transform for each rigid body in the rigid body tree.
+    // Publishes an odometry message for each rigid body that's connected via a
+    // floating (non-fixed) joint to the world.
     for (auto const& rigid_body : rigid_body_tree->bodies) {
 
       // Skips the current rigid body if it does not have the world as the
