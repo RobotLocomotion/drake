@@ -166,8 +166,9 @@ class DrakeRosTfPublisher {
 
     previous_send_time_ = current_time;
 
-    // The input vector u contains the change in the model state values.
-    // The following code obtains the absolute model state values.
+    // The input vector u contains the entire system's state.
+    // The following code extracts the position values from it
+    // and computes the kinematic properties of the system.
     auto uvec = Drake::toEigen(u);
     auto q = uvec.head(rigid_body_tree_->number_of_positions());
     KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q);
