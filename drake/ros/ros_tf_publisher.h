@@ -158,9 +158,8 @@ class DrakeRosTfPublisher {
 
   OutputVector<double> output(const double &t, const StateVector<double> &x,
                               const InputVector<double> &u) {
-    // Checks whether enough time has elapsed since the last transmission.
-    // Aborts if insufficient time has passed. This is to prevent flooding ROS
-    // topic /tf.
+    // Aborts if insufficient time has passed since the last transmission. This
+    // is to avoid flooding the ROS topics.
     ::ros::Time current_time = ::ros::Time::now();
     if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
       return u;
