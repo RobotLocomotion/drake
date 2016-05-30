@@ -38,8 +38,9 @@
       <origin rpy="0  0  0" xyz="-0.17246 -0.08623  0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial> -->
-    <visual name="__v2">
-      <origin rpy="0 0 0.46364" xyz="-0.1086 -0.0543 0"/>
+    <visual name="side_of_L">
+      <origin rpy="0 0 0.17012086" xyz="-0.1086 -0.0543 0"/>
+      <!-- <origin rpy="0 0 0.46364" xyz="-0.1086 -0.0543 0"/> -->
       <geometry>
         <box size="0.204637 0.061842 0.030921"/>
       </geometry>
@@ -47,7 +48,7 @@
         <color rgba="0 0 1 1" />
       </material>
     </visual>
-    <visual name="__v1">
+    <visual name="bottom_of_L">
       <origin rpy="0  0  0" xyz="0       0.02228  0"/>
       <geometry>
         <box size="0.061842 0.140955 0.030921"/>
@@ -82,7 +83,8 @@
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 -0.4085 0"/>
       <geometry>
-        <box size="0.061842 0.878847 0.030921"/>
+        <box size="0.061842 0.91 0.030921"/>
+        <!-- <box size="0.061842 0.878847 0.030921"/> -->
       </geometry>
       <material name="blue">
         <color rgba="0 0 1 1" />
@@ -135,7 +137,7 @@
       <origin rpy="0  0  0" xyz="-0.17246  0.08623  0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial> -->
-    <visual name="v1">
+    <visual name="bottom_of_L">
       <origin rpy="0 0 0" xyz="0 -0.02228 0"/>
       <geometry>
         <box size="0.061842 0.140955 0.030921"/>
@@ -144,8 +146,9 @@
         <color rgba="0 0 1 1" />
       </material>
     </visual>
-    <visual name="v2">
-      <origin rpy="0 0 -0.46364" xyz="-0.1086 0.0543 0"/>
+    <visual name="side_of_L">
+      <origin rpy="0 0 -0.17012086" xyz="-0.1086 0.0543 0"/>
+      <!-- <origin rpy="0 0 -0.46364" xyz="-0.1086 0.0543 0"/> -->
       <geometry>
         <box size="0.204637 0.061842 0.030921"/>
       </geometry>
@@ -329,7 +332,7 @@
     <child link="left_tie_rod_arm"/>
     <origin rpy="0 0 0" xyz="0 0.49473 -0.03092"/>
     <axis xyz="0 0 1"/>
-    <limit effort="0.0" lower="-0.401426" upper="0.5" velocity="0.0"/>
+    <limit effort="0.0" lower="-0.7" upper="0.7" velocity="0.0"/>
   </joint>
   <joint name="left_hub" type="fixed">
     <parent link="left_tie_rod_arm"/>
@@ -357,7 +360,7 @@
     <child link="right_tie_rod_arm"/>
     <origin rpy="0 0 0" xyz="0 -0.49473 -0.03092"/>
     <axis xyz="0 0 1"/>
-    <limit effort="0.0" lower="-0.401426" upper="0.5" velocity="0.0"/>
+    <limit effort="0.0" lower="-0.7" upper="0.7" velocity="0.0"/>
   </joint>
   <joint name="right_hub" type="fixed">
     <parent link="right_tie_rod_arm"/>
