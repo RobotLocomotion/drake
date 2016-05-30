@@ -29,7 +29,9 @@ constraints = [
                # frame must all be at z = 0 in world frame.
                # We don't care about the x or y position of the robot's base,
                # so we use NaN values to tell the IK solver not to apply a
-               # constraint along those dimensions.
+               # constraint along those dimensions. This is equivalent to
+               # placing a lower bound of -Inf and an upper bound of +Inf along
+               # those axes.
                ik.WorldPositionConstraint(robot, base_body_id,
                                           np.array([0.0, 0.0, 0.0]),
                                           np.array([np.nan, np.nan, 0.0]),
