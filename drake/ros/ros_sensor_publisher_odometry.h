@@ -88,7 +88,7 @@ class SensorPublisherOdometry {
       // odometry_messages_.
 
       // The key is simply the model name since there should only be one
-      // odometry message and publisher per model.
+      // odometry message and publisher per robot.
       const std::string& key = rigid_body->model_name();
 
       if (odometry_messages_.find(key) == odometry_messages_.end()) {
@@ -99,12 +99,6 @@ class SensorPublisherOdometry {
 
         std::unique_ptr<nav_msgs::Odometry> message(new nav_msgs::Odometry());
         message->header.frame_id = RigidBodyTree::kWorldLinkName;
-
-        // TODO(liangfok): Replace model name with the actual model name once
-        // #2462 is merged. See:
-        // https://github.com/RobotLocomotion/drake/pull/2462
-        // message->child_frame_id = std::string("model_name") + std::string("_")
-        //   + rigid_body->name();
         message->child_frame_id = rigid_body->name();
 
         odometry_messages_.insert(std::pair<std::string,
@@ -159,9 +153,6 @@ class SensorPublisherOdometry {
       // Skips the current rigid body if it's not connected to the world via a
       // floating joint.
       if (!rigid_body->getJoint().isFloating()) continue;
-
-      // Obtains the current link's joint.
-      // const DrakeJoint &joint = rigid_body->getJoint();
 
       // Defines the key that can be used to obtain the publisher and message.
       // The key is simply the model name since there should only be one
