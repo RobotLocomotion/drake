@@ -8,6 +8,7 @@
 #include "drake/util/drakeAppUtil.h"
 #include "drake/ros/ros_tf_publisher.h"
 #include "drake/ros/ros_vehicle_system.h"
+#include "drake/ros/ros_sensor_publisher_joint_state.h"
 #include "drake/ros/ros_sensor_publisher_lidar.h"
 #include "drake/ros/ros_sensor_publisher_odometry.h"
 
@@ -56,9 +57,21 @@ int do_main(int argc, const char* argv[]) {
   auto tf_publisher = std::make_shared<
       ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree);
 
+  auto joint_state_publisher = std::make_shared<
+      ::drake::ros::SensorPublisherJointState<RigidBodySystem::StateVector>>(
+      rigid_body_sys);
+
   auto sys =
-      cascade(cascade(cascade(cascade(vehicle_sys, visualizer), lidar_publisher),
-              odometry_publisher), tf_publisher);
+      cascade(
+        cascade(
+          cascade(
+            cascade(
+              cascade(
+                vehicle_sys, visualizer),
+              lidar_publisher),
+            odometry_publisher),
+          tf_publisher),
+        joint_state_publisher);
 
   // Initializes the simulation options.
   SimulationOptions options = GetCarSimulationDefaultOptions();
