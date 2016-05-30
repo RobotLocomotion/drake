@@ -4,10 +4,16 @@ import pydrake
 from pydrake.solvers import ik
 
 # Load our model from URDF
-robot = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(), "examples/PR2/pr2.urdf"))
+robot = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
+                                                  "examples/PR2/pr2.urdf"))
 
-# Add a convenient frame, positioned 0.1m away from the r_gripper_palm_link along that link's x axis
-robot.addFrame(pydrake.rbtree.RigidBodyFrame("r_hand_frame", robot.findLink("r_gripper_palm_link"), np.array([0.1, 0, 0]), np.array([0., 0, 0])))
+# Add a convenient frame, positioned 0.1m away from the r_gripper_palm_link
+# along that link's x axis
+robot.addFrame(
+           pydrake.rbtree.RigidBodyFrame("r_hand_frame",
+                                         robot.findLink("r_gripper_palm_link"),
+                                         np.array([0.1, 0, 0]),
+                                         np.array([0., 0, 0])))
 
 # Make sure attribute access works on bodies
 assert robot.world().name() == "world"
@@ -25,28 +31,28 @@ constraints = [
                # so we use NaN values to tell the IK solver not to apply a
                # constraint along those dimensions.
                ik.WorldPositionConstraint(robot, base_body_id,
-                                          np.zeros((3,)),
-                                          np.array([np.nan, np.nan, 0]),
-                                          np.array([np.nan, np.nan, 0])),
+                                          np.array([0.0, 0.0, 0.0]),
+                                          np.array([np.nan, np.nan, 0.0]),
+                                          np.array([np.nan, np.nan, 0.0])),
                ik.WorldPositionConstraint(robot, base_body_id,
-                                          np.array([1., 0, 0]),
-                                          np.array([np.nan, np.nan, 0]),
-                                          np.array([np.nan, np.nan, 0])),
+                                          np.array([1.0, 0.0, 0.0]),
+                                          np.array([np.nan, np.nan, 0.0]),
+                                          np.array([np.nan, np.nan, 0.0])),
                ik.WorldPositionConstraint(robot, base_body_id,
-                                          np.array([0., 1, 0]),
-                                          np.array([np.nan, np.nan, 0]),
-                                          np.array([np.nan, np.nan, 0])),
+                                          np.array([0.0, 1.0, 0.0]),
+                                          np.array([np.nan, np.nan, 0.0]),
+                                          np.array([np.nan, np.nan, 0.0])),
 
                # This constraint exactly specifies the desired position of the
                # hand frame we defined earlier.
                ik.WorldPositionConstraint(robot, hand_frame_id,
-                                          np.zeros((3,)),
-                                          np.array([0.5,0,0.6]),
-                                          np.array([0.5,0,0.6])),
+                                          np.array([0.0, 0.0, 0.0]),
+                                          np.array([0.5, 0.0, 0.6]),
+                                          np.array([0.5, 0.0, 0.6])),
                # And this specifies the orientation of that frame
                ik.WorldEulerConstraint(robot, hand_frame_id,
-                                       np.array([0.,0,0]),
-                                       np.array([0.,0,0]))
+                                       np.array([0.0, 0.0, 0.0]),
+                                       np.array([0.0, 0.0, 0.0]))
                ]
 
 q_seed = robot.getZeroConfiguration()
