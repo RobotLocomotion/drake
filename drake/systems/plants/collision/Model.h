@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "Element.h"
+#include "collision_element.h"
 #include "drake/drakeCollision_export.h"
 #include "drake/systems/plants/collision/point_pair.h"
 

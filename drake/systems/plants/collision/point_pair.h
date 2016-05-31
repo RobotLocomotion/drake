@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "Element.h"
+#include "collision_element.h"
 #include "drake/drakeCollision_export.h"
 
 namespace DrakeCollision {
