@@ -108,7 +108,7 @@ cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATL
 ## Some of them may also be hidden on Windows regardless of the status of MATLAB.
 cmake_dependent_option(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32;WITH_MOSEK" OFF)
 cmake_dependent_option(WITH_MOSEK "convex optimization solver; free for academics" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
@@ -118,13 +118,13 @@ cmake_dependent_option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficie
 # External Projects that are OFF by default
 ###########################################
 option(WITH_SNOPT "nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
+cmake_dependent_option(WITH_SIGNALSCOPE "live plotting tool for lcm messages" OFF "NOT WIN32;WITH_DIRECTOR" OFF)
 
 if(NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
   option(WITH_AVL "use w/ AVL to compute aerodynamic coefficients for airfoils")
   option(WITH_GUROBI "convex/integer optimization solver; free for academics (will prompt you for login bits)")
   option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
   option(WITH_OCTOMAP "provides oct-tree data structures")
-  option(WITH_SIGNALSCOPE "live plotting tool for lcm messages")
   option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 endif()
 
@@ -139,10 +139,14 @@ endif()
 set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
 set(bot_core_lcmtypes_dependencies lcm)
-set(director_dependencies lcm bot_core_lcmtypes libbot)
+set(director_dependencies bot_core_lcmtypes lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp nlopt)
+
+# List compilation and runtime dependencies. Runtime dependencies are needed
+# because the drake project must configure only after any dependencies used by
+# MATLAB have been installed.
+set(drake_dependencies bertini bot_core_lcmtypes bullet cmake eigen gloptipoly3 googletest gurobi iris lcm libbot mosek nlop octomap sedumi snopt spotless swig_matlab swigmake yalmip yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -432,7 +436,6 @@ foreach(proj ${EXTERNAL_PROJECTS})
       endif()
       # message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
     endif()
-
   else()
     message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
     set(PODS_VERBOSE_MAKEFILE "")
