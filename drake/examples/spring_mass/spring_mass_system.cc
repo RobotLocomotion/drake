@@ -121,15 +121,5 @@ void SpringMassSystem::Dynamics(
   derivative_vector->set_velocity(spring_force / mass_kg_);
 }
 
-void SpringMassSystem::MapVelocityToConfigurationDerivatives(
-    const Context<double>& context,
-    const StateVectorInterface<double>& generalized_velocity,
-    StateVectorInterface<double>* configuration_derivatives) const {
-  assert(generalized_velocity.size() == 1);
-  assert(configuration_derivatives->size() == 1);
-  // Identity transformation: the derivative of position is velocity.
-  configuration_derivatives->SetAtIndex(0, generalized_velocity.GetAtIndex(0));
-}
-
 }  // namespace examples
 }  // namespace drake

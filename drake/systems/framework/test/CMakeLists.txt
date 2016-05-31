@@ -27,4 +27,9 @@ if(GTEST_FOUND)
   target_link_libraries(state_test drakeSystemFramework
                         ${GTEST_BOTH_LIBRARIES})
   add_test(NAME state_test COMMAND state_test)
+
+  add_executable(continuous_system_test continuous_system_test.cc)
+  target_link_libraries(continuous_system_test drakeSystemFramework
+                        ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME continuous_system_test COMMAND continuous_system_test)
 endif()
