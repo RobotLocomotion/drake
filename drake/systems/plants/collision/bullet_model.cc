@@ -670,7 +670,8 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
 }
 
 // TODO(amcastro-tri): Change API so that ids_to_check actually is an
-// std::vector<CollisionElement*>. That way we avoid calling FindElement().
+// std::vector<CollisionElement*>. That way we avoid calling
+// FindMutableElement().
 // TODO(amcastro-tri): id_pairs could be computed by RigidBodyTree::compile only
 // once and be passed to this method every time is called since id_pairs does
 // not change during simulation.

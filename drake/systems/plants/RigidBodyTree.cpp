@@ -373,9 +373,9 @@ DrakeCollision::CollisionElementId RigidBodyTree::addCollisionElement(
   if (id != 0) {
     body.collision_element_ids.push_back(id);
     body.collision_element_groups[group_name].push_back(id);
-    // TODO(amcastro-tri): cleanup API so that we do not need FindElement any
-    // more.
-    body.AddCollisionElement(collision_model->FindElement(id));
+    // TODO(amcastro-tri): cleanup API so that we do not need FindMutableElement
+    // any more.
+    body.AddCollisionElement(collision_model->FindMutableElement(id));
   }
   return id;
 }
@@ -517,11 +517,11 @@ bool RigidBodyTree::collisionDetect(
     // cout << "RigidBodyTree::collisionDetect: points[i].getIdA() = " <<
     // points[i].getIdA() << endl;
     // cout << "RigidBodyTree::collisionDetect:
-    // collision_model->FindElement(points[i].getIdA()) = " <<
-    // collision_model->FindElement(points[i].getIdA()) << endl;
+    // collision_model->FindMutableElement(points[i].getIdA()) = " <<
+    // collision_model->FindMutableElement(points[i].getIdA()) << endl;
     // cout << "RigidBodyTree::collisionDetect:
-    // collision_model->FindElement(points[i].getIdA())->getId() = " <<
-    // collision_model->FindElement(points[i].getIdA())->getId() << endl;
+    // collision_model->FindMutableElement(points[i].getIdA())->getId() = " <<
+    // collision_model->FindMutableElement(points[i].getIdA())->getId() << endl;
     // cout << "RigidBodyTree::collisionDetect: elementA = " << elementA <<
     // endl;
     // END_DEBUG

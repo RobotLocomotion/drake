@@ -26,7 +26,7 @@ const CollisionElement* Model::FindElement(CollisionElementId id) const {
   }
 }
 
-CollisionElement* Model::FindElement(CollisionElementId id) {
+CollisionElement* Model::FindMutableElement(CollisionElementId id) {
   auto element_iter = elements.find(id);
   if (element_iter != elements.end()) {
     return element_iter->second.get();
