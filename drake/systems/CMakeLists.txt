@@ -1,15 +1,18 @@
-
-if (simulink_FOUND)
+if(simulink_FOUND)
   add_mex(DCSFunction DCSFunction.cpp)
 endif()
 
-if (LCM_FOUND)
+if(LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
   add_dependencies(drakeLCMSystem drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(drakeLCMSystem lcm)
 
   pods_install_libraries(drakeLCMSystem)
   drake_install_headers(LCMSystem.h)
+  pods_install_pkg_config_file(drake-lcm-system
+    LIBS -ldrakeLCMSystem
+    REQUIRES lcm
+    VERSION 0.0.1)
 endif()
 
 add_subdirectory(frames)

@@ -15,11 +15,6 @@ classdef Constraint
     name    % cell array of constraint names
     ceq_idx   % The row index of the equality constraint
     cin_idx   % The row index of the inequality constraint
-
-    % gradient sparsity information
-    iCfun   % An int vector. The row index of non-zero entries of the gradient matrix
-    jCvar   % An int vector. The column index of the non-zero entries of the gradient matrix
-    nnz     % An int scalar. The maximal number of non-zero entries in the gradient matrix
   end
 
   properties
@@ -29,34 +24,58 @@ classdef Constraint
                       % to supply all of the requested arguments.  Refer to
                       % the 'geval' documentation for additional supported values. @default ''
   end
+  
+  properties(Access = private)
+    % gradient sparsity information
+    iCfun   % An int vector. The row index of non-zero entries of the gradient matrix
+    jCvar   % An int vector. The column index of the non-zero entries of the gradient matrix
+    nnz     % An int scalar. The maximal number of non-zero entries in the gradient matrix
+  end
 
   methods
-    function obj = Constraint(lb,ub,xdim,grad_level)
+    function obj = Constraint(lb,ub,xdim,options)
       % Constraint(lb,ub) or Constraint(lb,ub,eval_handle)
       % @param lb    The lower bound of the constraint
       % @param ub    The upper bound of the constraint
       % @param xdim  size of the input
-      % @param grad_level derivative level of user gradients
+      % @option grad_level derivative level of user gradients
       %               -2 - non-differentiable
       %               -1 - unknown
       %                0 - no user gradients
       %                1 - first derivatives provided
       %                ...
       %              @default -1
+      % @option iCfun  The row indices of nonzero entries in the gradient
+      % matrix
+      % @option jCvar  The column indices of nonzero entries in the
+      % gradient matrix
       obj = obj.setBounds(lb,ub);
       if(~isnumeric(xdim) || numel(xdim) ~= 1 || xdim<0 || xdim ~= floor(xdim))
         error('Drake:Constraint:BadInputs','xdim should be a non-negative integer');
       end
       obj.xdim = xdim;
 
-      if (nargin<4), grad_level = -1; end
-      obj.grad_level = grad_level;
+      if (nargin<4), options = struct(); end
+      if(isnumeric(options) && numel(options) == 1)
+        options = struct('grad_level',options);
+      end
+      if(~isstruct(options))
+        error('Drake:Constraint:BadInputs','options should be a struct');
+      end
+      if(~isfield(options,'grad_level'))
+        options.grad_level = -1;
+      end
+      if(~isfield(options,'iCfun'))
+        options.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
+        options.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
+      elseif(~isfield(options,'jCvar'))
+        error('Drake:Constraint:BadInputs','if you pass in iCfun, then you must pass in jCvar as well');
+      end
+      obj.grad_level = options.grad_level;
 
       obj.name = repmat({''},obj.num_cnstr,1);
 
-      obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
-      obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
-      obj.nnz = obj.num_cnstr*obj.xdim;
+      obj = obj.setSparseStructure(options.iCfun,options.jCvar);
     end
 
     function obj = setSparseStructure(obj,iCfun,jCvar)
@@ -78,6 +97,12 @@ classdef Constraint
       obj.nnz = numel(iCfun);
     end
 
+    function [iCfun,jCvar,nnz] = getGradientSparseStructure(obj)
+      iCfun = obj.iCfun;
+      jCvar = obj.jCvar;
+      nnz = numel(iCfun);
+    end
+    
     function checkGradient(obj,tol,varargin)
       % Check the accuracy and sparsity pattern of the gradient
       % @param tol    -- A double scalar. The tolerance of the user gradient, compared with
@@ -86,7 +111,8 @@ classdef Constraint
       [~,dc] = obj.eval(varargin{:});
       [~,dc_numeric] = geval(@obj.eval,varargin{:},struct('grad_method','numerical'));
       valuecheck(dc,dc_numeric,tol);
-      valuecheck(dc,sparse(obj.iCfun,obj.jCvar,dc(sub2ind([obj.num_cnstr,obj.xdim],obj.iCfun,obj.jCvar)),obj.num_cnstr,obj.xdim,obj.nnz));
+      [m_iCfun,m_jCvar,m_nnz] = obj.getGradientSparseStructure();
+      valuecheck(dc,sparse(m_iCfun,m_jCvar,dc(sub2ind([obj.num_cnstr,obj.xdim],m_iCfun,m_jCvar)),obj.num_cnstr,obj.xdim,m_nnz));
     end
 
     function obj = setName(obj,name)

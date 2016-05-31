@@ -322,8 +322,8 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
   return c.getResults();
 }
 
-bool BulletModel::collidingPointsCheckOnly(const std::vector<Vector3d>& points,
-                                           double collision_threshold) {
+bool BulletModel::collidingPointsCheckOnly(
+    const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
 
@@ -335,12 +335,12 @@ bool BulletModel::collidingPointsCheckOnly(const std::vector<Vector3d>& points,
   btT.setIdentity();
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(false);
 
-  for (size_t i = 0; i < points.size(); ++i) {
+  for (size_t i = 0; i < input_points.size(); ++i) {
     BinaryContactResultCallback c;
 
-    btVector3 pos(static_cast<btScalar>(points[i](0)),
-                  static_cast<btScalar>(points[i](1)),
-                  static_cast<btScalar>(points[i](2)));
+    btVector3 pos(static_cast<btScalar>(input_points[i](0)),
+                  static_cast<btScalar>(input_points[i](1)),
+                  static_cast<btScalar>(input_points[i](2)));
     btT.setOrigin(pos);
     bt_obj.setWorldTransform(btT);
 
@@ -355,7 +355,7 @@ bool BulletModel::collidingPointsCheckOnly(const std::vector<Vector3d>& points,
 }
 
 std::vector<size_t> BulletModel::collidingPoints(
-    const std::vector<Vector3d>& points, double collision_threshold) {
+    const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
 
@@ -368,12 +368,12 @@ std::vector<size_t> BulletModel::collidingPoints(
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(false);
   std::vector<size_t> in_collision_indices;
 
-  for (size_t i = 0; i < points.size(); ++i) {
+  for (size_t i = 0; i < input_points.size(); ++i) {
     BinaryContactResultCallback c;
 
-    btVector3 pos(static_cast<btScalar>(points[i](0)),
-                  static_cast<btScalar>(points[i](1)),
-                  static_cast<btScalar>(points[i](2)));
+    btVector3 pos(static_cast<btScalar>(input_points[i](0)),
+                  static_cast<btScalar>(input_points[i](1)),
+                  static_cast<btScalar>(input_points[i](2)));
     btT.setOrigin(pos);
     bt_obj.setWorldTransform(btT);
 
@@ -708,6 +708,10 @@ bool BulletModel::collisionPointsAllToAll(
   MatrixXd normals;
   std::vector<double> distance;
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+
+  // Internally updates AABB's calling btCollisionWorld::updateAabbs();
+  // TODO(amcastro-tri): analyze if the call to BulletModel::updateModel() is
+  // redundant (since all it does is to call btCollisionWorld::updateAabbs()).
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
   int numManifolds =
       bt_world.bt_collision_world->getDispatcher()->getNumManifolds();

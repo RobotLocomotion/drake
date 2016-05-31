@@ -146,11 +146,11 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   using OutputVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
   explicit RigidBodySystem(std::shared_ptr<RigidBodyTree> rigid_body_tree)
-      : tree(rigid_body_tree),
-        use_multi_contact(false),
+      : use_multi_contact(false),
         penetration_stiffness(150.0),
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
+        tree(rigid_body_tree),
         direct_feedthrough(false) {}
 
   RigidBodySystem()
@@ -454,26 +454,58 @@ class AdditiveGaussianNoiseModel
   std::mt19937 generator;
 };
 
-/** RigidBodySensor
- * @brief interface class for elements which define a sensor which reads the
- * state of a rigid body system
+/**
+ * An abstract parent class of all sensors.
+ *
+ * This is an abstract top-level class of all rigid body sensors in Drake.
  */
 class DRAKERBSYSTEM_EXPORT RigidBodySensor {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  RigidBodySensor(RigidBodySystem const& sys, const std::string& name)
-      : sys(sys), name(name) {}
+
+  /**
+   * The constructor.
+   *
+   * @param[in] sys The rigid body system to which the sensor is attached.
+   * @param[in] name The name of the sensor.
+   * @param[in] frame The frame within the rigid body system's rigid body tree
+   * to which the sensor is attached.
+   */
+  RigidBodySensor(const RigidBodySystem& sys, const std::string& name,
+                  std::shared_ptr<RigidBodyFrame> frame)
+      : sys_(sys), name_(name), frame_(frame) {}
+
   virtual ~RigidBodySensor() {}
+
   virtual bool isDirectFeedthrough() const { return false; }
+
   virtual size_t getNumOutputs() const { return 0; }
+
   virtual Eigen::VectorXd output(
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const = 0;
-  const std::string& get_name() const { return name; }
 
- protected:
-  RigidBodySystem const& sys;
-  std::string name;
+  /// Returns the name of the sensor.
+  const std::string& get_name() const { return name_; }
+
+  /// Returns the name of the model (i.e., robot) that owns this sensor.
+  const std::string& get_model_name() const;
+
+  /// Returns the frame to which thi sensor is attached.
+  const RigidBodyFrame& get_frame() const;
+
+  /// Returns the rigid body system to which this sensor attaches.
+  const RigidBodySystem& get_rigid_body_system() const;
+
+ private:
+  /// The rigid body tree to which the sensor is attached.
+  const RigidBodySystem& sys_;
+
+  /// The sensor's name.
+  const std::string name_;
+
+  /// The frame within the rigid body tree to which this sensor is attached.
+  const std::shared_ptr<RigidBodyFrame> frame_;
 };
 
 /** RigidBodyDepthSensor
@@ -485,6 +517,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
                        const std::shared_ptr<RigidBodyFrame> frame,
                        tinyxml2::XMLElement* node);
+
   RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
                        const std::shared_ptr<RigidBodyFrame> frame,
                        std::size_t samples, double min_angle, double max_angle,
@@ -493,6 +526,16 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   ~RigidBodyDepthSensor() override {}
 
   size_t getNumOutputs() const override;
+
+  /**
+   * Returns `true` if this sensor scans horizontally.
+   */
+  virtual bool is_horizontal_scanner() const;
+
+  /**
+   * Returns `true` if this sensor scans vertically.
+   */
+  virtual bool is_vertical_scanner() const;
 
   /**
    * Returns the number of points in the image vertically (pitch).
@@ -554,9 +597,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   // length max_range, at the specific yaw (pitch) angle.
   void cacheRaycastEndpoints();
 
-  // The sensor's frame.
-  const std::shared_ptr<RigidBodyFrame> frame_;
-
   // The minimum pitch of the camera FOV in radians.
   double min_pitch_{};
 
@@ -614,7 +654,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
  private:
   bool gravity_compensation;
   std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
-  const std::shared_ptr<RigidBodyFrame> frame;
 };
 
 /** RigidBodyGyroscope
@@ -638,7 +677,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
 
  private:
   std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
-  const std::shared_ptr<RigidBodyFrame> frame;
 };
 
 /** RigidBodyMagnetometer
@@ -670,7 +708,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
  private:
   Eigen::Vector3d magnetic_north;
   std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
-  const std::shared_ptr<RigidBodyFrame> frame;
 };
 
 }  // end namespace Drake
