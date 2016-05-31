@@ -13,8 +13,34 @@
 #include <fstream>
 #include <iostream>
 
-using namespace std;
-using namespace Eigen;
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::string;
+using std::ofstream;
+using std::set;
+using std::vector;
+using std::map;
+using std::unordered_map;
+using std::pair;
+using std::hash;
+using std::equal_to;
+using std::less;
+using std::allocator;
+
+using Eigen::Vector3d;
+using Eigen::VectorXd;
+using Eigen::MatrixXd;
+using Eigen::Matrix3Xd;
+using Eigen::Isometry;
+using Eigen::Transform;
+using Eigen::Isometry3d;
+using Eigen::Dynamic;
+using Eigen::Matrix;
+using Eigen::Map;
+using Eigen::MatrixBase;
+using Eigen::AutoDiffScalar;
+
 using DrakeCollision::CollisionElement;
 
 const set<int> RigidBodyTree::default_robot_num_set = {0};
