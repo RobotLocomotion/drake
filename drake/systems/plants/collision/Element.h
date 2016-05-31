@@ -42,7 +42,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   Users should not call this method to test the collision of an element with
   itself, unless each collision element is guaranteed to belong to its own
   collision clique. **/
-  virtual bool CanCollideWith(const CollisionElement *other) const;
+  virtual bool CanCollideWith(const CollisionElement* other) const;
 
   /** Returns a pointer to the const RigidBody to which this CollisionElement
   is attached. **/

@@ -108,7 +108,7 @@ class DRAKERBM_EXPORT RigidBody {
              !(other.joint && other.joint->isFloating())));
   }
 
-  bool CanCollideWith(const RigidBody &other) const {
+  bool CanCollideWith(const RigidBody& other) const {
     bool ignored =
         this == &other || adjacentTo(other) ||
         (collision_filter_group & other.getCollisionFilterIgnores()).any() ||
@@ -168,8 +168,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   typedef std::vector<DrakeCollision::CollisionElement*>
       CollisionElementsVector;
-  typedef
-      typename CollisionElementsVector::iterator CollisionElementsIterator;
+  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
   typedef typename CollisionElementsVector::const_iterator
       CollisionElementsConstIterator;
   std::map<std::string, std::vector<DrakeCollision::CollisionElementId> >
@@ -185,7 +184,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   /** Adds collision element `e` to this rigid body.
   @param e The collision element being added to this body. **/
-  void AddCollisionElement(DrakeCollision::CollisionElement *e) {
+  void AddCollisionElement(DrakeCollision::CollisionElement* e) {
     collision_elements_.push_back(e);
   }
 

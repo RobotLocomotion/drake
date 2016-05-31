@@ -38,8 +38,9 @@ const DrakeJoint& RigidBody::getJoint() const {
   if (joint) {
     return (*joint);
   } else {
-    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_
-      + "\" in model " + model_name_ + " does not have a joint!");
+    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_ +
+                        "\" in model " + model_name_ +
+                        " does not have a joint!");
   }
 }
 
@@ -50,8 +51,8 @@ void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element) {
 }
 
 void RigidBody::AddToCollisionClique(int clique_id) {
-  for (auto eit = CollisionElementsBegin();
-       eit != CollisionElementsEnd(); ++eit) {
+  for (auto eit = CollisionElementsBegin(); eit != CollisionElementsEnd();
+       ++eit) {
     (*eit)->AddToCollisionClique(clique_id);
   }
 }
@@ -68,7 +69,8 @@ void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
-    const string& group_name, vector<DrakeCollision::CollisionElementId>& ids) const {
+    const string& group_name,
+    vector<DrakeCollision::CollisionElementId>& ids) const {
   auto group_ids_iter = collision_element_groups.find(group_name);
   if (group_ids_iter != collision_element_groups.end()) {
     ids.reserve(ids.size() + distance(group_ids_iter->second.begin(),

@@ -10,9 +10,9 @@ namespace DrakeCollision {
 
 class DRAKECOLLISION_EXPORT PointPair {
  public:
-  PointPair(const CollisionElementId idA, const CollisionElementId idB, const Eigen::Vector3d ptA,
-            const Eigen::Vector3d ptB, const Eigen::Vector3d normal,
-            double distance)
+  PointPair(const CollisionElementId idA, const CollisionElementId idB,
+            const Eigen::Vector3d ptA, const Eigen::Vector3d ptB,
+            const Eigen::Vector3d normal, double distance)
       : idA_(idA),
         idB_(idB),
         ptA_(ptA),

@@ -425,8 +425,8 @@ void BulletModel::updateModel() {
 }
 
 bool BulletModel::findClosestPointsBetweenElements(
-    const CollisionElementId idA, const CollisionElementId idB, const bool use_margins,
-    ResultCollector* result_collector) {
+    const CollisionElementId idA, const CollisionElementId idB,
+    const bool use_margins, ResultCollector* result_collector) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
   if (elements[idA]->getShape() == DrakeShapes::SPHERE &&

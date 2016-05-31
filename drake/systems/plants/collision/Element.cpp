@@ -35,7 +35,7 @@ const RigidBody* const CollisionElement::getBody() const { return body_; }
 
 void CollisionElement::set_rigid_body(const RigidBody* body) { body_ = body; }
 
-bool CollisionElement::CanCollideWith(const CollisionElement *other) const {
+bool CollisionElement::CanCollideWith(const CollisionElement* other) const {
   // If collision_cliques_.size() = N and other->collision_cliques_.size() = M
   // The worst case (overlapping elements without intersection) is O(N+M).
   return !SortedVectorsHaveIntersection(collision_cliques_,

@@ -21,7 +21,8 @@ class DRAKECOLLISION_EXPORT Model {
 
   /** \brief Add a collision element to this model.
   * \param element the collision element to be added to this model
-  * \return an CollisionElementId that uniquely identifies the added element within
+  * \return an CollisionElementId that uniquely identifies the added element
+  * within
   * this model
   */
   virtual CollisionElementId addElement(const CollisionElement& element);
@@ -29,14 +30,16 @@ class DRAKECOLLISION_EXPORT Model {
   bool removeElement(const CollisionElementId& id);
 
   /** Get a pointer to a const collision element in this model.
-   @param id an CollisionElementId corresponding to the desired collision element
+   @param id an CollisionElementId corresponding to the desired collision
+   element
    @returns a pointer to a const collision element corresponding to
    the given id or nullptr if no such collision element is present in the
    model. **/
   virtual const CollisionElement* FindElement(CollisionElementId id) const;
 
   /** Get a pointer to a mutable collision element in this model.
-   @param id an CollisionElementId corresponding to the desired collision element.
+   @param id an CollisionElementId corresponding to the desired collision
+   element.
    @returns a pointer to a mutable collision element corresponding to
    the given id or nullptr if no such collision element is present in the
    model. **/
@@ -61,7 +64,8 @@ class DRAKECOLLISION_EXPORT Model {
 
   /** \brief Compute the points of closest approach between all eligible
    * pairs of collision elements drawn from a specified set of elements
-   * \param ids_to_check the vector of CollisionElementId for which the all-to-all
+   * \param ids_to_check the vector of CollisionElementId for which the
+   * all-to-all
    * collision detection should be performed
    * \param use_margins flag indicating whether or not to use the version
    * of this model with collision margins
@@ -70,9 +74,9 @@ class DRAKECOLLISION_EXPORT Model {
    * called
    * \return true if this method ran successfully
    */
-  virtual bool closestPointsAllToAll(const std::vector<CollisionElementId>& ids_to_check,
-                                     const bool use_margins,
-                                     std::vector<PointPair>& closest_points) {
+  virtual bool closestPointsAllToAll(
+      const std::vector<CollisionElementId>& ids_to_check,
+      const bool use_margins, std::vector<PointPair>& closest_points) {
     return false;
   }
 
@@ -227,7 +231,8 @@ class DRAKECOLLISION_EXPORT Model {
   // Protected member variables are forbidden by the style guide.
   // Please do not add new references to this member.  Instead, use
   // the accessors.
-  std::unordered_map<CollisionElementId, std::unique_ptr<CollisionElement>> elements;
+  std::unordered_map<CollisionElementId, std::unique_ptr<CollisionElement>>
+      elements;
 
  private:
   Model(const Model&) {}

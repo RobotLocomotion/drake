@@ -366,7 +366,8 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   //    corners of the small box is the same.
 
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<CollisionElementId> ids_to_check = {large_box_id, small_box_id};
+  const std::vector<CollisionElementId> ids_to_check = {large_box_id,
+                                                        small_box_id};
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);

@@ -482,7 +482,8 @@ bool RigidBodyTree::collisionDetect(
     const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     vector<int>& bodyB_idx,
-    const vector<DrakeCollision::CollisionElementId>& ids_to_check, bool use_margins) {
+    const vector<DrakeCollision::CollisionElementId>& ids_to_check,
+    bool use_margins) {
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;

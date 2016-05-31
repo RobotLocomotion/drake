@@ -811,7 +811,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   int number_of_velocities() const { return num_velocities_; }
 
-
  public:
   static const std::set<int> default_robot_num_set;
 
