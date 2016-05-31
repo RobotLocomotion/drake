@@ -224,9 +224,12 @@ void RigidBodyTree::compile(void) {
     getTerrainContactPoints(body, body.contact_pts);
   }
 
-  // Create collision groups for the DrakeCollision::Model so that
-  // CollisionElement's in the same RigidBody do not collide. Also groups are
-  // created so that CollisionElement's in adjacent RigidBody's do not collide.
+  // Create collision cliques for the DrakeCollision::Model according to the
+  // policy imposed by RigidBody::CollidesWith.
+  // These cliques include:
+  //   * CollisionElement's in the same RigidBody.
+  //   * CollisionElement's in adjacent RigidBody's.
+  // For details on this policy see RigidBody::CollidesWith.
   CreateCollisionCliques();
 
   initialized_ = true;
@@ -1705,7 +1708,7 @@ RigidBody* RigidBodyTree::findLink(std::string name,
   return nullptr;
 }
 
-shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
+std::shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
     std::string frame_name, std::string model_name) const {
   std::transform(frame_name.begin(), frame_name.end(), frame_name.begin(),
                  ::tolower);  // convert to lower case
