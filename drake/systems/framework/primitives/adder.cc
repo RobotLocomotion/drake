@@ -22,7 +22,7 @@ std::unique_ptr<Context<T>> Adder<T>::CreateDefaultContext() const {
 }
 
 template <typename T>
-std::unique_ptr<SystemOutput<T>> Adder<T>::CreateDefaultOutput() const {
+std::unique_ptr<SystemOutput<T>> Adder<T>::AllocateOutput() const {
   // An adder has just one output port, a BasicVector of the size specified
   // at construction time.
   std::unique_ptr<SystemOutput<T>> output(new SystemOutput<T>);
@@ -50,19 +50,19 @@ void Adder<T>::Output(const Context<T>& context,
 
   // Check that there are the expected number of input ports.
   if (context.get_input().ports.size() != num_inputs_) {
-    throw std::runtime_error(
+    throw std::out_of_range(
         "Expected " + std::to_string(num_inputs_) + "input ports, but had " +
         std::to_string(context.get_input().ports.size()));
   }
 
   // Sum each input port into the output, after checking that it has the
   // expected length.
-  for (int i = 0; i < context.get_input().ports.size(); i++) {
+  for (size_t i = 0; i < context.get_input().ports.size(); i++) {
     const VectorInterface<T>* input =
         context.get_input().ports[i].vector_input;
     if (input == nullptr || input->get_value().rows() != length_) {
-      throw std::runtime_error("Input port " + std::to_string(i) +
-                               "is nullptr or has incorrect size.");
+      throw std::out_of_range("Input port " + std::to_string(i) +
+                              "is nullptr or has incorrect size.");
     }
     output_port->get_mutable_value() += input->get_value();
   }

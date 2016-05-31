@@ -27,10 +27,10 @@ namespace drake {
 class DRAKECARS_EXPORT TrajectoryCar {
  public:
   /// Constructs a TrajectoryCar system that traces the given @p curve,
-  /// at the given constant @p speed.  Throws an error if the curve
-  /// cannot be used for a trajectory (e.g., empty).
-  TrajectoryCar(const Curve2<double>& curve, double speed)
-      : curve_(curve), speed_(speed) {
+  /// at the given constant @p speed, starting at the given @p start_time.
+  /// Throws an error if the curve is empty (a zero @p path_length).
+  TrajectoryCar(const Curve2<double>& curve, double speed, double start_time)
+      : curve_(curve), speed_(speed), start_time_(start_time) {
     if (curve_.path_length() == 0.0) {
       throw std::invalid_argument{"empty curve"};
     }
@@ -65,7 +65,7 @@ class DRAKECARS_EXPORT TrajectoryCar {
     // N.B. Never use InputVector data, because we are !isDirectFeedthrough.
 
     // Trace the curve at a fixed speed.
-    const double distance = speed_ * time;
+    const double distance = speed_ * (time - start_time_);
     const Curve2<double>::PositionResult pose = curve_.GetPosition(distance);
 
     // Convert pose to OutputVector.
@@ -93,6 +93,7 @@ class DRAKECARS_EXPORT TrajectoryCar {
  private:
   const Curve2<double> curve_;
   const double speed_;
+  const double start_time_;
 };
 
 }  // namespace drake

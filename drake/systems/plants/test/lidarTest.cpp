@@ -34,6 +34,11 @@ int do_main(int argc, char* argv[]) {
         "ERROR: Unable to obtain pointer to the LIDAR sensor.");
   }
 
+  if (lidar_sensor->get_model_name() != "room_w_lidar") {
+    throw std::runtime_error(
+      "ERROR: LIDAR scanner reported that it is part of the wrong model!");
+  }
+
   if (!lidar_sensor->is_horizontal_scanner()) {
     throw std::runtime_error(
       "ERROR: LIDAR scanner says it is not horizontal but it is!");

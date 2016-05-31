@@ -7,7 +7,6 @@
 #include "drake/systems/framework/basic_vector.h"
 
 #include "gtest/gtest.h"
-#include "gmock/gmock.h"
 
 namespace drake {
 namespace systems {
@@ -18,7 +17,7 @@ class AdderTest : public ::testing::Test {
   void SetUp() override {
     adder_.reset(new Adder<double>(2 /* inputs */, 3 /* length */));
     context_ = adder_->CreateDefaultContext();
-    output_ = adder_->CreateDefaultOutput();
+    output_ = adder_->AllocateOutput();
   }
 
   std::unique_ptr<Adder<double>> adder_;
@@ -47,17 +46,17 @@ TEST_F(AdderTest, AddTwoVectors) {
   EXPECT_EQ(expected, output_port->get_value());
 }
 
-// Tests that std::runtime_error is thrown when the wrong number of input ports
+// Tests that std::out_of_range is thrown when the wrong number of input ports
 // are connected.
 TEST_F(AdderTest, WrongNumberOfInputPorts) {
   // Hook up just one input.
   BasicVector<double> input0(3 /* length */);
   context_->get_mutable_input()->ports[0].vector_input = &input0;
 
-  EXPECT_THROW(adder_->Output(*context_, output_.get()), std::runtime_error);
+  EXPECT_THROW(adder_->Output(*context_, output_.get()), std::out_of_range);
 }
 
-// Tests that std::runtime_error is thrown when input ports of the wrong size
+// Tests that std::out_of_range is thrown when input ports of the wrong size
 // are connected.
 TEST_F(AdderTest, WrongSizeOfInputPorts) {
   // Hook up two inputs, but one of them is the wrong size.
@@ -67,7 +66,7 @@ TEST_F(AdderTest, WrongSizeOfInputPorts) {
   context_->get_mutable_input()->ports[0].vector_input = &input0;
   context_->get_mutable_input()->ports[1].vector_input = &input1;
 
-  EXPECT_THROW(adder_->Output(*context_, output_.get()), std::runtime_error);
+  EXPECT_THROW(adder_->Output(*context_, output_.get()), std::out_of_range);
 }
 
 // Tests that Adder allocates no state variables in the context_.

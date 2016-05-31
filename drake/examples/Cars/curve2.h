@@ -35,17 +35,14 @@ class Curve2 {
   // Copyable.
   Curve2(const Curve2&) = default;
   Curve2& operator=(const Curve2&) = default;
-  // Not moveable.
-  Curve2(Curve2&&) = delete;
-  Curve2& operator=(Curve2&&) = delete;
 
   /// @return the length of this curve (the total distance traced).
   T path_length() const { return path_length_; }
 
   /// A result type for the GetPosition method.
   struct PositionResult {
-    Point2 position{Point2::Zero()};
-    Point2 position_dot{Point2::Zero()};
+    Point2 position = Point2{Point2::Zero()};
+    Point2 position_dot = Point2{Point2::Zero()};
   };
 
   /// Returns the Curve's @p PositionResult::position at @p path_distance,

@@ -44,8 +44,11 @@ int do_main(int argc, const char* argv[]) {
   SimulationOptions options =
       GetCarSimulationDefaultOptions();
 
+  // Defines the start time of the simulation.
+  const double kStartTime = 0;
+
   // Starts the simulation.
-  Drake::runLCM(sys, lcm, 0, duration,
+  Drake::runLCM(sys, lcm, kStartTime, duration,
                 GetInitialState(*(rigid_body_sys.get())),
                 options);
 

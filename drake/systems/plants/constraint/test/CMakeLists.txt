@@ -1,4 +1,3 @@
-
 add_matlab_test(NAME systems/plants/constraint/test/AllBodiesClosestDistanceConstraintTest COMMAND AllBodiesClosestDistanceConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/RelativeGazeTargetConstraintTest COMMAND RelativeGazeTargetConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/RelativePositionConstraintTest COMMAND RelativePositionConstraintTest)
@@ -9,6 +8,6 @@ add_matlab_test(NAME systems/plants/constraint/test/testPostureConstraint COMMAN
 add_matlab_test(NAME systems/plants/constraint/test/testQuasiStaticConstraint COMMAND testQuasiStaticConstraint)
 add_matlab_test(NAME systems/plants/constraint/test/testSingleTimeLinearPostureConstraint COMMAND testSingleTimeLinearPostureConstraint)
 
-if (LONG_RUNNING_TESTS)
+if(LONG_RUNNING_TESTS)
   # add_matlab_test(NAME systems/plants/constraint/test/testKinCnst COMMAND testKinCnst PROPERTIES TIMEOUT 1500)  # FIXME: see #2339
 endif()
