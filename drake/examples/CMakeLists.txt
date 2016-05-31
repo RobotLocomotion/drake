@@ -32,7 +32,7 @@ endif()
 # directly into examples/MY_EXAMPLE. See #1939.
 file(GLOB children *)
 foreach(child ${children})
-  if(IS_DIRECTORY ${child})
+  if(EXISTS ${child}/CMakeLists.txt)
     add_subdirectory(${child})
   endif()
 endforeach()
