@@ -65,14 +65,9 @@ class DrakeRosTfPublisher {
     // Instantiates a geometry_msgs::TransformStamped message for each rigid
     // body in the rigid body tree.
     for (auto &rigid_body : rigid_body_tree->bodies) {
-      // Skips the world link since the world link does not have a joint.
-      if (rigid_body->name() == RigidBodyTree::kWorldLinkName) continue;
 
-      // Skips links that do not have parents.
-      if (!rigid_body->hasParent()) continue;
-
-      // Obtains the current link's joint.
-      const DrakeJoint &joint = rigid_body->getJoint();
+      // Skips the current rigid body if it should be skipped.
+      if (!PublishTfForRigidBody(rigid_body.get())) continue;
 
       // Creates a unique key for holding the transform message.
       std::string key = rigid_body->model_name() + rigid_body->name();
@@ -91,6 +86,9 @@ class DrakeRosTfPublisher {
 
       message->header.frame_id = rigid_body->parent->name();
       message->child_frame_id = rigid_body->name();
+
+      // Obtains the current link's joint.
+      const DrakeJoint &joint = rigid_body->getJoint();
 
       // Initializes the transformation if the joint is fixed.
       // We can do this now since it will not change over time.
@@ -176,11 +174,8 @@ class DrakeRosTfPublisher {
     // Publishes the transform for each rigid body in the rigid body tree.
     for (auto const& rigid_body : rigid_body_tree_->bodies) {
 
-      // Skips parent-less links. This includes the world.
-      if (!rigid_body->hasParent()) continue;
-
-      // Obtains the current link's joint.
-      const DrakeJoint &joint = rigid_body->getJoint();
+      // Skips the current rigid body if it should be skipped.
+      if (!PublishTfForRigidBody(rigid_body.get())) continue;
 
       // Obtains a unique key for holding the transform message.
       std::string key = rigid_body->model_name() + rigid_body->name();
@@ -197,6 +192,9 @@ class DrakeRosTfPublisher {
       // Obtains a pointer to the geometry_msgs::TransformStamped message for
       // the current link.
       geometry_msgs::TransformStamped *message = message_in_map->second.get();
+
+      // Obtains the current link's joint.
+      const DrakeJoint &joint = rigid_body->getJoint();
 
       // Updates the transform only if the joint is not fixed.
       if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
@@ -256,30 +254,32 @@ class DrakeRosTfPublisher {
   bool isDirectFeedthrough() const { return true; }
 
  private:
-  /**
-   * The rigid body tree being used by Drake's rigid body dynamics engine.
-   */
+
+  // Determines whether a transform should be published for the specified
+  // rigid body. A rigid body should be skipped if it is the world link or if
+  // it is connected to the world via a fixed joint.
+  bool PublishTfForRigidBody(const RigidBody* rigid_body) {
+    // Skips parent-less links. This includes the world.
+    if (!rigid_body->hasParent()) return false;
+    return true;
+  }
+
+  // The rigid body tree being used by Drake's rigid body dynamics engine.
   const std::shared_ptr<RigidBodyTree> rigid_body_tree_;
 
-  /**
-   * Publishes the transform messages that specify the positions and
-   * orientations of every rigid body and frame in the rigid body tree. This is
-   * done on ROS topic /tf.
-   */
+  // Publishes the transform messages that specify the positions and
+  // orientations of every rigid body and frame in the rigid body tree. This is
+  // done on ROS topic /tf.
   tf::TransformBroadcaster tf_broadcaster_;
 
-  /**
-   * Maintains a set of ROS geometry_msgs::TransformStamped messages, one for
-   * each link and frame in the rigid body tree. This is used to avoid having to
-   * allocate a new message each time one needs to be sent. The key is the
-   * name of the model concatinated with the name of the rigid body or frame.
-   */
+  // Maintains a set of ROS geometry_msgs::TransformStamped messages, one for
+  // each link and frame in the rigid body tree. This is used to avoid having to
+  // allocate a new message each time one needs to be sent. The key is the
+  // name of the model concatinated with the name of the rigid body or frame.
   std::map<std::string, std::unique_ptr<geometry_msgs::TransformStamped>>
       transform_messages_;
 
-  /**
-   * The previous time the transform messages were sent.
-   */
+  // The previous time the transform messages were sent.
   ::ros::Time previous_send_time_;
 };
 
