@@ -9,8 +9,8 @@
 
 namespace Drake {
 
-/* Constraint
- * @brief A constraint is a function + lower and upper bounds.
+/**
+ * A constraint is a function + lower and upper bounds.
  *
  * Some thoughts:
  * It should support evaluating the constraint, adding it to an optimization
@@ -66,8 +66,8 @@ class Constraint {
   Eigen::VectorXd lower_bound_, upper_bound_;
 };
 
-/** QuadraticConstraint
- * @brief  lb <= .5 x'Qx + b'x <= ub
+/**
+ * lb <= .5 x'Qx + b'x <= ub
  */
 class QuadraticConstraint : public Constraint {
  public:
@@ -101,8 +101,8 @@ class QuadraticConstraint : public Constraint {
   Eigen::VectorXd b_;
 };
 
-/** PolynomialConstraint
- * @brief lb[i] <= P[i](x, y...) <= ub[i], where each P[i] is a multivariate
+/**
+ *  lb[i] <= P[i](x, y...) <= ub[i], where each P[i] is a multivariate
  *  polynomial in x, y...
  *
  * A constraint on the values of multivariate polynomials.
@@ -160,8 +160,8 @@ class PolynomialConstraint : public Constraint {
 // todo: consider implementing DifferentiableConstraint,
 // TwiceDifferentiableConstraint, ComplementarityConstraint,
 // IntegerConstraint, ...
-/** LinearConstraint
- * @brief Implements a constraint of the form @f lb <= Ax <= ub @f
+/**
+ * Implements a constraint of the form @f lb <= Ax <= ub @f
  */
 class LinearConstraint : public Constraint {
  public:
@@ -200,8 +200,8 @@ class LinearConstraint : public Constraint {
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
 };
 
-/** LinearEqualityConstraint
- * @brief Implements a constraint of the form @f Ax = b @f
+/**
+ * Implements a constraint of the form @f Ax = b @f
  */
 class LinearEqualityConstraint : public LinearConstraint {
  public:
@@ -234,11 +234,14 @@ class LinearEqualityConstraint : public LinearConstraint {
   }
 };
 
-/** BoundingBoxConstraint
-*@brief Implements a constraint of the form @f lb <= x <= ub @f
-*Note: the base Constraint class (as implemented at the moment) could play this
-* role.  But this class enforces
-*that it is ONLY a bounding box constraint, and not something more general.
+/**
+* Implements a constraint of the form @f lb <= x <= ub @f
+*
+* Note: the base Constraint class (as implemented at the moment) could
+* play this role.  But this class enforces that it is ONLY a bounding
+* box constraint, and not something more general.  Some solvers use
+* this information to handle bounding box constraints differently than
+* general constraints, so use of this form is encouraged.
 */
 class BoundingBoxConstraint : public LinearConstraint {
  public:
@@ -263,14 +266,15 @@ class BoundingBoxConstraint : public LinearConstraint {
 };
 
 
-/** LinearComplementarityConstraint
- *
+/**
  * Implements a constraint of the form:
+ *
  * <pre>
  *   Mx + q >= 0
  *   x >= 0
  *   x'(Mx + q) == 0
  * </pre>
+ *
  * An implied slack variable complements any 0 component of x.  To get
  * the slack values at a given solution x, use eval(x).
  */
