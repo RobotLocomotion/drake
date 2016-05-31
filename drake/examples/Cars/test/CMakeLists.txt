@@ -12,4 +12,8 @@ if(GTEST_FOUND AND LCM_FOUND AND NOT WIN32)
   add_executable(trajectory_car_test trajectory_car_test.cc)
   target_link_libraries(trajectory_car_test ${GTEST_BOTH_LIBRARIES} drakeCars)
   add_test(NAME trajectory_car_test COMMAND trajectory_car_test)
+
+  add_executable(car_simulation_test car_simulation_test.cc)
+  target_link_libraries(car_simulation_test ${GTEST_BOTH_LIBRARIES} drakeCars)
+  add_test(NAME car_simulation_test COMMAND car_simulation_test)
 endif()
