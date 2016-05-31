@@ -65,53 +65,6 @@ int do_main(int argc, const char* argv[]) {
       DrakeJoint::QUATERNION, car_offset);
   }
 
-  // auto car_offset_1 = std::allocate_shared<RigidBodyFrame>(
-  //     Eigen::aligned_allocator<RigidBodyFrame>(),
-  //     // Weld the model to the world link.
-  //     "world",
-
-  //     // A pointer to a rigid body to which to weld the model is not needed
-  //     // since the model will be welded to the world, which can by automatically
-  //     // found within the rigid body tree.
-  //     nullptr,
-
-  //     // The following parameter specifies the X,Y,Z position of the car's root
-  //     // link in the world's frame.
-  //     Eigen::Vector3d(0, 0, 0.378326),
-
-  //     // The following parameter specifies the roll, pitch, and yaw of the car's
-  //     // root link in the world's frame.
-  //     Eigen::Vector3d(0, 0, 0));
-
-  // auto car_offset_2 = std::allocate_shared<RigidBodyFrame>(
-  //     Eigen::aligned_allocator<RigidBodyFrame>(),
-  //     // Weld the model to the world link.
-  //     "world",
-
-  //     // A pointer to a rigid body to which to weld the model is not needed
-  //     // since the model will be welded to the world, which can by automatically
-  //     // found within the rigid body tree.
-  //     nullptr,
-
-  //     // The following parameter specifies the X,Y,Z position of the car's root
-  //     // link in the world's frame.
-  //     Eigen::Vector3d(5, 5, 0.378326),
-
-  //     // The following parameter specifies the roll, pitch, and yaw of the car's
-  //     // root link in the world's frame.
-  //     Eigen::Vector3d(0, 0, 0));
-
-  // std::string postfix_1 = "_1";
-  // std::string postfix_2 = "_2";
-
-  // rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
-  //   "/examples/Cars/models/prius/prius.sdf", &postfix_1,
-  //   DrakeJoint::QUATERNION, car_offset_1);
-
-  // rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
-  //   "/examples/Cars/models/prius/prius.sdf", &postfix_2, DrakeJoint::QUATERNION,
-  //   car_offset_2);
-
   // TODO(liangfok) move this into a method in car_simulation.h/.cc
   rigid_body_sys->penetration_stiffness = 5000.0;
   rigid_body_sys->penetration_damping = rigid_body_sys->penetration_stiffness / 10.0;
@@ -121,7 +74,7 @@ int do_main(int argc, const char* argv[]) {
   // std::cout << "Number of positions: " << rigid_body_sys->number_of_positions() << std::endl;
   // std::cout << "Number of velocities: " << rigid_body_sys->number_of_velocities() << std::endl;
 
-  double duration = std::numeric_limits<double>::infinity();
+  double duration = ParseDuration(argc, argv);
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 

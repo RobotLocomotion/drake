@@ -89,6 +89,20 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
   return rigid_body_sys;
 }
 
+double ParseDuration(int argc, const char* argv[]) {
+  for (int ii = 2; ii < argc; ii++) {
+    if (std::string(argv[ii]) == "--duration") {
+      if (++ii == argc) {
+        throw std::runtime_error(
+            "ERROR: Command line option \"--duration\" is not followed by a "
+            "value!");
+      }
+      return atof(argv[ii]);
+    }
+  }
+  return std::numeric_limits<double>::infinity();
+}
+
 void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
     double box_width, double box_depth) {
   DrakeShapes::Box geom(Eigen::Vector3d(box_width, box_width, box_depth));
