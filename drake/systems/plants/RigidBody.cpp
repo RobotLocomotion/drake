@@ -68,7 +68,7 @@ void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
-    const string& group_name, vector<DrakeCollision::ElementId>& ids) const {
+    const string& group_name, vector<DrakeCollision::CollisionElementId>& ids) const {
   auto group_ids_iter = collision_element_groups.find(group_name);
   if (group_ids_iter != collision_element_groups.end()) {
     ids.reserve(ids.size() + distance(group_ids_iter->second.begin(),
@@ -82,7 +82,7 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
-    vector<DrakeCollision::ElementId>& ids) const {
+    vector<DrakeCollision::CollisionElementId>& ids) const {
   ids.reserve(ids.size() + collision_element_ids.size());
   ids.insert(ids.end(), collision_element_ids.begin(),
              collision_element_ids.end());

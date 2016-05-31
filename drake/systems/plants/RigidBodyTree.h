@@ -129,7 +129,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * cannot be found.
    */
   bool transformCollisionFrame(
-      const DrakeCollision::ElementId& eid,
+      const DrakeCollision::CollisionElementId& eid,
       const Eigen::Isometry3d& transform_body_to_joint);
 
   void compile(void);  // call me after the model is loaded
@@ -549,7 +549,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Ref<const Eigen::Matrix3Xd> const& xB,
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
-  DrakeCollision::ElementId addCollisionElement(
+  DrakeCollision::CollisionElementId addCollisionElement(
       const DrakeCollision::CollisionElement& element, RigidBody& body,
       const std::string& group_name);
 
@@ -609,7 +609,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const KinematicsCache<double>& cache, Eigen::VectorXd& phi,
       Eigen::Matrix3Xd& normal, Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
       std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx,
-      const std::vector<DrakeCollision::ElementId>& ids_to_check,
+      const std::vector<DrakeCollision::CollisionElementId>& ids_to_check,
       bool use_margins);
 
   bool collisionDetect(const KinematicsCache<double>& cache,

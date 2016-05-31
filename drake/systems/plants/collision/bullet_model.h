@@ -16,7 +16,7 @@ namespace DrakeCollision {
 
 class BulletModel;  // forward declaration
 
-typedef std::unordered_map<ElementId, std::unique_ptr<btCollisionObject>>
+typedef std::unordered_map<CollisionElementId, std::unique_ptr<btCollisionObject>>
     ElementToBtObjMap;
 
 struct OverlapFilterCallback : public btOverlapFilterCallback {
@@ -57,10 +57,10 @@ class BulletModel : public Model {
 
   void updateModel() override;
 
-  ElementId addElement(const CollisionElement& element) override;
+  CollisionElementId addElement(const CollisionElement& element) override;
 
   bool updateElementWorldTransform(
-      const ElementId, const Eigen::Isometry3d& T_local_to_world) override;
+      const CollisionElementId, const Eigen::Isometry3d& T_local_to_world) override;
 
   /**
    * Finds the points where each pair of the elements in ids_to_check are
@@ -68,7 +68,7 @@ class BulletModel : public Model {
    *
    * \return true if any points are found.
    */
-  bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
+  bool closestPointsAllToAll(const std::vector<CollisionElementId>& ids_to_check,
                              const bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
@@ -130,7 +130,7 @@ class BulletModel : public Model {
    * returns false.
    */
   virtual bool findClosestPointsBetweenElements(
-      const ElementId idA, const ElementId idB, const bool use_margins,
+      const CollisionElementId idA, const CollisionElementId idB, const bool use_margins,
       ResultCollector* result_collector);
 
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);

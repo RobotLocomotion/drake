@@ -94,7 +94,7 @@ RigidBodyTree::RigidBodyTree(void)
 RigidBodyTree::~RigidBodyTree(void) {}
 
 bool RigidBodyTree::transformCollisionFrame(
-    const DrakeCollision::ElementId& eid,
+    const DrakeCollision::CollisionElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
 }
@@ -366,10 +366,10 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
   return name_to_index_map;
 }
 
-DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
+DrakeCollision::CollisionElementId RigidBodyTree::addCollisionElement(
     const CollisionElement& element, RigidBody& body,
     const string& group_name) {
-  DrakeCollision::ElementId id = collision_model->addElement(element);
+  DrakeCollision::CollisionElementId id = collision_model->addElement(element);
   if (id != 0) {
     body.collision_element_ids.push_back(id);
     body.collision_element_groups[group_name].push_back(id);
@@ -482,7 +482,7 @@ bool RigidBodyTree::collisionDetect(
     const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     vector<int>& bodyB_idx,
-    const vector<DrakeCollision::ElementId>& ids_to_check, bool use_margins) {
+    const vector<DrakeCollision::CollisionElementId>& ids_to_check, bool use_margins) {
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
@@ -537,7 +537,7 @@ bool RigidBodyTree::collisionDetect(
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     vector<int>& bodyB_idx, const vector<int>& bodies_idx,
     const set<string>& active_element_groups, bool use_margins) {
-  vector<DrakeCollision::ElementId> ids_to_check;
+  vector<DrakeCollision::CollisionElementId> ids_to_check;
   for (auto body_idx_iter = bodies_idx.begin();
        body_idx_iter != bodies_idx.end(); ++body_idx_iter) {
     if (*body_idx_iter >= 0 && *body_idx_iter < bodies.size()) {
@@ -556,7 +556,7 @@ bool RigidBodyTree::collisionDetect(
     const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     vector<int>& bodyB_idx, const vector<int>& bodies_idx, bool use_margins) {
-  vector<DrakeCollision::ElementId> ids_to_check;
+  vector<DrakeCollision::CollisionElementId> ids_to_check;
   for (auto body_idx_iter = bodies_idx.begin();
        body_idx_iter != bodies_idx.end(); ++body_idx_iter) {
     if (*body_idx_iter >= 0 && *body_idx_iter < bodies.size()) {
@@ -575,7 +575,7 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                                     vector<int>& bodyB_idx,
                                     const set<string>& active_element_groups,
                                     bool use_margins) {
-  vector<DrakeCollision::ElementId> ids_to_check;
+  vector<DrakeCollision::CollisionElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
     for (auto group_iter = active_element_groups.begin();
@@ -595,7 +595,7 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                                     vector<int>& bodyB_idx, bool use_margins) {
   // TODO(amcastro-tri): Move initialization of ids_to_check to
   // RigidBodyTree::compile since it doesn't change during simulation.
-  vector<DrakeCollision::ElementId> ids_to_check;
+  vector<DrakeCollision::CollisionElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
     (*body_iter)->appendCollisionElementIdsFromThisBody(ids_to_check);

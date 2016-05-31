@@ -17,7 +17,7 @@
 class RigidBody;
 
 namespace DrakeCollision {
-typedef uintptr_t ElementId;
+typedef uintptr_t CollisionElementId;
 
 class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
  public:
@@ -32,7 +32,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
 
   CollisionElement* clone() const override;
 
-  ElementId getId() const;
+  CollisionElementId getId() const;
 
   virtual bool isStatic() const { return false; }
 
@@ -75,7 +75,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   CollisionElement(const CollisionElement& other);
 
  private:
-  ElementId id;
+  CollisionElementId id;
   const RigidBody* body_{};
 
   // Collision cliques are defined as a group of collision elements that do not

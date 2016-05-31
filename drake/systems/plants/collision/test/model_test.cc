@@ -40,7 +40,7 @@ struct SurfacePoint {
 // contact point on a specific element here we use an `std::unordered_set` to
 // map id's to a `SurfacePoint` structure holding the analytical solution on
 // both body and world frames.
-typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
+typedef std::unordered_map<DrakeCollision::CollisionElementId, SurfacePoint>
     ElementToSurfacePointMap;
 
 /*
@@ -95,15 +95,15 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
 
   // Populate the model.
   std::shared_ptr<Model> model = newModel();
-  ElementId id1 = model->addElement(element_1);
-  ElementId id2 = model->addElement(element_2);
-  ElementId id3 = model->addElement(element_3);
+  CollisionElementId id1 = model->addElement(element_1);
+  CollisionElementId id2 = model->addElement(element_2);
+  CollisionElementId id3 = model->addElement(element_3);
   model->updateElementWorldTransform(id1, T_body1_to_world);
   model->updateElementWorldTransform(id2, T_body2_to_world);
   model->updateElementWorldTransform(id3, T_body3_to_world);
 
   // Compute the closest points.
-  const std::vector<ElementId> ids_to_check = {id1, id2, id3};
+  const std::vector<CollisionElementId> ids_to_check = {id1, id2, id3};
   std::vector<PointPair> points;
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(3, points.size());
@@ -231,8 +231,8 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
 
   // Populate the model.
   std::unique_ptr<Model> model(newModel());
-  ElementId box_id = model->addElement(colliding_box);
-  ElementId sphere_id = model->addElement(colliding_sphere);
+  CollisionElementId box_id = model->addElement(colliding_box);
+  CollisionElementId sphere_id = model->addElement(colliding_sphere);
 
   // Access the analytical solution to the contact point on the surface of each
   // collision element by element id.
@@ -258,7 +258,7 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
   std::vector<PointPair> points;
 
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<ElementId> ids_to_check = {box_id, sphere_id};
+  const std::vector<CollisionElementId> ids_to_check = {box_id, sphere_id};
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
@@ -329,8 +329,8 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
 
   // Populate the model.
   std::unique_ptr<Model> model(newModel());
-  ElementId large_box_id = model->addElement(colliding_large_box);
-  ElementId small_box_id = model->addElement(colliding_small_box);
+  CollisionElementId large_box_id = model->addElement(colliding_large_box);
+  CollisionElementId small_box_id = model->addElement(colliding_small_box);
 
   // Access the analytical solution to the contact point on the surface of each
   // collision element by element id.
@@ -366,7 +366,7 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   //    corners of the small box is the same.
 
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<ElementId> ids_to_check = {large_box_id, small_box_id};
+  const std::vector<CollisionElementId> ids_to_check = {large_box_id, small_box_id};
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
@@ -436,8 +436,8 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
 
   // Populate the model.
   std::unique_ptr<Model> model(newModel());
-  ElementId box1_id = model->addElement(colliding_box1);
-  ElementId box2_id = model->addElement(colliding_box1);
+  CollisionElementId box1_id = model->addElement(colliding_box1);
+  CollisionElementId box2_id = model->addElement(colliding_box1);
 
   // Access the analytical solution to the contact point on the surface of each
   // collision element by element id.
@@ -475,7 +475,7 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
   // 2. The vertical position of the collision point (since for any of the four
   //    corners of the small box is the same.
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<ElementId> ids_to_check = {box1_id, box2_id};
+  const std::vector<CollisionElementId> ids_to_check = {box1_id, box2_id};
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);

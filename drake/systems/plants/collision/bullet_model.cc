@@ -165,8 +165,8 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(
   return bt_shape;
 }
 
-ElementId BulletModel::addElement(const CollisionElement& element) {
-  ElementId id = Model::addElement(element);
+CollisionElementId BulletModel::addElement(const CollisionElement& element) {
+  CollisionElementId id = Model::addElement(element);
 
   if (id != 0) {
     std::unique_ptr<btCollisionShape> bt_shape;
@@ -280,8 +280,8 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
     DrakeShapes::Shape shapeA = elementA->getShape();
     DrakeShapes::Shape shapeB = elementB->getShape();
 
-    ElementId idA = elementA->getId();
-    ElementId idB = elementB->getId();
+    CollisionElementId idA = elementA->getId();
+    CollisionElementId idB = elementB->getId();
 
     double marginA = 0;
     double marginB = 0;
@@ -388,7 +388,7 @@ std::vector<size_t> BulletModel::collidingPoints(
 }
 
 bool BulletModel::updateElementWorldTransform(
-    const ElementId id, const Isometry3d& T_local_to_world) {
+    const CollisionElementId id, const Isometry3d& T_local_to_world) {
   const bool element_exists(
       Model::updateElementWorldTransform(id, T_local_to_world));
   if (element_exists) {
@@ -425,7 +425,7 @@ void BulletModel::updateModel() {
 }
 
 bool BulletModel::findClosestPointsBetweenElements(
-    const ElementId idA, const ElementId idB, const bool use_margins,
+    const CollisionElementId idA, const CollisionElementId idB, const bool use_margins,
     ResultCollector* result_collector) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
@@ -675,15 +675,15 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
 // once and be passed to this method every time is called since id_pairs does
 // not change during simulation.
 bool BulletModel::closestPointsAllToAll(
-    const std::vector<ElementId>& ids_to_check, const bool use_margins,
+    const std::vector<CollisionElementId>& ids_to_check, const bool use_margins,
     std::vector<PointPair>& closest_points) {
   std::vector<ElementIdPair> id_pairs;
   for (size_t i = 0; i < ids_to_check.size(); ++i) {
-    ElementId id_a = ids_to_check[i];
+    CollisionElementId id_a = ids_to_check[i];
     const CollisionElement* element_a = FindElement(id_a);
     if (element_a != nullptr) {
       for (size_t j = i + 1; j < ids_to_check.size(); ++j) {
-        ElementId id_b = ids_to_check[j];
+        CollisionElementId id_b = ids_to_check[j];
         const CollisionElement* element_b = FindElement(id_b);
         if (element_b != nullptr && element_a->CanCollideWith(element_b)) {
           id_pairs.push_back(std::make_pair(id_a, id_b));

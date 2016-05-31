@@ -118,10 +118,10 @@ class DRAKERBM_EXPORT RigidBody {
 
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
-      std::vector<DrakeCollision::ElementId>& ids) const;
+      std::vector<DrakeCollision::CollisionElementId>& ids) const;
 
   bool appendCollisionElementIdsFromThisBody(
-      std::vector<DrakeCollision::ElementId>& ids) const;
+      std::vector<DrakeCollision::CollisionElementId>& ids) const;
 
   /**
    * Transforms all of the visual, collision, and inertial elements associated
@@ -164,7 +164,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   DrakeShapes::VectorOfVisualElements visual_elements;
 
-  std::vector<DrakeCollision::ElementId> collision_element_ids;
+  std::vector<DrakeCollision::CollisionElementId> collision_element_ids;
 
   typedef std::vector<DrakeCollision::CollisionElement*>
       CollisionElementsVector;
@@ -172,7 +172,7 @@ class DRAKERBM_EXPORT RigidBody {
       typename CollisionElementsVector::iterator CollisionElementsIterator;
   typedef typename CollisionElementsVector::const_iterator
       CollisionElementsConstIterator;
-  std::map<std::string, std::vector<DrakeCollision::ElementId> >
+  std::map<std::string, std::vector<DrakeCollision::CollisionElementId> >
       collision_element_groups;
 
   CollisionElementsIterator CollisionElementsBegin() {
