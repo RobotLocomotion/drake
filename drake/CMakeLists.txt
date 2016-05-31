@@ -143,17 +143,28 @@ endif()
 # add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
 #   [CONFIGURATIONS <config>...]
 #   [WORKING_DIRECTORY <dir>]
-#   [PROPERTIES <prop1> <value1> ...])
+#   [PROPERTIES <prop1> <value1> ...]
+#   [REQUIRES <package1> <package2> ...])
 # note: default working directory is CMAKE_CURRENT_SOURCE_DIR
 # note: properties are set internally using set_tests_properties (<testname> PROPERTIES <prop1> <value1> ...)
+# note: packages in REQUIRES must write a file addpath_<package>.m to CMAKE_INSTALL_PREFIX/matlab
 function(add_matlab_test)
   # no matlab no tests
   if(NOT MATLAB_FOUND)
     return()
   endif()
   set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
-  set(multiValueArgs PROPERTIES)
+  set(multiValueArgs PROPERTIES REQUIRES)
   cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if(parsed_args_REQUIRES)
+    foreach(require ${parsed_args_REQUIRES})
+      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m")
+        message(STATUS "Not running ${parsed_args_NAME} because ${require} was not installed.")
+        return()
+      endif()
+    endforeach()
+  endif()
 
   string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in MATLAB
   if(NOT parsed_args_WORKING_DIRECTORY)
@@ -179,6 +190,15 @@ function(add_matlab_test)
   if(parsed_args_PROPERTIES)
     set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
   endif()
+
+#  if(parsed_args_REQUIRES)
+#    foreach(require ${parsed_args_REQUIRES})
+#      list(APPEND required_files "${PROJECT_BINARY_DIR}/../${require}-prefix/src/${require}-stamp/${require}-install")
+#    endforeach()
+#    if(required_files)
+#      set_property(TEST ${parsed_args_NAME} PROPERTY REQUIRED_FILES ${required_files})
+#    endif()
+#  endif()
 endfunction()
 
 enable_testing()
