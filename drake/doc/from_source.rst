@@ -39,7 +39,7 @@ This capability is primarily meant for members of our team and close collaborato
 Using Gurobi as an external
 ===========================
 
-Gurobi is enabled to build by default if one uses ``WITH_ALL_PUBLIC_EXTERNALS``. Additionally, some users may wish to install the Gurobi Optimizer as part of their Drake build even if they do not select ``WITH_ALL_PUBLIC_EXTERNALS`` by toggling ``WITH_GUROBI`` to ``ON``.
+Gurobi is enabled to build by default if one uses ``WITH_ALL_SUPPORTED_EXTERNALS``. Additionally, some users may wish to install the Gurobi Optimizer as part of their Drake build even if they do not select ``WITH_ALL_SUPPORTED_EXTERNALS`` by toggling ``WITH_GUROBI`` to ``ON``.
 
 To facilitate the Gurobi's building process, create an account and obtain a license on `Gurobi's website <http://www.gurobi.com/registration/general-reg-form?utm_expid=11945996-32.QTGUWGdTRw2vsRW5839Z5w.1&utm_referrer=http%3A%2F%2Fwww.gurobi.com%2Flogin>`_ *before* perforiming the Drake build with Gurobi. To actually be able to use Gurobi, there are two required verification steps:
 
