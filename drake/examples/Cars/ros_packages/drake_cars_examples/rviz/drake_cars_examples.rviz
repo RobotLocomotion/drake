@@ -14,7 +14,8 @@ Panels:
         - /LaserScan4
         - /Odometry1
         - /TF1/Frames1
-      Splitter Ratio: 0.307768
+        - /WorldModel1
+      Splitter Ratio: 0.631791
     Tree Height: 1401
   - Class: rviz/Selection
     Name: Selection
@@ -56,7 +57,7 @@ Visualization Manager:
       Plane Cell Count: 10
       Reference Frame: <Fixed Frame>
       Value: true
-    - Alpha: 0.5
+    - Alpha: 1
       Class: rviz/RobotModel
       Collision Enabled: false
       Enabled: true
@@ -147,8 +148,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.521777
-        Min Value: 0.470109
+        Max Value: 0.527121
+        Min Value: 0.469718
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -177,8 +178,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 1.01086
-        Min Value: -0.0297441
+        Max Value: 1.42044
+        Min Value: -0.00809033
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -207,8 +208,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.511814
-        Min Value: 0.40743
+        Max Value: 0.510609
+        Min Value: 0.431049
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -237,8 +238,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.511329
-        Min Value: 0.408971
+        Max Value: 0.50296
+        Min Value: 0.431042
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -280,63 +281,63 @@ Visualization Manager:
       Frames:
         All Enabled: false
         body:
-          Value: false
+          Value: true
         chassis_floor:
-          Value: false
+          Value: true
         front_axle:
-          Value: false
+          Value: true
         front_laser:
-          Value: false
+          Value: true
         front_lidar_link:
-          Value: false
+          Value: true
         ground:
-          Value: false
+          Value: true
         left_hub:
-          Value: false
+          Value: true
         left_tie_rod_arm:
           Value: true
         left_wheel:
-          Value: false
+          Value: true
         left_wheel_rear:
-          Value: false
+          Value: true
         outer_wall:
-          Value: false
+          Value: true
         rear_axle:
-          Value: false
+          Value: true
         rear_left_laser:
-          Value: false
+          Value: true
         rear_left_lidar_link:
-          Value: false
+          Value: true
         rear_right_laser:
-          Value: false
+          Value: true
         rear_right_lidar_link:
-          Value: false
+          Value: true
         right_hub:
-          Value: false
+          Value: true
         right_pinFrameA:
-          Value: false
+          Value: true
         right_pinFrameB:
-          Value: false
+          Value: true
         right_tie_rod_arm:
-          Value: false
+          Value: true
         right_wheel:
-          Value: false
+          Value: true
         right_wheel_rear:
-          Value: false
+          Value: true
         stairs:
-          Value: false
+          Value: true
         stairs_groundFrameA:
-          Value: false
+          Value: true
         stairs_groundFrameB:
-          Value: false
+          Value: true
         tie_rod:
-          Value: false
+          Value: true
         top_laser:
-          Value: false
+          Value: true
         top_lidar_link:
-          Value: false
+          Value: true
         world:
-          Value: false
+          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
@@ -387,6 +388,41 @@ Visualization Manager:
               {}
       Update Interval: 0
       Value: true
+    - Alpha: 1
+      Class: rviz/RobotModel
+      Collision Enabled: false
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        ground:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        outer_wall:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        stairs:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        world:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+      Name: WorldModel
+      Robot Description: world_description
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -411,22 +447,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 79.2175
+      Distance: 183.292
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 11.1083
-        Y: -8.48721
-        Z: -0.605973
+        X: 9.03132
+        Y: -44.9856
+        Z: -11.4816
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.5698
+      Pitch: 0.784797
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.000566475
+      Yaw: 6.21875
     Saved: ~
 Window Geometry:
   Displays:
@@ -434,7 +470,7 @@ Window Geometry:
   Height: 1722
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000003ad00000619fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000002800000619000000ee00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000ca00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000056f0000004cfc0100000002fb0000000800540069006d006501000000000000056f0000042500fffffffb0000000800540069006d006501000000000000045000000000000000000000056f0000061900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000023800000619fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000619000000ee00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000ca00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000a1e0000004cfc0100000002fb0000000800540069006d0065010000000000000a1e0000042500fffffffb0000000800540069006d00650100000000000004500000000000000000000007e00000061900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -443,6 +479,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1391
-  X: 1474
+  Width: 2590
+  X: 230
   Y: 21
