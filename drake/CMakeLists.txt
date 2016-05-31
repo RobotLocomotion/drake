@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.5)
 
+cmake_policy(SET CMP0025 NEW)
+cmake_policy(SET CMP0042 NEW)
+cmake_policy(SET CMP0054 OLD)
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
   message(FATAL_ERROR "GCC version must be at least 4.9")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
+  message(FATAL_ERROR "Apple Clang version must be at least 7")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
   message(FATAL_ERROR "Clang version must be at least 3.7")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
@@ -31,9 +37,6 @@ option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random se
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-cmake_policy(SET CMP0042 NEW)
-cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
 
 # prepend module path so we can override FindMatlab.cmake
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -77,12 +80,12 @@ endfunction()
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all")
 
   # TODO(#2372) These are warnings that we can't handle yet.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field")
   else()
