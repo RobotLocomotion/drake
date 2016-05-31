@@ -2,9 +2,14 @@
 
 #include <cstdlib>
 
+#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
+#include "drake/examples/Cars/gen/simple_car_state.h"
+
 using Eigen::MatrixXd;
 using Eigen::Matrix;
 using Eigen::VectorXd;
+using Drake::AffineSystem;
+using Drake::NullVector;
 
 namespace drake {
 namespace examples {
@@ -176,6 +181,30 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
 
   return vehicle_sys;
 }
+
+std::shared_ptr<AffineSystem<
+  NullVector, SimpleCarState, EulerFloatingJointState>>
+CreateSimpleCarVisualizationAdapter() {
+  const int insize = SimpleCarState<double>().size();
+  const int outsize = EulerFloatingJointState<double>().size();
+  MatrixXd D;
+  D.setZero(outsize, insize);
+  D(EulerFloatingJointStateIndices::kX, SimpleCarStateIndices::kX) = 1;
+  D(EulerFloatingJointStateIndices::kY, SimpleCarStateIndices::kY) = 1;
+  D(EulerFloatingJointStateIndices::kYaw, SimpleCarStateIndices::kHeading) = 1;
+  EulerFloatingJointState<double> y0;
+  return std::make_shared<
+    AffineSystem<
+        NullVector,
+        SimpleCarState,
+        EulerFloatingJointState>>(
+            MatrixXd::Zero(0, 0),
+            MatrixXd::Zero(0, insize),
+            VectorXd::Zero(0),
+            MatrixXd::Zero(outsize, 0),
+            D, toEigen(y0));
+}
+
 
 SimulationOptions GetCarSimulationDefaultOptions() {
   SimulationOptions result = Drake::default_simulation_options;
