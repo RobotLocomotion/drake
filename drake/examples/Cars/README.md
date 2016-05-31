@@ -123,6 +123,13 @@ To view the ROS `TF` tree:
 $ rosrun rqt_tf_tree rqt_tf_tree
 ```
 
+Another way to view the ROS `TF` tree:
+
+```
+$ rosrun tf view_frames
+$ evince frames.pdf
+```
+
 To drive the car around using a keyboard:
 
 ```
