@@ -4,8 +4,7 @@
 
 #include "drake/common/sorted_vectors_have_intersection.h"
 
-using namespace Eigen;
-using namespace std;
+using Eigen::Isometry3d;
 using drake::SortedVectorsHaveIntersection;
 
 namespace DrakeCollision {
@@ -62,7 +61,7 @@ const std::vector<int>& CollisionElement::collision_cliques() const {
   return collision_cliques_;
 }
 
-ostream& operator<<(ostream& out, const CollisionElement& ee) {
+std::ostream& operator<<(std::ostream& out, const CollisionElement& ee) {
   out << "DrakeCollision::Element:\n"
       << "  - id = " << ee.id << "\n"
       << "  - T_element_to_world =\n" << ee.T_element_to_world.matrix() << "\n"
