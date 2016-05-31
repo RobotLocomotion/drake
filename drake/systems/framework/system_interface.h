@@ -56,7 +56,7 @@ class SystemInterface : public AbstractSystemInterface {
 
   // Returns a default output, initialized with the correct number of
   // concrete output ports for this System.
-  virtual std::unique_ptr<SystemOutput<T>> CreateDefaultOutput() const = 0;
+  virtual std::unique_ptr<SystemOutput<T>> AllocateOutput() const = 0;
 
   // Computes the output for the given context, possibly updating values
   // in the cache.
