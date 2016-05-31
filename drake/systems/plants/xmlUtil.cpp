@@ -13,41 +13,80 @@ using namespace Eigen;
 using namespace tinyxml2;
 
 bool ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
-  if (val == nullptr)
+  if (val == nullptr) {
     throw std::runtime_error(
-        "ERROR: ParseThreeVectorValue: parameter val is nullptr!");
-  if (strval) {
-    std::stringstream ss(strval);
-    // supports a single scalar value or 3-vector value.
-    ss >> (*val)[0];
-    if (ss.good()) {
-      ss >> (*val)[1] >> (*val)[2];
-    } else {
-      (*val)[1] = (*val)[0];
-      (*val)[2] = (*val)[0];
-    }
-    return true;
-  } else {
+        "ERROR: ParseThreeVectorValue: parameter val is nullptr.");
+  }
+
+  // Handles the case where strval is a nullptr.
+  if (!strval) {
     return false;
   }
+
+  // Handles the case where strval is an empty strval.
+  if (std::string(strval) == "") {
+    throw std::runtime_error(
+        "ERROR: ParseThreeVectorValue: An empty strval was provided.");
+  }
+
+  std::stringstream ss(strval);
+  std::string token;
+  ss >> token;
+
+  (*val)[0] = std::stod(token);
+
+  // Handles the case where strval is a single scalar value.
+  if (!ss.good()) {
+    (*val)[1] = (*val)[0];
+    (*val)[2] = (*val)[0];
+    return true;
+  }
+
+  ss >> token;
+  (*val)[1] = std::stod(token);
+
+  // Handles the case where strval is a 2 vector.
+  if (!ss.good()) {
+    throw std::runtime_error(
+        "ERROR: ParseThreeVectorValue: A 2 vector was supplied.");
+  }
+
+  ss >> token;
+  (*val)[2] = std::stod(token);
+
+  // Handles the case where strval is vector that's longer than 3.
+  if (ss.good()) {
+    throw std::runtime_error(
+        "ERROR: ParseThreeVectorValue: A vector with more than three "
+        "elements was supplied.");
+  }
+
+  return true;
 }
 
-bool ParseThreeVectorValue(tinyxml2::XMLElement* node, Eigen::Vector3d* val) {
+bool ParseThreeVectorValue(const tinyxml2::XMLElement* node,
+                           Eigen::Vector3d* val) {
   if (node)
     return ParseThreeVectorValue(node->FirstChild()->Value(), val);
   else
     return false;
 }
 
-bool ParseThreeVectorValue(tinyxml2::XMLElement* node, const char* element_name,
-                           Eigen::Vector3d* val) {
-  return ParseThreeVectorValue(node->FirstChildElement(element_name), val);
+bool ParseThreeVectorValue(const tinyxml2::XMLElement* node,
+                           const char* element_name, Eigen::Vector3d* val) {
+  if (!node || !element_name)
+    return false;
+  else
+    return ParseThreeVectorValue(node->FirstChildElement(element_name), val);
 }
 
-bool ParseThreeVectorAttribute(tinyxml2::XMLElement* node,
+bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
                                const char* attribute_name,
                                Eigen::Vector3d* val) {
-  return ParseThreeVectorValue(node->Attribute(attribute_name), val);
+  if (!node || !attribute_name)
+    return false;
+  else
+    return ParseThreeVectorValue(node->Attribute(attribute_name), val);
 }
 
 // only writes values if they exist
