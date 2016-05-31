@@ -196,7 +196,7 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
     string resolved_filename = resolveFilename(filename, package_map, root_dir);
     DrakeShapes::Mesh mesh(filename, resolved_filename);
 
-    parseThreeVectorAttribute(shape_node, "scale", mesh.scale);
+    ParseThreeVectorAttribute(shape_node, "scale", &mesh.scale);
 
     element.setGeometry(mesh);
   } else {
