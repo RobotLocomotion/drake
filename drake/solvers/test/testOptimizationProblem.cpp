@@ -545,10 +545,10 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
       x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, 1, x),
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x),
                                     var_mapping,
-                                    Eigen::VectorXd::Constant(1, 1, 2),
-                                    Eigen::VectorXd::Constant(1, 1, 2));
+                                    Vector1d::Constant(2),
+                                    Vector1d::Constant(2));
     RunNonlinearProgram(problem, [&]() {
         EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
         // TODO(ggould-tri) test this with a two-sided constraint, once
@@ -564,10 +564,10 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
       x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, 1, poly),
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly),
                                     var_mapping,
-                                    Eigen::VectorXd::Constant(1, 1, 0),
-                                    Eigen::VectorXd::Constant(1, 1, 0));
+                                    Eigen::VectorXd::Zero(1),
+                                    Eigen::VectorXd::Zero(1));
     RunNonlinearProgram(problem, [&]() {
         EXPECT_NEAR(x_var.value()[0], 1, 0.2);
         EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
@@ -584,10 +584,10 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const std::vector<Polynomiald::VarType> var_mapping = {
       x.getSimpleVariable(),
       y.getSimpleVariable()};
-    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, 1, poly),
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly),
                                     var_mapping,
-                                    Eigen::VectorXd::Constant(1, 1, 0),
-                                    Eigen::VectorXd::Constant(1, 1, 0));
+                                    Eigen::VectorXd::Zero(1),
+                                    Eigen::VectorXd::Zero(1));
     RunNonlinearProgram(problem, [&]() {
         EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
         EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
@@ -613,8 +613,8 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     polynomials_vec << poly, x;
     problem.AddPolynomialConstraint(polynomials_vec,
                                     var_mapping,
-                                    Eigen::VectorXd::Constant(1, 1, -kInf),
-                                    Eigen::VectorXd::Constant(1, 1, 0));
+                                    Vector1d::Constant(-kInf),
+                                    Eigen::VectorXd::Zero(1));
     RunNonlinearProgram(problem, [&]() {
         EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
         EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);

@@ -170,7 +170,7 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     SID::PartialEvalType estimated_params;
     double error;
     std::tie(estimated_params, error) =
-        SID::EstimateParameters(VectorXPoly::Constant(1, 1, poly),
+        SID::EstimateParameters(VectorXPoly::Constant(1, poly),
                                 sample_points);
 
     EXPECT_LT(error, 1e-5);
@@ -193,7 +193,7 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     SID::PartialEvalType estimated_params;
     double error;
     std::tie(estimated_params, error) =
-        SID::EstimateParameters(VectorXPoly::Constant(1, 1, poly),
+        SID::EstimateParameters(VectorXPoly::Constant(1, poly),
                                 sample_points);
 
     EXPECT_LT(error, 0.1);
@@ -291,14 +291,14 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   // We write the manipulator as:
   //   H*vdot + C*v + g = B*u + f
   // Where f embodies any dissipative forces not appropriate to C.
-  VectorXPoly v(1, 1); v << velocity;
-  VectorXPoly vdot(1, 1); vdot << acceleration;
-  VectorXPoly H(1, 1); H << mass;
-  VectorXPoly C(1, 1); C << 0;
-  VectorXPoly g(1, 1); g << (spring * pos);
-  VectorXPoly f(1, 1); f << (velocity * damping);
-  VectorXPoly B(1, 1); B << 1;
-  VectorXPoly u(1, 1); u << input_force;
+  VectorXPoly v(1); v << velocity;
+  VectorXPoly vdot(1); vdot << acceleration;
+  VectorXPoly H(1); H << mass;
+  VectorXPoly C(1); C << 0;
+  VectorXPoly g(1); g << (spring * pos);
+  VectorXPoly f(1); f << (velocity * damping);
+  VectorXPoly B(1); B << 1;
+  VectorXPoly u(1); u << input_force;
 
   const VectorXPoly manipulator_left = (H * vdot) + (C * v) + g;
   const VectorXPoly manipulator_right = (B * u) + f;
