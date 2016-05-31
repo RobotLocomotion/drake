@@ -21,19 +21,28 @@ typedef uintptr_t CollisionElementId;
 
 class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
  public:
+  /** Constructs a new collision element with not geometry attached. **/
+  // TODO(amcastro-tri): having an element without geometry does not seem right.
   CollisionElement(const Eigen::Isometry3d& T_element_to_local =
                        Eigen::Isometry3d::Identity());
 
+  /** Constructs a new collision element with a given geometry and a local
+  transform from the geometry's frame to the collision element's frame. **/
   CollisionElement(const DrakeShapes::Geometry& geometry,
                    const Eigen::Isometry3d& T_element_to_local =
                        Eigen::Isometry3d::Identity());
 
-  ~CollisionElement() override {}
-
+  /** Creates an exact copy of this collision element.
+  The copy will point to the same rigid body as the original collision element.
+  The copy is created in the heap and the caller responsible for the newly
+  created resource. **/
   CollisionElement* clone() const override;
 
+  /** The unique CollisionElementId for this collision element. **/
   CollisionElementId getId() const;
 
+  // TODO(amcastro-tri): this is not overriden anyware and returns false always.
+  // See issue #2481.
   virtual bool isStatic() const { return false; }
 
   /** Returns `true` if this element should be checked for collisions
@@ -41,7 +50,10 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   A can collide with B, B can collide with A.
   Users should not call this method to test the collision of an element with
   itself, unless each collision element is guaranteed to belong to its own
-  collision clique. **/
+  collision clique.
+  This method does not support same-body checks and will incorrectly return true
+  in that case. A proper broad phase should never test an element against
+  itself. **/
   virtual bool CanCollideWith(const CollisionElement* other) const;
 
   /** Returns a pointer to the const RigidBody to which this CollisionElement
@@ -49,6 +61,7 @@ class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
   // TODO(amcastro-tri): getBody() -> get_body()
   const RigidBody* const getBody() const;
 
+  /** Set the rigid body this collision element is attached to. **/
   void set_rigid_body(const RigidBody* body);
 
   /** Adds this collision element to collision clique clique_id.
