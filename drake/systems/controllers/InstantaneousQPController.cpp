@@ -26,7 +26,7 @@ using drake::util::MatrixCompareType;
 void InstantaneousQPController::initialize() {
   body_or_frame_name_to_id = computeBodyOrFrameNameToIdMap(*(this->robot));
 
-  int nq = robot->num_positions;
+  int nq = robot->number_of_positions();
   int nu = static_cast<int>(robot->actuators.size());
 
   umin.resize(nu);
@@ -80,9 +80,9 @@ void InstantaneousQPController::initialize() {
 
   controller_state.t_prev = 0;
   controller_state.vref_integrator_state =
-      Eigen::VectorXd::Zero(robot->num_velocities);
+      Eigen::VectorXd::Zero(robot->number_of_velocities());
   controller_state.q_integrator_state =
-      Eigen::VectorXd::Zero(robot->num_positions);
+      Eigen::VectorXd::Zero(robot->number_of_positions());
   controller_state.foot_contact_prev[0] = false;
   controller_state.foot_contact_prev[1] = false;
   controller_state.num_active_contact_pts = 0;
@@ -143,11 +143,11 @@ PIDOutput InstantaneousQPController::wholeBodyPID(
   // accelerations and reference posture
   PIDOutput out;
   double dt = 0;
-  int nq = robot->num_positions;
+  int nq = robot->number_of_positions();
   assert(q.size() == nq);
-  assert(qd.size() == robot->num_velocities);
+  assert(qd.size() == robot->number_of_velocities());
   assert(q_des.size() == params.integrator.gains.size());
-  if (nq != robot->num_velocities) {
+  if (nq != robot->number_of_velocities()) {
     throw std::runtime_error(
         "this function will need to be rewritten when num_pos != num_vel");
   }
@@ -195,7 +195,7 @@ VectorXd InstantaneousQPController::velocityReference(
   // Integrate expected accelerations to determine a target feed-forward
   // velocity, which we can pass in to Atlas
   int i;
-  assert(qdd.size() == robot->num_velocities);
+  assert(qdd.size() == robot->number_of_velocities());
 
   double dt = 0;
   if (controller_state.t_prev != 0) {
@@ -574,7 +574,7 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
     const RigidBodyTree& robot) {
   auto id_map = std::unordered_map<std::string, int>();
   for (auto it = robot.bodies.begin(); it != robot.bodies.end(); ++it) {
-    id_map[(*it)->linkname] = it - robot.bodies.begin();
+    id_map[(*it)->name_] = it - robot.bodies.begin();
   }
 
   for (auto it = robot.frames.begin(); it != robot.frames.end(); ++it) {
@@ -622,7 +622,7 @@ int InstantaneousQPController::setupAndSolveQP(
   // mexPrintf("Kp_accel: %f, ", params.Kp_accel);
 
   int nu = robot->B.cols();
-  int nq = robot->num_positions;
+  int nq = robot->number_of_positions();
 
   // zmp_data
   Map<const Matrix<double, 4, 4, RowMajor>> A_ls(&qp_input.zmp_data.A[0][0]);
@@ -1025,11 +1025,11 @@ int InstantaneousQPController::setupAndSolveQP(
       Jb.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
       // Jbdot.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
     }
-    Ain.block(constraint_start_index, 0, 6, robot->num_positions) = Jb;
+    Ain.block(constraint_start_index, 0, 6, robot->number_of_positions()) = Jb;
     bin.segment(constraint_start_index, 6) =
         -Jbdotv + desired_body_accelerations[i].accel_bounds.max;
     constraint_start_index += 6;
-    Ain.block(constraint_start_index, 0, 6, robot->num_positions) = -Jb;
+    Ain.block(constraint_start_index, 0, 6, robot->number_of_positions()) = -Jb;
     bin.segment(constraint_start_index, 6) =
         Jbdotv - desired_body_accelerations[i].accel_bounds.min;
     constraint_start_index += 6;

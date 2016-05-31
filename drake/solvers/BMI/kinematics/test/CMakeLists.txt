@@ -1,4 +1,3 @@
-
 add_matlab_test(NAME solvers/BMI/kinematics/test/testIKABB COMMAND testIKABB)
 add_matlab_test(NAME solvers/BMI/kinematics/test/testIKBMI COMMAND testIKBMI)
 add_matlab_test(NAME solvers/BMI/kinematics/test/testIKrobotiq COMMAND testIKrobotiq)

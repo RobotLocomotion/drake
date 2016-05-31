@@ -9,7 +9,6 @@
 #include "drake/drakeCommon_export.h"
 
 namespace drake {
-namespace common {
 
 /** @brief Obtains canonicalized, platform-independent, human-readable names for
 arbitrarily-complicated C++ types.
@@ -18,7 +17,7 @@ Usage: @code
 using std::pair; using std::string;
 using MyVectorType = pair<int,string>;
 std::cout << "Type MyVectorType was: "
-          << NiceTypeName::Get<MyVectorType>() << std::endl;
+          << drake::NiceTypeName::Get<MyVectorType>() << std::endl;
 // Output: std::pair<int,std::string>
 @endcode
 
@@ -73,5 +72,4 @@ class NiceTypeName {
   NiceTypeName() = delete;
 };
 
-}  // namespace common
 }  // namespace drake

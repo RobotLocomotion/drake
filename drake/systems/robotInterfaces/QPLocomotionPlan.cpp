@@ -41,15 +41,15 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree& robot,
                                    const std::string& lcm_channel)
     : robot(robot),
       settings(settings),
-      start_time(std::numeric_limits<double>::quiet_NaN()),
-      pelvis_id(robot.findLinkId(settings.pelvis_name)),
       foot_body_ids(createFootBodyIdMap(robot, settings.foot_names)),
       knee_indices(createJointIndicesMap(robot, settings.knee_names)),
-      akx_indices(createJointIndicesMap(robot, settings.akx_names)),
       aky_indices(createJointIndicesMap(robot, settings.aky_names)),
+      akx_indices(createJointIndicesMap(robot, settings.akx_names)),
+      pelvis_id(robot.findLinkId(settings.pelvis_name)),
+      start_time(std::numeric_limits<double>::quiet_NaN()),
       plan_shift(Vector3d::Zero()),
-      shifted_zmp_trajectory(settings.zmp_trajectory),
-      last_foot_shift_time(0.0) {
+      last_foot_shift_time(0.0),
+      shifted_zmp_trajectory(settings.zmp_trajectory) {
   for (int i = 1; i < settings.support_times.size(); i++) {
     if (settings.support_times[i] < settings.support_times[i - 1])
       throw std::runtime_error("support times must be increasing");
@@ -135,7 +135,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   // whole body data
   auto q_des = settings.q_traj.value(t_plan);
   qp_input.whole_body_data.timestamp = 0;
-  qp_input.whole_body_data.num_positions = robot.num_positions;
+  qp_input.whole_body_data.num_positions = robot.number_of_positions();
   eigenVectorToStdVector(q_des, qp_input.whole_body_data.q_des);
   qp_input.whole_body_data.constrained_dofs =
       settings.constrained_position_indices;

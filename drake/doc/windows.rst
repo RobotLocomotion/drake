@@ -39,13 +39,21 @@ Download and install `Java's JDK <http://www.oracle.com/technetwork/java/javase/
 
 CMake
 -----
-Download and install `CMake <http://www.cmake.org/cmake/resources/software.html>`_ (binary version). Say yes when the CMake installer offers to add itself to your system path. Verify that ``C:\Program Files (x86)\CMake\bin`` is added to your system path. This can be done by opening a command prompt by typing::
+
+CMake 3.5 or higher is required.
+
+Please visit the `CMake Download Page`_ to obtain a Windows binary.
+Say yes when the CMake installer offers to add itself to your system path.
+Verify that ``C:\Program Files (x86)\CMake\bin`` is added to your path.
+This can be done by opening a command prompt by typing::
 
     $ cmd
 
 and executing::
 
-    $ echo %path%
+    $ echo %PATH%
+
+.. _`CMake Download Page`: https://cmake.org/download/
 
 .. _windows-installation-gnu:
 
@@ -87,7 +95,7 @@ Open a ``git`` bash shell. Then clone the master branch of Drake's official repo
     $ cd [source code directory]
     $ git clone https://github.com/RobotLocomotion/drake.git drake-distro
 
-At this point, we recommend you update your ``git`` remotes to avoid accidentally pushing to Drake's official repository as described :ref:`here <git-remote-config>`.
+At this point, we recommend you update your ``git remotes`` to avoid accidentally pushing to Drake's official repository as described :ref:`here <git-remote-config>`.
 
 .. _windows-build-directory:
 
@@ -166,12 +174,17 @@ The compilation process generates a bunch of shared ``.dll`` libraries. You need
 Test Compilation Results
 ------------------------
 
-To verify Drake was successfully compiled, run some unit tests::
+To verify Drake was successfully compiled, run the unit tests::
 
-    $ cd [build artifacts directory]
+    $ cd [build artifacts directory]/drake
     $ ctest -VV -C [build mode]
 
-For more details on how to run unit tests, see :ref:`here <unit-test-instructions>`.
+You can also run a specific unit test::
+
+    $ cd [build artifacts directory]/drake
+    $ ctest -VV -C [build mode] -R [name of unit test]
+
+For more details on unit testing, see :ref:`here <unit-test-instructions>`.
 
 
 .. When you're done with these platform-specific steps, return to :doc:`from_source` to complete and test your installation.

@@ -15,13 +15,13 @@ namespace systems {
 
 /// NamedValueVector is a low-performance convenience implementation of
 /// VectorInterface that labels each element in a column vector with a string.
-template <typename ScalarType>
-class NamedValueVector : public VectorInterface<ScalarType> {
+template <typename T>
+class NamedValueVector : public VectorInterface<T> {
  public:
-  /// Constructs a vector with one ScalarType element per name in names. Throws
+  /// Constructs a vector with one T element per name in names. Throws
   /// an std::runtime_error if names are not unique.
   explicit NamedValueVector(const std::vector<std::string>& names)
-      : values_(VectorX<ScalarType>::Zero(names.size(), 1 /* column */)),
+      : values_(VectorX<T>::Zero(names.size(), 1 /* column */)),
         names_(MakeNameMap(names)) {
     if (names_.size() != names.size()) {
       throw std::runtime_error("NamedValueVector has non-unique names.");
@@ -31,7 +31,7 @@ class NamedValueVector : public VectorInterface<ScalarType> {
   /// Constructs a vector with the names and values in named_values. Throws an
   /// std::runtime_error if names are not unique.
   NamedValueVector(
-      const std::vector<std::pair<std::string, ScalarType>>& named_values)
+      const std::vector<std::pair<std::string, T>>& named_values)
       : NamedValueVector(GetKeys(named_values)) {
     for (int i = 0; i < named_values.size(); ++i) {
       values_[i] = named_values[i].second;
@@ -40,20 +40,26 @@ class NamedValueVector : public VectorInterface<ScalarType> {
 
   ~NamedValueVector() override {}
 
-  void set_value(const VectorX<ScalarType>& value) override {
-    if (value.rows() != values_.rows()) {
-      throw std::runtime_error("Cannot set a NamedValueVector of size " +
-                               std::to_string(values_.rows()) +
-                               " with a value of size " +
-                               std::to_string(value.rows()));
+  ptrdiff_t size() const override {
+    return values_.rows();
+  }
+
+  void set_value(const VectorX<T>& value) override {
+    if (value.rows() != size()) {
+      throw std::out_of_range("Cannot set a NamedValueVector of size " +
+                              std::to_string(size()) +
+                              " with a value of size " +
+                              std::to_string(value.rows()));
     }
     values_ = value;
   }
 
-  const VectorX<ScalarType>& get_value() const override { return values_; }
+  const Eigen::VectorBlock<const VectorX<T>> get_value() const override {
+    return values_.head(size());
+  }
 
-  Eigen::VectorBlock<VectorX<ScalarType>> get_mutable_value() override {
-    return values_.head(values_.rows());
+  Eigen::VectorBlock<VectorX<T>> get_mutable_value() override {
+    return values_.head(size());
   }
 
   bool has_named_value(const std::string& name) const {
@@ -62,7 +68,7 @@ class NamedValueVector : public VectorInterface<ScalarType> {
 
   /// Sets the element with the given name. Throws std::runtime_error if
   /// the name doesn't exist.
-  void set_named_value(const std::string& name, ScalarType value) {
+  void set_named_value(const std::string& name, T value) {
     auto it = names_.find(name);
     if (it != names_.end()) {
       values_(it->second) = value;
@@ -72,7 +78,7 @@ class NamedValueVector : public VectorInterface<ScalarType> {
   }
 
   /// Returns the value with a given name, or nullptr if it doesn't exist.
-  const ScalarType* get_named_value(const std::string& name) const {
+  const T* get_named_value(const std::string& name) const {
     auto it = names_.find(name);
     if (it != names_.end()) {
       return &values_(it->second);
@@ -94,7 +100,7 @@ class NamedValueVector : public VectorInterface<ScalarType> {
 
   // Extracts the first element of each pair in named_values, preserving order.
   static std::vector<std::string> GetKeys(
-      const std::vector<std::pair<std::string, ScalarType>>& named_values) {
+      const std::vector<std::pair<std::string, T>>& named_values) {
     std::vector<std::string> keys;
     for (const auto& named_value : named_values) {
       keys.push_back(named_value.first);
@@ -102,8 +108,8 @@ class NamedValueVector : public VectorInterface<ScalarType> {
     return keys;
   }
 
-  // The column vector of ScalarType values.
-  VectorX<ScalarType> values_;
+  // The column vector of values.
+  VectorX<T> values_;
   // A map from a name, to the corresponding index in values_.
   const std::map<std::string, size_t> names_;
 };

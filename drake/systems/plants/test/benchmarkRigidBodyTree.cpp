@@ -1,6 +1,6 @@
+#include <cmath>
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/testUtil.h"
-#include <cmath>
 
 using namespace std;
 using namespace Eigen;
@@ -49,7 +49,8 @@ void scenario2(
     const vector<pair<Matrix<Scalar, Dynamic, 1>, Matrix<Scalar, Dynamic, 1>>>&
         states) {
   const eigen_aligned_unordered_map<RigidBody const*,
-                                    Matrix<Scalar, TWIST_SIZE, 1>> f_ext;
+                                    Matrix<Scalar, TWIST_SIZE, 1>>
+      f_ext;
   for (const auto& state : states) {
     cache.initialize(state.first, state.second);
     model.doKinematics(cache, true);
@@ -79,8 +80,8 @@ void testScenario1(const RigidBodyTree& model) {
     auto q = model.getRandomConfiguration(generator);
     qs_double.push_back(q);
 
-    MatrixXd grad =
-        MatrixXd::Identity(model.num_positions, model.num_positions);
+    MatrixXd grad = MatrixXd::Identity(model.number_of_positions(),
+                                       model.number_of_positions());
 
     auto q_autodiff_fixed = q.cast<AutoDiffFixedMaxSize>().eval();
     gradientMatrixToAutoDiff(grad, q_autodiff_fixed);
@@ -117,17 +118,20 @@ void testScenario1(const RigidBodyTree& model) {
   cout << "no gradients: "
        << measure<>::execution(scenario1<double>, model, cache_double,
                                qs_double, body_fixed_points) /
-              static_cast<double>(ntests) << " ms" << endl;
+              static_cast<double>(ntests)
+       << " ms" << endl;
   cout << "autodiff fixed max size: "
        << measure<>::execution(scenario1<AutoDiffFixedMaxSize>, model,
                                cache_autodiff_fixed, qs_autodiff_fixed,
                                body_fixed_points) /
-              static_cast<double>(ntests) << " ms" << endl;
+              static_cast<double>(ntests)
+       << " ms" << endl;
   cout << "autodiff dynamic size: "
        << measure<>::execution(scenario1<AutoDiffDynamicSize>, model,
                                cache_autodiff_dynamic, qs_autodiff_dynamic,
                                body_fixed_points) /
-              static_cast<double>(ntests) << " ms" << endl;
+              static_cast<double>(ntests)
+       << " ms" << endl;
   cout << endl;
 }
 
@@ -136,14 +140,16 @@ void testScenario2(const RigidBodyTree& model) {
 
   vector<pair<VectorXd, VectorXd>> states_double;
   vector<pair<Matrix<AutoDiffFixedMaxSize, Dynamic, 1>,
-              Matrix<AutoDiffFixedMaxSize, Dynamic, 1>>> states_autodiff_fixed;
+              Matrix<AutoDiffFixedMaxSize, Dynamic, 1>>>
+      states_autodiff_fixed;
   vector<pair<Matrix<AutoDiffDynamicSize, Dynamic, 1>,
-              Matrix<AutoDiffDynamicSize, Dynamic, 1>>> states_autodiff_dynamic;
+              Matrix<AutoDiffDynamicSize, Dynamic, 1>>>
+      states_autodiff_dynamic;
   default_random_engine generator;
 
   for (int i = 0; i < ntests; i++) {
     VectorXd q = model.getRandomConfiguration(generator);
-    VectorXd v = VectorXd::Random(model.num_velocities);
+    VectorXd v = VectorXd::Random(model.number_of_velocities());
     VectorXd x(q.rows() + v.rows());
     x << q, v;
     states_double.push_back(make_pair(q, v));
@@ -153,18 +159,18 @@ void testScenario2(const RigidBodyTree& model) {
     auto x_autodiff_fixed = x.cast<AutoDiffFixedMaxSize>().eval();
     gradientMatrixToAutoDiff(grad, x_autodiff_fixed);
     Matrix<AutoDiffFixedMaxSize, Dynamic, 1> q_autodiff_fixed =
-        x_autodiff_fixed.topRows(model.num_positions);
+        x_autodiff_fixed.topRows(model.number_of_positions());
     Matrix<AutoDiffFixedMaxSize, Dynamic, 1> v_autodiff_fixed =
-        x_autodiff_fixed.bottomRows(model.num_velocities);
+        x_autodiff_fixed.bottomRows(model.number_of_velocities());
     states_autodiff_fixed.push_back(
         make_pair(q_autodiff_fixed, v_autodiff_fixed));
 
     auto x_autodiff_dynamic = x.cast<AutoDiffDynamicSize>().eval();
     gradientMatrixToAutoDiff(grad, x_autodiff_dynamic);
     Matrix<AutoDiffDynamicSize, Dynamic, 1> q_autodiff_dynamic =
-        x_autodiff_dynamic.topRows(model.num_positions);
+        x_autodiff_dynamic.topRows(model.number_of_positions());
     Matrix<AutoDiffDynamicSize, Dynamic, 1> v_autodiff_dynamic =
-        x_autodiff_dynamic.bottomRows(model.num_velocities);
+        x_autodiff_dynamic.bottomRows(model.number_of_velocities());
     states_autodiff_dynamic.push_back(
         make_pair(q_autodiff_dynamic, v_autodiff_dynamic));
   }
@@ -177,16 +183,19 @@ void testScenario2(const RigidBodyTree& model) {
   cout << "no gradients: "
        << measure<>::execution(scenario2<double>, model, cache_double,
                                states_double) /
-              static_cast<double>(ntests) << " ms" << endl;
+              static_cast<double>(ntests)
+       << " ms" << endl;
   cout << "autodiff fixed max size: "
        << measure<>::execution(scenario2<AutoDiffFixedMaxSize>, model,
                                cache_autodiff_fixed, states_autodiff_fixed) /
-              static_cast<double>(ntests) << " ms" << endl;
+              static_cast<double>(ntests)
+       << " ms" << endl;
   cout << "autodiff dynamic size: "
        << measure<>::execution(scenario2<AutoDiffDynamicSize>, model,
                                cache_autodiff_dynamic,
                                states_autodiff_dynamic) /
-              static_cast<double>(ntests) << " ms" << endl;
+              static_cast<double>(ntests)
+       << " ms" << endl;
   cout << endl;
 }
 
