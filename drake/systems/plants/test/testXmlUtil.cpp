@@ -115,9 +115,8 @@ GTEST_TEST(test_parse_three_vector,
   parsed_vector3d << 0, 0, 0;
 
   for (const std::string& bad_value : invalid_strings) {
-    EXPECT_THROW(
-        ParseThreeVectorValue(bad_value.c_str(), &parsed_vector3d),
-        std::invalid_argument);
+    EXPECT_THROW(ParseThreeVectorValue(bad_value.c_str(), &parsed_vector3d),
+                 std::invalid_argument);
   }
 }
 
@@ -247,6 +246,26 @@ GTEST_TEST(test_parse_three_vector, node_child_input_nullptr_failure_mode) {
   EXPECT_THROW(ParseThreeVectorValue(node, nullptr, &parsed_vector3d),
                std::invalid_argument);
   EXPECT_THROW(ParseThreeVectorValue(nullptr, nullptr, &parsed_vector3d),
+               std::invalid_argument);
+}
+
+// Tests failure mode where the specified element does not exist.
+GTEST_TEST(test_parse_three_vector, node_child_input_no_element_failure_mode) {
+  const char* xml_string =
+      "<?xml version=\"1.0\" ?>\n"
+      "<foo>\n"
+      "  <bar>93.5</bar>\n"
+      "</foo>";
+
+  XMLDocument xml_doc;
+  xml_doc.Parse(xml_string);
+
+  XMLElement* node = xml_doc.FirstChildElement("foo");
+
+  Vector3d parsed_vector3d;
+  parsed_vector3d << 0, 0, 0;
+
+  EXPECT_THROW(ParseThreeVectorValue(node, "baz", &parsed_vector3d),
                std::invalid_argument);
 }
 

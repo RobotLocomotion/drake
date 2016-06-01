@@ -95,7 +95,13 @@ void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
         "ERROR: ParseThreeVectorValue: Parameter"
         "\"node\" and/or parameter \"element_name\" is null.");
   } else {
-    ParseThreeVectorValue(node->FirstChildElement(element_name), val);
+    const tinyxml2::XMLElement* child_node =
+        node->FirstChildElement(element_name);
+    if (child_node == nullptr) {
+      throw std::invalid_argument("ERROR: ParseThreeVectorValue: Element \"" +
+                                  std::string(element_name) + "\" not found.");
+    }
+    ParseThreeVectorValue(child_node, val);
   }
 }
 
