@@ -238,17 +238,12 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
 template<typename T>
 std::pair<typename SystemIdentification<T>::PartialEvalType, T>
 SystemIdentification<T>::EstimateParameters(
-    const VectorXPoly& polys,
+    const PolyType& poly,
     const std::vector<PartialEvalType>& active_var_values) {
   assert(active_var_values.size() > 0);
   const int num_data = active_var_values.size();
-  const int num_err_terms = num_data * polys.rows();
 
-  std::set<VarType> all_vars;
-  for (int i = 0; i < polys.rows(); i++) {
-    const std::set<VarType> poly_vars = polys[i].getVariables();
-    all_vars.insert(poly_vars.begin(), poly_vars.end());
-  }
+  const std::set<VarType> all_vars = poly.getVariables();
 
   // The set of vars left unspecified in at least one of active_var_values,
   // and thus which must appear in our return map.
@@ -274,7 +269,7 @@ SystemIdentification<T>::EstimateParameters(
   const auto parameter_variables =
       problem.AddContinuousVariables(num_to_estimate, "param");
   const auto error_variables =
-      problem.AddContinuousVariables(num_err_terms, "error");
+      problem.AddContinuousVariables(num_data, "error");
 
   // Create any necessary VarType IDs.  We build up two lists of VarType:
   //  * problem_vartypes holds a VarType for each decision variable.  This
@@ -286,7 +281,7 @@ SystemIdentification<T>::EstimateParameters(
   std::vector<VarType> problem_vartypes = vars_to_estimate;
   std::vector<VarType> error_vartypes;
   std::set<VarType> vars_in_problem = vars_to_estimate_set;
-  for (int i = 0; i < num_err_terms; i++) {
+  for (int i = 0; i < num_data; i++) {
     VarType error_var = CreateUnusedVar("err", vars_in_problem);
     vars_in_problem.insert(error_var);
     error_vartypes.push_back(error_var);
@@ -294,26 +289,18 @@ SystemIdentification<T>::EstimateParameters(
   }
 
   // For each datum, build a constraint with an error term.
-  for (int datum_num = 0; datum_num < num_data; datum_num++) {
-    VectorXPoly constraint_polys(polys.rows(), 1);
-    const PartialEvalType& partial_eval_map = active_var_values[datum_num];
-    for (int poly_num = 0; poly_num < polys.rows(); poly_num++) {
-      PolyType partial_poly = polys[poly_num].evaluatePartial(partial_eval_map);
-      PolyType constraint_poly =
-          partial_poly + PolyType(1, error_vartypes[datum_num * polys.rows() +
-                                                    poly_num]);
-      constraint_polys[poly_num] = constraint_poly;
-    }
+  for (int i = 0; i < num_data; i++) {
+    const PartialEvalType& partial_eval_map = active_var_values[i];
+    PolyType partial_poly = poly.evaluatePartial(partial_eval_map);
+    PolyType constraint_poly = partial_poly + PolyType(1, error_vartypes[i]);
     problem.AddPolynomialConstraint(
-        constraint_polys, problem_vartypes,
-        Eigen::VectorXd::Zero(polys.rows()),
-        Eigen::VectorXd::Zero(polys.rows()));
+        constraint_poly, problem_vartypes, 0, 0);
   }
 
   // Create a cost function that is least-squares on the error terms.
   auto cost = problem.AddQuadraticCost(
-      Eigen::MatrixXd::Identity(num_err_terms, num_err_terms),
-      Eigen::VectorXd::Zero(num_err_terms),
+      Eigen::MatrixXd::Identity(num_data, num_data),
+      Eigen::VectorXd::Zero(num_data),
       std::list<Drake::DecisionVariableView> { error_variables });
 
   // Solve the problem and copy out the result.
@@ -328,7 +315,7 @@ SystemIdentification<T>::EstimateParameters(
     estimates[var] = parameter_variables.value()[i];
   }
   T error_squared = 0;
-  for (int i = 0; i < num_err_terms; i++) {
+  for (int i = 0; i < num_data; i++) {
     error_squared += error_variables.value()[i] * error_variables.value()[i];
   }
 
