@@ -16,26 +16,11 @@ int main() {
   if (!model) {
     cerr << "ERROR: Failed to load model" << endl;
   }
-  Vector2d tspan;
-  tspan << 0, 1;
-  int l_hand{};
   int r_hand{};
-  // int l_foot;
-  // int r_foot;
   for (int i = 0; i < model->bodies.size(); i++) {
-    if (model->bodies[i]->name_.compare(string("l_hand"))) {
-      l_hand = i;
-    } else if (model->bodies[i]->name_.compare(string("r_hand"))) {
+    if (model->bodies[i]->name_.compare(string("r_hand"))) {
       r_hand = i;
     }
-    // else if (model->bodies[i].name_.compare(string("l_foot")))
-    //{
-    //  l_foot = i;
-    //}
-    // else if (model->bodies[i].name_.compare(string("r_foot")))
-    //{
-    //  r_foot = i;
-    //}
   }
   VectorXd qstar = model->getZeroConfiguration();
   qstar(3) = 0.8;
