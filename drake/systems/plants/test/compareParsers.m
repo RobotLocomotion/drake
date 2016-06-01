@@ -19,6 +19,9 @@ for urdf=urdfs'
     if strncmp(ex.identifier,'Drake:MissingDependency:',24)
       disp(' skipping due to a missing dependency'); 
       continue;
+    elseif strcmp(ex.identifier, 'Drake:WorldLinkInURDFModel')
+      disp(' skipping due to a world link being specified in the URDF file');
+      continue;
     end
     rethrow(ex);
   end
