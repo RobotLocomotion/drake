@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.5)
 
+cmake_policy(SET CMP0025 NEW)
+cmake_policy(SET CMP0042 NEW)
+cmake_policy(SET CMP0054 OLD)
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
   message(FATAL_ERROR "GCC version must be at least 4.9")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
+  message(FATAL_ERROR "Apple Clang version must be at least 7")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
   message(FATAL_ERROR "Clang version must be at least 3.7")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
@@ -31,9 +37,6 @@ option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random se
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-cmake_policy(SET CMP0042 NEW)
-cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
 
 # prepend module path so we can override FindMatlab.cmake
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -77,12 +80,12 @@ endfunction()
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all")
 
   # TODO(#2372) These are warnings that we can't handle yet.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field")
   else()
@@ -143,17 +146,28 @@ endif()
 # add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
 #   [CONFIGURATIONS <config>...]
 #   [WORKING_DIRECTORY <dir>]
-#   [PROPERTIES <prop1> <value1> ...])
+#   [PROPERTIES <prop1> <value1> ...]
+#   [REQUIRES <package1> <package2> ...])
 # note: default working directory is CMAKE_CURRENT_SOURCE_DIR
 # note: properties are set internally using set_tests_properties (<testname> PROPERTIES <prop1> <value1> ...)
+# note: packages in REQUIRES must write a file addpath_<package>.m to CMAKE_INSTALL_PREFIX/matlab
 function(add_matlab_test)
   # no matlab no tests
   if(NOT MATLAB_FOUND)
     return()
   endif()
   set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
-  set(multiValueArgs PROPERTIES)
+  set(multiValueArgs PROPERTIES REQUIRES)
   cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if(parsed_args_REQUIRES)
+    foreach(require ${parsed_args_REQUIRES})
+      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m")
+        message(STATUS "Not running ${parsed_args_NAME} because ${require} was not installed.")
+        return()
+      endif()
+    endforeach()
+  endif()
 
   string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in MATLAB
   if(NOT parsed_args_WORKING_DIRECTORY)

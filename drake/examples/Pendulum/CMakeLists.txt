@@ -27,7 +27,7 @@ endif()
 add_subdirectory(test)
 
 add_matlab_test(NAME examples/Pendulum/PendulumEnergyShaping.run COMMAND PendulumEnergyShaping.run)
-add_matlab_test(NAME examples/Pendulum/globalStability COMMAND globalStability)
+add_matlab_test(NAME examples/Pendulum/globalStability COMMAND globalStability REQUIRES mosek spotless)
 add_matlab_test(NAME examples/Pendulum/runDLQR COMMAND runDLQR)
 add_matlab_test(NAME examples/Pendulum/runLQR COMMAND runLQR)
 add_matlab_test(NAME examples/Pendulum/runLQRtest COMMAND runLQRtest)
