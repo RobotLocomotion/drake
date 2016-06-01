@@ -7,8 +7,8 @@ set(sources
 set(private_headers 
     spring_mass_system.h)
 
-add_library_with_exports(LIB_NAME drakeSpringMassSystem
-    SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
+add_library(drakeSpringMassSystem STATIC
+            ${sources} ${installed_headers} ${private_headers})
 add_dependencies(drakeSpringMassSystem drakeSystemFramework)
 target_link_libraries(drakeSpringMassSystem drakeSystemFramework)
 

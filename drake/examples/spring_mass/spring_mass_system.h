@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 
-#include "drake/drakeSpringMassSystem_export.h"
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -16,8 +15,7 @@ namespace examples {
 
 /// The state of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters.
-class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
-    : public systems::BasicStateVector<double> {
+class SpringMassStateVector : public systems::BasicStateVector<double> {
  public:
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
@@ -40,8 +38,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
 
 /// The output of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters.
-class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassOutputVector
-    : public systems::BasicVector<double> {
+class SpringMassOutputVector : public systems::BasicVector<double> {
  public:
   SpringMassOutputVector();
   ~SpringMassOutputVector() override;
@@ -65,8 +62,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassOutputVector
 /// @verbatim
 /// |-----\/\/ k /\/\----( m )  +x
 /// @endverbatim
-class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
-    : public systems::ContinuousSystem<double> {
+class SpringMassSystem : public systems::ContinuousSystem<double> {
  public:
   SpringMassSystem(const std::string& name, double spring_constant_N_per_m,
                    double mass_kg);
