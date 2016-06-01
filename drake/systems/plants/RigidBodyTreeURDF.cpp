@@ -362,9 +362,9 @@ void setDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
 }
 
 /**
- * Parses a joint URDF specification to obtain the name of the parent and child
- * links. An exception is thrown if either the parent or child links names
- * cannot be determined.
+ * Parses a joint URDF specification to obtain the names of the joint, parent
+ * link, child link, and the joint type. An exception is thrown if any of these
+ * names cannot be determined.
  *
  * @param[in] node The XML node parsing the URDF joint description.
  * @param[out] name A reference to a string where the name of the joint
@@ -585,7 +585,8 @@ void parseFrame(RigidBodyTree* model, XMLElement* node) {
  * If it finds such a joint, it updates the weld_to_frame parameter with the
  * offset specifies by the joint.
  *
- * An exception is thrown if no such joint is found.
+ * An exception is thrown if no such joint is found, or if multiple
+ * world-connecting joints are found.
  *
  * @param[in] node A pointer to the XML node that is parsing the URDF model.
  * @param[out] floating_base_type A reference to where the floating_base_type
@@ -614,9 +615,9 @@ void parseWorldJoint(XMLElement* node,
             "ERROR: Model contains multiple joints that connect to world!");
       found_world_joint = true;
 
-      // World joint found. The following code updates the weld_to_frame
-      // parameter based on the joint's offset, and the floating joint type
-      // based on the jont type.
+      // The world-connecting joint was found. The following code updates the
+      // weld_to_frame parameter based on the joint's offset, and the
+      // floating_base_type parameter based on the joint type.
       Isometry3d transform_to_parent_body = Isometry3d::Identity();
       XMLElement* origin = joint_node->FirstChildElement("origin");
       if (origin) {
