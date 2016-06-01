@@ -96,7 +96,7 @@ Suppose your merged PR was reverted on the master branch. What do you do?
 
 Here's one workflow:
 
-1. Checkout the master branch and create a new branch off of its ``HEAD``.
+1. Create a new development branch based off of the ``HEAD`` of master.
 
 2. `Revert <https://git-scm.com/docs/git-revert>`_ the revert of your
    originally-merged PR to get your changes back.
@@ -107,4 +107,5 @@ Here's one workflow:
 
 4. Commit your changes into your new branch.
 
-5. Issue a new PR containing your fixes.
+5. Issue a new PR containing your fixes. Be sure to link to the build cop revert
+   PR in your new PR.
