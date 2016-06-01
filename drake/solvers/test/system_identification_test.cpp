@@ -12,7 +12,7 @@ namespace {
 
 typedef SystemIdentification<double> SID;
 
-TEST(SystemIdentificationTest, LumpedSingle) {
+GTEST_TEST(SystemIdentificationTest, LumpedSingle) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
   Polynomiald a = Polynomiald("a");
@@ -33,7 +33,7 @@ TEST(SystemIdentificationTest, LumpedSingle) {
   EXPECT_EQ(lump_map.count(a * c), 1);
 }
 
-TEST(SystemIdentificationTest, LumpedMulti) {
+GTEST_TEST(SystemIdentificationTest, LumpedMulti) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
   Polynomiald a = Polynomiald("a");
@@ -69,7 +69,7 @@ TEST(SystemIdentificationTest, LumpedMulti) {
   // but the author could not get this working.
 }
 
-TEST(SystemIdentificationTest, LumpedParameterRewrite) {
+GTEST_TEST(SystemIdentificationTest, LumpedParameterRewrite) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
   Polynomiald a = Polynomiald("a");
@@ -140,7 +140,7 @@ TEST(SystemIdentificationTest, LumpedParameterRewrite) {
 #define BASIC_ESTIMATE_TEST_NAME DISABLED_BasicEstimateParameters
 #endif
 
-TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
+GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
   const Polynomiald x = Polynomiald("x");
   const auto x_var = x.getSimpleVariable();
   const Polynomiald y = Polynomiald("y");
@@ -261,7 +261,7 @@ std::vector<State> MakeTestData() {
 #define IDENTIFICATION_TEST_NAME DISABLED_SpringMassIdentification
 #endif
 
-TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
+GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   Polynomiald x = Polynomiald("x");
   auto x_var = x.getSimpleVariable();
   Polynomiald v = Polynomiald("v");

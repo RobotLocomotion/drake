@@ -55,7 +55,7 @@ run ``mex -setup`` in Matlab and select the option that mentions mexopts.sh
 
 http://stackoverflow.com/questions/20294160/matlab-error-regarding-compile-mex-command
 
-.. _faq_java_matlab_2013:
+.. _faq_compile_mex:
 
 Can't compile mex after upgrading XCode to 5.1 on Mac.
 ======================================================
@@ -67,8 +67,6 @@ The error message looks like::
 
 	/Applications/MATLAB_R2012a.app/extern/include/tmwtypes.h:819:9: error: unknown type name 'char16_t'
 	typedef char16_t CHAR16_T;
-
-
 
 MATLAB's types are not compatible with the newest version of clang.  Hopefully
 they will get in sync soon, but for now I've decided the best fix is to edit the
@@ -90,7 +88,7 @@ You might have to actually tell MATLAB to install the tool, running ``vrinstall`
 Undefined symbol "___sincos_stret" on Mac.
 ==========================================
 
-**A6.** This is an optimization in the XCode 5.  Update your mexopts.sh to make sure your MACOSX_DEPLOYMENT_TARGET is set to 10.9.  (It's best to just search and replace 10.8 for 10.9)
+This is an optimization in the XCode 5.  Update your ``mexopts.sh`` to make sure your ``MACOSX_DEPLOYMENT_TARGET`` is set to 10.9.  (It's best to just search and replace 10.8 for 10.9)
 
 
 .. _faq_ubuntu_nvidia:
@@ -102,7 +100,7 @@ I'm having trouble trying to install drake on Ubuntu after installing NVidia dri
 
 	make[5]: *** No rule to make target `/usr/lib/x86_64-linux-gnu/libGL.so', needed by `lib/libbot2-frames-renderers.so.1'.  Stop.
 
-**A7.** You may need to follow these steps:
+You may need to follow these steps:
 http://techtidings.blogspot.com/2012/01/problem-with-libglso-on-64-bit-ubuntu.html
 
 .. _faq_jpeglib:
@@ -150,6 +148,6 @@ The other two hits (one on line 123, one on line 135 of the unmodified file) loo
 
 Repeat the copy/paste/modify 10.10 to 10.11 process for these lines.
 
-Repeat this whole process for `clang++_maci64.xml`, `gfortran.xml`, and `intel_fortran.xml`.
+Repeat this whole process for ``clang++_maci64.xml``, ``gfortran.xml``, and ``intel_fortran.xml``.
 
 (note: this is a slightly more thorough version of the resolution described here: http://www.mathworks.com/matlabcentral/answers/243868-mex-can-t-find-compiler-after-xcode-7-update-r2015b ).
