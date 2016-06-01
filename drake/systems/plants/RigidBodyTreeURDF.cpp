@@ -361,45 +361,76 @@ void setDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
   }
 }
 
-void parseJoint(RigidBodyTree* model, XMLElement* node) {
-  const char* attr = node->Attribute("drake_ignore");
-  if (attr && strcmp(attr, "true") == 0) return;
-
-  attr = node->Attribute("name");
+/**
+ * Parses a joint URDF specification to obtain the name of the parent and child
+ * links. An exception is thrown if either the parent or child links names
+ * cannot be determined.
+ *
+ * @param[in] node The XML node parsing the URDF joint description.
+ * @param[out] name A reference to a string where the name of the joint
+ * should be saved.
+ * @param[out] type A reference to a string where the joint type should be
+ * saved.
+ * @param[out] parent_link_name A reference to a string where the name of the
+ * parent link should be saved.
+ * @param[out] child_link_name A reference to a string where the name of the
+ * child link should be saved.
+ */
+void parseJointKeyParams(XMLElement* node, std::string& name, std::string& type,
+                         std::string& parent_link_name,
+                         std::string& child_link_name) {
+  // Obtains the joint's name.
+  const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: joint tag is missing name attribute");
-  string name(attr);
+  name = std::string(attr);
 
+  // Obtains the joint's type.
   attr = node->Attribute("type");
   if (!attr)
     throw runtime_error("ERROR: joint " + name +
-                        " is missing the type attribute");
-  string type(attr);
+                        " is missing type "
+                        "attribute");
+  type = std::string(attr);
 
-  // parse parent
+  // Obtains the name of the joint's parent link.
   XMLElement* parent_node = node->FirstChildElement("parent");
   if (!parent_node)
-    throw runtime_error("ERROR: joint " + name + " doesn't have a parent node");
-
+    throw runtime_error("ERROR: joint " + name +
+                        " doesn't have a parent node!");
   attr = parent_node->Attribute("link");
   if (!attr)
     throw runtime_error("ERROR: joint " + name +
-                        " parent does not have a link attribute");
-  string parent_name(attr);
+                        "'s' parent does not have a link attribute!");
+  parent_link_name = std::string(attr);
 
-  int parent_index = findLinkIndex(model, parent_name);
-  if (parent_index < 0)
-    throw runtime_error("ERROR: could not find parent link named " +
-                        parent_name);
-
-  // parse child
+  // Obtains the name of the joint's child link.
   XMLElement* child_node = node->FirstChildElement("child");
   if (!child_node)
     throw runtime_error("ERROR: joint " + name + " doesn't have a child node");
   attr = child_node->Attribute("link");
   if (!attr)
     throw runtime_error("ERROR: joint " + name +
-                        " child does not have a link attribute");
-  string child_name(attr);
+                        "'s child does not have a link attribute");
+  child_link_name = std::string(attr);
+}
+
+void parseJoint(RigidBodyTree* model, XMLElement* node) {
+  const char* attr = node->Attribute("drake_ignore");
+  if (attr && strcmp(attr, "true") == 0) return;
+
+  // Parses the parent and child link names.
+  std::string name, type, parent_name, child_name;
+  parseJointKeyParams(node, name, type, parent_name, child_name);
+
+  // Checks if this joint connects to the world and, if so, terminates this
+  // method call. This is because joints that connect to the world are processed
+  // separately.
+  if (parent_name == "world") return;
+
+  int parent_index = findLinkIndex(model, parent_name);
+  if (parent_index < 0)
+    throw runtime_error("ERROR: could not find parent link named " +
+                        parent_name);
 
   int child_index = findLinkIndex(model, child_name);
   if (child_index < 0)
@@ -549,6 +580,74 @@ void parseFrame(RigidBodyTree* model, XMLElement* node) {
   model->addFrame(frame);
 }
 
+/**
+ * Searches for a joint that connects the URDF model to the world.
+ * If it finds such a joint, it updates the weld_to_frame parameter with the
+ * offset specifies by the joint.
+ *
+ * An exception is thrown if no such joint is found.
+ *
+ * @param[in] node A pointer to the XML node that is parsing the URDF model.
+ * @param[out] floating_base_type A reference to where the floating_base_type
+ * should be saved.
+ * @param[out] weld_to_frame The parameter to modify.
+ */
+void parseWorldJoint(XMLElement* node,
+                     DrakeJoint::FloatingBaseType& floating_base_type,
+                     std::shared_ptr<RigidBodyFrame>& weld_to_frame) {
+  bool found_world_joint = false;
+
+  for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
+       joint_node = joint_node->NextSiblingElement("joint")) {
+    const char* attr = joint_node->Attribute("drake_ignore");
+    if (attr && strcmp(attr, "true") == 0) continue;
+
+    // Parses the parent and child link names.
+    std::string joint_name, joint_type, parent_name, child_name;
+    parseJointKeyParams(joint_node, joint_name, joint_type, parent_name,
+                        child_name);
+
+    if (parent_name == "world") {
+      // Double checks to ensure only one joint connects the model to the world.
+      if (found_world_joint)
+        throw runtime_error(
+            "ERROR: Model contains multiple joints that connect to world!");
+      found_world_joint = true;
+
+      // World joint found. The following code updates the weld_to_frame
+      // parameter based on the joint's offset, and the floating joint type
+      // based on the jont type.
+      Isometry3d transform_to_parent_body = Isometry3d::Identity();
+      XMLElement* origin = joint_node->FirstChildElement("origin");
+      if (origin) {
+        originAttributesToTransform(origin, transform_to_parent_body);
+      }
+
+      if (weld_to_frame == nullptr) weld_to_frame.reset(new RigidBodyFrame());
+
+      weld_to_frame->name = "world";
+      weld_to_frame->transform_to_body = transform_to_parent_body;
+
+      if (joint_type == "fixed") {
+        floating_base_type = DrakeJoint::FloatingBaseType::FIXED;
+      } else if (joint_type == "continuous") {
+        floating_base_type = DrakeJoint::FloatingBaseType::QUATERNION;
+      }
+
+      // Throws an exception if the joint connecting the model to the world
+      // includes an axis specification.
+      //
+      // TODO(liangfok): Update URDF parser to support axis specification
+      // in joint that connects model to the world.
+      if (node->FirstChildElement("axis")) {
+        throw runtime_error(
+            "ERROR: Drake's URDF parser does not support an axis specification"
+            "for the joint that connects the model to the world.");
+      }
+    }
+  }
+}
+
 void parseRobot(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
@@ -564,6 +663,12 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
        link_node = link_node->NextSiblingElement("material"))
     parseMaterial(link_node, materials);  // accept failed material parsing
 
+  // The actual floating base type may differ from parameter floating_base_type
+  // because it may be specified by the URDF itself when the URDF contains a
+  // world link. By default, actual_floating_base_type equals paramter
+  // floating_base_type.
+  DrakeJoint::FloatingBaseType actual_floating_base_type = floating_base_type;
+
   // Maintains a list of links that were added to the rigid body tree.
   // This is iterated over by method AddFloatingJoint() to determine where
   // to attach floating joints.
@@ -576,6 +681,28 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
     if (parseLink(model, robotname, link_node, materials, package_map, root_dir,
                   &index)) {
       link_indices.push_back(index);
+    } else {
+      // Determines whether the link was not parsed because it is a world link.
+      const char* name_attr = link_node->Attribute("name");
+      if (!name_attr)
+        throw runtime_error("ERROR: link tag is missing name attribute");
+      if (std::string(name_attr) == "world") {
+        // A world link was specified within the URDF. The following code
+        // verifies that parameter weld_to_frame is not specified. It throws an
+        // exception if it is. Otherwise, it extract the information necessary
+        // create the virtual joint that connects the robot to the world.
+        if (weld_to_frame != nullptr) {
+          throw runtime_error(
+              "Both weld_to_frame and world link specified. "
+              "Only one may be specified when instantiating "
+              "a URDF model.");
+        } else {
+          // Since a world link was specifies, there must be a joint that
+          // connects the world to the robot's root note. The following
+          // method call parses the information contained within this joint.
+          parseWorldJoint(node, actual_floating_base_type, weld_to_frame);
+        }
+      }
     }
   }
 
@@ -613,7 +740,8 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
 
   // Adds the floating joint(s) that connect the newly added robot model to the
   // rest of the rigid body tree.
-  model->AddFloatingJoint(floating_base_type, link_indices, weld_to_frame);
+  model->AddFloatingJoint(actual_floating_base_type, link_indices,
+                          weld_to_frame);
 }
 
 void parseURDF(RigidBodyTree* model, XMLDocument* xml_doc,
