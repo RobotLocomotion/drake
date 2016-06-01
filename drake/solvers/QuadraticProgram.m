@@ -44,8 +44,8 @@ methods
     end
     
     sizecheck(f,[obj.num_vars,1]);
-    obj.Q = zeros(obj.num_vars,obj.num_vars);
-    obj.f = zeros(obj.num_vars,1);
+    obj.Q = sparse(obj.num_vars,obj.num_vars);
+    obj.f = sparse(obj.num_vars,1);
     obj = obj.addCost(QuadraticConstraint(-inf,inf,Q,f));
     obj = obj.addLinearConstraint(LinearConstraint(-inf(numel(bin),1),bin(:),Ain));
     obj = obj.addLinearConstraint(LinearConstraint(beq,beq,Aeq));

@@ -1,13 +1,14 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include <map>
 #include <string>
+
+#include <Eigen/Dense>
+#include "spruce.hh"
 
 #include "drake/drakeXMLUtil_export.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/thirdParty/tinyxml2/tinyxml2.h"
-#include "spruce.hh"
 
 template <typename Scalar>
 bool parseScalarValue(tinyxml2::XMLElement* node, Scalar& val) {
@@ -41,8 +42,11 @@ bool parseScalarAttribute(tinyxml2::XMLElement* node,
 }
 
 /**
- * Parses a three vector value from parameter \p strval. If \p strval points to
- * a single scalar value, it automatically converts it into a three vector by
+ * Parses a three vector value from parameter \p strval. There are two formats
+ * of \p strval that can be successfully parsed. The first format is
+ * "val1 val2 val3" where val1, val2, and val3 are double values. The second
+ * valid format is "val" where val is a double type. In this case, this method
+ * automatically converts the val1 scalar value into a three vector by
  * using the same scalar value for all three dimensions.
  *
  * @param[in] strval A pointer to the character array describing a three vector
@@ -67,7 +71,8 @@ bool ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val);
  * @throws std::runtime_error If parameter \p val is nullptr.
  */
 DRAKEXMLUTIL_EXPORT
-bool ParseThreeVectorValue(tinyxml2::XMLElement* node, Eigen::Vector3d* val);
+bool ParseThreeVectorValue(const tinyxml2::XMLElement* node,
+                           Eigen::Vector3d* val);
 
 /**
  * Parses a three vector value from parameter \p node, which is an XML node.
@@ -86,8 +91,8 @@ bool ParseThreeVectorValue(tinyxml2::XMLElement* node, Eigen::Vector3d* val);
  * @throws std::runtime_error If parameter \p val is nullptr.
  */
 DRAKEXMLUTIL_EXPORT
-bool ParseThreeVectorValue(tinyxml2::XMLElement* node, const char* element_name,
-                           Eigen::Vector3d* val);
+bool ParseThreeVectorValue(const tinyxml2::XMLElement* node,
+                           const char* element_name, Eigen::Vector3d* val);
 
 /**
  * Parses a three vector value from parameter \p node, which is an XML node. The
@@ -107,7 +112,7 @@ bool ParseThreeVectorValue(tinyxml2::XMLElement* node, const char* element_name,
  * @throws std::runtime_error If parameter \p val is nullptr.
  */
 DRAKEXMLUTIL_EXPORT
-bool ParseThreeVectorAttribute(tinyxml2::XMLElement* node,
+bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
                                const char* attribute_name,
                                Eigen::Vector3d* val);
 
