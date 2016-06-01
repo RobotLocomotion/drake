@@ -1,15 +1,15 @@
-if (LCM_FOUND AND GTEST_FOUND)
+if(LCM_FOUND AND GTEST_FOUND)
   add_executable(acrobotURDFDynamicsTest urdfDynamicsTest.cpp)
   target_link_libraries(acrobotURDFDynamicsTest drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME acrobotURDFDynamicsTest COMMAND acrobotURDFDynamicsTest)
-endif(LCM_FOUND AND GTEST_FOUND)
+endif()
 
 add_matlab_test(NAME examples/Acrobot/test/dHtest COMMAND dHtest)
 add_matlab_test(NAME examples/Acrobot/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)
 add_matlab_test(NAME examples/Acrobot/test/lqrTest COMMAND lqrTest)
 add_matlab_test(NAME examples/Acrobot/test/paramEstSyntheticData COMMAND paramEstSyntheticData)
 add_matlab_test(NAME examples/Acrobot/test/paramExtractFromURDF COMMAND paramExtractFromURDF)
-add_matlab_test(NAME examples/Acrobot/test/polyIK COMMAND polyIK)
+add_matlab_test(NAME examples/Acrobot/test/polyIK COMMAND polyIK REQUIRES spotless)
 add_matlab_test(NAME examples/Acrobot/test/testCpp COMMAND testCpp)
 # add_matlab_test(NAME examples/Acrobot/test/testJointLimits COMMAND testJointLimits)  # FIXME
 add_matlab_test(NAME examples/Acrobot/test/testKinematics COMMAND testKinematics)
