@@ -290,7 +290,7 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   //
   // We write the manipulator as:
   //   H*vdot + C*v + g = B*u + f
-  // Where f embodies any dissipative forces not appropriate to C.
+  // Where f embodies any forces not appropriate to C.
   VectorXPoly v(1); v << velocity;
   VectorXPoly vdot(1); vdot << acceleration;
   VectorXPoly H(1); H << mass;
