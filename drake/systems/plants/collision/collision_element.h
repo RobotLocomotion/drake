@@ -21,7 +21,7 @@ typedef uintptr_t CollisionElementId;
 
 class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
  public:
-  /** Constructs a new collision element with not geometry attached. **/
+  /** Constructs a new collision element with no geometry attached. **/
   // TODO(amcastro-tri): having an element without geometry does not seem right.
   CollisionElement(const Eigen::Isometry3d& T_element_to_local =
                        Eigen::Isometry3d::Identity());
