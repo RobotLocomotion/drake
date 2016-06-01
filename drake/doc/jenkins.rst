@@ -24,8 +24,9 @@ Running a Specific Build Before Submitting
 There are a number of Jenkins builds that do not normally run pre-submit, but
 do run post-submit or nightly.  The post-submit and nightly builds include
 long-running tests, lower-priority platforms (e.g. Windows MATLAB), and
-specialized options (e.g. msan).  Users with login access to Jenkins can
-manually trigger these builds on pull requests that have not yet been merged.
+specialized options (e.g. msan). Members of the RobotLocomotion organization
+can manually trigger these builds on pull requests that have not yet been
+merged.
 
 1. Log in to Jenkins using GitHub OAuth.
 2. Go to the `list of Experimental builds <https://drake-jenkins.csail.mit.edu/view/Experimental/>`_.
