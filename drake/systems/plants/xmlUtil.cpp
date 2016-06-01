@@ -109,9 +109,9 @@ void ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
   } else {
     const char* scale = node->Attribute(attribute_name);
     if (scale == nullptr) {
-          throw std::invalid_argument(
-            "ERROR: ParseThreeVectorAttribute: Attribute \"" +
-            std::string(attribute_name) + "\" not found.");
+      throw std::invalid_argument(
+          "ERROR: ParseThreeVectorAttribute: Attribute \"" +
+          std::string(attribute_name) + "\" not found.");
     }
     ParseThreeVectorValue(scale, val);
   }
