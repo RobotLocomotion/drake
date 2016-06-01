@@ -143,9 +143,8 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
   /// Checks if a PiecewisePolynomial is approximately equal to this one.
   /**
    * Checks that every coefficient of \p other is within \p tol of the
-   * corresponding coefficient of this PiecewisePolynomial.
-   * Any rules or limitations of Polynomial::integral also apply to this
-   * function.
+   * corresponding coefficient of this PiecewisePolynomial. Throws an exception
+   * if any Polynomial in either PiecewisePolynomial is not univariate.
    */
   bool isApprox(const PiecewisePolynomial& other, double tol) const;
 
