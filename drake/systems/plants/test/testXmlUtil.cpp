@@ -54,10 +54,11 @@ GTEST_TEST(test_parse_three_vector, string_input_null_failure_mode) {
   const char* null_string = nullptr;
 
   EXPECT_THROW(ParseThreeVectorValue(null_string, &parsed_vector3d),
-    std::invalid_argument);
+               std::invalid_argument);
   EXPECT_THROW(ParseThreeVectorValue("0.0, 1.1, 2.2", nullptr),
                std::invalid_argument);
-  EXPECT_THROW(ParseThreeVectorValue(null_string, nullptr), std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorValue(null_string, nullptr),
+               std::invalid_argument);
 }
 
 // Tests the ability to gracefully handle the failure mode where the user
@@ -101,23 +102,21 @@ GTEST_TEST(test_parse_three_vector,
 // provides a vector with non-double-type values.
 GTEST_TEST(test_parse_three_vector,
            string_input_non_double_vector_failure_mode) {
-  const int num_value_strings = 7;
-  const char* non_double_value_string[] = {
-    "foo bar baz",
-    "1.0 bar baz",
-    "2.0 3.0 baz",
-    "foo 4.0 4.1",
-    "foo bar 4.1",
-    "9.2 bar 4.1",
-    "1.1foo 2.2bar 3.3baz"
-  };
+  std::vector<std::string> invalid_strings;
+  invalid_strings.push_back("foo bar baz");
+  invalid_strings.push_back("1.0 bar baz");
+  invalid_strings.push_back("2.0 3.0 baz");
+  invalid_strings.push_back("foo 4.0 4.1");
+  invalid_strings.push_back("foo bar 4.1");
+  invalid_strings.push_back("9.2 bar 4.1");
+  invalid_strings.push_back("1.1foo 2.2bar 3.3baz");
 
   Vector3d parsed_vector3d;
   parsed_vector3d << 0, 0, 0;
 
-  for (int ii = 0; ii < num_value_strings; ii++) {
+  for (std::string& bad_value : invalid_strings) {
     EXPECT_THROW(
-        ParseThreeVectorValue(non_double_value_string[ii], &parsed_vector3d),
+        ParseThreeVectorValue(bad_value.c_str(), &parsed_vector3d),
         std::invalid_argument);
   }
 }
@@ -174,7 +173,8 @@ GTEST_TEST(test_parse_three_vector, node_input_nullptr) {
   Vector3d parsed_vector3d;
   parsed_vector3d << 0, 0, 0;
 
-  EXPECT_THROW(ParseThreeVectorValue(node, &parsed_vector3d), std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorValue(node, &parsed_vector3d),
+               std::invalid_argument);
 }
 
 // Tests the ability to load a three vector from an XML whose grandchild
@@ -242,9 +242,12 @@ GTEST_TEST(test_parse_three_vector, node_child_input_nullptr_failure_mode) {
   Vector3d parsed_vector3d;
   parsed_vector3d << 0, 0, 0;
 
-  EXPECT_THROW(ParseThreeVectorValue(nullptr, "bar", &parsed_vector3d), std::invalid_argument);
-  EXPECT_THROW(ParseThreeVectorValue(node, nullptr, &parsed_vector3d), std::invalid_argument);
-  EXPECT_THROW(ParseThreeVectorValue(nullptr, nullptr, &parsed_vector3d), std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorValue(nullptr, "bar", &parsed_vector3d),
+               std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorValue(node, nullptr, &parsed_vector3d),
+               std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorValue(nullptr, nullptr, &parsed_vector3d),
+               std::invalid_argument);
 }
 
 // Tests the ability to load a three vector from an XML attribute containing
@@ -306,9 +309,12 @@ GTEST_TEST(test_parse_three_vector, node_attribute_input_nullptr) {
   Vector3d parsed_vector3d;
   parsed_vector3d << 0, 0, 0;
 
-  EXPECT_THROW(ParseThreeVectorAttribute(nullptr, "scale", &parsed_vector3d), std::invalid_argument);
-  EXPECT_THROW(ParseThreeVectorAttribute(node, nullptr, &parsed_vector3d), std::invalid_argument);
-  EXPECT_THROW(ParseThreeVectorAttribute(nullptr, nullptr, &parsed_vector3d), std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorAttribute(nullptr, "scale", &parsed_vector3d),
+               std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorAttribute(node, nullptr, &parsed_vector3d),
+               std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorAttribute(nullptr, nullptr, &parsed_vector3d),
+               std::invalid_argument);
 }
 
 }  // namespace

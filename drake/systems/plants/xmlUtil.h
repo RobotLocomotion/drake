@@ -120,6 +120,18 @@ void ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
                                const char* attribute_name,
                                Eigen::Vector3d* val);
 
+/**
+ * Converts a string to a double value.
+ *
+ * @param[in] str A pointer to a string containing a representation of a double
+ * value.
+ * @return The corresponding double value that was represented in \p str.
+ * @throws std::invalid_argument If any problem is encountered while parsing the
+ * double value represented within \p str.
+ */
+DRAKEXMLUTIL_EXPORT
+double StringToDouble(const std::string* str);
+
 // only writes values if they exist
 DRAKEXMLUTIL_EXPORT bool parseVectorAttribute(const tinyxml2::XMLElement* node,
                                               const char* attribute_name,
