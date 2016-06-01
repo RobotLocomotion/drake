@@ -613,8 +613,8 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     polynomials_vec << poly, x;
     problem.AddPolynomialConstraint(polynomials_vec,
                                     var_mapping,
-                                    Vector1d::Constant(-kInf),
-                                    Eigen::VectorXd::Zero(1));
+                                    Eigen::VectorXd::Constant(2, -kInf),
+                                    Eigen::VectorXd::Zero(2));
     RunNonlinearProgram(problem, [&]() {
         EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
         EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
