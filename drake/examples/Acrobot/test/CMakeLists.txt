@@ -9,7 +9,7 @@ add_matlab_test(NAME examples/Acrobot/test/dynamicsGradientsTest COMMAND dynamic
 add_matlab_test(NAME examples/Acrobot/test/lqrTest COMMAND lqrTest)
 add_matlab_test(NAME examples/Acrobot/test/paramEstSyntheticData COMMAND paramEstSyntheticData)
 add_matlab_test(NAME examples/Acrobot/test/paramExtractFromURDF COMMAND paramExtractFromURDF)
-add_matlab_test(NAME examples/Acrobot/test/polyIK COMMAND polyIK)
+add_matlab_test(NAME examples/Acrobot/test/polyIK COMMAND polyIK REQUIRES spotless)
 add_matlab_test(NAME examples/Acrobot/test/testCpp COMMAND testCpp)
 # add_matlab_test(NAME examples/Acrobot/test/testJointLimits COMMAND testJointLimits)  # FIXME
 add_matlab_test(NAME examples/Acrobot/test/testKinematics COMMAND testKinematics)

@@ -170,7 +170,8 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     SID::PartialEvalType estimated_params;
     double error;
     std::tie(estimated_params, error) =
-        SID::EstimateParameters(poly, sample_points);
+        SID::EstimateParameters(VectorXPoly::Constant(1, poly),
+                                sample_points);
 
     EXPECT_LT(error, 1e-5);
     EXPECT_EQ(estimated_params.size(), 3);
@@ -192,7 +193,8 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     SID::PartialEvalType estimated_params;
     double error;
     std::tie(estimated_params, error) =
-        SID::EstimateParameters(poly, sample_points);
+        SID::EstimateParameters(VectorXPoly::Constant(1, poly),
+                                sample_points);
 
     EXPECT_LT(error, 0.1);
     EXPECT_EQ(estimated_params.size(), 3);
@@ -261,15 +263,19 @@ std::vector<State> MakeTestData() {
 #define IDENTIFICATION_TEST_NAME DISABLED_SpringMassIdentification
 #endif
 
+// TODO(ggould-tri) It is likely that much of the logic below will be
+// boilerplate shared by all manipulator identification; it should eventually
+// be pulled into a function of its own inside of system_identification.
+
 GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
-  Polynomiald x = Polynomiald("x");
-  auto x_var = x.getSimpleVariable();
-  Polynomiald v = Polynomiald("v");
-  auto v_var = v.getSimpleVariable();
-  Polynomiald a = Polynomiald("a");
-  auto a_var = a.getSimpleVariable();
-  Polynomiald f = Polynomiald("f");
-  auto f_var = f.getSimpleVariable();
+  Polynomiald pos = Polynomiald("pos");
+  auto pos_var = pos.getSimpleVariable();
+  Polynomiald velocity = Polynomiald("vel");
+  auto velocity_var = velocity.getSimpleVariable();
+  Polynomiald acceleration = Polynomiald("acc");
+  auto acceleration_var = acceleration.getSimpleVariable();
+  Polynomiald input_force = Polynomiald("f_in");
+  auto input_force_var = input_force.getSimpleVariable();
   Polynomiald mass = Polynomiald("m");
   auto mass_var = mass.getSimpleVariable();
   Polynomiald damping = Polynomiald("b");
@@ -277,30 +283,47 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   Polynomiald spring = Polynomiald("k");
   auto spring_var = spring.getSimpleVariable();
 
-  // We use a simple equation of motion rather than a manipulator equation
-  // here because we are testing the 1D version of parameter estimation.
-  Polynomiald force_equation = (mass * a) + (damping * v) + (spring * x) - f;
+  // Code style violations here:
+  // * Vector initializations use two statements on one line for clarity.
+  // * The short names and upper/lower case here are conventional in the
+  //   manipulator formulation.
+  //
+  // We write the manipulator as:
+  //   H*vdot + C*v + g = B*u + f
+  // Where f embodies any forces not appropriate to C.
+  VectorXPoly v(1); v << velocity;
+  VectorXPoly vdot(1); vdot << acceleration;
+  VectorXPoly H(1); H << mass;
+  VectorXPoly C(1); C << 0;
+  VectorXPoly g(1); g << (spring * pos);
+  VectorXPoly f(1); f << (velocity * damping);
+  VectorXPoly B(1); B << 1;
+  VectorXPoly u(1); u << input_force;
+
+  const VectorXPoly manipulator_left = (H * vdot) + (C * v) + g;
+  const VectorXPoly manipulator_right = (B * u) + f;
 
   std::default_random_engine noise_generator;
   noise_generator.seed(kNoiseSeed);
   std::uniform_real_distribution<double> noise_distribution(-kNoise, kNoise);
   auto noise = std::bind(noise_distribution, noise_generator);
 
-  std::vector<State> oracular_data = MakeTestData();
+  const std::vector<State> oracular_data = MakeTestData();
   std::vector<SID::PartialEvalType> measurements;
   for (const State& oracular_state : oracular_data) {
     SID::PartialEvalType measurement;
-    measurement[x_var] = oracular_state.position + noise();
-    measurement[v_var] = oracular_state.velocity + noise();
-    measurement[a_var] = oracular_state.acceleration + noise();
-    measurement[f_var] = oracular_state.force + noise();
+    measurement[pos_var] = oracular_state.position + noise();
+    measurement[velocity_var] = oracular_state.velocity + noise();
+    measurement[acceleration_var] = oracular_state.acceleration + noise();
+    measurement[input_force_var] = oracular_state.force + noise();
     measurements.push_back(measurement);
   }
 
   SID::PartialEvalType estimated_params;
   double error;
   std::tie(estimated_params, error) =
-      SID::EstimateParameters(force_equation, measurements);
+      SID::EstimateParameters(manipulator_left - manipulator_right,
+                              measurements);
 
   // Multiple layers of naive discrete-time numeric integration yields a very
   // high error value here, which almost all lands in the damping constant

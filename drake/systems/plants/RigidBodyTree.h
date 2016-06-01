@@ -184,7 +184,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
                                           // doKinematics below which checks for
                                           // this
 
-    for (int i = 0; i < bodies.size(); i++) {
+    for (size_t i = 0; i < bodies.size(); i++) {
       RigidBody& body = *bodies[i];
       KinematicsCacheElement<Scalar>& element = cache.getElement(body);
 
