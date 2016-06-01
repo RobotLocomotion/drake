@@ -60,7 +60,7 @@ class DRAKECOLLISION_EXPORT Model {
    * transform
    */
   virtual bool updateElementWorldTransform(
-      const CollisionElementId id, const Eigen::Isometry3d& T_local_to_world);
+      CollisionElementId id, const Eigen::Isometry3d& T_local_to_world);
 
   /** \brief Compute the points of closest approach between all eligible
    * pairs of collision elements drawn from a specified set of elements
@@ -76,7 +76,7 @@ class DRAKECOLLISION_EXPORT Model {
    */
   virtual bool closestPointsAllToAll(
       const std::vector<CollisionElementId>& ids_to_check,
-      const bool use_margins, std::vector<PointPair>& closest_points) {
+      bool use_margins, std::vector<PointPair>& closest_points) {
     return false;
   }
 
@@ -89,7 +89,7 @@ class DRAKECOLLISION_EXPORT Model {
    * called
    * \return true if this method ran successfully
    */
-  virtual bool collisionPointsAllToAll(const bool use_margins,
+  virtual bool collisionPointsAllToAll(bool use_margins,
                                        std::vector<PointPair>& points) {
     return false;
   }
@@ -106,7 +106,7 @@ class DRAKECOLLISION_EXPORT Model {
    * \return true if this method ran successfully
    */
   virtual bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     const bool use_margins,
+                                     bool use_margins,
                                      std::vector<PointPair>& closest_points) {
     return false;
   }
@@ -135,7 +135,7 @@ class DRAKECOLLISION_EXPORT Model {
    * collision points
    */
   virtual std::vector<PointPair> potentialCollisionPoints(
-      const bool use_margins) {
+      bool use_margins) {
     return std::vector<PointPair>();
   }
 

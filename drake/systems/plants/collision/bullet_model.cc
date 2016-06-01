@@ -388,7 +388,7 @@ std::vector<size_t> BulletModel::collidingPoints(
 }
 
 bool BulletModel::updateElementWorldTransform(
-    const CollisionElementId id, const Isometry3d& T_local_to_world) {
+    CollisionElementId id, const Isometry3d& T_local_to_world) {
   const bool element_exists(
       Model::updateElementWorldTransform(id, T_local_to_world));
   if (element_exists) {
@@ -425,8 +425,8 @@ void BulletModel::updateModel() {
 }
 
 bool BulletModel::findClosestPointsBetweenElements(
-    const CollisionElementId idA, const CollisionElementId idB,
-    const bool use_margins, ResultCollector* result_collector) {
+    CollisionElementId idA, CollisionElementId idB,
+    bool use_margins, ResultCollector* result_collector) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
   if (elements[idA]->getShape() == DrakeShapes::SPHERE &&
@@ -676,7 +676,7 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
 // once and be passed to this method every time is called since id_pairs does
 // not change during simulation.
 bool BulletModel::closestPointsAllToAll(
-    const std::vector<CollisionElementId>& ids_to_check, const bool use_margins,
+    const std::vector<CollisionElementId>& ids_to_check, bool use_margins,
     std::vector<PointPair>& closest_points) {
   std::vector<ElementIdPair> id_pairs;
   for (size_t i = 0; i < ids_to_check.size(); ++i) {
@@ -696,7 +696,7 @@ bool BulletModel::closestPointsAllToAll(
 }
 
 bool BulletModel::closestPointsPairwise(
-    const std::vector<ElementIdPair>& id_pairs, const bool use_margins,
+    const std::vector<ElementIdPair>& id_pairs, bool use_margins,
     std::vector<PointPair>& closest_points) {
   ResultCollector result_collector;
   for (const ElementIdPair& pair : id_pairs) {
@@ -709,7 +709,7 @@ bool BulletModel::closestPointsPairwise(
 }
 
 bool BulletModel::collisionPointsAllToAll(
-    const bool use_margins, std::vector<PointPair>& collision_points) {
+    bool use_margins, std::vector<PointPair>& collision_points) {
   BulletResultCollector c;
   MatrixXd normals;
   std::vector<double> distance;

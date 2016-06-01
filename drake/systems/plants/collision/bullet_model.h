@@ -60,7 +60,7 @@ class BulletModel : public Model {
   CollisionElementId addElement(const CollisionElement& element) override;
 
   bool updateElementWorldTransform(
-      const CollisionElementId,
+      CollisionElementId,
       const Eigen::Isometry3d& T_local_to_world) override;
 
   /**
@@ -71,9 +71,9 @@ class BulletModel : public Model {
    */
   bool closestPointsAllToAll(
       const std::vector<CollisionElementId>& ids_to_check,
-      const bool use_margins, std::vector<PointPair>& closest_points) override;
+      bool use_margins, std::vector<PointPair>& closest_points) override;
 
-  bool collisionPointsAllToAll(const bool use_margins,
+  bool collisionPointsAllToAll(bool use_margins,
                                std::vector<PointPair>& points) override;
 
   /**
@@ -83,7 +83,7 @@ class BulletModel : public Model {
    * \return true if any points are found.
    */
   bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             const bool use_margins,
+                             bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
   void collisionDetectFromPoints(
@@ -131,8 +131,8 @@ class BulletModel : public Model {
    * returns false.
    */
   virtual bool findClosestPointsBetweenElements(
-      const CollisionElementId idA, const CollisionElementId idB,
-      const bool use_margins, ResultCollector* result_collector);
+      CollisionElementId idA, CollisionElementId idB,
+      bool use_margins, ResultCollector* result_collector);
 
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletBoxShape(
