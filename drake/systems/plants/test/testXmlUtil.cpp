@@ -294,8 +294,8 @@ GTEST_TEST(test_parse_three_vector, node_attribute_input_scalar) {
   EXPECT_EQ(parsed_vector3d, expected_vector3d);
 }
 
-// Tests the ability to load a three vector from an XML attribute containing
-// a three vector.
+// Tests the failure mode where the parameters to ParseThreeVectorAttribute are
+// null.
 GTEST_TEST(test_parse_three_vector, node_attribute_input_nullptr) {
   const char* xml_string =
       "<?xml version=\"1.0\" ?>\n"
@@ -314,6 +314,24 @@ GTEST_TEST(test_parse_three_vector, node_attribute_input_nullptr) {
   EXPECT_THROW(ParseThreeVectorAttribute(node, nullptr, &parsed_vector3d),
                std::invalid_argument);
   EXPECT_THROW(ParseThreeVectorAttribute(nullptr, nullptr, &parsed_vector3d),
+               std::invalid_argument);
+}
+
+// Tests the failure mode where the the attribute name does not exist.
+GTEST_TEST(test_parse_three_vector, node_attribute_does_not_exist) {
+  const char* xml_string =
+      "<?xml version=\"1.0\" ?>\n"
+      "<mesh scale=\"9.9\" />";
+
+  XMLDocument xml_doc;
+  xml_doc.Parse(xml_string);
+
+  XMLElement* node = xml_doc.FirstChildElement("mesh");
+
+  Vector3d parsed_vector3d;
+  parsed_vector3d << 0, 0, 0;
+
+  EXPECT_THROW(ParseThreeVectorAttribute(node, "foo", &parsed_vector3d),
                std::invalid_argument);
 }
 
