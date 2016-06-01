@@ -56,6 +56,8 @@ class ContinuousSystemInterface : public SystemInterface<T> {
       const StateVectorInterface<T>& generalized_velocity,
       StateVectorInterface<T>* configuration_derivatives) const = 0;
 
+  // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity.
+
  protected:
   ContinuousSystemInterface() {}
 
