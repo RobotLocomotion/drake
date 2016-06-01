@@ -12,7 +12,7 @@ classdef QuadraticConstraint < Constraint
       sizecheck(lb,[1,1]);
       sizecheck(ub,[1,1]);
       nx = size(Q,1);
-      obj = obj@Constraint(lb,ub,nx,2);
+      obj = obj@Constraint(lb,ub,nx,struct('grad_level',2));
       sizecheck(Q,[nx,nx]);
       sizecheck(b,[nx,1]);
       obj.Q = (Q + Q')/2;  % ensure that Q is symmetric

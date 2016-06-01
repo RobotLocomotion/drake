@@ -212,16 +212,6 @@ GTEST_TEST(DrakeGeometryUtilTest, NormalizeVec) {
     Matrix<double, x_rows, x_rows> dx_norm;
     Matrix<double, x_rows * x_rows, x_rows> ddx_norm;
     normalizeVec(x, x_norm, &dx_norm, &ddx_norm);
-    //    std::cout << "gradientNumRows: " << gradientNumRows(x_rows, x_rows, 1)
-    //    << std::endl;
-
-    volatile auto volx_norm = x_norm;
-    volatile auto voldx_norm = dx_norm;
-    volatile auto volddx_norm = ddx_norm;
-
-    //    std::cout << "x_norm:\n" << x_norm << std::endl << std::endl;
-    //    std::cout << "dx_norm:\n" << dx_norm << std::endl << std::endl;
-    //    std::cout << "ddx_norm:\n" << ddx_norm << std::endl << std::endl;
   }
 }
 

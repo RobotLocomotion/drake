@@ -1,6 +1,6 @@
 add_matlab_test(NAME examples/CubicPolynomialExample.findFixedPointTest COMMAND CubicPolynomialExample.findFixedPointTest)
 add_matlab_test(NAME examples/CubicPolynomialExample.animate COMMAND CubicPolynomialExample.animate)
-add_matlab_test(NAME examples/CubicPolynomialExample.sosExample COMMAND CubicPolynomialExample.sosExample)
+add_matlab_test(NAME examples/CubicPolynomialExample.sosExample COMMAND CubicPolynomialExample.sosExample REQUIRES spotless)
 add_matlab_test(NAME examples/CubicPolynomialExample.run COMMAND CubicPolynomialExample.run)
 add_matlab_test(NAME examples/DoubleIntegrator.runDircol COMMAND DoubleIntegrator.runDircol)
 add_matlab_test(NAME examples/DoubleIntegrator.runDirtran COMMAND DoubleIntegrator.runDirtran)
@@ -27,9 +27,9 @@ if(LONG_RUNNING_TESTS)
 endif()
 
 # recurse into all example subdirectories
-# note: the GLOB workflow is typically not recommended due to the fact that cmake will not be able
+# note: the GLOB workflow is typically not recommended due to the fact that CMake will not be able
 # to detect changes, but we currently support users adding contributed examples by installing
-# directly into examples/MY_EXAMPLE .  See #1939
+# directly into examples/MY_EXAMPLE. See #1939.
 file(GLOB children *)
 foreach(child ${children})
   if(IS_DIRECTORY ${child})

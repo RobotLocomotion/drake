@@ -24,14 +24,14 @@ endif()
 macro(add_ik_cpp)
   add_executable(${ARGV} ${ARGV}.cpp)
   target_link_libraries(${ARGV} drakeRigidBodyConstraint drakeIK)
-  add_test( NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
+  add_test(NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
 endmacro()
 
 macro(add_ik_gtest)
   add_executable(${ARGV} ${ARGV}.cpp)
   target_link_libraries(${ARGV} drakeRigidBodyConstraint drakeIK
     ${GTEST_BOTH_LIBRARIES})
-  add_test( NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
+  add_test(NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
 endmacro()
 
 if(gurobi_FOUND)
@@ -197,6 +197,7 @@ add_matlab_test(NAME systems/plants/test/testWingForceGradients COMMAND testWing
 add_matlab_test(NAME systems/plants/test/testdHomogTrans COMMAND testdHomogTrans)
 add_matlab_test(NAME systems/plants/test/testdTransformSpatialMotion COMMAND testdTransformSpatialMotion)
 add_matlab_test(NAME systems/plants/test/timeSteppingRigidBodyManipulatorFramesTest COMMAND timeSteppingRigidBodyManipulatorFramesTest)
+add_matlab_test(NAME systems/plants/test/world_link_test COMMAND world_link_test)
 
 if(LONG_RUNNING_TESTS)
   add_matlab_test(NAME systems/plants/test/doublePendWBiceptSpring COMMAND doublePendWBiceptSpring PROPERTIES TIMEOUT 1500)

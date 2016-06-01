@@ -33,9 +33,9 @@ if(MATLAB_FOUND)
   target_link_libraries(rbmMexFunctions drakeRBM drakeMexUtil)
 
   macro(add_rbm_mex)
-    # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
-#    add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
-#    target_link_libraries(${ARGV} drakeRBM)
+    # TODO: use this again once I can assume everyone has CMAKE version >= 2.8.8
+    # add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
+    # target_link_libraries(${ARGV} drakeRBM)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} rbmMexFunctions)
   endmacro()
@@ -100,7 +100,7 @@ endif()
 
 set(drakeIK_SRC_FILES inverseKin.cpp inverseKinBackend.cpp
   inverseKinPointwise.cpp inverseKinTraj.cpp)
-set(drakeIK_PODS_PKG )
+set(drakeIK_PODS_PKG)
 if(gurobi_FOUND)
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
   set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} gurobi)
@@ -132,16 +132,16 @@ if(MATLAB_FOUND)
     pods_use_pkg_config_packages(approximateIKmex gurobi)
   endif()
 
-  macro(add_IK_mex)
+  macro(add_ik_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
-#    pods_use_pkg_config_packages(${ARGV} snopt_c)
+    # pods_use_pkg_config_packages(${ARGV} snopt_c)
   endmacro()
 
   if(snopt_c_FOUND)
-    add_IK_mex(inverseKinmex)
-    add_IK_mex(inverseKinPointwisemex)
-    add_IK_mex(inverseKinTrajmex)
+    add_ik_mex(inverseKinmex)
+    add_ik_mex(inverseKinPointwisemex)
+    add_ik_mex(inverseKinTrajmex)
   endif()
 endif()
 
