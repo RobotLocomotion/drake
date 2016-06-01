@@ -166,10 +166,9 @@ Note that after this initial build is done, if you change Drake's code, you can 
 Update PATH Environment Variable
 --------------------------------
 
-The compilation process generates a bunch of shared ``.dll`` libraries. You need to add the path to these directories to your ``PATH`` environment variable. Specifically, add the following:
+The compilation process generates a bunch of installed ``.dll`` libraries. You need to add the path to these libraries to your ``PATH`` environment variable:
 
-1. [build artifacts directory]\drake\lib\[build configuration]
-2. [build artifacts directory]\install\lib
+2. ``[build artifacts directory]\install\lib``
 
 Test Compilation Results
 ------------------------
