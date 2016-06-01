@@ -168,7 +168,7 @@ Update PATH Environment Variable
 
 The compilation process generates a bunch of installed ``.dll`` libraries. You need to add the path to these libraries to your ``PATH`` environment variable:
 
-2. ``[build artifacts directory]\install\lib``
+* ``[build artifacts directory]\install\lib``
 
 Test Compilation Results
 ------------------------
