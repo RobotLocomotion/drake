@@ -66,7 +66,7 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
 
     VectorXd dtpow(k);
     for (int p = 0; p < k; p++) {
-      dtpow(p) = pow(dt(j), static_cast<int>(p));
+      dtpow(p) = pow(dt(j), p);
     }
 
     alpha.col(j) =
