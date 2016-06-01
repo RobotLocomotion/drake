@@ -30,8 +30,8 @@ class ContinuousSystem : public ContinuousSystemInterface<T> {
           std::to_string(generalized_velocity.size()) +
           " != configuration_derivatives.size() " +
           std::to_string(configuration_derivatives->size()) +
-          ". Please override the default implementation of " +
-          "MapVelocityToConfigurationDerivatives.");
+          ". Do you need to override the default implementation of " +
+          "MapVelocityToConfigurationDerivatives?");
     }
 
     for (ptrdiff_t i = 0; i < generalized_velocity.size(); ++i) {
