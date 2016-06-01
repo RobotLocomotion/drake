@@ -314,9 +314,7 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
 
   body->name_ = attr;
-  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName))
-    throw runtime_error(
-        "ERROR: do not name a link 'world', it is a reserved name");
+  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName)) return false;
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node) parseInertial(body, inertial_node, model);
@@ -685,7 +683,9 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
       const char* name_attr = link_node->Attribute("name");
       if (!name_attr)
         throw runtime_error("ERROR: link tag is missing name attribute");
-      if (std::string(name_attr) == "world") {
+
+      if (std::string(name_attr) ==
+          std::string(RigidBodyTree::kWorldLinkName)) {
         // A world link was specified within the URDF. The following code
         // verifies that parameter weld_to_frame is not specified. It throws an
         // exception if it is since the model being added is connected to the
