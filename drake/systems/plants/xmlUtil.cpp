@@ -34,7 +34,7 @@ void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
   std::string token;
   ss >> token;
 
-  (*val)[0] = StringToDouble(&token);
+  (*val)[0] = StringToDouble(token);
 
   // Handles the case where strval is a single scalar value.
   if (!ss.good()) {
@@ -44,7 +44,7 @@ void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
   }
 
   ss >> token;
-  (*val)[1] = StringToDouble(&token);
+  (*val)[1] = StringToDouble(token);
 
   // Handles the case where strval is a 2 vector.
   if (!ss.good()) {
@@ -53,7 +53,7 @@ void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
   }
 
   ss >> token;
-  (*val)[2] = StringToDouble(&token);
+  (*val)[2] = StringToDouble(token);
 
   // Handles the case where strval is vector that's longer than 3.
   if (ss.good()) {
@@ -63,12 +63,12 @@ void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
   }
 }
 
-double StringToDouble(const string* str) {
+double StringToDouble(const string& str) {
   std::size_t num_chars = 0;
-  double result = std::stod(*str, &num_chars);
+  double result = std::stod(str, &num_chars);
 
   // Verifies that there are no additional characters after the double value.
-  if (str->size() != num_chars) {
+  if (str.size() != num_chars) {
     throw std::invalid_argument(
         "ERROR: Double value contained additional characters after the "
         "number.");
@@ -83,7 +83,7 @@ void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
     ParseThreeVectorValue(node->FirstChild()->Value(), val);
   } else {
     throw std::invalid_argument(
-        "ERROR: ParseThreeVectorValue: Parameter"
+        "ERROR: ParseThreeVectorValue: Parameter "
         "\"node\" is null.");
   }
 }

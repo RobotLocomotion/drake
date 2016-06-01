@@ -130,7 +130,7 @@ void ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
  * double value represented within \p str.
  */
 DRAKEXMLUTIL_EXPORT
-double StringToDouble(const std::string* str);
+double StringToDouble(const std::string& str);
 
 // only writes values if they exist
 DRAKEXMLUTIL_EXPORT bool parseVectorAttribute(const tinyxml2::XMLElement* node,

@@ -114,7 +114,7 @@ GTEST_TEST(test_parse_three_vector,
   Vector3d parsed_vector3d;
   parsed_vector3d << 0, 0, 0;
 
-  for (std::string& bad_value : invalid_strings) {
+  for (const std::string& bad_value : invalid_strings) {
     EXPECT_THROW(
         ParseThreeVectorValue(bad_value.c_str(), &parsed_vector3d),
         std::invalid_argument);
