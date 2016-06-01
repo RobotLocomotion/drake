@@ -562,9 +562,9 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(
-          const VectorXPoly& polynomials,
+          const Polynomiald& polynomial,
           const std::vector<Polynomiald::VarType>& poly_vars,
-          const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
+          double lb, double ub,
           const VariableList& vars) {
     // TODO(ggould-tri) We treat polynomial constraints as generic for now,
     // but that need not be so.  Polynomials of degree 1 are linear
@@ -576,7 +576,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     problem_type_.reset(
         problem_type_->AddGenericConstraint());
     std::shared_ptr<PolynomialConstraint>
-        constraint(new PolynomialConstraint(polynomials, poly_vars, lb, ub));
+        constraint(new PolynomialConstraint(polynomial, poly_vars, lb, ub));
     AddGenericConstraint(constraint, vars);
     return constraint;
   }
@@ -588,11 +588,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(
-          const VectorXPoly& polynomials,
+          const Polynomiald& polynomial,
           const std::vector<Polynomiald::VarType>& poly_vars,
-          const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
+          double lb, double ub) {
     return AddPolynomialConstraint(
-        polynomials, poly_vars, lb, ub, variable_views_);
+        polynomial, poly_vars, lb, ub, variable_views_);
   }
 
   // template <typename FunctionType>
