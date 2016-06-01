@@ -53,10 +53,11 @@ bool parseScalarAttribute(tinyxml2::XMLElement* node,
  * or a scalar value.
  * @param[out] val The three vector into which the results should be stored.
  * @return Whether the three vector was successfully parsed from \p strval.
- * @throws std::runtime_error If parameter \p val is nullptr.
+ * @throws std::invalid_argument If any problem is encountered parsing the three
+ * vector value.
  */
 DRAKEXMLUTIL_EXPORT
-bool ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val);
+void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val);
 
 /**
  * Parses a three vector value from parameter \p node, which is an XML node.
@@ -68,10 +69,11 @@ bool ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val);
  * @param[out] val The three vector into which the results should be stored.
  * @return Whether the three vector was successfully parsed from the XML element
  * node.
- * @throws std::runtime_error If parameter \p val is nullptr.
+ * @throws std::invalid_argument If any problem is encountered parsing the three
+ * vector value.
  */
 DRAKEXMLUTIL_EXPORT
-bool ParseThreeVectorValue(const tinyxml2::XMLElement* node,
+void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
                            Eigen::Vector3d* val);
 
 /**
@@ -88,10 +90,11 @@ bool ParseThreeVectorValue(const tinyxml2::XMLElement* node,
  * @param[out] val The three vector where the results should be stored.
  * @return Whether the three vector was successfully parsed from the XML element
  * node.
- * @throws std::runtime_error If parameter \p val is nullptr.
+ * @throws std::invalid_argument If any problem is encountered parsing the three
+ * vector value.
  */
 DRAKEXMLUTIL_EXPORT
-bool ParseThreeVectorValue(const tinyxml2::XMLElement* node,
+void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
                            const char* element_name, Eigen::Vector3d* val);
 
 /**
@@ -109,10 +112,11 @@ bool ParseThreeVectorValue(const tinyxml2::XMLElement* node,
  * @param[out] val The three vector where the results should be stored.
  * @return Whether the three vector was successfully parsed from the XML element
  * node.
- * @throws std::runtime_error If parameter \p val is nullptr.
+ * @throws std::invalid_argument If any problem is encountered parsing the three
+ * vector value.
  */
 DRAKEXMLUTIL_EXPORT
-bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
+void ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
                                const char* attribute_name,
                                Eigen::Vector3d* val);
 

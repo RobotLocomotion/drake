@@ -37,11 +37,11 @@ GTEST_TEST(test_parse_three_vector, from_string) {
   Vector3d expected_vector3d;
   expected_vector3d << 1.1, 2.2, 3.3;
 
-  EXPECT_TRUE(ParseThreeVectorValue(three_value_string, &parsed_vector3d));
+  EXPECT_NO_THROW(ParseThreeVectorValue(three_value_string, &parsed_vector3d));
   EXPECT_EQ(parsed_vector3d, expected_vector3d);
 
   expected_vector3d << 4.4, 4.4, 4.4;
-  EXPECT_TRUE(ParseThreeVectorValue(one_value_string, &parsed_vector3d));
+  EXPECT_NO_THROW(ParseThreeVectorValue(one_value_string, &parsed_vector3d));
   EXPECT_EQ(parsed_vector3d, expected_vector3d);
 }
 
@@ -53,10 +53,11 @@ GTEST_TEST(test_parse_three_vector, string_input_null_failure_mode) {
 
   const char* null_string = nullptr;
 
-  EXPECT_FALSE(ParseThreeVectorValue(null_string, &parsed_vector3d));
+  EXPECT_THROW(ParseThreeVectorValue(null_string, &parsed_vector3d),
+    std::invalid_argument);
   EXPECT_THROW(ParseThreeVectorValue("0.0, 1.1, 2.2", nullptr),
-               std::runtime_error);
-  EXPECT_THROW(ParseThreeVectorValue(null_string, nullptr), std::runtime_error);
+               std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorValue(null_string, nullptr), std::invalid_argument);
 }
 
 // Tests the ability to gracefully handle the failure mode where the user
@@ -68,7 +69,7 @@ GTEST_TEST(test_parse_three_vector, string_input_empty_string_failure_mode) {
   parsed_vector3d << 0, 0, 0;
 
   EXPECT_THROW(ParseThreeVectorValue(empty_string, &parsed_vector3d),
-               std::runtime_error);
+               std::invalid_argument);
 }
 
 // Tests the ability to gracefully handle the failure mode where the user
@@ -80,34 +81,35 @@ GTEST_TEST(test_parse_three_vector, string_input_two_vector_failure_mode) {
   parsed_vector3d << 0, 0, 0;
 
   EXPECT_THROW(ParseThreeVectorValue(two_value_string, &parsed_vector3d),
-               std::runtime_error);
+               std::invalid_argument);
 }
 
 // Tests the ability to gracefully handle the failure mode where the user
 // provides a vector with more than three elements.
 GTEST_TEST(test_parse_three_vector,
            string_input_more_than_three_vector_failure_mode) {
-  const char* two_value_string = "2.1 0.3 4.9 10.2 11.3";
+  const char* many_value_string = "2.1 0.3 4.9 10.2 11.3";
 
   Vector3d parsed_vector3d;
   parsed_vector3d << 0, 0, 0;
 
-  EXPECT_THROW(ParseThreeVectorValue(two_value_string, &parsed_vector3d),
-               std::runtime_error);
+  EXPECT_THROW(ParseThreeVectorValue(many_value_string, &parsed_vector3d),
+               std::invalid_argument);
 }
 
 // Tests the ability to gracefully handle the failure mode where the user
 // provides a vector with non-double-type values.
 GTEST_TEST(test_parse_three_vector,
            string_input_non_double_vector_failure_mode) {
-  const int num_value_strings = 6;
+  const int num_value_strings = 7;
   const char* non_double_value_string[] = {
     "foo bar baz",
     "1.0 bar baz",
     "2.0 3.0 baz",
     "foo 4.0 4.1",
     "foo bar 4.1",
-    "9.2 bar 4.1"
+    "9.2 bar 4.1",
+    "1.1foo 2.2bar 3.3baz"
   };
 
   Vector3d parsed_vector3d;
@@ -138,7 +140,7 @@ GTEST_TEST(test_parse_three_vector, node_input_vector) {
   Vector3d expected_vector3d;
   expected_vector3d << 5.5, 6.6, 7.7;
 
-  EXPECT_TRUE(ParseThreeVectorValue(node, &parsed_vector3d));
+  EXPECT_NO_THROW(ParseThreeVectorValue(node, &parsed_vector3d));
   EXPECT_EQ(parsed_vector3d, expected_vector3d);
 }
 
@@ -160,7 +162,7 @@ GTEST_TEST(test_parse_three_vector, node_input_scalar) {
   Vector3d expected_vector3d;
   expected_vector3d << 10.1, 10.1, 10.1;
 
-  EXPECT_TRUE(ParseThreeVectorValue(node, &parsed_vector3d));
+  EXPECT_NO_THROW(ParseThreeVectorValue(node, &parsed_vector3d));
   EXPECT_EQ(parsed_vector3d, expected_vector3d);
 }
 
@@ -172,7 +174,7 @@ GTEST_TEST(test_parse_three_vector, node_input_nullptr) {
   Vector3d parsed_vector3d;
   parsed_vector3d << 0, 0, 0;
 
-  EXPECT_FALSE(ParseThreeVectorValue(node, &parsed_vector3d));
+  EXPECT_THROW(ParseThreeVectorValue(node, &parsed_vector3d), std::invalid_argument);
 }
 
 // Tests the ability to load a three vector from an XML whose grandchild
@@ -195,7 +197,7 @@ GTEST_TEST(test_parse_three_vector, node_child_input_vector) {
   Vector3d expected_vector3d;
   expected_vector3d << 5.5, 6.6, 7.7;
 
-  EXPECT_TRUE(ParseThreeVectorValue(node, "bar", &parsed_vector3d));
+  EXPECT_NO_THROW(ParseThreeVectorValue(node, "bar", &parsed_vector3d));
   EXPECT_EQ(parsed_vector3d, expected_vector3d);
 }
 
@@ -219,7 +221,7 @@ GTEST_TEST(test_parse_three_vector, node_child_input_scalar) {
   Vector3d expected_vector3d;
   expected_vector3d << 93.5, 93.5, 93.5;
 
-  EXPECT_TRUE(ParseThreeVectorValue(node, "bar", &parsed_vector3d));
+  EXPECT_NO_THROW(ParseThreeVectorValue(node, "bar", &parsed_vector3d));
   EXPECT_EQ(parsed_vector3d, expected_vector3d);
 }
 
@@ -240,9 +242,9 @@ GTEST_TEST(test_parse_three_vector, node_child_input_nullptr_failure_mode) {
   Vector3d parsed_vector3d;
   parsed_vector3d << 0, 0, 0;
 
-  EXPECT_FALSE(ParseThreeVectorValue(nullptr, "bar", &parsed_vector3d));
-  EXPECT_FALSE(ParseThreeVectorValue(node, nullptr, &parsed_vector3d));
-  EXPECT_FALSE(ParseThreeVectorValue(nullptr, nullptr, &parsed_vector3d));
+  EXPECT_THROW(ParseThreeVectorValue(nullptr, "bar", &parsed_vector3d), std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorValue(node, nullptr, &parsed_vector3d), std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorValue(nullptr, nullptr, &parsed_vector3d), std::invalid_argument);
 }
 
 // Tests the ability to load a three vector from an XML attribute containing
@@ -263,7 +265,7 @@ GTEST_TEST(test_parse_three_vector, node_attribute_input_vector) {
   Vector3d expected_vector3d;
   expected_vector3d << 1.2, 3.4, 5.6;
 
-  EXPECT_TRUE(ParseThreeVectorAttribute(node, "scale", &parsed_vector3d));
+  EXPECT_NO_THROW(ParseThreeVectorAttribute(node, "scale", &parsed_vector3d));
   EXPECT_EQ(parsed_vector3d, expected_vector3d);
 }
 
@@ -285,7 +287,7 @@ GTEST_TEST(test_parse_three_vector, node_attribute_input_scalar) {
   Vector3d expected_vector3d;
   expected_vector3d << 9.9, 9.9, 9.9;
 
-  EXPECT_TRUE(ParseThreeVectorAttribute(node, "scale", &parsed_vector3d));
+  EXPECT_NO_THROW(ParseThreeVectorAttribute(node, "scale", &parsed_vector3d));
   EXPECT_EQ(parsed_vector3d, expected_vector3d);
 }
 
@@ -304,8 +306,9 @@ GTEST_TEST(test_parse_three_vector, node_attribute_input_nullptr) {
   Vector3d parsed_vector3d;
   parsed_vector3d << 0, 0, 0;
 
-  EXPECT_FALSE(ParseThreeVectorAttribute(nullptr, "scale", &parsed_vector3d));
-  EXPECT_FALSE(ParseThreeVectorAttribute(node, nullptr, &parsed_vector3d));
-  EXPECT_FALSE(ParseThreeVectorAttribute(nullptr, nullptr, &parsed_vector3d));
+  EXPECT_THROW(ParseThreeVectorAttribute(nullptr, "scale", &parsed_vector3d), std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorAttribute(node, nullptr, &parsed_vector3d), std::invalid_argument);
+  EXPECT_THROW(ParseThreeVectorAttribute(nullptr, nullptr, &parsed_vector3d), std::invalid_argument);
 }
-}
+
+}  // namespace

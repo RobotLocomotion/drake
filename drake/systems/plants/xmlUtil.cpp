@@ -1,6 +1,6 @@
-
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 #include "drake/Path.h"
@@ -12,34 +12,43 @@ using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
 
-bool ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
+void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
   if (val == nullptr) {
-    throw std::runtime_error(
-        "ERROR: ParseThreeVectorValue: parameter val is nullptr.");
+    throw std::invalid_argument(
+        "ERROR: ParseThreeVectorValue: Parameter \"val\" is null.");
   }
 
   // Handles the case where strval is a nullptr.
   if (!strval) {
-    return false;
+    throw std::invalid_argument(
+        "ERROR: ParseThreeVectorValue: Parameter \"strval\" is null.");
   }
 
   // Handles the case where strval is an empty strval.
   if (std::string(strval) == "") {
-    throw std::runtime_error(
-        "ERROR: ParseThreeVectorValue: An empty strval was provided.");
+    throw std::invalid_argument(
+        "ERROR: ParseThreeVectorValue: Parameter \"strval\" is empty.");
   }
 
   std::stringstream ss(strval);
   std::string token;
   ss >> token;
 
-  (*val)[0] = std::stod(token);
+  std::size_t num_chars = 0;
+  (*val)[0] = std::stod(token, &num_chars);
+
+  // Verifies that there are no additional characters after the double value.
+  if (token.size() != num_chars) {
+    throw std::invalid_argument(
+        "ERROR: ParseThreeVectorValue: Double value contained additional "
+        "characters after the number.");
+  }
 
   // Handles the case where strval is a single scalar value.
   if (!ss.good()) {
     (*val)[1] = (*val)[0];
     (*val)[2] = (*val)[0];
-    return true;
+    return;
   }
 
   ss >> token;
@@ -47,7 +56,7 @@ bool ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
 
   // Handles the case where strval is a 2 vector.
   if (!ss.good()) {
-    throw std::runtime_error(
+    throw std::invalid_argument(
         "ERROR: ParseThreeVectorValue: A 2 vector was supplied.");
   }
 
@@ -56,37 +65,44 @@ bool ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
 
   // Handles the case where strval is vector that's longer than 3.
   if (ss.good()) {
-    throw std::runtime_error(
+    throw std::invalid_argument(
         "ERROR: ParseThreeVectorValue: A vector with more than three "
         "elements was supplied.");
   }
-
-  return true;
 }
 
-bool ParseThreeVectorValue(const tinyxml2::XMLElement* node,
+void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
                            Eigen::Vector3d* val) {
-  if (node)
-    return ParseThreeVectorValue(node->FirstChild()->Value(), val);
-  else
-    return false;
+  if (node) {
+    ParseThreeVectorValue(node->FirstChild()->Value(), val);
+  } else {
+    throw std::invalid_argument(
+        "ERROR: ParseThreeVectorValue: Parameter"
+        "\"node\" is null.");
+  }
 }
 
-bool ParseThreeVectorValue(const tinyxml2::XMLElement* node,
+void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
                            const char* element_name, Eigen::Vector3d* val) {
-  if (!node || !element_name)
-    return false;
-  else
-    return ParseThreeVectorValue(node->FirstChildElement(element_name), val);
+  if (!node || !element_name) {
+    throw std::invalid_argument(
+        "ERROR: ParseThreeVectorValue: Parameter"
+        "\"node\" and/or parameter \"element_name\" is null.");
+  } else {
+    ParseThreeVectorValue(node->FirstChildElement(element_name), val);
+  }
 }
 
-bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
+void ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
                                const char* attribute_name,
                                Eigen::Vector3d* val) {
-  if (!node || !attribute_name)
-    return false;
-  else
-    return ParseThreeVectorValue(node->Attribute(attribute_name), val);
+  if (!node || !attribute_name) {
+    throw std::invalid_argument(
+        "ERROR: ParseThreeVectorAttribute: Parameter"
+        "\"node\" and/or parameter \"attribute_name\" is null.");
+  } else {
+    ParseThreeVectorValue(node->Attribute(attribute_name), val);
+  }
 }
 
 // only writes values if they exist
