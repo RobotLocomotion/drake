@@ -88,7 +88,7 @@ External Source Dependencies
 Download the external dependencies::
 
     cd drake-distro
-    make options
+    export CC=gcc-4.9 CXX=g++-4.9 make options
     # Use the GUI to choose which externals you want,
     # then press 'c' twice to configure,
     # then 'g' to generate makefiles and exit.
