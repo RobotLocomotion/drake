@@ -44,4 +44,4 @@ Experimental build you want to run, you can consult the
 `list of Continuous builds <https://drake-jenkins.csail.mit.edu/view/Continuous/>`_
 and the
 `list of Nightly builds <https://drake-jenkins.csail.mit.edu/view/Nightly/>`_,
-but you can't trigger those builds directly.
+but you can't trigger Continuous or Nightly builds directly.
