@@ -15,6 +15,8 @@
 class DRAKERBM_EXPORT RigidBody {
  private:
   std::unique_ptr<DrakeJoint> joint;
+
+  // TODO(amcastro-tri): move this to CollisionElement.
   DrakeCollision::bitmask collision_filter_group;
   DrakeCollision::bitmask collision_filter_ignores;
 
@@ -106,7 +108,7 @@ class DRAKERBM_EXPORT RigidBody {
              !(other.joint && other.joint->isFloating())));
   }
 
-  bool CollidesWith(const RigidBody& other) const {
+  bool CanCollideWith(const RigidBody& other) const {
     bool ignored =
         this == &other || adjacentTo(other) ||
         (collision_filter_group & other.getCollisionFilterIgnores()).any() ||
@@ -116,10 +118,10 @@ class DRAKERBM_EXPORT RigidBody {
 
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
-      std::vector<DrakeCollision::ElementId>& ids) const;
+      std::vector<DrakeCollision::CollisionElementId>& ids) const;
 
   bool appendCollisionElementIdsFromThisBody(
-      std::vector<DrakeCollision::ElementId>& ids) const;
+      std::vector<DrakeCollision::CollisionElementId>& ids) const;
 
   /**
    * Transforms all of the visual, collision, and inertial elements associated
@@ -162,9 +164,40 @@ class DRAKERBM_EXPORT RigidBody {
 
   DrakeShapes::VectorOfVisualElements visual_elements;
 
-  std::vector<DrakeCollision::ElementId> collision_element_ids;
-  std::map<std::string, std::vector<DrakeCollision::ElementId> >
+  std::vector<DrakeCollision::CollisionElementId> collision_element_ids;
+
+  typedef std::vector<DrakeCollision::CollisionElement*>
+      CollisionElementsVector;
+  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
+  typedef typename CollisionElementsVector::const_iterator
+      CollisionElementsConstIterator;
+  std::map<std::string, std::vector<DrakeCollision::CollisionElementId> >
       collision_element_groups;
+
+  CollisionElementsIterator CollisionElementsBegin() {
+    return collision_elements_.begin();
+  }
+
+  CollisionElementsIterator CollisionElementsEnd() {
+    return collision_elements_.end();
+  }
+
+  /** Adds collision element `e` to this rigid body.
+  @param e The collision element being added to this body. **/
+  void AddCollisionElement(DrakeCollision::CollisionElement* e) {
+    collision_elements_.push_back(e);
+  }
+
+  /** Adds body to a given collision clique by clique id.
+
+  This call adds each of the collision elements in this body to the provided
+  collision clique.
+
+  @param[in] clique_id Collision clique id. Collision elements in this clique
+  do not interact.
+
+  @see CollisionElement::AddToCollisionClique. **/
+  void AddToCollisionClique(int clique_id);
 
   Eigen::Matrix3Xd contact_pts;
 
@@ -174,41 +207,11 @@ class DRAKERBM_EXPORT RigidBody {
 
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
-  // TODO(amcastro-tri): move to a better place (h + cc files).
-  class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element {
-   public:
-    CollisionElement(const CollisionElement& other);
-    // TODO(amcastro-tri): The RigidBody should be const?
-    // TODO(amcastro-tri): It should not be possible to construct a
-    // CollisionElement without specifying a geometry. Remove this constructor.
-    CollisionElement(const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    CollisionElement(const DrakeShapes::Geometry& geometry,
-                     const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    virtual ~CollisionElement() {}
-
-    CollisionElement* clone() const override;
-
-    /**
-     * @brief Returns a const reference to the body to which this
-     * CollisionElement is attached.
-     */
-    // TODO(amcastro-tri): getBody() -> get_body()
-    const RigidBody& getBody() const;
-
-    bool CollidesWith(const DrakeCollision::Element* other) const override;
-
-#ifndef SWIG
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
-
-   private:
-    const RigidBody* const body;
-  };
-
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
+
+ private:
+  CollisionElementsVector collision_elements_;
 };

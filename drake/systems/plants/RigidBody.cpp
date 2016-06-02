@@ -38,8 +38,9 @@ const DrakeJoint& RigidBody::getJoint() const {
   if (joint) {
     return (*joint);
   } else {
-    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_
-      + "\" in model " + model_name_ + " does not have a joint!");
+    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_ +
+                        "\" in model " + model_name_ +
+                        " does not have a joint!");
   }
 }
 
@@ -47,6 +48,13 @@ bool RigidBody::hasParent() const { return parent != nullptr; }
 
 void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element) {
   visual_elements.push_back(element);
+}
+
+void RigidBody::AddToCollisionClique(int clique_id) {
+  for (auto eit = CollisionElementsBegin(); eit != CollisionElementsEnd();
+       ++eit) {
+    (*eit)->AddToCollisionClique(clique_id);
+  }
 }
 
 const DrakeShapes::VectorOfVisualElements& RigidBody::getVisualElements()
@@ -61,7 +69,8 @@ void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
-    const string& group_name, vector<DrakeCollision::ElementId>& ids) const {
+    const string& group_name,
+    vector<DrakeCollision::CollisionElementId>& ids) const {
   auto group_ids_iter = collision_element_groups.find(group_name);
   if (group_ids_iter != collision_element_groups.end()) {
     ids.reserve(ids.size() + distance(group_ids_iter->second.begin(),
@@ -75,7 +84,7 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
-    vector<DrakeCollision::ElementId>& ids) const {
+    vector<DrakeCollision::CollisionElementId>& ids) const {
   ids.reserve(ids.size() + collision_element_ids.size());
   ids.insert(ids.end(), collision_element_ids.begin(),
              collision_element_ids.end());
@@ -88,34 +97,6 @@ void RigidBody::ApplyTransformToJointFrame(
   for (auto& v : visual_elements) {
     v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
   }
-}
-
-RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
-    : DrakeCollision::Element(other), body(other.body) {}
-
-RigidBody::CollisionElement::CollisionElement(
-    const Isometry3d& T_element_to_link, const RigidBody* const body)
-    : DrakeCollision::Element(T_element_to_link), body(body) {}
-
-RigidBody::CollisionElement::CollisionElement(
-    const DrakeShapes::Geometry& geometry, const Isometry3d& T_element_to_link,
-    const RigidBody* const body)
-    : DrakeCollision::Element(geometry, T_element_to_link), body(body) {}
-
-RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
-  return new CollisionElement(*this);
-}
-
-const RigidBody& RigidBody::CollisionElement::getBody() const { return *body; }
-
-bool RigidBody::CollisionElement::CollidesWith(
-    const DrakeCollision::Element* other) const {
-  auto other_rb = dynamic_cast<const RigidBody::CollisionElement*>(other);
-  bool collides = true;
-  if (other_rb != nullptr) {
-    collides = this->body->CollidesWith(*other_rb->body);
-  }
-  return collides;
 }
 
 ostream& operator<<(ostream& out, const RigidBody& b) {

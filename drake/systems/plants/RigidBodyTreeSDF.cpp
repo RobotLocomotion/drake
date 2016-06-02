@@ -213,8 +213,9 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                         " has a collision element without a geometry.");
   }
 
-  RigidBody::CollisionElement element(
-      transform_parent_to_model.inverse() * transform_to_model, body);
+  DrakeCollision::CollisionElement element(
+      transform_parent_to_model.inverse() * transform_to_model);
+  element.set_rigid_body(body);
   if (!parseSDFGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse collision element in link " +
