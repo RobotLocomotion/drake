@@ -28,7 +28,7 @@ class BasicVector : public VectorInterface<T> {
 
   ~BasicVector() override {}
 
-  void set_value(const VectorX<T>& value) override {
+  void set_value(const Eigen::Ref<VectorX<T>>& value) override {
     if (value.rows() != values_.rows()) {
       throw std::out_of_range(
           "Cannot set a BasicVector of size " + std::to_string(values_.rows()) +
