@@ -25,7 +25,8 @@ class BulletResultCollector : public ResultCollector,
 
   btCollisionWorld::ContactResultCallback* getBtPtr();
 
-  void setElements(const Element* elemA, const Element* elemB);
+  void setElements(const CollisionElement* elemA,
+                   const CollisionElement* elemB);
 
  protected:
   int curr_bodyA_idx;

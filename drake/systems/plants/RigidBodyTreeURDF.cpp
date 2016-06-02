@@ -196,11 +196,9 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
     string resolved_filename = resolveFilename(filename, package_map, root_dir);
     DrakeShapes::Mesh mesh(filename, resolved_filename);
 
-    attr = shape_node->Attribute("scale");
-    if (attr) {
-      stringstream s(attr);
-      s >> mesh.scale;
-    }
+    // Obtains the scale of the mesh if it exists.
+    if (shape_node->Attribute("scale") != nullptr)
+      ParseThreeVectorAttribute(shape_node, "scale", &mesh.scale);
 
     element.setGeometry(mesh);
   } else {
@@ -290,7 +288,8 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     throw runtime_error("ERROR: Link " + body->name_ +
                         " has a collision element without geometry");
 
-  RigidBody::CollisionElement element(T_element_to_link, body);
+  DrakeCollision::CollisionElement element(T_element_to_link);
+  element.set_rigid_body(body);
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
                         body->name_ + ".");

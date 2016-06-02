@@ -71,9 +71,11 @@ int main(int argc, char* argv[]) {
         1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
     world.addVisualElement(
         DrakeShapes::VisualElement(geom, T_element_to_link, color));
+    DrakeCollision::CollisionElement colliding_world(geom, T_element_to_link);
+    colliding_world.set_rigid_body(&world);
     tree->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
-        "terrain");
+        colliding_world,
+        world, "terrain");
     tree->updateStaticCollisionElements();
   }
 

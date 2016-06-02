@@ -19,9 +19,9 @@ btScalar BulletResultCollector::addSingleResult(
       (colObj1Wrap->getCollisionObject()->getUserPointer() == nullptr)) {
     return false;
   }
-  auto element0 = static_cast<Element*>(
+  auto element0 = static_cast<CollisionElement*>(
       colObj0Wrap->getCollisionObject()->getUserPointer());
-  auto element1 = static_cast<Element*>(
+  auto element1 = static_cast<CollisionElement*>(
       colObj1Wrap->getCollisionObject()->getUserPointer());
   addSingleResult(element0->getId(), element1->getId(),
                   toVector3d(cp.getPositionWorldOnA()),

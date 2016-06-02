@@ -126,7 +126,8 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
     string resolved_filename = resolveFilename(uri, package_map, root_dir);
     DrakeShapes::Mesh mesh(uri, resolved_filename);
 
-    parseScalarValue(shape_node, "scale", mesh.scale);
+    if (shape_node->FirstChildElement("scale") != nullptr)
+      ParseThreeVectorValue(shape_node, "scale", &mesh.scale);
     element.setGeometry(mesh);
   } else {
     cerr << std::string(__FILE__) + ": " + __func__ + ": WARNING: "
@@ -212,8 +213,9 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                         " has a collision element without a geometry.");
   }
 
-  RigidBody::CollisionElement element(
-      transform_parent_to_model.inverse() * transform_to_model, body);
+  DrakeCollision::CollisionElement element(
+      transform_parent_to_model.inverse() * transform_to_model);
+  element.set_rigid_body(body);
   if (!parseSDFGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse collision element in link " +
