@@ -172,6 +172,15 @@ body.robotnum = robotnum;
 body.linkname=char(node.getAttribute('name'));
 body.linkname=regexprep(body.linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
 
+% Checks if the link is named "world". If it is, throw an exception since this
+% feature is not supported yet.
+% TODO(liangfok): Modify this URDF parser to support URDFs with world links.
+if strcmp(body.linkname, 'world')
+  fprintf('Detected world link in URDF. Throwing exception.\n');
+  error('Drake:WorldLinkInURDFModel',...
+    'World link specified in URDF. This is currently not supported.')
+end
+
 if (options.inertial && node.getElementsByTagName('inertial').getLength()>0)
   body = parseInertial(body,node.getElementsByTagName('inertial').item(0),model,options);
 end
