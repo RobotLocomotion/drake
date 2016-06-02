@@ -68,12 +68,7 @@ int do_main(int argc, const char* argv[]) {
     world_tree->addRobotFromURDF((i % 5) ? kSedanUrdf : kBreadtruckUrdf,
                                  DrakeJoint::ROLLPITCHYAW,
                                  nullptr /*weld_to_frame*/);
-    // TODO(maddog) Hmm... it appears that drake_visualizer wants unique names
-    //              on *links*, otherwise only one of the same-named links will
-    //              get updated joint parameters.
-    std::ostringstream name;
-    name << "car-" << i;
-    world_tree->bodies.back()->name_ = name.str();
+    world_tree->bodies.back()->robotnum = i + 1;
 
     // Add the trajectory car, and its visualization adapter.
     cars_system->AddSystem(CreateTrajectoryCarSystem(i));
