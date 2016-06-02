@@ -15,11 +15,18 @@ Install Prerequisites
 C++ Compiler
 ------------
 
-A compiler supporting C++11 or higher is required.
+A compiler supporting C++11 or higher is required. The installation process
+differs depending on which version of Ubuntu you’re using.
+
+Ubuntu 15.10 (Wily)
+~~~~~~~~~~~~~~~~~~~
 
 On Ubuntu 15.10 (Wily) and higher the system compiler is sufficient::
 
     sudo apt-get install g++-multilib
+
+Ubuntu 14.04 LTS (Trusty)
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 On Ubuntu 14.04 LTS (Trusty) one must install GCC 4.9 or higher, e.g.::
 
@@ -37,14 +44,25 @@ Or, Clang 3.7::
     sudo apt-get upgrade
     sudo apt-get install clang-3.7
 
+.. _cmake:
+
 CMake
 -----
 
-CMake 3.5 or higher is required.
+CMake 3.5 or higher is required. The installation process differs depending on
+which version of Ubuntu you're using.
+
+Ubuntu 16.04 LTS (Xenial)
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 On Ubuntu 16.04 LTS (Xenial) and higher one may use the system package::
 
     sudo apt-get install cmake cmake-curses-gui
+
+.. _cmake_on_older_ubuntu_versions:
+
+Older Versions of Ubuntu
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 On older Ubuntu versions please visit the `CMake Download Page`_ to obtain
 the CMake 3.5 pre-compiled binaries.  Extract the archive and add its ``bin``
@@ -81,17 +99,26 @@ Other prerequisites may be installed as follows::
 Environment
 -----------
 
-If not using the system compiler, specify the compiler in the environment::
+If you are not using your system's default compiler (for example if you need to
+use GCC/G++ 4.9 on Ubuntu 14.04 LTS), you must specify the desired compiler by
+setting the ``CC`` and ``CXX`` environment variables in your terminal. This can
+be done by executing the command below. To avoid needing to set these
+environment variables each time you open a new terminal, you can also add the
+line below to your ``~/.bashrc`` file::
 
     export CC=gcc-4.9 CXX=g++-4.9
 
-Or, precede every call to ``make`` with environment settings::
+Alternatively, you can precede every call to ``make`` with environment variable
+settings that specify the correct compiler::
 
-    env CXX=g++-4.9 CC=gcc-4.9 make ...
+    env CC=gcc-4.9 CXX=g++-4.9 make ...
 
-If not using a system-installed `CMake`_, ensure that it is in the ``PATH``::
+If you are not using a system-installed `CMake`_, ensure that it is in the
+``PATH``::
 
     export PATH=/path/to/cmake-binary/bin
+
+For more information, see :ref:`these instructions <cmake_on_older_ubuntu_versions>`.
 
 External Source Dependencies
 ============================
@@ -99,7 +126,7 @@ External Source Dependencies
 Download the external dependencies::
 
     cd drake-distro
-    env CXX=g++-4.9 CC=gcc-4.9 make options
+    make options
     # Use the GUI to choose which externals you want,
     # then press 'c' twice to configure,
     # then 'g' to generate makefiles and exit.
