@@ -48,6 +48,20 @@ On Ubuntu 16.04 LTS (Xenial) and higher one may use the system package::
 
 On older Ubuntu versions please visit the `CMake Download Page`_ to obtain
 a binary.  Extract it and add the ``bin`` directory to your ``PATH``.
+Below is one suggestion of a sequence of commands that you can execute to
+install CMake 3.5. It installs CMake 3.5 into `~/tools/` and then creates
+symbolic links to the CMake 3.5 executables from `/usr/local/bin`)::
+
+    mkdir -p ~/tools
+    cd ~/tools
+    wget https://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz
+    tar zxvf cmake-3.5.2-Linux-x86_64.tar.gz
+    cd cmake-3.5.2-Linux-x86_64/bin
+    sudo ln -s `pwd`/ccmake /usr/local/bin/ccmake
+    sudo ln -s `pwd`/cmake /usr/local/bin/cmake
+    sudo ln -s `pwd`/cmake-gui /usr/local/bin/cmake-gui
+    sudo ln -s `pwd`/cpack /usr/local/bin/cpack
+    sudo ln -s `pwd`/ctest /usr/local/bin/ctest
 
 .. _`CMake Download Page`: https://cmake.org/download/
 
