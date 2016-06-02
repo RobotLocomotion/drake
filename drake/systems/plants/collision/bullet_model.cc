@@ -869,7 +869,7 @@ bool BulletModel::ComputeMaximumDepthCollisionPoints(
     // One result per manifold.
     c.addSingleResult(elementA->getId(), elementB->getId(),
                       toVector3d(ptA), toVector3d(ptB),
-                      toVector3d(normalOnB), distance);
+                      toVector3d(normalOnB), min_distance);
   }
   collision_points = c.getResults();
   return c.pts.size() > 0;
