@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_subvector.h"
