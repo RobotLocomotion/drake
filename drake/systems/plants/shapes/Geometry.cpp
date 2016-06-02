@@ -178,10 +178,6 @@ Mesh::Mesh(const string &filename, const string &resolved_filename)
       resolved_filename(resolved_filename) {}
 
 bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
-  // DEBUG
-  // cout << "Mesh::extractMeshVertices: resolved_filename = " <<
-  // resolved_filename << endl;
-  // END_DEBUG
   if (resolved_filename.empty()) {
     return false;
   }
@@ -190,25 +186,13 @@ bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
   ifstream file;
-  // DEBUG
-  // cout << "Mesh::extractMeshVertices: do we have obj?" << endl;
-  // END_DEBUG
   if (ext.compare(".obj") == 0) {
-    // cout << "Loading mesh from " << fname << " (scale = " << scale << ")" <<
-    // endl;
     file.open(spath.getStr().c_str(), ifstream::in);
-
   } else {
-    // DEBUG
-    // cout << "Mesh::extractMeshVertices: check for obj file with same name" <<
-    // endl;
-    // END_DEBUG
     spath.setExtension(".obj");
 
     if (spath.exists()) {
-      // try changing the extension to obj and loading
-      //      cout << "Loading mesh from " <<
-      //      mypath.replace_extension(".obj").native() << endl;
+      // try changing the extension to obj and loading.
       file.open(spath.getStr().c_str(), ifstream::in);
     }
   }
@@ -221,11 +205,8 @@ bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
     return false;
   }
 
-  // DEBUG
-  // cout << "Mesh::extractMeshVertices: Count num_vertices" << endl;
-  // END_DEBUG
   string line;
-  // Count the number of vertices and resize vertex_coordinates
+  // Count the number of vertices and resize vertex_coordinates.
   int num_vertices = 0;
   while (getline(file, line)) {
     istringstream iss(line);
@@ -234,27 +215,17 @@ bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
       ++num_vertices;
     }
   }
-  // DEBUG
-  // cout << "Mesh::extractMeshVertices: num_vertices = " << num_vertices <<
-  // endl;
-  // END_DEBUG
   vertex_coordinates.resize(3, num_vertices);
 
   file.clear();
   file.seekg(0, file.beg);
 
-  // DEBUG
-  // cout << "Mesh::extractMeshVertices: Read vertices" << endl;
-  // END_DEBUG
   double d;
   int j = 0;
   while (getline(file, line)) {
     istringstream iss(line);
     string type;
     if (iss >> type && type == "v") {
-      // DEBUG
-      // cout << "Mesh::extractMeshVertices: Vertex" << j << endl;
-      // END_DEBUG
       int i = 0;
       while (iss >> d) {
         vertex_coordinates(i++, j) = d;
