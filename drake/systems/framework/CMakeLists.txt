@@ -3,10 +3,14 @@ set(sources
   basic_vector.cc
   cache.cc
   context.cc
+  continuous_system.cc
   named_value_vector.cc
   state.cc
+  state_subvector.cc
+  state_vector_interface.cc
   system_interface.cc
   system_output.cc
+  basic_state_vector.cc
   value.cc
   vector_interface.cc
   primitives/adder.cc)
@@ -17,10 +21,14 @@ set(installed_headers
   basic_vector.h
   cache.h
   context.h
+  continuous_system.h
   named_value_vector.h
   state.h
+  state_subvector.h
+  state_vector_interface.h
   system_interface.h
   system_output.h
+  basic_state_vector.h
   value.h
   vector_interface.h
   primitives/adder.h)

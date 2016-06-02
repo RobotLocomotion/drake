@@ -47,7 +47,18 @@ On Ubuntu 16.04 LTS (Xenial) and higher one may use the system package::
     sudo apt-get install cmake cmake-curses-gui
 
 On older Ubuntu versions please visit the `CMake Download Page`_ to obtain
-a binary.  Extract it and add the ``bin`` directory to your ``PATH``.
+the CMake 3.5 pre-compiled binaries.  Extract the archive and add its ``bin``
+directory to your ``PATH`` environment variable. For example, below is a
+suggested sequence of commands that installs CMake 3.5 into `~/tools/` and then
+modifies `~/.bashrc` with the new ``PATH`` environment variable::
+
+    mkdir -p ~/tools
+    cd ~/tools
+    wget https://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz
+    tar zxvf cmake-3.5.2-Linux-x86_64.tar.gz
+    rm cmake-3.5.2-Linux-x86_64.tar.gz
+    cd cmake-3.5.2-Linux-x86_64/bin
+    echo "export PATH=`pwd`:$PATH" >> ~/.bashrc
 
 .. _`CMake Download Page`: https://cmake.org/download/
 

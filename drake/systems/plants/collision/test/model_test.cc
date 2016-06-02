@@ -40,7 +40,7 @@ struct SurfacePoint {
 // contact point on a specific element here we use an `std::unordered_set` to
 // map id's to a `SurfacePoint` structure holding the analytical solution on
 // both body and world frames.
-typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
+typedef std::unordered_map<DrakeCollision::CollisionElementId, SurfacePoint>
     ElementToSurfacePointMap;
 
 /*
@@ -89,21 +89,21 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   DrakeShapes::Box geometry_1(Vector3d(1, 1, 1));
   DrakeShapes::Sphere geometry_2(0.5);
   DrakeShapes::Sphere geometry_3(0.5);
-  Element element_1(geometry_1);
-  Element element_2(geometry_2, T_elem2_to_body);
-  Element element_3(geometry_3);
+  CollisionElement element_1(geometry_1);
+  CollisionElement element_2(geometry_2, T_elem2_to_body);
+  CollisionElement element_3(geometry_3);
 
   // Populate the model.
   std::shared_ptr<Model> model = newModel();
-  ElementId id1 = model->addElement(element_1);
-  ElementId id2 = model->addElement(element_2);
-  ElementId id3 = model->addElement(element_3);
+  CollisionElementId id1 = model->addElement(element_1);
+  CollisionElementId id2 = model->addElement(element_2);
+  CollisionElementId id3 = model->addElement(element_3);
   model->updateElementWorldTransform(id1, T_body1_to_world);
   model->updateElementWorldTransform(id2, T_body2_to_world);
   model->updateElementWorldTransform(id3, T_body3_to_world);
 
   // Compute the closest points.
-  const std::vector<ElementId> ids_to_check = {id1, id2, id3};
+  const std::vector<CollisionElementId> ids_to_check = {id1, id2, id3};
   std::vector<PointPair> points;
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(3, points.size());
@@ -152,6 +152,67 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
 
+GTEST_TEST(ModelTest, CollisionCliques) {
+  CollisionElement element_1, element_2, element_3;
+
+  // Adds element 1 to its own set of groups.
+  element_1.AddToCollisionClique(2);
+  element_1.AddToCollisionClique(23);
+  element_1.AddToCollisionClique(11);
+  element_1.AddToCollisionClique(15);
+  element_1.AddToCollisionClique(9);
+
+  // Tests the situation where the same collision cliques are added to a
+  // collision element multiple times.
+  // If a collision element is added to a clique it already belongs to, the
+  // addition has no effect. This is tested by asserting the total number of
+  // elements in the test below.
+  element_1.AddToCollisionClique(11);
+  element_1.AddToCollisionClique(23);
+
+  // Cliques cannot be repeated. Therefore expect 5 cliques instead of 7.
+  ASSERT_EQ(5, element_1.number_of_cliques());
+  // Checks the correctness of the entire set.
+  EXPECT_EQ(std::vector<int>({2, 9, 11, 15, 23}),
+            element_1.collision_cliques());
+
+  // Adds element 2 to its own set of cliques.
+  element_2.AddToCollisionClique(11);
+  element_2.AddToCollisionClique(9);
+  element_2.AddToCollisionClique(13);
+  element_2.AddToCollisionClique(13);
+  element_2.AddToCollisionClique(11);
+
+  // Cliques cannot be repeated. Therefore expect 3 cliques instead of 5.
+  ASSERT_EQ(3, element_2.number_of_cliques());
+  // Checks the correctness of the entire set.
+  EXPECT_EQ(std::vector<int>({9, 11, 13}), element_2.collision_cliques());
+
+  // Adds element 3 to its own set of cliques.
+  element_3.AddToCollisionClique(1);
+  element_3.AddToCollisionClique(13);
+  element_3.AddToCollisionClique(13);
+  element_3.AddToCollisionClique(8);
+  element_3.AddToCollisionClique(1);
+
+  // Cliques cannot be repeated. Therefore expect 3 cliques instead of 5.
+  ASSERT_EQ(3, element_3.number_of_cliques());
+  // Checks the correctness of the entire set.
+  EXPECT_EQ(std::vector<int>({1, 8, 13}), element_3.collision_cliques());
+
+  // element_2 does not collide with element_1 (cliques 9 and 11 in common).
+  EXPECT_FALSE(element_2.CanCollideWith(&element_1));
+
+  // element_2 does not collide with element_3 (clique 13 in common).
+  EXPECT_FALSE(element_2.CanCollideWith(&element_3));
+
+  // element_3 does collide with element_1 (no cliques in common).
+  EXPECT_TRUE(element_3.CanCollideWith(&element_1));
+
+  // element_3 does not collide with element_2 (clique 13 in common).
+  EXPECT_FALSE(element_3.CanCollideWith(&element_2));
+}
+
 // A sphere of diameter 1.0 is placed on top of a box with sides of length 1.0.
 // The sphere overlaps with the box with its deepest penetration point (the
 // bottom) 0.25 units into the box (negative distance). Only one contact point
@@ -165,13 +226,13 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
   DrakeShapes::Box box(Vector3d(1.0, 1.0, 1.0));
   DrakeShapes::Sphere sphere(0.5);
 
-  Element colliding_box(box);
-  Element colliding_sphere(sphere);
+  CollisionElement colliding_box(box);
+  CollisionElement colliding_sphere(sphere);
 
   // Populate the model.
   std::unique_ptr<Model> model(newModel());
-  ElementId box_id = model->addElement(colliding_box);
-  ElementId sphere_id = model->addElement(colliding_sphere);
+  CollisionElementId box_id = model->addElement(colliding_box);
+  CollisionElementId sphere_id = model->addElement(colliding_sphere);
 
   // Access the analytical solution to the contact point on the surface of each
   // collision element by element id.
@@ -197,7 +258,7 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
   std::vector<PointPair> points;
 
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<ElementId> ids_to_check = {box_id, sphere_id};
+  const std::vector<CollisionElementId> ids_to_check = {box_id, sphere_id};
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
@@ -263,13 +324,13 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
   DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
 
-  Element colliding_large_box(large_box);
-  Element colliding_small_box(small_box);
+  CollisionElement colliding_large_box(large_box);
+  CollisionElement colliding_small_box(small_box);
 
   // Populate the model.
   std::unique_ptr<Model> model(newModel());
-  ElementId large_box_id = model->addElement(colliding_large_box);
-  ElementId small_box_id = model->addElement(colliding_small_box);
+  CollisionElementId large_box_id = model->addElement(colliding_large_box);
+  CollisionElementId small_box_id = model->addElement(colliding_small_box);
 
   // Access the analytical solution to the contact point on the surface of each
   // collision element by element id.
@@ -305,7 +366,8 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
   //    corners of the small box is the same.
 
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<ElementId> ids_to_check = {large_box_id, small_box_id};
+  const std::vector<CollisionElementId> ids_to_check = {large_box_id,
+                                                        small_box_id};
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
@@ -370,13 +432,13 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
   DrakeShapes::Box box1(Vector3d(1.0, 1.0, 1.0));
   DrakeShapes::Box box2(Vector3d(1.0, 1.0, 1.0));
 
-  Element colliding_box1(box1);
-  Element colliding_box2(box2);
+  CollisionElement colliding_box1(box1);
+  CollisionElement colliding_box2(box2);
 
   // Populate the model.
   std::unique_ptr<Model> model(newModel());
-  ElementId box1_id = model->addElement(colliding_box1);
-  ElementId box2_id = model->addElement(colliding_box1);
+  CollisionElementId box1_id = model->addElement(colliding_box1);
+  CollisionElementId box2_id = model->addElement(colliding_box1);
 
   // Access the analytical solution to the contact point on the surface of each
   // collision element by element id.
@@ -414,7 +476,7 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
   // 2. The vertical position of the collision point (since for any of the four
   //    corners of the small box is the same.
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<ElementId> ids_to_check = {box1_id, box2_id};
+  const std::vector<CollisionElementId> ids_to_check = {box1_id, box2_id};
   model->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
