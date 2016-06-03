@@ -55,6 +55,15 @@ size_t GetNumGradients(
   return m;
 }
 
+/// Parameters @p iRow and @p jCol are used in the same manner as
+/// described in
+/// http://www.coin-or.org/Ipopt/documentation/node23.html for the
+/// eval_jac_g() function (in the mode where it's requesting the
+/// sparsity structure of the Jacobian).  The triplet format is also
+/// described in
+/// http://www.coin-or.org/Ipopt/documentation/node38.html#app.triplet
+///
+/// @return the number of row/column pairs filled in.
 size_t GetGradientMatrix(
     const Drake::Constraint& c, const Drake::VariableList& variable_list,
     Index constraint_idx, Index* iRow, Index* jCol) {
@@ -117,6 +126,9 @@ size_t EvaluateConstraint(
   return grad_idx;
 }
 
+// IPOPT uses separate callbacks to get the result and the gradients.
+// Since Drake's eval() functions emit both of these at once, cache
+// the result for IPOPT.
 struct ResultCache {
   ResultCache(size_t x_size, size_t result_size, size_t grad_size) {
     // The choice of infinity as the default value below is arbitrary.
@@ -135,6 +147,13 @@ struct ResultCache {
   std::vector<Number> grad;
 };
 
+// The C++ interface for IPOPT is described here:
+// http://www.coin-or.org/Ipopt/documentation/node23.html
+//
+// IPOPT provides a pure(-ish) virtual base class which you have to
+// implement a concrete version of as the solver interface.
+// IpoptSolver creates an instance of IpoptSolver_NLP which lives for
+// the duration of the Solve() call.
 class IpoptSolver_NLP : public Ipopt::TNLP {
  public:
   explicit IpoptSolver_NLP(OptimizationProblem* problem)
