@@ -16,7 +16,7 @@ C++ Compiler
 ------------
 
 A compiler supporting C++11 or higher is required. The installation process
-differs depending on which version of Ubuntu you’re using.
+differs depending on which version of Ubuntu is being used.
 
 Ubuntu 15.10 (Wily)
 ~~~~~~~~~~~~~~~~~~~
@@ -28,7 +28,7 @@ On Ubuntu 15.10 (Wily) and higher the system compiler is sufficient::
 Ubuntu 14.04 LTS (Trusty)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-On Ubuntu 14.04 LTS (Trusty) one must install GCC 4.9 or higher, e.g.::
+On Ubuntu 14.04 LTS (Trusty) GCC 4.9 or higher must be installed, e.g.::
 
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     sudo apt-get update
@@ -50,12 +50,13 @@ CMake
 -----
 
 CMake 3.5 or higher is required. The installation process differs depending on
-which version of Ubuntu you're using.
+which version of Ubuntu is being used.
 
 Ubuntu 16.04 LTS (Xenial)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-On Ubuntu 16.04 LTS (Xenial) and higher one may use the system package::
+On Ubuntu 16.04 LTS (Xenial) and higher the following system package can be
+used::
 
     sudo apt-get install cmake cmake-curses-gui
 
@@ -66,7 +67,7 @@ Older Versions of Ubuntu
 
 On older Ubuntu versions please visit the `CMake Download Page`_ to obtain
 the CMake 3.5 pre-compiled binaries.  Extract the archive and add its ``bin``
-directory to your ``PATH`` environment variable. For example, below is a
+directory to the ``PATH`` environment variable. For example, below is a
 suggested sequence of commands that installs CMake 3.5 into `~/tools/` and then
 modifies `~/.bashrc` with the new ``PATH`` environment variable::
 
@@ -99,24 +100,37 @@ Other prerequisites may be installed as follows::
 Environment
 -----------
 
-If you are not using your system's default compiler (for example if you need to
-use GCC/G++ 4.9 on Ubuntu 14.04 LTS), you must specify the desired compiler by
-setting the ``CC`` and ``CXX`` environment variables in your terminal. This can
-be done by executing the command below. To avoid needing to set these
-environment variables each time you open a new terminal, you can also add the
-line below to your ``~/.bashrc`` file::
+There are up to two important environment variables to set depending on which
+version of Ubuntu is being used.
+
+Compiler Environment Variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the system's default compiler is not being used (for example if GCC/G++ 4.9
+is being used on Ubuntu 14.04 LTS), the desired compiler must be manually
+specified. One way to do this is by to set the ``CC`` and ``CXX`` environment
+variables. This can be done by executing the command below. To avoid needing to
+run this command each time a new terminal is opened, the command below can also
+be added to the ``~/.bashrc`` file::
 
     export CC=gcc-4.9 CXX=g++-4.9
 
-Alternatively, you can precede every call to ``make`` with environment variable
+Alternatively, every call to ``make`` can be preceded with environment variable
 settings that specify the correct compiler::
 
     env CC=gcc-4.9 CXX=g++-4.9 make ...
 
-If you are not using a system-installed `CMake`_, ensure that it is in the
-``PATH``::
+CMake Environment Variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    export PATH=/path/to/cmake-binary/bin
+*Note that this environment variable has already been done if
+the* :ref:`CMake instructions <cmake_on_older_ubuntu_versions>` *above were followed.*
+
+If the system-installed version of `CMake`_ is not being used, ensure that the
+location of the version to be used occurs first in the ``PATH`` environment
+variable::
+
+    export PATH=/path/to/cmake-binary/bin:$PATH
 
 For more information, see :ref:`these instructions <cmake_on_older_ubuntu_versions>`.
 
@@ -127,7 +141,7 @@ Download the external dependencies::
 
     cd drake-distro
     make options
-    # Use the GUI to choose which externals you want,
+    # Use the GUI to choose which externals to include,
     # then press 'c' twice to configure,
     # then 'g' to generate makefiles and exit.
     make download-all
@@ -148,15 +162,18 @@ Update the symbolic link in MATLAB to point to the version that was installed ea
 ccache
 ======
 
-You may wish to use ``ccache`` to speed up your (re)builds.
-To do so, add ``/usr/lib/ccache`` to the front of your ``$PATH``.
+A program called ``ccache`` can be used to speed up (re)builds.
+To use this program, add ``/usr/lib/ccache`` to the front of the ``$PATH``
+environment variable::
+
+    export PATH=/usr/lib/ccache:$PATH
 
 Return to Generic Instructions
 ==============================
 
-When you are done with these platform-specific steps,
-return to :doc:`from_source` to complete and test your installation.
+When these platform-specific steps are completed,
+return to :doc:`from_source` to complete and test the installation.
 
-Note that when you run drake commands from now on (including the
+Note that, from now on, when running Drake commands (including the
 ones in the linked instructions, such as ``make`` or ``make test``),
-you must always establish the proper `Environment`_.
+proper `Environment`_ must always be established.
