@@ -108,7 +108,7 @@ Compiler Environment Variables
 
 If the system's default compiler is not being used (for example if GCC/G++ 4.9
 is being used on Ubuntu 14.04 LTS), the desired compiler must be manually
-specified. One way to do this is by to set the ``CC`` and ``CXX`` environment
+specified. One way to do this is to set the ``CC`` and ``CXX`` environment
 variables. This can be done by executing the command below. To avoid needing to
 run this command each time a new terminal is opened, the command below can also
 be added to the ``~/.bashrc`` file::
@@ -123,7 +123,7 @@ settings that specify the correct compiler::
 CMake Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*Note that this environment variable has already been done if
+*Note that this environment variable has already been set if
 the* :ref:`CMake instructions <cmake_on_older_ubuntu_versions>` *above were followed.*
 
 If the system-installed version of `CMake`_ is not being used, ensure that the
