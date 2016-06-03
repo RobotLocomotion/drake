@@ -66,7 +66,7 @@ struct Unique {
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
-TEST(testOptimizationProblem, testAddFunction) {
+GTEST_TEST(testOptimizationProblem, testAddFunction) {
   OptimizationProblem prog;
   prog.AddContinuousVariables(1);
 
@@ -104,7 +104,7 @@ void RunNonlinearProgram(OptimizationProblem& prog,
   }
 }
 
-TEST(testOptimizationProblem, trivialLeastSquares) {
+GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
   OptimizationProblem prog;
 
   auto const& x = prog.AddContinuousVariables(4);
@@ -153,7 +153,7 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
     });
 }
 
-TEST(testOptimizationProblem, trivialLinearEquality) {
+GTEST_TEST(testOptimizationProblem, trivialLinearEquality) {
   OptimizationProblem prog;
 
   auto vars = prog.AddContinuousVariables(2);
@@ -187,7 +187,7 @@ class TestProblem1Objective {
   }
 };
 
-TEST(testOptimizationProblem, testProblem1) {
+GTEST_TEST(testOptimizationProblem, testProblem1) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(5);
   prog.AddCost(TestProblem1Objective());
@@ -257,7 +257,7 @@ class LowerBoundTestConstraint : public Constraint {
   int i2_;
 };
 
-TEST(testOptimizationProblem, lowerBoundTest) {
+GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(6);
   prog.AddCost(LowerBoundTestObjective());
@@ -328,7 +328,7 @@ class SixHumpCamelObjective {
   }
 };
 
-TEST(testOptimizationProblem, sixHumpCamel) {
+GTEST_TEST(testOptimizationProblem, sixHumpCamel) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(2);
   auto objective = prog.AddCost(SixHumpCamelObjective());
@@ -393,7 +393,7 @@ class GloptipolyConstrainedExampleConstraint
  * Which is from section 3.5 in
  *   Handbook of Test Problems in Local and Global Optimization
  */
-TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
+GTEST_TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
   OptimizationProblem prog;
 
   // This test is run twice on different collections of continuous
@@ -445,7 +445,7 @@ TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
  * Test that the eval() method of LinearComplementarityConstraint correctly
  * returns the slack.
  */
-TEST(testOptimizationProblem, simpleLCPConstraintEval) {
+GTEST_TEST(testOptimizationProblem, simpleLCPConstraintEval) {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
 
@@ -475,7 +475,7 @@ TEST(testOptimizationProblem, simpleLCPConstraintEval) {
  * this case; tests of the correctness of the Moby LCP solver itself live in
  * testMobyLCP.
  */
-TEST(testOptimizationProblem, simpleLCP) {
+GTEST_TEST(testOptimizationProblem, simpleLCP) {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
 
@@ -498,7 +498,7 @@ TEST(testOptimizationProblem, simpleLCP) {
  * @brief Just two copies of the simpleLCP example, to make sure that the
  * write-through of LCP results to the solution vector works correctly.
  */
-TEST(testOptimizationProblem, multiLCP) {
+GTEST_TEST(testOptimizationProblem, multiLCP) {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
 
@@ -533,18 +533,22 @@ TEST(testOptimizationProblem, multiLCP) {
 #endif
 
 /** Simple test of polynomial constraints. */
-TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
+GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   static const double kInf = std::numeric_limits<double>::infinity();
   // Generic constraints in nlopt require a very generous epsilon.
   static const double kEpsilon = 1e-4;
 
   // Given a degenerate polynomial, get the trivial solution.
   {
-    Polynomiald x("x");
+    const Polynomiald x("x");
     OptimizationProblem problem;
-    auto x_var = problem.AddContinuousVariables(1);
-    std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(x, var_mapping, 2, 2);
+    const auto x_var = problem.AddContinuousVariables(1);
+    const std::vector<Polynomiald::VarType> var_mapping = {
+      x.getSimpleVariable() };
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x),
+                                    var_mapping,
+                                    Vector1d::Constant(2),
+                                    Vector1d::Constant(2));
     RunNonlinearProgram(problem, [&]() {
         EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
         // TODO(ggould-tri) test this with a two-sided constraint, once
@@ -554,12 +558,16 @@ TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
 
   // Given a small univariate polynomial, find a low point.
   {
-    Polynomiald x("x");
-    Polynomiald poly = (x - 1) * (x - 1);
+    const Polynomiald x("x");
+    const Polynomiald poly = (x - 1) * (x - 1);
     OptimizationProblem problem;
-    auto x_var = problem.AddContinuousVariables(1);
-    std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(poly, var_mapping, 0, 0);
+    const auto x_var = problem.AddContinuousVariables(1);
+    const std::vector<Polynomiald::VarType> var_mapping = {
+      x.getSimpleVariable() };
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly),
+                                    var_mapping,
+                                    Eigen::VectorXd::Zero(1),
+                                    Eigen::VectorXd::Zero(1));
     RunNonlinearProgram(problem, [&]() {
         EXPECT_NEAR(x_var.value()[0], 1, 0.2);
         EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
@@ -568,15 +576,18 @@ TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
 
   // Given a small multivariate polynomial, find a low point.
   {
-    Polynomiald x("x");
-    Polynomiald y("y");
-    Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
+    const Polynomiald x("x");
+    const Polynomiald y("y");
+    const Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
     OptimizationProblem problem;
-    auto xy_var = problem.AddContinuousVariables(2);
-    std::vector<Polynomiald::VarType> var_mapping = {
+    const auto xy_var = problem.AddContinuousVariables(2);
+    const std::vector<Polynomiald::VarType> var_mapping = {
       x.getSimpleVariable(),
       y.getSimpleVariable()};
-    problem.AddPolynomialConstraint(poly, var_mapping, 0, 0);
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly),
+                                    var_mapping,
+                                    Eigen::VectorXd::Zero(1),
+                                    Eigen::VectorXd::Zero(1));
     RunNonlinearProgram(problem, [&]() {
         EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
         EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
@@ -591,14 +602,19 @@ TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   {
     // (x^4 - x^2 + 0.2 has two minima, one at 0.5 and the other at -0.5;
     // constrain x < 0 and EXPECT that the solver finds the negative one.)
-    Polynomiald x("x");
-    Polynomiald poly = x * x * x * x - x * x + 0.2;
+    const Polynomiald x("x");
+    const Polynomiald poly = x * x * x * x - x * x + 0.2;
     OptimizationProblem problem;
-    auto x_var = problem.AddContinuousVariables(1);
+    const auto x_var = problem.AddContinuousVariables(1);
     problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
-    std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(poly, var_mapping, -kInf, 0);
-    problem.AddPolynomialConstraint(x, var_mapping, -kInf, 0);
+    const std::vector<Polynomiald::VarType> var_mapping = {
+      x.getSimpleVariable() };
+    VectorXPoly polynomials_vec(2, 1);
+    polynomials_vec << poly, x;
+    problem.AddPolynomialConstraint(polynomials_vec,
+                                    var_mapping,
+                                    Eigen::VectorXd::Constant(2, -kInf),
+                                    Eigen::VectorXd::Zero(2));
     RunNonlinearProgram(problem, [&]() {
         EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
         EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);

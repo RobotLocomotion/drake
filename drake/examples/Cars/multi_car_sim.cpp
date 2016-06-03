@@ -32,7 +32,7 @@ int do_main(int argc, const char* argv[]) {
   const int kNumCarsPerRow = 3;
   const int kNumTotalCars = 12;
 
-  for (int ii = 0; ii < kNumTotalCars; ii++) {
+  for (int ii = 0; ii < kNumTotalCars; ++ii) {
     int x_coord = ii % kNumCarsPerRow;
     int y_coord = ii - x_coord * kNumCarsPerRow;
 

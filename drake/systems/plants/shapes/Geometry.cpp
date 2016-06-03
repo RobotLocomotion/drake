@@ -169,11 +169,11 @@ ostream &operator<<(ostream &out, const Capsule &cc) {
 }
 
 Mesh::Mesh(const string &filename)
-    : Geometry(MESH), scale(1.0), filename(filename) {}
+    : Geometry(MESH), scale(1.0, 1.0, 1.0), filename(filename) {}
 
 Mesh::Mesh(const string &filename, const string &resolved_filename)
     : Geometry(MESH),
-      scale(1.0),
+      scale(1.0, 1.0, 1.0),
       filename(filename),
       resolved_filename(resolved_filename) {}
 

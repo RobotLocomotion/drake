@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 
+#include "drake/systems/plants/collision/collision_element.h"
+
 using Eigen::MatrixXd;
 using Eigen::Matrix;
 using Eigen::VectorXd;
@@ -102,7 +104,7 @@ void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
   world.addVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   rigid_body_tree->addCollisionElement(
-      RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
+      DrakeCollision::CollisionElement(geom, T_element_to_link), world,
       "terrain");
   rigid_body_tree->updateStaticCollisionElements();
 }

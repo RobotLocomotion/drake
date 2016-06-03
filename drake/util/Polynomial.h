@@ -289,6 +289,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    */
   Polynomial integral(const CoefficientType& integration_constant = 0.0) const;
 
+  bool operator==(const Polynomial& other) const;
+
   Polynomial& operator+=(const Polynomial& other);
 
   Polynomial& operator-=(const Polynomial& other);
@@ -490,3 +492,6 @@ std::ostream& operator<<(
 }
 
 typedef Polynomial<double> Polynomiald;
+
+/// A column vector of polynomials; used in several optimization classes.
+typedef Eigen::Matrix<Polynomiald, Eigen::Dynamic, 1> VectorXPoly;

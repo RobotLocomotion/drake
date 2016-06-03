@@ -51,11 +51,11 @@ bool OverlapFilterCallback::needBroadphaseCollision(
         reinterpret_cast<btCollisionObject*>(proxy1->m_clientObject);
     if ((bt_collision_object0->getUserPointer() != NULL) &&
         (bt_collision_object1->getUserPointer() != NULL)) {
-      auto element0 =
-          static_cast<Element*>(bt_collision_object0->getUserPointer());
-      auto element1 =
-          static_cast<Element*>(bt_collision_object1->getUserPointer());
-      collides = collides && element0->CollidesWith(element1);
+      auto element0 = static_cast<CollisionElement*>(
+          bt_collision_object0->getUserPointer());
+      auto element1 = static_cast<CollisionElement*>(
+          bt_collision_object1->getUserPointer());
+      collides = collides && element0->CanCollideWith(element1);
     }
   }
   return collides;
@@ -165,8 +165,8 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(
   return bt_shape;
 }
 
-ElementId BulletModel::addElement(const Element& element) {
-  ElementId id = Model::addElement(element);
+CollisionElementId BulletModel::addElement(const CollisionElement& element) {
+  CollisionElementId id = Model::addElement(element);
 
   if (id != 0) {
     std::unique_ptr<btCollisionShape> bt_shape;
@@ -274,14 +274,14 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
     const btCollisionObject* obA = contact_manifold->getBody0();
     const btCollisionObject* obB = contact_manifold->getBody1();
 
-    auto elementA = static_cast<Element*>(obA->getUserPointer());
-    auto elementB = static_cast<Element*>(obB->getUserPointer());
+    auto elementA = static_cast<CollisionElement*>(obA->getUserPointer());
+    auto elementB = static_cast<CollisionElement*>(obB->getUserPointer());
 
     DrakeShapes::Shape shapeA = elementA->getShape();
     DrakeShapes::Shape shapeB = elementB->getShape();
 
-    ElementId idA = elementA->getId();
-    ElementId idB = elementB->getId();
+    CollisionElementId idA = elementA->getId();
+    CollisionElementId idB = elementB->getId();
 
     double marginA = 0;
     double marginB = 0;
@@ -388,7 +388,7 @@ std::vector<size_t> BulletModel::collidingPoints(
 }
 
 bool BulletModel::updateElementWorldTransform(
-    const ElementId id, const Isometry3d& T_local_to_world) {
+    CollisionElementId id, const Isometry3d& T_local_to_world) {
   const bool element_exists(
       Model::updateElementWorldTransform(id, T_local_to_world));
   if (element_exists) {
@@ -425,8 +425,8 @@ void BulletModel::updateModel() {
 }
 
 bool BulletModel::findClosestPointsBetweenElements(
-    const ElementId idA, const ElementId idB, const bool use_margins,
-    ResultCollector* result_collector) {
+    CollisionElementId idA, CollisionElementId idB,
+    bool use_margins, ResultCollector* result_collector) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
   if (elements[idA]->getShape() == DrakeShapes::SPHERE &&
@@ -669,18 +669,24 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
   return true;
 }
 
+// TODO(amcastro-tri): Change API so that ids_to_check actually is an
+// std::vector<CollisionElement*>. That way we avoid calling
+// FindMutableElement().
+// TODO(amcastro-tri): id_pairs could be computed by RigidBodyTree::compile only
+// once and be passed to this method every time is called since id_pairs does
+// not change during simulation.
 bool BulletModel::closestPointsAllToAll(
-    const std::vector<ElementId>& ids_to_check, const bool use_margins,
+    const std::vector<CollisionElementId>& ids_to_check, bool use_margins,
     std::vector<PointPair>& closest_points) {
   std::vector<ElementIdPair> id_pairs;
   for (size_t i = 0; i < ids_to_check.size(); ++i) {
-    ElementId id_a = ids_to_check[i];
-    const Element* element_a = readElement(id_a);
+    CollisionElementId id_a = ids_to_check[i];
+    const CollisionElement* element_a = FindElement(id_a);
     if (element_a != nullptr) {
       for (size_t j = i + 1; j < ids_to_check.size(); ++j) {
-        ElementId id_b = ids_to_check[j];
-        const Element* element_b = readElement(id_b);
-        if (element_b != nullptr && element_a->CollidesWith(element_b)) {
+        CollisionElementId id_b = ids_to_check[j];
+        const CollisionElement* element_b = FindElement(id_b);
+        if (element_b != nullptr && element_a->CanCollideWith(element_b)) {
           id_pairs.push_back(std::make_pair(id_a, id_b));
         }
       }
@@ -690,7 +696,7 @@ bool BulletModel::closestPointsAllToAll(
 }
 
 bool BulletModel::closestPointsPairwise(
-    const std::vector<ElementIdPair>& id_pairs, const bool use_margins,
+    const std::vector<ElementIdPair>& id_pairs, bool use_margins,
     std::vector<PointPair>& closest_points) {
   ResultCollector result_collector;
   for (const ElementIdPair& pair : id_pairs) {
@@ -703,11 +709,15 @@ bool BulletModel::closestPointsPairwise(
 }
 
 bool BulletModel::collisionPointsAllToAll(
-    const bool use_margins, std::vector<PointPair>& collision_points) {
+    bool use_margins, std::vector<PointPair>& collision_points) {
   BulletResultCollector c;
   MatrixXd normals;
   std::vector<double> distance;
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+
+  // Internally updates AABB's calling btCollisionWorld::updateAabbs();
+  // TODO(amcastro-tri): analyze if the call to BulletModel::updateModel() is
+  // redundant (since all it does is to call btCollisionWorld::updateAabbs()).
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
   int numManifolds =
       bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
@@ -717,8 +727,8 @@ bool BulletModel::collisionPointsAllToAll(
             ->getManifoldByIndexInternal(i);
     const btCollisionObject* obA = contactManifold->getBody0();
     const btCollisionObject* obB = contactManifold->getBody1();
-    auto elementA = static_cast<Element*>(obA->getUserPointer());
-    auto elementB = static_cast<Element*>(obB->getUserPointer());
+    auto elementA = static_cast<CollisionElement*>(obA->getUserPointer());
+    auto elementB = static_cast<CollisionElement*>(obB->getUserPointer());
     DrakeShapes::Shape shapeA = elementA->getShape();
     DrakeShapes::Shape shapeB = elementB->getShape();
     double marginA = 0;

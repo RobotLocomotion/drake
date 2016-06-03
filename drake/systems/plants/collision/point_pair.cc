@@ -17,9 +17,9 @@ void PointPair::getResults(Vector3d* ptA, Vector3d* ptB, Vector3d* normal,
   *distance = distance_;
 }
 
-ElementId PointPair::getIdA() const { return idA_; }
+CollisionElementId PointPair::getIdA() const { return idA_; }
 
-ElementId PointPair::getIdB() const { return idB_; }
+CollisionElementId PointPair::getIdB() const { return idB_; }
 
 Vector3d PointPair::getNormal() const { return normal_; }
 

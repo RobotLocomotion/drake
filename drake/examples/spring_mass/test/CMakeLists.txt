@@ -1,0 +1,5 @@
+if (GTEST_FOUND)
+  add_executable(spring_mass_system_test spring_mass_system_test.cc)
+  target_link_libraries(spring_mass_system_test drakeSpringMassSystem drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME spring_mass_system_test COMMAND spring_mass_system_test)
+endif()
