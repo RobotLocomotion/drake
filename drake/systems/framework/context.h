@@ -1,33 +1,16 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/state.h"
+#include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
 namespace systems {
-
-template <typename T>
-struct InputPort {
-  /// The port data, if the port is vector-valued.
-  /// TODO(david-german-tri): Add abstract-valued ports.
-  VectorInterface<T>* vector_input = nullptr;
-
-  /// The rate at which this port is sampled, in seconds.
-  /// If zero, the port is continuous.
-  double sample_time_sec{};
-};
-
-/// The Input is a container for pointers to all the data that is connected to
-/// a particular System from other Systems. The input data itself is not owned
-/// by the Input struct.
-template <typename T>
-struct Input {
-  std::vector<InputPort<T>> ports;
-};
 
 template <typename T>
 struct Time {
@@ -54,8 +37,23 @@ class Context {
   const Time<T>& get_time() const { return time_; }
   Time<T>* get_mutable_time() { return &time_; }
 
-  const Input<T>& get_input() const { return input_; }
-  Input<T>* get_mutable_input() { return &input_; }
+  const SystemInput<T>& get_input() const { return input_; }
+  SystemInput<T>* get_mutable_input() { return &input_; }
+
+  ptrdiff_t get_num_input_ports() const { return input_.ports.size(); }
+
+  /// Returns the vector data of the input port at @p index. Returns nullptr
+  /// if that port is not a vector-valued port, or if it is not connected.
+  /// Throws std::out_of_range if that port does not exist.
+  const VectorInterface<T>* get_vector_input(ptrdiff_t index) const {
+    if (index >= get_num_input_ports()) {
+      throw std::out_of_range("Input port out of range.");
+    }
+    if (input_.ports[index] == nullptr) {
+      return nullptr;
+    }
+    return input_.ports[index]->get_vector_data();
+  }
 
   const State<T>& get_state() const { return state_; }
   State<T>* get_mutable_state() { return &state_; }
@@ -75,7 +73,7 @@ class Context {
   Time<T> time_;
 
   /// The external inputs to the System.
-  Input<T> input_;
+  SystemInput<T> input_;
 
   /// The internal state of the System.
   State<T> state_;

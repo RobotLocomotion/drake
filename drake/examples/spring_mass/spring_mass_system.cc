@@ -27,7 +27,7 @@ SpringMassStateVector::SpringMassStateVector(double initial_position,
 
 SpringMassStateVector::~SpringMassStateVector() {}
 
-  // Order matters: Position (q) precedes velocity (v) in ContinuousState.
+// Order matters: Position (q) precedes velocity (v) in ContinuousState.
 double SpringMassStateVector::get_position() const { return GetAtIndex(0); }
 double SpringMassStateVector::get_velocity() const { return GetAtIndex(1); }
 void SpringMassStateVector::set_position(double q) { SetAtIndex(0, q); }
@@ -74,8 +74,9 @@ std::unique_ptr<Context<double>> SpringMassSystem::CreateDefaultContext()
 std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput() const {
   std::unique_ptr<SystemOutput<double>> output(new SystemOutput<double>);
   {
-    OutputPort<double> port;
-    port.vector_output.reset(new SpringMassOutputVector());
+    std::unique_ptr<VectorInterface<double>> data(new SpringMassOutputVector());
+    std::unique_ptr<OutputPort<double>> port(
+        new OutputPort<double>(std::move(data)));
     output->ports.push_back(std::move(port));
   }
   return output;
@@ -97,7 +98,7 @@ void SpringMassSystem::Output(const Context<double>& context,
       dynamic_cast<const SpringMassStateVector&>(
           context.get_state().continuous_state->get_state());
   SpringMassOutputVector* output_vector = dynamic_cast<SpringMassOutputVector*>(
-      output->ports[0].vector_output.get());
+      output->ports[0]->GetMutableVectorData());
   output_vector->set_position(state.get_position());
   output_vector->set_velocity(state.get_velocity());
 }
