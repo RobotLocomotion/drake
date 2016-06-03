@@ -28,6 +28,16 @@ if(GTEST_FOUND)
                         ${GTEST_BOTH_LIBRARIES})
   add_test(NAME continuous_system_test COMMAND continuous_system_test)
 
+  add_executable(system_input_test system_input_test.cc)
+  target_link_libraries(system_input_test drakeSystemFramework
+                        ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME system_input_test COMMAND system_input_test)
+
+  add_executable(system_output_test system_output_test.cc)
+  target_link_libraries(system_output_test drakeSystemFramework
+                        ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME system_output_test COMMAND system_output_test)
+
   add_executable(context_test context_test.cc)
   target_link_libraries(context_test drakeSystemFramework
                         ${GTEST_BOTH_LIBRARIES})

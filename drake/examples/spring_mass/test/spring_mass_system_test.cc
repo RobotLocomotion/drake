@@ -44,8 +44,8 @@ class SpringMassSystemTest : public ::testing::Test {
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector*>(
         context_->get_mutable_state()->continuous_state->get_mutable_state());
-    output_ = dynamic_cast<SpringMassOutputVector*>(
-        system_output_->ports[0].vector_output.get());
+    output_ = dynamic_cast<const SpringMassOutputVector*>(
+        system_output_->ports[0]->get_vector_data());
     derivatives_ =
         dynamic_cast<SpringMassStateVector*>(erased_derivatives_.get());
   }
@@ -60,7 +60,7 @@ class SpringMassSystemTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> system_output_;
   SpringMassStateVector* state_;
-  SpringMassOutputVector* output_;
+  const SpringMassOutputVector* output_;
   SpringMassStateVector* derivatives_;
 
  private:
