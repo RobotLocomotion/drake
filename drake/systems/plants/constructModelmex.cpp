@@ -204,8 +204,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         auto shape = (DrakeShapes::Shape) static_cast<int>(
             mxGetScalar(mxGetPropertySafe(pShape, 0, "drake_shape_id")));
         vector<double> params_vec;
-        DrakeCollision::CollisionElement element(T);
-        element.set_rigid_body(b.get());
+        RigidBody::CollisionElement element(T, b.get());
         switch (shape) {
           case DrakeShapes::BOX: {
             double* params = mxGetPrSafe(mxGetPropertySafe(pShape, 0, "size"));
