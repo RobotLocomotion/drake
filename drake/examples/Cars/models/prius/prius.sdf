@@ -2,7 +2,7 @@
 
 <sdf version='1.6'>
   <model name='prius_1'>
-    <pose>10 120 10 0 0 1.8</pose>
+    <pose>0 0 0 0 0 0</pose>
 
     <link name='chassis_floor'>
       <pose>0 0 0.378326 0 0 0</pose>
