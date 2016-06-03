@@ -9,6 +9,7 @@ set(sources
   state_subvector.cc
   state_vector_interface.cc
   system_interface.cc
+  system_input.cc
   system_output.cc
   basic_state_vector.cc
   value.cc
@@ -22,11 +23,13 @@ set(installed_headers
   cache.h
   context.h
   continuous_system.h
+  continuous_system_interface.h
   named_value_vector.h
   state.h
   state_subvector.h
   state_vector_interface.h
   system_interface.h
+  system_input.h
   system_output.h
   basic_state_vector.h
   value.h
