@@ -33,4 +33,8 @@ if (LCM_FOUND)
 
   add_executable(demo_multi_car demo_multi_car.cc)
   target_link_libraries(demo_multi_car drakeCars drakeRBSystem drakeLCMSystem)
+
+  add_executable(self_driving_car_demo self_driving_car_demo.cc)
+  add_dependencies(self_driving_car_demo drake_lcmtypes lcmtype_agg_hpp)
+  target_link_libraries(self_driving_car_demo drakeCars drakeRBSystem drakeLCMSystem)
 endif (LCM_FOUND)
