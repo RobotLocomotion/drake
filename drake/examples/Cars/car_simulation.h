@@ -49,6 +49,9 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
                                                        const char* argv[],
                                                        double* duration);
 
+DRAKECARS_EXPORT
+double ParseDuration(int argc, const char* argv[]);
+
 /**
  * Adds a terrain to the specified rigid body tree.
  *

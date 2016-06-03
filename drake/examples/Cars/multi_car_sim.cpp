@@ -74,7 +74,7 @@ int do_main(int argc, const char* argv[]) {
   // std::cout << "Number of positions: " << rigid_body_sys->number_of_positions() << std::endl;
   // std::cout << "Number of velocities: " << rigid_body_sys->number_of_velocities() << std::endl;
 
-  double duration = std::numeric_limits<double>::infinity();
+  double duration = ParseDuration(argc, argv);
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
