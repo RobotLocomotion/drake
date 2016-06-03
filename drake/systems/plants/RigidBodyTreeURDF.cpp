@@ -288,8 +288,7 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     throw runtime_error("ERROR: Link " + body->name_ +
                         " has a collision element without geometry");
 
-  DrakeCollision::CollisionElement element(T_element_to_link);
-  element.set_rigid_body(body);
+  RigidBody::CollisionElement element(T_element_to_link, body);
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
                         body->name_ + ".");

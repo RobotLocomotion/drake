@@ -6,12 +6,12 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "collision_element.h"
+#include "Element.h"
 #include "drake/drakeCollision_export.h"
 #include "drake/systems/plants/collision/point_pair.h"
 
 namespace DrakeCollision {
-typedef std::pair<CollisionElementId, CollisionElementId> ElementIdPair;
+typedef std::pair<ElementId, ElementId> ElementIdPair;
 
 class DRAKECOLLISION_EXPORT Model {
  public:
@@ -21,31 +21,22 @@ class DRAKECOLLISION_EXPORT Model {
 
   /** \brief Add a collision element to this model.
   * \param element the collision element to be added to this model
-  * \return an CollisionElementId that uniquely identifies the added element
-  * within
+  * \return an ElementId that uniquely identifies the added element within
   * this model
   */
-  virtual CollisionElementId addElement(const CollisionElement& element);
+  virtual ElementId addElement(const Element& element);
 
-  bool removeElement(const CollisionElementId& id);
+  bool removeElement(const ElementId& id);
 
-  /** Get a pointer to a const collision element in this model.
-   @param id an CollisionElementId corresponding to the desired collision
-   element
-   @returns a pointer to a const collision element corresponding to
-   the given id or nullptr if no such collision element is present in the
-   model. **/
-  virtual const CollisionElement* FindElement(CollisionElementId id) const;
+  /** \brief Get a read-only pointer to a collision element in this model.
+   * \param id an ElementId corresponding to the desired collision element
+   * \return a read-only pointer to the collision element corresponding to
+   * the given id or nullptr if no such collision element is present in the
+   * model.
+   */
+  virtual const Element* readElement(ElementId id) const;
 
-  /** Get a pointer to a mutable collision element in this model.
-   @param id an CollisionElementId corresponding to the desired collision
-   element.
-   @returns a pointer to a mutable collision element corresponding to
-   the given id or nullptr if no such collision element is present in the
-   model. **/
-  virtual CollisionElement* FindMutableElement(CollisionElementId id);
-
-  virtual void getTerrainContactPoints(CollisionElementId id0,
+  virtual void getTerrainContactPoints(ElementId id0,
                                        Eigen::Matrix3Xd& terrain_points);
 
   /** \brief Perform any operations needed to bring the model up-to-date
@@ -55,17 +46,16 @@ class DRAKECOLLISION_EXPORT Model {
 
   /** \brief Change the element-to-world transform of a specified collision
    * element.
-   * \param id an CollisionElementId corresponding to the element to be updated
+   * \param id an ElementId corresponding to the element to be updated
    * \param T_local_to_world the new value for the element-to-world
    * transform
    */
   virtual bool updateElementWorldTransform(
-      CollisionElementId id, const Eigen::Isometry3d& T_local_to_world);
+      const ElementId id, const Eigen::Isometry3d& T_local_to_world);
 
   /** \brief Compute the points of closest approach between all eligible
    * pairs of collision elements drawn from a specified set of elements
-   * \param ids_to_check the vector of CollisionElementId for which the
-   * all-to-all
+   * \param ids_to_check the vector of ElementId for which the all-to-all
    * collision detection should be performed
    * \param use_margins flag indicating whether or not to use the version
    * of this model with collision margins
@@ -74,9 +64,9 @@ class DRAKECOLLISION_EXPORT Model {
    * called
    * \return true if this method ran successfully
    */
-  virtual bool closestPointsAllToAll(
-      const std::vector<CollisionElementId>& ids_to_check,
-      bool use_margins, std::vector<PointPair>& closest_points) {
+  virtual bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
+                                     const bool use_margins,
+                                     std::vector<PointPair>& closest_points) {
     return false;
   }
 
@@ -89,7 +79,7 @@ class DRAKECOLLISION_EXPORT Model {
    * called
    * \return true if this method ran successfully
    */
-  virtual bool collisionPointsAllToAll(bool use_margins,
+  virtual bool collisionPointsAllToAll(const bool use_margins,
                                        std::vector<PointPair>& points) {
     return false;
   }
@@ -106,7 +96,7 @@ class DRAKECOLLISION_EXPORT Model {
    * \return true if this method ran successfully
    */
   virtual bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     bool use_margins,
+                                     const bool use_margins,
                                      std::vector<PointPair>& closest_points) {
     return false;
   }
@@ -135,7 +125,7 @@ class DRAKECOLLISION_EXPORT Model {
    * collision points
    */
   virtual std::vector<PointPair> potentialCollisionPoints(
-      bool use_margins) {
+      const bool use_margins) {
     return std::vector<PointPair>();
   }
 
@@ -218,7 +208,7 @@ class DRAKECOLLISION_EXPORT Model {
    * @param true if the collision element was successfully updated.
    */
   virtual bool transformCollisionFrame(
-      const DrakeCollision::CollisionElementId& eid,
+      const DrakeCollision::ElementId& eid,
       const Eigen::Isometry3d& transform_body_to_joint);
 
   /**
@@ -231,8 +221,7 @@ class DRAKECOLLISION_EXPORT Model {
   // Protected member variables are forbidden by the style guide.
   // Please do not add new references to this member.  Instead, use
   // the accessors.
-  std::unordered_map<CollisionElementId, std::unique_ptr<CollisionElement>>
-      elements;
+  std::unordered_map<ElementId, std::unique_ptr<Element>> elements;
 
  private:
   Model(const Model&) {}
