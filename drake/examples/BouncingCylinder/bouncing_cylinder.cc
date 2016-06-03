@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
   auto const& tree = sys->getRigidBodyTree();
 
   SimulationOptions options = Drake::default_simulation_options;
-  options.initial_step_size = 1.0e-3;
+  options.initial_step_size = 5e-3;
   options.realtime_factor = 0.0;
 
   auto visualizer =

@@ -1,5 +1,8 @@
 #include "cylinder_system.h"
 
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 namespace drake {
 
 CylinderSystem::CylinderSystem() {
@@ -24,16 +27,30 @@ void CylinderSystem::SetZeroConfiguration() {
 
 void CylinderSystem::SetUpTerrain() {
   // TODO(amcastro-tri): move out of here when collision materials kick in.
-  penetration_stiffness = 150.0;
-  penetration_damping = penetration_stiffness/10.0;
+  penetration_stiffness = 5000.0;
+  penetration_damping =
+      penetration_stiffness / 10.0;
+  friction_coefficient = 10.0;  // essentially infinite friction
 
   {  // Adds a flat terrain.
-    double box_width = 5;
-    double box_depth = 0.5;
+#if 0
+    double box_width = 100;
+    double box_depth = 1.0;
     DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
     Isometry3d T_element_to_link = Isometry3d::Identity();
     // The top of the box is at z=0.
+    T_element_to_link.linear() = Eigen::AngleAxisd(0.2*M_PI/180, Eigen::Vector3d::UnitY()).toRotationMatrix();
     T_element_to_link.translation() << 0, 0, -box_depth / 2;
+#endif
+
+    DrakeShapes::Mesh geom("DrivingSurface_simpler_allTris.obj", "/home/amcastro/Documents/NvidiaTerrain/PaloAltoLoop.obj");
+    Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
+    T_element_to_link.linear() = Eigen::AngleAxisd(0.2*M_PI/180, Eigen::Vector3d::UnitY()).toRotationMatrix()*Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitX()).toRotationMatrix();
+    //T_element_to_link.linear() = Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitX()).toRotationMatrix()*Eigen::AngleAxisd(-0.2*M_PI/180, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+
+    PRINT_VAR("T_element_to_link.linear():");
+    std::cout << T_element_to_link.linear() << std::endl;
+
     RigidBody& world = tree_->world();
     Vector4d color;
     color << 0.9297, 0.7930, 0.6758, 1;

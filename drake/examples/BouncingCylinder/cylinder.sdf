@@ -4,37 +4,140 @@
     <pose>0 0 0 0 0 0</pose>
 
     <link name='cylinder'>
-      <pose>0.0 0.0 0.5 1.570796326794897 0.0 0.0 </pose>
+      <pose>0.0 0.0 0.323342 1.570796326794897 0.0 0.0 </pose>
       <!--<pose>0.0 0.0 0.5 0.0 0.0 0.0 </pose>-->
       <inertial>
-        <mass>1.0</mass>
+        <mass>60</mass>
         <inertia>
-          <ixx>1.0</ixx>
-          <ixy>0.0</ixy>
-          <ixz>0.0</ixz>
-          <iyy>1.0</iyy>
-          <iyz>0.0</iyz>
-          <izz>1.0</izz>
+          <ixx>0.499912</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.778439</iyy>
+          <iyz>0</iyz>
+          <izz>0.499912</izz>
         </inertia>
       </inertial>
-      <visual name='cyl_visual'>
-	<pose>0 0.0 0.0 0 0 0</pose>
+
+      <visual name='wheel_a'>
+        <pose>0 0 0.0 0 0 0</pose>
+        <geometry>
+	  <sphere>
+            <radius>0.323342</radius>
+	  </sphere>
+<!--
+          <cylinder>
+            <length>0.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+-->
+        </geometry>
+        <material>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+<!--
+      <visual name='wheel_a'>
+        <pose>0 0 0.15 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>1.0</length>
+            <length>0.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+      <visual name='wheel_b'>
+        <pose>0 0 -0.15 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+-->
+
+      <collision name='wheel_a'>
+        <pose>0 0 0.0 0 0 0</pose>
+        <geometry>
+	  <sphere>
+            <radius>0.323342</radius>
+	  </sphere>
+<!--
+          <cylinder>
+            <length>0.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+-->
+        </geometry>
+      </collision>
+
+<!--
+      <collision name='wheel_a'>
+        <pose>0 0 0.15 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+
+      <collision name='wheel_b'>
+        <pose>0 0 -0.15 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+-->
+
+<!--
+      <visual name='cyl_visual_right'>
+	<pose>0 0.0 0.3 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.4</length>
             <radius>0.5</radius>
           </cylinder>
         </geometry>
       </visual>
-      <collision name='cyl_collision'>
-	<pose>0 0.0 0.0 0 0 0</pose>
+      <visual name='cyl_visual_left'>
+	<pose>0 0.0 -0.3 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>1.0</length>
+            <length>0.4</length>
+            <radius>0.5</radius>
+          </cylinder>
+        </geometry>
+      </visual>
+
+      <collision name='cyl_collision_top'>
+	<pose>0 0.0 0.3 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.4</length>
             <radius>0.5</radius>
           </cylinder>
         </geometry>
       </collision>
+      <collision name='cyl_collision_bottom'>
+	<pose>0 0.0 -0.3 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.4</length>
+            <radius>0.5</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+-->
     </link>
 
 <!--
