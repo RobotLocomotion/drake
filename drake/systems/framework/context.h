@@ -6,29 +6,11 @@
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/state.h"
+#include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
 namespace systems {
-
-template <typename T>
-struct InputPort {
-  /// The port data, if the port is vector-valued.
-  /// TODO(david-german-tri): Add abstract-valued ports.
-  const VectorInterface<T>* vector_input = nullptr;
-
-  /// The rate at which this port is sampled, in seconds.
-  /// If zero, the port is continuous.
-  double sample_time_sec{};
-};
-
-/// The Input is a container for pointers to all the data that is connected to
-/// a particular System from other Systems. The input data itself is not owned
-/// by the Input struct.
-template <typename T>
-struct Input {
-  std::vector<InputPort<T>> ports;
-};
 
 template <typename T>
 struct Time {
@@ -59,8 +41,44 @@ class Context {
   const Time<T>& get_time() const { return time_; }
   Time<T>* get_mutable_time() { return &time_; }
 
-  const Input<T>& get_input() const { return input_; }
-  Input<T>* get_mutable_input() { return &input_; }
+  /// Connects the input port @port to this Context at the given @p index.
+  /// Disconnects whatever input port was previously there, and deregisters
+  /// it from the output port on which it depends.
+  void SetInputPort(int index, std::unique_ptr<InputPort<T>> port) {
+    if (index >= get_num_input_ports()) {
+      throw std::out_of_range("Input port out of range.");
+    }
+    // TODO(david-german-tri): Set invalidation callbacks.
+    inputs_[index] = std::move(port);
+  }
+
+  /// Removes all the input ports, and deregisters them from the output ports
+  /// on which they depend.
+  void ClearInputPorts() {
+    inputs_.clear();
+  }
+
+  /// Clears the input ports and allocates @p n new input ports, not connected
+  /// to anything.
+  void SetNumInputPorts(int n) {
+    ClearInputPorts();
+    inputs_.resize(n);
+  }
+
+  int get_num_input_ports() const { return inputs_.size(); }
+
+  /// Returns the vector data of the input port at @p index. Returns nullptr
+  /// if that port is not a vector-valued port, or if it is not connected.
+  /// Throws std::out_of_range if that port does not exist.
+  const VectorInterface<T>* get_vector_input(int index) const {
+    if (index >= get_num_input_ports()) {
+      throw std::out_of_range("Input port out of range.");
+    }
+    if (inputs_[index] == nullptr) {
+      return nullptr;
+    }
+    return inputs_[index]->get_vector_data();
+  }
 
   const State<T>& get_state() const { return state_; }
   State<T>* get_mutable_state() { return &state_; }
@@ -70,7 +88,8 @@ class Context {
   Cache<T>* get_mutable_cache() const { return &cache_; }
 
   /// Returns a deep copy of this Context. The clone's input ports will hold
-  /// pointers to the same output ports as the original Context.
+  /// deep copies of the data that appears on this context's port at the time
+  /// the clone is created.
   std::unique_ptr<Context<T>> Clone() const {
     return std::unique_ptr<Context<T>>(DoClone());
   }
@@ -92,9 +111,17 @@ class Context {
     context->get_mutable_state()->continuous_state.reset(
         new ContinuousState<T>(xc_vector.Clone(), num_q, num_v, num_z));
 
+    // Make deep copies of the inputs into FreestandingInputPorts.
+    // TODO(david-german-tri): Consider whether version numbers should be
+    // preserved through the clone as well.
+    for (const auto& port : this->inputs_) {
+      context->inputs_.emplace_back(
+          new FreestandingInputPort<T>(
+              port->get_vector_data()->Clone(), port->get_sample_time_sec()));
+    }
+
     // Make deep copies of everything else using the default copy constructors.
     *context->get_mutable_time() = this->get_time();
-    *context->get_mutable_input() = this->get_input();
     *context->get_mutable_cache() = *this->get_mutable_cache();
     return context;
   }
@@ -109,7 +136,7 @@ class Context {
   Time<T> time_;
 
   /// The external inputs to the System.
-  Input<T> input_;
+  std::vector<std::unique_ptr<InputPort<T>>> inputs_;
 
   /// The internal state of the System.
   State<T> state_;
