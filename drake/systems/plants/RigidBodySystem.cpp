@@ -207,6 +207,14 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
           TB = Isometry3d::Identity();
         }
 
+#if   LIANG_LOOK_AT_THIS
+        xA = TA.translation();
+        torque_A = (pc-xA).cros(fA);
+        fB = -fA; //action/reaction
+        xB = TB.translation();
+        torque_B = (pc-xB).cros(fB); // NOTE: torque_B != torque_A !!!
+#endif
+
         PRINT_VAR(TA.translation().transpose());
         PRINT_VAR(TB.translation().transpose());
 
@@ -225,11 +233,11 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
         // compute the surface tangent basis
         Vector3d tangent1;
-        if (1.0 - this_normal(2) < EPSILON) {  // handle the unit-normal case
+        if (1.0 - this_normal(2) < 1.0e-14) {  // handle the unit-normal case
                                                // (since it's unit length, just
                                                // check z)
           tangent1 << 1.0, 0.0, 0.0;
-        } else if (1 + this_normal(2) < EPSILON) {
+        } else if (1 + this_normal(2) < 1.0e-14) {
           tangent1 << -1.0, 0.0, 0.0;  // same for the reflected case
         } else {                       // now the general case
           tangent1 << this_normal(1), -this_normal(0), 0.0;
@@ -237,7 +245,15 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
                            this_normal(0) * this_normal(0));
         }
         Vector3d tangent2 = this_normal.cross(tangent1);
-        Matrix3d R;  // rotation into normal coordinates
+
+        PRINT_VAR(tangent1);
+        PRINT_VAR(tangent2);
+        PRINT_VAR(this_normal);
+
+        // Transformation matrix from world frame to surface frame.
+        // fA below is in the surface frame.
+        // Therefore R^t * fA is the force vector in the world frame.
+        Matrix3d R;
         R.row(0) = tangent1;
         R.row(1) = tangent2;
         R.row(2) = this_normal;
@@ -262,6 +278,9 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
           PRINT_VAR(fA.transpose());
           PRINT_VAR(fA.norm());
+          PRINT_VAR((R.transpose()*fA).transpose());
+
+          //std::cin.get();
 
 #ifdef COLLISION_DEBUG_WITH_LCM_GL
           // LCMGL the force on xB

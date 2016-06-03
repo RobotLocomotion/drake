@@ -283,6 +283,7 @@ ElementId BulletModel::addElement(const Element& element) {
       bullet_world_no_margin_.bt_collision_world->addCollisionObject(
           bt_obj_no_margin.get());
 
+#if 0
       if (elements[id]->isStatic()) {
         bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
         bt_obj->activate();
@@ -294,6 +295,7 @@ ElementId BulletModel::addElement(const Element& element) {
         bt_obj_no_margin->setCollisionFlags(
             btCollisionObject::CF_STATIC_OBJECT);
       }
+#endif
 
       // Take ownership of the Bullet collision objects.
       bullet_world_.bt_collision_objects.insert(
@@ -845,15 +847,23 @@ bool BulletModel::ComputeMaximumDepthCollisionPoints(
     }
 
     int numContacts = contactManifold->getNumContacts();
+    PRINT_VAR(numContacts);
+
     // Initialize min_distance.
     min_distance = distance =
         contactManifold->getContactPoint(0).getDistance() + marginA + marginB;
     j_min = 0;
 
+    PRINT_VAR(marginA);
+    PRINT_VAR(marginB);
+    PRINT_VAR(distance);
+
     // Find maximum penetration depth point in manifold.
     for (int j = 1; j < numContacts; j++) {
       distance =
           contactManifold->getContactPoint(j).getDistance() + marginA + marginB;
+      PRINT_VAR(j);
+      PRINT_VAR(distance);
       if (distance < min_distance) {
         min_distance = distance;
         j_min = j;
