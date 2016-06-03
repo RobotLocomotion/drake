@@ -35,7 +35,7 @@ template <typename T> class VectorInterface {
   /// must be identical to b.
   /// May throw std::out_of_range if the new value has different dimensions
   /// than expected by the concrete class implementing VectorInterface.
-  virtual void set_value(const VectorX<T>& value) = 0;
+  virtual void set_value(const Eigen::Ref<VectorX<T>>& value) = 0;
 
   /// Returns a column vector containing the entire value of the signal.
   virtual const Eigen::VectorBlock<const VectorX<T>> get_value() const = 0;
