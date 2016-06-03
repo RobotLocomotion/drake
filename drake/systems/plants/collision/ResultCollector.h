@@ -9,8 +9,7 @@ class ResultCollector {
 
   virtual void addPointPairResult(const PointPair& result);
 
-  inline void addSingleResult(const CollisionElementId idA,
-                              const CollisionElementId idB,
+  inline void addSingleResult(const ElementId idA, const ElementId idB,
                               const Eigen::Vector3d& ptA,
                               const Eigen::Vector3d& ptB,
                               const Eigen::Vector3d& normal,

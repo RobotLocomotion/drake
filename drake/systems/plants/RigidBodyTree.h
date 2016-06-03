@@ -135,7 +135,7 @@ void addRobotFromSDF(const std::string& sdf_filename,
    * cannot be found.
    */
   bool transformCollisionFrame(
-      const DrakeCollision::CollisionElementId& eid,
+      const DrakeCollision::ElementId& eid,
       const Eigen::Isometry3d& transform_body_to_joint);
 
   void compile(void);  // call me after the model is loaded
@@ -555,8 +555,8 @@ void addRobotFromSDF(const std::string& sdf_filename,
       Eigen::Ref<const Eigen::Matrix3Xd> const& xB,
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
-  DrakeCollision::CollisionElementId addCollisionElement(
-      const DrakeCollision::CollisionElement& element, RigidBody& body,
+  DrakeCollision::ElementId addCollisionElement(
+      const RigidBody::CollisionElement& element, RigidBody& body,
       const std::string& group_name);
 
   template <class UnaryPredicate>
@@ -615,7 +615,7 @@ void addRobotFromSDF(const std::string& sdf_filename,
       const KinematicsCache<double>& cache, Eigen::VectorXd& phi,
       Eigen::Matrix3Xd& normal, Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
       std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx,
-      const std::vector<DrakeCollision::CollisionElementId>& ids_to_check,
+      const std::vector<DrakeCollision::ElementId>& ids_to_check,
       bool use_margins);
 
   bool collisionDetect(const KinematicsCache<double>& cache,
@@ -817,6 +817,7 @@ void addRobotFromSDF(const std::string& sdf_filename,
    */
   int number_of_velocities() const { return num_velocities_; }
 
+
  public:
   static const std::set<int> default_robot_num_set;
 
@@ -865,26 +866,6 @@ void addRobotFromSDF(const std::string& sdf_filename,
   //
   // See RigidBodyTree::compile
   void SortTree();
-
-  // Defines a number of collision cliques to be used by DrakeCollision::Model.
-  // Collision cliques are defined so that:
-  // - There is one clique per RigidBody: and so CollisionElement's attached to
-  // a RigidBody do not collide.
-  // - There is one clique per pair of RigidBodies that are not meant to
-  // collide. These are determined according to the policy provided by
-  // RigidBody::CanCollideWith.
-  //
-  // Collision cliques provide a very general way to specify which collision
-  // elements should (or should not) be checked for collisions.
-  // This particular method provides a default heuristics to create cliques for
-  // RigidBodyTree which are in accordance to the policy implemented by
-  // RigidBody::CanCollideWith.
-  // If this heuristics needs to be changed/updated this can be done by either:
-  // 1. Overwriting this method.
-  // 2. Implementing a new policy in RigidBody::CanCollideWith.
-  //
-  // @see RigidBody::CanCollideWith.
-  void CreateCollisionCliques();
 
   // collision_model and collision_model_no_margins both maintain
   // a collection of the collision geometry in the RBM for use in
