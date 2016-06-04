@@ -35,8 +35,8 @@ TEST_P(LoadModelTest, TestNoOffset) {
       DrakeJoint::QUATERNION);
 
   // Verifies that RigidBodyTree cannot find a link thatn does not exist.
-  auto nonexistent_body = rbs.getRigidBodyTree()->findLink("not_a_link");
-  EXPECT_TRUE(nonexistent_body == nullptr);
+  EXPECT_THROW(rbs.getRigidBodyTree()->findLink("not_a_link"),
+    std::runtime_error);
 
   // Verifies that the world link within the rigid body tree
   // can be found and obtained.
