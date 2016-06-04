@@ -42,16 +42,16 @@ int do_main(int argc, const char* argv[]) {
         "world",
 
         // A pointer to a rigid body to which to weld the model is not needed
-        // since the model will be welded to the world, which can by automatically
-        // found within the rigid body tree.
+        // since the model will be welded to the world, which can be
+        // automatically found within the rigid body tree.
         nullptr,
 
-        // The following parameter specifies the X,Y,Z position of the car's root
-        // link in the world's frame.
+        // The following parameter specifies the X,Y,Z position of the car's
+        // root link in the world's frame.
         Eigen::Vector3d(x_coord * 5, y_coord * 5, 0.378326),
 
-        // The following parameter specifies the roll, pitch, and yaw of the car's
-        // root link in the world's frame.
+        // The following parameter specifies the roll, pitch, and yaw of the
+        // car's root link in the world's frame.
         Eigen::Vector3d(0, 0, 0));
 
     // Ensure each copy of the car has a unique model name. This is done by
@@ -65,14 +65,7 @@ int do_main(int argc, const char* argv[]) {
       DrakeJoint::QUATERNION, car_offset);
   }
 
-  // TODO(liangfok) move this into a method in car_simulation.h/.cc
-  rigid_body_sys->penetration_stiffness = 5000.0;
-  rigid_body_sys->penetration_damping = rigid_body_sys->penetration_stiffness / 10.0;
-  rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
-
-  // std::cout << "Number of outputs: " << rigid_body_sys->getNumOutputs() << std::endl;
-  // std::cout << "Number of positions: " << rigid_body_sys->number_of_positions() << std::endl;
-  // std::cout << "Number of velocities: " << rigid_body_sys->number_of_velocities() << std::endl;
+  SetRigidBodySystemParameters(rigid_body_sys.get());
 
   double duration = ParseDuration(argc, argv);
 
@@ -80,9 +73,7 @@ int do_main(int argc, const char* argv[]) {
 
   AddFlatTerrain(tree);
 
-  // Initializes and cascades all of the other systems.
-  // auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
-
+  // Initializes and cascades all of the systems.
   auto visualizer =
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
