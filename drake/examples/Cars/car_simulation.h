@@ -78,7 +78,7 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
  */
 DRAKECARS_EXPORT
 void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
-	double box_width = 1000, double box_depth = 10);
+                    double box_width = 1000, double box_depth = 10);
 
 /**
  * Creates a vehicle system by instantiating PD controllers for the actuators

@@ -229,7 +229,6 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
                   XMLElement* node, const PackageMap& package_map,
                   PoseMap& pose_map, const string& root_dir, int* index,
                   int model_id) {
-
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
@@ -607,9 +606,8 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-
-  // The pose_map is needed because SDF specifies almost everything in the model's
-  // coordinate frame.
+  // The pose_map is needed because SDF specifies almost everything in the
+  // model's coordinate frame.
   PoseMap pose_map;
 
   if (!node->Attribute("name")) {
@@ -673,8 +671,8 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
 
   // Adds the floating joint that connects the newly added robot model to the
   // rest of the rigid body tree.
-  rigid_body_tree->AddFloatingJoint(floating_base_type, link_indices, weld_to_frame,
-                          &pose_map);
+  rigid_body_tree->AddFloatingJoint(floating_base_type, link_indices,
+                                    weld_to_frame, &pose_map);
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,
@@ -684,7 +682,7 @@ void parseWorld(RigidBodyTree* model, XMLElement* node,
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
     parseModel(model, model_node, package_map, root_dir, floating_base_type,
-      weld_to_frame);
+               weld_to_frame);
   }
 }
 
@@ -718,8 +716,8 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
   // Load all models not in a world.
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
-    parseModel(model, model_node, package_map, root_dir,
-               floating_base_type, weld_to_frame);
+    parseModel(model, model_node, package_map, root_dir, floating_base_type,
+               weld_to_frame);
   }
 
   model->compile();
@@ -746,5 +744,5 @@ void RigidBodyTree::addRobotFromSDF(
   }
 
   parseSDF(this, &xml_doc, package_map, root_dir, floating_base_type,
-    weld_to_frame);
+           weld_to_frame);
 }

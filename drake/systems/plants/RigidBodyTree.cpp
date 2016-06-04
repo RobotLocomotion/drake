@@ -46,8 +46,8 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
 
 RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type) :
-    RigidBodyTree() {
+    const DrakeJoint::FloatingBaseType floating_base_type)
+    : RigidBodyTree() {
   addRobotFromURDF(urdf_filename, floating_base_type);
 }
 
@@ -1592,8 +1592,8 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
 }
 
 RigidBody* RigidBodyTree::findLink(const std::string& link_name,
-    const std::string& model_name, int model_id) const {
-
+                                   const std::string& model_name,
+                                   int model_id) const {
   // Obtains lower case versions of the link name and model name.
   std::string link_name_lower = link_name;
   std::string model_name_lower = model_name;
@@ -1608,11 +1608,9 @@ RigidBody* RigidBodyTree::findLink(const std::string& link_name,
   int match_index = -1;
 
   for (size_t ii = 0; ii < bodies.size(); ii++) {
-
     // Skips the current link if model_id is not -1 and the link's robot ID is
     // not equal to the desired robot ID.
-    if (model_id != -1 && model_id != bodies[ii]->get_model_id())
-      continue;
+    if (model_id != -1 && model_id != bodies[ii]->get_model_id()) continue;
 
     // Obtains a lower case version of the current link's model name.
     string current_model_name = bodies[ii]->model_name();
@@ -1627,8 +1625,7 @@ RigidBody* RigidBodyTree::findLink(const std::string& link_name,
     // Obtains a lower case version of the current link's name.
     string current_link_name = bodies[ii]->name_;
     std::transform(current_link_name.begin(), current_link_name.end(),
-                   current_link_name.begin(),
-                   ::tolower);
+                   current_link_name.begin(), ::tolower);
 
     // Checks if the link names match. If so, checks whether this is the first
     // match. If so, it saves the current link's index. Otherwise it throws
@@ -1637,7 +1634,7 @@ RigidBody* RigidBodyTree::findLink(const std::string& link_name,
       if (match_index < 0) {
         match_index = ii;
       } else {
-       throw std::runtime_error(
+        throw std::runtime_error(
             "RigidBodyTree::findLink: ERROR: Found multiple links named \"" +
             link_name + "\".");
       }
@@ -1658,7 +1655,6 @@ RigidBody* RigidBodyTree::findLink(const std::string& link_name,
 
 shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
     const std::string& frame_name, int model_id) const {
-
   std::string frame_name_lower = frame_name;
 
   // Obtains a lower case version of frame_name.
@@ -1671,29 +1667,26 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   int match_index = -1;
 
   for (size_t ii = 0; ii < frames.size(); ++ii) {
-
     // Skips the current frame if model_id is not -1 and the frame's robot ID is
     // not equal to the desired robot ID.
-    if (model_id != -1 && model_id != frames[ii]->get_model_id())
-      continue;
+    if (model_id != -1 && model_id != frames[ii]->get_model_id()) continue;
 
     // Obtains a lower case version of the current frame.
     std::string current_frame_name = frames[ii]->name;
     std::transform(current_frame_name.begin(), current_frame_name.end(),
-                   current_frame_name.begin(),
-                   ::tolower);
+                   current_frame_name.begin(), ::tolower);
 
     // Checks if the frame names match. If so, checks whether this is the first
     // match. If so, it saves the current frame's index. Otherwise it throws
     // an exception indicating there are multiple matches.
     if (frame_name_lower == current_frame_name) {
       if (match_index < 0) {
-          match_index = ii;
-        } else {
-          throw std::runtime_error(
+        match_index = ii;
+      } else {
+        throw std::runtime_error(
             "RigidBodyTree::findFrame: ERROR: Found multiple frames named \"" +
             frame_name + "\".");
-        }
+      }
     }
   }
 
@@ -1709,17 +1702,16 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   }
 }
 
-int RigidBodyTree::findLinkId(const std::string& link_name, int model_id)
-    const {
+int RigidBodyTree::findLinkId(const std::string& link_name,
+                              int model_id) const {
   RigidBody* link = findLink(link_name, "", model_id);
   if (link == nullptr)
     throw std::runtime_error("could not find link id: " + link_name);
   return link->body_index;
 }
 
-RigidBody* RigidBodyTree::findJoint(const std::string& joint_name, int model_id)
-    const {
-
+RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
+                                    int model_id) const {
   // Obtains a lower case version of joint_name.
   std::string joint_name_lower = joint_name;
   std::transform(joint_name_lower.begin(), joint_name_lower.end(),
