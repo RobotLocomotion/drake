@@ -54,14 +54,8 @@ int do_main(int argc, const char* argv[]) {
         // car's root link in the world's frame.
         Eigen::Vector3d(0, 0, 0));
 
-    // Ensure each copy of the car has a unique model name. This is done by
-    // selecting a unique postfix for the model name.
-    std::stringstream postfix_buff;
-    postfix_buff << "_" << ii;
-    std::string postfix = postfix_buff.str();
-
     rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
-      "/examples/Cars/models/prius/prius.sdf", &postfix,
+      "/examples/Cars/models/prius/prius.sdf",
       DrakeJoint::QUATERNION, car_offset);
   }
 
