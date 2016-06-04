@@ -2,8 +2,6 @@
 
 #include <cstdlib>
 
-#include "drake/systems/plants/collision/collision_element.h"
-
 using Eigen::MatrixXd;
 using Eigen::Matrix;
 using Eigen::VectorXd;
