@@ -103,7 +103,7 @@ int contactConstraintsBV(
                 Eigen::aligned_allocator<SupportStateElement>> &supp,
     MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv,
     MatrixXd &normals) {
-  int j, k = 0, nq = r.num_positions;
+  int j, k = 0, nq = r.number_of_positions();
 
   B.resize(3, nc * 2 * m_surface_tangents);
   JB.resize(nq, nc * 2 * m_surface_tangents);
@@ -419,19 +419,12 @@ void evaluateXYZExpmapCubicSpline(double t,
 
   // construct autodiff version of expmap
   // autodiff derivatives represent first and second derivative w.r.t. time
-  typedef AutoDiffScalar<Matrix<double, Dynamic, 1>> ADScalar;  // TODO: should
-                                                                // use 1 instead
-                                                                // of dynamic,
-                                                                // but causes
-                                                                // issues with
-                                                                // eigen on MSVC
-                                                                // 32 bit;
-                                                                // should be
-                                                                // fixed in 3.3
-  typedef AutoDiffScalar<Matrix<ADScalar, Dynamic, 1>>
-      ADScalarSecondDeriv;  // TODO: should use 1 instead of dynamic, but causes
-                            // issues with eigen on MSVC 32 bit; should be fixed
-                            // in 3.3
+  // TODO(tkoolen): should use 1 instead of dynamic, but causes issues
+  // with eigen on MSVC 32 bit; should be fixed in 3.3
+  typedef AutoDiffScalar<Matrix<double, Dynamic, 1>> ADScalar;
+  // TODO(tkoolen): should use 1 instead of dynamic, but causes issues
+  // with eigen on MSVC 32 bit; should be fixed in 3.3
+  typedef AutoDiffScalar<Matrix<ADScalar, Dynamic, 1>> ADScalarSecondDeriv;
   Matrix<ADScalarSecondDeriv, 3, 1> expmap_autodiff;
   for (int i = 0; i < expmap_autodiff.size(); i++) {
     expmap_autodiff(i).value() = expmap(i);

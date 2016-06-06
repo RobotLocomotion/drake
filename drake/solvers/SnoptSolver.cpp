@@ -9,6 +9,8 @@
 
 #include "drake/solvers/Optimization.h"
 
+using drake::solvers::SolutionResult;
+
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
@@ -110,7 +112,7 @@ struct SNOPTData : public Drake::OptimizationProblem::SolverData {
 };
 
 struct SNOPTRun {
-  SNOPTRun(SNOPTData& d) : D(d) {
+  explicit SNOPTRun(SNOPTData& d) : D(d) {
     // Minimum default allocation needed by snInit
     D.min_alloc_w(snopt_mincw, snopt_miniw * 1000, snopt_minrw * 1000);
 
@@ -246,7 +248,7 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   return 0;
 }
 
-bool Drake::SnoptSolver::Solve(
+SolutionResult Drake::SnoptSolver::Solve(
     OptimizationProblem& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
   SNOPTRun cur(*d);
@@ -272,10 +274,10 @@ bool Drake::SnoptSolver::Solve(
   const Eigen::VectorXd x_initial_guess = prog.initial_guess();
   for (int i = 0; i < nx; i++) {
     x[i] = static_cast<snopt::doublereal>(x_initial_guess(i));
-    xlow[i] =
-        static_cast<snopt::doublereal>(-std::numeric_limits<double>::infinity());
-    xupp[i] =
-        static_cast<snopt::doublereal>(std::numeric_limits<double>::infinity());
+    xlow[i] = static_cast<snopt::doublereal>(
+        -std::numeric_limits<double>::infinity());
+    xupp[i] = static_cast<snopt::doublereal>(  // BR
+        std::numeric_limits<double>::infinity());
   }
   for (auto const& binding : prog.bounding_box_constraints()) {
     auto const& c = binding.constraint();
@@ -300,7 +302,8 @@ bool Drake::SnoptSolver::Solve(
     num_nonlinear_constraints += n;
   }
   size_t num_linear_constraints = 0;
-  for (auto const& binding : prog.linear_equality_constraints()) {
+  const auto linear_constraints = prog.GetAllLinearConstraints();
+  for (auto const& binding : linear_constraints) {
     num_linear_constraints += binding.constraint()->num_constraints();
   }
 
@@ -353,7 +356,7 @@ bool Drake::SnoptSolver::Solve(
   tripletList.reserve(num_linear_constraints * prog.num_vars());
 
   size_t linear_constraint_index = 0;
-  for (auto const& binding : prog.linear_equality_constraints()) {
+  for (auto const& binding : linear_constraints) {
     auto const& c = binding.constraint();
     size_t n = c->num_constraints();
     size_t var_index = 0;
@@ -431,38 +434,13 @@ bool Drake::SnoptSolver::Solve(
   snopt::doublereal ObjAdd = 0.0;
   snopt::integer ObjRow = 1;  // feasibility problem (for now)
 
-  // TODO sam.creasey These should be made into options when #1879 is
-  // resolved or deleted.
-  /*
-    mysnseti("Derivative
-    option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"DerivativeOption"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("Major iterations
-    limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MajorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("Minor iterations
-    limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MinorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnsetr("Major optimality
-    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MajorOptimalityTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnsetr("Major feasibility
-    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MajorFeasibilityTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnsetr("Minor feasibility
-    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MinorFeasibilityTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("Superbasics
-    limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"SuperbasicsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("Verify
-    level",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"VerifyLevel"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("Iterations
-    Limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"IterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("Scale
-    option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"ScaleOption"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("New basis
-    file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"NewBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("Old basis
-    file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"OldBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("Backup basis
-    file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"BackupBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnsetr("Linesearch
-    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"LinesearchTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-  */
+  for (const auto it : prog.GetSolverOptionsDouble("SNOPT")) {
+    cur.snSetr(it.first, it.second);
+  }
+
+  for (const auto it : prog.GetSolverOptionsInt("SNOPT")) {
+    cur.snSeti(it.first, it.second);
+  }
 
   snopt::integer info;
   snopt::snopta_(
@@ -481,8 +459,16 @@ bool Drake::SnoptSolver::Solve(
     sol(i) = static_cast<double>(x[i]);
   }
   prog.SetDecisionVariableValues(sol);
+  prog.SetSolverResult("SNOPT", info);
 
   // todo: extract the other useful quantities, too.
 
-  return true;
+  if (info >= 1 && info <= 6) {
+    return SolutionResult::kSolutionFound;
+  } else if (info >= 11 && info <= 16) {
+    return SolutionResult::kInfeasibleConstraints;
+  } else if (info == 91) {
+    return SolutionResult::kInvalidInput;
+  }
+  return SolutionResult::kUnknownError;
 }

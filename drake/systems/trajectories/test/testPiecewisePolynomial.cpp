@@ -54,8 +54,9 @@ void testIntegralAndDerivative() {
 
   // check continuity at knot points
   for (int i = 0; i < piecewise.getNumberOfSegments() - 1; ++i) {
-    valuecheck(integral.getPolynomial(i).value(integral.getDuration(i)),
-               integral.getPolynomial(i + 1).value(0.0));
+    valuecheck(integral.getPolynomial(i)
+               .evaluateUnivariate(integral.getDuration(i)),
+               integral.getPolynomial(i + 1).evaluateUnivariate(0.0));
   }
 }
 
@@ -141,7 +142,7 @@ void testValueOutsideOfRange() {
                               1e-10, MatrixCompareType::absolute));
 }
 
-TEST(testPiecewisePolynomial, AllTests) {
+GTEST_TEST(testPiecewisePolynomial, AllTests) {
   testIntegralAndDerivative<double>();
   testBasicFunctionality<double>();
   testValueOutsideOfRange<double>();

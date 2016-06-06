@@ -5,7 +5,7 @@
 #include "drake/drakeSide_export.h"
 
 // adapted from https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Type_Safe_Enum
-// TODO: replace with enum class
+// TODO(tkoolen): replace with enum class
 class DRAKESIDE_EXPORT Side {
  public:
   enum SideEnum { LEFT, RIGHT };
@@ -15,8 +15,12 @@ class DRAKESIDE_EXPORT Side {
 
  public:
   static const std::array<SideEnum, 2> values;
+
   Side();  // to allow usage in STL containers
+
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   Side(SideEnum v);
+
   SideEnum underlying() const { return val; }
 
   bool operator==(const Side& other) const;

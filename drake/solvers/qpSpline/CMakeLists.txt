@@ -2,12 +2,12 @@ add_library_with_exports(LIB_NAME drakeSplineGeneration SOURCE_FILES splineGener
 target_link_libraries(drakeSplineGeneration drakeTrajectories)
 pods_install_libraries(drakeSplineGeneration)
 drake_install_headers(splineGeneration.h ValueConstraint.h ContinuityConstraint.h SplineInformation.h)
-pods_install_pkg_config_file(drakeSplineGeneration
+pods_install_pkg_config_file(drake-spline-generation
   LIBS -ldrakeSplineGeneration
   REQUIRES
   VERSION 0.0.2)
 
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   add_mex(nWaypointCubicSplinemex nWaypointCubicSplinemex.cpp)
   target_link_libraries(nWaypointCubicSplinemex drakeSplineGeneration drakeMexUtil)
 

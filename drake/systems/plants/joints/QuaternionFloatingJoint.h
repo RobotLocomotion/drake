@@ -134,11 +134,11 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
         getNumVelocities(), 1);
   }
 
-  virtual bool isFloating() const override { return true; };
-  virtual std::string getPositionName(int index) const override;
-  virtual std::string getVelocityName(int index) const override;
-  virtual Eigen::VectorXd zeroConfiguration() const override;
-  virtual Eigen::VectorXd randomConfiguration(
+  bool isFloating() const override { return true; };
+  std::string getPositionName(int index) const override;
+  std::string getVelocityName(int index) const override;
+  Eigen::VectorXd zeroConfiguration() const override;
+  Eigen::VectorXd randomConfiguration(
       std::default_random_engine &generator) const override;
 
  public:

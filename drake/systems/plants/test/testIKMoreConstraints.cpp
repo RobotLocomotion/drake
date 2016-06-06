@@ -17,9 +17,9 @@ using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
 // Find the joint position indices corresponding to 'name'
-vector<int> getJointPositionVectorIndices(const RigidBodyTree &model,
-                                          const std::string &name) {
-  shared_ptr<RigidBody> joint_parent_body = model.findJoint(name);
+vector<int> getJointPositionVectorIndices(const RigidBodyTree& model,
+                                          const std::string& name) {
+  RigidBody* joint_parent_body = model.findJoint(name);
   int num_positions = joint_parent_body->getJoint().getNumPositions();
   vector<int> ret(static_cast<size_t>(num_positions));
 
@@ -29,22 +29,22 @@ vector<int> getJointPositionVectorIndices(const RigidBodyTree &model,
   return ret;
 }
 
-void findJointAndInsert(const RigidBodyTree &model, const std::string &name,
-                        vector<int> &position_list) {
+void findJointAndInsert(const RigidBodyTree& model, const std::string& name,
+                        vector<int>& position_list) {
   auto position_indices = getJointPositionVectorIndices(model, name);
 
   position_list.insert(position_list.end(), position_indices.begin(),
                        position_indices.end());
 }
 
-TEST(testIKMoreConstraints, IKMoreConstraints) {
+GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
   tspan << 0, 1;
 
   // Default Atlas v5 posture:
-  VectorXd qstar(model.num_positions);
+  VectorXd qstar(model.number_of_positions());
   qstar << -0.0260, 0, 0.8440, 0, 0, 0, 0, 0, 0, 0.2700, 0, 0.0550, -0.5700,
       1.1300, -0.5500, -0.0550, -1.3300, 2.1530, 0.5000, 0.0985, 0, 0.0008,
       -0.2700, 0, -0.0550, -0.5700, 1.1300, -0.5500, 0.0550, 1.3300, 2.1530,
@@ -163,7 +163,7 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
       -0.0624, -0.0811, -0.0811, -0.0811, -0.0811;
   kc_quasi.addContact(1, &r_foot, &r_foot_pts);
 
-  std::vector<RigidBodyConstraint *> constraint_array;
+  std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&kc_quasi);
   constraint_array.push_back(&kc_posture_knees);
   constraint_array.push_back(&kc_lfoot_pos);
@@ -175,7 +175,7 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   constraint_array.push_back(&kc_posture_back);
 
   IKoptions ikoptions(&model);
-  VectorXd q_sol(model.num_positions);
+  VectorXd q_sol(model.number_of_positions());
   int info;
   vector<string> infeasible_constraint;
   inverseKin(&model, qstar, qstar, constraint_array.size(),
@@ -184,12 +184,10 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   printf("INFO = %d\n", info);
   EXPECT_EQ(info, 1);
 
-
   /////////////////////////////////////////
   KinematicsCache<double> cache = model.doKinematics(q_sol);
   Vector3d com = model.centerOfMass(cache);
   printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
-  EXPECT_TRUE(
-      CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913), 1e-6,
-                      MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913),
+                              1e-6, MatrixCompareType::absolute));
 }

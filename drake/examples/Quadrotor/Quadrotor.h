@@ -23,7 +23,8 @@ class QuadrotorState {  // models the Drake::Vector concept
         yawdot(0) {}
 
   template <typename Derived>
-  QuadrotorState(const Eigen::MatrixBase<Derived>& x)
+  QuadrotorState(  // NOLINT(runtime/explicit) per Drake::Vector.
+      const Eigen::MatrixBase<Derived>& x)
       : x(x(0)),
         y(x(1)),
         z(x(2)),
@@ -94,8 +95,10 @@ template <typename ScalarType = double>
 class QuadrotorInput {
  public:
   QuadrotorInput(void) : w1(0), w2(0), w3(0), w4(0) {}
+
   template <typename Derived>
-  QuadrotorInput(const Eigen::MatrixBase<Derived>& x)
+  QuadrotorInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+      const Eigen::MatrixBase<Derived>& x)
       : w1(x(0)), w2(x(1)), w3(x(2)), w4(x(3)) {}
 
   template <typename Derived>
@@ -138,7 +141,7 @@ class Quadrotor {
   template <typename ScalarType>
   using InputVector = QuadrotorInput<ScalarType>;
 
-  Quadrotor() : m(0.5), g(9.81), L(0.1750), I(Eigen::Matrix3d::Identity()) {
+  Quadrotor() : g(9.81), L(0.1750), m(0.5), I(Eigen::Matrix3d::Identity()) {
     I(0, 0) = 0.0023;
     I(1, 1) = 0.0023;
     I(2, 2) = 0.004;

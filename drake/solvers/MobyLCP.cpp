@@ -16,6 +16,8 @@
 
 #include "Optimization.h"
 
+using drake::solvers::SolutionResult;
+
 namespace {
 template <typename Derived>
 void selectSubMat(const Eigen::MatrixBase<Derived>& in,
@@ -102,7 +104,7 @@ void MobyLCPSolver::ClearIndexVectors() const {
   _j.clear();
 }
 
-bool MobyLCPSolver::Solve(OptimizationProblem& prog) const {
+SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
   // TODO(ggould-tri) This solver currently imposes restrictions that its
   // problem:
   //
@@ -132,8 +134,8 @@ bool MobyLCPSolver::Solve(OptimizationProblem& prog) const {
 
   // Assert that the available LCPs cover the program and no two LCPs cover
   // the same variable.
-  for (int i = 0; i < prog.num_vars(); i++) {
-    bool coverings = 0;
+  for (size_t i = 0; i < prog.num_vars(); i++) {
+    int coverings = 0;
     for (const auto& binding : bindings) {
       if (binding.covers(i)) {
         coverings++;
@@ -155,6 +157,10 @@ bool MobyLCPSolver::Solve(OptimizationProblem& prog) const {
   // implementation but might perform better if the solver were to parallelize
   // internally.
   Eigen::VectorXd solution(prog.num_vars());
+
+  // We don't actually indicate different results.
+  prog.SetSolverResult("MobyLCP", 0);
+
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
     const std::shared_ptr<LinearComplementarityConstraint> constraint =
@@ -162,12 +168,12 @@ bool MobyLCPSolver::Solve(OptimizationProblem& prog) const {
     bool solved = SolveLcpLemkeRegularized(
         constraint->M(), constraint->q(), &constraint_solution);
     if (!solved) {
-      return false;
+      return SolutionResult::kUnknownError;
     }
     binding.WriteThrough(constraint_solution, &solution);
   }
   prog.SetDecisionVariableValues(solution);
-  return true;
+  return SolutionResult::kSolutionFound;
 }
 
 /// Fast pivoting algorithm for denerate, monotone LCPs with few nonzero,

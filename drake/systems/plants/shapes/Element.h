@@ -18,12 +18,12 @@ class DRAKESHAPES_EXPORT Element {
         T_element_to_local(T_element_to_local),
         geometry(geometry.clone()) {}
 
-  Element(const Geometry& geometry)
+  explicit Element(const Geometry& geometry)
       : T_element_to_world(Eigen::Isometry3d::Identity()),
         T_element_to_local(Eigen::Isometry3d::Identity()),
         geometry(geometry.clone()) {}
 
-  Element(const Eigen::Isometry3d& T_element_to_local)
+  explicit Element(const Eigen::Isometry3d& T_element_to_local)
       : T_element_to_world(Eigen::Isometry3d::Identity()),
         T_element_to_local(T_element_to_local),
         geometry() {}

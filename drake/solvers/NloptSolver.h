@@ -11,7 +11,8 @@ class DRAKEOPTIMIZATION_EXPORT NloptSolver :
  public:
   // This solver is implemented in various pieces depending on if
   // NLOpt was available during compilation.
-  virtual bool available() const override;
-  virtual bool Solve(OptimizationProblem& prog) const override;
+  bool available() const override;
+  drake::solvers::SolutionResult Solve(
+      OptimizationProblem& prog) const override;
 };
 }
