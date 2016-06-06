@@ -137,3 +137,11 @@ To work on the bleeding edge, do::
 	make
 
 This is especially useful if you are ready to contribute your work back to the main repository with a `pull request <https://help.github.com/articles/using-pull-requests/>`_.
+
+ccache
+======
+
+A program called ``ccache`` can be used to speed up (re)builds. Consult the
+`ccache manual <https://ccache.samba.org/manual.html#_run_modes>`_ for
+instructions on enabling ``ccache``.  To prevent certain spurious compiler
+errors, make sure to set the environment variable ``CACHE_CPP2=yes``.

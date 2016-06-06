@@ -159,15 +159,6 @@ Update the symbolic link in MATLAB to point to the version that was installed ea
     sudo rm libstdc++.so.6
     sudo ln -s /usr/lib/gcc/x86_64-linux-gnu/4.9/libstdc++.so libstdc++.so.6
 
-ccache
-======
-
-A program called ``ccache`` can be used to speed up (re)builds.
-To use this program, add ``/usr/lib/ccache`` to the front of the ``$PATH``
-environment variable::
-
-    export PATH=/usr/lib/ccache:$PATH
-
 Return to Generic Instructions
 ==============================
 
