@@ -26,7 +26,7 @@ struct SurfacePoint {
 
 // Solutions are accessed by collision element id using an std::unordered_set.
 // DrakeCollision::Model returns the collision detection results as a vector of
-// DrakeCollision::PointPair entries. Each entry holds a references to the pair
+// DrakeCollision::PointPair entries. Each entry holds a reference to the pair
 // of collision elements taking part in the collision. Collision elements are
 // referenced by their id.
 // The order in which the pair of elements is stored in a PointPair cannot

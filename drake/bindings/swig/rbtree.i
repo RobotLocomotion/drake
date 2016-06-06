@@ -33,8 +33,10 @@
 %template(vectorString) std::vector<std::string>;
 %shared_ptr(RigidBody)
 %template(vectorRigidBody) std::vector<std::shared_ptr<RigidBody> >;
+%shared_ptr(RigidBodyFrame)
 
 %eigen_typemaps(Eigen::VectorXd)
+%eigen_typemaps(Eigen::Vector3d)
 %eigen_typemaps(Eigen::Matrix<double, SPACE_DIMENSION, 1>)
 %eigen_typemaps(Eigen::Matrix3Xd)
 %eigen_typemaps(Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic>)
@@ -52,6 +54,8 @@
 // unique_ptr confuses SWIG, so we'll ignore it for now
 %ignore RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint);
 %include "drake/systems/plants/RigidBody.h"
+
+%include "drake/systems/plants/RigidBodyFrame.h"
 
 %immutable RigidBodyTree::actuators;
 %immutable RigidBodyTree::loops;

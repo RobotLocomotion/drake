@@ -196,11 +196,9 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
     string resolved_filename = resolveFilename(filename, package_map, root_dir);
     DrakeShapes::Mesh mesh(filename, resolved_filename);
 
-    attr = shape_node->Attribute("scale");
-    if (attr) {
-      stringstream s(attr);
-      s >> mesh.scale;
-    }
+    // Obtains the scale of the mesh if it exists.
+    if (shape_node->Attribute("scale") != nullptr)
+      ParseThreeVectorAttribute(shape_node, "scale", &mesh.scale);
 
     element.setGeometry(mesh);
   } else {
@@ -399,7 +397,7 @@ void parseJointKeyParams(XMLElement* node, std::string& name, std::string& type,
   attr = parent_node->Attribute("link");
   if (!attr)
     throw runtime_error("ERROR: joint " + name +
-                        "'s' parent does not have a link attribute!");
+                        "'s parent does not have a link attribute!");
   parent_link_name = std::string(attr);
 
   // Obtains the name of the joint's child link.
@@ -695,6 +693,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
       const char* name_attr = link_node->Attribute("name");
       if (!name_attr)
         throw runtime_error("ERROR: link tag is missing name attribute");
+
       if (std::string(name_attr) ==
           std::string(RigidBodyTree::kWorldLinkName)) {
         // A world link was specified within the URDF. The following code

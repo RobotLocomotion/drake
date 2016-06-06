@@ -1,10 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <cmath>
-
-#include <Eigen/Geometry>
-
 #include "drake/drakeCars_export.h"
 #include "drake/examples/Cars/gen/driving_command.h"
 #include "drake/examples/Cars/gen/simple_car_state.h"
@@ -14,6 +9,9 @@ namespace drake {
 
 /// SimpleCar -- model an idealized response to driving commands, neglecting
 /// all physics.
+///
+/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
+/// this class, please refer to @see http://drake.mit.edu/cxx_inl.html.
 ///
 /// configuration:
 /// * see lcmt_simple_car_config_t
@@ -34,6 +32,28 @@ namespace drake {
 ///
 class DRAKECARS_EXPORT SimpleCar {
  public:
+  static const drake::lcmt_simple_car_config_t kDefaultConfig;
+
+  explicit SimpleCar(
+      const drake::lcmt_simple_car_config_t& config = kDefaultConfig)
+      : config_(config) {}
+
+  const drake::lcmt_simple_car_config_t& config() const { return config_; }
+
+  // TODO(jwnimmer-tri) Clarify the type requirements in a future PR.
+  /// @name Implement the Drake System concept.
+  ///
+  /// @tparam ScalarType must support certain arithmetic operations,
+  /// which will be specified at a future time.
+  ///
+  /// Instantiated templates for the following ScalarTypes are provided:
+  /// - double
+  /// They are already available to link against in libdrakeCars.
+  ///
+  /// To use other unusual ScalarType substitutions,
+  /// @see http://drake.mit.edu/cxx_inl.html.
+  //@{
+
   template <typename ScalarType>
   using StateVector = SimpleCarState<ScalarType>;
   template <typename ScalarType>
@@ -41,55 +61,23 @@ class DRAKECARS_EXPORT SimpleCar {
   template <typename ScalarType>
   using OutputVector = SimpleCarState<ScalarType>;
 
-  explicit SimpleCar(
-      const drake::lcmt_simple_car_config_t& config = kDefaultConfig)
-      : config_(config) {}
-
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& time,
                                    const StateVector<ScalarType>& state,
-                                   const InputVector<ScalarType>& input) const {
-    // Apply simplistic throttle.
-    ScalarType new_velocity =
-        state.velocity() + input.throttle() * config_.max_acceleration *
-        config_.velocity_lookahead_time;
-    new_velocity = std::min(new_velocity, config_.max_velocity);
-
-    // Apply simplistic brake.
-    new_velocity += input.brake() * -config_.max_acceleration *
-                    config_.velocity_lookahead_time;
-    new_velocity = std::max(new_velocity, 0.);
-
-    // Apply steering.
-    ScalarType sane_steering_angle =
-        std::max(std::min(std::remainder(input.steering_angle(), 2 * M_PI),
-                          config_.max_abs_steering_angle),
-                 -config_.max_abs_steering_angle);
-    ScalarType curvature = std::tan(sane_steering_angle) / config_.wheelbase;
-
-    StateVector<ScalarType> rates;
-    rates.set_x(state.velocity() * std::cos(state.heading()));
-    rates.set_y(state.velocity() * std::sin(state.heading()));
-    rates.set_heading(curvature * state.velocity());
-    rates.set_velocity((new_velocity - state.velocity()) * config_.velocity_kp);
-    return rates;
-  }
+                                   const InputVector<ScalarType>& input) const;
 
   template <typename ScalarType>
   OutputVector<ScalarType> output(const ScalarType& time,
                                   const StateVector<ScalarType>& state,
-                                  const InputVector<ScalarType>& input) const {
-    return state;
-  }
+                                  const InputVector<ScalarType>& input) const;
 
   bool isTimeVarying() const { return false; }
   bool isDirectFeedthrough() const { return false; }
 
-  const drake::lcmt_simple_car_config_t& config() const { return config_; }
-
-  static const drake::lcmt_simple_car_config_t kDefaultConfig;
+  //@}
 
  private:
   const drake::lcmt_simple_car_config_t config_;
 };
-}
+
+}  // namespace drake

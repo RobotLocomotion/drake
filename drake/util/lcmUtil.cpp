@@ -33,7 +33,7 @@ PiecewisePolynomial<double> decodePiecewisePolynomial(
     const drake::lcmt_piecewise_polynomial& msg) {
   typedef PiecewisePolynomial<double>::PolynomialMatrix PolynomialMatrix;
   std::vector<PolynomialMatrix> polynomial_matrices;
-  for (int i = 0; i < msg.polynomial_matrices.size(); ++i) {
+  for (size_t i = 0; i < msg.polynomial_matrices.size(); ++i) {
     polynomial_matrices.push_back(
         decodePolynomialMatrix<Dynamic, Dynamic>(msg.polynomial_matrices[i]));
   }

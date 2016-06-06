@@ -92,6 +92,10 @@ void testOperators() {
                poly1.evaluateUnivariate(t) / scalar, 1e-8);
     valuecheck(poly1_times_poly1.evaluateUnivariate(t),
                poly1.evaluateUnivariate(t) * poly1.evaluateUnivariate(t), 1e-8);
+
+    // Check the '==' operator.
+    EXPECT_TRUE(poly1 + poly2 == sum);
+    EXPECT_FALSE(poly1 == sum);
   }
 }
 
@@ -346,6 +350,14 @@ GTEST_TEST(PolynomialTest, EvaluatePartial) {
   EXPECT_EQ(
       dut.evaluatePartial(eval_point_y).evaluateMultivariate(eval_point_x),
       expected_result);
+
+  // Test that zeroing out one term gives a sensible result.
+  EXPECT_EQ(dut.evaluatePartial(
+      std::map<Polynomiald::VarType, double>{{x.getSimpleVariable(), 0}}),
+            (2 * y) + 1);
+  EXPECT_EQ(dut.evaluatePartial(
+      std::map<Polynomiald::VarType, double>{{y.getSimpleVariable(), 0}}),
+            (5 * x * x * x) + 1);
 }
 
 }  // anonymous namespace
