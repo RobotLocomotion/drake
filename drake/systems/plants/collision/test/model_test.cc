@@ -404,12 +404,6 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox_multi) {
   // Collision test performed with Model::potentialCollisionPoints.
   points = model->potentialCollisionPoints(false);
 
-  for(int i=0;i<points.size();++i){
-    std::cout << "Point: " << i << std::endl;
-    std::cout << "ptA: " << points[i].getPtA().transpose() << std::endl;
-    std::cout << "ptB: " << points[i].getPtB().transpose() << std::endl;
-  }
-
   for(int i=0;i<points.size();++i) {
     EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance);
     EXPECT_TRUE(points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
