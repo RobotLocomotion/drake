@@ -283,6 +283,21 @@ find_package(roscpp QUIET)
 if(roscpp_FOUND)
   message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
   include_directories(${roscpp_INCLUDE_DIRS})
+
+  find_package(catkin REQUIRED)
+  find_package(genmsg REQUIRED)
+
+  find_package(std_msgs REQUIRED)
+  include_directories(${std_msgs_INCLUDE_DIRS})
+
+  find_package(sensor_msgs REQUIRED)
+  include_directories(${sensor_msgs_INCLUDE_DIRS})
+
+  find_package(ackermann_msgs REQUIRED)
+  include_directories(${ackermann_msgs_INCLUDE_DIRS})
+
+  find_package(tf REQUIRED)
+  include_directories(${tf_INCLUDE_DIRS})
 else()
   message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
 endif()
@@ -300,6 +315,10 @@ add_subdirectory(thirdParty/spruce)
 add_subdirectory(thirdParty/tinyxml2)
 add_subdirectory(examples)
 add_subdirectory(bindings)
+
+if(roscpp_FOUND AND catkin_FOUND AND genmsg_FOUND AND std_msgs_FOUND AND sensor_msgs_FOUND AND ackermann_msgs_FOUND AND tf_FOUND)
+  add_subdirectory(ros)
+endif()
 
 # setup MATLAB pods-compliance
 include(cmake/matlab_pods.cmake)
