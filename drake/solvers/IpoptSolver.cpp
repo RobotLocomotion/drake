@@ -28,6 +28,8 @@ namespace drake {
 namespace solvers {
 namespace {
 
+/// @param[out] lb Array of constraint lower bounds, parallel to @p ub
+/// @param[out] ub Array of constraint upper bounds, parallel to @p lb
 size_t GetConstraintBounds(
     const Drake::Constraint& c, Number* lb, Number* ub) {
   const Eigen::VectorXd& lower_bound = c.lower_bound();
@@ -96,6 +98,13 @@ size_t EvaluateConstraint(
     const Drake::Constraint& c, const Drake::VariableList& variable_list,
     Number* result, Number* grad) {
 
+  // For constraints which don't use all of the variables in the X
+  // input, extract a subset into the TaylorVecXd this_x to evaluate
+  // the constraint (we actually do this for all constraints.  One
+  // potential optimization might be to detect if the initial "tx" has
+  // the correct geometry (e.g. the constraint uses all decision
+  // variables in the same order they appear in xvec), but this is not
+  // currently done).
   size_t var_count = 0;
   for (const DecisionVariableView& v : variable_list) {
     var_count += v.size();
@@ -111,10 +120,17 @@ size_t EvaluateConstraint(
 
   TaylorVecXd ty(c.num_constraints());
   c.eval(this_x, ty);
+
+  // Store the results.  Since IPOPT directly knows the bounds of the
+  // constraint, we don't need to apply any bounding information here.
   for (size_t i = 0; i < c.num_constraints(); i++) {
     result[i] = ty(i).value();
   }
 
+  // Extract the appropriate derivatives from our result into the
+  // gradient array.  Like above, we need to use variable_list to
+  // figure out where the drivatives we actually care about are
+  // located.
   size_t grad_idx = 0;
   for (const DecisionVariableView& v : variable_list) {
     for (size_t i = 0; i < c.num_constraints(); i++) {
@@ -137,6 +153,7 @@ struct ResultCache {
     grad.resize(grad_size, std::numeric_limits<double>::infinity());
   }
 
+  /// @param n The size of the array located at @p x_in.
   bool is_x_equal(Index n, const Number* x_in) {
     assert(n == x.size());
     return !std::memcmp(x.data(), x_in, x.size() * sizeof(Number));
@@ -212,7 +229,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       }
     }
 
-    size_t constraint_idx = 0;
+    size_t constraint_idx = 0; // offset into g_l and g_u output arrays
     for (const auto& c : problem_->generic_constraints()) {
       constraint_idx += GetConstraintBounds(
           *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
@@ -240,6 +257,9 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       }
     }
 
+    // We don't currently use any solver options which require
+    // populating z_L, z_U or lambda.  Assert that IPOPT doesn't
+    // expect us to in case any such options get turned on.
     assert(!init_z);
     assert(!init_lambda);
     return true;
@@ -283,8 +303,13 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       assert(iRow != nullptr);
       assert(jCol != nullptr);
 
-      size_t constraint_idx = 0;
-      size_t grad_idx = 0;
+      size_t constraint_idx = 0; // Passed into GetGradientMatrix as
+                                 // the starting row number for the
+                                 // constraint being described.
+      size_t grad_idx = 0; // Offset into iRow, jCol output variables.
+                           // Incremented by the number of triplets
+                           // populated by each call to
+                           // GetGradientMatrix.
       for (const auto& c : problem_->generic_constraints()) {
         grad_idx += GetGradientMatrix(
             *(c.constraint()), c.variable_list(), constraint_idx,
@@ -393,17 +418,17 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     Number* grad = constraint_cache_->grad.data();
 
     for (const auto& c : problem_->generic_constraints()) {
-      grad += EvaluateConstraint(xvec, *c.constraint(), c.variable_list(),
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
                                  result, grad);
       result += c.constraint()->num_constraints();
     }
     for (const auto& c : problem_->linear_constraints()) {
-      grad += EvaluateConstraint(xvec, *c.constraint(), c.variable_list(),
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
                          result, grad);
       result += c.constraint()->num_constraints();
     }
     for (const auto& c : problem_->linear_equality_constraints()) {
-      grad += EvaluateConstraint(xvec, *c.constraint(), c.variable_list(),
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
                                  result, grad);
       result += c.constraint()->num_constraints();
     }
