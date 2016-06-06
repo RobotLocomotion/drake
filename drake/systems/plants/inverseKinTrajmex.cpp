@@ -12,13 +12,14 @@ using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 7) {
-    mexErrMsgIdAndTxt("Drake:inverseKinTrajmex:NotEnoughInputs",
-                      "Usage "
-                      "inverseKinPointwisemex(model_ptr, t, qdot0_seed, q_seed, q_"
-                      "nom, constraint1, constraint2,..., ikoptions");
+    mexErrMsgIdAndTxt(
+        "Drake:inverseKinTrajmex:NotEnoughInputs",
+        "Usage "
+        "inverseKinPointwisemex(model_ptr, t, qdot0_seed, q_seed, q_"
+        "nom, constraint1, constraint2,..., ikoptions");
   }
   RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[0]);
-  int nq = model->num_positions;
+  int nq = model->number_of_positions();
   int nT = static_cast<int>(mxGetNumberOfElements(prhs[1]));
   double* t = mxGetPrSafe(prhs[1]);
   Map<VectorXd> qdot0_seed(mxGetPrSafe(prhs[2]), nq);

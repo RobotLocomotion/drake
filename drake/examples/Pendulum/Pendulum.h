@@ -13,8 +13,10 @@ class PendulumState {  // models the Drake::Vector concept
   static std::string channel() { return "PendulumState"; }
 
   PendulumState(void) : theta(0), thetadot(0) {}
+
   template <typename Derived>
-  PendulumState(const Eigen::MatrixBase<Derived>& x)
+  PendulumState(  // NOLINT(runtime/explicit) per Drake::Vector.
+      const Eigen::MatrixBase<Derived>& x)
       : theta(x(0)), thetadot(x(1)) {}
 
   template <typename Derived>
@@ -54,8 +56,10 @@ class PendulumInput {
   static std::string channel() { return "PendulumInput"; }
 
   PendulumInput(void) : tau(0) {}
+
   template <typename Derived>
-  PendulumInput(const Eigen::MatrixBase<Derived>& x)
+  PendulumInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+      const Eigen::MatrixBase<Derived>& x)
       : tau(x(0)) {}
 
   template <typename Derived>
@@ -134,7 +138,7 @@ class PendulumEnergyShapingController {
   template <typename ScalarType>
   using OutputVector = PendulumInput<ScalarType>;
 
-  PendulumEnergyShapingController(const Pendulum& pendulum)
+  explicit PendulumEnergyShapingController(const Pendulum& pendulum)
       : m(pendulum.m), l(pendulum.l), b(pendulum.b), g(pendulum.g) {}
 
   template <typename ScalarType>

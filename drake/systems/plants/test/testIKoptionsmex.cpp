@@ -9,18 +9,19 @@ using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nlhs != 19 || nrhs != 1) {
-    mexErrMsgIdAndTxt("Drake:testIKoptions:BadInputs",
-                      "Usage [robot_address, Q, Qa, Qv, debug_mode, "
-                      "sequentialSeedFlag, majorFeasibilityTolerance,"
-                      "majorIterationsLimit, iterationsLimit, superbasicsLimit,"
-                      "majorOptimalityTolerance, additional_tSamples,"
-                      "fixInitialState, q0_lb, q0_ub, qd0_lb, qd0_ub, qdf_lb, qdf_ub]"
-                      " = testIKoptionsmex(ikoptions_ptr)");
+    mexErrMsgIdAndTxt(
+        "Drake:testIKoptions:BadInputs",
+        "Usage [robot_address, Q, Qa, Qv, debug_mode, "
+        "sequentialSeedFlag, majorFeasibilityTolerance,"
+        "majorIterationsLimit, iterationsLimit, superbasicsLimit,"
+        "majorOptimalityTolerance, additional_tSamples,"
+        "fixInitialState, q0_lb, q0_ub, qd0_lb, qd0_ub, qdf_lb, qdf_ub]"
+        " = testIKoptionsmex(ikoptions_ptr)");
   }
   IKoptions* ikoptions = (IKoptions*)getDrakeMexPointer(prhs[0]);
   // NOLINTNEXTLINE(runtime/int)
   auto robot_address = reinterpret_cast<long long>(ikoptions->getRobotPtr());
-  int nq = ikoptions->getRobotPtr()->num_positions;
+  int nq = ikoptions->getRobotPtr()->number_of_positions();
   MatrixXd Q;
   ikoptions->getQ(Q);
   MatrixXd Qv;

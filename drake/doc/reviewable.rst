@@ -1,6 +1,15 @@
+.. _reviewable:
+
 ****************************************************************
 Tips for Participating In Drake Code Reviews using reviewable.io
 ****************************************************************
+
+.. contents:: `Table of contents`
+   :depth: 3
+   :local:
+
+Introduction
+============
 
 Drake code reviews use https://reviewable.io. This page documents some
 best practices for communicating effectively in Reviewable.

@@ -1,15 +1,13 @@
-
-# todo: still build something useful if gurobi does not exist
+# TODO: still build something useful if Gurobi does not exist
 
 pods_find_pkg_config(gurobi)
 
-if (gurobi_FOUND)
+if(gurobi_FOUND)
 
   add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES QP.cpp)
-  set_target_properties(drakeQP PROPERTIES COMPILE_FLAGS -fPIC)
   pods_use_pkg_config_packages(drakeQP gurobi)
 
-  if (MATLAB_FOUND)
+  if(MATLAB_FOUND)
     add_mex(fastQPmex fastQPmex.cpp)
     target_link_libraries(fastQPmex drakeQP)
     add_mex(gurobiQPmex gurobiQPmex.cpp)
@@ -31,34 +29,37 @@ if(MATLAB_FOUND)
 endif()
 
 set(optimization_files)
-list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp)
+list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp system_identification.cpp)
 pods_find_pkg_config(nlopt)
-if (nlopt_FOUND)
+if(nlopt_FOUND)
   list(APPEND optimization_files NloptSolver.cpp)
 else()
   list(APPEND optimization_files NoNlopt.cpp)
-endif(nlopt_FOUND)
+endif()
 pods_find_pkg_config(snopt_c)
-if (snopt_c_FOUND)
+if(snopt_c_FOUND)
   list(APPEND optimization_files SnoptSolver.cpp)
 else()
   list(APPEND optimization_files NoSnopt.cpp)
-endif(snopt_c_FOUND)
+endif()
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
-set_target_properties(drakeOptimization PROPERTIES COMPILE_FLAGS -fPIC)
-drake_install_headers(MathematicalProgram.h Optimization.h)
+target_link_libraries(drakeOptimization drakePolynomial)
+drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h)
 pods_install_libraries(drakeOptimization)
-if (nlopt_FOUND)
+pods_install_pkg_config_file(drake-optimization
+  LIBS -ldrakeOptimization
+  REQUIRES
+  VERSION 0.0.1)
+if(nlopt_FOUND)
   pods_use_pkg_config_packages(drakeOptimization nlopt)
-endif(nlopt_FOUND)
-if (snopt_c_FOUND)
+endif()
+if(snopt_c_FOUND)
   pods_use_pkg_config_packages(drakeOptimization snopt_c)
-endif(snopt_c_FOUND)
+endif()
 
 if(snopt_c_FOUND AND MATLAB_FOUND)
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
-  set_target_properties(NonlinearProgramSnoptmex PROPERTIES COMPILE_FLAGS -fPIC)
 endif()
 
 add_subdirectory(qpSpline)

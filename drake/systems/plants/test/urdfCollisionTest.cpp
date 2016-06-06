@@ -21,8 +21,8 @@ int main(int argc, char* argv[]) {
   Eigen::VectorXd q = model->getZeroConfiguration();
   int i;
 
-  if (argc >= 2 + model->num_positions) {
-    for (i = 0; i < model->num_positions; i++)
+  if (argc >= 2 + model->number_of_positions()) {
+    for (i = 0; i < model->number_of_positions(); i++)
       sscanf(argv[2 + i], "%lf", &q(i));
   }
 
@@ -49,8 +49,8 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 3; ++i) {
       cout << xB(i, j) << " ";
     }
-    cout << model->bodies[bodyA_idx.at(j)]->linkname << " ";
-    cout << model->bodies[bodyB_idx.at(j)]->linkname << endl;
+    cout << model->bodies[bodyA_idx.at(j)]->name_ << " ";
+    cout << model->bodies[bodyB_idx.at(j)]->name_ << endl;
   }
 
   delete model;

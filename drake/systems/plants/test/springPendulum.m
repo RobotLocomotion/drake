@@ -8,3 +8,5 @@ v = r.constructVisualizer();
 v.playback(xtraj);
 
 end
+
+% TIMEOUT 1500

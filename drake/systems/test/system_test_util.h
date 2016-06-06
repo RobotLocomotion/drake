@@ -14,7 +14,7 @@ std::shared_ptr<AffineSystem<EigenVector<StatesAtCompileTime>::template type,
                              EigenVector<InputsAtCompileTime>::template type,
                              EigenVector<OutputsAtCompileTime>::template type>>
 CreateRandomAffineSystem(size_t num_states, size_t num_inputs,
-                         size_t num_outputs) {
+                         size_t num_outputs, bool direct_feedthrough = true) {
   using ReturnType =
       AffineSystem<EigenVector<StatesAtCompileTime>::template type,
                    EigenVector<InputsAtCompileTime>::template type,
@@ -33,7 +33,11 @@ CreateRandomAffineSystem(size_t num_states, size_t num_inputs,
           num_outputs, num_states)
           .eval();
   auto D =
+      direct_feedthrough ?
       Eigen::Matrix<double, OutputsAtCompileTime, InputsAtCompileTime>::Random(
+          num_outputs, num_inputs)
+          .eval() :
+      Eigen::Matrix<double, OutputsAtCompileTime, InputsAtCompileTime>::Zero(
           num_outputs, num_inputs)
           .eval();
   auto xdot0 =

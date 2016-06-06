@@ -1,3 +1,5 @@
+.. _git-remote-config:
+
 *****************************************
 Avoid Accidental Pushes to the Repository
 *****************************************

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <list>
+#include <map>
 #include <memory>
 #include <initializer_list>
 #include <Eigen/Core>
@@ -12,13 +13,16 @@
 #include "drake/drakeOptimization_export.h"
 #include "drake/solvers/Constraint.h"
 #include "drake/solvers/MathematicalProgram.h"
+#include "drake/solvers/solution_result.h"
+#include "drake/util/Polynomial.h"
 
 
 namespace Drake {
 
 /**
  * DecisionVariable
- * @brief Provides storage for a decision variable inside an OptimizationProblem.
+ * @brief Provides storage for a decision variable inside an
+ * OptimizationProblem.
  */
 class DecisionVariable {
  public:
@@ -63,7 +67,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   /// Create a view which covers an entire DecisionVariable.
   ///
   /// @p var is aliased, and must remain valid for the lifetime of the view.
-  DecisionVariableView(const DecisionVariable& var)
+  explicit DecisionVariableView(const DecisionVariable& var)
       : var_(var), start_index_(0), size_(var_.value().rows()) {}
 
   /// Create a view covering part of a DecisionVariable.
@@ -220,14 +224,14 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+    void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                       Eigen::VectorXd& y) const override {
       y.resize(FunctionTraits<F>::numOutputs(f_));
       assert(x.rows() == FunctionTraits<F>::numInputs(f_));
       assert(y.rows() == FunctionTraits<F>::numOutputs(f_));
       FunctionTraits<F>::eval(f_, x, y);
     }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+    void eval(const Eigen::Ref<const TaylorVecXd>& x,
                       TaylorVecXd& y) const override {
       y.resize(FunctionTraits<F>::numOutputs(f_));
       assert(x.rows() == FunctionTraits<F>::numInputs(f_));
@@ -243,10 +247,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       // to int so it is odr-used (see
   // https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
   OptimizationProblem()
-      : problem_type_(MathematicalProgramInterface::GetLeastSquaresProgram()),
-        num_vars_(0),
+      : num_vars_(0),
         x_initial_guess_(
-            static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)) {}
+            static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
+        problem_type_(MathematicalProgramInterface::GetLeastSquaresProgram()),
+      solver_result_(0) {}
 
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
@@ -315,7 +320,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   }
 
   /** addQuadraticCost
-   * @brief adds a cost term of the form (x-x_desired)'*Q*(x-x_desired)
+   * @brief Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
@@ -337,7 +342,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** addGenericConstraint
    *
-   * @brief adds a generic constraint to the program.  This should
+   * @brief Adds a generic constraint to the program.  This should
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
    * expensive solver.
@@ -353,8 +358,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearConstraint
    *
-   * @brief adds linear constraints referencing potentially a subset
-   * of the decision variables.
+   * @brief Adds linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
    */
   void AddLinearConstraint(
       std::shared_ptr<LinearConstraint> con,
@@ -366,8 +371,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearConstraint
    *
-   * @brief adds linear constraints to the program for all (currently existing)
-   * variables
+   * @brief Adds linear constraints to the program for all (currently existing)
+   * variables.
    */
   void AddLinearConstraint(
       std::shared_ptr<LinearConstraint> con) {
@@ -376,8 +381,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearConstraint
    *
-   * @brief adds linear constraints referencing potentially a subset
-   * of the decision variables.
+   * @brief Adds linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
    */
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
@@ -391,8 +396,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearConstraint
    *
-   * @brief adds linear constraints to the program for all (currently existing)
-   * variables
+   * @brief Adds linear constraints to the program for all (currently existing)
+   * variables.
    */
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
@@ -402,11 +407,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddLinearConstraint(A, lb, ub, variable_views_);
   }
 
-
   /** AddLinearEqualityConstraint
    *
-   * @brief adds linear equality constraints referencing potentially a
-   * subset of the decision variables.
+   * @brief Adds linear equality constraints referencing potentially a
+   * subset of the decision variables (defined in the vars parameter).
    */
   void AddLinearEqualityConstraint(
       std::shared_ptr<LinearEqualityConstraint> con,
@@ -418,8 +422,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearEqualityConstraint
    *
-   * @brief adds linear equality constraints to the program for all
-   * (currently existing) variables
+   * @brief Adds linear equality constraints to the program for all
+   * (currently existing) variables.
    */
   void AddLinearEqualityConstraint(
       std::shared_ptr<LinearEqualityConstraint> con) {
@@ -428,7 +432,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearEqualityConstraint
    *
-   * @brief adds linear equality constraints referencing potentially a subset of
+   * @brief Adds linear equality constraints referencing potentially a subset of
    * the decision variables.
    * Example: to add and equality constraint which only depends on two of the
    * elements of x, you could use
@@ -447,8 +451,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearEqualityConstraint
    *
-   * @brief adds linear equality constraints to the program for all
-   * (currently existing) variables
+   * @brief Adds linear equality constraints to the program for all
+   * (currently existing) variables.
    */
   template <typename DerivedA, typename DerivedB>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
@@ -459,7 +463,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief adds bounding box constraints referencing potentially a subset of
+   * @brief Adds bounding box constraints referencing potentially a subset of
    * the decision variables.
    */
   void AddBoundingBoxConstraint(
@@ -472,8 +476,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief adds bounding box constraints to the program for all
-   * (currently existing) variables
+   * @brief Adds bounding box constraints to the program for all
+   * (currently existing) variables.
    */
   void AddBoundingBoxConstraint(
       std::shared_ptr<BoundingBoxConstraint> con) {
@@ -482,8 +486,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief adds bounding box constraints referencing potentially a
-   * subset of the decision variables.
+   * @brief Adds bounding box constraints referencing potentially a
+   * subset of the decision variables (defined in the vars parameter).
    */
   template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
@@ -497,8 +501,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief adds bounding box constraints to the program for all
-   * (currently existing) variables
+   * @brief Adds bounding box constraints to the program for all
+   * (currently existing) variables.
    */
   template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
@@ -509,7 +513,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearComplementarityConstraint
    *
-   * @brief adds a linear complementarity constraints referencing a subset of
+   * @brief Adds a linear complementarity constraints referencing a subset of
    * the decision variables.
    */
   template <typename DerivedM, typename Derivedq>
@@ -540,7 +544,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearComplementarityConstraint
    *
-   * @brief adds a linear complementarity constraint to the program for all
+   * @brief Adds a linear complementarity constraint to the program for all
    * (currently existing) variables.
    */
   template <typename DerivedM, typename Derivedq>
@@ -549,6 +553,46 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
           const Eigen::MatrixBase<DerivedM>& M,
           const Eigen::MatrixBase<Derivedq>& q) {
     return AddLinearComplementarityConstraint(M, q, variable_views_);
+  }
+
+  /** AddPolynomialConstraint
+   *
+   * @brief Adds a polynomial constraint to the program referencing a subset
+   * of the decision variables (defined in the vars parameter).
+   */
+  std::shared_ptr<PolynomialConstraint>
+      AddPolynomialConstraint(
+          const VectorXPoly& polynomials,
+          const std::vector<Polynomiald::VarType>& poly_vars,
+          const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
+          const VariableList& vars) {
+    // TODO(ggould-tri) We treat polynomial constraints as generic for now,
+    // but that need not be so.  Polynomials of degree 1 are linear
+    // constraints, and some polynomial constraints may map to linear
+    // complementarity constraints.  That will certainly be needed for
+    // performance purposes, as automatically generated rigid body manipulator
+    // equations subject to lumped parameter rewriting may frequently come out
+    // as degree 1.
+    problem_type_.reset(
+        problem_type_->AddGenericConstraint());
+    std::shared_ptr<PolynomialConstraint>
+        constraint(new PolynomialConstraint(polynomials, poly_vars, lb, ub));
+    AddGenericConstraint(constraint, vars);
+    return constraint;
+  }
+
+  /** AddPolynomialConstraint
+   *
+   * @brief Adds a polynomial constraint to the program referencing all of the
+   * decision variables.
+   */
+  std::shared_ptr<PolynomialConstraint>
+      AddPolynomialConstraint(
+          const VectorXPoly& polynomials,
+          const std::vector<Polynomiald::VarType>& poly_vars,
+          const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
+    return AddPolynomialConstraint(
+        polynomials, poly_vars, lb, ub, variable_views_);
   }
 
   // template <typename FunctionType>
@@ -563,7 +607,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     x_initial_guess_.segment(var.index(), var.size()) = x0;
   }
 
-  bool Solve() {
+  /**
+   * Solve the OptimizationProblem.
+   *
+   * @return SolutionResult indicating if the solution was successful.
+   */
+  drake::solvers::SolutionResult Solve() {
     return problem_type_->Solve(*this);
   }  // todo: add argument for options
 
@@ -588,6 +637,59 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       v.set_value(x.middleRows(index, v.value().rows()));
       index += v.value().rows();
     }
+  }
+
+  /**
+   * Set an option for a particular solver.  This interface does not
+   * do any verification of solver parameters beyond what an
+   * individual solver does for itself.  It does not even verify that
+   * the specifed solver exists.  Use this only when you have
+   * particular knowledge of what solver is being invoked, and exactly
+   * what tuning is required.
+   *
+   * Supported solver names/options:
+   *
+   * "SNOPT" -- Paramater names and values as specified in SNOPT
+   * User's Guide section 7.7 "Description ofthe optional parameters",
+   * used as described in section 7.5 for snSet().
+   */
+  void SetSolverOption(const std::string& solver_name,
+                       const std::string& solver_option,
+                       double option_value) {
+    solver_options_double_[solver_name][solver_option] = option_value;
+  }
+
+  void SetSolverOption(const std::string& solver_name,
+                       const std::string& solver_option,
+                       int option_value) {
+    solver_options_int_[solver_name][solver_option] = option_value;
+  }
+
+  const std::map<std::string, double>& GetSolverOptionsDouble(
+      const std::string& solver_name) {
+    return solver_options_double_[solver_name];
+  }
+
+  const std::map<std::string, int>& GetSolverOptionsInt(
+      const std::string& solver_name) {
+    return solver_options_int_[solver_name];
+  }
+
+  /**
+   * Get the name and result code of the particular solver which was
+   * used to solve this OptimizationProblem.  The solver names and
+   * results are not documented here as this function is only intended
+   * for debugging, testing, and support of certain legacy
+   * APIs.
+   */
+  void GetSolverResult(std::string* solver_name, int* solver_result) const {
+    *solver_name = solver_name_;
+    *solver_result = solver_result_;
+  }
+
+  void SetSolverResult(const std::string& solver_name, int solver_result) {
+    solver_name_ = solver_name;
+    solver_result_ = solver_result;
   }
 
   const std::list<Binding<Constraint>>& generic_objectives() const {
@@ -650,8 +752,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   VariableList variable_views_;
   std::list<Binding<Constraint>> generic_objectives_;
   std::list<Binding<Constraint>> generic_constraints_;
-  std::list<Binding<LinearConstraint>>
-      linear_constraints_;  // note: does not include linear_equality_constraints_
+  // note: linear_constraints_ does not include linear_equality_constraints_
+  std::list<Binding<LinearConstraint>> linear_constraints_;
   std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
   std::list<Binding<BoundingBoxConstraint>> bbox_constraints_;
 
@@ -664,6 +766,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   Eigen::VectorXd x_initial_guess_;
   std::shared_ptr<SolverData> solver_data_;
   std::shared_ptr<MathematicalProgramInterface> problem_type_;
+  std::string solver_name_;
+  int solver_result_;
+  std::map<std::string, std::map<std::string, double>> solver_options_double_;
+  std::map<std::string, std::map<std::string, int>> solver_options_int_;
 };
 
 }  // end namespace Drake

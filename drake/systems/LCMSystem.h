@@ -154,7 +154,7 @@ class LCMOutputSystem {
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) {}
+  explicit LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) {}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -179,7 +179,7 @@ class LCMOutputSystem<
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm) {}
+  explicit LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm) {}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -207,7 +207,7 @@ class DRAKELCMSYSTEM_EXPORT LCMLoop {
   bool stop;
   lcm::LCM &lcm;
 
-  LCMLoop(lcm::LCM &_lcm) : lcm(_lcm), stop(false) {}
+  explicit LCMLoop(lcm::LCM &_lcm) : stop(false), lcm(_lcm) {}
 
   void loopWithSelect();
 };

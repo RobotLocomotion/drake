@@ -12,7 +12,8 @@ class QuadrotorInput {
     QuadrotorInput(void) : motors(Eigen::Vector4d::Zero()) {}
 
     template <typename Derived>
-    QuadrotorInput(const Eigen::MatrixBase<Derived>& x) : motors(x) {}
+    QuadrotorInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+        const Eigen::MatrixBase<Derived>& x) : motors(x) {}
 
     template <typename Derived>
     QuadrotorInput& operator=(const Eigen::MatrixBase<Derived>& x) {
@@ -24,8 +25,11 @@ class QuadrotorInput {
       return vec.motors;
     }
 
-    friend std::string getCoordinateName(const QuadrotorInput<ScalarType>& vec, unsigned int index) {
-      return index >= 0 && index < RowsAtCompileTime ? std::string("motor") + std::to_string(index + 1) : std::string("error");
+    friend std::string getCoordinateName(const QuadrotorInput<ScalarType>& vec,
+                                         unsigned int index) {
+      return (index >= 0 && index < RowsAtCompileTime)
+          ? std::string("motor") + std::to_string(index + 1)
+          : std::string("error");
     }
 
     static const int RowsAtCompileTime = 4;
@@ -34,7 +38,8 @@ class QuadrotorInput {
     Eigen::Matrix<ScalarType, 4, 1> motors;
 };
 
-bool decode(const drake::lcmt_quadrotor_input_t& msg, double& t, QuadrotorInput<double>& x) {
+bool decode(const drake::lcmt_quadrotor_input_t& msg, double& t,
+            QuadrotorInput<double>& x) {
   t = double(msg.timestamp)/1000.0;
   x.motors = Eigen::Vector4d(msg.motors);
   return true;
