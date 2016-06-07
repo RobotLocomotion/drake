@@ -17,12 +17,6 @@ if(GTEST_FOUND)
   add_executable(n_ary_system_test n_ary_system_test.cc)
   target_link_libraries(n_ary_system_test ${GTEST_BOTH_LIBRARIES})
   add_test(NAME n_ary_system_test COMMAND n_ary_system_test)
-
-  if(roscpp_FOUND)
-    add_executable(ros_test ros_test.cc)
-    target_link_libraries(ros_test ${GTEST_BOTH_LIBRARIES} ${roscpp_LIBRARIES})
-    add_test(NAME ros_test COMMAND ros_test)
-  endif()
 endif()
 
 add_matlab_test(NAME systems/test/HybridSystemSampleTimeTest.run COMMAND HybridSystemSampleTimeTest.run)
