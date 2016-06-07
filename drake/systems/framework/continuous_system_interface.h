@@ -18,8 +18,8 @@ class ContinuousSystemInterface : public SystemInterface<T> {
 
   /// Returns a vector of the same size as the continuous_state allocated in
   /// CreateDefaultContext. Solvers will provide this vector as the output
-  /// argument to Dynamics.
-  virtual std::unique_ptr<StateVectorInterface<T>> AllocateStateDerivatives()
+  /// argument to GetDerivatives.
+  virtual std::unique_ptr<ContinuousState<T>> AllocateDerivatives()
       const = 0;
 
   /// Produces the derivatives of the continuous state xc with respect to time.
@@ -29,12 +29,12 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// the derivatives.
   ///
   /// Implementations may assume that the output is of the type constructed in
-  /// CreateDefaultStateDerivatives.
+  /// AllocateStateDerivatives.
   ///
   /// @param derivatives The output vector. Will be the same length as the
   ///                    state vector Context.state.continuous_state.
-  virtual void Dynamics(const Context<T>& context,
-                        StateVectorInterface<T>* derivatives) const = 0;
+  virtual void GetDerivatives(const Context<T>& context,
+                              ContinuousState<T>* derivatives) const = 0;
 
   /// Transforms the velocity (v) in the given Context state to the derivative
   /// of the configuration (qdot). The transformation must be linear

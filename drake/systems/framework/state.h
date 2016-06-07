@@ -70,7 +70,7 @@ class ContinuousState {
   // state of a Diagram, using StateSupervectors.
 
   /// Returns the entire state vector.
-  const StateVectorInterface<T>& get_state() { return *state_; }
+  const StateVectorInterface<T>& get_state() const { return *state_; }
 
   /// Returns a mutable pointer to the entire state vector, never null.
   StateVectorInterface<T>* get_mutable_state() { return state_.get(); }
@@ -109,23 +109,23 @@ class ContinuousState {
   }
 
  private:
-  /// The entire state vector.  May or may not own the underlying data.
+  // The entire state vector.  May or may not own the underlying data.
   std::unique_ptr<StateVectorInterface<T>> state_;
 
-  /// Generalized coordinates representing System configuration, conventionally
-  /// denoted `q`. These are second-order state variables.
-  /// This is a subset of state_ and does not own the underlying data.
+  // Generalized coordinates representing System configuration, conventionally
+  // denoted `q`. These are second-order state variables.
+  // This is a subset of state_ and does not own the underlying data.
   std::unique_ptr<StateVectorInterface<T>> generalized_position_;
 
-  /// Generalized speeds representing System velocity. Conventionally denoted
-  /// `v`. These are first-order state variables that the System can linearly
-  /// map to time derivatives `qdot` of `q` above.
-  /// This is a subset of state_ and does not own the underlying data.
+  // Generalized speeds representing System velocity. Conventionally denoted
+  // `v`. These are first-order state variables that the System can linearly
+  // map to time derivatives `qdot` of `q` above.
+  // This is a subset of state_ and does not own the underlying data.
   std::unique_ptr<StateVectorInterface<T>> generalized_velocity_;
 
-  /// Additional continuous, first-order state variables not representing
-  /// multibody system motion.  Conventionally denoted `z`.
-  /// This is a subset of state_ and does not own the underlying data.
+  // Additional continuous, first-order state variables not representing
+  // multibody system motion.  Conventionally denoted `z`.
+  // This is a subset of state_ and does not own the underlying data.
   std::unique_ptr<StateVectorInterface<T>> misc_continuous_state_;
 };
 

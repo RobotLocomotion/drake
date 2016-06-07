@@ -35,7 +35,7 @@ TEST_F(AdderTest, AddTwoVectors) {
   context_->get_mutable_input()->ports[0].vector_input = &input0;
   context_->get_mutable_input()->ports[1].vector_input = &input1;
 
-  adder_->Output(*context_, output_.get());
+  adder_->GetOutput(*context_, output_.get());
 
   ASSERT_EQ(1, output_->ports.size());
   BasicVector<double>* output_port = dynamic_cast<BasicVector<double>*>(
@@ -53,7 +53,7 @@ TEST_F(AdderTest, WrongNumberOfInputPorts) {
   BasicVector<double> input0(3 /* length */);
   context_->get_mutable_input()->ports[0].vector_input = &input0;
 
-  EXPECT_THROW(adder_->Output(*context_, output_.get()), std::out_of_range);
+  EXPECT_THROW(adder_->GetOutput(*context_, output_.get()), std::out_of_range);
 }
 
 // Tests that std::out_of_range is thrown when input ports of the wrong size
@@ -66,7 +66,7 @@ TEST_F(AdderTest, WrongSizeOfInputPorts) {
   context_->get_mutable_input()->ports[0].vector_input = &input0;
   context_->get_mutable_input()->ports[1].vector_input = &input1;
 
-  EXPECT_THROW(adder_->Output(*context_, output_.get()), std::out_of_range);
+  EXPECT_THROW(adder_->GetOutput(*context_, output_.get()), std::out_of_range);
 }
 
 // Tests that Adder allocates no state variables in the context_.

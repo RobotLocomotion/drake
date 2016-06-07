@@ -56,6 +56,35 @@ SpringMassSystem::SpringMassSystem(const std::string& name,
       spring_constant_N_per_m_(spring_constant_N_per_m),
       mass_kg_(mass_kg) {}
 
+double SpringMassSystem::GetSpringForce(const MyContext& context) const {
+  const double k = spring_constant_N_per_m_,
+               x = get_position(context),
+               x0 = 0.,  // TODO(david-german-tri) should be a parameter.
+               stretch = x - x0, f = -k * stretch;
+  return f;
+}
+
+double SpringMassSystem::GetPotentialEnergy(const MyContext& context) const {
+  const double k = spring_constant_N_per_m_,
+               x = get_position(context),
+               x0 = 0.,  // TODO(david-german-tri) should be a parameter.
+               stretch = x - x0, pe = k * stretch * stretch / 2;
+  return pe;
+}
+
+double SpringMassSystem::GetKineticEnergy(const MyContext& context) const {
+  const double m = mass_kg_,
+               v = get_velocity(context),
+               ke = m * v * v / 2;
+  return ke;
+}
+
+// TODO(sherm1) Make this more interesting.
+double SpringMassSystem::GetPower(const MyContext&) const {
+  const double power = 0.;
+  return power;
+}
+
 SpringMassSystem::~SpringMassSystem() {}
 
 std::string SpringMassSystem::get_name() const { return name_; }
@@ -81,15 +110,18 @@ std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput() const {
   return output;
 }
 
-std::unique_ptr<StateVectorInterface<double>>
-SpringMassSystem::AllocateStateDerivatives() const {
-  return std::unique_ptr<StateVectorInterface<double>>(
+std::unique_ptr<ContinuousState<double>> SpringMassSystem::AllocateDerivatives()
+    const {
+  std::unique_ptr<SpringMassStateVector> derivs(
       new SpringMassStateVector(0, 0));
+  return std::unique_ptr<ContinuousState<double>>(
+      new ContinuousState<double>(std::move(derivs), 1 /* size of q */,
+                                  1 /* size of v */, 0 /* size of z */));
 }
 
 // Assign the state to the output.
-void SpringMassSystem::Output(const Context<double>& context,
-                              SystemOutput<double>* output) const {
+void SpringMassSystem::GetOutput(const Context<double>& context,
+                                 SystemOutput<double>* output) const {
   // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,
   // and static_cast in Release mode.
   // TODO(david-german-tri): Cache the output of this function.
@@ -103,22 +135,24 @@ void SpringMassSystem::Output(const Context<double>& context,
 }
 
 // Compute the actual physics.
-void SpringMassSystem::Dynamics(
+void SpringMassSystem::GetDerivatives(
     const Context<double>& context,
-    StateVectorInterface<double>* derivatives) const {
+    ContinuousState<double>* derivatives) const {
   // TODO(david-german-tri): Cache the output of this function.
   const SpringMassStateVector& state =
       dynamic_cast<const SpringMassStateVector&>(
           context.get_state().continuous_state->get_state());
   SpringMassStateVector* derivative_vector =
-      dynamic_cast<SpringMassStateVector*>(derivatives);
+      dynamic_cast<SpringMassStateVector*>(derivatives->get_mutable_state());
 
   // The derivative of position is velocity.
   derivative_vector->set_position(state.get_velocity());
 
-  // The derivative of velocity is spring force divided by mass.
-  const double spring_force = -spring_constant_N_per_m_ * state.get_position();
-  derivative_vector->set_velocity(spring_force / mass_kg_);
+  // By Newton's 2nd law, the derivative of velocity (acceleration) is f/m where
+  // f is the force applied to the body by the spring, and m is the mass of the
+  // body.
+  const double force_applied_to_body = GetSpringForce(context);
+  derivative_vector->set_velocity(force_applied_to_body / mass_kg_);
 }
 
 }  // namespace examples
