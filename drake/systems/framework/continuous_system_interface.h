@@ -16,11 +16,10 @@ class ContinuousSystemInterface : public SystemInterface<T> {
  public:
   ~ContinuousSystemInterface() override {}
 
-  /// Returns a vector of the same size as the continuous_state allocated in
-  /// CreateDefaultContext. Solvers will provide this vector as the output
-  /// argument to GetDerivatives.
-  virtual std::unique_ptr<ContinuousState<T>> AllocateDerivatives()
-      const = 0;
+  /// Returns a ContinuousState of the same size as the continuous_state
+  /// allocated in CreateDefaultContext. Solvers will provide this state as the
+  /// output argument to GetDerivatives.
+  virtual std::unique_ptr<ContinuousState<T>> AllocateDerivatives() const = 0;
 
   /// Produces the derivatives of the continuous state xc with respect to time.
   /// The @p derivatives vector will correspond elementwise with the state
@@ -29,7 +28,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// the derivatives.
   ///
   /// Implementations may assume that the output is of the type constructed in
-  /// AllocateStateDerivatives.
+  /// AllocateDerivatives.
   ///
   /// @param derivatives The output vector. Will be the same length as the
   ///                    state vector Context.state.continuous_state.
