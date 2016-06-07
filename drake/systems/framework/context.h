@@ -69,7 +69,7 @@ class Context {
   /// effect of invaliding any computation that is dependent on them.
   TimeStep<T>* get_mutable_time_step() { return &time_step_; }
 
-  /// Returns a const reference to the Input object, which references the 
+  /// Returns a const reference to the Input object, which references the
   /// current input values.
   const Input<T>& get_input() const { return input_; }
 
