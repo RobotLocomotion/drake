@@ -47,16 +47,20 @@ size_t GetConstraintBounds(
 size_t GetNumGradients(
     const Drake::Constraint& c, const Drake::VariableList& variable_list,
     Index* num_grad) {
-  const size_t m = c.num_constraints();
 
   size_t var_count = 0;
   for (const DecisionVariableView& v : variable_list) {
     var_count += v.size();
   }
-  *num_grad = m * var_count;
-  return m;
+
+  const size_t num_constraints = c.num_constraints();
+  *num_grad = num_constraints * var_count;
+  return num_constraints;
 }
 
+/// @param constraint_idx The starting row number for the constraint
+/// being described.
+///
 /// Parameters @p iRow and @p jCol are used in the same manner as
 /// described in
 /// http://www.coin-or.org/Ipopt/documentation/node23.html for the
@@ -92,6 +96,11 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
   return xvec;
 }
 
+/// Evaluate a constraint, storing the result of the evaluation into
+/// @p result and gradients into @p grad.  @p grad is the sparse
+/// matrix data for which the structure was defined in
+/// GetGradientMatrix.
+///
 /// @return number of gradient entries populated
 size_t EvaluateConstraint(
     const Eigen::VectorXd& xvec,
@@ -129,7 +138,7 @@ size_t EvaluateConstraint(
 
   // Extract the appropriate derivatives from our result into the
   // gradient array.  Like above, we need to use variable_list to
-  // figure out where the drivatives we actually care about are
+  // figure out where the derivatives we actually care about are
   // located.
   size_t grad_idx = 0;
   for (const DecisionVariableView& v : variable_list) {
@@ -183,6 +192,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                             Index& nnz_h_lag, IndexStyleEnum& index_style) {
     n = problem_->num_vars();
 
+    // The IPOPT interface defines eval_f() and eval_grad_f() as
+    // ouputting a single Number for the result, and the size of the
+    // output gradient array at the same order as the x variables.
+    // Initialize the cost cache with those dimensions.
     cost_cache_.reset(new ResultCache(n, 1, n));
 
     m = 0;
@@ -270,6 +283,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       EvaluateCosts(n, x);
     }
 
+    assert(cost_cache_->result.size() == 1);
     obj_value = cost_cache_->result[0];
     return true;
   }
@@ -370,11 +384,11 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       }
     }
 
-    Eigen::VectorXd sol(n);
+    Eigen::VectorXd solution(n);
     for (size_t i = 0; i < n; i++) {
-      sol(i) = x[i];
+      solution(i) = x[i];
     }
-    problem_->SetDecisionVariableValues(sol);
+    problem_->SetDecisionVariableValues(solution);
   }
 
   SolutionResult result() const { return result_; }
@@ -440,7 +454,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   SolutionResult result_;
 };
 
-}  // end anonymous namespace
+}  // namespace
 
 
 bool IpoptSolver::available() const {
@@ -458,15 +472,15 @@ SolutionResult IpoptSolver::Solve(OptimizationProblem &prog) const {
   app->Options()->SetStringValue("hessian_approximation", "limited-memory");
   app->Options()->SetIntegerValue("print_level", 2);
 
-  for (const auto it : prog.GetSolverOptionsDouble("IPOPT")) {
+  for (const auto& it : prog.GetSolverOptionsDouble("IPOPT")) {
     app->Options()->SetNumericValue(it.first, it.second);
   }
 
-  for (const auto it : prog.GetSolverOptionsInt("IPOPT")) {
+  for (const auto& it : prog.GetSolverOptionsInt("IPOPT")) {
     app->Options()->SetIntegerValue(it.first, it.second);
   }
 
-  for (const auto it : prog.GetSolverOptionsStr("IPOPT")) {
+  for (const auto& it : prog.GetSolverOptionsStr("IPOPT")) {
     app->Options()->SetStringValue(it.first, it.second);
   }
 
