@@ -15,7 +15,7 @@ Install the prerequisites::
     brew tap homebrew/science
     brew update
     brew upgrade
-    brew install autoconf automake ccache cmake doxygen gcc glib graphviz gtk+ \
+    brew install autoconf automake cmake doxygen gcc glib graphviz gtk+ \
       jpeg libpng libtool mpfr mpich2 numpy python qt qwt swig valgrind wget
     brew install vtk5 --with-qt
     pip install -U beautifulsoup4 cpplint html5lib Sphinx
