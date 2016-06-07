@@ -170,7 +170,6 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
                       MyContinuousState* derivatives) const override;
 
  private:
-
   static const SpringMassStateVector& get_xc(const MyContext& c) {
     return dynamic_cast<const SpringMassStateVector&>(
         c.get_state().continuous_state->get_state());

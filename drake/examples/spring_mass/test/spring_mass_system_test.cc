@@ -1,7 +1,7 @@
 #ifdef _MSC_VER
 // Suppress ugly Eigen internal warning in PartialPivLU's solver, correctly
 // caught by Microsoft C++, and an irrelevant GTest warning.
-#pragma warning (disable : 4800 4275)
+#pragma warning(disable : 4800 4275)
 #endif
 
 #include "drake/examples/spring_mass/spring_mass_system.h"
@@ -204,7 +204,7 @@ the autodifferentiated matrices agree with the numerical one. Also, consider
 switching to central differences here to get more decimal places. */
 MatrixX<double> CalcDxdotDx(const ContinuousSystem<double>& system,
                             const Context<double>& context) {
-  const double perturb = 1e-7; // roughly sqrt(precision)
+  const double perturb = 1e-7;  // roughly sqrt(precision)
   auto derivs0 = system.AllocateDerivatives();
   system.GetDerivatives(context, derivs0.get());
   const ptrdiff_t nx = derivs0->get_state().size();
@@ -269,7 +269,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
   // Set initial conditions in each Context.
   for (auto& context : contexts) {
     context->set_time(0);
-    system_->set_position(context.get(), 0.1);  // Displacement 0.1m, velocity 0m/s.
+    system_->set_position(context.get(), 0.1);  // Displacement 0.1m, vel. 0m/s.
     system_->set_velocity(context.get(), 0.);
   }
 
@@ -327,7 +327,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
       const ptrdiff_t nx = vx0.size();
       const auto I = MatrixX<double>::Identity(nx, nx);
 
-      // Would normally iterate until convergence of dx norm as shown above. 
+      // Would normally iterate until convergence of dx norm as shown above.
       // Here I'm just iterating a fixed number of time that I know is plenty!
       for (int i = 0; i < 6; ++i) {
         system_->GetDerivatives(*contexts[kIe], derivs[kIe].get());
