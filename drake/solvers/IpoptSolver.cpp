@@ -229,7 +229,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       }
     }
 
-    size_t constraint_idx = 0; // offset into g_l and g_u output arrays
+    size_t constraint_idx = 0;  // offset into g_l and g_u output arrays
     for (const auto& c : problem_->generic_constraints()) {
       constraint_idx += GetConstraintBounds(
           *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
@@ -303,13 +303,13 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       assert(iRow != nullptr);
       assert(jCol != nullptr);
 
-      size_t constraint_idx = 0; // Passed into GetGradientMatrix as
-                                 // the starting row number for the
-                                 // constraint being described.
-      size_t grad_idx = 0; // Offset into iRow, jCol output variables.
-                           // Incremented by the number of triplets
-                           // populated by each call to
-                           // GetGradientMatrix.
+      size_t constraint_idx = 0;  // Passed into GetGradientMatrix as
+                                  // the starting row number for the
+                                  // constraint being described.
+      size_t grad_idx = 0;  // Offset into iRow, jCol output variables.
+                            // Incremented by the number of triplets
+                            // populated by each call to
+                            // GetGradientMatrix.
       for (const auto& c : problem_->generic_constraints()) {
         grad_idx += GetGradientMatrix(
             *(c.constraint()), c.variable_list(), constraint_idx,
