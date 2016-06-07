@@ -44,7 +44,10 @@ class StateVectorInterface {
   /// value and allocates no memory.
   virtual void SetFromVector(const Eigen::Ref<VectorX<T>>& value) = 0;
 
-  /// Copies the entire state to a no-semantics vector.
+  /// Copies the entire state to a vector with no semantics.
+  ///
+  /// Implementations should ensure this operation is O(N) in the size of the
+  /// value and allocates only the O(N) memory that it returns.
   virtual VectorX<T> CopyToVector() = 0;
 
  protected:
