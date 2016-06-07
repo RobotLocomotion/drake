@@ -8,7 +8,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h"
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
 
-#include "collision_element.h"
+#include "Element.h"
 #include "Model.h"
 #include "BulletResultCollector.h"
 
@@ -16,8 +16,8 @@ namespace DrakeCollision {
 
 class BulletModel;  // forward declaration
 
-typedef std::unordered_map<
-    CollisionElementId, std::unique_ptr<btCollisionObject>> ElementToBtObjMap;
+typedef std::unordered_map<ElementId, std::unique_ptr<btCollisionObject>>
+    ElementToBtObjMap;
 
 struct OverlapFilterCallback : public btOverlapFilterCallback {
   // return true when pairs need collision
@@ -57,11 +57,10 @@ class BulletModel : public Model {
 
   void updateModel() override;
 
-  CollisionElementId addElement(const CollisionElement& element) override;
+  ElementId addElement(const Element& element) override;
 
   bool updateElementWorldTransform(
-      CollisionElementId,
-      const Eigen::Isometry3d& T_local_to_world) override;
+      const ElementId, const Eigen::Isometry3d& T_local_to_world) override;
 
   /**
    * Finds the points where each pair of the elements in ids_to_check are
@@ -69,11 +68,11 @@ class BulletModel : public Model {
    *
    * \return true if any points are found.
    */
-  bool closestPointsAllToAll(
-      const std::vector<CollisionElementId>& ids_to_check,
-      bool use_margins, std::vector<PointPair>& closest_points) override;
+  bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
+                             const bool use_margins,
+                             std::vector<PointPair>& closest_points) override;
 
-  bool collisionPointsAllToAll(bool use_margins,
+  bool collisionPointsAllToAll(const bool use_margins,
                                std::vector<PointPair>& points) override;
 
   /**
@@ -83,7 +82,7 @@ class BulletModel : public Model {
    * \return true if any points are found.
    */
   bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             bool use_margins,
+                             const bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
   void collisionDetectFromPoints(
@@ -131,8 +130,8 @@ class BulletModel : public Model {
    * returns false.
    */
   virtual bool findClosestPointsBetweenElements(
-      CollisionElementId idA, CollisionElementId idB,
-      bool use_margins, ResultCollector* result_collector);
+      const ElementId idA, const ElementId idB, const bool use_margins,
+      ResultCollector* result_collector);
 
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletBoxShape(

@@ -13,35 +13,8 @@
 #include <fstream>
 #include <iostream>
 
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::string;
-using std::ofstream;
-using std::set;
-using std::vector;
-using std::map;
-using std::unordered_map;
-using std::pair;
-using std::hash;
-using std::equal_to;
-using std::less;
-using std::allocator;
-
-using Eigen::Vector3d;
-using Eigen::VectorXd;
-using Eigen::MatrixXd;
-using Eigen::Matrix3Xd;
-using Eigen::Isometry;
-using Eigen::Transform;
-using Eigen::Isometry3d;
-using Eigen::Dynamic;
-using Eigen::Matrix;
-using Eigen::Map;
-using Eigen::MatrixBase;
-using Eigen::AutoDiffScalar;
-
-using DrakeCollision::CollisionElement;
+using namespace std;
+using namespace Eigen;
 
 const set<int> RigidBodyTree::default_robot_num_set = {0};
 const char* const RigidBodyTree::kWorldLinkName = "world";
@@ -94,7 +67,7 @@ RigidBodyTree::RigidBodyTree(void)
 RigidBodyTree::~RigidBodyTree(void) {}
 
 bool RigidBodyTree::transformCollisionFrame(
-    const DrakeCollision::CollisionElementId& eid,
+    const DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
 }
@@ -224,32 +197,7 @@ void RigidBodyTree::compile(void) {
     getTerrainContactPoints(body, body.contact_pts);
   }
 
-  // Create collision cliques for the DrakeCollision::Model according to the
-  // policy imposed by RigidBody::CollidesWith.
-  // These cliques include:
-  //   * CollisionElement's in the same RigidBody.
-  //   * CollisionElement's in adjacent RigidBody's.
-  // For details on this policy see RigidBody::CollidesWith.
-  CreateCollisionCliques();
-
   initialized_ = true;
-}
-
-void RigidBodyTree::CreateCollisionCliques() {
-  int ncol_groups = 0;
-  // 1) For collision elements in the same body
-  for (auto& body : bodies) {
-    body->AddToCollisionClique(ncol_groups++);
-  }
-
-  // 2) For collision elements in different bodies
-  for (int i = 0; i < bodies.size(); ++i)
-    for (int j = i + 1; j < bodies.size(); ++j)
-      if (!bodies[i]->CanCollideWith(*bodies[j])) {
-        bodies[i]->AddToCollisionClique(ncol_groups);
-        bodies[j]->AddToCollisionClique(ncol_groups);
-        ++ncol_groups;
-      }
 }
 
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
@@ -366,16 +314,13 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
   return name_to_index_map;
 }
 
-DrakeCollision::CollisionElementId RigidBodyTree::addCollisionElement(
-    const CollisionElement& element, RigidBody& body,
+DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
+    const RigidBody::CollisionElement& element, RigidBody& body,
     const string& group_name) {
-  DrakeCollision::CollisionElementId id = collision_model->addElement(element);
+  DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {
     body.collision_element_ids.push_back(id);
     body.collision_element_groups[group_name].push_back(id);
-    // TODO(amcastro-tri): cleanup API so that we do not need FindMutableElement
-    // any more.
-    body.AddCollisionElement(collision_model->FindMutableElement(id));
   }
   return id;
 }
@@ -452,9 +397,10 @@ void RigidBodyTree::collisionDetectFromPoints(
     body_x.col(i) = ptA;
     normal.col(i) = n;
     phi[i] = distance;
-    const CollisionElement* elementB =
-        collision_model->FindElement(closest_points[i].getIdB());
-    body_idx.push_back(elementB->getBody()->body_index);
+    const RigidBody::CollisionElement* elementB =
+        dynamic_cast<const RigidBody::CollisionElement*>(
+            collision_model->readElement(closest_points[i].getIdB()));
+    body_idx.push_back(elementB->getBody().body_index);
   }
 }
 
@@ -482,8 +428,7 @@ bool RigidBodyTree::collisionDetect(
     const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     vector<int>& bodyB_idx,
-    const vector<DrakeCollision::CollisionElementId>& ids_to_check,
-    bool use_margins) {
+    const vector<DrakeCollision::ElementId>& ids_to_check, bool use_margins) {
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
@@ -511,24 +456,26 @@ bool RigidBodyTree::collisionDetect(
     xB.col(i) = ptB;
     normal.col(i) = n;
     phi[i] = distance;
-    const CollisionElement* elementA =
-        collision_model->FindElement(points[i].getIdA());
+    const RigidBody::CollisionElement* elementA =
+        dynamic_cast<const RigidBody::CollisionElement*>(
+            collision_model->readElement(points[i].getIdA()));
     // DEBUG
     // cout << "RigidBodyTree::collisionDetect: points[i].getIdA() = " <<
     // points[i].getIdA() << endl;
     // cout << "RigidBodyTree::collisionDetect:
-    // collision_model->FindMutableElement(points[i].getIdA()) = " <<
-    // collision_model->FindMutableElement(points[i].getIdA()) << endl;
+    // collision_model->readElement(points[i].getIdA()) = " <<
+    // collision_model->readElement(points[i].getIdA()) << endl;
     // cout << "RigidBodyTree::collisionDetect:
-    // collision_model->FindMutableElement(points[i].getIdA())->getId() = " <<
-    // collision_model->FindMutableElement(points[i].getIdA())->getId() << endl;
+    // collision_model->readElement(points[i].getIdA())->getId() = " <<
+    // collision_model->readElement(points[i].getIdA())->getId() << endl;
     // cout << "RigidBodyTree::collisionDetect: elementA = " << elementA <<
     // endl;
     // END_DEBUG
-    bodyA_idx.push_back(elementA->getBody()->body_index);
-    const CollisionElement* elementB =
-        collision_model->FindElement(points[i].getIdB());
-    bodyB_idx.push_back(elementB->getBody()->body_index);
+    bodyA_idx.push_back(elementA->getBody().body_index);
+    const RigidBody::CollisionElement* elementB =
+        dynamic_cast<const RigidBody::CollisionElement*>(
+            collision_model->readElement(points[i].getIdB()));
+    bodyB_idx.push_back(elementB->getBody().body_index);
   }
   return points_found;
 }
@@ -538,7 +485,7 @@ bool RigidBodyTree::collisionDetect(
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     vector<int>& bodyB_idx, const vector<int>& bodies_idx,
     const set<string>& active_element_groups, bool use_margins) {
-  vector<DrakeCollision::CollisionElementId> ids_to_check;
+  vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_idx_iter = bodies_idx.begin();
        body_idx_iter != bodies_idx.end(); ++body_idx_iter) {
     if (*body_idx_iter >= 0 && *body_idx_iter < bodies.size()) {
@@ -557,7 +504,7 @@ bool RigidBodyTree::collisionDetect(
     const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     vector<int>& bodyB_idx, const vector<int>& bodies_idx, bool use_margins) {
-  vector<DrakeCollision::CollisionElementId> ids_to_check;
+  vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_idx_iter = bodies_idx.begin();
        body_idx_iter != bodies_idx.end(); ++body_idx_iter) {
     if (*body_idx_iter >= 0 && *body_idx_iter < bodies.size()) {
@@ -576,7 +523,7 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                                     vector<int>& bodyB_idx,
                                     const set<string>& active_element_groups,
                                     bool use_margins) {
-  vector<DrakeCollision::CollisionElementId> ids_to_check;
+  vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
     for (auto group_iter = active_element_groups.begin();
@@ -594,9 +541,7 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                                     Matrix3Xd& xA, Matrix3Xd& xB,
                                     vector<int>& bodyA_idx,
                                     vector<int>& bodyB_idx, bool use_margins) {
-  // TODO(amcastro-tri): Move initialization of ids_to_check to
-  // RigidBodyTree::compile since it doesn't change during simulation.
-  vector<DrakeCollision::CollisionElementId> ids_to_check;
+  vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
     (*body_iter)->appendCollisionElementIdsFromThisBody(ids_to_check);
@@ -628,17 +573,19 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   double distance;
 
   for (size_t i = 0; i < num_potential_collisions; i++) {
-    const CollisionElement* elementA =
-        collision_model->FindElement(potential_collisions[i].getIdA());
-    const CollisionElement* elementB =
-        collision_model->FindElement(potential_collisions[i].getIdB());
+    const RigidBody::CollisionElement* elementA =
+        dynamic_cast<const RigidBody::CollisionElement*>(
+            collision_model->readElement(potential_collisions[i].getIdA()));
+    const RigidBody::CollisionElement* elementB =
+        dynamic_cast<const RigidBody::CollisionElement*>(
+            collision_model->readElement(potential_collisions[i].getIdB()));
     potential_collisions[i].getResults(&ptA, &ptB, &n, &distance);
     xA.col(i) = ptA;
     xB.col(i) = ptB;
     normal.col(i) = n;
     phi[i] = distance;
-    bodyA_idx.push_back(elementA->getBody()->body_index);
-    bodyB_idx.push_back(elementB->getBody()->body_index);
+    bodyA_idx.push_back(elementA->getBody().body_index);
+    bodyB_idx.push_back(elementB->getBody().body_index);
   }
 }
 
@@ -677,12 +624,14 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
     xA_in_world.col(i) = ptA;
     xB_in_world.col(i) = ptB;
 
-    const CollisionElement* elementA =
-        collision_model->FindElement(points[i].getIdA());
-    bodyA_idx.push_back(elementA->getBody()->body_index);
-    const CollisionElement* elementB =
-        collision_model->FindElement(points[i].getIdB());
-    bodyB_idx.push_back(elementB->getBody()->body_index);
+    const RigidBody::CollisionElement* elementA =
+        dynamic_cast<const RigidBody::CollisionElement*>(
+            collision_model->readElement(points[i].getIdA()));
+    bodyA_idx.push_back(elementA->getBody().body_index);
+    const RigidBody::CollisionElement* elementB =
+        dynamic_cast<const RigidBody::CollisionElement*>(
+            collision_model->readElement(points[i].getIdB()));
+    bodyB_idx.push_back(elementB->getBody().body_index);
   }
   return points_found;
 }
@@ -1709,7 +1658,7 @@ RigidBody* RigidBodyTree::findLink(std::string name,
   return nullptr;
 }
 
-std::shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
+shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
     std::string frame_name, std::string model_name) const {
   std::transform(frame_name.begin(), frame_name.end(), frame_name.begin(),
                  ::tolower);  // convert to lower case

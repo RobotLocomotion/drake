@@ -101,9 +101,9 @@ Here's one workflow:
 2. `Revert <https://git-scm.com/docs/git-revert>`_ the revert of your
    originally-merged PR to get your changes back.
 
-3. Debug the problem. This may require you to run post-submit continuous
-   integration tests to ensure the problem that caused your PR to be reverted
-   was actually fixed.
+3. Debug the problem. This may require you to
+   :ref:`run on-demand continuous integration builds <run_specific_build>` to
+   ensure the problem that caused your PR to be reverted was actually fixed.
 
 4. Commit your changes into your new branch.
 

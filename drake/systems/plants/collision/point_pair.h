@@ -3,16 +3,16 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "collision_element.h"
+#include "Element.h"
 #include "drake/drakeCollision_export.h"
 
 namespace DrakeCollision {
 
 class DRAKECOLLISION_EXPORT PointPair {
  public:
-  PointPair(const CollisionElementId idA, const CollisionElementId idB,
-            const Eigen::Vector3d ptA, const Eigen::Vector3d ptB,
-            const Eigen::Vector3d normal, double distance)
+  PointPair(const ElementId idA, const ElementId idB, const Eigen::Vector3d ptA,
+            const Eigen::Vector3d ptB, const Eigen::Vector3d normal,
+            double distance)
       : idA_(idA),
         idB_(idB),
         ptA_(ptA),
@@ -24,8 +24,8 @@ class DRAKECOLLISION_EXPORT PointPair {
                   Eigen::Vector3d* normal) const;
   void getResults(Eigen::Vector3d* ptA, Eigen::Vector3d* ptB,
                   Eigen::Vector3d* normal, double* distance) const;
-  CollisionElementId getIdA() const;
-  CollisionElementId getIdB() const;
+  ElementId getIdA() const;
+  ElementId getIdB() const;
   Eigen::Vector3d getNormal() const;
   Eigen::Vector3d getPtA() const;
   Eigen::Vector3d getPtB() const;
@@ -56,8 +56,8 @@ class DRAKECOLLISION_EXPORT PointPair {
   }
 
  protected:
-  CollisionElementId idA_;
-  CollisionElementId idB_;
+  ElementId idA_;
+  ElementId idB_;
   Eigen::Vector3d ptA_;
   Eigen::Vector3d ptB_;
   Eigen::Vector3d normal_;
