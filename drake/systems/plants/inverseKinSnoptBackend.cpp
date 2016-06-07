@@ -21,6 +21,7 @@ namespace snopt {
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
+#include "ik_trajectory_helper.h"
 #include "inverseKinBackend.h"
 
 #include <Eigen/LU>
@@ -48,8 +49,6 @@ static QuasiStaticConstraint* qsc_ptr = nullptr;
 static MatrixXd q_nom;
 static VectorXd q_nom_i;
 static MatrixXd Q;
-static MatrixXd Qa;
-static MatrixXd Qv;
 static bool qscActiveFlag;
 static snopt::integer nx;
 static snopt::integer nF;
@@ -83,18 +82,10 @@ static snopt::integer qstart_idx;
 static snopt::integer num_qfree;
 static snopt::integer num_qdotfree;
 
-static MatrixXd velocity_mat;
-static MatrixXd velocity_mat_qd0;
-static MatrixXd velocity_mat_qdf;
-static MatrixXd accel_mat;
-static MatrixXd accel_mat_qd0;
-static MatrixXd accel_mat_qdf;
+static IKTrajectoryHelper* ik_traj_h;
 
 static VectorXd* t_inbetween;
 static snopt::integer num_inbetween_tSamples;
-static MatrixXd* dqInbetweendqknot;
-static MatrixXd* dqInbetweendqd0;
-static MatrixXd* dqInbetweendqdf;
 static snopt::integer* qknot_qsamples_idx;
 
 /* Remeber to delete this*/
@@ -188,58 +179,11 @@ static int snoptIKfun(snopt::integer* Status, snopt::integer* n,
   return 0;
 }
 
-static void IKtraj_cost_fun(MatrixXd q, const VectorXd& qdot0,
+static void IKtraj_cost_fun(const MatrixXd& q, const VectorXd& qdot0,
                             const VectorXd& qdotf, double& J, double* dJ) {
-  MatrixXd dJ_vec = MatrixXd::Zero(1, nq * (num_qfree + num_qdotfree));
-  MatrixXd qdot(nq * nT, 1);
-  MatrixXd qddot(nq * nT, 1);
-  q.resize(nq * nT, 1);
-  qdot.block(0, 0, nq, 1) = qdot0;
-  qdot.block(nq, 0, nq * (nT - 2), 1) =
-      velocity_mat * q + velocity_mat_qd0 * qdot0 + velocity_mat_qdf * qdotf;
-  qdot.block(nq * (nT - 1), 0, nq, 1) = qdotf;
-  qddot = accel_mat * q + accel_mat_qd0 * qdot0 + accel_mat_qdf * qdotf;
-  q.resize(nq, nT);
-  qdot.resize(nq, nT);
-  qddot.resize(nq, nT);
-  MatrixXd q_diff = q.block(0, qstart_idx, nq, num_qfree) -
-                    q_nom.block(0, qstart_idx, nq, num_qfree);
-  MatrixXd tmp1 = 0.5 * Qa * qddot;
-  MatrixXd tmp2 = tmp1.cwiseProduct(qddot);
-  J = tmp2.sum();
-  MatrixXd tmp3 = 0.5 * Qv * qdot;
-  MatrixXd tmp4 = tmp3.cwiseProduct(qdot);
-  J += tmp4.sum();
-  MatrixXd tmp5 = 0.5 * Q * q_diff;
-  MatrixXd tmp6 = tmp5.cwiseProduct(q_diff);
-  J += tmp6.sum();
-  MatrixXd dJdqd =
-      2 * tmp3.block(0, 1, nq, nT - 2);  // [dJdqd(2) dJdqd(3) dJdqd(nT-1)]
-  dJdqd.resize(1, nq * (nT - 2));
-  dJ_vec.block(0, 0, 1, nq * num_qfree) =
-      dJdqd *
-      velocity_mat.block(0, nq * qstart_idx, (nT - 2) * nq, nq * num_qfree);
-  MatrixXd dJdqdiff = 2 * tmp5;
-  dJdqdiff.resize(1, nq * num_qfree);
-  dJ_vec.block(0, 0, 1, nq * num_qfree) += dJdqdiff;
-  MatrixXd dJdqdd = 2.0 * tmp1;
-  dJdqdd.resize(1, nq * nT);
-  dJ_vec.block(0, 0, 1, nq * num_qfree) +=
-      dJdqdd * accel_mat.block(0, nq * qstart_idx, nq * nT, nq * num_qfree);
-  MatrixXd dJdqdotf;
-  dJdqdotf = dJdqdd * accel_mat_qdf + qdotf.transpose() * Qv +
-             dJdqd * velocity_mat_qdf;
-  dJdqdotf.resize(1, nq);
-  if (fixInitialState) {
-    dJ_vec.block(0, nq * num_qfree, 1, nq) = dJdqdotf;
-  } else {
-    MatrixXd dJdqdot0;
-    dJdqdot0 = dJdqdd * accel_mat_qd0 + qdot0.transpose() * Qv +
-               dJdqd * velocity_mat_qd0;
-    dJdqdot0.resize(1, nq);
-    dJ_vec.block(0, nq * num_qfree, 1, nq) = dJdqdot0;
-    dJ_vec.block(0, nq * num_qfree + nq, 1, nq) = dJdqdotf;
-  }
+  MatrixXd dJ_vec;
+  J = ik_traj_h->CalculateCost(q, q_nom, qstart_idx, qdot0, qdotf,
+                               fixInitialState, &dJ_vec);
   memcpy(dJ, dJ_vec.data(), sizeof(double) * nq * (num_qfree + num_qdotfree));
 }
 
@@ -292,9 +236,9 @@ static int snoptIKtrajfun(snopt::integer* Status, snopt::integer* n,
 
   for (int i = 0; i < nT - 1; i++) {
     q.resize(nq * nT, 1);
-    MatrixXd q_inbetween_block_tmp = dqInbetweendqknot[i] * q +
-                                     dqInbetweendqd0[i] * qdot0 +
-                                     dqInbetweendqdf[i] * qdotf;
+    MatrixXd q_inbetween_block_tmp = ik_traj_h->dq_inbetween_dqknot()[i] * q +
+                                     ik_traj_h->dq_inbetween_dqd0()[i] * qdot0 +
+                                     ik_traj_h->dq_inbetween_dqdf()[i] * qdotf;
     q_inbetween_block_tmp.resize(nq, t_inbetween[i].size());
     q_inbetween.block(0, inbetween_idx, nq, t_inbetween[i].size()) =
         q_inbetween_block_tmp;
@@ -314,16 +258,19 @@ static int snoptIKtrajfun(snopt::integer* Status, snopt::integer* n,
           MatrixXd dc_kdx = MatrixXd::Zero(nc, nq * (num_qfree + num_qdotfree));
           dc_kdx.block(0, 0, nc, nq * num_qfree) =
               dc_k *
-              dqInbetweendqknot[i].block(nq * j, nq * qstart_idx, nq,
-                                         nq * num_qfree);
+              ik_traj_h->dq_inbetween_dqknot()[i].block(
+                  nq * j, nq * qstart_idx, nq, nq * num_qfree);
           if (!fixInitialState) {
             dc_kdx.block(0, nq * num_qfree, nc, nq) =
-                dc_k * dqInbetweendqd0[i].block(nq * j, 0, nq, nq);
+                dc_k * ik_traj_h->dq_inbetween_dqd0()[i].block(
+                    nq * j, 0, nq, nq);
             dc_kdx.block(0, nq * num_qfree + nq, nc, nq) =
-                dc_k * dqInbetweendqdf[i].block(nq * j, 0, nq, nq);
+                dc_k * ik_traj_h->dq_inbetween_dqdf()[i].block(
+                    nq * j, 0, nq, nq);
           } else {
             dc_kdx.block(0, nq * num_qfree, nc, nq) =
-                dc_k * dqInbetweendqdf[i].block(nq * j, 0, nq, nq);
+                dc_k * ik_traj_h->dq_inbetween_dqdf()[i].block(
+                    nq * j, 0, nq, nq);
           }
           memcpy(G + nG_cum, dc_kdx.data(), sizeof(double) * dc_kdx.size());
           nf_cum += nc;
@@ -359,16 +306,16 @@ static int snoptIKtrajfun(snopt::integer* Status, snopt::integer* n,
                         mt_kc_nc[i], nq * t_inbetween[j].size());
       mtkc_dc_dx.block(0, 0, mt_kc_nc[i], nq * num_qfree) +=
           dc_ij *
-          dqInbetweendqknot[j].block(
+          ik_traj_h->dq_inbetween_dqknot()[j].block(
               0, qstart_idx * nq, nq * t_inbetween[j].size(), nq * num_qfree);
       if (fixInitialState) {
         mtkc_dc_dx.block(0, nq * num_qfree, mt_kc_nc[i], nq) +=
-            dc_ij * dqInbetweendqdf[j];
+            dc_ij * ik_traj_h->dq_inbetween_dqdf()[j];
       } else {
         mtkc_dc_dx.block(0, nq * num_qfree, mt_kc_nc[i], nq) +=
-            dc_ij * dqInbetweendqd0[j];
+            dc_ij * ik_traj_h->dq_inbetween_dqd0()[j];
         mtkc_dc_dx.block(0, nq * num_qfree + nq, mt_kc_nc[i], nq) +=
-            dc_ij * dqInbetweendqdf[j];
+            dc_ij * ik_traj_h->dq_inbetween_dqdf()[j];
       }
     }
     memcpy(G + nG_cum, mtkc_dc_dx.data(), sizeof(double) * mtkc_dc_dx.size());
@@ -1066,8 +1013,7 @@ void inverseKinSnoptBackend(
     for (int j = 0; j < nT - 2; j++) {
       dt_ratio[j] = dt[j] / dt[j + 1];
     }
-    ikoptions.getQa(Qa);
-    ikoptions.getQv(Qv);
+
     VectorXd q0_lb(nq);
     VectorXd q0_ub(nq);
     ikoptions.getq0(q0_lb, q0_ub);
@@ -1095,76 +1041,9 @@ void inverseKinSnoptBackend(
       num_qfree = nT;
       num_qdotfree = 2;
     }
-    // This part can be rewritten using the sparse matrix if efficiency becomes
-    // a concern
-    MatrixXd velocity_mat1 = MatrixXd::Zero(nq * nT, nq * nT);
-    MatrixXd velocity_mat2 = MatrixXd::Zero(nq * nT, nq * nT);
-    velocity_mat1.block(0, 0, nq, nq) = MatrixXd::Identity(nq, nq);
-    velocity_mat1.block(nq * (nT - 1), nq * (nT - 1), nq, nq) =
-        MatrixXd::Identity(nq, nq);
-    for (int j = 1; j < nT - 1; j++) {
-      double val_tmp1 = dt[j - 1];
-      double val_tmp2 = dt[j - 1] * (2.0 + 2.0 * dt_ratio[j - 1]);
-      double val_tmp3 = dt[j - 1] * dt_ratio[j - 1];
-      double val_tmp4 = 3.0 - 3.0 * dt_ratio[j - 1] * dt_ratio[j - 1];
-      double val_tmp5 = 3.0 - val_tmp4;
-      for (int k = 0; k < nq; k++) {
-        velocity_mat1(j * nq + k, (j - 1) * nq + k) = val_tmp1;
-        velocity_mat1(j * nq + k, j * nq + k) = val_tmp2;
-        velocity_mat1(j * nq + k, (j + 1) * nq + k) = val_tmp3;
-        velocity_mat2(j * nq + k, (j - 1) * nq + k) = -3.0;
-        velocity_mat2(j * nq + k, j * nq + k) = val_tmp4;
-        velocity_mat2(j * nq + k, (j + 1) * nq + k) = val_tmp5;
-      }
-    }
-    velocity_mat.resize(nq * (nT - 2), nq * nT);
-    velocity_mat =
-        velocity_mat1.inverse().block(nq, 0, nq * (nT - 2), nq * nT) *
-        velocity_mat2;
 
-    MatrixXd velocity_mat1_middle_inv =
-        (velocity_mat1.block(nq, nq, nq * (nT - 2), nq * (nT - 2))).inverse();
-    velocity_mat_qd0 = -velocity_mat1_middle_inv *
-                       velocity_mat1.block(nq, 0, nq * (nT - 2), nq);
-    velocity_mat_qdf =
-        -velocity_mat1_middle_inv *
-        velocity_mat1.block(nq, nq * (nT - 1), nq * (nT - 2), nq);
-
-    MatrixXd accel_mat1 = MatrixXd::Zero(nq * nT, nq * nT);
-    MatrixXd accel_mat2 = MatrixXd::Zero(nq * nT, nq * nT);
-    for (int j = 0; j < nT - 1; j++) {
-      double val_tmp1 = -6.0 / (dt[j] * dt[j]);
-      double val_tmp2 = -val_tmp1;
-      double val_tmp3 = -4.0 / dt[j];
-      double val_tmp4 = 0.5 * val_tmp3;
-      for (int k = 0; k < nq; k++) {
-        accel_mat1(j * nq + k, j * nq + k) = val_tmp1;
-        accel_mat1(j * nq + k, (j + 1) * nq + k) = val_tmp2;
-        accel_mat2(j * nq + k, j * nq + k) = val_tmp3;
-        accel_mat2(j * nq + k, (j + 1) * nq + k) = val_tmp4;
-      }
-    }
-    for (int k = 0; k < nq; k++) {
-      double val_tmp1 = 6.0 / (dt[nT - 2] * dt[nT - 2]);
-      double val_tmp2 = -val_tmp1;
-      double val_tmp3 = 2.0 / dt[nT - 2];
-      double val_tmp4 = 4.0 / dt[nT - 2];
-      accel_mat1((nT - 1) * nq + k, (nT - 2) * nq + k) = val_tmp1;
-      accel_mat1((nT - 1) * nq + k, (nT - 1) * nq + k) = val_tmp2;
-      accel_mat2((nT - 1) * nq + k, (nT - 2) * nq + k) = val_tmp3;
-      accel_mat2((nT - 1) * nq + k, (nT - 1) * nq + k) = val_tmp4;
-    }
-    accel_mat.resize(nq * nT, nq * nT);
-    accel_mat = accel_mat1 +
-                accel_mat2.block(0, nq, nq * nT, nq * (nT - 2)) * velocity_mat;
-    accel_mat_qd0.resize(nq * nT, nq);
-    accel_mat_qd0 =
-        accel_mat2.block(0, 0, nq * nT, nq) +
-        accel_mat2.block(0, nq, nq * nT, nq * (nT - 2)) * velocity_mat_qd0;
-    accel_mat_qdf.resize(nq * nT, nq);
-    accel_mat_qdf =
-        accel_mat2.block(0, (nT - 1) * nq, nT * nq, nq) +
-        accel_mat2.block(0, nq, nq * nT, nq * (nT - 2)) * velocity_mat_qdf;
+    ik_traj_h = new IKTrajectoryHelper(nq, nT, t, num_qfree, num_qdotfree,
+                                       ikoptions, dt, dt_ratio);
 
     qfree_idx = new snopt::integer[nq * num_qfree];
     qdotf_idx = new snopt::integer[nq];
@@ -1174,6 +1053,7 @@ void inverseKinSnoptBackend(
       qdot0_idx = nullptr;
     }
     int qdot_idx_start = 0;
+
     if (qscActiveFlag) {
       nx = nq * (num_qfree + num_qdotfree) + num_qsc_pts * num_qfree;
       for (int j = 0; j < num_qfree; j++) {
@@ -1251,6 +1131,15 @@ void inverseKinSnoptBackend(
       // memcpy(xlow+qdotf_idx[0], qdf_lb.data(), sizeof(double)*nq);
       // memcpy(xupp+qdotf_idx[0], qdf_ub.data(), sizeof(double)*nq);
     }
+
+    // The code below (through the calculation of t_samples) is
+    // significantly duplicated in IKTrajectoryHelper, and could
+    // mostly be deleted in favor of the version in the helper code.
+    // Unfortunately doing so would require adding more accessors to
+    // the helpers to get data that is only used briefly here
+    // (inbetween_tSamples) or wouldn't be meaningful to a generic
+    // implementation (qknot_qsamples_index).  This entire file should
+    // soon go away anyway, so this seems alright for the moment.
     set<double> t_set(t, t + nT);
     VectorXd inbetween_tSamples;
     inbetween_tSamples.resize(0);
@@ -1298,68 +1187,6 @@ void inverseKinSnoptBackend(
       }
       qknot_qsamples_idx[nT - 1] = nT + num_inbetween_tSamples - 1;
       t_samples[nT + num_inbetween_tSamples - 1] = t[nT - 1];
-    }
-    dqInbetweendqknot = new MatrixXd[nT - 1];
-    dqInbetweendqd0 = new MatrixXd[nT - 1];
-    dqInbetweendqdf = new MatrixXd[nT - 1];
-
-    for (int i = 0; i < nT - 1; i++) {
-      VectorXd dt_ratio_inbetween_i = t_inbetween[i] / dt[i];
-      int nt_sample_inbetween_i = static_cast<int>(t_inbetween[i].size());
-      dqInbetweendqknot[i] =
-          MatrixXd::Zero(nt_sample_inbetween_i * nq, nq * nT);
-      dqInbetweendqdf[i] = MatrixXd::Zero(nt_sample_inbetween_i * nq, nq);
-      dqInbetweendqdf[i] = MatrixXd::Zero(nt_sample_inbetween_i * nq, nq);
-      MatrixXd dq_idqdknot_i = MatrixXd::Zero(nt_sample_inbetween_i * nq, nq);
-      MatrixXd dq_idqdknot_ip1 = MatrixXd::Zero(nt_sample_inbetween_i * nq, nq);
-      for (int j = 0; j < nt_sample_inbetween_i; j++) {
-        double val1 = 1.0 - 3.0 * pow(dt_ratio_inbetween_i[j], 2) +
-                      2.0 * pow(dt_ratio_inbetween_i[j], 3);
-        double val2 = 3.0 * pow(dt_ratio_inbetween_i[j], 2) -
-                      2.0 * pow(dt_ratio_inbetween_i[j], 3);
-        double val3 = (1.0 - 2.0 * dt_ratio_inbetween_i[j] +
-                       pow(dt_ratio_inbetween_i[j], 2)) *
-                      t_inbetween[i](j);
-        double val4 =
-            (pow(dt_ratio_inbetween_i[j], 2) - dt_ratio_inbetween_i[j]) *
-            t_inbetween[i](j);
-        for (int k = 0; k < nq; k++) {
-          dqInbetweendqknot[i](j * nq + k, i * nq + k) = val1;
-          dqInbetweendqknot[i](j * nq + k, (i + 1) * nq + k) = val2;
-          dq_idqdknot_i(j * nq + k, k) = val3;
-          dq_idqdknot_ip1(j * nq + k, k) = val4;
-        }
-      }
-      if (i >= 1 && i <= nT - 3) {
-        dqInbetweendqknot[i] +=
-            dq_idqdknot_i * velocity_mat.block((i - 1) * nq, 0, nq, nq * nT) +
-            dq_idqdknot_ip1 * velocity_mat.block(i * nq, 0, nq, nq * nT);
-        dqInbetweendqd0[i] =
-            dq_idqdknot_i * velocity_mat_qd0.block((i - 1) * nq, 0, nq, nq) +
-            dq_idqdknot_ip1 * velocity_mat_qd0.block(i * nq, 0, nq, nq);
-        dqInbetweendqdf[i] =
-            dq_idqdknot_i * velocity_mat_qdf.block((i - 1) * nq, 0, nq, nq) +
-            dq_idqdknot_ip1 * velocity_mat_qdf.block(i * nq, 0, nq, nq);
-      } else if (i == 0 && i != nT - 2) {
-        dqInbetweendqknot[i] +=
-            dq_idqdknot_ip1 * velocity_mat.block(i * nq, 0, nq, nq * nT);
-        dqInbetweendqd0[i] =
-            dq_idqdknot_i +
-            dq_idqdknot_ip1 * velocity_mat_qd0.block(i * nq, 0, nq, nq);
-        dqInbetweendqdf[i] =
-            dq_idqdknot_ip1 * velocity_mat_qdf.block(i * nq, 0, nq, nq);
-      } else if (i == nT - 2 && i != 0) {
-        dqInbetweendqknot[i] +=
-            dq_idqdknot_i * velocity_mat.block((i - 1) * nq, 0, nq, nq * nT);
-        dqInbetweendqd0[i] =
-            dq_idqdknot_i * velocity_mat_qd0.block((i - 1) * nq, 0, nq, nq);
-        dqInbetweendqdf[i] =
-            dq_idqdknot_i * velocity_mat_qdf.block((i - 1) * nq, 0, nq, nq) +
-            dq_idqdknot_ip1;
-      } else if (i == 0 && i == nT - 2) {
-        dqInbetweendqd0[i] = dq_idqdknot_i;
-        dqInbetweendqdf[i] = dq_idqdknot_ip1;
-      }
     }
 
     snopt::integer* nc_inbetween_array =
@@ -2060,12 +1887,14 @@ void inverseKinSnoptBackend(
     qdot_sol->block(0, nT - 1, nq, 1) = qdotf;
     MatrixXd q_sol_tmp = *q_sol;
     q_sol_tmp.resize(nq * nT, 1);
-    MatrixXd qdot_sol_tmp = velocity_mat * q_sol_tmp;
+    MatrixXd qdot_sol_tmp = ik_traj_h->velocity_mat() * q_sol_tmp;
     qdot_sol_tmp.resize(nq, nT - 2);
     qdot_sol->block(0, 1, nq, nT - 2) = qdot_sol_tmp;
     MatrixXd qddot_sol_tmp(nq * nT, 1);
     qddot_sol_tmp =
-        accel_mat * q_sol_tmp + accel_mat_qd0 * qdot0 + accel_mat_qdf * qdotf;
+        ik_traj_h->accel_mat() * q_sol_tmp +
+        ik_traj_h->accel_mat_qd0() * qdot0 +
+        ik_traj_h->accel_mat_qdf() * qdotf;
     qddot_sol_tmp.resize(nq, nT);
     (*qddot_sol) = qddot_sol_tmp;
 
@@ -2135,9 +1964,6 @@ void inverseKinSnoptBackend(
     delete[] dt_ratio;
     delete[] t_inbetween;
     delete[] t_samples;
-    delete[] dqInbetweendqknot;
-    delete[] dqInbetweendqd0;
-    delete[] dqInbetweendqdf;
     delete[] nc_inbetween_array;
     delete[] nG_inbetween_array;
     delete[] Cmin_inbetween_array;
@@ -2158,6 +1984,7 @@ void inverseKinSnoptBackend(
   delete[] jAvar_array;
   delete[] A_array;
   if (mode == 2) {
+    delete ik_traj_h;
     delete[] qfree_idx;
     delete[] qdotf_idx;
     delete[] mt_kc_nc;

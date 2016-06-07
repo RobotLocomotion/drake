@@ -131,8 +131,8 @@ if(MATLAB_FOUND)
   endmacro()
 endif()
 
-set(drakeIK_SRC_FILES inverseKin.cpp inverseKinBackend.cpp
-  inverseKinPointwise.cpp inverseKinTraj.cpp)
+set(drakeIK_SRC_FILES ik_trajectory_helper.cc inverseKin.cpp
+  inverseKinBackend.cpp inverseKinPointwise.cpp inverseKinTraj.cpp)
 set(drakeIK_PODS_PKG)
 if(gurobi_FOUND)
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
