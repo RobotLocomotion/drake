@@ -50,6 +50,13 @@ TEST_F(StateSubvectorTest, Access) {
   EXPECT_THROW(subvec.GetAtIndex(2), std::out_of_range);
 }
 
+TEST_F(StateSubvectorTest, Copy) {
+  StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
+  Eigen::Vector2i expected;
+  expected << 2, 3;
+  EXPECT_EQ(expected, subvec.CopyToVector());
+}
+
 // Tests that writes to the subvector pass through to the sliced vector.
 TEST_F(StateSubvectorTest, Mutation) {
   StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);

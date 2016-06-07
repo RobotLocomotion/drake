@@ -30,6 +30,12 @@ TEST_F(BasicStateVectorTest, Access) {
   EXPECT_THROW(state_vector_->GetAtIndex(2), std::out_of_range);
 }
 
+TEST_F(BasicStateVectorTest, Copy) {
+  Eigen::Vector2i expected;
+  expected << 1, 2;
+  EXPECT_EQ(expected, state_vector_->CopyToVector());
+}
+
 TEST_F(BasicStateVectorTest, InvalidAccess) {
   EXPECT_THROW(state_vector_->GetAtIndex(kLength), std::out_of_range);
 }
@@ -41,7 +47,7 @@ TEST_F(BasicStateVectorTest, Mutation) {
 }
 
 TEST_F(BasicStateVectorTest, SetFromVector) {
-  Eigen::Vector2i next_value(kLength);
+  Eigen::Vector2i next_value;
   next_value << 3, 4;
 
   state_vector_->SetFromVector(next_value);

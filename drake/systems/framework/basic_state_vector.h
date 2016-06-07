@@ -44,6 +44,10 @@ class BasicStateVector : public StateVectorInterface<T> {
     vector_->set_value(value);
   }
 
+  VectorX<T> CopyToVector() override {
+    return vector_->get_value();
+  }
+
  private:
   // BasicStateVector objects are neither copyable nor moveable.
   BasicStateVector(const BasicStateVector& other) = delete;
