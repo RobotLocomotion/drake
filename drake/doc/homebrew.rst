@@ -13,6 +13,7 @@ Install the prerequisites::
 
     brew tap homebrew/python
     brew tap homebrew/science
+    brew tap robotlocomotion/director
     brew update
     brew upgrade
     brew install autoconf automake cmake doxygen gcc glib graphviz gtk+ \
