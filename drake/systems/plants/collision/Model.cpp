@@ -6,18 +6,18 @@ using namespace std;
 using namespace Eigen;
 
 namespace DrakeCollision {
-CollisionElementId Model::addElement(const CollisionElement& element) {
-  unique_ptr<CollisionElement> element_local(element.clone());
-  CollisionElementId id = element_local->getId();
+ElementId Model::addElement(const Element& element) {
+  unique_ptr<Element> element_local(element.clone());
+  ElementId id = element_local->getId();
   this->elements.insert(make_pair(id, move(element_local)));
   return id;
 }
 
-bool Model::removeElement(const CollisionElementId& id) {
+bool Model::removeElement(const ElementId& id) {
   return elements.erase(id) > 0;
 }
 
-const CollisionElement* Model::FindElement(CollisionElementId id) const {
+const Element* Model::readElement(ElementId id) const {
   auto element_iter = elements.find(id);
   if (element_iter != elements.end()) {
     return element_iter->second.get();
@@ -26,16 +26,7 @@ const CollisionElement* Model::FindElement(CollisionElementId id) const {
   }
 }
 
-CollisionElement* Model::FindMutableElement(CollisionElementId id) {
-  auto element_iter = elements.find(id);
-  if (element_iter != elements.end()) {
-    return element_iter->second.get();
-  } else {
-    return nullptr;
-  }
-}
-
-void Model::getTerrainContactPoints(CollisionElementId id0,
+void Model::getTerrainContactPoints(ElementId id0,
                                     Eigen::Matrix3Xd& terrain_points) {
   auto element_iter = elements.find(id0);
   if (element_iter != elements.end()) {
@@ -45,7 +36,7 @@ void Model::getTerrainContactPoints(CollisionElementId id0,
   }
 }
 
-bool Model::updateElementWorldTransform(const CollisionElementId id,
+bool Model::updateElementWorldTransform(const ElementId id,
                                         const Isometry3d& T_elem_to_world) {
   auto elem_itr = elements.find(id);
   if (elem_itr != elements.end()) {
@@ -59,7 +50,7 @@ bool Model::updateElementWorldTransform(const CollisionElementId id,
 }
 
 bool Model::transformCollisionFrame(
-    const DrakeCollision::CollisionElementId& eid,
+    const DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   auto element = elements.find(eid);
   if (element != elements.end()) {
@@ -71,7 +62,7 @@ bool Model::transformCollisionFrame(
   }
 }
 
-bool closestPointsAllToAll(const vector<CollisionElementId>& ids_to_check,
+bool closestPointsAllToAll(const vector<ElementId>& ids_to_check,
                            const bool use_margins,
                            vector<PointPair>& closest_points) {
   return false;

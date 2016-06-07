@@ -44,7 +44,7 @@ class NamedValueVector : public VectorInterface<T> {
     return values_.rows();
   }
 
-  void set_value(const VectorX<T>& value) override {
+  void set_value(const Eigen::Ref<VectorX<T>>& value) override {
     if (value.rows() != size()) {
       throw std::out_of_range("Cannot set a NamedValueVector of size " +
                               std::to_string(size()) +

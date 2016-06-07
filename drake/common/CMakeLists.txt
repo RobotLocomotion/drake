@@ -7,9 +7,7 @@ set(sources nice_type_name.cc)
 
 # List headers that should be installed with Drake so that they
 # are available elsewhere via #include "drake/common/xxx.h".
-set(installed_headers
-    nice_type_name.h
-    sorted_vectors_have_intersection.h)
+set(installed_headers nice_type_name.h)
 
 # List headers that are needed by code here but should not
 # be exposed anywhere else.
