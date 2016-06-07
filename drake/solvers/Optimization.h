@@ -671,7 +671,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option,
-                       const std::string option_value) {
+                       const std::string& option_value) {
     solver_options_str_[solver_name][solver_option] = option_value;
   }
 

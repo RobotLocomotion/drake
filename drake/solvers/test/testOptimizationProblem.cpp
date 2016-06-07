@@ -206,6 +206,9 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
                                 MatrixXd::Constant(5, 1, 1));
   VectorXd expected(5);
   expected << 1, 1, 0, 1, 0;
+
+  // IPOPT has difficulty with this problem depending on the initial
+  // conditions, which is why the initial guess varies so little.
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
