@@ -280,7 +280,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
     const auto t = contexts[0]->get_time();
 
     /* Evaluate derivatives at the beginning of a step, then generate
-    Outputs (which may depend on derivatives). Uncomment four lines below if you
+    Outputs (which may depend on derivatives). Uncomment five lines below if you
     want to get output you can plot.
 
     TODO(david-german-tri,sherm1) Should have a way to run similar code in
@@ -290,7 +290,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
     for (int i = 0; i < kNumIntegrators; ++i) {
       system_->GetDerivatives(*contexts[i], derivs[i].get());
       system_->GetOutput(*contexts[i], outputs[i].get());
-      const auto& ovec = outputs[i]->ports[0].vector_output;
+      // const auto& ovec = outputs[i]->ports[0].vector_output;
       // for (ptrdiff_t i = 0; i < ovec->size(); ++i)
       //    cout << "  " << ovec->get_value()[i];
     }
