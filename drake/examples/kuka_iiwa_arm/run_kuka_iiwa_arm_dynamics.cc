@@ -8,10 +8,12 @@
 #include "drake/systems/cascade_system.h"
 #include "drake/util/drakeAppUtil.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
 
 using Drake::RigidBodySystem;
 using Drake::BotVisualizer;
 using Eigen::VectorXd;
+using drake::RobotStateTap;
 
 int main(int argc, char* argv[]) {
   // Initializes LCM.
@@ -54,11 +56,14 @@ int main(int argc, char* argv[]) {
     rigid_body_sys->penetration_damping = 0;
   }
 
-  // Instantiates a BotVisualizer and cascades it with the rigid body system.
+  // Instantiates additional systems and cascades them with the rigid body
+  // system.
   auto visualizer =
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
-  auto sys = cascade(rigid_body_sys, visualizer);
+  auto robot_state_tap = std::make_shared<RobotStateTap<RigidBodySystem::StateVector>>();
+
+  auto sys = cascade(cascade(rigid_body_sys, visualizer), robot_state_tap);
 
   // Obtains an initial state of the simulation.
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
@@ -70,11 +75,73 @@ int main(int argc, char* argv[]) {
   options.initial_step_size = 0.002;
 
   // Prevents exception from being thrown when simulation runs slower than real
-  // time.
+  // time, which it most likely will given the small step size.
   options.warn_real_time_violation = true;
 
   // Starts the simulation.
   Drake::simulate(*sys.get(), 0, 5, x0, options);
 
-  // Ensures the robot's joints are within their limits.
+  auto final_robot_state = robot_state_tap->get_input_vector();
+  int num_positions = rigid_body_sys->number_of_positions();
+  int num_velocities = rigid_body_sys->number_of_velocities();
+
+  // Ensures the size of the output is correct.
+  if (final_robot_state.size() != rigid_body_sys->getNumOutputs()) {
+    throw std::runtime_error(
+      "ERROR: Size of final robot state ("
+      + std::to_string(final_robot_state.size())
+      + ") does not match size of rigid body system's output ("
+      + std::to_string(rigid_body_sys->getNumOutputs()) + ").");
+  }
+
+  // Ensures the number of position states equals the number of velocity states.
+  if (num_positions != num_velocities) {
+    throw std::runtime_error(
+      "ERROR: Number of positions ("
+      + std::to_string(num_positions)
+      + ") does not match the number of velocities ("
+      + std::to_string(num_velocities) + ").");
+  }
+
+  // Ensures the number of position and velocity states match the size of the
+  // final robot state.
+  if ((num_positions + num_velocities) != final_robot_state.size()) {
+    throw std::runtime_error(
+      "ERROR: Total number of positions and velocities ("
+      + std::to_string(num_positions + num_velocities)
+      + ") does not match size of robot state ("
+      + std::to_string(final_robot_state.size()) + ").");
+  }
+
+  // Ensures the robot's joints are within their position limits.
+  std::vector<std::unique_ptr<RigidBody>>& bodies = tree->bodies;
+  for (int robot_state_index = 0, body_index = 0; body_index < bodies.size();
+      ++body_index) {
+
+    // skip rigid bodies without a parent (this includes the world link)
+    if (!bodies[body_index]->hasParent()) continue;
+
+    const DrakeJoint& joint = bodies[body_index]->getJoint();
+    const Eigen::VectorXd& min_limit = joint.getJointLimitMin();
+    const Eigen::VectorXd& max_limit = joint.getJointLimitMax();
+
+    for (int ii = 0; ii < joint.getNumPositions(); ++ii) {
+      double position = final_robot_state[robot_state_index++];
+      if (position < min_limit[ii]) {
+        throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF "
+          + joint.getPositionName(ii) + ") violated minimum position limit ("
+          + std::to_string(position) + " < "
+          + std::to_string(min_limit[ii]) + ").");
+      }
+      if (position > max_limit[ii]) {
+        throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF "
+          + joint.getPositionName(ii) + ") violated maximum position limit ("
+          + std::to_string(position) + " > "
+          + std::to_string(max_limit[ii]) + ").");
+      }
+    }
+  }
+
+  // Unfortunately we cannot check the joint velocities since the velocity
+  // limits are not being parsed.
 }
