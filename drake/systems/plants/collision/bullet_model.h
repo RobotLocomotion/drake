@@ -89,6 +89,8 @@ class BulletModel : public Model {
       const Eigen::Matrix3Xd& points, bool use_margins,
       std::vector<PointPair>& closest_points) override;
 
+  void ClearCachedResults(bool use_margins);
+
   bool collisionRaycast(const Eigen::Matrix3Xd& origins,
                         const Eigen::Matrix3Xd& ray_endpoints, bool use_margins,
                         Eigen::VectorXd& distances,

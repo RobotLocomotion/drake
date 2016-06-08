@@ -753,6 +753,20 @@ bool BulletModel::collisionPointsAllToAll(
   return c.pts.size() > 0;
 }
 
+void BulletModel::ClearCachedResults(bool use_margins) {
+  BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+
+  int numManifolds =
+      bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
+
+  for (int i = 0; i < numManifolds; i++) {
+    btPersistentManifold *contactManifold =
+        bt_world.bt_collision_world->getDispatcher()
+            ->getManifoldByIndexInternal(i);
+    contactManifold->clearManifold();
+  }
+}
+
 BulletCollisionWorldWrapper& BulletModel::getBulletWorld(bool use_margins) {
   if (use_margins) {
     return bullet_world_;
