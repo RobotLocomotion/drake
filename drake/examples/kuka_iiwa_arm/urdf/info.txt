@@ -1,4 +1,0 @@
-This folder contains a model of the Kuka LBR IIWA R820 14. The arm model taken
-from: https://github.com/SalvoVirga/iiwa_stack
-
-For licensing details, see LICENSE.txt.

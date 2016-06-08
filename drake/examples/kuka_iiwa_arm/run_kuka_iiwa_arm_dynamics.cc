@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
       DrakeJoint::FIXED);
 
   // Obtains a reference to the rigid body tree within the rigid body system.
-  auto const& tree = rigid_body_sys->getRigidBodyTree();
+  const auto& tree = rigid_body_sys->getRigidBodyTree();
 
   // Adds the ground.
   {
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
 
   // Specifies the simulation options.
   Drake::SimulationOptions options;
-  options.realtime_factor = 1.0;
+  options.realtime_factor = 0;  // As fast as possible.
   options.initial_step_size = 0.002;
 
   // Prevents exception from being thrown when simulation runs slower than real

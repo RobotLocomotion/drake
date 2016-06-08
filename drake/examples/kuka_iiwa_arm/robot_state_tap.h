@@ -5,14 +5,14 @@
 namespace drake {
 
 /// Implements a Drake System (@see drake/systems/System.h) that
-/// saves the latest system state as a local variable and provides an accessor
-/// to it. This is useful for testing the final state of the robot in a unit
-/// test. It otherwise merely passes through its input to output.
+/// saves the latest input as a local variable and provides an accessor
+/// to it. This is useful for testing the final configuration of the robot in a
+/// unit test. It otherwise merely passes through its input to output.
 template <template <typename> class Vector>
 class RobotStateTap {
  public:
-  /// Create an RobotStateTap that publishes on the given @p lcm instance.
-  explicit RobotStateTap() {}
+  /// Creates a RobotStateTap.
+  RobotStateTap() {}
 
   // Noncopyable.
   RobotStateTap(const RobotStateTap&) = delete;
@@ -35,22 +35,16 @@ class RobotStateTap {
 
   OutputVector<double> output(const double& t, const StateVector<double>& x,
                               const InputVector<double>& u) {
-    if (u_.size() != u.size())
-      u_.resize(u.size());
-
-    for (int ii = 0; ii < u.size(); ++ii) {
-      u_[ii] = u[ii];
-    }
-
+    u_ = Drake::toEigen(u);
     return u;
   }
 
   bool isTimeVarying() const { return false; }
   bool isDirectFeedthrough() const { return true; }
 
-  const InputVector<double>& get_input_vector() { return u_; }
-
   //@}
+
+  const InputVector<double>& get_input_vector() { return u_; }
 
  private:
   InputVector<double> u_;
