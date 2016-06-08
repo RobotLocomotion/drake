@@ -356,12 +356,10 @@ GTEST_TEST(ModelTest, Box_vs_Sphere_multi) {
 
   // Notice however that the x and z coordinates are computed with a much
   // larger error.
-  EXPECT_TRUE(
-      points[0].getPtA().isApprox(solution[points[0].getIdA()].body_frame,
-                                  tolerance*200));
-  EXPECT_TRUE(
-      points[0].getPtB().isApprox(solution[points[0].getIdB()].body_frame,
-                                  tolerance*200));
+  EXPECT_TRUE(points[0].getPtA().isApprox(
+      solution[points[0].getIdA()].body_frame, tolerance * 200));
+  EXPECT_TRUE(points[0].getPtB().isApprox(
+      solution[points[0].getIdB()].body_frame, tolerance * 200));
 }
 
 // This test seeks to find out whether DrakeCollision::Model can report
@@ -535,7 +533,7 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox_multi) {
   // Collision test performed with Model::potentialCollisionPoints.
   points = model->potentialCollisionPoints(false);
   ASSERT_EQ(4, points.size());
-  for(int i=0;i<points.size();++i) {
+  for (int i = 0; i < points.size(); ++i) {
     EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance);
     EXPECT_TRUE(points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
     // Collision points are reported on each of the respective bodies' frames.
@@ -704,10 +702,10 @@ GTEST_TEST(ModelTest, NonAlignedBoxes_multi) {
   points = model->potentialCollisionPoints(false);
   ASSERT_EQ(4, points.size());
 
-  for(int i=0; i < points.size(); ++i) {
+  for (int i = 0; i < points.size(); ++i) {
     EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance);
     EXPECT_TRUE(points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0),
-                                               tolerance*50));
+                                               tolerance * 50));
     // Collision points are reported on each of the respective bodies' frames.
     // This is consistent with the return by Model::closestPointsAllToAll.
     // Only test for vertical position.
@@ -760,13 +758,13 @@ GTEST_TEST(ModelTest, ClearCachedResults) {
   std::vector<PointPair> points;
 
   // Not clearing cached results
-  for(int i=0;i<4;i++) {
+  for (int i = 0; i < 4; i++) {
     // Small disturbance so that tests are slightly different causing Bullet's
     // dispatcher to cache these results.
-    if(i==0) small_box_pose.translation() = Vector3d(   0.0, 5.4,    0.0);
-    if(i==1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
-    if(i==2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
-    if(i==3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
+    if (i == 0) small_box_pose.translation() = Vector3d(   0.0, 5.4,    0.0);
+    if (i == 1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
+    if (i == 2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
+    if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
     model->updateElementWorldTransform(small_box_id, small_box_pose);
 
     // Notice that the results vectored is cleared every time so that results
@@ -779,10 +777,10 @@ GTEST_TEST(ModelTest, ClearCachedResults) {
   // If Bullet cached those tests then there should be four results.
   ASSERT_EQ(4, points.size());
 
-  for(int i=0; i < points.size(); ++i) {
+  for (int i = 0; i < points.size(); ++i) {
     EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance);
-    EXPECT_TRUE(points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0),
-                                               tolerance));
+    EXPECT_TRUE(
+        points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0), tolerance));
     // Only test for vertical position.
     EXPECT_NEAR(points[i].getPtA().y(),
                 solution[points[0].getIdA()].world_frame.y(), tolerance);
@@ -791,13 +789,13 @@ GTEST_TEST(ModelTest, ClearCachedResults) {
   }
 
   // Clearing cached results
-  for(int i=0;i<4;i++) {
+  for (int i = 0; i < 4; i++) {
     // Small disturbance so that tests are slightly different causing Bullet's
     // dispatcher to cache these results.
-    if(i==0) small_box_pose.translation() = Vector3d(   0.0, 5.4,    0.0);
-    if(i==1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
-    if(i==2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
-    if(i==3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
+    if (i == 0) small_box_pose.translation() = Vector3d(   0.0, 5.4,    0.0);
+    if (i == 1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
+    if (i == 2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
+    if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
     model->updateElementWorldTransform(small_box_id, small_box_pose);
 
     // Notice that the results vectored is cleared every time so that results
