@@ -14,7 +14,9 @@ classdef LinearConstraint < Constraint
       % @param ub    -- The upper bound of the constraint
       % @param A     -- A matrix of size num_cnstr x xdim. The linear constraint matrix
       xdim = size(A,2);
-      obj = obj@Constraint(lb,ub,xdim,2);
+      [iAfun,jAvar,m_A_val] = find(A);
+      options = struct('grad_level',2,'iCfun',iAfun,'jCvar',jAvar);
+      obj = obj@Constraint(lb,ub,xdim,options);
       if(~isnumeric(lb) || ~isnumeric(ub))
         error('Drake:LinearConstraint:BadInputs','LinearConstraint lb and ub should be numeric')
       end
@@ -23,7 +25,7 @@ classdef LinearConstraint < Constraint
       end
       sizecheck(A,[obj.num_cnstr,obj.xdim]);
       obj.A = A;
-      [iAfun,jAvar,obj.A_val] = find(obj.A);
+      obj.A_val = m_A_val;
       obj = obj.setSparseStructure(iAfun,jAvar);
       obj.A = sparse(A);
     end

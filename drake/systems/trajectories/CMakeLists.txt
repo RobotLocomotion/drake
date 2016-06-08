@@ -1,4 +1,4 @@
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   add_mex(PPTmex PPTmex.cpp)
   add_mex(ExpPlusPPTrajectoryEvalmex ExpPlusPPTrajectoryEvalmex.cpp)
 endif()
@@ -29,6 +29,5 @@ if(BLAS_LIBRARY AND snopt_c_FOUND AND bullet_FOUND AND MATLAB_FOUND)
   target_link_libraries(isCollisionFree_mex drakeMexUtil)
   target_link_libraries(ptToPolyBullet_mex drakeMexUtil)
 endif()
-
 
 add_subdirectory(test)

@@ -1,4 +1,3 @@
-
-add_matlab_test(NAME examples/grasping/forceClosure/test/testFixedContactsSearchQ1 COMMAND testFixedContactsSearchQ1)
-add_matlab_test(NAME examples/grasping/forceClosure/test/testForceClosureContactsFixedFaces COMMAND testForceClosureContactsFixedFaces)
-add_matlab_test(NAME examples/grasping/forceClosure/test/testSynthesizeGrasp COMMAND testSynthesizeGrasp)
+add_matlab_test(NAME examples/grasping/forceClosure/test/testFixedContactsSearchQ1 COMMAND testFixedContactsSearchQ1 REQUIRES spotless)
+add_matlab_test(NAME examples/grasping/forceClosure/test/testForceClosureContactsFixedFaces COMMAND testForceClosureContactsFixedFaces REQUIRES spotless)
+add_matlab_test(NAME examples/grasping/forceClosure/test/testSynthesizeGrasp COMMAND testSynthesizeGrasp REQUIRES spotless)

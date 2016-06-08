@@ -1,5 +1,5 @@
 pods_find_pkg_config(yaml-cpp)
-if (yaml-cpp_FOUND)
+if(yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeYAMLUtil SOURCE_FILES yamlUtil.cpp)
   pods_use_pkg_config_packages(drakeYAMLUtil yaml-cpp)
   target_link_libraries(drakeYAMLUtil drakeRBM drakeSide)

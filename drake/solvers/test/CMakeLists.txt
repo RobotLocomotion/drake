@@ -1,4 +1,4 @@
-if (GTEST_FOUND)
+if(GTEST_FOUND)
   add_executable(testOptimizationProblem testOptimizationProblem.cpp)
   target_link_libraries(testOptimizationProblem drakeOptimization
     ${GTEST_BOTH_LIBRARIES})

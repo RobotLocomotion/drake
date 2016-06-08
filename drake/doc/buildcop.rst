@@ -79,8 +79,33 @@ author, and include the following template in the PR description.
  reverted, please review and LGTM this PR. This allows the build cop to merge
  without waiting for CI results.
 
+ For advice on how to handle a build cop revert, see [2].
+
  Thanks!
  Your Friendly Oncall Buildcop
 
  [1] CI Dashboard: https://drake-jenkins.csail.mit.edu/view/Continuous/
+ [2] http://drake.mit.edu/buildcop.html#workflow-for-handling-a-build-cop-revert
 
+.. _handling_a_build_cop_revert:
+
+Workflow for Handling a Build Cop Revert
+----------------------------------------
+
+Suppose your merged PR was reverted on the master branch. What do you do?
+
+Here's one workflow:
+
+1. Create a new development branch based off of the ``HEAD`` of master.
+
+2. `Revert <https://git-scm.com/docs/git-revert>`_ the revert of your
+   originally-merged PR to get your changes back.
+
+3. Debug the problem. This may require you to
+   :ref:`run on-demand continuous integration builds <run_specific_build>` to
+   ensure the problem that caused your PR to be reverted was actually fixed.
+
+4. Commit your changes into your new branch.
+
+5. Issue a new PR containing your fixes. Be sure to link to the build cop revert
+   PR in your new PR.
