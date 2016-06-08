@@ -257,12 +257,13 @@ ElementId BulletModel::addElement(const Element& element) {
 }
 
 std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
-  if (dispatch_method_in_use_ == kNotYetDecided)
+  if (dispatch_method_in_use_ == kNotYetDecided) {
     dispatch_method_in_use_ = kPotentialCollisionPoints;
-  else if (dispatch_method_in_use_ != kPotentialCollisionPoints)
+  } else if (dispatch_method_in_use_ != kPotentialCollisionPoints) {
     throw std::runtime_error(
         "Calling BulletModel::potentialCollisionPoints after previously using"
-        " another dispatch method will result in undefined behavior.");
+            " another dispatch method will result in undefined behavior.");
+  }
 
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
   bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(
