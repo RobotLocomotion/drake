@@ -43,6 +43,41 @@ struct SurfacePoint {
 typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
     ElementToSurfacePointMap;
 
+// GENERAL REMARKS ON THE TESTS PERFORMED
+// A series of canonical tests are performed. These are Box_vs_Sphere,
+// SmallBoxSittingOnLargeBox and NonAlignedBoxes.
+// These tests are performed using the following algorithms:
+// - closestPointsAllToAll: O(N^2) checking all pairs of collision elements.
+//   Results are in bodies' frames.
+// - collisionPointsAllToAll: Uses collision library dispatching.
+//   Results are in world frame.
+// - potentialCollisionPoints: randomly samples collision elements' pose
+//   searching for potential collision points. Results are in the bodies'
+//   frames.
+
+// CLEARING CACHED RESULTS TEST
+// An additional test, ClearCachedResults, is introduced to test
+// Model::ClearCachedResults.
+// This method clears results cached by the model so that future collision
+// queries are performed from scratch and do not depend on past history.
+
+// REMARKS ON MULTICONTACT
+// It is found that the results from Model::potentialCollisionPoints are
+// affected by a previous calls to Model::collisionPointsAllToAll even if cached
+// results are cleared with Model::ClearCachedResults. This is the reason why
+// multicontact tests using Model::potentialCollisionPoints are performed
+// separately in their own tests. For instance, for the NonAlignedBoxes there is
+// a separate tests called NonAlignedBoxes_multi performed with
+// Model::potentialCollisionPoints.
+// It seems like Bullet is storing some additional configuration setup with the
+// call to Model::collisionPointsAllToAll that persists throughout subsequent
+// calls to Model::potentialCollisionPoints.
+// Therefore, DO NOT mix these calls since they might produce erroneous results.
+// Notice also that the tolerance used for these tests is much higher. The
+// reason is that Bullet randomly changes the pose of the collision elements
+// searching for potential collision points. This is the additional source of
+// error introduced.
+
 /*
  * Three bodies (cube (1 m edges) and two spheres (0.5 m radii) arranged like
  *this
@@ -209,8 +244,7 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
       points[0].getPtB().isApprox(solution[points[0].getIdB()].body_frame));
 
   // Collision test performed with Model::collisionPointsAllToAll.
-  // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
-  // looks like the margins are not appropriately subtracted.
+  // Not using margins.
   points.clear();
   model->collisionPointsAllToAll(false, points);
   ASSERT_EQ(1, points.size());
@@ -229,17 +263,105 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
   EXPECT_TRUE(
       points[0].getPtB().isApprox(solution[points[0].getIdB()].world_frame));
 
+  // Collision test performed with Model::collisionPointsAllToAll.
+  // Using margins.
+  points.clear();
+  model->collisionPointsAllToAll(true, points);
+  ASSERT_EQ(1, points.size());
+  EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
+  // Points are in the world frame on the surface of the corresponding body.
+  // That is why getPtA() is generally different from getPtB(), unless there is
+  // an exact non-penetrating collision.
+  // WARNING:
+  // This convention is different from the one used by closestPointsAllToAll
+  // which computes points in the local frame of the body.
+  // TODO(amcastro-tri): make these two conventions match? does this interfere
+  // with any Matlab functionality?
+  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(
+      points[0].getPtA().isApprox(solution[points[0].getIdA()].world_frame));
+  EXPECT_TRUE(
+      points[0].getPtB().isApprox(solution[points[0].getIdB()].world_frame));
+}
+
+// This test is exactly the same as the previous Box_vs_Sphere test.
+// The difference is that a multi-contact algorithm is being used.
+// It is found that the results from Model::potentialCollisionPoints are
+// affected by a previous call to Model::collisionPointsAllToAll even if cached
+// results are cleared with Model::ClearCachedResults. This is the reason why
+// the tests in Box_vs_Sphere are performed separately from the tests in
+// Box_vs_Sphere_multi.
+// It seems like Bullet is storing some additional configuration setup with the
+// call to Model::collisionPointsAllToAll that persists throughout subsequent
+// calls to Model::potentialCollisionPoints.
+// Therefore, DO NOT mix these calls since they might produce erroneous results.
+// Notice also that the tolerance used for these tests is much higher. The
+// reason is that Bullet randomly changes the pose of the collision elements
+// searching for potential collision points. This is the additional source of
+// error introduced.
+GTEST_TEST(ModelTest, Box_vs_Sphere_multi) {
+  // Numerical precision tolerance to perform floating point comparisons.
+  // Its magnitude was chosen to be the minimum value for which these tests can
+  // successfully pass.
+  const double tolerance = 2.0e-4;
+
+  DrakeShapes::Box box(Vector3d(1.0, 1.0, 1.0));
+  DrakeShapes::Sphere sphere(0.5);
+
+  Element colliding_box(box);
+  Element colliding_sphere(sphere);
+
+  // Populate the model.
+  std::unique_ptr<Model> model(newModel());
+  ElementId box_id = model->addElement(colliding_box);
+  ElementId sphere_id = model->addElement(colliding_sphere);
+
+  // Access the analytical solution to the contact point on the surface of each
+  // collision element by element id.
+  // Solutions are expressed in world and body frames.
+  ElementToSurfacePointMap solution = {
+      /*           world frame     , body frame  */
+      {box_id,    {{0.0,  1.0, 0.0}, {0.0,  0.5, 0.0}}},
+      {sphere_id, {{0.0, 0.75, 0.0}, {0.0, -0.5, 0.0}}}};
+
+  // Body 1 pose
+  Isometry3d box_pose;
+  box_pose.setIdentity();
+  box_pose.translation() = Vector3d(0.0, 0.5, 0.0);
+  model->updateElementWorldTransform(box_id, box_pose);
+
+  // Body 2 pose
+  Isometry3d sphere_pose;
+  sphere_pose.setIdentity();
+  sphere_pose.translation() = Vector3d(0.0, 1.25, 0.0);
+  model->updateElementWorldTransform(sphere_id, sphere_pose);
+
+  // List of collision points.
+  std::vector<PointPair> points;
+
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
   points = model->potentialCollisionPoints(false);
+
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance);
   // Points are in the bodies' frame on the surface of the corresponding body.
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+
+  // The vertical coordinate is computed within tolerance.
+  EXPECT_NEAR(points[0].getPtA().y(),
+              solution[points[0].getIdA()].body_frame.y(), tolerance);
+  EXPECT_NEAR(points[0].getPtB().y(),
+              solution[points[0].getIdB()].body_frame.y(), tolerance);
+
+  // Notice however that the x and z coordinates are computed with a much
+  // larger error.
   EXPECT_TRUE(
-      points[0].getPtA().isApprox(solution[points[0].getIdA()].body_frame));
+      points[0].getPtA().isApprox(solution[points[0].getIdA()].body_frame,
+                                  tolerance*200));
   EXPECT_TRUE(
-      points[0].getPtB().isApprox(solution[points[0].getIdB()].body_frame));
+      points[0].getPtB().isApprox(solution[points[0].getIdB()].body_frame,
+                                  tolerance*200));
 }
 
 // This test seeks to find out whether DrakeCollision::Model can report
@@ -352,6 +474,15 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
 
 // This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
 // The difference is that a multi-contact algorithm is being used.
+// It is found that the results from Model::potentialCollisionPoints are
+// affected by a previous call to Model::collisionPointsAllToAll even if cached
+// results are cleared with Model::ClearCachedResults. This is the reason why
+// the tests in Box_vs_Sphere are performed separately from the tests in
+// Box_vs_Sphere_multi.
+// It seems like Bullet is storing some additional configuration setup with the
+// call to Model::collisionPointsAllToAll that persists throughout subsequent
+// calls to Model::potentialCollisionPoints.
+// Therefore, DO NOT mix these calls since they might produce erroneous results.
 GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox_multi) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
@@ -403,7 +534,7 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox_multi) {
 
   // Collision test performed with Model::potentialCollisionPoints.
   points = model->potentialCollisionPoints(false);
-
+  ASSERT_EQ(4, points.size());
   for(int i=0;i<points.size();++i) {
     EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance);
     EXPECT_TRUE(points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -509,20 +640,186 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
               solution[points[0].getIdA()].world_frame.y(), tolerance);
   EXPECT_NEAR(points[0].getPtB().y(),
               solution[points[0].getIdB()].world_frame.y(), tolerance);
+}
+
+// This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
+// The difference is that a multi-contact algorithm is being used.
+// It is found that the results from Model::potentialCollisionPoints are
+// affected by a previous call to Model::collisionPointsAllToAll even if cached
+// results are cleared with Model::ClearCachedResults. This is the reason why
+// the tests in Box_vs_Sphere are performed separately from the tests in
+// Box_vs_Sphere_multi.
+// It seems like Bullet is storing some additional configuration setup with the
+// call to Model::collisionPointsAllToAll that persists throughout subsequent
+// calls to Model::potentialCollisionPoints.
+// Therefore, DO NOT mix these calls since they might produce erroneous results.
+// Notice also that the tolerance used for these tests is much higher. The
+// reason is that Bullet randomly changes the pose of the collision elements
+// searching for potential collision points. This is the additional source of
+// error introduced.
+GTEST_TEST(ModelTest, NonAlignedBoxes_multi) {
+  // Numerical precision tolerance to perform floating point comparisons.
+  // Its magnitude was chosen to be the minimum value for which these tests can
+  // successfully pass.
+  const double tolerance = 5.0e-4;
+
+  // Boxes centered around the origin in their local frames.
+  DrakeShapes::Box box1(Vector3d(1.0, 1.0, 1.0));
+  DrakeShapes::Box box2(Vector3d(1.0, 1.0, 1.0));
+
+  Element colliding_box1(box1);
+  Element colliding_box2(box2);
+
+  // Populate the model.
+  std::unique_ptr<Model> model(newModel());
+  ElementId box1_id = model->addElement(colliding_box1);
+  ElementId box2_id = model->addElement(colliding_box1);
+
+  // Access the analytical solution to the contact point on the surface of each
+  // collision element by element id.
+  // Solutions are expressed in world and body frames.
+  ElementToSurfacePointMap solution = {
+      /*         world frame    , body frame  */
+      {box1_id, {{0.0, 1.0, 0.0}, {0.0,  0.5, 0.0}}},
+      {box2_id, {{0.0, 0.9, 0.0}, {0.0, -0.5, 0.0}}}};
+
+  // Box 1 pose.
+  Isometry3d box1_pose;
+  box1_pose.setIdentity();
+  box1_pose.translation() = Vector3d(0.0, 0.5, 0.0);
+  model->updateElementWorldTransform(box1_id, box1_pose);
+
+  // Box 2 pose.
+  // Rotate box 2 45 degrees around the y axis so that it does not alight with
+  // box 1.
+  Isometry3d box2_pose;
+  box2_pose.setIdentity();
+  box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
+  box2_pose.linear() = AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
+  model->updateElementWorldTransform(box2_id, box2_pose);
+
+  // List of collision points.
+  std::vector<PointPair> points;
 
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
   points = model->potentialCollisionPoints(false);
+  ASSERT_EQ(4, points.size());
+
+  for(int i=0; i < points.size(); ++i) {
+    EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance);
+    EXPECT_TRUE(points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0),
+                                               tolerance*50));
+    // Collision points are reported on each of the respective bodies' frames.
+    // This is consistent with the return by Model::closestPointsAllToAll.
+    // Only test for vertical position.
+    EXPECT_NEAR(points[i].getPtA().y(),
+                solution[points[0].getIdA()].body_frame.y(), tolerance);
+    EXPECT_NEAR(points[i].getPtB().y(),
+                solution[points[0].getIdB()].body_frame.y(), tolerance);
+  }
+}
+
+GTEST_TEST(ModelTest, ClearCachedResults) {
+  // Numerical precision tolerance to perform floating point comparisons.
+  // Its magnitude was chosen to be the minimum value for which these tests can
+  // successfully pass.
+  const double tolerance = 2.0e-9;
+
+  // Boxes centered around the origin in their local frames.
+  DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
+  DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
+
+  Element colliding_large_box(large_box);
+  Element colliding_small_box(small_box);
+
+  // Populate the model.
+  std::unique_ptr<Model> model(newModel());
+  ElementId large_box_id = model->addElement(colliding_large_box);
+  ElementId small_box_id = model->addElement(colliding_small_box);
+
+  // Access the analytical solution to the contact point on the surface of each
+  // collision element by element id.
+  // Solutions are expressed in world and body frames.
+  ElementToSurfacePointMap solution = {
+      /*              world frame    , body frame  */
+      {large_box_id, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
+      {small_box_id, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
+
+  // Large body pose
+  Isometry3d large_box_pose;
+  large_box_pose.setIdentity();
+  large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
+  model->updateElementWorldTransform(large_box_id, large_box_pose);
+
+  // Small body pose
+  Isometry3d small_box_pose;
+  small_box_pose.setIdentity();
+  small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
+  model->updateElementWorldTransform(small_box_id, small_box_pose);
+
+  // List of collision points.
+  std::vector<PointPair> points;
+
+  // Not clearing cached results
+  for(int i=0;i<4;i++) {
+    // Small disturbance so that tests are slightly different causing Bullet's
+    // dispatcher to cache these results.
+    if(i==0) small_box_pose.translation() = Vector3d(   0.0, 5.4,    0.0);
+    if(i==1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
+    if(i==2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
+    if(i==3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
+    model->updateElementWorldTransform(small_box_id, small_box_pose);
+
+    // Notice that the results vectored is cleared every time so that results
+    // do not accumulate.
+    points.clear();
+
+    model->collisionPointsAllToAll(false, points);
+  }
+
+  // If Bullet cached those tests then there should be four results.
+  ASSERT_EQ(4, points.size());
+
+  for(int i=0; i < points.size(); ++i) {
+    EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance);
+    EXPECT_TRUE(points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0),
+                                               tolerance));
+    // Only test for vertical position.
+    EXPECT_NEAR(points[i].getPtA().y(),
+                solution[points[0].getIdA()].world_frame.y(), tolerance);
+    EXPECT_NEAR(points[i].getPtB().y(),
+                solution[points[0].getIdB()].world_frame.y(), tolerance);
+  }
+
+  // Clearing cached results
+  for(int i=0;i<4;i++) {
+    // Small disturbance so that tests are slightly different causing Bullet's
+    // dispatcher to cache these results.
+    if(i==0) small_box_pose.translation() = Vector3d(   0.0, 5.4,    0.0);
+    if(i==1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
+    if(i==2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
+    if(i==3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
+    model->updateElementWorldTransform(small_box_id, small_box_pose);
+
+    // Notice that the results vectored is cleared every time so that results
+    // do not accumulate.
+    points.clear();
+
+    // Clear cache before each test.
+    model->ClearCachedResults(false);
+    model->collisionPointsAllToAll(false, points);
+  }
+
+  // Since cache was cleared on every test, only one point is expected.
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
-  // Collision points are reported on each of the respective bodies' frames.
-  // This is consistent with the return by Model::closestPointsAllToAll.
   // Only test for vertical position.
   EXPECT_NEAR(points[0].getPtA().y(),
-              solution[points[0].getIdA()].body_frame.y(), tolerance);
+              solution[points[0].getIdA()].world_frame.y(), tolerance);
   EXPECT_NEAR(points[0].getPtB().y(),
-              solution[points[0].getIdB()].body_frame.y(), tolerance);
+              solution[points[0].getIdB()].world_frame.y(), tolerance);
 }
 
 }  // namespace
