@@ -124,7 +124,6 @@ class BulletModel : public Model {
       double collision_threshold) override;
 
  private:
-
   enum DispatchMethod {
     kNotYetDecided,
     kClosestPointsAllToAll,
