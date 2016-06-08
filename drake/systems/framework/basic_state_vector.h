@@ -25,7 +25,7 @@ class BasicStateVector : public StateVectorInterface<T> {
   const T GetAtIndex(ptrdiff_t index) const override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
-                              "out of bounds for state vector of size " +
+                              " out of bounds for state vector of size " +
                               std::to_string(size()));
     }
     return vector_->get_value()[index];
@@ -34,7 +34,7 @@ class BasicStateVector : public StateVectorInterface<T> {
   void SetAtIndex(ptrdiff_t index, const T& value) override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
-                              "out of bounds for state vector of size " +
+                              " out of bounds for state vector of size " +
                               std::to_string(size()));
     }
     vector_->get_mutable_value()[index] = value;
@@ -42,6 +42,10 @@ class BasicStateVector : public StateVectorInterface<T> {
 
   void SetFromVector(const Eigen::Ref<VectorX<T>>& value) override {
     vector_->set_value(value);
+  }
+
+  VectorX<T> CopyToVector() override {
+    return vector_->get_value();
   }
 
  private:
