@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
   for (int robot_state_index = 0, body_index = 0; body_index < bodies.size();
       ++body_index) {
 
-    // skip rigid bodies without a parent (this includes the world link)
+    // Skips rigid bodies without a parent (this includes the world link).
     if (!bodies[body_index]->hasParent()) continue;
 
     const DrakeJoint& joint = bodies[body_index]->getJoint();
