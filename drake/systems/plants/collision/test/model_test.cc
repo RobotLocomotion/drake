@@ -623,8 +623,6 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
               solution[points[0].getIdB()].body_frame.y(), tolerance);
 
   // Collision test performed with Model::collisionPointsAllToAll.
-  // TODO(amcastro-tri): with `use_margins = true` the results are wrong. It
-  // looks like the margins are not appropriately subtracted.
   points.clear();
   model->collisionPointsAllToAll(false, points);
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
