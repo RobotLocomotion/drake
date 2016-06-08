@@ -104,15 +104,15 @@ class DRAKECOLLISION_EXPORT Model {
   /** Clears possibly cached results so that a fresh computation can be
   performed.
 
-  @param use_margins[in] If `true`, it clears the cache of the model with
-  margins. If `false`, it clears the model without margins.
+  @param use_margins[in] If `true`, the cache of the model with margins is
+  cleared. If `false`, the cache of the model without margins is cleared.
 
   Depending on the implementation, the collision model may cache results on each
   dispatch. For instance, Bullet uses cached results to warm-start its LCP
   solvers.
 
-  Clearing cached results allows to perform a fresh computation without any
-  coupling with previous history.
+  Clearing cached results allows the collision model to perform a fresh
+  computation without any coupling with previous history.
 
   @see drake/systems/plants/collision/test/model_test.cc. **/
   virtual void ClearCachedResults(bool use_margins) {}

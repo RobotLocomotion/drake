@@ -56,19 +56,17 @@ typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
 //   frames.
 
 // CLEARING CACHED RESULTS TEST
-// An additional test, ClearCachedResults, is introduced to test
-// Model::ClearCachedResults.
+// Test ClearCachedResults tests the method Model::ClearCachedResults.
 // This method clears results cached by the model so that future collision
 // queries are performed from scratch and do not depend on past history.
 
 // REMARKS ON MULTICONTACT
-// It is found that the results from Model::potentialCollisionPoints are
-// affected by a previous calls to Model::collisionPointsAllToAll even if cached
-// results are cleared with Model::ClearCachedResults. This is the reason why
-// multicontact tests using Model::potentialCollisionPoints are performed
-// separately in their own tests. For instance, for the NonAlignedBoxes there is
-// a separate tests called NonAlignedBoxes_multi performed with
-// Model::potentialCollisionPoints.
+// Results from Model::potentialCollisionPoints are affected by previous calls
+// to Model::collisionPointsAllToAll even if cached results are cleared with
+// Model::ClearCachedResults. This is the reason why multicontact tests using
+// Model::potentialCollisionPoints are performed separately in their own tests.
+// For instance, for the NonAlignedBoxes there is a separate tests called
+// NonAlignedBoxes_multi performed with Model::potentialCollisionPoints.
 // It seems like Bullet is storing some additional configuration setup with the
 // call to Model::collisionPointsAllToAll that persists throughout subsequent
 // calls to Model::potentialCollisionPoints.
@@ -348,7 +346,7 @@ GTEST_TEST(ModelTest, Box_vs_Sphere_multi) {
   // Points are in the bodies' frame on the surface of the corresponding body.
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
 
-  // The vertical coordinate is computed within tolerance.
+  // Ensures the vertical coordinate is computed within tolerance.
   EXPECT_NEAR(points[0].getPtA().y(),
               solution[points[0].getIdA()].body_frame.y(), tolerance);
   EXPECT_NEAR(points[0].getPtB().y(),
@@ -472,11 +470,11 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
 
 // This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
 // The difference is that a multi-contact algorithm is being used.
-// It is found that the results from Model::potentialCollisionPoints are
-// affected by a previous call to Model::collisionPointsAllToAll even if cached
-// results are cleared with Model::ClearCachedResults. This is the reason why
-// the tests in Box_vs_Sphere are performed separately from the tests in
-// Box_vs_Sphere_multi.
+// Results from Model::potentialCollisionPoints are affected by previous calls
+// to Model::collisionPointsAllToAll even if cached results are cleared with
+// Model::ClearCachedResults. This is the reason why the tests in
+// SmallBoxSittingOnLargeBox are performed separately from the tests in
+// SmallBoxSittingOnLargeBoxe_multi.
 // It seems like Bullet is storing some additional configuration setup with the
 // call to Model::collisionPointsAllToAll that persists throughout subsequent
 // calls to Model::potentialCollisionPoints.
@@ -525,10 +523,10 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox_multi) {
   // Unfortunately DrakeCollision::Model is randomly selecting the contact
   // points. It is not even clear at this stage how many points in the manifold
   // we should expect.
-  // What we can test for sure is:
+  // What we can test for sure are:
   // 1. The penetration depth.
   // 2. The vertical position of the collision point (since for any of the four
-  //    corners of the small box is the same.
+  //    corners of the small box is the same).
 
   // Collision test performed with Model::potentialCollisionPoints.
   points = model->potentialCollisionPoints(false);
@@ -638,13 +636,13 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
               solution[points[0].getIdB()].world_frame.y(), tolerance);
 }
 
-// This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
+// This test is exactly the same as the previous NonAlignedBoxes.
 // The difference is that a multi-contact algorithm is being used.
-// It is found that the results from Model::potentialCollisionPoints are
-// affected by a previous call to Model::collisionPointsAllToAll even if cached
-// results are cleared with Model::ClearCachedResults. This is the reason why
-// the tests in Box_vs_Sphere are performed separately from the tests in
-// Box_vs_Sphere_multi.
+// Results from Model::potentialCollisionPoints are affected by a previous call
+// to Model::collisionPointsAllToAll even if cached results are cleared with
+// Model::ClearCachedResults. This is the reason why the tests in
+// NonAlignedBoxes are performed separately from the tests in
+// NonAlignedBoxes_multi.
 // It seems like Bullet is storing some additional configuration setup with the
 // call to Model::collisionPointsAllToAll that persists throughout subsequent
 // calls to Model::potentialCollisionPoints.
@@ -758,7 +756,7 @@ GTEST_TEST(ModelTest, ClearCachedResults) {
   std::vector<PointPair> points;
 
   // Not clearing cached results
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; ++i) {
     // Small disturbance so that tests are slightly different causing Bullet's
     // dispatcher to cache these results.
     if (i == 0) small_box_pose.translation() = Vector3d(   0.0, 5.4,    0.0);
@@ -767,7 +765,7 @@ GTEST_TEST(ModelTest, ClearCachedResults) {
     if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
     model->updateElementWorldTransform(small_box_id, small_box_pose);
 
-    // Notice that the results vectored is cleared every time so that results
+    // Notice that the results vector is cleared every time so that results
     // do not accumulate.
     points.clear();
 
@@ -789,7 +787,7 @@ GTEST_TEST(ModelTest, ClearCachedResults) {
   }
 
   // Clearing cached results
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; ++i) {
     // Small disturbance so that tests are slightly different causing Bullet's
     // dispatcher to cache these results.
     if (i == 0) small_box_pose.translation() = Vector3d(   0.0, 5.4,    0.0);
@@ -798,7 +796,7 @@ GTEST_TEST(ModelTest, ClearCachedResults) {
     if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
     model->updateElementWorldTransform(small_box_id, small_box_pose);
 
-    // Notice that the results vectored is cleared every time so that results
+    // Notice that the results vector is cleared every time so that results
     // do not accumulate.
     points.clear();
 
