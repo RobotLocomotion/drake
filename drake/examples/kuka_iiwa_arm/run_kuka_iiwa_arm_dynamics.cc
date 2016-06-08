@@ -124,16 +124,22 @@ int main(int argc, char* argv[]) {
     const Eigen::VectorXd& min_limit = joint.getJointLimitMin();
     const Eigen::VectorXd& max_limit = joint.getJointLimitMax();
 
+    // Defines a joint limit tolerance. This is the amount in radians over which
+    // joint position limits can be violated and still be considered to be
+    // within the limits. Once we are able to model joint limits via
+    // constraints, we may be able to remove the need for this tolerance value.
+    const double kJointLimitTolerance = 0.0261799;  // 1.5 degrees.
+
     for (int ii = 0; ii < joint.getNumPositions(); ++ii) {
       double position = final_robot_state[robot_state_index++];
-      if (position < min_limit[ii]) {
+      if (position < min_limit[ii] - kJointLimitTolerance) {
         throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF " +
                                  joint.getPositionName(ii) +
                                  ") violated minimum position limit (" +
                                  std::to_string(position) + " < " +
                                  std::to_string(min_limit[ii]) + ").");
       }
-      if (position > max_limit[ii]) {
+      if (position > max_limit[ii] + kJointLimitTolerance) {
         throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF " +
                                  joint.getPositionName(ii) +
                                  ") violated maximum position limit (" +
