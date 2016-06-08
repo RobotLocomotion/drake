@@ -257,6 +257,14 @@ ElementId BulletModel::addElement(const Element& element) {
 }
 
 std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
+
+  if(dispatch_method_in_use_ == kNotYetDecided)
+    dispatch_method_in_use_ = kPotentialCollisionPoints;
+  else if(dispatch_method_in_use_ != kPotentialCollisionPoints)
+    throw std::runtime_error(
+        "Calling BulletModel::potentialCollisionPoints after previously using"
+            " another dispatch method will result in undefined behavior.");
+
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
   bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(
       kPerturbationIterations, kMinimumPointsPerturbationThreshold);
@@ -672,6 +680,10 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
 bool BulletModel::closestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, const bool use_margins,
     std::vector<PointPair>& closest_points) {
+
+  if(dispatch_method_in_use_ == kNotYetDecided)
+    dispatch_method_in_use_ = kClosestPointsAllToAll;
+
   std::vector<ElementIdPair> id_pairs;
   for (size_t i = 0; i < ids_to_check.size(); ++i) {
     ElementId id_a = ids_to_check[i];
@@ -704,6 +716,10 @@ bool BulletModel::closestPointsPairwise(
 
 bool BulletModel::collisionPointsAllToAll(
     const bool use_margins, std::vector<PointPair>& collision_points) {
+
+  if(dispatch_method_in_use_ == kNotYetDecided)
+    dispatch_method_in_use_ = kCollisionPointsAllToAll;
+
   BulletResultCollector c;
   MatrixXd normals;
   std::vector<double> distance;

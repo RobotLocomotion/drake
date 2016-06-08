@@ -280,6 +280,13 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
       points[0].getPtA().isApprox(solution[points[0].getIdA()].world_frame));
   EXPECT_TRUE(
       points[0].getPtB().isApprox(solution[points[0].getIdB()].world_frame));
+
+  // Calls to BulletModel::potentialCollisionPoints cannot be mixed.
+  // Therefore throw an exception if user attempts to call
+  // potentialCollisionPoints after calling another dispatch method.
+  points.clear();
+  EXPECT_THROW(points = model->potentialCollisionPoints(false),
+               std::runtime_error);
 }
 
 // This test is exactly the same as the previous Box_vs_Sphere test.
@@ -466,6 +473,10 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
               solution[points[0].getIdA()].world_frame.y(), tolerance);
   EXPECT_NEAR(points[0].getPtB().y(),
               solution[points[0].getIdB()].world_frame.y(), tolerance);
+
+  points.clear();
+  EXPECT_THROW(points = model->potentialCollisionPoints(false),
+               std::runtime_error);
 }
 
 // This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
@@ -634,6 +645,10 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
               solution[points[0].getIdA()].world_frame.y(), tolerance);
   EXPECT_NEAR(points[0].getPtB().y(),
               solution[points[0].getIdB()].world_frame.y(), tolerance);
+
+  points.clear();
+  EXPECT_THROW(points = model->potentialCollisionPoints(false),
+               std::runtime_error);
 }
 
 // This test is exactly the same as the previous NonAlignedBoxes.

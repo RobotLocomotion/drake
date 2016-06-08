@@ -89,7 +89,7 @@ class BulletModel : public Model {
       const Eigen::Matrix3Xd& points, bool use_margins,
       std::vector<PointPair>& closest_points) override;
 
-  void ClearCachedResults(bool use_margins);
+  void ClearCachedResults(bool use_margins) override;
 
   bool collisionRaycast(const Eigen::Matrix3Xd& origins,
                         const Eigen::Matrix3Xd& ray_endpoints, bool use_margins,
@@ -124,6 +124,14 @@ class BulletModel : public Model {
       double collision_threshold) override;
 
  private:
+
+  enum DispatchMethod {
+    kNotYetDecided,
+    kClosestPointsAllToAll,
+    kCollisionPointsAllToAll,
+    kPotentialCollisionPoints
+  };
+
   /**
    * \brief Finds the points where elements A and B are closest.
    *
@@ -158,6 +166,8 @@ class BulletModel : public Model {
 
   BulletModel(const BulletModel&) {}
   BulletModel& operator=(const BulletModel&) { return *this; }
+
+  DispatchMethod dispatch_method_in_use_{kNotYetDecided};
 };
 
 }  // namespace DrakeCollision
