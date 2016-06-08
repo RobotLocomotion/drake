@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/state_vector_interface.h"
 #include "drake/systems/framework/vector_interface.h"
 
@@ -17,6 +18,13 @@ namespace systems {
 template <typename T>
 class BasicStateVector : public StateVectorInterface<T> {
  public:
+  /// Constructs a BasicStateVector that owns a generic BasicVector of the
+  /// specified @p size.
+  explicit BasicStateVector(int64_t size)
+      : BasicStateVector(
+            std::unique_ptr<VectorInterface<T>>(new BasicVector<T>(size))) {}
+
+  /// Constructs a BasicStateVector that owns an arbitrary @p vector.
   explicit BasicStateVector(std::unique_ptr<VectorInterface<T>> vector)
       : vector_(std::move(vector)) {}
 
