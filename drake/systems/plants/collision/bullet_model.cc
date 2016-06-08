@@ -759,8 +759,8 @@ void BulletModel::ClearCachedResults(bool use_margins) {
   int numManifolds =
       bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
 
-  for (int i = 0; i < numManifolds; i++) {
-    btPersistentManifold *contactManifold =
+  for (int i = 0; i < numManifolds; ++i) {
+    btPersistentManifold* contactManifold =
         bt_world.bt_collision_world->getDispatcher()
             ->getManifoldByIndexInternal(i);
     contactManifold->clearManifold();
