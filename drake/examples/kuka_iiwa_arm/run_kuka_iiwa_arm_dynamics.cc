@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     DrakeShapes::Box geom(Eigen::Vector3d(box_width, box_width, box_depth));
     Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
     T_element_to_link.translation() << 0, 0,
-        -box_depth;  // top of the box is at z = 0
+        -box_depth / 2.0;  // top of the box is at z = 0
     RigidBody& world = tree->world();
     Eigen::Vector4d color;
     color << 0.9297, 0.7930, 0.6758,
@@ -68,12 +68,13 @@ int main(int argc, char* argv[]) {
   Drake::SimulationOptions options;
   options.realtime_factor = 1.0;
   options.initial_step_size = 0.002;
-  if (commandLineOptionExists(argv, argv + argc, "--non-realtime")) {
-    options.warn_real_time_violation = true;
-  }
+
+  // Prevents exception from being thrown when simulation runs slower than real
+  // time.
+  options.warn_real_time_violation = true;
 
   // Starts the simulation.
   Drake::simulate(*sys.get(), 0, 5, x0, options);
 
-  // TODO(liang.fok): Check the final state of the system before returning 0.
+  // Ensures the robot's joints are within their limits.
 }
