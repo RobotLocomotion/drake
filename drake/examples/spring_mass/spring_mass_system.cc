@@ -122,14 +122,10 @@ std::unique_ptr<ContinuousState<double>> SpringMassSystem::AllocateDerivatives()
 // Assign the state to the output.
 void SpringMassSystem::GetOutput(const Context<double>& context,
                                  SystemOutput<double>* output) const {
-  // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,
-  // and static_cast in Release mode.
   // TODO(david-german-tri): Cache the output of this function.
-  const SpringMassStateVector& state =
-      dynamic_cast<const SpringMassStateVector&>(
-          context.get_state().continuous_state->get_state());
-  SpringMassOutputVector* output_vector = dynamic_cast<SpringMassOutputVector*>(
-      output->ports[0].vector_output.get());
+  const SpringMassStateVector& state = get_state(context);
+
+  SpringMassOutputVector* output_vector = get_mutable_output(output);
   output_vector->set_position(state.get_position());
   output_vector->set_velocity(state.get_velocity());
 }
@@ -139,11 +135,9 @@ void SpringMassSystem::GetDerivatives(
     const Context<double>& context,
     ContinuousState<double>* derivatives) const {
   // TODO(david-german-tri): Cache the output of this function.
-  const SpringMassStateVector& state =
-      dynamic_cast<const SpringMassStateVector&>(
-          context.get_state().continuous_state->get_state());
-  SpringMassStateVector* derivative_vector =
-      dynamic_cast<SpringMassStateVector*>(derivatives->get_mutable_state());
+  const SpringMassStateVector& state = get_state(context);
+
+  SpringMassStateVector* derivative_vector = get_mutable_state(derivatives);
 
   // The derivative of position is velocity.
   derivative_vector->set_position(state.get_velocity());

@@ -81,22 +81,22 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
 
   /// Get the current position of the mass in the given Context.
   double get_position(const MyContext& context) const {
-    return get_xc(context).get_position();
+    return get_state(context).get_position();
   }
 
   /// Get the current velocity of the mass in the given Context.
   double get_velocity(const MyContext& context) const {
-    return get_xc(context).get_velocity();
+    return get_state(context).get_velocity();
   }
 
   /// Set the position of the mass in the given Context.
   void set_position(MyContext* context, double position) const {
-    get_mutable_xc(context)->set_position(position);
+    get_mutable_state(context)->set_position(position);
   }
 
   /// Set the velocity of the mass in the given Context.
   void set_velocity(MyContext* context, double velocity) const {
-    get_mutable_xc(context)->set_velocity(velocity);
+    get_mutable_state(context)->set_velocity(velocity);
   }
 
   /** Return the force being applied by the spring to the mass in the given
@@ -170,14 +170,35 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
                       MyContinuousState* derivatives) const override;
 
  private:
-  static const SpringMassStateVector& get_xc(const MyContext& c) {
-    return dynamic_cast<const SpringMassStateVector&>(
-        c.get_state().continuous_state->get_state());
+  // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,
+  // and static_cast in Release mode.
+
+  static const SpringMassStateVector& get_state(
+      const MyContinuousState& cstate) {
+    return dynamic_cast<const SpringMassStateVector&>(cstate.get_state());
   }
 
-  static SpringMassStateVector* get_mutable_xc(MyContext* c) {
-    return dynamic_cast<SpringMassStateVector*>(
-        c->get_mutable_state()->continuous_state->get_mutable_state());
+  static SpringMassStateVector* get_mutable_state(MyContinuousState* cstate) {
+    return dynamic_cast<SpringMassStateVector*>(cstate->get_mutable_state());
+  }
+
+  static const SpringMassOutputVector& get_output(const MyOutput& output) {
+    return dynamic_cast<const SpringMassOutputVector&>(
+        *output.ports[0].vector_output);
+  }
+
+  static SpringMassOutputVector* get_mutable_output(MyOutput* output) {
+    return dynamic_cast<SpringMassOutputVector*>(
+        output->ports[0].vector_output.get());
+  }
+
+  static const SpringMassStateVector& get_state(const MyContext& context) {
+    return get_state(*context.get_state().continuous_state);
+  }
+
+  static SpringMassStateVector* get_mutable_state(MyContext* context) {
+    return get_mutable_state(
+        context->get_mutable_state()->continuous_state.get());
   }
 
   const std::string name_;
