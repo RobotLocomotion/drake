@@ -79,8 +79,26 @@ int main(int argc, char* argv[]) {
   // time, which it most likely will given the small step size.
   options.warn_real_time_violation = true;
 
+  // Instantates a variable that specifies the duration of the simulation.
+  // The default value is 5 seconds.
+  double duration = 5.0;
+
+  // Searches through the command line looking for a "--duration" flag followed
+  // by a floating point number that specifies a custom duration.
+  for (int ii = 1; ii < argc; ++ii) {
+    if (std::string(argv[ii]) == "--duration") {
+      if (++ii == argc) {
+        throw std::runtime_error(
+            "ERROR: Command line option \"--duration\" is not followed by a "
+            "value!");
+      }
+      duration = atof(argv[ii]);
+    }
+  }
+
   // Starts the simulation.
-  Drake::simulate(*sys.get(), 0, 5, x0, options);
+  const double kStartTime = 0;
+  Drake::simulate(*sys.get(), kStartTime, duration, x0, options);
 
   auto final_robot_state = robot_state_tap->get_input_vector();
   int num_positions = rigid_body_sys->number_of_positions();
