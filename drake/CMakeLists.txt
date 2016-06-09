@@ -51,12 +51,8 @@ endif()
 set(POD_NAME drake)
 include(cmake/pods.cmake)
 
-find_package(Java REQUIRED)
+find_package(Java 1.6 REQUIRED)
 include(UseJava)
-
-if(WIN32)
-  set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)  # See #2442.
-endif()
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
@@ -147,7 +143,30 @@ else()
   # if MATLAB is in the PATH then use cmake find_package to find it
   # along with what is needed to use matlab_add_unit_test
   if(MATLAB_FOUND)
-    find_package(Matlab COMPONENTS MAIN_PROGRAM)
+    find_package(Matlab COMPONENTS MAIN_PROGRAM REQUIRED)
+
+    set(Matlab_Java_MAIN_PROGRAM_ARGS -nodesktop -nodisplay -nosplash)
+    if(WIN32)
+      set(Matlab_Java_MAIN_PROGRAM_ARGS ${Matlab_Java_MAIN_PROGRAM_ARGS} -wait)
+    endif()
+    execute_process(
+      COMMAND ${Matlab_MAIN_PROGRAM} ${Matlab_Java_MAIN_PROGRAM_ARGS} -r "version -java"
+      RESULT_VARIABLE Matlab_Java_RESULT_VARIABLE
+      ERROR_VARIABLE Matlab_Java_OUTPUT_VARIABLE
+      OUTPUT_VARIABLE Matlab_Java_OUTPUT_VARIABLE
+      TIMEOUT 180)
+    if(NOT Matlab_Java_RESULT_VARIABLE AND Matlab_Java_OUTPUT_VARIABLE MATCHES "Java ([0-9]+\\.[0-9]+)\\.[0-9_.]+")
+      set(Matlab_Java_VERSION_MAJOR_MINOR ${CMAKE_MATCH_1})
+      set(Java_VERSION_MAJOR_MINOR "${Java_VERSION_MAJOR}.${Java_VERSION_MINOR}")
+      if(NOT Matlab_Java_VERSION_MAJOR_MINOR VERSION_EQUAL Java_VERSION_MAJOR_MINOR)
+        message(WARNING "MATLAB JVM version (${Matlab_Java_VERSION_MAJOR_MINOR}) does not match installed Java SDK version (${Java_VERSION_MAJOR_MINOR})")
+        if(Matlab_Java_VERSION_MAJOR_MINOR VERSION_LESS Java_VERSION_MAJOR_MINOR)
+          set(CMAKE_JAVA_COMPILE_FLAGS -target ${Matlab_Java_VERSION_MAJOR_MINOR})
+        endif()
+      endif()
+    else()
+      message(WARNING "Could not determine MATLAB JVM version")
+    endif()
   endif()
 endif()
 
