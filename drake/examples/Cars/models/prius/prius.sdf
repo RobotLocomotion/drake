@@ -398,7 +398,7 @@
       </collision>
     </link>
 
-    <link name='body'>
+    <link name='chassis'>
       <pose>0 0 0.385184 0 0 0</pose>
       <inertial>
         <pose>0 0 0 0 0 0</pose>
@@ -549,9 +549,9 @@
       </axis>
     </joint>
 
-    <joint name='body' type='fixed'>
+    <joint name='chassis' type='fixed'>
       <parent>chassis_floor</parent>
-      <child>body</child>
+      <child>chassis</child>
       <pose>0 0 0 0 0 0</pose>
     </joint>
 

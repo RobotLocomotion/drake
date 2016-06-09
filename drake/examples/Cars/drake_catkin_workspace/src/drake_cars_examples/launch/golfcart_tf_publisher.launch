@@ -1,0 +1,4 @@
+<?xml version="1.0" ?>
+<launch>
+  <node name="golfcart_tf_publisher" pkg="drake_cars_examples" type="golfcart_tf_publisher" output="screen" />
+</launch>

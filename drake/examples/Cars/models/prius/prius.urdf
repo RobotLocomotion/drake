@@ -306,7 +306,7 @@
       </material>
     </visual>
   </link>
-  <link name="body">
+  <link name="chassis">
     <inertial>
       <mass value="5.42794"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -397,9 +397,9 @@
     <axis xyz="0  0 -1"/>
     <limit effort="10000" velocity="10000"/>
   </joint>
-  <joint name="body" type="fixed">
+  <joint name="chassis" type="fixed">
     <parent link="chassis_floor"/>
-    <child link="body"/>
+    <child link="chassis"/>
     <origin rpy="0  0  0" xyz="0 0 0.006857999999999975226927518"/>
     <axis xyz="0  0  0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
