@@ -1,0 +1,5 @@
+if(LCM_FOUND)
+  add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
+  target_link_libraries(run_kuka_iiwa_arm_dynamics drakeRBSystem drakeLCMSystem)
+  add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
+endif()
