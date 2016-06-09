@@ -23,9 +23,8 @@ namespace drake {
 /// * velocity
 ///
 /// input vector:
-/// * steering angle (virtual center wheel angle);
-///   a positive angle means a positive change in heading (left turn);
-///   the value must lie within (-pi, +pi).
+/// * steering angle (virtual center wheel angle, with some limits);
+///   a positive angle means a positive change in heading (left turn)
 /// * throttle (0-1)
 /// * brake (0-1)
 ///
@@ -41,14 +40,14 @@ class DRAKECARS_EXPORT SimpleCar {
 
   const drake::lcmt_simple_car_config_t& config() const { return config_; }
 
+  // TODO(jwnimmer-tri) Clarify the type requirements in a future PR.
   /// @name Implement the Drake System concept.
   ///
-  /// @tparam ScalarType must support certain arithmetic operations;
-  /// for details, see ./test/simple_car_scalartype_test.cc.
+  /// @tparam ScalarType must support certain arithmetic operations,
+  /// which will be specified at a future time.
   ///
   /// Instantiated templates for the following ScalarTypes are provided:
   /// - double
-  /// - Drake::TaylorVarXd
   /// They are already available to link against in libdrakeCars.
   ///
   /// To use other unusual ScalarType substitutions,

@@ -1,7 +1,5 @@
 #include "drake/examples/Cars/simple_car-inl.h"
 
-#include "drake/core/Gradient.h"
-
 namespace drake {
 
 const double kInchToMeter = 0.0254;
@@ -34,7 +32,7 @@ SimpleCar::OutputVector<ScalarType> drake::SimpleCar::output(   \
 
 // These instantiations must match the API documentation in simple_car.h.
 DRAKE_INSTANTIATE(double)
-DRAKE_INSTANTIATE(Drake::TaylorVarXd)
+// TODO(jwnimmer-tri) Add support for additional types.
 
 #undef DRAKE_INSTANTIATE
 
