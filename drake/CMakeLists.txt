@@ -150,7 +150,7 @@ else()
       set(Matlab_Java_MAIN_PROGRAM_ARGS ${Matlab_Java_MAIN_PROGRAM_ARGS} -wait)
     endif()
     execute_process(
-      COMMAND ${Matlab_MAIN_PROGRAM} ${Matlab_Java_MAIN_PROGRAM_ARGS} -r "version -java"
+      COMMAND ${Matlab_MAIN_PROGRAM} ${Matlab_Java_MAIN_PROGRAM_ARGS} -r "version -java,quit"
       RESULT_VARIABLE Matlab_Java_RESULT_VARIABLE
       ERROR_VARIABLE Matlab_Java_OUTPUT_VARIABLE
       OUTPUT_VARIABLE Matlab_Java_OUTPUT_VARIABLE
@@ -161,7 +161,7 @@ else()
       if(NOT Matlab_Java_VERSION_MAJOR_MINOR VERSION_EQUAL Java_VERSION_MAJOR_MINOR)
         message(WARNING "MATLAB JVM version (${Matlab_Java_VERSION_MAJOR_MINOR}) does not match installed Java SDK version (${Java_VERSION_MAJOR_MINOR})")
         if(Matlab_Java_VERSION_MAJOR_MINOR VERSION_LESS Java_VERSION_MAJOR_MINOR)
-          set(CMAKE_JAVA_COMPILE_FLAGS -target ${Matlab_Java_VERSION_MAJOR_MINOR})
+          set(CMAKE_JAVA_COMPILE_FLAGS -source ${Matlab_Java_VERSION_MAJOR_MINOR} -target ${Matlab_Java_VERSION_MAJOR_MINOR})
         endif()
       endif()
     else()
