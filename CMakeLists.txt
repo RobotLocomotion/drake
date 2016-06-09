@@ -93,36 +93,40 @@ option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
 if(DISABLE_MATLAB)
   message(STATUS "MATLAB is disabled.")
 else()
-  find_package(Matlab COMPONENTS MAIN_PROGRAM)
+  find_program(matlab matlab)
+  if(matlab)
+    message(STATUS "Found MATLAB at " ${matlab})
+  else()
+    message(STATUS "Looked for MATLAB but could not find it.")
+  endif()
 endif()
 
 ## The following projects are default ON when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
-cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON Matlab_FOUND OFF)
+cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB;matlab" OFF)
 
 ## The following projects are default OFF when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
 ## Some of them may also be hidden on Windows regardless of the status of MATLAB.
-if(NOT WIN32)
-  cmake_dependent_option(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF Matlab_FOUND OFF)
-  cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF Matlab_FOUND OFF)
-  cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "Matlab_FOUND;WITH_MOSEK" OFF)
-  cmake_dependent_option(WITH_MOSEK "convex optimization solver; free for academics" OFF Matlab_FOUND OFF)
-  cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF Matlab_FOUND OFF)
-  cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF Matlab_FOUND OFF)
-  cmake_dependent_option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils" OFF Matlab_FOUND OFF)
-endif()
+cmake_dependent_option(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32;WITH_MOSEK" OFF)
+cmake_dependent_option(WITH_MOSEK "convex optimization solver; free for academics" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 
 ###########################################
 # External Projects that are OFF by default
 ###########################################
 option(WITH_SNOPT "nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
+cmake_dependent_option(WITH_SIGNALSCOPE "live plotting tool for lcm messages" OFF "NOT WIN32;WITH_DIRECTOR" OFF)
+
 if(NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
   option(WITH_AVL "use w/ AVL to compute aerodynamic coefficients for airfoils")
   option(WITH_GUROBI "convex/integer optimization solver; free for academics (will prompt you for login bits)")
   option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
   option(WITH_OCTOMAP "provides oct-tree data structures")
-  cmake_dependent_option(WITH_SIGNALSCOPE "live plotting tool for lcm messages" OFF WITH_DIRECTOR OFF)
   option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 endif()
 
