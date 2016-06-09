@@ -208,6 +208,60 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
     });
 }
 
+
+// This test comes from Section 2.3 of "Handbook of Test Problems in
+// Local and Global Optimization"
+class TestProblem2Objective {
+ public:
+  static size_t numInputs() { return 6; }
+  static size_t numOutputs() { return 1; }
+
+  template <typename ScalarType>
+  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
+    y(0) =
+        (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
+            (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
+            (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
+            (-1.5 * x(4)) +  (-10.0 * x(5)) ;
+  }
+};
+
+GTEST_TEST(testOptimizationProblem, testProblem2) {
+OptimizationProblem prog;
+auto x = prog.AddContinuousVariables(6);
+prog.AddCost(TestProblem2Objective());
+VectorXd constraint1(6), constraint2(6);
+constraint1 << 6, 3, 3, 2, 1, 0;
+prog.AddLinearConstraint(
+    constraint1.transpose(),
+    Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+    Drake::Vector1d::Constant(6.5));
+constraint2 << 10, 0, 10, 0, 0, 1;
+prog.AddLinearConstraint(
+    constraint2.transpose(),
+    Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+    Drake::Vector1d::Constant(20));
+
+Eigen::VectorXd lower(6);
+lower << 0, 0, 0, 0, 0, 0;
+Eigen::VectorXd upper(6);
+upper <<1,1,1,1,1,
+    std::numeric_limits<double>::infinity();
+prog.AddBoundingBoxConstraint(lower, upper);
+
+VectorXd expected(6);
+expected << 0, 1, 0, 1, 1, 20;
+prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(5));
+
+RunNonlinearProgram(prog, [&]() {
+EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
+                            MatrixCompareType::absolute));
+});
+}
+
+
 // This test comes from Section 3.4 of "Handbook of Test Problems in
 // Local and Global Optimization"
 class LowerBoundTestObjective {
