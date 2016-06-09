@@ -224,7 +224,7 @@ class TestProblem2Objective {
         (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
             (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
             (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
-            (-1.5 * x(4)) +  (-10.0 * x(5)) ;
+            (-1.5 * x(4)) +  (-10.0 * x(5));
   }
 };
 
@@ -247,7 +247,7 @@ prog.AddLinearConstraint(
 Eigen::VectorXd lower(6);
 lower << 0, 0, 0, 0, 0, 0;
 Eigen::VectorXd upper(6);
-upper <<1,1,1,1,1,
+upper <<1, 1, 1, 1, 1,
     std::numeric_limits<double>::infinity();
 prog.AddBoundingBoxConstraint(lower, upper);
 
