@@ -36,8 +36,8 @@ SimpleCar::StateVector<ScalarType> SimpleCar::dynamics(
 
   // Apply steering.
   ScalarType sane_steering_angle = input.steering_angle();
-  assert(sane_steering_angle >= static_cast<ScalarType>(M_PI));
-  assert(sane_steering_angle <= static_cast<ScalarType>(M_PI));
+  assert(static_cast<ScalarType>(-M_PI) < sane_steering_angle);
+  assert(sane_steering_angle < static_cast<ScalarType>(M_PI));
   sane_steering_angle = std::min(
       sane_steering_angle,
       static_cast<ScalarType>(config_.max_abs_steering_angle));
