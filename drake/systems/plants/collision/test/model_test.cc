@@ -185,46 +185,56 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
 
+class BoxVsSphereTest : public ::testing::Test {
+ public:
+  void SetUp() override {
+    DrakeShapes::Box box(Vector3d(1.0, 1.0, 1.0));
+    DrakeShapes::Sphere sphere(0.5);
+
+    Element colliding_box(box);
+    Element colliding_sphere(sphere);
+
+    // Populate the model.
+    model = newModel();
+    box_id = model->addElement(colliding_box);
+    sphere_id = model->addElement(colliding_sphere);
+
+    // Access the analytical solution to the contact point on the surface of each
+    // collision element by element id.
+    // Solutions are expressed in world and body frames.
+    solution = {
+        /*           world frame     , body frame  */
+        {box_id,    {{0.0,  1.0, 0.0}, {0.0,  0.5, 0.0}}},
+        {sphere_id, {{0.0, 0.75, 0.0}, {0.0, -0.5, 0.0}}}};
+
+    // Body 1 pose
+    Isometry3d box_pose;
+    box_pose.setIdentity();
+    box_pose.translation() = Vector3d(0.0, 0.5, 0.0);
+    model->updateElementWorldTransform(box_id, box_pose);
+
+    // Body 2 pose
+    Isometry3d sphere_pose;
+    sphere_pose.setIdentity();
+    sphere_pose.translation() = Vector3d(0.0, 1.25, 0.0);
+    model->updateElementWorldTransform(sphere_id, sphere_pose);
+  }
+ protected:
+  double tolerance;
+  std::unique_ptr<Model> model;
+  ElementId box_id, sphere_id;
+  ElementToSurfacePointMap solution;
+};
+
 // A sphere of diameter 1.0 is placed on top of a box with sides of length 1.0.
 // The sphere overlaps with the box with its deepest penetration point (the
 // bottom) 0.25 units into the box (negative distance). Only one contact point
 // is expected when colliding with a sphere.
-GTEST_TEST(ModelTest, Box_vs_Sphere) {
+TEST_F(BoxVsSphereTest, SingleContact) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  const double tolerance = 2.0e-9;
-
-  DrakeShapes::Box box(Vector3d(1.0, 1.0, 1.0));
-  DrakeShapes::Sphere sphere(0.5);
-
-  Element colliding_box(box);
-  Element colliding_sphere(sphere);
-
-  // Populate the model.
-  std::unique_ptr<Model> model(newModel());
-  ElementId box_id = model->addElement(colliding_box);
-  ElementId sphere_id = model->addElement(colliding_sphere);
-
-  // Access the analytical solution to the contact point on the surface of each
-  // collision element by element id.
-  // Solutions are expressed in world and body frames.
-  ElementToSurfacePointMap solution = {
-      /*           world frame     , body frame  */
-      {box_id,    {{0.0,  1.0, 0.0}, {0.0,  0.5, 0.0}}},
-      {sphere_id, {{0.0, 0.75, 0.0}, {0.0, -0.5, 0.0}}}};
-
-  // Body 1 pose
-  Isometry3d box_pose;
-  box_pose.setIdentity();
-  box_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-  model->updateElementWorldTransform(box_id, box_pose);
-
-  // Body 2 pose
-  Isometry3d sphere_pose;
-  sphere_pose.setIdentity();
-  sphere_pose.translation() = Vector3d(0.0, 1.25, 0.0);
-  model->updateElementWorldTransform(sphere_id, sphere_pose);
+  tolerance = 2.0e-9;
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -292,42 +302,11 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
 // This test is exactly the same as the previous Box_vs_Sphere test.
 // The difference is that a multi-contact algorithm is being used.
 // See REMARKS ON MULTICONTACT at the top of this file.
-GTEST_TEST(ModelTest, Box_vs_Sphere_multi) {
+TEST_F(BoxVsSphereTest, MultiContact) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  const double tolerance = 2.0e-4;
-
-  DrakeShapes::Box box(Vector3d(1.0, 1.0, 1.0));
-  DrakeShapes::Sphere sphere(0.5);
-
-  Element colliding_box(box);
-  Element colliding_sphere(sphere);
-
-  // Populate the model.
-  std::unique_ptr<Model> model(newModel());
-  ElementId box_id = model->addElement(colliding_box);
-  ElementId sphere_id = model->addElement(colliding_sphere);
-
-  // Access the analytical solution to the contact point on the surface of each
-  // collision element by element id.
-  // Solutions are expressed in world and body frames.
-  ElementToSurfacePointMap solution = {
-      /*           world frame     , body frame  */
-      {box_id,    {{0.0,  1.0, 0.0}, {0.0,  0.5, 0.0}}},
-      {sphere_id, {{0.0, 0.75, 0.0}, {0.0, -0.5, 0.0}}}};
-
-  // Body 1 pose
-  Isometry3d box_pose;
-  box_pose.setIdentity();
-  box_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-  model->updateElementWorldTransform(box_id, box_pose);
-
-  // Body 2 pose
-  Isometry3d sphere_pose;
-  sphere_pose.setIdentity();
-  sphere_pose.translation() = Vector3d(0.0, 1.25, 0.0);
-  model->updateElementWorldTransform(sphere_id, sphere_pose);
+  tolerance = 2.0e-4;
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -366,43 +345,53 @@ GTEST_TEST(ModelTest, Box_vs_Sphere_multi) {
 // single (randomly chosen) point at one of the smaller box corners. In previous
 // runs this was the corner at (0.5, 0.5, z) where z = 5.0 for the top of the
 // large box and z = 4.9 for the bottom of the smaller box.
-GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
+class SmallBoxSittingOnLargeBox: public ::testing::Test {
+ public:
+  void SetUp() override {
+    // Boxes centered around the origin in their local frames.
+    DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
+    DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
+
+    Element colliding_large_box(large_box);
+    Element colliding_small_box(small_box);
+
+    // Populate the model.
+    model = newModel();
+    large_box_id = model->addElement(colliding_large_box);
+    small_box_id = model->addElement(colliding_small_box);
+
+    // Access the analytical solution to the contact point on the surface of
+    // each collision element by element id.
+    // Solutions are expressed in world and body frames.
+    solution = {
+        /*              world frame    , body frame  */
+        {large_box_id, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
+        {small_box_id, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
+
+    // Large body pose
+    Isometry3d large_box_pose;
+    large_box_pose.setIdentity();
+    large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
+    model->updateElementWorldTransform(large_box_id, large_box_pose);
+
+    // Small body pose
+    Isometry3d small_box_pose;
+    small_box_pose.setIdentity();
+    small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
+    model->updateElementWorldTransform(small_box_id, small_box_pose);
+  }
+ protected:
+  double tolerance;
+  std::unique_ptr<Model> model;
+  ElementId small_box_id, large_box_id;
+  ElementToSurfacePointMap solution;
+};
+
+TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  const double tolerance = 2.0e-9;
-
-  // Boxes centered around the origin in their local frames.
-  DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
-  DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
-
-  Element colliding_large_box(large_box);
-  Element colliding_small_box(small_box);
-
-  // Populate the model.
-  std::unique_ptr<Model> model(newModel());
-  ElementId large_box_id = model->addElement(colliding_large_box);
-  ElementId small_box_id = model->addElement(colliding_small_box);
-
-  // Access the analytical solution to the contact point on the surface of each
-  // collision element by element id.
-  // Solutions are expressed in world and body frames.
-  ElementToSurfacePointMap solution = {
-      /*              world frame    , body frame  */
-      {large_box_id, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
-      {small_box_id, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
-
-  // Large body pose
-  Isometry3d large_box_pose;
-  large_box_pose.setIdentity();
-  large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-  model->updateElementWorldTransform(large_box_id, large_box_pose);
-
-  // Small body pose
-  Isometry3d small_box_pose;
-  small_box_pose.setIdentity();
-  small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-  model->updateElementWorldTransform(small_box_id, small_box_pose);
+  tolerance = 2.0e-9;
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -470,43 +459,11 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
 // This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
 // The difference is that a multi-contact algorithm is being used.
 // See REMARKS ON MULTICONTACT at the top of this file.
-GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox_multi) {
+TEST_F(SmallBoxSittingOnLargeBox, MultiContact) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  const double tolerance = 2.0e-9;
-
-  // Boxes centered around the origin in their local frames.
-  DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
-  DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
-
-  Element colliding_large_box(large_box);
-  Element colliding_small_box(small_box);
-
-  // Populate the model.
-  std::unique_ptr<Model> model(newModel());
-  ElementId large_box_id = model->addElement(colliding_large_box);
-  ElementId small_box_id = model->addElement(colliding_small_box);
-
-  // Access the analytical solution to the contact point on the surface of each
-  // collision element by element id.
-  // Solutions are expressed in world and body frames.
-  ElementToSurfacePointMap solution = {
-      /*              world frame    , body frame  */
-      {large_box_id, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
-      {small_box_id, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
-
-  // Large body pose
-  Isometry3d large_box_pose;
-  large_box_pose.setIdentity();
-  large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-  model->updateElementWorldTransform(large_box_id, large_box_pose);
-
-  // Small body pose
-  Isometry3d small_box_pose;
-  small_box_pose.setIdentity();
-  small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-  model->updateElementWorldTransform(small_box_id, small_box_pose);
+  tolerance = 2.0e-9;
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -543,46 +500,56 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox_multi) {
 
 // Unfortunately these tests show that DrakeCollision::Model only reports a
 // single (randomly chosen) point within this octagonal contact area.
-GTEST_TEST(ModelTest, NonAlignedBoxes) {
+class NonAlignedBoxes: public ::testing::Test {
+ public:
+  void SetUp() override {
+    // Boxes centered around the origin in their local frames.
+    DrakeShapes::Box box1(Vector3d(1.0, 1.0, 1.0));
+    DrakeShapes::Box box2(Vector3d(1.0, 1.0, 1.0));
+
+    Element colliding_box1(box1);
+    Element colliding_box2(box2);
+
+    // Populate the model.
+    model = newModel();
+    box1_id = model->addElement(colliding_box1);
+    box2_id = model->addElement(colliding_box1);
+
+    // Access the analytical solution to the contact point on the surface of each
+    // collision element by element id.
+    // Solutions are expressed in world and body frames.
+    solution = {
+        /*         world frame    , body frame  */
+        {box1_id, {{0.0, 1.0, 0.0}, {0.0,  0.5, 0.0}}},
+        {box2_id, {{0.0, 0.9, 0.0}, {0.0, -0.5, 0.0}}}};
+
+    // Box 1 pose.
+    Isometry3d box1_pose;
+    box1_pose.setIdentity();
+    box1_pose.translation() = Vector3d(0.0, 0.5, 0.0);
+    model->updateElementWorldTransform(box1_id, box1_pose);
+
+    // Box 2 pose.
+    // Rotate box 2 45 degrees around the y axis so that it does not alight with
+    // box 1.
+    Isometry3d box2_pose;
+    box2_pose.setIdentity();
+    box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
+    box2_pose.linear() = AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
+    model->updateElementWorldTransform(box2_id, box2_pose);
+  }
+ protected:
+  double tolerance;
+  std::unique_ptr<Model> model;
+  ElementId box1_id, box2_id;
+  ElementToSurfacePointMap solution;
+};
+
+TEST_F(NonAlignedBoxes, SingleContact) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  const double tolerance = 3.0e-9;
-
-  // Boxes centered around the origin in their local frames.
-  DrakeShapes::Box box1(Vector3d(1.0, 1.0, 1.0));
-  DrakeShapes::Box box2(Vector3d(1.0, 1.0, 1.0));
-
-  Element colliding_box1(box1);
-  Element colliding_box2(box2);
-
-  // Populate the model.
-  std::unique_ptr<Model> model(newModel());
-  ElementId box1_id = model->addElement(colliding_box1);
-  ElementId box2_id = model->addElement(colliding_box1);
-
-  // Access the analytical solution to the contact point on the surface of each
-  // collision element by element id.
-  // Solutions are expressed in world and body frames.
-  ElementToSurfacePointMap solution = {
-      /*         world frame    , body frame  */
-      {box1_id, {{0.0, 1.0, 0.0}, {0.0,  0.5, 0.0}}},
-      {box2_id, {{0.0, 0.9, 0.0}, {0.0, -0.5, 0.0}}}};
-
-  // Box 1 pose.
-  Isometry3d box1_pose;
-  box1_pose.setIdentity();
-  box1_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-  model->updateElementWorldTransform(box1_id, box1_pose);
-
-  // Box 2 pose.
-  // Rotate box 2 45 degrees around the y axis so that it does not alight with
-  // box 1.
-  Isometry3d box2_pose;
-  box2_pose.setIdentity();
-  box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
-  box2_pose.linear() = AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
-  model->updateElementWorldTransform(box2_id, box2_pose);
+  tolerance = 3.0e-9;
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -634,46 +601,11 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
 // This test is exactly the same as the previous NonAlignedBoxes.
 // The difference is that a multi-contact algorithm is being used.
 // See REMARKS ON MULTICONTACT at the top of this file.
-GTEST_TEST(ModelTest, NonAlignedBoxes_multi) {
+TEST_F(NonAlignedBoxes, MultiContact) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  const double tolerance = 5.0e-4;
-
-  // Boxes centered around the origin in their local frames.
-  DrakeShapes::Box box1(Vector3d(1.0, 1.0, 1.0));
-  DrakeShapes::Box box2(Vector3d(1.0, 1.0, 1.0));
-
-  Element colliding_box1(box1);
-  Element colliding_box2(box2);
-
-  // Populate the model.
-  std::unique_ptr<Model> model(newModel());
-  ElementId box1_id = model->addElement(colliding_box1);
-  ElementId box2_id = model->addElement(colliding_box1);
-
-  // Access the analytical solution to the contact point on the surface of each
-  // collision element by element id.
-  // Solutions are expressed in world and body frames.
-  ElementToSurfacePointMap solution = {
-      /*         world frame    , body frame  */
-      {box1_id, {{0.0, 1.0, 0.0}, {0.0,  0.5, 0.0}}},
-      {box2_id, {{0.0, 0.9, 0.0}, {0.0, -0.5, 0.0}}}};
-
-  // Box 1 pose.
-  Isometry3d box1_pose;
-  box1_pose.setIdentity();
-  box1_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-  model->updateElementWorldTransform(box1_id, box1_pose);
-
-  // Box 2 pose.
-  // Rotate box 2 45 degrees around the y axis so that it does not alight with
-  // box 1.
-  Isometry3d box2_pose;
-  box2_pose.setIdentity();
-  box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
-  box2_pose.linear() = AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
-  model->updateElementWorldTransform(box2_id, box2_pose);
+  tolerance = 5.0e-4;
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -699,31 +631,11 @@ GTEST_TEST(ModelTest, NonAlignedBoxes_multi) {
 
 // Tests and illustrates the use of Model::ClearCachedResults to perform a
 // collision query that returns a single result.
-GTEST_TEST(ModelTest, ClearCachedResults) {
+TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  const double tolerance = 2.0e-9;
-
-  // Boxes centered around the origin in their local frames.
-  DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
-  DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
-
-  Element colliding_large_box(large_box);
-  Element colliding_small_box(small_box);
-
-  // Populate the model.
-  std::unique_ptr<Model> model(newModel());
-  ElementId large_box_id = model->addElement(colliding_large_box);
-  ElementId small_box_id = model->addElement(colliding_small_box);
-
-  // Access the analytical solution to the contact point on the surface of each
-  // collision element by element id.
-  // Solutions are expressed in world and body frames.
-  ElementToSurfacePointMap solution = {
-      /*              world frame    , body frame  */
-      {large_box_id, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
-      {small_box_id, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
+  tolerance = 2.0e-9;
 
   // Large body pose
   Isometry3d large_box_pose;
