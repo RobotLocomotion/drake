@@ -596,69 +596,6 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   }
 }
 
-void RigidBodyTree::ComputeMaximumDepthCollisionPoints(
-    const KinematicsCache<double> &cache, VectorXd &phi, Matrix3Xd &normal,
-    Matrix3Xd &xA, Matrix3Xd &xB, vector<int> &bodyA_idx,
-    vector<int> &bodyB_idx, bool use_margins) {
-  updateDynamicCollisionElements(cache);
-  vector<DrakeCollision::PointPair> contact_points;
-  collision_model->ComputeMaximumDepthCollisionPoints(
-      use_margins, contact_points);
-  size_t num_contact_points = contact_points.size();
-
-  phi = VectorXd::Zero(num_contact_points);
-  normal = MatrixXd::Zero(3, num_contact_points);
-  xA = Matrix3Xd(3, num_contact_points);
-  xB = Matrix3Xd(3, num_contact_points);
-
-  bodyA_idx.clear();
-  bodyB_idx.clear();
-
-  Vector3d ptA, ptB, n;
-  double distance;
-
-  PRINT_VAR(num_contact_points);
-
-  for (size_t i = 0; i < num_contact_points; i++) {
-    contact_points[i].getResults(&ptA, &ptB, &n, &distance);
-
-    // Normal is in the world's frame.
-    normal.col(i) = n;
-    phi[i] = distance;
-
-    // Get body indexes.
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(contact_points[i].getIdA()));
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(contact_points[i].getIdB()));
-    bodyA_idx.push_back(elementA->getBody().body_index);
-    bodyB_idx.push_back(elementB->getBody().body_index);
-
-    // Get bodies' transforms.
-    const RigidBody& bodyA = elementA->getBody();
-    Isometry3d TA;
-    if (bodyA.hasParent()) { // body is dynamic.
-      TA = cache.getElement(bodyA).transform_to_world;
-    } else { // body is static.
-      TA = Isometry3d::Identity();
-    }
-
-    const RigidBody& bodyB = elementB->getBody();
-    Isometry3d TB;
-    if (bodyB.hasParent()) { // body is dynamic.
-      TB = cache.getElement(bodyB).transform_to_world;
-    } else { // body is static.
-      TB = Isometry3d::Identity();
-    }
-
-    // Transform to bodies' frames.
-    xA.col(i) = TA.inverse() * ptA;
-    xB.col(i) = TB.inverse() * ptB;
-  }
-}
-
 bool RigidBodyTree::collidingPointsCheckOnly(
     const KinematicsCache<double>& cache, const vector<Vector3d>& points,
     double collision_threshold) {
