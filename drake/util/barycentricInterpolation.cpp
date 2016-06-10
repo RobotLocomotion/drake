@@ -61,7 +61,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   int m = static_cast<int>(mxGetM(prhs[1])),
       n = static_cast<int>(mxGetN(prhs[1])), d = m + 1;
 
-  if (mxGetNumberOfElements(prhs[0]) != m)
+  if (static_cast<int>(mxGetNumberOfElements(prhs[0])) != m)
     mexErrMsgIdAndTxt(
         "Drake:barycentricInterpolation:BadInput",
         "the number of bins must equal the dimension of the points");

@@ -133,9 +133,9 @@ classdef RigidBodyWing < RigidBodyForceElement
           % xfoil cannot handle long filenames (see bug 1734), so
           % copy the profile to the tmp directory and call that instead.
           % yuck.
-          [~,filename,fileext] = fileparts(profile);
-          copyfile(which(profile),fullfile(tempdir,[filename,fileext]));
-          profile = fullfile(tempdir,[filename,fileext]);
+          newname = [tempname,'.dat'];
+          copyfile(which(profile),newname);
+          profile = newname;
 
           avlprofile = strcat('AFILE', '\n', profile);
           xfoilprofile = strcat('LOAD', '\n', profile);

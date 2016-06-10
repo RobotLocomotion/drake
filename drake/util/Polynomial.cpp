@@ -1,6 +1,8 @@
 #include "drake/util/Polynomial.h"
-#include <stdexcept>
+
 #include <cstring>
+#include <set>
+#include <stdexcept>
 
 using namespace std;
 using namespace Eigen;
@@ -241,7 +243,8 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::derivative(
 
   for (typename vector<Monomial>::const_iterator iter = monomials.begin();
        iter != monomials.end(); iter++) {
-    if (!iter->terms.empty() && iter->terms[0].power >= derivative_order) {
+    if (!iter->terms.empty() && (
+            iter->terms[0].power >= static_cast<PowerType>(derivative_order))) {
       Monomial m = *iter;
       for (unsigned int k = 0; k < derivative_order;
            k++) {  // take the remaining derivatives
@@ -289,6 +292,19 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(
   ret.is_univariate = true;
   ret.monomials.push_back(m);
   return ret;
+}
+
+template <typename CoefficientType>
+bool Polynomial<CoefficientType>::operator==(
+    const Polynomial<CoefficientType>& other) const {
+  // Comparison of unsorted vectors is faster copying them into std::set
+  // btrees rather than using std::is_permutation().
+  // TODO(#2216) switch from multiset to set for further performance gains.
+  const std::multiset<Monomial> this_monomials(monomials.begin(),
+                                               monomials.end());
+  const std::multiset<Monomial> other_monomials(other.monomials.begin(),
+                                                other.monomials.end());
+  return this_monomials == other_monomials;
 }
 
 template <typename CoefficientType>
@@ -529,7 +545,7 @@ string Polynomial<CoefficientType>::idToVariableName(const VarType id) {
                                                    (int)(kNameLength - 1));
   char name[kNameLength + 1];
   int j = 0;
-  for (int i = 0; i < kNameLength; i++) {
+  for (int i = 0; i < static_cast<int>(kNameLength); i++) {
     unsigned int name_ind = (name_part / multiplier) % (kNumNameChars + 1);
     if (name_ind > 0) name[j++] = kNameChars[name_ind - 1];
     multiplier /= kNumNameChars + 1;
@@ -543,6 +559,10 @@ template <typename CoefficientType>
 void Polynomial<CoefficientType>::makeMonomialsUnique(void) {
   VarType unique_var = 0;  // also update the univariate flag
   for (ptrdiff_t i = monomials.size() - 1; i >= 0; i--) {
+    if (monomials[i].coefficient == 0) {
+      monomials.erase(monomials.begin() + i);
+      continue;
+    }
     Monomial& mi = monomials[i];
     if (!mi.terms.empty()) {
       if (mi.terms.size() > 1) is_univariate = false;

@@ -90,13 +90,10 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
 
   /// Estimate some parameters of a polynomial based on empirical data.
   /**
-   * Given a polynomial equation P(a, b, ... x, y, ...) = 0, and measured
-   * values of some its arguments (x, y, ..., referred to as the "active
-   * variables"), estimate values for the remaining arguments (a, b, ...,
-   * referred to as the "parameters").
-   *
-   * P in this case is a single polynomial.  A version that takes a vector of
-   * Polynomial is forthcoming (TODO(ggould-tri)).
+   * Given one or more polynomial equations P[i](a, b, ... x, y, ...) = 0, and
+   * measured values of some its arguments (x, y, ..., referred to as the
+   * "active variables"), estimate values for the remaining arguments (a, b,
+   * ..., referred to as the "parameters").
    *
    * Measured x, y, ... is provided in a list of maps, active_var_values.
    *
@@ -107,7 +104,7 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    */
   typedef std::map<VarType, CoefficientType> PartialEvalType;
   static std::pair<PartialEvalType, CoefficientType> EstimateParameters(
-      const PolyType& poly,
+      const VectorXPoly& polys,
       const std::vector<PartialEvalType>& active_var_values);
 
  private:

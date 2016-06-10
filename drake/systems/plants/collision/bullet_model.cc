@@ -313,6 +313,14 @@ ElementId BulletModel::addElement(const Element& element) {
 }
 
 std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
+  if (dispatch_method_in_use_ == kNotYetDecided) {
+    dispatch_method_in_use_ = kPotentialCollisionPoints;
+  } else if (dispatch_method_in_use_ != kPotentialCollisionPoints) {
+    throw std::runtime_error(
+        "Calling BulletModel::potentialCollisionPoints after previously using"
+            " another dispatch method will result in undefined behavior.");
+  }
+
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
   bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(
       kPerturbationIterations, kMinimumPointsPerturbationThreshold);
@@ -728,6 +736,9 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
 bool BulletModel::closestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, const bool use_margins,
     std::vector<PointPair>& closest_points) {
+  if (dispatch_method_in_use_ == kNotYetDecided)
+    dispatch_method_in_use_ = kClosestPointsAllToAll;
+
   std::vector<ElementIdPair> id_pairs;
   for (size_t i = 0; i < ids_to_check.size(); ++i) {
     ElementId id_a = ids_to_check[i];
@@ -760,6 +771,9 @@ bool BulletModel::closestPointsPairwise(
 
 bool BulletModel::collisionPointsAllToAll(
     const bool use_margins, std::vector<PointPair>& collision_points) {
+  if (dispatch_method_in_use_ == kNotYetDecided)
+    dispatch_method_in_use_ = kCollisionPointsAllToAll;
+
   BulletResultCollector c;
   MatrixXd normals;
   std::vector<double> distance;
@@ -812,7 +826,7 @@ bool BulletModel::collisionPointsAllToAll(
 bool BulletModel::ComputeMaximumDepthCollisionPoints(
     const bool use_margins, std::vector<PointPair>& collision_points) {
   BulletResultCollector c;
-  BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+  BulletCollisionWorldWrapper &bt_world = getBulletWorld(use_margins);
 
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
   int numManifolds =
@@ -825,14 +839,14 @@ bool BulletModel::ComputeMaximumDepthCollisionPoints(
   int j_min;
 
   for (int i = 0; i < numManifolds; i++) {
-    btPersistentManifold* contactManifold =
+    btPersistentManifold *contactManifold =
         bt_world.bt_collision_world->getDispatcher()
             ->getManifoldByIndexInternal(i);
 
-    const btCollisionObject* obA = contactManifold->getBody0();
-    const btCollisionObject* obB = contactManifold->getBody1();
-    elementA = static_cast<Element*>(obA->getUserPointer());
-    elementB = static_cast<Element*>(obB->getUserPointer());
+    const btCollisionObject *obA = contactManifold->getBody0();
+    const btCollisionObject *obB = contactManifold->getBody1();
+    elementA = static_cast<Element *>(obA->getUserPointer());
+    elementB = static_cast<Element *>(obB->getUserPointer());
     DrakeShapes::Shape shapeA = elementA->getShape();
     DrakeShapes::Shape shapeB = elementB->getShape();
     double marginA = 0;
@@ -871,10 +885,10 @@ bool BulletModel::ComputeMaximumDepthCollisionPoints(
     }
 
     // Gather info for maximum penetration point.
-    btManifoldPoint& pt = contactManifold->getContactPoint(j_min);
-    const btVector3& normalOnB = pt.m_normalWorldOnB;
-    const btVector3& ptA = pt.getPositionWorldOnA() + normalOnB * marginA;
-    const btVector3& ptB = pt.getPositionWorldOnB() - normalOnB * marginB;
+    btManifoldPoint &pt = contactManifold->getContactPoint(j_min);
+    const btVector3 &normalOnB = pt.m_normalWorldOnB;
+    const btVector3 &ptA = pt.getPositionWorldOnA() + normalOnB * marginA;
+    const btVector3 &ptB = pt.getPositionWorldOnB() - normalOnB * marginB;
 
     // One result per manifold.
     c.addSingleResult(elementA->getId(), elementB->getId(),
@@ -883,6 +897,20 @@ bool BulletModel::ComputeMaximumDepthCollisionPoints(
   }
   collision_points = c.getResults();
   return c.pts.size() > 0;
+}
+
+void BulletModel::ClearCachedResults(bool use_margins) {
+  BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+
+  int numManifolds =
+      bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
+
+  for (int i = 0; i < numManifolds; ++i) {
+    btPersistentManifold* contactManifold =
+        bt_world.bt_collision_world->getDispatcher()
+            ->getManifoldByIndexInternal(i);
+    contactManifold->clearManifold();
+  }
 }
 
 BulletCollisionWorldWrapper& BulletModel::getBulletWorld(bool use_margins) {

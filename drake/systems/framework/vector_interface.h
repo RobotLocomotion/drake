@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #include <Eigen/Dense>
 
 namespace drake {
@@ -15,7 +17,8 @@ using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1 /* column */>;
 /// signal. The vector is always a column vector.
 ///
 /// @tparam T Must be a Scalar compatible with Eigen.
-template <typename T> class VectorInterface {
+template <typename T>
+class VectorInterface {
  public:
   virtual ~VectorInterface() {}
 
@@ -25,11 +28,15 @@ template <typename T> class VectorInterface {
   VectorInterface(VectorInterface<T>&& other) = delete;
   VectorInterface& operator=(VectorInterface<T>&& other) = delete;
 
+  /// Returns the size of the vector, which must be equal to the number of rows
+  /// in get_value().
+  virtual ptrdiff_t size() const = 0;
+
   /// Sets the vector to the given value. After a.set_value(b.get_value()), a
   /// must be identical to b.
-  /// May throw std::runtime_error if the new value has different dimensions
+  /// May throw std::out_of_range if the new value has different dimensions
   /// than expected by the concrete class implementing VectorInterface.
-  virtual void set_value(const VectorX<T>& value) = 0;
+  virtual void set_value(const Eigen::Ref<const VectorX<T>>& value) = 0;
 
   /// Returns a column vector containing the entire value of the signal.
   virtual const Eigen::VectorBlock<const VectorX<T>> get_value() const = 0;

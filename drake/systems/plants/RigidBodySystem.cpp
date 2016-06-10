@@ -376,8 +376,8 @@ std::vector<const RigidBodySensor*> RigidBodySystem::GetSensors() const {
   return result;
 }
 
-DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double>
-getInitialState(const RigidBodySystem& sys) {
+DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
+    const RigidBodySystem& sys) {
   VectorXd x0(sys.tree->number_of_positions() +
               sys.tree->number_of_velocities());
 
@@ -410,16 +410,16 @@ getInitialState(const RigidBodySystem& sys) {
           sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index,
           loops[i].frameB->frame_index, bTbp, tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
-          new SingleTimeKinematicConstraintWrapper(
-              &constraints.back(), &kin_helper));
+          new SingleTimeKinematicConstraintWrapper(&constraints.back(),
+                                                   &kin_helper));
       prog.AddGenericConstraint(con1wrapper, {qvar});
       constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis,
           loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp,
           tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
-          new SingleTimeKinematicConstraintWrapper(
-              &constraints.back(), &kin_helper));
+          new SingleTimeKinematicConstraintWrapper(&constraints.back(),
+                                                   &kin_helper));
       prog.AddGenericConstraint(con2wrapper, {qvar});
     }
 
@@ -495,35 +495,48 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
   tree->addFrame(frameB);
 }
 
+const std::string& RigidBodySensor::get_model_name() const {
+  return frame_->body->model_name();
+}
+
+const RigidBodyFrame& RigidBodySensor::get_frame() const {
+  return *frame_.get();
+}
+
+/// Returns the rigid body system to which this sensor attaches.
+const RigidBodySystem& RigidBodySensor::get_rigid_body_system() const {
+  return sys_;
+}
+
 RigidBodyMagnetometer::RigidBodyMagnetometer(
     RigidBodySystem const& sys, const std::string& name,
     const std::shared_ptr<RigidBodyFrame> frame, double declination)
-    : RigidBodySensor(sys, name), frame(frame) {
+    : RigidBodySensor(sys, name, frame) {
   setDeclination(declination);
 }
 
 RigidBodyAccelerometer::RigidBodyAccelerometer(
     RigidBodySystem const& sys, const std::string& name,
     const std::shared_ptr<RigidBodyFrame> frame)
-    : RigidBodySensor(sys, name), frame(frame), gravity_compensation(false) {}
+    : RigidBodySensor(sys, name, frame), gravity_compensation(false) {}
 
 Eigen::VectorXd RigidBodyAccelerometer::output(
     const double& t, const KinematicsCache<double>& rigid_body_state,
     const RigidBodySystem::InputVector<double>& u) const {
   VectorXd x = rigid_body_state.getX();
-  auto xdd = sys.dynamics(t, x, u);
-  auto const& tree = sys.getRigidBodyTree();
+  auto xdd = get_rigid_body_system().dynamics(t, x, u);
+  auto const& tree = get_rigid_body_system().getRigidBodyTree();
   auto v_dot = xdd.bottomRows(rigid_body_state.getNumVelocities());
 
   Vector3d sensor_origin =
       Vector3d::Zero();  // assumes sensor coincides with the frame's origin;
   auto J = tree->transformPointsJacobian(rigid_body_state, sensor_origin,
-                                         frame->frame_index, 0, false);
+                                         get_frame().frame_index, 0, false);
   auto Jdot_times_v = tree->transformPointsJacobianDotTimesV(
-      rigid_body_state, sensor_origin, frame->frame_index, 0);
+      rigid_body_state, sensor_origin, get_frame().frame_index, 0);
 
   Vector4d quat_world_to_body =
-      tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
+      tree->relativeQuaternion(rigid_body_state, 0, get_frame().frame_index);
 
   Vector3d accel_base = Jdot_times_v + J * v_dot;
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
@@ -539,15 +552,15 @@ Eigen::VectorXd RigidBodyAccelerometer::output(
 RigidBodyGyroscope::RigidBodyGyroscope(
     RigidBodySystem const& sys, const std::string& name,
     const std::shared_ptr<RigidBodyFrame> frame)
-    : RigidBodySensor(sys, name), frame(frame) {}
+    : RigidBodySensor(sys, name, frame) {}
 
 Eigen::VectorXd RigidBodyMagnetometer::output(
     const double& t, const KinematicsCache<double>& rigid_body_state,
     const RigidBodySystem::InputVector<double>& u) const {
-  auto const& tree = sys.getRigidBodyTree();
+  auto const& tree = get_rigid_body_system().getRigidBodyTree();
 
   Vector4d quat_world_to_body =
-      tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
+      tree->relativeQuaternion(rigid_body_state, 0, get_frame().frame_index);
 
   Vector3d mag_body = quatRotateVec(quat_world_to_body, magnetic_north);
 
@@ -558,9 +571,9 @@ Eigen::VectorXd RigidBodyGyroscope::output(
     const double& t, const KinematicsCache<double>& rigid_body_state,
     const RigidBodySystem::InputVector<double>& u) const {
   // relative twist of body with respect to world expressed in body
-  auto const& tree = sys.getRigidBodyTree();
+  auto const& tree = get_rigid_body_system().getRigidBodyTree();
   auto relative_twist = tree->relativeTwist(
-      rigid_body_state, 0, frame->frame_index, frame->frame_index);
+      rigid_body_state, 0, get_frame().frame_index, get_frame().frame_index);
   Eigen::Vector3d angular_rates = relative_twist.head<3>();
 
   return noise_model ? noise_model->generateNoise(angular_rates)
@@ -571,8 +584,7 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(
     RigidBodySystem const& sys, const std::string& name,
     const std::shared_ptr<RigidBodyFrame> frame, std::size_t samples,
     double min_angle, double max_angle, double range)
-    : RigidBodySensor(sys, name),
-      frame_(frame),
+    : RigidBodySensor(sys, name, frame),
       min_yaw_(min_angle),
       max_yaw_(max_angle),
       num_pixel_cols_(samples),
@@ -584,7 +596,7 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(
 RigidBodyDepthSensor::RigidBodyDepthSensor(
     RigidBodySystem const& sys, const std::string& name,
     std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node)
-    : RigidBodySensor(sys, name), frame_(frame) {
+    : RigidBodySensor(sys, name, frame) {
   string type(node->Attribute("type"));
 
   if (type.compare("ray") == 0) {
@@ -634,6 +646,8 @@ void RigidBodyDepthSensor::CheckValidConfiguration() {
     error_msg
         << "ERROR: RigidBodyDepthSensor: min pitch is greater than max pitch!"
         << std::endl
+        << "  - sensor name: " << get_name() << std::endl
+        << "  - model name: " << get_model_name() << std::endl
         << "  - min pitch: " << min_pitch_ << std::endl
         << "  - max pitch: " << max_pitch_ << std::endl
         << std::endl;
@@ -645,6 +659,8 @@ void RigidBodyDepthSensor::CheckValidConfiguration() {
     std::stringstream error_msg;
     error_msg << "ERROR: RigidBodyDepthSensor: min yaw is greater than max yaw!"
               << std::endl
+              << "  - sensor name: " << get_name() << std::endl
+              << "  - model name: " << get_model_name() << std::endl
               << "  - min yaw: " << min_yaw_ << std::endl
               << "  - max yaw: " << max_yaw_ << std::endl
               << std::endl;
@@ -659,7 +675,8 @@ void RigidBodyDepthSensor::CheckValidConfiguration() {
                  "Contradiction between min/max pitch and number of pixels per "
                  "row."
               << std::endl
-              << "  - sensor name: " << name << std::endl
+              << "  - sensor name: " << get_name() << std::endl
+              << "  - model name: " << get_model_name() << std::endl
               << "  - min pitch: " << min_pitch_ << std::endl
               << "  - max pitch: " << max_pitch_ << std::endl
               << "  - number of pixels per row: " << num_pixel_rows_
@@ -675,7 +692,8 @@ void RigidBodyDepthSensor::CheckValidConfiguration() {
                  "Contradiction between min/max yaw and number of pixels per "
                  "column."
               << std::endl
-              << "  - sensor name: " << name << std::endl
+              << "  - sensor name: " << get_name() << std::endl
+              << "  - model name: " << get_model_name() << std::endl
               << "  - min yaw: " << min_yaw_ << std::endl
               << "  - max yaw: " << max_yaw_ << std::endl
               << "  - number of pixels per row: " << num_pixel_cols_
@@ -716,15 +734,16 @@ Eigen::VectorXd RigidBodyDepthSensor::output(
 
   // Computes the origin of the rays in the world frame. The origin of
   // of the rays in the frame of the sensor is [0,0,0] (the Vector3d::Zero()).
-  Vector3d origin = sys.getRigidBodyTree()->transformPoints(
-      rigid_body_state, Vector3d::Zero(), frame_->frame_index, 0);
+  Vector3d origin = get_rigid_body_system().getRigidBodyTree()->transformPoints(
+      rigid_body_state, Vector3d::Zero(), get_frame().frame_index, 0);
 
   // Computes the end of the casted rays in the world frame.
-  Matrix3Xd raycast_endpoints_world = sys.getRigidBodyTree()->transformPoints(
-      rigid_body_state, raycast_endpoints, frame_->frame_index, 0);
+  Matrix3Xd raycast_endpoints_world =
+      get_rigid_body_system().getRigidBodyTree()->transformPoints(
+          rigid_body_state, raycast_endpoints, get_frame().frame_index, 0);
 
-  sys.getRigidBodyTree()->collisionRaycast(rigid_body_state, origin,
-                                           raycast_endpoints_world, distances);
+  get_rigid_body_system().getRigidBodyTree()->collisionRaycast(
+      rigid_body_state, origin, raycast_endpoints_world, distances);
 
   for (size_t i = 0; i < num_distances; i++) {
     if (distances[i] < 0.0 || distances[i] > max_range_) {
@@ -744,7 +763,6 @@ size_t RigidBodyDepthSensor::getNumOutputs() const {
 bool RigidBodyDepthSensor::is_horizontal_scanner() const {
   return num_pixel_cols_ > 1;
 }
-
 
 bool RigidBodyDepthSensor::is_vertical_scanner() const {
   return num_pixel_rows_ > 1;

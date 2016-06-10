@@ -28,14 +28,16 @@ class BasicVector : public VectorInterface<T> {
 
   ~BasicVector() override {}
 
-  void set_value(const VectorX<T>& value) override {
+  void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
     if (value.rows() != values_.rows()) {
-      throw std::runtime_error(
+      throw std::out_of_range(
           "Cannot set a BasicVector of size " + std::to_string(values_.rows()) +
           " with a value of size " + std::to_string(value.rows()));
     }
     values_ = value;
   }
+
+  ptrdiff_t size() const override { return values_.rows(); }
 
   const Eigen::VectorBlock<const VectorX<T>> get_value() const override {
     return values_.head(values_.rows());

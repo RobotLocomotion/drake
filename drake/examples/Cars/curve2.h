@@ -41,8 +41,8 @@ class Curve2 {
 
   /// A result type for the GetPosition method.
   struct PositionResult {
-    Point2 position{Point2::Zero()};
-    Point2 position_dot{Point2::Zero()};
+    Point2 position = Point2{Point2::Zero()};
+    Point2 position_dot = Point2{Point2::Zero()};
   };
 
   /// Returns the Curve's @p PositionResult::position at @p path_distance,

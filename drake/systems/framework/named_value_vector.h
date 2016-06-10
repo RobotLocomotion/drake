@@ -30,7 +30,7 @@ class NamedValueVector : public VectorInterface<T> {
 
   /// Constructs a vector with the names and values in named_values. Throws an
   /// std::runtime_error if names are not unique.
-  NamedValueVector(
+  explicit NamedValueVector(
       const std::vector<std::pair<std::string, T>>& named_values)
       : NamedValueVector(GetKeys(named_values)) {
     for (int i = 0; i < named_values.size(); ++i) {
@@ -40,22 +40,23 @@ class NamedValueVector : public VectorInterface<T> {
 
   ~NamedValueVector() override {}
 
-  void set_value(const VectorX<T>& value) override {
-    if (value.rows() != values_.rows()) {
-      throw std::runtime_error("Cannot set a NamedValueVector of size " +
-                               std::to_string(values_.rows()) +
-                               " with a value of size " +
-                               std::to_string(value.rows()));
+  ptrdiff_t size() const override { return values_.rows(); }
+
+  void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
+    if (value.rows() != size()) {
+      throw std::out_of_range(
+          "Cannot set a NamedValueVector of size " + std::to_string(size()) +
+          " with a value of size " + std::to_string(value.rows()));
     }
     values_ = value;
   }
 
   const Eigen::VectorBlock<const VectorX<T>> get_value() const override {
-    return values_.head(values_.rows());
+    return values_.head(size());
   }
 
   Eigen::VectorBlock<VectorX<T>> get_mutable_value() override {
-    return values_.head(values_.rows());
+    return values_.head(size());
   }
 
   bool has_named_value(const std::string& name) const {

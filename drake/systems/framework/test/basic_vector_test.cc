@@ -4,7 +4,6 @@
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
-#include "gmock/gmock.h"
 
 #include "drake/core/functional_form.h"
 #include "drake/util/Polynomial.h"
@@ -48,6 +47,12 @@ GTEST_TEST(BasicVectorTest, FunctionalFormInitiallyUndefined) {
   EXPECT_TRUE(vec.get_value()[0].IsUndefined());
 }
 
+// Tests that the BasicVector has a size as soon as it is constructed.
+GTEST_TEST(BasicVectorTest, Size) {
+  BasicVector<int> vec(5);
+  EXPECT_EQ(5, vec.size());
+}
+
 // Tests that the BasicVector can be mutated in-place.
 GTEST_TEST(BasicVectorTest, Mutate) {
   BasicVector<int> vec(2);
@@ -73,7 +78,7 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
   BasicVector<int> vec(2);
   Eigen::Vector3i next_value;
   next_value << 3, 4, 5;
-  EXPECT_THROW(vec.set_value(next_value), std::runtime_error);
+  EXPECT_THROW(vec.set_value(next_value), std::out_of_range);
 }
 
 }  // namespace

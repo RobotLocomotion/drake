@@ -43,6 +43,7 @@ void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
 
   Eigen::VectorXd fast_z;
   bool result = l.SolveLcpFast(M, q, &fast_z);
+  (void)(result);  // TODO(sammy-tri) Either use, or remove.
   if (expected_z.size() == 0) {
     ASSERT_TRUE(expect_fast_pass)
         << "Expected Z not provided and expect_fast_pass unset.";
