@@ -8,13 +8,11 @@ using Eigen::VectorXd;
 
 namespace drake {
 
-class DRAKERBSYSTEM_EXPORT AtlasSystem : public Drake::RigidBodySystem {
+class AtlasSystem : public Drake::RigidBodySystem {
  public:
   AtlasSystem();
 
   const VectorXd& get_initial_state() const;
-
-  static const int kNumberOfPositions;
 
  private:
   RigidBodyTree* tree_;
