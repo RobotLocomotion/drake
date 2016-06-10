@@ -120,7 +120,7 @@ class Context {
         new ContinuousState<T>(xc_vector.Clone(), num_q, num_v, num_z));
 
     // Make deep copies of everything else using the default copy constructors.
-    *context->get_mutable_time() = this->get_time();
+    *context->get_mutable_time_step() = this->get_time_step();
     *context->get_mutable_input() = this->get_input();
     *context->get_mutable_cache() = *this->get_mutable_cache();
     return context;

@@ -177,19 +177,7 @@ TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
 }
 
 // These are helper functions for the Integrate test below.
-
-/* Copy the contents of a state vector into an Eigen vector. */
-VectorX<double> ToEigen(const StateVectorInterface<double>& x) {
-  VectorX<double> v(x.size());
-  for (ptrdiff_t i = 0; i < x.size(); ++i) v[i] = x.GetAtIndex(i);
-  return v;
-}
-
-/* Copy the contents of an Eigen Vector to a state vector already sized. */
-void FromEigen(const VectorX<double>& v, StateVectorInterface<double>* x) {
-  assert(v.size() == x->size());
-  for (ptrdiff_t i = 0; i < x->size(); ++i) x->SetAtIndex(i, v[i]);
-}
+//
 
 /* Given a System and a Context, calculate the partial derivative matrix
 D xdot / D x. Here x has only continuous variables; in general we would have
@@ -206,8 +194,8 @@ MatrixX<double> CalcDxdotDx(const ContinuousSystem<double>& system,
   auto derivs0 = system.AllocateDerivatives();
   system.GetDerivatives(context, derivs0.get());
   const ptrdiff_t nx = derivs0->get_state().size();
-  const VectorX<double> xdot0(ToEigen(derivs0->get_state()));
-  MatrixX<double> dxdotdx(nx, nx);
+  const VectorX<double> xdot0 = derivs0->get_state().CopyToVector();
+  MatrixX<double> d_xdot_dx(nx, nx);
 
   // TODO(david-german-tr) Need a copy of the Context here to allow
   // perturbation of state variables without affecting the original.
@@ -221,11 +209,11 @@ MatrixX<double> CalcDxdotDx(const ContinuousSystem<double>& system,
     const double xi = x->GetAtIndex(i);
     x->SetAtIndex(i, xi + perturb);
     system.GetDerivatives(wcontext, derivs.get());
-    dxdotdx.col(i) = (ToEigen(derivs->get_state()) - xdot0) / perturb;
+    d_xdot_dx.col(i) = (derivs->get_state().CopyToVector() - xdot0) / perturb;
     x->SetAtIndex(i, xi);  // repair Context
   }
 
-  return dxdotdx;
+  return d_xdot_dx;
 }
 
 /* Calculate the total energy for this system in the given Context.
@@ -318,7 +306,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
       // Invalidate all xc-dependent quantities.
       auto& x1 = *contexts[kIe]->get_mutable_state()
                       ->continuous_state->get_mutable_state();
-      const auto vx0 = ToEigen(x1);
+      const auto vx0 = x1.CopyToVector();
       const auto& dx0 = derivs[kIe]->get_state();
       PlusEq(&x1, h, dx0);  // x1 += h*dx0 (initial guess)
       contexts[kIe]->set_time(std::min(t + h, kTfinal));  // t=t1
@@ -330,14 +318,14 @@ TEST_F(SpringMassSystemTest, Integrate) {
       for (int i = 0; i < 6; ++i) {
         system_->GetDerivatives(*contexts[kIe], derivs[kIe].get());
         const auto& dx1 = derivs[kIe]->get_state();
-        const auto vx1 = ToEigen(x1);
-        const auto vdx1 = ToEigen(dx1);
+        const auto vx1 = x1.CopyToVector();
+        const auto vdx1 = dx1.CopyToVector();
         const auto err = vx1 - (vx0 + h * vdx1);
         const auto DxdotDx = CalcDxdotDx(*system_, *contexts[kIe]);
         const auto J = I - h * DxdotDx;
         Eigen::PartialPivLU<MatrixX<double>> Jlu(J);
         VectorX<double> dx = Jlu.solve(err);
-        FromEigen(vx1 - dx, &x1);
+        x1.SetFromVector(vx1 - dx);
       }
     }
 
