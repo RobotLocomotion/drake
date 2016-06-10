@@ -80,5 +80,4 @@ void AtlasSystem::SetUpTerrain() {
   }
 }
 
-} // namespace drake
-
+}  // namespace drake

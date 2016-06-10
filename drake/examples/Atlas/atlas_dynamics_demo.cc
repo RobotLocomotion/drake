@@ -14,23 +14,22 @@ int main(int argc, char* argv[]) {
   try {
     if (argc != 1 && argc != 3) {
       std::cerr << "Usage: " << argv[0] << " [options]" << std::endl
-          << "Options: " << std::endl
-          << "  --duration [duration in seconds]"
-          << std::endl;
+                << "Options: " << std::endl
+                << "  --duration [duration in seconds]" << std::endl;
       return 0;
     }
 
     // Parse command line options.
     double final_time = std::numeric_limits<double>::infinity();
     try {
-      char *duration_option =
+      char* duration_option =
           getCommandLineOption(argv, argv + argc, "--duration");
       if (duration_option) {
         final_time = std::stod(std::string(duration_option));
       }
-    } catch(std::exception& e){
-      std::cout << "Error when parsing command line options: "
-          << e.what() << std::endl;
+    } catch (std::exception& e) {
+      std::cout << "Error when parsing command line options: " << e.what()
+                << std::endl;
       return 1;
     }
 
@@ -39,7 +38,7 @@ int main(int argc, char* argv[]) {
 
     std::shared_ptr<AtlasSystem> atlas_sys = std::make_shared<AtlasSystem>();
 
-    auto const &tree = atlas_sys->getRigidBodyTree();
+    auto const& tree = atlas_sys->getRigidBodyTree();
 
     auto visualizer =
         std::make_shared<BotVisualizer<AtlasSystem::StateVector>>(lcm, tree);
@@ -52,7 +51,7 @@ int main(int argc, char* argv[]) {
 
     runLCM(sys_with_vis, lcm, 0, final_time, atlas_sys->get_initial_state(),
            options);
-  }catch (const std::exception& e) {
+  } catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
     return 1;
   }

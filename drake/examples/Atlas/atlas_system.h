@@ -8,7 +8,7 @@ using Eigen::VectorXd;
 
 namespace drake {
 
-class DRAKERBSYSTEM_EXPORT AtlasSystem: public Drake::RigidBodySystem {
+class DRAKERBSYSTEM_EXPORT AtlasSystem : public Drake::RigidBodySystem {
  public:
   AtlasSystem();
 
@@ -18,7 +18,7 @@ class DRAKERBSYSTEM_EXPORT AtlasSystem: public Drake::RigidBodySystem {
 
  private:
   RigidBodyTree* tree_;
-  VectorXd x0_; // Atlas's initial configuration.
+  VectorXd x0_;  // Atlas's initial configuration.
 
   // Sets the initial pose for Atlas.
   // Magic numbers are initial conditions used in runAtlasWalking.m.
@@ -27,4 +27,4 @@ class DRAKERBSYSTEM_EXPORT AtlasSystem: public Drake::RigidBodySystem {
   void SetUpTerrain();
 };
 
-} //namespace drake
+}  // namespace drake
