@@ -19,6 +19,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_subvector.h"
+#include "drake/systems/framework/state_vector_arithmetic.h"
 #include "drake/systems/framework/state_vector_interface.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -164,21 +165,6 @@ TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
 }
 
 // These are helper functions for the Integrate test below.
-
-/* Compute x += scale * y with x and y equal-length state vectors.
-
-TODO(david-german-tri,sherm1) StateVectors should support some basic arithmetic
-operators to reduce the amount of meaning-obscuring clutter involved in writing
-solvers. */
-void PlusEq(StateVectorInterface<double>* x, double scale,
-            const StateVectorInterface<double>& y) {
-  assert(x->size() == y.size());
-  for (ptrdiff_t i = 0; i < x->size(); ++i) {
-    const double xi = x->GetAtIndex(i);
-    const double yi = y.GetAtIndex(i);
-    x->SetAtIndex(i, xi + scale * yi);
-  }
-}
 
 /* Copy the contents of a state vector into an Eigen vector. */
 VectorX<double> ToEigen(const StateVectorInterface<double>& x) {
