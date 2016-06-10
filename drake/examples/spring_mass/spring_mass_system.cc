@@ -32,6 +32,10 @@ double SpringMassStateVector::get_velocity() const { return GetAtIndex(1); }
 void SpringMassStateVector::set_position(double q) { SetAtIndex(0, q); }
 void SpringMassStateVector::set_velocity(double v) { SetAtIndex(1, v); }
 
+SpringMassStateVector* SpringMassStateVector::DoClone() const {
+  return new SpringMassStateVector(get_position(), get_velocity());
+}
+
 SpringMassOutputVector::SpringMassOutputVector()
     : BasicVector<double>(kStateSize) {}
 
