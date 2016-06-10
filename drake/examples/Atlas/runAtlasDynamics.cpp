@@ -20,7 +20,6 @@ int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if (!lcm->good()) return 1;
 
-  // Unfortunately Drake::cascade takes std::shared_ptr's as arguments.
   std::shared_ptr<AtlasSystem> atlas_sys = std::make_shared<AtlasSystem>();
 
   auto const& tree = atlas_sys->getRigidBodyTree();

@@ -66,7 +66,6 @@ void AtlasSystem::SetUpTerrain() {
     T_element_to_link.translation() << 0, 0, -box_depth / 2;
     RigidBody& world = tree_->world();
     Vector4d color;
-    // Was hex2dec({'ee','cb','ad'})'/256 in Matlab.
     color << 0.9297, 0.7930, 0.6758, 1;
     world.addVisualElement(
         DrakeShapes::VisualElement(geom, T_element_to_link, color));

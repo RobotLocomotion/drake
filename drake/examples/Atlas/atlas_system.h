@@ -31,5 +31,4 @@ class DRAKERBSYSTEM_EXPORT AtlasSystem: public Drake::RigidBodySystem {
   void SetUpTerrain();
 };
 
-
 } //namespace drake
