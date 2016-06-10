@@ -27,6 +27,7 @@ Unreleased: changes on master, not yet released
  - [#1970][] The `drake` pod Makefile now includes the `install` action.
  - [#1953][] Replace `valuecheckMatrix()` with `CompareMatrices()`.
  - [#2018][] Fix capitalization of `Constraint` and `OptimizationProblem` APIs to match style guide.
+ - [#2415][] Require CMake 3.5 or higher to configure and build.
 
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated

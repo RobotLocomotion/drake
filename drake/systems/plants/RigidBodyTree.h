@@ -190,7 +190,7 @@ void addRobotFromSDF(const std::string& sdf_filename,
                                           // doKinematics below which checks for
                                           // this
 
-    for (int i = 0; i < bodies.size(); i++) {
+    for (size_t i = 0; i < bodies.size(); i++) {
       RigidBody& body = *bodies[i];
       KinematicsCacheElement<Scalar>& element = cache.getElement(body);
 

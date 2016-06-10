@@ -5,6 +5,10 @@
 add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
 target_link_libraries(drakeXMLUtil tinyxml2 spruce)
 pods_install_libraries(drakeXMLUtil)
+pods_install_pkg_config_file(drake-xml-util
+  LIBS -ldrakeXMLUtil
+  REQUIRES
+  VERSION 0.0.1)
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeSDF.cpp RigidBodyTreeContact.cpp)
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
@@ -24,14 +28,14 @@ add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(joints)
 
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   add_mex(rbmMexFunctions SHARED rigidBodyTreeMexFunctions.cpp)
   target_link_libraries(rbmMexFunctions drakeRBM drakeMexUtil)
 
   macro(add_rbm_mex)
-    # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
-#    add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
-#    target_link_libraries(${ARGV} drakeRBM)
+    # TODO: use this again once I can assume everyone has CMAKE version >= 2.8.8
+    # add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
+    # target_link_libraries(${ARGV} drakeRBM)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} rbmMexFunctions)
   endmacro()
@@ -76,12 +80,12 @@ if (MATLAB_FOUND)
     add_mex(solveLCPmex solveLCPmex.cpp)
     target_link_libraries(solveLCPmex drakeRBM drakeMexUtil drakeQP)
   endif()
-endif(MATLAB_FOUND)
+endif()
 
 add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES IKoptions.cpp)
 target_link_libraries(drakeIKoptions drakeRBM)
 
-if (MATLAB_FOUND)
+if(MATLAB_FOUND)
   macro(add_ikoptions_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeIKoptions)
@@ -92,11 +96,11 @@ if (MATLAB_FOUND)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeUtil drakeRigidBodyConstraint)
   endmacro()
-endif(MATLAB_FOUND)
+endif()
 
 set(drakeIK_SRC_FILES inverseKin.cpp inverseKinBackend.cpp
   inverseKinPointwise.cpp inverseKinTraj.cpp)
-set(drakeIK_PODS_PKG )
+set(drakeIK_PODS_PKG)
 if(gurobi_FOUND)
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
   set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} gurobi)
@@ -108,7 +112,7 @@ else()
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} inverseKinNoSnoptBackend.cpp)
 endif()
 
-if (drakeIK_SRC_FILES)
+if(drakeIK_SRC_FILES)
   add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
   pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
   target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
@@ -121,41 +125,41 @@ if (drakeIK_SRC_FILES)
     VERSION 0.0.1)
 endif()
 
-if (MATLAB_FOUND)
-  if (gurobi_FOUND)
+if(MATLAB_FOUND)
+  if(gurobi_FOUND)
     add_mex(approximateIKmex approximateIKmex.cpp)
     target_link_libraries(approximateIKmex drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
     pods_use_pkg_config_packages(approximateIKmex gurobi)
   endif()
 
-  macro(add_IK_mex)
+  macro(add_ik_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
-#    pods_use_pkg_config_packages(${ARGV} snopt_c)
+    # pods_use_pkg_config_packages(${ARGV} snopt_c)
   endmacro()
 
-  if (snopt_c_FOUND)
-    add_IK_mex(inverseKinmex)
-    add_IK_mex(inverseKinPointwisemex)
-    add_IK_mex(inverseKinTrajmex)
+  if(snopt_c_FOUND)
+    add_ik_mex(inverseKinmex)
+    add_ik_mex(inverseKinPointwisemex)
+    add_ik_mex(inverseKinTrajmex)
   endif()
-endif(MATLAB_FOUND)
+endif()
 
-if (LCM_FOUND)
+if(LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
   target_link_libraries(drakeRBSystem drakeRBM drakeLCMSystem drakeOptimization drakeRigidBodyConstraint)
+
+  drake_install_headers(RigidBodySystem.h)
+  pods_install_libraries(drakeRBSystem)
   pods_install_pkg_config_file(drake-rbsystem
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
     LIBS -ldrakeRBSystem -ldrakeRBM -ldrakeLCMSystem -ldrakeOptimization -ldrakeRigidBodyConstraint
     REQUIRES lcm
     VERSION 0.0.1)
 
-  drake_install_headers(RigidBodySystem.h)
-  pods_install_libraries(drakeRBSystem)
-
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
   target_link_libraries(rigidBodyLCMNode drakeRBSystem)
   pods_install_executables(rigidBodyLCMNode)
-endif (LCM_FOUND)
+endif()
 
 add_subdirectory(test)

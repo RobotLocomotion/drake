@@ -37,7 +37,7 @@ void findJointAndInsert(const RigidBodyTree& model, const std::string& name,
                        position_indices.end());
 }
 
-TEST(testIKMoreConstraints, IKMoreConstraints) {
+GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
