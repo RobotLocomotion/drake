@@ -50,6 +50,26 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
                                                        double* duration);
 
 /**
+ * Parses the simulation duration from the command line arguments. The duration
+ * is specified by two sucessive tokens. The first token is "--duration" while
+ * the second token is a string representation of a double value.
+ *
+ * @param[in] argc The number of command line arguments.
+ * @param[in] argv An array of command line arguments.
+ * @preturn the duration in seconds.
+ */
+DRAKECARS_EXPORT
+double ParseDuration(int argc, const char* argv[]);
+
+/**
+ * Sets the penetration and friction parameters of the rigid body system.
+ *
+ * @param[in] rigid_body_sys The rigid body system to modify.
+ */
+DRAKECARS_EXPORT
+void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
+
+/**
  * Adds a terrain to the specified rigid body tree.
  *
  * @param rigid_body_tree The rigid body tree.
@@ -58,7 +78,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
  */
 DRAKECARS_EXPORT
 void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
-	double box_width = 1000, double box_depth = 10);
+                    double box_width = 1000, double box_depth = 10);
 
 /**
  * Creates a vehicle system by instantiating PD controllers for the actuators
