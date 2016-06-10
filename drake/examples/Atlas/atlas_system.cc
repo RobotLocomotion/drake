@@ -6,8 +6,6 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::Isometry3d;
 
-const int AtlasSystem::kNumberOfPositions = 73;
-
 AtlasSystem::AtlasSystem() {
   addRobotFromFile(
       Drake::getDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
