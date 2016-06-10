@@ -30,6 +30,29 @@ TEST_F(BasicStateVectorTest, Access) {
   EXPECT_THROW(state_vector_->GetAtIndex(2), std::out_of_range);
 }
 
+TEST_F(BasicStateVectorTest, Copy) {
+  Eigen::Vector2i expected;
+  expected << 1, 2;
+  EXPECT_EQ(expected, state_vector_->CopyToVector());
+}
+
+TEST_F(BasicStateVectorTest, Clone) {
+  std::unique_ptr<LeafStateVector<int>> clone =
+      dynamic_cast<LeafStateVector<int>*>(state_vector_.get())->Clone();
+
+  // Verify that type and data were preserved in the clone.
+  BasicStateVector<int>* typed_clone = dynamic_cast<BasicStateVector<int>*>(
+      clone.get());
+  ASSERT_NE(nullptr, typed_clone);
+  EXPECT_EQ(1, typed_clone->GetAtIndex(0));
+  EXPECT_EQ(2, typed_clone->GetAtIndex(1));
+
+  // Verify that writes to the clone do not affect the original vector.
+  typed_clone->SetAtIndex(1, 42);
+  EXPECT_EQ(42, typed_clone->GetAtIndex(1));
+  EXPECT_EQ(2, state_vector_->GetAtIndex(1));
+}
+
 TEST_F(BasicStateVectorTest, InvalidAccess) {
   EXPECT_THROW(state_vector_->GetAtIndex(kLength), std::out_of_range);
 }
@@ -41,7 +64,7 @@ TEST_F(BasicStateVectorTest, Mutation) {
 }
 
 TEST_F(BasicStateVectorTest, SetFromVector) {
-  Eigen::Vector2i next_value(kLength);
+  Eigen::Vector2i next_value;
   next_value << 3, 4;
 
   state_vector_->SetFromVector(next_value);
@@ -51,6 +74,16 @@ TEST_F(BasicStateVectorTest, SetFromVector) {
 
 TEST_F(BasicStateVectorTest, InvalidMutation) {
   EXPECT_THROW(state_vector_->SetAtIndex(kLength, 42), std::out_of_range);
+}
+
+TEST_F(BasicStateVectorTest, SizeBasedConstructor) {
+  state_vector_.reset(new BasicStateVector<int>(5));
+  EXPECT_EQ(5, state_vector_->size());
+  // Because it's based on a BasicVector<int>, BasicStateVector<int> should be
+  // zero-initialized.
+  EXPECT_EQ(0, state_vector_->GetAtIndex(4));
+  state_vector_->SetAtIndex(4, 42);
+  EXPECT_EQ(42, state_vector_->GetAtIndex(4));
 }
 
 }  // namespace

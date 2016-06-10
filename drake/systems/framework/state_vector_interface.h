@@ -8,8 +8,8 @@ namespace drake {
 namespace systems {
 
 /// StateVectorInterface is an interface template for vector quantities within
-/// the state of a System.  Both composite Systems (Diagrams) and Systems that
-/// have no component systems have state that satisfies StateVectorInterface.
+/// the state of a System.  Both composite Systems (Diagrams) and leaf Systems
+/// have state that satisfies StateVectorInterface.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
@@ -42,7 +42,13 @@ class StateVectorInterface {
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.
-  virtual void SetFromVector(const Eigen::Ref<VectorX<T>>& value) = 0;
+  virtual void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) = 0;
+
+  /// Copies the entire state to a vector with no semantics.
+  ///
+  /// Implementations should ensure this operation is O(N) in the size of the
+  /// value and allocates only the O(N) memory that it returns.
+  virtual VectorX<T> CopyToVector() const = 0;
 
  protected:
   StateVectorInterface() {}
