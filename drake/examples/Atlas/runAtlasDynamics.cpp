@@ -4,6 +4,7 @@
 #include "atlas_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/LCMSystem.h"
+#include "drake/util/drakeAppUtil.h"
 
 using Drake::SimulationOptions;
 using Drake::BotVisualizer;
@@ -11,11 +12,27 @@ using drake::AtlasSystem;
 
 int main(int argc, char* argv[]) {
   try {
-    SimulationOptions options;
+    if (argc != 1 && argc != 3) {
+      std::cerr << "Usage: " << argv[0] << " [options]" << std::endl
+          << "Options: " << std::endl
+          << "  --duration [duration in seconds]"
+          << std::endl;
+      return 0;
+    }
 
-    // Get the final time of the simulation.
-    double final_time =
-        argc >= 2 ? atof(argv[1]) : std::numeric_limits<double>::infinity();
+    // Parse command line options.
+    double final_time = std::numeric_limits<double>::infinity();
+    try {
+      char *duration_option =
+          getCommandLineOption(argv, argv + argc, "--duration");
+      if (duration_option) {
+        final_time = std::stod(std::string(duration_option));
+      }
+    } catch(std::exception& e){
+      std::cout << "Error when parsing command line options: "
+          << e.what() << std::endl;
+      return 1;
+    }
 
     std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
     if (!lcm->good()) return 1;
@@ -24,13 +41,14 @@ int main(int argc, char* argv[]) {
 
     auto const &tree = atlas_sys->getRigidBodyTree();
 
-    options.initial_step_size = 5e-5;
-    options.realtime_factor = 0.0;
-
     auto visualizer =
         std::make_shared<BotVisualizer<AtlasSystem::StateVector>>(lcm, tree);
 
     auto sys_with_vis = cascade(atlas_sys, visualizer);
+
+    SimulationOptions options;
+    options.initial_step_size = 5e-5;
+    options.realtime_factor = 0.0;
 
     runLCM(sys_with_vis, lcm, 0, final_time, atlas_sys->get_initial_state(),
            options);
