@@ -29,7 +29,6 @@ class LeafStateVector : public StateVectorInterface<T> {
  protected:
   LeafStateVector() {}
 
- private:
   /// Returns a new LeafStateVector containing a copy of the entire state.
   /// Caller must take ownership.
   ///
@@ -37,6 +36,7 @@ class LeafStateVector : public StateVectorInterface<T> {
   /// value and allocates only the O(N) memory that it returns.
   virtual LeafStateVector<T>* DoClone() const = 0;
 
+ private:
   // LeafStateVector objects are neither copyable nor moveable.
   LeafStateVector(const LeafStateVector& other) = delete;
   LeafStateVector& operator=(const LeafStateVector& other) = delete;

@@ -33,7 +33,7 @@ class ContextTest : public ::testing::Test {
     }
     std::unique_ptr<BasicVector<double>> state_data(
         new BasicVector<double>(kStateSize));
-    state_data->get_mutable_value() << 1.0, 1.0, 2.0, 3.0, 5.0;
+    state_data->get_mutable_value() << 1.0, 2.0, 3.0, 5.0, 8.0;
 
     context_.get_mutable_state()->continuous_state.reset(
         new ContinuousState<double>(
@@ -64,7 +64,7 @@ TEST_F(ContextTest, Clone) {
       clone->get_mutable_state()->continuous_state.get();
   VectorX<double> contents = xc->get_state().CopyToVector();
   VectorX<double> expected(kStateSize);
-  expected << 1.0, 1.0, 2.0, 3.0, 5.0;
+  expected << 1.0, 2.0, 3.0, 5.0, 8.0;
   EXPECT_EQ(expected, contents);
 
   // Verify that the state type was preserved.
@@ -76,19 +76,19 @@ TEST_F(ContextTest, Clone) {
   // Verify that the second-order structure was preserved.
   EXPECT_EQ(kGeneralizedPositionSize, xc->get_generalized_position().size());
   EXPECT_EQ(1.0, xc->get_generalized_position().GetAtIndex(0));
-  EXPECT_EQ(1.0, xc->get_generalized_position().GetAtIndex(1));
+  EXPECT_EQ(2.0, xc->get_generalized_position().GetAtIndex(1));
 
   EXPECT_EQ(kGeneralizedVelocitySize, xc->get_generalized_velocity().size());
-  EXPECT_EQ(2.0, xc->get_generalized_velocity().GetAtIndex(0));
-  EXPECT_EQ(3.0, xc->get_generalized_velocity().GetAtIndex(1));
+  EXPECT_EQ(3.0, xc->get_generalized_velocity().GetAtIndex(0));
+  EXPECT_EQ(5.0, xc->get_generalized_velocity().GetAtIndex(1));
 
   EXPECT_EQ(kMiscContinuousStateSize, xc->get_misc_continuous_state().size());
-  EXPECT_EQ(5.0, xc->get_misc_continuous_state().GetAtIndex(0));
+  EXPECT_EQ(8.0, xc->get_misc_continuous_state().GetAtIndex(0));
 
   // Verify that changes to the cloned state do not affect the original state.
   xc->get_mutable_generalized_velocity()->SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, xc_data->GetAtIndex(3));
-  EXPECT_EQ(3.0,
+  EXPECT_EQ(5.0,
             context_.get_state().continuous_state->get_state().GetAtIndex(3));
 }
 
