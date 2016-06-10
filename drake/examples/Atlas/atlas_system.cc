@@ -2,6 +2,10 @@
 
 namespace drake {
 
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::Isometry3d;
+
 const int AtlasSystem::kNumberOfPositions = 73;
 
 AtlasSystem::AtlasSystem() {
