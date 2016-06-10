@@ -1,0 +1,11 @@
+This folder contains a model of the Kuka LBR IIWA R820 14. The URDF and OBJ
+files that constitute the arm model are taken from:
+https://github.com/SalvoVirga/iiwa_stack
+
+The original license for these files is given in the link below and copied into
+file iiwa_stack.LICENSE.txt.
+
+https://github.com/SalvoVirga/iiwa_stack/blob/master/LICENSE.txt
+
+Our changes are covered by Drake's license terms (See LICENSE.TXT in Drake's
+root folder).
