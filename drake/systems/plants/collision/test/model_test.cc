@@ -199,8 +199,8 @@ class BoxVsSphereTest : public ::testing::Test {
     box_id = model->addElement(colliding_box);
     sphere_id = model->addElement(colliding_sphere);
 
-    // Access the analytical solution to the contact point on the surface of each
-    // collision element by element id.
+    // Access the analytical solution to the contact point on the surface of
+    // each collision element by element id.
     // Solutions are expressed in world and body frames.
     solution = {
         /*           world frame     , body frame  */
@@ -219,6 +219,7 @@ class BoxVsSphereTest : public ::testing::Test {
     sphere_pose.translation() = Vector3d(0.0, 1.25, 0.0);
     model->updateElementWorldTransform(sphere_id, sphere_pose);
   }
+
  protected:
   double tolerance;
   std::unique_ptr<Model> model;
@@ -380,6 +381,7 @@ class SmallBoxSittingOnLargeBox: public ::testing::Test {
     small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
     model->updateElementWorldTransform(small_box_id, small_box_pose);
   }
+
  protected:
   double tolerance;
   std::unique_ptr<Model> model;
@@ -515,8 +517,8 @@ class NonAlignedBoxes: public ::testing::Test {
     box1_id = model->addElement(colliding_box1);
     box2_id = model->addElement(colliding_box1);
 
-    // Access the analytical solution to the contact point on the surface of each
-    // collision element by element id.
+    // Access the analytical solution to the contact point on the surface of
+    // each collision element by element id.
     // Solutions are expressed in world and body frames.
     solution = {
         /*         world frame    , body frame  */
@@ -535,9 +537,11 @@ class NonAlignedBoxes: public ::testing::Test {
     Isometry3d box2_pose;
     box2_pose.setIdentity();
     box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
-    box2_pose.linear() = AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
+    box2_pose.linear() =
+        AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
     model->updateElementWorldTransform(box2_id, box2_pose);
   }
+
  protected:
   double tolerance;
   std::unique_ptr<Model> model;
