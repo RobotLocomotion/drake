@@ -59,6 +59,16 @@ TEST_F(BasicStateVectorTest, InvalidMutation) {
   EXPECT_THROW(state_vector_->SetAtIndex(kLength, 42), std::out_of_range);
 }
 
+TEST_F(BasicStateVectorTest, SizeBasedConstructor) {
+  state_vector_.reset(new BasicStateVector<int>(5));
+  EXPECT_EQ(5, state_vector_->size());
+  // Because it's based on a BasicVector<int>, BasicStateVector<int> should be
+  // zero-initialized.
+  EXPECT_EQ(0, state_vector_->GetAtIndex(4));
+  state_vector_->SetAtIndex(4, 42);
+  EXPECT_EQ(42, state_vector_->GetAtIndex(4));
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

@@ -46,8 +46,8 @@ function(drake_forcebuild proj)
     ALWAYS 1)
 endfunction()
 
-# Require Java at the super-build level so libbot cannot configure without finding Java
-find_package(Java REQUIRED)
+# Require Java at the super-build level since libbot cannot configure without finding Java
+find_package(Java 1.6 REQUIRED)
 include(UseJava)
 
 # menu of extra examples
