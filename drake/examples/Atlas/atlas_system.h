@@ -5,10 +5,7 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-using Eigen::Vector3d;
-using Eigen::Vector4d;
 using Eigen::VectorXd;
-using Eigen::Isometry3d;
 
 namespace drake {
 
@@ -24,7 +21,7 @@ class DRAKERBSYSTEM_EXPORT AtlasSystem: public Drake::RigidBodySystem {
   RigidBodyTree* tree_;
   VectorXd x0_; // Atlas's initial configuration.
 
-  // Sets the initial pose of Atlas.
+  // Sets the initial pose for Atlas.
   // Magic numbers are initial conditions used in runAtlasWalking.m.
   void SetInitialConfiguration();
 
