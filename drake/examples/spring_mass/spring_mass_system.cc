@@ -19,15 +19,14 @@ const ptrdiff_t kStateSize = 2;
 
 SpringMassStateVector::SpringMassStateVector(double initial_position,
                                              double initial_velocity)
-    : BasicStateVector<double>(std::unique_ptr<BasicVector<double>>(
-          new BasicVector<double>(kStateSize))) {
+    : BasicStateVector<double>(kStateSize) {
   set_position(initial_position);
   set_velocity(initial_velocity);
 }
 
 SpringMassStateVector::~SpringMassStateVector() {}
 
-  // Order matters: Position (q) precedes velocity (v) in ContinuousState.
+// Order matters: Position (q) precedes velocity (v) in ContinuousState.
 double SpringMassStateVector::get_position() const { return GetAtIndex(0); }
 double SpringMassStateVector::get_velocity() const { return GetAtIndex(1); }
 void SpringMassStateVector::set_position(double q) { SetAtIndex(0, q); }
