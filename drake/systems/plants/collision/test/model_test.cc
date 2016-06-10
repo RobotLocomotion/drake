@@ -65,7 +65,7 @@ typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
 // to Model::collisionPointsAllToAll even if cached results are cleared with
 // Model::ClearCachedResults. This is the reason why multicontact tests using
 // Model::potentialCollisionPoints are performed separately in their own tests.
-// For instance, for the NonAlignedBoxes there is a separate tests called
+// For instance, for the NonAlignedBoxes there is a separate test called
 // NonAlignedBoxes_multi performed with Model::potentialCollisionPoints.
 // It seems like Bullet is storing some additional configuration setup with the
 // call to Model::collisionPointsAllToAll that persists throughout subsequent
@@ -291,19 +291,7 @@ GTEST_TEST(ModelTest, Box_vs_Sphere) {
 
 // This test is exactly the same as the previous Box_vs_Sphere test.
 // The difference is that a multi-contact algorithm is being used.
-// It is found that the results from Model::potentialCollisionPoints are
-// affected by a previous call to Model::collisionPointsAllToAll even if cached
-// results are cleared with Model::ClearCachedResults. This is the reason why
-// the tests in Box_vs_Sphere are performed separately from the tests in
-// Box_vs_Sphere_multi.
-// It seems like Bullet is storing some additional configuration setup with the
-// call to Model::collisionPointsAllToAll that persists throughout subsequent
-// calls to Model::potentialCollisionPoints.
-// Therefore, DO NOT mix these calls since they might produce erroneous results.
-// Notice also that the tolerance used for these tests is much higher. The
-// reason is that Bullet randomly changes the pose of the collision elements
-// searching for potential collision points. This is the additional source of
-// error introduced.
+// See REMARKS ON MULTICONTACT at the top of this file.
 GTEST_TEST(ModelTest, Box_vs_Sphere_multi) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
@@ -481,15 +469,7 @@ GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox) {
 
 // This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
 // The difference is that a multi-contact algorithm is being used.
-// Results from Model::potentialCollisionPoints are affected by previous calls
-// to Model::collisionPointsAllToAll even if cached results are cleared with
-// Model::ClearCachedResults. This is the reason why the tests in
-// SmallBoxSittingOnLargeBox are performed separately from the tests in
-// SmallBoxSittingOnLargeBoxe_multi.
-// It seems like Bullet is storing some additional configuration setup with the
-// call to Model::collisionPointsAllToAll that persists throughout subsequent
-// calls to Model::potentialCollisionPoints.
-// Therefore, DO NOT mix these calls since they might produce erroneous results.
+// See REMARKS ON MULTICONTACT at the top of this file.
 GTEST_TEST(ModelTest, SmallBoxSittingOnLargeBox_multi) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
@@ -653,19 +633,7 @@ GTEST_TEST(ModelTest, NonAlignedBoxes) {
 
 // This test is exactly the same as the previous NonAlignedBoxes.
 // The difference is that a multi-contact algorithm is being used.
-// Results from Model::potentialCollisionPoints are affected by a previous call
-// to Model::collisionPointsAllToAll even if cached results are cleared with
-// Model::ClearCachedResults. This is the reason why the tests in
-// NonAlignedBoxes are performed separately from the tests in
-// NonAlignedBoxes_multi.
-// It seems like Bullet is storing some additional configuration setup with the
-// call to Model::collisionPointsAllToAll that persists throughout subsequent
-// calls to Model::potentialCollisionPoints.
-// Therefore, DO NOT mix these calls since they might produce erroneous results.
-// Notice also that the tolerance used for these tests is much higher. The
-// reason is that Bullet randomly changes the pose of the collision elements
-// searching for potential collision points. This is the additional source of
-// error introduced.
+// See REMARKS ON MULTICONTACT at the top of this file.
 GTEST_TEST(ModelTest, NonAlignedBoxes_multi) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
@@ -729,6 +697,8 @@ GTEST_TEST(ModelTest, NonAlignedBoxes_multi) {
   }
 }
 
+// Tests and illustrates the use of Model::ClearCachedResults to perform a
+// collision query that returns a single result.
 GTEST_TEST(ModelTest, ClearCachedResults) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
