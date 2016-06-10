@@ -70,13 +70,13 @@ class ContinuousState {
   // state of a Diagram, using StateSupervectors.
 
   /// Returns the entire state vector.
-  const StateVectorInterface<T>& get_state() { return *state_; }
+  const StateVectorInterface<T>& get_state() const { return *state_; }
 
   /// Returns a mutable pointer to the entire state vector, never null.
   StateVectorInterface<T>* get_mutable_state() { return state_.get(); }
 
   /// Returns the subset of the state vector that is generalized position `q`.
-  const StateVectorInterface<T>& get_generalized_position() {
+  const StateVectorInterface<T>& get_generalized_position() const {
     return *generalized_position_;
   }
 
@@ -87,7 +87,7 @@ class ContinuousState {
   }
 
   /// Returns the subset of the state vector that is generalized velocity `v`.
-  const StateVectorInterface<T>& get_generalized_velocity() {
+  const StateVectorInterface<T>& get_generalized_velocity() const {
     return *generalized_velocity_;
   }
 
@@ -98,7 +98,7 @@ class ContinuousState {
   }
 
   /// Returns the subset of the state vector that is other continuous state `z`.
-  const StateVectorInterface<T>& get_misc_continuous_state() {
+  const StateVectorInterface<T>& get_misc_continuous_state() const {
     return *misc_continuous_state_;
   }
 

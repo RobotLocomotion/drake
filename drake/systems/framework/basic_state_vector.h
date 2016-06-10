@@ -4,8 +4,9 @@
 #include <stdexcept>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/vector_interface.h"
+#include "leaf_state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -14,9 +15,13 @@ namespace systems {
 /// StateVectorInterface in a convenient manner for leaf Systems,
 /// by owning and wrapping a VectorInterface<T>.
 ///
+/// It will often be convenient to inherit from BasicStateVector, and add
+/// additional semantics specific to the leaf System. Such child classes must
+/// override DoClone with an implementation that returns their concrete type.
+///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
-class BasicStateVector : public StateVectorInterface<T> {
+class BasicStateVector : public LeafStateVector<T> {
  public:
   /// Constructs a BasicStateVector that owns a generic BasicVector of the
   /// specified @p size.
@@ -24,7 +29,8 @@ class BasicStateVector : public StateVectorInterface<T> {
       : BasicStateVector(
             std::unique_ptr<VectorInterface<T>>(new BasicVector<T>(size))) {}
 
-  /// Constructs a BasicStateVector that owns an arbitrary @p vector.
+  /// Constructs a BasicStateVector that owns an arbitrary @p vector, which
+  /// must not be nullptr.
   explicit BasicStateVector(std::unique_ptr<VectorInterface<T>> vector)
       : vector_(std::move(vector)) {}
 
@@ -48,18 +54,27 @@ class BasicStateVector : public StateVectorInterface<T> {
     vector_->get_mutable_value()[index] = value;
   }
 
-  void SetFromVector(const Eigen::Ref<VectorX<T>>& value) override {
+  void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) override {
     vector_->set_value(value);
   }
 
-  VectorX<T> CopyToVector() override {
-    return vector_->get_value();
+  VectorX<T> CopyToVector() const override { return vector_->get_value(); }
+
+ protected:
+  BasicStateVector(const BasicStateVector& other)
+      : BasicStateVector(other.size()) {
+    SetFromVector(other.vector_->get_value());
   }
 
  private:
-  // BasicStateVector objects are neither copyable nor moveable.
-  BasicStateVector(const BasicStateVector& other) = delete;
+  BasicStateVector<T>* DoClone() const override {
+    return new BasicStateVector<T>(*this);
+  }
+
+  // Assignment of BasicStateVectors could change size, so we forbid it.
   BasicStateVector& operator=(const BasicStateVector& other) = delete;
+
+  // BasicStateVector objects are not moveable.
   BasicStateVector(BasicStateVector&& other) = delete;
   BasicStateVector& operator=(BasicStateVector&& other) = delete;
 
