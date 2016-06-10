@@ -3,6 +3,7 @@
 
 #include "atlas_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/LCMSystem.h"
 
 using Drake::SimulationOptions;
 using Drake::BotVisualizer;
