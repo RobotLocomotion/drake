@@ -39,7 +39,7 @@ This capability is primarily meant for members of our team and close collaborato
 Using Gurobi as an external
 ===========================
 
-Gurobi is enabled to build by default if one uses ``WITH_ALL_PUBLIC_EXTERNALS``. Additionally, some users may wish to install the Gurobi Optimizer as part of their Drake build even if they do not select ``WITH_ALL_PUBLIC_EXTERNALS`` by toggling ``WITH_GUROBI`` to ``ON``.
+Gurobi is enabled to build by default if one uses ``WITH_ALL_SUPPORTED_EXTERNALS``. Additionally, some users may wish to install the Gurobi Optimizer as part of their Drake build even if they do not select ``WITH_ALL_SUPPORTED_EXTERNALS`` by toggling ``WITH_GUROBI`` to ``ON``.
 
 To facilitate the Gurobi's building process, create an account and obtain a license on `Gurobi's website <http://www.gurobi.com/registration/general-reg-form?utm_expid=11945996-32.QTGUWGdTRw2vsRW5839Z5w.1&utm_referrer=http%3A%2F%2Fwww.gurobi.com%2Flogin>`_ *before* perforiming the Drake build with Gurobi. To actually be able to use Gurobi, there are two required verification steps:
 
@@ -95,7 +95,7 @@ To include all symbols and get details about the actual compiler and linker comm
     BUILD_TYPE=Debug make VERBOSE=true
 
 
-Test your installation
+Test Your Installation
 ======================
 
 Start MATLAB, then at the MATLAB prompt do::
@@ -103,21 +103,27 @@ Start MATLAB, then at the MATLAB prompt do::
 	cd drake-distro/drake
 	addpath_drake
 
-Then `cd` into the examples directories and try some things out.  Here are a few fun ones to get you started:
+Then ``cd`` into the examples directories and try some things out.  Here are a few
+fun ones to get you started:
 
 * ``runLQR`` in the ``examples/CartPole`` directory
 * ``runLQR`` in the ``examples/Quadrotor2D`` directory
 * ``RimlessWheelPlant.run()`` in the ``examples/RimlessWheel`` directory
 * ``StateMachineControl.run()`` in the ``examples/PlanarMonopodHopper`` directory
 
-For an exhaustive test (which can take more than an hour to run if you have all of the backend solvers enabled), consider running the following from the system terminal (not the MATLAB terminal) command line::
+To run some unit tests, execute the following::
 
-	cd drake-distro/drake
-	make test
+    cd drake-distro/drake/pod-build
+    ctest -VV
 
-Note that this is slow -- it starts a fresh instance of MATLAB for every individual test -- but it is the most robust way to test for issues that can potentially crash MATLAB.  Currently, the make test script is setup to send a summary of the success / failures to our continuous integration server after it finishes all of the jobs.  This was our internal setup, and has been left there for now so that we can help you debug your installations.
+For more details on how to run Drake's unit tests, see the instructions
+here: :ref:`unit-test-instructions`.
 
-If you have problems, please check the :doc:`faq`.  If the solution is not there, or if you discover something missing from our installation instructions or lists of prerequisites, then please `file an issue <https://github.com/RobotLocomotion/drake/issues/new>`_ and label it as *installation*.
+If you have problems, please check the :doc:`faq`.  If the solution is not
+there, or if you discover something missing from our installation instructions
+or lists of prerequisites, then please
+`file an issue <https://github.com/RobotLocomotion/drake/issues/new>`_ and label
+it as *installation*.
 
 Stay up to date
 ===============
@@ -131,3 +137,4 @@ To work on the bleeding edge, do::
 	make
 
 This is especially useful if you are ready to contribute your work back to the main repository with a `pull request <https://help.github.com/articles/using-pull-requests/>`_.
+

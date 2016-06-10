@@ -708,6 +708,10 @@ bool BulletModel::collisionPointsAllToAll(
   MatrixXd normals;
   std::vector<double> distance;
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+
+  // Internally updates AABB's calling btCollisionWorld::updateAabbs();
+  // TODO(amcastro-tri): analyze if the call to BulletModel::updateModel() is
+  // redundant (since all it does is to call btCollisionWorld::updateAabbs()).
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
   int numManifolds =
       bt_world.bt_collision_world->getDispatcher()->getNumManifolds();

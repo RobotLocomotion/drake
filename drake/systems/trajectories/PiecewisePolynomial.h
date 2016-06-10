@@ -8,6 +8,27 @@
 #include <limits>
 #include "drake/drakeTrajectories_export.h"
 
+/// A scalar multi-variate piecewise polynomial.
+/**
+ * PiecewisePolynomial represents a list of contiguous segments in time with a
+ * Polynomial defined for each segment.
+ *
+ * An example of a piecewise function is the absolute value function:
+ *
+ * @code
+ * int abs(int x)
+ * {
+ *   if (x<0) {
+ *     return -x;
+     }
+ *   else return x;
+ * }
+ * @endcode
+ * 
+ * PiecewisePolynomials can be added, subtracted, and multiplied.
+ * They cannot be divided because Polynomials are not closed
+ * under division.
+ */
 template <typename CoefficientType = double>
 class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
     : public PiecewisePolynomialBase {
@@ -45,10 +66,40 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
   PiecewisePolynomial(std::vector<PolynomialType> const& polynomials,
                       std::vector<double> const& segment_times);
 
+  /// Takes the derivative of this PiecewisePolynomial.
+  /**
+   * Returns a PiecewisePolynomial where each segment is the derivative of the
+   * segment in the input PiecewisePolynomial.
+   * Any rules or limitations of Polynomial::derivative also apply to this
+   * function.
+   *
+   * If \p derivative_order is given, takes the nth derivative of this
+   * PiecewisePolynomial.
+   */
   PiecewisePolynomial derivative(int derivative_order = 1) const;
 
+  /// Takes the integral of this PiecewisePolynomial.
+  /**
+   * Returns a PiecewisePolynomial that is the indefinite integral of this one.
+   * Any rules or limitations of Polynomial::integral also apply to this
+   * function.
+   *
+   * If \p value_at_start_time is given, it does the following only for the 
+   * first segment: adds that constant as the constant term 
+   * (zeroth-order coefficient) of the resulting Polynomial.
+   */
   PiecewisePolynomial integral(double value_at_start_time = 0.0) const;
 
+  /// Takes the integral of this PiecewisePolynomial.
+  /**
+   * Returns a PiecewisePolynomial that is the indefinite integral of this one.
+   * Any rules or limitations of Polynomial::integral also apply to this
+   * function.
+   *
+   * If \p value_at_start_time is given, it does the following only for the 
+   * first segment: adds value_at_start_time(row,col) as the constant term 
+   * (zeroth-order coefficient) of the resulting Polynomial.
+   */
   PiecewisePolynomial integral(
       const CoefficientMatrixRef& value_at_start_time) const;
 
@@ -89,6 +140,12 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
 
   const PiecewisePolynomial operator-(const CoefficientMatrix& offset) const;
 
+  /// Checks if a PiecewisePolynomial is approximately equal to this one.
+  /**
+   * Checks that every coefficient of \p other is within \p tol of the
+   * corresponding coefficient of this PiecewisePolynomial. Throws an exception
+   * if any Polynomial in either PiecewisePolynomial is not univariate.
+   */
   bool isApprox(const PiecewisePolynomial& other, double tol) const;
 
   void shiftRight(double offset);
@@ -99,6 +156,11 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
 
   PiecewisePolynomial slice(int start_segment_index, int num_segments);
 
+  /// Obtains a random PiecewisePolynomial of the specified size.
+  /**
+   * Obtains a PiecewisePolynomial with the given \p segment_times. Each segment
+   * will have a matrix of random Polynomials of the specified size.
+   */
   static PiecewisePolynomial random(
       Eigen::Index rows, Eigen::Index cols,
       Eigen::Index num_coefficients_per_polynomial,

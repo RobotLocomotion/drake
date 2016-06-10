@@ -247,10 +247,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       // to int so it is odr-used (see
   // https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
   OptimizationProblem()
-      : problem_type_(MathematicalProgramInterface::GetLeastSquaresProgram()),
-        num_vars_(0),
+      : num_vars_(0),
         x_initial_guess_(
             static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
+        problem_type_(MathematicalProgramInterface::GetLeastSquaresProgram()),
       solver_result_(0) {}
 
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
@@ -562,9 +562,9 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(
-          const Polynomiald& polynomial,
+          const VectorXPoly& polynomials,
           const std::vector<Polynomiald::VarType>& poly_vars,
-          double lb, double ub,
+          const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
           const VariableList& vars) {
     // TODO(ggould-tri) We treat polynomial constraints as generic for now,
     // but that need not be so.  Polynomials of degree 1 are linear
@@ -576,7 +576,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     problem_type_.reset(
         problem_type_->AddGenericConstraint());
     std::shared_ptr<PolynomialConstraint>
-        constraint(new PolynomialConstraint(polynomial, poly_vars, lb, ub));
+        constraint(new PolynomialConstraint(polynomials, poly_vars, lb, ub));
     AddGenericConstraint(constraint, vars);
     return constraint;
   }
@@ -588,11 +588,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(
-          const Polynomiald& polynomial,
+          const VectorXPoly& polynomials,
           const std::vector<Polynomiald::VarType>& poly_vars,
-          double lb, double ub) {
+          const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
     return AddPolynomialConstraint(
-        polynomial, poly_vars, lb, ub, variable_views_);
+        polynomials, poly_vars, lb, ub, variable_views_);
   }
 
   // template <typename FunctionType>

@@ -17,7 +17,7 @@ struct OutputPort {
 
   /// The rate at which this port produces output, in seconds.
   /// If zero, the port is continuous.
-  double sample_time_sec;
+  double sample_time_sec{};
 };
 
 /// A container for all the output of a System.

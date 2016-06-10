@@ -3,18 +3,15 @@
 #
 
 # List all source files used to build libdrakeCommon.
-set(sources 
-    nice_type_name.cc)
+set(sources nice_type_name.cc)
 
 # List headers that should be installed with Drake so that they
 # are available elsewhere via #include "drake/common/xxx.h".
-set(installed_headers
-    nice_type_name.h)
+set(installed_headers nice_type_name.h)
 
 # List headers that are needed by code here but should not
 # be exposed anywhere else.
-set(private_headers 
-    )
+set(private_headers)
 
 # Create the library target and note its dependencies. Also generates
 # a header defining DRAKECOMMON_EXPORT for dealing with .dlls on Windows.
@@ -32,4 +29,3 @@ pods_install_pkg_config_file(drake-common
   VERSION 0.0.1)
 
 add_subdirectory(test)
-

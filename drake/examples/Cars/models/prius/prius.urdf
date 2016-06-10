@@ -345,7 +345,7 @@
     <axis xyz="0 0 1"/>
     <limit effort="0" lower="-1.5" upper="1.5" velocity="0"/>
   </joint>
-  <joint name="left_wheel_joint" type="revolute">
+  <joint name="left_wheel_joint" type="continuous">
     <parent link="left_hub"/>
     <child link="left_wheel"/>
     <origin rpy="0 0 0" xyz="0 0 -0.183582999999999940676787"/>
@@ -366,7 +366,7 @@
     <axis xyz="0  0  0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
-  <joint name="right_wheel_joint" type="revolute">
+  <joint name="right_wheel_joint" type="continuous">
     <parent link="right_hub"/>
     <child link="right_wheel"/>
     <origin rpy="0 0 0" xyz="0 0 0.18357"/>
@@ -380,14 +380,14 @@
     <axis xyz="0 0 0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
-  <joint name="rear_left_wheel_joint" type="revolute">
+  <joint name="rear_left_wheel_joint" type="continuous">
     <parent link="rear_axle"/>
     <child link="left_wheel_rear"/>
     <origin rpy="1.570796326794896557998982  0 0" xyz="0 0.80199  0"/>
     <axis xyz="0  0 -1"/>
     <limit effort="10000" velocity="10000"/>
   </joint>
-  <joint name="rear_right_wheel_joint" type="revolute">
+  <joint name="rear_right_wheel_joint" type="continuous">
     <parent link="rear_axle"/>
     <child link="right_wheel_rear"/>
     <origin rpy="1.570796326794896557998982 0 0" xyz="0 -0.80199  0"/>

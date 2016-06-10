@@ -141,7 +141,7 @@ class Quadrotor {
   template <typename ScalarType>
   using InputVector = QuadrotorInput<ScalarType>;
 
-  Quadrotor() : m(0.5), g(9.81), L(0.1750), I(Eigen::Matrix3d::Identity()) {
+  Quadrotor() : g(9.81), L(0.1750), m(0.5), I(Eigen::Matrix3d::Identity()) {
     I(0, 0) = 0.0023;
     I(1, 1) = 0.0023;
     I(2, 2) = 0.004;

@@ -1,2 +1,1 @@
-
 add_matlab_test(NAME examples/TwoWheeledInvertedPendulum/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)

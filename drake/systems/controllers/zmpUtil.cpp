@@ -65,8 +65,8 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
     }
 
     VectorXd dtpow(k);
-    for (size_t p = 0; p < k; p++) {
-      dtpow(p) = pow(dt(j), static_cast<int>(p));
+    for (int p = 0; p < k; p++) {
+      dtpow(p) = pow(dt(j), p);
     }
 
     alpha.col(j) =
@@ -74,7 +74,7 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
   }
 
   vector<PiecewisePolynomial<double>::PolynomialMatrix> polynomial_matrices;
-  for (int segment = 0; segment < n; segment++) {
+  for (size_t segment = 0; segment < n; segment++) {
     PiecewisePolynomial<double>::PolynomialMatrix polynomial_matrix(4, 1);
     for (int row = 0; row < 4; row++) {
       polynomial_matrix(row) = Polynomial<double>(beta[segment].row(row));

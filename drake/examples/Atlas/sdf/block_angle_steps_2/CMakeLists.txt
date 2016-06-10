@@ -1,8 +1,6 @@
 set(MODEL_NAME block_level_steps)
-set (files 
+set(files
   model.sdf
-  model.config
-)
-
+  model.config)
 
 install(FILES ${files} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/gazebo_models/environments/${MODEL_NAME}/)
