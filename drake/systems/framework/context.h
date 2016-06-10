@@ -71,11 +71,16 @@ class Context {
 
   /// Returns a deep copy of this Context. The clone's input ports will hold
   /// pointers to the same output ports as the original Context.
-  ///
+  std::unique_ptr<Context<T>> Clone() const {
+    return std::unique_ptr<Context<T>>(DoClone());
+  }
+
+ private:
   /// The Context implementation for Diagrams must override this method, since
-  /// the state of a Diagram will not be a LeafStateVector.
-  virtual std::unique_ptr<Context<T>> Clone() const {
-    std::unique_ptr<Context<T>> context(new Context);
+  /// the state of a Diagram will not be a LeafStateVector. The caller owns the
+  /// returned memory.
+  virtual Context<T>* DoClone() const {
+    Context<T>* context = new Context<T>();
 
     // Make a deep copy of the state using LeafStateVector::Clone().
     const ContinuousState<T>& xc = *this->get_state().continuous_state;
@@ -94,7 +99,6 @@ class Context {
     return context;
   }
 
- private:
   // Context objects are neither copyable nor moveable.
   Context(const Context& other) = delete;
   Context& operator=(const Context& other) = delete;
