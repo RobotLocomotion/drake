@@ -185,6 +185,10 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
 
+// A sphere of diameter 1.0 is placed on top of a box with sides of length 1.0.
+// The sphere overlaps with the box with its deepest penetration point (the
+// bottom) 0.25 units into the box (negative distance). Only one contact point
+// is expected when colliding with a sphere.
 class BoxVsSphereTest : public ::testing::Test {
  public:
   void SetUp() override {
@@ -227,10 +231,6 @@ class BoxVsSphereTest : public ::testing::Test {
   ElementToSurfacePointMap solution;
 };
 
-// A sphere of diameter 1.0 is placed on top of a box with sides of length 1.0.
-// The sphere overlaps with the box with its deepest penetration point (the
-// bottom) 0.25 units into the box (negative distance). Only one contact point
-// is expected when colliding with a sphere.
 TEST_F(BoxVsSphereTest, SingleContact) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
