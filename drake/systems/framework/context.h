@@ -103,11 +103,16 @@ class Context {
 
   /// Returns a deep copy of this Context. The clone's input ports will hold
   /// pointers to the same output ports as the original Context.
-  ///
+  std::unique_ptr<Context<T>> Clone() const {
+    return std::unique_ptr<Context<T>>(DoClone());
+  }
+
+ private:
   /// The Context implementation for Diagrams must override this method, since
-  /// the state of a Diagram will not be a LeafStateVector.
-  virtual std::unique_ptr<Context<T>> Clone() const {
-    std::unique_ptr<Context<T>> context(new Context);
+  /// the state of a Diagram will not be a LeafStateVector. The caller owns the
+  /// returned memory.
+  virtual Context<T>* DoClone() const {
+    Context<T>* context = new Context<T>();
 
     // Make a deep copy of the state using LeafStateVector::Clone().
     const ContinuousState<T>& xc = *this->get_state().continuous_state;
@@ -120,13 +125,12 @@ class Context {
         new ContinuousState<T>(xc_vector.Clone(), num_q, num_v, num_z));
 
     // Make deep copies of everything else using the default copy constructors.
-    *context->get_mutable_time_step() = this->get_time_step();
+    *context->get_mutable_time() = this->get_time();
     *context->get_mutable_input() = this->get_input();
     *context->get_mutable_cache() = *this->get_mutable_cache();
     return context;
   }
 
- private:
   // Context objects are neither copyable nor moveable.
   Context(const Context& other) = delete;
   Context& operator=(const Context& other) = delete;
@@ -142,8 +146,8 @@ class Context {
   // The internal state of the System.
   State<T> state_;
 
-  // The cache. This holds computations that were performed using the
-  // time, input, and state values above.
+  /// The cache. The System may insert arbitrary key-value pairs, and configure
+  /// invalidation on a per-line basis.
   mutable Cache<T> cache_;
 };
 

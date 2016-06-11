@@ -37,7 +37,6 @@ using systems::BasicVector;
 using systems::BasicStateVector;
 using systems::Context;
 using systems::ContinuousState;
-using systems::ContinuousSystem;
 using systems::LeafStateVector;
 using systems::StateSubvector;
 using systems::StateVectorInterface;

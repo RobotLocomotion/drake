@@ -17,8 +17,7 @@ namespace systems {
 ///
 /// It will often be convenient to inherit from BasicStateVector, and add
 /// additional semantics specific to the leaf System. Such child classes must
-/// override DoClone to return their concrete type. Otherwise, type information
-/// will be lost when the state is cloned.
+/// override DoClone with an implementation that returns their concrete type.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
@@ -30,7 +29,8 @@ class BasicStateVector : public LeafStateVector<T> {
       : BasicStateVector(
             std::unique_ptr<VectorInterface<T>>(new BasicVector<T>(size))) {}
 
-  /// Constructs a BasicStateVector that owns an arbitrary @p vector.
+  /// Constructs a BasicStateVector that owns an arbitrary @p vector, which
+  /// must not be nullptr.
   explicit BasicStateVector(std::unique_ptr<VectorInterface<T>> vector)
       : vector_(std::move(vector)) {}
 
@@ -60,16 +60,20 @@ class BasicStateVector : public LeafStateVector<T> {
 
   VectorX<T> CopyToVector() const override { return vector_->get_value(); }
 
- private:
-  BasicStateVector<T>* DoClone() const override {
-    auto clone = new BasicStateVector<T>(size());
-    clone->SetFromVector(vector_->get_value());
-    return clone;
+ protected:
+  BasicStateVector(const BasicStateVector& other)
+      : BasicStateVector(other.size()) {
+    SetFromVector(other.vector_->get_value());
   }
 
-  // BasicStateVector objects are neither copyable nor moveable.
-  BasicStateVector(const BasicStateVector& other) = delete;
+  BasicStateVector<T>* DoClone() const override {
+    return new BasicStateVector<T>(*this);
+  }
+
+  // Assignment of BasicStateVectors could change size, so we forbid it.
   BasicStateVector& operator=(const BasicStateVector& other) = delete;
+
+  // BasicStateVector objects are not moveable.
   BasicStateVector(BasicStateVector&& other) = delete;
   BasicStateVector& operator=(BasicStateVector&& other) = delete;
 
