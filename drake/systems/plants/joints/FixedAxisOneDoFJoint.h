@@ -1,10 +1,12 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <cmath>
 #include <exception>
 #include <limits>
 #include <stdexcept>
+
+#include <Eigen/Core>
+
 #include "DrakeJointImpl.h"
 #include "drake/util/drakeGradientUtil.h"
 
