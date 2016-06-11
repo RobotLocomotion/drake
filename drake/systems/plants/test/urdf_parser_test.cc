@@ -57,18 +57,18 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 
   // Obtains a reference to foo_joint and verifies its parameters are correct.
   const DrakeJoint& foo_joint = foo_joint_link->getJoint();
-  EXPECT_TRUE(foo_joint.getName() == "foo_joint");
+  EXPECT_EQ(foo_joint.getName(), "foo_joint");
   EXPECT_FALSE(foo_joint.isFloating());
-  EXPECT_TRUE(foo_joint.getNumPositions() == 1);
-  EXPECT_TRUE(foo_joint.getNumVelocities() == 1);
+  EXPECT_EQ(foo_joint.getNumPositions(), 1);
+  EXPECT_EQ(foo_joint.getNumVelocities(), 1);
 
   // Obtains a reference to foo_transmission and verifies its parameters.
   const RigidBodyActuator& foo_actuator =
       rigid_body_tree->get_actuator("foo_motor");
 
-  EXPECT_TRUE(foo_actuator.effort_limit_min == -123);
-  EXPECT_TRUE(foo_actuator.effort_limit_max == 123);
-  EXPECT_TRUE(foo_actuator.reduction == 0.5);
+  EXPECT_EQ(foo_actuator.effort_limit_min, -123);
+  EXPECT_EQ(foo_actuator.effort_limit_max, 123);
+  EXPECT_EQ(foo_actuator.reduction, 0.5);
 }
 
 }  // namespace
