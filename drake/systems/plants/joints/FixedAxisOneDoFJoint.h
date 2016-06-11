@@ -19,6 +19,8 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   double damping;
   double coulomb_friction;
   double coulomb_window;
+  double effort_min;
+  double effort_max;
 
  protected:
   FixedAxisOneDoFJoint(Derived &derived, const std::string &name,
@@ -113,14 +115,25 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return ret;
   }
 
-  void setJointLimits(double joint_limit_min, double joint_limit_max) {
+  void setJointLimits(double joint_limit_min, double joint_limit_max,
+      double effort_min = -std::numeric_limits<double>::infinity(),
+      double effort_max = std::numeric_limits<double>::infinity()) {
+
     if (joint_limit_min > joint_limit_max) {
       throw std::logic_error(
-          "joint_limit_min cannot be larger than joint_limit_max");
+          "ERROR: joint_limit_min cannot be larger than joint_limit_max");
+    }
+
+    if (effort_min > effort_max) {
+      throw std::logic_error(
+          "ERROR: effort_min cannot be larger than effort_max");
     }
 
     this->DrakeJoint::joint_limit_min[0] = joint_limit_min;
     this->DrakeJoint::joint_limit_max[0] = joint_limit_max;
+
+    this->DrakeJoint::joint_effort_limit_min[0] = effort_min;
+    this->DrakeJoint::joint_effort_limit_max[0] = effort_max;
   }
 
   Eigen::VectorXd zeroConfiguration() const { return Eigen::VectorXd::Zero(1); }

@@ -66,6 +66,8 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   const std::string name;
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
+  Eigen::VectorXd joint_effort_limit_min;
+  Eigen::VectorXd joint_effort_limit_max;
 
  public:
   DrakeJoint(const std::string &name,
@@ -98,6 +100,10 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   virtual const Eigen::VectorXd &getJointLimitMin() const;
 
   virtual const Eigen::VectorXd &getJointLimitMax() const;
+
+  virtual const Eigen::VectorXd& get_joint_effort_limit_min() const;
+
+  virtual const Eigen::VectorXd& get_joint_effort_limit_max() const;
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(double)
 

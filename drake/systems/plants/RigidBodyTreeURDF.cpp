@@ -342,7 +342,21 @@ void setLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
            upper = numeric_limits<double>::infinity();
     parseScalarAttribute(limit_node, "lower", lower);
     parseScalarAttribute(limit_node, "upper", upper);
-    fjoint->setJointLimits(lower, upper);
+
+    double effort_max = numeric_limits<double>::infinity();
+    double effort_min = -numeric_limits<double>::infinity();
+
+    // Parses and saves the effort limits.
+    parseScalarAttribute(limit_node, "effort", effort_max);
+    effort_min = -effort_max;
+
+    // Attribute effort_min and effort_max take precedence over attribute
+    // effort if they exist
+    parseScalarAttribute(limit_node, "effort_min", effort_min);
+    parseScalarAttribute(limit_node, "effort_max", effort_max);
+
+    // Saves the joint limits.
+    fjoint->setJointLimits(lower, upper, effort_min, effort_max);
   }
 }
 
@@ -522,18 +536,18 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
   double gain = 1.0;
   if (reduction_node) parseScalarValue(reduction_node, gain);
 
-  XMLElement* limit_node = joint_node->FirstChildElement("limit");
+  // Obtains the min and max effort from the joint.
   double effort_max = numeric_limits<double>::infinity();
   double effort_min = -numeric_limits<double>::infinity();
-  if (limit_node) {
-    parseScalarAttribute(limit_node, "effort", effort_max);
-    effort_min = -effort_max;
 
-    // effort_min and effort_max take precedence over effort if they exist
-    parseScalarAttribute(limit_node, "effort_min", effort_min);
-    parseScalarAttribute(limit_node, "effort_max", effort_max);
+  RigidBody* joint_body = model->findJoint(joint_name);
+
+  if (joint_body != nullptr) {
+    effort_max = joint_body->getJoint().get_joint_effort_limit_max()[0];
+    effort_min = joint_body->getJoint().get_joint_effort_limit_min()[0];
   }
 
+  // Creates the actutor and adds it to the rigid body tree.
   model->actuators.push_back(RigidBodyActuator(actuator_name,
                                                model->bodies[body_index].get(),
                                                gain, effort_min, effort_max));
