@@ -606,7 +606,6 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-
   // The pose_map is needed because SDF specifies almost everything in the
   // model's coordinate frame.
   PoseMap pose_map;
