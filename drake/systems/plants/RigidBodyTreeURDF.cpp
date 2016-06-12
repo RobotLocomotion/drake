@@ -478,7 +478,7 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
   model->bodies[child_index]->parent = model->bodies[parent_index].get();
 }
 
-void GetActuarEffortLimit(XMLElement* node, const std::string& joint_name,
+void GetActuatorEffortLimit(XMLElement* node, const std::string& joint_name,
                           double* min_effort, double* max_effort) {
   bool joint_found = false;
 
@@ -575,7 +575,7 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
   double effort_max = numeric_limits<double>::infinity();
   double effort_min = -numeric_limits<double>::infinity();
 
-  GetActuarEffortLimit(static_cast<XMLElement*>(node->Parent()), joint_name,
+  GetActuatorEffortLimit(static_cast<XMLElement*>(node->Parent()), joint_name,
                        &effort_min, &effort_max);
 
   // Creates the actutor and adds it to the rigid body tree.
