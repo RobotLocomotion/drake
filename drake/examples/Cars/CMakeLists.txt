@@ -30,7 +30,7 @@ if(LCM_FOUND)
   add_dependencies(car_sim_lcm drake_lcmtypes lcmtype_agg_hpp)
   target_link_libraries(car_sim_lcm drakeCars drakeRBSystem drakeLCMSystem)
 
-  add_executable(multi_car_sim_lcm multi_car_sim_lcm.cpp)
+  add_executable(multi_car_sim_lcm multi_car_sim_lcm.cc)
   add_dependencies(multi_car_sim_lcm drake_lcmtypes lcmtype_agg_hpp)
   target_link_libraries(multi_car_sim_lcm drakeCars drakeRBSystem drakeLCMSystem)
 
