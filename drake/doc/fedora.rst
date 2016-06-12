@@ -16,7 +16,7 @@ Install the prerequisites::
     wget -q https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
     sudo rpm -U epel-release-latest-7.noarch.rpm
 
-    sudo yum install autoconf automake bison ccache clang cmake doxygen flex \
+    sudo yum install autoconf automake bison clang cmake doxygen flex \
       freeglut-devel gcc-c++ gcc-gfortran git graphviz gtk2-devel \
       java-*-openjdk-devel libjpeg-turbo-devel libpng-devel libtool make \
       mpfr-devel mpich numpy perl perl-HTML-Form perl-libwww-perl \

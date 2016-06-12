@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/state_vector_interface.h"
 #include "drake/systems/framework/vector_interface.h"
 
@@ -17,6 +18,13 @@ namespace systems {
 template <typename T>
 class BasicStateVector : public StateVectorInterface<T> {
  public:
+  /// Constructs a BasicStateVector that owns a generic BasicVector of the
+  /// specified @p size.
+  explicit BasicStateVector(int64_t size)
+      : BasicStateVector(
+            std::unique_ptr<VectorInterface<T>>(new BasicVector<T>(size))) {}
+
+  /// Constructs a BasicStateVector that owns an arbitrary @p vector.
   explicit BasicStateVector(std::unique_ptr<VectorInterface<T>> vector)
       : vector_(std::move(vector)) {}
 
@@ -25,7 +33,7 @@ class BasicStateVector : public StateVectorInterface<T> {
   const T GetAtIndex(ptrdiff_t index) const override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
-                              "out of bounds for state vector of size " +
+                              " out of bounds for state vector of size " +
                               std::to_string(size()));
     }
     return vector_->get_value()[index];
@@ -34,7 +42,7 @@ class BasicStateVector : public StateVectorInterface<T> {
   void SetAtIndex(ptrdiff_t index, const T& value) override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
-                              "out of bounds for state vector of size " +
+                              " out of bounds for state vector of size " +
                               std::to_string(size()));
     }
     vector_->get_mutable_value()[index] = value;
@@ -42,6 +50,10 @@ class BasicStateVector : public StateVectorInterface<T> {
 
   void SetFromVector(const Eigen::Ref<VectorX<T>>& value) override {
     vector_->set_value(value);
+  }
+
+  VectorX<T> CopyToVector() override {
+    return vector_->get_value();
   }
 
  private:

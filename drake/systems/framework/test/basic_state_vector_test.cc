@@ -30,6 +30,12 @@ TEST_F(BasicStateVectorTest, Access) {
   EXPECT_THROW(state_vector_->GetAtIndex(2), std::out_of_range);
 }
 
+TEST_F(BasicStateVectorTest, Copy) {
+  Eigen::Vector2i expected;
+  expected << 1, 2;
+  EXPECT_EQ(expected, state_vector_->CopyToVector());
+}
+
 TEST_F(BasicStateVectorTest, InvalidAccess) {
   EXPECT_THROW(state_vector_->GetAtIndex(kLength), std::out_of_range);
 }
@@ -41,7 +47,7 @@ TEST_F(BasicStateVectorTest, Mutation) {
 }
 
 TEST_F(BasicStateVectorTest, SetFromVector) {
-  Eigen::Vector2i next_value(kLength);
+  Eigen::Vector2i next_value;
   next_value << 3, 4;
 
   state_vector_->SetFromVector(next_value);
@@ -51,6 +57,16 @@ TEST_F(BasicStateVectorTest, SetFromVector) {
 
 TEST_F(BasicStateVectorTest, InvalidMutation) {
   EXPECT_THROW(state_vector_->SetAtIndex(kLength, 42), std::out_of_range);
+}
+
+TEST_F(BasicStateVectorTest, SizeBasedConstructor) {
+  state_vector_.reset(new BasicStateVector<int>(5));
+  EXPECT_EQ(5, state_vector_->size());
+  // Because it's based on a BasicVector<int>, BasicStateVector<int> should be
+  // zero-initialized.
+  EXPECT_EQ(0, state_vector_->GetAtIndex(4));
+  state_vector_->SetAtIndex(4, 42);
+  EXPECT_EQ(42, state_vector_->GetAtIndex(4));
 }
 
 }  // namespace

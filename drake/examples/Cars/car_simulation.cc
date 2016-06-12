@@ -94,7 +94,7 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys) {
 }
 
 double ParseDuration(int argc, const char* argv[]) {
-  for (int ii = 1; ii < argc; ii++) {
+  for (int ii = 1; ii < argc; ++ii) {
     if (std::string(argv[ii]) == "--duration") {
       if (++ii == argc) {
         throw std::runtime_error(
