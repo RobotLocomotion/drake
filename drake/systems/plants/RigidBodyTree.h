@@ -692,7 +692,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @throws std::invalid_argument if no rigid body actuator with name @p name
    * exists.
    */
-  const RigidBodyActuator& GetActuator(const std::string&) const;
+  const RigidBodyActuator& GetActuator(const std::string& name) const;
 
   // TODO(tkoolen): remove parseBodyOrFrameID methods
   template <typename Scalar>

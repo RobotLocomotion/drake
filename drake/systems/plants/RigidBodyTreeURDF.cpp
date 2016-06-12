@@ -342,8 +342,6 @@ void setLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
            upper = numeric_limits<double>::infinity();
     parseScalarAttribute(limit_node, "lower", lower);
     parseScalarAttribute(limit_node, "upper", upper);
-
-    // Saves the joint limits.
     fjoint->setJointLimits(lower, upper);
   }
 }
