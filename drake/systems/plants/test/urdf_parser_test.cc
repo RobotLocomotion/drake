@@ -63,8 +63,9 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
   EXPECT_EQ(foo_joint.getNumVelocities(), 1);
 
   // Obtains a reference to foo_transmission and verifies its parameters.
+  const std::string actuator_name = "foo_motor";
   const RigidBodyActuator& foo_actuator =
-      rigid_body_tree->get_actuator("foo_motor");
+      rigid_body_tree->GetActuator(actuator_name);
 
   EXPECT_EQ(foo_actuator.effort_limit_min, -123);
   EXPECT_EQ(foo_actuator.effort_limit_max, 123);

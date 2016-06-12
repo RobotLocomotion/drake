@@ -688,11 +688,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * selected based on its name.
    *
    * @param name The name of the rigid body actuator to get.
-   * @return A const reference to the rigid body actuator with name @p name.
+   * @returns A const reference to the rigid body actuator with name @p name.
    * @throws std::invalid_argument if no rigid body actuator with name @p name
    * exists.
    */
-  const RigidBodyActuator& get_actuator(std::string name) const;
+  const RigidBodyActuator& GetActuator(const std::string&) const;
 
   // TODO(tkoolen): remove parseBodyOrFrameID methods
   template <typename Scalar>

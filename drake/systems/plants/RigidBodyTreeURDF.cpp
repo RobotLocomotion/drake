@@ -343,20 +343,8 @@ void setLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
     parseScalarAttribute(limit_node, "lower", lower);
     parseScalarAttribute(limit_node, "upper", upper);
 
-    double effort_max = numeric_limits<double>::infinity();
-    double effort_min = -numeric_limits<double>::infinity();
-
-    // Parses and saves the effort limits.
-    parseScalarAttribute(limit_node, "effort", effort_max);
-    effort_min = -effort_max;
-
-    // Attribute effort_min and effort_max take precedence over attribute
-    // effort if they exist
-    parseScalarAttribute(limit_node, "effort_min", effort_min);
-    parseScalarAttribute(limit_node, "effort_max", effort_max);
-
     // Saves the joint limits.
-    fjoint->setJointLimits(lower, upper, effort_min, effort_max);
+    fjoint->setJointLimits(lower, upper);
   }
 }
 
@@ -492,6 +480,55 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
   model->bodies[child_index]->parent = model->bodies[parent_index].get();
 }
 
+void GetActuarEffortLimit(XMLElement* node, const std::string& joint_name,
+                          double* min_effort, double* max_effort) {
+  bool joint_found = false;
+
+  for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
+       joint_node = joint_node->NextSiblingElement("joint")) {
+    // Checks for the existence of an attribute named "drake_ignore". If such an
+    // attribute exists and has a value of "true", ignores the current joint.
+    {
+      const char* attr = joint_node->Attribute("drake_ignore");
+      if (attr && strcmp(attr, "true") == 0) {
+        continue;
+      }
+    }
+
+    // Obtains the joint's name.
+    const char* attr = joint_node->Attribute("name");
+    if (!attr) {
+      throw runtime_error(
+          "GetActuarEffortLimit: ERROR: joint tag is missing name attribute");
+    }
+    std::string name = std::string(attr);
+
+    // Checks if the current joint's name matches parameter joint_name.
+    if (name == joint_name) {
+      joint_found = true;
+
+      // Parses the minimum and maximum effort limits.
+      XMLElement* limit_node = joint_node->FirstChildElement("limit");
+      if (limit_node) {
+        // Parses attribute "effort" if it exists.
+        parseScalarAttribute(limit_node, "effort", *max_effort);
+        (*min_effort) = -(*max_effort);
+
+        // Attribute effort_min and effort_max take precedence over attribute
+        // effort if they exist.
+        parseScalarAttribute(limit_node, "effort_min", *min_effort);
+        parseScalarAttribute(limit_node, "effort_max", *max_effort);
+      }
+    }
+  }
+
+  if (!joint_found) {
+    throw std::runtime_error(
+        "GetActuarEffortLimit: ERROR: Unable to find joint \"" + joint_name +
+        "\".");
+  }
+}
+
 void parseTransmission(RigidBodyTree* model, XMLElement* node) {
   const char* attr = nullptr;
   XMLElement* type_node = node->FirstChildElement("type");
@@ -540,12 +577,8 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
   double effort_max = numeric_limits<double>::infinity();
   double effort_min = -numeric_limits<double>::infinity();
 
-  RigidBody* joint_body = model->findJoint(joint_name);
-
-  if (joint_body != nullptr) {
-    effort_max = joint_body->getJoint().get_joint_effort_limit_max()[0];
-    effort_min = joint_body->getJoint().get_joint_effort_limit_min()[0];
-  }
+  GetActuarEffortLimit(static_cast<XMLElement*>(node->Parent()), joint_name,
+                       &effort_min, &effort_max);
 
   // Creates the actutor and adds it to the rigid body tree.
   model->actuators.push_back(RigidBodyActuator(actuator_name,

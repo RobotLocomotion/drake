@@ -101,10 +101,11 @@ void RigidBodyTree::SortTree() {
   }
 }
 
-const RigidBodyActuator& RigidBodyTree::get_actuator(std::string name) const {
-  for (const auto& actuator_ptr : actuators) {
-    if (actuator_ptr.name == name) {
-      return actuator_ptr;
+const RigidBodyActuator& RigidBodyTree::GetActuator(const std::string& name)
+    const {
+  for (const auto& actuator : actuators) {
+    if (actuator.name == name) {
+      return actuator;
     }
   }
   throw std::invalid_argument("ERROR: Could not find actuator named \"" + name
