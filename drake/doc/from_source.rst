@@ -95,6 +95,7 @@ out-of-source build directory.
 ::
 
     mkdir drake-build
+    cd drake-build
     cmake path/to/drake-distro -G Ninja
     ninja
 
