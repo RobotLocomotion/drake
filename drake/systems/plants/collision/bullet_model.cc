@@ -728,6 +728,10 @@ bool BulletModel::collisionPointsAllToAll(
   std::vector<double> distance;
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
 
+  // This removes the "persistent" behavior of Bullet's manifolds allowing to
+  // perform a clean, from scratch, collision dispatch.
+  ClearCachedResults(use_margins);
+
   // Internally updates AABB's calling btCollisionWorld::updateAabbs();
   // TODO(amcastro-tri): analyze if the call to BulletModel::updateModel() is
   // redundant (since all it does is to call btCollisionWorld::updateAabbs()).
