@@ -10,7 +10,6 @@ AtlasSystem::AtlasSystem() {
   addRobotFromFile(
       Drake::getDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
       DrakeJoint::QUATERNION);
-  tree_ = getRigidBodyTree().get();
 
   x0_ = VectorXd::Zero(getNumStates());
   SetInitialConfiguration();
@@ -23,7 +22,10 @@ AtlasSystem::AtlasSystem() {
 const VectorXd& AtlasSystem::get_initial_state() const { return x0_; }
 
 void AtlasSystem::SetInitialConfiguration() {
-  x0_.head(tree_->number_of_positions()) = tree_->getZeroConfiguration();
+  RigidBodyTree* tree = getRigidBodyTree().get();
+  x0_.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+
+  // Magic numbers are initial conditions used in runAtlasWalking.m.
   x0_(2) = 0.844;    // base z
   x0_(10) = 0.27;    // l_arm_shz
   x0_(11) = 0.0;     // l_leg_hpz
@@ -58,24 +60,24 @@ void AtlasSystem::SetUpTerrain() {
   // TODO(amcastro-tri): move out of here when collision materials kick in.
   penetration_stiffness = 1500.0;
   penetration_damping = 150.0;
+  RigidBodyTree* tree = getRigidBodyTree().get();
 
-  {  // Adds a flat terrain.
-    double box_width = 1000;
-    double box_depth = 10;
-    DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
-    Isometry3d T_element_to_link = Isometry3d::Identity();
-    // The top of the box is at z=0.
-    T_element_to_link.translation() << 0, 0, -box_depth / 2;
-    RigidBody& world = tree_->world();
-    Vector4d color;
-    color << 0.9297, 0.7930, 0.6758, 1;
-    world.addVisualElement(
-        DrakeShapes::VisualElement(geom, T_element_to_link, color));
-    tree_->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
-        "terrain");
-    tree_->updateStaticCollisionElements();
-  }
+  // Adds a flat terrain.
+  double box_width = 1000;
+  double box_depth = 10;
+  DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
+  Isometry3d T_element_to_link = Isometry3d::Identity();
+  // The top of the box is at z=0.
+  T_element_to_link.translation() << 0, 0, -box_depth / 2;
+  RigidBody& world = tree->world();
+  Vector4d color;
+  color << 0.9297, 0.7930, 0.6758, 1;
+  world.addVisualElement(
+      DrakeShapes::VisualElement(geom, T_element_to_link, color));
+  tree->addCollisionElement(
+      RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
+      "terrain");
+  tree->updateStaticCollisionElements();
 }
 
 }  // namespace drake
