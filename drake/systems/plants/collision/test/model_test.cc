@@ -199,9 +199,9 @@ class BoxVsSphereTest : public ::testing::Test {
     Element colliding_sphere(sphere);
 
     // Populate the model.
-    model = newModel();
-    box_id = model->addElement(colliding_box);
-    sphere_id = model->addElement(colliding_sphere);
+    model_ = newModel();
+    box_id = model_->addElement(colliding_box);
+    sphere_id = model_->addElement(colliding_sphere);
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
@@ -215,18 +215,18 @@ class BoxVsSphereTest : public ::testing::Test {
     Isometry3d box_pose;
     box_pose.setIdentity();
     box_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-    model->updateElementWorldTransform(box_id, box_pose);
+    model_->updateElementWorldTransform(box_id, box_pose);
 
     // Body 2 pose
     Isometry3d sphere_pose;
     sphere_pose.setIdentity();
     sphere_pose.translation() = Vector3d(0.0, 1.25, 0.0);
-    model->updateElementWorldTransform(sphere_id, sphere_pose);
+    model_->updateElementWorldTransform(sphere_id, sphere_pose);
   }
 
  protected:
   double tolerance_;
-  std::unique_ptr<Model> model;
+  std::unique_ptr<Model> model_;
   ElementId box_id, sphere_id;
   ElementToSurfacePointMap solution;
 };
@@ -242,7 +242,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
 
   // Collision test performed with Model::closestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box_id, sphere_id};
-  model->closestPointsAllToAll(ids_to_check, true, points);
+  model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
@@ -255,7 +255,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Collision test performed with Model::collisionPointsAllToAll.
   // Not using margins.
   points.clear();
-  model->collisionPointsAllToAll(false, points);
+  model_->collisionPointsAllToAll(false, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
@@ -275,7 +275,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Collision test performed with Model::collisionPointsAllToAll.
   // Using margins.
   points.clear();
-  model->collisionPointsAllToAll(true, points);
+  model_->collisionPointsAllToAll(true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
@@ -296,7 +296,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Therefore throw an exception if user attempts to call
   // potentialCollisionPoints after calling another dispatch method.
   points.clear();
-  EXPECT_THROW(points = model->potentialCollisionPoints(false),
+  EXPECT_THROW(points = model_->potentialCollisionPoints(false),
                std::runtime_error);
 }
 
@@ -314,7 +314,7 @@ TEST_F(BoxVsSphereTest, MultiContact) {
 
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
-  points = model->potentialCollisionPoints(false);
+  points = model_->potentialCollisionPoints(false);
 
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
@@ -357,9 +357,9 @@ class SmallBoxSittingOnLargeBox: public ::testing::Test {
     Element colliding_small_box(small_box);
 
     // Populate the model.
-    model = newModel();
-    large_box_id = model->addElement(colliding_large_box);
-    small_box_id = model->addElement(colliding_small_box);
+    model_ = newModel();
+    large_box_id = model_->addElement(colliding_large_box);
+    small_box_id = model_->addElement(colliding_small_box);
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
@@ -373,18 +373,18 @@ class SmallBoxSittingOnLargeBox: public ::testing::Test {
     Isometry3d large_box_pose;
     large_box_pose.setIdentity();
     large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-    model->updateElementWorldTransform(large_box_id, large_box_pose);
+    model_->updateElementWorldTransform(large_box_id, large_box_pose);
 
     // Small body pose
     Isometry3d small_box_pose;
     small_box_pose.setIdentity();
     small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-    model->updateElementWorldTransform(small_box_id, small_box_pose);
+    model_->updateElementWorldTransform(small_box_id, small_box_pose);
   }
 
  protected:
   double tolerance_;
-  std::unique_ptr<Model> model;
+  std::unique_ptr<Model> model_;
   ElementId small_box_id, large_box_id;
   ElementToSurfacePointMap solution;
 };
@@ -410,7 +410,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
 
   // Collision test performed with Model::closestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {large_box_id, small_box_id};
-  model->closestPointsAllToAll(ids_to_check, true, points);
+  model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -424,7 +424,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // Collision test performed with Model::collisionPointsAllToAll.
   // Not using margins.
   points.clear();
-  model->collisionPointsAllToAll(false, points);
+  model_->collisionPointsAllToAll(false, points);
 
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
@@ -442,7 +442,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // Collision test performed with Model::collisionPointsAllToAll.
   // Using margins.
   points.clear();
-  model->collisionPointsAllToAll(true, points);
+  model_->collisionPointsAllToAll(true, points);
 
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
@@ -454,7 +454,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
               solution[points[0].getIdB()].world_frame.y(), tolerance_);
 
   points.clear();
-  EXPECT_THROW(points = model->potentialCollisionPoints(false),
+  EXPECT_THROW(points = model_->potentialCollisionPoints(false),
                std::runtime_error);
 }
 
@@ -479,7 +479,7 @@ TEST_F(SmallBoxSittingOnLargeBox, MultiContact) {
   //    corners of the small box is the same).
 
   // Collision test performed with Model::potentialCollisionPoints.
-  points = model->potentialCollisionPoints(false);
+  points = model_->potentialCollisionPoints(false);
   ASSERT_EQ(4, points.size());
   for (int i = 0; i < points.size(); ++i) {
     EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance_);
@@ -513,9 +513,9 @@ class NonAlignedBoxes: public ::testing::Test {
     Element colliding_box2(box2);
 
     // Populate the model.
-    model = newModel();
-    box1_id = model->addElement(colliding_box1);
-    box2_id = model->addElement(colliding_box1);
+    model_ = newModel();
+    box1_id = model_->addElement(colliding_box1);
+    box2_id = model_->addElement(colliding_box1);
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
@@ -529,7 +529,7 @@ class NonAlignedBoxes: public ::testing::Test {
     Isometry3d box1_pose;
     box1_pose.setIdentity();
     box1_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-    model->updateElementWorldTransform(box1_id, box1_pose);
+    model_->updateElementWorldTransform(box1_id, box1_pose);
 
     // Box 2 pose.
     // Rotate box 2 45 degrees around the y axis so that it does not alight with
@@ -539,12 +539,12 @@ class NonAlignedBoxes: public ::testing::Test {
     box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
     box2_pose.linear() =
         AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
-    model->updateElementWorldTransform(box2_id, box2_pose);
+    model_->updateElementWorldTransform(box2_id, box2_pose);
   }
 
  protected:
   double tolerance_;
-  std::unique_ptr<Model> model;
+  std::unique_ptr<Model> model_;
   ElementId box1_id, box2_id;
   ElementToSurfacePointMap solution;
 };
@@ -569,7 +569,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   //    corners of the small box is the same.
   // Collision test performed with Model::closestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box1_id, box2_id};
-  model->closestPointsAllToAll(ids_to_check, true, points);
+  model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
   EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -582,7 +582,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
 
   // Collision test performed with Model::collisionPointsAllToAll.
   points.clear();
-  model->collisionPointsAllToAll(false, points);
+  model_->collisionPointsAllToAll(false, points);
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
   // least the four corners of the smaller box. However it randomly picks one
@@ -598,7 +598,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
               solution[points[0].getIdB()].world_frame.y(), tolerance_);
 
   points.clear();
-  EXPECT_THROW(points = model->potentialCollisionPoints(false),
+  EXPECT_THROW(points = model_->potentialCollisionPoints(false),
                std::runtime_error);
 }
 
@@ -616,7 +616,7 @@ TEST_F(NonAlignedBoxes, MultiContact) {
 
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
-  points = model->potentialCollisionPoints(false);
+  points = model_->potentialCollisionPoints(false);
   ASSERT_EQ(4, points.size());
 
   for (int i = 0; i < points.size(); ++i) {
@@ -645,13 +645,13 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   Isometry3d large_box_pose;
   large_box_pose.setIdentity();
   large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-  model->updateElementWorldTransform(large_box_id, large_box_pose);
+  model_->updateElementWorldTransform(large_box_id, large_box_pose);
 
   // Small body pose
   Isometry3d small_box_pose;
   small_box_pose.setIdentity();
   small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-  model->updateElementWorldTransform(small_box_id, small_box_pose);
+  model_->updateElementWorldTransform(small_box_id, small_box_pose);
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -664,13 +664,13 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
     if (i == 1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
     if (i == 2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
     if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
-    model->updateElementWorldTransform(small_box_id, small_box_pose);
+    model_->updateElementWorldTransform(small_box_id, small_box_pose);
 
     // Notice that the results vector is cleared every time so that results
     // do not accumulate.
     points.clear();
 
-    model->collisionPointsAllToAll(false, points);
+    model_->collisionPointsAllToAll(false, points);
   }
 
   // If Bullet cached those tests then there should be four results.
@@ -695,15 +695,15 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
     if (i == 1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
     if (i == 2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
     if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
-    model->updateElementWorldTransform(small_box_id, small_box_pose);
+    model_->updateElementWorldTransform(small_box_id, small_box_pose);
 
     // Notice that the results vector is cleared every time so that results
     // do not accumulate.
     points.clear();
 
     // Clear cache before each test.
-    model->ClearCachedResults(false);
-    model->collisionPointsAllToAll(false, points);
+    model_->ClearCachedResults(false);
+    model_->collisionPointsAllToAll(false, points);
   }
 
   // Since cache was cleared on every test, only one point is expected.
