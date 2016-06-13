@@ -108,8 +108,8 @@ double ParseDuration(int argc, const char* argv[]) {
 }
 
 void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
-    double box_width, double box_depth) {
-  DrakeShapes::Box geom(Eigen::Vector3d(box_width, box_width, box_depth));
+    double box_size, double box_depth) {
+  DrakeShapes::Box geom(Eigen::Vector3d(box_size, box_size, box_depth));
   Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
   T_element_to_link.translation() << 0, 0,
       -box_depth / 2;  // top of the box is at z=0
