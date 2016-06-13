@@ -307,7 +307,7 @@ void setSDFDynamics(RigidBodyTree* model, XMLElement* node,
 }
 
 void parseSDFFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
-                   int robot_num) {
+                   int model_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
 
@@ -327,7 +327,7 @@ void parseSDFFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
   }
 
   // The following will throw a std::runtime_error if the link doesn't exist.
-  RigidBody* link = rigid_body_tree->findLink(link_name, "", robot_num);
+  RigidBody* link = rigid_body_tree->findLink(link_name, "", model_id);
 
   // Get the frame's pose
   XMLElement* pose = node->FirstChildElement("pose");
@@ -588,12 +588,9 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 /**
  * Parses a model and adds it to the rigid body tree.
  *
- * @param model A pointer to the rigid body tree to which to add the model.
+ * @param rigid_body_tree A pointer to the rigid body tree to which to add the
+ * model.
  * @param node The XML node containing the model information.
- * @param model_name_postfix A postfix to add to the end of the model name.
- * This can be nullptr, in which case the model name as specified by the SDF
- * remains unchanged. It is useful to allow multiple cars to be added based on
- * the same underlying SDF model.
  * @param package_map A map containing information about the ROS workspace
  * in which to search for meshes.
  * @param root_dir The root directory from which to search for mesh files.

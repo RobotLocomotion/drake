@@ -112,7 +112,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   /**
    * Returns an integer than can be used to uniquely identify a model
-   * within this rigid body tree.
+   * within this rigid body tree. Note that this method is not thread safe!
    */
   int getUniqueModelID() { return next_model_id_++; }
 
@@ -677,39 +677,93 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   /**
    * Finds a link with the specified \p link_name belonging to a model with the
-   * specified \p model_id.
+   * specified \p model_name and \p model_id. Note that if \p model_name is the
+   * empty string and \p model_id is -1, every model is searched. If
+   * \p model_name and \p model_id are inconsistent, no link will be found and
+   * an exception will be thrown.
    *
    * @param[in] link_name The name of the link to find.
    * @param[in] model_name The name of the model to which the link belongs. If
    * this value is an empty string, every model is searched.
-   * @param[in] model_id The ID of the robot to which the link belongs. If this
+   * @param[in] model_id The ID of the model to which the link belongs. If this
    * value is -1, every model is searched.
+   * @throws std::logic_error if multiple matching links are found or no
+   * matching links are found.
    */
   RigidBody* findLink(const std::string& link_name,
     const std::string& model_name = "", int model_id = -1) const;
 
   /**
-   * Obtains the ID of a link, which is its body index.
+   * Finds a link with the specified \p link_name belonging to a model with the
+   * specified \p model_name. Note that if \p model_name is the empty string,
+   * every model is searched.
+   *
+   * @param[in] link_name The name of the link to find.
+   * @param[in] model_name The name of the model to which the link belongs. If
+   * this value is an empty string, every model is searched.
+   * @throws std::logic_error if multiple matching links are found or no
+   * matching links are found.
+   */
+  // RigidBody* findLink(const std::string& link_name,
+  //     const std::string& model_name = "") const {
+  //   return findLink(link_name, model_name, -1);
+  // }
+
+  /**
+   * Finds a link with the specified \p link_name belonging to a model with the
+   * specified \p model_id. Note that if \p model_name is the empty string and
+   * \p model_id is -1, every model is searched.
+   *
+   * @param[in] link_name The name of the link to find.
+   * @param[in] model_id The ID of the model to which the link belongs. If this
+   * value is -1, every model is searched.
+   * @throws std::logic_error if multiple matching links are found or no
+   * matching links are found.
+   */
+  // RigidBody* findLink(const std::string& link_name, int model_id = -1) const {
+  //   return findLink(link_name, "", model_id);
+  // }
+
+  /**
+   * Obtains the body index of a link. Note that the body index of the link
+   * is different from the ID of the model to which the link belongs.
    *
    * @param[in] link_name The name of the link.
-   * @param[in] model_id The ID of the robot.
-   * @return The body index of the specified link.
+   * @param[in] model_id The ID of the model. This parameter is optional. If
+   * this parameter is not specified, all models are searched.
+   * @return The body index of the specified link. If this value is -1, all
+   * models are searched for a link named \p link_name.
+   * @throws std::logic_error if no link with the specified \p link_name and
+   * \p model_id were found or if multiple matching links were found.
    */
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
+  /**
+   * Obtains a pointer to a rigid body whose parent joint is named
+   * \p joint_name and is part of a model with ID \p model_id.
+   *
+   * @param[in] joint_name The name of the joint.
+   * @param[in] model_id The ID of the model that contains the joint. This
+   * parameter is optional. If this parameter is omitted, every model is
+   * searched.
+   * @return A pointer to the rigid body whose joint is the one being searched
+   * for.
+   * @throws std::logic_error if no joint is found.
+   */
   RigidBody* findJoint(const std::string& joint_name, int model_id = -1) const;
 
   int findJointId(const std::string& joint_name, int model_id = -1) const;
 
   /**
-   * Finds a frame of the specified \p frame_name belonging to a robot with the
+   * Finds a frame of the specified \p frame_name belonging to a model with the
    * specified \p model_id.
    *
    * @param[in] frame_name The name of the frame to find.
-   * @param[in] model_id The ID of the robot to which the frame belongs. If this
-   * value is -1, search all robots.
+   * @param[in] model_id The ID of the model to which the frame belongs. If this
+   * value is -1, search all models.
+   * @throws std::logic_error if multiple matching frames are found.
    */
   std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;

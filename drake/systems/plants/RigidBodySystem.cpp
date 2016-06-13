@@ -803,26 +803,46 @@ void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node) {
     parseSDFJoint(sys, model_id, elnode, pose_map);
 }
 
-void parseSDF(RigidBodySystem& sys, int model_id, XMLDocument* xml_doc) {
+void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   XMLElement* node = xml_doc->FirstChildElement("sdf");
 
-  if (!node)
+  if (!node) {
     throw std::runtime_error(
         "ERROR: This xml file does not contain an sdf tag");
+  }
 
-  // Increments the model_id based on the number of models in the world node.
-  XMLElement* world_node =
-      node->FirstChildElement(RigidBodyTree::kWorldLinkName);
-  if (world_node) {
-    for (XMLElement* model_node = world_node->FirstChildElement("model");
-         model_node; model_node = model_node->NextSiblingElement("model")) {
-      ++model_id;
+  // Obtains the final model ID after all of the models in this SDF is added
+  // to the RigidBodyTree. Note that this is simply the current model ID since
+  // the models in this SDF were already added to the rigid body tree prior to
+  // this method being called.
+  int final_model_id = sys.getRigidBodyTree()->getCurrentModelID();
+
+  // Computes the number of models in the SDF.
+  int number_of_models_in_sdf = 0;
+  {
+    XMLElement* world_node =
+        node->FirstChildElement(RigidBodyTree::kWorldLinkName);
+    if (world_node) {
+      for (XMLElement* model_node = world_node->FirstChildElement("model");
+           model_node; model_node = model_node->NextSiblingElement("model")) {
+        ++number_of_models_in_sdf;
+      }
+    }
+
+    for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
+        elnode = node->NextSiblingElement("model")) {
+      ++number_of_models_in_sdf;
     }
   }
 
+  // Computes the ID of the first model in the SDF.
+  int model_id = final_model_id - number_of_models_in_sdf;
+
+  // Parses each model in the SDF.
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
-       elnode = node->NextSiblingElement("model"))
+      elnode = node->NextSiblingElement("model")) {
     parseSDFModel(sys, model_id++, elnode);
+  }
 }
 
 void RigidBodySystem::addRobotFromURDFString(
@@ -863,8 +883,6 @@ void RigidBodySystem::addRobotFromSDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
-  int initial_model_id = tree->getCurrentModelID();
-
   // Adds the robot to the rigid body tree.
   tree->addRobotFromSDF(sdf_filename, floating_base_type,
     weld_to_frame);
@@ -878,7 +896,7 @@ void RigidBodySystem::addRobotFromSDF(
       "RigidBodySystem::addRobotFromSDF: ERROR: Failed to parse xml in file "
       + sdf_filename + "\n" + xml_doc.ErrorName());
   }
-  parseSDF(*this, initial_model_id, &xml_doc);
+  parseSDF(*this, &xml_doc);
 }
 
 void RigidBodySystem::addRobotFromFile(
