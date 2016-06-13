@@ -27,5 +27,5 @@ catkin_package(
 
 # include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(golfcart_tf_publisher src/golfcart_tf_publisher.cc)
-target_link_libraries(golfcart_tf_publisher ${catkin_LIBRARIES})
+add_executable(golfcart_adapter src/golfcart_adapter.cc)
+target_link_libraries(golfcart_adapter ${catkin_LIBRARIES})

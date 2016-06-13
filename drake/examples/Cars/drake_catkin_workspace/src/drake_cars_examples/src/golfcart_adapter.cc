@@ -91,14 +91,14 @@ class PriusToGolfCartSensorConverter {
 
   void callback_rear_left_laser(const sensor_msgs::LaserScanPtr& msg) {
     sensor_msgs::LaserScan message = *(msg.get());
-    message.header.frame_id = "rear_right_lidar";
-    pub_rear_right_lidar.publish(message);
+    message.header.frame_id = "rear_left_lidar";
+    pub_rear_left_lidar.publish(message);
   }
 
   void callback_rear_right_laser(const sensor_msgs::LaserScanPtr& msg) {
     sensor_msgs::LaserScan message = *(msg.get());
-    message.header.frame_id = "rear_left_lidar";
-    pub_rear_left_lidar.publish(message);
+    message.header.frame_id = "rear_right_lidar";
+    pub_rear_right_lidar.publish(message);
   }
 
  private:
@@ -120,7 +120,7 @@ int do_main(int argc, char* argv[]) {
   const double kCycleFrequency = 10.0;
 
   // Initializes ROS.
-  ros::init(argc, argv, "golfcart_tf_publisher");
+  ros::init(argc, argv, "golfcart_adapter");
 
   // Sets the verbosity level to DEBUG.
   if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
@@ -134,7 +134,7 @@ int do_main(int argc, char* argv[]) {
   tf::TransformBroadcaster broadcaster;
   PriusToGolfCartSensorConverter msg_converter;
 
-  // Starts a new thread for handling message convertion.
+  // Starts a thread for handling sensor message conversion.
   std::thread msg_converter_thread(msg_converter);
 
   // Cycles at kCycleFrequency Hz.
@@ -195,7 +195,7 @@ int do_main(int argc, char* argv[]) {
     // "rear_left_laser".
     tf_converter.obtain_and_send_transform(
       std::string("chassis_floor"),
-      std::string("rear_right_laser"),
+      std::string("rear_left_laser"),
       std::string("golfcartdj/base_link"),
       std::string("rear_left_lidar"));
 
