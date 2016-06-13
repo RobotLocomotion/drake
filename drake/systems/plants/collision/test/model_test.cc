@@ -200,34 +200,34 @@ class BoxVsSphereTest : public ::testing::Test {
 
     // Populate the model.
     model_ = newModel();
-    box_id = model_->addElement(colliding_box);
-    sphere_id = model_->addElement(colliding_sphere);
+    box_id_ = model_->addElement(colliding_box);
+    sphere_id_ = model_->addElement(colliding_sphere);
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
     // Solutions are expressed in world and body frames.
     solution = {
         /*           world frame     , body frame  */
-        {box_id,    {{0.0,  1.0, 0.0}, {0.0,  0.5, 0.0}}},
-        {sphere_id, {{0.0, 0.75, 0.0}, {0.0, -0.5, 0.0}}}};
+        {box_id_,    {{0.0,  1.0, 0.0}, {0.0,  0.5, 0.0}}},
+        {sphere_id_, {{0.0, 0.75, 0.0}, {0.0, -0.5, 0.0}}}};
 
     // Body 1 pose
     Isometry3d box_pose;
     box_pose.setIdentity();
     box_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-    model_->updateElementWorldTransform(box_id, box_pose);
+    model_->updateElementWorldTransform(box_id_, box_pose);
 
     // Body 2 pose
     Isometry3d sphere_pose;
     sphere_pose.setIdentity();
     sphere_pose.translation() = Vector3d(0.0, 1.25, 0.0);
-    model_->updateElementWorldTransform(sphere_id, sphere_pose);
+    model_->updateElementWorldTransform(sphere_id_, sphere_pose);
   }
 
  protected:
   double tolerance_;
   std::unique_ptr<Model> model_;
-  ElementId box_id, sphere_id;
+  ElementId box_id_, sphere_id_;
   ElementToSurfacePointMap solution;
 };
 
@@ -241,7 +241,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   std::vector<PointPair> points;
 
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<ElementId> ids_to_check = {box_id, sphere_id};
+  const std::vector<ElementId> ids_to_check = {box_id_, sphere_id_};
   model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
@@ -358,34 +358,34 @@ class SmallBoxSittingOnLargeBox: public ::testing::Test {
 
     // Populate the model.
     model_ = newModel();
-    large_box_id = model_->addElement(colliding_large_box);
-    small_box_id = model_->addElement(colliding_small_box);
+    large_box_id_ = model_->addElement(colliding_large_box);
+    small_box_id_ = model_->addElement(colliding_small_box);
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
     // Solutions are expressed in world and body frames.
     solution = {
         /*              world frame    , body frame  */
-        {large_box_id, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
-        {small_box_id, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
+        {large_box_id_, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
+        {small_box_id_, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
 
     // Large body pose
     Isometry3d large_box_pose;
     large_box_pose.setIdentity();
     large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-    model_->updateElementWorldTransform(large_box_id, large_box_pose);
+    model_->updateElementWorldTransform(large_box_id_, large_box_pose);
 
     // Small body pose
     Isometry3d small_box_pose;
     small_box_pose.setIdentity();
     small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-    model_->updateElementWorldTransform(small_box_id, small_box_pose);
+    model_->updateElementWorldTransform(small_box_id_, small_box_pose);
   }
 
  protected:
   double tolerance_;
   std::unique_ptr<Model> model_;
-  ElementId small_box_id, large_box_id;
+  ElementId small_box_id_, large_box_id_;
   ElementToSurfacePointMap solution;
 };
 
@@ -409,7 +409,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   //    corners of the small box is the same.
 
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<ElementId> ids_to_check = {large_box_id, small_box_id};
+  const std::vector<ElementId> ids_to_check = {large_box_id_, small_box_id_};
   model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
@@ -514,22 +514,22 @@ class NonAlignedBoxes: public ::testing::Test {
 
     // Populate the model.
     model_ = newModel();
-    box1_id = model_->addElement(colliding_box1);
-    box2_id = model_->addElement(colliding_box1);
+    box1_id_ = model_->addElement(colliding_box1);
+    box2_id_ = model_->addElement(colliding_box1);
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
     // Solutions are expressed in world and body frames.
     solution = {
         /*         world frame    , body frame  */
-        {box1_id, {{0.0, 1.0, 0.0}, {0.0,  0.5, 0.0}}},
-        {box2_id, {{0.0, 0.9, 0.0}, {0.0, -0.5, 0.0}}}};
+        {box1_id_, {{0.0, 1.0, 0.0}, {0.0,  0.5, 0.0}}},
+        {box2_id_, {{0.0, 0.9, 0.0}, {0.0, -0.5, 0.0}}}};
 
     // Box 1 pose.
     Isometry3d box1_pose;
     box1_pose.setIdentity();
     box1_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-    model_->updateElementWorldTransform(box1_id, box1_pose);
+    model_->updateElementWorldTransform(box1_id_, box1_pose);
 
     // Box 2 pose.
     // Rotate box 2 45 degrees around the y axis so that it does not alight with
@@ -539,13 +539,13 @@ class NonAlignedBoxes: public ::testing::Test {
     box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
     box2_pose.linear() =
         AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
-    model_->updateElementWorldTransform(box2_id, box2_pose);
+    model_->updateElementWorldTransform(box2_id_, box2_pose);
   }
 
  protected:
   double tolerance_;
   std::unique_ptr<Model> model_;
-  ElementId box1_id, box2_id;
+  ElementId box1_id_, box2_id_;
   ElementToSurfacePointMap solution;
 };
 
@@ -568,7 +568,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   // 2. The vertical position of the collision point (since for any of the four
   //    corners of the small box is the same.
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<ElementId> ids_to_check = {box1_id, box2_id};
+  const std::vector<ElementId> ids_to_check = {box1_id_, box2_id_};
   model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
@@ -645,13 +645,13 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   Isometry3d large_box_pose;
   large_box_pose.setIdentity();
   large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-  model_->updateElementWorldTransform(large_box_id, large_box_pose);
+  model_->updateElementWorldTransform(large_box_id_, large_box_pose);
 
   // Small body pose
   Isometry3d small_box_pose;
   small_box_pose.setIdentity();
   small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-  model_->updateElementWorldTransform(small_box_id, small_box_pose);
+  model_->updateElementWorldTransform(small_box_id_, small_box_pose);
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -664,7 +664,7 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
     if (i == 1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
     if (i == 2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
     if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
-    model_->updateElementWorldTransform(small_box_id, small_box_pose);
+    model_->updateElementWorldTransform(small_box_id_, small_box_pose);
 
     // Notice that the results vector is cleared every time so that results
     // do not accumulate.
@@ -695,7 +695,7 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
     if (i == 1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
     if (i == 2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
     if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
-    model_->updateElementWorldTransform(small_box_id, small_box_pose);
+    model_->updateElementWorldTransform(small_box_id_, small_box_pose);
 
     // Notice that the results vector is cleared every time so that results
     // do not accumulate.
