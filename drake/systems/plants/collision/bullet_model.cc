@@ -5,11 +5,6 @@
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
-
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-
-
 using Eigen::Isometry3d;
 using Eigen::Matrix3Xd;
 using Eigen::MatrixXd;
