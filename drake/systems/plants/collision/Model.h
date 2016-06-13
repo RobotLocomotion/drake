@@ -84,11 +84,6 @@ class DRAKECOLLISION_EXPORT Model {
     return false;
   }
 
-  virtual bool ComputeMaximumDepthCollisionPoints(const bool use_margins,
-                                          std::vector<PointPair>& points) {
-    return false;
-  }
-
   /** \brief Compute the points of closest approach between specified pairs
    * of collision elements
    * \param id_pairs vector of ElementIdPair specifying which pairs of

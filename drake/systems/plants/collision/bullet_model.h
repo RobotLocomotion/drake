@@ -75,9 +75,6 @@ class BulletModel : public Model {
   bool collisionPointsAllToAll(const bool use_margins,
                                std::vector<PointPair>& points) override;
 
-  bool ComputeMaximumDepthCollisionPoints(const bool use_margins,
-                               std::vector<PointPair>& points) override;
-
   /**
    * Finds the points where each pair of elements in id_pairs are
    * closest.  Inserts those points in closest_points.
