@@ -56,9 +56,9 @@ typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
 //   frames.
 
 // CLEARING CACHED RESULTS TEST
-// Test ClearCachedResults tests the method Model::ClearCachedResults.
-// This method clears results cached by the model so that future collision
-// queries are performed from scratch and do not depend on past history.
+// Test ClearCachedResults tests the model is not caching results when a series
+// of collision dispatch queries is performed. This ensures results do not
+// depend on the past history and that the user gets a fresh query every time.
 
 // REMARKS ON MULTICONTACT
 // Results from Model::potentialCollisionPoints are affected by previous calls
@@ -630,6 +630,63 @@ TEST_F(NonAlignedBoxes, MultiContact) {
                 solution_[points[0].getIdA()].body_frame.y(), tolerance_);
     EXPECT_NEAR(points[i].getPtB().y(),
                 solution_[points[0].getIdB()].body_frame.y(), tolerance_);
+  }
+}
+
+// Tests the model is not caching results from a series of different queries.
+// Internally the model is using the method Model::ClearCachedResults
+// to this end.
+TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
+  // Numerical precision tolerance to perform floating point comparisons.
+  // Its magnitude was chosen to be the minimum value for which these tests can
+  // successfully pass.
+  tolerance_ = 2.0e-9;
+
+  // Large body pose
+  Isometry3d large_box_pose;
+  large_box_pose.setIdentity();
+  large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
+  model_->updateElementWorldTransform(large_box_id_, large_box_pose);
+
+  // Small body pose
+  Isometry3d small_box_pose;
+  small_box_pose.setIdentity();
+  small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
+  model_->updateElementWorldTransform(small_box_id_, small_box_pose);
+
+  // List of collision points.
+  std::vector<PointPair> points;
+
+  // Not clearing cached results
+  for (int i = 0; i < 4; ++i) {
+    // Small disturbance so that tests are slightly different causing Bullet's
+    // dispatcher to cache these results.
+    if (i == 0) small_box_pose.translation() = Vector3d(   0.0, 5.4,    0.0);
+    if (i == 1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
+    if (i == 2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
+    if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
+    model_->updateElementWorldTransform(small_box_id_, small_box_pose);
+
+    // Notice that the results vector is cleared every time so that results
+    // do not accumulate.
+    points.clear();
+
+    model_->collisionPointsAllToAll(false, points);
+  }
+
+  // Check that the model is not caching results even after four queries.
+  // If the model does not cache results there should only be one result.
+  ASSERT_EQ(1, points.size());
+
+  for (int i = 0; i < points.size(); ++i) {
+    EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance_);
+    EXPECT_TRUE(
+        points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0), tolerance_));
+    // Only test for vertical position.
+    EXPECT_NEAR(points[i].getPtA().y(),
+                solution_[points[0].getIdA()].world_frame.y(), tolerance_);
+    EXPECT_NEAR(points[i].getPtB().y(),
+                solution_[points[0].getIdB()].world_frame.y(), tolerance_);
   }
 }
 
