@@ -612,7 +612,7 @@ void parseTransmission(RigidBodyTree* model, XMLElement* transmission_node) {
   double effort_min = -numeric_limits<double>::infinity();
 
   if (XMLElement* element =
-      dynamic_cast<XMLElement*>(transmission_node->Parent())) {
+          dynamic_cast<XMLElement*>(transmission_node->Parent())) {
     GetActuatorEffortLimit(element, joint_name, &effort_min, &effort_max);
   } else {
     throw std::logic_error(
