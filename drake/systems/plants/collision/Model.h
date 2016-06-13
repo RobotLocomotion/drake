@@ -79,8 +79,8 @@ class DRAKECOLLISION_EXPORT Model {
    * called
    * \return true if this method ran successfully
    */
-  virtual bool collisionPointsAllToAll(const bool use_margins,
-                                       std::vector<PointPair>& points) {
+  virtual bool ComputeMaximumDepthCollisionPoints(const bool use_margins,
+                                                  std::vector<PointPair> &points) {
     return false;
   }
 

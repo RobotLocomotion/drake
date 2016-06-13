@@ -49,7 +49,7 @@ typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
 // These tests are performed using the following algorithms:
 // - closestPointsAllToAll: O(N^2) checking all pairs of collision elements.
 //   Results are in bodies' frames.
-// - collisionPointsAllToAll: Uses collision library dispatching.
+// - ComputeMaximumDepthCollisionPoints: Uses collision library dispatching.
 //   Results are in world frame.
 // - potentialCollisionPoints: randomly samples collision elements' pose
 //   searching for potential collision points. Results are in the bodies'
@@ -62,13 +62,13 @@ typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
 
 // REMARKS ON MULTICONTACT
 // Results from Model::potentialCollisionPoints are affected by previous calls
-// to Model::collisionPointsAllToAll even if cached results are cleared with
+// to Model::ComputeMaximumDepthCollisionPoints even if cached results are cleared with
 // Model::ClearCachedResults. This is the reason why multicontact tests using
 // Model::potentialCollisionPoints are performed separately in their own tests.
 // For instance, for the NonAlignedBoxes there is a separate test called
 // NonAlignedBoxes_multi performed with Model::potentialCollisionPoints.
 // It seems like Bullet is storing some additional configuration setup with the
-// call to Model::collisionPointsAllToAll that persists throughout subsequent
+// call to Model::ComputeMaximumDepthCollisionPoints that persists throughout subsequent
 // calls to Model::potentialCollisionPoints.
 // Therefore, DO NOT mix these calls since they might produce erroneous results.
 // Notice also that the tolerance used for these tests is much higher. The
@@ -252,10 +252,10 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   EXPECT_TRUE(
       points[0].getPtB().isApprox(solution_[points[0].getIdB()].body_frame));
 
-  // Collision test performed with Model::collisionPointsAllToAll.
+  // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Not using margins.
   points.clear();
-  model_->collisionPointsAllToAll(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
@@ -272,10 +272,10 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   EXPECT_TRUE(
       points[0].getPtB().isApprox(solution_[points[0].getIdB()].world_frame));
 
-  // Collision test performed with Model::collisionPointsAllToAll.
+  // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Using margins.
   points.clear();
-  model_->collisionPointsAllToAll(true, points);
+  model_->ComputeMaximumDepthCollisionPoints(true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
@@ -421,10 +421,10 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   EXPECT_NEAR(points[0].getPtB().y(),
               solution_[points[0].getIdB()].body_frame.y(), tolerance_);
 
-  // Collision test performed with Model::collisionPointsAllToAll.
+  // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Not using margins.
   points.clear();
-  model_->collisionPointsAllToAll(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, points);
 
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
@@ -439,10 +439,10 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   EXPECT_NEAR(points[0].getPtB().y(),
               solution_[points[0].getIdB()].world_frame.y(), tolerance_);
 
-  // Collision test performed with Model::collisionPointsAllToAll.
+  // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Using margins.
   points.clear();
-  model_->collisionPointsAllToAll(true, points);
+  model_->ComputeMaximumDepthCollisionPoints(true, points);
 
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
@@ -580,9 +580,9 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   EXPECT_NEAR(points[0].getPtB().y(),
               solution_[points[0].getIdB()].body_frame.y(), tolerance_);
 
-  // Collision test performed with Model::collisionPointsAllToAll.
+  // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   points.clear();
-  model_->collisionPointsAllToAll(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, points);
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
   // least the four corners of the smaller box. However it randomly picks one
@@ -671,7 +671,7 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
     // do not accumulate.
     points.clear();
 
-    model_->collisionPointsAllToAll(false, points);
+    model_->ComputeMaximumDepthCollisionPoints(false, points);
   }
 
   // Check that the model is not caching results even after four queries.

@@ -718,8 +718,8 @@ bool BulletModel::closestPointsPairwise(
   return closest_points.size() > 0;
 }
 
-bool BulletModel::collisionPointsAllToAll(
-    const bool use_margins, std::vector<PointPair>& collision_points) {
+bool BulletModel::ComputeMaximumDepthCollisionPoints(
+    const bool use_margins, std::vector<PointPair> &collision_points) {
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kCollisionPointsAllToAll;
 
