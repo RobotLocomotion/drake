@@ -46,7 +46,7 @@ favorite web browser::
 directory), the ``[build artifacts directory]`` is typically
 ``[drake distro]/drake/pod-build/``.
 
-** Note 2:** By enabling the ``BUILD_DOCUMENTATION`` cmake option, the
+**Note 2:** By enabling the ``BUILD_DOCUMENTATION`` cmake option, the
 documentation will be built *every* time you compile Drake. To stop this
 behavior, see the instructions below on how to disable documentation
 generation.
