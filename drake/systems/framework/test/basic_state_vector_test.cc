@@ -36,6 +36,23 @@ TEST_F(BasicStateVectorTest, Copy) {
   EXPECT_EQ(expected, state_vector_->CopyToVector());
 }
 
+TEST_F(BasicStateVectorTest, Clone) {
+  std::unique_ptr<LeafStateVector<int>> clone =
+      dynamic_cast<LeafStateVector<int>*>(state_vector_.get())->Clone();
+
+  // Verify that type and data were preserved in the clone.
+  BasicStateVector<int>* typed_clone = dynamic_cast<BasicStateVector<int>*>(
+      clone.get());
+  ASSERT_NE(nullptr, typed_clone);
+  EXPECT_EQ(1, typed_clone->GetAtIndex(0));
+  EXPECT_EQ(2, typed_clone->GetAtIndex(1));
+
+  // Verify that writes to the clone do not affect the original vector.
+  typed_clone->SetAtIndex(1, 42);
+  EXPECT_EQ(42, typed_clone->GetAtIndex(1));
+  EXPECT_EQ(2, state_vector_->GetAtIndex(1));
+}
+
 TEST_F(BasicStateVectorTest, InvalidAccess) {
   EXPECT_THROW(state_vector_->GetAtIndex(kLength), std::out_of_range);
 }
