@@ -6,7 +6,7 @@ using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
 using systems::OutputPort;
-using systems::StateVectorInterface;
+using systems::StateVector;
 using systems::SystemOutput;
 using systems::VectorInterface;
 using systems::VectorX;
@@ -84,10 +84,9 @@ std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput() const {
   return output;
 }
 
-std::unique_ptr<StateVectorInterface<double>>
+std::unique_ptr<StateVector<double>>
 SpringMassSystem::AllocateStateDerivatives() const {
-  return std::unique_ptr<StateVectorInterface<double>>(
-      new SpringMassStateVector(0, 0));
+  return std::unique_ptr<StateVector<double>>(new SpringMassStateVector(0, 0));
 }
 
 // Assign the state to the output.
@@ -106,9 +105,8 @@ void SpringMassSystem::Output(const Context<double>& context,
 }
 
 // Compute the actual physics.
-void SpringMassSystem::Dynamics(
-    const Context<double>& context,
-    StateVectorInterface<double>* derivatives) const {
+void SpringMassSystem::Dynamics(const Context<double>& context,
+                                StateVector<double>* derivatives) const {
   // TODO(david-german-tri): Cache the output of this function.
   const SpringMassStateVector& state =
       dynamic_cast<const SpringMassStateVector&>(

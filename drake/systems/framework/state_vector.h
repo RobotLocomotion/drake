@@ -7,15 +7,15 @@
 namespace drake {
 namespace systems {
 
-/// StateVectorInterface is an interface template for vector quantities within
+/// StateVector is an abstrat base class template for vector quantities within
 /// the state of a System.  Both composite Systems (Diagrams) and leaf Systems
-/// have state that satisfies StateVectorInterface.
+/// have state that satisfies StateVector.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
-class StateVectorInterface {
+class StateVector {
  public:
-  virtual ~StateVectorInterface() {}
+  virtual ~StateVector() {}
 
   /// Returns the number of elements in the vector.
   ///
@@ -51,14 +51,14 @@ class StateVectorInterface {
   virtual VectorX<T> CopyToVector() const = 0;
 
  protected:
-  StateVectorInterface() {}
+  StateVector() {}
 
  private:
-  // StateVectorInterface objects are neither copyable nor moveable.
-  StateVectorInterface(const StateVectorInterface& other) = delete;
-  StateVectorInterface& operator=(const StateVectorInterface& other) = delete;
-  StateVectorInterface(StateVectorInterface&& other) = delete;
-  StateVectorInterface& operator=(StateVectorInterface&& other) = delete;
+  // StateVector objects are neither copyable nor moveable.
+  StateVector(const StateVector& other) = delete;
+  StateVector& operator=(const StateVector& other) = delete;
+  StateVector(StateVector&& other) = delete;
+  StateVector& operator=(StateVector&& other) = delete;
 };
 
 }  // namespace systems

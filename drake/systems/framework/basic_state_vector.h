@@ -12,7 +12,7 @@ namespace drake {
 namespace systems {
 
 /// BasicStateVector is a concrete class template that implements
-/// StateVectorInterface in a convenient manner for leaf Systems,
+/// StateVector in a convenient manner for leaf Systems,
 /// by owning and wrapping a VectorInterface<T>.
 ///
 /// It will often be convenient to inherit from BasicStateVector, and add

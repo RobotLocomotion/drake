@@ -3,7 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -20,7 +20,7 @@ class BasicStateVectorTest : public ::testing::Test {
     state_vector_.reset(new BasicStateVector<int>(std::move(vec)));
   }
 
-  std::unique_ptr<StateVectorInterface<int>> state_vector_;
+  std::unique_ptr<StateVector<int>> state_vector_;
 };
 
 TEST_F(BasicStateVectorTest, Access) {
@@ -41,8 +41,8 @@ TEST_F(BasicStateVectorTest, Clone) {
       dynamic_cast<LeafStateVector<int>*>(state_vector_.get())->Clone();
 
   // Verify that type and data were preserved in the clone.
-  BasicStateVector<int>* typed_clone = dynamic_cast<BasicStateVector<int>*>(
-      clone.get());
+  BasicStateVector<int>* typed_clone =
+      dynamic_cast<BasicStateVector<int>*>(clone.get());
   ASSERT_NE(nullptr, typed_clone);
   EXPECT_EQ(1, typed_clone->GetAtIndex(0));
   EXPECT_EQ(2, typed_clone->GetAtIndex(1));

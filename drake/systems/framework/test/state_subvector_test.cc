@@ -7,7 +7,7 @@
 
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -25,7 +25,7 @@ class StateSubvectorTest : public ::testing::Test {
     state_vector_.reset(new BasicStateVector<int>(std::move(vec)));
   }
 
-  std::unique_ptr<StateVectorInterface<int>> state_vector_;
+  std::unique_ptr<StateVector<int>> state_vector_;
 };
 
 TEST_F(StateSubvectorTest, NullptrVector) {
