@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdexcept>
+
 #include <Eigen/Dense>
 
 #include "drake/systems/framework/vector_interface.h"
@@ -7,7 +9,7 @@
 namespace drake {
 namespace systems {
 
-/// StateVector is an abstrat base class template for vector quantities within
+/// StateVector is an abstract base class template for vector quantities within
 /// the state of a System.  Both composite Systems (Diagrams) and leaf Systems
 /// have state that satisfies StateVector.
 ///
@@ -49,6 +51,38 @@ class StateVector {
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates only the O(N) memory that it returns.
   virtual VectorX<T> CopyToVector() const = 0;
+
+  /// Adds this vector to @p vec, which must be the same size.
+  ///
+  /// Implementations may override this default implementation with a more
+  /// efficient approach, for instance if the vector is contiguous.
+  /// Implementations should ensure this operation remains O(N) in the size of
+  /// the value and allocates no memory.
+  virtual void AddToVector(Eigen::Ref<VectorX<T>> vec) const {
+    if (vec.rows() != size()) {
+      throw std::out_of_range("Addends must be the same length.");
+    }
+    for (ptrdiff_t i = 0; i < size(); ++i) {
+      vec[i] += GetAtIndex(i);
+    }
+  }
+
+  /// Adds the vector @p rhs to this vector. Both vectors must be the same size.
+  ///
+  /// Implementations may override this default implementation with a more
+  /// efficient approach, for instance if the vector is contiguous.
+  /// Implementations should ensure this operation remains O(N) in the size of
+  /// the value and allocates no memory.
+  virtual StateVector& operator+=(const StateVector<T>& rhs) {
+    if (size() != rhs.size()) {
+      throw std::out_of_range("Addends must be the same length.");
+    }
+    assert(size() == rhs.size());
+    for (ptrdiff_t i = 0; i < size(); ++i) {
+      SetAtIndex(i, GetAtIndex(i) + rhs.GetAtIndex(i));
+    }
+    return *this;
+  }
 
  protected:
   StateVector() {}
