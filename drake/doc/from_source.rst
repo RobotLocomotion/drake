@@ -71,16 +71,66 @@ Before running build, you will need to follow the instructions for your host sys
 
 Build the collection
 ====================
+There are two supported ways to build Drake:
+`Ninja <https://ninja-build.org/>`_ (recommended) and
+`Make <https://www.gnu.org/software/make/>`_ (legacy).
+Because the Drake build is not entirely out-of-source, you must pick one build
+system and stick to it. Switching build systems within the same working tree
+will produce CMake errors.
+
+.. _build_with_ninja:
+
+Build with Ninja (Recommended)
+------------------------------
+First, confirm that `Ninja <https://ninja-build.org/>`_ is installed
+on your system:
+
+::
+
+    ninja --version
+
+Drake uses `CMake <https://cmake.org/>`_ to generate Ninja files within an
+out-of-source build directory.
+
+::
+
+    mkdir drake-build
+    cmake path/to/drake-distro -G Ninja
+    ninja
+
+Most ``cmake`` flags will work with Drake. For example,
+``CMAKE_BUILD_TYPE`` can be used to control the debug level.
+
+::
+
+    cmake path/to/drake-distro -G Ninja -DCMAKE_BUILD_TYPE:STRING=[Debug|Release|RelWithDebInfo]
+    ninja -j <num_CPUs>
+
+To determine the shell commands, compiler flags, and linker flags that CMake
+generated, consult ``build.ninja`` and ``drake/build.ninja``, or run
+``ninja -v`` for a verbose build.
+
+.. _build_with_make:
+
+Build with Make (Legacy)
+------------------------
+First, confirm that `Make <https://www.gnu.org/software/make/>`_ is installed
+on your system:
+
+::
+
+    make --version
+
+Drake includes a Makefile, which invokes `CMake <https://cmake.org/>`_ to 
+generate and execute platform-specific build scripts. To build with Make:
 
 ::
 
 	cd drake-distro
 	make
 
-**NOTE: do not use sudo here**.
-Following the pods guidelines, make will automatically perform a local installation.  Just ``make`` is sufficient, and will prevent problems later.
-
-Feel free to use ``make -j`` if your platform supports it.
+**Do NOT use sudo.** Just ``make`` is sufficient, and will prevent problems
+later. Feel free to use ``make -j`` if your platform supports it.
 
 To include all of the symbols for debugging purposes, execute:
 
@@ -93,7 +143,6 @@ To include all symbols and get details about the actual compiler and linker comm
 ::
 
     BUILD_TYPE=Debug make VERBOSE=true
-
 
 Test Your Installation
 ======================
