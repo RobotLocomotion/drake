@@ -124,7 +124,7 @@ GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
   EXPECT_TRUE(CompareMatrices(b.head(3), xhead.value(), 1e-10,
                               MatrixCompareType::absolute));
 
-  valuecheck(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment
+  valuecheck(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment.
 
   auto const& y = prog.AddContinuousVariables(2);
   prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
@@ -259,7 +259,7 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
 }
 
 // This test comes from Section 3.4 of "Handbook of Test Problems in
-// Local and Global Optimization"
+// Local and Global Optimization."
 class LowerBoundTestObjective {
  public:
   static size_t numInputs() { return 6; }
