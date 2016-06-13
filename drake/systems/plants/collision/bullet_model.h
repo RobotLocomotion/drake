@@ -168,8 +168,6 @@ class BulletModel : public Model {
       const DrakeShapes::Capsule& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletMeshShape(
       const DrakeShapes::Mesh& geometry, bool use_margins);
-  static std::unique_ptr<btCollisionShape> newBulletStaticMeshShape(
-      const DrakeShapes::Mesh& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletMeshPointsShape(
       const DrakeShapes::MeshPoints& geometry, bool use_margins);
 
