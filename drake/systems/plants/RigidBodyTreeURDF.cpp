@@ -479,9 +479,9 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
 }
 
 // Searches through the URDF document looking for the effort limits of a
-// particular joint. If the joint is not found, throw an exception. If the
-// limits of the joint are not specified, do nothing. If the effort limits are
-// specified, save the effort limits in \p min_effort and \p max_effort.
+// particular joint. If the joint is not found, throws an exception. If the
+// limits of the joint are not specified, does nothing. If the effort limits are
+// specified, saves the effort limits in \p min_effort and \p max_effort.
 //
 // @param[in] robot_node The XML node for the robot description. This must
 // contain child joint elements through which to search.
@@ -536,6 +536,8 @@ void GetActuatorEffortLimit(XMLElement* robot_node,
     }
   }
 
+  // If this point in the code is reached, that means no joint named
+  // joint_name was not found in the URDF. Therefore throw an exception.
   throw std::logic_error(
       "GetActuarEffortLimit: ERROR: Unable to find joint \"" + joint_name +
       "\".");
