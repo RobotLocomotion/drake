@@ -106,7 +106,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addRobotFromSDF(const std::string& sdf_filename,
-                      const DrakeJoint::FloatingBaseType floating_base_type =
+                       const DrakeJoint::FloatingBaseType floating_base_type =
                            DrakeJoint::QUATERNION,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
@@ -691,7 +691,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * matching links are found.
    */
   RigidBody* findLink(const std::string& link_name,
-    const std::string& model_name = "", int model_id = -1) const;
+                      const std::string& model_name = "",
+                      int model_id = -1) const;
 
   /**
    * Finds a link with the specified \p link_name belonging to a model with the
@@ -720,7 +721,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @throws std::logic_error if multiple matching links are found or no
    * matching links are found.
    */
-  // RigidBody* findLink(const std::string& link_name, int model_id = -1) const {
+  // RigidBody* findLink(const std::string& link_name, int model_id = -1) const
+  // {
   //   return findLink(link_name, "", model_id);
   // }
 
@@ -815,7 +817,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -898,7 +901,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * system.
    */
   int number_of_velocities() const { return num_velocities_; }
-
 
  public:
   static const std::set<int> default_robot_num_set;
