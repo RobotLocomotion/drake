@@ -815,7 +815,7 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   // to the RigidBodyTree. Note that this is simply the current model ID since
   // the models in this SDF were already added to the rigid body tree prior to
   // this method being called.
-  int final_model_id = sys.getRigidBodyTree()->getCurrentModelID();
+  int final_model_id = sys.getRigidBodyTree()->get_current_model_id();
 
   // Computes the number of models in the SDF.
   int number_of_models_in_sdf = 0;

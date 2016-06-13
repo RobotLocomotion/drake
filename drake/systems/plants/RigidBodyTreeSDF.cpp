@@ -614,7 +614,7 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
 
   string model_name = node->Attribute("name");
 
-  int model_id = rigid_body_tree->getUniqueModelID();
+  int model_id = rigid_body_tree->get_next_model_id();
 
   // Maintains a list of links that were added to the rigid body tree.
   // This is iterated over by method AddFloatingJoint() to determine where

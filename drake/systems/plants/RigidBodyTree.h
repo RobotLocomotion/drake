@@ -114,13 +114,13 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * Returns an integer than can be used to uniquely identify a model
    * within this rigid body tree. Note that this method is not thread safe!
    */
-  int getUniqueModelID() { return next_model_id_++; }
+  int get_next_model_id() { return next_model_id_++; }
 
   /**
    * Returns an integer that will be used as a unique ID for the next model
    * to be added within the rigid body tree.
    */
-  int getCurrentModelID() { return next_model_id_; }
+  int get_current_model_id() { return next_model_id_; }
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
@@ -730,9 +730,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * Obtains the body index of a link. Note that the body index of the link
    * is different from the ID of the model to which the link belongs.
    *
-   * @param[in] link_name The name of the link.
+   * @param[in] link_name The link whose body index we want to find. It should
+   * be unique within the searched models, otherwise an exception will be
+   * thrown.
    * @param[in] model_id The ID of the model. This parameter is optional. If
-   * this parameter is not specified, all models are searched.
+   * supplied, only that model is searched; otherwise, all models are searched.
    * @return The body index of the specified link. If this value is -1, all
    * models are searched for a link named \p link_name.
    * @throws std::logic_error if no link with the specified \p link_name and
@@ -743,16 +745,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
   /**
-   * Obtains a pointer to a rigid body whose parent joint is named
+   * Obtains a pointer to the rigid body whose parent joint is named
    * \p joint_name and is part of a model with ID \p model_id.
    *
-   * @param[in] joint_name The name of the joint.
+   * @param[in] joint_name The name of the joint to find.
    * @param[in] model_id The ID of the model that contains the joint. This
-   * parameter is optional. If this parameter is omitted, every model is
-   * searched.
+   * parameter is optional. If supplied, only that model is searched; otherwise,
+   * all models are searched.
    * @return A pointer to the rigid body whose joint is the one being searched
    * for.
-   * @throws std::logic_error if no joint is found.
+   * @throws std::logic_error if no joint is found with the given name within
+   * the searched model(s).
    */
   RigidBody* findJoint(const std::string& joint_name, int model_id = -1) const;
 

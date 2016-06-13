@@ -72,19 +72,20 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
 /**
  * Adds a terrain to the specified rigid body tree.
  *
- * Adds a square-shaped flat terrain with to the specified rigid body tree.
- * The purpose of this terrain is to provide a rigid body upon which a vehicle
- * can reside and resist the force of gravity. Without this terrain, the vehicle
- * will effectively "fall through the ground" due to gravity. The length and
- * width of the terrain lies in the X-Y plane of the world coordinate frame has
- * lengths of \p box_width. The depth of the terrain is specified by
- * \p box_depth. A greater \p box_depth will reduce the probability of a
+ * Adds a square-shaped flat terrain to the specified rigid body tree.
+ * The purpose of this terrain is to provide a collision element upon which
+ * vehicles can reside and resist the force of gravity. Without this terrain,
+ * the vehicles will effectively fall through the ground due to gravity. The
+ * length and width of the terrain lies in the X-Y plane of the world coordinate
+ * frame abd has lengths of \p box_width. The depth of the terrain is specified
+ * by \p box_depth. A greater \p box_depth will reduce the probability of a
  * vehicle falling through the ground. The top surface of the terrain is at
  * Z = 0.
  *
- * @param[in] rigid_body_tree The rigid body tree.
+ * @param[in] rigid_body_tree The rigid body tree to which to add the terrain.
  * @param[in] box_width The length and width of the terrain.
- * @param[in] box_depth The depth of the terrain.
+ * @param[in] box_depth The depth of the terrain. Note that regardless of how
+ * deep the terrain is, the top surface of the terrain will be at Z = 0.
  */
 DRAKECARS_EXPORT
 void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
