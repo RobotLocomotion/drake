@@ -13,9 +13,6 @@
 #include <fstream>
 #include <iostream>
 
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-
 using namespace std;
 using namespace Eigen;
 
@@ -156,15 +153,11 @@ void RigidBodyTree::compile(void) {
   num_velocities_ = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    PRINT_VAR(body.name());
-    PRINT_VAR(body.hasParent());
     if (body.hasParent()) {
       body.position_num_start = num_positions_;
       num_positions_ += body.getJoint().getNumPositions();
       body.velocity_num_start = num_velocities_;
       num_velocities_ += body.getJoint().getNumVelocities();
-      PRINT_VAR(body.getJoint().getName());
-      PRINT_VAR(body.getJoint().getNumPositions());
     } else {
       body.position_num_start = 0;
       body.velocity_num_start = 0;

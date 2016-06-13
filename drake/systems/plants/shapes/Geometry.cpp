@@ -1,18 +1,10 @@
 #include <fstream>
-#include <stdexcept>
 
 #include "Geometry.h"
 #include "spruce.hh"
 
-using std::string;
-using std::istringstream;
-using std::ifstream;
-
-using Eigen::Vector3i;
-using Eigen::Vector3d;
-using Eigen::RowVectorXd;
-using Eigen::Matrix3Xd;
-using Eigen::Matrix3Xi;
+using namespace std;
+using namespace Eigen;
 
 namespace DrakeShapes {
 const int Geometry::NUM_BBOX_POINTS = 8;
@@ -72,7 +64,7 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
   points << cx, cy, cz;
 }
 
-std::ostream &operator<<(std::ostream &out, const Geometry &gg) {
+ostream &operator<<(ostream &out, const Geometry &gg) {
   out << ShapeToString(gg.getShape()) << ", " << gg.NUM_BBOX_POINTS;
   return out;
 }
@@ -96,7 +88,7 @@ void Sphere::getTerrainContactPoints(Matrix3Xd &points) const {
     points = Matrix3Xd();
 }
 
-std::ostream &operator<<(std::ostream &out, const Sphere &ss) {
+ostream &operator<<(ostream &out, const Sphere &ss) {
   out << static_cast<const Geometry &>(ss) << ", " << ss.radius << ", "
       << ss.NUM_POINTS;
   return out;
@@ -117,7 +109,7 @@ void Box::getTerrainContactPoints(Matrix3Xd &points) const {
   getPoints(points);
 }
 
-std::ostream &operator<<(std::ostream &out, const Box &bb) {
+ostream &operator<<(ostream &out, const Box &bb) {
   out << static_cast<const Geometry &>(bb) << ", " << bb.size.transpose();
   return out;
 }
@@ -130,9 +122,9 @@ Cylinder *Cylinder::clone() const { return new Cylinder(*this); }
 void Cylinder::getPoints(Matrix3Xd &points) const {
   static bool warnOnce = true;
   if (warnOnce) {
-    std::cerr << "Warning: DrakeShapes::Cylinder::getPoints(): """
-        "This method returns the vertices of the cylinder''s bounding-box."
-         << std::endl;
+    cerr << "Warning: DrakeShapes::Cylinder::getPoints(): This method returns "
+            "the vertices of the cylinder''s bounding-box."
+         << endl;
     warnOnce = false;
   }
 
@@ -143,7 +135,7 @@ void Cylinder::getBoundingBoxPoints(Matrix3Xd &points) const {
   Geometry::getBoundingBoxPoints(radius, radius, length / 2.0, points);
 }
 
-std::ostream &operator<<(std::ostream &out, const Cylinder &cc) {
+ostream &operator<<(ostream &out, const Cylinder &cc) {
   out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", "
       << cc.length;
   return out;
@@ -170,7 +162,7 @@ void Capsule::getBoundingBoxPoints(Matrix3Xd &points) const {
                                  points);
 }
 
-std::ostream &operator<<(std::ostream &out, const Capsule &cc) {
+ostream &operator<<(ostream &out, const Capsule &cc) {
   out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", "
       << cc.length;
   return out;
@@ -186,6 +178,10 @@ Mesh::Mesh(const string &filename, const string &resolved_filename)
       resolved_filename(resolved_filename) {}
 
 bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
+  // DEBUG
+  // cout << "Mesh::extractMeshVertices: resolved_filename = " <<
+  // resolved_filename << endl;
+  // END_DEBUG
   if (resolved_filename.empty()) {
     return false;
   }
@@ -194,27 +190,42 @@ bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
   ifstream file;
+  // DEBUG
+  // cout << "Mesh::extractMeshVertices: do we have obj?" << endl;
+  // END_DEBUG
   if (ext.compare(".obj") == 0) {
+    // cout << "Loading mesh from " << fname << " (scale = " << scale << ")" <<
+    // endl;
     file.open(spath.getStr().c_str(), ifstream::in);
+
   } else {
+    // DEBUG
+    // cout << "Mesh::extractMeshVertices: check for obj file with same name" <<
+    // endl;
+    // END_DEBUG
     spath.setExtension(".obj");
 
     if (spath.exists()) {
-      // try changing the extension to obj and loading.
+      // try changing the extension to obj and loading
+      //      cout << "Loading mesh from " <<
+      //      mypath.replace_extension(".obj").native() << endl;
       file.open(spath.getStr().c_str(), ifstream::in);
     }
   }
 
   if (!file.is_open()) {
-    std::cerr << "Warning: Mesh " << spath.getStr()
+    cerr << "Warning: Mesh " << spath.getStr()
          << " ignored because it does not have extension .obj (nor can I find "
             "a juxtaposed file with a .obj extension)"
-         << std::endl;
+         << endl;
     return false;
   }
 
+  // DEBUG
+  // cout << "Mesh::extractMeshVertices: Count num_vertices" << endl;
+  // END_DEBUG
   string line;
-  // Count the number of vertices and resize vertex_coordinates.
+  // Count the number of vertices and resize vertex_coordinates
   int num_vertices = 0;
   while (getline(file, line)) {
     istringstream iss(line);
@@ -223,17 +234,27 @@ bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
       ++num_vertices;
     }
   }
+  // DEBUG
+  // cout << "Mesh::extractMeshVertices: num_vertices = " << num_vertices <<
+  // endl;
+  // END_DEBUG
   vertex_coordinates.resize(3, num_vertices);
 
   file.clear();
   file.seekg(0, file.beg);
 
+  // DEBUG
+  // cout << "Mesh::extractMeshVertices: Read vertices" << endl;
+  // END_DEBUG
   double d;
   int j = 0;
   while (getline(file, line)) {
     istringstream iss(line);
     string type;
     if (iss >> type && type == "v") {
+      // DEBUG
+      // cout << "Mesh::extractMeshVertices: Vertex" << j << endl;
+      // END_DEBUG
       int i = 0;
       while (iss >> d) {
         vertex_coordinates(i++, j) = d;
@@ -241,73 +262,6 @@ bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
       ++j;
     }
   }
-  return true;
-}
-
-bool Mesh::ReadMeshConnectivities(Matrix3Xi& connectivities) const {
-  if (resolved_filename.empty()) return false;
-
-  spruce::path spath(resolved_filename);
-  string ext = spath.extension();
-  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-  FILE* file;
-  if (ext.compare(".obj") == 0) {
-    file = fopen(spath.getStr().c_str(),"r");
-  } else {
-    spath.setExtension(".obj");
-    if (spath.exists()) {
-      // try changing the extension to obj and loading.
-      file = fopen(spath.getStr().c_str(),"r");
-    }
-  }
-
-  if (!file) {
-    throw std::logic_error(
-        "Could not open mesh file \""+spath.getStr() + "\".");
-  }
-
-  // Count the number of triangles and resize connectivities.
-  int num_triangles = 0;
-  char *line = NULL;
-  size_t len = 0;
-  ssize_t read;
-  char key[128];
-  while ((read = getline(&line, &len, file)) != -1) {
-    sscanf(line,"%s",key);
-    if (strcmp(key, "f") == 0) ++num_triangles;
-  }
-
-  // Allocate memory.
-  connectivities.resize(3, num_triangles);
-
-  // Read triangles.
-  rewind(file);
-  int itri = 0;
-  int ignored_entry;
-  int tri[3];
-  while(true) {
-    // Get first word in the line.
-    if(fscanf(file, "%s", key) == EOF) break;
-    if (strcmp(key, "f") == 0) {
-      int matches = fscanf(file,
-                           "%d//%d %d//%d %d//%d\n",
-                           tri + 0,
-                           &ignored_entry,
-                           tri + 1,
-                           &ignored_entry,
-                           tri + 2,
-                           &ignored_entry);
-      if(matches != 6)
-        throw std::logic_error(
-            "File \""+filename+"\" cannot be parsed. Format not supported.");
-      connectivities.col(itri++) = Vector3i(tri[0]-1,tri[1]-1,tri[2]-1);
-      if(itri>num_triangles)
-        throw(std::logic_error("Number of triangles exceeded previous count."));
-    }
-  } // while
-  fclose(file);
-
   return true;
 }
 
@@ -332,7 +286,7 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
-std::ostream &operator<<(std::ostream &out, const Mesh &mm) {
+ostream &operator<<(ostream &out, const Mesh &mm) {
   out << static_cast<const Geometry &>(mm) << ", " << mm.scale << ", "
       << mm.filename << ", " << mm.resolved_filename << ", " << mm.root_dir;
   return out;
@@ -359,7 +313,7 @@ void MeshPoints::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
-std::ostream &operator<<(std::ostream &out, const MeshPoints &mp) {
+ostream &operator<<(ostream &out, const MeshPoints &mp) {
   out << static_cast<const Geometry &>(mp) << ",\n" << mp.points;
   return out;
 }

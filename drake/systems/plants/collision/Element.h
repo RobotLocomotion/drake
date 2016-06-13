@@ -30,17 +30,6 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   virtual bool isStatic() const { return false; }
 
-  /** Flags this collision element to be static, i.e. does not move.
-  @see Element::is_static(). **/
-  void set_static() { is_static_ = true;}
-
-  /** @returns `true` if the shape does not move.
-
-  For instace, a terrain commonly is a static collision element. This property
-  could allow the collision dispatcher to perform certain optimizations not
-  generally possible for moving objects. **/
-  bool is_static() { return is_static_;}
-
   /**
    * Returns true if this element should be checked for collisions
    * with the other object.  CollidesWith should be symmetric: if
@@ -59,7 +48,6 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
  private:
   ElementId id;
-  bool is_static_{false};
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

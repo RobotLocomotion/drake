@@ -6,8 +6,6 @@
 #include "drake/systems/System.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include <bot_lcmgl_client/lcmgl.h>
-
 /** Rigid Body Dynamics Engine Class Design  (still needs to be implemented
  * below)
  *
@@ -275,8 +273,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   double penetration_stiffness;  // k
   double penetration_damping;    // b
   double friction_coefficient;   // mu
-
-  bot_lcmgl_t *lcmgl_;
 
  private:
   std::shared_ptr<RigidBodyTree> tree;

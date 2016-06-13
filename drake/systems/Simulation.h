@@ -113,7 +113,6 @@ void simulate(const System& sys, double ti, double tf,
 
   // Take steps from ti to tf.
   double t = ti;
-  bool first_time{true};
   while (t < tf) {
     double realtime_factor = options.realtime_factor;
     if (realtime_factor < 0.0) {
@@ -152,11 +151,6 @@ void simulate(const System& sys, double ti, double tf,
 
     // 2nd order result: x = x0 + dt (xd0+xd1)/2.
     x = toEigen(x) + (dt / 2) * (toEigen(xdot0) + toEigen(xdot1));
-
-    if(first_time) {
-      std::cin.get();
-      first_time = false;
-    }
   }
 }
 

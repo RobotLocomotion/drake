@@ -10,8 +10,6 @@
 #include "spruce.hh"
 #include "xmlUtil.h"
 
-#include <unistd.h>
-
 using Eigen::Isometry3d;
 using Eigen::Matrix;
 using Eigen::MatrixXd;
@@ -32,10 +30,6 @@ using std::string;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 using tinyxml2::XML_SUCCESS;
-
-
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
 
 namespace Drake {
 
@@ -154,25 +148,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
       tree->potentialCollisions(kinsol, phi, normal, xA, xB, bodyA_idx,
                                 bodyB_idx);
     else
-      tree->ComputeMaximumDepthCollisionPoints(
-          kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
-    //tree->collisionDetect(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
-
-
-
-#if 0
-    // Here call collisionPointsAllToAll (with use_margins=false because of bug)
-    // and in RBT::PerformCollisionDetection transform points to local bodie's
-    // frame of reference (since Model::collisionPointsAllToAll returns points
-    // in world's frame.
-    // This should be enought to re-test Prius example and if succesful then
-    // load the PA loop.
-    tree->FindAndComputeContactPoints(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
-#endif
-
-   // std::cin.get();
-    //usleep(5000);
-    PRINT_VAR(phi.rows());
+      tree->collisionDetect(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
 
     for (int i = 0; i < phi.rows(); i++) {
       if (phi(i) < 0.0) {  // then i have contact
@@ -184,60 +160,13 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
                                                 0, false);
         Vector3d this_normal = normal.col(i);
 
-        PRINT_VAR(phi(i));
-        PRINT_VAR(this_normal.transpose());
-        PRINT_VAR(xA.col(i).transpose());
-        PRINT_VAR(xB.col(i).transpose());
-        PRINT_VAR(tree->bodies[bodyA_idx[i]]->name());
-        PRINT_VAR(tree->bodies[bodyB_idx[i]]->name());
-        const RigidBody& bodyA = *(tree->bodies[bodyA_idx[i]].get());
-        const RigidBody& bodyB = *(tree->bodies[bodyB_idx[i]].get());
-
-        Isometry3d TA;
-        if (bodyA.hasParent()) { // body is dynamic.
-          TA = kinsol.getElement(bodyA).transform_to_world;
-        } else { // body is static.
-          TA = Isometry3d::Identity();
-        }
-
-        Isometry3d TB;
-        if (bodyB.hasParent()) { // body is dynamic.
-          TB = kinsol.getElement(bodyB).transform_to_world;
-        } else { // body is static.
-          TB = Isometry3d::Identity();
-        }
-
-#if   LIANG_LOOK_AT_THIS
-        xA = TA.translation();
-        torque_A = (pc-xA).cros(fA);
-        fB = -fA; //action/reaction
-        xB = TB.translation();
-        torque_B = (pc-xB).cros(fB); // NOTE: torque_B != torque_A !!!
-#endif
-
-        PRINT_VAR(TA.translation().transpose());
-        PRINT_VAR(TB.translation().transpose());
-
-        Vector3d pc; // the contact point on the world (the box)
-        if(bodyA_idx[i]==0)
-          pc = xA.col(i);
-        else
-          pc = xB.col(i);
-
-#ifdef COLLISION_DEBUG_WITH_LCM_GL
-        // LCMGL sphere at contact point on box.
-        bot_lcmgl_color3f(lcmgl_, 1.0, 0.0, 0.0);
-        double xyz[] = {pc.x(), pc.y(), pc.z()};
-        bot_lcmgl_sphere(lcmgl_, xyz, .05, 36, 36);
-#endif
-
         // compute the surface tangent basis
         Vector3d tangent1;
-        if (1.0 - this_normal(2) < 1.0e-14) {  // handle the unit-normal case
+        if (1.0 - this_normal(2) < EPSILON) {  // handle the unit-normal case
                                                // (since it's unit length, just
                                                // check z)
           tangent1 << 1.0, 0.0, 0.0;
-        } else if (1 + this_normal(2) < 1.0e-14) {
+        } else if (1 + this_normal(2) < EPSILON) {
           tangent1 << -1.0, 0.0, 0.0;  // same for the reflected case
         } else {                       // now the general case
           tangent1 << this_normal(1), -this_normal(0), 0.0;
@@ -245,15 +174,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
                            this_normal(0) * this_normal(0));
         }
         Vector3d tangent2 = this_normal.cross(tangent1);
-
-        PRINT_VAR(tangent1);
-        PRINT_VAR(tangent2);
-        PRINT_VAR(this_normal);
-
-        // Transformation matrix from world frame to surface frame.
-        // fA below is in the surface frame.
-        // Therefore R^t * fA is the force vector in the world frame.
-        Matrix3d R;
+        Matrix3d R;  // rotation into normal coordinates
         R.row(0) = tangent1;
         R.row(1) = tangent2;
         R.row(2) = this_normal;
@@ -276,39 +197,12 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
                       (relative_velocity.head(2).norm() + EPSILON)) *
               relative_velocity.head(2);  // epsilon to avoid divide by zero
 
-          PRINT_VAR(fA.transpose());
-          PRINT_VAR(fA.norm());
-          PRINT_VAR((R.transpose()*fA).transpose());
-
-          //std::cin.get();
-
-#ifdef COLLISION_DEBUG_WITH_LCM_GL
-          // LCMGL the force on xB
-          bot_lcmgl_color3f(lcmgl_, 1.0, 0.0, 1.0);
-          bot_lcmgl_push_matrix(lcmgl_);
-          double arrow_length = fA.norm()/5.0;
-          double angle = -acos(fA.x()/(fA.norm()+1.0e-16))*180/M_PI;
-          Vector3d axis = fA.normalized().cross(Vector3d::UnitX());
-          PRINT_VAR(angle);
-          PRINT_VAR(axis.transpose());
-          bot_lcmgl_rotated(lcmgl_,
-                            angle, axis.x(), axis.y(), axis.z());
-          bot_lcmgl_translated(lcmgl_, xyz[0], xyz[1], xyz[2]);
-          bot_lcmgl_translated(lcmgl_, arrow_length/2.0, 0.0, 0.0);
-          bot_lcmgl_draw_arrow_3d (lcmgl_, arrow_length, 0.015, 4*0.015, 0.005);
-          bot_lcmgl_pop_matrix(lcmgl_);
-#endif
-
           // equal and opposite: fB = -fA.
           // tau = (R*JA)^T fA + (R*JB)^T fB = J^T fA
           C -= J.transpose() * fA;
         }
       }
     }
-#ifdef COLLISION_DEBUG_WITH_LCM_GL
-    bot_lcmgl_switch_buffer(lcmgl_);
-#endif
-    //if(phi.rows()>1) std::cin.get();
   }
 
   if (tree->getNumPositionConstraints()) {
