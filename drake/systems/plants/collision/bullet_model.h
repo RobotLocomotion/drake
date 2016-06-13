@@ -72,8 +72,8 @@ class BulletModel : public Model {
                              const bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
-  bool ComputeMaximumDepthCollisionPoints(const bool use_margins,
-                                          std::vector<PointPair> &points) override;
+  bool ComputeMaximumDepthCollisionPoints(
+      const bool use_margins, std::vector<PointPair>& points) override;
 
   /**
    * Finds the points where each pair of elements in id_pairs are
@@ -140,7 +140,7 @@ class BulletModel : public Model {
   static constexpr double kLargeMargin = 0.05;
 
   // BulletModel objects are not copyable
-  BulletModel(const BulletModel&) =  delete;
+  BulletModel(const BulletModel&) = delete;
   BulletModel& operator=(const BulletModel&) = delete;
 
   /**

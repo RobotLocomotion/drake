@@ -62,14 +62,15 @@ typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
 
 // REMARKS ON MULTICONTACT
 // Results from Model::potentialCollisionPoints are affected by previous calls
-// to Model::ComputeMaximumDepthCollisionPoints even if cached results are cleared with
-// Model::ClearCachedResults. This is the reason why multicontact tests using
-// Model::potentialCollisionPoints are performed separately in their own tests.
+// to Model::ComputeMaximumDepthCollisionPoints even if cached results are
+// cleared with Model::ClearCachedResults. This is the reason why multicontact
+// tests using Model::potentialCollisionPoints are performed separately in their
+// own tests.
 // For instance, for the NonAlignedBoxes there is a separate test called
 // NonAlignedBoxes_multi performed with Model::potentialCollisionPoints.
 // It seems like Bullet is storing some additional configuration setup with the
-// call to Model::ComputeMaximumDepthCollisionPoints that persists throughout subsequent
-// calls to Model::potentialCollisionPoints.
+// call to Model::ComputeMaximumDepthCollisionPoints that persists throughout
+// subsequent calls to Model::potentialCollisionPoints.
 // Therefore, DO NOT mix these calls since they might produce erroneous results.
 // Notice also that the tolerance used for these tests is much higher. The
 // reason is that Bullet randomly changes the pose of the collision elements
