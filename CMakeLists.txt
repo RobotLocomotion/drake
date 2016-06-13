@@ -78,6 +78,8 @@ if(WIN32)
 else()
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
+  option(WITH_LIBCCD "Required for FCL" OFF)
+  option(WITH_FCL "Fast Collision Library" OFF)
   option(WITH_NLOPT "nonlinear optimization solver" ON)
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
@@ -148,7 +150,31 @@ set(signalscope_dependencies director)
 # List compilation and runtime dependencies. Runtime dependencies are needed
 # because the drake project must configure only after any dependencies used by
 # MATLAB have been installed.
-set(drake_dependencies bertini bot_core_lcmtypes bullet cmake eigen gloptipoly3 googletest gurobi iris lcm libbot mosek nlop octomap sedumi snopt spotless swig_matlab swigmake yalmip yaml_cpp)
+set(drake_dependencies
+  bertini
+  bot_core_lcmtypes
+  bullet
+  cmake
+  eigen
+  fcl
+  gloptipoly3
+  googletest
+  gurobi
+  iris
+  lcm
+  libbot
+  libccd
+  mosek
+  nlop
+  octomap
+  sedumi
+  snopt
+  spotless
+  swig_matlab
+  swigmake
+  yalmip
+  yaml_cpp)
+set(fcl_dependancies libccd)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -161,6 +187,16 @@ set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
 set(bullet_GIT_TAG f7cfcf6a24977b57dc832593743c770548799e45)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
+set(libccd_GIT_REPOSITORY https://github.com/danfis/libccd.git)
+set(libccd_GIT_TAG v2.0)
+set(libccd_IS_PUBLIC TRUE)
+set(libccd_IS_CMAKE_POD TRUE)
+set(fcl_GIT_REPOSITORY https://github.com/flexible-collision-library/fcl.git)
+set(fcl_GIT_TAG 0cd30df40797f5908c295c3458a4c0344b2fc57c)
+#set(fcl_GIT_TAG 0.5.0)
+set(fcl_IS_PUBLIC TRUE)
+set(fcl_IS_CMAKE_POD TRUE)
+
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
 set(cmake_GIT_TAG abe1a22d0bb767423de4e3bd1123cc2deae1c82a)
 set(cmake_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
@@ -291,6 +327,8 @@ foreach(proj IN ITEMS
   bot_core_lcmtypes
   libbot
   bullet
+  libccd
+  fcl
   spotless
   director
   signalscope

@@ -1,4 +1,11 @@
 set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp point_pair.cc Model.cpp ResultCollector.cpp)
+find_package(fcl)
+
+if (fcl_FOUND)
+  set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} fcl_model.cc)
+  set(fcl "yes" CACHE STRING "yes")
+endif()
+
 pods_find_pkg_config(bullet)
 
 if(bullet_FOUND)
@@ -9,9 +16,16 @@ endif()
 
 add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_SRC_FILES})
 
-if(bullet_FOUND)
+if (fcl_FOUND)
+  target_compile_definitions(drakeCollision PRIVATE FCL_COLLISION)
+  target_link_libraries(drakeCollision fcl)
+endif()
+
+if (bullet_FOUND)
   pods_use_pkg_config_packages(drakeCollision bullet)
 endif()
+
+
 target_link_libraries(drakeCollision drakeShapes)
 
 enable_testing()
