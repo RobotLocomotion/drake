@@ -15,8 +15,6 @@ using Eigen::Matrix3Xd;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
-using Eigen::Vector3i;
-using Eigen::Matrix3Xi;
 
 namespace DrakeCollision {
 
