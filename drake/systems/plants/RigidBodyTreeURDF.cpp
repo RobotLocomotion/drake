@@ -492,7 +492,8 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
 // @param[out] max_effort A pointer to where the minimum effort should be saved.
 // If the effort limits are not specified, this value is not modified.
 // @throws std::logic_error if the name of the actuator's joint cannot be
-// determined or no matching joint can be found.
+// determined.
+// @throws std::runtime_error if no matching joint can be found.
 void GetActuatorEffortLimit(XMLElement* robot_node,
                             const std::string& joint_name, double* min_effort,
                             double* max_effort) {
@@ -537,8 +538,8 @@ void GetActuatorEffortLimit(XMLElement* robot_node,
   }
 
   // If this point in the code is reached, that means no joint named
-  // joint_name was not found in the URDF. Therefore throw an exception.
-  throw std::logic_error(
+  // joint_name was found in the URDF. Therefore throw an exception.
+  throw std::runtime_error(
       "GetActuarEffortLimit: ERROR: Unable to find joint \"" + joint_name +
       "\".");
 }
