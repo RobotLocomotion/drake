@@ -92,9 +92,9 @@ Other prerequisites may be installed as follows::
       graphviz libgtk2.0-dev libhtml-form-perl libjpeg-dev libmpfr-dev \
       libwww-perl libpng-dev libqt4-dev libqt4-opengl-dev libqwt-dev \
       libterm-readkey-perl libtool libvtk-java libvtk5-dev libvtk5-qt4-dev \
-      make mpich2 perl pkg-config python-bs4 python-dev python-gtk2 \
-      python-html5lib python-numpy python-pip python-sphinx python-vtk \
-      subversion swig unzip valgrind
+      make mpich2 ninja-build perl pkg-config python-bs4 python-dev \
+      python-gtk2 python-html5lib python-numpy python-pip python-sphinx \
+      python-vtk subversion swig unzip valgrind
     sudo pip install -U cpplint
 
 Environment
@@ -115,8 +115,8 @@ be added to the ``~/.bashrc`` file::
 
     export CC=gcc-4.9 CXX=g++-4.9
 
-Alternatively, every call to ``make`` can be preceded with environment variable
-settings that specify the correct compiler::
+Alternatively, every call to ``make`` or ``cmake`` can be preceded with
+environment variable settings that specify the correct compiler::
 
     env CC=gcc-4.9 CXX=g++-4.9 make ...
 
