@@ -51,21 +51,6 @@ documentation will be built *every* time you compile Drake. To stop this
 behavior, see the instructions below on how to disable documentation
 generation.
 
-**Note 3:** If you update Doxygen comments within the code, you should
-generate the Doxygen website and verify that the newly added or modified Doxygen
-comments correctly show up. Unfortunately, the huge amount of text printed to
-the terminal often masks any errors or warnings that are produced. To view these
-warnings and errors, pipe the output to a file, then search for the keywords
-"warning" or "error" within this resulting text file. The command to pipe the
-output of documentation creation to a file is given below::
-
-    $ make documentation &> ~/Downloads/drake_documentation_log.txt
-
-The above command will save the output of the Doxygen website creation process
-into text file ``~/Downloads/drake_documentation_log.txt``. Open this file and
-search through it to verify there are no new warnings or errors caused by your
-changes.
-
 .. _doxygen-generation-visual-studio:
 
 Using Microsoft Visual Studio
