@@ -143,7 +143,6 @@ add_matlab_test(NAME systems/plants/test/ignoreSelfCollisionsTest COMMAND ignore
 add_matlab_test(NAME systems/plants/test/linearize_test COMMAND linearize_test)
 add_matlab_test(NAME systems/plants/test/momentumTest COMMAND momentumTest)
 add_matlab_test(NAME systems/plants/test/moveSpatialMassMatrixTest COMMAND moveSpatialMassMatrixTest)
-add_matlab_test(NAME systems/plants/test/multiContactTest COMMAND multiContactTest)
 add_matlab_test(NAME systems/plants/test/multiRobotTest COMMAND multiRobotTest)
 add_matlab_test(NAME systems/plants/test/simulinkDependency COMMAND simulinkDependency)
 add_matlab_test(NAME systems/plants/test/testApproximateIK COMMAND testApproximateIK)
