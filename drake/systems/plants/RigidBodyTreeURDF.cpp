@@ -478,12 +478,26 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
   model->bodies[child_index]->parent = model->bodies[parent_index].get();
 }
 
-void GetActuatorEffortLimit(XMLElement* node, const std::string& joint_name,
-                          double* min_effort, double* max_effort) {
-  bool joint_found = false;
-
-  for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
-       joint_node = joint_node->NextSiblingElement("joint")) {
+// Searches through the URDF document looking for the effort limits of a
+// particular joint. If the joint is not found, throw an exception. If the
+// limits of the joint are not specified, do nothing. If the effort limits are
+// specified, save the effort limits in \p min_effort and \p max_effort.
+//
+// @param[in] robot_node The XML node for the robot description. This must
+// contain child joint elements through which to search.
+// @param[in] joint_name The name of the joint to find. If no joint with such a
+// name exists, throw an exception.
+// @param[out] min_effort A pointer to where the minimum effort should be saved.
+// If the effort limits are not specified, this value is not modified.
+// @param[out] max_effort A pointer to where the minimum effort should be saved.
+// If the effort limits are not specified, this value is not modified.
+// @throws std::logic_error if the name of the actuator's joint cannot be
+// determined or no matching joint can be found.
+void GetActuatorEffortLimit(XMLElement* robot_node,
+                            const std::string& joint_name, double* min_effort,
+                            double* max_effort) {
+  for (XMLElement* joint_node = robot_node->FirstChildElement("joint");
+       joint_node; joint_node = joint_node->NextSiblingElement("joint")) {
     // Checks for the existence of an attribute named "drake_ignore". If such an
     // attribute exists and has a value of "true", ignores the current joint.
     {
@@ -496,15 +510,14 @@ void GetActuatorEffortLimit(XMLElement* node, const std::string& joint_name,
     // Obtains the joint's name.
     const char* attr = joint_node->Attribute("name");
     if (!attr) {
-      throw runtime_error(
-          "GetActuarEffortLimit: ERROR: joint tag is missing name attribute");
+      throw std::logic_error(
+          "RigidBodyTreeURDF.cpp: GetActuarEffortLimit: ERROR: Joint tag is "
+          "missing name attribute.");
     }
     std::string name = std::string(attr);
 
     // Checks if the current joint's name matches parameter joint_name.
     if (name == joint_name) {
-      joint_found = true;
-
       // Parses the minimum and maximum effort limits.
       XMLElement* limit_node = joint_node->FirstChildElement("limit");
       if (limit_node) {
@@ -517,57 +530,80 @@ void GetActuatorEffortLimit(XMLElement* node, const std::string& joint_name,
         parseScalarAttribute(limit_node, "effort_min", *min_effort);
         parseScalarAttribute(limit_node, "effort_max", *max_effort);
       }
+
+      // Terminates this method call since the joint was found.
+      return;
     }
   }
 
-  if (!joint_found) {
-    throw std::runtime_error(
-        "GetActuarEffortLimit: ERROR: Unable to find joint \"" + joint_name +
-        "\".");
-  }
+  throw std::logic_error(
+      "GetActuarEffortLimit: ERROR: Unable to find joint \"" + joint_name +
+      "\".");
 }
 
-void parseTransmission(RigidBodyTree* model, XMLElement* node) {
+void parseTransmission(RigidBodyTree* model, XMLElement* transmission_node) {
+  // Determines the transmission type.
   const char* attr = nullptr;
-  XMLElement* type_node = node->FirstChildElement("type");
+  XMLElement* type_node = transmission_node->FirstChildElement("type");
   if (type_node) {
     attr = type_node->GetText();
   }
 
   if (!attr) {
-    attr = node->Attribute("type");  // old URDF format, kept for convenience
-    if (!attr)
-      throw runtime_error(
-          "ERROR: transmission element is missing the type child");
+    // Old URDF format, kept for convenience
+    attr = transmission_node->Attribute("type");
+    if (!attr) {
+      throw std::logic_error(
+          "RigidBodyTreeURDF.cpp: parseTransmission: ERROR: Transmission "
+          "element "
+          "is missing the type child.");
+    }
   }
   string type(attr);
+
+  // Checks if the transmission type is not SimpleTransmission. If it is not,
+  // print a warning and then abort this method call since only simple
+  // transmissions are supported at this time.
   if (type.find("SimpleTransmission") == string::npos) {
-    cerr << "WARNING: only SimpleTransmissions are supported right now.  this "
-            "element will be skipped."
+    cerr << "RigidBodyTreeURDF.cpp: parseTransmission: WARNING: Only "
+            "SimpleTransmissions are supported right now.  This element will "
+            "be skipped."
          << endl;
     return;
   }
 
-  XMLElement* actuator_node = node->FirstChildElement("actuator");
-  if (!actuator_node || !actuator_node->Attribute("name"))
-    throw runtime_error("ERROR: transmission is missing an actuator element");
+  // Determines the actuator's name.
+  XMLElement* actuator_node = transmission_node->FirstChildElement("actuator");
+  if (!actuator_node || !actuator_node->Attribute("name")) {
+    throw std::logic_error(
+        "RigidBodyTreeURDF.cpp: parseTransmission: ERROR: "
+        "Transmission is missing an actuator element.");
+  }
   string actuator_name(actuator_node->Attribute("name"));
 
-  XMLElement* joint_node = node->FirstChildElement("joint");
-  if (!joint_node || !joint_node->Attribute("name"))
-    throw runtime_error("ERROR: transmission is missing a joint element");
+  // Determines the name of the joint to which the actuator is attached.
+  XMLElement* joint_node = transmission_node->FirstChildElement("joint");
+  if (!joint_node || !joint_node->Attribute("name")) {
+    throw std::logic_error(
+        "RigidBodyTreeURDF.cpp: parseTransmission: ERROR: "
+        "Transmission is missing a joint element.");
+  }
   string joint_name(joint_node->Attribute("name"));
 
+  // Checks if the actuator is attached to a fixed joint. If so, abort this
+  // method call.
   int body_index = findLinkIndexByJointName(model, joint_name);
 
   if (model->bodies[body_index]->getJoint().getNumPositions() == 0) {
-    cerr << "WARNING: Skipping transmission since it's attached to a fixed "
-            "joint: "
-         << joint_name << endl;
+    cerr << "RigidBodyTreeURDF.cpp: parseTransmission: WARNING: Skipping "
+            "transmission since it's attached to a fixed joint \""
+         << joint_name << "\"." << endl;
     return;
   }
 
-  XMLElement* reduction_node = node->FirstChildElement("mechanicalReduction");
+  // Obtains the actuator's gain.
+  XMLElement* reduction_node =
+      transmission_node->FirstChildElement("mechanicalReduction");
   double gain = 1.0;
   if (reduction_node) parseScalarValue(reduction_node, gain);
 
@@ -575,10 +611,17 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
   double effort_max = numeric_limits<double>::infinity();
   double effort_min = -numeric_limits<double>::infinity();
 
-  GetActuatorEffortLimit(static_cast<XMLElement*>(node->Parent()), joint_name,
-                       &effort_min, &effort_max);
+  if (XMLElement* element =
+      dynamic_cast<XMLElement*>(transmission_node->Parent())) {
+    GetActuatorEffortLimit(element, joint_name, &effort_min, &effort_max);
+  } else {
+    throw std::logic_error(
+        "RigidBodyTreeURDF.cpp: parseTransmission: ERROR: Expected a <robot> "
+        "element as a parent of a <transmission> element for actuator \"" +
+        actuator_name + "\" and joint \"" + joint_name + "\".");
+  }
 
-  // Creates the actutor and adds it to the rigid body tree.
+  // Creates the actuator and adds it to the rigid body tree.
   model->actuators.push_back(RigidBodyActuator(actuator_name,
                                                model->bodies[body_index].get(),
                                                gain, effort_min, effort_max));
