@@ -72,9 +72,9 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
 /**
  * Adds a box-shaped terrain to the specified rigid body tree.
  *
- * The length and width of the terrain lies in the X-Y plane of the world
- * coordinate frame abd has lengths of \p box_width. The depth of the terrain is
- * specified by \p box_depth. The top surface of the terrain is at Z = 0.
+ * The Z-axis of the box matches the Z-axis of the world, i.e., positive Z
+ * points up. The length and width of the terrain is \p box_size. The depth of
+ * the terrain is \p box_depth. The top surface of the box is at Z = 0.
  *
  * @param[in] rigid_body_tree The rigid body tree to which to add the terrain.
  * @param[in] box_size The length and width of the terrain.
