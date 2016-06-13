@@ -1,17 +1,20 @@
+#include <thread>
+
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
+#include <sensor_msgs/LaserScan.h>
 
 namespace drake {
 namespace examples {
 namespace cars {
 namespace {
 
-class PriusToGolfcartTFConverter {
+class PriusToGolfCartTFConverter {
  public:
-  PriusToGolfcartTFConverter() :
+  PriusToGolfCartTFConverter() :
       start_time_(ros::Time::now()) {
   }
 
@@ -34,15 +37,85 @@ class PriusToGolfcartTFConverter {
   }
 
  private:
-  const static double kPublishErrorThreshold = 2.0;
+  constexpr static double kPublishErrorThreshold = 2.0;
   ros::Time start_time_;
 
   tf::TransformListener listener_;
   tf::TransformBroadcaster broadcaster_;
 };
 
-int do_main(int argc, char* argv[]) {
+class PriusToGolfCartSensorConverter {
+ public:
+  PriusToGolfCartSensorConverter() {
+  }
 
+  void operator()() {
+    ros::NodeHandle node;
+
+    // Declares the publishers for the golf cart sensor data.
+    pub_front_lidar = node.advertise<sensor_msgs::LaserScan>("front_lidar", 1000);
+    pub_front_top_lidar = node.advertise<sensor_msgs::LaserScan>("front_top_lidar", 1000);
+    pub_rear_right_lidar = node.advertise<sensor_msgs::LaserScan>("rear_right_lidar", 1000);;
+    pub_rear_left_lidar = node.advertise<sensor_msgs::LaserScan>("rear_left_lidar", 1000);
+
+    // Subscribes to the ROS topics containing Prius sensor data
+    sub_front_laser = node.subscribe(
+      "/drake/prius_1/lidar/front_laser", 1,
+      & PriusToGolfCartSensorConverter::callback_front_laser, this);
+    sub_top_laser = node.subscribe(
+      "/drake/prius_1/lidar/top_laser", 1,
+      & PriusToGolfCartSensorConverter::callback_top_laser, this);
+    sub_rear_left_laser = node.subscribe(
+      "/drake/prius_1/lidar/rear_left_laser",
+       1, & PriusToGolfCartSensorConverter::callback_rear_left_laser, this);
+    sub_rear_right_laser = node.subscribe(
+      "/drake/prius_1/lidar/rear_right_laser", 1,
+      & PriusToGolfCartSensorConverter::callback_rear_right_laser, this);
+
+    ros::AsyncSpinner spinner(4); // Use 4 threads
+    spinner.start();
+    ros::waitForShutdown();
+  }
+
+  void callback_front_laser(const sensor_msgs::LaserScanPtr& msg) {
+    sensor_msgs::LaserScan message = *(msg.get());
+    message.header.frame_id = "front_lidar";
+    pub_front_lidar.publish(message);
+  }
+
+  void callback_top_laser(const sensor_msgs::LaserScanPtr& msg) {
+    sensor_msgs::LaserScan message = *(msg.get());
+    message.header.frame_id = "front_top_lidar";
+    pub_front_top_lidar.publish(message);
+  }
+
+  void callback_rear_left_laser(const sensor_msgs::LaserScanPtr& msg) {
+    sensor_msgs::LaserScan message = *(msg.get());
+    message.header.frame_id = "rear_right_lidar";
+    pub_rear_right_lidar.publish(message);
+  }
+
+  void callback_rear_right_laser(const sensor_msgs::LaserScanPtr& msg) {
+    sensor_msgs::LaserScan message = *(msg.get());
+    message.header.frame_id = "rear_left_lidar";
+    pub_rear_left_lidar.publish(message);
+  }
+
+ private:
+  // Declares the golf cart ROS topic publishers
+  ros::Publisher pub_front_lidar;
+  ros::Publisher pub_front_top_lidar;
+  ros::Publisher pub_rear_right_lidar;
+  ros::Publisher pub_rear_left_lidar;
+
+  // Declares the Prius sensor ROS topic listeners.
+  ros::Subscriber sub_front_laser;
+  ros::Subscriber sub_top_laser;
+  ros::Subscriber sub_rear_left_laser;
+  ros::Subscriber sub_rear_right_laser;
+};
+
+int do_main(int argc, char* argv[]) {
   // Defines the frequency in Hz of publishing golfcart transforms.
   const double kCycleFrequency = 10.0;
 
@@ -57,8 +130,12 @@ int do_main(int argc, char* argv[]) {
 
   // Instantiates some useful local variables.
   ros::NodeHandle node;
-  PriusToGolfcartTFConverter tf_converter;
+  PriusToGolfCartTFConverter tf_converter;
   tf::TransformBroadcaster broadcaster;
+  PriusToGolfCartSensorConverter msg_converter;
+
+  // Starts a new thread for handling message convertion.
+  std::thread msg_converter_thread(msg_converter);
 
   // Cycles at kCycleFrequency Hz.
   ros::Rate rate(kCycleFrequency);
@@ -124,6 +201,9 @@ int do_main(int argc, char* argv[]) {
 
     rate.sleep();
   }
+
+  msg_converter_thread.join();
+
   return 0;
 }
 
