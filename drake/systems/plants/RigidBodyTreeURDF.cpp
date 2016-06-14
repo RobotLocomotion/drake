@@ -30,7 +30,7 @@ using tinyxml2::XMLElement;
 
 namespace {
 
-// todo: rectify this with findLinkId in the class (which makes more
+// todo: rectify this with FindBodyIndex in the class (which makes more
 // assumptions)
 int findLinkIndex(RigidBodyTree* model, string link_name) {
   int index = -1;

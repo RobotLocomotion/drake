@@ -72,14 +72,17 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
 /**
  * Adds a box-shaped terrain to the specified rigid body tree.
  *
- * The Z-axis of the box matches the Z-axis of the world, i.e., positive Z
- * points up. The length and width of the terrain is \p box_size. The depth of
- * the terrain is \p box_depth. The top surface of the box is at Z = 0.
+ * The X, Y, and Z axes of the box matches the X, Y, and Z-axis of the world.
+ * The length and width of the box is aligned with X and Y and are \p box_size
+ * long. The depth of the box is aligned with Z and is \p box_depth long. The
+ * top surface of the box is at Z = 0.
  *
  * @param[in] rigid_body_tree The rigid body tree to which to add the terrain.
- * @param[in] box_size The length and width of the terrain.
- * @param[in] box_depth The depth of the terrain. Note that regardless of how
- * deep the terrain is, the top surface of the terrain will be at Z = 0.
+ * @param[in] box_size The length and width of the terrain aligned with the
+ * world's X and Y axes.
+ * @param[in] box_depth The depth of the terrain aligned with the world's Z
+ * axis. Note that regardless of how deep the terrain is, the top surface of the
+ * terrain will be at Z = 0.
  */
 DRAKECARS_EXPORT
 void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,

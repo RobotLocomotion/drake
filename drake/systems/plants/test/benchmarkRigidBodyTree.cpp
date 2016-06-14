@@ -98,15 +98,15 @@ void testScenario1(const RigidBodyTree& model) {
   int npoints_head = 1;
   vector<string> sides{"l", "r"};
   for (const auto& side : sides) {
-    int hand_id = model.findLinkId(side + "_hand");
+    int hand_id = model.FindBodyIndex(side + "_hand");
     body_fixed_points.insert(
         make_pair(hand_id, Matrix3Xd::Random(3, npoints_hands)));
 
-    int foot_id = model.findLinkId(side + "_foot");
+    int foot_id = model.FindBodyIndex(side + "_foot");
     body_fixed_points.insert(
         make_pair(foot_id, Matrix3Xd::Random(3, npoints_feet)));
   }
-  int head_id = model.findLinkId("head");
+  int head_id = model.FindBodyIndex("head");
   body_fixed_points.insert(
       make_pair(head_id, Matrix3Xd::Random(3, npoints_head)));
 

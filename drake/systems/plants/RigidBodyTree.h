@@ -695,38 +695,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       int model_id = -1) const;
 
   /**
-   * Finds a link with the specified \p link_name belonging to a model with the
-   * specified \p model_name. Note that if \p model_name is the empty string,
-   * every model is searched.
-   *
-   * @param[in] link_name The name of the link to find.
-   * @param[in] model_name The name of the model to which the link belongs. If
-   * this value is an empty string, every model is searched.
-   * @throws std::logic_error if multiple matching links are found or no
-   * matching links are found.
-   */
-  // RigidBody* findLink(const std::string& link_name,
-  //     const std::string& model_name = "") const {
-  //   return findLink(link_name, model_name, -1);
-  // }
-
-  /**
-   * Finds a link with the specified \p link_name belonging to a model with the
-   * specified \p model_id. Note that if \p model_name is the empty string and
-   * \p model_id is -1, every model is searched.
-   *
-   * @param[in] link_name The name of the link to find.
-   * @param[in] model_id The ID of the model to which the link belongs. If this
-   * value is -1, every model is searched.
-   * @throws std::logic_error if multiple matching links are found or no
-   * matching links are found.
-   */
-  // RigidBody* findLink(const std::string& link_name, int model_id = -1) const
-  // {
-  //   return findLink(link_name, "", model_id);
-  // }
-
-  /**
    * Obtains the body index of a link. Note that the body index of the link
    * is different from the ID of the model to which the link belongs.
    *
@@ -740,7 +708,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @throws std::logic_error if no link with the specified \p link_name and
    * \p model_id were found or if multiple matching links were found.
    */
-  int findLinkId(const std::string& link_name, int model_id = -1) const;
+  int FindBodyIndex(const std::string& link_name, int model_id = -1) const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.

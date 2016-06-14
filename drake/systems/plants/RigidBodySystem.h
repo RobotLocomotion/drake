@@ -177,6 +177,24 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
+  /**
+   * Adds the models contained within an SDF file to this rigid body system.
+   * The models within a particular SDF file can be added multiple times. Each
+   * model is uniquely identified by a model ID that is assigned to the rigid
+   * bodies that belong to the model.
+   *
+   * @param[in] sdf_filename The name of the SDF file containing the models to
+   * add to this rigid body system.
+   * @param[in] floating_base_type The type of floating base to use to connect
+   * the models within the SDF file to the world.
+   * @param[in] welt_to_frame The frame used for connecting the models in the
+   * SDF to the rigid body tree within this rigid body system. Note that this
+   * specifies both the existing frame in the rigid body tree to connect the
+   * new models to and the offset from this frame theo the new models' root
+   * body. This is an optional parameter. If it is nullptr, the models within
+   * the SDF are connected to the world with zero offset and rotation relative
+   * to the world's frame.
+   */
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
                            DrakeJoint::QUATERNION,

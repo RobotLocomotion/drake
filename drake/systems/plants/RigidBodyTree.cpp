@@ -1702,7 +1702,7 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   }
 }
 
-int RigidBodyTree::findLinkId(const std::string& link_name,
+int RigidBodyTree::FindBodyIndex(const std::string& link_name,
                               int model_id) const {
   RigidBody* link = findLink(link_name, "", model_id);
   if (link == nullptr) {
