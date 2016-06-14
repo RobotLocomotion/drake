@@ -133,7 +133,6 @@ include_directories(BEFORE ${generated_dir})
 
 # set up matlab build
 include(cmake/mex.cmake)
-set(DISABLE_MATLAB TRUE)
 if(DISABLE_MATLAB)
   message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
 else()
