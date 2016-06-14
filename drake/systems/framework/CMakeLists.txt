@@ -7,7 +7,7 @@ set(sources
   named_value_vector.cc
   state.cc
   state_subvector.cc
-  state_vector_interface.cc
+  state_vector.cc
   system_interface.cc
   system_output.cc
   basic_state_vector.cc
@@ -25,7 +25,7 @@ set(installed_headers
   named_value_vector.h
   state.h
   state_subvector.h
-  state_vector_interface.h
+  state_vector.h
   state_vector_arithmetic.h
   system_interface.h
   system_output.h

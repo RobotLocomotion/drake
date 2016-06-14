@@ -12,7 +12,7 @@ namespace drake {
 namespace systems {
 
 /// BasicStateVector is a concrete class template that implements
-/// StateVectorInterface in a convenient manner for leaf Systems,
+/// StateVector in a convenient manner for leaf Systems,
 /// by owning and wrapping a VectorInterface<T>.
 ///
 /// It will often be convenient to inherit from BasicStateVector, and add
@@ -59,6 +59,17 @@ class BasicStateVector : public LeafStateVector<T> {
   }
 
   VectorX<T> CopyToVector() const override { return vector_->get_value(); }
+
+  void AddToVector(Eigen::Ref<VectorX<T>> vec) const override {
+    assert(vec.rows() == size());
+    vec += vector_->get_value();
+  }
+
+  BasicStateVector& operator+=(const StateVector<T>& rhs) override {
+    assert(size() == rhs.size());
+    rhs.AddToVector(vector_->get_mutable_value());
+    return *this;
+  }
 
  protected:
   BasicStateVector(const BasicStateVector& other)

@@ -3,7 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -20,7 +20,7 @@ class BasicStateVectorTest : public ::testing::Test {
     state_vector_.reset(new BasicStateVector<int>(std::move(vec)));
   }
 
-  std::unique_ptr<StateVectorInterface<int>> state_vector_;
+  std::unique_ptr<StateVector<int>> state_vector_;
 };
 
 TEST_F(BasicStateVectorTest, Access) {
@@ -41,8 +41,8 @@ TEST_F(BasicStateVectorTest, Clone) {
       dynamic_cast<LeafStateVector<int>*>(state_vector_.get())->Clone();
 
   // Verify that type and data were preserved in the clone.
-  BasicStateVector<int>* typed_clone = dynamic_cast<BasicStateVector<int>*>(
-      clone.get());
+  BasicStateVector<int>* typed_clone =
+      dynamic_cast<BasicStateVector<int>*>(clone.get());
   ASSERT_NE(nullptr, typed_clone);
   EXPECT_EQ(1, typed_clone->GetAtIndex(0));
   EXPECT_EQ(2, typed_clone->GetAtIndex(1));
@@ -85,6 +85,32 @@ TEST_F(BasicStateVectorTest, SizeBasedConstructor) {
   state_vector_->SetAtIndex(4, 42);
   EXPECT_EQ(42, state_vector_->GetAtIndex(4));
 }
+
+// Tests that the BasicStateVector can be added to an Eigen vector.
+TEST_F(BasicStateVectorTest, AddToVector) {
+  Eigen::Vector2i target;
+  target << 3, 4;
+  state_vector_->AddToVector(target);
+
+  Eigen::Vector2i expected;
+  expected << 4, 6;
+  EXPECT_EQ(expected, target);
+}
+
+// Tests that another StateVector can be added to the BasicStateVector.
+TEST_F(BasicStateVectorTest, PlusEq) {
+  BasicStateVector<int> addend(2);
+  addend.SetAtIndex(0, 5);
+  addend.SetAtIndex(1, 6);
+  *state_vector_ += addend;
+
+  EXPECT_EQ(6, state_vector_->GetAtIndex(0));
+  EXPECT_EQ(8, state_vector_->GetAtIndex(1));
+}
+
+// TODO(david-german-tri): Once GMock is available in the Drake build, add a
+// test case demonstrating that the += operator on BasicStateVector calls
+// AddToVector on the addend.
 
 }  // namespace
 }  // namespace systems

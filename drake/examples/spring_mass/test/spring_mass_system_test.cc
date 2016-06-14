@@ -21,8 +21,7 @@
 #include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_subvector.h"
-#include "drake/systems/framework/state_vector_arithmetic.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/util/eigen_matrix_compare.h"
 
@@ -41,7 +40,7 @@ using systems::ContinuousState;
 using systems::ContinuousSystem;
 using systems::LeafStateVector;
 using systems::StateSubvector;
-using systems::StateVectorInterface;
+using systems::StateVector;
 using systems::SystemOutput;
 using systems::VectorX;
 using systems::MatrixX;
@@ -90,6 +89,9 @@ class SpringMassSystemTest : public ::testing::Test {
   SpringMassStateVector* state_;
   SpringMassOutputVector* output_;
   SpringMassStateVector* derivatives_;
+
+ private:
+  std::unique_ptr<StateVector<double>> erased_derivatives_;
 };
 
 TEST_F(SpringMassSystemTest, Name) {

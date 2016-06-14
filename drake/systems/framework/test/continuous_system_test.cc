@@ -9,7 +9,7 @@
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
@@ -40,7 +40,6 @@ class TestContinuousSystem : public ContinuousSystem<double> {
   void GetOutput(const Context<double>& context,
                  SystemOutput<double>* output) const override {}
 
-
   void GetDerivatives(const Context<double>& context,
                       ContinuousState<double>* derivatives) const override {}
 };
@@ -58,8 +57,8 @@ TEST_F(ContinuousSystemTest, MapVelocityToConfigurationDerivatives) {
   BasicStateVector<double> state_vec1(std::move(vec1));
   BasicStateVector<double> state_vec2(std::move(vec2));
 
-  system_.MapVelocityToConfigurationDerivatives(context_,
-                                                state_vec1, &state_vec2);
+  system_.MapVelocityToConfigurationDerivatives(context_, state_vec1,
+                                                &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
@@ -72,9 +71,8 @@ TEST_F(ContinuousSystemTest, VelocityConfigurationDerivativeSizeMismatch) {
   BasicStateVector<double> state_vec1(std::move(vec1));
   BasicStateVector<double> state_vec2(std::move(vec2));
 
-  EXPECT_THROW(system_.MapVelocityToConfigurationDerivatives(context_,
-                                                             state_vec1,
-                                                             &state_vec2),
+  EXPECT_THROW(system_.MapVelocityToConfigurationDerivatives(
+                   context_, state_vec1, &state_vec2),
                std::out_of_range);
 }
 

@@ -6,7 +6,7 @@ using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
 using systems::OutputPort;
-using systems::StateVectorInterface;
+using systems::StateVector;
 using systems::SystemOutput;
 using systems::VectorInterface;
 using systems::VectorX;

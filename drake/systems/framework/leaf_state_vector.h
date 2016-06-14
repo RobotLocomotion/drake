@@ -2,19 +2,19 @@
 
 #include <Eigen/Dense>
 
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 
 namespace drake {
 namespace systems {
 
 /// LeafStateVector is an abstract class template that implements
-/// StateVectorInterface for leaf Systems, i.e. Systems that are not Diagrams.
+/// StateVector for leaf Systems, i.e. Systems that are not Diagrams.
 ///
 /// It introduces the additional Non-Virtual Interface method Clone(), with
 /// corresponding virtual implementation DoClone().  Children of LeafStateVector
 /// should override DoClone to return their concrete type.
 template <typename T>
-class LeafStateVector : public StateVectorInterface<T> {
+class LeafStateVector : public StateVector<T> {
  public:
   ~LeafStateVector() override {}
 

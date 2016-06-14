@@ -3,7 +3,7 @@
 #include <string>
 
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_interface.h"
 
@@ -51,9 +51,8 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// @param generalized_velocity The velocity to transform.
   /// @param configuration_derivatives The output vector.  Must not be nullptr.
   virtual void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context,
-      const StateVectorInterface<T>& generalized_velocity,
-      StateVectorInterface<T>* configuration_derivatives) const = 0;
+      const Context<T>& context, const StateVector<T>& generalized_velocity,
+      StateVector<T>* configuration_derivatives) const = 0;
 
   // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity.
 
