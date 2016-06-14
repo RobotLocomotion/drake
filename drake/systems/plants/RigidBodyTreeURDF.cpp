@@ -539,7 +539,7 @@ void GetActuatorEffortLimit(XMLElement* robot_node,
   // If this point in the code is reached, that means no joint named
   // joint_name was found in the URDF. Therefore throw an exception.
   throw std::runtime_error(
-      "GetActuarEffortLimit: ERROR: Unable to find joint \"" + joint_name +
+      "GetActuatorEffortLimit: ERROR: Unable to find joint \"" + joint_name +
       "\".");
 }
 
