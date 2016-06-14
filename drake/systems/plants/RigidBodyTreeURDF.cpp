@@ -512,7 +512,7 @@ void GetActuatorEffortLimit(XMLElement* robot_node,
     const char* attr = joint_node->Attribute("name");
     if (!attr) {
       throw std::logic_error(
-          "RigidBodyTreeURDF.cpp: GetActuarEffortLimit: ERROR: Joint tag is "
+          "RigidBodyTreeURDF.cpp: GetActuatorEffortLimit: ERROR: Joint tag is "
           "missing name attribute.");
     }
     std::string name = std::string(attr);
@@ -558,8 +558,7 @@ void parseTransmission(RigidBodyTree* model, XMLElement* transmission_node) {
     if (!attr) {
       throw std::logic_error(
           "RigidBodyTreeURDF.cpp: parseTransmission: ERROR: Transmission "
-          "element "
-          "is missing the type child.");
+          "element is missing the type child.");
     }
   }
   string type(attr);
@@ -698,7 +697,7 @@ void parseWorldJoint(XMLElement* node,
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint")) {
     const char* attr = joint_node->Attribute("drake_ignore");
-    if (attr && strcmp(attr, "true") == 0) continue;
+    if (attr && (std::strcmp(attr, "true") == 0)) continue;
 
     // Parses the names of the joint, joint type, parent link, and child link.
     std::string joint_name, joint_type, parent_name, child_name;
