@@ -17,6 +17,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/continuous_system.h"
 #include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_subvector.h"
@@ -37,6 +38,7 @@ using systems::BasicVector;
 using systems::BasicStateVector;
 using systems::Context;
 using systems::ContinuousState;
+using systems::ContinuousSystem;
 using systems::LeafStateVector;
 using systems::StateSubvector;
 using systems::StateVectorInterface;
@@ -196,10 +198,9 @@ MatrixX<double> CalcDxdotDx(const ContinuousSystem<double>& system,
   const VectorX<double> xdot0 = derivs0->get_state().CopyToVector();
   MatrixX<double> d_xdot_dx(nx, nx);
 
-  // TODO(david-german-tr) Need a copy of the Context here to allow
-  // perturbation of state variables without affecting the original.
-  Context<double>& wcontext = const_cast<Context<double>&>(context);
-  auto x = wcontext.get_mutable_state()->continuous_state->get_mutable_state();
+  auto temp_context = context.Clone();
+  auto x =
+      temp_context->get_mutable_state()->continuous_state->get_mutable_state();
 
   // This is a temp that holds one column of the result as a ContinuousState.
   auto derivs = system.AllocateDerivatives();
@@ -207,7 +208,7 @@ MatrixX<double> CalcDxdotDx(const ContinuousSystem<double>& system,
   for (ptrdiff_t i = 0; i < x->size(); ++i) {
     const double xi = x->GetAtIndex(i);
     x->SetAtIndex(i, xi + perturb);
-    system.GetDerivatives(wcontext, derivs.get());
+    system.GetDerivatives(*temp_context, derivs.get());
     d_xdot_dx.col(i) = (derivs->get_state().CopyToVector() - xdot0) / perturb;
     x->SetAtIndex(i, xi);  // repair Context
   }
