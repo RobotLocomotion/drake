@@ -811,37 +811,67 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
         "ERROR: This xml file does not contain an sdf tag");
   }
 
-  // Obtains the final model ID after all of the models in this SDF is added
-  // to the RigidBodyTree. Note that this is simply the current model ID since
-  // the models in this SDF were already added to the rigid body tree prior to
-  // this method being called.
+  // Obtains the final model ID after all models in the SDF are added to the
+  // RigidBodyTree. This is simply the current model ID since the models in this
+  // SDF were already added to the rigid body tree prior to this method being
+  // called. It's possible for final_model_id to be greater than the number of
+  // models in the SDF file since multiple SDF files can be loaded into this
+  // RigidBodySystem. In fact, the same SDF file can be added to this
+  // RigidBodySystem multiple times. This is feasible since the rigid bodies
+  // that belong to a particular model are all assigned a model ID that's unique
+  // to that model.
   int final_model_id = sys.getRigidBodyTree()->get_current_model_id();
 
-  // Computes the number of models in the SDF.
+  // Computes the number of models in the SDF. This includes only the models
+  // that are not part of the world. This is correct because even though
+  // RigidBodyTree assigns a unique model ID to each model regardless of whether
+  // it is part of the world, the models that are part of the world are added
+  // first and thus have smaller model IDs. Since the models that are not part
+  // of the world are the ones that need to be parsed by the RigidBodySystem,
+  // we only count the models that are not part of the world.
   int number_of_models_in_sdf = 0;
   {
-    XMLElement* world_node =
-        node->FirstChildElement(RigidBodyTree::kWorldLinkName);
-    if (world_node) {
-      for (XMLElement* model_node = world_node->FirstChildElement("model");
-           model_node; model_node = model_node->NextSiblingElement("model")) {
-        ++number_of_models_in_sdf;
-      }
-    }
-
     for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
         elnode = node->NextSiblingElement("model")) {
       ++number_of_models_in_sdf;
     }
   }
 
-  // Computes the ID of the first model in the SDF.
+  // Computes the ID of the first model in the SDF. Since this SDF was just
+  // added to the RigidBodyTree, the model ID of the first model in the SDF
+  // is simply the final_model_id minus the number of models in the SDF that
+  // are not part of the world..
   int model_id = final_model_id - number_of_models_in_sdf;
 
-  // Parses each model in the SDF.
+  // Parses each model in the SDF. This includes parsing and instantiating
+  // simulated sensors as specified by the SDF description.
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
       elnode = node->NextSiblingElement("model")) {
     parseSDFModel(sys, model_id++, elnode);
+  }
+
+  // Verifies that the model_id is equal to the final_model_id. They should
+  // match since the number of models we just parsed is equal to:
+  //
+  //     number_of_models_in_sdf and initially
+  //
+  // And, initially:
+  //
+  // model_id = final_model_id - number_of_models_in_sdf
+  //
+  // Since model_id is incremented each time a model in the SDF is parsed, its
+  // final value is model_id + number_of_models_in_sdf. Thus:
+  //
+  // model_id = final_model_id - number_of_models_in_sdf +
+  //            number_of_models_in_sdf
+  //          = final_model_id
+  //
+  // Hence, at this point in the code, model_id should equal final_model_id.
+  if (model_id != final_model_id) {
+    throw std::runtime_error(
+      "RigidBodySystem.cpp: parseSDF: ERROR: the final model ID (" +
+      std::to_string(model_id) + ") is not equal to the expected final model "
+      "ID (" + std::to_string(final_model_id) + ")");
   }
 }
 
