@@ -23,9 +23,7 @@ const Drake::DecisionVariableView setupVariables(OptimizationProblem optProblem,
 
 DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     const int numInputs, const int numStates, const size_t numTimeSamples,
-    const int trajectoryTimeLowerBound, const int trajectoryTimeUpperBound
-    // options TODO
-    )
+    const int trajectoryTimeLowerBound, const int trajectoryTimeUpperBound)
     : numInputs_(numInputs),
       numStates_(numStates),
       numTimeSamples_(numTimeSamples) {
@@ -34,7 +32,7 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
 
   (void)vars;  // !!! temp to avoid warnings.
 
-  // TODO create LinearConstraint from upper & lower bounds.
+  // TODO(tri-lucy) create LinearConstraint from upper & lower bounds.
   // AddLinearConstraint
   // create and add bounding box constraint.
   // addDynamicConstraints
