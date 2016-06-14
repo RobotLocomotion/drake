@@ -491,9 +491,8 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
 // If the effort limits are not specified, this value is not modified.
 // @param[out] max_effort A pointer to where the minimum effort should be saved.
 // If the effort limits are not specified, this value is not modified.
-// @throws std::logic_error if the name of the actuator's joint cannot be
-// determined.
-// @throws std::runtime_error if no matching joint can be found.
+// @throws std::runtime_error if the name of the actuator's joint cannot be
+// determined or if the named joint could not be found.
 void GetActuatorEffortLimit(XMLElement* robot_node,
                             const std::string& joint_name, double* min_effort,
                             double* max_effort) {
@@ -511,7 +510,7 @@ void GetActuatorEffortLimit(XMLElement* robot_node,
     // Obtains the joint's name.
     const char* attr = joint_node->Attribute("name");
     if (!attr) {
-      throw std::logic_error(
+      throw std::runtime_error(
           "RigidBodyTreeURDF.cpp: GetActuatorEffortLimit: ERROR: Joint tag is "
           "missing name attribute.");
     }
