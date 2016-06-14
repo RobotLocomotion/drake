@@ -86,6 +86,17 @@ if(ENV{OXYGEN_DIR})
 endif()
 
 if(DRAKE_DOCUMENTATION_OUTPUTS)
-  add_custom_target(documentation ALL DEPENDS ${DRAKE_DOCUMENTATION_OUTPUTS})
+  # Undocumented option for use by CI builds to build documentation
+  # as part of the default build targets ("all" or "ALL_BUILD").
+  # We do not do this by default because developers should only
+  # get documentation built by an explicit request for the target.
+  if(BUILD_DOCUMENTATION_ALWAYS)
+    set(_DRAKE_DOCUMENTATION_ALL ALL)
+  else()
+    set(_DRAKE_DOCUMENTATION_ALL "")
+  endif()
+
+  add_custom_target(documentation ${_DRAKE_DOCUMENTATION_ALL}
+    DEPENDS ${DRAKE_DOCUMENTATION_OUTPUTS})
   install(FILES .nojekyll CNAME DESTINATION ${DRAKE_DOCUMENTATION_DIR})
 endif()
