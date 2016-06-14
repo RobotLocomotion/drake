@@ -258,7 +258,7 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
   expected << 0, 1, 0, 1, 1, 20;
   prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(6));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
                                 MatrixCompareType::absolute));
   });
 }
@@ -345,7 +345,7 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
 
   Eigen::VectorXd expected(6);
   expected << 5, 1, 5, 0, 5, 10;
-  Eigen::VectorXd delta = .1 * Eigen::VectorXd::Random(6);
+  Eigen::VectorXd delta = .05 * Eigen::VectorXd::Random(6);
   prog.SetInitialGuess({x}, expected + delta);
 
   // This test seems to be fairly sensitive to how much the randomness
