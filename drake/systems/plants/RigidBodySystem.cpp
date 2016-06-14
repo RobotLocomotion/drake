@@ -853,18 +853,19 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   // Verifies that the model_id is equal to the final_model_id. They should
   // match since the number of models we just parsed is equal to:
   //
-  //     number_of_models_in_sdf and initially
+  //     number_of_models_in_sdf
   //
-  // And, initially:
+  // And initially prior to parsing the models in the SDF:
   //
-  // model_id = final_model_id - number_of_models_in_sdf
+  //     model_id = final_model_id - number_of_models_in_sdf
   //
   // Since model_id is incremented each time a model in the SDF is parsed, its
-  // final value is model_id + number_of_models_in_sdf. Thus:
+  // final value is equal to its original value plus number_of_models_in_sdf.
+  // Thus:
   //
-  // model_id = final_model_id - number_of_models_in_sdf +
-  //            number_of_models_in_sdf
-  //          = final_model_id
+  //     model_id = final_model_id - number_of_models_in_sdf +
+  //                number_of_models_in_sdf
+  //              = final_model_id
   //
   // Hence, at this point in the code, model_id should equal final_model_id.
   if (model_id != final_model_id) {
