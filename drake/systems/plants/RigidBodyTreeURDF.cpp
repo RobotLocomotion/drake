@@ -302,7 +302,7 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
                const MaterialMap& materials, const PackageMap& package_map,
                const string& root_dir, int* index) {
   const char* attr = node->Attribute("drake_ignore");
-  if (attr && strcmp(attr, "true") == 0) return false;
+  if (attr && (std::strcmp(attr, "true") == 0)) return false;
 
   RigidBody* body{nullptr};
   std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
@@ -413,7 +413,7 @@ void parseJointKeyParams(XMLElement* node, std::string& name, std::string& type,
 
 void parseJoint(RigidBodyTree* model, XMLElement* node) {
   const char* attr = node->Attribute("drake_ignore");
-  if (attr && strcmp(attr, "true") == 0) return;
+  if (attr && (std::strcmp(attr, "true") == 0)) return;
 
   // Parses the parent and child link names.
   std::string name, type, parent_name, child_name;
@@ -503,7 +503,7 @@ void GetActuatorEffortLimit(XMLElement* robot_node,
     // attribute exists and has a value of "true", ignores the current joint.
     {
       const char* attr = joint_node->Attribute("drake_ignore");
-      if (attr && strcmp(attr, "true") == 0) {
+      if (attr && (std::strcmp(attr, "true") == 0)) {
         continue;
       }
     }
