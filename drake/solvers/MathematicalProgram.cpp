@@ -23,8 +23,7 @@ class MathematicalProgram : public MathematicalProgramInterface {
 
      virtual MathematicalProgramInterface* AddLinearCost() { return new
      MathematicalProgram; }
-     virtual MathematicalProgramInterface* AddQuadraticCost() { return new
-     MathematicalProgram; }
+
      virtual MathematicalProgramInterface* AddCost() { return new
      MathematicalProgram; }
 
@@ -41,6 +40,12 @@ class MathematicalProgram : public MathematicalProgramInterface {
      return new
      MathematicalProgram; };
   */
+  MathematicalProgramInterface* AddQuadraticCost() override {
+    return new MathematicalProgram;
+  };
+  MathematicalProgramInterface* AddLinearCost() override {
+    return new MathematicalProgram;
+  };
   MathematicalProgramInterface* AddGenericObjective() override {
     return new MathematicalProgram;
   };
@@ -71,6 +76,12 @@ class NonlinearProgram : public MathematicalProgram {
   MathematicalProgramInterface* AddGenericConstraint() override {
     return new NonlinearProgram;
   };
+  MathematicalProgramInterface* AddQuadraticCost() override {
+    return new NonlinearProgram;
+  };
+  MathematicalProgramInterface* AddLinearCost() override {
+    return new NonlinearProgram;
+  };
   MathematicalProgramInterface* AddLinearConstraint() override {
     return new NonlinearProgram;
   };
@@ -96,7 +107,7 @@ class NonlinearProgram : public MathematicalProgram {
   SnoptSolver snopt_solver;
 };
 
-/*  // Prototype of the more complete optimization problem class hiearchy (to
+/*  // Prototype of the more complete optimization problem class hierarchy (to
     be implemented only as needed)
     struct MixedIntegerNonlinearProgram : public MathematicalProgramInterface
    {};
@@ -143,7 +154,43 @@ class LinearComplementarityProblem : public MathematicalProgram {
   };
 };
 
-class LeastSquares : public NonlinearProgram {  // public LinearProgram, public
+class QuadraticProgram : public NonlinearProgram  {
+
+ public:
+MathematicalProgramInterface* AddQuadraticCost() override {
+  return new QuadraticProgram;
+};
+MathematicalProgramInterface* AddLinearCost() override {
+  return new QuadraticProgram;
+}
+MathematicalProgramInterface* AddLinearConstraint() override {
+  return new QuadraticProgram;
+};
+MathematicalProgramInterface* AddLinearEqualityConstraint() override {
+  return new QuadraticProgram;
+};
+
+SolutionResult Solve(OptimizationProblem& prog) const override {
+  std::cout<<"Inside Quadratic Program SOlve\n";
+
+  if (snopt_solver.available()) {
+    std::cout<<"Inside Quadratic Program SOlve : SNOPT\n";
+    return snopt_solver.Solve(prog);
+  }
+  if (nlopt_solver.available()) {
+    return nlopt_solver.Solve(prog);
+  }
+  return MathematicalProgram::Solve(prog);
+}
+
+private:
+  NloptSolver nlopt_solver;
+  SnoptSolver snopt_solver;
+};
+
+
+
+class LeastSquares : public QuadraticProgram {  // public LinearProgram, public
  public:
   // LinearComplementarityProblem
   MathematicalProgramInterface* AddLinearEqualityConstraint() override {

@@ -3,8 +3,8 @@
 #include "drake/solvers/NloptSolver.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/solvers/SnoptSolver.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/Polynomial.h"
+#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
@@ -89,20 +89,22 @@ void RunNonlinearProgram(OptimizationProblem& prog,
   SnoptSolver snopt_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
-    std::make_pair("SNOPT", &snopt_solver),
-    std::make_pair("NLopt", &nlopt_solver)
-  };
+      std::make_pair("SNOPT", &snopt_solver),
+      std::make_pair("NLopt", &nlopt_solver)};
 
   for (const auto& solver : solvers) {
-    if (!solver.second->available()) { continue; }
+    if (!solver.second->available()) {
+      continue;
+    }
     SolutionResult result = SolutionResult::kUnknownError;
-    ASSERT_NO_THROW(result = solver.second->Solve(prog)) <<
-        "Using solver: " << solver.first;
-    EXPECT_EQ(result, SolutionResult::kSolutionFound) <<
-        "Using solver: " << solver.first;
+    ASSERT_NO_THROW(result = solver.second->Solve(prog)) << "Using solver: "
+                                                         << solver.first;
+    EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Using solver: "
+                                                      << solver.first;
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
 }
+
 
 GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
   OptimizationProblem prog;
@@ -146,11 +148,11 @@ GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
-      EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
-                                  MatrixCompareType::absolute));
-      EXPECT_TRUE(CompareMatrices(b / 3, x.value(), 1e-10,
-                                  MatrixCompareType::absolute));
-    });
+    EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+  });
 }
 
 GTEST_TEST(testOptimizationProblem, trivialLinearEquality) {
@@ -159,13 +161,13 @@ GTEST_TEST(testOptimizationProblem, trivialLinearEquality) {
   auto vars = prog.AddContinuousVariables(2);
 
   // Use a non-square matrix to catch row/column mistakes in the solvers.
-  prog.AddLinearEqualityConstraint(
-      Vector2d(0, 1).transpose(), Vector1d::Constant(1));
+  prog.AddLinearEqualityConstraint(Vector2d(0, 1).transpose(),
+                                   Vector1d::Constant(1));
   prog.SetInitialGuess(vars, Vector2d(2, 2));
   RunNonlinearProgram(prog, [&]() {
-      EXPECT_DOUBLE_EQ(vars.value()(0), 2);
-      EXPECT_DOUBLE_EQ(vars.value()(1), 1);
-    });
+    EXPECT_DOUBLE_EQ(vars.value()(0), 2);
+    EXPECT_DOUBLE_EQ(vars.value()(1), 1);
+  });
 }
 
 // This test comes from Section 2.2 of "Handbook of Test Problems in
@@ -179,11 +181,10 @@ class TestProblem1Objective {
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     assert(x.rows() == numInputs());
     assert(y.rows() == numOutputs());
-    y(0) =
-        (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
-        (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
-        (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
-        (47.5 * x(4));
+    y(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
+           (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
+           (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
+           (47.5 * x(4));
   }
 };
 
@@ -197,15 +198,110 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
       constraint.transpose(),
       Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       Drake::Vector1d::Constant(40));
-  prog.AddBoundingBoxConstraint(
-      MatrixXd::Constant(5, 1, 0), MatrixXd::Constant(5, 1, 1));
+  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
+                                MatrixXd::Constant(5, 1, 1));
   VectorXd expected(5);
   expected << 1, 1, 0, 1, 0;
   prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-      EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
-                                  MatrixCompareType::absolute));
-    });
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
+                                MatrixCompareType::absolute));
+  });
+}
+
+
+class TestProblem1ObjectiveLinearPart {
+ public:
+
+  static size_t numInputs() { return 5; }
+  static size_t numOutputs() { return 1; }
+
+  template <typename ScalarType>
+  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
+    y(0) = (42 * x(0))  + (44 * x(1))  + (45 * x(2)) + (47 * x(3))  + (47.5 * x(4));
+  }
+};
+
+GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
+  OptimizationProblem prog;
+  auto x = prog.AddContinuousVariables(5);//Matrix<double, 3, 4>::Identity()
+  //prog.AddQuadraticCost(-50*Eigen::Matrix<double,5,5>::Identity(),Eigen::VectorXd::Zero(5));
+  prog.AddQuadraticCost(-50*Eigen::Matrix<double,5,5>::Identity());
+  Eigen::VectorXd C(5);
+  C<< 42, 44, 45, 47, 47.5;
+//  prog.AddLinearCost(C);
+  prog.AddCost(TestProblem1ObjectiveLinearPart());
+//  Eigen::VectorXd linCost(5);
+//  linCost << 42, 44, 45, 47, 47.5;
+//  //prog.AddCost(linCost);
+  VectorXd constraint(5);
+  constraint << 20, 12, 11, 7, 4;
+  prog.AddLinearConstraint(
+      constraint.transpose(),
+      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Drake::Vector1d::Constant(40));
+  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
+      MatrixXd::Constant(5, 1, 1));
+  VectorXd expected(5);
+  expected << 1, 1, 0, 1, 0;
+  prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(5));
+  RunNonlinearProgram(prog, [&]() {
+  EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
+                              MatrixCompareType::absolute));
+});
+}
+
+
+// This test comes from Section 2.3 of "Handbook of Test Problems in
+// Local and Global Optimization"
+class TestProblem2Objective {
+ public:
+  static size_t numInputs() { return 6; }
+  static size_t numOutputs() { return 1; }
+
+  template <typename ScalarType>
+  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
+    y(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
+           (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
+           (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
+           (-1.5 * x(4)) + (-10.0 * x(5));
+  }
+};
+
+GTEST_TEST(testOptimizationProblem, testProblem2) {
+  OptimizationProblem prog;
+  auto x = prog.AddContinuousVariables(6);
+  prog.AddCost(TestProblem2Objective());
+  VectorXd constraint1(6), constraint2(6);
+  constraint1 << 6, 3, 3, 2, 1, 0;
+  prog.AddLinearConstraint(
+      constraint1.transpose(),
+      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Drake::Vector1d::Constant(6.5));
+  constraint2 << 10, 0, 10, 0, 0, 1;
+  prog.AddLinearConstraint(
+      constraint2.transpose(),
+      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Drake::Vector1d::Constant(20));
+
+  Eigen::VectorXd lower(6);
+  lower << 0, 0, 0, 0, 0, 0;
+  Eigen::VectorXd upper(6);
+  upper << 1, 1, 1, 1, 1, std::numeric_limits<double>::infinity();
+  prog.AddBoundingBoxConstraint(lower, upper);
+
+  VectorXd expected(6);
+  expected << 0, 1, 0, 1, 1, 20;
+  prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(5));
+
+  RunNonlinearProgram(prog, [&]() {
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
+                                MatrixCompareType::absolute));
+  });
 }
 
 // This test comes from Section 3.4 of "Handbook of Test Problems in
@@ -220,27 +316,26 @@ class LowerBoundTestObjective {
     assert(x.rows() == numInputs());
     assert(y.rows() == numOutputs());
     y(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
-        (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
-        (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
+           (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
+           (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
   }
 };
 
 class LowerBoundTestConstraint : public Constraint {
  public:
-  LowerBoundTestConstraint(int i1, int i2) :
-      Constraint(1, Vector1d::Constant(4),
-                 Vector1d::Constant(std::numeric_limits<double>::infinity())),
-      i1_(i1),
-      i2_(i2) {}
-
+  LowerBoundTestConstraint(int i1, int i2)
+      : Constraint(1, Vector1d::Constant(4),
+                   Vector1d::Constant(std::numeric_limits<double>::infinity())),
+        i1_(i1),
+        i2_(i2) {}
 
   // for just these two types, implementing this locally is almost cleaner...
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    Eigen::VectorXd& y) const override {
+            Eigen::VectorXd& y) const override {
     evalImpl(x, y);
   }
   void eval(const Eigen::Ref<const TaylorVecXd>& x,
-                    TaylorVecXd& y) const override {
+            TaylorVecXd& y) const override {
     evalImpl(x, y);
   }
 
@@ -280,16 +375,13 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
       Drake::Vector1d::Constant(2));
   Eigen::VectorXd c3(6);
   c3 << 1, 1, 0, 0, 0, 0;
-  prog.AddLinearConstraint(
-      c3.transpose(),
-      Drake::Vector1d::Constant(2),
-      Drake::Vector1d::Constant(6));
+  prog.AddLinearConstraint(c3.transpose(), Drake::Vector1d::Constant(2),
+                           Drake::Vector1d::Constant(6));
   Eigen::VectorXd lower(6);
   lower << 0, 0, 1, 0, 1, 0;
   Eigen::VectorXd upper(6);
   upper << std::numeric_limits<double>::infinity(),
-      std::numeric_limits<double>::infinity(),
-      5, 6, 5, 10;
+      std::numeric_limits<double>::infinity(), 5, 6, 5, 10;
   prog.AddBoundingBoxConstraint(lower, upper);
 
   Eigen::VectorXd expected(6);
@@ -301,16 +393,16 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   // causes the initial guess to deviate, so the tolerance is a bit
   // larget than others.
   RunNonlinearProgram(prog, [&]() {
-      EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
-                                  MatrixCompareType::absolute));
-    });
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
+                                MatrixCompareType::absolute));
+  });
 
   // Try again with the offsets in the opposite direction.
   prog.SetInitialGuess({x}, expected - delta);
   RunNonlinearProgram(prog, [&]() {
-      EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
-                                  MatrixCompareType::absolute));
-    });
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
+                                MatrixCompareType::absolute));
+  });
 }
 
 class SixHumpCamelObjective {
@@ -334,14 +426,14 @@ GTEST_TEST(testOptimizationProblem, sixHumpCamel) {
   auto objective = prog.AddCost(SixHumpCamelObjective());
 
   RunNonlinearProgram(prog, [&]() {
-      // check (numerically) if it is a local minimum
-      VectorXd ystar, y;
-      objective->eval(x.value(), ystar);
-      for (int i = 0; i < 10; i++) {
-        objective->eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
-        if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
-      }
-    });
+    // check (numerically) if it is a local minimum
+    VectorXd ystar, y;
+    objective->eval(x.value(), ystar);
+    for (int i = 0; i < 10; i++) {
+      objective->eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
+      if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
+    }
+  });
 }
 
 class GloptipolyConstrainedExampleObjective {
@@ -368,11 +460,11 @@ class GloptipolyConstrainedExampleConstraint
 
   // for just these two types, implementing this locally is almost cleaner...
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    Eigen::VectorXd& y) const override {
+            Eigen::VectorXd& y) const override {
     evalImpl(x, y);
   }
   void eval(const Eigen::Ref<const TaylorVecXd>& x,
-                    TaylorVecXd& y) const override {
+            TaylorVecXd& y) const override {
     evalImpl(x, y);
   }
 
@@ -434,11 +526,11 @@ GTEST_TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
   prog.SetInitialGuess({x}, initial_guess);
   prog.SetInitialGuess({y}, initial_guess);
   RunNonlinearProgram(prog, [&]() {
-      EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4,
-                                  MatrixCompareType::absolute));
-      EXPECT_TRUE(CompareMatrices(y.value(), Vector3d(0.5, 0, 3), 1e-4,
-                                  MatrixCompareType::absolute));
-    });
+    EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(y.value(), Vector3d(0.5, 0, 3), 1e-4,
+                                MatrixCompareType::absolute));
+  });
 }
 
 /**
@@ -544,16 +636,15 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
-      x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x),
-                                    var_mapping,
+        x.getSimpleVariable()};
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                     Vector1d::Constant(2),
                                     Vector1d::Constant(2));
     RunNonlinearProgram(problem, [&]() {
-        EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
-        // TODO(ggould-tri) test this with a two-sided constraint, once
-        // the nlopt wrapper supports those.
-      });
+      EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
+      // TODO(ggould-tri) test this with a two-sided constraint, once
+      // the nlopt wrapper supports those.
+    });
   }
 
   // Given a small univariate polynomial, find a low point.
@@ -563,15 +654,14 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
-      x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly),
-                                    var_mapping,
+        x.getSimpleVariable()};
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
     RunNonlinearProgram(problem, [&]() {
-        EXPECT_NEAR(x_var.value()[0], 1, 0.2);
-        EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
-      });
+      EXPECT_NEAR(x_var.value()[0], 1, 0.2);
+      EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
+    });
   }
 
   // Given a small multivariate polynomial, find a low point.
@@ -582,20 +672,18 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     const auto xy_var = problem.AddContinuousVariables(2);
     const std::vector<Polynomiald::VarType> var_mapping = {
-      x.getSimpleVariable(),
-      y.getSimpleVariable()};
-    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly),
-                                    var_mapping,
+        x.getSimpleVariable(), y.getSimpleVariable()};
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
     RunNonlinearProgram(problem, [&]() {
-        EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
-        EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
-        std::map<Polynomiald::VarType, double> eval_point = {
+      EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
+      EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
+      std::map<Polynomiald::VarType, double> eval_point = {
           {x.getSimpleVariable(), xy_var.value()[0]},
           {y.getSimpleVariable(), xy_var.value()[1]}};
-        EXPECT_LE(poly.evaluateMultivariate(eval_point), kEpsilon);
-      });
+      EXPECT_LE(poly.evaluateMultivariate(eval_point), kEpsilon);
+    });
   }
 
   // Given two polynomial constraints, satisfy both.
@@ -608,17 +696,16 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const auto x_var = problem.AddContinuousVariables(1);
     problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
     const std::vector<Polynomiald::VarType> var_mapping = {
-      x.getSimpleVariable() };
+        x.getSimpleVariable()};
     VectorXPoly polynomials_vec(2, 1);
     polynomials_vec << poly, x;
-    problem.AddPolynomialConstraint(polynomials_vec,
-                                    var_mapping,
+    problem.AddPolynomialConstraint(polynomials_vec, var_mapping,
                                     Eigen::VectorXd::Constant(2, -kInf),
                                     Eigen::VectorXd::Zero(2));
     RunNonlinearProgram(problem, [&]() {
-        EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
-        EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
-      });
+      EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
+      EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
+    });
   }
 }
 

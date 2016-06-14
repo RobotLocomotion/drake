@@ -340,6 +340,38 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddQuadraticCost(Q, x_desired, variable_views_);
   }
 
+  template <typename DerivedQ>
+  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
+    const Eigen::MatrixBase<DerivedQ>& Q) {
+    return AddQuadraticCost(Q, Eigen::VectorXd::Zero(Q.rows()),variable_views_);
+  }
+
+
+
+  /** addLinearCost
+ * @brief Adds a cost term of the form C'*x.
+ */
+//
+//  template <typename DerivedC>
+//  std::shared_ptr<LinearConstraint> AddLinearCost(
+//    const Eigen::MatrixBase<DerivedC>& C) {
+//    Eigen::MatrixXd temp = C.transpose().matrix().asDiagonal();
+//      std::shared_ptr<LinearConstraint> objective(new LinearConstraint(
+//        C, -std::numeric_limits<double>::infinity(),
+//        std::numeric_limits<double>::infinity()));
+//    AddCost(objective, variable_views_);
+//    return(objective);
+//  }
+
+//  AddLinearConstraint(
+//  const Eigen::MatrixBase<DerivedA>& A,
+//  const Eigen::MatrixBase<DerivedLB>& lb,
+//  const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
+//    auto constraint = std::make_shared<LinearConstraint>(A, lb, ub);
+//    AddLinearConstraint(constraint, vars);
+//
+
+
   /** addGenericConstraint
    *
    * @brief Adds a generic constraint to the program.  This should
@@ -650,7 +682,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * Supported solver names/options:
    *
    * "SNOPT" -- Paramater names and values as specified in SNOPT
-   * User's Guide section 7.7 "Description ofthe optional parameters",
+   * User's Guide section 7.7 "Description ofnthe optional parameters",
    * used as described in section 7.5 for snSet().
    */
   void SetSolverOption(const std::string& solver_name,

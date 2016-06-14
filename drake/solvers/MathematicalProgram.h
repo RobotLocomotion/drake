@@ -28,6 +28,8 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramInterface {
      virtual MathematicalProgramInterface* AddSecondOrderConeConstraint() = 0;
      virtual MathematicalProgramInterface* AddComplementarityConstraint() = 0;
   */
+  virtual MathematicalProgramInterface * AddQuadraticCost() = 0;
+  virtual MathematicalProgramInterface * AddLinearCost() = 0;
   virtual MathematicalProgramInterface* AddGenericObjective() = 0;
   virtual MathematicalProgramInterface* AddGenericConstraint() = 0;
   virtual MathematicalProgramInterface* AddLinearConstraint() = 0;
