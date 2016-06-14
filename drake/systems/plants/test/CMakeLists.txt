@@ -114,6 +114,10 @@ if(GTEST_FOUND)
   add_executable(testXmlUtil testXmlUtil.cpp)
   target_link_libraries(testXmlUtil drakeXMLUtil ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testXmlUtil COMMAND testXmlUtil)
+
+  add_executable(urdf_parser_test urdf_parser_test.cc)
+  target_link_libraries(urdf_parser_test drakeRBM ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME urdf_parser_test COMMAND urdf_parser_test)
 endif()
 
 add_matlab_test(NAME systems/plants/test/addRobotFromURDFStringTest COMMAND addRobotFromURDFStringTest)
@@ -139,7 +143,6 @@ add_matlab_test(NAME systems/plants/test/ignoreSelfCollisionsTest COMMAND ignore
 add_matlab_test(NAME systems/plants/test/linearize_test COMMAND linearize_test)
 add_matlab_test(NAME systems/plants/test/momentumTest COMMAND momentumTest)
 add_matlab_test(NAME systems/plants/test/moveSpatialMassMatrixTest COMMAND moveSpatialMassMatrixTest)
-add_matlab_test(NAME systems/plants/test/multiContactTest COMMAND multiContactTest)
 add_matlab_test(NAME systems/plants/test/multiRobotTest COMMAND multiRobotTest)
 add_matlab_test(NAME systems/plants/test/simulinkDependency COMMAND simulinkDependency)
 add_matlab_test(NAME systems/plants/test/testApproximateIK COMMAND testApproximateIK)
