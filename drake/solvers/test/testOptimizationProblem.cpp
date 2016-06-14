@@ -241,17 +241,14 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
       constraint2.transpose(),
       Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       Drake::Vector1d::Constant(20));
-
   Eigen::VectorXd lower(6);
   lower << 0, 0, 0, 0, 0, 0;
   Eigen::VectorXd upper(6);
   upper << 1, 1, 1, 1, 1, std::numeric_limits<double>::infinity();
   prog.AddBoundingBoxConstraint(lower, upper);
-
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
-  prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(5));
-
+  prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(6));
   RunNonlinearProgram(prog, [&]() {
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
                                 MatrixCompareType::absolute));
