@@ -192,7 +192,7 @@ set(gloptipoly_IS_PUBLIC FALSE)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG fbbdbbc0152ddb37df209d221aff37448b8ff29f)
 set(gurobi_IS_PUBLIC FALSE)
-set(ipopt_GIT_REPOSITORY http://github.com/sammy-tri/ipopt-mirror.git)
+set(ipopt_GIT_REPOSITORY http://github.com/RobotLocomotion/ipopt-mirror.git)
 set(ipopt_GIT_TAG 11649b7a063e03af38fcc59cf8cdb0694735c84c)
 set(ipopt_IS_PUBLIC TRUE)
 # TODO(sam.creasey) add an alternate build command for WIN32 which
