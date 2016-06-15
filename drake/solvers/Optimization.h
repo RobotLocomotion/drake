@@ -351,17 +351,18 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   /** addLinearCost
  * @brief Adds a cost term of the form C'*x.
  */
-//
-//  template <typename DerivedC>
-//  std::shared_ptr<LinearConstraint> AddLinearCost(
-//    const Eigen::MatrixBase<DerivedC>& C) {
-//    Eigen::MatrixXd temp = C.transpose().matrix().asDiagonal();
-//      std::shared_ptr<LinearConstraint> objective(new LinearConstraint(
-//        C, -std::numeric_limits<double>::infinity(),
-//        std::numeric_limits<double>::infinity()));
-//    AddCost(objective, variable_views_);
-//    return(objective);
-//  }
+
+  template <typename DerivedC>
+  std::shared_ptr<LinearConstraint> AddLinearCost(
+    const Eigen::MatrixBase<DerivedC>& C) {
+    Eigen::MatrixXd temp = C.transpose().matrix().asDiagonal();
+      std::shared_ptr<LinearConstraint> objective(new LinearConstraint(temp,Eigen::VectorXd::Zero(temp.rows()),
+                                                                       Eigen::VectorXd::Zero(temp.rows())));
+
+    AddCost(objective, variable_views_);
+    return(objective);
+//    return(0);
+  }
 
 //  AddLinearConstraint(
 //  const Eigen::MatrixBase<DerivedA>& A,
