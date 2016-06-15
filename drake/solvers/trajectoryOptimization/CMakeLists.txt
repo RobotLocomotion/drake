@@ -1,4 +1,4 @@
-add_library_with_exports(LIB_NAME drakeTrajectoryOptimization SOURCE_FILES direct_trajectory_optimization.cpp)
+add_library_with_exports(LIB_NAME drakeTrajectoryOptimization SOURCE_FILES direct_trajectory_optimization.cc)
 target_link_libraries(drakeTrajectoryOptimization)
 pods_install_libraries(drakeTrajectoryOptimization)
 drake_install_headers(direct_trajectory_optimization.h)
