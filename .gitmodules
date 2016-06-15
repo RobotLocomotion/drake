@@ -1,0 +1,90 @@
+[submodule "drake/cmake"]
+	path = drake/cmake
+	url = https://github.com/RobotLocomotion/cmake.git
+[submodule "drake/doc/textbook"]
+	path = drake/doc/textbook
+	url = https://github.com/RussTedrake/underactuated.git
+[submodule "externals/eigen"]
+	path = externals/eigen
+	url = https://github.com/RobotLocomotion/eigen-pod.git
+[submodule "externals/googletest"]
+	path = externals/googletest
+	url = https://github.com/google/googletest.git
+[submodule "externals/gtk"]
+	path = externals/gtk
+	url = https://github.com/RobotLocomotion/gtk-pod.git
+[submodule "externals/lcm"]
+	path = externals/lcm
+	url = https://github.com/RobotLocomotion/lcm-pod.git
+[submodule "externals/bot_core_lcmtypes"]
+	path = externals/bot_core_lcmtypes
+	url = https://github.com/jhoare/bot_core_lcmtypes
+[submodule "externals/libbot"]
+	path = externals/libbot
+	url = https://github.com/RobotLocomotion/libbot.git
+[submodule "externals/bullet"]
+	path = externals/bullet
+	url = https://github.com/RobotLocomotion/bullet-pod.git
+[submodule "externals/spotless"]
+	path = externals/spotless
+	url = https://github.com/RobotLocomotion/spotless-pod.git
+[submodule "externals/director"]
+	path = externals/director
+	url = https://github.com/RobotLocomotion/director.git
+[submodule "externals/signalscope"]
+	path = externals/signalscope
+	url = https://github.com/mitdrc/signal-scope.git
+[submodule "externals/octomap"]
+	path = externals/octomap
+	url = https://github.com/RobotLocomotion/octomap-pod.git
+[submodule "externals/snopt"]
+	path = externals/snopt
+	url = git@github.com:RobotLocomotion/snopt.git
+[submodule "externals/gurobi"]
+	path = externals/gurobi
+	url = https://github.com/RobotLocomotion/gurobi.git
+[submodule "externals/mosek"]
+	path = externals/mosek
+	url = https://github.com/rdeits/mosek-pod.git
+[submodule "externals/iris"]
+	path = externals/iris
+	url = https://github.com/rdeits/iris-distro.git
+[submodule "externals/yalmip"]
+	path = externals/yalmip
+	url = https://github.com/RobotLocomotion/yalmip.git
+[submodule "externals/gloptipoly"]
+	path = externals/gloptipoly
+	url = git@github.com:RobotLocomotion/gloptipoly3.git
+[submodule "externals/bertini"]
+	path = externals/bertini
+	url = git@github.com:RobotLocomotion/bertini.git
+[submodule "externals/sedumi"]
+	path = externals/sedumi
+	url = git@github.com:RobotLocomotion/sedumi.git
+[submodule "externals/avl"]
+	path = externals/avl
+	url = https://github.com/RobotLocomotion/avl.git
+[submodule "externals/xfoil"]
+	path = externals/xfoil
+	url = https://github.com/RobotLocomotion/xfoil.git
+[submodule "externals/meshconverters"]
+	path = externals/meshconverters
+	url = https://github.com/RobotLocomotion/meshConverters.git
+[submodule "externals/swigmake"]
+	path = externals/swigmake
+	url = https://github.com/rdeits/swigmake.git
+[submodule "externals/swig_matlab"]
+	path = externals/swig_matlab
+	url = https://github.com/rdeits/swig-matlab-pod.git
+[submodule "externals/yaml_cpp"]
+	path = externals/yaml_cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "externals/nlopt"]
+	path = externals/nlopt
+	url = https://github.com/stevengj/nlopt.git
+[submodule "drake/examples/LittleDog"]
+	path = drake/examples/LittleDog
+	url = https://github.com/RobotLocomotion/LittleDog.git
+[submodule "externals/ipopt"]
+	path = externals/ipopt
+	url = https://github.com/RobotLocomotion/ipopt-mirror.git

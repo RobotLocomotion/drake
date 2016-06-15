@@ -652,6 +652,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * "SNOPT" -- Paramater names and values as specified in SNOPT
    * User's Guide section 7.7 "Description ofthe optional parameters",
    * used as described in section 7.5 for snSet().
+   *
+   * "IPOPT" -- Paramater names and values as specified in IPOPT users
+   * guide section "Options Reference"
+   * http://www.coin-or.org/Ipopt/documentation/node40.html
    */
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option,
@@ -665,6 +669,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     solver_options_int_[solver_name][solver_option] = option_value;
   }
 
+  void SetSolverOption(const std::string& solver_name,
+                       const std::string& solver_option,
+                       const std::string& option_value) {
+    solver_options_str_[solver_name][solver_option] = option_value;
+  }
+
   const std::map<std::string, double>& GetSolverOptionsDouble(
       const std::string& solver_name) {
     return solver_options_double_[solver_name];
@@ -673,6 +683,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   const std::map<std::string, int>& GetSolverOptionsInt(
       const std::string& solver_name) {
     return solver_options_int_[solver_name];
+  }
+
+  const std::map<std::string, std::string>& GetSolverOptionsStr(
+      const std::string& solver_name) {
+    return solver_options_str_[solver_name];
   }
 
   /**
@@ -770,6 +785,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   int solver_result_;
   std::map<std::string, std::map<std::string, double>> solver_options_double_;
   std::map<std::string, std::map<std::string, int>> solver_options_int_;
+  std::map<std::string, std::map<std::string, std::string>> solver_options_str_;
 };
 
 }  // end namespace Drake
