@@ -832,7 +832,7 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   int number_of_models_in_sdf = 0;
   {
     for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
-        elnode = node->NextSiblingElement("model")) {
+        elnode = elnode->NextSiblingElement("model")) {
       ++number_of_models_in_sdf;
     }
   }
@@ -846,7 +846,7 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   // Parses each model in the SDF. This includes parsing and instantiating
   // simulated sensors as specified by the SDF description.
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
-      elnode = node->NextSiblingElement("model")) {
+      elnode = elnode->NextSiblingElement("model")) {
     parseSDFModel(sys, model_id++, elnode);
   }
 
