@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <ostream>
 #include <type_traits>
@@ -59,12 +60,22 @@ class FunctionalForm::Internal {
   static bool need_vars(Form f) {
     return f != Form::kZero && f != Form::kConstant;
   }
+
+  static Form FormFromDouble(double d) {
+    if (d == 0) {
+      return Form::kZero;
+    }
+    if (std::isnan(d)) {
+      return Form::kUndefined;
+    }
+    return Form::kConstant;
+  }
 };
 
 FunctionalForm::FunctionalForm() : FunctionalForm(Form::kUndefined, {}) {}
 
 FunctionalForm::FunctionalForm(double d)
-    : FunctionalForm(d == 0 ? Form::kZero : Form::kConstant, {}) {}
+    : FunctionalForm(Internal::FormFromDouble(d), {}) {}
 
 FunctionalForm::FunctionalForm(Form f, Variables&& v)
     : vars_(std::move(v)), form_(f) {
