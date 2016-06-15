@@ -3,8 +3,8 @@
 #include <list>
 #include <stdexcept>
 #include "drake/solvers/Optimization.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "spruce.hh"
@@ -832,7 +832,7 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   int number_of_models_in_sdf = 0;
   {
     for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
-        elnode = elnode->NextSiblingElement("model")) {
+         elnode = elnode->NextSiblingElement("model")) {
       ++number_of_models_in_sdf;
     }
   }
@@ -846,7 +846,7 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   // Parses each model in the SDF. This includes parsing and instantiating
   // simulated sensors as specified by the SDF description.
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
-      elnode = elnode->NextSiblingElement("model")) {
+       elnode = elnode->NextSiblingElement("model")) {
     parseSDFModel(sys, model_id++, elnode);
   }
 
@@ -870,9 +870,11 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   // Hence, at this point in the code, model_id should equal final_model_id.
   if (model_id != final_model_id) {
     throw std::runtime_error(
-      "RigidBodySystem.cpp: parseSDF: ERROR: the final model ID (" +
-      std::to_string(model_id) + ") is not equal to the expected final model "
-      "ID (" + std::to_string(final_model_id) + ")");
+        "RigidBodySystem.cpp: parseSDF: ERROR: the final model ID (" +
+        std::to_string(model_id) +
+        ") is not equal to the expected final model "
+        "ID (" +
+        std::to_string(final_model_id) + ")");
   }
 }
 
@@ -903,8 +905,9 @@ void RigidBodySystem::addRobotFromURDF(
   xml_doc.LoadFile(urdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
     throw std::runtime_error(
-      "RigidBodySystem::addRobotFromURDF: ERROR: Failed to parse xml in file "
-      + urdf_filename + "\n" + xml_doc.ErrorName());
+        "RigidBodySystem::addRobotFromURDF: ERROR: Failed to parse xml in "
+        "file " +
+        urdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseURDF(*this, &xml_doc);
 }
@@ -913,10 +916,8 @@ void RigidBodySystem::addRobotFromSDF(
     const string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-
   // Adds the robot to the rigid body tree.
-  tree->addRobotFromSDF(sdf_filename, floating_base_type,
-    weld_to_frame);
+  tree->addRobotFromSDF(sdf_filename, floating_base_type, weld_to_frame);
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).
@@ -924,8 +925,9 @@ void RigidBodySystem::addRobotFromSDF(
   xml_doc.LoadFile(sdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
     throw std::runtime_error(
-      "RigidBodySystem::addRobotFromSDF: ERROR: Failed to parse xml in file "
-      + sdf_filename + "\n" + xml_doc.ErrorName());
+        "RigidBodySystem::addRobotFromSDF: ERROR: Failed to parse xml in "
+        "file " +
+        sdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseSDF(*this, &xml_doc);
 }
@@ -946,8 +948,8 @@ void RigidBodySystem::addRobotFromFile(
     addRobotFromSDF(filename, floating_base_type, weld_to_frame);
   } else {
     throw runtime_error(
-      "RigidBodySystem::addRobotFromFile: ERROR: Unknown file extension: "
-      + ext);
+        "RigidBodySystem::addRobotFromFile: ERROR: Unknown file extension: " +
+        ext);
   }
 }
 

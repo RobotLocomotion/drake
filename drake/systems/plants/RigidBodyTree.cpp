@@ -101,15 +101,15 @@ void RigidBodyTree::SortTree() {
   }
 }
 
-const RigidBodyActuator& RigidBodyTree::GetActuator(const std::string& name)
-    const {
+const RigidBodyActuator& RigidBodyTree::GetActuator(
+    const std::string& name) const {
   for (const auto& actuator : actuators) {
     if (actuator.name == name) {
       return actuator;
     }
   }
-  throw std::invalid_argument("ERROR: Could not find actuator named \"" + name
-    + "\"");
+  throw std::invalid_argument("ERROR: Could not find actuator named \"" + name +
+                              "\"");
 }
 
 void RigidBodyTree::compile(void) {
@@ -1646,9 +1646,9 @@ RigidBody* RigidBodyTree::findLink(const std::string& link_name,
         match_index = ii;
       } else {
         throw std::logic_error(
-          "RigidBodyTree::findLink: ERROR: found multiple links named \"" +
-          link_name + "\", model name = \"" + model_name + "\", model id = " +
-          std::to_string(model_id) + ".");
+            "RigidBodyTree::findLink: ERROR: found multiple links named \"" +
+            link_name + "\", model name = \"" + model_name + "\", model id = " +
+            std::to_string(model_id) + ".");
       }
     }
   }
@@ -1659,9 +1659,9 @@ RigidBody* RigidBodyTree::findLink(const std::string& link_name,
     return bodies[match_index].get();
   } else {
     throw std::logic_error(
-      "RigidBodyTree::findLink: ERROR: Could not find link named \"" +
-          link_name + "\", model name = \"" + model_name + "\", model id = " +
-          std::to_string(model_id) + ".");
+        "RigidBodyTree::findLink: ERROR: Could not find link named \"" +
+        link_name + "\", model name = \"" + model_name + "\", model id = " +
+        std::to_string(model_id) + ".");
   }
 }
 
@@ -1708,19 +1708,19 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
     return frames[match_index];
   } else {
     throw std::logic_error(
-      "RigidBodyTree::findFrame: ERROR: could not find frame named \"" +
-      frame_name + "\", model id = " + std::to_string(model_id) + ".");
+        "RigidBodyTree::findFrame: ERROR: could not find frame named \"" +
+        frame_name + "\", model id = " + std::to_string(model_id) + ".");
   }
 }
 
 int RigidBodyTree::FindBodyIndex(const std::string& link_name,
-                              int model_id) const {
+                                 int model_id) const {
   RigidBody* link = findLink(link_name, "", model_id);
   if (link == nullptr) {
     throw std::logic_error(
-      "RigidBodyTree::findLinkID: ERROR: Could not find link id for link " +
-      std::string("named \"") + link_name + "\", model_id = " +
-      std::to_string(model_id));
+        "RigidBodyTree::findLinkID: ERROR: Could not find link id for link " +
+        std::string("named \"") + link_name + "\", model_id = " +
+        std::to_string(model_id));
   }
   return link->body_index;
 }
@@ -1762,15 +1762,21 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
   bool match_found = false;
   for (size_t ii = 0; ii < this->bodies.size(); ++ii) {
     if (name_match[ii]) {
+      if (match_found) {
+        throw std::logic_error(
+            "RigidBodyTree::findJoint: ERROR: Multiple "
+            "joints found named \"" +
+            joint_name + "\", model ID = " + std::to_string(model_id) + ".");
+      }
       ind_match = ii;
       match_found = true;
     }
   }
   if (!match_found) {
     throw std::logic_error(
-      "RigidBodyTree::findJoint: ERROR: Could not find unique joint " +
-      std::string("named \"") + joint_name + "\", model_id = " +
-      std::to_string(model_id));
+        "RigidBodyTree::findJoint: ERROR: Could not find unique joint " +
+        std::string("named \"") + joint_name + "\", model_id = " +
+        std::to_string(model_id));
   } else {
     return this->bodies[ind_match].get();
   }
