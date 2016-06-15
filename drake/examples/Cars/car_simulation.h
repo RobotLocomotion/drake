@@ -7,6 +7,9 @@
 
 #include "drake/drakeCars_export.h"
 #include "drake/examples/Cars/gen/driving_command.h"
+#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
+#include "drake/examples/Cars/gen/simple_car_state.h"
+#include "drake/examples/Cars/trajectory_car.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
@@ -101,6 +104,25 @@ std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
 CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
+
+
+/**
+ * Creates a TrajectoryCar system with a fixed trajectory.
+ * The details of the trajectory are not documented / promised by this API.
+ *
+ * @param index Selects which pre-programmed trajectory to use.
+ */
+DRAKECARS_EXPORT
+std::shared_ptr<TrajectoryCar> CreateTrajectoryCarSystem(int index);
+
+/**
+ * Creates a linear system to map NPC car state to the state vector of a
+ * floating joint, allowing motion and steering in the x-y plane only.
+ */
+DRAKECARS_EXPORT
+std::shared_ptr<Drake::AffineSystem<
+  Drake::NullVector, SimpleCarState, EulerFloatingJointState>>
+CreateSimpleCarVisualizationAdapter();
 
 /**
  * Returns the default simulation options for car simulations. The default

@@ -744,6 +744,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::string getBodyOrFrameName(int body_or_frame_id) const;
   // @param body_or_frame_id the index of the body or the id of the frame.
 
+  /**
+   * Obtains a rigid body actuator from this rigid body tree. The actuator is
+   * selected based on its name.
+   *
+   * @param name The name of the rigid body actuator to get.
+   * @returns A const reference to the rigid body actuator with name @p name.
+   * @throws std::invalid_argument if no rigid body actuator with name @p name
+   * exists.
+   */
+  const RigidBodyActuator& GetActuator(const std::string& name) const;
+
   // TODO(tkoolen): remove parseBodyOrFrameID methods
   template <typename Scalar>
   int parseBodyOrFrameID(

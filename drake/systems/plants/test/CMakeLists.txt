@@ -114,6 +114,10 @@ if(GTEST_FOUND)
   add_executable(testXmlUtil testXmlUtil.cpp)
   target_link_libraries(testXmlUtil drakeXMLUtil ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testXmlUtil COMMAND testXmlUtil)
+
+  add_executable(urdf_parser_test urdf_parser_test.cc)
+  target_link_libraries(urdf_parser_test drakeRBM ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME urdf_parser_test COMMAND urdf_parser_test)
 endif()
 
 add_matlab_test(NAME systems/plants/test/addRobotFromURDFStringTest COMMAND addRobotFromURDFStringTest)
