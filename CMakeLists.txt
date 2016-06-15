@@ -93,6 +93,7 @@ else()
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_NLOPT "nonlinear optimization solver" ON)
+  option(WITH_IPOPT "nonlinear optimization solver" ON)
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
@@ -162,7 +163,7 @@ set(signalscope_dependencies director)
 # List compilation and runtime dependencies. Runtime dependencies are needed
 # because the drake project must configure only after any dependencies used by
 # MATLAB have been installed.
-set(drake_dependencies bertini bot_core_lcmtypes bullet cmake eigen gloptipoly3 googletest gurobi iris lcm libbot mosek nlop octomap sedumi snopt spotless swig_matlab swigmake yalmip yaml_cpp)
+set(drake_dependencies bertini bot_core_lcmtypes bullet cmake eigen gloptipoly3 googletest gurobi iris lcm libbot mosek nlopt ipopt octomap sedumi snopt spotless swig_matlab swigmake yalmip yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_IS_PUBLIC TRUE)
@@ -185,6 +186,10 @@ set(gtk_IS_CMAKE_POD TRUE)
 set(gtk_IS_PUBLIC TRUE)
 set(gloptipoly_IS_PUBLIC FALSE)
 set(gurobi_IS_PUBLIC FALSE)
+set(ipopt_IS_PUBLIC TRUE)
+# TODO(sam.creasey) add an alternate build command for WIN32 which
+# downloads the precopiled binary and installs that.
+set(ipopt_BUILD_COMMAND ./configure  --with-blas=BUILD --with-lapack=BUILD --prefix=${CMAKE_INSTALL_PREFIX} --includedir=${CMAKE_INSTALL_PREFIX}/include/ipopt --disable-shared --with-pic && make install)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
 set(lcm_IS_CMAKE_POD TRUE)
@@ -263,6 +268,7 @@ foreach(proj IN ITEMS
   swigmake
   swig_matlab
   yaml_cpp
+  ipopt
   nlopt
   drake)
   string(TOUPPER ${proj} proj_upper)
