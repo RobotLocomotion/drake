@@ -48,8 +48,14 @@
 
     <link name='left_tie_rod_arm'>
       <pose>1.23701032 0.40850253 0.292422 0 0 0</pose>
-      <visual name='v2'>
-        <pose>.06385963 0.03192981 0 0 0 0.463648</pose>
+      <visual name='side_of_L'>
+
+        <!-- 0.17012086 rad = 9.74720751 degrees -->
+        <pose>0.06385963 0.03192981 0 0 0 0.17012086</pose>
+
+        <!-- 0.463648 rad = 26 degrees -->
+        <!-- <pose>0.06385963 0.03192981 0 0 0 0.463648</pose> -->
+
         <geometry>
           <box>
             <size>0.204637 0.061842 0.030921</size>
@@ -59,8 +65,8 @@
           <diffuse>0 0.5 0 1</diffuse>
         </material>
       </visual>
-      <visual name='v1'>
-        <pose>.17246863 0.10851978 0 0 -0 0</pose>
+      <visual name='bottom_of_L'>
+        <pose>0.17246863 0.10851978 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.061842 0.140955 0.030921</size>
@@ -89,12 +95,14 @@
     </link>
 
     <link name='tie_rod'>
-      <pose>1.23702 0 0.323342 0 0 0</pose>
+      <pose>1.2 0 0.323342 0 0 0</pose>
+      <!-- <pose>1.23702 0 0.323342 0 0 0</pose> -->
       <visual name='visual'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
-            <size>0.061842 0.878847 0.030921</size>
+            <size>0.061842 0.91 0.030921</size>
+            <!-- <size>0.061842 0.878847 0.030921</size> -->
           </box>
         </geometry>
         <material>
@@ -165,8 +173,8 @@
 
     <link name='right_tie_rod_arm'>
       <pose>1.23701032 -0.40849616 0.292422 0 0 0</pose>
-      <visual name='v1'>
-        <pose>.17246863 -0.10851978 0 0 -0 0</pose>
+      <visual name='bottom_of_L'>
+        <pose>0.17246863 -0.10851978 0 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.061842 0.140955 0.030921</size>
@@ -176,8 +184,12 @@
           <diffuse>0 0.5 0 1</diffuse>
         </material>
       </visual>
-      <visual name='v2'>
-        <pose>.06385963 -0.03192981 0 0 0 -0.463648</pose>
+      <visual name='side_of_L'>
+        <!-- -0.17012086 rad = -9.74720751 degrees -->
+        <pose>0.06385963 -0.03192981 0 0 0 -0.17012086</pose>
+
+        <!-- -0.463648 rad = -26 degrees -->
+        <!-- <pose>0.06385963 -0.03192981 0 0 0 -0.463648</pose> -->
         <geometry>
           <box>
             <size>0.204637 0.061842 0.030921</size>
@@ -398,7 +410,7 @@
       </collision>
     </link>
 
-    <link name='body'>
+    <link name='chassis'>
       <pose>0 0 0.385184 0 0 0</pose>
       <inertial>
         <pose>0 0 0 0 0 0</pose>
@@ -439,8 +451,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-0.401426</lower>
-          <upper>0.5</upper>
+          <lower>-0.7</lower>
+          <upper>0.7</upper>
         </limit>
       </axis>
     </joint>
@@ -450,10 +462,12 @@
       <child>left_hub</child>
       <pose>0 0 0 0 0 0</pose>
     </joint>
+
     <joint name='left_pin' type='revolute'>
       <parent>left_tie_rod_arm</parent>
       <child>tie_rod</child>
-      <pose>0 0.4085 0 0 0 0</pose>
+      <pose>0 0.42 0 0 0 0</pose>
+      <!-- <pose>0 0.4085 0 0 0 0</pose> -->
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
@@ -481,8 +495,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-0.401426</lower>
-          <upper>0.5</upper>
+          <lower>-0.7</lower>
+          <upper>0.7</upper>
           <effort>0</effort>
         </limit>
       </axis>
@@ -497,7 +511,8 @@
     <joint name='right_pin' type='revolute'>
       <parent>right_tie_rod_arm</parent>
       <child>tie_rod</child>
-      <pose>0 -0.817006 0 0 0 0</pose>
+      <pose>0 -0.84 0 0 0 0</pose>
+      <!-- <pose>0 -0.817006 0 0 0 0</pose> -->
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
@@ -550,9 +565,9 @@
       </axis>
     </joint>
 
-    <joint name='body' type='fixed'>
+    <joint name='chassis' type='fixed'>
       <parent>chassis_floor</parent>
-      <child>body</child>
+      <child>chassis</child>
       <pose>0 0 0 0 0 0</pose>
     </joint>
 

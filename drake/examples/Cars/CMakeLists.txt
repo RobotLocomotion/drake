@@ -30,6 +30,12 @@ if(LCM_FOUND)
   add_dependencies(car_sim_lcm drake_lcmtypes lcmtype_agg_hpp)
   target_link_libraries(car_sim_lcm drakeCars drakeRBSystem drakeLCMSystem)
 
+  if(roscpp_FOUND)
+    add_executable(car_sim_lcm_and_ros car_sim_lcm_and_ros.cc)
+    # add_dependencies(carSimLCMandROS ${PROJECT_NAME}_generate_messages)
+    target_link_libraries(car_sim_lcm_and_ros drakeCars drakeRBM drakeRBSystem drakeLCMSystem ${roscpp_LIBRARIES} ${tf_LIBRARIES})
+  endif()
+
   add_executable(demo_multi_car demo_multi_car.cc)
   target_link_libraries(demo_multi_car drakeCars drakeRBSystem drakeLCMSystem)
 endif()

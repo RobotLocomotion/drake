@@ -77,7 +77,70 @@ $ ../../pod-build/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1
 
 ### Simulation Using Drake + LCM + ROS
 
-*Coming Soon!*
+Drake's car example includes a ROS package called `drake_cars_examples`, which
+is located in `[drake distro]/drake/examples/Cars/ros_packages`.
+To enable this package, edit your `~/.bashrc` and add the following lines to it
+(be sure all other ROS-related settings are commented out):
+
+```
+# Setup Drake's ROS workspace
+source /opt/ros/indigo/setup.bash
+export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:[drake-distro]/drake/examples/Cars/ros_packages
+```
+
+Save and close your `~/.bashrc` file. Then apply the changes by executing the
+following command:
+
+```
+$ source ~/.bashrc
+```
+
+Ensure the `drake_cars_examples` ROS package is in your ROS workspace. This can
+be done by executing the command below. It should change your present
+current working directory to be
+`[drake distro]/drake/examples/Cars/ros_packages/drake_cars_examples/`.
+
+```
+$ roscd drake_cars_examples
+```
+
+Start RViz:
+
+```
+$ roslaunch drake_cars_examples rviz_prius.launch
+```
+
+To run the simulation:
+
+```
+$ cd [drake-distro]/drake/examples/Cars
+$ ../../pod-build/bin/car_sim_lcm_and_ros models/prius/prius_with_lidar.sdf models/stata_garage_p1.sdf
+```
+
+To view the ROS `TF` tree:
+
+```
+$ rosrun rqt_tf_tree rqt_tf_tree
+```
+
+Another way to view the ROS `TF` tree:
+
+```
+$ rosrun tf view_frames
+$ evince frames.pdf
+```
+
+To drive the car around using a keyboard:
+
+```
+$ cd [drake distro]/drake/examples/Cars/ros_packages/
+$ git clone git@github.com:liangfok/ackermann-drive-teleop.git ackermann_drive_teleop
+$ cd ackermann_drive_teleop
+$ git checkout feature/ackermann_drive_stamped
+$ rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7
+```
+The 1.0 and 0.7 parameters in the last command above specifies a max throttle
+of 1.0 m/s and a max steering angle of 0.7 radians.
 
 Additional Simulation Notes
 ---------------------------
@@ -114,7 +177,6 @@ $ python steering_command_driver.py --mode=one-time --throttle=1.0 --steering-an
 ```
 
 Every time that you run the command above, it sends one LCM message.
-
 
 Adjustments for Windows
 -----------------------
@@ -163,3 +225,21 @@ This will start the demo with N cars; if N is not supplied, the
 default is 100 (and the minimum N is 1).  There are no controls.
 
 Use Ctrl-C in your terminal to stop and close the demo.
+
+### Troubleshooting
+
+You may encounter the following error when executing the command to start RViz:
+
+```
+$ roslaunch drake_cars_examples rviz_prius.launch
+...
+  File "/opt/ros/indigo/share/xacro/xacro.py", line 47, in <module>
+    cur_dir = os.getcwd()
+OSError: [Errno 2] No such file or directory
+
+```
+
+This is often because the terminal was in a directory that was removed and
+replaced with another identically-named directory, possibly due to switching git
+branches. To fix this problem, simply change back to your `[drake distro]`
+directory and then navigate back to `[drake distro]/examples/Cars`.
