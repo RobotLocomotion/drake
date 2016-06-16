@@ -59,9 +59,7 @@ GTEST_TEST(testIKpointwise, simpleIKpointwise) {
     Vector3d com = rbm.centerOfMass(cache);
     printf("t %d: %5.6f\n%5.6f\n%5.6f\n", i, com(0), com(1), com(2));
     if (i < (nT - 1)) {
-      // SNOPT and IPOPT diverge slightly in their output, so reduce
-      // the tolerance a bit.
-      EXPECT_TRUE(CompareMatrices(com, expected_initial, 1e-4,
+      EXPECT_TRUE(CompareMatrices(com, expected_initial, 1e-6,
                                   MatrixCompareType::absolute));
     } else {
       EXPECT_TRUE(CompareMatrices(com, expected_final, 1e-6,

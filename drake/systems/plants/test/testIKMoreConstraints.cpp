@@ -188,8 +188,6 @@ GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   KinematicsCache<double> cache = model.doKinematics(q_sol);
   Vector3d com = model.centerOfMass(cache);
   printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
-  // SNOPT and IPOPT diverge slightly in their output, so use a
-  // slightly reduced tolerance.
   EXPECT_TRUE(CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913),
-                              1e-4, MatrixCompareType::absolute));
+                              1e-6, MatrixCompareType::absolute));
 }
