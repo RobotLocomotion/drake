@@ -3,23 +3,22 @@
 #include "mosekQP.h"
 
 static void MSKAPI printstr(void *handle,
-                            MSKCONST char str[])
-{
-  printf("%s",str);
+                            MSKCONST char str[]) {
+  printf("%s", str);
 }
 
 mosekQP::mosekQP(int num_variables, int num_constraints,
-          std::vector<double> linear_equation_scalars_,
-          Eigen::MatrixXd quad_objective_,
-          double constant_eqn_term,
-          Eigen::MatrixXd linear_cons_,
-          Eigen::MatrixXd dense_quad_cons_,
-          std::vector<MSKboundkeye> mosek_constraint_bounds_,
-          std::vector<double> upper_constraint_bounds_,
-          std::vector<double> lower_constraint_bounds_,
-          std::vector<MSKboundkeye> mosek_variable_bounds_,
-          std::vector<double> upper_variable_bounds_,
-          std::vector<double> lower_variable_bounds_) {
+                 std::vector<double> linear_equation_scalars_,
+                 Eigen::MatrixXd quad_objective_,
+                 double constant_eqn_term,
+                 Eigen::MatrixXd linear_cons_,
+                 Eigen::MatrixXd dense_quad_cons_,
+                 std::vector<MSKboundkeye> mosek_constraint_bounds_,
+                 std::vector<double> upper_constraint_bounds_,
+                 std::vector<double> lower_constraint_bounds_,
+                 std::vector<MSKboundkeye> mosek_variable_bounds_,
+                 std::vector<double> upper_variable_bounds_,
+                 std::vector<double> lower_variable_bounds_) {
   numvar = num_variables;
   numcon = num_constraints;
   env = NULL;
@@ -78,25 +77,25 @@ mosekQP::mosekQP(int num_variables, int num_constraints,
   if (r == MSK_RES_OK)
     r = MSK_putqobj(task, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
   AddVariableBounds(mosek_variable_bounds_, upper_variable_bounds_,
-    lower_variable_bounds_);
+      lower_variable_bounds_);
   AddLinearConstraintMatrix(linear_cons_);
   AddConstraintBounds(mosek_constraint_bounds_, upper_constraint_bounds_,
-    lower_constraint_bounds_);
+      lower_constraint_bounds_);
   AddQuadraticConstraintMatrix(dense_quad_cons_);
 }
 
 mosekQP::mosekQP(int num_variables, int num_constraints,
-          std::vector<double> linear_equation_scalars_,
-          Eigen::SparseMatrix<double> sparse_quad_objective_,
-          double constant_eqn_term,
-          Eigen::SparseMatrix<double> sparse_linear_cons_,
-          Eigen::SparseMatrix<double> sparse_quad_cons_,
-          std::vector<MSKboundkeye> mosek_constraint_bounds_,
-          std::vector<double> upper_constraint_bounds_,
-          std::vector<double> lower_constraint_bounds_,
-          std::vector<MSKboundkeye> mosek_variable_bounds_,
-          std::vector<double> upper_variable_bounds_,
-          std::vector<double> lower_variable_bounds_) {
+                 std::vector<double> linear_equation_scalars_,
+                 Eigen::SparseMatrix<double> sparse_quad_objective_,
+                 double constant_eqn_term,
+                 Eigen::SparseMatrix<double> sparse_linear_cons_,
+                 Eigen::SparseMatrix<double> sparse_quad_cons_,
+                 std::vector<MSKboundkeye> mosek_constraint_bounds_,
+                 std::vector<double> upper_constraint_bounds_,
+                 std::vector<double> lower_constraint_bounds_,
+                 std::vector<MSKboundkeye> mosek_variable_bounds_,
+                 std::vector<double> upper_variable_bounds_,
+                 std::vector<double> lower_variable_bounds_) {
   numvar = num_variables;
   numcon = num_constraints;
   env = NULL;
@@ -150,8 +149,8 @@ mosekQP::mosekQP(int num_variables, int num_constraints,
   int lowtrinonzero = 0;
   for (int k = 0; k < sparse_quad_objective_.outerSize(); ++k) {
     for (Eigen::SparseMatrix<double>::InnerIterator
-         it(sparse_quad_objective_, k);
-         it; ++it) {
+              it(sparse_quad_objective_, k);
+              it; ++it) {
       if (it.row() >= it.col()) {  // I.e. it is lower triangular
         qval.push_back(it.value());
         qsubi.push_back(it.row());   // row index
@@ -163,9 +162,9 @@ mosekQP::mosekQP(int num_variables, int num_constraints,
   if (r == MSK_RES_OK)
     r = MSK_putqobj(task, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
   AddVariableBounds(mosek_variable_bounds_,
-    upper_variable_bounds_, lower_variable_bounds_);
+      upper_variable_bounds_, lower_variable_bounds_);
   AddConstraintBounds(mosek_constraint_bounds_,
-    upper_constraint_bounds_, lower_constraint_bounds_);
+      upper_constraint_bounds_, lower_constraint_bounds_);
   AddLinearConstraintSparseColumnMatrix(sparse_linear_cons_);
   AddQuadraticConstraintSparseColumnMatrix(sparse_quad_cons_);
 }
@@ -296,10 +295,10 @@ std::vector<double> mosekQP::OptimizeTask(std::string maxormin) {
 
     if (r == MSK_RES_OK) {
       MSKsolstae solsta;
-      if (r == MSK_RES_OK){
+      if (r == MSK_RES_OK) {
         r = MSK_getsolsta(task, MSK_SOL_ITR, &solsta);
 
-        switch (solsta){
+        switch (solsta) {
           case MSK_SOL_STA_OPTIMAL:
           case MSK_SOL_STA_NEAR_OPTIMAL: {
             double *xx = (double*) calloc(numvar, sizeof(double));
@@ -307,14 +306,15 @@ std::vector<double> mosekQP::OptimizeTask(std::string maxormin) {
               /* Request the interior point solution. */
               MSK_getxx(task, MSK_SOL_ITR, xx);
               printf("Optimal primal solution\n");
-              for(j = 0; j<numvar; ++j) {
-                printf("x[%d]: %e\n",j,xx[j]);
+              for (j = 0; j < numvar; ++j) {
+                printf("x[%d]: %e\n", j, xx[j]);
                 soln.push_back(xx[j]);
               }
               free(xx);
               return soln;
-            } else
+            } else {
               r = MSK_RES_ERR_SPACE;
+            }
             break;
           }
           case MSK_SOL_STA_DUAL_INFEAS_CER:
