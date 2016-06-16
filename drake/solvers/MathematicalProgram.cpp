@@ -198,5 +198,5 @@ MathematicalProgramInterface::GetLeastSquaresProgram() {
 
 MathematicalProgramSolverInterface::~MathematicalProgramSolverInterface() {}
 
-}
-}
+}  // namespace solvers
+}  // namespace drake

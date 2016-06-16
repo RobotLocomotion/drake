@@ -1306,5 +1306,5 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(
   return false;
 }
 
-}
-}
+}  // namespace solvers
+}  // namespace drake
