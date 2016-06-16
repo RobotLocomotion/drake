@@ -246,7 +246,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   return 0;
 }
 
-} // anon namespace
+}  // anon namespace
 
 bool SnoptSolver::available() const {
   return true;
