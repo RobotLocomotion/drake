@@ -52,8 +52,9 @@ class Constraint {
   // to do allocation, but also allows it to choose stack allocation instead.
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const = 0;
-  // move this to DifferentiableConstraint derived class if/when we
-  // need to support non-differentiable functions
+  // Move this to DifferentiableConstraint derived class if/when we
+  // need to support non-differentiable functions (at least, if
+  // DifferentiableConstraint is ever implemented).
   virtual void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
                     Drake::TaylorVecXd& y) const = 0;
 

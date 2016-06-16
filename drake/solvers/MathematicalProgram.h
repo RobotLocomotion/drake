@@ -49,5 +49,5 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
   virtual SolutionResult Solve(OptimizationProblem& prog) const = 0;
 };
 
-}
-}
+}  // namespace solvers
+}  // namespace drake

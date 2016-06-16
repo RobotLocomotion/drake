@@ -245,7 +245,8 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
   return 0;
 }
-}
+
+} // anon namespace
 
 bool SnoptSolver::available() const {
   return true;
@@ -475,5 +476,5 @@ SolutionResult SnoptSolver::Solve(OptimizationProblem& prog) const {
   return SolutionResult::kUnknownError;
 }
 
-}
-}
+}  // namespace solvers
+}  // namespace drake

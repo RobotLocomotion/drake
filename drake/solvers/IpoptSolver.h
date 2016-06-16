@@ -16,5 +16,5 @@ class DRAKEOPTIMIZATION_EXPORT IpoptSolver :
   SolutionResult Solve(OptimizationProblem& prog) const override;
 };
 
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

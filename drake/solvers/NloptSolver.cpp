@@ -377,5 +377,5 @@ SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
   return result;
 }
 
-}
-}
+}  // namespace solvers
+}  // namespace drake
