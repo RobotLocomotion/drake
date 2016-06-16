@@ -93,7 +93,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // happily, this clunkier version seems fast enough for now
   // the optimization framework should support this (though it has not been
   // tested thoroughly yet)
-  OptimizationProblem prog;
+  drake::solvers::OptimizationProblem prog;
   auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree->massMatrix(kinsol);
@@ -284,7 +284,7 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
   if (sys.tree->getNumPositionConstraints()) {
     // todo: move this up to the system level?
 
-    OptimizationProblem prog;
+    drake::solvers::OptimizationProblem prog;
     std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> const&
         loops = sys.tree->loops;
 

@@ -21,17 +21,10 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 
-using Drake::Constraint;
 using Drake::TaylorVecXd;
 using Drake::VecIn;
 using Drake::Vector1d;
 using Drake::VecOut;
-using Drake::MathematicalProgramSolverInterface;
-using Drake::NloptSolver;
-using Drake::OptimizationProblem;
-using Drake::BoundingBoxConstraint;
-using Drake::SnoptSolver;
-using Drake::LinearComplementarityConstraint;
 using drake::util::MatrixCompareType;
 
 namespace drake {
@@ -200,8 +193,8 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
   constraint << 20, 12, 11, 7, 4;
   prog.AddLinearConstraint(
       constraint.transpose(),
-      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Drake::Vector1d::Constant(40));
+      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Vector1d::Constant(40));
   prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
                                 MatrixXd::Constant(5, 1, 1));
   VectorXd expected(5);
@@ -242,13 +235,13 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
   constraint1 << 6, 3, 3, 2, 1, 0;
   prog.AddLinearConstraint(
       constraint1.transpose(),
-      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Drake::Vector1d::Constant(6.5));
+      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Vector1d::Constant(6.5));
   constraint2 << 10, 0, 10, 0, 0, 1;
   prog.AddLinearConstraint(
       constraint2.transpose(),
-      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Drake::Vector1d::Constant(20));
+      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Vector1d::Constant(20));
   Eigen::VectorXd lower(6);
   lower << 0, 0, 0, 0, 0, 0;
   Eigen::VectorXd upper(6);
@@ -324,18 +317,18 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   c1 << 1, -3, 0, 0, 0, 0;
   prog.AddLinearConstraint(
       c1.transpose(),
-      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Drake::Vector1d::Constant(2));
+      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Vector1d::Constant(2));
   Eigen::VectorXd c2(6);
   c2 << -1, 1, 0, 0, 0, 0;
   prog.AddLinearConstraint(
       c2.transpose(),
-      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Drake::Vector1d::Constant(2));
+      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Vector1d::Constant(2));
   Eigen::VectorXd c3(6);
   c3 << 1, 1, 0, 0, 0, 0;
-  prog.AddLinearConstraint(c3.transpose(), Drake::Vector1d::Constant(2),
-                           Drake::Vector1d::Constant(6));
+  prog.AddLinearConstraint(c3.transpose(), Vector1d::Constant(2),
+                           Vector1d::Constant(6));
   Eigen::VectorXd lower(6);
   lower << 0, 0, 1, 0, 1, 0;
   Eigen::VectorXd upper(6);

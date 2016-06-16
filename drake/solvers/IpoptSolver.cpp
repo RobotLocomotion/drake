@@ -20,8 +20,6 @@ using Ipopt::IpoptData;
 using Ipopt::Number;
 using Ipopt::SolverReturn;
 
-using Drake::DecisionVariableView;
-using Drake::OptimizationProblem;
 using Drake::TaylorVecXd;
 
 namespace drake {
@@ -31,7 +29,7 @@ namespace {
 /// @param[out] lb Array of constraint lower bounds, parallel to @p ub
 /// @param[out] ub Array of constraint upper bounds, parallel to @p lb
 size_t GetConstraintBounds(
-    const Drake::Constraint& c, Number* lb, Number* ub) {
+    const Constraint& c, Number* lb, Number* ub) {
   const Eigen::VectorXd& lower_bound = c.lower_bound();
   const Eigen::VectorXd& upper_bound = c.upper_bound();
   for (size_t i = 0; i < c.num_constraints(); i++) {
@@ -45,7 +43,7 @@ size_t GetConstraintBounds(
 /// @param[out] num_grad number of gradients
 /// @return number of constraints
 size_t GetNumGradients(
-    const Drake::Constraint& c, const Drake::VariableList& variable_list,
+    const Constraint& c, const VariableList& variable_list,
     Index* num_grad) {
 
   size_t var_count = 0;
@@ -71,7 +69,7 @@ size_t GetNumGradients(
 ///
 /// @return the number of row/column pairs filled in.
 size_t GetGradientMatrix(
-    const Drake::Constraint& c, const Drake::VariableList& variable_list,
+    const Constraint& c, const VariableList& variable_list,
     Index constraint_idx, Index* iRow, Index* jCol) {
   const size_t m = c.num_constraints();
   size_t grad_index = 0;
@@ -104,7 +102,7 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
 /// @return number of gradient entries populated
 size_t EvaluateConstraint(
     const Eigen::VectorXd& xvec,
-    const Drake::Constraint& c, const Drake::VariableList& variable_list,
+    const Constraint& c, const VariableList& variable_list,
     Number* result, Number* grad) {
 
   // For constraints which don't use all of the variables in the X
