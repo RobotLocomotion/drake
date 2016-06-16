@@ -28,12 +28,13 @@ On Ubuntu 15.10 (Wily) and higher the system compiler is sufficient::
 Ubuntu 14.04 LTS (Trusty)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-On Ubuntu 14.04 LTS (Trusty) GCC 4.9 or higher must be installed, e.g.::
+On Ubuntu 14.04 LTS (Trusty) GCC 4.9 or higher and Fortran 4.9 must be
+installed, e.g.::
 
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install g++-4.9-multilib
+    sudo apt-get install g++-4.9-multilib gfortran-4.9
 
 Or, Clang 3.7::
 
@@ -88,7 +89,7 @@ Other prerequisites may be installed as follows::
 
     sudo apt-get update
     sudo apt-get install --no-install-recommends autoconf automake bison \
-      default-jdk doxygen flex freeglut3-dev git gfortran-4.9 \
+      default-jdk doxygen flex freeglut3-dev git \
       graphviz libgtk2.0-dev libhtml-form-perl libjpeg-dev libmpfr-dev \
       libwww-perl libpng-dev libqt4-dev libqt4-opengl-dev libqwt-dev \
       libterm-readkey-perl libtool libvtk-java libvtk5-dev libvtk5-qt4-dev \
@@ -106,12 +107,12 @@ version of Ubuntu is being used.
 Compiler Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the system's default compiler is not being used (for example if GCC/G++ 4.9
-fortran 4.9 is being used on Ubuntu 14.04 LTS), the desired compiler must be
-manually specified. One way to do this is to set the ``CC``, ``CXX``, and ``FC``
-environment variables. This can be done by executing the command below. To avoid
-needing to run this command each time a new terminal is opened, the command
-below can also be added to the ``~/.bashrc`` file::
+If the system's default compiler is not being used (for example if
+gcc/g++/gfortran 4.9 are being used on Ubuntu 14.04 LTS), the desired compiler
+must be manually specified. One way to do this is to set the ``CC``, ``CXX``,
+and ``FC`` environment variables. This can be done by executing the command
+below. To avoid needing to run this command each time a new terminal is opened,
+the command below can also be added to the ``~/.bashrc`` file::
 
     export CC=gcc-4.9 CXX=g++-4.9 FC=gfortran-4.9
 
