@@ -28,8 +28,7 @@ On Ubuntu 15.10 (Wily) and higher the system compiler is sufficient::
 Ubuntu 14.04 LTS (Trusty)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-On Ubuntu 14.04 LTS (Trusty) GCC 4.9 or higher and Fortran 4.9 must be
-installed, e.g.::
+On Ubuntu 14.04 LTS (Trusty) GCC 4.9 or higher must be installed, e.g.::
 
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     sudo apt-get update
