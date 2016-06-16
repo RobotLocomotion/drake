@@ -107,18 +107,18 @@ Compiler Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If the system's default compiler is not being used (for example if GCC/G++ 4.9
-is being used on Ubuntu 14.04 LTS), the desired compiler must be manually
-specified. One way to do this is to set the ``CC`` and ``CXX`` environment
-variables. This can be done by executing the command below. To avoid needing to
-run this command each time a new terminal is opened, the command below can also
-be added to the ``~/.bashrc`` file::
+fortran 4.9 is being used on Ubuntu 14.04 LTS), the desired compiler must be
+manually specified. One way to do this is to set the ``CC``, ``CXX``, and ``FC``
+environment variables. This can be done by executing the command below. To avoid
+needing to run this command each time a new terminal is opened, the command
+below can also be added to the ``~/.bashrc`` file::
 
-    export CC=gcc-4.9 CXX=g++-4.9
+    export CC=gcc-4.9 CXX=g++-4.9 FC=gfortran-4.9
 
 Alternatively, every call to ``make`` can be preceded with environment variable
 settings that specify the correct compiler::
 
-    env CC=gcc-4.9 CXX=g++-4.9 make ...
+    env CC=gcc-4.9 CXX=g++-4.9 FC=gfortran-4.9 make ...
 
 CMake Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
