@@ -3,13 +3,18 @@
 
 #include <stdexcept>
 
-bool Drake::NloptSolver::available() const {
+namespace drake {
+namespace solvers {
+
+bool NloptSolver::available() const {
   return false;
 }
 
-drake::solvers::SolutionResult Drake::NloptSolver::Solve(
-    OptimizationProblem &prog) const {
+SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
   throw std::runtime_error(
       "The Nlopt bindings were not compiled.  You'll need to use a different "
       "solver.");
 }
+
+}  // namespace drake
+}  // namespace solvers
