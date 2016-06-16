@@ -20,6 +20,9 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
+using drake::solvers::Constraint;
+using drake::solvers::DecisionVariableView;
+using drake::solvers::OptimizationProblem;
 using drake::solvers::SolutionResult;
 
 /// NOTE: The contents of this class are for the most part direct ports of

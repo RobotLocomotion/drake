@@ -10,7 +10,8 @@
 
 #include "MathematicalProgram.h"
 
-namespace Drake {
+namespace drake {
+namespace solvers {
 
 class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
     : public MathematicalProgramSolverInterface {
@@ -43,8 +44,7 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
                                 double zero_tol = -1.0) const;
 
   bool available() const override { return true; }
-  drake::solvers::SolutionResult Solve(
-      OptimizationProblem& prog) const override;
+  SolutionResult Solve(OptimizationProblem& prog) const override;
 
  private:
   void ClearIndexVectors() const;
@@ -86,4 +86,5 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
   mutable Eigen::SparseMatrix<double> _MMs, _MMx, _eye, _zero, _diag_lambda;
 };
 
-}  // end namespace Drake
+}  // end namespace solvers
+}  // end namespace drake
