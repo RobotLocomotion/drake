@@ -88,7 +88,7 @@ Other prerequisites may be installed as follows::
 
     sudo apt-get update
     sudo apt-get install --no-install-recommends autoconf automake bison \
-      default-jdk doxygen flex freeglut3-dev git gfortran \
+      default-jdk doxygen flex freeglut3-dev git gfortran-4.9 \
       graphviz libgtk2.0-dev libhtml-form-perl libjpeg-dev libmpfr-dev \
       libwww-perl libpng-dev libqt4-dev libqt4-opengl-dev libqwt-dev \
       libterm-readkey-perl libtool libvtk-java libvtk5-dev libvtk5-qt4-dev \
