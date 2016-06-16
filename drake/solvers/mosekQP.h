@@ -24,10 +24,11 @@ class mosekQP {
    *problem using the mosek solver.
    */
  public:
-  ///Create a mosek quadratic programming environment using a constraint matrix
-  ///Takes the number of variables and constraints, the quadratic eqn to
-  ///optimize, the constraint matrix, and the constraint and variable bounds
-  ///@p environment is created and must be told to optimize.
+  /* Create a mosek quadratic programming environment using a constraint matrix
+  * Takes the number of variables and constraints, the quadratic eqn to
+  * optimize, the constraint matrix, and the constraint and variable bounds
+  * @p environment is created and must be told to optimize.
+  */
   mosekQP(int num_variables, int num_constraints,
           std::vector<double> linear_equation_scalars_,
           Eigen::MatrixXd quad_objective_,
@@ -90,7 +91,6 @@ class mosekQP {
    *http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
    *to ensure ease of translation and understanding.
    */
-  //Number of constraints and variables
    /*addLinearConstraintMatrix()
    *@brief adds linear constraints to mosek environment
    */
@@ -100,7 +100,8 @@ class mosekQP {
   *@brief adds linear constraints in sparse column matrix form
   *just uses Eigen's sparse matrix library to implement expected format
   */
-  void AddLinearConstraintSparseColumnMatrix(Eigen::SparseMatrix<double> sparsecons_);
+  void AddLinearConstraintSparseColumnMatrix(
+      Eigen::SparseMatrix<double> sparsecons_);
 
   /*AddQuadraticConstraintMatrix()
    *@brief adds quadratic constraints to mosek environment
@@ -111,38 +112,39 @@ class mosekQP {
   *@brief adds quadratic constraints in sparse column matrix form
   *just uses Eigen's sparse matrix library to implement expected format
   */
-  void AddQuadraticConstraintSparseColumnMatrix(Eigen::SparseMatrix<double> sparsecons_);
+  void AddQuadraticConstraintSparseColumnMatrix(
+      Eigen::SparseMatrix<double> sparsecons_);
 
   /*addLinearConstraintBounds()
   *@brief bounds constraints, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
   *for details on how to set mosek_bounds_
   */
   void AddConstraintBounds(std::vector<MSKboundkeye> mosek_bounds_,
-      std::vector<double> upper_bounds_,
-      std::vector<double> lower_bounds_);
+                           std::vector<double> upper_bounds_,
+                           std::vector<double> lower_bounds_);
 
   /*addVariableBounds()
    *@brief bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
    *for details on how to set mosek_bounds_
    */
   void AddVariableBounds(std::vector<MSKboundkeye> mosek_bounds_,
-      std::vector<double> upper_bounds_,
-      std::vector<double> lower_bounds_);
+                         std::vector<double> upper_bounds_,
+                         std::vector<double> lower_bounds_);
 
 
   MSKint32t numvar, numcon;
-  MSKint32t* aptrb;  //Where ptrb[j] is the position of the first
-                     //value/index in aval / asub for column j.
-  MSKint32t*  aptre;  //Where ptre[j] is the position of the last
-                      //value/index plus one in aval / asub for column j.
-  MSKint32t* asub; //list of row indices
-  double* aval;  //list of nonzero entries of A ordered by columns
-  MSKboundkeye* bkc;  //mosek notation bounds on constraints
-  double *blc, *buc;  //bounds on constraints
-  MSKboundkeye *bkx;  //mosek notation bounds on variables
-  double *blx, *bux;  //bounds on variables
-  MSKenv_t env;  //Internal environment, used to check if problem formed
-                 //correctly
-  MSKtask_t task;  //internal definition of task
-  MSKrescodee r;  //used for validity checking
+  MSKint32t* aptrb;   // Where ptrb[j] is the position of the first
+                      // value/index in aval / asub for column j.
+  MSKint32t*  aptre;  // Where ptre[j] is the position of the last
+                      // value/index plus one in aval / asub for column j.
+  MSKint32t* asub;    // list of row indices
+  double* aval;       // list of nonzero entries of A ordered by columns
+  MSKboundkeye* bkc;  // mosek notation bounds on constraints
+  double *blc, *buc;  // bounds on constraints
+  MSKboundkeye *bkx;  // mosek notation bounds on variables
+  double *blx, *bux;  // bounds on variables
+  MSKenv_t env;       // Internal environment, used to check if problem formed
+                      // correctly
+  MSKtask_t task;     // internal definition of task
+  MSKrescodee r;      // used for validity checking
 };
