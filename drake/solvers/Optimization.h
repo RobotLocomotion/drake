@@ -346,31 +346,17 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddQuadraticCost(Q, Eigen::VectorXd::Zero(Q.rows()),variable_views_);
   }
 
-
-
   /** addLinearCost
  * @brief Adds a cost term of the form C'*x.
  */
-
   template <typename DerivedC>
   std::shared_ptr<LinearConstraint> AddLinearCost(
     const Eigen::MatrixBase<DerivedC>& C) {
-    Eigen::MatrixXd temp = C.transpose().matrix().asDiagonal();
-      std::shared_ptr<LinearConstraint> objective(new LinearConstraint(temp,Eigen::VectorXd::Zero(temp.rows()),
-                                                                       Eigen::VectorXd::Zero(temp.rows())));
-
+      std::shared_ptr<LinearConstraint> objective(new LinearConstraint(C.transpose(),Eigen::VectorXd::Zero(C.rows()),
+                                                                       Eigen::VectorXd::Zero(C.rows())));
     AddCost(objective, variable_views_);
     return(objective);
-//    return(0);
   }
-
-//  AddLinearConstraint(
-//  const Eigen::MatrixBase<DerivedA>& A,
-//  const Eigen::MatrixBase<DerivedLB>& lb,
-//  const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
-//    auto constraint = std::make_shared<LinearConstraint>(A, lb, ub);
-//    AddLinearConstraint(constraint, vars);
-//
 
 
   /** addGenericConstraint

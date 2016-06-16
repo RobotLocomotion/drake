@@ -209,33 +209,17 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
   });
 }
 
-
-class TestProblem1ObjectiveLinearPart {
- public:
-
-  static size_t numInputs() { return 5; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    assert(x.rows() == numInputs());
-    assert(y.rows() == numOutputs());
-    y(0) = (42 * x(0))  + (44 * x(1))  + (45 * x(2)) + (47 * x(3))  + (47.5 * x(4));
-  }
-};
-
 GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
   OptimizationProblem prog;
-  auto x = prog.AddContinuousVariables(5);//Matrix<double, 3, 4>::Identity()
-  //prog.AddQuadraticCost(-50*Eigen::Matrix<double,5,5>::Identity(),Eigen::VectorXd::Zero(5));
-  prog.AddQuadraticCost(-50*Eigen::Matrix<double,5,5>::Identity());
+  auto x = prog.AddContinuousVariables(5);
+
+  Eigen::MatrixXd Q = -50*Eigen::Matrix<double,5,5>::Identity();
   Eigen::VectorXd C(5);
   C<< 42, 44, 45, 47, 47.5;
+
+  prog.AddQuadraticCost(Q);
   prog.AddLinearCost(C);
-//  prog.AddCost(TestProblem1ObjectiveLinearPart());
-//  Eigen::VectorXd linCost(5);
-//  linCost << 42, 44, 45, 47, 47.5;
-//  prog.AddCost(linCost);
+
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
   prog.AddLinearConstraint(
@@ -248,11 +232,9 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
   expected << 1, 1, 0, 1, 0;
   prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-  EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-1,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
+                              MatrixCompareType::absolute));});
 
-std::cout<<"Obtained : "<<x.value();
-});
 }
 
 
@@ -304,6 +286,46 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
                                 MatrixCompareType::absolute));
   });
+}
+
+
+GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
+OptimizationProblem prog;
+auto x = prog.AddContinuousVariables(6);
+MatrixXd Q =  -50.0 * MatrixXd::Identity(6, 6);
+Q(5,5) = 0.0;
+VectorXd C(6);
+C<< -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
+
+prog.AddQuadraticCost(Q);
+prog.AddLinearCost(C);
+
+VectorXd constraint1(6), constraint2(6);
+constraint1 << 6, 3, 3, 2, 1, 0;
+prog.AddLinearConstraint(
+    constraint1.transpose(),
+    Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+    Drake::Vector1d::Constant(6.5));
+constraint2 << 10, 0, 10, 0, 0, 1;
+prog.AddLinearConstraint(
+    constraint2.transpose(),
+    Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+    Drake::Vector1d::Constant(20));
+
+Eigen::VectorXd lower(6);
+lower << 0, 0, 0, 0, 0, 0;
+Eigen::VectorXd upper(6);
+upper << 1, 1, 1, 1, 1, std::numeric_limits<double>::infinity();
+prog.AddBoundingBoxConstraint(lower, upper);
+
+VectorXd expected(6);
+expected << 0, 1, 0, 1, 1, 20;
+prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(5));
+
+RunNonlinearProgram(prog, [&]() {
+EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
+                            MatrixCompareType::absolute));
+});
 }
 
 // This test comes from Section 3.4 of "Handbook of Test Problems in
@@ -389,14 +411,16 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   Eigen::VectorXd expected(6);
   expected << 5, 1, 5, 0, 5, 10;
   Eigen::VectorXd delta = .1 * Eigen::VectorXd::Random(6);
-  prog.SetInitialGuess({x}, expected + delta);
 
   // This test seems to be fairly sensitive to how much the randomness
   // causes the initial guess to deviate, so the tolerance is a bit
   // larget than others.
+
+  prog.SetInitialGuess({x}, expected + delta);
+
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
-                                MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
+                              MatrixCompareType::absolute));
   });
 
   // Try again with the offsets in the opposite direction.
@@ -405,6 +429,8 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
                                 MatrixCompareType::absolute));
   });
+
+
 }
 
 class SixHumpCamelObjective {
