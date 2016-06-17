@@ -50,7 +50,7 @@ continuous integration turnaround time, these tests run on the build servers
 post-submit, but not pre-submit. To enable these tests locally, execute::
 
     $ cd [drake build artifacts directory]
-    $ cmake -DLONG_RUNNING_TESTS=ON ..
+    $ cmake -DLONG_RUNNING_TESTS=ON .
 
 The last command above saves your new build option in
 ``[drake build artifacts directory]/CMakeCache.txt``.
