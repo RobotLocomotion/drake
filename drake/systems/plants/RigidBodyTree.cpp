@@ -46,8 +46,8 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
 
 RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type) :
-    RigidBodyTree() {
+    const DrakeJoint::FloatingBaseType floating_base_type)
+    : RigidBodyTree() {
   addRobotFromURDF(urdf_filename, floating_base_type);
 }
 
@@ -101,15 +101,15 @@ void RigidBodyTree::SortTree() {
   }
 }
 
-const RigidBodyActuator& RigidBodyTree::GetActuator(const std::string& name)
-    const {
+const RigidBodyActuator& RigidBodyTree::GetActuator(
+    const std::string& name) const {
   for (const auto& actuator : actuators) {
     if (actuator.name == name) {
       return actuator;
     }
   }
-  throw std::invalid_argument("ERROR: Could not find actuator named \"" + name
-    + "\"");
+  throw std::invalid_argument("ERROR: Could not find actuator named \"" + name +
+                              "\"");
 }
 
 void RigidBodyTree::compile(void) {
@@ -1602,152 +1602,181 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   return ret;
 }
 
-RigidBody* RigidBodyTree::findLink(std::string name, int robot) const {
-  std::transform(name.begin(), name.end(), name.begin(),
-                 ::tolower);  // convert to lower case
+RigidBody* RigidBodyTree::findLink(const std::string& link_name,
+                                   const std::string& model_name,
+                                   int model_id) const {
+  // Obtains lower case versions of the link name and model name.
+  std::string link_name_lower = link_name;
+  std::string model_name_lower = model_name;
+  std::transform(link_name_lower.begin(), link_name_lower.end(),
+                 link_name_lower.begin(), ::tolower);  // convert to lower case
+  std::transform(model_name_lower.begin(), model_name_lower.end(),
+                 model_name_lower.begin(), ::tolower);  // convert to lower case
 
-  int match = -1;
-  for (size_t i = 0; i < bodies.size(); i++) {
-    // Note: unlike the MATLAB implementation, I don't have to handle the fixed
-    // joint names
-    string lower_link_name = bodies[i]->name_;
-    std::transform(lower_link_name.begin(), lower_link_name.end(),
-                   lower_link_name.begin(),
-                   ::tolower);                    // convert to lower case
-    if (lower_link_name.compare(name) == 0) {  // the names match
-      if (robot == -1 ||
-          bodies[i]->robotnum == robot) {  // it's the right robot
-        if (match < 0) {                   // it's the first match
-          match = i;
-        } else {
-          std::cerr << "RigidBodyTree::findLink: ERROR: Found multiple links "
-                    << "named " << name << "." << std::endl;
-          return nullptr;
-        }
+  // Instantiates a variable that keeps track of the index within the frames
+  // array that contains the desired frame. It is initialized to be -1 to
+  // indicate that no frame was found.
+  int match_index = -1;
+
+  for (size_t ii = 0; ii < bodies.size(); ++ii) {
+    // Skips the current link if model_id is not -1 and the link's robot ID is
+    // not equal to the desired model ID.
+    if (model_id != -1 && model_id != bodies[ii]->get_model_id()) continue;
+
+    // Obtains a lower case version of the current link's model name.
+    string current_model_name = bodies[ii]->model_name();
+    std::transform(current_model_name.begin(), current_model_name.end(),
+                   current_model_name.begin(), ::tolower);
+
+    // Skips the current link if model_name is not empty and the link's model
+    // name is not equal to the desired model name.
+    if (!model_name_lower.empty() && model_name_lower != current_model_name)
+      continue;
+
+    // Obtains a lower case version of the current link's name.
+    string current_link_name = bodies[ii]->name_;
+    std::transform(current_link_name.begin(), current_link_name.end(),
+                   current_link_name.begin(), ::tolower);
+
+    // Checks if the link names match. If so, checks whether this is the first
+    // match. If so, it saves the current link's index. Otherwise it throws
+    // an exception indicating there are multiple matches.
+    if (current_link_name == link_name_lower) {
+      if (match_index < 0) {
+        match_index = ii;
+      } else {
+        throw std::logic_error(
+            "RigidBodyTree::findLink: ERROR: found multiple links named \"" +
+            link_name + "\", model name = \"" + model_name + "\", model id = " +
+            std::to_string(model_id) + ".");
       }
     }
   }
-  if (match >= 0) return bodies[match].get();
-  std::cerr << "RigidBodyTree::findLink: ERROR: Could not find any links named "
-            << name << "." << std::endl;
-  return nullptr;
-}
 
-RigidBody* RigidBodyTree::findLink(std::string name,
-                                   std::string model_name) const {
-  std::transform(name.begin(), name.end(), name.begin(),
-                 ::tolower);  // convert to lower case
-  std::transform(model_name.begin(), model_name.end(), model_name.begin(),
-                 ::tolower);  // convert to lower case
-
-  int match = -1;
-  for (size_t i = 0; i < bodies.size(); i++) {
-    // Note: unlike the MATLAB implementation, I don't have to handle the fixed
-    // joint names
-    string lower_link_name = bodies[i]->name_;
-    std::transform(lower_link_name.begin(), lower_link_name.end(),
-                   lower_link_name.begin(),
-                   ::tolower);                    // convert to lower case
-    if (lower_link_name.compare(name) == 0) {  // the names match
-      string lower_model_name = bodies[i]->model_name_;
-      std::transform(lower_model_name.begin(), lower_model_name.end(),
-                     lower_model_name.begin(), ::tolower);
-      if (model_name.empty() ||
-          lower_model_name.compare(model_name) == 0) {  // it's the right robot
-        if (match < 0) {                                // it's the first match
-          match = i;
-        } else {
-          cerr << "RigidBodyTree::findLink: ERROR: Found multiple links named "
-               << name << endl;
-          return nullptr;
-        }
-      }
-    }
+  // Checks if a match was found. If so, returns a pointer to the matching
+  // link. Otherwise, throws an exception indicating no match was found.
+  if (match_index >= 0) {
+    return bodies[match_index].get();
+  } else {
+    throw std::logic_error(
+        "RigidBodyTree::findLink: ERROR: Could not find link named \"" +
+        link_name + "\", model name = \"" + model_name + "\", model id = " +
+        std::to_string(model_id) + ".");
   }
-  if (match >= 0) return bodies[match].get();
-  cerr << "could not find any links named " << name << endl;
-  return nullptr;
 }
 
 shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
-    std::string frame_name, std::string model_name) const {
-  std::transform(frame_name.begin(), frame_name.end(), frame_name.begin(),
-                 ::tolower);  // convert to lower case
-  std::transform(model_name.begin(), model_name.end(), model_name.begin(),
-                 ::tolower);  // convert to lower case
+    const std::string& frame_name, int model_id) const {
+  std::string frame_name_lower = frame_name;
 
-  int match = -1;
-  for (size_t i = 0; i < frames.size(); i++) {
-    string frame_name_lower = frames[i]->name;
-    std::transform(frame_name_lower.begin(), frame_name_lower.end(),
-                   frame_name_lower.begin(),
-                   ::tolower);                        // convert to lower case
-    if (frame_name_lower.compare(frame_name) == 0) {  // the names match
-      string frame_model_name_lower = frames[i]->body->model_name_;
-      std::transform(frame_model_name_lower.begin(),
-                     frame_model_name_lower.end(),
-                     frame_model_name_lower.begin(), ::tolower);
-      if (model_name.empty() ||
-          frame_model_name_lower == model_name) {  // it's the right robot
-        if (match < 0) {                           // it's the first match
-          match = i;
-        } else {
-          cerr << "Error: found multiple frames named " << frame_name << endl;
-          return nullptr;
-        }
+  // Obtains a lower case version of frame_name.
+  std::transform(frame_name_lower.begin(), frame_name_lower.end(),
+                 frame_name_lower.begin(), ::tolower);
+
+  // Instantiates a variable that keeps track of the index within the frames
+  // array that contains the desired frame. It is initialized to be -1 to
+  // indicate that no matching frame was found.
+  int match_index = -1;
+
+  for (size_t ii = 0; ii < frames.size(); ++ii) {
+    // Skips the current frame if model_id is not -1 and the frame's robot ID is
+    // not equal to the desired robot ID.
+    if (model_id != -1 && model_id != frames[ii]->get_model_id()) continue;
+
+    // Obtains a lower case version of the current frame.
+    std::string current_frame_name = frames[ii]->name;
+    std::transform(current_frame_name.begin(), current_frame_name.end(),
+                   current_frame_name.begin(), ::tolower);
+
+    // Checks if the frame names match. If so, checks whether this is the first
+    // match. If so, it saves the current frame's index. Otherwise it throws
+    // an exception indicating there are multiple matches.
+    if (frame_name_lower == current_frame_name) {
+      if (match_index < 0) {
+        match_index = ii;
+      } else {
+        throw std::logic_error(
+            "RigidBodyTree::findFrame: ERROR: Found multiple frames named \"" +
+            frame_name + "\", model_id = " + std::to_string(model_id));
       }
     }
   }
-  if (match >= 0) return frames[match];
-  cerr << "Error: could not find a frame named " << frame_name << endl;
-  return nullptr;
+
+  // Checks if a match was found. If so, returns a pointer to the matching
+  // frame. Otherwise, throws an exception indicating no match was found.
+  if (match_index >= 0) {
+    return frames[match_index];
+  } else {
+    throw std::logic_error(
+        "RigidBodyTree::findFrame: ERROR: could not find frame named \"" +
+        frame_name + "\", model id = " + std::to_string(model_id) + ".");
+  }
 }
 
-int RigidBodyTree::findLinkId(const std::string& name, int robot) const {
-  RigidBody* link = findLink(name, robot);
-  if (link == nullptr)
-    throw std::runtime_error("could not find link id: " + name);
+int RigidBodyTree::FindBodyIndex(const std::string& link_name,
+                                 int model_id) const {
+  RigidBody* link = findLink(link_name, "", model_id);
+  if (link == nullptr) {
+    throw std::logic_error(
+        "RigidBodyTree::findLinkID: ERROR: Could not find link id for link " +
+        std::string("named \"") + link_name + "\", model_id = " +
+        std::to_string(model_id));
+  }
   return link->body_index;
 }
 
-RigidBody* RigidBodyTree::findJoint(std::string jointname, int robot) const {
-  std::transform(jointname.begin(), jointname.end(), jointname.begin(),
-                 ::tolower);  // convert to lower case
+RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
+                                    int model_id) const {
+  // Obtains a lower case version of joint_name.
+  std::string joint_name_lower = joint_name;
+  std::transform(joint_name_lower.begin(), joint_name_lower.end(),
+                 joint_name_lower.begin(), ::tolower);
 
   vector<bool> name_match;
   name_match.resize(this->bodies.size());
-  for (size_t i = 0; i < this->bodies.size(); i++) {
-    if (bodies[i]->hasParent()) {
-      string lower_jointname = this->bodies[i]->getJoint().getName();
-      std::transform(lower_jointname.begin(), lower_jointname.end(),
-                     lower_jointname.begin(),
+
+  for (size_t ii = 0; ii < this->bodies.size(); ii++) {
+    if (bodies[ii]->hasParent()) {
+      string current_joint_name = this->bodies[ii]->getJoint().getName();
+      std::transform(current_joint_name.begin(), current_joint_name.end(),
+                     current_joint_name.begin(),
                      ::tolower);  // convert to lower case
-      if (lower_jointname.compare(jointname) == 0) {
-        name_match[i] = true;
+      if (current_joint_name == joint_name_lower) {
+        name_match[ii] = true;
       } else {
-        name_match[i] = false;
+        name_match[ii] = false;
       }
     }
   }
-  if (robot != -1) {
-    for (size_t i = 0; i < this->bodies.size(); i++) {
-      if (name_match[i]) {
-        name_match[i] = this->bodies[i]->robotnum == robot;
+
+  if (model_id != -1) {
+    for (size_t ii = 0; ii < this->bodies.size(); ii++) {
+      if (name_match[ii]) {
+        name_match[ii] = this->bodies[ii]->robotnum == model_id;
       }
     }
   }
+
   // Unlike the MATLAB implementation, I am not handling the fixed joints
   size_t ind_match = 0;
   bool match_found = false;
-  for (size_t i = 0; i < this->bodies.size(); i++) {
-    if (name_match[i]) {
-      ind_match = i;
+  for (size_t ii = 0; ii < this->bodies.size(); ++ii) {
+    if (name_match[ii]) {
+      if (match_found) {
+        throw std::logic_error(
+            "RigidBodyTree::findJoint: ERROR: Multiple "
+            "joints found named \"" +
+            joint_name + "\", model ID = " + std::to_string(model_id) + ".");
+      }
+      ind_match = ii;
       match_found = true;
     }
   }
   if (!match_found) {
-    cerr << "couldn't find unique joint " << jointname << endl;
-    return (nullptr);
+    throw std::logic_error(
+        "RigidBodyTree::findJoint: ERROR: Could not find unique joint " +
+        std::string("named \"") + joint_name + "\", model_id = " +
+        std::to_string(model_id));
   } else {
     return this->bodies[ind_match].get();
   }

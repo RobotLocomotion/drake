@@ -219,3 +219,5 @@ if(LONG_RUNNING_TESTS)
   add_matlab_test(NAME systems/plants/test/testInertiasInWorldFrame COMMAND testInertiasInWorldFrame PROPERTIES TIMEOUT 1500)
   add_matlab_test(NAME systems/plants/test/testMassSpringDamperThrust COMMAND testMassSpringDamperThrust PROPERTIES TIMEOUT 1500)
 endif()
+
+add_subdirectory(rigid_body_system)
