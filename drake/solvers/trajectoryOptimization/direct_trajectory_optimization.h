@@ -7,8 +7,6 @@
 #include "drake/drakeOptimization_export.h"
 #include "drake/solvers/Optimization.h"
 
-using Drake::OptimizationProblem;
-
 namespace drake {
 namespace solvers {
 
@@ -24,7 +22,7 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   const int numStates_;
   const size_t numTimeSamples_;  // aka N
 
-  Drake::OptimizationProblem optProblem_;
+  OptimizationProblem optProblem_;
   // TODO(tri-lucy): I'm not sure we actually need these inds, because of how
   // vars are made in C++ Drake.
   Eigen::VectorXd h_inds_;  // (N-1) x 1 indices for timesteps h so that
