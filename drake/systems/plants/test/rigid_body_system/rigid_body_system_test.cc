@@ -14,6 +14,42 @@ namespace {
 
 using Drake::RigidBodySystem;
 
+// Tests the ability to load a URDF as part of the world of a rigid body system.
+GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
+  // Instantiates a rigid body system.
+  std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
+
+  // Adds the same SDF to the rigid body system twice. Both models are connected
+  // to the world using a quaternion joint. The first model's root frame match
+  // the world's coordinate frame. The second model's root frame is offset from
+  // the world's coordinate fram by X = 1, Y = 1, and Z = 1.
+  rigid_body_sys->addRobotFromFile(
+      Drake::getDrakePath() +
+          "/systems/plants/test/rigid_body_system/world.urdf",
+      DrakeJoint::FIXED);
+
+  // Verifies that the number of states, inputs, and outputs are all zero.
+  EXPECT_EQ(rigid_body_sys->getNumStates(), 0);
+  EXPECT_EQ(rigid_body_sys->getNumInputs(), 0);
+  EXPECT_EQ(rigid_body_sys->getNumOutputs(), 0);
+
+  // Obtains a const pointer to the rigid body tree within the rigid body
+  // system.
+  const std::shared_ptr<RigidBodyTree>& tree =
+      rigid_body_sys->getRigidBodyTree();
+
+  // Checks that the links in the world can be obtained and they have the
+  // correct model name.
+  for (auto& link_name :
+       {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
+    RigidBody* link_ptr = tree->findLink(link_name);
+    EXPECT_NE(link_ptr, nullptr);
+    EXPECT_EQ(link_ptr->model_name(), "dual_ramps");
+  }
+}
+
+// Tests the ability to load a SDF multiple times into the same rigid body
+// system. The SDF contains more than one model and sensor on each link.
 GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // Instantiates a rigid body system.
   std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
