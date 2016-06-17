@@ -43,6 +43,11 @@ class DRAKERBM_EXPORT RigidBodyFrame {
         transform_to_body(Eigen::Isometry3d::Identity()),
         frame_index(0) {}
 
+  /**
+   * Returns the ID of the model to which this rigid body frame belongs.
+   */
+  int get_model_id() { return body->get_model_id(); }
+
   std::string name;
   RigidBody* body;
   Eigen::Isometry3d transform_to_body;

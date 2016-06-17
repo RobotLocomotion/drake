@@ -20,6 +20,7 @@ Coming soon. See issue
 
 Doxygen Website Generation
 ==========================
+
 First enable the ``documentation`` build target by executing the following::
 
     $ cd [build artifacts directory]
@@ -32,6 +33,7 @@ using the command line, and the second through Microsoft Visual Studio.
 
 Using the Command Line
 ----------------------
+
 To build the documentation via the command line, execute::
 
     $ cd [build artifacts directory]
@@ -45,11 +47,6 @@ favorite web browser::
 **Note 1:** If you're building Drake in-source (i.e., within the ``pod-build``
 directory), the ``[build artifacts directory]`` is typically
 ``[drake distro]/drake/pod-build/``.
-
-** Note 2:** By enabling the ``BUILD_DOCUMENTATION`` cmake option, the
-documentation will be built *every* time you compile Drake. To stop this
-behavior, see the instructions below on how to disable documentation
-generation.
 
 .. _doxygen-generation-visual-studio:
 

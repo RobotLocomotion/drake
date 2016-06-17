@@ -2,8 +2,15 @@
 
 #include <cstdlib>
 
-using Eigen::MatrixXd;
+#include "drake/examples/Cars/curve2.h"
+#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
+#include "drake/examples/Cars/gen/simple_car_state.h"
+#include "drake/examples/Cars/trajectory_car.h"
+
+using Drake::AffineSystem;
+using Drake::NullVector;
 using Eigen::Matrix;
+using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 namespace drake {
@@ -78,30 +85,51 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
 
   // If no environment is specified, the following code adds a flat terrain.
   if (argc < 3) {
-    double box_width = 1000;
-    double box_depth = 10;
-    DrakeShapes::Box geom(Eigen::Vector3d(box_width, box_width, box_depth));
-    Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-    T_element_to_link.translation() << 0, 0,
-        -box_depth / 2;  // top of the box is at z=0
-    RigidBody& world = tree->world();
-    Eigen::Vector4d color;
-    color << 0.9297, 0.7930, 0.6758,
-        1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
-    world.addVisualElement(
-        DrakeShapes::VisualElement(geom, T_element_to_link, color));
-    tree->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
-        "terrain");
-    tree->updateStaticCollisionElements();
+    AddFlatTerrain(tree);
   }
 
-  rigid_body_sys->penetration_stiffness = 5000.0;
-  rigid_body_sys->penetration_damping =
-      rigid_body_sys->penetration_stiffness / 10.0;
-  rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
+  SetRigidBodySystemParameters(rigid_body_sys.get());
 
   return rigid_body_sys;
+}
+
+void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys) {
+  rigid_body_sys->penetration_stiffness = 5000.0;
+  rigid_body_sys->penetration_damping =
+    rigid_body_sys->penetration_stiffness / 10.0;
+  rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
+}
+
+double ParseDuration(int argc, const char* argv[]) {
+  for (int ii = 1; ii < argc; ++ii) {
+    if (std::string(argv[ii]) == "--duration") {
+      if (++ii == argc) {
+        throw std::runtime_error(
+            "ERROR: Command line option \"--duration\" is not followed by a "
+            "value!");
+      }
+      return atof(argv[ii]);
+    }
+  }
+  return std::numeric_limits<double>::infinity();
+}
+
+void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
+    double box_size, double box_depth) {
+  DrakeShapes::Box geom(Eigen::Vector3d(box_size, box_size, box_depth));
+  Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
+  T_element_to_link.translation() << 0, 0,
+      -box_depth / 2;  // top of the box is at z=0
+  RigidBody& world = rigid_body_tree->world();
+  Eigen::Vector4d color;
+  color << 0.9297, 0.7930, 0.6758,
+      1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
+  world.addVisualElement(
+      DrakeShapes::VisualElement(geom, T_element_to_link, color));
+  rigid_body_tree->addCollisionElement(
+      RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
+      "terrain");
+  rigid_body_tree->updateStaticCollisionElements();
 }
 
 std::shared_ptr<CascadeSystem<
@@ -176,6 +204,93 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
 
   return vehicle_sys;
 }
+
+namespace {
+// A figure-eight.  One loop has a radius of @p radius - @p inset,
+// the other loop has a radius of @p radius + @p inset.
+Curve2<double> MakeCurve(double radius, double inset) {
+  // TODO(jwnimmer-tri) This function will be rewritten once we have
+  // proper splines.  Don't try too hard to understand it.  Run the
+  // demo to see it first, and only then try to understand the code.
+
+  typedef Curve2<double>::Point2 Point2d;
+  std::vector<Point2d> waypoints;
+
+  // Start (0, +i).
+  // Straight right to (+r, +i).
+  // Loop around (+i, +r).
+  // Straight back to (+i, 0).
+  waypoints.push_back({0.0, inset});
+  for (int theta_deg = -90; theta_deg <= 180; ++theta_deg) {
+    const Point2d center{radius, radius};
+    const double theta = theta_deg * M_PI / 180.0;
+    const Point2d direction{std::cos(theta), std::sin(theta)};
+    waypoints.push_back(center + (direction * (radius - inset)));
+  }
+  waypoints.push_back({inset, 0.0});
+
+  // Start (+i, 0).
+  // Straight down to (+i, -r).
+  // Loop around (-r, +i).
+  // Straight back to start (implicitly via segment to waypoints[0]).
+  for (int theta_deg = 0; theta_deg >= -270; --theta_deg) {
+    const Point2d center{-radius, -radius};
+    const double theta = theta_deg * M_PI / 180.0;
+    const Point2d direction{std::cos(theta), std::sin(theta)};
+    waypoints.push_back(center + (direction * (radius + inset)));
+  }
+
+  // Many copies.
+  const int kNumCopies = 100;
+  std::vector<Point2d> looped_waypoints;
+  for (int copies = 0; copies < kNumCopies; ++copies) {
+    std::copy(waypoints.begin(), waypoints.end(),
+              std::back_inserter(looped_waypoints));
+  }
+  looped_waypoints.push_back(waypoints.front());
+
+  return Curve2<double>(looped_waypoints);
+}
+}  // namespace anonymous
+
+std::shared_ptr<TrajectoryCar> CreateTrajectoryCarSystem(int index) {
+  // The possible curves to trace (lanes).
+  const std::vector<Curve2<double>> curves{
+    MakeCurve(40.0, 0.0),  // BR
+    MakeCurve(40.0, 4.0),  // BR
+    MakeCurve(40.0, 8.0),
+  };
+
+  // Magic car placement to make a good visual demo.
+  const auto& curve = curves[index % curves.size()];
+  const double start_time = (index / curves.size()) * 0.8;
+  const double kSpeed = 8.0;
+  return std::make_shared<TrajectoryCar>(curve, kSpeed, start_time);
+}
+
+std::shared_ptr<AffineSystem<
+  NullVector, SimpleCarState, EulerFloatingJointState>>
+CreateSimpleCarVisualizationAdapter() {
+  const int insize = SimpleCarState<double>().size();
+  const int outsize = EulerFloatingJointState<double>().size();
+  MatrixXd D;
+  D.setZero(outsize, insize);
+  D(EulerFloatingJointStateIndices::kX, SimpleCarStateIndices::kX) = 1;
+  D(EulerFloatingJointStateIndices::kY, SimpleCarStateIndices::kY) = 1;
+  D(EulerFloatingJointStateIndices::kYaw, SimpleCarStateIndices::kHeading) = 1;
+  EulerFloatingJointState<double> y0;
+  return std::make_shared<
+    AffineSystem<
+        NullVector,
+        SimpleCarState,
+        EulerFloatingJointState>>(
+            MatrixXd::Zero(0, 0),
+            MatrixXd::Zero(0, insize),
+            VectorXd::Zero(0),
+            MatrixXd::Zero(outsize, 0),
+            D, toEigen(y0));
+}
+
 
 SimulationOptions GetCarSimulationDefaultOptions() {
   SimulationOptions result = Drake::default_simulation_options;

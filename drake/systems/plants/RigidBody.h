@@ -40,6 +40,16 @@ class DRAKERBM_EXPORT RigidBody {
   const std::string& model_name() const;
 
   /**
+   * Returns the ID of the model to which this rigid body belongs.
+   */
+  const int get_model_id() const;
+
+  /**
+   * Sets the ID of the model to which this rigid body belongs.
+   */
+  void set_model_id(int model_id);
+
+  /**
    * Sets the parent joint through which this rigid body connects to its parent
    * rigid body.
    *

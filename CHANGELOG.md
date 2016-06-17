@@ -21,6 +21,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2426][] Changed `RigidBodyTree::findLinkId()` to be `RigidBodyTree::FindBodyIndex()`. Updated APIs of `RigidBodyTree`, `RigidBody`, `RigidBodyTree`, and `RigidBodyFrame` to support notion of a "model ID" that uniquely identifies a model within a `RigidBodySystem`. This enables the same SDF file to be loaded multiple times into the same `RigidBodySystem`.
  - [#2303][] The following member variables should now be accessed via accessor methods: `RigidBody::linkname`, `RigidBody::model_name`, `RigidBodyTree::num_positions`, and `RigidBodyTree::num_velocities`.
  - [#2325][] The following member variable should now be accessed via an accessor method: `RigidBodyConstraint::robot`.
  - [#1992][] Matlab tests must now be explicitly listed in CMakeLists.
@@ -68,3 +69,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2018]: https://github.com/RobotLocomotion/drake/issues/2018
 [#2303]: https://github.com/RobotLocomotion/drake/issues/2303
 [#2325]: https://github.com/RobotLocomotion/drake/issues/2325
+[#2426]: https://github.com/RobotLocomotion/drake/issues/2426

@@ -16,8 +16,8 @@
 
 #include "Optimization.h"
 
-using drake::solvers::SolutionResult;
-
+namespace drake {
+namespace solvers {
 namespace {
 template <typename Derived>
 void selectSubMat(const Eigen::MatrixBase<Derived>& in,
@@ -80,8 +80,6 @@ Eigen::Index minCoeffIdx(const Eigen::MatrixBase<Derived>& in) {
 
 const double NEAR_ZERO = std::sqrt(std::numeric_limits<double>::epsilon());
 }
-
-namespace Drake {
 
 // Sole constructor
 MobyLCPSolver::MobyLCPSolver() : log_enabled_(false) {}
@@ -1307,4 +1305,6 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(
   // still here?  failure...
   return false;
 }
-}
+
+}  // namespace solvers
+}  // namespace drake
