@@ -15,10 +15,10 @@
 	url = https://github.com/RobotLocomotion/gtk-pod.git
 [submodule "externals/lcm"]
 	path = externals/lcm
-	url = https://github.com/RobotLocomotion/lcm-pod.git
+	url = https://github.com/RobotLocomotion/lcm.git
 [submodule "externals/bot_core_lcmtypes"]
 	path = externals/bot_core_lcmtypes
-	url = https://github.com/jhoare/bot_core_lcmtypes
+	url = https://github.com/mwoehlke-kitware/bot_core_lcmtypes
 [submodule "externals/libbot"]
 	path = externals/libbot
 	url = https://github.com/RobotLocomotion/libbot.git

@@ -49,7 +49,7 @@ if(LCM_FOUND)
   # we only need methods that are templated and defined in the header
 
   add_library_with_exports(LIB_NAME drakeLCMUtil SOURCE_FILES lcmUtil.cpp)
-  add_dependencies(drakeLCMUtil drake_lcmtypes lcmtype_agg_hpp)
+  add_dependencies(drakeLCMUtil drake_lcmtypes)
   target_link_libraries(drakeLCMUtil drakeTrajectories)
   drake_install_headers(lcmUtil.h)
   pods_install_libraries(drakeLCMUtil)
