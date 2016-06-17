@@ -342,6 +342,10 @@ foreach(proj ${EXTERNAL_PROJECTS})
       if(NOT ${proj}_BINARY_DIR)
         if(POD_BUILD)
           set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}/pod-build")
+          # Make sure the source tree is empty before cloning into it.
+          set(${proj}_DOWNLOAD_COMMAND ${CMAKE_COMMAND} -E remove_directory ${${proj}_GIT_SUBMODULE_PATH}/pod-build
+            COMMAND ${${proj}_DOWNLOAD_COMMAND}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${${proj}_GIT_SUBMODULE_PATH}/pod-build)
         else()
           set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
         endif()
