@@ -1,28 +1,38 @@
 #include <memory>
-#include <stdexcept>
-#include <string>
 
 #include "drake/Path.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/testUtil.h"
-
-//#include "drake/systems/plants/BotVisualizer.h"
-//#include "drake/systems/plants/RigidBodySystem.h"
 
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-
 namespace drake {
+namespace systems {
+namespace plants {
+namespace test {
 namespace {
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using Eigen::Matrix3Xd;
-//using Drake::BotVisualizer;
-//using Drake::RigidBodySystem;
+using DrakeCollision::ElementId;
+
+// Structure used to hold the analytical solution of the tests.
+// It stores the collision point on the surface of a collision body in both
+// world and body frames.
+// See systems/plants/collision/test/model_test.cc.
+struct SurfacePoint {
+  SurfacePoint() {}
+  SurfacePoint(Vector3d wf, Vector3d bf) : world_frame(wf), body_frame(bf) {}
+  // Eigen variables are left uninitalized by default.
+  Vector3d world_frame;
+  Vector3d body_frame;
+};
+
+// Solutions are accessed by collision element id using an std::unordered_set.
+// See detailed explanation in systems/plants/collision/test/model_test.cc.
+typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
+    ElementToSurfacePointMap;
 
 class RBTCollisionTest: public ::testing::Test {
  protected:
@@ -30,16 +40,30 @@ class RBTCollisionTest: public ::testing::Test {
     tree_.addRobotFromSDF(
         Drake::getDrakePath() + "/systems/plants/test/collision_test.sdf",
         DrakeJoint::QUATERNION);
+
+    small_box_id_ = tree_.findLink("small_box")->collision_element_ids[0];
+    large_box_id_ = tree_.findLink("large_box")->collision_element_ids[0];
+
+    // Access the analytical solution to the contact point on the surface of
+    // each collision element by element id.
+    // Solutions are expressed in world and body frames.
+    solution_ = {
+        /*              world frame    , body frame  */
+        {large_box_id_, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
+        {small_box_id_, {{0.0, 4.9, 0.0}, {0.0,  0.0, 0.6}}}};
   }
 
+  double tolerance_;
   RigidBodyTree tree_;
+  ElementId small_box_id_, large_box_id_;
+  ElementToSurfacePointMap solution_;
 };
 
 TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  const double tolerance = 2.0e-9;
+  tolerance_ = 4.0e-16;
 
   int nq = tree_.number_of_positions();
   int nv = tree_.number_of_velocities();
@@ -50,7 +74,7 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   auto q = x.topRows(nq);
   auto v = x.bottomRows(nv);
 
-  auto kinsol = tree_.doKinematics(q, v);
+  KinematicsCache<double> kinsol = tree_.doKinematics(q, v);
 
   VectorXd phi;
   Matrix3Xd normal, xA, xB;
@@ -59,37 +83,30 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   tree_.ComputeMaximumDepthCollisionPoints(
       kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx, false);
 
-#if 0
-  auto lcm = std::make_shared<lcm::LCM>();
-  auto tree_ptr = std::shared_ptr<RigidBodyTree>(&tree_);
-  auto visualizer = std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(
-      lcm, tree_ptr);
-  visualizer->output(0.0, x, x);
-#endif
+  ElementId bodyA_collision_element_id =
+      tree_.bodies[bodyA_idx[0]]->collision_element_ids[0];
+  ElementId bodyB_collision_element_id =
+      tree_.bodies[bodyB_idx[0]]->collision_element_ids[0];
 
+  // RigidBodyTree::ComputeMaximumDepthCollisionPoints returns only one point,
+  // the maximum depth collision point.
   ASSERT_EQ(1, phi.size());
-  EXPECT_NEAR(-0.1, phi(0), tolerance);
+  EXPECT_NEAR(-0.1, phi(0), tolerance_);
   EXPECT_TRUE(normal.col(0).isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // Only test for vertical position.
-  EXPECT_NEAR(xA.col(0).y(), 2.5, tolerance);
+  EXPECT_NEAR(xA.col(0).y(),
+              solution_[bodyA_collision_element_id].body_frame.y(), tolerance_);
   // In body's frame, which is rotated 90 degrees in pitch from
   // collision_test.sdf, the collision point is on the z-axis.
   // In addition, is not at z=0.5 but at z=0.6 since there is an offset of 0.1
   // in body's z-axis for the collision element as set from collision_test.sdf.
-  EXPECT_NEAR(xB.col(0).z(), 0.6, tolerance);
-
-  for(int i=0;i<phi.size();++i) {
-    PRINT_VAR(i);
-    PRINT_VAR(tree_.bodies[bodyA_idx[i]]->name());
-    PRINT_VAR(tree_.bodies[bodyB_idx[i]]->name());
-    PRINT_VAR(phi(i));
-    PRINT_VAR(normal.col(i).transpose());
-    PRINT_VAR(xA.col(i).transpose());
-    PRINT_VAR(xB.col(i).transpose());
-  }
-
+  EXPECT_NEAR(xB.col(0).z(),
+              solution_[bodyB_collision_element_id].body_frame.z(), tolerance_);
 }
 
-} // namespace
-} // namespace drake
+}  // namespace
+}  // namespace test
+}  // namespace plants
+}  // namespace systems
+}  // namespace drake
