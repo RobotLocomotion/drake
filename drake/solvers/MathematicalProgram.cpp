@@ -6,9 +6,8 @@
 #include "Optimization.h"
 #include "SnoptSolver.h"
 
-using drake::solvers::SolutionResult;
-
-namespace Drake {
+namespace drake {
+namespace solvers {
 MathematicalProgramInterface::~MathematicalProgramInterface() {}
 
 namespace {
@@ -96,7 +95,7 @@ class NonlinearProgram : public MathematicalProgram {
   }
 
  private:
-  drake::solvers::IpoptSolver ipopt_solver;
+  IpoptSolver ipopt_solver;
   NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
 };
@@ -198,4 +197,6 @@ MathematicalProgramInterface::GetLeastSquaresProgram() {
 }
 
 MathematicalProgramSolverInterface::~MathematicalProgramSolverInterface() {}
-}
+
+}  // namespace solvers
+}  // namespace drake

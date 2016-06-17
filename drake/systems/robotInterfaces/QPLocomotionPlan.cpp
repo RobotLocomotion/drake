@@ -45,7 +45,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree& robot,
       knee_indices(createJointIndicesMap(robot, settings.knee_names)),
       aky_indices(createJointIndicesMap(robot, settings.aky_names)),
       akx_indices(createJointIndicesMap(robot, settings.akx_names)),
-      pelvis_id(robot.findLinkId(settings.pelvis_name)),
+      pelvis_id(robot.FindBodyIndex(settings.pelvis_name)),
       start_time(std::numeric_limits<double>::quiet_NaN()),
       plan_shift(Vector3d::Zero()),
       last_foot_shift_time(0.0),
@@ -868,7 +868,7 @@ const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(
     RigidBodyTree& robot, const std::map<Side, std::string>& foot_names) {
   std::map<Side, int> foot_body_ids;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
-    foot_body_ids[*it] = robot.findLinkId(foot_names.at(*it));
+    foot_body_ids[*it] = robot.FindBodyIndex(foot_names.at(*it));
   }
   return foot_body_ids;
 }

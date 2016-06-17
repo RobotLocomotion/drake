@@ -16,8 +16,8 @@
 #include "drake/solvers/solution_result.h"
 #include "drake/util/Polynomial.h"
 
-
-namespace Drake {
+namespace drake {
+namespace solvers {
 
 /**
  * DecisionVariable
@@ -213,30 +213,30 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     // Construct by copying from an lvalue.
     template <typename... Args>
     ConstraintImpl(F const& f, Args&&... args)
-        : Constraint(FunctionTraits<F>::numOutputs(f),
+        : Constraint(Drake::FunctionTraits<F>::numOutputs(f),
                      std::forward<Args>(args)...),
           f_(f) {}
 
     // Construct by moving from an rvalue.
     template <typename... Args>
     ConstraintImpl(F&& f, Args&&... args)
-        : Constraint(FunctionTraits<F>::numOutputs(f),
+        : Constraint(Drake::FunctionTraits<F>::numOutputs(f),
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
     void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                      Eigen::VectorXd& y) const override {
-      y.resize(FunctionTraits<F>::numOutputs(f_));
-      assert(x.rows() == FunctionTraits<F>::numInputs(f_));
-      assert(y.rows() == FunctionTraits<F>::numOutputs(f_));
-      FunctionTraits<F>::eval(f_, x, y);
+              Eigen::VectorXd& y) const override {
+      y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
+      assert(x.rows() == Drake::FunctionTraits<F>::numInputs(f_));
+      assert(y.rows() == Drake::FunctionTraits<F>::numOutputs(f_));
+      Drake::FunctionTraits<F>::eval(f_, x, y);
     }
-    void eval(const Eigen::Ref<const TaylorVecXd>& x,
-                      TaylorVecXd& y) const override {
-      y.resize(FunctionTraits<F>::numOutputs(f_));
-      assert(x.rows() == FunctionTraits<F>::numInputs(f_));
-      assert(y.rows() == FunctionTraits<F>::numOutputs(f_));
-      FunctionTraits<F>::eval(f_, x, y);
+    void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
+              Drake::TaylorVecXd& y) const override {
+      y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
+      assert(x.rows() == Drake::FunctionTraits<F>::numInputs(f_));
+      assert(y.rows() == Drake::FunctionTraits<F>::numOutputs(f_));
+      Drake::FunctionTraits<F>::eval(f_, x, y);
     }
   };
 
@@ -612,7 +612,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    *
    * @return SolutionResult indicating if the solution was successful.
    */
-  drake::solvers::SolutionResult Solve() {
+  SolutionResult Solve() {
     return problem_type_->Solve(*this);
   }  // todo: add argument for options
 
@@ -788,4 +788,5 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   std::map<std::string, std::map<std::string, std::string>> solver_options_str_;
 };
 
-}  // end namespace Drake
+}  // end namespace solvers
+}  // end namespace drake

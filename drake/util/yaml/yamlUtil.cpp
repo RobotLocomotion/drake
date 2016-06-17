@@ -385,7 +385,7 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
   YAML::Node hands = body_names["hands"];
   for (const auto& side : Side::values) {
     ret.foot_ids[side] =
-        robot.findLinkId(feet[side_identifiers[side]].as<string>());
+        robot.FindBodyIndex(feet[side_identifiers[side]].as<string>());
   }
 
   YAML::Node joint_group_names = metadata["joint_group_names"];

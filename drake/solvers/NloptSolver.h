@@ -4,7 +4,8 @@
 
 #include "drake/solvers/MathematicalProgram.h"
 
-namespace Drake {
+namespace drake {
+namespace solvers {
 
 class DRAKEOPTIMIZATION_EXPORT NloptSolver :
       public MathematicalProgramSolverInterface  {
@@ -12,7 +13,8 @@ class DRAKEOPTIMIZATION_EXPORT NloptSolver :
   // This solver is implemented in various pieces depending on if
   // NLOpt was available during compilation.
   bool available() const override;
-  drake::solvers::SolutionResult Solve(
-      OptimizationProblem& prog) const override;
+  SolutionResult Solve(OptimizationProblem& prog) const override;
 };
-}
+
+}  // namespace solvers
+}  // namespace drake
