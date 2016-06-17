@@ -7,11 +7,11 @@
 namespace drake {
 namespace solvers {
 
-class DRAKEOPTIMIZATION_EXPORT NloptSolver :
+class DRAKEOPTIMIZATION_EXPORT IpoptSolver :
       public MathematicalProgramSolverInterface  {
  public:
   // This solver is implemented in various pieces depending on if
-  // NLOpt was available during compilation.
+  // Ipopt was available during compilation.
   bool available() const override;
   SolutionResult Solve(OptimizationProblem& prog) const override;
 };

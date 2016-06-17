@@ -7,7 +7,7 @@
 
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -25,7 +25,7 @@ class StateSubvectorTest : public ::testing::Test {
     state_vector_.reset(new BasicStateVector<int>(std::move(vec)));
   }
 
-  std::unique_ptr<StateVectorInterface<int>> state_vector_;
+  std::unique_ptr<StateVector<int>> state_vector_;
 };
 
 TEST_F(StateSubvectorTest, NullptrVector) {
@@ -71,6 +71,46 @@ TEST_F(StateSubvectorTest, Mutation) {
   EXPECT_EQ(5, state_vector_->GetAtIndex(1));
   EXPECT_EQ(42, state_vector_->GetAtIndex(2));
   EXPECT_EQ(4, state_vector_->GetAtIndex(3));
+}
+
+// Tests that a StateVector can be added to a StateSubvector.
+TEST_F(StateSubvectorTest, PlusEq) {
+  BasicStateVector<int> addend(2);
+  addend.SetAtIndex(0, 7);
+  addend.SetAtIndex(1, 8);
+
+  StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
+  subvec += addend;
+
+  EXPECT_EQ(1, state_vector_->GetAtIndex(0));
+  EXPECT_EQ(9, state_vector_->GetAtIndex(1));
+  EXPECT_EQ(11, state_vector_->GetAtIndex(2));
+  EXPECT_EQ(4, state_vector_->GetAtIndex(3));
+}
+
+TEST_F(StateSubvectorTest, PlusEqInvalidSize) {
+  BasicStateVector<int> addend(1);
+  StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
+  EXPECT_THROW(subvec += addend, std::out_of_range);
+}
+
+// Tests that a StateSubvector can be added to an Eigen vector.
+TEST_F(StateSubvectorTest, AddToVector) {
+  VectorX<int> target(2);
+  target << 100, 1000;
+
+  StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
+  subvec.AddToVector(target);
+
+  Eigen::Vector2i expected;
+  expected << 102, 1003;
+  EXPECT_EQ(expected, target);
+}
+
+TEST_F(StateSubvectorTest, AddToVectorInvalidSize) {
+  VectorX<int> target(3);
+  StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
+  EXPECT_THROW(subvec.AddToVector(target), std::out_of_range);
 }
 
 }  // namespace

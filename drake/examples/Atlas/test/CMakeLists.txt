@@ -12,7 +12,8 @@ if(LONG_RUNNING_TESTS)
   # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingTiltedBlocks COMMAND runAtlasWalkingTiltedBlocks PROPERTIES TIMEOUT 1500 REQUIRES iris)
   # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingDownStairs COMMAND runAtlasWalkingDownStairs PROPERTIES TIMEOUT 1500 REQUIRES iris)
 
-  add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingHeelSupport COMMAND runAtlasWalkingHeelSupport PROPERTIES TIMEOUT 1500 REQUIRES iris)
+  # See Github Issues #2553 #2538
+  # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingHeelSupport COMMAND runAtlasWalkingHeelSupport PROPERTIES TIMEOUT 1500 REQUIRES iris)
 endif()
 
 add_matlab_test(NAME examples/Atlas/test/runDRCDrillTask COMMAND runDRCDrillTask)

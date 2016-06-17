@@ -42,7 +42,8 @@ class KinematicsCacheHelper {
   KinematicsCache<Scalar> kinsol_;
 };
 
-class SingleTimeKinematicConstraintWrapper : public Constraint {
+class SingleTimeKinematicConstraintWrapper :
+      public drake::solvers::Constraint {
  public:
   /// All pointers are aliased for the lifetime of the wrapper.
   SingleTimeKinematicConstraintWrapper(
@@ -79,7 +80,8 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
   mutable KinematicsCacheHelper<double>* kin_helper_;
 };
 
-class QuasiStaticConstraintWrapper : public Constraint {
+class QuasiStaticConstraintWrapper :
+      public drake::solvers::Constraint {
  public:
   /// All pointers are aliased for the lifetime of the wrapper.  Also,
   /// the wrapped QuasiStaticConstraint claims to have three

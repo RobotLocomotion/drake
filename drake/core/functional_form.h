@@ -109,7 +109,8 @@ class DRAKECORE_EXPORT FunctionalForm {
   /** Construct an \ref undefined form with no variables. */
   FunctionalForm();
 
-  /** Construct a \ref constant or \ref zero form with no variables.  */
+  /** Construct a \ref constant, \ref zero (0), or \ref undefined (NaN)
+      form with no variables.  */
   explicit FunctionalForm(double d);
 
   /** Return a \ref zero form with no variables. */

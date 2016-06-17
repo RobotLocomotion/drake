@@ -110,6 +110,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
                            DrakeJoint::QUATERNION,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
+  /**
+   * Returns an integer than can be used to uniquely identify a model
+   * within this rigid body tree. Note that this method is not thread safe!
+   */
+  int get_next_model_id() { return next_model_id_++; }
+
+  /**
+   * Returns an integer that will be used as a unique ID for the next model
+   * to be added within the rigid body tree.
+   */
+  int get_current_model_id() { return next_model_id_; }
+
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
@@ -662,25 +674,85 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   void warnOnce(const std::string& id, const std::string& msg);
 
-  RigidBody* findLink(std::string name, int robot) const;
+  /**
+   * Finds a link with the specified \p link_name belonging to a model with the
+   * specified \p model_name and \p model_id. Note that if \p model_name is the
+   * empty string and \p model_id is -1, every model is searched. If
+   * \p model_name and \p model_id are inconsistent, no link will be found and
+   * an exception will be thrown.
+   *
+   * @param[in] link_name The name of the link to find.
+   * @param[in] model_name The name of the model to which the link belongs. If
+   * this value is an empty string, every model is searched.
+   * @param[in] model_id The ID of the model to which the link belongs. If this
+   * value is -1, every model is searched.
+   * @throws std::logic_error if multiple matching links are found or no
+   * matching links are found.
+   */
+  RigidBody* findLink(const std::string& link_name,
+                      const std::string& model_name = "",
+                      int model_id = -1) const;
 
-  RigidBody* findLink(std::string name, std::string model_name = "") const;
-
-  int findLinkId(const std::string& name, int robot = -1) const;
+  /**
+   * Obtains the body index of a link. Note that the body index of the link
+   * is different from the ID of the model to which the link belongs.
+   *
+   * @param[in] link_name The link whose body index we want to find. It should
+   * be unique within the searched models, otherwise an exception will be
+   * thrown.
+   * @param[in] model_id The ID of the model. This parameter is optional. If
+   * supplied, only that model is searched; otherwise, all models are searched.
+   * @return The body index of the specified link. If this value is -1, all
+   * models are searched for a link named \p link_name.
+   * @throws std::logic_error if no link with the specified \p link_name and
+   * \p model_id were found or if multiple matching links were found.
+   */
+  int FindBodyIndex(const std::string& link_name, int model_id = -1) const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
-  RigidBody* findJoint(std::string jointname, int robot = -1) const;
+  /**
+   * Obtains a pointer to the rigid body whose parent joint is named
+   * \p joint_name and is part of a model with ID \p model_id.
+   *
+   * @param[in] joint_name The name of the joint to find.
+   * @param[in] model_id The ID of the model that contains the joint. This
+   * parameter is optional. If supplied, only that model is searched; otherwise,
+   * all models are searched.
+   * @return A pointer to the rigid body whose joint is the one being searched
+   * for.
+   * @throws std::logic_error if no joint is found with the given name within
+   * the searched model(s).
+   */
+  RigidBody* findJoint(const std::string& joint_name, int model_id = -1) const;
 
-  int findJointId(const std::string& joint_name, int robot = -1) const;
+  int findJointId(const std::string& joint_name, int model_id = -1) const;
 
-  // @param robot the index of the robot. robot = -1 means to look at
-  // all the robots
-  std::shared_ptr<RigidBodyFrame> findFrame(std::string frame_name,
-                                            std::string model_name = "") const;
+  /**
+   * Finds a frame of the specified \p frame_name belonging to a model with the
+   * specified \p model_id.
+   *
+   * @param[in] frame_name The name of the frame to find.
+   * @param[in] model_id The ID of the model to which the frame belongs. If this
+   * value is -1, search all models.
+   * @throws std::logic_error if multiple matching frames are found.
+   */
+  std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
+                                            int model_id = -1) const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
   // @param body_or_frame_id the index of the body or the id of the frame.
+
+  /**
+   * Obtains a rigid body actuator from this rigid body tree. The actuator is
+   * selected based on its name.
+   *
+   * @param name The name of the rigid body actuator to get.
+   * @returns A const reference to the rigid body actuator with name @p name.
+   * @throws std::invalid_argument if no rigid body actuator with name @p name
+   * exists.
+   */
+  const RigidBodyActuator& GetActuator(const std::string& name) const;
 
   // TODO(tkoolen): remove parseBodyOrFrameID methods
   template <typename Scalar>
@@ -726,7 +798,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -810,7 +883,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   int number_of_velocities() const { return num_velocities_; }
 
-
  public:
   static const std::set<int> default_robot_num_set;
 
@@ -842,6 +914,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   // The number of velocity states in this rigid body tree.
   int num_velocities_{};
+
+  // Remembers the ID that should be assigned to the next model added to this
+  // rigid body tree.
+  int next_model_id_{};
 
   // helper functions for contactConstraints
   template <typename Scalar>

@@ -1,13 +1,13 @@
 #include "MathematicalProgram.h"
 
+#include "IpoptSolver.h"
 #include "MobyLCP.h"
 #include "NloptSolver.h"
 #include "Optimization.h"
 #include "SnoptSolver.h"
 
-using drake::solvers::SolutionResult;
-
-namespace Drake {
+namespace drake {
+namespace solvers {
 MathematicalProgramInterface::~MathematicalProgramInterface() {}
 
 namespace {
@@ -85,6 +85,9 @@ class NonlinearProgram : public MathematicalProgram {
     if (snopt_solver.available()) {
       return snopt_solver.Solve(prog);
     }
+    if (ipopt_solver.available()) {
+      return ipopt_solver.Solve(prog);
+    }
     if (nlopt_solver.available()) {
       return nlopt_solver.Solve(prog);
     }
@@ -92,6 +95,7 @@ class NonlinearProgram : public MathematicalProgram {
   }
 
  private:
+  IpoptSolver ipopt_solver;
   NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
 };
@@ -193,4 +197,6 @@ MathematicalProgramInterface::GetLeastSquaresProgram() {
 }
 
 MathematicalProgramSolverInterface::~MathematicalProgramSolverInterface() {}
-}
+
+}  // namespace solvers
+}  // namespace drake

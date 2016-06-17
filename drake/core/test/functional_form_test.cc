@@ -1,5 +1,6 @@
 #include "drake/core/functional_form.h"
 
+#include <cmath>
 #include <sstream>
 
 #include <Eigen/Core>
@@ -268,6 +269,9 @@ GTEST_TEST(FunctionalFormTest, Construct) {
 
   FunctionalForm double_nonzero(0.1);
   EXPECT_TRUE(double_nonzero.IsConstant());
+
+  FunctionalForm double_nan(std::nan(""));
+  EXPECT_TRUE(double_nan.IsUndefined());
 }
 
 GTEST_TEST(FunctionalFormTest, Basic) {

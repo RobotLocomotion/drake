@@ -5,7 +5,8 @@
 #include "drake/drakeOptimization_export.h"
 #include "drake/solvers/solution_result.h"
 
-namespace Drake {
+namespace drake {
+namespace solvers {
 class OptimizationProblem;
 
 // uses virtual methods to crawl up the complexity hiearchy as new decision
@@ -35,8 +36,7 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramInterface {
   virtual MathematicalProgramInterface*
   AddLinearComplementarityConstraint() = 0;
 
-  virtual drake::solvers::SolutionResult Solve(
-      OptimizationProblem& prog) const = 0;
+  virtual SolutionResult Solve(OptimizationProblem& prog) const = 0;
 
   static std::shared_ptr<MathematicalProgramInterface> GetLeastSquaresProgram();
 };
@@ -46,7 +46,8 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
  public:
   virtual ~MathematicalProgramSolverInterface();
   virtual bool available() const = 0;
-  virtual drake::solvers::SolutionResult Solve(
-      OptimizationProblem& prog) const = 0;
+  virtual SolutionResult Solve(OptimizationProblem& prog) const = 0;
 };
-}
+
+}  // namespace solvers
+}  // namespace drake

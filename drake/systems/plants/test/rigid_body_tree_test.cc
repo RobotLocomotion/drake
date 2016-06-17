@@ -56,8 +56,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
 
   EXPECT_TRUE(tree->findLink("body1", "robot1") != nullptr);
   EXPECT_TRUE(tree->findLink("body1", "robot2") != nullptr);
-  EXPECT_TRUE(tree->findLink("body2", "robot1") == nullptr);
-  EXPECT_TRUE(tree->findLink("body2", "robot2") == nullptr);
+  EXPECT_THROW(tree->findLink("body2", "robot1"), std::logic_error);
+  EXPECT_THROW(tree->findLink("body2", "robot2"), std::logic_error);
 
   // Adds floating joints that connect r1b1 and r2b1 to the rigid body tree's
   // world link at zero offset.

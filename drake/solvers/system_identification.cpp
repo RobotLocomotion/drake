@@ -270,7 +270,7 @@ SystemIdentification<T>::EstimateParameters(
   assert(num_data >= vars_to_estimate.size());
 
   // Build up our optimization problem's decision variables.
-  Drake::OptimizationProblem problem;
+  OptimizationProblem problem;
   const auto parameter_variables =
       problem.AddContinuousVariables(num_to_estimate, "param");
   const auto error_variables =
@@ -314,7 +314,7 @@ SystemIdentification<T>::EstimateParameters(
   auto cost = problem.AddQuadraticCost(
       Eigen::MatrixXd::Identity(num_err_terms, num_err_terms),
       Eigen::VectorXd::Zero(num_err_terms),
-      std::list<Drake::DecisionVariableView> { error_variables });
+      std::list<DecisionVariableView> { error_variables });
 
   // Solve the problem and copy out the result.
   SolutionResult solution_result = problem.Solve();

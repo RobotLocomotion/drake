@@ -9,7 +9,7 @@
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
@@ -26,8 +26,10 @@ class TestContinuousSystem : public ContinuousSystem<double> {
 
   std::string get_name() const override { return "TestContinuousSystem"; }
 
-  std::unique_ptr<StateVectorInterface<double>> AllocateStateDerivatives()
-      const override { return nullptr; }
+  std::unique_ptr<StateVector<double>> AllocateStateDerivatives()
+      const override {
+    return nullptr;
+  }
 
   std::unique_ptr<Context<double>> CreateDefaultContext() const override {
     return nullptr;
@@ -40,9 +42,8 @@ class TestContinuousSystem : public ContinuousSystem<double> {
   void Output(const Context<double>& context,
               SystemOutput<double>* output) const override {}
 
-
   void Dynamics(const Context<double>& context,
-                StateVectorInterface<double>* derivatives) const override {}
+                StateVector<double>* derivatives) const override {}
 };
 
 class ContinuousSystemTest : public ::testing::Test {
@@ -58,8 +59,8 @@ TEST_F(ContinuousSystemTest, MapVelocityToConfigurationDerivatives) {
   BasicStateVector<double> state_vec1(std::move(vec1));
   BasicStateVector<double> state_vec2(std::move(vec2));
 
-  system_.MapVelocityToConfigurationDerivatives(context_,
-                                                state_vec1, &state_vec2);
+  system_.MapVelocityToConfigurationDerivatives(context_, state_vec1,
+                                                &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
@@ -72,9 +73,8 @@ TEST_F(ContinuousSystemTest, VelocityConfigurationDerivativeSizeMismatch) {
   BasicStateVector<double> state_vec1(std::move(vec1));
   BasicStateVector<double> state_vec2(std::move(vec2));
 
-  EXPECT_THROW(system_.MapVelocityToConfigurationDerivatives(context_,
-                                                             state_vec1,
-                                                             &state_vec2),
+  EXPECT_THROW(system_.MapVelocityToConfigurationDerivatives(
+                   context_, state_vec1, &state_vec2),
                std::out_of_range);
 }
 
