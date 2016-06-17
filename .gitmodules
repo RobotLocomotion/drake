@@ -88,3 +88,4 @@
 [submodule "externals/ipopt"]
 	path = externals/ipopt
 	url = https://github.com/RobotLocomotion/ipopt-mirror.git
+	ignore = untracked
