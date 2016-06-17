@@ -49,27 +49,28 @@ typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
 // These tests are performed using the following algorithms:
 // - closestPointsAllToAll: O(N^2) checking all pairs of collision elements.
 //   Results are in bodies' frames.
-// - collisionPointsAllToAll: Uses collision library dispatching.
+// - ComputeMaximumDepthCollisionPoints: Uses collision library dispatching.
 //   Results are in world frame.
 // - potentialCollisionPoints: randomly samples collision elements' pose
 //   searching for potential collision points. Results are in the bodies'
 //   frames.
 
 // CLEARING CACHED RESULTS TEST
-// Test ClearCachedResults tests the method Model::ClearCachedResults.
-// This method clears results cached by the model so that future collision
-// queries are performed from scratch and do not depend on past history.
+// Test ClearCachedResults tests the model is not caching results when a series
+// of collision dispatch queries is performed. This ensures results do not
+// depend on the past history and that the user gets a fresh query every time.
 
 // REMARKS ON MULTICONTACT
 // Results from Model::potentialCollisionPoints are affected by previous calls
-// to Model::collisionPointsAllToAll even if cached results are cleared with
-// Model::ClearCachedResults. This is the reason why multicontact tests using
-// Model::potentialCollisionPoints are performed separately in their own tests.
+// to Model::ComputeMaximumDepthCollisionPoints even if cached results are
+// cleared with Model::ClearCachedResults. This is the reason why multicontact
+// tests using Model::potentialCollisionPoints are performed separately in their
+// own tests.
 // For instance, for the NonAlignedBoxes there is a separate test called
 // NonAlignedBoxes_multi performed with Model::potentialCollisionPoints.
 // It seems like Bullet is storing some additional configuration setup with the
-// call to Model::collisionPointsAllToAll that persists throughout subsequent
-// calls to Model::potentialCollisionPoints.
+// call to Model::ComputeMaximumDepthCollisionPoints that persists throughout
+// subsequent calls to Model::potentialCollisionPoints.
 // Therefore, DO NOT mix these calls since they might produce erroneous results.
 // Notice also that the tolerance used for these tests is much higher. The
 // reason is that Bullet randomly changes the pose of the collision elements
@@ -252,10 +253,10 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   EXPECT_TRUE(
       points[0].getPtB().isApprox(solution_[points[0].getIdB()].body_frame));
 
-  // Collision test performed with Model::collisionPointsAllToAll.
+  // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Not using margins.
   points.clear();
-  model_->collisionPointsAllToAll(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
@@ -272,10 +273,10 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   EXPECT_TRUE(
       points[0].getPtB().isApprox(solution_[points[0].getIdB()].world_frame));
 
-  // Collision test performed with Model::collisionPointsAllToAll.
+  // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Using margins.
   points.clear();
-  model_->collisionPointsAllToAll(true, points);
+  model_->ComputeMaximumDepthCollisionPoints(true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
@@ -421,10 +422,10 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   EXPECT_NEAR(points[0].getPtB().y(),
               solution_[points[0].getIdB()].body_frame.y(), tolerance_);
 
-  // Collision test performed with Model::collisionPointsAllToAll.
+  // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Not using margins.
   points.clear();
-  model_->collisionPointsAllToAll(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, points);
 
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
@@ -439,10 +440,10 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   EXPECT_NEAR(points[0].getPtB().y(),
               solution_[points[0].getIdB()].world_frame.y(), tolerance_);
 
-  // Collision test performed with Model::collisionPointsAllToAll.
+  // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Using margins.
   points.clear();
-  model_->collisionPointsAllToAll(true, points);
+  model_->ComputeMaximumDepthCollisionPoints(true, points);
 
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
@@ -580,9 +581,9 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   EXPECT_NEAR(points[0].getPtB().y(),
               solution_[points[0].getIdB()].body_frame.y(), tolerance_);
 
-  // Collision test performed with Model::collisionPointsAllToAll.
+  // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   points.clear();
-  model_->collisionPointsAllToAll(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, points);
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
   // least the four corners of the smaller box. However it randomly picks one
@@ -633,8 +634,9 @@ TEST_F(NonAlignedBoxes, MultiContact) {
   }
 }
 
-// Tests and illustrates the use of Model::ClearCachedResults to perform a
-// collision query that returns a single result.
+// Tests the model is not caching results from a series of different queries.
+// Internally the model is using the method Model::ClearCachedResults
+// to this end.
 TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
@@ -670,11 +672,12 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
     // do not accumulate.
     points.clear();
 
-    model_->collisionPointsAllToAll(false, points);
+    model_->ComputeMaximumDepthCollisionPoints(false, points);
   }
 
-  // If Bullet cached those tests then there should be four results.
-  ASSERT_EQ(4, points.size());
+  // Check that the model is not caching results even after four queries.
+  // If the model does not cache results there should only be one result.
+  ASSERT_EQ(1, points.size());
 
   for (int i = 0; i < points.size(); ++i) {
     EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance_);
@@ -686,35 +689,6 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
     EXPECT_NEAR(points[i].getPtB().y(),
                 solution_[points[0].getIdB()].world_frame.y(), tolerance_);
   }
-
-  // Clearing cached results
-  for (int i = 0; i < 4; ++i) {
-    // Small disturbance so that tests are slightly different causing Bullet's
-    // dispatcher to cache these results.
-    if (i == 0) small_box_pose.translation() = Vector3d(   0.0, 5.4,    0.0);
-    if (i == 1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
-    if (i == 2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
-    if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
-    model_->updateElementWorldTransform(small_box_id_, small_box_pose);
-
-    // Notice that the results vector is cleared every time so that results
-    // do not accumulate.
-    points.clear();
-
-    // Clear cache before each test.
-    model_->ClearCachedResults(false);
-    model_->collisionPointsAllToAll(false, points);
-  }
-
-  // Since cache was cleared on every test, only one point is expected.
-  ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
-  // Only test for vertical position.
-  EXPECT_NEAR(points[0].getPtA().y(),
-              solution_[points[0].getIdA()].world_frame.y(), tolerance_);
-  EXPECT_NEAR(points[0].getPtB().y(),
-              solution_[points[0].getIdB()].world_frame.y(), tolerance_);
 }
 
 }  // namespace
