@@ -4,7 +4,7 @@ namespace drake {
 namespace solvers {
 namespace {
 
-const Drake::DecisionVariableView setupVariables(OptimizationProblem optProblem,
+const DecisionVariableView setupVariables(OptimizationProblem optProblem,
                                                  size_t N, int numStates,
                                                  int numInputs) {
   int nH = N - 1;
@@ -12,7 +12,7 @@ const Drake::DecisionVariableView setupVariables(OptimizationProblem optProblem,
   int nU = numInputs;
   int numVars = nH + N * (nX + nU);
 
-  Drake::DecisionVariableView vars =
+  DecisionVariableView vars =
       optProblem.AddContinuousVariables(numVars, "h");
   // !!! Looks like we have to create 3 sets of decision vars, for h, x, u:
   // !!! Should call AddContinuousVariables 3x.
@@ -27,7 +27,7 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     : numInputs_(numInputs),
       numStates_(numStates),
       numTimeSamples_(numTimeSamples) {
-  Drake::DecisionVariableView vars =
+  DecisionVariableView vars =
       setupVariables(optProblem_, numTimeSamples_, numStates_, numInputs_);
 
   (void)vars;  // !!! temp to avoid warnings.
