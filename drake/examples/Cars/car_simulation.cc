@@ -79,7 +79,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
       }
       *duration = atof(argv[i]);
     } else {
-      tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);
+      rigid_body_sys->addRobotFromFile(argv[i], DrakeJoint::FIXED);
     }
   }
 
