@@ -43,15 +43,40 @@ int findLinkIndex(RigidBodyTree* model, string link_name) {
   return index;
 }
 
-int findLinkIndexByJointName(RigidBodyTree* model, string jointname) {
+// Finds the index of the link whose parent joint has a specified name.
+// Throws a std::runtime_error if no such link can be found or if more than
+// one link is found.
+//
+// TODO(liang.fok): Generalize this method to support a model_id.
+//                  See: https://github.com/RobotLocomotion/drake/issues/2583
+int findLinkIndexByJointName(RigidBodyTree* model, string joint_name) {
+  // Stores the index of the link whose joint is the one we're searching for.
   int index = -1;
+
+  // Searches through all of the bodies in the rigid body tree looking for the
+  // joint with the specified name.
   for (unsigned int i = 0; i < model->bodies.size(); i++) {
     if (model->bodies[i]->hasParent() &&
-        jointname.compare(model->bodies[i]->getJoint().getName()) == 0) {
-      index = i;
-      break;
+        joint_name.compare(model->bodies[i]->getJoint().getName()) == 0) {
+      if (index == -1) {
+        index = i;
+      } else {
+        throw std::runtime_error(
+            "RigidBodyTreeURDF.cpp: findLinkIndexByJointName: ERROR: Multiple "
+            "joints named \"" +
+            joint_name + "\" found.");
+      }
     }
   }
+
+  // Verifies that the link was found. If not, throws an exception.
+  if (index == -1) {
+    throw std::runtime_error(
+        "RigidBodyTreeURDF.cpp: findLinkIndexByJointName: "
+        "ERROR: Unable to find joint named \"" +
+        joint_name + "\".");
+  }
+
   return index;
 }
 

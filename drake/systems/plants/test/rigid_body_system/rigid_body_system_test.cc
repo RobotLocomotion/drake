@@ -143,6 +143,26 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_NE(tree->findJoint("joint_2", 3), nullptr);
 }
 
+GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
+  // Instantiates a rigid body system.
+  std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
+
+  // Adds the same SDF to the rigid body system twice. Both models are connected
+  // to the world using a quaternion joint. The first model's root frame matches
+  // the world's coordinate frame. The second model's root frame is offset from
+  // the world's coordinate frame by X = 1, Y = 1, and Z = 1.
+  EXPECT_THROW(
+      rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
+                                       "/systems/plants/test/rigid_body_system/"
+                                       "bad_transmission_no_joint.urdf"),
+      std::runtime_error);
+
+  // Obtains a const pointer to the rigid body tree within the rigid body
+  // system.
+  // const std::shared_ptr<RigidBodyTree>& tree =
+  //     rigid_body_sys->getRigidBodyTree();
+}
+
 }  // namespace
 }  // namespace rigid_body_system
 }  // namespace test
