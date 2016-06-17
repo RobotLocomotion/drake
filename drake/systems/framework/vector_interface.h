@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 
 #include "drake/common/eigen_types.h"
 
@@ -21,12 +22,6 @@ class VectorInterface {
  public:
   virtual ~VectorInterface() {}
 
-  // VectorInterface objects are neither copyable nor moveable.
-  VectorInterface(const VectorInterface<T>& other) = delete;
-  VectorInterface& operator=(const VectorInterface<T>& other) = delete;
-  VectorInterface(VectorInterface<T>&& other) = delete;
-  VectorInterface& operator=(VectorInterface<T>&& other) = delete;
-
   /// Returns the size of the vector, which must be equal to the number of rows
   /// in get_value().
   virtual ptrdiff_t size() const = 0;
@@ -44,8 +39,19 @@ class VectorInterface {
   /// does not allow resizing the vector itself.
   virtual Eigen::VectorBlock<VectorX<T>> get_mutable_value() = 0;
 
+  /// Copies the entire vector to a new VectorInterface, with the same concrete
+  /// implementation type.
+  virtual std::unique_ptr<VectorInterface<T>> Clone() const = 0;
+
  protected:
   VectorInterface() {}
+
+ private:
+  // VectorInterface objects are neither copyable nor moveable.
+  VectorInterface(const VectorInterface<T>& other) = delete;
+  VectorInterface& operator=(const VectorInterface<T>& other) = delete;
+  VectorInterface(VectorInterface<T>&& other) = delete;
+  VectorInterface& operator=(VectorInterface<T>&& other) = delete;
 };
 
 }  // namespace systems

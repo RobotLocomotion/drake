@@ -47,7 +47,24 @@ class BasicVector : public VectorInterface<T> {
     return values_.head(values_.rows());
   }
 
+  /// Copies the entire state to a new BasicVector.
+  ///
+  /// Uses the Non-Virtual Interface idiom because smart pointers do not have
+  /// type covariance.
+  std::unique_ptr<VectorInterface<T>> Clone() const final {
+    return std::unique_ptr<VectorInterface<T>>(DoClone());
+  }
+
  private:
+  // Returns a new BasicStateVector containing a copy of the entire state.
+  // Subclasses of BasicVector must override DoClone to return their covariant
+  // type.
+  virtual BasicVector<T>* DoClone() const {
+    BasicVector* clone = new BasicVector(size());
+    clone->values_ = values_;
+    return clone;
+  }
+
   // The column vector of T values.
   VectorX<T> values_;
 };
