@@ -83,6 +83,17 @@ class NamedValueVector : public VectorInterface<T> {
     return nullptr;
   }
 
+  std::unique_ptr<VectorInterface<T>> Clone() const override {
+    // Get all of the names.
+    std::vector<std::pair<std::string, T>> named_values;
+    for (const auto& name_map : names_) {
+      named_values.push_back(
+          std::make_pair(name_map.first, *get_named_value(name_map.first)));
+    }
+    return std::unique_ptr<VectorInterface<T>>(
+        new NamedValueVector<T>(named_values));
+  }
+
  private:
   // Given a list of names, returns a map from each name to its index in the
   // vector. If a name appears multiple times, the last index is used.

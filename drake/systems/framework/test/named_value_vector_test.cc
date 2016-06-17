@@ -64,6 +64,19 @@ GTEST_TEST(NamedValueVectorTest, SetWholeVector) {
   EXPECT_EQ(4, *vector.get_named_value("bar"));
 }
 
+// Tests that when a NamedValueVector is cloned, its type and data are
+// preserved.
+GTEST_TEST(NamedValueVectorTest, Clone) {
+  NamedValueVector<int> vector(
+      std::vector<std::pair<std::string, int>>{{"foo", 1}, {"bar", 2}});
+
+  std::unique_ptr<VectorInterface<int>> clone = vector.Clone();
+  NamedValueVector<int>* typed_clone =
+      dynamic_cast<NamedValueVector<int>*>(clone.get());
+  EXPECT_EQ(1, *typed_clone->get_named_value("foo"));
+  EXPECT_EQ(2, *typed_clone->get_named_value("bar"));
+}
+
 // Tests that an error is thrown when the NamedValueVector is set to a vector
 // of a different size.
 GTEST_TEST(NamedValueVectorTest, ReinitializeInvalid) {
