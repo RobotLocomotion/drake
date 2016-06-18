@@ -663,7 +663,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
                            std::vector<int>& bodyA_idx,
                            std::vector<int>& bodyB_idx,
                            bool use_margins = true);
-  // bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
 
   virtual bool collidingPointsCheckOnly(
       const KinematicsCache<double>& cache,

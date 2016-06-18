@@ -623,7 +623,7 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
 
   vector<DrakeCollision::PointPair> points;
   bool points_found =
-      collision_model->collisionPointsAllToAll(use_margins, points);
+      collision_model->ComputeMaximumDepthCollisionPoints(use_margins, points);
 
   xA_in_world = Matrix3Xd::Zero(3, points.size());
   xB_in_world = Matrix3Xd::Zero(3, points.size());
