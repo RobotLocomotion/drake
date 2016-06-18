@@ -248,8 +248,10 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
           element.setMaterial(rgba);
         }
       } else {
-        cerr << "WARNING: visual element had a material with neither a name "
-                "nor a nested color element"
+        cerr << "WARNING: Visual element had a material with neither a name "
+                "nor a nested color element" << endl
+             << "  - model name: " << body->model_name() << endl
+             << "  - body name: " << body->name()
              << endl;
       }
     }
