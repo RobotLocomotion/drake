@@ -19,15 +19,15 @@ namespace plants {
 namespace {
 
 std::string model_file_1, model_file_2;
-std::shared_ptr<RigidBodyFrame> model_pose_in_world;
 
 GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
+  // Creates a rigid body system using the first model.
   auto r1 = make_shared<RigidBodySystem>();
   r1->addRobotFromFile(model_file_1, DrakeJoint::QUATERNION);
 
+  // Creates a rigid body system using the second model.
   auto r2 = make_shared<RigidBodySystem>();
-  r2->addRobotFromFile(model_file_2, DrakeJoint::QUATERNION,
-                       model_pose_in_world);
+  r2->addRobotFromFile(model_file_2, DrakeJoint::QUATERNION);
 
   // for debugging:
   // r1->getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");
@@ -36,6 +36,10 @@ GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
   // dot -Tpng -O /tmp/r1.dot; dot -Tpng -O /tmp/r2.dot; open /tmp/r1.dot.png
   // /tmp/r2.dot.png
 
+  // Verfies that the two rigid body systems are equal. This is done by first
+  // comparing the number of states, inputs, and outputs of the two rigid body
+  // systems and then feeding in random state values into the two rigid body
+  // systems and verifying that their resulting xdot states are the same.
   EXPECT_EQ(r1->getNumStates(), r2->getNumStates());
   EXPECT_EQ(r1->getNumInputs(), r2->getNumInputs());
   EXPECT_EQ(r1->getNumOutputs(), r2->getNumOutputs());
@@ -71,41 +75,22 @@ GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
 }  // namespace drake
 
 int main(int argc, char** argv) {
-  std::cout << "Running main() from compareRigidBodySystems.cpp" << std::endl;
-  // ::testing::GTEST_FLAG(output) = "xml:hello.xml";
-
-  std::cout << "Calling testing::InitGoogleTest(...)" << std::endl;
+  // Initializes the Google Test infrastructure.
   testing::InitGoogleTest(&argc, argv);
 
-  std::cout << "argc = " << argc << std::endl;
+  // Checks if the minimum number of command line parameters exists. If not,
+  // prints a message describing the command line options and then abort with
+  // an error code.
   if (argc < 3) {
     std::cerr << "Usage: " << argv[0]
-              << " [options] full_path_to_robot1 full_path_to_robot2 x y z\n"
-              << " The x y z parameters are optional and specify the position"
-              << " of robot2 in the world, which is useful for URDF"
-              << " models)" << std::endl;
+              << " [options] full_path_to_robot1 full_path_to_robot2"
+              << std::endl;
     return 1;
   }
 
+  // Obtains the names of the two models to compare.
   drake::systems::plants::model_file_1 = argv[1];
   drake::systems::plants::model_file_2 = argv[2];
-
-  if (argc > 3) {
-    drake::systems::plants::model_pose_in_world =
-        std::allocate_shared<RigidBodyFrame>(
-            Eigen::aligned_allocator<RigidBodyFrame>(),
-            std::string(RigidBodyTree::kWorldLinkName),
-            nullptr,  // not used since the robot is attached to the world
-            Eigen::Vector3d(std::stod(argv[3]), std::stod(argv[4]),
-                            std::stod(argv[5])),  // xyz of the car's root link
-            Eigen::Vector3d(0, 0, 0));            // rpy of the car's root link
-  } else {
-    drake::systems::plants::model_pose_in_world =
-        std::allocate_shared<RigidBodyFrame>(
-            Eigen::aligned_allocator<RigidBodyFrame>(),
-            std::string(RigidBodyTree::kWorldLinkName), nullptr,
-            Eigen::Isometry3d::Identity());
-  }
 
   return RUN_ALL_TESTS();
 }
