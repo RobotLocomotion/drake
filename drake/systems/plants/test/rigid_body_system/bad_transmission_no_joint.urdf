@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!--
-Implements a Robot model that contains a transmission for a joint that does not
+Implements a robot model that contains a transmission for a joint that does not
 exist.
 -->
 <robot name="robot_with_bad_transmission">
