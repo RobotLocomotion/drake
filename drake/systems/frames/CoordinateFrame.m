@@ -555,16 +555,17 @@ classdef CoordinateFrame < handle
       % characters, and create a cell array with a unique identifier
       % appended to each string.
       
-      % for example, if s='aabab', 
+      % for example, if prefix='aabab', 
       % coordinates = {'a1', 'a2', 'b1', 'a3', 'b2'}
       
       % initialize our empty cell array
-      n = length(s);
+      n = length(prefix);
       coordinates = cell(n,1);
 
       % t is a copy of the string which we will incrementaly delete letters from to 
-      % find all unique characters in s
-      t = s;
+      % find all unique characters in the prefix
+      s = prefix
+      t = prefix;
       while ~isempty(t)
           % the first letter in t is a new unique character 
           c = t(1);
