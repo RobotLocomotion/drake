@@ -19,10 +19,9 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   // Instantiates a rigid body system.
   std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
 
-  // Adds the same SDF to the rigid body system twice. Both models are connected
-  // to the world using a quaternion joint. The first model's root frame match
-  // the world's coordinate frame. The second model's root frame is offset from
-  // the world's coordinate fram by X = 1, Y = 1, and Z = 1.
+  // Adds a URDF to the rigid body system. This URDF contains only fixed joints
+  // and is attached to the world via a fixed joint. Thus, everything in the
+  // URDF becomes part of the world.
   rigid_body_sys->addRobotFromFile(
       Drake::getDrakePath() +
           "/systems/plants/test/rigid_body_system/world.urdf",
