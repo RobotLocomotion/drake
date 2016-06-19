@@ -6,6 +6,7 @@
 #include "drake/systems/plants/material_map.h"
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "drake/systems/plants/xmlUtil.h"
+#include "drake/util/eigen_matrix_compare.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
@@ -86,6 +87,46 @@ void parseInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model) {
   body->I = transformSpatialInertia(T, I);
 }
 
+// Adds a material to the supplied material map. If the material is already
+// present, it checks whether the new values are the same as the old values. If
+// they are the same, return normally. Otherwise print a warning to std::cerr.
+//
+// Currently, only simple colors are supported as the material. In the future,
+// support for textures may be added.
+//
+// @param[in] material_name A human-understantable description of the material.
+// @param[in] color_rgba The red-green-blue-alpha color values of the material.
+// The range of values is [0, 1].
+// @param[out] materials A pointer to the map in which to store the material.
+void AddMaterialToMaterialMap(const std::string& material_name,
+    const Vector4d& color_rgba, MaterialMap* materials) {
+  // Determines if the material is already in the map.
+  auto material_iter = materials->find(material_name);
+  if (material_iter != materials->end()) {
+    // The material is already in the map. Checks whether the old material is
+    // the same as the new material.
+    auto& existing_color = material_iter->second;
+    if (!drake::util::CompareMatrices(color_rgba, existing_color, 1e-10,
+        drake::util::MatrixCompareType::relative)) {
+      // The materials map already has the material_name key but the color
+      // associated with it is different.
+      std::cerr << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
+                << "WARNING: Material \"" + material_name + "\" was previously "
+                << "defined but was associated with different RGBA color "
+                << "values." << std::endl
+                << "  - existing RGBA values: " << existing_color.transpose()
+                << std::endl
+                << "  - new RGBA values: " << color_rgba.transpose()
+                << std::endl
+                << "Keeping the original RGBA values in the materials map."
+                << std::endl;
+    }
+  } else {
+    // Adds the new color to the materials map.
+    (*materials)[material_name] = color_rgba;
+  }
+}
+
 bool parseMaterial(XMLElement* node, MaterialMap& materials) {
   const char* attr;
   attr = node->Attribute("name");
@@ -94,11 +135,6 @@ bool parseMaterial(XMLElement* node, MaterialMap& materials) {
     return false;
   }
   string name(attr);
-  auto material_iter = materials.find(name);
-  bool already_in_map = false;
-  if (material_iter != materials.end()) {
-    already_in_map = true;
-  }
 
   Vector4d rgba;
   XMLElement* color_node = node->FirstChildElement("color");
@@ -107,12 +143,14 @@ bool parseMaterial(XMLElement* node, MaterialMap& materials) {
       cerr << "WARNING: color tag is missing rgba attribute" << endl;
       return false;
     }
-    materials[name] = rgba;
-  } else if (!already_in_map) {
-    cerr << "WARNING: material \"" << name
-         << "\" is not a simple color material (so is currently unsupported)"
-         << endl;
-    return false;
+    AddMaterialToMaterialMap(name, rgba, &materials);
+  } else {
+    if (materials.find(name) == materials.end()) {
+      cerr << "WARNING: material \"" << name
+           << "\" is not a simple color material (so is currently unsupported)"
+           << endl;
+      return false;
+    }
   }
   return true;
 }
@@ -211,62 +249,117 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
+// Parses the URDF visual specification of a link. Currently, only colors are
+// supported.
+//
+// TODO(liang.fok) Add support for textures. See:
+// https://github.com/RobotLocomotion/drake/issues/2588
+//
+// For color visualizations that are named, this method adds the name and color
+// tuple into the materials map.
+//
+// A warning is printed to std::cerr if a material is not set for the rigid
+// body's visualization.
 void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
-                 const MaterialMap& materials, const PackageMap& package_map,
+                 MaterialMap* materials, const PackageMap& package_map,
                  const string& root_dir) {
-  // DEBUG
-  // cout << "parseVisual: START" << endl;
-  // END_DEBUG
-  Isometry3d T_element_to_link = Isometry3d::Identity();
-  XMLElement* origin = node->FirstChildElement("origin");
-  if (origin) originAttributesToTransform(origin, T_element_to_link);
-
+  // Ensures there is a geometry child element. Since this is a required
+  // element, throws an exception if a geometry element does not exist.
   XMLElement* geometry_node = node->FirstChildElement("geometry");
-  if (!geometry_node)
+  if (!geometry_node) {
     throw runtime_error("ERROR: Link " + body->name_ +
                         " has a visual element without geometry.");
+  }
 
+  // Obtains the reference frame of the visualization relative to the reference
+  // frame of the rigid body that is being visualized. It defaults to identity
+  // if no transform is specified.
+  Isometry3d T_element_to_link = Isometry3d::Identity();
+  {
+    XMLElement* origin = node->FirstChildElement("origin");
+    if (origin) originAttributesToTransform(origin, T_element_to_link);
+  }
   DrakeShapes::VisualElement element(T_element_to_link);
+
+  // Parses the geometry specifications of the visualization.
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse visual element in link " +
                         body->name_ + ".");
 
+  // Parses the material specification of the visualization.
   XMLElement* material_node = node->FirstChildElement("material");
   if (material_node) {
-    const char* attr;
-    attr = material_node->Attribute("name");
-    if (attr && strlen(attr) > 0 && materials.find(attr) != materials.end()) {
-      element.setMaterial(materials.at(attr));
-    } else {
+    // Checks whether a "color" child element exists. If so, parses the
+    // color value.
+    bool color_specified = false;
+    Vector4d rgba;
+    {
       XMLElement* color_node = material_node->FirstChildElement("color");
       if (color_node) {
         Vector4d rgba;
         if (!parseVectorAttribute(color_node, "rgba", rgba)) {
-          cerr << "WARNING: Failed to parse color element rgba in visual"
-               << endl;
-        } else {
-          element.setMaterial(rgba);
+          throw runtime_error("ERROR: Failed to parse color of material for "
+            "model \"" + body->model_name() + "\", link \"" + body->name() +
+            "\".");
         }
-      } else {
-        cerr << "WARNING: Visual element had a material with neither a name "
-                "nor a nested color element" << endl
-             << "  - model name: " << body->model_name() << endl
-             << "  - body name: " << body->name()
-             << endl;
+        color_specified = true;
       }
+    }
+
+    // Checks whether the "name" attribute exists. If so, obtains the name of
+    // the material.
+    std::string material_name;
+    bool name_specified = false;
+    {
+      const char* attr = material_node->Attribute("name");
+
+      if (attr != nullptr && strlen(attr) != 0) {
+        material_name = std::string(attr);
+        name_specified = true;
+      }
+    }
+
+    // Adds the material to the materials map if both the name and color are
+    // specified.
+    if (color_specified && name_specified)
+      AddMaterialToMaterialMap(material_name, rgba, materials);
+
+    // Sets the material color if the color is specified. This takes precedence
+    // over any material in the material map.
+    bool material_set = false;
+    {
+      if (color_specified) {
+        element.setMaterial(rgba);
+        material_set = true;
+      } else {
+        // No color specified. Checks if the material is already in the
+        // materials map.
+        if (name_specified) {
+          auto material_iter = materials->find(material_name);
+          if (material_iter != materials->end()) {
+            // The material is in the map. Sets the material of the visual
+            // element based on the value in the map.
+            element.setMaterial(material_iter->second);
+            material_set = true;
+          }
+        }
+      }
+    }
+
+    // Prints a warning if the material was not set for this visualization.
+    if (!material_set) {
+      cerr << "RigidBodyTreeURDF.cpp: parseVisual(): "
+           << "WARNING: Visual element has a material whose color could not"
+              "be determined. Maybe it has a texture? Textures are currenty "
+              "not supported." << endl
+           << "  - model name: " << body->model_name() << endl
+           << "  - body name: " << body->name() << endl
+           << "  - material name: " << material_name << endl;
     }
   }
 
-  if (element.hasGeometry()) {
-    // DEBUG
-    // cout << "parseVisual: Adding element to body" << endl;
-    // END_DEBUG
+  if (element.hasGeometry())
     body->addVisualElement(element);
-  }
-
-  // DEBUG
-  // cout << "parseVisual: END" << endl;
-  // END_DEBUG
 }
 
 void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
@@ -301,7 +394,7 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 }
 
 bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
-               const MaterialMap& materials, const PackageMap& package_map,
+               MaterialMap* materials, const PackageMap& package_map,
                const string& root_dir, int* index) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && (std::strcmp(attr, "true") == 0)) return false;
@@ -776,7 +869,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
        link_node = link_node->NextSiblingElement("link")) {
     int index;
-    if (parseLink(model, robotname, link_node, materials, package_map, root_dir,
+    if (parseLink(model, robotname, link_node, &materials, package_map, root_dir,
                   &index)) {
       link_indices.push_back(index);
     } else {
