@@ -340,6 +340,28 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddQuadraticCost(Q, x_desired, variable_views_);
   }
 
+  /** addQuadraticCost
+   * @brief Adds a cost term of the form x'*Q*x.
+   */
+  template <typename DerivedQ>
+  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
+  const Eigen::MatrixBase<DerivedQ>& Q) {
+    return AddQuadraticCost(Q, Eigen::VectorXd::Zero(Q.rows()),variable_views_);
+  }
+
+  /** addLinearCost
+   * @brief Adds a cost term of the form C'*x.
+   */
+  template <typename DerivedC>
+  std::shared_ptr<LinearConstraint> AddLinearCost(
+  const Eigen::MatrixBase<DerivedC>& C) {
+    std::shared_ptr<LinearConstraint> objective(new LinearConstraint(C.transpose(),Eigen::VectorXd::Zero(C.rows()),
+                                                                     Eigen::VectorXd::Zero(C.rows())));
+    AddCost(objective, variable_views_);
+    return(objective);
+  }
+
+
   /** addGenericConstraint
    *
    * @brief Adds a generic constraint to the program.  This should
