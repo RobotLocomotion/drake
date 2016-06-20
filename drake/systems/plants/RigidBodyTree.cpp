@@ -600,33 +600,23 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   }
 }
 
-void RigidBodyTree::ComputeMaximumDepthCollisionPoints(
-    const KinematicsCache<double> &cache, VectorXd &phi, Matrix3Xd &normal,
-    Matrix3Xd &xA, Matrix3Xd &xB, vector<int> &bodyA_idx,
-    vector<int> &bodyB_idx, bool use_margins) {
+std::vector<RigidBodyCollisionPair>
+RigidBodyTree::ComputeMaximumDepthCollisionPoints(
+    const KinematicsCache<double>& cache, bool use_margins) {
   updateDynamicCollisionElements(cache);
   vector<DrakeCollision::PointPair> contact_points;
   collision_model->ComputeMaximumDepthCollisionPoints(
       use_margins, contact_points);
   size_t num_contact_points = contact_points.size();
 
-  phi = VectorXd::Zero(num_contact_points);
-  normal = MatrixXd::Zero(3, num_contact_points);
-  xA = Matrix3Xd(3, num_contact_points);
-  xB = Matrix3Xd(3, num_contact_points);
-
-  bodyA_idx.clear();
-  bodyB_idx.clear();
+  std::vector<RigidBodyCollisionPair> collision_pairs;
+  collision_pairs.reserve(num_contact_points);
 
   Vector3d ptA, ptB, n;
   double distance;
 
   for (size_t i = 0; i < num_contact_points; i++) {
     contact_points[i].getResults(&ptA, &ptB, &n, &distance);
-
-    // Normal is in the world's frame.
-    normal.col(i) = n;
-    phi[i] = distance;
 
     // Get body indexes.
     const RigidBody::CollisionElement* elementA =
@@ -635,8 +625,6 @@ void RigidBodyTree::ComputeMaximumDepthCollisionPoints(
     const RigidBody::CollisionElement* elementB =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(contact_points[i].getIdB()));
-    bodyA_idx.push_back(elementA->getBody().body_index);
-    bodyB_idx.push_back(elementB->getBody().body_index);
 
     // Get bodies' transforms.
     const RigidBody& bodyA = elementA->getBody();
@@ -656,9 +644,14 @@ void RigidBodyTree::ComputeMaximumDepthCollisionPoints(
     }
 
     // Transform to bodies' frames.
-    xA.col(i) = TA.inverse() * ptA;
-    xB.col(i) = TB.inverse() * ptB;
+    Vector3d ptA_body = TA.inverse() * ptA;
+    Vector3d ptB_body = TB.inverse() * ptB;
+
+    collision_pairs.push_back(RigidBodyCollisionPair(bodyA, bodyB,
+                                                     n, distance,
+                                                     ptA_body, ptB_body));
   }
+  return collision_pairs;
 }
 
 bool RigidBodyTree::collidingPointsCheckOnly(

@@ -13,7 +13,7 @@ pods_install_pkg_config_file(drake-xml-util
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeSDF.cpp RigidBodyTreeContact.cpp)
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
 pods_install_libraries(drakeRBM)
-drake_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h)
+drake_install_headers(RigidBodyTree.h RigidBody.h rigid_body_collision_pair.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h)
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
   REQUIRES

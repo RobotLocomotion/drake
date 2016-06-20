@@ -78,32 +78,30 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
 
   KinematicsCache<double> kinsol = tree_.doKinematics(q, v);
 
-  VectorXd phi;
-  Matrix3Xd normal, xA, xB;
-  std::vector<int> bodyA_idx, bodyB_idx;
-
-  tree_.ComputeMaximumDepthCollisionPoints(
-      kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx, false);
-
-  ElementId bodyA_collision_element_id =
-      tree_.bodies[bodyA_idx[0]]->collision_element_ids[0];
-  ElementId bodyB_collision_element_id =
-      tree_.bodies[bodyB_idx[0]]->collision_element_ids[0];
+  std::vector<RigidBodyCollisionPair> collision_pairs =
+      tree_.ComputeMaximumDepthCollisionPoints(
+      kinsol, false);
 
   // RigidBodyTree::ComputeMaximumDepthCollisionPoints returns only one point,
   // the maximum depth collision point.
-  ASSERT_EQ(1, phi.size());
-  EXPECT_NEAR(-0.1, phi(0), tolerance_);
-  EXPECT_TRUE(normal.col(0).isApprox(Vector3d(0.0, -1.0, 0.0)));
+  ASSERT_EQ(1, collision_pairs.size());
+
+  ElementId bodyA_collision_element_id =
+      collision_pairs[0].bodyA_.collision_element_ids[0];
+  ElementId bodyB_collision_element_id =
+      collision_pairs[0].bodyB_.collision_element_ids[0];
+
+  EXPECT_NEAR(-0.1, collision_pairs[0].distance_, tolerance_);
+  EXPECT_TRUE(collision_pairs[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // Only test for vertical position.
-  EXPECT_NEAR(xA.col(0).y(),
+  EXPECT_NEAR(collision_pairs[0].ptA_.y(),
               solution_[bodyA_collision_element_id].body_frame.y(), tolerance_);
   // In body's frame, which is rotated 90 degrees in pitch from
   // collision_test.sdf, the collision point is on the z-axis.
   // In addition, is not at z=0.5 but at z=0.6 since there is an offset of 0.1
   // in body's z-axis for the collision element as set from collision_test.sdf.
-  EXPECT_NEAR(xB.col(0).z(),
+  EXPECT_NEAR(collision_pairs[0].ptB_.z(),
               solution_[bodyB_collision_element_id].body_frame.z(), tolerance_);
 }
 
