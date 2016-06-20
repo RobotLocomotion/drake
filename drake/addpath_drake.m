@@ -1,4 +1,4 @@
-function addpath_drake
+function [] = addpath_drake()
 % Checks dependencies and sets up matlab path.
 % Searches the machine for necessary support programs, and generates
 % config.mat.  If required tools aren't found, it tries to be helpful in
@@ -7,13 +7,22 @@ function addpath_drake
 
 root = fileparts(mfilename('fullpath'));
 
+% Search four directories up for the build directory. It will typically be
+% in ./build/matlab for in-source builds with Make, or 
+% ../drake-build/drake/matlab for out-of-source builds with Ninja.
 if ~exist('pods_get_base_path','file')
-  % search up to 4 directories up for a build/matlab directory
   pfx='';
   for i=1:4
-    if exist(fullfile(root,pfx,'build','matlab'),'file')
-      disp(['Adding ', fullfile(root,pfx,'build','matlab'), ' to the matlab path']);
-      addpath(fullfile(root,pfx,'build','matlab'));
+    in_source_path = fullfile(root, pfx, 'build', 'matlab');
+    if exist(in_source_path,'file')
+      disp(['Adding ', in_source_path, ' to the matlab path']);
+      addpath(in_source_path);
+      break;
+    end
+    out_of_source_path = fullfile(root, pfx, 'drake-build', 'drake', 'matlab');
+    if exist(out_of_source_path,'file')
+      disp(['Adding ', out_of_source_path, ' to the matlab path']);
+      addpath(out_of_source_path);
       break;
     end
     pfx = fullfile('..',pfx);
@@ -21,7 +30,7 @@ if ~exist('pods_get_base_path','file')
 end
 
 if ~exist('pods_get_base_path','file')
-  error('You must run make first (and/or add your pod build/matlab directory to the matlab path)');
+  error('Could not find pods_get_base_path. Build Drake and add install/matlab to the MATLAB path.');
 end
 
 if verLessThan('matlab','7.6')
