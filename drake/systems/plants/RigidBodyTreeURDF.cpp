@@ -112,16 +112,29 @@ void AddMaterialToMaterialMap(const std::string& material_name,
             drake::util::MatrixCompareType::relative)) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
-      std::cerr << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
-                << "WARNING: Material \"" + material_name + "\" was previously "
-                << "defined but was associated with different RGBA color "
-                << "values." << std::endl
-                << "  - existing RGBA values: " << existing_color.transpose()
-                << std::endl
-                << "  - new RGBA values: " << color_rgba.transpose()
-                << std::endl
-                << "Keeping the original RGBA values in the materials map."
-                << std::endl;
+      std::stringstream error_buff;
+      error_buff
+        << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
+        << "Error: Material \"" + material_name + "\" was previously "
+        << "defined but was associated with different RGBA color "
+        << "values." << std::endl
+        << "  - existing RGBA values: " << existing_color.transpose()
+        << std::endl
+        << "  - new RGBA values: " << color_rgba.transpose()
+        << std::endl
+        << "Keeping the original RGBA values in the materials map."
+        << std::endl;
+      throw std::runtime_error(error_buff.str());
+      // std::cerr << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
+      //           << "WARNING: Material \"" + material_name + "\" was previously "
+      //           << "defined but was associated with different RGBA color "
+      //           << "values." << std::endl
+      //           << "  - existing RGBA values: " << existing_color.transpose()
+      //           << std::endl
+      //           << "  - new RGBA values: " << color_rgba.transpose()
+      //           << std::endl
+      //           << "Keeping the original RGBA values in the materials map."
+      //           << std::endl;
     }
   } else {
     // Adds the new color to the materials map.
@@ -129,12 +142,14 @@ void AddMaterialToMaterialMap(const std::string& material_name,
   }
 }
 
-bool parseMaterial(XMLElement* node, MaterialMap& materials) {
+void ParseMaterial(XMLElement* node, MaterialMap& materials) {
   const char* attr;
   attr = node->Attribute("name");
   if (!attr || strlen(attr) == 0) {
-    cerr << "WARNING: material tag is missing a name" << endl;
-    return false;
+    throw std::logic_error("RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
+                           "Material tag is missing a name.");
+    // cerr << "WARNING: material tag is missing a name" << endl;
+    // return;
   }
   string name(attr);
 
@@ -142,19 +157,20 @@ bool parseMaterial(XMLElement* node, MaterialMap& materials) {
   XMLElement* color_node = node->FirstChildElement("color");
   if (color_node) {
     if (!parseVectorAttribute(color_node, "rgba", rgba)) {
-      cerr << "WARNING: color tag is missing rgba attribute" << endl;
-      return false;
+      throw std::logic_error("RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
+                               "Color tag is missing rgba attribute.");
     }
     AddMaterialToMaterialMap(name, rgba, &materials);
   } else {
     if (materials.find(name) == materials.end()) {
-      cerr << "WARNING: material \"" << name
-           << "\" is not a simple color material (so is currently unsupported)"
-           << endl;
-      return false;
+      throw std::runtime_error("RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
+        "Material \"" + name + "\" is not a simple color material and is thus "
+        "not currently supported.");
+      // cerr << "WARNING: material \"" << name << "\" is not a simple color "
+      //      << "material and is thus not currently supported." << endl;
+      // return;
     }
   }
-  return true;
 }
 
 bool parseGeometry(XMLElement* node, const PackageMap& package_map,
@@ -854,8 +870,9 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
   // Parses the model's material elements.
   MaterialMap materials;
   for (XMLElement* link_node = node->FirstChildElement("material"); link_node;
-       link_node = link_node->NextSiblingElement("material"))
-    parseMaterial(link_node, materials);  // accept failed material parsing
+       link_node = link_node->NextSiblingElement("material")) {
+    ParseMaterial(link_node, materials);
+  }
 
   // Makes a copy of parameter floating_base_type. This is necessary since the
   // actual type may be specified by the URDF itself when the URDF contains a
