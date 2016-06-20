@@ -664,22 +664,21 @@ class DRAKERBM_EXPORT RigidBodyTree {
                            std::vector<int>& bodyB_idx,
                            bool use_margins = true);
 
-  /** Computes the point of closest approach between collision elements in the
+  /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.
 
    @param cache[in] a KinematicsCache constructed by RigidBodyTree::doKinematics
-   given \f$ q \f$ and \f$ v \f$.
+   given `q` and `v`.
 
    Collision points are returned in a series of vectors with as many entries as
    collision points found.
 
    @param phi[out] A vector containing the closest distance between
-   CollisionElement's that are in contact.
+   RigidBody's that are in contact.
 
    @param normal[out] The normal vector reported in world's frame. Since the
    normal on body A equals the normal on body B but points in the opposite
-   direction, the normal is only reported for body B. This is true only in the
-   world's frame and therefore the normal vector is reported in this frame.
+   direction, the normal is only reported for body B.
 
    @param xA[out] The collision point on body A reported on body A's frame.
 
@@ -692,13 +691,13 @@ class DRAKERBM_EXPORT RigidBodyTree {
    @param use_margins[in] If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
    **/
-  void ComputeMaximumDepthCollisionPoints(const KinematicsCache<double> &cache,
-                                          Eigen::VectorXd &phi,
-                                          Eigen::Matrix3Xd &normal,
-                                          Eigen::Matrix3Xd &xA,
-                                          Eigen::Matrix3Xd &xB,
-                                          std::vector<int> &bodyA_idx,
-                                          std::vector<int> &bodyB_idx,
+  void ComputeMaximumDepthCollisionPoints(const KinematicsCache<double>& cache,
+                                          Eigen::VectorXd& phi,
+                                          Eigen::Matrix3Xd& normal,
+                                          Eigen::Matrix3Xd& xA,
+                                          Eigen::Matrix3Xd& xB,
+                                          std::vector<int>& bodyA_idx,
+                                          std::vector<int>& bodyB_idx,
                                           bool use_margins = true);
 
   virtual bool collidingPointsCheckOnly(
