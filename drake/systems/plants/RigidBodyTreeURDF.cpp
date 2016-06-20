@@ -99,15 +99,17 @@ void parseInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model) {
 // The range of values is [0, 1].
 // @param[out] materials A pointer to the map in which to store the material.
 void AddMaterialToMaterialMap(const std::string& material_name,
-    const Vector4d& color_rgba, MaterialMap* materials) {
+                              const Vector4d& color_rgba,
+                              MaterialMap* materials) {
   // Determines if the material is already in the map.
   auto material_iter = materials->find(material_name);
   if (material_iter != materials->end()) {
     // The material is already in the map. Checks whether the old material is
     // the same as the new material.
     auto& existing_color = material_iter->second;
-    if (!drake::util::CompareMatrices(color_rgba, existing_color, 1e-10,
-        drake::util::MatrixCompareType::relative)) {
+    if (!drake::util::CompareMatrices(
+            color_rgba, existing_color, 1e-10,
+            drake::util::MatrixCompareType::relative)) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
       std::cerr << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
@@ -298,9 +300,10 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
       if (color_node) {
         Vector4d rgba;
         if (!parseVectorAttribute(color_node, "rgba", rgba)) {
-          throw runtime_error("ERROR: Failed to parse color of material for "
-            "model \"" + body->model_name() + "\", link \"" + body->name() +
-            "\".");
+          throw runtime_error(
+              "ERROR: Failed to parse color of material for "
+              "model \"" +
+              body->model_name() + "\", link \"" + body->name() + "\".");
         }
         color_specified = true;
       }
@@ -351,15 +354,15 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
       cerr << "RigidBodyTreeURDF.cpp: parseVisual(): "
            << "WARNING: Visual element has a material whose color could not"
               "be determined. Maybe it has a texture? Textures are currenty "
-              "not supported." << endl
+              "not supported."
+           << endl
            << "  - model name: " << body->model_name() << endl
            << "  - body name: " << body->name() << endl
            << "  - material name: " << material_name << endl;
     }
   }
 
-  if (element.hasGeometry())
-    body->addVisualElement(element);
+  if (element.hasGeometry()) body->addVisualElement(element);
 }
 
 void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
@@ -869,8 +872,8 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
        link_node = link_node->NextSiblingElement("link")) {
     int index;
-    if (parseLink(model, robotname, link_node, &materials, package_map, root_dir,
-                  &index)) {
+    if (parseLink(model, robotname, link_node, &materials, package_map,
+                  root_dir, &index)) {
       link_indices.push_back(index);
     } else {
       // Determines whether the link was not parsed because it is a world link.
