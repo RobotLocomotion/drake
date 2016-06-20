@@ -10,6 +10,7 @@ namespace drake {
 namespace systems {
 namespace plants {
 namespace test {
+namespace rigid_body_tree {
 namespace {
 
 using Eigen::Vector3d;
@@ -22,8 +23,8 @@ using DrakeCollision::ElementId;
 // world and body frames.
 // See systems/plants/collision/test/model_test.cc.
 struct SurfacePoint {
-  SurfacePoint() {}
-  SurfacePoint(Vector3d wf, Vector3d bf) : world_frame(wf), body_frame(bf) {}
+  SurfacePoint() { }
+  SurfacePoint(Vector3d wf, Vector3d bf) : world_frame(wf), body_frame(bf) { }
   // Eigen variables are left uninitalized by default.
   Vector3d world_frame;
   Vector3d body_frame;
@@ -50,8 +51,8 @@ class RBTCollisionTest: public ::testing::Test {
     // Solutions are expressed in world and body frames.
     solution_ = {
         /*              world frame    , body frame  */
-        {large_box_id_, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
-        {small_box_id_, {{0.0, 4.9, 0.0}, {0.0,  0.0, 0.6}}}};
+        {large_box_id_, {{0.0, 5.0, 0.0}, {0.0, 2.5, 0.0}}},
+        {small_box_id_, {{0.0, 4.9, 0.0}, {0.0, 0.0, 0.6}}}};
   }
 
   double tolerance_;
@@ -107,6 +108,7 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
 }
 
 }  // namespace
+}  // namespace rigid_body_tree
 }  // namespace test
 }  // namespace plants
 }  // namespace systems
