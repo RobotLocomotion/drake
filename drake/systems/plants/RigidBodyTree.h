@@ -694,20 +694,22 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       int model_id = -1) const;
 
   /**
-   * Obtains the body index of a link. Note that the body index of the link
-   * is different from the ID of the model to which the link belongs.
+   * Obtains the index of a rigid body within this rigid body tree. The rigid
+   * body tree maintains a vector of pointers to all rigid bodies that are part
+   * of the rigid body tree. The index of a rigid body is the index within this
+   * vector at which a pointer to the rigid body is stored.
    *
-   * @param[in] link_name The link whose body index we want to find. It should
+   * @param[in] body_name The body whose index we want to find. It should
    * be unique within the searched models, otherwise an exception will be
    * thrown.
    * @param[in] model_id The ID of the model. This parameter is optional. If
-   * supplied, only that model is searched; otherwise, all models are searched.
-   * @return The body index of the specified link. If this value is -1, all
-   * models are searched for a link named \p link_name.
-   * @throws std::logic_error if no link with the specified \p link_name and
-   * \p model_id were found or if multiple matching links were found.
+   * supplied, only the model with the specified ID is searched; otherwise, all
+   * models are searched.
+   * @return The index of the specified rigid body.
+   * @throws std::logic_error if no rigid body with the specified \p body_name
+   * and \p model_id was found or if multiple matching rigid bodies were found.
    */
-  int FindBodyIndex(const std::string& link_name, int model_id = -1) const;
+  int FindBodyIndex(const std::string& body_name, int model_id = -1) const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
