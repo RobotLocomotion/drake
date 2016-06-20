@@ -341,13 +341,11 @@ endif()
 include(cmake/matlab_pods.cmake)
 pods_configure_matlab_paths()
 
-file(RELATIVE_PATH relpath ${CMAKE_INSTALL_PREFIX}/matlab ${CMAKE_CURRENT_SOURCE_DIR})
-
 message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab")
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
   "function addpath_drake()\n"
-  "  mfiledir = fileparts(which(mfilename));\n"
-  "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
+  "  addpath(fullfile('${CMAKE_INSTALL_PREFIX}', 'matlab'));\n"
+  "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
   "  addpath_drake();\n"
   "  cd(wd);\n"
   "end\n"
@@ -355,8 +353,7 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
   "function rmpath_drake()\n"
-  "  mfiledir = fileparts(which(mfilename));\n"
-  "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
+  "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
   "  rmpath_drake();\n"
   "  cd(wd);\n")
 
