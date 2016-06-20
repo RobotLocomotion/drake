@@ -213,12 +213,11 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(5);
 
-  Eigen::MatrixXd Q = -50*Eigen::Matrix<double,5,5>::Identity();
-  Eigen::VectorXd C(5);
-  C<< 42, 44, 45, 47, 47.5;
+  Eigen::MatrixXd Q = -100*Eigen::Matrix<double,5,5>::Identity();
+  Eigen::VectorXd c(5);
+  c<< 42, 44, 45, 47, 47.5;
 
-  prog.AddQuadraticCost(Q);
-  prog.AddLinearCost(C);
+  prog.AddQuadraticProgramCost(Q,c);
 
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
@@ -287,13 +286,12 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
 GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(6);
-  MatrixXd Q =  -50.0 * MatrixXd::Identity(6, 6);
+  MatrixXd Q =  -100.0 * MatrixXd::Identity(6, 6);
   Q(5,5) = 0.0;
-  VectorXd C(6);
-  C<< -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
+  VectorXd c(6);
+  c<< -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
 
-  prog.AddQuadraticCost(Q);
-  prog.AddLinearCost(C);
+  prog.AddQuadraticProgramCost(Q,c);
 
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
@@ -315,7 +313,7 @@ GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
 
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
-  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
+  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
 
   RunNonlinearProgram(prog, [&]() {
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,

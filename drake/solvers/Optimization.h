@@ -340,27 +340,27 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddQuadraticCost(Q, x_desired, variable_views_);
   }
 
-  /** addQuadraticCost
-   * @brief Adds a cost term of the form x'*Q*x.
+  /** addQuadraticProgramCost
+   * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
    */
-  template <typename DerivedQ>
-  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
-  const Eigen::MatrixBase<DerivedQ>& Q) {
-    return AddQuadraticCost(Q, Eigen::VectorXd::Zero(Q.rows()),variable_views_);
+  template <typename DerivedQ, typename Derivedb>
+  std::shared_ptr<QuadraticConstraint> AddQuadraticProgramCost(
+  const Eigen::MatrixBase<DerivedQ>& Q,
+  const Eigen::MatrixBase<Derivedb>& b, const VariableList& vars) {
+    std::shared_ptr<QuadraticConstraint> objective(new QuadraticConstraint(
+        Q, b, -std::numeric_limits<double>::infinity(),
+        std::numeric_limits<double>::infinity()));
+    AddCost(objective, vars);
+    return objective;
   }
 
-  /** addLinearCost
-   * @brief Adds a cost term of the form C'*x.
-   */
-  template <typename DerivedC>
-  std::shared_ptr<LinearConstraint> AddLinearCost(
-  const Eigen::MatrixBase<DerivedC>& C) {
-    std::shared_ptr<LinearConstraint> objective(new LinearConstraint(C.transpose(),Eigen::VectorXd::Zero(C.rows()),
-                                                                     Eigen::VectorXd::Zero(C.rows())));
-    AddCost(objective, variable_views_);
-    return(objective);
-  }
 
+  template <typename DerivedQ, typename Derivedb>
+  std::shared_ptr<QuadraticConstraint> AddQuadraticProgramCost(
+      const Eigen::MatrixBase<DerivedQ>& Q,
+      const Eigen::MatrixBase<Derivedb>& b) {
+    return AddQuadraticProgramCost(Q, b, variable_views_);
+  }
 
   /** addGenericConstraint
    *
