@@ -102,9 +102,10 @@ At this point, we recommend you update your ``git remotes`` to avoid accidentall
 Create Build Directory
 ----------------------
 
-Create a directory for holding Drake's compiler artifacts::
+Create a directory for holding Drake's compiler artifacts.
+It should be a sibling of ``drake-distro``::
 
-    $ mkdir -p [build artifacts directory]
+    $ mkdir -p drake-build
 
 .. _windows-configure-build:
 
@@ -113,7 +114,7 @@ Configure Build
 
 Configure the build system::
 
-    $ cd [build artifacts directory]
+    $ cd drake-build
     $ cmake-gui [source code directory]/drake-distro
 
 You should see the following ``CMake`` GUI appear:
@@ -148,19 +149,19 @@ Compile Drake
 
 Back in the ``bash`` terminal, start the compilation process. There are many configurations you can compile Drake in. For example, three popular configurations are ``Debug``, ``RelWithDebInfo``, and ``Release``. You specify the mode when compiling Drake, as shown below::
 
-    $ cd [build artifacts directory]
+    $ cd drake-build
     $ cmake --build . --target ALL_BUILD --config [build configuration]
 
 For example, to compile Drake using build configuration ``RelWithDebInfo``, execute::
 
-    $ cd [build artifacts directory]
+    $ cd drake-build
     $ cmake --build . --target ALL_BUILD --config RelWithDebInfo
 
 Sit back. Grab a coffee. The compilation process will take a while.
 
 Note that after this initial build is done, if you change Drake's code, you can more quickly recompile by executing::
 
-    $ cd [build artifacts directory]/drake
+    $ cd drake-build/drake
     $ cmake --build . --target ALL_BUILD --config [build configuration]
 
 Update PATH Environment Variable
@@ -168,19 +169,19 @@ Update PATH Environment Variable
 
 The compilation process generates a bunch of installed ``.dll`` libraries. You need to add the path to these libraries to your ``PATH`` environment variable:
 
-* ``[build artifacts directory]\install\lib``
+* ``drake-build\install\lib``
 
 Test Compilation Results
 ------------------------
 
 To verify Drake was successfully compiled, run the unit tests::
 
-    $ cd [build artifacts directory]/drake
+    $ cd drake-build/drake
     $ ctest -VV -C [build mode]
 
 You can also run a specific unit test::
 
-    $ cd [build artifacts directory]/drake
+    $ cd drake-build/drake
     $ ctest -VV -C [build mode] -R [name of unit test]
 
 For more details on unit testing, see :ref:`here <unit-test-instructions>`.
