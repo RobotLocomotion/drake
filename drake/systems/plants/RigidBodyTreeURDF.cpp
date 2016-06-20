@@ -51,7 +51,7 @@ int findLinkIndex(RigidBodyTree* model, string link_name) {
 //                  See: https://github.com/RobotLocomotion/drake/issues/2583
 int FindBodyIndexByJointName(RigidBodyTree* model, string joint_name) {
   // Instantiates a local variable that stores the index of the rigid body whose
-  // joint is the one we're searching for. It is initializes to an invalid index
+  // joint is the one we're searching for. It is initialized to an invalid index
   // so the failure mode of not finding any matching joint can be identified.
   // Valid index values are between zero and the number of rigid bodies in
   // the rigid body tree.
