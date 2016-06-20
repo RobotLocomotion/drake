@@ -38,7 +38,8 @@ class RBTCollisionTest: public ::testing::Test {
  protected:
   void SetUp() override {
     tree_.addRobotFromSDF(
-        Drake::getDrakePath() + "/systems/plants/test/collision_test.sdf",
+        Drake::getDrakePath() +
+            "/systems/plants/test/rigid_body_tree/small_box_on_large_box.sdf",
         DrakeJoint::QUATERNION);
 
     small_box_id_ = tree_.findLink("small_box")->collision_element_ids[0];
