@@ -1713,14 +1713,14 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   }
 }
 
-int RigidBodyTree::FindBodyIndex(const std::string& link_name,
+int RigidBodyTree::FindBodyIndex(const std::string& body_name,
                                  int model_id) const {
-  RigidBody* link = findLink(link_name, "", model_id);
+  RigidBody* link = findLink(body_name, "", model_id);
   if (link == nullptr) {
     throw std::logic_error(
-        "RigidBodyTree::findLinkID: ERROR: Could not find link id for link " +
-        std::string("named \"") + link_name + "\", model_id = " +
-        std::to_string(model_id));
+        "RigidBodyTree::FindBodyIndex: ERROR: Could not find index for rigid "
+        "body \"" + body_name + "\", model_id = " + std::to_string(model_id) +
+        ".");
   }
   return link->body_index;
 }
