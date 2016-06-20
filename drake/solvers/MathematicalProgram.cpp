@@ -41,6 +41,12 @@ class MathematicalProgram : public MathematicalProgramInterface {
      return new
      MathematicalProgram; };
   */
+  MathematicalProgramInterface * AddQuadraticCost() override {
+    return new MathematicalProgram;
+  }
+  MathematicalProgramInterface * AddLinearCost() override {
+    return new MathematicalProgram;
+  }
   MathematicalProgramInterface* AddGenericObjective() override {
     return new MathematicalProgram;
   };
@@ -156,6 +162,7 @@ class QuadraticProgram : public NonlinearProgram  {
   MathematicalProgramInterface* AddLinearCost() override {
     return new QuadraticProgram;
   }
+
   MathematicalProgramInterface* AddLinearConstraint() override {
     return new QuadraticProgram;
   };
