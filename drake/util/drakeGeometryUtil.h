@@ -1,13 +1,15 @@
 #pragma once
 
+#include "drake/common/eigen_types.h"
+#include "drake/util/drakeGradientUtil.h"
+#include "drake/drakeGeometryUtil_export.h"
+
 #include <Eigen/Dense>
 #include <cstring>
 #include <cmath>
 #include <random>
-#include "drake/util/drakeGradientUtil.h"
-#include "drake/drakeGeometryUtil_export.h"
 
-const int TWIST_SIZE = 6;
+constexpr int TWIST_SIZE = drake::TWIST_SIZE;
 const int QUAT_SIZE = 4;
 const int EXPMAP_SIZE = 3;
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
@@ -284,7 +286,7 @@ Eigen::Vector4d axis2quat(const Eigen::MatrixBase<Derived>& a) {
   auto c = std::cos(arg);
   auto s = std::sin(arg);
   Eigen::Vector4d ret;
-  ret << c, s* axis;
+  ret << c, s * axis;
   return ret;
 }
 
@@ -301,9 +303,9 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> axis2rotmat(
   auto stheta = std::sin(theta);
   auto c = 1 - ctheta;
   Eigen::Matrix<typename Derived::Scalar, 3, 3> R;
-  R << ctheta + x* x* c, x* y* c - z* stheta, x* z* c + y* stheta,
-      y* x* c + z* stheta, ctheta + y* y* c, y* z* c - x* stheta,
-      z* x* c - y* stheta, z* y* c + x* stheta, ctheta + z* z* c;
+  R << ctheta + x * x * c, x * y * c - z * stheta, x * z * c + y * stheta,
+      y * x * c + z * stheta, ctheta + y * y * c, y * z * c - x * stheta,
+      z * x * c - y * stheta, z * y * c + x * stheta, ctheta + z * z * c;
 
   return R;
 }
@@ -873,7 +875,7 @@ void rpydot2angularvelMatrix(
   Scalar sy = sin(y);
   Scalar cy = cos(y);
 
-  E << cp* cy, -sy, 0.0, cp* sy, cy, 0.0, -sp, 0.0, 1.0;
+  E << cp * cy, -sy, 0.0, cp * sy, cy, 0.0, -sp, 0.0, 1.0;
   if (dE) {
     (*dE) << 0.0, -sp * cy, -cp * sy, 0.0, -sp * sy, cp * cy, 0.0, -cp, 0.0,
         0.0, 0.0, -cy, 0.0, 0.0, -sy, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -946,11 +948,11 @@ void cylindrical2cartesian(const Eigen::Matrix<Scalar, 3, 1>& m_cylinder_axis,
   double theta_dot = v_cylinder(1);
   double height_dot = v_cylinder(2);
   Eigen::Matrix<Scalar, 3, 1> x_pos_cartesian;
-  x_pos_cartesian << radius* c_theta, radius* s_theta, height;
+  x_pos_cartesian << radius * c_theta, radius * s_theta, height;
   x_pos_cartesian = R_cylinder2cartesian * x_pos_cartesian + cylinder_origin;
   Eigen::Matrix<Scalar, 3, 1> v_pos_cartesian;
-  v_pos_cartesian << radius * -s_theta* theta_dot + radius_dot* c_theta,
-      radius* c_theta* theta_dot + radius_dot* s_theta, height_dot;
+  v_pos_cartesian << radius * -s_theta * theta_dot + radius_dot * c_theta,
+      radius * c_theta * theta_dot + radius_dot * s_theta, height_dot;
   v_pos_cartesian = R_cylinder2cartesian * v_pos_cartesian;
   Eigen::Vector3d x_rpy_cylinder = x_cylinder.block(3, 0, 3, 1);
   Eigen::Matrix<Scalar, 3, 3> R_tangent = rpy2rotmat(x_rpy_cylinder);
