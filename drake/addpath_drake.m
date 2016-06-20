@@ -1,4 +1,4 @@
-function addpath_drake
+function [] = addpath_drake()
 % Checks dependencies and sets up matlab path.
 % Searches the machine for necessary support programs, and generates
 % config.mat.  If required tools aren't found, it tries to be helpful in
@@ -8,20 +8,7 @@ function addpath_drake
 root = fileparts(mfilename('fullpath'));
 
 if ~exist('pods_get_base_path','file')
-  % search up to 4 directories up for a build/matlab directory
-  pfx='';
-  for i=1:4
-    if exist(fullfile(root,pfx,'build','matlab'),'file')
-      disp(['Adding ', fullfile(root,pfx,'build','matlab'), ' to the matlab path']);
-      addpath(fullfile(root,pfx,'build','matlab'));
-      break;
-    end
-    pfx = fullfile('..',pfx);
-  end
-end
-
-if ~exist('pods_get_base_path','file')
-  error('You must run make first (and/or add your pod build/matlab directory to the matlab path)');
+  error('Could not find pods_get_base_path. Build Drake and add install/matlab to the MATLAB path.');
 end
 
 if verLessThan('matlab','7.6')
