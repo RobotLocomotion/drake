@@ -70,17 +70,19 @@ class DRAKECOLLISION_EXPORT Model {
     return false;
   }
 
-  /** \brief Compute the points of closest approach between all eligible
-   * pairs of collision elements in this model
-   * \param use_margins flag indicating whether or not to use the version
-   * of this model with collision margins
-   * \param[out] closest_points reference to a vector of PointPair objects
-   * that contains the closest point information after this method is
-   * called
-   * \return true if this method ran successfully
-   */
-  virtual bool collisionPointsAllToAll(const bool use_margins,
-                                       std::vector<PointPair>& points) {
+  /** Computes the point of closest approach between collision elements that
+   are in contact.
+
+   @param[in] use_margins If `true` the model uses the representation with
+   margins. If `false`, the representation without margins is used instead.
+
+   @param[out] closest_points reference to a vector of PointPair objects
+   that contains the closest point information after this method is called.
+
+   @returns `true` if this method ran successfully and `false` otherwise.
+   **/
+  virtual bool ComputeMaximumDepthCollisionPoints(
+      const bool use_margins, std::vector<PointPair>& closest_points) {
     return false;
   }
 

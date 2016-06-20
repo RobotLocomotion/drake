@@ -55,11 +55,12 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
 
   // Adds the same SDF to the rigid body system twice. Both models are connected
-  // to the world using a quaternion joint. The first model's root frame match
+  // to the world using a quaternion joint. The first model's root frame matches
   // the world's coordinate frame. The second model's root frame is offset from
-  // the world's coordinate fram by X = 1, Y = 1, and Z = 1.
-  rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
-    "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf");
+  // the world's coordinate frame by X = 1, Y = 1, and Z = 1.
+  rigid_body_sys->addRobotFromFile(
+      Drake::getDrakePath() +
+      "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf");
 
   Eigen::Isometry3d T_second_model_to_world;
   {
@@ -73,16 +74,17 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
       Eigen::aligned_allocator<RigidBodyFrame>(), "world", nullptr,
       T_second_model_to_world);
 
-  rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
-    "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf",
-    DrakeJoint::QUATERNION, weld_to_frame);
+  rigid_body_sys->addRobotFromFile(
+      Drake::getDrakePath() +
+          "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf",
+      DrakeJoint::QUATERNION, weld_to_frame);
 
   // Checks that the rigid body system has the correct number of states. The
   // rigid body system has 36 positions + 32 velocities = 68 states.
   EXPECT_EQ(rigid_body_sys->getNumStates(), 68);
 
   // Checks that the rigid body system has the correct number of inputs. The
-  // rigid body system has 2 joints * 4 robots = 8 inputs.
+  // rigid body system has 2 joints * 4 models = 8 inputs.
   EXPECT_EQ(rigid_body_sys->getNumInputs(), 8);
 
   // Checks that the number of sensors in the rigid body system is correct.
@@ -92,19 +94,22 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // Checks that the rigid body system has the correct number of outputs. The
   // rigid body system has:
   //   (640 outputs / sensor * 3 sensors / models * 4 models) +
-  //   36 position outputs + 32 velocity outputs = 7748.
+  //   36 position outputs + 32 velocity outputs = 7748 outputs.
   EXPECT_EQ(rigid_body_sys->getNumOutputs(), 7748);
 
   // Checks that the rigid body system has the correct number of positions.
-  // (7 floating DOFs + 2 joint DOFs) * 4 models = 36
+  // The rigid body system has:
+  //   (7 floating DOFs + 2 joint DOFs) * 4 models = 36 positions.
   EXPECT_EQ(rigid_body_sys->number_of_positions(), 36);
 
   // Checks that the rigid body system has the correct number of velocities.
-  // (6 floating DOFs + 2 joint DOFs) * 4 models = 32
+  // (6 floating DOFs + 2 joint DOFs) * 4 models = 32 velocities.
   EXPECT_EQ(rigid_body_sys->number_of_velocities(), 32);
 
+  // Obtains a const pointer to the rigid body tree within the rigid body
+  // system.
   const std::shared_ptr<RigidBodyTree>& tree =
-    rigid_body_sys->getRigidBodyTree();
+      rigid_body_sys->getRigidBodyTree();
 
   // Checks that an exception is thrown if we try to find a link using a
   // non-existent link name.
@@ -113,6 +118,8 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // Checks that an exception is thrown if we try to find a link using a
   // non-unique link name.
   EXPECT_THROW(tree->findLink("link_1"), std::logic_error);
+  EXPECT_THROW(tree->findLink("link_2"), std::logic_error);
+  EXPECT_THROW(tree->findLink("link_3"), std::logic_error);
 
   // Checks that an exception is thrown if we try to find a link using a
   // non-unique link name and model name.
@@ -129,6 +136,14 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_NE(tree->findLink("link_1", "", 1), nullptr);
   EXPECT_NE(tree->findLink("link_1", "", 2), nullptr);
   EXPECT_NE(tree->findLink("link_1", "", 3), nullptr);
+  EXPECT_NE(tree->findLink("link_2", "", 0), nullptr);
+  EXPECT_NE(tree->findLink("link_2", "", 1), nullptr);
+  EXPECT_NE(tree->findLink("link_2", "", 2), nullptr);
+  EXPECT_NE(tree->findLink("link_2", "", 3), nullptr);
+  EXPECT_NE(tree->findLink("link_3", "", 0), nullptr);
+  EXPECT_NE(tree->findLink("link_3", "", 1), nullptr);
+  EXPECT_NE(tree->findLink("link_3", "", 2), nullptr);
+  EXPECT_NE(tree->findLink("link_3", "", 3), nullptr);
 
   // Checks that a link can be obtained when we specify the link's name, model
   // name, and model ID.
@@ -136,11 +151,20 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_NE(tree->findLink("link_1", "model_2", 1), nullptr);
   EXPECT_NE(tree->findLink("link_1", "model_1", 2), nullptr);
   EXPECT_NE(tree->findLink("link_1", "model_2", 3), nullptr);
+  EXPECT_NE(tree->findLink("link_2", "model_1", 0), nullptr);
+  EXPECT_NE(tree->findLink("link_2", "model_2", 1), nullptr);
+  EXPECT_NE(tree->findLink("link_2", "model_1", 2), nullptr);
+  EXPECT_NE(tree->findLink("link_2", "model_2", 3), nullptr);
+  EXPECT_NE(tree->findLink("link_3", "model_1", 0), nullptr);
+  EXPECT_NE(tree->findLink("link_3", "model_2", 1), nullptr);
+  EXPECT_NE(tree->findLink("link_3", "model_1", 2), nullptr);
+  EXPECT_NE(tree->findLink("link_3", "model_2", 3), nullptr);
 
   // Checks that we cannot access a non-existent joint.
   EXPECT_THROW(tree->findJoint("non-existent-joint"), std::logic_error);
 
   // Checks that we cannot access a joint using just the joint name.
+  // This is impossible because there are multiple joints with the same name.
   EXPECT_THROW(tree->findJoint("joint_1"), std::logic_error);
   EXPECT_THROW(tree->findJoint("joint_2"), std::logic_error);
 
