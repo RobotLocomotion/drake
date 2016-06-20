@@ -713,8 +713,8 @@ bool BulletModel::closestPointsPairwise(
   return closest_points.size() > 0;
 }
 
-bool BulletModel::collisionPointsAllToAll(
-    const bool use_margins, std::vector<PointPair>& collision_points) {
+bool BulletModel::ComputeMaximumDepthCollisionPoints(
+    const bool use_margins, std::vector<PointPair> &collision_points) {
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kCollisionPointsAllToAll;
 
@@ -722,6 +722,10 @@ bool BulletModel::collisionPointsAllToAll(
   MatrixXd normals;
   std::vector<double> distance;
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+
+  // This removes the "persistent" behavior of Bullet's manifolds allowing to
+  // perform a clean, from scratch, collision dispatch.
+  ClearCachedResults(use_margins);
 
   // Internally updates AABB's calling btCollisionWorld::updateAabbs();
   // TODO(amcastro-tri): analyze if the call to BulletModel::updateModel() is
