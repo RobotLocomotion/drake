@@ -187,7 +187,15 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
   std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
 
   // Tests whether an exception is properly thrown when loading a URDF with a
-  // transmission that specifies a non-existent joint.
+  // transmission that specifies a non-existent joint. This is done by first
+  // verifying that an exception is thrown, and then verifying that the thrown
+  // exception is the correct one.
+  EXPECT_THROW(
+      rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
+                                       "/systems/plants/test/rigid_body_system/"
+                                       "bad_transmission_no_joint.urdf"),
+      std::runtime_error);
+
   try {
     rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
                                      "/systems/plants/test/rigid_body_system/"
