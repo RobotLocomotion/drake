@@ -868,11 +868,11 @@ namespace systems {
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     const RigidBodyTree& model, const tinyxml2::XMLElement* link,
     const tinyxml2::XMLElement* pose, const std::string& name) {
-  std::string link_name = link->Attribute("link");
-  RigidBody* body = model.findLink(link_name);
+  std::string body_name = link->Attribute("link");
+  RigidBody* body = model.FindBody(body_name);
   if (body == nullptr) {
-    throw runtime_error("couldn't find link " + link_name +
-                        " referenced in frame " + name);
+    throw runtime_error("ERROR: Couldn't find body \"" + body_name + "\""
+                        " referenced in frame \"" + name + "\".");
   }
 
   Vector3d xyz = Vector3d::Zero(), rpy = Vector3d::Zero();

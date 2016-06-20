@@ -729,13 +729,13 @@ void parseSDFJoint(RigidBodySystem& sys, int model_id, XMLElement* node,
 
 void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
                   PoseMap& pose_map) {
-  // Obtains the name of the link.
+  // Obtains the name of the body.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
-  string link_name(attr);
+  string body_name(attr);
 
-  // Obtains the corresponding rigid body from the rigid body tree.
-  auto body = sys.getRigidBodyTree()->findLink(link_name, "", model_id);
+  // Obtains the corresponding body from the rigid body tree.
+  auto body = sys.getRigidBodyTree()->FindBody(body_name, "", model_id);
 
   // Obtains the transform from the link to the model.
   Isometry3d transform_link_to_model = Isometry3d::Identity();
