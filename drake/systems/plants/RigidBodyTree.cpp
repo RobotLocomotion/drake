@@ -641,17 +641,17 @@ void RigidBodyTree::ComputeMaximumDepthCollisionPoints(
     // Get bodies' transforms.
     const RigidBody& bodyA = elementA->getBody();
     Isometry3d TA;
-    if (bodyA.hasParent()) { // body is dynamic.
+    if (bodyA.hasParent()) {  // body is dynamic.
       TA = cache.getElement(bodyA).transform_to_world;
-    } else { // body is static.
+    } else {  // body is static.
       TA = Isometry3d::Identity();
     }
 
     const RigidBody& bodyB = elementB->getBody();
     Isometry3d TB;
-    if (bodyB.hasParent()) { // body is dynamic.
+    if (bodyB.hasParent()) {  // body is dynamic.
       TB = cache.getElement(bodyB).transform_to_world;
-    } else { // body is static.
+    } else {  // body is static.
       TB = Isometry3d::Identity();
     }
 
