@@ -1,5 +1,13 @@
 <?xml version="1.0" ?>
 <robot name="prius_1">
+  <link name="world" />
+
+  <joint name="world_to_prius_joint" type="continuous">
+    <origin rpy="0 0 0" xyz="0 0 0.378326"/>
+    <parent link="world"/>
+    <child link="chassis_floor"/>
+  </joint>
+
   <link name="chassis_floor">
     <inertial>
       <mass value="57.833"/>
