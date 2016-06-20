@@ -664,6 +664,34 @@ class DRAKERBM_EXPORT RigidBodyTree {
                            std::vector<int>& bodyB_idx,
                            bool use_margins = true);
 
+  /** Computes the point of closest approach between collision elements in the
+   RigidBodyTree that are in contact.
+
+   @param cache[in] a KinematicsCache constructed by RigidBodyTree::doKinematics
+   given \f$ q \f$ and \f$ v \f$.
+
+   Collision points are returned in a series of vectors with as many entries as
+   collision points found.
+
+   @param phi[out] A vector containing the closest distance between
+   CollisionElement's that are in contact.
+
+   @param normal[out] The normal vector reported in world's frame. Since the
+   normal on body A equals the normal on body B but points in the opposite
+   direction, the normal is only reported for body B. This is true only in the
+   world's frame and therefore the normal vector is reported in this frame.
+
+   @param xA[out] The collision point on body A reported on body A's frame.
+
+   @param xB[out] The collision point on body B reported on body B's frame.
+
+   @param bodyA_idx[out] Index for body A in RigidBodyTree::bodies.
+
+   @param bodyB_idx[out] Index for body B in RigidBodyTree::bodies.
+
+   @param use_margins[in] If `true` the model uses the representation with
+   margins. If `false`, the representation without margins is used instead.
+   **/
   void ComputeMaximumDepthCollisionPoints(const KinematicsCache<double> &cache,
                                           Eigen::VectorXd &phi,
                                           Eigen::Matrix3Xd &normal,
