@@ -1,4 +1,3 @@
-
 #include "drake/solvers/IpoptSolver.h"
 
 #include <cstring>
@@ -11,6 +10,7 @@
 #include <IpTNLP.hpp>
 #undef HAVE_CSTDDEF
 
+#include "drake/common/drake_assert.h"
 #include "drake/core/Gradient.h"
 #include "drake/solvers/Optimization.h"
 
@@ -162,7 +162,7 @@ struct ResultCache {
 
   /// @param n The size of the array located at @p x_in.
   bool is_x_equal(Index n, const Number* x_in) {
-    assert(n == x.size());
+    DRAKE_ASSERT(n == x.size());
     return !std::memcmp(x.data(), x_in, x.size() * sizeof(Number));
   }
 
@@ -221,7 +221,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
   virtual bool get_bounds_info(Index n, Number* x_l, Number* x_u,
                                Index m, Number* g_l, Number* g_u) {
-    assert(n == problem_->num_vars());
+    DRAKE_ASSERT(n == problem_->num_vars());
     for (Index i = 0; i < n; i++) {
       x_l[i] = -std::numeric_limits<double>::infinity();
       x_u[i] = std::numeric_limits<double>::infinity();
@@ -262,7 +262,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                   Number* lambda) {
     if (init_x) {
       const Eigen::VectorXd& initial_guess = problem_->initial_guess();
-      assert(initial_guess.size() == n);
+      DRAKE_ASSERT(initial_guess.size() == n);
       for (size_t i = 0; i < n; i++) {
         x[i] = initial_guess[i];
       }
@@ -271,8 +271,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     // We don't currently use any solver options which require
     // populating z_L, z_U or lambda.  Assert that IPOPT doesn't
     // expect us to in case any such options get turned on.
-    assert(!init_z);
-    assert(!init_lambda);
+    DRAKE_ASSERT(!init_z);
+    DRAKE_ASSERT(!init_lambda);
     return true;
   }
 
@@ -281,7 +281,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       EvaluateCosts(n, x);
     }
 
-    assert(cost_cache_->result.size() == 1);
+    DRAKE_ASSERT(cost_cache_->result.size() == 1);
     obj_value = cost_cache_->result[0];
     return true;
   }
@@ -292,7 +292,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       EvaluateCosts(n, x);
     }
 
-    assert(cost_cache_->grad.size() == n);
+    DRAKE_ASSERT(cost_cache_->grad.size() == n);
     std::memcpy(grad_f, cost_cache_->grad.data(), n * sizeof(Number));
     return true;
   }
@@ -303,7 +303,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       EvaluateConstraints(n, x);
     }
 
-    assert(constraint_cache_->result.size() == m);
+    DRAKE_ASSERT(constraint_cache_->result.size() == m);
     std::memcpy(g, constraint_cache_->result.data(), m * sizeof(Number));
     return true;
   }
@@ -312,8 +312,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                           Index m, Index nele_jac, Index* iRow, Index *jCol,
                           Number* values) {
     if (values == nullptr) {
-      assert(iRow != nullptr);
-      assert(jCol != nullptr);
+      DRAKE_ASSERT(iRow != nullptr);
+      DRAKE_ASSERT(jCol != nullptr);
 
       size_t constraint_idx = 0;  // Passed into GetGradientMatrix as
                                   // the starting row number for the
@@ -340,19 +340,19 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
             iRow + grad_idx, jCol + grad_idx);
         constraint_idx += c.constraint()->num_constraints();
       }
-      assert(grad_idx == nele_jac);
+      DRAKE_ASSERT(grad_idx == nele_jac);
       return true;
     }
 
-    assert(iRow == nullptr);
-    assert(jCol == nullptr);
+    DRAKE_ASSERT(iRow == nullptr);
+    DRAKE_ASSERT(jCol == nullptr);
 
     // We're being asked for the actual values.
     if (new_x || !constraint_cache_->is_x_equal(n, x)) {
       EvaluateConstraints(n, x);
     }
 
-    assert(constraint_cache_->grad.size() == nele_jac);
+    DRAKE_ASSERT(constraint_cache_->grad.size() == nele_jac);
     std::memcpy(
         values, constraint_cache_->grad.data(), nele_jac * sizeof(Number));
     return true;
@@ -460,7 +460,7 @@ bool IpoptSolver::available() const {
 }
 
 SolutionResult IpoptSolver::Solve(OptimizationProblem &prog) const {
-  assert(prog.linear_complementarity_constraints().empty());
+  DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
