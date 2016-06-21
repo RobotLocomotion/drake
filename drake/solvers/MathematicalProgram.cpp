@@ -41,10 +41,10 @@ class MathematicalProgram : public MathematicalProgramInterface {
      return new
      MathematicalProgram; };
   */
-  MathematicalProgramInterface * AddQuadraticCost() override {
+  MathematicalProgramInterface* AddQuadraticCost() override {
     return new MathematicalProgram;
   }
-  MathematicalProgramInterface * AddLinearCost() override {
+  MathematicalProgramInterface* AddLinearCost() override {
     return new MathematicalProgram;
   }
   MathematicalProgramInterface* AddGenericObjective() override {
@@ -130,7 +130,8 @@ class NonlinearProgram : public MathematicalProgram {
     virtual MathematicalProgramInterface* AddLinearEqualityConstraint() { return
    new
     LinearProgram; };
-    virtual MathematicalProgramInterface* AddLinearInequalityConstraint() { return
+    virtual MathematicalProgramInterface* AddLinearInequalityConstraint() {
+   return
     new LinearProgram; };
     };
 
@@ -153,8 +154,7 @@ class LinearComplementarityProblem : public MathematicalProgram {
   };
 };
 
-class QuadraticProgram : public NonlinearProgram  {
-
+class QuadraticProgram : public NonlinearProgram {
  public:
   MathematicalProgramInterface* AddQuadraticCost() override {
     return new QuadraticProgram;
@@ -171,10 +171,10 @@ class QuadraticProgram : public NonlinearProgram  {
   };
 
   SolutionResult Solve(OptimizationProblem& prog) const override {
-    std::cout<<"Inside Quadratic Program SOlve\n";
+    std::cout << "Inside Quadratic Program SOlve\n";
 
     if (snopt_solver.available()) {
-      std::cout<<"Inside Quadratic Program SOlve : SNOPT\n";
+      std::cout << "Inside Quadratic Program SOlve : SNOPT\n";
       return snopt_solver.Solve(prog);
     }
     if (nlopt_solver.available()) {
@@ -187,8 +187,6 @@ class QuadraticProgram : public NonlinearProgram  {
   NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
 };
-
-
 
 class LeastSquares : public QuadraticProgram {  // public LinearProgram, public
  public:
