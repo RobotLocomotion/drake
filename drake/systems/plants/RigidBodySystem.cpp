@@ -177,6 +177,9 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         // Tangential velocity in world's frame.
         Vector3d urt_world = ur_world - urn * normal;
 
+        // Magnitude of the tangential contribution to the relative velocity.
+        double urt_norm = urt_world.norm();
+
         // Normal component magnitude of the collision force acting
         // on body A.
         double fAn = std::max<double>(
@@ -190,12 +193,12 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         // on body A.
         // Notice that since fAn > 0 always, then fAn_world.norm() = fAn.
         double fAt = -std::min<double>(
-            penetration_damping * urt_world.norm(),
+            penetration_damping * urt_norm,
             friction_coefficient * fAn);
 
         // Tangential contribution to the contact force on body A in
         // world's frame.
-        Vector3d fAt_world = fAt * urt_world / (urt_world.norm() + EPSILON);
+        Vector3d fAt_world = fAt * urt_world / (urt_norm + EPSILON);
 
         // Total contact force on body A in world's frame.
         Vector3d fA_world = fAn_world + fAt_world;
