@@ -4,6 +4,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
 #include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
@@ -77,7 +78,7 @@ class StateVector {
     if (size() != rhs.size()) {
       throw std::out_of_range("Addends must be the same length.");
     }
-    assert(size() == rhs.size());
+    DRAKE_ASSERT(size() == rhs.size());
     for (ptrdiff_t i = 0; i < size(); ++i) {
       SetAtIndex(i, GetAtIndex(i) + rhs.GetAtIndex(i));
     }

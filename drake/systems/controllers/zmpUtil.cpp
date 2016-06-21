@@ -2,6 +2,8 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
 
+#include "drake/common/drake_assert.h"
+
 using namespace Eigen;
 using namespace std;
 
@@ -13,7 +15,7 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
   int k = d + 1;
 
   for (size_t i = 1; i < n; i++) {
-    assert(zmp_trajectory.getSegmentPolynomialDegree(i) == d);
+    DRAKE_ASSERT(zmp_trajectory.getSegmentPolynomialDegree(i) == d);
   }
 
   VectorXd dt(n);

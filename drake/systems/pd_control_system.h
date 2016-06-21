@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_assert.h"
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
 #include "drake/core/Vector.h"
@@ -34,12 +35,13 @@ class PDControlSystem {
   PDControlSystem(const SystemPtr& sys, const Eigen::MatrixBase<DerivedA>& Kp,
                   const Eigen::MatrixBase<DerivedB>& Kd)
       : sys(sys), Kp(Kp), Kd(Kd) {
-    assert(Drake::getNumInputs(*sys) == Kp.rows() &&
-           "Kp must have the same number of rows as the system has inputs");
-    assert(Kp.rows() == Kd.rows() &&
-           "Kd must have the same number of rows as Kp");
-    assert(Drake::getNumStates(*sys) == Kp.cols() + Kd.cols() &&
-           "Kp and Kd must match the number of states");
+    DRAKE_ASSERT(Drake::getNumInputs(*sys) == Kp.rows() &&
+                 "Kp must have the same number of rows as the system has"
+                 " inputs");
+    DRAKE_ASSERT(Kp.rows() == Kd.rows() &&
+                 "Kd must have the same number of rows as Kp");
+    DRAKE_ASSERT(Drake::getNumStates(*sys) == Kp.cols() + Kd.cols() &&
+                 "Kp and Kd must match the number of states");
   }
 
   template <typename ScalarType>

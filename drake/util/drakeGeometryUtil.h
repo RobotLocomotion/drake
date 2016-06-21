@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cmath>
 #include <random>
+#include "drake/common/drake_assert.h"
 #include "drake/util/drakeGradientUtil.h"
 #include "drake/drakeGeometryUtil_export.h"
 
@@ -1110,7 +1111,7 @@ dTransformSpatialMotion(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
                         const Eigen::MatrixBase<DerivedX>& X,
                         const Eigen::MatrixBase<DerivedDT>& dT,
                         const Eigen::MatrixBase<DerivedDX>& dX) {
-  assert(dT.cols() == dX.cols());
+  DRAKE_ASSERT(dT.cols() == dX.cols());
   typename DerivedDT::Index nq = dT.cols();
 
   const auto& R = T.linear();
@@ -1174,7 +1175,7 @@ dTransformSpatialForce(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
                        const Eigen::MatrixBase<DerivedX>& X,
                        const Eigen::MatrixBase<DerivedDT>& dT,
                        const Eigen::MatrixBase<DerivedDX>& dX) {
-  assert(dT.cols() == dX.cols());
+  DRAKE_ASSERT(dT.cols() == dX.cols());
   typename DerivedDT::Index nq = dT.cols();
 
   const auto& R = T.linear();
@@ -1614,8 +1615,8 @@ void quat2expmapSequence(const Eigen::MatrixBase<DerivedQ>& quat,
       "Scalar types don't match.");
   typedef typename DerivedQ::Scalar Scalar;
 
-  assert(quat.cols() == quat_dot.cols() &&
-         "number of columns of quat doesn't match quat_dot");
+  DRAKE_ASSERT(quat.cols() == quat_dot.cols() &&
+               "number of columns of quat doesn't match quat_dot");
   Index N = quat.cols();
 
   typedef AutoDiffScalar<Matrix<Scalar, 1, 1>> ADScalar;

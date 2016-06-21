@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_assert.h"
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
 #include "drake/core/Vector.h"
@@ -131,7 +132,7 @@ class FeedbackSystem {
         *u1 = static_cast<InputVector<ScalarType>>(toEigen(*y2) + toEigen(u));
       }
     } else {
-      assert(!sys2->isDirectFeedthrough());  // Per our constructor.
+      DRAKE_ASSERT(!sys2->isDirectFeedthrough());  // Per our constructor.
       // sys2->output doesn't use y1, so it's okay that it isn't filled in yet.
       *y2 = sys2->output(t, x2, *y1);
       *u1 = static_cast<InputVector<ScalarType>>(toEigen(*y2) + toEigen(u));

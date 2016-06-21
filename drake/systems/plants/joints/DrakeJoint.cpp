@@ -1,5 +1,7 @@
 #include "drake/systems/plants/joints/DrakeJoint.h"
 
+#include "drake/common/drake_assert.h"
+
 using namespace Eigen;
 
 DrakeJoint::DrakeJoint(const std::string& _name,
@@ -13,8 +15,8 @@ DrakeJoint::DrakeJoint(const std::string& _name,
       transform_to_parent_body(_transform_to_parent_body),
       num_positions(_num_positions),
       num_velocities(_num_velocities) {
-  assert(num_positions <= MAX_NUM_POSITIONS);
-  assert(num_velocities <= MAX_NUM_VELOCITIES);
+  DRAKE_ASSERT(num_positions <= MAX_NUM_POSITIONS);
+  DRAKE_ASSERT(num_velocities <= MAX_NUM_VELOCITIES);
 }
 
 DrakeJoint::~DrakeJoint() {

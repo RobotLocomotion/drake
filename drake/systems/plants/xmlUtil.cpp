@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/Path.h"
+#include "drake/common/drake_assert.h"
 #include "drake/thirdParty/tinydir/tinydir.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "xmlUtil.h"
@@ -205,11 +206,9 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
     std::string frame;
     std::stringstream s(attr);
     s >> frame;
-    assert(0 && "this has not been tested yet");  // and could cause problems
-                                                  // with the default pose
-                                                  // assumptions in the sdf
-                                                  // parser, which I simply had
-                                                  // to guess
+    // This could cause problems with the default pose assumptions in
+    // the sdf parser, which I simply had to guess.
+    DRAKE_ASSERT(0 && "this has not been tested yet");
     Eigen::Isometry3d T_frame =
         pose_map.at(frame);  // will throw an exception if the frame is not
                              // found.  that is the desired behavior.

@@ -1,3 +1,4 @@
+#include "drake/common/drake_assert.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/drakeMexUtil.h"
 #include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
@@ -182,7 +183,8 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports) {
 
 std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap>
 setUpContactGroups(RigidBodyTree* robot, const mxArray* mex_contact_groups) {
-  assert(mxGetNumberOfElements(mex_contact_groups) == robot->bodies.size());
+  DRAKE_ASSERT(mxGetNumberOfElements(mex_contact_groups) ==
+               robot->bodies.size());
   std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap>
       contact_groups;
   contact_groups.reserve(robot->bodies.size());
