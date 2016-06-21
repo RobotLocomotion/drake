@@ -2,13 +2,12 @@
 
 #include <cstddef>
 
+#include "drake/common/eigen_types.h"
+
 #include <Eigen/Dense>
 
 namespace drake {
 namespace systems {
-
-template <typename T>
-using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1 /* column */>;
 
 /// VectorInterface is a pure abstract interface that real-valued signals
 /// between Systems must satisfy. Classes that inherit from VectorInterface

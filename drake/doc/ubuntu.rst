@@ -92,9 +92,9 @@ Other prerequisites may be installed as follows::
       graphviz libgtk2.0-dev libhtml-form-perl libjpeg-dev libmpfr-dev \
       libwww-perl libpng-dev libqt4-dev libqt4-opengl-dev libqwt-dev \
       libterm-readkey-perl libtool libvtk-java libvtk5-dev libvtk5-qt4-dev \
-      make mpich2 perl pkg-config python-bs4 python-dev python-gtk2 \
-      python-html5lib python-numpy python-pip python-sphinx python-vtk \
-      subversion swig unzip valgrind
+      make mpich2 ninja-build perl pkg-config python-bs4 python-dev \
+      python-gtk2 python-html5lib python-numpy python-pip python-sphinx \
+      python-vtk subversion swig unzip valgrind
     sudo pip install -U cpplint
 
 Environment
@@ -115,8 +115,8 @@ the command below can also be added to the ``~/.bashrc`` file::
 
     export CC=gcc-4.9 CXX=g++-4.9 FC=gfortran-4.9
 
-Alternatively, every call to ``make`` can be preceded with environment variable
-settings that specify the correct compiler::
+Alternatively, every call to ``make`` or ``cmake`` can be preceded with
+environment variable settings that specify the correct compiler::
 
     env CC=gcc-4.9 CXX=g++-4.9 FC=gfortran-4.9 make ...
 
@@ -133,18 +133,6 @@ variable::
     export PATH=/path/to/cmake-binary/bin:$PATH
 
 For more information, see :ref:`these instructions <cmake_on_older_ubuntu_versions>`.
-
-External Source Dependencies
-============================
-
-Download the external dependencies::
-
-    cd drake-distro
-    make options
-    # Use the GUI to choose which externals to include,
-    # then press 'c' twice to configure,
-    # then 'g' to generate makefiles and exit.
-    make download-all
 
 MATLAB
 ======
