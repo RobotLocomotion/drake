@@ -28,7 +28,12 @@ add_executable(
 add_test(NAME 
   drake_assert_test_compile COMMAND
   drake_assert_test_compile)
-# - This version of the test should yield a compile error.
+# - This version of the test should yield a compile error, as follows:
+#  - add_executable: Declare a compilation rule to create an executable.
+#  - target_compile_definitions: Enable code that generates a compile error.
+#  - set_target_properites: Compile the executable only when directly asked.
+#  - add_test: Add a test that asks cmake to compile the executable.
+#  - set_test_properties: The test passes if and only if the exitcode was 1.
 add_executable(
   drake_assert_test_nocompile 
   drake_assert_test_compile.cc)

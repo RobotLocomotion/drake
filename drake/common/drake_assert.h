@@ -22,6 +22,9 @@
 /// - If both macros are defined, it is a compile-time error.
 /// - If neither are defined, then NDEBUG governs assertions as usual.
 ///
+/// This header will define exactly one of either @p DRAKE_ASSERT_IS_ARMED or
+/// @p DRAKE_ASSERT_IS_DISARMED to indicate whether @p DRAKE_ASSERT is armed.
+///
 /// One difference versus the standard @p assert(condition) is that the
 /// @p condition within @p DRAKE_ASSERT is always syntax-checked, even if
 /// Drake's assertions are disarmed.
@@ -72,10 +75,10 @@ void Abort(const char* condition, const char* func, const char* file, int line);
 
 #ifdef DRAKE_ASSERT_IS_ARMED
 // Assertions are enabled.
-#define DRAKE_ASSERT(condition) DRAKE_ABORT_UNLESS(condition)
+# define DRAKE_ASSERT(condition) DRAKE_ABORT_UNLESS(condition)
 #else
 // Assertions are disabled, so just typecheck the expression.
-#define DRAKE_ASSERT(condition) static_assert(                  \
+# define DRAKE_ASSERT(condition) static_assert(                 \
       std::is_convertible<decltype(condition), bool>::value,    \
       "Assertion condition should be bool-convertible.")
 #endif
