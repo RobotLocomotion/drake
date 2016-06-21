@@ -546,7 +546,7 @@ bool BulletModel::findClosestPointsBetweenElements(
 void BulletModel::collisionDetectFromPoints(
     const Matrix3Xd& points, bool use_margins,
     std::vector<PointPair>& closest_points) {
-  closest_points.reserve(points.cols());
+  closest_points.resize(points.cols());
   VectorXd phi(points.cols());
 
   btSphereShape shapeA(0.0);
@@ -590,10 +590,10 @@ void BulletModel::collisionDetectFromPoints(
         got_one = true;
         Element* collision_element =
             static_cast<Element*>(bt_objB->getUserPointer());
-        closest_points.push_back(
+        closest_points[i] =
             PointPair(collision_element, collision_element,
                       toVector3d(pointOnElemB), toVector3d(pointOnBinWorld),
-                      toVector3d(gjkOutput.m_normalOnBInWorld), distance));
+                      toVector3d(gjkOutput.m_normalOnBInWorld), distance);
       }
     }
   }
