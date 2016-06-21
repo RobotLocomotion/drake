@@ -8,7 +8,8 @@ namespace detail {
 
 void Abort(const char* condition, const char* func, const char* file,
            int line) {
-  std::cerr << "abort: failure at " << file << ":" << line << " in " << func;
+  std::cerr << "abort: failure at " << file << ":" << line
+            << " in " << func << "()";
   if (condition) {
     std::cerr << ": assertion '" << condition << "' failed.";
   } else {
