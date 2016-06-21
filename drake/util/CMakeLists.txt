@@ -4,7 +4,7 @@ endif()
 
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
-if(LCM_FOUND AND MATLAB_FOUND)
+if(lcm_FOUND AND MATLAB_FOUND)
   if(simulink_FOUND)
     add_mex(lcmLogger lcmLogger.cpp)
     pods_use_pkg_config_packages(lcmLogger lcm)
@@ -44,7 +44,7 @@ if(MATLAB_FOUND)
     VERSION 0.0.1)
 endif()
 
-if(LCM_FOUND)
+if(lcm_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
   # we only need methods that are templated and defined in the header
 

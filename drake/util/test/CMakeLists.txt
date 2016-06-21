@@ -18,7 +18,7 @@ if(MATLAB_FOUND)
   target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil drakeMexUtil)
 endif()
 
-if(LCM_FOUND)
+if(lcm_FOUND)
 add_executable(testLCMUtil testLCMUtil.cpp)
 target_link_libraries(testLCMUtil drakeLCMUtil)
 endif()

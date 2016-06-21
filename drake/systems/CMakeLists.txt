@@ -8,7 +8,7 @@ if(simulink_FOUND)
   add_mex(DCSFunction DCSFunction.cpp)
 endif()
 
-if(LCM_FOUND)
+if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
   target_link_libraries(drakeLCMSystem drake_lcmtypes)
 
