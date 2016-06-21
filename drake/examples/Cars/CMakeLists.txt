@@ -22,12 +22,12 @@ if(LCM_FOUND)
     REQUIRES
     VERSION 0.0.1)
 
-  add_dependencies(drakeCars drake_lcmtypes lcmtype_agg_hpp)
+  add_dependencies(drakeCars drake_lcmtypes)
   add_executable(simple_car_demo simple_car_demo.cc)
   target_link_libraries(simple_car_demo drakeCars drakeRBSystem drakeLCMSystem)
 
   add_executable(car_sim_lcm car_sim_lcm.cc)
-  add_dependencies(car_sim_lcm drake_lcmtypes lcmtype_agg_hpp)
+  add_dependencies(car_sim_lcm drake_lcmtypes)
   target_link_libraries(car_sim_lcm drakeCars drakeRBSystem drakeLCMSystem)
 
   add_executable(demo_multi_car demo_multi_car.cc)

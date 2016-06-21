@@ -79,8 +79,8 @@ if(LCM_FOUND)
 
   if(bullet_FOUND)
     add_executable(testLidar lidarTest.cpp)
-    add_dependencies(testLidar drake_lcmtypes lcmtype_agg_hpp)
-    target_link_libraries(testLidar drakeRBSystem)
+    add_dependencies(testLidar drake_lcmtypes)
+    target_link_libraries(testLidar drakeRBSystem lcmtypes_bot2-core)
     add_test(NAME testLidar COMMAND testLidar)
   endif()
 
