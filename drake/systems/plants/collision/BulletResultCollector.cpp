@@ -23,7 +23,7 @@ btScalar BulletResultCollector::addSingleResult(
       colObj0Wrap->getCollisionObject()->getUserPointer());
   auto element1 = static_cast<Element*>(
       colObj1Wrap->getCollisionObject()->getUserPointer());
-  addSingleResult(element0->getId(), element1->getId(),
+  addSingleResult(element0, element1,
                   toVector3d(cp.getPositionWorldOnA()),
                   toVector3d(cp.getPositionWorldOnB()),
                   toVector3d(cp.m_normalWorldOnB), (double)cp.m_distance1);
