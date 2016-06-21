@@ -200,21 +200,11 @@ class DRAKERBM_EXPORT RigidBody {
 
     CollisionElement* clone() const override;
 
-    /**
-     * @brief Returns a const reference to the body to which this
-     * CollisionElement is attached.
-     */
-    // TODO(amcastro-tri): getBody() -> get_body()
-    const RigidBody& getBody() const;
-
     bool CollidesWith(const DrakeCollision::Element* other) const override;
 
 #ifndef SWIG
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
-
-   private:
-    const RigidBody* const body;
   };
 
  public:

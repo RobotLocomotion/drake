@@ -10,6 +10,12 @@
 #include "drake/drakeCollision_export.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 
+// Forward declaration.
+// RigidBody's interface is never used by the collision engine.
+// It is however useful for the concept of having a CollisionElement attached
+// to a Body.
+class RigidBody;
+
 namespace DrakeCollision {
 typedef uintptr_t ElementId;
 
@@ -37,6 +43,13 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
    */
   virtual bool CollidesWith(const Element* other) const { return true; }
 
+  /** Returns a pointer to the const RigidBody to which this CollisionElement
+  is attached. **/
+  const RigidBody* const get_body() const;
+
+  /** Set the rigid body this collision element is attached to. **/
+  void set_rigid_body(const RigidBody* body);
+
   /**
    * A toString method for this class.
    */
@@ -48,6 +61,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
  private:
   ElementId id;
+  const RigidBody* body_{};
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
