@@ -19,6 +19,10 @@ command = [command, '-not -path "', rootdir, '/*/dev/*" '];
 % "irb_140_convhull".
 command = [command, '-not -path "', rootdir, '/*irb_140_convhull*" '];
 
+% Updates the above command to blacklist any URDF containing the string
+% "bad_transmission_no_joint.urdf".
+command = [command, '-not -path "', rootdir, '/*bad_transmission_no_joint.urdf" '];
+
 % Finds URDF files using the previously defined command.
 [info, p] = system(command);
 
