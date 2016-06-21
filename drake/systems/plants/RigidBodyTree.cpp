@@ -1665,6 +1665,14 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   }
 }
 
+RigidBody* RigidBodyTree::findLink(const std::string& link_name,
+                    const std::string& model_name,
+                    int model_id) const {
+  static_assert(false, "RigidBodyTree: findLink: ERROR: This method is "
+    "deprecated. Please use the newer RigidBodyTree::FindBody(...)!");
+  return nullptr;
+}
+
 shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
     const std::string& frame_name, int model_id) const {
   std::string frame_name_lower = frame_name;
@@ -1723,6 +1731,13 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
         ".");
   }
   return body->body_index;
+}
+
+int RigidBodyTree::findLinkId(const std::string& link_name, int model_id)
+                              const {
+  static_assert(false, "RigidBodyTree: findLinkId: ERROR: This method is "
+    "deprecated. Please use the newer RigidBodyTree::FindBodyIndex(...)!");
+  return -1;
 }
 
 RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
