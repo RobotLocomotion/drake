@@ -25,6 +25,8 @@ class DRAKECOLLISION_EXPORT PointPair {
                   Eigen::Vector3d* normal, double* distance) const;
   ElementId getIdA() const;
   ElementId getIdB() const;
+  const Element* const get_elementA() const;
+  const Element* const get_elementB() const;
   Eigen::Vector3d getNormal() const;
   Eigen::Vector3d getPtA() const;
   Eigen::Vector3d getPtB() const;
