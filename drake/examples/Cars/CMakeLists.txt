@@ -1,5 +1,5 @@
 add_subdirectory(test)
-if(LCM_FOUND)
+if(lcm_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
 
   add_library_with_exports(LIB_NAME drakeCars SOURCE_FILES

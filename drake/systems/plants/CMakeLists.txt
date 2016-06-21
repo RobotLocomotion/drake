@@ -166,7 +166,7 @@ pods_install_pkg_config_file(drake-rbsystem
   LIBS -ldrakeRBSystem -ldrakeRBM -ldrakeOptimization -ldrakeRigidBodyConstraint
   VERSION 0.0.1)
 
-if(LCM_FOUND)
+if(lcm_FOUND)
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
   target_link_libraries(rigidBodyLCMNode drakeRBSystem drakeLCMSystem)
   pods_install_executables(rigidBodyLCMNode)
