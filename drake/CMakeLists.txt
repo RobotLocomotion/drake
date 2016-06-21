@@ -243,7 +243,7 @@ include(cmake/procman.cmake)  # helper script for writing procman files
 
 # set up and build lcm types
 find_package(lcm)
-if(LCM_FOUND)
+if(lcm_FOUND)
   add_subdirectory(lcmtypes)
   include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
 
