@@ -33,7 +33,7 @@ class VectorInterface {
   virtual void set_value(const Eigen::Ref<const VectorX<T>>& value) = 0;
 
   /// Returns a column vector containing the entire value of the signal.
-  virtual const Eigen::VectorBlock<const VectorX<T>> get_value() const = 0;
+  virtual Eigen::VectorBlock<const VectorX<T>> get_value() const = 0;
 
   /// Returns a reference that allows mutation of the values in this vector, but
   /// does not allow resizing the vector itself.
