@@ -1,12 +1,12 @@
 #pragma once
 
-#include <cassert>
 #include <cmath>
 #include <stdexcept>
 #include <type_traits>
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
 #include "drake/core/Vector.h"
 
 namespace drake {
@@ -58,7 +58,7 @@ class NAryState {
   void Append(const UnitVector& unit) {
     if (unit_size_ == 0) {
       // NOP --- in particular, count_ should remain at -1.
-      assert(count_ == -1);
+      DRAKE_ASSERT(count_ == -1);
       return;
     }
     // Enlarge combined_vector_ by size of the converted unit.

@@ -7,6 +7,7 @@
 #include <initializer_list>
 #include <Eigen/Core>
 
+#include "drake/common/drake_assert.h"
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
 #include "drake/core/Vector.h"
@@ -75,7 +76,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   DecisionVariableView(const DecisionVariable& var, size_t start, size_t n)
       : var_(var), start_index_(start), size_(n) {
-    assert(start + n < var.value().rows());
+    DRAKE_ASSERT(start + n < var.value().rows());
   }
 
   /** index()
@@ -114,23 +115,23 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   }
 
   const DecisionVariableView operator()(size_t i) const {
-    assert(i <= size_);
+    DRAKE_ASSERT(i <= size_);
     return DecisionVariableView(var_, start_index_ + i, 1);
   }
   const DecisionVariableView row(size_t i) const {
-    assert(i <= size_);
+    DRAKE_ASSERT(i <= size_);
     return DecisionVariableView(var_, start_index_ + i, 1);
   }
   const DecisionVariableView head(size_t n) const {
-    assert(n <= size_);
+    DRAKE_ASSERT(n <= size_);
     return DecisionVariableView(var_, start_index_, n);
   }
   const DecisionVariableView tail(size_t n) const {
-    assert(n <= size_);
+    DRAKE_ASSERT(n <= size_);
     return DecisionVariableView(var_, start_index_ + size_ - n, n);
   }
   const DecisionVariableView segment(size_t start, size_t n) const {
-    assert(start + n <= size_);
+    DRAKE_ASSERT(start + n <= size_);
     return DecisionVariableView(var_, start_index_ + start, n);
   }
 
@@ -194,7 +195,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
      */
     void WriteThrough(const Eigen::VectorXd& solution,
                       Eigen::VectorXd* output) const {
-      assert(solution.rows() == GetNumElements());
+      DRAKE_ASSERT(solution.rows() == GetNumElements());
       size_t solution_index = 0;
       for (auto view : variable_list_) {
         const auto& solution_segment =
@@ -227,15 +228,15 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override {
       y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
-      assert(x.rows() == Drake::FunctionTraits<F>::numInputs(f_));
-      assert(y.rows() == Drake::FunctionTraits<F>::numOutputs(f_));
+      DRAKE_ASSERT(x.rows() == Drake::FunctionTraits<F>::numInputs(f_));
+      DRAKE_ASSERT(y.rows() == Drake::FunctionTraits<F>::numOutputs(f_));
       Drake::FunctionTraits<F>::eval(f_, x, y);
     }
     void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
               Drake::TaylorVecXd& y) const override {
       y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
-      assert(x.rows() == Drake::FunctionTraits<F>::numInputs(f_));
-      assert(y.rows() == Drake::FunctionTraits<F>::numOutputs(f_));
+      DRAKE_ASSERT(x.rows() == Drake::FunctionTraits<F>::numInputs(f_));
+      DRAKE_ASSERT(y.rows() == Drake::FunctionTraits<F>::numOutputs(f_));
       Drake::FunctionTraits<F>::eval(f_, x, y);
     }
   };
@@ -529,11 +530,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     // other types of constraint or objective.
     // (TODO(ggould-tri) relax this to non-overlapping bindings, possibly by
     // calling multiple solvers.)
-    assert(generic_constraints_.empty());
-    assert(generic_objectives_.empty());
-    assert(linear_constraints_.empty());
-    assert(linear_equality_constraints_.empty());
-    assert(bbox_constraints_.empty());
+    DRAKE_ASSERT(generic_constraints_.empty());
+    DRAKE_ASSERT(generic_objectives_.empty());
+    DRAKE_ASSERT(linear_constraints_.empty());
+    DRAKE_ASSERT(linear_equality_constraints_.empty());
+    DRAKE_ASSERT(bbox_constraints_.empty());
 
     std::shared_ptr<LinearComplementarityConstraint> constraint(
         new LinearComplementarityConstraint(M, q));
@@ -631,7 +632,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   template <typename Derived>
   void SetDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
-    assert(x.rows() == num_vars_);
+    DRAKE_ASSERT(x.rows() == num_vars_);
     size_t index = 0;
     for (auto& v : variables_) {
       v.set_value(x.middleRows(index, v.value().rows()));

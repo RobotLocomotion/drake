@@ -2,6 +2,7 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include <list>
 #include <stdexcept>
+#include "drake/common/drake_assert.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
@@ -250,8 +251,8 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
                                    x.bottomRows(tree->number_of_velocities()));
   Eigen::VectorXd y(getNumOutputs());
 
-  assert(getNumStates() == x.size());
-  assert(getNumInputs() == u.size());
+  DRAKE_ASSERT(getNumStates() == x.size());
+  DRAKE_ASSERT(getNumInputs() == u.size());
 
   y.segment(0, getNumStates()) << x;
   int index = getNumStates();

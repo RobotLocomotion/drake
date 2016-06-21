@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_assert.h"
 #include "drake/systems/System.h"
 
 namespace Drake {
@@ -35,11 +36,11 @@ class AffineSystem {
                const Eigen::MatrixBase<DerivedD>& D,
                const Eigen::MatrixBase<Derivedy0>& y0)
       : A(A), B(B), C(C), D(D), xdot0(xdot0), y0(y0) {
-    assert(A.rows() == A.cols());
-    assert(B.rows() == A.cols());
-    assert(xdot0.rows() == A.cols());
-    assert(C.cols() == A.cols());
-    assert(y0.rows() == C.rows());
+    DRAKE_ASSERT(A.rows() == A.cols());
+    DRAKE_ASSERT(B.rows() == A.cols());
+    DRAKE_ASSERT(xdot0.rows() == A.cols());
+    DRAKE_ASSERT(C.cols() == A.cols());
+    DRAKE_ASSERT(y0.rows() == C.rows());
   }
 
   template <typename ScalarType>

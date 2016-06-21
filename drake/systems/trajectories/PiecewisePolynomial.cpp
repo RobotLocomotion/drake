@@ -1,5 +1,6 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include <cassert>
+
+#include "drake/common/drake_assert.h"
 
 using namespace std;
 using namespace Eigen;
@@ -9,7 +10,7 @@ PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(
     std::vector<PolynomialMatrix> const& polynomials,
     std::vector<double> const& segment_times)
     : PiecewisePolynomialBase(segment_times), polynomials(polynomials) {
-  assert(segment_times.size() == (polynomials.size() + 1));
+  DRAKE_ASSERT(segment_times.size() == (polynomials.size() + 1));
   for (int i = 1; i < getNumberOfSegments(); i++) {
     if (polynomials[i].rows() != polynomials[0].rows())
       throw std::runtime_error(
@@ -27,7 +28,7 @@ PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(
     std::vector<PolynomialType> const& polynomials,
     std::vector<double> const& segment_times)
     : PiecewisePolynomialBase(segment_times) {
-  assert(segment_times.size() == (polynomials.size() + 1));
+  DRAKE_ASSERT(segment_times.size() == (polynomials.size() + 1));
 
   for (int i = 0; i < polynomials.size(); i++) {
     PolynomialMatrix matrix(1, 1);
