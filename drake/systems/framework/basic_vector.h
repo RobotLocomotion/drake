@@ -39,7 +39,7 @@ class BasicVector : public VectorInterface<T> {
 
   ptrdiff_t size() const override { return values_.rows(); }
 
-  const Eigen::VectorBlock<const VectorX<T>> get_value() const override {
+  Eigen::VectorBlock<const VectorX<T>> get_value() const override {
     return values_.head(values_.rows());
   }
 
