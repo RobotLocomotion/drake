@@ -1,4 +1,4 @@
-if(LCM_FOUND)
+if(lcm_FOUND)
   add_executable(runPendulumDynamics runDynamics.cpp)
   target_link_libraries(runPendulumDynamics drakeRBM drakeLCMSystem)
   add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics --non-realtime)
