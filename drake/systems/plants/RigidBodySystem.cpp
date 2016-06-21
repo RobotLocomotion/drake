@@ -142,65 +142,65 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // apply contact forces
   {
     VectorXd phi;
-    Matrix3Xd normal, xA, xB;
+    Matrix3Xd normals_list, xA, xB;
     vector<int> bodyA_idx, bodyB_idx;
     if (use_multi_contact)
-      tree->potentialCollisions(kinsol, phi, normal, xA, xB, bodyA_idx,
-                                bodyB_idx);
+      tree->potentialCollisions(kinsol,
+                                phi, normals_list,
+                                xA, xB, bodyA_idx, bodyB_idx);
     else
-      tree->collisionDetect(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
+      tree->collisionDetect(kinsol,
+                            phi, normals_list,
+                            xA, xB, bodyA_idx, bodyB_idx);
 
     for (int i = 0; i < phi.rows(); i++) {
       if (phi(i) < 0.0) {  // then i have contact
         // todo: move this entire block to a shared an updated "contactJacobian"
         // method in RigidBodyTree
-        auto JA = tree->transformPointsJacobian(kinsol, xA.col(i), bodyA_idx[i],
-                                                0, false);
-        auto JB = tree->transformPointsJacobian(kinsol, xB.col(i), bodyB_idx[i],
-                                                0, false);
-        Vector3d this_normal = normal.col(i);
+        MatrixXd JA = tree->transformPointsJacobian(
+            kinsol, xA.col(i), bodyA_idx[i], 0, false);
+        MatrixXd JB = tree->transformPointsJacobian(
+            kinsol, xB.col(i), bodyB_idx[i], 0, false);
 
-        // compute the surface tangent basis
-        Vector3d tangent1;
-        if (1.0 - this_normal(2) < EPSILON) {  // handle the unit-normal case
-                                               // (since it's unit length, just
-                                               // check z)
-          tangent1 << 1.0, 0.0, 0.0;
-        } else if (1 + this_normal(2) < EPSILON) {
-          tangent1 << -1.0, 0.0, 0.0;  // same for the reflected case
-        } else {                       // now the general case
-          tangent1 << this_normal(1), -this_normal(0), 0.0;
-          tangent1 /= sqrt(this_normal(1) * this_normal(1) +
-                           this_normal(0) * this_normal(0));
-        }
-        Vector3d tangent2 = this_normal.cross(tangent1);
-        Matrix3d R;  // rotation into normal coordinates
-        R.row(0) = tangent1;
-        R.row(1) = tangent2;
-        R.row(2) = this_normal;
-        auto J = R * (JA - JB);          // J = [ D1; D2; n ]
-        auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
+        Vector3d normal = normals_list.col(i);
 
-        {
-          // spring law for normal force:  fA_normal = -k*phi - b*phidot
-          // and damping for tangential force:  fA_tangent = -b*tangentdot
-          // (bounded by the friction cone)
-          Vector3d fA;
-          fA(2) =
-              std::max<double>(-penetration_stiffness * phi(i) -
-                                   penetration_damping * relative_velocity(2),
-                               0.0);
-          fA.head(2) =
-              -std::min<double>(
-                  penetration_damping,
-                  friction_coefficient * fA(2) /
-                      (relative_velocity.head(2).norm() + EPSILON)) *
-              relative_velocity.head(2);  // epsilon to avoid divide by zero
+        // Jacobian transforming from generalized velocities to relative
+        // velocity between bodies A and B.
+        MatrixXd Jrel = (JA - JB);
 
-          // equal and opposite: fB = -fA.
-          // tau = (R*JA)^T fA + (R*JB)^T fB = J^T fA
-          C -= J.transpose() * fA;
-        }
+        // Relative velocity in world's frame.
+        Vector3d ur_world = Jrel * v;
+
+        // Normal component of the relative velocity.
+        double urn = ur_world.dot(normal);
+
+        // Tangential velocity in world's frame.
+        Vector3d urt_world = ur_world - urn * normal;
+
+        // Normal component magnitude of the collision force acting
+        // on body A.
+        double fAn = std::max<double>(
+            - penetration_stiffness * phi(i)
+            - penetration_damping * urn, 0.0);
+
+        // Normal contribution to the contact force on body A in world's frame.
+        Vector3d fAn_world = fAn * normal;
+
+        // Tangential component magnitude of the contact force acting
+        // on body A.
+        // Notice that since fAn > 0 always, then fAn_world.norm() = fAn.
+        double fAt = -std::min<double>(
+            penetration_damping * urt_world.norm(),
+            friction_coefficient * fAn);
+
+        // Tangential contribution to the contact force on body A in
+        // world's frame.
+        Vector3d fAt_world = fAt * urt_world / (urt_world.norm() + EPSILON);
+
+        // Total contact force on body A in world's frame.
+        Vector3d fA_world = fAn_world + fAt_world;
+
+        C -= Jrel.transpose() * fA_world;
       }
     }
   }
