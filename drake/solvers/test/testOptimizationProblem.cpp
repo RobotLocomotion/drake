@@ -339,14 +339,14 @@ GTEST_TEST(testOptimizationProblem, testValGravComp) {
   robot.doKinematics(cache, true);
 
   // inverse dynamics looks like:
-  // M(q) * qdd + h(q,qd) = S * tau + J^T * lambda,
+  // M(q) * qdd + h(q,qd) = S * tau + J^T * lambda, S is the selection matrix, the 6 dof are not actuated (floating pelvis)
   // assume we have 2 contacts at the foot, we want to solve for qdd, and lambda, 
   // and tau = M_l * qdd + h_l - J^T_l * lamda, _l means the lower rows of those matrices,
   //
   // the unknown is X = [qdd, lambda]
   // equality constraints: M_u * qdd + h_u = J^T_u * lambda
   // inequality: a bunch, etc for now
-  // min: (J*qdd + Jdqd)^2 + (Jcom*qdd + Jcomdqd - comdd_d)^2 + (qdd)^2 + (lambda)^2
+  // min: (J*qdd + Jdqd)^2 + (Jcom*qdd + Jcomdqd - comdd_d)^2 + (qdd)^2 + (lambda)^2 + etc
 
   MatrixXd M = robot.massMatrix(cache);
   eigen_aligned_unordered_map<RigidBody const*, Matrix<double, TWIST_SIZE, 1>> f_ext;
@@ -376,8 +376,6 @@ GTEST_TEST(testOptimizationProblem, testValGravComp) {
     foot_pose[i] = robot.relativeTransform(cache, 0, foot_id[i]) * foot_to_contact;
     foot_J[i] = getTaskSpaceJacobian(robot, cache, foot_id[i], foot_to_contact.translation());
     foot_Jdv[i] = getTaskSpaceJacobianDotTimesV(robot, cache, foot_id[i], foot_to_contact.translation());
-    
-    std::cout << foot_pose[i].translation().transpose() << std::endl;
   }
 
   MatrixXd CE(neq, nVar);
@@ -403,6 +401,7 @@ GTEST_TEST(testOptimizationProblem, testValGravComp) {
     CE.block(0,nQdd+i*6,6,6) = -foot_J[i].block<6,6>(0,0).transpose();
   }
   ce0.head(6) = h.head(6);
+  // i locked the qdd = zero here. In general, this is not true;
   CE.block(6,0,nQdd,nQdd).setIdentity();
 
   // inequality: Fz >= 0; no friction limit, no cop limit for now 
@@ -413,12 +412,13 @@ GTEST_TEST(testOptimizationProblem, testValGravComp) {
 
   // cost function
   // CoM term
+  // (J * qdd + Jdv - comdd_d)^T * (J * qdd + Jdv - comdd_d)
   Vector3d comdd_d = Vector3d::Zero();
   double w_com = 100;
   MatrixXd Jcom = robot.centerOfMassJacobian(cache);
   VectorXd Jcomdv = robot.centerOfMassJacobianDotTimesV(cache);
   H.block(0,0,nQdd,nQdd) += w_com * Jcom.transpose() * Jcom;
-  h0.head(nQdd) += w_com * 1 * (Jcomdv - comdd_d).transpose() * Jcom;
+  h0.head(nQdd) += w_com * 2 * (Jcomdv - comdd_d).transpose() * Jcom;
 
   // contact not moving term
   Vector6d footdd_d[nContacts];
@@ -426,26 +426,24 @@ GTEST_TEST(testOptimizationProblem, testValGravComp) {
   for (int i = 0; i < nContacts; i++) {
     footdd_d[i].setZero();
     H.block(0,0,nQdd,nQdd) += w_foot * foot_J[i].transpose() * foot_J[i];
-    h0.head(nQdd) += w_foot * 1 * (foot_Jdv[i] - footdd_d[i]).transpose() * foot_J[i];
+    h0.head(nQdd) += w_foot * 2 * (foot_Jdv[i] - footdd_d[i]).transpose() * foot_J[i];
   }
 
   // reg qdd
   double w_qdd_reg = 1000000;
   H.block(0,0,nQdd,nQdd) += w_qdd_reg * MatrixXd::Identity(nQdd,nQdd);
-  //for (int i = 0; i < nQdd; i++)
-  //  H(i,i) += w_qdd_reg;
 
   // reg wrench
   double w_wrench_reg = 0.01;
-  //for (int i = 0; i < nWrench; i++)
-  //  H(nQdd+i,nQdd+i) += w_wrench_reg;
   H.block(nQdd,nQdd,nWrench,nWrench) += w_wrench_reg * MatrixXd::Identity(nWrench,nWrench);
 
   //////////////////////////////////////////////////////////
   // SOLVE
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(nVar);
+  // I want to minize x^T * H * x + h0^T * qdd, I am not sure if you have the 0.5 * H inside there somewhere???
   prog.AddQuadraticProgramCost(H, h0);
+  // the equality constraints seem to be A * X = b?
   prog.AddLinearEqualityConstraint(CE, -ce0);
   VectorXd init = VectorXd::Zero(nVar);
   init(nQdd + 5) = 700;
@@ -493,8 +491,9 @@ GTEST_TEST(testOptimizationProblem, testValGravComp) {
   for (int i = 0; i < nContacts; i++)
     residual -= foot_J[i].transpose() * lambda.segment<6>(i*6);
   residual.tail(nTrq) -= tau;
-
-  std::cout << residual << std::endl;
+  
+  EXPECT_TRUE(CompareMatrices(residual, VectorXd::Zero(nQdd), 1e-9,
+                                MatrixCompareType::absolute));
 }
 
 // This test comes from Section 2.3 of "Handbook of Test Problems in
