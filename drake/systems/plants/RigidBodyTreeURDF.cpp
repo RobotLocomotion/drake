@@ -411,7 +411,7 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     // TODO(liang.fok): Update this logic to once texture-based materials are
     // supported. See: https://github.com/RobotLocomotion/drake/issues/2588.
     if (!material_set) {
-      std::stringsream error_buff;
+      std::stringstream error_buff;
       error_buff
           << "RigidBodyTreeURDF.cpp: parseVisual(): "
           << "WARNING: Visual element has a material whose color could not"
@@ -919,9 +919,10 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
 
   // Parses the model's material elements.
   MaterialMap materials;
-  for (XMLElement* link_node = node->FirstChildElement("material"); link_node;
-       link_node = link_node->NextSiblingElement("material")) {
-    ParseMaterial(link_node, materials);
+  for (XMLElement* material_node = node->FirstChildElement("material");
+       material_node;
+       material_node = material_node->NextSiblingElement("material")) {
+    ParseMaterial(material_node, materials);
   }
 
   // Makes a copy of parameter floating_base_type. This is necessary since the
