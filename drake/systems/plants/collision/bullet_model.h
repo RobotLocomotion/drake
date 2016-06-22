@@ -10,7 +10,7 @@
 
 #include "Element.h"
 #include "Model.h"
-#include "BulletResultCollector.h"
+#include "ResultCollector.h"
 
 namespace DrakeCollision {
 

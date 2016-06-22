@@ -13,6 +13,12 @@ using Eigen::VectorXd;
 
 namespace DrakeCollision {
 
+// Helper method to convert a btVector3 to an Eigen vector representation.
+// Using Eigen::Map avoids unnecessary (expensive) copies.
+Eigen::Map<const Vector3d> toVector3d(const btVector3& bt_vec) {
+  return Eigen::Map<const Vector3d>(bt_vec.m_floats);
+}
+
 static const int kPerturbationIterations = 8;
 static const int kMinimumPointsPerturbationThreshold = 8;
 
