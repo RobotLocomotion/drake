@@ -40,7 +40,7 @@ class BotVisualizer {
   }
 
   BotVisualizer(std::shared_ptr<lcm::LCM> _lcm,
-                const std::string &urdf_filename,
+                const std::string& urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type)
       : tree(new RigidBodyTree(urdf_filename, floating_base_type)), lcm(_lcm) {
     init();
@@ -51,7 +51,7 @@ class BotVisualizer {
 
     draw_msg.num_links = tree->bodies.size();
     std::vector<float> position = {0, 0, 0}, quaternion = {0, 0, 0, 1};
-    for (const auto &body : tree->bodies) {
+    for (const auto& body : tree->bodies) {
       draw_msg.link_name.push_back(body->name_);
       draw_msg.robot_num.push_back(body->robotnum);
       draw_msg.position.push_back(position);
@@ -62,15 +62,15 @@ class BotVisualizer {
   void publishLoadRobot() const {
     drake::lcmt_viewer_load_robot vr;
     vr.num_links = tree->bodies.size();
-    for (const auto &body : tree->bodies) {
+    for (const auto& body : tree->bodies) {
       drake::lcmt_viewer_link_data link;
       link.name = body->name_;
       link.robot_num = body->robotnum;
       link.num_geom = body->visual_elements.size();
-      for (const auto &v : body->visual_elements) {
+      for (const auto& v : body->visual_elements) {
         drake::lcmt_viewer_geometry_data gdata;
 
-        const DrakeShapes::Geometry &geometry = v.getGeometry();
+        const DrakeShapes::Geometry& geometry = v.getGeometry();
 
         switch (v.getShape()) {  // would prefer to do this through virtual
                                  // methods, but don't want to introduce any LCM
@@ -78,7 +78,7 @@ class BotVisualizer {
           case DrakeShapes::BOX: {
             gdata.type = gdata.BOX;
             gdata.num_float_data = 3;
-            auto b = dynamic_cast<const DrakeShapes::Box &>(geometry);
+            auto b = dynamic_cast<const DrakeShapes::Box&>(geometry);
             for (int i = 0; i < 3; i++)
               gdata.float_data.push_back(static_cast<float>(b.size(i)));
             break;
@@ -86,14 +86,14 @@ class BotVisualizer {
           case DrakeShapes::SPHERE: {
             gdata.type = gdata.SPHERE;
             gdata.num_float_data = 1;
-            auto b = dynamic_cast<const DrakeShapes::Sphere &>(geometry);
+            auto b = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
             gdata.float_data.push_back(static_cast<float>(b.radius));
             break;
           }
           case DrakeShapes::CYLINDER: {
             gdata.type = gdata.CYLINDER;
             gdata.num_float_data = 2;
-            auto c = dynamic_cast<const DrakeShapes::Cylinder &>(geometry);
+            auto c = dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
             gdata.float_data.push_back(static_cast<float>(c.radius));
             gdata.float_data.push_back(static_cast<float>(c.length));
             break;
@@ -101,7 +101,7 @@ class BotVisualizer {
           case DrakeShapes::MESH: {
             gdata.type = gdata.MESH;
             gdata.num_float_data = 1;
-            auto m = dynamic_cast<const DrakeShapes::Mesh &>(geometry);
+            auto m = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
             gdata.float_data.push_back(static_cast<float>(m.scale[0]));
             gdata.float_data.push_back(static_cast<float>(m.scale[1]));
             gdata.float_data.push_back(static_cast<float>(m.scale[2]));
@@ -117,7 +117,7 @@ class BotVisualizer {
           case DrakeShapes::CAPSULE: {
             gdata.type = gdata.CAPSULE;
             gdata.num_float_data = 2;
-            auto c = dynamic_cast<const DrakeShapes::Capsule &>(geometry);
+            auto c = dynamic_cast<const DrakeShapes::Capsule&>(geometry);
             gdata.float_data.push_back(static_cast<float>(c.radius));
             gdata.float_data.push_back(static_cast<float>(c.length));
             break;
@@ -145,27 +145,26 @@ class BotVisualizer {
     lcm->publish("DRAKE_VIEWER_LOAD_ROBOT", &vr);
   }
 
-  StateVector<double> dynamics(const double &t, const StateVector<double> &x,
-                               const InputVector<double> &u) const {
+  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
+                               const InputVector<double>& u) const {
     return StateVector<double>();
   }
 
-  OutputVector<double> output(const double &t, const StateVector<double> &x,
-                              const InputVector<double> &u) const {
+  OutputVector<double> output(const double& t, const StateVector<double>& x,
+                              const InputVector<double>& u) const {
     draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
 
-    auto uvec = toEigen(u);
-    auto q = uvec.head(tree->number_of_positions());
+    const Eigen::VectorXd q = toEigen(u).head(tree->number_of_positions());
     KinematicsCache<double> cache = tree->doKinematics(q);
 
     int i, j;
     for (i = 0; i < tree->bodies.size(); i++) {
       auto transform = tree->relativeTransform(cache, 0, i);
       auto quat = rotmat2quat(transform.linear());
-      std::vector<float> &position = draw_msg.position[i];
+      std::vector<float>& position = draw_msg.position[i];
       auto translation = transform.translation();
       for (j = 0; j < 3; j++) position[j] = static_cast<float>(translation(j));
-      std::vector<float> &quaternion = draw_msg.quaternion[i];
+      std::vector<float>& quaternion = draw_msg.quaternion[i];
       for (j = 0; j < 4; j++) quaternion[j] = static_cast<float>(quat(j));
     }
 
