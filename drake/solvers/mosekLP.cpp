@@ -11,6 +11,10 @@ extern "C" {
 #include <iostream>
 #include <string>
 
+
+namespace drake {
+namespace solvers {
+
 static void MSKAPI printstr(void *handle,
                             MSKCONST char str[]) {
   printf("%s", str);
@@ -126,6 +130,8 @@ mosekLP::mosekLP(int num_variables, int num_constraints,
   AddLinearConstraintSparseColumnMatrix(sparsecons_);
 }
 
+bool mosekLP::available() { return true }
+
 void mosekLP::AddLinearConstraintMatrix(Eigen::MatrixXd cons_) {
   // Create sparse matrix vectors by column, then send them to
   // addLinearConstraintSparseColumnMatrix()
@@ -196,8 +202,158 @@ void mosekLP::AddVariableBounds(std::vector<MSKboundkeye> mosek_bounds_,
   }
 }
 
-std::vector<double> mosekLP::OptimizeTask(std::string maxormin) {
+std::vector<MSKboundkeye> FindMosekBounds(std::vector<double> upper_bounds_,
+                                          std::vector<double> lower_bounds_) {
+  assert(upper_bounds_.size() == lower_bounds_.size());
+  std::vector<MSKboundkeye> mosek_bounds_(upper_bounds_.size());
+  int i = 0;
+  for (i = 0; i < upper_bounds_.size(); i++) {
+    if (upper_bounds_[i] == +MSK_INFINITY) {
+      if (lower_bounds_[i] == -MSK_INFINITY) {
+        mosek_bounds_.push_back(MSK_BK_FR);
+      } else {
+        mosek_bounds_.push_back(MSK_BK_LO);
+      }
+    } else {
+      if (upper_bounds_[i] == lower_bounds_[i]) {
+        mosek_bounds_.push_back(MSK_BK_FX);
+      } else if (lower_bounds_ == -MSK_INFINITY) {
+        mosek_bounds_.push_back(MSK_BK_UP);
+      } else {
+        mosek_bounds_.push_back(MSK_BK_RA);
+      }
+    }
+  }
+  return mosek_bounds_;
+}
+
+
+SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
   int j = 0;
+  // construct an object that calls all the previous work so I can salvage
+  // something at least.
+  // assume that the problem type is linear currently.
+  // TODO(adunyak): Add support for quadratic objective and constraints
+  if (prog.GetSolverOptionsStr("problemtype").find("linear")
+      == std::string::npos)
+    return kUknownError;  // Not a linear optimization
+  int totalconnum = 0, varnum = 0, i = 0;
+  for (auto&& con_ : prog.linear_constraints()) {
+    // check to see if the constraint references a single variable,
+    // which is handles as a variable bound by mosek
+    for (auto&& row : con_.constraint()->A().row(i)) {
+      if (row.nonZeros() != 1)
+        totalconnum++;
+    }
+    ++i;
+  }
+  Eigen::MatrixXd linear_cons_(totalconnum, prog.num_vars());
+  std::vector<double> upper_constraint_bounds_(totalconnum);
+  std::vector<double> lower_constraint_bounds_(totalconnum);
+  std::vector<MSKboundkeye> mosek_constraint_bounds_(totalconnum);
+  std::vector<MSKboundkeye> mosek_variable_bounds_(prog.num_vars());
+  std::vector<double> upper_variable_bounds_(prog.num_vars());
+  std::vector<double> lower_variable_bounds_(prog.num_vars());
+  linear_cons_.setZero(totalconnum, prog.num_vars());
+  int connum = 0;
+  i = 0
+  for (auto&& con_ : prog.linear_constraints()) {  // type is
+                                                   // Binding<LinearConstraint>
+    // construct a mapping from a variable in con_ 's VariableList
+    // to the column indexes of the variables constraint points to
+    std::vector<int> indexmap(con_.variable_list().size());
+    i = 0;
+    for (auto&& view : con_.variable_list()) {  // view is DecisionVariableView
+      indexmap[i] = view.index();
+      ++i;
+    }
+    // Address the constraint matrix directly, translating back to our original
+    // variable space
+    for (int i = 0; i < con_.constraint()->num_constraints(); i++) {
+      if (con_.constraint()->A().row(i).nonZeros() != 1) {
+        // if this if statement is entered, the constraint is not a var bound
+        // and must be handled differently by mosek
+        for (int j = 0; j < con_.constraint()->A().cols(); j++) {
+              linear_cons_(connum, indexmap[i]) = con_.constraint()->A()(i, j);
+            // lower bounds first
+            if (con_.constraint()->lower_bound()(i) !=
+                -std::numeric_limits<double>::infinity()) {
+              lower_constraint_bounds_[connum] =
+                con_.constraint()->lower_bound()(i);
+            } else {
+              lower_constraint_bounds_[connum] = -MSK_INFINITY;
+            }
+            // upper bound
+            if (con_.constraint()->upper_bound()(i) !=
+                +std::numeric_limits<double>::infinity()) {
+              upper_constraint_bounds_[connum] =
+                con_.constraint()->upper_bound()(i);
+            } else {
+              upper_constraint_bounds_[connum] = +MSK_INFINITY;
+            }
+            ++connum;
+          }
+      } else {
+        // This is a var bound
+        for (int j = 0; j < con_.constraint()->A().cols(); j++) {
+          if (con_.constraint()->A()(i, j) != 0) {  // expect only one nonzero
+            // upper bounds
+            if (con_.constraint()->upper_bound()(i) !=
+                +std::numeric_limits<double>::infinity()) {
+              upper_variable_bounds_[indexmap[j]] =
+                con_.constraint()->upper_bound()(i);
+            } else {
+              upper_variable_bounds_[indexmap[j]] = +MSK_INFINITY;
+            }
+            // lower bounds
+            if (con_.constraint()->lower_bound()(i) !=
+                -std::numeric_limits<double>::infinity()) {
+              lower_variable_bounds_[indexmap[j]] =
+                con_.constraint()->lower_bound()(i);
+            } else {
+              lower_variable_bounds_[indexmap[j]] = -MSK_INFINITY;
+            }
+            break;  // no need to check the rest
+          }
+        }
+      }
+    }
+  }
+  mosek_constraint_bounds_ = FindMosekBounds(upper_constraint_bounds_,
+                                             lower_constraint_bounds_);
+  mosek_variable_bounds_ = FindMosekBounds(upper_variable_bounds_,
+                                           lower_constraint_bounds_);
+
+  // find the linear objective here
+  std::vector<double> linobj_(
+      prog.generic_objectives().front().constraint()->A().data(),
+      prog.generic_objectives().front().constraint()->A().data() +
+        prog.generic_objectives().front().constraint()->A().rows() *
+        prog.generic_objectives().front().constraint()->A().cols());
+  mosekLP opt(prog.num_vars(),
+              totalconnum,
+              linobj_,
+              linear_cons_,
+              mosek_constraint_bounds_,
+              upper_constraint_bounds_,
+              lower_constraint_bounds_,
+              mosek_variable_bounds_,
+              upper_variable_bounds_,
+              lower_variable_bounds_);
+  SolutionResult s = opt.OptimizeTask(prog.GetSolverOptionsStr("maxormin"),
+                                      prog.GetSolverOptionsStr("problemtype"));
+  solutions_ = opt.GetSolution();
+  return s;
+}
+
+SolutionResult mosekLP::OptimizeTask(std::string maxormin, std::string ptype) {
+  solutions_.clear();
+  if (ptype.find("quad") != std::string::npos)
+    auto problemtype = MSK_SOL_ITR;
+  else if (ptype.find("linear") != std::string::npos)
+    auto problemtype = MSK_SOL_BAS;
+  else
+    return kUknownError;
   if (r == MSK_RES_OK && maxormin == "max")
     r = MSK_putobjsense(task, MSK_OBJECTIVE_SENSE_MAXIMIZE);
   else if (r == MSK_RES_OK && maxormin == "min")
@@ -208,7 +364,7 @@ std::vector<double> mosekLP::OptimizeTask(std::string maxormin) {
     r = MSK_optimizetrm(task, &trmcode);
 
     // Uncomment next line to print solution summary
-    MSK_solutionsummary(task, MSK_STREAM_LOG);
+    // MSK_solutionsummary(task, MSK_STREAM_LOG);
 
     if (r == MSK_RES_OK) {
       MSKsolstae solsta;
@@ -226,7 +382,7 @@ std::vector<double> mosekLP::OptimizeTask(std::string maxormin) {
               std::vector<double> soln;
               for (j = 0; j < numvar; ++j) {
                 printf("x[%d]: %e\n", j, xx[j]);
-                soln.push_back(xx[j]);
+                solutions.push_back(xx[j]);
               }
               free(xx);
               return soln;
@@ -260,3 +416,6 @@ std::vector<double> mosekLP::OptimizeTask(std::string maxormin) {
     }
   }
 }
+
+}  // namespace solvers
+}  // namespace drake

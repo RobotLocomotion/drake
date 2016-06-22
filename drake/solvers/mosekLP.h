@@ -5,10 +5,14 @@
 extern "C" {
   #include "mosek.h"  // Make sure to figure out how to put in makefile
 }
+
 #include <Eigen/Sparse>
 #include <Eigen/Core>
 #include <vector>
 #include <string>
+
+#include "solution_result.h"
+#include "optimization.h"
 
 /*Definitions and program flow taken from
 http://docs.mosek.com/7.1/capi/Linear_optimization.html
@@ -16,8 +20,11 @@ http://docs.mosek.com/7.1/capi/Linear_optimization.html
 For further definition of terms, see
 http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
 */
+namespace drake {
+namespace solvers {
 
-class mosekLP {
+class DRAKEOPTIMIZATION_EXPORT mosekLP :
+      public Drake::MathematicalProgramSolverInterface {
   /*mosekLP
    *@brief this class allows the creation and solution of a linear programming
    *problem using the mosek solver.
@@ -57,23 +64,31 @@ class mosekLP {
   ~mosekLP() {
     MSK_deletetask(&task);
     MSK_deleteenv(&env);
-    delete aptrb;
-    delete aptre;
-    delete asub;
-    delete aval;
-    delete bkc;
-    delete blc;
-    delete buc;
-    delete bkx;
-    delete blx;
-    delete bux;}
+    free(aptrb);
+    free(aptre);
+    free(asub);
+    free(aval);
+    free(bkc);
+    free(blc);
+    free(buc);
+    free(bkx);
+    free(blx);
+    free(bux);
+  }
 
-    /*optimizeTask()
-   *@brief optimizes variables in given linear constraints, works with either
-   *of the two previous object declarations. Accepts "max" or "min" to maximize
-   *or minimize the task respectively (case sensitive).
-   */
-  std::vector<double> OptimizeTask(std::string maxormin);
+    /* Solve()
+   * @brief optimizes variables in given linear constraints, works with either
+   * of the two previous object declarations.
+   * */
+  SolutionResult Solve(OptimizationProblem &prog) const override;
+
+  bool available() const override;
+
+  std::vector GetSolution() { return solutions_ }
+
+  Eigen::VectorXd GetEigenVectorSolutions {
+      return Eigen::VectorXd soln_(solutions_.data());
+  }
 
  private:
   /*The following names are consistent with the example programs given by
@@ -111,6 +126,14 @@ class mosekLP {
       std::vector<double> upper_bounds_,
       std::vector<double> lower_bounds_);
 
+  /*FindMosekBounds()
+   * Given upper and lower bounds for a variable or constraint, finds the
+   * equivalent Mosek bound keys.
+   */
+  std::vector<MSKboundkeye> FindMosekBounds(std::vector<double> upper_bounds_,
+                                            std::vector<double> lower_bounds_);
+
+  SolutionResult OptimizeTask(std::string maxormin, std::string ptype);
 
   MSKint32t numvar, numcon;
   MSKint32t* aptrb;   // Where ptrb[j] is the position of the first
@@ -127,4 +150,8 @@ class mosekLP {
                       // correctly
   MSKtask_t task;     // internal definition of task
   MSKrescodee r;      // used for validity checking
+  std::vector<double> solutions_;  // Contains the solutions of the system
 };
+
+}  // namespace solvers
+}  // namespace drake
