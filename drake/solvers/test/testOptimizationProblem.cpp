@@ -232,7 +232,7 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
   std::srand((unsigned int) time(0));
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
                                 MatrixCompareType::absolute));
   });
 }
@@ -279,8 +279,11 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
   expected << 0, 1, 0, 1, 1, 20;
   std::srand((unsigned int) time(0));
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
+  // This test seems to be fairly sensitive to how much the randomness
+  // causes the initial guess to deviate, so the tolerance is a bit
+  // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
                                 MatrixCompareType::absolute));
   });
 }
@@ -318,8 +321,11 @@ GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
   std::srand((unsigned int) time(0));
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
 
+  // This test seems to be fairly sensitive to how much the randomness
+  // causes the initial guess to deviate, so the tolerance is a bit
+  // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
                                 MatrixCompareType::absolute));
   });
 }
