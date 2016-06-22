@@ -120,50 +120,52 @@ void parseInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model) {
 // present, it checks whether the new values are the same as the old values. If
 // they are the same, return normally. Otherwise print a warning to std::cerr.
 //
-// Currently, only simple colors are supported as the material. In the future,
-// support for textures may be added.
+// Currently, only simple colors are supported as the material.
 //
-// @param[in] material_name A human-understantable description of the material.
+// TODO(liang.fok) Add support for texture-based materials. See:
+// https://github.com/RobotLocomotion/drake/issues/2588
+//
+// @param[in] material_name A human-understandable name of the material.
 // @param[in] color_rgba The red-green-blue-alpha color values of the material.
 // The range of values is [0, 1].
 // @param[out] materials A pointer to the map in which to store the material.
+// If this pointer is a null, a `std::runtime_exception` is thrown.
 void AddMaterialToMaterialMap(const std::string& material_name,
                               const Vector4d& color_rgba,
                               MaterialMap* materials) {
+  // Throws an exception if parameter materials is null.
+  if (materials == nullptr) {
+    throw std::runtime_error(
+        "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap: ERROR: materials is "
+        "null, material_name = " +
+        material_name + ".");
+  }
+
   // Determines if the material is already in the map.
   auto material_iter = materials->find(material_name);
   if (material_iter != materials->end()) {
     // The material is already in the map. Checks whether the old material is
-    // the same as the new material.
+    // the same as the new material. Note that since the range of values in the
+    // RGBA vectors is [0, 1], absolute and relative tolerance comparisons are
+    // identical.
     auto& existing_color = material_iter->second;
     if (!drake::util::CompareMatrices(
             color_rgba, existing_color, 1e-10,
-            drake::util::MatrixCompareType::relative)) {
+            drake::util::MatrixCompareType::absolute)) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
       std::stringstream error_buff;
-      error_buff
-        << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
-        << "Error: Material \"" + material_name + "\" was previously "
-        << "defined but was associated with different RGBA color "
-        << "values." << std::endl
-        << "  - existing RGBA values: " << existing_color.transpose()
-        << std::endl
-        << "  - new RGBA values: " << color_rgba.transpose()
-        << std::endl
-        << "Keeping the original RGBA values in the materials map."
-        << std::endl;
+      error_buff << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
+                 << "Error: Material \"" + material_name + "\" was previously "
+                 << "defined but was associated with different RGBA color "
+                 << "values." << std::endl
+                 << "  - existing RGBA values: " << existing_color.transpose()
+                 << std::endl
+                 << "  - new RGBA values: " << color_rgba.transpose()
+                 << std::endl
+                 << "Keeping the original RGBA values in the materials map."
+                 << std::endl;
       throw std::runtime_error(error_buff.str());
-      // std::cerr << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
-      //           << "WARNING: Material \"" + material_name + "\" was previously "
-      //           << "defined but was associated with different RGBA color "
-      //           << "values." << std::endl
-      //           << "  - existing RGBA values: " << existing_color.transpose()
-      //           << std::endl
-      //           << "  - new RGBA values: " << color_rgba.transpose()
-      //           << std::endl
-      //           << "Keeping the original RGBA values in the materials map."
-      //           << std::endl;
     }
   } else {
     // Adds the new color to the materials map.
@@ -175,10 +177,9 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
   const char* attr;
   attr = node->Attribute("name");
   if (!attr || strlen(attr) == 0) {
-    throw std::logic_error("RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
-                           "Material tag is missing a name.");
-    // cerr << "WARNING: material tag is missing a name" << endl;
-    // return;
+    throw std::runtime_error(
+        "RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
+        "Material tag is missing a name.");
   }
   string name(attr);
 
@@ -186,18 +187,28 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
   XMLElement* color_node = node->FirstChildElement("color");
   if (color_node) {
     if (!parseVectorAttribute(color_node, "rgba", rgba)) {
-      throw std::logic_error("RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
-                               "Color tag is missing rgba attribute.");
+      throw std::logic_error(
+          "RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
+          "Color tag is missing rgba attribute.");
     }
     AddMaterialToMaterialMap(name, rgba, &materials);
   } else {
+    // If no color was specified and the material is not in the materials map,
+    // assume the material is not a simple color value, print a warning, and
+    // then return.
+    //
+    // TODO(liang.fok): Update this logic once texture-based materials are
+    // supported. See: https://github.com/RobotLocomotion/drake/issues/2588.
     if (materials.find(name) == materials.end()) {
-      throw std::runtime_error("RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
-        "Material \"" + name + "\" is not a simple color material and is thus "
-        "not currently supported.");
-      // cerr << "WARNING: material \"" << name << "\" is not a simple color "
-      //      << "material and is thus not currently supported." << endl;
-      // return;
+      std::cerr
+          << "RigidBodyTreeURDF.cpp: ParseMaterial():  WARNING: No color "
+          << "supplied for material \"" << name
+          << "\" and it is not previously "
+          << "specified in the URDF file. Maybe a texture was supplied instead "
+          << "but textures are currently not supported. For more information, "
+          << "see: https://github.com/RobotLocomotion/drake/issues/2588."
+          << endl;
+      return;
     }
   }
 }
@@ -394,16 +405,26 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
       }
     }
 
-    // Prints a warning if the material was not set for this visualization.
+    // Throws a std::runtime_error if the material was not set for this
+    // visualization.
+    //
+    // TODO(liang.fok): Update this logic to once texture-based materials are
+    // supported. See: https://github.com/RobotLocomotion/drake/issues/2588.
     if (!material_set) {
-      cerr << "RigidBodyTreeURDF.cpp: parseVisual(): "
-           << "WARNING: Visual element has a material whose color could not"
-              "be determined. Maybe it has a texture? Textures are currenty "
-              "not supported."
-           << endl
-           << "  - model name: " << body->model_name() << endl
-           << "  - body name: " << body->name() << endl
-           << "  - material name: " << material_name << endl;
+      std::stringsream error_buff;
+      error_buff
+          << "RigidBodyTreeURDF.cpp: parseVisual(): "
+          << "WARNING: Visual element has a material whose color could not"
+             "be determined. Maybe it is a texture-based material? "
+             "Texture-based "
+             "materials are currently not supported. For more information, "
+             "see: "
+             "https://github.com/RobotLocomotion/drake/issues/2588."
+          << std::endl
+          << "  - model name: " << body->model_name() << std::endl
+          << "  - body name: " << body->name() << std::endl
+          << "  - material name: " << material_name << std::endl;
+      throw std::runtime_error(error_buff.str());
     }
   }
 
