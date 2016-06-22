@@ -574,6 +574,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       int model_id = -1) const;
 
   /**
+   * This is a deprecated version of `FindBody(...)`. Calling this method will
+   * result in a compile-time error. Please use `FindBody(...)` instead.
+   */
+  RigidBody* findLink(const std::string& link_name,
+                      const std::string& model_name = "",
+                      int model_id = -1) const;
+
+  /**
    * Obtains the index of a rigid body within this rigid body tree. The rigid
    * body tree maintains a vector of pointers to all rigid bodies that are part
    * of the rigid body tree. The index of a rigid body is the index within this
@@ -590,6 +598,13 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * and \p model_id was found or if multiple matching rigid bodies were found.
    */
   int FindBodyIndex(const std::string& body_name, int model_id = -1) const;
+
+  /**
+   * This is a deprecated version of `FindBodyIndex(...)`. Calling this method
+   * will result in a compile-time error. Please use `FindBodyIndex(...)`
+   * instead.
+   */
+  int findLinkId(const std::string& link_name, int model_id = -1) const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
