@@ -7,10 +7,12 @@ function [] = addpath_drake()
 
 root = fileparts(mfilename('fullpath'));
 
+if ~exist('pods_get_base_path','file')
+% The Drake build process produces some MATLAB files, and those files are not
+% already on the MATLAB path, so we need to find them first.
 % Search four directories up for the build directory. It will typically be
 % in ./build/matlab for in-source builds with Make, or 
 % ../drake-build/drake/matlab for out-of-source builds with Ninja.
-if ~exist('pods_get_base_path','file')
   pfx='';
   for i=1:4
     in_source_path = fullfile(root, pfx, 'build', 'matlab');
@@ -30,7 +32,9 @@ if ~exist('pods_get_base_path','file')
 end
 
 if ~exist('pods_get_base_path','file')
-  error('Could not find pods_get_base_path. Build Drake and add install/matlab to the MATLAB path.');
+  error(['The Drake build outputs are not on the MATLAB path, and could ' ...
+         'not be auto-detected. Please add the build output directory ' ...
+         '"matlab" to the path, then re-run addpath_drake.']);
 end
 
 if verLessThan('matlab','7.6')
