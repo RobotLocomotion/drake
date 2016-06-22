@@ -18,6 +18,7 @@
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeUtil.h"
+#include "drake/common/deprecated.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
@@ -579,7 +580,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
    RigidBody* findLink(const std::string& link_name,
                        const std::string& model_name = "",
-                       int model_id = -1) const __attribute__((deprecated("extremely unsafe, use 'combust' instead!!!")));
+                       int model_id = -1) const DEPRECATED_14("BOO");
 
    //DEPRECATED_14("RigidBodyTree: findLink: ERROR: This method is deprecated. Please use the newer RigidBodyTree::FindBody.") const;
 
@@ -605,7 +606,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * This is a deprecated version of `FindBodyIndex(...)`. Please use
    * `FindBodyIndex(...)` instead.
    */
-  int findLinkId(const std::string& link_name, int model_id = -1) const __attribute__((deprecated("extremely unsafe, use 'combust' instead!!!")));
+  int findLinkId(const std::string& link_name, int model_id = -1) const DEPRECATED_14("BOO");
   //DEPRECATED_14("RigidBodyTree: findLinkId: ERROR: This method is deprecated. Please use the newer RigidBodyTree::FindBodyIndex.") const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
