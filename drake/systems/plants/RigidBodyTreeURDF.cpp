@@ -135,7 +135,7 @@ void AddMaterialToMaterialMap(const std::string& material_name,
                               MaterialMap* materials) {
   // Throws an exception if parameter materials is null.
   if (materials == nullptr) {
-    throw std::runtime_error(
+    throw std::logic_error(
         "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap: ERROR: materials is "
         "null, material_name = " +
         material_name + ".");
@@ -183,14 +183,13 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
   }
   string name(attr);
 
-  Vector4d rgba;
-  rgba = Vector4d::Zero();  // Defaults to black.
+  Vector4d rgba = Vector4d::Zero();  // Defaults to black.
 
   XMLElement* color_node = node->FirstChildElement("color");
 
   if (color_node) {
     if (!parseVectorAttribute(color_node, "rgba", rgba)) {
-      throw std::logic_error(
+      throw std::runtime_error(
           "RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
           "Color tag is missing rgba attribute.");
     }
@@ -213,14 +212,12 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
             << name << "\" is a texture. Textures are currently not supported. "
             << "For more information, see: "
             << "https://github.com/RobotLocomotion/drake/issues/2588. "
-               "Defaulting "
-            << "to use the black color for this material." << endl;
+               "Defaulting to use the black color for this material." << endl;
         AddMaterialToMaterialMap(name, rgba, &materials);
       } else {
         throw std::runtime_error(
             "RigidBodyTreeURDF.cpp: ParseMaterial: ERROR: Failed to parse "
-            "material \"" +
-            name + "\".");
+            "material \"" + name + "\".");
       }
 
       return;
