@@ -1649,14 +1649,14 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   return ret;
 }
 
-RigidBody* RigidBodyTree::findLink(const std::string& link_name,
+RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
                                    const std::string& model_name,
                                    int model_id) const {
-  // Obtains lower case versions of the link name and model name.
-  std::string link_name_lower = link_name;
+  // Obtains lower case versions of the body name and model name.
+  std::string body_name_lower = body_name;
   std::string model_name_lower = model_name;
-  std::transform(link_name_lower.begin(), link_name_lower.end(),
-                 link_name_lower.begin(), ::tolower);  // convert to lower case
+  std::transform(body_name_lower.begin(), body_name_lower.end(),
+                 body_name_lower.begin(), ::tolower);  // convert to lower case
   std::transform(model_name_lower.begin(), model_name_lower.end(),
                  model_name_lower.begin(), ::tolower);  // convert to lower case
 
@@ -1666,48 +1666,48 @@ RigidBody* RigidBodyTree::findLink(const std::string& link_name,
   int match_index = -1;
 
   for (size_t ii = 0; ii < bodies.size(); ++ii) {
-    // Skips the current link if model_id is not -1 and the link's robot ID is
+    // Skips the current body if model_id is not -1 and the body's robot ID is
     // not equal to the desired model ID.
     if (model_id != -1 && model_id != bodies[ii]->get_model_id()) continue;
 
-    // Obtains a lower case version of the current link's model name.
+    // Obtains a lower case version of the current body's model name.
     string current_model_name = bodies[ii]->model_name();
     std::transform(current_model_name.begin(), current_model_name.end(),
                    current_model_name.begin(), ::tolower);
 
-    // Skips the current link if model_name is not empty and the link's model
+    // Skips the current body if model_name is not empty and the body's model
     // name is not equal to the desired model name.
     if (!model_name_lower.empty() && model_name_lower != current_model_name)
       continue;
 
-    // Obtains a lower case version of the current link's name.
-    string current_link_name = bodies[ii]->name_;
-    std::transform(current_link_name.begin(), current_link_name.end(),
-                   current_link_name.begin(), ::tolower);
+    // Obtains a lower case version of the current body's name.
+    string current_body_name = bodies[ii]->name_;
+    std::transform(current_body_name.begin(), current_body_name.end(),
+                   current_body_name.begin(), ::tolower);
 
-    // Checks if the link names match. If so, checks whether this is the first
-    // match. If so, it saves the current link's index. Otherwise it throws
+    // Checks if the body names match. If so, checks whether this is the first
+    // match. If so, it saves the current body's index. Otherwise it throws
     // an exception indicating there are multiple matches.
-    if (current_link_name == link_name_lower) {
+    if (current_body_name == body_name_lower) {
       if (match_index < 0) {
         match_index = ii;
       } else {
         throw std::logic_error(
-            "RigidBodyTree::findLink: ERROR: found multiple links named \"" +
-            link_name + "\", model name = \"" + model_name + "\", model id = " +
+            "RigidBodyTree::FindBody: ERROR: found multiple bodys named \"" +
+            body_name + "\", model name = \"" + model_name + "\", model id = " +
             std::to_string(model_id) + ".");
       }
     }
   }
 
   // Checks if a match was found. If so, returns a pointer to the matching
-  // link. Otherwise, throws an exception indicating no match was found.
+  // body. Otherwise, throws an exception indicating no match was found.
   if (match_index >= 0) {
     return bodies[match_index].get();
   } else {
     throw std::logic_error(
-        "RigidBodyTree::findLink: ERROR: Could not find link named \"" +
-        link_name + "\", model name = \"" + model_name + "\", model id = " +
+        "RigidBodyTree::FindBody: ERROR: Could not find body named \"" +
+        body_name + "\", model name = \"" + model_name + "\", model id = " +
         std::to_string(model_id) + ".");
   }
 }
@@ -1762,14 +1762,14 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
 
 int RigidBodyTree::FindBodyIndex(const std::string& body_name,
                                  int model_id) const {
-  RigidBody* link = findLink(body_name, "", model_id);
-  if (link == nullptr) {
+  RigidBody* body = FindBody(body_name, "", model_id);
+  if (body == nullptr) {
     throw std::logic_error(
         "RigidBodyTree::FindBodyIndex: ERROR: Could not find index for rigid "
         "body \"" +
         body_name + "\", model_id = " + std::to_string(model_id) + ".");
   }
-  return link->body_index;
+  return body->body_index;
 }
 
 RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,

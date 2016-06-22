@@ -11,7 +11,7 @@ robot = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
 # along that link's x axis
 robot.addFrame(
            pydrake.rbtree.RigidBodyFrame("r_hand_frame",
-                                         robot.findLink("r_gripper_palm_link"),
+                                         robot.FindBody("r_gripper_palm_link"),
                                          np.array([0.1, 0, 0]),
                                          np.array([0., 0, 0])))
 
@@ -19,7 +19,7 @@ robot.addFrame(
 assert robot.world().name() == "world"
 
 hand_frame_id = robot.findFrame("r_hand_frame").frame_index
-base_body_id = robot.findLink('base_footprint').body_index
+base_body_id = robot.FindBody('base_footprint').body_index
 
 constraints = [
                # These three constraints ensure that the base of the robot is

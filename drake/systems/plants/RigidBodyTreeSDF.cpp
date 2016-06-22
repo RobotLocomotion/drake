@@ -318,16 +318,16 @@ void parseSDFFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
   }
   string name(attr);
 
-  // Parse the link
-  string link_name;
-  if (!parseStringValue(node, "link", link_name)) {
+  // Parses the body.
+  string body_name;
+  if (!parseStringValue(node, "link", body_name)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Frame \"" + name +
                         "\" doesn't have a link node.");
   }
 
   // The following will throw a std::runtime_error if the link doesn't exist.
-  RigidBody* link = rigid_body_tree->findLink(link_name, "", model_id);
+  RigidBody* link = rigid_body_tree->FindBody(body_name, "", model_id);
 
   // Get the frame's pose
   XMLElement* pose = node->FirstChildElement("pose");
@@ -381,7 +381,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                         "\" doesn't have a parent node.");
   }
 
-  auto parent = model->findLink(parent_name, "", model_id);
+  auto parent = model->FindBody(parent_name, "", model_id);
   if (!parent) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to find a parent link named \"" +
@@ -396,7 +396,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                         "\" doesn't have a child node.");
   }
 
-  auto child = model->findLink(child_name, "", model_id);
+  auto child = model->FindBody(child_name, "", model_id);
   if (!child) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to find a child link named " +

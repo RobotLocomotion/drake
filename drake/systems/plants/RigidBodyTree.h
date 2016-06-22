@@ -555,21 +555,21 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::vector<Eigen::Vector3d>& points, double collision_threshold);
 
   /**
-   * Finds a link with the specified \p link_name belonging to a model with the
-   * specified \p model_name and \p model_id. Note that if \p model_name is the
-   * empty string and \p model_id is -1, every model is searched. If
-   * \p model_name and \p model_id are inconsistent, no link will be found and
-   * an exception will be thrown.
+   * Finds a body with the specified \p body_name belonging to a model
+   * with the specified \p model_name and \p model_id. Note that if
+   * \p model_name is the empty string and \p model_id is -1, every model is
+   * searched. If \p model_name and \p model_id are inconsistent, no body
+   * will be found and an exception will be thrown.
    *
-   * @param[in] link_name The name of the link to find.
-   * @param[in] model_name The name of the model to which the link belongs. If
+   * @param[in] body_name The name of the body to find.
+   * @param[in] model_name The name of the model to which the body belongs. If
    * this value is an empty string, every model is searched.
-   * @param[in] model_id The ID of the model to which the link belongs. If this
+   * @param[in] model_id The ID of the model to which the body belongs. If this
    * value is -1, every model is searched.
-   * @throws std::logic_error if multiple matching links are found or no
-   * matching links are found.
+   * @throws std::logic_error if multiple matching bodies are found or no
+   * matching bodies are found.
    */
-  RigidBody* findLink(const std::string& link_name,
+  RigidBody* FindBody(const std::string& body_name,
                       const std::string& model_name = "",
                       int model_id = -1) const;
 
