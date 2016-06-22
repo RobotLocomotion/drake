@@ -7,7 +7,7 @@ if(LCM_FOUND)
     curve2.cc
     simple_car.cc
     trajectory_car.cc)
-  target_link_libraries(drakeCars drakeRBSystem drakeShapes)
+  target_link_libraries(drakeCars drakeRBSystem drakeShapes drakeCommon)
   pods_install_libraries(drakeCars)
   drake_install_headers(
     curve2.h

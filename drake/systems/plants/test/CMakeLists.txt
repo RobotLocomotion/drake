@@ -102,7 +102,7 @@ if(LCM_FOUND)
     add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
 
     if(snopt_c_FOUND)
-      add_test(NAME comparePriusURDFtoSDF COMMAND compareRigidBodySystems prius.sdf prius.urdf 0 0 0.378326 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Cars/models/prius")
+      add_test(NAME comparePriusURDFtoSDF COMMAND compareRigidBodySystems prius.sdf prius.urdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Cars/models/prius")
     endif()
 
     add_executable(load_model_test load_model_test.cc)
@@ -123,6 +123,10 @@ if(GTEST_FOUND)
   add_executable(urdf_parser_test urdf_parser_test.cc)
   target_link_libraries(urdf_parser_test drakeRBM ${GTEST_BOTH_LIBRARIES})
   add_test(NAME urdf_parser_test COMMAND urdf_parser_test)
+
+  add_executable(rigid_body_test rigid_body_test.cc)
+  target_link_libraries(rigid_body_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME rigid_body_test COMMAND rigid_body_test)
 endif()
 
 add_matlab_test(NAME systems/plants/test/addRobotFromURDFStringTest COMMAND addRobotFromURDFStringTest)

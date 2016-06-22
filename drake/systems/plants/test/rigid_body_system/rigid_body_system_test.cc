@@ -14,6 +14,41 @@ namespace {
 
 using Drake::RigidBodySystem;
 
+// Tests the ability to load a URDF as part of the world of a rigid body system.
+GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
+  // Instantiates a rigid body system.
+  std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
+
+  // Adds a URDF to the rigid body system. This URDF contains only fixed joints
+  // and is attached to the world via a fixed joint. Thus, everything in the
+  // URDF becomes part of the world.
+  rigid_body_sys->addRobotFromFile(
+      Drake::getDrakePath() +
+          "/systems/plants/test/rigid_body_system/world.urdf",
+      DrakeJoint::FIXED);
+
+  // Verifies that the number of states, inputs, and outputs are all zero.
+  EXPECT_EQ(rigid_body_sys->getNumStates(), 0);
+  EXPECT_EQ(rigid_body_sys->getNumInputs(), 0);
+  EXPECT_EQ(rigid_body_sys->getNumOutputs(), 0);
+
+  // Obtains a const pointer to the rigid body tree within the rigid body
+  // system.
+  const std::shared_ptr<RigidBodyTree>& tree =
+      rigid_body_sys->getRigidBodyTree();
+
+  // Checks that the links in the world can be obtained and they have the
+  // correct model name.
+  for (auto& link_name :
+       {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
+    RigidBody* link_ptr = tree->findLink(link_name);
+    EXPECT_NE(link_ptr, nullptr);
+    EXPECT_EQ(link_ptr->model_name(), "dual_ramps");
+  }
+}
+
+// Tests the ability to load a SDF multiple times into the same rigid body
+// system. The SDF contains more than one model and sensor on each link.
 GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // Instantiates a rigid body system.
   std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
@@ -141,6 +176,36 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_NE(tree->findJoint("joint_2", 1), nullptr);
   EXPECT_NE(tree->findJoint("joint_2", 2), nullptr);
   EXPECT_NE(tree->findJoint("joint_2", 3), nullptr);
+}
+
+// Tests whether the URDF parser is robust against an improperly specified
+// transmission element. In this case, the transmission element specifies a
+// non-existent joint. For more information, see:
+// https://github.com/RobotLocomotion/drake/issues/1864
+GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
+  // Instantiates a rigid body system.
+  std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
+
+  // Tests whether an exception is properly thrown when loading a URDF with a
+  // transmission that specifies a non-existent joint. This is done by first
+  // verifying that an exception is thrown, and then verifying that the thrown
+  // exception is the correct one.
+  EXPECT_THROW(
+      rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
+                                       "/systems/plants/test/rigid_body_system/"
+                                       "bad_transmission_no_joint.urdf"),
+      std::runtime_error);
+
+  try {
+    rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
+                                     "/systems/plants/test/rigid_body_system/"
+                                     "bad_transmission_no_joint.urdf");
+  } catch (std::runtime_error& error) {
+    // Asserts that the exception is thrown when FindBodyIndexByJointName()
+    // fails to find a non-existing joint.
+    EXPECT_TRUE(std::string(error.what()).find("FindBodyIndexByJointName") !=
+      std::string::npos);
+  }
 }
 
 }  // namespace

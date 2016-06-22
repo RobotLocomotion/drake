@@ -43,15 +43,44 @@ int findLinkIndex(RigidBodyTree* model, string link_name) {
   return index;
 }
 
-int findLinkIndexByJointName(RigidBodyTree* model, string jointname) {
+// Finds the index of the link whose parent joint has a specified name.
+// Throws a std::runtime_error if no such link can be found or if more than
+// one link is found.
+//
+// TODO(liang.fok): Generalize this method to support a model_id.
+//                  See: https://github.com/RobotLocomotion/drake/issues/2583
+int FindBodyIndexByJointName(RigidBodyTree* model, string joint_name) {
+  // Instantiates a local variable that stores the index of the rigid body whose
+  // joint is the one we're searching for. It is initialized to an invalid index
+  // so the failure mode of not finding any matching joint can be identified.
+  // Valid index values are between zero and the number of rigid bodies in
+  // the rigid body tree.
   int index = -1;
+
+  // Searches through all of the bodies in the rigid body tree looking for the
+  // joint with the specified name.
   for (unsigned int i = 0; i < model->bodies.size(); i++) {
     if (model->bodies[i]->hasParent() &&
-        jointname.compare(model->bodies[i]->getJoint().getName()) == 0) {
-      index = i;
-      break;
+        joint_name.compare(model->bodies[i]->getJoint().getName()) == 0) {
+      if (index == -1) {
+        index = i;
+      } else {
+        throw std::runtime_error(
+            "RigidBodyTreeURDF.cpp: FindBodyIndexByJointName: ERROR: Multiple "
+            "joints named \"" +
+            joint_name + "\" found.");
+      }
     }
   }
+
+  // Verifies that the link was found. If not, throws an exception.
+  if (index == -1) {
+    throw std::runtime_error(
+        "RigidBodyTreeURDF.cpp: FindBodyIndexByJointName: "
+        "ERROR: Unable to find joint named \"" +
+        joint_name + "\".");
+  }
+
   return index;
 }
 
@@ -595,7 +624,7 @@ void parseTransmission(RigidBodyTree* model, XMLElement* transmission_node) {
 
   // Checks if the actuator is attached to a fixed joint. If so, abort this
   // method call.
-  int body_index = findLinkIndexByJointName(model, joint_name);
+  int body_index = FindBodyIndexByJointName(model, joint_name);
 
   if (model->bodies[body_index]->getJoint().getNumPositions() == 0) {
     cerr << "RigidBodyTreeURDF.cpp: parseTransmission: WARNING: Skipping "
