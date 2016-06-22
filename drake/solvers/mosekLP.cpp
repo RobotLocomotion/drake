@@ -340,8 +340,9 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
               mosek_variable_bounds_,
               upper_variable_bounds_,
               lower_variable_bounds_);
-  SolutionResult s = opt.OptimizeTask(prog.GetSolverOptionsStr("maxormin"),
-                                      prog.GetSolverOptionsStr("problemtype"));
+  SolutionResult s = opt.OptimizeTask(
+      prog.GetSolverOptionsStr("Mosek")["maxormin"],
+      prog.GetSolverOptionsStr("Mosek")["problemtype"]);
   solutions_ = opt.GetSolution();
   return s;
 }

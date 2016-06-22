@@ -1,5 +1,6 @@
 #include <typeinfo>
 
+#include "drake/solvers/mosekLP.h"
 #include "drake/solvers/IpoptSolver.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/NloptSolver.h"
@@ -83,13 +84,16 @@ void RunNonlinearProgram(OptimizationProblem& prog,
   IpoptSolver ipopt_solver;
   NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
+  mosekLP mosek_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
     std::make_pair("SNOPT", &snopt_solver),
     std::make_pair("NLopt", &nlopt_solver),
-    std::make_pair("Ipopt", &ipopt_solver)
+    std::make_pair("Ipopt", &ipopt_solver),
+    std::make_pair("Mosek", &mosek_solver)
   };
-
+  prog.SetSolverOption("Mosek", "maxormin", "max");
+  prog.SetSolverOption("Mosek", "problemtype", "linear");
   for (const auto& solver : solvers) {
     if (!solver.second->available()) {
       continue;

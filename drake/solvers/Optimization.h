@@ -656,6 +656,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * "IPOPT" -- Paramater names and values as specified in IPOPT users
    * guide section "Options Reference"
    * http://www.coin-or.org/Ipopt/documentation/node40.html
+   *
+   *"Mosek" -- Accepts two parameters: "maxormin" -- maximize or minimize
+   * current problem
+   * "problemtype" -- currently only accepts "linear", plan to add "quadratic"
+   * soon. SDP will take longer.
    */
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option,

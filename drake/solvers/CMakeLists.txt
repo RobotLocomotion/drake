@@ -33,6 +33,18 @@ if(MATLAB_FOUND)
   target_link_libraries(lqrmex drakeUtil)
 endif()
 
+if(mosek_FOUND)
+  add_library_with_exports(LIB_NAME mosekLP SOURCEFILES mosekLP.cpp)
+  pods_use_pkg_config_packages(mosekLP mosek)
+  pods_install_libraries(mosekLP)
+  drake_install_headers(mosekLP.h)
+  pods_install_pkg_config_file(mosek
+    LIBS -lmosek64 -L${CMAKE_INSTALL_PREFIX}/lib
+    CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
+    REQUIRES
+    VERSION 7.0.0)
+endif()
+
 set(optimization_files)
 list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp system_identification.cpp)
 pods_find_pkg_config(ipopt)
