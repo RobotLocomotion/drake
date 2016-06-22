@@ -2,7 +2,7 @@
 
 #include "drake/common/deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"

@@ -14,7 +14,7 @@
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
-#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeUtil.h"
