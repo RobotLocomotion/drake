@@ -212,12 +212,13 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
             << name << "\" is a texture. Textures are currently not supported. "
             << "For more information, see: "
             << "https://github.com/RobotLocomotion/drake/issues/2588. "
-               "Defaulting to use the black color for this material." << endl;
+               "Defaulting to use the black color for this material."
+            << endl;
         AddMaterialToMaterialMap(name, rgba, &materials);
       } else {
         throw std::runtime_error(
-            "RigidBodyTreeURDF.cpp: ParseMaterial: ERROR: Failed to parse "
-            "material \"" + name + "\".");
+            "RigidBodyTreeURDF.cpp: ParseMaterial: ERROR: Material\"" + name +
+            "\" not previously defined. Therefore a color must be specified.");
       }
 
       return;
@@ -356,7 +357,14 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     throw runtime_error("ERROR: Failed to parse visual element in link " +
                         body->name_ + ".");
 
-  // Parses the material specification of the visualization.
+  // Parses the material specification of the visualization. Note that we cannot
+  // reuse the logic within ParseMaterial() here because the context is
+  // different. Whereas ParseMaterial() parses material specifications that
+  // are children elements of the "robot" element, the material specification
+  // being parsed here are children of a "visual" element. One key difference is
+  // the XML here may not specify a "name" attribute. Because of this difference
+  // in context, we need specialized logic here to determine the material
+  // visualization of a link.
   XMLElement* material_node = node->FirstChildElement("material");
   if (material_node) {
     // Checks whether a "color" child element exists. If so, parses the
@@ -420,18 +428,14 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     // Throws a std::runtime_error if the material was not set for this
     // visualization.
     //
-    // TODO(liang.fok): Update this logic to once texture-based materials are
+    // TODO(liang.fok): Update this logic once texture-based materials are
     // supported. See: https://github.com/RobotLocomotion/drake/issues/2588.
     if (!material_set) {
       std::stringstream error_buff;
       error_buff
           << "RigidBodyTreeURDF.cpp: parseVisual(): "
           << "WARNING: Visual element has a material whose color could not"
-             "be determined. Maybe it is a texture-based material? "
-             "Texture-based "
-             "materials are currently not supported. For more information, "
-             "see: "
-             "https://github.com/RobotLocomotion/drake/issues/2588."
+             "be determined."
           << std::endl
           << "  - model name: " << body->model_name() << std::endl
           << "  - body name: " << body->name() << std::endl
