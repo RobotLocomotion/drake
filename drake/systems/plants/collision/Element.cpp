@@ -26,7 +26,7 @@ Element* Element::clone() const { return new Element(*this); }
 
 ElementId Element::getId() const { return id; }
 
-const RigidBody* const Element::get_body() const { return body_; }
+const RigidBody* Element::get_body() const { return body_; }
 
 void Element::set_rigid_body(const RigidBody* body) { body_ = body; }
 

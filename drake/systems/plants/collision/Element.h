@@ -50,7 +50,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   /** Returns a pointer to the const RigidBody to which this CollisionElement
   is attached. **/
-  const RigidBody* const get_body() const;
+  const RigidBody* get_body() const;
 
   /** Set the rigid body this collision element is attached to. **/
   void set_rigid_body(const RigidBody* body);
