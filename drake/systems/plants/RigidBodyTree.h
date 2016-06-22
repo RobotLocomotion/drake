@@ -574,9 +574,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       int model_id = -1) const;
 
   /**
-   * This is a deprecated version of `FindBody(...)`. Calling this method will
-   * result in a compile-time error. Please use `FindBody(...)` instead.
+   * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
+   * instead.
    */
+  DEPRECATED_14("RigidBodyTree: findLink: ERROR: This method is deprecated. Please use the newer RigidBodyTree::FindBody.");
   RigidBody* findLink(const std::string& link_name,
                       const std::string& model_name = "",
                       int model_id = -1) const;
@@ -600,10 +601,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
   int FindBodyIndex(const std::string& body_name, int model_id = -1) const;
 
   /**
-   * This is a deprecated version of `FindBodyIndex(...)`. Calling this method
-   * will result in a compile-time error. Please use `FindBodyIndex(...)`
-   * instead.
+   * This is a deprecated version of `FindBodyIndex(...)`. Please use
+   * `FindBodyIndex(...)` instead.
    */
+  DEPRECATED_14("RigidBodyTree: findLinkId: ERROR: This method is deprecated. Please use the newer RigidBodyTree::FindBodyIndex.");
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
   // TODO(amcastro-tri): The name of this method is misleading.

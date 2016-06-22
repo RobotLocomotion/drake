@@ -1,5 +1,6 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
+#include "drake/common/deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
@@ -1715,9 +1716,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
 RigidBody* RigidBodyTree::findLink(const std::string& link_name,
                     const std::string& model_name,
                     int model_id) const {
-  static_assert(false, "RigidBodyTree: findLink: ERROR: This method is "
-    "deprecated. Please use the newer RigidBodyTree::FindBody(...)!");
-  return nullptr;
+  return FindBody(link_name, model_name, model_id);
 }
 
 shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
@@ -1782,9 +1781,7 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
 
 int RigidBodyTree::findLinkId(const std::string& link_name, int model_id)
                               const {
-  static_assert(false, "RigidBodyTree: findLinkId: ERROR: This method is "
-    "deprecated. Please use the newer RigidBodyTree::FindBodyIndex(...)!");
-  return -1;
+  return FindBodyIndex(link_name, model_id);
 }
 
 RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
