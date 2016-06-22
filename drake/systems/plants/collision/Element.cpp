@@ -18,7 +18,8 @@ Element::Element(const DrakeShapes::Geometry& geometry,
 }
 
 Element::Element(const Element& other)
-    : DrakeShapes::Element(other), id((ElementId) this) {}
+    : DrakeShapes::Element(other), id((ElementId) this),
+      is_static_(other.is_static_) {}
 
 Element* Element::clone() const { return new Element(*this); }
 
