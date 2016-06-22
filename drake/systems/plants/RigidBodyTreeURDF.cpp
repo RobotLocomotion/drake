@@ -184,7 +184,10 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
   string name(attr);
 
   Vector4d rgba;
+  rgba = Vector4d::Zero();  // Defaults to black.
+
   XMLElement* color_node = node->FirstChildElement("color");
+
   if (color_node) {
     if (!parseVectorAttribute(color_node, "rgba", rgba)) {
       throw std::logic_error(
@@ -194,20 +197,32 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
     AddMaterialToMaterialMap(name, rgba, &materials);
   } else {
     // If no color was specified and the material is not in the materials map,
-    // assume the material is not a simple color value, print a warning, and
-    // then return.
+    // check if the material is texture-based. If it is, print a warning, use
+    // default color (black), and then return.
+    //
+    // Otherwise, throw an exception.
     //
     // TODO(liang.fok): Update this logic once texture-based materials are
     // supported. See: https://github.com/RobotLocomotion/drake/issues/2588.
     if (materials.find(name) == materials.end()) {
-      std::cerr
-          << "RigidBodyTreeURDF.cpp: ParseMaterial():  WARNING: No color "
-          << "supplied for material \"" << name
-          << "\" and it is not previously "
-          << "specified in the URDF file. Maybe a texture was supplied instead "
-          << "but textures are currently not supported. For more information, "
-          << "see: https://github.com/RobotLocomotion/drake/issues/2588."
-          << endl;
+      XMLElement* texture_node = node->FirstChildElement("texture");
+
+      if (texture_node) {
+        std::cerr
+            << "RigidBodyTreeURDF.cpp: ParseMaterial():  WARNING: Material \""
+            << name << "\" is a texture. Textures are currently not supported. "
+            << "For more information, see: "
+            << "https://github.com/RobotLocomotion/drake/issues/2588. "
+               "Defaulting "
+            << "to use the black color for this material." << endl;
+        AddMaterialToMaterialMap(name, rgba, &materials);
+      } else {
+        throw std::runtime_error(
+            "RigidBodyTreeURDF.cpp: ParseMaterial: ERROR: Failed to parse "
+            "material \"" +
+            name + "\".");
+      }
+
       return;
     }
   }
