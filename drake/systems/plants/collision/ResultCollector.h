@@ -14,7 +14,7 @@ class ResultCollector {
                        const Eigen::Vector3d& ptB,
                        const Eigen::Vector3d& normal,
                        const double distance) {
-    pts.push_back(PointPair(elementA, elementB, ptA, ptB, normal, distance));
+    pts.emplace_back(elementA, elementB, ptA, ptB, normal, distance);
   }
 
   std::vector<PointPair> getResults() const { return pts; }

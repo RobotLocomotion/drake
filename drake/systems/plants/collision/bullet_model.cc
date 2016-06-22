@@ -319,10 +319,10 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
       auto point_on_B =
           elements[idB]->getLocalTransform() * toVector3d(point_on_elemB);
 
-      point_pairs.push_back(
-          PointPair(elements[idA].get(), elements[idB].get(),
-                    point_on_A, point_on_B, toVector3d(normal_on_B),
-                    static_cast<double>(pt.getDistance()) + marginA + marginB));
+      point_pairs.emplace_back(
+          elements[idA].get(), elements[idB].get(),
+          point_on_A, point_on_B, toVector3d(normal_on_B),
+          static_cast<double>(pt.getDistance()) + marginA + marginB);
     }
   }
 
@@ -764,11 +764,10 @@ bool BulletModel::ComputeMaximumDepthCollisionPoints(
         const btVector3& ptA = pt.getPositionWorldOnA() + normalOnB * marginA;
         const btVector3& ptB = pt.getPositionWorldOnB() - normalOnB * marginB;
 
-        collision_points.push_back(
-            PointPair(elementA, elementB,
-                      toVector3d(ptA), toVector3d(ptB), toVector3d(normalOnB),
-                      static_cast<double>(
-                          pt.getDistance() + marginA + marginB)));
+        collision_points.emplace_back(
+            elementA, elementB,
+            toVector3d(ptA), toVector3d(ptB), toVector3d(normalOnB),
+            static_cast<double>(pt.getDistance() + marginA + marginB));
       }
     }
   }
