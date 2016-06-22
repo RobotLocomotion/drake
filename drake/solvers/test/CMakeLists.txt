@@ -1,4 +1,6 @@
 if(GTEST_FOUND)
+  MESSAGE(STATUS ${CMAKE_CURRENT_SOURCE_DIR})
+  ADD_DEFINITIONS(-DVALKYRIE_URDF_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}\")
   add_executable(testOptimizationProblem testOptimizationProblem.cpp)
   target_link_libraries(testOptimizationProblem drakeOptimization drakeRBM
     ${GTEST_BOTH_LIBRARIES})

@@ -286,9 +286,11 @@ Vector6d getTaskSpaceJacobianDotTimesV(const RigidBodyTree &r, KinematicsCache<d
   return Jdv;
 }
 
-GTEST_TEST(testOptimizationProblem, testValGravComp) {
-  std::string home_dir = getenv("HOME");
-  std::string urdf = std::string(home_dir) + std::string("/code/oh-distro-private/software/models/val_description/urdf/valkyrie_sim_drake.urdf");
+GTEST_TEST(testOptimizationProblem, testValGravComp)
+{
+  ////////////////////////////////////////////////////////////////////
+  // load model
+  std::string urdf = std::string(VALKYRIE_URDF_PATH) + std::string("/valkyrie_sim_drake.urdf");
   
   RigidBodyTree robot(urdf, DrakeJoint::ROLLPITCHYAW);
   KinematicsCache<double> cache(robot.bodies);
@@ -308,6 +310,50 @@ GTEST_TEST(testOptimizationProblem, testValGravComp) {
     joint_name_to_id[robot.getPositionName(i)] = i;
   }
 
+  ////////////////////////////////////////////////////////////////////
+  // inverse dynamics looks like:
+  // M(q) * qdd + h(q,qd) = S * tau + J^T * lambda, S is the selection matrix, the 6 dof are not actuated (floating pelvis)
+  // assume we have 2 contacts at the foot, we want to solve for qdd, and lambda, 
+  // and tau = M_l * qdd + h_l - J^T_l * lamda, _l means the lower nTrq rows of those matrices,
+  //
+  // the unknown is X = [qdd, lambda]
+  // equality constraints: 
+  //  M_u * qdd + h_u = J^T_u * lambda (equations of motion)
+  //  J * qdd + Jdqd = 0, (contact constraints)                      
+  // inEquality: a bunch, etc for now
+  // cost func:
+  //  min (Jcom*qdd + Jcomdqd - comdd_d)^2 + (qdd - qdd_d)^2 + (lambda - lambda_d)^2 + all_kinds_of_body_acceleration_cost_terms + etc
+   
+  // alloc QP's input matrices
+  int nContacts = 2;
+  int nQdd = robot.number_of_velocities();
+  int nWrench = 6 * nContacts;
+  int nTrq = nQdd - 6;
+  
+  int nVar = nQdd + nWrench;
+  int nEq = 6 + 6 * nContacts; // + nQdd;
+  int nInEq = 11 * nContacts + nQdd;
+  
+  MatrixXd CE(nEq, nVar);
+  VectorXd ce0(nEq);
+  MatrixXd CI(nInEq, nVar);
+  VectorXd ci_l(nInEq);
+  VectorXd ci_u(nInEq);
+
+  MatrixXd H(nVar, nVar);
+  VectorXd h0(nVar);
+
+  VectorXd X(nVar);
+
+  CE.setZero();
+  ce0.setZero();
+  CI.setZero();
+  ci_u = VectorXd::Constant(nInEq, std::numeric_limits<double>::infinity());
+  ci_l = VectorXd::Constant(nInEq, -std::numeric_limits<double>::infinity());
+  H.setZero();
+  h0.setZero(); 
+  
+  ////////////////////////////////////////////////////////////////////
   // set state and do kinematics
   VectorXd q(robot.number_of_positions());
   VectorXd qd(robot.number_of_velocities());
@@ -338,29 +384,10 @@ GTEST_TEST(testOptimizationProblem, testValGravComp) {
   cache.initialize(q, qd);
   robot.doKinematics(cache, true);
 
-  // inverse dynamics looks like:
-  // M(q) * qdd + h(q,qd) = S * tau + J^T * lambda, S is the selection matrix, the 6 dof are not actuated (floating pelvis)
-  // assume we have 2 contacts at the foot, we want to solve for qdd, and lambda, 
-  // and tau = M_l * qdd + h_l - J^T_l * lamda, _l means the lower rows of those matrices,
-  //
-  // the unknown is X = [qdd, lambda]
-  // equality constraints: M_u * qdd + h_u = J^T_u * lambda
-  // inequality: a bunch, etc for now
-  // min: (J*qdd + Jdqd)^2 + (Jcom*qdd + Jcomdqd - comdd_d)^2 + (qdd)^2 + (lambda)^2 + etc
-
   MatrixXd M = robot.massMatrix(cache);
   eigen_aligned_unordered_map<RigidBody const*, Matrix<double, TWIST_SIZE, 1>> f_ext;
   VectorXd h = robot.dynamicsBiasTerm(cache, f_ext);
-
-  int nContacts = 2;
-  int nQdd = robot.number_of_velocities();
-  int nWrench = 6 * nContacts;
-  int nTrq = nQdd - 6;
   
-  int nVar = nQdd + nWrench;
-  int neq = 6 + nQdd;
-  int nineq = 1 * nContacts; // Fz >= 0
-
   // get contact related stuff
   int foot_id[nContacts]; 
   std::string foot_name[nContacts] = {std::string("leftFoot"), std::string("rightFoot")};
@@ -377,123 +404,258 @@ GTEST_TEST(testOptimizationProblem, testValGravComp) {
     foot_J[i] = getTaskSpaceJacobian(robot, cache, foot_id[i], foot_to_contact.translation());
     foot_Jdv[i] = getTaskSpaceJacobianDotTimesV(robot, cache, foot_id[i], foot_to_contact.translation());
   }
+  
+  // get pelvis related stuff
+  MatrixXd Jpelv = getTaskSpaceJacobian(robot, cache, body_or_frame_name_to_id.at("pelvis"), Vector3d::Zero());
+  Vector6d Jpelvdv = getTaskSpaceJacobianDotTimesV(robot, cache, body_or_frame_name_to_id.at("pelvis"), Vector3d::Zero());
 
-  MatrixXd CE(neq, nVar);
-  VectorXd ce0(neq);
-  MatrixXd CI(nineq, nVar);
-  VectorXd ci0(nineq);
-
-  MatrixXd H(nVar, nVar);
-  VectorXd h0(nVar);
-
-  VectorXd X(nVar);
-
-  CE.setZero();
-  ce0.setZero();
-  CI.setZero();
-  ci0.setZero();
-  H.setZero();
-  h0.setZero();
-
-  // equality: EOM
-  CE.block(0,0,6,nQdd) = M.topRows(6);
-  for (int i = 0; i < nContacts; i++) {
-    CE.block(0,nQdd+i*6,6,6) = -foot_J[i].block<6,6>(0,0).transpose();
-  }
-  ce0.head(6) = h.head(6);
-  // i locked the qdd = zero here. In general, this is not true;
-  CE.block(6,0,nQdd,nQdd).setIdentity();
-
-  // inequality: Fz >= 0; no friction limit, no cop limit for now 
-  for (int i = 0; i < nContacts; i++) {
-    CI(i, nQdd+5+i*6) = 1;
-  }
-  ci0.setZero();
-
-  // cost function
-  // CoM term
-  // (J * qdd + Jdv - comdd_d)^T * (J * qdd + Jdv - comdd_d)
-  Vector3d comdd_d = Vector3d::Zero();
-  double w_com = 100;
+  // get com related stuff
   MatrixXd Jcom = robot.centerOfMassJacobian(cache);
   VectorXd Jcomdv = robot.centerOfMassJacobianDotTimesV(cache);
-  H.block(0,0,nQdd,nQdd) += w_com * Jcom.transpose() * Jcom;
-  h0.head(nQdd) += w_com * 2 * (Jcomdv - comdd_d).transpose() * Jcom;
-
-  // contact not moving term
-  Vector6d footdd_d[nContacts];
-  double w_foot = 1000;
+  
+  // tau = M_l * qdd + h_l - J^T_l * lambda,
+  // tau = TAU * X + tau0
+  MatrixXd Tau(MatrixXd::Zero(nTrq, nVar));
+  Tau.block(0,0,nTrq,nQdd) = M.bottomRows(nTrq);
   for (int i = 0; i < nContacts; i++) {
-    footdd_d[i].setZero();
-    H.block(0,0,nQdd,nQdd) += w_foot * foot_J[i].transpose() * foot_J[i];
-    h0.head(nQdd) += w_foot * 2 * (foot_Jdv[i] - footdd_d[i]).transpose() * foot_J[i];
+    Tau.block(0,nQdd+i*6,nTrq,6) = -foot_J[i].block(0,6,6,nTrq).transpose();
+  }
+  VectorXd tau0 = h.tail(nTrq); 
+   
+
+  ////////////////////////////////////////////////////////////////////
+  // set up equality constraints
+  // equations of motion part, 6 rows
+  int rowIdx = 0;
+  CE.block(rowIdx,0,6,nQdd) = M.topRows(6);
+  for (int i = 0; i < nContacts; i++) {
+    CE.block(rowIdx,nQdd+i*6,6,6) = -foot_J[i].block<6,6>(0,0).transpose();
+  }
+  ce0.segment<6>(rowIdx) = h.head(6);
+  rowIdx += 6;
+
+  // contact constraints, 6 per contact rows
+  Vector6d footdd_d[nContacts];
+  footdd_d[0] = footdd_d[1] = Vector6d::Zero();
+  for (int i = 0; i < nContacts; i++) {
+    CE.block(rowIdx,0,6,nQdd) = foot_J[i];
+    ce0.segment<6>(rowIdx) = foot_Jdv[i] - footdd_d[i];
+    rowIdx += 6;
   }
 
-  // reg qdd
-  double w_qdd_reg = 1000000;
+  // i locked the qdd = zero here. In general, this is not true;
+  //CE.block(rowIdx,0,nQdd,nQdd).setIdentity();
+
+  ////////////////////////////////////////////////////////////////////
+  // set up inequality constraints
+  // these are for contact wrench, 11 rows per contact.
+  // NOTE: these constraints are specified for the contact wrench in the body
+  // frame, but lambda are in world frame. So need to transform it by R^-1 
+  // 2 for Fx, Fy, Mz within friction cone, 6
+  // 2 for CoP x within foot, 2
+  // 2 for CoP y within foot, 2
+  // 1 for Fz >= 0,
+  double mu = 1;
+  double x_max = 0.2;
+  double x_min = -0.05;
+  double y_max = 0.05;
+  double y_min = -0.05;
+  
+  rowIdx = 0;
+  // Fz >= 0;
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 5) = 1;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Fx <= mu * Fz, Fx - mu * Fz <= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 3) = 1;
+    CI(rowIdx, nQdd+i*6 + 5) = -mu;
+    ci_u(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Fx >= -mu * Fz, Fx + mu * Fz >= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 3) = 1;
+    CI(rowIdx, nQdd+i*6 + 5) = mu;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Fy <= mu * Fz, Fy - mu * Fz <= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 4) = 1;
+    CI(rowIdx, nQdd+i*6 + 5) = -mu;
+    ci_u(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Fy >= -mu * Fz, Fy + mu * Fz >= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 4) = 1;
+    CI(rowIdx, nQdd+i*6 + 5) = mu;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Mz <= mu * Fz, Mz - mu * Fz <= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 2) = 1;
+    CI(rowIdx, nQdd+i*6 + 5) = -mu;
+    ci_u(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Mz >= -mu * Fz, Mz + mu * Fz >= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 2) = 1;
+    CI(rowIdx, nQdd+i*6 + 5) = mu;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // cop_x <= x_max, -My / Fz <= x_max, -My - x_max * Fz <= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 1) = -1;
+    CI(rowIdx, nQdd+i*6 + 5) = -x_max;
+    ci_u(rowIdx) = 0;
+    rowIdx++;
+  }
+  // cop_x >= x_min, -My / Fz >= x_min, -My - x_min * Fz >= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 1) = -1;
+    CI(rowIdx, nQdd+i*6 + 5) = -x_min;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // cop_y <= y_max, Mx / Fz <= y_max, Mx - y_max * Fz <= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 0) = 1;
+    CI(rowIdx, nQdd+i*6 + 5) = -y_max;
+    ci_u(rowIdx) = 0;
+    rowIdx++;
+  }
+  // cop_y >= y_min, Mx / Fz >= y_min, Mx - y_min * Fz >= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, nQdd+i*6 + 0) = 1;
+    CI(rowIdx, nQdd+i*6 + 5) = -y_min;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // since all of the above are constraints on wrench expressed in the body frame,
+  // we need to rotate the lambda into body frame
+  MatrixXd world_to_foot(MatrixXd::Zero(nWrench, nWrench));
+  for (int i = 0; i < nContacts; i++) {
+    world_to_foot.block<3,3>(i*6,i*6) = foot_pose[i].linear().transpose();
+    world_to_foot.block<3,3>(i*6+3,i*6+3) = world_to_foot.block<3,3>(i*6,i*6);
+  }
+  CI.block(0,nQdd,rowIdx,nWrench) = CI.block(0,nQdd,rowIdx,nWrench) * world_to_foot;
+
+  // torque limits: min <= tau <= max, nTrq rows
+  // min <= M_l * qdd + h_l - J^T_l * lambda <= max
+  // min - h_l <= M_l * qdd - J^T_l * lambda <= max - h_l
+  VectorXd tau_min = VectorXd::Constant(nTrq, -300);
+  VectorXd tau_max = VectorXd::Constant(nTrq, 300);
+  CI.block(rowIdx,0,nTrq,nVar) = Tau; 
+  ci_l.segment(rowIdx,nTrq) = tau_min - tau0;
+  ci_u.segment(rowIdx,nTrq) = tau_max - tau0;
+  rowIdx += nTrq;
+
+  ////////////////////////////////////////////////////////////////////
+  // cost function: 
+  // min 0.5 * X^T * H * X + h0.transpose() * X, and we are sending H, h0
+  // CoM term
+  // w * (J * qdd + Jdv - comdd_d)^T * (J * qdd + Jdv - comdd_d)
+  Vector3d comdd_d = Vector3d::Zero();
+  double w_com = 1e2;
+  H.block(0,0,nQdd,nQdd) += w_com * Jcom.transpose() * Jcom;
+  h0.head(nQdd) += w_com * (Jcomdv - comdd_d).transpose() * Jcom;
+
+  // pelvis, same as above, you can add torso, hand, head, etc 
+  Vector6d pelvdd_d = Vector6d::Zero();
+  double w_pelv = 1e1;
+  H.block(0,0,nQdd,nQdd) += w_pelv * Jpelv.transpose() * Jpelv;
+  h0.head(nQdd) += w_pelv * (Jpelvdv - pelvdd_d).transpose() * Jpelv;
+
+  // regularize qdd to qdd_d
+  double w_qdd_reg = 1e-2;
+  VectorXd qdd_d(VectorXd::Zero(nQdd));
   H.block(0,0,nQdd,nQdd) += w_qdd_reg * MatrixXd::Identity(nQdd,nQdd);
+  h0.head(nQdd) += w_qdd_reg * (-qdd_d);
 
-  // reg wrench
-  double w_wrench_reg = 0.01;
+  // regularize lambda to lambda_d
+  double w_wrench_reg = 1e-5;
+  VectorXd lambda_d(VectorXd::Zero(nWrench));
+  lambda_d[5] = 660;
+  lambda_d[11] = 660;
   H.block(nQdd,nQdd,nWrench,nWrench) += w_wrench_reg * MatrixXd::Identity(nWrench,nWrench);
+  h0.segment(nQdd, nWrench) += w_wrench_reg * (-lambda_d);
 
-  //////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////
   // SOLVE
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(nVar);
-  // I want to minize x^T * H * x + h0^T * qdd, I am not sure if you have the 0.5 * H inside there somewhere???
   prog.AddQuadraticProgramCost(H, h0);
-  // the equality constraints seem to be A * X = b?
   prog.AddLinearEqualityConstraint(CE, -ce0);
-  VectorXd init = VectorXd::Zero(nVar);
-  init(nQdd + 5) = 700;
-  init(nQdd + 11) = 700;
-  prog.SetInitialGuess({x}, init);
+  prog.AddLinearConstraint(CI, ci_l, ci_u);
+  prog.SetInitialGuess({x}, VectorXd::Zero(nVar));
   SolutionResult result;
   SnoptSolver snopt_solver;
   result = snopt_solver.Solve(prog);
   assert(result == SolutionResult::kSolutionFound);
   X = x.value();
 
-  //////////////////////////////////////////////////////////
-
-  // get qdd, lambda, and tau
+  ////////////////////////////////////////////////////////////////////
+  // parse output,
+  // compute qdd, lambda, tau
   VectorXd qdd = X.head(nQdd);
   VectorXd lambda = X.tail(nWrench); 
-  VectorXd tau = M.bottomRows(nTrq) * qdd + h.tail(nTrq);
-  for (int i = 0; i < nContacts; i++) {
-    tau -= foot_J[i].block(0,6,6,nTrq).transpose() * lambda.segment<6>(i*6);
-  }
+  VectorXd tau = tau0 + Tau * X;
 
-  std::cout << "QDD:\n";
+  std::cout << "===============================================\n";
+  std::cout << "accelerations:\n";
   for (int i = 0; i < nQdd; i++)
     std::cout << robot.getPositionName(i) << ": " << qdd[i] << std::endl;
  
-  std::cout << "COMDD:\n";
+  std::cout << "com acc: ";
   std::cout << (Jcom * qdd + Jcomdv).transpose() << std::endl;
+  
+  std::cout << "pelv acc: ";
+  std::cout << (Jpelv * qdd + Jpelvdv).transpose() << std::endl;
 
-  std::cout << "LFdd:\n";
-  std::cout << (foot_J[0] * qdd + foot_Jdv[0]).transpose() << std::endl;
-  std::cout << "RFdd:\n";
-  std::cout << (foot_J[1] * qdd + foot_Jdv[1]).transpose() << std::endl;
+  Vector6d foot_acc[nContacts];
+  Vector6d foot_wrench_w[nContacts];
+  Vector6d foot_wrench_b[nContacts];
+  for (int i = 0; i < nContacts; i++) {
+    foot_acc[i] = (foot_J[i] * qdd + foot_Jdv[i]);
+    foot_wrench_w[i] = lambda.segment<6>(i*6);
+    foot_wrench_b[i] = world_to_foot.block<6,6>(i*6,i*6) * foot_wrench_w[i];
+    
+    std::cout << foot_name[i] << " acc: " << foot_acc[i].transpose() << std::endl;
+  }
+  
+  std::cout << "===============================================\n";
+  std::cout << "contact wrench:\n";
+  for (int i = 0; i < nContacts; i++) {
+    std::cout << foot_name[i] << " wrench in world frame: " << foot_wrench_w[i].transpose() << std::endl;
+    std::cout << foot_name[i] << " wrench in body frame: " << foot_wrench_b[i].transpose() << std::endl;
+  }
 
-  std::cout << "LF:\n";
-  std::cout << lambda.head(6) << std::endl;
-  std::cout << "RF:\n";
-  std::cout << lambda.tail(6) << std::endl;
-
-  std::cout << "TAU:\n";
+  std::cout << "===============================================\n";
+  std::cout << "torque:\n";
   for (int i = 0; i < nTrq; i++)
     std::cout << robot.getPositionName(i+6) << ": " << tau[i] << std::endl;
 
+  ////////////////////////////////////////////////////////////////////
+  // sanity checks,
   // check dynamics
   VectorXd residual = M * qdd + h;
   for (int i = 0; i < nContacts; i++)
     residual -= foot_J[i].transpose() * lambda.segment<6>(i*6);
   residual.tail(nTrq) -= tau;
-  
   EXPECT_TRUE(CompareMatrices(residual, VectorXd::Zero(nQdd), 1e-9,
                                 MatrixCompareType::absolute));
+  // check contact not moving
+  for (int i = 0; i < nContacts; i++) {
+    EXPECT_TRUE(CompareMatrices(foot_acc[i], Vector6d::Zero(), 1e-9,
+                                MatrixCompareType::absolute));
+  }
 }
 
 // This test comes from Section 2.3 of "Handbook of Test Problems in
