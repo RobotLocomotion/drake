@@ -19,7 +19,7 @@ Element::Element(const DrakeShapes::Geometry& geometry,
 
 Element::Element(const Element& other)
     : DrakeShapes::Element(other),
-      id((ElementId) this),
+      id(reinterpret_cast<ElementId>(this)),
       body_(other.body_) {}
 
 Element* Element::clone() const { return new Element(*this); }
