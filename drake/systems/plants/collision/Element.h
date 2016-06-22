@@ -11,9 +11,14 @@
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 
 // Forward declaration.
-// RigidBody's interface is never used by the collision engine.
-// It is however useful for the concept of having a CollisionElement attached
-// to a Body.
+// This is forward declaration is made in order to be able to add a reference
+// to the parent body without the collision element ever using the RigidBody or
+// any of its methods.
+// This is particularly useful when the physics engine (at the RigidBody or
+// RigidBodyTree scope) needs to retrieve the parent body (for instance to
+// query its world transform).
+// An alternative would be to include RigidBody.h, however this would create a
+// cyclic dependency.
 class RigidBody;
 
 namespace DrakeCollision {
