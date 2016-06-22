@@ -66,7 +66,7 @@ class DRAKECOLLISION_EXPORT PointPair {
   Eigen::Vector3d ptA_;
   Eigen::Vector3d ptB_;
   Eigen::Vector3d normal_;
-  double distance_;
+  double distance_{};
 };
 
 }  // namespace DrakeCollision
