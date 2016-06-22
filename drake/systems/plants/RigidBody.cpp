@@ -105,14 +105,14 @@ RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
 RigidBody::CollisionElement::CollisionElement(
     const Isometry3d& T_element_to_link, const RigidBody* const body)
     : DrakeCollision::Element(T_element_to_link) {
-  set_rigid_body(body);
+  set_body(body);
 }
 
 RigidBody::CollisionElement::CollisionElement(
     const DrakeShapes::Geometry& geometry, const Isometry3d& T_element_to_link,
     const RigidBody* const body)
     : DrakeCollision::Element(geometry, T_element_to_link) {
-  set_rigid_body(body);
+  set_body(body);
 }
 
 RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {

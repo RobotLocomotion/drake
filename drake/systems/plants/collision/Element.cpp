@@ -28,7 +28,7 @@ ElementId Element::getId() const { return id; }
 
 const RigidBody* Element::get_body() const { return body_; }
 
-void Element::set_rigid_body(const RigidBody* body) { body_ = body; }
+void Element::set_body(const RigidBody *body) { body_ = body; }
 
 ostream& operator<<(ostream& out, const Element& ee) {
   out << "DrakeCollision::Element:\n"

@@ -53,7 +53,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
   const RigidBody* get_body() const;
 
   /** Set the rigid body this collision element is attached to. **/
-  void set_rigid_body(const RigidBody* body);
+  void set_body(const RigidBody *body);
 
   /**
    * A toString method for this class.
