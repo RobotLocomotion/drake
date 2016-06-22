@@ -41,13 +41,7 @@
       const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &v) \
       const = 0;
 
-class RigidBody;
-
 class DRAKEJOINTS_EXPORT DrakeJoint {
-  // disable copy construction and assignment
-  // DrakeJoint(const DrakeJoint&) = delete;
-  // DrakeJoint& operator=(const DrakeJoint&) = delete;
-
  public:
   enum FloatingBaseType { FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2 };
   static const int MAX_NUM_POSITIONS = 7;
@@ -57,17 +51,6 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
       AutoDiffFixedMaxSize;  // 73 is number of states of quat-parameterized
                              // Atlas
 
- private:
-  const Eigen::Isometry3d transform_to_parent_body;
-  const int num_positions;
-  const int num_velocities;
-
- protected:
-  const std::string name;
-  Eigen::VectorXd joint_limit_min;
-  Eigen::VectorXd joint_limit_max;
-
- public:
   DrakeJoint(const std::string &name,
              const Eigen::Isometry3d &transform_to_parent_body,
              int num_positions, int num_velocities);
@@ -106,6 +89,15 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(
       Eigen::AutoDiffScalar<Eigen::VectorXd>)
 
- public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ protected:
+  const std::string name;
+  Eigen::VectorXd joint_limit_min;
+  Eigen::VectorXd joint_limit_max;
+
+ private:
+  const Eigen::Isometry3d transform_to_parent_body;
+  const int num_positions;
+  const int num_velocities;
 };
