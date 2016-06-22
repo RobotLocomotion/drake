@@ -35,10 +35,10 @@ repository) or out-of-source (i.e., within a directory that is outside of your
 clone of Drake's repository).
 
 For in-source builds, the build artifacts directory is typically
-``[drake distro]/drake/pod-build``.
+``drake-distro/drake/pod-build``.
 
 For out-of-source builds, the build artifacts directory is typically
-``[out of source directory]/drake``.
+``drake-build/drake``.
 
 .. _enable-long-running-unit-test:
 

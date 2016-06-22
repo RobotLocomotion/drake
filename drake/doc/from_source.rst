@@ -96,17 +96,19 @@ on your system:
     ninja --version
 
 Drake uses `CMake <https://cmake.org/>`_ to generate Ninja files within an
-out-of-source build directory. You can configure CMake options by passing
-them at the ``cmake`` command line with ``-D``, or in a GUI by running
-``ccmake`` instead of ``cmake``. For instance, the following sequence of
-commands generates Ninja files with build type ``Debug``, and then runs the 
-Ninja build.
+out-of-source build directory. You should name this directory ``drake-build``,
+and it should be a sibling of ``drake-distro``.
+
+You can configure CMake options by passing them at the ``cmake`` command 
+line with ``-D``, or in a GUI by running ``ccmake`` instead of ``cmake``. 
+For instance, the following sequence of commands generates Ninja files with
+build type ``Debug``, and then runs the Ninja build.
 
 ::
 
     mkdir drake-build
     cd drake-build
-    cmake path/to/drake-distro -G Ninja -DCMAKE_BUILD_TYPE:STRING=Debug
+    cmake ../drake-distro -G Ninja -DCMAKE_BUILD_TYPE:STRING=Debug
     ninja
 
 Ninja can rebuild Drake from within ``drake-build/drake`` without
