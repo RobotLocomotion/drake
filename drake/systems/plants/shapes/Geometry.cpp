@@ -1,10 +1,18 @@
 #include <fstream>
+#include <stdexcept>
 
 #include "Geometry.h"
 #include "spruce.hh"
 
-using namespace std;
-using namespace Eigen;
+using std::string;
+using std::istringstream;
+using std::ifstream;
+
+using Eigen::Vector3i;
+using Eigen::Vector3d;
+using Eigen::RowVectorXd;
+using Eigen::Matrix3Xd;
+using Eigen::Matrix3Xi;
 
 namespace DrakeShapes {
 const int Geometry::NUM_BBOX_POINTS = 8;
@@ -64,7 +72,7 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
   points << cx, cy, cz;
 }
 
-ostream &operator<<(ostream &out, const Geometry &gg) {
+std::ostream &operator<<(std::ostream &out, const Geometry &gg) {
   out << ShapeToString(gg.getShape()) << ", " << gg.NUM_BBOX_POINTS;
   return out;
 }
@@ -88,7 +96,7 @@ void Sphere::getTerrainContactPoints(Matrix3Xd &points) const {
     points = Matrix3Xd();
 }
 
-ostream &operator<<(ostream &out, const Sphere &ss) {
+std::ostream &operator<<(std::ostream &out, const Sphere &ss) {
   out << static_cast<const Geometry &>(ss) << ", " << ss.radius << ", "
       << ss.NUM_POINTS;
   return out;
@@ -109,7 +117,7 @@ void Box::getTerrainContactPoints(Matrix3Xd &points) const {
   getPoints(points);
 }
 
-ostream &operator<<(ostream &out, const Box &bb) {
+std::ostream &operator<<(std::ostream &out, const Box &bb) {
   out << static_cast<const Geometry &>(bb) << ", " << bb.size.transpose();
   return out;
 }
@@ -122,9 +130,9 @@ Cylinder *Cylinder::clone() const { return new Cylinder(*this); }
 void Cylinder::getPoints(Matrix3Xd &points) const {
   static bool warnOnce = true;
   if (warnOnce) {
-    cerr << "Warning: DrakeShapes::Cylinder::getPoints(): This method returns "
-            "the vertices of the cylinder''s bounding-box."
-         << endl;
+    std::cerr << "Warning: DrakeShapes::Cylinder::getPoints(): """
+        "This method returns the vertices of the cylinder''s bounding-box."
+         << std::endl;
     warnOnce = false;
   }
 
@@ -135,7 +143,7 @@ void Cylinder::getBoundingBoxPoints(Matrix3Xd &points) const {
   Geometry::getBoundingBoxPoints(radius, radius, length / 2.0, points);
 }
 
-ostream &operator<<(ostream &out, const Cylinder &cc) {
+std::ostream &operator<<(std::ostream &out, const Cylinder &cc) {
   out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", "
       << cc.length;
   return out;
@@ -162,7 +170,7 @@ void Capsule::getBoundingBoxPoints(Matrix3Xd &points) const {
                                  points);
 }
 
-ostream &operator<<(ostream &out, const Capsule &cc) {
+std::ostream &operator<<(std::ostream &out, const Capsule &cc) {
   out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", "
       << cc.length;
   return out;
@@ -214,10 +222,10 @@ bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
   }
 
   if (!file.is_open()) {
-    cerr << "Warning: Mesh " << spath.getStr()
+    std::cerr << "Warning: Mesh " << spath.getStr()
          << " ignored because it does not have extension .obj (nor can I find "
             "a juxtaposed file with a .obj extension)"
-         << endl;
+         << std::endl;
     return false;
   }
 
@@ -286,7 +294,7 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
-ostream &operator<<(ostream &out, const Mesh &mm) {
+std::ostream &operator<<(std::ostream &out, const Mesh &mm) {
   out << static_cast<const Geometry &>(mm) << ", " << mm.scale << ", "
       << mm.filename << ", " << mm.resolved_filename << ", " << mm.root_dir;
   return out;
@@ -313,7 +321,7 @@ void MeshPoints::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
-ostream &operator<<(ostream &out, const MeshPoints &mp) {
+std::ostream &operator<<(std::ostream &out, const MeshPoints &mp) {
   out << static_cast<const Geometry &>(mp) << ",\n" << mp.points;
   return out;
 }
