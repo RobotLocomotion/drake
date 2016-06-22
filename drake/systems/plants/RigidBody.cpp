@@ -30,7 +30,7 @@ const std::string& RigidBody::name() const { return name_; }
 
 const std::string& RigidBody::model_name() const { return model_name_; }
 
-const int RigidBody::get_model_id() const { return robotnum; }
+int RigidBody::get_model_id() const { return robotnum; }
 
 void RigidBody::set_model_id(int model_id) { robotnum = model_id; }
 

@@ -42,7 +42,7 @@ class DRAKERBM_EXPORT RigidBody {
   /**
    * Returns the ID of the model to which this rigid body belongs.
    */
-  const int get_model_id() const;
+  int get_model_id() const;
 
   /**
    * Sets the ID of the model to which this rigid body belongs.
