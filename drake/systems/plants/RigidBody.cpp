@@ -1,4 +1,3 @@
-
 #include "RigidBody.h"
 
 #include <stdexcept>
@@ -62,6 +61,12 @@ void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
                                    const DrakeCollision::bitmask& ignores) {
   setCollisionFilterGroup(group);
   setCollisionFilterIgnores(ignores);
+}
+
+bool RigidBody::adjacentTo(const RigidBody& other) const {
+  return ((has_as_parent(other) && !(joint && joint->isFloating())) ||
+          (other.has_as_parent(*this) &&
+           !(other.joint && other.joint->isFloating())));
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
