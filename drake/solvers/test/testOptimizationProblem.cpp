@@ -1,6 +1,5 @@
 #include <typeinfo>
 
-#include "drake/common/drake_assert.h"
 #include "drake/solvers/IpoptSolver.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/NloptSolver.h"
@@ -10,6 +9,9 @@
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
+
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/KinematicsCache.h"
 
 using Eigen::Dynamic;
 using Eigen::Ref;
@@ -21,6 +23,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
+using Eigen::Isometry3d;
 
 using Drake::TaylorVecXd;
 using Drake::VecIn;
@@ -61,7 +64,6 @@ struct Unique {
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
-// TODO(naveenoid) : tests need to be purged of Random initializations.
 
 GTEST_TEST(testOptimizationProblem, testAddFunction) {
   OptimizationProblem prog;
@@ -80,14 +82,6 @@ GTEST_TEST(testOptimizationProblem, testAddFunction) {
   prog.AddCost(std::unique_ptr<Unique>(new Unique));
 }
 
-void CheckSolverType(OptimizationProblem& prog,
-                     std::string desired_solver_name) {
-  std::string solver_name;
-  int solver_result;
-  prog.GetSolverResult(&solver_name, &solver_result);
-  EXPECT_EQ(solver_name, desired_solver_name);
-}
-
 void RunNonlinearProgram(OptimizationProblem& prog,
                          std::function<void(void)> test_func) {
   IpoptSolver ipopt_solver;
@@ -95,9 +89,10 @@ void RunNonlinearProgram(OptimizationProblem& prog,
   SnoptSolver snopt_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
-      std::make_pair("SNOPT", &snopt_solver),
-      std::make_pair("NLopt", &nlopt_solver),
-      std::make_pair("Ipopt", &ipopt_solver)};
+    std::make_pair("SNOPT", &snopt_solver),
+    std::make_pair("NLopt", &nlopt_solver),
+    std::make_pair("Ipopt", &ipopt_solver)
+  };
 
   for (const auto& solver : solvers) {
     if (!solver.second->available()) {
@@ -112,11 +107,9 @@ void RunNonlinearProgram(OptimizationProblem& prog,
   }
 }
 
-GTEST_TEST(testOptimizationProblem, trivialLinearSystem) {
+GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
   OptimizationProblem prog;
 
-  // First, add four variables set equal by four equations
-  // to equal a random vector
   auto const& x = prog.AddContinuousVariables(4);
 
   auto x2 = x(2);
@@ -135,10 +128,6 @@ GTEST_TEST(testOptimizationProblem, trivialLinearSystem) {
 
   valuecheck(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment.
 
-  CheckSolverType(prog, "Linear System Solver");
-
-  // Add two more variables with a very slightly more complicated
-  // constraint and solve again. Should still be a linear system.
   auto const& y = prog.AddContinuousVariables(2);
   prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
   prog.Solve();
@@ -146,16 +135,13 @@ GTEST_TEST(testOptimizationProblem, trivialLinearSystem) {
                               MatrixCompareType::absolute));
   EXPECT_TRUE(
       CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
-  CheckSolverType(prog, "Linear System Solver");
 
-  // Now modify the original constraint by its handle
   con->updateConstraint(3 * Matrix4d::Identity(), b);
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(
       CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
-  CheckSolverType(prog, "Linear System Solver");
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
@@ -187,15 +173,15 @@ GTEST_TEST(testOptimizationProblem, trivialLinearEquality) {
 
 // This test comes from Section 2.2 of "Handbook of Test Problems in
 // Local and Global Optimization."
-class TestProblem1Cost {
+class TestProblem1Objective {
  public:
   static size_t numInputs() { return 5; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
     y(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
            (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
            (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
@@ -206,7 +192,7 @@ class TestProblem1Cost {
 GTEST_TEST(testOptimizationProblem, testProblem1) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(5);
-  prog.AddCost(TestProblem1Cost());
+  prog.AddCost(TestProblem1Objective());
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
   prog.AddLinearConstraint(
@@ -220,25 +206,22 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
 
   // IPOPT has difficulty with this problem depending on the initial
   // conditions, which is why the initial guess varies so little.
-  std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
                                 MatrixCompareType::absolute));
   });
 }
 
-// This test is identical to testProblem1 above but the cost is
-// framed as a QP instead.
 GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(5);
 
-  Eigen::MatrixXd Q = -100 * Eigen::Matrix<double, 5, 5>::Identity();
+  Eigen::MatrixXd Q = -100*Eigen::Matrix<double,5,5>::Identity();
   Eigen::VectorXd c(5);
-  c << 42, 44, 45, 47, 47.5;
+  c<< 42, 44, 45, 47, 47.5;
 
-  prog.AddQuadraticCost(Q, c);
+  prog.AddQuadraticProgramCost(Q,c);
 
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
@@ -247,28 +230,284 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
       Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       Drake::Vector1d::Constant(40));
   prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
-                                MatrixXd::Constant(5, 1, 1));
+      MatrixXd::Constant(5, 1, 1));
   VectorXd expected(5);
   expected << 1, 1, 0, 1, 0;
-  std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
-                                MatrixCompareType::absolute));
-  });
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
+                              MatrixCompareType::absolute));
+});
+}
+
+////////////////////// SFENG
+//
+typedef Eigen::Matrix<double,6,1> Vector6d;
+MatrixXd getTaskSpaceJacobian(const RigidBodyTree &r, KinematicsCache<double> &cache, int body, const Vector3d &local_offset)
+{
+  std::vector<int> v_or_q_indices;
+  KinematicPath body_path = r.findKinematicPath(0, body);
+  MatrixXd Jg = r.geometricJacobian(cache, 0, body, 0, true, &v_or_q_indices);
+  MatrixXd J(6, r.number_of_velocities());
+  J.setZero();
+
+  Vector3d points = r.transformPoints(cache, local_offset, body, 0);
+
+  int col = 0;
+  for (std::vector<int>::iterator it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
+    // angular
+    J.template block<SPACE_DIMENSION, 1>(0,*it) = Jg.block<3,1>(0,col);
+    // linear, just like the linear velocity, assume qd = 1, the column is the linear velocity.
+    J.template block<SPACE_DIMENSION, 1>(3,*it) = Jg.block<3,1>(3,col);
+    J.template block<SPACE_DIMENSION, 1>(3,*it).noalias() += Jg.block<3,1>(0,col).cross(points);
+    col++;
+  }
+
+  return J;
+}
+
+Vector6d getTaskSpaceJacobianDotTimesV(const RigidBodyTree &r, KinematicsCache<double> &cache, int body_or_frame_id, const Vector3d &local_offset)
+{
+  // position of point in world
+  Vector3d p = r.transformPoints(cache, local_offset, body_or_frame_id, 0);
+  Vector6d twist = r.relativeTwist(cache, 0, body_or_frame_id, 0);
+  Vector6d J_geometric_dot_times_v = r.geometricJacobianDotTimesV(cache, 0, body_or_frame_id, 0);
+
+  // linear vel of r
+  Vector3d pdot = twist.head<3>().cross(p) + twist.tail<3>();
+
+  // each column of J_task Jt = [Jg_omega; Jg_v + Jg_omega.cross(p)]
+  // Jt * v, angular part stays the same, 
+  // linear part = [\dot{Jg_v}v + \dot{Jg_omega}.cross(p) + Jg_omega.cross(rdot)] * v 
+  //             = [lin of JgdotV + ang of JgdotV.cross(p) + omega.cross(rdot)]
+  Vector6d Jdv = J_geometric_dot_times_v;
+  Jdv.tail<3>() += twist.head<3>().cross(pdot) + J_geometric_dot_times_v.head<3>().cross(p);
+
+  return Jdv;
+}
+
+GTEST_TEST(testOptimizationProblem, testValGravComp) {
+  std::string home_dir = getenv("HOME");
+  std::string urdf = std::string(home_dir) + std::string("/code/oh-distro-private/software/models/val_description/urdf/valkyrie_sim_drake.urdf");
+  
+  RigidBodyTree robot(urdf, DrakeJoint::ROLLPITCHYAW);
+  KinematicsCache<double> cache(robot.bodies);
+  
+  std::unordered_map<std::string, int> body_or_frame_name_to_id;
+  body_or_frame_name_to_id = std::unordered_map<std::string, int>();
+  for (auto it = robot.bodies.begin(); it != robot.bodies.end(); ++it) {
+    body_or_frame_name_to_id[(*it)->name()] = it - robot.bodies.begin();
+  }
+
+  for (auto it = robot.frames.begin(); it != robot.frames.end(); ++it) {
+    body_or_frame_name_to_id[(*it)->name] = -(it - robot.frames.begin()) - 2;
+  }
+  
+  std::unordered_map<std::string, int> joint_name_to_id; 
+  for (int i = 0; i < robot.number_of_positions(); i++) {
+    joint_name_to_id[robot.getPositionName(i)] = i;
+  }
+
+  // set state and do kinematics
+  VectorXd q(robot.number_of_positions());
+  VectorXd qd(robot.number_of_velocities());
+
+  q.setZero();
+  qd.setZero();
+
+  q[joint_name_to_id.at("rightHipRoll")] = 0.01;
+  q[joint_name_to_id.at("rightHipPitch")] = -0.5432;
+  q[joint_name_to_id.at("rightKneePitch")] = 1.2195;
+  q[joint_name_to_id.at("rightAnklePitch")] = -0.7070;
+  q[joint_name_to_id.at("rightAnkleRoll")] = -0.0069;
+
+  q[joint_name_to_id.at("leftHipRoll")] = -0.01;
+  q[joint_name_to_id.at("leftHipPitch")] = -0.5432;
+  q[joint_name_to_id.at("leftKneePitch")] = 1.2195;
+  q[joint_name_to_id.at("leftAnklePitch")] = -0.7070;
+  q[joint_name_to_id.at("leftAnkleRoll")] = 0.0069;
+
+  q[joint_name_to_id.at("rightShoulderRoll")] = 1;
+  q[joint_name_to_id.at("rightShoulderYaw")] = 0.5;
+  q[joint_name_to_id.at("rightElbowPitch")] = M_PI/2.;
+  
+  q[joint_name_to_id.at("leftShoulderRoll")] = -1;
+  q[joint_name_to_id.at("leftShoulderYaw")] = 0.5;
+  q[joint_name_to_id.at("leftElbowPitch")] = -M_PI/2.;
+  
+  cache.initialize(q, qd);
+  robot.doKinematics(cache, true);
+
+  // inverse dynamics looks like:
+  // M(q) * qdd + h(q,qd) = S * tau + J^T * lambda,
+  // assume we have 2 contacts at the foot, we want to solve for qdd, and lambda, 
+  // and tau = M_l * qdd + h_l - J^T_l * lamda, _l means the lower rows of those matrices,
+  //
+  // the unknown is X = [qdd, lambda]
+  // equality constraints: M_u * qdd + h_u = J^T_u * lambda
+  // inequality: a bunch, etc for now
+  // min: (J*qdd + Jdqd)^2 + (Jcom*qdd + Jcomdqd - comdd_d)^2 + (qdd)^2 + (lambda)^2
+
+  MatrixXd M = robot.massMatrix(cache);
+  eigen_aligned_unordered_map<RigidBody const*, Matrix<double, TWIST_SIZE, 1>> f_ext;
+  VectorXd h = robot.dynamicsBiasTerm(cache, f_ext);
+
+  int nContacts = 2;
+  int nQdd = robot.number_of_velocities();
+  int nWrench = 6 * nContacts;
+  int nTrq = nQdd - 6;
+  
+  int nVar = nQdd + nWrench;
+  int neq = 6 + nQdd;
+  int nineq = 1 * nContacts; // Fz >= 0
+
+  // get contact related stuff
+  int foot_id[nContacts]; 
+  std::string foot_name[nContacts] = {std::string("leftFoot"), std::string("rightFoot")};
+  Isometry3d foot_pose[nContacts];
+  MatrixXd foot_J[nContacts];
+  VectorXd foot_Jdv[nContacts];
+  // contact is 9cm below ankle
+  Isometry3d foot_to_contact = Isometry3d::Identity();
+  foot_to_contact.translation() = Vector3d(0,0,-0.09);
+
+  for (int i = 0; i < nContacts; i++) {
+    foot_id[i] = body_or_frame_name_to_id.at(foot_name[i]);
+    foot_pose[i] = robot.relativeTransform(cache, 0, foot_id[i]) * foot_to_contact;
+    foot_J[i] = getTaskSpaceJacobian(robot, cache, foot_id[i], foot_to_contact.translation());
+    foot_Jdv[i] = getTaskSpaceJacobianDotTimesV(robot, cache, foot_id[i], foot_to_contact.translation());
+    
+    std::cout << foot_pose[i].translation().transpose() << std::endl;
+  }
+
+  MatrixXd CE(neq, nVar);
+  VectorXd ce0(neq);
+  MatrixXd CI(nineq, nVar);
+  VectorXd ci0(nineq);
+
+  MatrixXd H(nVar, nVar);
+  VectorXd h0(nVar);
+
+  VectorXd X(nVar);
+
+  CE.setZero();
+  ce0.setZero();
+  CI.setZero();
+  ci0.setZero();
+  H.setZero();
+  h0.setZero();
+
+  // equality: EOM
+  CE.block(0,0,6,nQdd) = M.topRows(6);
+  for (int i = 0; i < nContacts; i++) {
+    CE.block(0,nQdd+i*6,6,6) = -foot_J[i].block<6,6>(0,0).transpose();
+  }
+  ce0.head(6) = h.head(6);
+  CE.block(6,0,nQdd,nQdd).setIdentity();
+
+  // inequality: Fz >= 0; no friction limit, no cop limit for now 
+  for (int i = 0; i < nContacts; i++) {
+    CI(i, nQdd+5+i*6) = 1;
+  }
+  ci0.setZero();
+
+  // cost function
+  // CoM term
+  Vector3d comdd_d = Vector3d::Zero();
+  double w_com = 100;
+  MatrixXd Jcom = robot.centerOfMassJacobian(cache);
+  VectorXd Jcomdv = robot.centerOfMassJacobianDotTimesV(cache);
+  H.block(0,0,nQdd,nQdd) += w_com * Jcom.transpose() * Jcom;
+  h0.head(nQdd) += w_com * 1 * (Jcomdv - comdd_d).transpose() * Jcom;
+
+  // contact not moving term
+  Vector6d footdd_d[nContacts];
+  double w_foot = 1000;
+  for (int i = 0; i < nContacts; i++) {
+    footdd_d[i].setZero();
+    H.block(0,0,nQdd,nQdd) += w_foot * foot_J[i].transpose() * foot_J[i];
+    h0.head(nQdd) += w_foot * 1 * (foot_Jdv[i] - footdd_d[i]).transpose() * foot_J[i];
+  }
+
+  // reg qdd
+  double w_qdd_reg = 1000000;
+  H.block(0,0,nQdd,nQdd) += w_qdd_reg * MatrixXd::Identity(nQdd,nQdd);
+  //for (int i = 0; i < nQdd; i++)
+  //  H(i,i) += w_qdd_reg;
+
+  // reg wrench
+  double w_wrench_reg = 0.01;
+  //for (int i = 0; i < nWrench; i++)
+  //  H(nQdd+i,nQdd+i) += w_wrench_reg;
+  H.block(nQdd,nQdd,nWrench,nWrench) += w_wrench_reg * MatrixXd::Identity(nWrench,nWrench);
+
+  //////////////////////////////////////////////////////////
+  // SOLVE
+  OptimizationProblem prog;
+  auto x = prog.AddContinuousVariables(nVar);
+  prog.AddQuadraticProgramCost(H, h0);
+  prog.AddLinearEqualityConstraint(CE, -ce0);
+  VectorXd init = VectorXd::Zero(nVar);
+  init(nQdd + 5) = 700;
+  init(nQdd + 11) = 700;
+  prog.SetInitialGuess({x}, init);
+  SolutionResult result;
+  SnoptSolver snopt_solver;
+  result = snopt_solver.Solve(prog);
+  assert(result == SolutionResult::kSolutionFound);
+  X = x.value();
+
+  //////////////////////////////////////////////////////////
+
+  // get qdd, lambda, and tau
+  VectorXd qdd = X.head(nQdd);
+  VectorXd lambda = X.tail(nWrench); 
+  VectorXd tau = M.bottomRows(nTrq) * qdd + h.tail(nTrq);
+  for (int i = 0; i < nContacts; i++) {
+    tau -= foot_J[i].block(0,6,6,nTrq).transpose() * lambda.segment<6>(i*6);
+  }
+
+  std::cout << "QDD:\n";
+  for (int i = 0; i < nQdd; i++)
+    std::cout << robot.getPositionName(i) << ": " << qdd[i] << std::endl;
+ 
+  std::cout << "COMDD:\n";
+  std::cout << (Jcom * qdd + Jcomdv).transpose() << std::endl;
+
+  std::cout << "LFdd:\n";
+  std::cout << (foot_J[0] * qdd + foot_Jdv[0]).transpose() << std::endl;
+  std::cout << "RFdd:\n";
+  std::cout << (foot_J[1] * qdd + foot_Jdv[1]).transpose() << std::endl;
+
+  std::cout << "LF:\n";
+  std::cout << lambda.head(6) << std::endl;
+  std::cout << "RF:\n";
+  std::cout << lambda.tail(6) << std::endl;
+
+  std::cout << "TAU:\n";
+  for (int i = 0; i < nTrq; i++)
+    std::cout << robot.getPositionName(i+6) << ": " << tau[i] << std::endl;
+
+  // check dynamics
+  VectorXd residual = M * qdd + h;
+  for (int i = 0; i < nContacts; i++)
+    residual -= foot_J[i].transpose() * lambda.segment<6>(i*6);
+  residual.tail(nTrq) -= tau;
+
+  std::cout << residual << std::endl;
 }
 
 // This test comes from Section 2.3 of "Handbook of Test Problems in
 // Local and Global Optimization."
-class TestProblem2Cost {
+class TestProblem2Objective {
  public:
   static size_t numInputs() { return 6; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
     y(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
            (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
            (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
@@ -279,7 +518,7 @@ class TestProblem2Cost {
 GTEST_TEST(testOptimizationProblem, testProblem2) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(6);
-  prog.AddCost(TestProblem2Cost());
+  prog.AddCost(TestProblem2Objective());
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
   prog.AddLinearConstraint(
@@ -298,29 +537,22 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
   prog.AddBoundingBoxConstraint(lower, upper);
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
-  std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
-  // This test seems to be fairly sensitive to how much the randomness
-  // causes the initial guess to deviate, so the tolerance is a bit
-  // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-4,
                                 MatrixCompareType::absolute));
   });
 }
 
-
-// This test is identical to testProblem2 above but the cost is
-// framed as a QP instead.
 GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(6);
-  MatrixXd Q = -100.0 * MatrixXd::Identity(6, 6);
-  Q(5, 5) = 0.0;
+  MatrixXd Q =  -100.0 * MatrixXd::Identity(6, 6);
+  Q(5,5) = 0.0;
   VectorXd c(6);
-  c << -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
+  c<< -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
 
-  prog.AddQuadraticCost(Q, c);
+  prog.AddQuadraticProgramCost(Q,c);
 
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
@@ -342,29 +574,25 @@ GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
 
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
-  std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
 
-  // This test seems to be fairly sensitive to how much the randomness
-  // causes the initial guess to deviate, so the tolerance is a bit
-  // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-4,
+                              MatrixCompareType::absolute));
   });
 }
 
 // This test comes from Section 3.4 of "Handbook of Test Problems in
 // Local and Global Optimization."
-class LowerBoundTestCost {
+class LowerBoundTestObjective {
  public:
   static size_t numInputs() { return 6; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
     y(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
            (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
            (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
@@ -405,7 +633,7 @@ class LowerBoundTestConstraint : public Constraint {
 GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(6);
-  prog.AddCost(LowerBoundTestCost());
+  prog.AddCost(LowerBoundTestObjective());
   std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
   prog.AddGenericConstraint(con1);
   std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
@@ -436,7 +664,6 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
 
   Eigen::VectorXd expected(6);
   expected << 5, 1, 5, 0, 5, 10;
-  std::srand(0);
   Eigen::VectorXd delta = .05 * Eigen::VectorXd::Random(6);
   prog.SetInitialGuess({x}, expected + delta);
 
@@ -444,27 +671,27 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
-  });
+      EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
+                                  MatrixCompareType::absolute));
+    });
 
   // Try again with the offsets in the opposite direction.
   prog.SetInitialGuess({x}, expected - delta);
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
-  });
+      EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
+                                  MatrixCompareType::absolute));
+    });
 }
 
-class SixHumpCamelCost {
+class SixHumpCamelObjective {
  public:
   static size_t numInputs() { return 2; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
     y(0) =
         x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) +
         x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
@@ -474,28 +701,28 @@ class SixHumpCamelCost {
 GTEST_TEST(testOptimizationProblem, sixHumpCamel) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(2);
-  auto cost = prog.AddCost(SixHumpCamelCost());
+  auto objective = prog.AddCost(SixHumpCamelObjective());
 
   RunNonlinearProgram(prog, [&]() {
     // check (numerically) if it is a local minimum
     VectorXd ystar, y;
-    cost->eval(x.value(), ystar);
+    objective->eval(x.value(), ystar);
     for (int i = 0; i < 10; i++) {
-      cost->eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
+      objective->eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
       if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
     }
   });
 }
 
-class GloptipolyConstrainedExampleCost {
+class GloptipolyConstrainedExampleObjective {
  public:
   static size_t numInputs() { return 3; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
     y(0) = -2 * x(0) + x(1) - x(2);
   }
 };
@@ -541,11 +768,11 @@ GTEST_TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
 
   // This test is run twice on different collections of continuous
   // variables to make sure that the solvers correctly handle mapping
-  // variables to constraints/costs.
+  // variables to constraints/objectives.
   auto x = prog.AddContinuousVariables(3);
   auto y = prog.AddContinuousVariables(3);
-  prog.AddCost(GloptipolyConstrainedExampleCost(), {x});
-  prog.AddCost(GloptipolyConstrainedExampleCost(), {y});
+  prog.AddCost(GloptipolyConstrainedExampleObjective(), {x});
+  prog.AddCost(GloptipolyConstrainedExampleObjective(), {y});
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
   prog.AddGenericConstraint(qp_con, {x});
@@ -762,129 +989,6 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   }
 }
 
-/**
- * Test how an unconstrained QP is dispatched and solved:
- *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
- *     at (x1=1, x2=1).
- *   - on the same problem plus the additional problem
- *     (2*x2 - 5)^2 + (2*x3 - 2)^2, which, when combined
- *     with the first problem, has min at (x1=1, x2=2, x3=1)
- * The first case tests a single quadratic cost, and the
- * second case tests multiple quadratic costs affecting
- * different variable views. All fall under the
- * umbrella of the Equality Constrained QP Solver.
- */
-GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
-  OptimizationProblem prog;
-  auto x = prog.AddContinuousVariables(2);
-  MatrixXd Q(2, 2);
-  Q << 1.0, 0.0,
-       0.0, 1.0;
-  VectorXd c(2);
-  c << -1.0, -1.0;
-
-  prog.AddQuadraticCost(Q, c);
-
-  prog.Solve();
-
-  VectorXd expected_answer(2);
-  expected_answer << 1.0, 1.0;
-  EXPECT_TRUE(CompareMatrices(
-                expected_answer,
-                x.value(),
-                1e-10,
-                MatrixCompareType::absolute));
-  // There are no inequality constraints, and only quadratic costs,
-  // so this should hold:
-  CheckSolverType(prog, "Equality Constrained QP Solver");
-
-  // Add one more variable and constrain a view into them.
-  auto y = prog.AddContinuousVariables(1);
-  Q << 2.0, 0.0,
-       0.0, 2.0;
-  c << -5.0, -2.0;
-  VariableList vars;
-  vars.push_back(x.segment(1, 1));
-  vars.push_back(y);
-
-  prog.AddQuadraticCost(Q, c, vars);
-  prog.Solve();
-  expected_answer.resize(3);
-  expected_answer << 1.0, 2.0, 1.0;
-  VectorXd actual_answer(3);
-  actual_answer << x.value(), y.value();
-  EXPECT_TRUE(
-    CompareMatrices(expected_answer, actual_answer,
-                    1e-10, MatrixCompareType::absolute))
-      << "\tExpected: " << expected_answer.transpose()
-      << "\tActual: " << actual_answer.transpose();
-
-  // Problem still has only quadratic costs, so solver should be the same.
-  CheckSolverType(prog, "Equality Constrained QP Solver");
-}
-
-/**
- * Test how an equality-constrained QP is dispatched
- *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
- *     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
- *     The resulting constrained min is at (x1=0.5, x2=0.5).
- *   - on the same problem with an additional variable x3,
- *     with (2*x1 - x3 = 0). Resulting solution should be
- *     (x1=0.5, x2=0.5, x3=1.0)
- */
-GTEST_TEST(testOptimizationProblem, testLinearlyConstrainedQPDispatch) {
-OptimizationProblem prog;
-  auto x = prog.AddContinuousVariables(2);
-  MatrixXd Q(2, 2);
-  Q << 1, 0.0,
-       0.0, 1.0;
-  VectorXd c(2);
-  c << -1.0, -1.0;
-
-  prog.AddQuadraticCost(Q, c);
-
-  VectorXd constraint1(2);
-  // x1 + x2 = 1
-  constraint1 << 1, 1;
-  prog.AddLinearEqualityConstraint(
-      constraint1.transpose(),
-      Drake::Vector1d::Constant(1.0));
-
-  prog.Solve();
-
-  VectorXd expected_answer(2);
-  expected_answer << 0.5, 0.5;
-  EXPECT_TRUE(
-    CompareMatrices(expected_answer, x.value(), 1e-10,
-                    MatrixCompareType::absolute));
-
-  // This problem is now an Equality Constrained QP and should
-  // use this solver:
-  CheckSolverType(prog, "Equality Constrained QP Solver");
-
-  // Add one more variable and constrain it in a different way
-  auto y = prog.AddContinuousVariables(1);
-  Vector2d constraint2(2);
-  constraint2 << 2., -1.;
-  // 2*x1 - x3 = 0, so x3 should wind up as 1.0
-  VariableList vars;
-  vars.push_back(x.segment(0, 1));
-  vars.push_back(y);
-
-  prog.AddLinearEqualityConstraint(
-      constraint2.transpose(),
-      Drake::Vector1d::Constant(0.0), vars);
-  prog.Solve();
-  expected_answer.resize(3);
-  expected_answer << 0.5, 0.5, 1.0;
-  VectorXd actual_answer(3);
-  actual_answer << x.value(), y.value();
-  EXPECT_TRUE(
-    CompareMatrices(expected_answer, actual_answer,
-                    1e-10, MatrixCompareType::absolute))
-      << "\tExpected: " << expected_answer.transpose()
-      << "\tActual: " << actual_answer.transpose();
-}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
