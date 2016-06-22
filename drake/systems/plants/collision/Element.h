@@ -11,7 +11,7 @@
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 
 // Forward declaration.
-// This is forward declaration is made in order to be able to add a reference
+// This forward declaration is made in order to be able to add a reference
 // to the parent body without the collision element ever using the RigidBody or
 // any of its methods.
 // This is particularly useful when the physics engine (at the RigidBody or
