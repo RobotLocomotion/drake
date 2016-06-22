@@ -257,6 +257,14 @@ ElementId BulletModel::addElement(const Element& element) {
 }
 
 std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
+  if (dispatch_method_in_use_ == kNotYetDecided) {
+    dispatch_method_in_use_ = kPotentialCollisionPoints;
+  } else if (dispatch_method_in_use_ != kPotentialCollisionPoints) {
+    throw std::runtime_error(
+        "Calling BulletModel::potentialCollisionPoints after previously using"
+            " another dispatch method will result in undefined behavior.");
+  }
+
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
   bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(
       kPerturbationIterations, kMinimumPointsPerturbationThreshold);
@@ -672,6 +680,9 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
 bool BulletModel::closestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, const bool use_margins,
     std::vector<PointPair>& closest_points) {
+  if (dispatch_method_in_use_ == kNotYetDecided)
+    dispatch_method_in_use_ = kClosestPointsAllToAll;
+
   std::vector<ElementIdPair> id_pairs;
   for (size_t i = 0; i < ids_to_check.size(); ++i) {
     ElementId id_a = ids_to_check[i];
@@ -702,12 +713,19 @@ bool BulletModel::closestPointsPairwise(
   return closest_points.size() > 0;
 }
 
-bool BulletModel::collisionPointsAllToAll(
-    const bool use_margins, std::vector<PointPair>& collision_points) {
+bool BulletModel::ComputeMaximumDepthCollisionPoints(
+    const bool use_margins, std::vector<PointPair> &collision_points) {
+  if (dispatch_method_in_use_ == kNotYetDecided)
+    dispatch_method_in_use_ = kCollisionPointsAllToAll;
+
   BulletResultCollector c;
   MatrixXd normals;
   std::vector<double> distance;
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+
+  // This removes the "persistent" behavior of Bullet's manifolds allowing to
+  // perform a clean, from scratch, collision dispatch.
+  ClearCachedResults(use_margins);
 
   // Internally updates AABB's calling btCollisionWorld::updateAabbs();
   // TODO(amcastro-tri): analyze if the call to BulletModel::updateModel() is
@@ -744,12 +762,27 @@ bool BulletModel::collisionPointsAllToAll(
         const btVector3& ptB = pt.getPositionWorldOnB() - normalOnB * marginB;
         c.addSingleResult(elementA->getId(), elementB->getId(), toVector3d(ptA),
                           toVector3d(ptB), toVector3d(normalOnB),
-                          static_cast<double>(pt.getDistance()));
+                          static_cast<double>(
+                              pt.getDistance() + marginA + marginB));
       }
     }
   }
   collision_points = c.getResults();
   return c.pts.size() > 0;
+}
+
+void BulletModel::ClearCachedResults(bool use_margins) {
+  BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+
+  int numManifolds =
+      bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
+
+  for (int i = 0; i < numManifolds; ++i) {
+    btPersistentManifold* contactManifold =
+        bt_world.bt_collision_world->getDispatcher()
+            ->getManifoldByIndexInternal(i);
+    contactManifold->clearManifold();
+  }
 }
 
 BulletCollisionWorldWrapper& BulletModel::getBulletWorld(bool use_margins) {

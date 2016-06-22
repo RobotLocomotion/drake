@@ -10,9 +10,11 @@
 #include "drake/core/Gradient.h"
 #include "drake/solvers/Optimization.h"
 
-using drake::solvers::SolutionResult;
+using Drake::TaylorVecXd;
 
-namespace Drake {
+namespace drake {
+namespace solvers {
+
 namespace {
 Eigen::VectorXd MakeEigenVector(const std::vector<double>& x) {
   Eigen::VectorXd xvec(x.size());
@@ -29,7 +31,7 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
     var_count += v.size();
   }
 
-  auto tx = initializeAutoDiff(xvec);
+  auto tx = Drake::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
   for (const DecisionVariableView& v : variable_list) {
@@ -51,7 +53,7 @@ double EvaluateCosts(const std::vector<double>& x,
   double cost = 0;
   Eigen::VectorXd xvec = MakeEigenVector(x);
 
-  auto tx = initializeAutoDiff(xvec);
+  auto tx = Drake::initializeAutoDiff(xvec);
   TaylorVecXd ty(1);
   TaylorVecXd this_x;
 
@@ -374,4 +376,6 @@ SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
   prog.SetSolverResult("NLopt", nlopt_result);
   return result;
 }
-}
+
+}  // namespace solvers
+}  // namespace drake

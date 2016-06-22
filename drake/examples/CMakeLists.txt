@@ -1,3 +1,8 @@
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # TODO(#2372) These are warnings that we can't handle yet.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+endif()
+
 add_matlab_test(NAME examples/CubicPolynomialExample.findFixedPointTest COMMAND CubicPolynomialExample.findFixedPointTest)
 add_matlab_test(NAME examples/CubicPolynomialExample.animate COMMAND CubicPolynomialExample.animate)
 add_matlab_test(NAME examples/CubicPolynomialExample.sosExample COMMAND CubicPolynomialExample.sosExample REQUIRES spotless)
@@ -32,7 +37,7 @@ endif()
 # directly into examples/MY_EXAMPLE. See #1939.
 file(GLOB children *)
 foreach(child ${children})
-  if(IS_DIRECTORY ${child})
+  if(EXISTS ${child}/CMakeLists.txt)
     add_subdirectory(${child})
   endif()
 endforeach()

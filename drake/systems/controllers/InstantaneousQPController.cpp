@@ -511,8 +511,8 @@ void checkCentroidalMomentumMatchesTotalWrench(
         active_supports,
     const MatrixXd& B, const VectorXd& beta) {
   std::map<int, Side> foot_body_index_to_side;
-  foot_body_index_to_side[robot.findLinkId("l_foot")] = Side::LEFT;
-  foot_body_index_to_side[robot.findLinkId("r_foot")] = Side::RIGHT;
+  foot_body_index_to_side[robot.FindBodyIndex("l_foot")] = Side::LEFT;
+  foot_body_index_to_side[robot.FindBodyIndex("r_foot")] = Side::RIGHT;
   // compute sum of wrenches, compare to rate of change of momentum from vd
   Vector6d total_wrench_in_world = Vector6d::Zero();
   const int n_basis_vectors_per_contact = 2 * m_surface_tangents;

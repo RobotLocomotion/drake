@@ -20,6 +20,9 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
+using drake::solvers::Constraint;
+using drake::solvers::DecisionVariableView;
+using drake::solvers::OptimizationProblem;
 using drake::solvers::SolutionResult;
 
 /// NOTE: The contents of this class are for the most part direct ports of
@@ -35,9 +38,8 @@ namespace {
 class InverseKinObjective : public Constraint {
  public:
   // All references are aliased for the life of the objective.
-  InverseKinObjective(RigidBodyTree* model, const MatrixXd& Q)
+  InverseKinObjective(const RigidBodyTree* model, const MatrixXd& Q)
       : Constraint(model->number_of_positions()),
-        model_(model),
         Q_(Q) {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -66,7 +68,6 @@ class InverseKinObjective : public Constraint {
   }
 
  private:
-  RigidBodyTree* model_;
   const MatrixXd& Q_;
   VectorXd q_nom_i_;
 };

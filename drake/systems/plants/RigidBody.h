@@ -11,6 +11,7 @@
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 class DRAKERBM_EXPORT RigidBody {
  private:
@@ -38,6 +39,16 @@ class DRAKERBM_EXPORT RigidBody {
    */
   // TODO(amcastro-tri): Move concept of world out of here as per #2318.
   const std::string& model_name() const;
+
+  /**
+   * Returns the ID of the model to which this rigid body belongs.
+   */
+  const int get_model_id() const;
+
+  /**
+   * Sets the ID of the model to which this rigid body belongs.
+   */
+  void set_model_id(int model_id);
 
   /**
    * Sets the parent joint through which this rigid body connects to its parent
@@ -100,11 +111,7 @@ class DRAKERBM_EXPORT RigidBody {
   }
 
   // TODO(amcastro-tri): Change to is_adjacent_to().
-  bool adjacentTo(const RigidBody& other) const {
-    return ((has_as_parent(other) && !(joint && joint->isFloating())) ||
-            (other.has_as_parent(*this) &&
-             !(other.joint && other.joint->isFloating())));
-  }
+  bool adjacentTo(const RigidBody& other) const;
 
   bool CollidesWith(const RigidBody& other) const {
     bool ignored =

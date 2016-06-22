@@ -31,8 +31,7 @@ namespace solvers {
  * Note: The term "system identification" used throughout here refers to the
  * process of simplifying the equations defining a physical system to a
  * minimum number of "lumped" parameters and then estimating the values of
- * those parameters based on empirical data.  For reference, see e.g.:
- *   https://dl.dropboxusercontent.com/u/3432353/parameterEstimation.pdf
+ * those parameters based on empirical data.
  */
 template <typename CoefficientType>
 class DRAKEOPTIMIZATION_EXPORT SystemIdentification {

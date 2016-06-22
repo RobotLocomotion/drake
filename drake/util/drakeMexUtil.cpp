@@ -225,7 +225,7 @@ mxArray* stdStringToMatlab(const std::string& str) {
 
 mxArray* vectorOfStdStringsToMatlab(const std::vector<std::string>& strs) {
   mxArray* cell = mxCreateCellMatrix(strs.size(), 1);
-  for (int i = 0; i < strs.size(); i++) {
+  for (size_t i = 0; i < strs.size(); i++) {
     mxSetCell(cell, i, mxCreateString(strs[i].c_str()));
   }
   return cell;
@@ -305,12 +305,12 @@ const std::vector<T> matlabToStdVector(const mxArray* in) {
   std::vector<T> ret;
   if (mxIsLogical(in)) {
     mxLogical* data = mxGetLogicals(in);
-    for (int i = 0; i < mxGetNumberOfElements(in); i++) {
+    for (size_t i = 0; i < mxGetNumberOfElements(in); i++) {
       ret.push_back(static_cast<T>(data[i]));
     }
   } else {
     double* data = mxGetPrSafe(in);
-    for (int i = 0; i < mxGetNumberOfElements(in); i++) {
+    for (size_t i = 0; i < mxGetNumberOfElements(in); i++) {
       ret.push_back(static_cast<T>(data[i]));
     }
   }
@@ -392,7 +392,7 @@ trigPolyToEigen(const mxArray* trigpoly) {
 mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
   mwSize stride = 1;
   mwSize ret = 0;
-  for (int i = 0; i < ndims; i++) {
+  for (mwSize i = 0; i < ndims; i++) {
     ret += sub[i] * stride;
     stride *= dims[i];
   }

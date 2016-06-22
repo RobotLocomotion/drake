@@ -8,7 +8,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_system.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
@@ -36,6 +36,9 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
 
   /// Sets the velocity of the mass in meters per second.
   void set_velocity(double v);
+
+ private:
+  SpringMassStateVector* DoClone() const override;
 };
 
 /// The output of a one-dimensional spring-mass system, consisting of the
@@ -85,15 +88,14 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
       const override;
 
   /// Allocates state derivatives of type SpringMassStateVector.
-  std::unique_ptr<systems::StateVectorInterface<double>>
-  AllocateStateDerivatives() const override;
+  std::unique_ptr<systems::StateVector<double>> AllocateStateDerivatives()
+      const override;
 
   void Output(const systems::Context<double>& context,
               systems::SystemOutput<double>* output) const override;
 
-  void Dynamics(
-      const systems::Context<double>& context,
-      systems::StateVectorInterface<double>* derivatives) const override;
+  void Dynamics(const systems::Context<double>& context,
+                systems::StateVector<double>* derivatives) const override;
 
  private:
   const std::string name_;

@@ -33,7 +33,7 @@ On Ubuntu 14.04 LTS (Trusty) GCC 4.9 or higher must be installed, e.g.::
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install g++-4.9-multilib
+    sudo apt-get install g++-4.9-multilib gfortran-4.9
 
 Or, Clang 3.7::
 
@@ -88,13 +88,13 @@ Other prerequisites may be installed as follows::
 
     sudo apt-get update
     sudo apt-get install --no-install-recommends autoconf automake bison \
-      ccache default-jdk doxygen flex freeglut3-dev git \
+      default-jdk doxygen flex freeglut3-dev git \
       graphviz libgtk2.0-dev libhtml-form-perl libjpeg-dev libmpfr-dev \
       libwww-perl libpng-dev libqt4-dev libqt4-opengl-dev libqwt-dev \
       libterm-readkey-perl libtool libvtk-java libvtk5-dev libvtk5-qt4-dev \
-      make mpich2 perl pkg-config python-bs4 python-dev python-gtk2 \
-      python-html5lib python-numpy python-pip python-sphinx python-vtk \
-      subversion swig unzip valgrind
+      make mpich ninja-build perl pkg-config python-bs4 python-dev \
+      python-gtk2 python-html5lib python-numpy python-pip python-sphinx \
+      python-vtk subversion swig unzip valgrind
     sudo pip install -U cpplint
 
 Environment
@@ -106,19 +106,19 @@ version of Ubuntu is being used.
 Compiler Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the system's default compiler is not being used (for example if GCC/G++ 4.9
-is being used on Ubuntu 14.04 LTS), the desired compiler must be manually
-specified. One way to do this is to set the ``CC`` and ``CXX`` environment
-variables. This can be done by executing the command below. To avoid needing to
-run this command each time a new terminal is opened, the command below can also
-be added to the ``~/.bashrc`` file::
+If the system's default compiler is not being used (for example if
+gcc/g++/gfortran 4.9 are being used on Ubuntu 14.04 LTS), the desired compiler
+must be manually specified. One way to do this is to set the ``CC``, ``CXX``,
+and ``FC`` environment variables. This can be done by executing the command
+below. To avoid needing to run this command each time a new terminal is opened,
+the command below can also be added to the ``~/.bashrc`` file::
 
-    export CC=gcc-4.9 CXX=g++-4.9
+    export CC=gcc-4.9 CXX=g++-4.9 FC=gfortran-4.9
 
-Alternatively, every call to ``make`` can be preceded with environment variable
-settings that specify the correct compiler::
+Alternatively, every call to ``make`` or ``cmake`` can be preceded with
+environment variable settings that specify the correct compiler::
 
-    env CC=gcc-4.9 CXX=g++-4.9 make ...
+    env CC=gcc-4.9 CXX=g++-4.9 FC=gfortran-4.9 make ...
 
 CMake Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -134,18 +134,6 @@ variable::
 
 For more information, see :ref:`these instructions <cmake_on_older_ubuntu_versions>`.
 
-External Source Dependencies
-============================
-
-Download the external dependencies::
-
-    cd drake-distro
-    make options
-    # Use the GUI to choose which externals to include,
-    # then press 'c' twice to configure,
-    # then 'g' to generate makefiles and exit.
-    make download-all
-
 MATLAB
 ======
 
@@ -158,15 +146,6 @@ Update the symbolic link in MATLAB to point to the version that was installed ea
     cd /usr/local/MATLAB/R2016a/sys/os/glnxa64
     sudo rm libstdc++.so.6
     sudo ln -s /usr/lib/gcc/x86_64-linux-gnu/4.9/libstdc++.so libstdc++.so.6
-
-ccache
-======
-
-A program called ``ccache`` can be used to speed up (re)builds.
-To use this program, add ``/usr/lib/ccache`` to the front of the ``$PATH``
-environment variable::
-
-    export PATH=/usr/lib/ccache:$PATH
 
 Return to Generic Instructions
 ==============================

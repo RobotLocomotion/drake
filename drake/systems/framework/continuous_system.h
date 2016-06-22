@@ -5,7 +5,7 @@
 
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_system_interface.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -21,9 +21,8 @@ class ContinuousSystem : public ContinuousSystemInterface<T> {
   /// @p generalized_velocity and @p configuration_derivatives are not the
   /// same size. Child classes should override this function if qdot != v.
   void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context,
-      const StateVectorInterface<T>& generalized_velocity,
-      StateVectorInterface<T>* configuration_derivatives) const override {
+      const Context<T>& context, const StateVector<T>& generalized_velocity,
+      StateVector<T>* configuration_derivatives) const override {
     if (generalized_velocity.size() != configuration_derivatives->size()) {
       throw std::out_of_range(
           "generalized_velocity.size() " +
@@ -35,8 +34,8 @@ class ContinuousSystem : public ContinuousSystemInterface<T> {
     }
 
     for (ptrdiff_t i = 0; i < generalized_velocity.size(); ++i) {
-      configuration_derivatives->SetAtIndex(
-          i, generalized_velocity.GetAtIndex(i));
+      configuration_derivatives->SetAtIndex(i,
+                                            generalized_velocity.GetAtIndex(i));
     }
   }
 
@@ -46,11 +45,9 @@ class ContinuousSystem : public ContinuousSystemInterface<T> {
  private:
   // ContinuousSystem objects are neither copyable nor moveable.
   ContinuousSystem(const ContinuousSystem<T>& other) = delete;
-  ContinuousSystem& operator=(
-      const ContinuousSystem<T>& other) = delete;
+  ContinuousSystem& operator=(const ContinuousSystem<T>& other) = delete;
   ContinuousSystem(ContinuousSystem<T>&& other) = delete;
-  ContinuousSystem& operator=(ContinuousSystem<T>&& other) =
-      delete;
+  ContinuousSystem& operator=(ContinuousSystem<T>&& other) = delete;
 };
 
 }  // namespace systems

@@ -7,7 +7,7 @@
 
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -18,12 +18,12 @@ constexpr size_t kVelocityLength = 1;
 constexpr size_t kMiscLength = 1;
 constexpr size_t kLength = kPositionLength + kVelocityLength + kMiscLength;
 
-std::unique_ptr<StateVectorInterface<int>> MakeStateVector() {
+std::unique_ptr<StateVector<int>> MakeStateVector() {
   std::unique_ptr<VectorInterface<int>> vec;
   vec.reset(new BasicVector<int>(kLength));
   vec->get_mutable_value() << 1, 2, 3, 4;
 
-  std::unique_ptr<StateVectorInterface<int>> state_vector(
+  std::unique_ptr<StateVector<int>> state_vector(
       new BasicStateVector<int>(std::move(vec)));
   return state_vector;
 }

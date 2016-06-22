@@ -7,7 +7,7 @@ if(LCM_FOUND)
     curve2.cc
     simple_car.cc
     trajectory_car.cc)
-  target_link_libraries(drakeCars drakeRBSystem drakeShapes)
+  target_link_libraries(drakeCars drakeRBSystem drakeShapes drakeCommon)
   pods_install_libraries(drakeCars)
   drake_install_headers(
     curve2.h
@@ -29,6 +29,12 @@ if(LCM_FOUND)
   add_executable(car_sim_lcm car_sim_lcm.cc)
   add_dependencies(car_sim_lcm drake_lcmtypes lcmtype_agg_hpp)
   target_link_libraries(car_sim_lcm drakeCars drakeRBSystem drakeLCMSystem)
+
+  add_executable(multi_car_sim_lcm multi_car_sim_lcm.cc)
+  add_dependencies(multi_car_sim_lcm drake_lcmtypes lcmtype_agg_hpp)
+  target_link_libraries(multi_car_sim_lcm drakeCars drakeRBSystem drakeLCMSystem)
+
+  add_test(NAME multi_car_sim_lcm COMMAND multi_car_sim_lcm --duration 0.05)
 
   add_executable(demo_multi_car demo_multi_car.cc)
   target_link_libraries(demo_multi_car drakeCars drakeRBSystem drakeLCMSystem)

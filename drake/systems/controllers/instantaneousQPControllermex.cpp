@@ -87,12 +87,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     const mxArray *mex_foot_force_torque_measurements = prhs[narg++];
     if (!mxIsEmpty(mex_foot_force_torque_measurements)) {
       foot_force_torque_measurements[Side::LEFT].frame_idx =
-          controller->getRobot().findLinkId("l_foot");
+          controller->getRobot().FindBodyIndex("l_foot");
       foot_force_torque_measurements[Side::LEFT].wrench =
           matlabToEigenMap<TWIST_SIZE, 1>(
               mxGetFieldSafe(mex_foot_force_torque_measurements, "left"));
       foot_force_torque_measurements[Side::RIGHT].frame_idx =
-          controller->getRobot().findLinkId("r_foot");
+          controller->getRobot().FindBodyIndex("r_foot");
       foot_force_torque_measurements[Side::RIGHT].wrench =
           matlabToEigenMap<TWIST_SIZE, 1>(
               mxGetFieldSafe(mex_foot_force_torque_measurements, "right"));

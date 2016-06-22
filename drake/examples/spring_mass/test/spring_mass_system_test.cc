@@ -7,9 +7,10 @@
 
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_subvector.h"
-#include "drake/systems/framework/state_vector_interface.h"
+#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/util/eigen_matrix_compare.h"
 
@@ -17,8 +18,9 @@ namespace drake {
 
 using systems::Context;
 using systems::ContinuousState;
+using systems::LeafStateVector;
 using systems::StateSubvector;
-using systems::StateVectorInterface;
+using systems::StateVector;
 using systems::SystemOutput;
 using util::MatrixCompareType;
 
@@ -60,11 +62,21 @@ class SpringMassSystemTest : public ::testing::Test {
   SpringMassStateVector* derivatives_;
 
  private:
-  std::unique_ptr<StateVectorInterface<double>> erased_derivatives_;
+  std::unique_ptr<StateVector<double>> erased_derivatives_;
 };
 
 TEST_F(SpringMassSystemTest, Name) {
   EXPECT_EQ("test_system", system_->get_name());
+}
+
+TEST_F(SpringMassSystemTest, CloneState) {
+  InitializeState(1.0, 2.0);
+  std::unique_ptr<LeafStateVector<double>> clone = state_->Clone();
+  SpringMassStateVector* typed_clone =
+      dynamic_cast<SpringMassStateVector*>(clone.get());
+  ASSERT_NE(nullptr, typed_clone);
+  EXPECT_EQ(1.0, typed_clone->get_position());
+  EXPECT_EQ(2.0, typed_clone->get_velocity());
 }
 
 // Tests that state is passed through to the output.
