@@ -244,6 +244,73 @@ bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
   return true;
 }
 
+bool Mesh::ReadMeshConnectivities(Matrix3Xi& connectivities) const {
+  if (resolved_filename.empty()) return false;
+
+  spruce::path spath(resolved_filename);
+  string ext = spath.extension();
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+  FILE* file;
+  if (ext.compare(".obj") == 0) {
+    file = fopen(spath.getStr().c_str(),"r");
+  } else {
+    spath.setExtension(".obj");
+    if (spath.exists()) {
+      // try changing the extension to obj and loading.
+      file = fopen(spath.getStr().c_str(),"r");
+    }
+  }
+
+  if (!file) {
+    throw std::logic_error(
+        "Could not open mesh file \""+spath.getStr() + "\".");
+  }
+
+  // Count the number of triangles and resize connectivities.
+  int num_triangles = 0;
+  char *line = NULL;
+  size_t len = 0;
+  ssize_t read;
+  char key[128];
+  while ((read = getline(&line, &len, file)) != -1) {
+    sscanf(line,"%s",key);
+    if (strcmp(key, "f") == 0) ++num_triangles;
+  }
+
+  // Allocate memory.
+  connectivities.resize(3, num_triangles);
+
+  // Read triangles.
+  rewind(file);
+  int itri = 0;
+  int ignored_entry;
+  int tri[3];
+  while(true) {
+    // Get first word in the line.
+    if(fscanf(file, "%s", key) == EOF) break;
+    if (strcmp(key, "f") == 0) {
+      int matches = fscanf(file,
+                           "%d//%d %d//%d %d//%d\n",
+                           tri + 0,
+                           &ignored_entry,
+                           tri + 1,
+                           &ignored_entry,
+                           tri + 2,
+                           &ignored_entry);
+      if(matches != 6)
+        throw std::logic_error(
+            "File \""+filename+"\" cannot be parsed. Format not supported.");
+      connectivities.col(itri++) = Vector3i(tri[0]-1,tri[1]-1,tri[2]-1);
+      if(itri>num_triangles)
+        throw(std::logic_error("Number of triangles exceeded previous count."));
+    }
+  } // while
+  fclose(file);
+
+  return true;
+}
+
 Mesh *Mesh::clone() const { return new Mesh(*this); }
 
 void Mesh::getPoints(Eigen::Matrix3Xd &point_matrix) const {
