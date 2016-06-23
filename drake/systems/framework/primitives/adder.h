@@ -18,7 +18,7 @@ class Adder : public SystemInterface<T> {
  public:
   /// @param num_inputs is the number of input ports to be added.
   /// @param length is the size of each input port.
-  Adder(int64_t num_inputs, int64_t length);
+  Adder(int num_inputs, int length);
   ~Adder() override {}
 
   /// Allocates the number of input ports specified in the constructor.
@@ -37,8 +37,8 @@ class Adder : public SystemInterface<T> {
   std::string get_name() const override { return "adder"; }
 
  private:
-  const int64_t num_inputs_;
-  const int64_t length_;
+  const int num_inputs_;
+  const int length_;
 };
 
 }  // namespace systems

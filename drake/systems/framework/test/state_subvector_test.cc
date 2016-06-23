@@ -13,8 +13,8 @@ namespace drake {
 namespace systems {
 namespace {
 
-const int64_t kLength = 4;
-const int64_t kSubVectorLength = 2;
+const int kLength = 4;
+const int kSubVectorLength = 2;
 
 class StateSubvectorTest : public ::testing::Test {
  protected:

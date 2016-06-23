@@ -45,8 +45,8 @@ class ContinuousState {
   /// @param num_q The number of position variables.
   /// @param num_v The number of velocity variables.
   /// @param num_z  The number of other variables.
-  ContinuousState(std::unique_ptr<StateVector<T>> state, int64_t num_q,
-                  int64_t num_v, int64_t num_z) {
+  ContinuousState(std::unique_ptr<StateVector<T>> state, int num_q,
+                  int num_v, int num_z) {
     state_ = std::move(state);
     if (state_->size() != num_q + num_v + num_z) {
       throw std::out_of_range(

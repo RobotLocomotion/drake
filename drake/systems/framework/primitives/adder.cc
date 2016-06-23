@@ -11,7 +11,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Adder<T>::Adder(int64_t num_inputs, int64_t length)
+Adder<T>::Adder(int num_inputs, int length)
     : num_inputs_(num_inputs), length_(length) {}
 
 template <typename T>
@@ -57,7 +57,7 @@ void Adder<T>::Output(const Context<T>& context,
 
   // Sum each input port into the output, after checking that it has the
   // expected length.
-  for (int64_t i = 0; i < context.get_input().ports.size(); i++) {
+  for (int i = 0; i < context.get_input().ports.size(); i++) {
     const VectorInterface<T>* input =
         context.get_input().ports[i].vector_input;
     if (input == nullptr || input->get_value().rows() != length_) {

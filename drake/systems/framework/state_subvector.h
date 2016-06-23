@@ -22,8 +22,8 @@ class StateSubvector : public StateVector<T> {
   /// at first_element.
   /// @param vector The vector to slice.  Must not be nullptr. Must remain
   ///               valid for the lifetime of this object.
-  StateSubvector(StateVector<T>* vector, int64_t first_element,
-                 int64_t num_elements)
+  StateSubvector(StateVector<T>* vector, int first_element,
+                 int num_elements)
       : vector_(vector),
         first_element_(first_element),
         num_elements_(num_elements) {
@@ -44,9 +44,9 @@ class StateSubvector : public StateVector<T> {
 
   ~StateSubvector() override {}
 
-  int64_t size() const override { return num_elements_; }
+  int size() const override { return num_elements_; }
 
-  const T GetAtIndex(int64_t index) const override {
+  const T GetAtIndex(int index) const override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
                               " out of bounds for state subvector of size " +
@@ -55,7 +55,7 @@ class StateSubvector : public StateVector<T> {
     return vector_->GetAtIndex(first_element_ + index);
   }
 
-  void SetAtIndex(int64_t index, const T& value) override {
+  void SetAtIndex(int index, const T& value) override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
                               " out of bounds for state subvector of size " +
@@ -86,8 +86,8 @@ class StateSubvector : public StateVector<T> {
   StateSubvector& operator=(StateSubvector&& other) = delete;
 
   StateVector<T>* vector_{nullptr};
-  int64_t first_element_{0};
-  int64_t num_elements_{0};
+  int first_element_{0};
+  int num_elements_{0};
 };
 
 }  // namespace systems
