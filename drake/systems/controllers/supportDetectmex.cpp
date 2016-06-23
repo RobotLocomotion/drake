@@ -1,3 +1,4 @@
+#include "drake/common/drake_assert.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/util/drakeMexUtil.h"
 
@@ -111,7 +112,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
     for (i = 0; i < mxGetNumberOfElements(mxBodies); i++) {
       mxArray* mxBodyContactPts = mxGetCell(mxContactPts, i);
-      assert(mxGetM(mxBodyContactPts) == 3);
+      DRAKE_ASSERT(mxGetM(mxBodyContactPts) == 3);
       int nc = static_cast<int>(mxGetN(mxBodyContactPts));
       if (nc < 1) continue;
 

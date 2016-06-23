@@ -1,4 +1,3 @@
-
 #include "drake/solvers/NloptSolver.h"
 
 #include <stdexcept>
@@ -7,6 +6,7 @@
 
 #include <nlopt.hpp>
 
+#include "drake/common/drake_assert.h"
 #include "drake/core/Gradient.h"
 #include "drake/solvers/Optimization.h"
 
@@ -164,8 +164,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
 
   const Constraint* c = wrapped->constraint;
   const size_t num_constraints = c->num_constraints();
-  assert(num_constraints >= m);
-  assert(wrapped->active_constraints.size() == m);
+  DRAKE_ASSERT(num_constraints >= m);
+  DRAKE_ASSERT(wrapped->active_constraints.size() == m);
 
   TaylorVecXd ty(num_constraints);
   TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_list));
@@ -191,7 +191,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
           ty(i).value(), lower_bound(i), upper_bound(i));
     }
     result_idx++;
-    assert(result_idx <= m);
+    DRAKE_ASSERT(result_idx <= m);
   }
 
   if (grad) {
@@ -210,9 +210,9 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
           grad[(result_idx * n) + j] = ty(i).derivatives()(j) * grad_sign;
         }
         result_idx++;
-        assert(result_idx <= m);
+        DRAKE_ASSERT(result_idx <= m);
       }
-      assert(result_idx == m);
+      DRAKE_ASSERT(result_idx == m);
     }
   }
 }
@@ -239,7 +239,7 @@ void WrapConstraint(const _Binding& binding,
   bool is_pure_inequality = true;
   const Eigen::VectorXd& lower_bound = binding.constraint()->lower_bound();
   const Eigen::VectorXd& upper_bound = binding.constraint()->upper_bound();
-  assert(lower_bound.size() == upper_bound.size());
+  DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
   for (size_t i = 0; i < lower_bound.size(); i++) {
     if (lower_bound(i) == upper_bound(i)) {
       wrapped_eq.active_constraints.insert(i);

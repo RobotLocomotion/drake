@@ -1,9 +1,9 @@
 #include "drake/systems/framework/primitives/adder.h"
 
-#include <cassert>
 #include <stdexcept>
 #include <string>
 
+#include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -42,10 +42,10 @@ void Adder<T>::Output(const Context<T>& context,
   // since failures would reflect a bug in the Adder implementation, not
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
-  assert(output->ports.size() == 1);
+  DRAKE_ASSERT(output->ports.size() == 1);
   VectorInterface<T>* output_port = output->ports[0].vector_output.get();
-  assert(output_port != nullptr);
-  assert(output_port->get_value().rows() == length_);
+  DRAKE_ASSERT(output_port != nullptr);
+  DRAKE_ASSERT(output_port->get_value().rows() == length_);
   output_port->get_mutable_value() = VectorX<T>::Zero(length_);
 
   // Check that there are the expected number of input ports.

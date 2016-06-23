@@ -2,6 +2,8 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <stdexcept>
 
+#include "drake/common/drake_assert.h"
+
 using namespace Eigen;
 
 template <typename CoefficientType>
@@ -21,7 +23,7 @@ ExponentialPlusPiecewisePolynomial<CoefficientType>::
       alpha(Matrix<CoefficientType, Dynamic, Dynamic>::Zero(
           1, piecewise_polynomial_part.getNumberOfSegments())),
       piecewise_polynomial_part(piecewise_polynomial_part) {
-  assert(piecewise_polynomial_part.cols() == 1);
+  DRAKE_ASSERT(piecewise_polynomial_part.cols() == 1);
 }
 
 template <typename CoefficientType>
@@ -41,7 +43,7 @@ template <typename CoefficientType>
 ExponentialPlusPiecewisePolynomial<CoefficientType>
 ExponentialPlusPiecewisePolynomial<CoefficientType>::derivative(
     int derivative_order) const {
-  assert(derivative_order >= 0);
+  DRAKE_ASSERT(derivative_order >= 0);
   // quite inefficient, especially for high order derivatives due to all the
   // temporaries...
   MatrixX K_new = K;
