@@ -61,6 +61,9 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassOutputVector
 
   /// Sets the velocity of the mass in meters per second.
   void set_velocity(double v);
+
+ private:
+  SpringMassOutputVector* DoClone() const override;
 };
 
 /// A model of a one-dimensional spring-mass system.
