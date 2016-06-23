@@ -1,7 +1,8 @@
-
 #include "drake/systems/plants/RigidBodySystem.h"
+
 #include <list>
 #include <stdexcept>
+
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/ConstraintWrappers.h"

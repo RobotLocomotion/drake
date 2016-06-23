@@ -1,11 +1,13 @@
+#include "drake/systems/plants/rigidBodyTreeMexFunctions.h"
+
 #include <typeinfo>
 #include <Eigen/Sparse>
-#include "rigidBodyTreeMexFunctions.h"
+
 #include "drake/common/drake_assert.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/standardMexConversions.h"
+#include "drake/systems/plants/rigidBodyTreeMexConversions.h"
 #include "drake/util/makeFunction.h"
-#include "rigidBodyTreeMexConversions.h"
+#include "drake/util/standardMexConversions.h"
 
 using namespace std;
 using namespace Eigen;

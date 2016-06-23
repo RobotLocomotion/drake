@@ -2,6 +2,7 @@
 
 #include <Eigen/Core>
 #include <vector>
+
 #include "drake/common/drake_assert.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/drakeTrajectories_export.h"
