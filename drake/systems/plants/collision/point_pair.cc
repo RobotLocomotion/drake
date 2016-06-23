@@ -21,9 +21,9 @@ ElementId PointPair::getIdA() const { return idA_; }
 
 ElementId PointPair::getIdB() const { return idB_; }
 
-const Element* const PointPair::get_elementA() const { return elementA_; }
+const Element* PointPair::get_elementA() const { return elementA_; }
 
-const Element* const PointPair::get_elementB() const { return elementB_; }
+const Element* PointPair::get_elementB() const { return elementB_; }
 
 Vector3d PointPair::getNormal() const { return normal_; }
 
