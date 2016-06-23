@@ -15,14 +15,17 @@ if(LCM_FOUND AND MATLAB_FOUND)
 endif()
 
 add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
+target_link_libraries(drakePolynomial drakeCommon)
+
 pods_install_libraries(drakePolynomial)
 drake_install_headers(Polynomial.h)
 pods_install_pkg_config_file(drake-polynomial
-  LIBS -ldrakePolynomial
+  LIBS -ldrakePolynomial -ldrakeCommon
   REQUIRES
   VERSION 0.0.2)
 
 add_library_with_exports(LIB_NAME drakeUtil SOURCE_FILES drakeUtil.cpp)
+target_link_libraries(drakeUtil drakeCommon)
 drake_install_headers(drakeUtil.h)
 pods_install_libraries(drakeUtil)
 pods_install_pkg_config_file(drake-util
@@ -62,10 +65,11 @@ endif()
 drake_install_headers(drakeGradientUtil.h)
 
 add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUtil.cpp)
+target_link_libraries(drakeGeometryUtil drakeCommon)
 pods_install_libraries(drakeGeometryUtil)
 drake_install_headers(drakeGeometryUtil.h)
 pods_install_pkg_config_file(drake-geometry-util
-  LIBS -ldrakeGeometryUtil
+  LIBS -ldrakeGeometryUtil -ldrakeCommon
   REQUIRES
   VERSION 0.0.1)
 
