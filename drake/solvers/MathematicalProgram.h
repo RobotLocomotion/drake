@@ -20,7 +20,6 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramInterface {
   /* these would be used to fill out the optimization hierarchy:
 
      virtual MathematicalProgramInterface* AddIntegerVariable() = 0;
-     virtual MathematicalProgramInterface* AddCost() = 0;
      virtual MathematicalProgramInterface* AddSumsOfSquaresConstraint() = 0;
      virtual MathematicalProgramInterface* AddLinearMatrixInequalityConstraint()
      = 0;
