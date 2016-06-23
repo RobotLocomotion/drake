@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-#include "drake/common/deprecated.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
