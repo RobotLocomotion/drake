@@ -1,7 +1,13 @@
 #include "drake/systems/controllers/controlUtil.h"
+
+#include "drake/math/autodiff.h"
+#include "drake/math/expmap.h"
 #include "drake/util/drakeUtil.h"
 
 using namespace Eigen;
+
+using drake::math::autoDiffToValueMatrix;
+using drake::math::expmap2quat;
 
 template <typename DerivedA, typename DerivedB>
 void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M,

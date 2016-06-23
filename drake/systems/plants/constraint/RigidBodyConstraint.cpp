@@ -4,10 +4,14 @@
 #include <stdexcept>
 
 #include "drake/core/Gradient.h"
+#include "drake/math/autodiff.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 using namespace Eigen;
+
+using drake::math::autoDiffToValueMatrix;
+using drake::math::autoDiffToGradientMatrix;
 
 namespace DrakeRigidBodyConstraint {
 Vector2d default_tspan(-std::numeric_limits<double>::infinity(),

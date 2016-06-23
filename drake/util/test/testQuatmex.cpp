@@ -1,11 +1,17 @@
 #include <mex.h>
 
 #include <tuple>
+
+#include "drake/math/autodiff.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/core/Gradient.h"
+
 using namespace Eigen;
 using namespace std;
 using namespace Drake;
+
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::autoDiffToValueMatrix;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 5) {

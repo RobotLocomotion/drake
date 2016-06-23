@@ -1,7 +1,7 @@
 #include <mex.h>
 
+#include "drake/math/expmap.h"
 #include "drake/util/drakeMexUtil.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -29,7 +29,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   memcpy(quat_dot.data(), mxGetPr(prhs[1]), sizeof(double) * 4 * N);
   Matrix<double, 3, Dynamic> expmap(3, N);
   Matrix<double, 3, Dynamic> expmap_dot(3, N);
-  quat2expmapSequence(quat, quat_dot, expmap, expmap_dot);
+  drake::math::quat2expmapSequence(quat, quat_dot, expmap, expmap_dot);
   plhs[0] = eigenToMatlab(expmap);
   plhs[1] = eigenToMatlab(expmap_dot);
 }

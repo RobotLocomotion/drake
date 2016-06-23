@@ -1,17 +1,22 @@
 #include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
-#include <stdexcept>
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include "drake/util/drakeGeometryUtil.h"
+#include <stdexcept>
+#include <string>
+
+#include "drake/core/Gradient.h"
+#include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
+#include "drake/examples/Atlas/atlasUtil.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/expmap.h"
+#include "drake/math/gradient.h"
 #include "drake/solvers/qpSpline/splineGeneration.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"
-#include <string>
 #include "drake/util/convexHull.h"
-#include "drake/examples/Atlas/atlasUtil.h"
-#include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
-#include "drake/core/Gradient.h"
 
 // TODO(tkoolen): discuss possibility of chatter in knee control
 // TODO(tkoolen): make body_motions a map from RigidBody* to BodyMotionData,
@@ -20,6 +25,13 @@
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+
+using drake::math::Gradient;
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::autoDiffToValueMatrix;
+using drake::math::expmap2quat;
+using drake::math::closestExpmap;
+using drake::math::quat2expmap;
 
 const std::map<SupportLogicType, std::vector<bool>>
     QPLocomotionPlan::support_logic_maps =

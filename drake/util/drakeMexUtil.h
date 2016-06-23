@@ -18,7 +18,13 @@
  */
 #include <unsupported/Eigen/AutoDiff>
 #include <Eigen/src/SparseCore/SparseMatrix.h>
+
+#include "drake/math/autodiff.h"
 #include "drake/util/drakeGradientUtil.h"
+
+using drake::math::autoDiffToValueMatrix;
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::Gradient;
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)

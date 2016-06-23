@@ -1,7 +1,9 @@
 #pragma once
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
+
+#include "drake/math/gradient.h"
 #include "drake/systems/System.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -181,9 +183,9 @@ class Quadrotor {
     Eigen::Matrix<Scalar, 3, 1> pqr_dot =
         I.ldlt().solve(pqr_dot_term1 - pqr.cross(I * pqr));
     Eigen::Matrix<Scalar, 3, 3> Phi;
-    typename Gradient<Eigen::Matrix<Scalar, 3, 3>, 3>::type dPhi;
-    auto ddPhi =
-        (typename Gradient<Eigen::Matrix<Scalar, 3, 3>, 3, 2>::type*)nullptr;
+    typename drake::math::Gradient<Eigen::Matrix<Scalar, 3, 3>, 3>::type dPhi;
+    typename drake::math::Gradient<Eigen::Matrix<Scalar, 3, 3>, 3, 2>::type*
+        ddPhi = nullptr;
     angularvel2rpydotMatrix(rpy, Phi, &dPhi, ddPhi);
 
     Eigen::Matrix<Scalar, 9, 3> drpy2drotmat = drpy2rotmat(rpy);

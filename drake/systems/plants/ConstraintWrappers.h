@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 
 #include "drake/core/Gradient.h"
+#include "drake/math/autodiff.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/KinematicsCache.h"
@@ -65,14 +66,14 @@ class SingleTimeKinematicConstraintWrapper :
   }
   void eval(const Eigen::Ref<const TaylorVecXd>& tq,
                     TaylorVecXd& ty) const override {
-    Eigen::VectorXd q = autoDiffToValueMatrix(tq);
+    Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
     auto& kinsol = kin_helper_->UpdateKinematics(
         q, rigid_body_constraint_->getRobotPointer());
     Eigen::VectorXd y;
     Eigen::MatrixXd dy;
     rigid_body_constraint_->eval(nullptr, kinsol, y, dy);
     initializeAutoDiffGivenGradientMatrix(
-        y, (dy * autoDiffToGradientMatrix(tq)).eval(), ty);
+        y, (dy * drake::math::autoDiffToGradientMatrix(tq)).eval(), ty);
   }
 
  private:
@@ -110,7 +111,7 @@ class QuasiStaticConstraintWrapper :
   }
   void eval(const Eigen::Ref<const TaylorVecXd>& tq,
             TaylorVecXd& ty) const override {
-    Eigen::VectorXd q = autoDiffToValueMatrix(tq);
+    Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
     auto& kinsol = kin_helper_->UpdateKinematics(
         q.head(
             rigid_body_constraint_->getRobotPointer()->number_of_positions()),
@@ -122,7 +123,7 @@ class QuasiStaticConstraintWrapper :
     rigid_body_constraint_->eval(nullptr, kinsol, weights.data(), y, dy);
     y.conservativeResize(num_constraints());
     initializeAutoDiffGivenGradientMatrix(
-        y, (dy * autoDiffToGradientMatrix(tq)).eval(), ty);
+        y, (dy * drake::math::autoDiffToGradientMatrix(tq)).eval(), ty);
   }
 
  private:
