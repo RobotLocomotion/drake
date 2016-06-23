@@ -582,11 +582,13 @@ class DRAKERBM_EXPORT RigidBodyTree {
                        const std::string& model_name = "",
                        int model_id = -1) const
 #ifndef SWIG
-                        DEPRECATED_14("BOO")
+                        DRAKE_DEPRECATED(
+                          "RigidBodyTree: findLink: WARNING: This method is "
+                          "deprecated. Please use the newer "
+                          "RigidBodyTree::FindBody.")
 #endif
                         ;
 
-   //DEPRECATED_14("RigidBodyTree: findLink: ERROR: This method is deprecated. Please use the newer RigidBodyTree::FindBody.") const;
 
   /**
    * Obtains the index of a rigid body within this rigid body tree. The rigid
@@ -612,10 +614,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   int findLinkId(const std::string& link_name, int model_id = -1) const
 #ifndef SWIG
-                        DEPRECATED_14("BOO")
+                        DRAKE_DEPRECATED(
+                          "RigidBodyTree: findLinkId: ERROR: This "
+                          "method is deprecated. Please use the newer "
+                          "RigidBodyTree::FindBodyIndex.")
 #endif
                         ;
-  //DEPRECATED_14("RigidBodyTree: findLinkId: ERROR: This method is deprecated. Please use the newer RigidBodyTree::FindBodyIndex.") const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
