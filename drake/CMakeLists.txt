@@ -236,6 +236,11 @@ set(drake_jar_requires)
 
 include(cmake/procman.cmake)  # helper script for writing procman files
 
+# set up pseudo-target for threads
+find_package(Threads)
+add_library(threads INTERFACE)
+target_link_libraries(threads INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+
 # Setup ROS if it is available on the local system. Note that this occurs before
 # LCM configuration to prevent ROS message generation from conflicting with LCM
 # message generation. This prevent ROS from generating its own custom messages.
