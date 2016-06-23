@@ -129,7 +129,7 @@ void parseInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model) {
 // @param[in] color_rgba The red-green-blue-alpha color values of the material.
 // The range of values is [0, 1].
 // @param[out] materials A pointer to the map in which to store the material.
-// If this pointer is a null, a `std::runtime_exception` is thrown.
+// If this pointer is a null, a `std::logic_error` is thrown.
 void AddMaterialToMaterialMap(const std::string& material_name,
                               const Vector4d& color_rgba,
                               MaterialMap* materials) {
