@@ -1,5 +1,6 @@
 #include <mex.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/util/drakeUtil.h"
 #include <Eigen/Dense>
 
@@ -23,11 +24,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   const size_t R_rows = mxGetM(prhs[3]);
   const size_t R_cols = mxGetN(prhs[3]);
 
-  assert(A_rows == A_cols);
-  assert(Q_rows == Q_cols);
-  assert(Q_rows == A_rows);
-  assert(R_rows == R_cols);
-  assert(R_rows == B_cols);
+  DRAKE_ASSERT(A_rows == A_cols);
+  DRAKE_ASSERT(Q_rows == Q_cols);
+  DRAKE_ASSERT(Q_rows == A_rows);
+  DRAKE_ASSERT(R_rows == R_cols);
+  DRAKE_ASSERT(R_rows == B_cols);
 
   Map<MatrixXd> A(mxGetPr(prhs[0]), A_rows, A_cols);
   Map<MatrixXd> B(mxGetPr(prhs[1]), B_rows, B_cols);
