@@ -46,7 +46,7 @@ string drake::NiceTypeName::Demangle(const char* typeid_name) {
 string drake::NiceTypeName::Canonicalize(const string& demangled) {
   using SPair = std::pair<std::regex, string>;
   // These are applied in this order.
-  const std::array<SPair, 8> subs{
+  const std::array<SPair, 8> subs{{
     // Remove unwanted keywords and following space. (\b is word boundary.)
     SPair(std::regex("\\b(class|struct|enum|union) "), ""),
     // Tidy up anonymous namespace.
@@ -65,7 +65,7 @@ string drake::NiceTypeName::Canonicalize(const string& demangled) {
     SPair(std::regex("\\bstd::basic_string<char,std::char_traits<char>,"
                      "std::allocator<char>>"),
           "std::string")
-  };
+  }};
 
   string canonical(demangled);
   for (const auto& sp : subs) {
