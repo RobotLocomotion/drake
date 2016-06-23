@@ -20,14 +20,6 @@ class MathematicalProgram : public MathematicalProgramInterface {
      below
      virtual MathematicalProgramInterface* AddIntegerVariable() { return new
      MathematicalProgram; }
-
-     virtual MathematicalProgramInterface* AddLinearCost() { return new
-     MathematicalProgram; }
-     virtual MathematicalProgramInterface* AddQuadraticCost() { return new
-     MathematicalProgram; }
-     virtual MathematicalProgramInterface* AddCost() { return new
-     MathematicalProgram; }
-
      virtual MathematicalProgramInterface* AddSumsOfSquaresConstraint() { return
      new
      MathematicalProgram; }
@@ -171,24 +163,14 @@ class QuadraticProgram : public NonlinearProgram {
   };
 
   SolutionResult Solve(OptimizationProblem& prog) const override {
-    std::cout << "Inside Quadratic Program SOlve\n";
 
-    if (snopt_solver.available()) {
-      std::cout << "Inside Quadratic Program SOlve : SNOPT\n";
-      return snopt_solver.Solve(prog);
-    }
-    if (nlopt_solver.available()) {
-      return nlopt_solver.Solve(prog);
-    }
-    return MathematicalProgram::Solve(prog);
+    return NonlinearProgram::Solve(prog);
   }
 
- private:
-  NloptSolver nlopt_solver;
-  SnoptSolver snopt_solver;
+  // todo: naveenoid add Gurobi wrapper object and solve call
 };
 
-class LeastSquares : public QuadraticProgram {  // public LinearProgram, public
+class LeastSquares : public QuadraticProgram {
  public:
   // LinearComplementarityProblem
   MathematicalProgramInterface* AddLinearEqualityConstraint() override {
