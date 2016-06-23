@@ -1712,6 +1712,12 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   }
 }
 
+RigidBody* RigidBodyTree::findLink(const std::string& link_name,
+                    const std::string& model_name,
+                    int model_id) const {
+  return FindBody(link_name, model_name, model_id);
+}
+
 shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
     const std::string& frame_name, int model_id) const {
   std::string frame_name_lower = frame_name;
@@ -1770,6 +1776,11 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
         body_name + "\", model_id = " + std::to_string(model_id) + ".");
   }
   return body->body_index;
+}
+
+int RigidBodyTree::findLinkId(const std::string& link_name, int model_id)
+                              const {
+  return FindBodyIndex(link_name, model_id);
 }
 
 RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,

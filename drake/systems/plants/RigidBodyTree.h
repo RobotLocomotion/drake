@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
+#include "drake/common/deprecated.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
@@ -574,6 +575,21 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       int model_id = -1) const;
 
   /**
+   * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
+   * instead.
+   */
+  RigidBody* findLink(const std::string& link_name,
+                      const std::string& model_name = "",
+                      int model_id = -1) const
+#ifndef SWIG
+      DRAKE_DEPRECATED(
+          "RigidBodyTree: findLink: WARNING: This method is "
+          "deprecated. Please use the newer "
+          "RigidBodyTree::FindBody.")
+#endif
+          ;
+
+  /**
    * Obtains the index of a rigid body within this rigid body tree. The rigid
    * body tree maintains a vector of pointers to all rigid bodies that are part
    * of the rigid body tree. The index of a rigid body is the index within this
@@ -590,6 +606,19 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * and \p model_id was found or if multiple matching rigid bodies were found.
    */
   int FindBodyIndex(const std::string& body_name, int model_id = -1) const;
+
+  /**
+   * This is a deprecated version of `FindBodyIndex(...)`. Please use
+   * `FindBodyIndex(...)` instead.
+   */
+  int findLinkId(const std::string& link_name, int model_id = -1) const
+#ifndef SWIG
+      DRAKE_DEPRECATED(
+          "RigidBodyTree: findLinkId: ERROR: This "
+          "method is deprecated. Please use the newer "
+          "RigidBodyTree::FindBodyIndex.")
+#endif
+          ;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
@@ -672,7 +701,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
