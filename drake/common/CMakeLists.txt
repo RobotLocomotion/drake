@@ -12,6 +12,7 @@ set(sources
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
   drake_assert.h
+  drake_deprecated.h
   nice_type_name.h
   )
 

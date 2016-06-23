@@ -16,7 +16,9 @@ Unreleased: changes on master, not yet released
 [//]: # "New functionality or APIs."
 ### Added
 
- - None
+ - [#2602][] Added `DRAKE_ASSERT` and `DRAKE_ABORT_UNLESS` macros to replace
+ built-in `assert()` macro.
+ - [#2621][] Added `DRAKE_DEPRECATED` macro for portable deprecation.
 
 [//]: # "Altered functionality or APIs."
 ### Changed
@@ -71,3 +73,5 @@ Changes in version v0.9.11 and before are not provided.
 [#2303]: https://github.com/RobotLocomotion/drake/issues/2303
 [#2325]: https://github.com/RobotLocomotion/drake/issues/2325
 [#2426]: https://github.com/RobotLocomotion/drake/issues/2426
+[#2602]: https://github.com/RobotLocomotion/drake/issues/2602
+[#2621]: https://github.com/RobotLocomotion/drake/issues/2621
