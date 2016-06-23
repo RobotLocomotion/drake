@@ -352,7 +352,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     std::shared_ptr<QuadraticConstraint> objective(
         new QuadraticConstraint(Q, b, -std::numeric_limits<double>::infinity(),
                                 std::numeric_limits<double>::infinity()));
-    // todo(naveenoid) : Call to MathematicalProgram::AddQuadraticCost needs to be made here
+    // todo(naveenoid) : Call to MathematicalProgram::AddQuadraticCost required
     AddCost(objective, vars);
     return objective;
   }
