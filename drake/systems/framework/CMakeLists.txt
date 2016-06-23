@@ -4,7 +4,6 @@ set(sources
   cache.cc
   context.cc
   continuous_system.cc
-  named_value_vector.cc
   state.cc
   state_subvector.cc
   state_vector.cc
@@ -22,7 +21,7 @@ set(installed_headers
   cache.h
   context.h
   continuous_system.h
-  named_value_vector.h
+  continuous_system_interface.h
   state.h
   state_subvector.h
   state_vector.h
