@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 
@@ -34,9 +35,9 @@ class BasicStateVector : public LeafStateVector<T> {
   explicit BasicStateVector(std::unique_ptr<VectorInterface<T>> vector)
       : vector_(std::move(vector)) {}
 
-  ptrdiff_t size() const override { return vector_->get_value().rows(); }
+  int64_t size() const override { return vector_->get_value().rows(); }
 
-  const T GetAtIndex(ptrdiff_t index) const override {
+  const T GetAtIndex(int64_t index) const override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
                               " out of bounds for state vector of size " +
@@ -45,7 +46,7 @@ class BasicStateVector : public LeafStateVector<T> {
     return vector_->get_value()[index];
   }
 
-  void SetAtIndex(ptrdiff_t index, const T& value) override {
+  void SetAtIndex(int64_t index, const T& value) override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
                               " out of bounds for state vector of size " +

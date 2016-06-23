@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef>
+#include <cstdint>
 #include <memory>
 
 #include "drake/common/eigen_types.h"
@@ -24,7 +24,7 @@ class VectorInterface {
 
   /// Returns the size of the vector, which must be equal to the number of rows
   /// in get_value().
-  virtual ptrdiff_t size() const = 0;
+  virtual int64_t size() const = 0;
 
   /// Sets the vector to the given value. After a.set_value(b.get_value()), a
   /// must be identical to b.

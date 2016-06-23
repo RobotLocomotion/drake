@@ -13,10 +13,10 @@ namespace drake {
 namespace systems {
 namespace {
 
-constexpr size_t kPositionLength = 2;
-constexpr size_t kVelocityLength = 1;
-constexpr size_t kMiscLength = 1;
-constexpr size_t kLength = kPositionLength + kVelocityLength + kMiscLength;
+constexpr int64_t kPositionLength = 2;
+constexpr int64_t kVelocityLength = 1;
+constexpr int64_t kMiscLength = 1;
+constexpr int64_t kLength = kPositionLength + kVelocityLength + kMiscLength;
 
 std::unique_ptr<StateVector<int>> MakeStateVector() {
   std::unique_ptr<VectorInterface<int>> vec;

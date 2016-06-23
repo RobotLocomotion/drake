@@ -9,7 +9,7 @@ namespace drake {
 namespace systems {
 namespace {
 
-const size_t kLength = 2;
+const int64_t kLength = 2;
 
 class BasicStateVectorTest : public ::testing::Test {
  protected:

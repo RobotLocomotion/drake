@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 
 #include "drake/systems/framework/continuous_system_interface.h"
@@ -17,7 +18,7 @@ class Adder : public SystemInterface<T> {
  public:
   /// @param num_inputs is the number of input ports to be added.
   /// @param length is the size of each input port.
-  Adder(size_t num_inputs, size_t length);
+  Adder(int64_t num_inputs, int64_t length);
   ~Adder() override {}
 
   /// Allocates the number of input ports specified in the constructor.
@@ -36,8 +37,8 @@ class Adder : public SystemInterface<T> {
   std::string get_name() const override { return "adder"; }
 
  private:
-  const size_t num_inputs_;
-  const size_t length_;
+  const int64_t num_inputs_;
+  const int64_t length_;
 };
 
 }  // namespace systems

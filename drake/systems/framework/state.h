@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -44,8 +45,8 @@ class ContinuousState {
   /// @param num_q The number of position variables.
   /// @param num_v The number of velocity variables.
   /// @param num_z  The number of other variables.
-  ContinuousState(std::unique_ptr<StateVector<T>> state, size_t num_q,
-                  size_t num_v, size_t num_z) {
+  ContinuousState(std::unique_ptr<StateVector<T>> state, int64_t num_q,
+                  int64_t num_v, int64_t num_z) {
     state_ = std::move(state);
     if (state_->size() != num_q + num_v + num_z) {
       throw std::out_of_range(

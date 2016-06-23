@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 
@@ -33,7 +34,7 @@ class ContinuousSystem : public ContinuousSystemInterface<T> {
           "MapVelocityToConfigurationDerivatives?");
     }
 
-    for (ptrdiff_t i = 0; i < generalized_velocity.size(); ++i) {
+    for (int64_t i = 0; i < generalized_velocity.size(); ++i) {
       configuration_derivatives->SetAtIndex(i,
                                             generalized_velocity.GetAtIndex(i));
     }

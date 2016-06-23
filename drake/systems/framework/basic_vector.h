@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <limits>
 #include <stdexcept>
 #include <vector>
@@ -21,7 +22,7 @@ namespace systems {
 template <typename T>
 class BasicVector : public VectorInterface<T> {
  public:
-  explicit BasicVector(int size)
+  explicit BasicVector(int64_t size)
       : values_(VectorX<T>::Constant(
             size, std::numeric_limits<
                       typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
@@ -37,7 +38,7 @@ class BasicVector : public VectorInterface<T> {
     values_ = value;
   }
 
-  ptrdiff_t size() const override { return values_.rows(); }
+  int64_t size() const override { return values_.rows(); }
 
   Eigen::VectorBlock<const VectorX<T>> get_value() const override {
     return values_.head(values_.rows());
