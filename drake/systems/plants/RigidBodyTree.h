@@ -580,9 +580,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
 #ifndef SWIG
       DRAKE_DEPRECATED(
-          "RigidBodyTree: findLink: WARNING: This method is "
-          "deprecated. Please use the newer "
-          "RigidBodyTree::FindBody.")
+          "Please use RigidBodyTree::FindBody instead.")
 #endif
   RigidBody* findLink(const std::string& link_name,
                       const std::string& model_name = "",
@@ -612,9 +610,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
 #ifndef SWIG
       DRAKE_DEPRECATED(
-          "RigidBodyTree: findLinkId: ERROR: This "
-          "method is deprecated. Please use the newer "
-          "RigidBodyTree::FindBodyIndex.")
+          "Pleasse use RigidBodyTree::FindBodyIndex instead.")
 #endif
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
