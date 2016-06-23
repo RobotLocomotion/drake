@@ -17,8 +17,6 @@
 // This is particularly useful when the physics engine (at the RigidBody or
 // RigidBodyTree scope) needs to retrieve the parent body (for instance to
 // query its world transform).
-// An alternative would be to include RigidBody.h, however this would create a
-// cyclic dependency.
 class RigidBody;
 
 namespace DrakeCollision {
