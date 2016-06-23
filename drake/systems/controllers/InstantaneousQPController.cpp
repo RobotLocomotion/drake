@@ -1,7 +1,9 @@
-#include "InstantaneousQPController.h"
+#include "drake/systems/controllers/InstantaneousQPController.h"
+
 #include <lcm/lcm-cpp.hpp>
 #include <map>
 #include <memory>
+
 #include "drake/Path.h"
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/fastQP.h"

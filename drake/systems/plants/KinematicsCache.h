@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <stdexcept>
 #include <utility>
+
 #include "drake/common/drake_assert.h"
 #include "drake/util/drakeGradientUtil.h"
 #include "RigidBody.h"

@@ -6,7 +6,7 @@ add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
 target_link_libraries(drakeXMLUtil drakeCommon tinyxml2 spruce)
 pods_install_libraries(drakeXMLUtil)
 pods_install_pkg_config_file(drake-xml-util
-  LIBS -ldrakeXMLUtil -ldrakeCommmon
+  LIBS -ldrakeXMLUtil -ldrakeCommmon -ltinyxml2 -lspruce
   REQUIRES
   VERSION 0.0.1)
 

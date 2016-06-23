@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cmath>
 #include <random>
+
 #include "drake/common/drake_assert.h"
 #include "drake/util/drakeGradientUtil.h"
 #include "drake/drakeGeometryUtil_export.h"

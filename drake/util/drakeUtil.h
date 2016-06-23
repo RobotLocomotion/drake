@@ -13,6 +13,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <unordered_map>
+
 #include "drake/common/drake_assert.h"
 #include "drake/drakeUtil_export.h"
 

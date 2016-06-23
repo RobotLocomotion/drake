@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
+
 #include "drake/common/drake_assert.h"
 #include "drake/util/drakeGradientUtil.h"  // todo: pull the core tools into this file and zap the old gradient util.
 
