@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <algorithm>
 #include <initializer_list>
 #include <list>
 #include <map>
 #include <memory>
+#include <Eigen/Core>
 
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
@@ -352,7 +352,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     std::shared_ptr<QuadraticConstraint> objective(
         new QuadraticConstraint(Q, b, -std::numeric_limits<double>::infinity(),
                                 std::numeric_limits<double>::infinity()));
-    AddCost(objective, vars);
+    AddCost(objective, vars); // todo(naveenoid) : this needs to be based on a call to AddQuadraticCost
     return objective;
   }
 

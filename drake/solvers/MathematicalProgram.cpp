@@ -167,7 +167,7 @@ class QuadraticProgram : public NonlinearProgram {
     return NonlinearProgram::Solve(prog);
   }
 
-  // todo: naveenoid add Gurobi wrapper object and solve call
+  // todo(naveenoid) : add Gurobi wrapper object and solve call here before handoff
 };
 
 class LeastSquares : public QuadraticProgram {
