@@ -14,7 +14,7 @@
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
-#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeUtil.h"
@@ -158,133 +158,32 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
 
+  /// Initializes a `KinematicsCache` with the given configuration @p q,
+  /// computes the kinematics, and returns the cache.
+  ///
+  /// This method is explicitly instantiated in RigidBodyTree.cpp for a
+  /// small set of supported `DerivedQ`.
   template <typename DerivedQ>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(
-      const Eigen::MatrixBase<DerivedQ>& q) const {
-    KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
-    ret.initialize(q);
-    doKinematics(ret);
-    return ret;
-  }
+      const Eigen::MatrixBase<DerivedQ>& q) const;
 
+  /// Initializes a `KinematicsCache` with the given configuration @p q
+  /// and velocity @p v, computes the kinematics, and returns the cache.
+  ///
+  /// This method is explicitly instantiated in RigidBodyTree.cpp for a
+  /// small set of supported `DerivedQ` and `DerivedV`.
   template <typename DerivedQ, typename DerivedV>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(
       const Eigen::MatrixBase<DerivedQ>& q,
-      const Eigen::MatrixBase<DerivedV>& v, bool compute_JdotV = true) const {
-    KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
-    ret.initialize(q, v);
-    doKinematics(ret, compute_JdotV);
-    return ret;
-  }
+      const Eigen::MatrixBase<DerivedV>& v, bool compute_JdotV = true) const;
 
+  /// Computes the kinematics on the given @p cache.
+  ///
+  /// This method is explicitly instantiated in RigidBodyTree.cpp for a
+  /// small set of supported Scalar types.
   template <typename Scalar>
   void doKinematics(KinematicsCache<Scalar>& cache,
-                    bool compute_JdotV = false) const {
-    using namespace std;
-    using namespace Eigen;
-
-    const auto& q = cache.getQ();
-    if (!initialized_)
-      throw runtime_error("RigidBodyTree::doKinematics: call compile first.");
-
-    compute_JdotV = compute_JdotV && cache.hasV();  // no sense in computing
-                                                    // Jdot times v if v is not
-                                                    // passed in
-
-    cache.setPositionKinematicsCached();  // doing this here because there is a
-                                          // geometricJacobian call within
-                                          // doKinematics below which checks for
-                                          // this
-
-    for (size_t i = 0; i < bodies.size(); i++) {
-      RigidBody& body = *bodies[i];
-      KinematicsCacheElement<Scalar>& element = cache.getElement(body);
-
-      if (body.hasParent()) {
-        const KinematicsCacheElement<Scalar>& parent_element =
-            cache.getElement(*body.parent);
-        const DrakeJoint& joint = body.getJoint();
-        auto q_body =
-            q.middleRows(body.position_num_start, joint.getNumPositions());
-
-        // transform
-        auto T_body_to_parent =
-            joint.getTransformToParentBody().cast<Scalar>() *
-            joint.jointTransform(q_body);
-        element.transform_to_world =
-            parent_element.transform_to_world * T_body_to_parent;
-
-        // motion subspace in body frame
-        Matrix<Scalar, Dynamic, Dynamic>* dSdq = nullptr;
-        joint.motionSubspace(q_body, element.motion_subspace_in_body, dSdq);
-
-        // motion subspace in world frame
-        element.motion_subspace_in_world = transformSpatialMotion(
-            element.transform_to_world, element.motion_subspace_in_body);
-
-        joint.qdot2v(q_body, element.qdot_to_v, nullptr);
-        joint.v2qdot(q_body, element.v_to_qdot, nullptr);
-
-        if (cache.hasV()) {
-          const auto& v = cache.getV();
-          if (joint.getNumVelocities() == 0) {  // for fixed joints
-            element.twist_in_world = parent_element.twist_in_world;
-            if (compute_JdotV) {
-              element.motion_subspace_in_world_dot_times_v =
-                  parent_element.motion_subspace_in_world_dot_times_v;
-            }
-          } else {
-            // twist
-            auto v_body =
-                v.middleRows(body.velocity_num_start, joint.getNumVelocities());
-
-            Eigen::Matrix<Scalar, TWIST_SIZE, 1> joint_twist =
-                element.motion_subspace_in_world * v_body;
-            element.twist_in_world = parent_element.twist_in_world;
-            element.twist_in_world.noalias() += joint_twist;
-
-            if (compute_JdotV) {
-              // Sdotv
-              joint.motionSubspaceDotTimesV(
-                  q_body, v_body, element.motion_subspace_in_body_dot_times_v,
-                  nullptr, nullptr);
-
-              // Jdotv
-              auto joint_accel =
-                  crossSpatialMotion(element.twist_in_world, joint_twist);
-              joint_accel += transformSpatialMotion(
-                  element.transform_to_world,
-                  element.motion_subspace_in_body_dot_times_v);
-              element.motion_subspace_in_world_dot_times_v =
-                  parent_element.motion_subspace_in_world_dot_times_v +
-                  joint_accel;
-            }
-          }
-        }
-      } else {
-        element.transform_to_world.setIdentity();
-        // motion subspace in body frame is empty
-        // motion subspace in world frame is empty
-        // qdot to v is empty
-        // v to qdot is empty
-
-        if (cache.hasV()) {
-          element.twist_in_world.setZero();
-          element.motion_subspace_in_body.setZero();
-          element.motion_subspace_in_world.setZero();
-          element.qdot_to_v.setZero();
-          element.v_to_qdot.setZero();
-
-          if (compute_JdotV) {
-            element.motion_subspace_in_body_dot_times_v.setZero();
-            element.motion_subspace_in_world_dot_times_v.setZero();
-          }
-        }
-      }
-    }
-
-    cache.setJdotVCached(compute_JdotV && cache.hasV());
-  }
+                    bool compute_JdotV = false) const;
 
   bool isBodyPartOfRobot(const RigidBody& body,
                          const std::set<int>& robotnum) const;
@@ -337,23 +236,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
   size_t getNumJointLimitConstraints() const;
 
   int getNumContacts(const std::set<int>& body_idx) const;  // = emptyIntSet);
-
-  template <typename Derived>
-  void getContactPositions(
-      const KinematicsCache<typename Derived::Scalar>& cache,
-      Eigen::MatrixBase<Derived>& pos,
-      const std::set<int>& body_idx) const;  // = emptyIntSet);
-
-  template <typename Derived>
-  void getContactPositionsJac(
-      const KinematicsCache<typename Derived::Scalar>& cache,
-      Eigen::MatrixBase<Derived>& J,
-      const std::set<int>& body_idx) const;  // = emptyIntSet);
-
-  //  template <typename Derived>
-  //  void getContactPositionsJacDot(Eigen::MatrixBase<Derived> &Jdot, const
-  //  std::set<int> &body_idx);// = emptyIntSet);
-  //
 
   /**
    * Computes CoP in world frame. Normal and point on contact plane should be in
@@ -672,8 +554,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const KinematicsCache<double>& cache,
       const std::vector<Eigen::Vector3d>& points, double collision_threshold);
 
-  void warnOnce(const std::string& id, const std::string& msg);
-
   /**
    * Finds a link with the specified \p link_name belonging to a model with the
    * specified \p model_name and \p model_id. Note that if \p model_name is the
@@ -778,14 +658,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   size_t getNumPositionConstraints() const;
 
-  /*
-  template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-  Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(
-      const KinematicsCache<typename Derived::Scalar>& cache, const
-  Eigen::MatrixBase<Derived>& mat) const;
-  */
-
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
@@ -800,8 +672,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic>
-        full(compact.rows(), ncols);
+                  Eigen::Dynamic> full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -938,18 +809,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // See RigidBodyTree::compile
   void SortTree();
 
-  // collision_model and collision_model_no_margins both maintain
-  // a collection of the collision geometry in the RBM for use in
-  // collision detection of different kinds. collision_model has
-  // small margins applied to all collision geometry when that
-  // geometry is added, to improve the numerical stability of
-  // contact gradients taken using the model. collision_model_no_margins
-  // does not apply these margins, such that it can be used for
-  // precise raycasting, e.g. for simulating a laser scanner
-  // These models are switched between with the use_margins flag
-  // to collision-relevant methods of the RBM.
+  // collision_model maintains a collection of the collision geometry in the
+  // RBM for use in collision detection of different kinds. Small margins are
+  // applied to all collision geometry when that geometry is added, to improve
+  // the numerical stability of contact gradients taken using the model.
   std::unique_ptr<DrakeCollision::Model> collision_model;
-  // std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
+
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

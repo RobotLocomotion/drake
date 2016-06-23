@@ -1,7 +1,7 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
 #include "drake/common/eigen_types.h"
-#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
@@ -459,16 +459,8 @@ bool RigidBodyTree::collisionDetect(
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
-  // DEBUG
-  // cout << "RigidBodyTree::collisionDetect: calling
-  // collision_model->closestPointsAllToAll" << endl;
-  // END_DEBUG
   bool points_found =
       collision_model->closestPointsAllToAll(ids_to_check, use_margins, points);
-  // DEBUG
-  // cout << "RigidBodyTree::collisionDetect: points.size() = " << points.size()
-  // << endl;
-  // END_DEBUG
 
   xA = MatrixXd::Zero(3, points.size());
   xB = MatrixXd::Zero(3, points.size());
@@ -486,18 +478,6 @@ bool RigidBodyTree::collisionDetect(
     const RigidBody::CollisionElement* elementA =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(points[i].getIdA()));
-    // DEBUG
-    // cout << "RigidBodyTree::collisionDetect: points[i].getIdA() = " <<
-    // points[i].getIdA() << endl;
-    // cout << "RigidBodyTree::collisionDetect:
-    // collision_model->readElement(points[i].getIdA()) = " <<
-    // collision_model->readElement(points[i].getIdA()) << endl;
-    // cout << "RigidBodyTree::collisionDetect:
-    // collision_model->readElement(points[i].getIdA())->getId() = " <<
-    // collision_model->readElement(points[i].getIdA())->getId() << endl;
-    // cout << "RigidBodyTree::collisionDetect: elementA = " << elementA <<
-    // endl;
-    // END_DEBUG
     bodyA_idx.push_back(elementA->getBody().body_index);
     const RigidBody::CollisionElement* elementB =
         dynamic_cast<const RigidBody::CollisionElement*>(
@@ -663,28 +643,125 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
   return points_found;
 }
 
-void RigidBodyTree::warnOnce(const string& id, const string& msg) {
-  auto print_warning_iter = already_printed_warnings.find(id);
-  if (print_warning_iter == already_printed_warnings.end()) {
-    cout << msg << endl;
-    already_printed_warnings.insert(id);
-  }
+template <typename DerivedQ>
+KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree::doKinematics(
+    const Eigen::MatrixBase<DerivedQ>& q) const {
+  KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
+  ret.initialize(q);
+  doKinematics(ret);
+  return ret;
 }
 
-// bool RigidBodyTree::closestDistanceAllBodies(VectorXd& distance,
-// MatrixXd& Jd)
-//{
-// MatrixXd ptsA, ptsB, normal, JA, JB;
-// vector<int> bodyA_idx, bodyB_idx;
-// bool return_val =
-// closestPointsAllBodies(bodyA_idx, bodyB_idx, ptsA, ptsB, normal, distance,
-// JA, JB, Jd);
-// DEBUG
-// cout << "RigidBodyTree::closestDistanceAllBodies: distance.size() = " <<
-// distance.size() << endl;
-// END_DEBUG
-// return return_val;
-//};
+template <typename DerivedQ, typename DerivedV>
+KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree::doKinematics(
+    const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v,
+    bool compute_JdotV) const {
+  KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
+  ret.initialize(q, v);
+  doKinematics(ret, compute_JdotV);
+  return ret;
+}
+
+template <typename Scalar>
+void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
+                                 bool compute_JdotV) const {
+  const auto& q = cache.getQ();
+  if (!initialized_)
+    throw runtime_error("RigidBodyTree::doKinematics: call compile first.");
+
+  // Only compute Jdot times V if V has been provided in the cache.
+  compute_JdotV = compute_JdotV && cache.hasV();
+  // Required in call to geometricJacobian below.
+  cache.setPositionKinematicsCached();
+
+  for (size_t i = 0; i < bodies.size(); i++) {
+    RigidBody& body = *bodies[i];
+    KinematicsCacheElement<Scalar>& element = cache.getElement(body);
+
+    if (body.hasParent()) {
+      const KinematicsCacheElement<Scalar>& parent_element =
+          cache.getElement(*body.parent);
+      const DrakeJoint& joint = body.getJoint();
+      auto q_body =
+          q.middleRows(body.position_num_start, joint.getNumPositions());
+
+      // transform
+      auto T_body_to_parent = joint.getTransformToParentBody().cast<Scalar>() *
+                              joint.jointTransform(q_body);
+      element.transform_to_world =
+          parent_element.transform_to_world * T_body_to_parent;
+
+      // motion subspace in body frame
+      Matrix<Scalar, Dynamic, Dynamic>* dSdq = nullptr;
+      joint.motionSubspace(q_body, element.motion_subspace_in_body, dSdq);
+
+      // motion subspace in world frame
+      element.motion_subspace_in_world = transformSpatialMotion(
+          element.transform_to_world, element.motion_subspace_in_body);
+
+      joint.qdot2v(q_body, element.qdot_to_v, nullptr);
+      joint.v2qdot(q_body, element.v_to_qdot, nullptr);
+
+      if (cache.hasV()) {
+        const auto& v = cache.getV();
+        if (joint.getNumVelocities() == 0) {  // for fixed joints
+          element.twist_in_world = parent_element.twist_in_world;
+          if (compute_JdotV) {
+            element.motion_subspace_in_world_dot_times_v =
+                parent_element.motion_subspace_in_world_dot_times_v;
+          }
+        } else {
+          // twist
+          auto v_body =
+              v.middleRows(body.velocity_num_start, joint.getNumVelocities());
+
+          Eigen::Matrix<Scalar, TWIST_SIZE, 1> joint_twist =
+              element.motion_subspace_in_world * v_body;
+          element.twist_in_world = parent_element.twist_in_world;
+          element.twist_in_world.noalias() += joint_twist;
+
+          if (compute_JdotV) {
+            // Sdotv
+            joint.motionSubspaceDotTimesV(
+                q_body, v_body, element.motion_subspace_in_body_dot_times_v,
+                nullptr, nullptr);
+
+            // Jdotv
+            auto joint_accel =
+                crossSpatialMotion(element.twist_in_world, joint_twist);
+            joint_accel += transformSpatialMotion(
+                element.transform_to_world,
+                element.motion_subspace_in_body_dot_times_v);
+            element.motion_subspace_in_world_dot_times_v =
+                parent_element.motion_subspace_in_world_dot_times_v +
+                joint_accel;
+          }
+        }
+      }
+    } else {
+      element.transform_to_world.setIdentity();
+      // motion subspace in body frame is empty
+      // motion subspace in world frame is empty
+      // qdot to v is empty
+      // v to qdot is empty
+
+      if (cache.hasV()) {
+        element.twist_in_world.setZero();
+        element.motion_subspace_in_body.setZero();
+        element.motion_subspace_in_world.setZero();
+        element.qdot_to_v.setZero();
+        element.v_to_qdot.setZero();
+
+        if (compute_JdotV) {
+          element.motion_subspace_in_body_dot_times_v.setZero();
+          element.motion_subspace_in_world_dot_times_v.setZero();
+        }
+      }
+    }
+  }
+
+  cache.setJdotVCached(compute_JdotV && cache.hasV());
+}
 
 template <typename Scalar>
 void RigidBodyTree::updateCompositeRigidBodyInertias(
@@ -924,52 +1001,6 @@ int RigidBodyTree::getNumContacts(const set<int>& body_idx) const {
     n += bodies[bi]->contact_pts.cols();
   }
   return static_cast<int>(n);
-}
-
-template <typename Derived>
-void RigidBodyTree::getContactPositions(
-    const KinematicsCache<typename Derived::Scalar>& cache,
-    MatrixBase<Derived>& pos, const set<int>& body_idx) const {
-  // kinematics cache checks are already being done in forwardKin
-  int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
-  if (nb == 0) nb = static_cast<int>(bodies.size());
-  set<int>::iterator iter = body_idx.begin();
-  for (int i = 0; i < nb; i++) {
-    if (body_idx.size() == 0)
-      bi = i;
-    else
-      bi = *iter++;
-    nc = static_cast<int>(bodies[bi]->contact_pts.cols());
-    if (nc > 0) {
-      pos.block(0, n, 3, nc) =
-          forwardKin(cache, bodies[bi]->contact_pts, bi, 0, 0);
-      n += nc;
-    }
-  }
-}
-
-template <typename Derived>
-void RigidBodyTree::getContactPositionsJac(
-    const KinematicsCache<typename Derived::Scalar>& cache,
-    MatrixBase<Derived>& J, const set<int>& body_idx) const {
-  // kinematics cache checks are already being done in forwardKinJacobian
-  int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
-  if (nb == 0) nb = static_cast<int>(bodies.size());
-  set<int>::iterator iter = body_idx.begin();
-  MatrixXd p;
-  for (int i = 0; i < nb; i++) {
-    if (body_idx.size() == 0)
-      bi = i;
-    else
-      bi = *iter++;
-    nc = static_cast<int>(bodies[bi]->contact_pts.cols());
-    if (nc > 0) {
-      p.resize(3 * nc, num_positions_);
-      J.block(3 * n, 0, 3 * nc, num_positions_) =
-          forwardKinJacobian(cache, bodies[bi]->contact_pts, bi, 0, 0, true, 0);
-      n += nc;
-    }
-  }
 }
 
 /* [body_ind, Tframe] = parseBodyOrFrameID(body_or_frame_id) */
@@ -2335,3 +2366,47 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV<AutoDiffUpTo73d>(
 template DRAKERBM_EXPORT VectorX<AutoDiffXd>
 RigidBodyTree::relativeQuaternionJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int) const;
+
+// Explicit template instantiations for doKinematics(cache).
+template DRAKERBM_EXPORT void RigidBodyTree::doKinematics(
+    KinematicsCache<double>&, bool) const;
+template DRAKERBM_EXPORT void RigidBodyTree::doKinematics(
+    KinematicsCache<AutoDiffXd>&, bool) const;
+template DRAKERBM_EXPORT void RigidBodyTree::doKinematics(
+    KinematicsCache<AutoDiffUpTo73d>&, bool) const;
+
+// Explicit template instantiations for doKinematics(q).
+template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<VectorXd> const&) const;
+template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<Eigen::Block<MatrixXd const, -1, 1, true>> const&) const;
+template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<Eigen::Block<MatrixXd, -1, 1, true>> const&) const;
+template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<Eigen::Map<VectorXd>> const&) const;
+template DRAKERBM_EXPORT KinematicsCache<AutoDiffXd>
+RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<VectorX<AutoDiffXd>> const&) const;
+
+// Explicit template instantiations for doKinematics(q, v).
+template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<VectorXd> const&, Eigen::MatrixBase<VectorXd> const&,
+    bool) const;
+template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<Eigen::Block<VectorXd const, -1, 1, false>> const&,
+    Eigen::MatrixBase<Eigen::Block<VectorXd const, -1, 1, false>> const&,
+    bool) const;
+template DRAKERBM_EXPORT KinematicsCache<AutoDiffXd>
+RigidBodyTree::doKinematics(Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
+                            Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
+                            bool) const;
+template DRAKERBM_EXPORT KinematicsCache<AutoDiffUpTo73d>
+RigidBodyTree::doKinematics(Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const&,
+                            Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const&,
+                            bool) const;
+template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<Eigen::Map<VectorXd>> const&,
+    Eigen::MatrixBase<Eigen::Map<VectorXd>> const&, bool) const;
+template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&,
+    Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&, bool) const;

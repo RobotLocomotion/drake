@@ -1,4 +1,3 @@
-
 #include "RigidBody.h"
 
 #include <stdexcept>
@@ -30,7 +29,7 @@ const std::string& RigidBody::name() const { return name_; }
 
 const std::string& RigidBody::model_name() const { return model_name_; }
 
-const int RigidBody::get_model_id() const { return robotnum; }
+int RigidBody::get_model_id() const { return robotnum; }
 
 void RigidBody::set_model_id(int model_id) { robotnum = model_id; }
 
@@ -62,6 +61,12 @@ void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
                                    const DrakeCollision::bitmask& ignores) {
   setCollisionFilterGroup(group);
   setCollisionFilterIgnores(ignores);
+}
+
+bool RigidBody::adjacentTo(const RigidBody& other) const {
+  return ((has_as_parent(other) && !(joint && joint->isFloating())) ||
+          (other.has_as_parent(*this) &&
+           !(other.joint && other.joint->isFloating())));
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
