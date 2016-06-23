@@ -25,7 +25,7 @@ int g(int arg) { return arg; }
 GTEST_TEST(DrakeDeprecatedTest, ClassTest) {
   MyClass this_is_obsolete;
   MyNewClass this_is_not;
-  (void)this_is_obsolete; // avoid "unused" warning
+  (void)this_is_obsolete;  // avoid "unused" warning
   (void)this_is_not;
 }
 
