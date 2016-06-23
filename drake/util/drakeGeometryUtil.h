@@ -4,6 +4,8 @@
 #include <cstring>
 #include <cmath>
 #include <random>
+
+#include "drake/common/drake_assert.h"
 #include "drake/util/drakeGradientUtil.h"
 #include "drake/drakeGeometryUtil_export.h"
 
@@ -1110,30 +1112,30 @@ dTransformSpatialMotion(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
                         const Eigen::MatrixBase<DerivedX>& X,
                         const Eigen::MatrixBase<DerivedDT>& dT,
                         const Eigen::MatrixBase<DerivedDX>& dX) {
-  assert(dT.cols() == dX.cols());
+  DRAKE_ASSERT(dT.cols() == dX.cols());
   typename DerivedDT::Index nq = dT.cols();
 
   const auto& R = T.linear();
   const auto& p = T.translation();
 
-  std::array<int, 3> rows = {0, 1, 2};
-  std::array<int, 3> R_cols = {0, 1, 2};
-  std::array<int, 1> p_cols = {3};
+  std::array<int, 3> rows = {{0, 1, 2}};
+  std::array<int, 3> R_cols = {{0, 1, 2}};
+  std::array<int, 1> p_cols = {{3}};
 
   auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
   auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
 
   typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type ret(
       X.size(), nq);
-  std::array<int, 3> Xomega_rows = {0, 1, 2};
-  std::array<int, 3> Xv_rows = {3, 4, 5};
+  std::array<int, 3> Xomega_rows = {{0, 1, 2}};
+  std::array<int, 3> Xv_rows = {{3, 4, 5}};
   for (int col = 0; col < X.cols(); col++) {
     auto Xomega_col = X.template block<3, 1>(0, col);
     auto Xv_col = X.template block<3, 1>(3, col);
 
     auto RXomega_col = (R * Xomega_col).eval();
 
-    std::array<int, 1> col_array = {col};
+    std::array<int, 1> col_array = {{col}};
     auto dXomega_col = getSubMatrixGradient<Eigen::Dynamic>(
         dX, Xomega_rows, col_array, X.rows());
     auto dXv_col =
@@ -1174,30 +1176,30 @@ dTransformSpatialForce(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
                        const Eigen::MatrixBase<DerivedX>& X,
                        const Eigen::MatrixBase<DerivedDT>& dT,
                        const Eigen::MatrixBase<DerivedDX>& dX) {
-  assert(dT.cols() == dX.cols());
+  DRAKE_ASSERT(dT.cols() == dX.cols());
   typename DerivedDT::Index nq = dT.cols();
 
   const auto& R = T.linear();
   const auto& p = T.translation();
 
-  std::array<int, 3> rows = {0, 1, 2};
-  std::array<int, 3> R_cols = {0, 1, 2};
-  std::array<int, 1> p_cols = {3};
+  std::array<int, 3> rows = {{0, 1, 2}};
+  std::array<int, 3> R_cols = {{0, 1, 2}};
+  std::array<int, 1> p_cols = {{3}};
 
   auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
   auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
 
   typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type ret(X.size(),
                                                                       nq);
-  std::array<int, 3> Xomega_rows = {0, 1, 2};
-  std::array<int, 3> Xv_rows = {3, 4, 5};
+  std::array<int, 3> Xomega_rows = {{0, 1, 2}};
+  std::array<int, 3> Xv_rows = {{3, 4, 5}};
   for (int col = 0; col < X.cols(); col++) {
     auto Xomega_col = X.template block<3, 1>(0, col);
     auto Xv_col = X.template block<3, 1>(3, col);
 
     auto RXv_col = (R * Xv_col).eval();
 
-    std::array<int, 1> col_array = {col};
+    std::array<int, 1> col_array = {{col}};
     auto dXomega_col = getSubMatrixGradient<Eigen::Dynamic>(
         dX, Xomega_rows, col_array, X.rows());
     auto dXv_col =
@@ -1451,9 +1453,9 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
   const auto& R = T.linear();
   const auto& p = T.translation();
 
-  std::array<int, 3> rows = {0, 1, 2};
-  std::array<int, 3> R_cols = {0, 1, 2};
-  std::array<int, 1> p_cols = {3};
+  std::array<int, 3> rows = {{0, 1, 2}};
+  std::array<int, 3> R_cols = {{0, 1, 2}};
+  std::array<int, 1> p_cols = {{3}};
 
   auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
   auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
@@ -1614,8 +1616,8 @@ void quat2expmapSequence(const Eigen::MatrixBase<DerivedQ>& quat,
       "Scalar types don't match.");
   typedef typename DerivedQ::Scalar Scalar;
 
-  assert(quat.cols() == quat_dot.cols() &&
-         "number of columns of quat doesn't match quat_dot");
+  DRAKE_ASSERT(quat.cols() == quat_dot.cols() &&
+               "number of columns of quat doesn't match quat_dot");
   Index N = quat.cols();
 
   typedef AutoDiffScalar<Matrix<Scalar, 1, 1>> ADScalar;

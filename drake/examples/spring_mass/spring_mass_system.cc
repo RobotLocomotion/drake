@@ -51,6 +51,12 @@ void SpringMassOutputVector::set_velocity(double v) {
   get_mutable_value()[1] = v;
 }
 
+SpringMassOutputVector* SpringMassOutputVector::DoClone() const {
+  SpringMassOutputVector* clone(new SpringMassOutputVector());
+  clone->get_mutable_value() = get_value();
+  return clone;
+}
+
 SpringMassSystem::SpringMassSystem(const std::string& name,
                                    double spring_constant_N_per_m,
                                    double mass_kg)

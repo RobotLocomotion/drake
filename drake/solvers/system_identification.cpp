@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "drake/common/drake_assert.h"
 #include "drake/solvers/Optimization.h"
-
 
 namespace drake {
 namespace solvers {
@@ -240,7 +240,7 @@ std::pair<typename SystemIdentification<T>::PartialEvalType, T>
 SystemIdentification<T>::EstimateParameters(
     const VectorXPoly& polys,
     const std::vector<PartialEvalType>& active_var_values) {
-  assert(active_var_values.size() > 0);
+  DRAKE_ASSERT(active_var_values.size() > 0);
   const int num_data = active_var_values.size();
   const int num_err_terms = num_data * polys.rows();
 
@@ -267,7 +267,7 @@ SystemIdentification<T>::EstimateParameters(
 
   // Make sure we have as many data points as vars we are estimating, or else
   // our solution will be meaningless.
-  assert(num_data >= vars_to_estimate.size());
+  DRAKE_ASSERT(num_data >= vars_to_estimate.size());
 
   // Build up our optimization problem's decision variables.
   OptimizationProblem problem;

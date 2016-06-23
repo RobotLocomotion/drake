@@ -1,6 +1,8 @@
 #include "drake/util/drakeMexUtil.h"
 #include <stdexcept>
 
+#include "drake/common/drake_assert.h"
+
 using namespace std;
 using namespace Eigen;
 
@@ -338,10 +340,10 @@ DLLEXPORT Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(
   auto coeff =
       matlabToEigenMap<Dynamic, 1>(mxGetPropertySafe(msspoly, 0, "coeff"));
 
-  assert(sub.rows() == var.rows());
-  assert(sub.rows() == pow.rows());
-  assert(sub.rows() == coeff.rows());
-  assert(var.cols() == pow.cols());
+  DRAKE_ASSERT(sub.rows() == var.rows());
+  DRAKE_ASSERT(sub.rows() == pow.rows());
+  DRAKE_ASSERT(sub.rows() == coeff.rows());
+  DRAKE_ASSERT(var.cols() == pow.cols());
 
   Matrix<Polynomiald, Dynamic, Dynamic> poly((int)dim(0), (int)dim(1));
   for (int i = 0; i < sub.rows(); i++) {

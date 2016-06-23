@@ -1,8 +1,11 @@
-#include "constructPtrRigidBodyConstraint.h"
+#include "drake/systems/plants/constraint/constructPtrRigidBodyConstraint.h"
+
+#include "drake/common/drake_assert.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/util/drakeMexUtil.h"
 #include "drake/systems/controllers/controlUtil.h"
+
 using namespace Eigen;
 using namespace std;
 
@@ -351,12 +354,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       Vector3d axis;
       rigidBodyConstraintParse3dUnitVector(prhs[3], axis);
       Vector3d target;
-      assert(mxIsNumeric(prhs[4]));
-      assert(mxGetM(prhs[4]) == 3 && mxGetN(prhs[4]) == 1);
+      DRAKE_ASSERT(mxIsNumeric(prhs[4]));
+      DRAKE_ASSERT(mxGetM(prhs[4]) == 3 && mxGetN(prhs[4]) == 1);
       memcpy(target.data(), mxGetPrSafe(prhs[4]), sizeof(double) * 3);
       Vector3d gaze_origin;
-      assert(mxIsNumeric(prhs[5]));
-      assert(mxGetM(prhs[5]) == 3 && mxGetN(prhs[5]) == 1);
+      DRAKE_ASSERT(mxIsNumeric(prhs[5]));
+      DRAKE_ASSERT(mxGetM(prhs[5]) == 3 && mxGetN(prhs[5]) == 1);
       memcpy(gaze_origin.data(), mxGetPrSafe(prhs[5]), sizeof(double) * 3);
       double conethreshold = rigidBodyConstraintParseGazeConethreshold(prhs[6]);
       cnst = new WorldGazeTargetConstraint(model, body, axis, target,

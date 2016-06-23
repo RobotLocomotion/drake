@@ -29,7 +29,7 @@ GTEST_TEST(VectorTest, ValueAssignment) {
   state.theta = 0.2;
   state.thetadot = 0.3;
 
-  EXPECT_EQ(size(state), 2);
+  EXPECT_EQ(size(state), 2u);
 
   state = x;
   EXPECT_EQ(state.theta, 0.2);

@@ -1,8 +1,11 @@
-#include "InstantaneousQPController.h"
+#include "drake/systems/controllers/InstantaneousQPController.h"
+
 #include <lcm/lcm-cpp.hpp>
 #include <map>
 #include <memory>
+
 #include "drake/Path.h"
+#include "drake/common/drake_assert.h"
 #include "drake/solvers/fastQP.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -144,9 +147,9 @@ PIDOutput InstantaneousQPController::wholeBodyPID(
   PIDOutput out;
   double dt = 0;
   int nq = robot->number_of_positions();
-  assert(q.size() == nq);
-  assert(qd.size() == robot->number_of_velocities());
-  assert(q_des.size() == params.integrator.gains.size());
+  DRAKE_ASSERT(q.size() == nq);
+  DRAKE_ASSERT(qd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(q_des.size() == params.integrator.gains.size());
   if (nq != robot->number_of_velocities()) {
     throw std::runtime_error(
         "this function will need to be rewritten when num_pos != num_vel");
@@ -195,7 +198,7 @@ VectorXd InstantaneousQPController::velocityReference(
   // Integrate expected accelerations to determine a target feed-forward
   // velocity, which we can pass in to Atlas
   int i;
-  assert(qdd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(qdd.size() == robot->number_of_velocities());
 
   double dt = 0;
   if (controller_state.t_prev != 0) {
@@ -691,7 +694,7 @@ int InstantaneousQPController::setupAndSolveQP(
       nd = 2 *
            m_surface_tangents;  // for friction cone approx, hard coded for now
 
-  assert(nu + 6 == nq);
+  DRAKE_ASSERT(nu + 6 == nq);
 
   std::vector<DesiredBodyAcceleration> desired_body_accelerations;
   desired_body_accelerations.resize(qp_input.num_tracked_bodies);

@@ -14,6 +14,7 @@
 #include <sstream>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "Optimization.h"
 
 namespace drake {
@@ -50,9 +51,9 @@ void selectSubVec(const Eigen::MatrixBase<Derived>& in,
 template <typename DerivedA, typename DerivedB, typename F>
 void transformVecElements(const Eigen::MatrixBase<DerivedA>& in,
                           Eigen::MatrixBase<DerivedB>* out, F func) {
-  assert(in.cols() == 1);
-  assert(out->cols() == 1);
-  assert(in.rows() == out->rows());
+  DRAKE_ASSERT(in.cols() == 1);
+  DRAKE_ASSERT(out->cols() == 1);
+  DRAKE_ASSERT(in.rows() == out->rows());
   for (int i = 0; i < in.rows(); i++) {
     (*out)(i) = func(in(i), (*out)(i));
   }
@@ -61,7 +62,7 @@ void transformVecElements(const Eigen::MatrixBase<DerivedA>& in,
 template <typename Derived>
 Eigen::SparseVector<double> makeSparseVector(
     const Eigen::MatrixBase<Derived>& in) {
-  assert(in.cols() == 1);
+  DRAKE_ASSERT(in.cols() == 1);
   Eigen::SparseVector<double> out(in.rows());
   for (int i = 0; i < in.rows(); i++) {
     if (in(i) != 0.0) {
@@ -123,10 +124,10 @@ SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
   // Restriction 3 could reasonably be relaxed to simply let unbound
   // variables sit at 0.
 
-  assert(prog.generic_constraints().empty());
-  assert(prog.generic_objectives().empty());
-  assert(prog.GetAllLinearConstraints().empty());
-  assert(prog.bounding_box_constraints().empty());
+  DRAKE_ASSERT(prog.generic_constraints().empty());
+  DRAKE_ASSERT(prog.generic_objectives().empty());
+  DRAKE_ASSERT(prog.GetAllLinearConstraints().empty());
+  DRAKE_ASSERT(prog.bounding_box_constraints().empty());
 
   const auto& bindings = prog.linear_complementarity_constraints();
 
@@ -139,7 +140,7 @@ SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
         coverings++;
       }
     }
-    assert(coverings == 1);
+    DRAKE_ASSERT(coverings == 1);
   }
 
   // Solve each individual LCP, writing the result back to the decision

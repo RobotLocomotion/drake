@@ -1,10 +1,13 @@
+#include "drake/systems/plants/rigidBodyTreeMexFunctions.h"
+
 #include <typeinfo>
 #include <Eigen/Sparse>
-#include "rigidBodyTreeMexFunctions.h"
+
+#include "drake/common/drake_assert.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/standardMexConversions.h"
+#include "drake/systems/plants/rigidBodyTreeMexConversions.h"
 #include "drake/util/makeFunction.h"
-#include "rigidBodyTreeMexConversions.h"
+#include "drake/util/standardMexConversions.h"
 
 using namespace std;
 using namespace Eigen;
@@ -326,7 +329,7 @@ Matrix<Scalar, Dynamic, 1> dynamicsBiasTermTemp(
   eigen_aligned_unordered_map<const RigidBody *, Matrix<Scalar, 6, 1>> f_ext;
 
   if (f_ext_value.size() > 0) {
-    assert(f_ext_value.cols() == model.bodies.size());
+    DRAKE_ASSERT(f_ext_value.cols() == model.bodies.size());
     for (Eigen::Index i = 0; i < f_ext_value.cols(); i++) {
       f_ext.insert({model.bodies[i].get(), f_ext_value.col(i)});
     }

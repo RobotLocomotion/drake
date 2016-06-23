@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <type_traits>
 
 #include "drake/drakeCommon_export.h"

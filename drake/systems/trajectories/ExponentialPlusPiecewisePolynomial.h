@@ -2,6 +2,8 @@
 
 #include <Eigen/Core>
 #include <vector>
+
+#include "drake/common/drake_assert.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/drakeTrajectories_export.h"
 
@@ -38,13 +40,14 @@ class DRAKETRAJECTORIES_EXPORT ExponentialPlusPiecewisePolynomial
         A(A),
         alpha(alpha),
         piecewise_polynomial_part(piecewise_polynomial_part) {
-    assert(K.rows() == rows());
-    assert(K.cols() == A.rows());
-    assert(A.rows() == A.cols());
-    assert(alpha.rows() == A.cols());
-    assert(alpha.cols() == piecewise_polynomial_part.getNumberOfSegments());
-    assert(piecewise_polynomial_part.rows() == rows());
-    assert(piecewise_polynomial_part.cols() == 1);
+    DRAKE_ASSERT(K.rows() == rows());
+    DRAKE_ASSERT(K.cols() == A.rows());
+    DRAKE_ASSERT(A.rows() == A.cols());
+    DRAKE_ASSERT(alpha.rows() == A.cols());
+    DRAKE_ASSERT(alpha.cols() ==
+                 piecewise_polynomial_part.getNumberOfSegments());
+    DRAKE_ASSERT(piecewise_polynomial_part.rows() == rows());
+    DRAKE_ASSERT(piecewise_polynomial_part.cols() == 1);
   }
 
   // from PiecewisePolynomial
