@@ -6,8 +6,9 @@
 #include <cmath>
 #include <vector>
 #include <array>
-#include <cassert>
 #include <stdexcept>
+
+#include "drake/common/drake_assert.h"
 
 template <std::size_t Size>
 std::array<int, Size> intRange(int start) {
@@ -137,7 +138,7 @@ typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type matGradMultMat(
     const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedB>& B,
     const Eigen::MatrixBase<DerivedDA>& dA,
     const Eigen::MatrixBase<DerivedDB>& dB) {
-  assert(dA.cols() == dB.cols());
+  DRAKE_ASSERT(dA.cols() == dB.cols());
 
   typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type ret(
       A.rows() * B.cols(), dA.cols());
@@ -173,7 +174,7 @@ template <typename DerivedDA, typename DerivedB>
 typename MatGradMult<DerivedDA, DerivedB>::type matGradMult(
     const Eigen::MatrixBase<DerivedDA>& dA,
     const Eigen::MatrixBase<DerivedB>& B) {
-  assert(B.rows() == 0 ? dA.rows() == 0 : dA.rows() % B.rows() == 0);
+  DRAKE_ASSERT(B.rows() == 0 ? dA.rows() == 0 : dA.rows() % B.rows() == 0);
   typename DerivedDA::Index A_rows = B.rows() == 0 ? 0 : dA.rows() / B.rows();
   const int A_rows_at_compile_time =
       (DerivedDA::RowsAtCompileTime == Eigen::Dynamic ||

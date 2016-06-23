@@ -3,6 +3,8 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
+
+#include "drake/common/drake_assert.h"
 #include "drake/util/drakeGradientUtil.h"  // todo: pull the core tools into this file and zap the old gradient util.
 
 namespace Drake {
@@ -46,8 +48,8 @@ void initializeAutoDiffGivenGradientMatrix(
   static_assert(static_cast<int>(Derived::SizeAtCompileTime) ==
                     static_cast<int>(DerivedGradient::RowsAtCompileTime),
                 "gradient has wrong number of rows at compile time");
-  assert(val.size() == gradient.rows() &&
-         "gradient has wrong number of rows at runtime");
+  DRAKE_ASSERT(val.size() == gradient.rows() &&
+               "gradient has wrong number of rows at runtime");
   typedef AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime>
       ExpectedAutoDiffType;
   static_assert(static_cast<int>(ExpectedAutoDiffType::RowsAtCompileTime) ==

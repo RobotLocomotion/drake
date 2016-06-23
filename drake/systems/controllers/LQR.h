@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_assert.h"
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
 #include "drake/core/Vector.h"
@@ -20,7 +21,7 @@ timeInvariantLQR(const System& sys,
       System::template StateVector<double>::RowsAtCompileTime;
   const int num_inputs =
       System::template InputVector<double>::RowsAtCompileTime;
-  assert(!sys.isTimeVarying());
+  DRAKE_ASSERT(!sys.isTimeVarying());
   static_assert(num_states != 0, "This system has no continuous states");
   using namespace std;
   using namespace Eigen;
