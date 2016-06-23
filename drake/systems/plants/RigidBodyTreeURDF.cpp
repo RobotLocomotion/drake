@@ -368,7 +368,9 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   XMLElement* material_node = node->FirstChildElement("material");
   if (material_node) {
     // Checks whether a "color" child element exists. If so, parses the
-    // color value.
+    // color value. It instantiates a local boolean variable called
+    // "color_specified" that records whether this visual element specifies a
+    // material color.
     bool color_specified = false;
     Vector4d rgba;
     {
@@ -386,7 +388,9 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     }
 
     // Checks whether the "name" attribute exists. If so, obtains the name of
-    // the material.
+    // the material. It instantiates a local boolean variable called
+    // "name_specified" that records whether this visual element specifies a
+    // material name.
     std::string material_name;
     bool name_specified = false;
     {
@@ -399,14 +403,21 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     }
 
     // Adds the material to the materials map if both the name and color are
-    // specified.
+    // specified. This is so that link elements that reside later in the URDF
+    // can reference this material in their visualization elements. Note that
+    // this capability is not specified by the official URDF specification (see:
+    // http://wiki.ros.org/urdf/XML/link), but is needed by certain URDFs
+    // released by organizations and companies like Robotiq and ROS Industrial
+    // (for example, see this URDF by Robotiq: http://bit.ly/28P0pmo).
     if (color_specified && name_specified)
       AddMaterialToMaterialMap(material_name, rgba, materials);
 
-    // Sets the material color if the color is specified. This takes precedence
-    // over any material in the material map.
+    // Sets the material's color.
     bool material_set = false;
     {
+      // If the color is specified as a child element of the current material
+      // node, use that color. It takes precedence over any material saved in
+      // the material map.
       if (color_specified) {
         element.setMaterial(rgba);
         material_set = true;
