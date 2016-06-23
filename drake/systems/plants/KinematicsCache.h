@@ -9,8 +9,11 @@
 #include <type_traits>
 #include <stdexcept>
 #include <utility>
+
+#include "drake/systems/plants/RigidBody.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeGradientUtil.h"
-#include "RigidBody.h"
 
 template <typename Scalar>
 class KinematicsCacheElement {
