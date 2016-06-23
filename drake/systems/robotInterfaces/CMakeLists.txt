@@ -15,8 +15,7 @@ pods_install_pkg_config_file(drake-side
 
 if(LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeQPLocomotionPlan SOURCE_FILES QPLocomotionPlan.cpp BodyMotionData.cpp) # TODO: move BodyMotionData to a better place
-  target_link_libraries(drakeQPLocomotionPlan drakeSplineGeneration drakeRBM drakeLCMUtil drakeSide drakeConvexHull drakeAtlasUtil drakeZMPUtil)
-  pods_use_pkg_config_packages(drakeQPLocomotionPlan lcm)
+  target_link_libraries(drakeQPLocomotionPlan drakeSplineGeneration drakeRBM drakeLCMUtil drakeSide drakeConvexHull drakeAtlasUtil drakeZMPUtil lcm)
   pods_install_libraries(drakeQPLocomotionPlan)
   drake_install_headers(QPLocomotionPlan.h BodyMotionData.h)
   pods_install_pkg_config_file(drake-qp-locomotion-plan

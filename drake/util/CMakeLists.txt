@@ -7,11 +7,11 @@ add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 if(LCM_FOUND AND MATLAB_FOUND)
   if(simulink_FOUND)
     add_mex(lcmLogger lcmLogger.cpp)
-    pods_use_pkg_config_packages(lcmLogger lcm)
+    target_link_libraries(lcmLogger lcm)
   endif()
 
   add_mex(publishLCMLog publishLCMLog.cpp)
-  pods_use_pkg_config_packages(publishLCMLog lcm)
+  target_link_libraries(publishLCMLog lcm)
 endif()
 
 add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
@@ -52,7 +52,7 @@ if(LCM_FOUND)
   # we only need methods that are templated and defined in the header
 
   add_library_with_exports(LIB_NAME drakeLCMUtil SOURCE_FILES lcmUtil.cpp)
-  add_dependencies(drakeLCMUtil drake_lcmtypes lcmtype_agg_hpp)
+  add_dependencies(drakeLCMUtil drake_lcmtypes_hpp)
   target_link_libraries(drakeLCMUtil drakeTrajectories)
   drake_install_headers(lcmUtil.h)
   pods_install_libraries(drakeLCMUtil)
