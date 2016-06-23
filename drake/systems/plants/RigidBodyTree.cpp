@@ -1,6 +1,8 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/gradient.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -16,6 +18,7 @@
 
 using namespace std;
 using namespace Eigen;
+
 using drake::AutoDiffUpTo73d;
 using drake::AutoDiffXd;
 using drake::Matrix3X;
@@ -23,6 +26,9 @@ using drake::Matrix4X;
 using drake::MatrixX;
 using drake::Vector3;
 using drake::VectorX;
+
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::Gradient;
 
 /// A column vector consisting of one twist.
 template <typename Scalar>

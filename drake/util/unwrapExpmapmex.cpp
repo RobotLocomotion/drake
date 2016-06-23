@@ -1,4 +1,6 @@
 #include <Eigen/Core>
+
+#include "drake/math/autodiff.h"
 #include "drake/util/mexify.h"
 #include "drake/util/standardMexConversions.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -8,6 +10,9 @@
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+
+using drake::math::autoDiffToValueMatrix;
+using drake::math::autoDiffToGradientMatrix;
 
 // note: gradient only w.r.t. expmap2...
 pair<Vector3d, typename Gradient<Vector3d, 3>::type> unwrapExpmapWithGradient(
