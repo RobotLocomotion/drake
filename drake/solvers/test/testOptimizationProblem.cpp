@@ -204,7 +204,7 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
   std::srand((unsigned int) time(0));
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
                                 MatrixCompareType::absolute));
   });
 }
@@ -412,6 +412,7 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
 
   Eigen::VectorXd expected(6);
   expected << 5, 1, 5, 0, 5, 10;
+  std::srand((unsigned int) time(0));
   Eigen::VectorXd delta = .05 * Eigen::VectorXd::Random(6);
   prog.SetInitialGuess({x}, expected + delta);
 
