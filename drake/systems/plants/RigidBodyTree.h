@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
+#include "drake/common/deprecated.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
@@ -18,7 +19,6 @@
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeUtil.h"
-#include "drake/common/deprecated.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
@@ -578,17 +578,16 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
    * instead.
    */
-   RigidBody* findLink(const std::string& link_name,
-                       const std::string& model_name = "",
-                       int model_id = -1) const
+  RigidBody* findLink(const std::string& link_name,
+                      const std::string& model_name = "",
+                      int model_id = -1) const
 #ifndef SWIG
-                        DRAKE_DEPRECATED(
-                          "RigidBodyTree: findLink: WARNING: This method is "
-                          "deprecated. Please use the newer "
-                          "RigidBodyTree::FindBody.")
+      DRAKE_DEPRECATED(
+          "RigidBodyTree: findLink: WARNING: This method is "
+          "deprecated. Please use the newer "
+          "RigidBodyTree::FindBody.")
 #endif
-                        ;
-
+          ;
 
   /**
    * Obtains the index of a rigid body within this rigid body tree. The rigid
@@ -614,12 +613,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   int findLinkId(const std::string& link_name, int model_id = -1) const
 #ifndef SWIG
-                        DRAKE_DEPRECATED(
-                          "RigidBodyTree: findLinkId: ERROR: This "
-                          "method is deprecated. Please use the newer "
-                          "RigidBodyTree::FindBodyIndex.")
+      DRAKE_DEPRECATED(
+          "RigidBodyTree: findLinkId: ERROR: This "
+          "method is deprecated. Please use the newer "
+          "RigidBodyTree::FindBodyIndex.")
 #endif
-                        ;
+          ;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
@@ -702,7 +701,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
