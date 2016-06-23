@@ -184,16 +184,6 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
                   .matrix() == T_r3_and_r4_to_r2.matrix());
 }
 
-// TEST_F(RigidBodyTreeTest, TestCallingDeprecatedMethods) {
-//   // Adds rigid bodies r1b1 and r2b1 to the rigid body tree.
-//   tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
-//   tree->add_rigid_body(std::unique_ptr<RigidBody>(r2b1));
-
-//   // Calls deprecated method findLink on it.
-//   EXPECT_NE(tree->findLink("body1", "robot1"), nullptr);
-//   EXPECT_NE(tree->findLinkId("body1"), -1);
-// }
-
 }  // namespace
 }  // namespace test
 }  // namespace plants
