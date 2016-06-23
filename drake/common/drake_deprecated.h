@@ -18,11 +18,11 @@ users that a feature they are depending on will be removed in a future release.
 Usage: @code
   // Attribute comes *before* declaration of a deprecated function or variable;
   // no semicolon is allowed.
-  DRAKE_DEPRECATED("f() is slow; use g() instead")
+  DRAKE_DEPRECATED("f() is slow; use g() instead.")
   int f(int arg);
 
   // Attribute comes *after* struct, class, enum keyword.
-  class DRAKE_DEPRECATED("use MyNewClass instead")
+  class DRAKE_DEPRECATED("Use MyNewClass instead.")
   MyClass {
   };
 @endcode
@@ -48,7 +48,6 @@ that we can use non-standard compiler hacks. */
     /* C++14 */
     #define DRAKE_DEPRECATED(MSG) [[deprecated("\nDRAKE DEPRECATED: " MSG)]]
   #elif _MSC_VER
-    /* VC++ just says warning C4996 so add "DEPRECATED" to the message. */
     #define DRAKE_DEPRECATED(MSG) \
       __declspec(deprecated("\nDRAKE DEPRECATED: " MSG))
   #else /* gcc or clang */
