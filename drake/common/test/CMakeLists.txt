@@ -18,6 +18,10 @@ if(GTEST_FOUND)
   target_compile_definitions(drake_assert_test_disabled PRIVATE DRAKE_DISABLE_ASSERTS)
   target_link_libraries(drake_assert_test_disabled drakeCommon ${GTEST_BOTH_LIBRARIES})
   add_test(NAME drake_assert_test_disabled COMMAND drake_assert_test_disabled)
+
+  add_executable(drake_deprecated_test drake_deprecated_test.cc)
+  target_link_libraries(drake_deprecated_test drakeCommon ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME drake_deprecated_test COMMAND drake_deprecated_test)
 endif()
 
 # The entire block of CMake build rules and CTests exists to confirm that the
