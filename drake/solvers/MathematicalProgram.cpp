@@ -163,11 +163,10 @@ class QuadraticProgram : public NonlinearProgram {
   };
 
   SolutionResult Solve(OptimizationProblem& prog) const override {
-
     return NonlinearProgram::Solve(prog);
   }
 
-  // todo(naveenoid) : add Gurobi wrapper object and solve call here before handoff
+  // todo(naveenoid) : add Gurobi wrapper object, and solve here
 };
 
 class LeastSquares : public QuadraticProgram {
