@@ -187,7 +187,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
 // Ensures RigidBodyTree::doKinemantics(q, v, bool) is explicitly instantiated
 // with matrix block input parameters. For more information, see:
-// https://github.com/RobotLocomotion/drake/issues/2634
+// https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithMatrixBlocks) {
   tree->addRobotFromURDF(Drake::getDrakePath() +
           "/systems/plants/test/two_dof_robot.urdf");
