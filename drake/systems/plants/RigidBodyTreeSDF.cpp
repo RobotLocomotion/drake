@@ -228,7 +228,7 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   //  2. Load collision elements on a separate pass after links and joints were
   //     already loaded.
   //  Issue #### was created to track this problem.
-  if(body->name().compare(std::string(RigidBodyTree::kWorldLinkName)) == 0)
+  if (body->name().compare(std::string(RigidBodyTree::kWorldLinkName)) == 0)
     element.set_static();
   if (!parseSDFGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +

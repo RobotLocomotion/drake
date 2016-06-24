@@ -244,10 +244,10 @@ ElementId BulletModel::addElement(const Element& element) {
 
       bullet_world_.bt_collision_world->
           addCollisionObject(bt_obj.get(),
-                             collision_filter_group,collision_filter_mask);
+                             collision_filter_group, collision_filter_mask);
       bullet_world_no_margin_.bt_collision_world->
           addCollisionObject(bt_obj_no_margin.get(),
-                             collision_filter_group,collision_filter_mask);
+                             collision_filter_group, collision_filter_mask);
 
       // Take ownership of the Bullet collision objects.
       bullet_world_.bt_collision_objects.insert(
