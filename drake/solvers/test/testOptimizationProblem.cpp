@@ -60,7 +60,7 @@ struct Unique {
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
-// todo(naveenoid) : tests need to be purged of Random initializations.
+// TODO(naveenoid) : tests need to be purged of Random initializations.
 
 GTEST_TEST(testOptimizationProblem, testAddFunction) {
   OptimizationProblem prog;
@@ -210,6 +210,8 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
   });
 }
 
+// This test is identical to testProblem1 above but the cost is
+// framed as a QP instead.
 GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(5);
@@ -289,6 +291,9 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
   });
 }
 
+
+// This test is identical to testProblem2 above but the cost is
+// framed as a QP instead.
 GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(6);

@@ -13,7 +13,7 @@ class OptimizationProblem;
 // variables and constraints are added to the program
 // note that there is dynamic allocation happening in here, but on a structure
 // of negligible size.  (is there a better way?)
-// todo(naveenoid) : extensive rewrite needed to cope with design defects.
+// TODO(naveenoid) : extensive rewrite needed to cope with design defects.
 class DRAKEOPTIMIZATION_EXPORT MathematicalProgramInterface {
  public:
   virtual ~MathematicalProgramInterface();

@@ -39,7 +39,7 @@ class MathematicalProgram : public MathematicalProgramInterface {
   MathematicalProgramInterface* AddLinearCost() override {
     return new MathematicalProgram;
   }
-  // todo(naveenoid) : Objective to be refactored to Cost.
+  // TODO(naveenoid) : Objective to be refactored to Cost.
   MathematicalProgramInterface* AddGenericObjective() override {
     return new MathematicalProgram;
   };
@@ -64,7 +64,7 @@ class MathematicalProgram : public MathematicalProgramInterface {
 
 class NonlinearProgram : public MathematicalProgram {
  public:
-  // todo(naveenoid) : bug exists in adding a Linear Quadratic or
+  // TODO(naveenoid) : bug exists in adding a Linear Quadratic or
   // Generic Cost to a NonlinearProgram
   MathematicalProgramInterface* AddGenericObjective() override {
     return new NonlinearProgram;
@@ -147,7 +147,7 @@ class LinearComplementarityProblem : public MathematicalProgram {
   MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
     return new LinearComplementarityProblem;
   };
-  // todo(naveenoid) : bug exists in adding a QuadraticCost to an LCP Problem.
+  // TODO(naveenoid) : bug exists in adding a QuadraticCost to an LCP Problem.
   // Ideal fix involves rewrite of this entire class hierarchy.
 };
 
@@ -171,7 +171,7 @@ class QuadraticProgram : public NonlinearProgram {
     return NonlinearProgram::Solve(prog);
   }
 
-  // todo(naveenoid) : add Gurobi wrapper object, and solve here.
+  // TODO(naveenoid) : add Gurobi wrapper object, and solve here.
 };
 
 class LeastSquares : public QuadraticProgram {
@@ -191,7 +191,7 @@ class LeastSquares : public QuadraticProgram {
     }
 
     Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(
-        num_constraints, prog.num_vars());  // todo: use a sparse matrix here?
+        num_constraints, prog.num_vars());  // TODO: use a sparse matrix here?
     Eigen::VectorXd beq(num_constraints);
 
     size_t constraint_index = 0;

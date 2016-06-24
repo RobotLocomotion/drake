@@ -321,7 +321,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddCost(std::forward<std::unique_ptr<F>>(f), variable_views_);
   }
 
-  /** addQuadraticCost
+  /** AddQuadraticCost
    * @brief Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
   template <typename DerivedQ, typename Derivedb>
@@ -342,7 +342,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddQuadraticCost(Q, x_desired, variable_views_);
   }
 
-  /** addQuadraticProgramCost
+  /** AddQuadraticProgramCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to subset of the variables
    */
@@ -353,15 +353,15 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     std::shared_ptr<QuadraticConstraint> objective(
         new QuadraticConstraint(Q, b, -std::numeric_limits<double>::infinity(),
                                 std::numeric_limits<double>::infinity()));
-    // todo(naveenoid) : Call to MathematicalProgram::AddQuadraticCost required
+    // TODO(naveenoid) : Call to MathematicalProgram::AddQuadraticCost required
     AddCost(objective, vars);
     return objective;
   }
 
-  /** addQuadraticProgramCost
- * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
+  /** AddQuadraticProgramCost
+   * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applies to all of the continuous variables.
- */
+   */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticProgramCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
@@ -369,7 +369,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddQuadraticProgramCost(Q, b, variable_views_);
   }
 
-  /** addGenericConstraint
+  /** AddGenericConstraint
    *
    * @brief Adds a generic constraint to the program.  This should
    * only be used if a more specific type of constraint is not
@@ -630,7 +630,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   SolutionResult Solve() {
     return problem_type_->Solve(*this);
-  }  // todo: add argument for options
+  }  // TODO: add argument for options
 
   //    template <typename Derived>
   //    bool solve(const Eigen::MatrixBase<Derived>& x0);
