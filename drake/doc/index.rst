@@ -89,6 +89,7 @@ Next steps
    gallery
    installation
    Introduction and Examples <http://underactuated.csail.mit.edu/underactuated.html?chapter=drake>
+   design
    developers
    Doxygen (C++) <doxygen_cxx/index.html#://>
    Doxygen (MATLAB) <doxygen_matlab/index.html#://>
