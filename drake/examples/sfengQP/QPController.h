@@ -1,12 +1,13 @@
 #pragma once
 
+#include "sfConfig.h"
 #include "sfRobotState.h"
 #include "sfQP.h"
 #include <exception>
 #include <iostream>
 #include <fstream>
 
-class QPInput {
+class QPInput : public Configurable {
 public:
   std::vector<std::string> jointNames;
   
@@ -24,29 +25,18 @@ public:
   double w_qdd;
   double w_wrench_reg;
   
-  void init(const RigidBodyTree &r) {
-    for (int i = 0; i < r.number_of_positions(); i++)
-      jointNames.push_back(r.getPositionName(i));
-    _inited = true;
-  }
-
   QPInput() 
   { 
     _inited = false;
-    _paramLookup["w_com"] = &w_com;
-    _paramLookup["w_pelv"] = &w_pelv;
-    _paramLookup["w_torso"] = &w_torso;
-    _paramLookup["w_foot"] = &w_foot;
-    _paramLookup["w_hand"] = &w_hand;
-    _paramLookup["w_qdd"] = &w_qdd;
-    _paramLookup["w_wrench_reg"] = &w_wrench_reg;
+    _setupParamLookup();
   }
 
   QPInput(const RigidBodyTree &r) 
   { 
     init(r);
     qdd_d.resize(r.number_of_velocities());
-    _inited = true; 
+    _inited = true;
+    _setupParamLookup();
   }
   
   bool isSane() const 
@@ -56,39 +46,10 @@ public:
     return ret;
   }
 
-  bool loadParamFromFile(const std::string &fileName) 
-  {
-    std::ifstream in(fileName);
-
-    if (!in.good())
-      return false;
-
-    std::string name;
-    std::map<const std::string, double *>::iterator res;
-    double val;
-    bool ret = true;
-    while (true)
-    {
-      in >> name;
-      if (in.eof())
-        break;
-
-      res = _paramLookup.find(name);
-      // can't find item
-      if (res == _paramLookup.end()) {
-        std::cerr << "unknown param: " << name << " aborting." << std::endl;
-        ret = false;
-        break;
-      }
-
-      in >> val;
-      *(res->second) = val;
-      std::cerr << "read " << name << " = " << val << std::endl;
-    }
-
-    //printParams();
-
-    return ret;
+  void init(const RigidBodyTree &r) {
+    for (int i = 0; i < r.number_of_positions(); i++)
+      jointNames.push_back(r.getPositionName(i));
+    _inited = true;
   }
 
   class QPInputException : public std::exception {
@@ -97,9 +58,21 @@ public:
     } 
   };
 
+protected:
+  bool _setupParamLookup() 
+  {
+    _paramLookup["w_com"] = &w_com;
+    _paramLookup["w_pelv"] = &w_pelv;
+    _paramLookup["w_torso"] = &w_torso;
+    _paramLookup["w_foot"] = &w_foot;
+    _paramLookup["w_hand"] = &w_hand;
+    _paramLookup["w_qdd"] = &w_qdd;
+    _paramLookup["w_wrench_reg"] = &w_wrench_reg;
+    return true;
+  }
+ 
 private:
   bool _inited;
-  std::map<const std::string, double *> _paramLookup;
 
 };
 
@@ -148,20 +121,6 @@ private:
 
 class QPParam {
 public: 
-  /*
-  Vector6d Kp_pelv;
-  Vector6d Kd_pelv; 
-  
-  Vector6d Kp_torso;
-  Vector6d Kd_torso;
-  
-  Vector6d Kp_foot;
-  Vector6d Kd_foot;
-  
-  Vector6d Kp_hand;
-  Vector6d Kd_hand;
-  */
-
   double mu; // Fx, Fy < |mu * Fz|
   double mu_Mz; // Mz < |mu * Mz|
   double x_max; 

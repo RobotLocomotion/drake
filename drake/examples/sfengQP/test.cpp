@@ -44,14 +44,7 @@ int main()
   QPOutput output(*rs.robot);
 
   // setup input
-  input.w_com = 1e2;
-  input.w_pelv = 1e1;
-  input.w_torso = 1e1;
-  input.w_foot = 1e1;
-  input.w_qdd = 1e-2;
-  input.w_wrench_reg = 1e-5;
-
-  input.loadParamFromFile(std::string(VALKYRIE_URDF_PATH) + std::string("/qpc_params"));
+  assert(input.loadParamFromFile(std::string(VALKYRIE_URDF_PATH) + std::string("/qpc_params")));
 
   input.comdd_d.setZero();
   input.pelvdd_d.setZero();
@@ -68,11 +61,7 @@ int main()
 
   // make estimator
   QPEstimator est(urdf);
-  est.w_error = 1;
-  est.w_measured_vel = 1;
-  est.w_measured_wrench = 1;
-  est.w_measured_trq = 1;
-  est.dt = 2e-3;
+  assert(est.loadParamFromFile(std::string(VALKYRIE_URDF_PATH) + std::string("/qpe_params")));
 
   est.init(0, q, qd, output.trq, output.foot_wrench_in_sensor_frame[0], output.foot_wrench_in_sensor_frame[1]);
   est.estimate(0, q, qd + output.qdd * est.dt, output.trq, output.foot_wrench_in_sensor_frame[0], output.foot_wrench_in_sensor_frame[1]);

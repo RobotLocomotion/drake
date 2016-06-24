@@ -232,6 +232,7 @@ int QPEstimator::estimate(double t, const VectorXd &q, const VectorXd &v, const 
 int QPEstimator::init(double t, const VectorXd &q, const VectorXd &v, const VectorXd &trq, const Vector6d &ft_l, const Vector6d &ft_r)
 {
   rs.update(t, q, v, trq, ft_l, ft_r);
+  dt = 2e-3;
   _inited = true;
 
   return 0;
