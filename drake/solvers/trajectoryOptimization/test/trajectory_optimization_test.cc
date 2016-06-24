@@ -11,7 +11,8 @@ namespace solvers {
 namespace {
 
 GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
-  DirectTrajectoryOptimization directTraj(1, 2, 21, 2, 6);
+  // TODO(lgibson) 3rd arg should be 21, using smaller # now for testing.
+  DirectTrajectoryOptimization directTraj(1, 2, 5, 2, 6);
 }
 
 }  // anonymous namespace

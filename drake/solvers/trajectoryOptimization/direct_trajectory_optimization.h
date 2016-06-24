@@ -20,7 +20,7 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  private:
   const int numInputs_;
   const int numStates_;
-  const size_t numTimeSamples_;  // aka N
+  const size_t N; // Number of time samples
 
   OptimizationProblem optProblem_;
   // TODO(tri-lucy): I'm not sure we actually need these inds, because of how
