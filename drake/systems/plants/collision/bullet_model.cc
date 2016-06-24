@@ -215,7 +215,7 @@ ElementId BulletModel::addElement(const Element& element) {
         break;
     }
     if (bt_shape) {
-      // Create the collision objects
+      // Create the actual Bullet collision objects.
       std::unique_ptr<btCollisionObject> bt_obj(new btCollisionObject());
       std::unique_ptr<btCollisionObject> bt_obj_no_margin(
           new btCollisionObject());
@@ -224,22 +224,30 @@ ElementId BulletModel::addElement(const Element& element) {
       bt_obj->setUserPointer(elements[id].get());
       bt_obj_no_margin->setUserPointer(elements[id].get());
 
-      // Add the collision objects to the collision worlds
-      bullet_world_.bt_collision_world->addCollisionObject(bt_obj.get());
-      bullet_world_no_margin_.bt_collision_world->addCollisionObject(
-          bt_obj_no_margin.get());
+      // Here bit masks are set so that static collision elements are not even
+      // checked for collisions between them.
+      //
+      // From Bullet's user manual, Ch. 5:
+      // Bullet provides three easy ways to ensure that only certain objects
+      // collide with each other: masks, broadphase filter callbacks and
+      // nearcallbacks. It is worth noting that mask-based collision selection
+      // happens a lot further up the toolchain than the callback do. In short,
+      // if masks are sufficient for your purposes, use them; they perform
+      // better and are a lot simpler to use.
+      bool is_dynamic = !elements[id]->is_static();
+      short collision_filter_group =
+          is_dynamic? short(btBroadphaseProxy::DefaultFilter) :
+          short(btBroadphaseProxy::StaticFilter);
+      short collision_filter_mask =
+          is_dynamic? short(btBroadphaseProxy::AllFilter) :
+          short(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
-      if (elements[id]->isStatic()) {
-        bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-        bt_obj->activate();
-        bt_obj_no_margin->setCollisionFlags(
-            btCollisionObject::CF_KINEMATIC_OBJECT);
-        bt_obj_no_margin->activate();
-      } else {
-        bt_obj->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
-        bt_obj_no_margin->setCollisionFlags(
-            btCollisionObject::CF_STATIC_OBJECT);
-      }
+      bullet_world_.bt_collision_world->
+          addCollisionObject(bt_obj.get(),
+                             collision_filter_group,collision_filter_mask);
+      bullet_world_no_margin_.bt_collision_world->
+          addCollisionObject(bt_obj_no_margin.get(),
+                             collision_filter_group,collision_filter_mask);
 
       // Take ownership of the Bullet collision objects.
       bullet_world_.bt_collision_objects.insert(
