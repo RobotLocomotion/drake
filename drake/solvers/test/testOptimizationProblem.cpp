@@ -60,6 +60,7 @@ struct Unique {
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
+//todo(naveenoid) : tests need to be purged of Random initializations.
 
 GTEST_TEST(testOptimizationProblem, testAddFunction) {
   OptimizationProblem prog;
@@ -201,7 +202,7 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
 
   // IPOPT has difficulty with this problem depending on the initial
   // conditions, which is why the initial guess varies so little.
-  std::srand((unsigned int) time(0));
+  std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
@@ -229,7 +230,7 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
                                 MatrixXd::Constant(5, 1, 1));
   VectorXd expected(5);
   expected << 1, 1, 0, 1, 0;
-  std::srand((unsigned int) time(0));
+  std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
@@ -277,7 +278,7 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
   prog.AddBoundingBoxConstraint(lower, upper);
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
-  std::srand((unsigned int) time(0));
+  std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
   // This test seems to be fairly sensitive to how much the randomness
   // causes the initial guess to deviate, so the tolerance is a bit
@@ -318,7 +319,7 @@ GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
 
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
-  std::srand((unsigned int) time(0));
+  std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
 
   // This test seems to be fairly sensitive to how much the randomness
@@ -412,7 +413,7 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
 
   Eigen::VectorXd expected(6);
   expected << 5, 1, 5, 0, 5, 10;
-  std::srand((unsigned int) time(0));
+  std::srand(0);
   Eigen::VectorXd delta = .05 * Eigen::VectorXd::Random(6);
   prog.SetInitialGuess({x}, expected + delta);
 

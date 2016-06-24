@@ -344,6 +344,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** addQuadraticProgramCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
+   * Applied to subset of the variables
    */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticProgramCost(
@@ -357,6 +358,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return objective;
   }
 
+  /** addQuadraticProgramCost
+ * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
+   * Applies to all of the continuous variables.
+ */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticProgramCost(
       const Eigen::MatrixBase<DerivedQ>& Q,

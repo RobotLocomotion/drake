@@ -14,6 +14,7 @@ class OptimizationProblem;
 // note that there is dynamic allocation happening in here, but on a structure
 // of negligible size.  (is there a better way?)
 class DRAKEOPTIMIZATION_EXPORT MathematicalProgramInterface {
+ // todo(naveenoid) : extensive rewrite needed to cope with design defects.
  public:
   virtual ~MathematicalProgramInterface();
 
