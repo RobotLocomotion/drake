@@ -1,6 +1,6 @@
 if(GTEST_FOUND)
   add_executable(testOptimizationProblem testOptimizationProblem.cpp)
-  target_link_libraries(testOptimizationProblem drakeOptimization
+  target_link_libraries(testOptimizationProblem drakeOptimization mosekLP
     ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testOptimizationProblem COMMAND testOptimizationProblem)
 
