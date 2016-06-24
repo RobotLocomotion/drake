@@ -108,10 +108,6 @@ if(LCM_FOUND)
     add_executable(load_model_test load_model_test.cc)
     target_link_libraries(load_model_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
     add_test(NAME load_model_test COMMAND load_model_test)
-
-    add_executable(rigid_body_tree_test rigid_body_tree_test.cc)
-    target_link_libraries(rigid_body_tree_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-    add_test(NAME rigid_body_tree_test COMMAND rigid_body_tree_test)
   endif()
 endif()
 
@@ -225,3 +221,4 @@ if(LONG_RUNNING_TESTS)
 endif()
 
 add_subdirectory(rigid_body_system)
+add_subdirectory(rigid_body_tree)

@@ -190,22 +190,30 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 // with vector block input parameters. For more information, see:
 // https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
-  tree->addRobotFromURDF(Drake::getDrakePath() +
-          "/systems/plants/test/two_dof_robot.urdf");
+  std::string file_name = Drake::getDrakePath() +
+          "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+  std::cout << "file name: " << file_name << std::endl;
+  tree->addRobotFromURDF(file_name);
+  std::cout << "1" << std::endl;
   VectorX<double> q;
   VectorX<double> v;
+  std::cout << "2" << std::endl;
   q.resize(tree->number_of_positions());
   v.resize(tree->number_of_velocities());
   q.setZero();
   v.setZero();
+  std::cout << "3" << std::endl;
 
   Eigen::MatrixBase<Eigen::Block<Eigen::VectorXd, -1, 1, false>>
     q_block = q.head(q.size());
   Eigen::MatrixBase<Eigen::Block<Eigen::VectorXd, -1, 1, false>>
     v_block = v.head(v.size());
 
+  std::cout << "4" << std::endl;
   KinematicsCache<double> cache = tree->doKinematics(q_block, v_block);
+  std::cout << "5" << std::endl;
   EXPECT_TRUE(cache.hasV());
+  std::cout << "6" << std::endl;
 }
 
 }  // namespace

@@ -656,9 +656,13 @@ template <typename DerivedQ, typename DerivedV>
 KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree::doKinematics(
     const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v,
     bool compute_JdotV) const {
+  std::cout << "RigidBodyTree::doKinematics: 1" << std::endl;
   KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
+  std::cout << "RigidBodyTree::doKinematics: 2" << std::endl;
   ret.initialize(q, v);
+  std::cout << "RigidBodyTree::doKinematics: 3" << std::endl;
   doKinematics(ret, compute_JdotV);
+  std::cout << "RigidBodyTree::doKinematics: 4" << std::endl;
   return ret;
 }
 

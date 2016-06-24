@@ -122,10 +122,15 @@ class KinematicsCache {
     static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");
     static_assert(std::is_same<typename Derived::Scalar, Scalar>::value,
                   "scalar type of q must match scalar type of KinematicsCache");
+    std::cout << "KinematicsCache::initialize: " << 1 << std::endl;
     DRAKE_ASSERT(this->q.rows() == q.rows());
+    std::cout << "KinematicsCache::initialize: " << 2 << std::endl;
     this->q = q;
+    std::cout << "KinematicsCache::initialize: " << 3 << std::endl;
     invalidate();
+    std::cout << "KinematicsCache::initialize: " << 4 << std::endl;
     velocity_vector_valid = false;
+    std::cout << "KinematicsCache::initialize: " << 5 << std::endl;
   }
 
   template <typename DerivedQ, typename DerivedV>

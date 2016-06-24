@@ -1108,8 +1108,11 @@ void RigidBodyTree::addRobotFromURDF(
     const string& urdf_filename, PackageMap& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+  std::cout << "RigidbodyTree::addRobotFromURDF: Method called!\n"
+            << "  - urdf file name: " << urdf_filename << std::endl;
   XMLDocument xml_doc;
   xml_doc.LoadFile(urdf_filename.data());
+  std::cout << "RigidbodyTree::addRobotFromURDF: Done loading URDF." << std::endl;
   if (xml_doc.ErrorID()) {
     throw std::runtime_error("failed to parse xml in file " + urdf_filename +
                              "\n" + xml_doc.ErrorName());
@@ -1121,6 +1124,10 @@ void RigidBodyTree::addRobotFromURDF(
     root_dir = urdf_filename.substr(0, found);
   }
 
+  std::cout << "RigidbodyTree::addRobotFromURDF: root_dir = " << root_dir
+    << std::endl;
   parseURDF(this, &xml_doc, package_map, root_dir, floating_base_type,
             weld_to_frame);
+  std::cout << "RigidbodyTree::addRobotFromURDF: done parsing URDF."
+    << std::endl;
 }
