@@ -92,9 +92,11 @@ void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
       1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
   world.addVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
+  RigidBody::CollisionElement
+      collision_element(geom, T_element_to_link, &world);
+  collision_element.set_static();
   rigid_body_tree->addCollisionElement(
-      RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
-      "terrain");
+      collision_element, world, "terrain");
   rigid_body_tree->updateStaticCollisionElements();
 }
 
