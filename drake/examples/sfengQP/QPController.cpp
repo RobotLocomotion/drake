@@ -77,12 +77,6 @@ int QPController::control(const sfRobotState &rs, const QPInput &input, QPOutput
   // 2 for CoP x within foot, 2
   // 2 for CoP y within foot, 2
   // 1 for Fz >= 0,
-  double mu = 1;
-  double x_max = 0.2;
-  double x_min = -0.05;
-  double y_max = 0.05;
-  double y_min = -0.05;
-  
   rowIdx = 0;
   // Fz >= 0;
   for (int i = 0; i < nContacts; i++) {
@@ -93,70 +87,70 @@ int QPController::control(const sfRobotState &rs, const QPInput &input, QPOutput
   // Fx <= mu * Fz, Fx - mu * Fz <= 0
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 3) = 1;
-    _CI(rowIdx, lambda_start+i*6 + 5) = -mu;
+    _CI(rowIdx, lambda_start+i*6 + 5) = -param.mu;
     _ci_u(rowIdx) = 0;
     rowIdx++;
   }
   // Fx >= -mu * Fz, Fx + mu * Fz >= 0
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 3) = 1;
-    _CI(rowIdx, lambda_start+i*6 + 5) = mu;
+    _CI(rowIdx, lambda_start+i*6 + 5) = param.mu;
     _ci_l(rowIdx) = 0;
     rowIdx++;
   }
   // Fy <= mu * Fz, Fy - mu * Fz <= 0
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 4) = 1;
-    _CI(rowIdx, lambda_start+i*6 + 5) = -mu;
+    _CI(rowIdx, lambda_start+i*6 + 5) = -param.mu;
     _ci_u(rowIdx) = 0;
     rowIdx++;
   }
   // Fy >= -mu * Fz, Fy + mu * Fz >= 0
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 4) = 1;
-    _CI(rowIdx, lambda_start+i*6 + 5) = mu;
+    _CI(rowIdx, lambda_start+i*6 + 5) = param.mu;
     _ci_l(rowIdx) = 0;
     rowIdx++;
   }
   // Mz <= mu * Fz, Mz - mu * Fz <= 0
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 2) = 1;
-    _CI(rowIdx, lambda_start+i*6 + 5) = -mu;
+    _CI(rowIdx, lambda_start+i*6 + 5) = -param.mu_Mz;
     _ci_u(rowIdx) = 0;
     rowIdx++;
   }
   // Mz >= -mu * Fz, Mz + mu * Fz >= 0
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 2) = 1;
-    _CI(rowIdx, lambda_start+i*6 + 5) = mu;
+    _CI(rowIdx, lambda_start+i*6 + 5) = param.mu_Mz;
     _ci_l(rowIdx) = 0;
     rowIdx++;
   }
   // cop_x <= x_max, -My / Fz <= x_max, -My - x_max * Fz <= 0
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 1) = -1;
-    _CI(rowIdx, lambda_start+i*6 + 5) = -x_max;
+    _CI(rowIdx, lambda_start+i*6 + 5) = -param.x_max;
     _ci_u(rowIdx) = 0;
     rowIdx++;
   }
   // cop_x >= x_min, -My / Fz >= x_min, -My - x_min * Fz >= 0
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 1) = -1;
-    _CI(rowIdx, lambda_start+i*6 + 5) = -x_min;
+    _CI(rowIdx, lambda_start+i*6 + 5) = -param.x_min;
     _ci_l(rowIdx) = 0;
     rowIdx++;
   }
   // cop_y <= y_max, Mx / Fz <= y_max, Mx - y_max * Fz <= 0
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 0) = 1;
-    _CI(rowIdx, lambda_start+i*6 + 5) = -y_max;
+    _CI(rowIdx, lambda_start+i*6 + 5) = -param.y_max;
     _ci_u(rowIdx) = 0;
     rowIdx++;
   }
   // cop_y >= y_min, Mx / Fz >= y_min, Mx - y_min * Fz >= 0
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 0) = 1;
-    _CI(rowIdx, lambda_start+i*6 + 5) = -y_min;
+    _CI(rowIdx, lambda_start+i*6 + 5) = -param.y_min;
     _ci_l(rowIdx) = 0;
     rowIdx++;
   }
@@ -253,7 +247,7 @@ void QPOutput::print() const
   std::cout << "===============================================\n";
   std::cout << "accelerations:\n";
   for (int i = 0; i < qdd.rows(); i++)
-    std::cout << names[i] << ": " << qdd[i] << std::endl;
+    std::cout << jointNames[i] << ": " << qdd[i] << std::endl;
  
   std::cout << "com acc: ";
   std::cout << comdd.transpose() << std::endl;
@@ -276,7 +270,7 @@ void QPOutput::print() const
   std::cout << "===============================================\n";
   std::cout << "torque:\n";
   for (int i = 0; i < trq.rows(); i++)
-    std::cout << names[i+6] << ": " << trq[i] << std::endl;
+    std::cout << jointNames[i+6] << ": " << trq[i] << std::endl;
    
 }
 

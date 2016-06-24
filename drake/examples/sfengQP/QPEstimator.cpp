@@ -181,9 +181,9 @@ int QPEstimator::estimate(double t, const VectorXd &q, const VectorXd &v, const 
   _h0.segment(qd_nxt_start,nQdd) += w_measured_vel * (-v);
 
   // wrench term, stuff measured in the body frame
-  _H.block(lambda_start,lambda_start,nWrench,nWrench) += w_measured_wrench * world_to_foot;
-  _h0.segment<6>(lambda_start) += w_measured_wrench * (-ft_l_b);
-  _h0.segment<6>(lambda_start+6) += w_measured_wrench * (-ft_r_b);
+  _H.block(lambda_start,lambda_start,nWrench,nWrench) += w_measured_wrench * MatrixXd::Identity(nWrench,nWrench);
+  _h0.segment<6>(lambda_start) += w_measured_wrench * world_to_foot.block<6,6>(0,0).transpose() * (-ft_l_b);
+  _h0.segment<6>(lambda_start+6) += w_measured_wrench * world_to_foot.block<6,6>(6,6).transpose() * (-ft_r_b);
 
   // measured torque
   // (Tau * X + tau0 - trq)^T * (Tau * X + tau0 - trq)
@@ -207,6 +207,16 @@ int QPEstimator::estimate(double t, const VectorXd &q, const VectorXd &v, const 
   */
 
   this->solve();
+
+  std::cout << "cost: " << 0.5*_X.transpose()*_H*_X + _h0.transpose()*_X << std::endl;
+  VectorXd X = _X;
+  X.segment(qd_nxt_start, nQdd) = v;
+  X.segment(error_start, nQdd).setZero();
+  X.segment(lambda_start, 6) = ft_l_b;
+  X.segment(lambda_start+6, 6) = ft_r_b;
+  X.segment(lambda_start, nWrench) = world_to_foot.transpose() * X.segment(lambda_start, nWrench); 
+  std::cout << "cost: " << 0.5*X.transpose()*_H*X + _h0.transpose()*X << std::endl;
+   
   
   ////////////////////////////////////////////////////////////////////
   // parse output,

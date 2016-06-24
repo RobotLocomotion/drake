@@ -1,0 +1,6 @@
+w_com           1e2
+w_pelv          1e1
+w_torso         1e1
+w_foot          1e1
+w_qdd           1e-2
+w_wrench_reg    1e-5

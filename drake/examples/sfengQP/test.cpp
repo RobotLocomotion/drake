@@ -51,6 +51,8 @@ int main()
   input.w_qdd = 1e-2;
   input.w_wrench_reg = 1e-5;
 
+  input.loadParamFromFile(std::string(VALKYRIE_URDF_PATH) + std::string("/qpc_params"));
+
   input.comdd_d.setZero();
   input.pelvdd_d.setZero();
   input.torsodd_d.setZero();
@@ -73,15 +75,14 @@ int main()
   est.dt = 2e-3;
 
   est.init(0, q, qd, output.trq, output.foot_wrench_in_sensor_frame[0], output.foot_wrench_in_sensor_frame[1]);
-  assert(rs.foot[0]->J.isApprox(est.rs.foot[0]->J, 1e-15));
-  assert(rs.foot[1]->J.isApprox(est.rs.foot[1]->J, 1e-15));
-  
   est.estimate(0, q, qd + output.qdd * est.dt, output.trq, output.foot_wrench_in_sensor_frame[0], output.foot_wrench_in_sensor_frame[1]);
 
   std::cout << "residual:\n" << est.residual << std::endl;
   std::cout << "\nvel:\n" << est.vel << std::endl;
   std::cout << "\ntrq:\n" << est.trq << std::endl;
   std::cout << "\nwrench:\n" << est.wrench << std::endl;
+  /*
+  */
 
   return 1;
 }
