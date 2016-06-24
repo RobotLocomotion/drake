@@ -131,6 +131,7 @@ class KinematicsCache {
     std::cout << "KinematicsCache::initialize: " << 4 << std::endl;
     velocity_vector_valid = false;
     std::cout << "KinematicsCache::initialize: " << 5 << std::endl;
+    std::cout << "KinematicsCache::initialize: Done method call." << std::endl;
   }
 
   template <typename DerivedQ, typename DerivedV>
