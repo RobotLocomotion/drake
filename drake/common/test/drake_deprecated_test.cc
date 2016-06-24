@@ -2,14 +2,9 @@
 
 #include "gtest/gtest.h"
 
-/* This test only verifies that the Drake build can still succeed if a
-deprecated class or function is in use.
-
-Note: It would be possible to test whether warnings are actually issued by
-building this test with compiler flags making the deprecated warning an error
-(-Werror=deprecated-declarations for gcc and clang), then using the technique
-used for drake_assert_test_compile to check for failure to compile. We are not
-doing that here. */
+/* This test verifies that the Drake build can still succeed if a deprecated
+class or function is in use, and (through CMakeLists.txt rules) that when
+deprecation warnings are promoted to errors, the build would fail. */
 
 namespace {
 
