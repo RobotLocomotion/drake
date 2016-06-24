@@ -10,6 +10,15 @@
 #include "drake/drakeCollision_export.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 
+// Forward declaration.
+// This forward declaration is made in order to be able to add a reference
+// to the parent body without the collision element ever using the RigidBody or
+// any of its methods.
+// This is particularly useful when the physics engine (at the RigidBody or
+// RigidBodyTree scope) needs to retrieve the parent body (for instance to
+// query its world transform).
+class RigidBody;
+
 namespace DrakeCollision {
 typedef uintptr_t ElementId;
 
@@ -37,6 +46,13 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
    */
   virtual bool CollidesWith(const Element* other) const { return true; }
 
+  /** Returns a pointer to the const RigidBody to which this CollisionElement
+  is attached. **/
+  const RigidBody* get_body() const;
+
+  /** Sets the rigid body this collision element is attached to. **/
+  void set_body(const RigidBody *body);
+
   /**
    * A toString method for this class.
    */
@@ -48,6 +64,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
  private:
   ElementId id;
+  const RigidBody* body_{};
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

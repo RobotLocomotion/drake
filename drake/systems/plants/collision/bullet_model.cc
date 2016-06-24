@@ -13,6 +13,12 @@ using Eigen::VectorXd;
 
 namespace DrakeCollision {
 
+// Helper method to convert a btVector3 to an Eigen vector representation.
+// Using Eigen::Map avoids unnecessary (expensive) copies.
+Eigen::Map<const Vector3d> toVector3d(const btVector3& bt_vec) {
+  return Eigen::Map<const Vector3d>(bt_vec.m_floats);
+}
+
 static const int kPerturbationIterations = 8;
 static const int kMinimumPointsPerturbationThreshold = 8;
 
@@ -270,7 +276,7 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
       kPerturbationIterations, kMinimumPointsPerturbationThreshold);
   bt_world.bt_collision_configuration.setPlaneConvexMultipointIterations(
       kPerturbationIterations, kMinimumPointsPerturbationThreshold);
-  BulletResultCollector c;
+  std::vector<PointPair> point_pairs;
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
   size_t numManifolds =
       bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
@@ -319,15 +325,16 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
       auto point_on_B =
           elements[idB]->getLocalTransform() * toVector3d(point_on_elemB);
 
-      c.addSingleResult(
-          idA, idB, point_on_A, point_on_B, toVector3d(normal_on_B),
+      point_pairs.emplace_back(
+          elements[idA].get(), elements[idB].get(),
+          point_on_A, point_on_B, toVector3d(normal_on_B),
           static_cast<double>(pt.getDistance()) + marginA + marginB);
     }
   }
 
   bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(0, 0);
   bt_world.bt_collision_configuration.setPlaneConvexMultipointIterations(0, 0);
-  return c.getResults();
+  return point_pairs;
 }
 
 bool BulletModel::collidingPointsCheckOnly(
@@ -451,7 +458,7 @@ bool BulletModel::findClosestPointsBetweenElements(
             .radius;
     double distance = (xA_world - xB_world).norm();
     result_collector->addSingleResult(
-        idA, idB,
+        elements[idA].get(), elements[idB].get(),
         elements[idA]->getLocalTransform() * TA_world.inverse() *
             (xA_world +
              (xB_world - xA_world) * radiusA /
@@ -528,7 +535,8 @@ bool BulletModel::findClosestPointsBetweenElements(
       gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld - pointOnBinWorld);
 
   if (gjkOutput.m_hasResult) {
-    result_collector->addSingleResult(idA, idB, point_on_A, point_on_B,
+    result_collector->addSingleResult(elements[idA].get(), elements[idB].get(),
+                                      point_on_A, point_on_B,
                                       toVector3d(gjkOutput.m_normalOnBInWorld),
                                       static_cast<double>(distance));
   } else {
@@ -544,8 +552,7 @@ bool BulletModel::findClosestPointsBetweenElements(
 void BulletModel::collisionDetectFromPoints(
     const Matrix3Xd& points, bool use_margins,
     std::vector<PointPair>& closest_points) {
-  closest_points.resize(
-      points.cols(), PointPair(0, 0, Vector3d(), Vector3d(), Vector3d(), 0.0));
+  closest_points.resize(points.cols());
   VectorXd phi(points.cols());
 
   btSphereShape shapeA(0.0);
@@ -587,8 +594,10 @@ void BulletModel::collisionDetectFromPoints(
         btVector3 pointOnElemB = input.m_transformB.invXform(pointOnBinWorld);
         phi[i] = distance;
         got_one = true;
+        Element* collision_element =
+            static_cast<Element*>(bt_objB->getUserPointer());
         closest_points[i] =
-            PointPair(bt_objB_iter->first, bt_objB_iter->first,
+            PointPair(collision_element, collision_element,
                       toVector3d(pointOnElemB), toVector3d(pointOnBinWorld),
                       toVector3d(gjkOutput.m_normalOnBInWorld), distance);
       }
@@ -718,7 +727,7 @@ bool BulletModel::ComputeMaximumDepthCollisionPoints(
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kCollisionPointsAllToAll;
 
-  BulletResultCollector c;
+  collision_points.clear();
   MatrixXd normals;
   std::vector<double> distance;
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
@@ -760,15 +769,15 @@ bool BulletModel::ComputeMaximumDepthCollisionPoints(
         const btVector3& normalOnB = pt.m_normalWorldOnB;
         const btVector3& ptA = pt.getPositionWorldOnA() + normalOnB * marginA;
         const btVector3& ptB = pt.getPositionWorldOnB() - normalOnB * marginB;
-        c.addSingleResult(elementA->getId(), elementB->getId(), toVector3d(ptA),
-                          toVector3d(ptB), toVector3d(normalOnB),
-                          static_cast<double>(
-                              pt.getDistance() + marginA + marginB));
+
+        collision_points.emplace_back(
+            elementA, elementB,
+            toVector3d(ptA), toVector3d(ptB), toVector3d(normalOnB),
+            static_cast<double>(pt.getDistance() + marginA + marginB));
       }
     }
   }
-  collision_points = c.getResults();
-  return c.pts.size() > 0;
+  return collision_points.size() > 0;
 }
 
 void BulletModel::ClearCachedResults(bool use_margins) {
