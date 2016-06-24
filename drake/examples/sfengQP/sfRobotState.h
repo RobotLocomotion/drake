@@ -9,14 +9,25 @@ using namespace Eigen;
 class BodyOfInterest {
 public:
   std::string name;
+  std::string link_name;
   Eigen::Isometry3d pose;
   Vector6d vel;
   
   MatrixXd J;
   Vector6d Jdv;
 
-  BodyOfInterest(const std::string &n) { name = n; }
-
+  BodyOfInterest(const std::string &n) 
+  { 
+    name = n;
+    link_name = n;
+  }
+  
+  BodyOfInterest(const std::string &n, const std::string &ln) 
+  { 
+    name = n;
+    link_name = ln;
+  }
+  
   void addToLog(Logger &logger) const
   {
     logger.add_datapoint(name+"[x]", "m", pose.translation().data());
@@ -53,19 +64,20 @@ public:
   VectorXd h;
 
   // computed from kinematics  
-  Isometry3d foot_ft_sensor[2];
-  Isometry3d foot_contact[2];
   Vector3d com;
   Vector3d comd;
   MatrixXd J_com;
   Vector3d Jdv_com;
 
   BodyOfInterest pelv;
-  BodyOfInterest l_foot;
-  BodyOfInterest r_foot;
+  BodyOfInterest l_foot; // at the bottom of foot
+  BodyOfInterest r_foot; // at the bottom of foot
+  BodyOfInterest l_foot_sensor;
+  BodyOfInterest r_foot_sensor;
   BodyOfInterest torso;
 
   std::vector<BodyOfInterest *> foot; // easy access to l_foot, r_foot
+  std::vector<BodyOfInterest *> foot_sensor; // easy access to l_foot_sensor, r_foot_sensor
 
   Vector2d cop;
   Vector2d cop_b[2];
@@ -79,6 +91,8 @@ public:
       pelv("pelvis"),
       l_foot("leftFoot"),
       r_foot("rightFoot"),
+      l_foot_sensor("leftFootSensor", "leftFoot"),
+      r_foot_sensor("rightFootSensor", "rightFoot"),
       torso("torso")
   {
     // build map
@@ -98,6 +112,10 @@ public:
     foot.resize(2);
     foot[Side::LEFT] = &l_foot;
     foot[Side::RIGHT] = &r_foot;
+    
+    foot_sensor.resize(2);
+    foot_sensor[Side::LEFT] = &l_foot_sensor;
+    foot_sensor[Side::RIGHT] = &r_foot_sensor;
 
     time = _time0 = 0;
   }
@@ -105,6 +123,7 @@ public:
   //void parseMsg(const bot_core::robot_state_t &msg);
   void addToLog(Logger &logger) const;
 
+  // ft_l, and ft_r needs to be ROTATED FIRST s.t. x fwd, z up!!!
   void update(double t, const VectorXd &q, const VectorXd &v, const VectorXd &trq, const Vector6d &l_ft, const Vector6d &r_ft);
 
 private:

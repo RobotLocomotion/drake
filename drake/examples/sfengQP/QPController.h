@@ -1,6 +1,9 @@
 #pragma once
 
 #include "sfRobotState.h"
+#include "sfQP.h"
+#include <exception>
+
 
 class QPInput {
 public:
@@ -17,6 +20,7 @@ public:
   double w_torso;
   double w_foot;
   double w_qdd;
+  double w_wrench_reg;
   
   void init(const RigidBodyTree &r) {
     for (int i = 0; i < r.number_of_positions(); i++)
@@ -25,14 +29,23 @@ public:
   }
 
   QPInput() { _inited = false; }
-  QPInput(const RigidBodyTree &r) { init(r); _inited = true; }
+  QPInput(const RigidBodyTree &r) { 
+    init(r);
+    qdd_d.resize(r.number_of_velocities());
+    _inited = true; 
+  }
   
-  bool isSane() const
-  {
+  bool isSane() const {
     bool ret = _inited;
     ret &= names.size() == qdd_d.size();
     return ret;
   }
+
+  class QPInputException : public std::exception {
+    virtual const char *what() const throw() {
+      return "Invalid QP Input.";
+    } 
+  };
 
 private:
   bool _inited;
@@ -50,7 +63,7 @@ public:
   VectorXd trq;
 
   Vector6d foot_wrench_w[2];
-  Vector6d foot_wrench_b[2];
+  Vector6d foot_wrench_in_sensor_frame[2];
   
   QPOutput() { _inited = false; }
   QPOutput(const RigidBodyTree &r) { init(r); _inited = true; }
@@ -71,15 +84,18 @@ public:
   
   void print() const;
 
+  class QPOutputException : public std::exception {
+    virtual const char *what() const throw() {
+      return "Invalid QP Output.";
+    } 
+  };
+ 
 private:
   bool _inited;
 };
 
-class QPController {
+class QPController : public sfQP {
 public:
   int control(const sfRobotState &rs, const QPInput &input, QPOutput &output);
 
-private:
-  MatrixXd _CE, _CI, _H;
-  VectorXd _ce0, _ci_l, _ci_u, _h0, _X;
 };

@@ -75,26 +75,20 @@ void sfRobotState::update(double t, const VectorXd &q, const VectorXd &v, const 
   comd = J_com * v;
 
   // body parts
-  _fillKinematics(pelv.name, pelv.pose, pelv.vel, pelv.J, pelv.Jdv);
-  _fillKinematics(l_foot.name, l_foot.pose, l_foot.vel, l_foot.J, l_foot.Jdv, Vector3d(0, 0, -0.09)); // 9cm below
-  _fillKinematics(r_foot.name, r_foot.pose, r_foot.vel, r_foot.J, r_foot.Jdv, Vector3d(0, 0, -0.09)); // 9cm below
-  _fillKinematics(torso.name, torso.pose, torso.vel, torso.J, torso.Jdv);
+  _fillKinematics(pelv.link_name, pelv.pose, pelv.vel, pelv.J, pelv.Jdv);
+  _fillKinematics(l_foot.link_name, l_foot.pose, l_foot.vel, l_foot.J, l_foot.Jdv, Vector3d(0, 0, -0.09)); // 9cm below
+  _fillKinematics(r_foot.link_name, r_foot.pose, r_foot.vel, r_foot.J, r_foot.Jdv, Vector3d(0, 0, -0.09)); // 9cm below
+  _fillKinematics(torso.link_name, torso.pose, torso.vel, torso.J, torso.Jdv);
+  
+  _fillKinematics(l_foot_sensor.link_name, l_foot_sensor.pose, l_foot_sensor.vel, l_foot_sensor.J, l_foot_sensor.Jdv, Vector3d(0.0215646, 0.0, -0.051054));
+  _fillKinematics(r_foot_sensor.link_name, r_foot_sensor.pose, r_foot_sensor.vel, r_foot_sensor.J, r_foot_sensor.Jdv, Vector3d(0.0215646, 0.0, -0.051054));
 
   // ft sensor
-  Eigen::Isometry3d ft_offset = Translation3d(Vector3d(0.0215646, 0.0, -0.051054)) * AngleAxisd(M_PI, Vector3d::UnitX());
-  foot_ft_sensor[Side::LEFT] = l_foot.pose * ft_offset;
-  foot_ft_sensor[Side::RIGHT] = r_foot.pose * ft_offset;
-  
   footFT_b[Side::LEFT] = l_ft;
   footFT_b[Side::RIGHT] = r_ft;
-
   for (int i = 0; i < 2; i++) {
-    // rotate the ft measurement to the same orientation as the foot
-    footFT_b[i].segment<3>(0) = ft_offset.linear() * footFT_b[i].segment<3>(0);
-    footFT_b[i].segment<3>(3) = ft_offset.linear() * footFT_b[i].segment<3>(3);
-
-    footFT_w[i].segment<3>(0) = foot[i]->pose.linear() * footFT_b[i].segment<3>(0);
-    footFT_w[i].segment<3>(3) = foot[i]->pose.linear() * footFT_b[i].segment<3>(3);
+    footFT_w[i].segment<3>(0) = foot_sensor[i]->pose.linear() * footFT_b[i].segment<3>(0);
+    footFT_w[i].segment<3>(3) = foot_sensor[i]->pose.linear() * footFT_b[i].segment<3>(3);
 
     //MatrixXd test = foot[i]->J;
     //test.block(0,0,6,6).setZero();
@@ -108,8 +102,8 @@ void sfRobotState::update(double t, const VectorXd &q, const VectorXd &v, const 
     cop_b[i][0] = -footFT_b[i][1] / footFT_b[i][5];
     cop_b[i][1] = footFT_b[i][0] / footFT_b[i][5];
     
-    cop_w[i][0] = -footFT_w[i][1] / footFT_w[i][5] + foot_ft_sensor[i].translation()[0];
-    cop_w[i][1] = footFT_w[i][0] / footFT_w[i][5] + foot_ft_sensor[i].translation()[1];
+    cop_w[i][0] = -footFT_w[i][1] / footFT_w[i][5] + foot_sensor[i]->pose.translation()[0];
+    cop_w[i][1] = footFT_w[i][0] / footFT_w[i][5] + foot_sensor[i]->pose.translation()[1];
   }
   cop = (cop_w[Side::LEFT]*footFT_b[Side::LEFT][5]+cop_w[Side::RIGHT]*footFT_b[Side::RIGHT][5]) / (footFT_b[Side::LEFT][5]+footFT_b[Side::RIGHT][5]);
 

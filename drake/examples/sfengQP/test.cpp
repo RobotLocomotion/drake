@@ -1,4 +1,5 @@
 #include "QPController.h"
+#include "QPEstimator.h"
 
 int main()
 {
@@ -37,12 +38,50 @@ int main()
    
   rs.update(0, q, qd, VectorXd::Zero(rs.robot->number_of_velocities()-6), Vector6d::Zero(), Vector6d::Zero());
   
+  // make controller
   QPController con;
   QPInput input(*rs.robot);
   QPOutput output(*rs.robot);
 
+  // setup input
+  input.w_com = 1e2;
+  input.w_pelv = 1e1;
+  input.w_torso = 1e1;
+  input.w_foot = 1e1;
+  input.w_qdd = 1e-2;
+  input.w_wrench_reg = 1e-5;
+
+  input.comdd_d.setZero();
+  input.pelvdd_d.setZero();
+  input.torsodd_d.setZero();
+  input.footdd_d[Side::LEFT].setZero();
+  input.footdd_d[Side::RIGHT].setZero();
+  input.qdd_d.setZero();
+
+  // call QP
   con.control(rs, input, output);
+
+  // print result
   output.print();
+
+  // make estimator
+  QPEstimator est(urdf);
+  est.w_error = 1;
+  est.w_measured_vel = 1;
+  est.w_measured_wrench = 1;
+  est.w_measured_trq = 1;
+  est.dt = 2e-3;
+
+  est.init(0, q, qd, output.trq, output.foot_wrench_in_sensor_frame[0], output.foot_wrench_in_sensor_frame[1]);
+  assert(rs.foot[0]->J.isApprox(est.rs.foot[0]->J, 1e-15));
+  assert(rs.foot[1]->J.isApprox(est.rs.foot[1]->J, 1e-15));
+  
+  est.estimate(0, q, qd + output.qdd * est.dt, output.trq, output.foot_wrench_in_sensor_frame[0], output.foot_wrench_in_sensor_frame[1]);
+
+  std::cout << "residual:\n" << est.residual << std::endl;
+  std::cout << "\nvel:\n" << est.vel << std::endl;
+  std::cout << "\ntrq:\n" << est.trq << std::endl;
+  std::cout << "\nwrench:\n" << est.wrench << std::endl;
 
   return 1;
 }
