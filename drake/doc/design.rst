@@ -27,5 +27,7 @@ Software Design Documents
 Mathematical Derivation Documents
 =================================
 
-- *Coming soon: System 2.0 Design*
+.. Create a bulleted list of links to software design documents (e.g.,
+.. restructured text, PDFs, Google Docs, URLs, etc.)
+
 - `Stereographic Projection <https://github.com/RobotLocomotion/drake/raw/master/drake/doc/derivations/stereographic.pdf>`_
