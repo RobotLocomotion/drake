@@ -4,9 +4,12 @@
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
 #include "drake/core/Vector.h"
+#include "drake/math/autodiff.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/util/drakeGradientUtil.h"
 #include "drake/util/drakeUtil.h"
+
+using drake::math::autoDiffToGradientMatrix;
 
 namespace Drake {
 

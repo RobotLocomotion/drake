@@ -9,6 +9,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
+#include "drake/math/autodiff.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
@@ -21,6 +22,8 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::autoDiffToValueMatrix;
 using drake::solvers::Constraint;
 using drake::solvers::DecisionVariableView;
 using drake::solvers::OptimizationProblem;
