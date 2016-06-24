@@ -70,6 +70,7 @@ set_tests_properties(
 add_executable(drake_deprecated_test drake_deprecated_test.cc)
 target_link_libraries(drake_deprecated_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Remove spurious warnings from the default build output.
   set_target_properties(
     drake_deprecated_test
     PROPERTIES COMPILE_FLAGS "-Wno-deprecated-declarations")
@@ -78,17 +79,19 @@ add_test(NAME drake_deprecated_test COMMAND drake_deprecated_test)
 
 # This block proves that DRAKE_DEPRECATED does cause deprecation warnings,
 # by promoting that warning to an error and looking for compile failure,
-# similar to the assert "nocompile" test above.
-add_executable(
-  drake_deprecated_test_nocompile
-  drake_deprecated_test.cc)
-target_link_libraries(
-  drake_deprecated_test_nocompile
-  drakeCommon ${GTEST_BOTH_LIBRARIES})
-set_target_properties(
-  drake_deprecated_test_nocompile
-  PROPERTIES EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+# similar to the assert "nocompile" test above.  We cannot run this test
+# on Windows, because drake_deprecated.h forces C4996 to be a warning; as
+# the code exists now, we cannot promote to an error via the command line.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_executable(
+    drake_deprecated_test_nocompile
+    drake_deprecated_test.cc)
+  target_link_libraries(
+    drake_deprecated_test_nocompile
+    drakeCommon ${GTEST_BOTH_LIBRARIES})
+  set_target_properties(
+    drake_deprecated_test_nocompile
+    PROPERTIES EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
   set_target_properties(
     drake_deprecated_test_nocompile
     PROPERTIES COMPILE_FLAGS "-Werror=deprecated-declarations")
