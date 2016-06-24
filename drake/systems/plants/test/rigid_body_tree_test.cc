@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
 #include "drake/Path.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -186,20 +187,22 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 }
 
 // Ensures RigidBodyTree::doKinemantics(q, v, bool) is explicitly instantiated
-// with matrix block input parameters. For more information, see:
+// with vector block input parameters. For more information, see:
 // https://github.com/RobotLocomotion/drake/issues/2634.
-TEST_F(RigidBodyTreeTest, TestDoKinematicsWithMatrixBlocks) {
+TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
   tree->addRobotFromURDF(Drake::getDrakePath() +
           "/systems/plants/test/two_dof_robot.urdf");
-  Eigen::Matrix<double, Eigen::Dynamic, 1> q;
-  Eigen::Matrix<double, Eigen::Dynamic, 1> v;
+  VectorX<double> q;
+  VectorX<double> v;
   q.resize(tree->number_of_positions());
   v.resize(tree->number_of_velocities());
   q.setZero();
   v.setZero();
 
-  auto q_block = q.head(q.size());
-  auto v_block = v.head(v.size());
+  Eigen::MatrixBase<Eigen::Block<Eigen::VectorXd, -1, 1, false>>
+    q_block = q.head(q.size());
+  Eigen::MatrixBase<Eigen::Block<Eigen::VectorXd, -1, 1, false>>
+    v_block = v.head(v.size());
 
   KinematicsCache<double> cache = tree->doKinematics(q_block, v_block);
   EXPECT_TRUE(cache.hasV());
