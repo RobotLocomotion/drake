@@ -64,7 +64,7 @@ class MathematicalProgram : public MathematicalProgramInterface {
 
 class NonlinearProgram : public MathematicalProgram {
  public:
-  //todo(naveenoid) : bug exists in adding a Linear Quadratic or
+  // todo(naveenoid) : bug exists in adding a Linear Quadratic or
   // Generic Cost to a NonlinearProgram
   MathematicalProgramInterface* AddGenericObjective() override {
     return new NonlinearProgram;
@@ -147,7 +147,7 @@ class LinearComplementarityProblem : public MathematicalProgram {
   MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
     return new LinearComplementarityProblem;
   };
-  //todo(naveenoid) : bug exists in adding a QuadraticCost to an LCP Problem.
+  // todo(naveenoid) : bug exists in adding a QuadraticCost to an LCP Problem.
   // Ideal fix involves rewrite of this entire class hierarchy.
 };
 

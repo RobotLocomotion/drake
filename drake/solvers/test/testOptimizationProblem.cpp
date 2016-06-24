@@ -60,7 +60,7 @@ struct Unique {
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
-//todo(naveenoid) : tests need to be purged of Random initializations.
+// todo(naveenoid) : tests need to be purged of Random initializations.
 
 GTEST_TEST(testOptimizationProblem, testAddFunction) {
   OptimizationProblem prog;
