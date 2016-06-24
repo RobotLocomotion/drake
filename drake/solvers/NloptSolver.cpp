@@ -240,7 +240,7 @@ void WrapConstraint(const _Binding& binding,
   const Eigen::VectorXd& lower_bound = binding.constraint()->lower_bound();
   const Eigen::VectorXd& upper_bound = binding.constraint()->upper_bound();
   DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
-  for (size_t i = 0; i < lower_bound.size(); i++) {
+  for (size_t i = 0; i < static_cast<size_t>(lower_bound.size()); i++) {
     if (lower_bound(i) == upper_bound(i)) {
       wrapped_eq.active_constraints.insert(i);
     } else {
@@ -308,7 +308,7 @@ SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
     const Eigen::VectorXd& lower_bound = c->lower_bound();
     const Eigen::VectorXd& upper_bound = c->upper_bound();
     for (const DecisionVariableView& v : binding.variable_list()) {
-      for (int k = 0; k < v.size(); k++) {
+      for (size_t k = 0; k < v.size(); k++) {
         const int idx = v.index() + k;
         xlow[idx] = std::max(lower_bound(k), xlow[idx]);
         xupp[idx] = std::min(upper_bound(k), xupp[idx]);

@@ -78,7 +78,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   DecisionVariableView(const DecisionVariable& var, size_t start, size_t n)
       : var_(var), start_index_(start), size_(n) {
-    DRAKE_ASSERT(start + n < var.value().rows());
+    DRAKE_ASSERT((start + n) < static_cast<size_t>(var.value().rows()));
   }
 
   /** index()
@@ -101,7 +101,8 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   }
 
   std::string name() const {
-    if (start_index_ == 0 && size_ == var_.value().size()) {
+    if ((start_index_ == 0) &&
+        (size_ == static_cast<size_t>(var_.value().size()))) {
       return var_.name();
     } else {
       return var_.name() + "(" + std::to_string(start_index_) + ":" +
@@ -197,7 +198,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
      */
     void WriteThrough(const Eigen::VectorXd& solution,
                       Eigen::VectorXd* output) const {
-      DRAKE_ASSERT(solution.rows() == GetNumElements());
+      DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
       size_t solution_index = 0;
       for (auto view : variable_list_) {
         const auto& solution_segment =
@@ -230,15 +231,19 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override {
       y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
-      DRAKE_ASSERT(x.rows() == Drake::FunctionTraits<F>::numInputs(f_));
-      DRAKE_ASSERT(y.rows() == Drake::FunctionTraits<F>::numOutputs(f_));
+      DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
+                   Drake::FunctionTraits<F>::numInputs(f_));
+      DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
+                   Drake::FunctionTraits<F>::numOutputs(f_));
       Drake::FunctionTraits<F>::eval(f_, x, y);
     }
     void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
               Drake::TaylorVecXd& y) const override {
       y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
-      DRAKE_ASSERT(x.rows() == Drake::FunctionTraits<F>::numInputs(f_));
-      DRAKE_ASSERT(y.rows() == Drake::FunctionTraits<F>::numOutputs(f_));
+      DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
+                   Drake::FunctionTraits<F>::numInputs(f_));
+      DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
+                   Drake::FunctionTraits<F>::numOutputs(f_));
       Drake::FunctionTraits<F>::eval(f_, x, y);
     }
   };
@@ -648,7 +653,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   template <typename Derived>
   void SetDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
-    DRAKE_ASSERT(x.rows() == num_vars_);
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == num_vars_);
     size_t index = 0;
     for (auto& v : variables_) {
       v.set_value(x.middleRows(index, v.value().rows()));
