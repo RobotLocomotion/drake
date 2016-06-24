@@ -1,13 +1,18 @@
 #include <Eigen/Core>
+
+#include "drake/math/autodiff.h"
+#include "drake/math/expmap.h"
 #include "drake/util/mexify.h"
 #include "drake/util/standardMexConversions.h"
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/makeFunction.h"
 #include "drake/core/Gradient.h"
 
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+
+using drake::math::autoDiffToValueMatrix;
+using drake::math::autoDiffToGradientMatrix;
 
 // note: gradient only w.r.t. expmap2...
 pair<Vector3d, typename Gradient<Vector3d, 3>::type> closestExpmapWithGradient(
@@ -16,15 +21,16 @@ pair<Vector3d, typename Gradient<Vector3d, 3>::type> closestExpmapWithGradient(
   auto expmap2_autodiff = initializeAutoDiff(expmap2);
   auto expmap1_autodiff =
       (expmap1.cast<decltype(expmap2_autodiff)::Scalar>()).eval();
-  auto closest_autodiff = closestExpmap(expmap1_autodiff, expmap2_autodiff);
+  auto closest_autodiff = drake::math::closestExpmap(expmap1_autodiff,
+                                                     expmap2_autodiff);
   return make_pair(autoDiffToValueMatrix(closest_autodiff),
                    autoDiffToGradientMatrix(closest_autodiff));
 }
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nlhs == 1) {
-    auto func =
-        make_function(&closestExpmap<Map<const Vector3d>, Map<const Vector3d>>);
+    auto func = make_function(
+        &drake::math::closestExpmap<Map<const Vector3d>, Map<const Vector3d>>);
     mexCallFunction(nlhs, plhs, nrhs, prhs, true, func);
   } else if (nlhs == 2) {
     auto func = make_function(&closestExpmapWithGradient);

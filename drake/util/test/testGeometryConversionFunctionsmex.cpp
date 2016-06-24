@@ -1,8 +1,12 @@
+#include "drake/math/autodiff.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeMexUtil.h"
 #include "drake/core/Gradient.h"
 
 using namespace Eigen;
+
+using drake::math::autoDiffToValueMatrix;
+using drake::math::autoDiffToGradientMatrix;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 2 || nlhs != 12) {

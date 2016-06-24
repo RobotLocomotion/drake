@@ -1,6 +1,8 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/gradient.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -16,6 +18,7 @@
 
 using namespace std;
 using namespace Eigen;
+
 using drake::AutoDiffUpTo73d;
 using drake::AutoDiffXd;
 using drake::Matrix3X;
@@ -23,6 +26,9 @@ using drake::Matrix4X;
 using drake::MatrixX;
 using drake::Vector3;
 using drake::VectorX;
+
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::Gradient;
 
 /// A column vector consisting of one twist.
 template <typename Scalar>
@@ -424,10 +430,8 @@ void RigidBodyTree::collisionDetectFromPoints(
     body_x.col(i) = ptA;
     normal.col(i) = n;
     phi[i] = distance;
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(closest_points[i].getIdB()));
-    body_idx.push_back(elementB->getBody().body_index);
+    const DrakeCollision::Element* elementB = closest_points[i].get_elementB();
+    body_idx.push_back(elementB->get_body()->body_index);
   }
 }
 
@@ -475,14 +479,10 @@ bool RigidBodyTree::collisionDetect(
     xB.col(i) = ptB;
     normal.col(i) = n;
     phi[i] = distance;
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(points[i].getIdA()));
-    bodyA_idx.push_back(elementA->getBody().body_index);
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(points[i].getIdB()));
-    bodyB_idx.push_back(elementB->getBody().body_index);
+    const DrakeCollision::Element* elementA = points[i].get_elementA();
+    bodyA_idx.push_back(elementA->get_body()->body_index);
+    const DrakeCollision::Element* elementB = points[i].get_elementB();
+    bodyB_idx.push_back(elementB->get_body()->body_index);
   }
   return points_found;
 }
@@ -580,19 +580,17 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   double distance;
 
   for (size_t i = 0; i < num_potential_collisions; i++) {
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(potential_collisions[i].getIdA()));
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(potential_collisions[i].getIdB()));
+    const DrakeCollision::Element* elementA =
+        potential_collisions[i].get_elementA();
+    const DrakeCollision::Element* elementB =
+        potential_collisions[i].get_elementB();
     potential_collisions[i].getResults(&ptA, &ptB, &n, &distance);
     xA.col(i) = ptA;
     xB.col(i) = ptB;
     normal.col(i) = n;
     phi[i] = distance;
-    bodyA_idx.push_back(elementA->getBody().body_index);
-    bodyB_idx.push_back(elementB->getBody().body_index);
+    bodyA_idx.push_back(elementA->get_body()->body_index);
+    bodyB_idx.push_back(elementB->get_body()->body_index);
   }
 }
 
@@ -631,14 +629,10 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
     xA_in_world.col(i) = ptA;
     xB_in_world.col(i) = ptB;
 
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(points[i].getIdA()));
-    bodyA_idx.push_back(elementA->getBody().body_index);
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(points[i].getIdB()));
-    bodyB_idx.push_back(elementB->getBody().body_index);
+    const DrakeCollision::Element* elementA = points[i].get_elementA();
+    bodyA_idx.push_back(elementA->get_body()->body_index);
+    const DrakeCollision::Element* elementB = points[i].get_elementB();
+    bodyB_idx.push_back(elementB->get_body()->body_index);
   }
   return points_found;
 }
