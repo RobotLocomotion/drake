@@ -191,7 +191,8 @@ class LeastSquares : public QuadraticProgram {
     }
 
     Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(
-        num_constraints, prog.num_vars());  // TODO: use a sparse matrix here?
+        num_constraints, prog.num_vars());
+    // TODO(naveenoid) : use a sparse matrix here?
     Eigen::VectorXd beq(num_constraints);
 
     size_t constraint_index = 0;

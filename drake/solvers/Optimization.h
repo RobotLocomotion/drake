@@ -630,7 +630,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   SolutionResult Solve() {
     return problem_type_->Solve(*this);
-  }  // TODO: add argument for options
+  }  // TODO(naveenoid) : add argument for options
 
   //    template <typename Derived>
   //    bool solve(const Eigen::MatrixBase<Derived>& x0);
