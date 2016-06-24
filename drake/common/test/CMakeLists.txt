@@ -73,6 +73,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   set_target_properties(
     drake_deprecated_test
     PROPERTIES COMPILE_FLAGS "-Wno-deprecated-declarations")
+elseif(MSVC)
+  set_target_properties(
+    drake_deprecated_test
+    PROPERTIES COMPILE_FLAGS "/wd4996")
 endif()
 add_test(NAME drake_deprecated_test COMMAND drake_deprecated_test)
 
@@ -92,12 +96,16 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   set_target_properties(
     drake_deprecated_test_nocompile
     PROPERTIES COMPILE_FLAGS "-Werror=deprecated-declarations")
-  add_test(NAME
-    drake_deprecated_test_nocompile
-    COMMAND ${CMAKE_COMMAND} --build . --target
-    drake_deprecated_test_nocompile --config $<CONFIGURATION>
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-  set_tests_properties(
-    drake_deprecated_test_nocompile
-    PROPERTIES WILL_FAIL TRUE)
+elseif(MSVC)
+  set_target_properties(
+    drake_deprecated_test
+    PROPERTIES COMPILE_FLAGS "/we4996")
 endif()
+add_test(NAME
+  drake_deprecated_test_nocompile
+  COMMAND ${CMAKE_COMMAND} --build . --target
+  drake_deprecated_test_nocompile --config $<CONFIGURATION>
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+set_tests_properties(
+  drake_deprecated_test_nocompile
+  PROPERTIES WILL_FAIL TRUE)
