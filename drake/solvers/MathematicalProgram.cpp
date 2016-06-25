@@ -20,14 +20,6 @@ class MathematicalProgram : public MathematicalProgramInterface {
      below
      virtual MathematicalProgramInterface* AddIntegerVariable() { return new
      MathematicalProgram; }
-
-     virtual MathematicalProgramInterface* AddLinearCost() { return new
-     MathematicalProgram; }
-     virtual MathematicalProgramInterface* AddQuadraticCost() { return new
-     MathematicalProgram; }
-     virtual MathematicalProgramInterface* AddCost() { return new
-     MathematicalProgram; }
-
      virtual MathematicalProgramInterface* AddSumsOfSquaresConstraint() { return
      new
      MathematicalProgram; }
@@ -41,6 +33,13 @@ class MathematicalProgram : public MathematicalProgramInterface {
      return new
      MathematicalProgram; };
   */
+  MathematicalProgramInterface* AddQuadraticCost() override {
+    return new MathematicalProgram;
+  }
+  MathematicalProgramInterface* AddLinearCost() override {
+    return new MathematicalProgram;
+  }
+  // TODO(naveenoid) : Objective to be refactored to Cost.
   MathematicalProgramInterface* AddGenericObjective() override {
     return new MathematicalProgram;
   };
@@ -65,6 +64,8 @@ class MathematicalProgram : public MathematicalProgramInterface {
 
 class NonlinearProgram : public MathematicalProgram {
  public:
+  // TODO(naveenoid) : bug exists in adding a Linear Quadratic or
+  // Generic Cost to a NonlinearProgram
   MathematicalProgramInterface* AddGenericObjective() override {
     return new NonlinearProgram;
   };
@@ -124,7 +125,8 @@ class NonlinearProgram : public MathematicalProgram {
     virtual MathematicalProgramInterface* AddLinearEqualityConstraint() { return
    new
     LinearProgram; };
-    virtual MathematicalProgramInterface* AddLinearInequalityConstraint() { return
+    virtual MathematicalProgramInterface* AddLinearInequalityConstraint() {
+   return
     new LinearProgram; };
     };
 
@@ -145,9 +147,34 @@ class LinearComplementarityProblem : public MathematicalProgram {
   MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
     return new LinearComplementarityProblem;
   };
+  // TODO(naveenoid) : bug exists in adding a QuadraticCost to an LCP Problem.
+  // Ideal fix involves rewrite of this entire class hierarchy.
 };
 
-class LeastSquares : public NonlinearProgram {  // public LinearProgram, public
+class QuadraticProgram : public NonlinearProgram {
+ public:
+  MathematicalProgramInterface* AddQuadraticCost() override {
+    return new QuadraticProgram;
+  };
+  MathematicalProgramInterface* AddLinearCost() override {
+    return new QuadraticProgram;
+  }
+
+  MathematicalProgramInterface* AddLinearConstraint() override {
+    return new QuadraticProgram;
+  };
+  MathematicalProgramInterface* AddLinearEqualityConstraint() override {
+    return new QuadraticProgram;
+  };
+
+  SolutionResult Solve(OptimizationProblem& prog) const override {
+    return NonlinearProgram::Solve(prog);
+  }
+
+  // TODO(naveenoid) : add Gurobi wrapper object, and solve here.
+};
+
+class LeastSquares : public QuadraticProgram {
  public:
   // LinearComplementarityProblem
   MathematicalProgramInterface* AddLinearEqualityConstraint() override {
@@ -164,7 +191,8 @@ class LeastSquares : public NonlinearProgram {  // public LinearProgram, public
     }
 
     Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(
-        num_constraints, prog.num_vars());  // todo: use a sparse matrix here?
+        num_constraints, prog.num_vars());
+    // TODO(naveenoid) : use a sparse matrix here?
     Eigen::VectorXd beq(num_constraints);
 
     size_t constraint_index = 0;
