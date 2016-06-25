@@ -5,8 +5,11 @@ Documentation Generation Instructions
 *************************************
 
 This section contains instructions on how to generate Drake's documentation.
-This includes both API documentation, which uses
-`Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_, and Drake's website, which
+This includes both API documentation
+(`C++ <http://drake.mit.edu/doxygen_cxx/index.html>`_ and
+`MATLAB <http://drake.mit.edu/doxygen_matlab/index.html>`_),
+which uses `Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_, and
+`Drake's website <http://drake.mit.edu>`_, which
 uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_.
 
 Drake's documentation is built using the ``documentation`` build target. It must
