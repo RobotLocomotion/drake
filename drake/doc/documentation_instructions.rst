@@ -10,11 +10,11 @@ This includes both API documentation, which uses
 uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_.
 
 Drake's documentation is built using the ``documentation`` build target. It must
-first be enabled prior to documentation generation. The process also depends
+first be enabled prior to documentation generation. This process depends
 on whether Drake is being built in-source our out-of-source, and which build
 system is being used, e.g., ``make``, ``ninja``, or ``MSVC``. The following
 subsections describe the process for the officially-supported configurations.
-Please jump to the subsection that matches the build style being employed.
+Please jump to the subsection that matches the build style and tool employed.
 
 .. _documentation-in-source-make:
 
