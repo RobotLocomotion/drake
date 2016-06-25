@@ -123,10 +123,7 @@ class KinematicsCache {
     static_assert(std::is_same<typename Derived::Scalar, Scalar>::value,
                   "scalar type of q must match scalar type of KinematicsCache");
     DRAKE_ASSERT(this->q.rows() == q.rows());
-
-    this->q.resize(q.size());
     this->q = q;
-
     invalidate();
     velocity_vector_valid = false;
   }

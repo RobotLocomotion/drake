@@ -2390,6 +2390,10 @@ template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Block<VectorXd const, -1, 1, false>> const&,
     Eigen::MatrixBase<Eigen::Block<VectorXd const, -1, 1, false>> const&,
     bool) const;
+template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&,
+    Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&,
+    bool) const;
 template DRAKERBM_EXPORT KinematicsCache<AutoDiffXd>
 RigidBodyTree::doKinematics(Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
                             Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
@@ -2404,7 +2408,3 @@ template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
 template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&, bool) const;
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
-    Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&,
-    Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&,
-    bool) const;
