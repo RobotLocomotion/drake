@@ -1,5 +1,3 @@
-if(GTEST_FOUND)
-  add_executable(rigid_body_system_test rigid_body_system_test.cc)
-  target_link_libraries(rigid_body_system_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME rigid_body_system_test COMMAND rigid_body_system_test)
-endif()
+add_executable(rigid_body_system_test rigid_body_system_test.cc)
+target_link_libraries(rigid_body_system_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+add_test(NAME rigid_body_system_test COMMAND rigid_body_system_test)
