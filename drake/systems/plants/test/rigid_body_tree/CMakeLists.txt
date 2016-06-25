@@ -1,0 +1,5 @@
+if(GTEST_FOUND)
+    add_executable(rigid_body_tree_test rigid_body_tree_test.cc)
+    target_link_libraries(rigid_body_tree_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+    add_test(NAME rigid_body_tree_test COMMAND rigid_body_tree_test)
+endif()
