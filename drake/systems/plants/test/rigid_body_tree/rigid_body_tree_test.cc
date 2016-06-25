@@ -194,26 +194,21 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
           "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
   std::cout << "file name: " << file_name << std::endl;
   tree->addRobotFromURDF(file_name);
-  std::cout << "1" << std::endl;
+
   VectorX<double> q;
   VectorX<double> v;
-  std::cout << "2" << std::endl;
   q.resize(tree->number_of_positions());
   v.resize(tree->number_of_velocities());
   q.setZero();
   v.setZero();
-  std::cout << "3" << std::endl;
 
-  Eigen::MatrixBase<Eigen::Block<Eigen::VectorXd, -1, 1, false>>
+  Eigen::VectorBlock<Eigen::Matrix<double, -1, 1>, -1>
     q_block = q.head(q.size());
-  Eigen::MatrixBase<Eigen::Block<Eigen::VectorXd, -1, 1, false>>
+  Eigen::VectorBlock<Eigen::Matrix<double, -1, 1>, -1>
     v_block = v.head(v.size());
 
-  std::cout << "4" << std::endl;
   KinematicsCache<double> cache = tree->doKinematics(q_block, v_block);
-  std::cout << "5" << std::endl;
   EXPECT_TRUE(cache.hasV());
-  std::cout << "6" << std::endl;
 }
 
 }  // namespace
