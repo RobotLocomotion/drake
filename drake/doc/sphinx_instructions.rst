@@ -4,8 +4,9 @@
 Sphinx Instructions
 ********************
 
-This section constains instructions on how to use Sphinx with Drake.
-Sphinx is the framework for gerating Drake's `website <http://drake.mit.edu>`_.
+This section contains instructions on how to use Sphinx with Drake.
+Sphinx is the framework for generating Drake's
+`website <http://drake.mit.edu>`_.
 
 .. _sphinx-generation:
 
