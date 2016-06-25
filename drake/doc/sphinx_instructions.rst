@@ -13,4 +13,4 @@ Sphinx Website Generation
 ==========================
 
 To generate and view Drake's website, see:
-:ref:`Documentation Instructions<documentation-instructions>`.
+:ref:`Documentation Instructions<documentation-generation-instructions>`.

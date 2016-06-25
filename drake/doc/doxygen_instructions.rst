@@ -22,4 +22,4 @@ Doxygen Website Generation
 ==========================
 
 To generate and view Drake's Doxygen website, see:
-:ref:`Documentation Instructions<documentation-instructions>`.
+:ref:`Documentation Instructions<documentation-generation-instructions>`.

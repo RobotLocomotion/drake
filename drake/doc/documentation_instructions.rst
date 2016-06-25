@@ -1,22 +1,22 @@
-.. _documentation-instructions:
+.. _documentation-generation-instructions:
 
-**************************
-Documentation Instructions
-**************************
+*************************************
+Documentation Generation Instructions
+*************************************
 
-This section contains instructions on how to build Drake's documentation. This
-includes both generating the API documentation using
-`Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_ and the website using
-`Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_.
+This section contains instructions on how to generate Drake's documentation.
+This includes both API documentation, which uses
+`Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_, and Drake's website, which
+uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_.
 
 Drake's documentation is built using the ``documentation`` build target. It must
 first be enabled prior to documentation generation. The process also depends
-on whether Drake is being built in-source our out of source and which build
-system is being used (e.g., ``make``, ``ninja``, or ``MSVC``). The following
+on whether Drake is being built in-source our out-of-source, and which build
+system is being used, e.g., ``make``, ``ninja``, or ``MSVC``. The following
 subsections describe the process for the officially-supported configurations.
 Please jump to the subsection that matches the build style being employed.
 
-.. _documentation-in-source-make
+.. _documentation-in-source-make:
 
 In-source Builds Using ``make``
 ===============================
@@ -41,7 +41,7 @@ to build the documentation::
 To view the generated documentation, see:
 :ref:`Viewing Generated Documentation <viewing-generated-documentation>`
 
-.. _documentation-out-of-source-ninja
+.. _documentation-out-of-source-ninja:
 
 Out-of-source Builds Using ``ninja``
 ====================================
@@ -66,7 +66,7 @@ to build the documentation::
 To view the generated documentation, see:
 :ref:`Viewing Generated Documentation <viewing-generated-documentation>`
 
-.. _documentation-out-of-source-msvc
+.. _documentation-out-of-source-msvc:
 
 Out-of-source Builds Using ``MSVC``
 ===================================
@@ -86,13 +86,18 @@ In Visual Studio, there is a ``documentation`` target that's visible through the
 Solution Explorer, as shown below:
 
 .. image:: images/doxygen_instructions/visual_studio_build_targets.png
+   :width: 500 px
+   :align: center
 
 To build the documentation, simply select and build the ``documentation`` target
 in the IDE. Note that in Microsoft Visual Studio, the ``documentation`` target
 is not built when building the other targets, meaning there is one less reason
 to disable the ``documentation`` target.
 
-.. _viewing-generated-documentation
+To view the generated documentation, see:
+:ref:`Viewing Generated Documentation <viewing-generated-documentation>`
+
+.. _viewing-generated-documentation:
 
 Viewing the Generated Documentation
 ===================================
