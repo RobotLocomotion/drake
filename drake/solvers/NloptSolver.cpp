@@ -43,7 +43,7 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
 
 // This function meets the signature requirements for nlopt::vfunc as
 // described in
-// http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#Objective_function
+// http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#ObjectCostive_function
 double EvaluateCosts(const std::vector<double>& x,
                      std::vector<double>& grad,
                      void* f_data) {
@@ -61,7 +61,7 @@ double EvaluateCosts(const std::vector<double>& x,
     grad.assign(grad.size(), 0);
   }
 
-  for (auto const& binding : prog->generic_objectives()) {
+  for (auto const& binding : prog->generic_costs()) {
     size_t index = 0;
     for (const DecisionVariableView& v : binding.variable_list()) {
       this_x.conservativeResize(index + v.size());
