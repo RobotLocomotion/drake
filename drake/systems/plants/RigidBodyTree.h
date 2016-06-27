@@ -553,23 +553,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
    @param cache[in] a KinematicsCache constructed by RigidBodyTree::doKinematics
    given `q` and `v`.
 
-   Collision points are returned in a series of vectors with as many entries as
-   collision points found.
-
-   @param phi[out] A vector containing the closest distance between
-   RigidBody's that are in contact.
-
-   @param normal[out] The normal vector reported in world's frame. Since the
-   normal on body A equals the normal on body B but points in the opposite
-   direction, the normal is only reported for body B.
-
-   @param xA[out] The collision point on body A reported on body A's frame.
-
-   @param xB[out] The collision point on body B reported on body B's frame.
-
-   @param bodyA_idx[out] Index for body A in RigidBodyTree::bodies.
-
-   @param bodyB_idx[out] Index for body B in RigidBodyTree::bodies.
+   Collision points are returned as a vector of PontPair's.
+   See the documentation for PointPair for details.
 
    @param use_margins[in] If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.

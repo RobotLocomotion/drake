@@ -8,6 +8,7 @@
 
 namespace DrakeCollision {
 
+/** Structure containing the results of a collision query. **/
 struct DRAKECOLLISION_EXPORT PointPair {
   PointPair() {}
 
@@ -57,13 +58,29 @@ struct DRAKECOLLISION_EXPORT PointPair {
     return (distance_ >= pt.distance_);
   }
 
+  /** Element A in the pair participating in the collision. **/
   const Element* elementA_{nullptr};
+
+  /** Element B in the pair participating in the collision. **/
   const Element* elementB_{nullptr};
+
+  /** Id of element A participating in the collision. **/
   ElementId idA_{0};
+
+  /** Id of element B participating in the collision. **/
   ElementId idB_{0};
+
+  /** Collision point on the surface of body A. **/
   Eigen::Vector3d ptA_;
+
+  /** Collision point on the surface of body B. **/
   Eigen::Vector3d ptB_;
+
+  /** Outwards normal on body B. On body A it points in the opposite
+  direction. **/
   Eigen::Vector3d normal_;
+
+  /** Distance between the point on body A and the point on body B. **/
   double distance_{};
 };
 
