@@ -39,10 +39,11 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   using DrakeJoint::getNumVelocities;
 
   template <typename DerivedQ, typename DerivedMS>
-  void motionSubspace(const Eigen::MatrixBase<DerivedQ>& q,
-                      Eigen::MatrixBase<DerivedMS>& motion_subspace,
-                      typename Gradient<DerivedMS, Eigen::Dynamic>::type*
-                          dmotion_subspace = nullptr) const {
+  void motionSubspace(
+      const Eigen::MatrixBase<DerivedQ>& q,
+      Eigen::MatrixBase<DerivedMS>& motion_subspace,
+      typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
+          dmotion_subspace = nullptr) const {
     motion_subspace = joint_axis.cast<typename DerivedQ::Scalar>();
     if (dmotion_subspace) {
       dmotion_subspace->setZero(motion_subspace.size(), getNumPositions());
@@ -55,12 +56,12 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
       const Eigen::MatrixBase<DerivedV>& v,
       Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>&
           motion_subspace_dot_times_v,
-      typename Gradient<Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>,
-                        Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq =
-          nullptr,
-      typename Gradient<Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>,
-                        Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv =
-          nullptr) const {
+      typename drake::math::Gradient<
+          Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type*
+          dmotion_subspace_dot_times_vdq = nullptr,
+      typename drake::math::Gradient<
+          Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type*
+          dmotion_subspace_dot_times_vdv = nullptr) const {
     motion_subspace_dot_times_v.setZero();
 
     if (dmotion_subspace_dot_times_vdq) {
@@ -115,8 +116,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return ret;
   }
 
-  void setJointLimits(
-      double joint_limit_min, double joint_limit_max) {
+  void setJointLimits(double joint_limit_min, double joint_limit_max) {
     if (joint_limit_min > joint_limit_max) {
       throw std::logic_error(
           "ERROR: joint_limit_min cannot be larger than joint_limit_max");

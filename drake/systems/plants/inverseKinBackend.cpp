@@ -6,8 +6,10 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+#include "drake/common/drake_assert.h"
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
+#include "drake/math/autodiff.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
@@ -20,6 +22,8 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::autoDiffToValueMatrix;
 using drake::solvers::Constraint;
 using drake::solvers::DecisionVariableView;
 using drake::solvers::OptimizationProblem;
@@ -175,8 +179,8 @@ void inverseKinMode1(
         VectorXd A;
         st_lpc->geval(&t[t_index], iAfun, jAvar, A);
 
-        assert(iAfun.size() == jAvar.size());
-        assert(iAfun.size() == A.size());
+        DRAKE_ASSERT(iAfun.size() == jAvar.size());
+        DRAKE_ASSERT(iAfun.size() == A.size());
 
         typedef Eigen::Triplet<double> T;
         std::vector<T> triplet_list;

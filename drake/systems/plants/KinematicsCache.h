@@ -4,13 +4,16 @@
 #include <Eigen/Geometry>
 #include <unordered_map>
 #include <vector>
-#include <cassert>
 #include <numeric>
 #include <type_traits>
 #include <stdexcept>
 #include <utility>
+
+#include "drake/common/drake_assert.h"
+#include "drake/systems/plants/RigidBody.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeGradientUtil.h"
-#include "RigidBody.h"
 
 template <typename Scalar>
 class KinematicsCacheElement {
@@ -119,7 +122,7 @@ class KinematicsCache {
     static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");
     static_assert(std::is_same<typename Derived::Scalar, Scalar>::value,
                   "scalar type of q must match scalar type of KinematicsCache");
-    assert(this->q.rows() == q.rows());
+    DRAKE_ASSERT(this->q.rows() == q.rows());
     this->q = q;
     invalidate();
     velocity_vector_valid = false;
@@ -132,7 +135,7 @@ class KinematicsCache {
     static_assert(DerivedV::ColsAtCompileTime == 1, "v must be a vector");
     static_assert(std::is_same<typename DerivedV::Scalar, Scalar>::value,
                   "scalar type of v must match scalar type of KinematicsCache");
-    assert(this->v.rows() == v.rows());
+    DRAKE_ASSERT(this->v.rows() == v.rows());
     this->v = v;
     velocity_vector_valid = true;
   }

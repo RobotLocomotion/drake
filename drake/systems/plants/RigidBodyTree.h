@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
@@ -555,20 +556,32 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::vector<Eigen::Vector3d>& points, double collision_threshold);
 
   /**
-   * Finds a link with the specified \p link_name belonging to a model with the
-   * specified \p model_name and \p model_id. Note that if \p model_name is the
-   * empty string and \p model_id is -1, every model is searched. If
-   * \p model_name and \p model_id are inconsistent, no link will be found and
-   * an exception will be thrown.
+   * Finds a body with the specified \p body_name belonging to a model
+   * with the specified \p model_name and \p model_id. Note that if
+   * \p model_name is the empty string and \p model_id is -1, every model is
+   * searched. If \p model_name and \p model_id are inconsistent, no body
+   * will be found and an exception will be thrown.
    *
-   * @param[in] link_name The name of the link to find.
-   * @param[in] model_name The name of the model to which the link belongs. If
+   * @param[in] body_name The name of the body to find.
+   * @param[in] model_name The name of the model to which the body belongs. If
    * this value is an empty string, every model is searched.
-   * @param[in] model_id The ID of the model to which the link belongs. If this
+   * @param[in] model_id The ID of the model to which the body belongs. If this
    * value is -1, every model is searched.
-   * @throws std::logic_error if multiple matching links are found or no
-   * matching links are found.
+   * @throws std::logic_error if multiple matching bodies are found or no
+   * matching bodies are found.
    */
+  RigidBody* FindBody(const std::string& body_name,
+                      const std::string& model_name = "",
+                      int model_id = -1) const;
+
+  /**
+   * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
+   * instead.
+   */
+#ifndef SWIG
+      DRAKE_DEPRECATED(
+          "Please use RigidBodyTree::FindBody instead.")
+#endif
   RigidBody* findLink(const std::string& link_name,
                       const std::string& model_name = "",
                       int model_id = -1) const;
@@ -590,6 +603,16 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * and \p model_id was found or if multiple matching rigid bodies were found.
    */
   int FindBodyIndex(const std::string& body_name, int model_id = -1) const;
+
+  /**
+   * This is a deprecated version of `FindBodyIndex(...)`. Please use
+   * `FindBodyIndex(...)` instead.
+   */
+#ifndef SWIG
+      DRAKE_DEPRECATED(
+          "Pleasse use RigidBodyTree::FindBodyIndex instead.")
+#endif
+  int findLinkId(const std::string& link_name, int model_id = -1) const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
@@ -672,7 +695,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();

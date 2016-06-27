@@ -1,9 +1,14 @@
 #include <cmath>
+
+#include "drake/math/autodiff.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;
+
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::autoDiffToValueMatrix;
 
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;

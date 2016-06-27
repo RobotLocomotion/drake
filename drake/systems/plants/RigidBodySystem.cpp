@@ -1,7 +1,9 @@
-
 #include "drake/systems/plants/RigidBodySystem.h"
+
 #include <list>
 #include <stdexcept>
+
+#include "drake/common/drake_assert.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
@@ -250,8 +252,8 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
                                    x.bottomRows(tree->number_of_velocities()));
   Eigen::VectorXd y(getNumOutputs());
 
-  assert(getNumStates() == x.size());
-  assert(getNumInputs() == u.size());
+  DRAKE_ASSERT(getNumStates() == x.size());
+  DRAKE_ASSERT(getNumInputs() == u.size());
 
   y.segment(0, getNumStates()) << x;
   int index = getNumStates();
@@ -729,13 +731,13 @@ void parseSDFJoint(RigidBodySystem& sys, int model_id, XMLElement* node,
 
 void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
                   PoseMap& pose_map) {
-  // Obtains the name of the link.
+  // Obtains the name of the body.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
-  string link_name(attr);
+  string body_name(attr);
 
-  // Obtains the corresponding rigid body from the rigid body tree.
-  auto body = sys.getRigidBodyTree()->findLink(link_name, "", model_id);
+  // Obtains the corresponding body from the rigid body tree.
+  auto body = sys.getRigidBodyTree()->FindBody(body_name, "", model_id);
 
   // Obtains the transform from the link to the model.
   Isometry3d transform_link_to_model = Isometry3d::Identity();
