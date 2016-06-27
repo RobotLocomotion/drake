@@ -258,7 +258,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       : num_vars_(0),
         x_initial_guess_(
             static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
-        problem_type_(MathematicalProgramInterface::GetLeastSquaresProgram()),
+        problem_type_(),
         solver_result_(0) {}
 
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
@@ -281,7 +281,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   void AddCost(std::shared_ptr<Constraint> const& obj,
                VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddGenericCost());
+    problem_type_.AddGenericObjective();
     generic_costs_.push_back(Binding<Constraint>(obj, vars));
   }
 
@@ -384,7 +384,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   void AddGenericConstraint(std::shared_ptr<Constraint> con,
                             VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddGenericConstraint());
+    problem_type_.AddGenericConstraint();
     generic_constraints_.push_back(Binding<Constraint>(con, vars));
   }
   void AddGenericConstraint(std::shared_ptr<Constraint> con) {
@@ -398,7 +398,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   void AddLinearConstraint(std::shared_ptr<LinearConstraint> con,
                            VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddLinearConstraint());
+    problem_type_.AddLinearConstraint();
     linear_constraints_.push_back(Binding<LinearConstraint>(con, vars));
   }
 
@@ -446,7 +446,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   void AddLinearEqualityConstraint(
       std::shared_ptr<LinearEqualityConstraint> con, VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddLinearEqualityConstraint());
+    problem_type_.AddLinearEqualityConstraint();
     linear_equality_constraints_.push_back(
         Binding<LinearEqualityConstraint>(con, vars));
   }
@@ -499,7 +499,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   void AddBoundingBoxConstraint(std::shared_ptr<BoundingBoxConstraint> con,
                                 VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddLinearConstraint());
+    problem_type_.AddLinearConstraint();
     bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, vars));
   }
 
@@ -549,7 +549,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                      const Eigen::MatrixBase<Derivedq>& q,
                                      const VariableList& vars) {
-    problem_type_.reset(problem_type_->AddLinearComplementarityConstraint());
+    problem_type_.AddLinearComplementarityConstraint();
 
     // Linear Complementarity Constraint cannot currently coexist with any
     // other types of constraint or cost.
@@ -597,7 +597,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     // performance purposes, as automatically generated rigid body manipulator
     // equations subject to lumped parameter rewriting may frequently come out
     // as degree 1.
-    problem_type_.reset(problem_type_->AddGenericConstraint());
+    problem_type_.AddGenericConstraint();
     std::shared_ptr<PolynomialConstraint> constraint(
         new PolynomialConstraint(polynomials, poly_vars, lb, ub));
     AddGenericConstraint(constraint, vars);
@@ -635,7 +635,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * @return SolutionResult indicating if the solution was successful.
    */
   SolutionResult Solve() {
-    return problem_type_->Solve(*this);
+    return problem_type_.Solve(*this);
   }  // TODO(naveenoid) : add argument for options
 
   //    template <typename Derived>
@@ -799,7 +799,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   size_t num_vars_;
   Eigen::VectorXd x_initial_guess_;
   std::shared_ptr<SolverData> solver_data_;
-  std::shared_ptr<MathematicalProgramInterface> problem_type_;
+  MathematicalProgram problem_type_;
   std::string solver_name_;
   int solver_result_;
   std::map<std::string, std::map<std::string, double>> solver_options_double_;

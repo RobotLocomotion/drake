@@ -9,14 +9,28 @@ namespace drake {
 namespace solvers {
 class OptimizationProblem;
 
-// uses virtual methods to crawl up the complexity hiearchy as new decision
-// variables and constraints are added to the program
-// note that there is dynamic allocation happening in here, but on a structure
-// of negligible size.  (is there a better way?)
-// TODO(naveenoid) : extensive rewrite needed to cope with design defects.
-class DRAKEOPTIMIZATION_EXPORT MathematicalProgramInterface {
+/// Interface used by implementations of individual solvers.
+class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
  public:
-  virtual ~MathematicalProgramInterface();
+  virtual ~MathematicalProgramSolverInterface() {};
+  virtual bool available() const = 0;
+  virtual SolutionResult Solve(OptimizationProblem& prog) const = 0;
+};
+
+/// A class for characterizing a mathematical program and choosing a solver.
+/**
+ * MathematicalProgram allows an OptimizationProblem to choose an appropriate
+ * solver (MathematicalProgramSolverInterface) and to invoke that solver (via
+ * the Solve() method).
+ *
+ * The problem simply calls the appropriate Add method of this class each time
+ * it adds a cost or constraint.  Having done so, a call to Solve() will
+ * invoke an appropriate solver, or else throw an exception if no solver is
+ * available.
+ */
+class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
+ public:
+  MathematicalProgram();
 
   /* these would be used to fill out the optimization hierarchy:
 
@@ -27,26 +41,24 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramInterface {
      virtual MathematicalProgramInterface* AddSecondOrderConeConstraint() = 0;
      virtual MathematicalProgramInterface* AddComplementarityConstraint() = 0;
   */
-  virtual MathematicalProgramInterface* AddLinearCost() = 0;
-  virtual MathematicalProgramInterface* AddQuadraticCost() = 0;
-  virtual MathematicalProgramInterface* AddGenericCost() = 0;
-  virtual MathematicalProgramInterface* AddGenericConstraint() = 0;
-  virtual MathematicalProgramInterface* AddLinearConstraint() = 0;
-  virtual MathematicalProgramInterface* AddLinearEqualityConstraint() = 0;
-  virtual MathematicalProgramInterface*
-  AddLinearComplementarityConstraint() = 0;
+  void AddGenericObjective();
+  void AddGenericConstraint();
+  void AddLinearObjective();
+  void AddLinearConstraint();
+  void AddQuadraticObjective();
+  void AddQuadraticConstraint();
+  void AddLinearEqualityConstraint();
+  void AddLinearComplementarityConstraint();
 
-  virtual SolutionResult Solve(OptimizationProblem& prog) const = 0;
+  SolutionResult Solve(OptimizationProblem& prog) const;
 
-  static std::shared_ptr<MathematicalProgramInterface> GetLeastSquaresProgram();
-};
-
-/// Interface used by implementations of individual solvers.
-class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
- public:
-  virtual ~MathematicalProgramSolverInterface();
-  virtual bool available() const = 0;
-  virtual SolutionResult Solve(OptimizationProblem& prog) const = 0;
+ private:
+  int required_capabilities_;
+  std::unique_ptr<MathematicalProgramSolverInterface> ipopt_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> snopt_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> moby_lcp_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> least_squares_solver_;
 };
 
 }  // namespace solvers
