@@ -150,7 +150,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_NEAR(1.0, points[0].getDistance(), tolerance);
   // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(-1, 0, 0)));
   EXPECT_TRUE(points[0].getPtA().isApprox(Vector3d(0.5, 0, 0)));
   EXPECT_TRUE(points[0].getPtB().isApprox(Vector3d(0.5, 0, 0)));
 
@@ -167,7 +167,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
   EXPECT_TRUE(
-      points[1].getNormal().isApprox(Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0)));
+      points[1].normal_.isApprox(Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0)));
   EXPECT_TRUE(points[1].getPtA().isApprox(Vector3d(0.5, 0.5, 0)));
   // Notice the y component is positive given that the body's frame is rotated
   // 90 degrees around the z axis.
@@ -181,7 +181,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_NEAR(1.0, points[2].getDistance(), tolerance);
   // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
-  EXPECT_TRUE(points[2].getNormal().isApprox(Vector3d(0, -1, 0)));
+  EXPECT_TRUE(points[2].normal_.isApprox(Vector3d(0, -1, 0)));
   EXPECT_TRUE(points[2].getPtA().isApprox(Vector3d(1, 0.5, 0)));
   EXPECT_TRUE(points[2].getPtB().isApprox(Vector3d(-0.5, 0, 0)));
 }
@@ -247,7 +247,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   EXPECT_TRUE(
       points[0].getPtA().isApprox(solution_[points[0].idA_].body_frame));
   EXPECT_TRUE(
@@ -267,7 +267,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // which computes points in the local frame of the body.
   // TODO(amcastro-tri): make these two conventions match? does this interfere
   // with any Matlab functionality?
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   EXPECT_TRUE(
       points[0].getPtA().isApprox(solution_[points[0].idA_].world_frame));
   EXPECT_TRUE(
@@ -287,7 +287,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // which computes points in the local frame of the body.
   // TODO(amcastro-tri): make these two conventions match? does this interfere
   // with any Matlab functionality?
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   EXPECT_TRUE(
       points[0].getPtA().isApprox(solution_[points[0].idA_].world_frame));
   EXPECT_TRUE(
@@ -320,7 +320,7 @@ TEST_F(BoxVsSphereTest, MultiContact) {
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
 
   // Ensures the vertical coordinate is computed within tolerance_.
   EXPECT_NEAR(points[0].getPtA().y(),
@@ -414,7 +414,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // Only test for vertical position.
   EXPECT_NEAR(points[0].getPtA().y(),
@@ -484,7 +484,7 @@ TEST_F(SmallBoxSittingOnLargeBox, MultiContact) {
   ASSERT_EQ(4, points.size());
   for (int i = 0; i < points.size(); ++i) {
     EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance_);
-    EXPECT_TRUE(points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+    EXPECT_TRUE(points[i].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
     // Collision points are reported on each of the respective bodies' frames.
     // This is consistent with the return by Model::closestPointsAllToAll.
     // Only test for vertical position.
@@ -573,7 +573,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // Only test for vertical position.
   EXPECT_NEAR(points[0].getPtA().y(),
@@ -590,7 +590,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   // corner.
   ASSERT_EQ(1, points.size());
   EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported in the world's frame.
   // Only test for vertical position.
   EXPECT_NEAR(points[0].getPtA().y(),
@@ -622,7 +622,7 @@ TEST_F(NonAlignedBoxes, MultiContact) {
 
   for (int i = 0; i < points.size(); ++i) {
     EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance_);
-    EXPECT_TRUE(points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0),
+    EXPECT_TRUE(points[i].normal_.isApprox(Vector3d(0.0, -1.0, 0.0),
                                                tolerance_ * 50));
     // Collision points are reported on each of the respective bodies' frames.
     // This is consistent with the return by Model::closestPointsAllToAll.
@@ -682,7 +682,7 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   for (int i = 0; i < points.size(); ++i) {
     EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance_);
     EXPECT_TRUE(
-        points[i].getNormal().isApprox(Vector3d(0.0, -1.0, 0.0), tolerance_));
+        points[i].normal_.isApprox(Vector3d(0.0, -1.0, 0.0), tolerance_));
     // Only test for vertical position.
     EXPECT_NEAR(points[i].getPtA().y(),
                 solution_[points[0].idA_].world_frame.y(), tolerance_);
