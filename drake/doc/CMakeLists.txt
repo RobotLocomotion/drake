@@ -22,7 +22,7 @@ if(SPHINX_EXECUTABLE)
     DESTINATION ${DRAKE_DOCUMENTATION_DIR} OPTIONAL)
   list(APPEND DRAKE_DOCUMENTATION_OUTPUTS sphinx_output)
 else()
-  message(WARNING "SPHINX_EXECUTABLE (sphinx-build) not found. Sphinx documentation will not be built.")
+  message(STATUS "SPHINX_EXECUTABLE (sphinx-build) not found. Sphinx will be excluded from the documentation build.")
 endif()
 
 find_package(Doxygen)
@@ -57,10 +57,10 @@ if(DOXYGEN_FOUND)
       DESTINATION ${DRAKE_DOCUMENTATION_DIR}/doxygen_matlab OPTIONAL)
     list(APPEND DRAKE_DOCUMENTATION_OUTPUTS doxygen_matlab_output)
   else()
-    message(WARNING "PERL_EXECUTABLE (perl) not found. MATLAB Doxygen documentation will not be built.")
+    message(STATUS "PERL_EXECUTABLE (perl) not found. MATLAB Doxygen will be excluded from the documentation build.")
   endif()
 else()
-  message(WARNING "DOXYGEN_EXECUTABLE (doxygen) not found. C++ and MATLAB Doxygen documentation will not be built.")
+  message(STATUS "DOXYGEN_EXECUTABLE (doxygen) not found. C++ and MATLAB Doxygen will be excluded from the documentation build.")
 endif()
 
 if(ENV{OXYGEN_DIR})
@@ -86,10 +86,11 @@ if(ENV{OXYGEN_DIR})
 endif()
 
 if(DRAKE_DOCUMENTATION_OUTPUTS)
-  # Undocumented option for use by CI builds to build documentation
-  # as part of the default build targets ("all" or "ALL_BUILD").
-  # We do not do this by default because developers should only
-  # get documentation built by an explicit request for the target.
+  # BUILD_DOCUMENTATION_ALWAYS is an undocumented option for use by CI builds.
+  # When set to ON, documentation is included in the default build targets
+  # "all" and "ALL_BUILD".
+  # BUILD_DOCUMENTATION_ALWAYS is off by default so that developers do not have
+  # to wait for the documentation to build every time they rebuild Drake itself.
   if(BUILD_DOCUMENTATION_ALWAYS)
     set(_DRAKE_DOCUMENTATION_ALL ALL)
   else()

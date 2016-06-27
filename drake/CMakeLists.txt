@@ -380,7 +380,7 @@ if(MATLAB_FOUND)
     PROPERTIES TIMEOUT 300)
 endif()
 
-option(BUILD_DOCUMENTATION "Build Doxygen and Sphinx documentation." OFF)
+option(BUILD_DOCUMENTATION "Enable Doxygen and Sphinx documentation targets." ON)
 
 if(BUILD_DOCUMENTATION)
   add_subdirectory(doc)
