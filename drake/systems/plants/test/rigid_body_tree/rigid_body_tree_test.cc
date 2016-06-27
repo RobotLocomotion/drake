@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
+#include "drake/Path.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 namespace drake {
@@ -182,6 +184,30 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
                   ->getJoint()
                   .getTransformToParentBody()
                   .matrix() == T_r3_and_r4_to_r2.matrix());
+}
+
+// Ensures RigidBodyTree::doKinemantics(q, v, bool) is explicitly instantiated
+// with vector block input parameters. For more information, see:
+// https://github.com/RobotLocomotion/drake/issues/2634.
+TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
+  std::string file_name = Drake::getDrakePath() +
+          "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+  tree->addRobotFromURDF(file_name);
+
+  VectorX<double> q;
+  VectorX<double> v;
+  q.resize(tree->number_of_positions());
+  v.resize(tree->number_of_velocities());
+  q.setZero();
+  v.setZero();
+
+  Eigen::VectorBlock<VectorX<double>>
+    q_block = q.head(q.size());
+  Eigen::VectorBlock<VectorX<double>>
+    v_block = v.head(v.size());
+
+  KinematicsCache<double> cache = tree->doKinematics(q_block, v_block);
+  EXPECT_TRUE(cache.hasV());
 }
 
 }  // namespace
