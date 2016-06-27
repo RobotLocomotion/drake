@@ -20,8 +20,6 @@ struct DRAKECOLLISION_EXPORT PointPair {
         ptA_(ptA), ptB_(ptB),
         normal_(normal),
         distance_(distance) {}
-  
-  double getDistance() const;
 
   bool operator<(const PointPair& pt) const {
     return (distance_ < pt.distance_);

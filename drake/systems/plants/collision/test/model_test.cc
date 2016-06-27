@@ -147,7 +147,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   // they are available.
   EXPECT_EQ(id1, points[0].idA_);
   EXPECT_EQ(id2, points[0].idB_);
-  EXPECT_NEAR(1.0, points[0].getDistance(), tolerance);
+  EXPECT_NEAR(1.0, points[0].distance_, tolerance);
   // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
   EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(-1, 0, 0)));
@@ -163,7 +163,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   // sphere_center_to_surface_distance =
   // = sqrt(8.0) - 1.0/sqrt(2.0) - 1/2.
   double exact_distance = sqrt(8.0) - 1.0 / sqrt(2.0) - 0.5;
-  EXPECT_NEAR(exact_distance, points[1].getDistance(), tolerance);
+  EXPECT_NEAR(exact_distance, points[1].distance_, tolerance);
   // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
   EXPECT_TRUE(
@@ -178,7 +178,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   // Check the closest point between object 2 and object 3.
   EXPECT_EQ(id2, points[2].idA_);
   EXPECT_EQ(id3, points[2].idB_);
-  EXPECT_NEAR(1.0, points[2].getDistance(), tolerance);
+  EXPECT_NEAR(1.0, points[2].distance_, tolerance);
   // Normal is on body B expressed in the world's frame.
   // Points are in the local frame of the body.
   EXPECT_TRUE(points[2].normal_.isApprox(Vector3d(0, -1, 0)));
@@ -245,7 +245,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   const std::vector<ElementId> ids_to_check = {box_id_, sphere_id_};
   model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
+  EXPECT_NEAR(-0.25, points[0].distance_, tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
   EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   EXPECT_TRUE(
@@ -258,7 +258,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   points.clear();
   model_->ComputeMaximumDepthCollisionPoints(false, points);
   ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
+  EXPECT_NEAR(-0.25, points[0].distance_, tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
   // That is why ptA_ is generally different from ptB_, unless there is
   // an exact non-penetrating collision.
@@ -278,7 +278,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   points.clear();
   model_->ComputeMaximumDepthCollisionPoints(true, points);
   ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
+  EXPECT_NEAR(-0.25, points[0].distance_, tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
   // That is why ptA_ is generally different from ptB_, unless there is
   // an exact non-penetrating collision.
@@ -318,7 +318,7 @@ TEST_F(BoxVsSphereTest, MultiContact) {
   points = model_->potentialCollisionPoints(false);
 
   ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.25, points[0].getDistance(), tolerance_);
+  EXPECT_NEAR(-0.25, points[0].distance_, tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
   EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
 
@@ -413,7 +413,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   const std::vector<ElementId> ids_to_check = {large_box_id_, small_box_id_};
   model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
+  EXPECT_NEAR(-0.1, points[0].distance_, tolerance_);
   EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // Only test for vertical position.
@@ -432,7 +432,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // least the four corners of the smaller box. However it randomly picks one
   // corner.
   ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
+  EXPECT_NEAR(-0.1, points[0].distance_, tolerance_);
   // Collision points are reported in the world's frame.
   // Only test for vertical position.
   EXPECT_NEAR(points[0].ptA_.y(),
@@ -446,7 +446,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   model_->ComputeMaximumDepthCollisionPoints(true, points);
 
   ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
+  EXPECT_NEAR(-0.1, points[0].distance_, tolerance_);
   // Collision points are reported in the world's frame.
   // Only test for vertical position.
   EXPECT_NEAR(points[0].ptA_.y(),
@@ -483,7 +483,7 @@ TEST_F(SmallBoxSittingOnLargeBox, MultiContact) {
   points = model_->potentialCollisionPoints(false);
   ASSERT_EQ(4, points.size());
   for (int i = 0; i < points.size(); ++i) {
-    EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance_);
+    EXPECT_NEAR(-0.1, points[i].distance_, tolerance_);
     EXPECT_TRUE(points[i].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
     // Collision points are reported on each of the respective bodies' frames.
     // This is consistent with the return by Model::closestPointsAllToAll.
@@ -572,7 +572,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   const std::vector<ElementId> ids_to_check = {box1_id_, box2_id_};
   model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
+  EXPECT_NEAR(-0.1, points[0].distance_, tolerance_);
   EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
   // Only test for vertical position.
@@ -589,7 +589,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   // least the four corners of the smaller box. However it randomly picks one
   // corner.
   ASSERT_EQ(1, points.size());
-  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance_);
+  EXPECT_NEAR(-0.1, points[0].distance_, tolerance_);
   EXPECT_TRUE(points[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported in the world's frame.
   // Only test for vertical position.
@@ -621,7 +621,7 @@ TEST_F(NonAlignedBoxes, MultiContact) {
   ASSERT_EQ(4, points.size());
 
   for (int i = 0; i < points.size(); ++i) {
-    EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance_);
+    EXPECT_NEAR(-0.1, points[i].distance_, tolerance_);
     EXPECT_TRUE(points[i].normal_.isApprox(Vector3d(0.0, -1.0, 0.0),
                                                tolerance_ * 50));
     // Collision points are reported on each of the respective bodies' frames.
@@ -680,7 +680,7 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   ASSERT_EQ(1, points.size());
 
   for (int i = 0; i < points.size(); ++i) {
-    EXPECT_NEAR(-0.1, points[i].getDistance(), tolerance_);
+    EXPECT_NEAR(-0.1, points[i].distance_, tolerance_);
     EXPECT_TRUE(
         points[i].normal_.isApprox(Vector3d(0.0, -1.0, 0.0), tolerance_));
     // Only test for vertical position.
