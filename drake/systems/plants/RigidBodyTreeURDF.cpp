@@ -2,6 +2,7 @@
 #include <sstream>
 #include <string>
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/material_map.h"
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
@@ -96,8 +97,7 @@ void parseInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model) {
 
   body->com << T(0, 3), T(1, 3), T(2, 3);
 
-  Matrix<double, TWIST_SIZE, TWIST_SIZE> I =
-      Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+  drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
   I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");

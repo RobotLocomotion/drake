@@ -1,5 +1,6 @@
 #include <cmath>
 
+#include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/testUtil.h"
@@ -53,8 +54,7 @@ void scenario2(
     const RigidBodyTree& model, KinematicsCache<Scalar>& cache,
     const vector<pair<Matrix<Scalar, Dynamic, 1>, Matrix<Scalar, Dynamic, 1>>>&
         states) {
-  const eigen_aligned_unordered_map<RigidBody const*,
-                                    Matrix<Scalar, TWIST_SIZE, 1>>
+  const eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<Scalar>>
       f_ext;
   for (const auto& state : states) {
     cache.initialize(state.first, state.second);

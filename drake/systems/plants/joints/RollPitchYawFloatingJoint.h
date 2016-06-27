@@ -1,6 +1,9 @@
 #pragma once
 
 #include "DrakeJointImpl.h"
+#include "drake/common/eigen_types.h"
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/drakeGradientUtil.h"
 
 class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
     : public DrakeJointImpl<RollPitchYawFloatingJoint> {
@@ -36,7 +39,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
     typedef typename DerivedQ::Scalar Scalar;
-    motion_subspace.resize(TWIST_SIZE, getNumVelocities());
+    motion_subspace.resize(drake::kTwistSize, getNumVelocities());
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
     Eigen::Matrix<Scalar, SPACE_DIMENSION, RPY_SIZE> E;
     rpydot2angularvelMatrix(rpy, E);
@@ -97,7 +100,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
           Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type*
           dmotion_subspace_dot_times_vdv = nullptr) const {
     typedef typename DerivedQ::Scalar Scalar;
-    motion_subspace_dot_times_v.resize(TWIST_SIZE, 1);
+    motion_subspace_dot_times_v.resize(drake::kTwistSize, 1);
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
     Scalar roll = rpy(0);
     Scalar pitch = rpy(1);

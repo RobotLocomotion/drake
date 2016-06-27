@@ -1,6 +1,8 @@
-#include "RigidBody.h"
+#include "drake/systems/plants/RigidBody.h"
 
 #include <stdexcept>
+
+#include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
@@ -22,7 +24,7 @@ RigidBody::RigidBody()
   body_index = 0;
   mass = 0.0;
   com = Vector3d::Zero();
-  I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+  I << drake::SquareTwistMatrix<double>::Zero();
 }
 
 const std::string& RigidBody::name() const { return name_; }

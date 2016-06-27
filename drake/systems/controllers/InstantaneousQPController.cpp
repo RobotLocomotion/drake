@@ -6,6 +6,7 @@
 
 #include "drake/Path.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/solvers/fastQP.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -790,14 +791,14 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   // handle external wrenches to compensate for
-  eigen_aligned_unordered_map<RigidBody const*, Matrix<double, TWIST_SIZE, 1>>
+  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
   for (auto it = qp_input.body_wrench_data.begin();
        it != qp_input.body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_or_frame_name_to_id.at(body_wrench_data.body_name);
     auto f_ext_i =
-        Map<const Matrix<double, TWIST_SIZE, 1>>(body_wrench_data.wrench);
+        Map<const drake::TwistVector<double>>(body_wrench_data.wrench);
     f_ext.insert({robot->bodies[body_id].get(), f_ext_i});
   }
 

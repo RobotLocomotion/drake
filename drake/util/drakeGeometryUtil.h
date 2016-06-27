@@ -10,11 +10,11 @@
 #include <random>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/drakeGeometryUtil_export.h"
 #include "drake/math/gradient.h"
 #include "drake/util/drakeGradientUtil.h"
 
-const int TWIST_SIZE = 6;
 const int QUAT_SIZE = 4;
 const int EXPMAP_SIZE = 3;
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
@@ -1037,7 +1037,7 @@ void cartesian2cylindrical(const Eigen::Matrix<Scalar, 3, 1>& m_cylinder_axis,
  */
 template <typename Derived>
 struct TransformSpatial {
-  typedef typename Eigen::Matrix<typename Derived::Scalar, TWIST_SIZE,
+  typedef typename Eigen::Matrix<typename Derived::Scalar, drake::kTwistSize,
                                  Derived::ColsAtCompileTime> type;
 };
 
@@ -1045,8 +1045,8 @@ template <typename DerivedM>
 typename TransformSpatial<DerivedM>::type transformSpatialMotion(
     const Eigen::Transform<typename DerivedM::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedM>& M) {
-  Eigen::Matrix<typename DerivedM::Scalar, TWIST_SIZE,
-                DerivedM::ColsAtCompileTime> ret(TWIST_SIZE, M.cols());
+  Eigen::Matrix<typename DerivedM::Scalar, drake::kTwistSize,
+                DerivedM::ColsAtCompileTime> ret(drake::kTwistSize, M.cols());
   ret.template topRows<3>().noalias() = T.linear() * M.template topRows<3>();
   ret.template bottomRows<3>().noalias() =
       -ret.template topRows<3>().colwise().cross(T.translation());
@@ -1109,8 +1109,8 @@ template <typename DerivedF>
 typename TransformSpatial<DerivedF>::type transformSpatialForce(
     const Eigen::Transform<typename DerivedF::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedF>& F) {
-  Eigen::Matrix<typename DerivedF::Scalar, TWIST_SIZE,
-                DerivedF::ColsAtCompileTime> ret(TWIST_SIZE, F.cols());
+  Eigen::Matrix<typename DerivedF::Scalar, drake::kTwistSize,
+                DerivedF::ColsAtCompileTime> ret(drake::kTwistSize, F.cols());
   ret.template bottomRows<3>().noalias() =
       T.linear() * F.template bottomRows<3>().eval();
   ret.template topRows<3>() =
@@ -1196,7 +1196,7 @@ bool isRegularInertiaMatrix(const Eigen::MatrixBase<DerivedI>& I) {
 }
 
 template <typename DerivedI>
-Eigen::Matrix<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE>
+drake::SquareTwistMatrix<typename DerivedI::Scalar>
 transformSpatialInertia(
     const Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION,
                            Eigen::Isometry>& T_current_to_new,
@@ -1238,7 +1238,7 @@ transformSpatialInertia(
       return ret;
     };
 
-    Matrix<Scalar, TWIST_SIZE, TWIST_SIZE> I_new;
+    drake::SquareTwistMatrix<Scalar> I_new;
     auto c_new = (R * c).eval();
     auto J_new = I_new.template topLeftCorner<3, 3>();
 
@@ -1270,7 +1270,7 @@ template <typename DerivedA, typename DerivedB>
 typename TransformSpatial<DerivedB>::type crossSpatialMotion(
     const Eigen::MatrixBase<DerivedA>& a,
     const Eigen::MatrixBase<DerivedB>& b) {
-  typename TransformSpatial<DerivedB>::type ret(TWIST_SIZE, b.cols());
+  typename TransformSpatial<DerivedB>::type ret(drake::kTwistSize, b.cols());
   ret.template topRows<3>() =
       -b.template topRows<3>().colwise().cross(a.template topRows<3>());
   ret.template bottomRows<3>() =
@@ -1284,7 +1284,7 @@ template <typename DerivedA, typename DerivedB>
 typename TransformSpatial<DerivedB>::type crossSpatialForce(
     const Eigen::MatrixBase<DerivedA>& a,
     const Eigen::MatrixBase<DerivedB>& b) {
-  typename TransformSpatial<DerivedB>::type ret(TWIST_SIZE, b.cols());
+  typename TransformSpatial<DerivedB>::type ret(drake::kTwistSize, b.cols());
   ret.template topRows<3>() =
       -b.template topRows<3>().colwise().cross(a.template topRows<3>());
   ret.template topRows<3>() -=
@@ -1295,13 +1295,12 @@ typename TransformSpatial<DerivedB>::type crossSpatialForce(
 }
 
 template <typename DerivedA, typename DerivedB>
-Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic>
+drake::TwistMatrix<typename DerivedA::Scalar>
 dCrossSpatialMotion(
     const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b,
     const typename drake::math::Gradient<DerivedA, Eigen::Dynamic>::type& da,
     const typename drake::math::Gradient<DerivedB, Eigen::Dynamic>::type& db) {
-  Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> ret(
-      TWIST_SIZE, da.cols());
+  drake::TwistMatrix<typename DerivedA::Scalar> ret(drake::kTwistSize, da.cols());
   ret.row(0) = -da.row(2) * b[1] + da.row(1) * b[2] - a[2] * db.row(1) +
                a[1] * db.row(2);
   ret.row(1) =
@@ -1321,13 +1320,12 @@ dCrossSpatialMotion(
 }
 
 template <typename DerivedA, typename DerivedB>
-Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic>
+drake::TwistMatrix<typename DerivedA::Scalar>
 dCrossSpatialForce(
     const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b,
     const typename drake::math::Gradient<DerivedA, Eigen::Dynamic>::type& da,
     const typename drake::math::Gradient<DerivedB, Eigen::Dynamic>::type& db) {
-  Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> ret(
-      TWIST_SIZE, da.cols());
+  drake::TwistMatrix<typename DerivedA::Scalar> ret(drake::kTwistSize, da.cols());
   ret.row(0) = da.row(2) * b[1] - da.row(1) * b[2] + da.row(5) * b[4] -
                da.row(4) * b[5] + a[2] * db.row(1) - a[1] * db.row(2) +
                a[5] * db.row(4) - a[4] * db.row(5);
