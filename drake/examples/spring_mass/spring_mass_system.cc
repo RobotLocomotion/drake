@@ -13,7 +13,7 @@ using systems::VectorInterface;
 namespace examples {
 
 namespace {
-const ptrdiff_t kStateSize = 2;
+constexpr int64_t kStateSize = 2;
 }  // namespace
 
 SpringMassStateVector::SpringMassStateVector(double initial_position,
