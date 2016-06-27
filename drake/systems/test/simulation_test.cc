@@ -39,8 +39,8 @@ class SimulationTest : public ::testing::Test {
 
   Drake::SimulationOptions options;
 
-  double ti; // The initial simulation time.
-  double tf; // The final simulation time.
+  double ti;  // The initial simulation time.
+  double tf;  // The final simulation time.
 };
 
 
