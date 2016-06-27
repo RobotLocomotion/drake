@@ -221,7 +221,7 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
   Eigen::VectorXd c(5);
   c << 42, 44, 45, 47, 47.5;
 
-  prog.AddQuadraticProgramCost(Q, c);
+  prog.AddQuadraticCost(Q, c);
 
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
@@ -303,7 +303,7 @@ GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
   VectorXd c(6);
   c << -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
 
-  prog.AddQuadraticProgramCost(Q, c);
+  prog.AddQuadraticCost(Q, c);
 
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
