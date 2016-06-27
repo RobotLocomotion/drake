@@ -43,8 +43,8 @@ class RBTCollisionTest: public ::testing::Test {
             "/systems/plants/test/rigid_body_tree/small_box_on_large_box.sdf",
         DrakeJoint::QUATERNION);
 
-    small_box_id_ = tree_.findLink("small_box")->collision_element_ids[0];
-    large_box_id_ = tree_.findLink("large_box")->collision_element_ids[0];
+    small_box_id_ = tree_.FindBody("small_box")->collision_element_ids[0];
+    large_box_id_ = tree_.FindBody("large_box")->collision_element_ids[0];
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
