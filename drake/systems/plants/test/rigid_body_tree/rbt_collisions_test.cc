@@ -94,21 +94,21 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   // the maximum depth collision point.
   ASSERT_EQ(1, collision_pairs.size());
 
-  const RigidBody* bodyA = collision_pairs[0].elementA_->get_body();
-  const RigidBody* bodyB = collision_pairs[0].elementB_->get_body();
+  const RigidBody* bodyA = collision_pairs[0].elementA->get_body();
+  const RigidBody* bodyB = collision_pairs[0].elementB->get_body();
 
-  EXPECT_NEAR(-0.1, collision_pairs[0].distance_, tolerance_);
-  EXPECT_TRUE(collision_pairs[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_NEAR(-0.1, collision_pairs[0].distance, tolerance_);
+  EXPECT_TRUE(collision_pairs[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
 
   // Collision points are reported on each of the respective bodies' frames.
-  EXPECT_TRUE(collision_pairs[0].ptA_.isApprox(
+  EXPECT_TRUE(collision_pairs[0].ptA.isApprox(
       solution_[bodyA].body_frame, tolerance_));
 
   // In body's frame, which is rotated 90 degrees in pitch from
   // collision_test.sdf, the collision point is on the z-axis.
   // In addition, is not at z=0.5 but at z=0.6 since there is an offset of 0.1
   // in body's z-axis for the collision element as set from collision_test.sdf.
-  EXPECT_TRUE(collision_pairs[0].ptB_.isApprox(
+  EXPECT_TRUE(collision_pairs[0].ptB.isApprox(
       solution_[bodyB].body_frame, tolerance_));
 }
 
