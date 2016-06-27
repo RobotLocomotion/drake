@@ -1,9 +1,5 @@
 #include <memory>
 
-
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-
 #include "drake/Path.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -20,7 +16,6 @@ namespace {
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using Eigen::Matrix3Xd;
-using DrakeCollision::ElementId;
 
 // Structure used to hold the analytical solution of the tests.
 // It stores the collision point on the surface of a collision body in both
@@ -34,35 +29,40 @@ struct SurfacePoint {
   Vector3d body_frame;
 };
 
-// Solutions are accessed by collision element id using an std::unordered_map.
-// See detailed explanation in systems/plants/collision/test/model_test.cc.
-typedef std::unordered_map<DrakeCollision::ElementId, SurfacePoint>
-    ElementToSurfacePointMap;
+// Solutions are accessed by rigid body pointer using an std::unordered_map.
+// DrakeCollision::Model returns the collision detection results as a vector of
+// DrakeCollision::PointPair entries. Each entry holds a reference to the pair
+// of collision elements taking part in the collision.
+// To provide a simple access to the appropriate solution for the collision
+// point on each body, a map is used to allow referencing the corresponding
+// solution by body pointer.
+typedef std::unordered_map<const RigidBody*, SurfacePoint>
+    BodyToSurfacePointMap;
 
 class RBTCollisionTest: public ::testing::Test {
  protected:
   void SetUp() override {
     tree_.addRobotFromSDF(
         Drake::getDrakePath() +
-            "/systems/plants/test/rigid_body_tree/small_sphere_on_large_box.sdf",
+        "/systems/plants/test/rigid_body_tree/small_sphere_on_large_box.sdf",
         DrakeJoint::QUATERNION);
 
-    small_sphere_id_ = tree_.FindBody("small_sphere")->collision_element_ids[0];
-    large_box_id_ = tree_.FindBody("large_box")->collision_element_ids[0];
+    small_sphere_ = tree_.FindBody("small_sphere");
+    large_box_ = tree_.FindBody("large_box");
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
     // Solutions are expressed in world and body frames.
     solution_ = {
-        /*                  world frame    , body frame  */
-        {large_box_id_,    {{0.0, 5.0, 0.0}, {0.0, 2.5, 0.0}}},
-        {small_sphere_id_, {{0.0, 4.9, 0.0}, {0.0, 0.0, 0.6}}}};
+        /*              world frame    , body frame  */
+        {large_box_,    {{0.0, 5.0, 0.0}, {0.0, 2.5, 0.0}}},
+        {small_sphere_, {{0.0, 4.9, 0.0}, {0.0, 0.0, 0.6}}}};
   }
 
   double tolerance_;
   RigidBodyTree tree_;
-  ElementId small_sphere_id_, large_box_id_;
-  ElementToSurfacePointMap solution_;
+  const RigidBody *small_sphere_, *large_box_;
+  BodyToSurfacePointMap solution_;
 };
 
 // This unit test assesses the correct return from
@@ -94,30 +94,22 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   // the maximum depth collision point.
   ASSERT_EQ(1, collision_pairs.size());
 
-  ElementId bodyA_collision_element_id =
-      collision_pairs[0].elementA_->getId();
-  ElementId bodyB_collision_element_id =
-      collision_pairs[0].elementB_->getId();
+  const RigidBody* bodyA = collision_pairs[0].elementA_->get_body();
+  const RigidBody* bodyB = collision_pairs[0].elementB_->get_body();
 
   EXPECT_NEAR(-0.1, collision_pairs[0].distance_, tolerance_);
   EXPECT_TRUE(collision_pairs[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
 
-  PRINT_VAR(collision_pairs[0].ptA_.transpose());
-  PRINT_VAR(solution_[bodyA_collision_element_id].body_frame.transpose());
-
   // Collision points are reported on each of the respective bodies' frames.
   EXPECT_TRUE(collision_pairs[0].ptA_.isApprox(
-      solution_[bodyA_collision_element_id].body_frame, tolerance_));
-
-  PRINT_VAR(collision_pairs[0].ptB_.transpose());
-  PRINT_VAR(solution_[bodyB_collision_element_id].body_frame.transpose());
+      solution_[bodyA].body_frame, tolerance_));
 
   // In body's frame, which is rotated 90 degrees in pitch from
   // collision_test.sdf, the collision point is on the z-axis.
   // In addition, is not at z=0.5 but at z=0.6 since there is an offset of 0.1
   // in body's z-axis for the collision element as set from collision_test.sdf.
   EXPECT_TRUE(collision_pairs[0].ptB_.isApprox(
-      solution_[bodyB_collision_element_id].body_frame, tolerance_));
+      solution_[bodyB].body_frame, tolerance_));
 }
 
 }  // namespace
