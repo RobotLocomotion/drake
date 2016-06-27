@@ -488,7 +488,8 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   //     to RBT::compile when all the connectivity information is available.
   //  2. Load collision elements on a separate pass after links and joints were
   //     already loaded.
-  //  Issue #### was created to track this problem.
+  //  Issue 2661 was created to track this problem.
+  // TODO(amcastro-tri): fix the above issue tracked by 2661.
   if (body->name().compare(std::string(RigidBodyTree::kWorldLinkName)) == 0)
     element.set_static();
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
