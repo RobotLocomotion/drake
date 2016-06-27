@@ -781,6 +781,9 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   VariableList variable_views_;
   std::list<Binding<Constraint>> generic_costs_;
   std::list<Binding<Constraint>> generic_constraints_;
+  std::list<Binding<Constraint>> generic_costs_;
+  std::list<Binding<Constraint>> generic_constraints_;
+
   // note: linear_constraints_ does not include linear_equality_constraints_
   std::list<Binding<LinearConstraint>> linear_constraints_;
   std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
