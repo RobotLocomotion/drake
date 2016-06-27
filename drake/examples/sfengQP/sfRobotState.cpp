@@ -14,44 +14,44 @@ void sfRobotState::_fillKinematics(const std::string &name, Isometry3d &pose, Ve
 }
 
 // assumeing init is called. otherwise memory isn't quite right
-void sfRobotState::addToLog(Logger &logger) const
+void sfRobotState::addToLog(MRDLogger &logger) const
 {
-  logger.add_datapoint("time", "s", &time);
+  logger.addChannel("time", "s", &time);
   
   pelv.addToLog(logger);
   l_foot.addToLog(logger);
   r_foot.addToLog(logger);
   torso.addToLog(logger);
 
-  logger.add_datapoint("com[x]", "m", com.data());
-  logger.add_datapoint("com[y]", "m", com.data()+1);
-  logger.add_datapoint("com[z]", "m", com.data()+2);
-  logger.add_datapoint("comd[x]", "m/s", comd.data());
-  logger.add_datapoint("comd[y]", "m/s", comd.data()+1);
-  logger.add_datapoint("comd[z]", "m/s", comd.data()+2);
+  logger.addChannel("com[x]", "m", com.data());
+  logger.addChannel("com[y]", "m", com.data()+1);
+  logger.addChannel("com[z]", "m", com.data()+2);
+  logger.addChannel("comd[x]", "m/s", comd.data());
+  logger.addChannel("comd[y]", "m/s", comd.data()+1);
+  logger.addChannel("comd[z]", "m/s", comd.data()+2);
 
-  logger.add_datapoint("cop[x]", "m", cop.data());
-  logger.add_datapoint("cop[y]", "m", cop.data()+1);
+  logger.addChannel("cop[x]", "m", cop.data());
+  logger.addChannel("cop[y]", "m", cop.data()+1);
 
-  logger.add_datapoint("F_w[L][x]", "N", footFT_w[Side::LEFT].data()+3);
-  logger.add_datapoint("F_w[L][y]", "N", footFT_w[Side::LEFT].data()+4);
-  logger.add_datapoint("F_w[L][z]", "N", footFT_w[Side::LEFT].data()+5);
-  logger.add_datapoint("M_w[L][x]", "Nm", footFT_w[Side::LEFT].data()+0);
-  logger.add_datapoint("M_w[L][y]", "Nm", footFT_w[Side::LEFT].data()+1);
-  logger.add_datapoint("M_w[L][z]", "Nm", footFT_w[Side::LEFT].data()+1);
-  logger.add_datapoint("F_w[R][x]", "N", footFT_w[Side::RIGHT].data()+3);
-  logger.add_datapoint("F_w[R][y]", "N", footFT_w[Side::RIGHT].data()+4);
-  logger.add_datapoint("F_w[R][z]", "N", footFT_w[Side::RIGHT].data()+5);
-  logger.add_datapoint("M_w[R][x]", "Nm", footFT_w[Side::RIGHT].data()+0);
-  logger.add_datapoint("M_w[R][y]", "Nm", footFT_w[Side::RIGHT].data()+1);
-  logger.add_datapoint("M_w[R][z]", "Nm", footFT_w[Side::RIGHT].data()+1);
+  logger.addChannel("F_w[L][x]", "N", footFT_w[Side::LEFT].data()+3);
+  logger.addChannel("F_w[L][y]", "N", footFT_w[Side::LEFT].data()+4);
+  logger.addChannel("F_w[L][z]", "N", footFT_w[Side::LEFT].data()+5);
+  logger.addChannel("M_w[L][x]", "Nm", footFT_w[Side::LEFT].data()+0);
+  logger.addChannel("M_w[L][y]", "Nm", footFT_w[Side::LEFT].data()+1);
+  logger.addChannel("M_w[L][z]", "Nm", footFT_w[Side::LEFT].data()+1);
+  logger.addChannel("F_w[R][x]", "N", footFT_w[Side::RIGHT].data()+3);
+  logger.addChannel("F_w[R][y]", "N", footFT_w[Side::RIGHT].data()+4);
+  logger.addChannel("F_w[R][z]", "N", footFT_w[Side::RIGHT].data()+5);
+  logger.addChannel("M_w[R][x]", "Nm", footFT_w[Side::RIGHT].data()+0);
+  logger.addChannel("M_w[R][y]", "Nm", footFT_w[Side::RIGHT].data()+1);
+  logger.addChannel("M_w[R][z]", "Nm", footFT_w[Side::RIGHT].data()+1);
 
   for (int i = 0; i < pos.size(); i++)
-    logger.add_datapoint("q["+robot->getPositionName(i)+"]", "rad", pos.data()+i);
+    logger.addChannel("q["+robot->getPositionName(i)+"]", "rad", pos.data()+i);
   for (int i = 0; i < vel.size(); i++)
-    logger.add_datapoint("v["+robot->getPositionName(i)+"]", "rad/s", vel.data()+i);
+    logger.addChannel("v["+robot->getPositionName(i)+"]", "rad/s", vel.data()+i);
   for (int i = 0; i < trq.size(); i++)
-    logger.add_datapoint("trq["+robot->getPositionName(i)+"]", "Nm", trq.data()+i);
+    logger.addChannel("trq["+robot->getPositionName(i)+"]", "Nm", trq.data()+i);
 }
 
 void sfRobotState::update(double t, const VectorXd &q, const VectorXd &v, const VectorXd &trq, const Vector6d &l_ft, const Vector6d &r_ft)

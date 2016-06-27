@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/systems/robotInterfaces/Side.h"
-#include "Logger.h"
+#include "MRDLogger.h"
 #include "sfUtils.h"
 
 using namespace Eigen;
@@ -28,18 +28,18 @@ public:
     link_name = ln;
   }
   
-  void addToLog(Logger &logger) const
+  void addToLog(MRDLogger &logger) const
   {
-    logger.add_datapoint(name+"[x]", "m", pose.translation().data());
-    logger.add_datapoint(name+"[y]", "m", pose.translation().data()+1);
-    logger.add_datapoint(name+"[z]", "m", pose.translation().data()+2);
+    logger.addChannel(name+"[x]", "m", pose.translation().data());
+    logger.addChannel(name+"[y]", "m", pose.translation().data()+1);
+    logger.addChannel(name+"[z]", "m", pose.translation().data()+2);
     
-    logger.add_datapoint(name+"d[x]", "m/s", vel.data()+3);
-    logger.add_datapoint(name+"d[y]", "m/s", vel.data()+4);
-    logger.add_datapoint(name+"d[z]", "m/s", vel.data()+5);
-    logger.add_datapoint(name+"d[wx]", "m/s", vel.data()+0);
-    logger.add_datapoint(name+"d[wy]", "m/s", vel.data()+1);
-    logger.add_datapoint(name+"d[wz]", "m/s", vel.data()+2);
+    logger.addChannel(name+"d[x]", "m/s", vel.data()+3);
+    logger.addChannel(name+"d[y]", "m/s", vel.data()+4);
+    logger.addChannel(name+"d[z]", "m/s", vel.data()+5);
+    logger.addChannel(name+"d[wx]", "m/s", vel.data()+0);
+    logger.addChannel(name+"d[wy]", "m/s", vel.data()+1);
+    logger.addChannel(name+"d[wz]", "m/s", vel.data()+2);
   }
 };
 
@@ -121,7 +121,7 @@ public:
   }
 
   //void parseMsg(const bot_core::robot_state_t &msg);
-  void addToLog(Logger &logger) const;
+  void addToLog(MRDLogger &logger) const;
 
   // ft_l, and ft_r needs to be ROTATED FIRST s.t. x fwd, z up!!!
   void update(double t, const VectorXd &q, const VectorXd &v, const VectorXd &trq, const Vector6d &l_ft, const Vector6d &r_ft);

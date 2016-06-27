@@ -44,7 +44,7 @@ int main()
   QPOutput output(*rs.robot);
 
   // setup input
-  assert(input.loadParamFromFile(std::string(VALKYRIE_URDF_PATH) + std::string("/qpc_params")));
+  assert(input.loadParamFromFile(std::string(VALKYRIE_URDF_PATH) + std::string("/config/qpc_params")));
 
   input.comdd_d.setZero();
   input.pelvdd_d.setZero();
@@ -61,7 +61,7 @@ int main()
 
   // make estimator
   QPEstimator est(urdf);
-  assert(est.loadParamFromFile(std::string(VALKYRIE_URDF_PATH) + std::string("/qpe_params")));
+  assert(est.loadParamFromFile(std::string(VALKYRIE_URDF_PATH) + std::string("/config/qpe_params")));
 
   est.init(0, q, qd, output.trq, output.foot_wrench_in_sensor_frame[0], output.foot_wrench_in_sensor_frame[1]);
   est.estimate(0, q, qd + output.qdd * est.dt, output.trq, output.foot_wrench_in_sensor_frame[0], output.foot_wrench_in_sensor_frame[1]);
