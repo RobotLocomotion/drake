@@ -439,9 +439,8 @@ void BulletModel::updateModel() {
   bullet_world_no_margin_.bt_collision_world->updateAabbs();
 }
 
-bool BulletModel::findClosestPointsBetweenElements(
-    const ElementId idA, const ElementId idB, const bool use_margins,
-    ResultCollector* result_collector) {
+PointPair BulletModel::findClosestPointsBetweenElements(
+    const ElementId idA, const ElementId idB, const bool use_margins) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
   if (elements[idA]->getShape() == DrakeShapes::SPHERE &&
@@ -457,7 +456,7 @@ bool BulletModel::findClosestPointsBetweenElements(
         dynamic_cast<const DrakeShapes::Sphere&>(elements[idB]->getGeometry())
             .radius;
     double distance = (xA_world - xB_world).norm();
-    result_collector->addSingleResult(
+    return PointPair(
         elements[idA].get(), elements[idB].get(),
         elements[idA]->getLocalTransform() * TA_world.inverse() *
             (xA_world +
@@ -469,7 +468,6 @@ bool BulletModel::findClosestPointsBetweenElements(
                  distance),  // ptB (in body B coords)
         (xA_world - xB_world) / distance,
         distance - radiusA - radiusB);
-    return true;
   }
 
   btConvexShape* shapeA;
@@ -480,10 +478,16 @@ bool BulletModel::findClosestPointsBetweenElements(
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
 
   auto bt_objA_iter = bt_world.bt_collision_objects.find(idA);
-  if (bt_objA_iter == bt_world.bt_collision_objects.end()) return false;
+  if (bt_objA_iter == bt_world.bt_collision_objects.end())
+    throw std::runtime_error(
+        "In BulletModel::findClosestPointsBetweenElements: "
+            "invalid ElementId for body A.");
 
   auto bt_objB_iter = bt_world.bt_collision_objects.find(idB);
-  if (bt_objB_iter == bt_world.bt_collision_objects.end()) return false;
+  if (bt_objB_iter == bt_world.bt_collision_objects.end())
+    throw std::runtime_error(
+        "In BulletModel::findClosestPointsBetweenElements: "
+            "invalid ElementId for body B.");
 
   std::unique_ptr<btCollisionObject>& bt_objA = bt_objA_iter->second;
   std::unique_ptr<btCollisionObject>& bt_objB = bt_objB_iter->second;
@@ -535,18 +539,16 @@ bool BulletModel::findClosestPointsBetweenElements(
       gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld - pointOnBinWorld);
 
   if (gjkOutput.m_hasResult) {
-    result_collector->addSingleResult(elements[idA].get(), elements[idB].get(),
-                                      point_on_A, point_on_B,
-                                      toVector3d(gjkOutput.m_normalOnBInWorld),
-                                      static_cast<double>(distance));
+    return PointPair(elements[idA].get(), elements[idB].get(),
+                     point_on_A, point_on_B,
+                     toVector3d(gjkOutput.m_normalOnBInWorld),
+                     static_cast<double>(distance));
   } else {
     throw std::runtime_error(
         "In BulletModel::findClosestPointsBetweenElements: "
         "No closest point found between " +
         std::to_string(idA) + " and " + std::to_string(idB));
   }
-
-  return (result_collector->pts.size() > 0);
 }
 
 void BulletModel::collisionDetectFromPoints(
@@ -712,13 +714,11 @@ bool BulletModel::closestPointsAllToAll(
 bool BulletModel::closestPointsPairwise(
     const std::vector<ElementIdPair>& id_pairs, const bool use_margins,
     std::vector<PointPair>& closest_points) {
-  ResultCollector result_collector;
+  closest_points.clear();
   for (const ElementIdPair& pair : id_pairs) {
-    findClosestPointsBetweenElements(pair.first, pair.second, use_margins,
-                                     &result_collector);
+    closest_points.push_back(
+        findClosestPointsBetweenElements(pair.first, pair.second, use_margins));
   }
-
-  closest_points = result_collector.getResults();
   return closest_points.size() > 0;
 }
 
