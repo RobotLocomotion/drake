@@ -96,7 +96,6 @@ void RunNonlinearProgram(OptimizationProblem& prog,
       continue;
     }
     SolutionResult result = SolutionResult::kUnknownError;
-    std::cout<<"Using solver"<<solver.first<<"\n";
     ASSERT_NO_THROW(result = solver.second->Solve(prog)) << "Using solver: "
                                                          << solver.first;
     EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Using solver: "
