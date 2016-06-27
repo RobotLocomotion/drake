@@ -16,7 +16,7 @@ namespace {
 
 using Drake::EigenVector;
 
-class SimulationTest : public ::testing::Test {
+class SimulationTerminationTest : public ::testing::Test {
  public:
   void SetUp() override {
     sys_ptr = Drake::system_test::CreateRandomAffineSystem<10, 10, 10>(
@@ -46,14 +46,14 @@ class SimulationTest : public ::testing::Test {
 
 // Tests whether Drake::simulate() can be called using default simulation
 // options without an exception being thrown.
-TEST_F(SimulationTest, TerminationConditionDefault) {
+TEST_F(SimulationTerminationTest, TerminationConditionDefault) {
   EXPECT_NO_THROW(Drake::simulate(*sys_ptr, ti, tf, xi, options));\
 }
 
 // Tests whether Drake::simulate() can be called using simulation options
 // with a custom termination function. This function returns true terminating
 // the simulation loop.
-TEST_F(SimulationTest, TerminationConditionTrue) {
+TEST_F(SimulationTerminationTest, TerminationConditionTrue) {
   options.should_stop = []() { return true; };
   EXPECT_NO_THROW(Drake::simulate(*sys_ptr, ti, tf, xi, options));
 }
@@ -61,7 +61,7 @@ TEST_F(SimulationTest, TerminationConditionTrue) {
 // Tests whether Drake::simulate() can be called using simulation options
 // customized with a different termination function. This function throws an
 // exception, which should be caught.
-TEST_F(SimulationTest, TerminationConditionThrow) {
+TEST_F(SimulationTerminationTest, TerminationConditionThrow) {
   options.should_stop = []() {
     throw std::runtime_error("Terminate now!");
     return true;
