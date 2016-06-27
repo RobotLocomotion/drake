@@ -613,15 +613,13 @@ RigidBodyTree::ComputeMaximumDepthCollisionPoints(
     contact_points[i].getResults(&ptA, &ptB, &n, &distance);
 
     // Get body indexes.
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(contact_points[i].getIdA()));
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(contact_points[i].getIdB()));
+    const DrakeCollision::Element* elementA =
+        contact_points[i].get_elementA();
+    const DrakeCollision::Element* elementB =
+        contact_points[i].get_elementB();
 
     // Get bodies' transforms.
-    const RigidBody& bodyA = elementA->getBody();
+    const RigidBody& bodyA = *elementA->get_body();
     Isometry3d TA;
     if (bodyA.hasParent()) {  // body is dynamic.
       TA = cache.getElement(bodyA).transform_to_world;
@@ -629,7 +627,7 @@ RigidBodyTree::ComputeMaximumDepthCollisionPoints(
       TA = Isometry3d::Identity();
     }
 
-    const RigidBody& bodyB = elementB->getBody();
+    const RigidBody& bodyB = *elementB->get_body();
     Isometry3d TB;
     if (bodyB.hasParent()) {  // body is dynamic.
       TB = cache.getElement(bodyB).transform_to_world;
