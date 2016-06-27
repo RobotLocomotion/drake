@@ -43,7 +43,7 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
 
 // This function meets the signature requirements for nlopt::vfunc as
 // described in
-// http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#ObjectCostive_function
+// http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#Objective_function
 double EvaluateCosts(const std::vector<double>& x,
                      std::vector<double>& grad,
                      void* f_data) {
