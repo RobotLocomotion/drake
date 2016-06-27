@@ -1,5 +1,6 @@
 #include "SplineInformation.h"
-#include <cassert>
+
+#include "drake/common/drake_assert.h"
 
 using namespace std;
 
@@ -8,7 +9,7 @@ SplineInformation::SplineInformation(
     std::vector<double> const& segment_times)
     : PiecewisePolynomialBase(segment_times),
       segment_polynomial_degrees(segment_polynomial_orders) {
-  assert(segment_times.size() == segment_polynomial_orders.size() + 1);
+  DRAKE_ASSERT(segment_times.size() == segment_polynomial_orders.size() + 1);
   value_constraints.resize(getNumberOfSegments());
 }
 

@@ -298,7 +298,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   std::shared_ptr<RigidBodyTree> tree;
   std::vector<std::shared_ptr<RigidBodyForceElement>> force_elements;
   std::vector<std::shared_ptr<RigidBodySensor>> sensors;
-  size_t num_sensor_outputs;
   bool direct_feedthrough;
 
   /*

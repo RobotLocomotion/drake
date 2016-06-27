@@ -1,4 +1,3 @@
-
 #include "RigidBody.h"
 
 #include <stdexcept>
@@ -30,7 +29,7 @@ const std::string& RigidBody::name() const { return name_; }
 
 const std::string& RigidBody::model_name() const { return model_name_; }
 
-const int RigidBody::get_model_id() const { return robotnum; }
+int RigidBody::get_model_id() const { return robotnum; }
 
 void RigidBody::set_model_id(int model_id) { robotnum = model_id; }
 
@@ -64,6 +63,12 @@ void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
   setCollisionFilterIgnores(ignores);
 }
 
+bool RigidBody::adjacentTo(const RigidBody& other) const {
+  return ((has_as_parent(other) && !(joint && joint->isFloating())) ||
+          (other.has_as_parent(*this) &&
+           !(other.joint && other.joint->isFloating())));
+}
+
 bool RigidBody::appendCollisionElementIdsFromThisBody(
     const string& group_name, vector<DrakeCollision::ElementId>& ids) const {
   auto group_ids_iter = collision_element_groups.find(group_name);
@@ -95,29 +100,31 @@ void RigidBody::ApplyTransformToJointFrame(
 }
 
 RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
-    : DrakeCollision::Element(other), body(other.body) {}
+    : DrakeCollision::Element(other) {}
 
 RigidBody::CollisionElement::CollisionElement(
     const Isometry3d& T_element_to_link, const RigidBody* const body)
-    : DrakeCollision::Element(T_element_to_link), body(body) {}
+    : DrakeCollision::Element(T_element_to_link) {
+  set_body(body);
+}
 
 RigidBody::CollisionElement::CollisionElement(
     const DrakeShapes::Geometry& geometry, const Isometry3d& T_element_to_link,
     const RigidBody* const body)
-    : DrakeCollision::Element(geometry, T_element_to_link), body(body) {}
+    : DrakeCollision::Element(geometry, T_element_to_link) {
+  set_body(body);
+}
 
 RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
   return new CollisionElement(*this);
 }
-
-const RigidBody& RigidBody::CollisionElement::getBody() const { return *body; }
 
 bool RigidBody::CollisionElement::CollidesWith(
     const DrakeCollision::Element* other) const {
   auto other_rb = dynamic_cast<const RigidBody::CollisionElement*>(other);
   bool collides = true;
   if (other_rb != nullptr) {
-    collides = this->body->CollidesWith(*other_rb->body);
+    collides = get_body()->CollidesWith(*other_rb->get_body());
   }
   return collides;
 }

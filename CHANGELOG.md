@@ -16,11 +16,14 @@ Unreleased: changes on master, not yet released
 [//]: # "New functionality or APIs."
 ### Added
 
- - None
+ - [#2602][] Added `DRAKE_ASSERT` and `DRAKE_ABORT_UNLESS` macros to replace
+ built-in `assert()` macro.
+ - [#2621][] Added `DRAKE_DEPRECATED` macro for portable deprecation.
 
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2597][] Changed `RigidBodyTree::findLink()` to be `RigidBodyTree::FindBody()`.
  - [#2426][] Changed `RigidBodyTree::findLinkId()` to be `RigidBodyTree::FindBodyIndex()`. Updated APIs of `RigidBodyTree`, `RigidBody`, `RigidBodyTree`, and `RigidBodyFrame` to support notion of a "model ID" that uniquely identifies a model within a `RigidBodySystem`. This enables the same SDF file to be loaded multiple times into the same `RigidBodySystem`.
  - [#2303][] The following member variables should now be accessed via accessor methods: `RigidBody::linkname`, `RigidBody::model_name`, `RigidBodyTree::num_positions`, and `RigidBodyTree::num_velocities`.
  - [#2325][] The following member variable should now be accessed via an accessor method: `RigidBodyConstraint::robot`.
@@ -33,6 +36,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
 
+ - [#2610][] RigidBodyTree::getContactPositions and ::getContactPositionsJac are removed.
  - [#2102][] Macports and Cygwin are no longer supported.
  - [#2067][] `core/Core.h` is removed.
  - [#2039][] Ubuntu 12.04 Trusty is no longer supported.
@@ -70,3 +74,6 @@ Changes in version v0.9.11 and before are not provided.
 [#2303]: https://github.com/RobotLocomotion/drake/issues/2303
 [#2325]: https://github.com/RobotLocomotion/drake/issues/2325
 [#2426]: https://github.com/RobotLocomotion/drake/issues/2426
+[#2597]: https://github.com/RobotLocomotion/drake/issues/2597
+[#2602]: https://github.com/RobotLocomotion/drake/issues/2602
+[#2621]: https://github.com/RobotLocomotion/drake/issues/2621

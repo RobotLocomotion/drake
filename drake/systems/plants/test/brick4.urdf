@@ -7,7 +7,9 @@
       <geometry>
         <box size="0.06 0.06 1.176"/>
       </geometry>
-      <material name="dark_gray"/>
+      <material name="dark_gray">
+        <color rgba="0.4 0.4 0.4 1.0"/>
+      </material>
       <origin xyz="1 0 0"/>
     </visual>
     <collision>

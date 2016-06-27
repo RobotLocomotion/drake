@@ -1,11 +1,18 @@
+/// @file
+/// THIS FILE IS DEPRECATED.
+/// Its contents are moving into drake/math.
+
 #pragma once
 
 #include <Eigen/Dense>
 #include <cstring>
 #include <cmath>
 #include <random>
-#include "drake/util/drakeGradientUtil.h"
+
+#include "drake/common/drake_assert.h"
 #include "drake/drakeGeometryUtil_export.h"
+#include "drake/math/gradient.h"
+#include "drake/util/drakeGradientUtil.h"
 
 const int TWIST_SIZE = 6;
 const int QUAT_SIZE = 4;
@@ -167,10 +174,10 @@ DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector3d uniformlyRandomRPY(
 template <typename Derived>
 void normalizeVec(
     const Eigen::MatrixBase<Derived>& x, typename Derived::PlainObject& x_norm,
-    typename Gradient<Derived, Derived::RowsAtCompileTime, 1>::type* dx_norm =
-        nullptr,
-    typename Gradient<Derived, Derived::RowsAtCompileTime, 2>::type* ddx_norm =
-        nullptr) {
+    typename drake::math::Gradient<Derived, Derived::RowsAtCompileTime,
+                                   1>::type* dx_norm = nullptr,
+    typename drake::math::Gradient<Derived, Derived::RowsAtCompileTime,
+                                   2>::type* ddx_norm = nullptr) {
   typename Derived::Scalar xdotx = x.squaredNorm();
   typename Derived::Scalar norm_x = sqrt(xdotx);
   x_norm = x / norm_x;
@@ -284,7 +291,7 @@ Eigen::Vector4d axis2quat(const Eigen::MatrixBase<Derived>& a) {
   auto c = std::cos(arg);
   auto s = std::sin(arg);
   Eigen::Vector4d ret;
-  ret << c, s* axis;
+  ret << c, s * axis;
   return ret;
 }
 
@@ -301,9 +308,9 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> axis2rotmat(
   auto stheta = std::sin(theta);
   auto c = 1 - ctheta;
   Eigen::Matrix<typename Derived::Scalar, 3, 3> R;
-  R << ctheta + x* x* c, x* y* c - z* stheta, x* z* c + y* stheta,
-      y* x* c + z* stheta, ctheta + y* y* c, y* z* c - x* stheta,
-      z* x* c - y* stheta, z* y* c + x* stheta, ctheta + z* z* c;
+  R << ctheta + x * x * c, x * y * c - z * stheta, x * z * c + y * stheta,
+      y * x * c + z * stheta, ctheta + y * y * c, y * z * c - x * stheta,
+      z * x * c - y * stheta, z * y * c + x * stheta, ctheta + z * z * c;
 
   return R;
 }
@@ -313,66 +320,6 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(
     const Eigen::MatrixBase<Derived>& a) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   return quat2rpy(axis2quat(a));
-}
-
-/*
- * expmap2x
- */
-namespace Drake {
-namespace internal {
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatNonDegenerate(
-    const Eigen::MatrixBase<Derived>& v,
-    typename Derived::Scalar& theta_squared) {
-  using namespace std;
-  typedef typename Derived::Scalar Scalar;
-  static_assert(
-      Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1,
-      "Wrong size.");
-
-  Eigen::Matrix<Scalar, 4, 1> q;
-
-  Scalar theta = sqrt(theta_squared);
-  Scalar arg = theta / Scalar(2);
-  q(0) = cos(arg);
-  q.template bottomRows<3>() = v;
-  q.template bottomRows<3>() *= sin(arg) / theta;
-
-  return q;
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatDegenerate(
-    const Eigen::MatrixBase<Derived>& v,
-    typename Derived::Scalar& theta_squared) {
-  typedef typename Derived::Scalar Scalar;
-  static_assert(
-      Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1,
-      "Wrong size.");
-
-  Eigen::Matrix<Scalar, 4, 1> q;
-
-  q(0) = -theta_squared / 8.0 + 1.0;
-  q.template bottomRows<3>() = v;
-  q.template bottomRows<3>() *=
-      (theta_squared * 8.0E1 - 1.92E3) * (-2.604166666666667E-4);
-
-  return q;
-}
-}
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(
-    const Eigen::MatrixBase<Derived>& v) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  typedef typename Derived::Scalar Scalar;
-  Scalar theta_squared = v.squaredNorm();
-  if (theta_squared < pow(Eigen::NumTraits<Scalar>::epsilon(), 0.5)) {
-    return Drake::internal::expmap2quatDegenerate(v, theta_squared);
-  } else {
-    return Drake::internal::expmap2quatNonDegenerate(v, theta_squared);
-  }
 }
 
 /*
@@ -536,16 +483,16 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(
  * rotation conversion gradient functions
  */
 template <typename Derived>
-typename Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
-                  QUAT_SIZE>::type
+typename drake::math::Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
+                               QUAT_SIZE>::type
 dquat2rotmat(const Eigen::MatrixBase<Derived>& q) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>,
                                            QUAT_SIZE);
 
-  typename Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
-                    QUAT_SIZE>::type ret;
+  typename drake::math::Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
+                                 QUAT_SIZE>::type ret;
   typename Eigen::MatrixBase<Derived>::PlainObject qtilde;
-  typename Gradient<Derived, QUAT_SIZE>::type dqtilde;
+  typename drake::math::Gradient<Derived, QUAT_SIZE>::type dqtilde;
   normalizeVec(q, qtilde, &dqtilde);
 
   typedef typename Derived::Scalar Scalar;
@@ -562,8 +509,9 @@ dquat2rotmat(const Eigen::MatrixBase<Derived>& q) {
 }
 
 template <typename DerivedR, typename DerivedDR>
-typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>,
-                  DerivedDR::ColsAtCompileTime>::type
+typename drake::math::Gradient<
+    Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>,
+    DerivedDR::ColsAtCompileTime>::type
 drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
             const Eigen::MatrixBase<DerivedDR>& dR) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedR>,
@@ -574,8 +522,9 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
 
   typename DerivedDR::Index nq = dR.cols();
   typedef typename DerivedR::Scalar Scalar;
-  typedef typename Gradient<Eigen::Matrix<Scalar, RPY_SIZE, 1>,
-                            DerivedDR::ColsAtCompileTime>::type ReturnType;
+  typedef typename drake::math::Gradient<Eigen::Matrix<Scalar, RPY_SIZE, 1>,
+                                         DerivedDR::ColsAtCompileTime>::type
+      ReturnType;
   ReturnType drpy(RPY_SIZE, nq);
 
   auto dR11_dq =
@@ -609,8 +558,9 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
 }
 
 template <typename DerivedR, typename DerivedDR>
-typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 1>,
-                  DerivedDR::ColsAtCompileTime>::type
+typename drake::math::Gradient<
+    Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 1>,
+    DerivedDR::ColsAtCompileTime>::type
 drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
              const Eigen::MatrixBase<DerivedDR>& dR) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedR>,
@@ -620,8 +570,9 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
       THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   typedef typename DerivedR::Scalar Scalar;
-  typedef typename Gradient<Eigen::Matrix<Scalar, QUAT_SIZE, 1>,
-                            DerivedDR::ColsAtCompileTime>::type ReturnType;
+  typedef typename drake::math::Gradient<Eigen::Matrix<Scalar, QUAT_SIZE, 1>,
+                                         DerivedDR::ColsAtCompileTime>::type
+      ReturnType;
   typename DerivedDR::Index nq = dR.cols();
 
   auto dR11_dq =
@@ -764,8 +715,8 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(
 template <typename DerivedA, typename DerivedB>
 Eigen::Matrix<typename DerivedA::Scalar, 3, Eigen::Dynamic> dcrossProduct(
     const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b,
-    const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
-    const typename Gradient<DerivedB, Eigen::Dynamic>::type& db) {
+    const typename drake::math::Gradient<DerivedA, Eigen::Dynamic>::type& da,
+    const typename drake::math::Gradient<DerivedB, Eigen::Dynamic>::type& db) {
   Eigen::Matrix<typename DerivedA::Scalar, 3, Eigen::Dynamic> ret(3, da.cols());
   ret.noalias() = da.colwise().cross(b);
   ret.noalias() -= db.colwise().cross(a);
@@ -860,7 +811,7 @@ void angularvel2rpydotMatrix(
 template <typename DerivedRPY, typename DerivedE>
 void rpydot2angularvelMatrix(
     const Eigen::MatrixBase<DerivedRPY>& rpy, Eigen::MatrixBase<DerivedE>& E,
-    typename Gradient<DerivedE, RPY_SIZE, 1>::type* dE = nullptr) {
+    typename drake::math::Gradient<DerivedE, RPY_SIZE, 1>::type* dE = nullptr) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
                                            RPY_SIZE);
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedE>,
@@ -873,7 +824,7 @@ void rpydot2angularvelMatrix(
   Scalar sy = sin(y);
   Scalar cy = cos(y);
 
-  E << cp* cy, -sy, 0.0, cp* sy, cy, 0.0, -sp, 0.0, 1.0;
+  E << cp * cy, -sy, 0.0, cp * sy, cy, 0.0, -sp, 0.0, 1.0;
   if (dE) {
     (*dE) << 0.0, -sp * cy, -cp * sy, 0.0, -sp * sy, cp * cy, 0.0, -cp, 0.0,
         0.0, 0.0, -cy, 0.0, 0.0, -sy, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -900,7 +851,8 @@ void rpydot2angularvel(
     const Eigen::MatrixBase<DerivedRPY>& rpy,
     const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
     Eigen::MatrixBase<DerivedOMEGA>& omega,
-    typename Gradient<DerivedOMEGA, RPY_SIZE, 1>::type* domega = nullptr) {
+    typename drake::math::Gradient<DerivedOMEGA, RPY_SIZE, 1>::type* domega =
+        nullptr) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
                                            RPY_SIZE);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>,
@@ -946,11 +898,11 @@ void cylindrical2cartesian(const Eigen::Matrix<Scalar, 3, 1>& m_cylinder_axis,
   double theta_dot = v_cylinder(1);
   double height_dot = v_cylinder(2);
   Eigen::Matrix<Scalar, 3, 1> x_pos_cartesian;
-  x_pos_cartesian << radius* c_theta, radius* s_theta, height;
+  x_pos_cartesian << radius * c_theta, radius * s_theta, height;
   x_pos_cartesian = R_cylinder2cartesian * x_pos_cartesian + cylinder_origin;
   Eigen::Matrix<Scalar, 3, 1> v_pos_cartesian;
-  v_pos_cartesian << radius * -s_theta* theta_dot + radius_dot* c_theta,
-      radius* c_theta* theta_dot + radius_dot* s_theta, height_dot;
+  v_pos_cartesian << radius * -s_theta * theta_dot + radius_dot * c_theta,
+      radius * c_theta * theta_dot + radius_dot * s_theta, height_dot;
   v_pos_cartesian = R_cylinder2cartesian * v_pos_cartesian;
   Eigen::Vector3d x_rpy_cylinder = x_cylinder.block(3, 0, 3, 1);
   Eigen::Matrix<Scalar, 3, 3> R_tangent = rpy2rotmat(x_rpy_cylinder);
@@ -1105,35 +1057,35 @@ typename TransformSpatial<DerivedM>::type transformSpatialMotion(
 
 template <typename Scalar, typename DerivedX, typename DerivedDT,
           typename DerivedDX>
-typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type
+typename drake::math::Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type
 dTransformSpatialMotion(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
                         const Eigen::MatrixBase<DerivedX>& X,
                         const Eigen::MatrixBase<DerivedDT>& dT,
                         const Eigen::MatrixBase<DerivedDX>& dX) {
-  assert(dT.cols() == dX.cols());
+  DRAKE_ASSERT(dT.cols() == dX.cols());
   typename DerivedDT::Index nq = dT.cols();
 
   const auto& R = T.linear();
   const auto& p = T.translation();
 
-  std::array<int, 3> rows = {0, 1, 2};
-  std::array<int, 3> R_cols = {0, 1, 2};
-  std::array<int, 1> p_cols = {3};
+  std::array<int, 3> rows = {{0, 1, 2}};
+  std::array<int, 3> R_cols = {{0, 1, 2}};
+  std::array<int, 1> p_cols = {{3}};
 
   auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
   auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
 
-  typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type ret(
-      X.size(), nq);
-  std::array<int, 3> Xomega_rows = {0, 1, 2};
-  std::array<int, 3> Xv_rows = {3, 4, 5};
+  typename drake::math::Gradient<DerivedX, DerivedDX::ColsAtCompileTime,
+                                 1>::type ret(X.size(), nq);
+  std::array<int, 3> Xomega_rows = {{0, 1, 2}};
+  std::array<int, 3> Xv_rows = {{3, 4, 5}};
   for (int col = 0; col < X.cols(); col++) {
     auto Xomega_col = X.template block<3, 1>(0, col);
     auto Xv_col = X.template block<3, 1>(3, col);
 
     auto RXomega_col = (R * Xomega_col).eval();
 
-    std::array<int, 1> col_array = {col};
+    std::array<int, 1> col_array = {{col}};
     auto dXomega_col = getSubMatrixGradient<Eigen::Dynamic>(
         dX, Xomega_rows, col_array, X.rows());
     auto dXv_col =
@@ -1169,35 +1121,35 @@ typename TransformSpatial<DerivedF>::type transformSpatialForce(
 
 template <typename Scalar, typename DerivedX, typename DerivedDT,
           typename DerivedDX>
-typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type
+typename drake::math::Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type
 dTransformSpatialForce(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
                        const Eigen::MatrixBase<DerivedX>& X,
                        const Eigen::MatrixBase<DerivedDT>& dT,
                        const Eigen::MatrixBase<DerivedDX>& dX) {
-  assert(dT.cols() == dX.cols());
+  DRAKE_ASSERT(dT.cols() == dX.cols());
   typename DerivedDT::Index nq = dT.cols();
 
   const auto& R = T.linear();
   const auto& p = T.translation();
 
-  std::array<int, 3> rows = {0, 1, 2};
-  std::array<int, 3> R_cols = {0, 1, 2};
-  std::array<int, 1> p_cols = {3};
+  std::array<int, 3> rows = {{0, 1, 2}};
+  std::array<int, 3> R_cols = {{0, 1, 2}};
+  std::array<int, 1> p_cols = {{3}};
 
   auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
   auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
 
-  typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type ret(X.size(),
-                                                                      nq);
-  std::array<int, 3> Xomega_rows = {0, 1, 2};
-  std::array<int, 3> Xv_rows = {3, 4, 5};
+  typename drake::math::Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type
+      ret(X.size(), nq);
+  std::array<int, 3> Xomega_rows = {{0, 1, 2}};
+  std::array<int, 3> Xv_rows = {{3, 4, 5}};
   for (int col = 0; col < X.cols(); col++) {
     auto Xomega_col = X.template block<3, 1>(0, col);
     auto Xv_col = X.template block<3, 1>(3, col);
 
     auto RXv_col = (R * Xv_col).eval();
 
-    std::array<int, 1> col_array = {col};
+    std::array<int, 1> col_array = {{col}};
     auto dXomega_col = getSubMatrixGradient<Eigen::Dynamic>(
         dX, Xomega_rows, col_array, X.rows());
     auto dXv_col =
@@ -1346,8 +1298,8 @@ template <typename DerivedA, typename DerivedB>
 Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic>
 dCrossSpatialMotion(
     const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b,
-    const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
-    const typename Gradient<DerivedB, Eigen::Dynamic>::type& db) {
+    const typename drake::math::Gradient<DerivedA, Eigen::Dynamic>::type& da,
+    const typename drake::math::Gradient<DerivedB, Eigen::Dynamic>::type& db) {
   Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> ret(
       TWIST_SIZE, da.cols());
   ret.row(0) = -da.row(2) * b[1] + da.row(1) * b[2] - a[2] * db.row(1) +
@@ -1372,8 +1324,8 @@ template <typename DerivedA, typename DerivedB>
 Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic>
 dCrossSpatialForce(
     const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b,
-    const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
-    const typename Gradient<DerivedB, Eigen::Dynamic>::type& db) {
+    const typename drake::math::Gradient<DerivedA, Eigen::Dynamic>::type& da,
+    const typename drake::math::Gradient<DerivedB, Eigen::Dynamic>::type& db) {
   Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> ret(
       TWIST_SIZE, da.cols());
   ret.row(0) = da.row(2) * b[1] - da.row(1) * b[2] + da.row(5) * b[4] -
@@ -1451,9 +1403,9 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
   const auto& R = T.linear();
   const auto& p = T.translation();
 
-  std::array<int, 3> rows = {0, 1, 2};
-  std::array<int, 3> R_cols = {0, 1, 2};
-  std::array<int, 1> p_cols = {3};
+  std::array<int, 3> rows = {{0, 1, 2}};
+  std::array<int, 3> R_cols = {{0, 1, 2}};
+  std::array<int, 1> p_cols = {{3}};
 
   auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
   auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
@@ -1474,22 +1426,6 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
   }
 
   return ret;
-}
-
-template <typename DerivedQ>
-Eigen::Matrix<typename DerivedQ::Scalar, 3, 1> quat2expmap(
-    const Eigen::MatrixBase<DerivedQ>& q) {
-  using namespace Eigen;
-  typedef typename DerivedQ::Scalar Scalar;
-  static_assert(
-      DerivedQ::RowsAtCompileTime == 4 && DerivedQ::ColsAtCompileTime == 1,
-      "Wrong size.");
-
-  Scalar t = sqrt(Scalar(1) - q(0) * q(0));
-  bool is_degenerate = (t * t < NumTraits<Scalar>::epsilon());
-  Scalar s(2);
-  if (!is_degenerate) s *= acos(q(0)) / t;
-  return s * q.template tail<3>();
 }
 
 template <typename Derived>
@@ -1533,108 +1469,5 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> unwrapExpmap(
     return expmap2_flip;
   } else {
     return expmap2;
-  }
-}
-
-// TODO(tkoolen): move to AutoDiffScalar.h?
-/** AutoDiffScalar overloads of round to mimic std::round from <cmath>.
- */
-template <typename DerType>
-double round(const Eigen::AutoDiffScalar<DerType>& x) {
-  return round(x.value());
-}
-
-// TODO(tkoolen): move to AutoDiffScalar.h?
-/** AutoDiffScalar overloads of floor to mimic std::round from <cmath>.
- */
-template <typename DerType>
-double floor(const Eigen::AutoDiffScalar<DerType>& x) {
-  return floor(x.value());
-}
-
-template <typename Derived1, typename Derived2>
-Eigen::Matrix<typename Derived1::Scalar, 3, 1> closestExpmap(
-    const Eigen::MatrixBase<Derived1>& expmap1,
-    const Eigen::MatrixBase<Derived2>& expmap2) {
-  using namespace Eigen;
-  using namespace std;
-  static_assert(
-      Derived1::RowsAtCompileTime == 3 && Derived1::ColsAtCompileTime == 1,
-      "Wrong size.");
-  static_assert(
-      Derived2::RowsAtCompileTime == 3 && Derived2::ColsAtCompileTime == 1,
-      "Wrong size.");
-  static_assert(
-      std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value,
-      "Scalar types don't match.");
-  typedef typename Derived1::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real Real;
-
-  Real expmap1_norm = expmap1.norm();
-  Real expmap2_norm = expmap2.norm();
-  Eigen::Matrix<Scalar, 3, 1> ret;
-  if (expmap2_norm < NumTraits<Scalar>::epsilon()) {
-    if (expmap1_norm > NumTraits<Scalar>::epsilon()) {
-      auto expmap1_axis = (expmap1 / expmap1_norm).eval();
-      auto expmap1_round = round(expmap1_norm / (2 * M_PI));
-      return expmap1_axis * expmap1_round * 2 * M_PI;
-    } else {
-      return expmap2;
-    }
-  } else {
-    auto expmap2_axis = (expmap2 / expmap2_norm).eval();
-    auto expmap2_closest_k =
-        ((expmap2_axis.transpose() * expmap1).value() - expmap2_norm) /
-        (2 * M_PI);
-    auto expmap2_closest_k1 = floor(expmap2_closest_k);
-    auto expmap2_closest_k2 = expmap2_closest_k1 + 1.0;
-    auto expmap2_closest1 =
-        (expmap2 + 2 * expmap2_closest_k1 * M_PI * expmap2_axis).eval();
-    auto expmap2_closest2 =
-        (expmap2 + 2 * expmap2_closest_k2 * M_PI * expmap2_axis).eval();
-    if ((expmap2_closest1 - expmap1).norm() <
-        (expmap2_closest2 - expmap1).norm()) {
-      return expmap2_closest1;
-    } else {
-      return expmap2_closest2;
-    }
-  }
-}
-
-template <typename DerivedQ, typename DerivedE>
-void quat2expmapSequence(const Eigen::MatrixBase<DerivedQ>& quat,
-                         const Eigen::MatrixBase<DerivedQ>& quat_dot,
-                         Eigen::MatrixBase<DerivedE>& expmap,
-                         Eigen::MatrixBase<DerivedE>& expmap_dot) {
-  using namespace Eigen;
-  static_assert(DerivedQ::RowsAtCompileTime == 4, "Wrong size.");
-  static_assert(DerivedE::RowsAtCompileTime == 3, "Wrong size.");
-  static_assert(
-      std::is_same<typename DerivedQ::Scalar, typename DerivedE::Scalar>::value,
-      "Scalar types don't match.");
-  typedef typename DerivedQ::Scalar Scalar;
-
-  assert(quat.cols() == quat_dot.cols() &&
-         "number of columns of quat doesn't match quat_dot");
-  Index N = quat.cols();
-
-  typedef AutoDiffScalar<Matrix<Scalar, 1, 1>> ADScalar;
-  auto quat_autodiff = quat.template cast<ADScalar>().eval();
-  for (int i = 0; i < quat.size(); i++) {
-    quat_autodiff(i).derivatives()(0) = quat_dot(i);
-  }
-
-  expmap.resize(3, N);
-  expmap_dot.resize(3, N);
-  Matrix<ADScalar, 3, 1> expmap_autodiff_previous;
-  for (int i = 0; i < N; i++) {
-    auto expmap_autodiff = quat2expmap(quat_autodiff.col(i));
-    if (i >= 1) {
-      expmap_autodiff =
-          closestExpmap(expmap_autodiff_previous, expmap_autodiff);
-    }
-    expmap.col(i) = autoDiffToValueMatrix(expmap_autodiff);
-    expmap_dot.col(i) = autoDiffToGradientMatrix(expmap_autodiff);
-    expmap_autodiff_previous = expmap_autodiff;
   }
 }

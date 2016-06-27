@@ -9,7 +9,6 @@ using systems::OutputPort;
 using systems::StateVector;
 using systems::SystemOutput;
 using systems::VectorInterface;
-using systems::VectorX;
 
 namespace examples {
 
@@ -50,6 +49,12 @@ void SpringMassOutputVector::set_position(double q) {
 
 void SpringMassOutputVector::set_velocity(double v) {
   get_mutable_value()[1] = v;
+}
+
+SpringMassOutputVector* SpringMassOutputVector::DoClone() const {
+  SpringMassOutputVector* clone(new SpringMassOutputVector());
+  clone->get_mutable_value() = get_value();
+  return clone;
 }
 
 SpringMassSystem::SpringMassSystem(const std::string& name,

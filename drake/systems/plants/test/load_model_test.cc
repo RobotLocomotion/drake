@@ -35,12 +35,12 @@ TEST_P(LoadModelTest, TestNoOffset) {
       DrakeJoint::QUATERNION);
 
   // Verifies that RigidBodyTree cannot find a link thatn does not exist.
-  EXPECT_THROW(rbs.getRigidBodyTree()->findLink("not_a_link"),
+  EXPECT_THROW(rbs.getRigidBodyTree()->FindBody("not_a_link"),
     std::logic_error);
 
   // Verifies that the world link within the rigid body tree
   // can be found and obtained.
-  auto world_body = rbs.getRigidBodyTree()->findLink("world");
+  auto world_body = rbs.getRigidBodyTree()->FindBody("world");
   EXPECT_TRUE(world_body != nullptr);
 
   // Verifies that the world link does not have a parent.
@@ -147,7 +147,7 @@ TEST_P(LoadModelTest, TestWeld) {
     T_model2_to_link2.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto link2_body = rbs.getRigidBodyTree()->findLink("link2");
+  auto link2_body = rbs.getRigidBodyTree()->FindBody("link2");
   EXPECT_TRUE(link2_body != nullptr);
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
@@ -159,7 +159,7 @@ TEST_P(LoadModelTest, TestWeld) {
       DrakeJoint::FIXED, weld_to_frame);
 
   // Verifies that the newly added link exists and is in the correct location.
-  auto link_body = rbs.getRigidBodyTree()->findLink("link");
+  auto link_body = rbs.getRigidBodyTree()->FindBody("link");
   EXPECT_TRUE(link_body != nullptr);
   EXPECT_TRUE(link_body->getJoint().getTransformToParentBody().matrix() ==
               T_model2_to_link2.matrix());
@@ -188,7 +188,7 @@ GTEST_TEST(LoadSDFTest, TestInternalOffset) {
     T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
   EXPECT_TRUE(link1_body != nullptr);
   EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix() ==
               T_model_to_world.matrix());
@@ -227,7 +227,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffset1) {
     T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
   EXPECT_TRUE(link1_body != nullptr);
   EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix() ==
               T_model_to_world.matrix());
@@ -262,7 +262,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffset2) {
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to identity.
-  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
   EXPECT_TRUE(link1_body != nullptr);
   EXPECT_TRUE(
       link1_body->getJoint().getTransformToParentBody().matrix().isApprox(
@@ -321,7 +321,7 @@ TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
     T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto link1_body = rbs->getRigidBodyTree()->findLink(params.root_link_name_);
+  auto link1_body = rbs->getRigidBodyTree()->FindBody(params.root_link_name_);
   EXPECT_TRUE(link1_body != nullptr);
 
   // Note: The following two local variables are necessary to avoid a transient

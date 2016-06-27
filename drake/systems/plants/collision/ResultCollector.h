@@ -9,12 +9,12 @@ class ResultCollector {
 
   virtual void addPointPairResult(const PointPair& result);
 
-  inline void addSingleResult(const ElementId idA, const ElementId idB,
-                              const Eigen::Vector3d& ptA,
-                              const Eigen::Vector3d& ptB,
-                              const Eigen::Vector3d& normal,
-                              const double distance) {
-    addPointPairResult(PointPair(idA, idB, ptA, ptB, normal, distance));
+  void addSingleResult(const Element* elementA, const Element* elementB,
+                       const Eigen::Vector3d& ptA,
+                       const Eigen::Vector3d& ptB,
+                       const Eigen::Vector3d& normal,
+                       const double distance) {
+    pts.emplace_back(elementA, elementB, ptA, ptB, normal, distance);
   }
 
   std::vector<PointPair> getResults() const { return pts; }

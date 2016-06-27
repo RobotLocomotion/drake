@@ -6,6 +6,8 @@
 #include <numeric>
 #include <stdexcept>
 
+#include "drake/common/drake_assert.h"
+
 using namespace std;
 using namespace Eigen;
 
@@ -128,7 +130,7 @@ PiecewisePolynomial<double> nWaypointCubicSpline(
     const vector<double>& segment_times, double x0, double xd0, double xf,
     double xdf, const Ref<const VectorXd>& xi) {
   const int num_segments = static_cast<int>(xi.size() + 1);
-  assert(segment_times.size() == num_segments + 1);
+  DRAKE_ASSERT(segment_times.size() == num_segments + 1);
 
   int polynomial_order = 3;
   vector<int> segment_polynomial_orders;

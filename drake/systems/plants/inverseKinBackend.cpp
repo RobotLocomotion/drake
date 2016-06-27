@@ -6,8 +6,10 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+#include "drake/common/drake_assert.h"
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
+#include "drake/math/autodiff.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
@@ -20,6 +22,8 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::autoDiffToValueMatrix;
 using drake::solvers::Constraint;
 using drake::solvers::DecisionVariableView;
 using drake::solvers::OptimizationProblem;
@@ -38,9 +42,8 @@ namespace {
 class InverseKinObjective : public Constraint {
  public:
   // All references are aliased for the life of the objective.
-  InverseKinObjective(RigidBodyTree* model, const MatrixXd& Q)
+  InverseKinObjective(const RigidBodyTree* model, const MatrixXd& Q)
       : Constraint(model->number_of_positions()),
-        model_(model),
         Q_(Q) {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -69,7 +72,6 @@ class InverseKinObjective : public Constraint {
   }
 
  private:
-  RigidBodyTree* model_;
   const MatrixXd& Q_;
   VectorXd q_nom_i_;
 };
@@ -177,8 +179,8 @@ void inverseKinMode1(
         VectorXd A;
         st_lpc->geval(&t[t_index], iAfun, jAvar, A);
 
-        assert(iAfun.size() == jAvar.size());
-        assert(iAfun.size() == A.size());
+        DRAKE_ASSERT(iAfun.size() == jAvar.size());
+        DRAKE_ASSERT(iAfun.size() == A.size());
 
         typedef Eigen::Triplet<double> T;
         std::vector<T> triplet_list;

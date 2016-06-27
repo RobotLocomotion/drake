@@ -86,7 +86,12 @@ Additional Rules
   some compiler someday but we deem the risk acceptable in trade for
   allowing this common, clutter-reducing practice. For discussion, see
   `stackoverflow <http://stackoverflow.com/questions/5813700/difference-between-size-t-and-stdsize-t>`_
-  and Drake issue `#2374 <https://github.com/RobotLocomotion/drake/issues/2374>`_.
+  and Drake `#2374 <https://github.com/RobotLocomotion/drake/issues/2374>`_.
+* Never use ``assert()`` from ``<cassert>``; instead, use ``DRAKE_ASSERT``.
+  Never use ``DRAKE_ASSERT(false)``; instead, use ``DRAKE_ABORT()``.
+  Use ``DRAKE_ABORT_UNLESS(`` *condition* ``)`` for assertions that will
+  never be disabled, even in release mode.  For discussion, see Drake
+  `#1935 <https://github.com/RobotLocomotion/drake/issues/1935>`_.
 
 .. _code-style-guide-matlab:
 
