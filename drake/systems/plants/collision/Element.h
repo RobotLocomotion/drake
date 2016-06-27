@@ -43,7 +43,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
   @see Element::is_static(). **/
   void set_static() { is_static_ = true;}
 
-  /** @returns `true` if the shape does not move.
+  /** Returns `true` if the shape does not move, `false` otherwise.
 
   For instace, a terrain commonly is a static collision element. This property
   could allow the collision dispatcher to perform certain optimizations not
