@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include "drake/common/drake_assert.h"
+#include "drake/math/quaternion.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
@@ -28,6 +29,8 @@ using std::numeric_limits;
 using std::runtime_error;
 using std::shared_ptr;
 using std::string;
+
+using drake::math::quatRotateVec;
 
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;

@@ -12,6 +12,7 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/expmap.h"
 #include "drake/math/gradient.h"
+#include "drake/math/quaternion.h"
 #include "drake/solvers/qpSpline/splineGeneration.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
@@ -32,6 +33,7 @@ using drake::math::autoDiffToValueMatrix;
 using drake::math::expmap2quat;
 using drake::math::closestExpmap;
 using drake::math::quat2expmap;
+using drake::math::quatRotateVec;
 
 const std::map<SupportLogicType, std::vector<bool>>
     QPLocomotionPlan::support_logic_maps =
