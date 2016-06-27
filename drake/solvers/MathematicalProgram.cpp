@@ -134,8 +134,8 @@ SolutionResult MathematicalProgram::Solve(OptimizationProblem& prog) const {
   // constraints present.
   if (is_satisfied(required_capabilities_, kLeastSquaresCapabilities) &&
       least_squares_solver_->available()) {
-    // TODO ggould Also allow quadratic objectives whose matrix is Identity:
-    // This is the objective function the solver uses anyway when
+    // TODO(ggould-tri) Also allow quadratic objectives whose matrix is
+    // Identity: This is the objective function the solver uses anyway when
     // underconstrainted, and is fairly common in real-world problems.
     return least_squares_solver_->Solve(prog);
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
