@@ -241,10 +241,10 @@ ElementId BulletModel::addElement(const Element& element) {
       // if masks are sufficient for your purposes, use them; they perform
       // better and are a lot simpler to use.
       //
-      // Filter groups are specified by bitmaks. For a 16 bit short this means
+      // Filter groups are specified by bitmasks. For a 16 bit short this means
       // that the maximum number of groups is 16 and a collision element could
       // belong to several groups at the same time (more than one bit on).
-      // For efficiency, a collision element has group and a mask. The mask is
+      // For efficiency, a collision element has a group and a mask. The mask is
       // set to have the bit corresponding to the gorup bit set to zero.
       // With this information two elements A and B are checked for
       // collision if: (A.group & B.mask) != 0 && (B.group & A.mask) != 0
