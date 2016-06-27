@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
+#include "drake/Path.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 namespace drake {
@@ -54,23 +56,23 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
   tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
   tree->add_rigid_body(std::unique_ptr<RigidBody>(r2b1));
 
-  EXPECT_TRUE(tree->findLink("body1", "robot1") != nullptr);
-  EXPECT_TRUE(tree->findLink("body1", "robot2") != nullptr);
-  EXPECT_THROW(tree->findLink("body2", "robot1"), std::logic_error);
-  EXPECT_THROW(tree->findLink("body2", "robot2"), std::logic_error);
+  EXPECT_TRUE(tree->FindBody("body1", "robot1") != nullptr);
+  EXPECT_TRUE(tree->FindBody("body1", "robot2") != nullptr);
+  EXPECT_THROW(tree->FindBody("body2", "robot1"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("body2", "robot2"), std::logic_error);
 
   // Adds floating joints that connect r1b1 and r2b1 to the rigid body tree's
-  // world link at zero offset.
+  // world at zero offset.
   tree->AddFloatingJoint(DrakeJoint::QUATERNION,
                         {r1b1->body_index, r2b1->body_index});
 
   // Verfies that the two rigid bodies are located in the correct place.
-  const DrakeJoint& jointR1B1 = tree->findLink("body1", "robot1")->getJoint();
+  const DrakeJoint& jointR1B1 = tree->FindBody("body1", "robot1")->getJoint();
   EXPECT_TRUE(jointR1B1.isFloating());
   EXPECT_TRUE(jointR1B1.getTransformToParentBody().matrix() ==
               Eigen::Isometry3d::Identity().matrix());
 
-  const DrakeJoint& jointR2B1 = tree->findLink("body1", "robot2")->getJoint();
+  const DrakeJoint& jointR2B1 = tree->FindBody("body1", "robot2")->getJoint();
   EXPECT_TRUE(jointR2B1.isFloating());
   EXPECT_TRUE(jointR2B1.getTransformToParentBody().matrix() ==
               Eigen::Isometry3d::Identity().matrix());
@@ -83,7 +85,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
   tree->add_rigid_body(std::unique_ptr<RigidBody>(r2b1));
 
   // Adds floating joints that connect r1b1 and r2b1 to the rigid body tree's
-  // world link at offset x = 1, y = 1, z = 1.
+  // world at offset x = 1, y = 1, z = 1.
   Eigen::Isometry3d T_r1and2_to_world;
   {
     Eigen::Vector3d xyz, rpy;
@@ -100,12 +102,12 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
                         {r1b1->body_index, r2b1->body_index}, weld_to_frame);
 
   // Verfies that the two rigid bodies are located in the correct place.
-  const DrakeJoint& jointR1B1 = tree->findLink("body1", "robot1")->getJoint();
+  const DrakeJoint& jointR1B1 = tree->FindBody("body1", "robot1")->getJoint();
   EXPECT_TRUE(jointR1B1.isFloating());
   EXPECT_TRUE(jointR1B1.getTransformToParentBody().matrix() ==
               T_r1and2_to_world.matrix());
 
-  const DrakeJoint& jointR2B1 = tree->findLink("body1", "robot2")->getJoint();
+  const DrakeJoint& jointR2B1 = tree->FindBody("body1", "robot2")->getJoint();
   EXPECT_TRUE(jointR2B1.isFloating());
   EXPECT_TRUE(jointR2B1.getTransformToParentBody().matrix() ==
               T_r1and2_to_world.matrix());
@@ -136,7 +138,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   auto r2b1_weld = std::allocate_shared<RigidBodyFrame>(
       Eigen::aligned_allocator<RigidBodyFrame>(), "body1",
-      tree->findLink("body1", "robot1"), T_r2_to_r1);
+      tree->FindBody("body1", "robot1"), T_r2_to_r1);
 
   tree->AddFloatingJoint(DrakeJoint::QUATERNION, {r2b1->body_index}, r2b1_weld);
 
@@ -157,31 +159,55 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   auto r3b1_and_r4b1_weld = std::allocate_shared<RigidBodyFrame>(
       Eigen::aligned_allocator<RigidBodyFrame>(), "body1",
-      tree->findLink("body1", "robot2"), T_r3_and_r4_to_r2);
+      tree->FindBody("body1", "robot2"), T_r3_and_r4_to_r2);
 
   tree->AddFloatingJoint(DrakeJoint::QUATERNION,
                         {r3b1->body_index, r4b1->body_index},
                         r3b1_and_r4b1_weld);
 
-  EXPECT_TRUE(tree->findLink("body1", "robot1")
+  EXPECT_TRUE(tree->FindBody("body1", "robot1")
                   ->getJoint()
                   .getTransformToParentBody()
                   .matrix() == Eigen::Isometry3d::Identity().matrix());
 
-  EXPECT_TRUE(tree->findLink("body1", "robot2")
+  EXPECT_TRUE(tree->FindBody("body1", "robot2")
                   ->getJoint()
                   .getTransformToParentBody()
                   .matrix() == T_r2_to_r1.matrix());
 
-  EXPECT_TRUE(tree->findLink("body1", "robot3")
+  EXPECT_TRUE(tree->FindBody("body1", "robot3")
                   ->getJoint()
                   .getTransformToParentBody()
                   .matrix() == T_r3_and_r4_to_r2.matrix());
 
-  EXPECT_TRUE(tree->findLink("body1", "robot4")
+  EXPECT_TRUE(tree->FindBody("body1", "robot4")
                   ->getJoint()
                   .getTransformToParentBody()
                   .matrix() == T_r3_and_r4_to_r2.matrix());
+}
+
+// Ensures RigidBodyTree::doKinemantics(q, v, bool) is explicitly instantiated
+// with vector block input parameters. For more information, see:
+// https://github.com/RobotLocomotion/drake/issues/2634.
+TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
+  std::string file_name = Drake::getDrakePath() +
+          "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+  tree->addRobotFromURDF(file_name);
+
+  VectorX<double> q;
+  VectorX<double> v;
+  q.resize(tree->number_of_positions());
+  v.resize(tree->number_of_velocities());
+  q.setZero();
+  v.setZero();
+
+  Eigen::VectorBlock<VectorX<double>>
+    q_block = q.head(q.size());
+  Eigen::VectorBlock<VectorX<double>>
+    v_block = v.head(v.size());
+
+  KinematicsCache<double> cache = tree->doKinematics(q_block, v_block);
+  EXPECT_TRUE(cache.hasV());
 }
 
 }  // namespace
