@@ -66,18 +66,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
   std::vector<int> t_indices;
   t_indices.reserve(num_knots);
-  for (int i = 0; i < num_knots; i++) {
+  for (mwSize i = 0; i < num_knots; i++) {
     t_indices.push_back(i + 1);  // assume knot point won't be the same time as
                                  // the initial state, or previous knot point
   }
 
-  while (t_indices[0] < GRID_STEPS - num_knots + 1) {
-    for (int i = 0; i < num_knots; i++)
+  while (t_indices[0] < (GRID_STEPS - static_cast<int>(num_knots) + 1)) {
+    for (mwSize i = 0; i < num_knots; i++)
       segment_times[i + 1] = t0 + t_indices[i] * t_step;
 
     bool valid_solution = true;
     double objective_value = 0.0;
-    for (int dof = 0; dof < ndof && valid_solution; dof++) {
+    for (mwSize dof = 0; dof < ndof && valid_solution; dof++) {
       try {
         PiecewisePolynomial<double> spline = nWaypointCubicSpline(
             segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments),
@@ -119,7 +119,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     PiecewisePolynomial<double> spline = nWaypointCubicSpline(
         best_segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments),
         xdf[dof], xi.row(dof).transpose());
-    for (mwSize segment_index = 0; segment_index < spline.getNumberOfSegments();
+    for (mwSize segment_index = 0;
+         segment_index < static_cast<mwSize>(spline.getNumberOfSegments());
          segment_index++) {
       for (mwSize coefficient_index = 0;
            coefficient_index < num_coeffs_per_segment; coefficient_index++) {
