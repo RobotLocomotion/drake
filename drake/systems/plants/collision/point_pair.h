@@ -21,30 +21,6 @@ struct DRAKECOLLISION_EXPORT PointPair {
         normal_(normal),
         distance_(distance) {}
 
-  bool operator<(const PointPair& pt) const {
-    return (distance_ < pt.distance_);
-  }
-
-  bool operator==(const PointPair& pt) const {
-    return (distance_ == pt.distance_);
-  }
-
-  bool operator!=(const PointPair& pt) const {
-    return (distance_ != pt.distance_);
-  }
-
-  bool operator<=(const PointPair& pt) const {
-    return (distance_ <= pt.distance_);
-  }
-
-  bool operator>(const PointPair& pt) const {
-    return (distance_ > pt.distance_);
-  }
-
-  bool operator>=(const PointPair& pt) const {
-    return (distance_ >= pt.distance_);
-  }
-
   /** Element A in the pair participating in the collision. **/
   const Element* elementA_{nullptr};
 
