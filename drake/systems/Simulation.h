@@ -31,11 +31,19 @@ struct SimulationOptions {
    */
   bool warn_real_time_violation;
 
+  /**
+   * Enables a custom simulation termination condition. This function is called
+   * each cycle of the simulation loop. If the function returns true, the
+   * simulation is terminated.
+   */
+  std::function<bool()> should_stop;
+
   SimulationOptions()
       : realtime_factor(-1.0),
         initial_step_size(0.01),
         timeout_seconds(1.0),
-        warn_real_time_violation(false) {}
+        warn_real_time_violation(false),
+        should_stop([]() { return false; }) {}
 };
 static const SimulationOptions default_simulation_options;
 
@@ -113,7 +121,7 @@ void simulate(const System& sys, double ti, double tf,
 
   // Take steps from ti to tf.
   double t = ti;
-  while (t < tf) {
+  while (t < tf && !options.should_stop()) {
     double realtime_factor = options.realtime_factor;
     if (realtime_factor < 0.0) {
       realtime_factor = 0.0;
