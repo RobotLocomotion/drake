@@ -4,19 +4,6 @@ using Eigen::Vector3d;
 
 namespace DrakeCollision {
 
-void PointPair::getResults(Vector3d* ptA, Vector3d* ptB,
-                           Vector3d* normal) const {
-  *ptA = ptA_;
-  *ptB = ptB_;
-  *normal = normal_;
-}
-
-void PointPair::getResults(Vector3d* ptA, Vector3d* ptB, Vector3d* normal,
-                           double* distance) const {
-  getResults(ptA, ptB, normal);
-  *distance = distance_;
-}
-
 ElementId PointPair::getIdA() const { return idA_; }
 
 ElementId PointPair::getIdB() const { return idB_; }

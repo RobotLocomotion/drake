@@ -422,14 +422,11 @@ void RigidBodyTree::collisionDetectFromPoints(
   normal.resize(3, closest_points.size());
   phi.resize(closest_points.size());
 
-  Vector3d ptA, ptB, n;
-  double distance;
   for (size_t i = 0; i < closest_points.size(); ++i) {
-    closest_points[i].getResults(&ptA, &ptB, &n, &distance);
-    x.col(i) = ptB;
-    body_x.col(i) = ptA;
-    normal.col(i) = n;
-    phi[i] = distance;
+    x.col(i) = closest_points[i].ptB_;
+    body_x.col(i) = closest_points[i].ptA_;
+    normal.col(i) = closest_points[i].normal_;
+    phi[i] = closest_points[i].distance_;
     const DrakeCollision::Element* elementB = closest_points[i].get_elementB();
     body_idx.push_back(elementB->get_body()->body_index);
   }
@@ -471,14 +468,11 @@ bool RigidBodyTree::collisionDetect(
   normal = MatrixXd::Zero(3, points.size());
   phi = VectorXd::Zero(points.size());
 
-  Vector3d ptA, ptB, n;
-  double distance;
   for (size_t i = 0; i < points.size(); ++i) {
-    points[i].getResults(&ptA, &ptB, &n, &distance);
-    xA.col(i) = ptA;
-    xB.col(i) = ptB;
-    normal.col(i) = n;
-    phi[i] = distance;
+    xA.col(i) = points[i].ptA_;
+    xB.col(i) = points[i].ptB_;
+    normal.col(i) = points[i].normal_;
+    phi[i] = points[i].distance_;
     const DrakeCollision::Element* elementA = points[i].get_elementA();
     bodyA_idx.push_back(elementA->get_body()->body_index);
     const DrakeCollision::Element* elementB = points[i].get_elementB();
@@ -576,19 +570,15 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   bodyA_idx.clear();
   bodyB_idx.clear();
 
-  Vector3d ptA, ptB, n;
-  double distance;
-
   for (size_t i = 0; i < num_potential_collisions; i++) {
     const DrakeCollision::Element* elementA =
         potential_collisions[i].get_elementA();
     const DrakeCollision::Element* elementB =
         potential_collisions[i].get_elementB();
-    potential_collisions[i].getResults(&ptA, &ptB, &n, &distance);
-    xA.col(i) = ptA;
-    xB.col(i) = ptB;
-    normal.col(i) = n;
-    phi[i] = distance;
+    xA.col(i) = potential_collisions[i].ptA_;
+    xB.col(i) = potential_collisions[i].ptB_;
+    normal.col(i) = potential_collisions[i].normal_;
+    phi[i] = potential_collisions[i].distance_;
     bodyA_idx.push_back(elementA->get_body()->body_index);
     bodyB_idx.push_back(elementB->get_body()->body_index);
   }
@@ -658,12 +648,9 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
   xA_in_world = Matrix3Xd::Zero(3, points.size());
   xB_in_world = Matrix3Xd::Zero(3, points.size());
 
-  Vector3d ptA, ptB, n;
-  double distance;
   for (size_t i = 0; i < points.size(); ++i) {
-    points[i].getResults(&ptA, &ptB, &n, &distance);
-    xA_in_world.col(i) = ptA;
-    xB_in_world.col(i) = ptB;
+    xA_in_world.col(i) = points[i].ptA_;
+    xB_in_world.col(i) = points[i].ptB_;
 
     const DrakeCollision::Element* elementA = points[i].get_elementA();
     bodyA_idx.push_back(elementA->get_body()->body_index);
