@@ -241,11 +241,12 @@ ElementId BulletModel::addElement(const Element& element) {
       // if masks are sufficient for your purposes, use them; they perform
       // better and are a lot simpler to use.
       bool is_dynamic = !elements[id]->is_static();
-      short collision_filter_group =
-          is_dynamic? short(btBroadphaseProxy::DefaultFilter) :
-          short(btBroadphaseProxy::StaticFilter);
-      short collision_filter_mask =
-          is_dynamic? short(btBroadphaseProxy::AllFilter) :
+      short collision_filter_group =  is_dynamic?    // NOLINT(runtime/int)
+          short(btBroadphaseProxy::DefaultFilter) :  // NOLINT(runtime/int)
+          short(btBroadphaseProxy::StaticFilter);    // NOLINT(runtime/int)
+      short collision_filter_mask = is_dynamic?  // NOLINT(runtime/int)
+          short(btBroadphaseProxy::AllFilter) :  // NOLINT(runtime/int)
+          // NOLINTNEXTLINE(runtime/int)
           short(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
       bullet_world_.bt_collision_world->
