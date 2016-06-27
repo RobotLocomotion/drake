@@ -237,15 +237,34 @@ ElementId BulletModel::addElement(const Element& element) {
       // Bullet provides three easy ways to ensure that only certain objects
       // collide with each other: masks, broadphase filter callbacks and
       // nearcallbacks. It is worth noting that mask-based collision selection
-      // happens a lot further up the toolchain than the callback do. In short,
+      // happens a lot further up the toolchain than the callbacks do. In short,
       // if masks are sufficient for your purposes, use them; they perform
       // better and are a lot simpler to use.
+      //
+      // Filter groups are specified by bitmaks. For a 16 bit short this means
+      // that the maximum number of groups is 16 and a collision element could
+      // belong to several groups at the same time (more than one bit on).
+      // For efficiency, a collision element has group and a mask. The mask is
+      // set to have the bit corresponding to the gorup bit set to zero.
+      // With this information two elements A and B are checked for
+      // collision if: (A.group & B.mask) != 0 && (B.group & A.mask) != 0
+      // Note: btBroadphaseProxy::AllFilter corresponds to all bits set to 1.
+      //
+      // Consider for example (four bits for simplicity):
+      //      Element | group | mask |
+      //        A     |  0001 | 1111 | <== AllFilter corresponds to all ones.
+      //        B     |  0010 | 1101 | <== AllFilter with second bit flipped.
+      //
+      // In this case A.group & B.mask = 0 and B.group & A.mask = 0.
+      // See Bullet's user manual, Ch. 5.
       bool is_dynamic = !elements[id]->is_static();
       short collision_filter_group =  is_dynamic?    // NOLINT(runtime/int)
           short(btBroadphaseProxy::DefaultFilter) :  // NOLINT(runtime/int)
           short(btBroadphaseProxy::StaticFilter);    // NOLINT(runtime/int)
       short collision_filter_mask = is_dynamic?  // NOLINT(runtime/int)
           short(btBroadphaseProxy::AllFilter) :  // NOLINT(runtime/int)
+          // The exclusive or flips the one bit position corresponding to the
+          // StaticFilter group (group 2 by default, bit 1).
           // NOLINTNEXTLINE(runtime/int)
           short(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
