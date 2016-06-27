@@ -20,8 +20,7 @@ class DRAKERBM_EXPORT RigidBodyFrame {
                  const Eigen::Isometry3d& _transform_to_body)
       : name(_name),
         body(_body),
-        transform_to_body(_transform_to_body),
-        frame_index(0) {}
+        transform_to_body(_transform_to_body) {}
 
   /**
    * A constructor where the transform-to-body is specified using
@@ -29,19 +28,13 @@ class DRAKERBM_EXPORT RigidBodyFrame {
    */
   RigidBodyFrame(const std::string& _name, RigidBody* _body,
                  const Eigen::Vector3d& xyz = Eigen::Vector3d::Zero(),
-                 const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero())
-      : name(_name), body(_body), frame_index(0) {
-    transform_to_body.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
-  }
+                 const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
   /**
    * The default constructor.
    */
   RigidBodyFrame()
-      : name(""),
-        body(nullptr),
-        transform_to_body(Eigen::Isometry3d::Identity()),
-        frame_index(0) {}
+      : RigidBodyFrame("", nullptr, Eigen::Isometry3d::Identity()) {}
 
   /**
    * Returns the ID of the model to which this rigid body frame belongs.
@@ -51,7 +44,7 @@ class DRAKERBM_EXPORT RigidBodyFrame {
   std::string name;
   RigidBody* body;
   Eigen::Isometry3d transform_to_body;
-  int frame_index;  // this will be negative, but will also be gone soon!
+  int frame_index = 0;  // this will be negative, but will also be gone soon!
 
  public:
 #ifndef SWIG
