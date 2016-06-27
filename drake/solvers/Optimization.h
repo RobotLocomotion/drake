@@ -322,11 +322,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddCost(std::forward<std::unique_ptr<F>>(f), variable_views_);
   }
 
-  /** AddQuadraticCost
+  /** AddQuadraticErrorCost
    * @brief Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
   template <typename DerivedQ, typename Derivedb>
-  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
+  std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired, const VariableList& vars) {
     std::shared_ptr<QuadraticConstraint> cost(new QuadraticConstraint(
@@ -337,18 +337,18 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   }
 
   template <typename DerivedQ, typename Derivedb>
-  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
+  std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired) {
-    return AddQuadraticCost(Q, x_desired, variable_views_);
+    return AddQuadraticErrorCost(Q, x_desired, variable_views_);
   }
 
-  /** AddQuadraticProgramCost
+  /** AddQuadraticCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to subset of the variables
    */
   template <typename DerivedQ, typename Derivedb>
-  std::shared_ptr<QuadraticConstraint> AddQuadraticProgramCost(
+  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b, const VariableList& vars) {
     std::shared_ptr<QuadraticConstraint> cost(
@@ -359,15 +359,15 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return cost;
   }
 
-  /** AddQuadraticProgramCost
+  /** AddQuadraticCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applies to all of the continuous variables.
    */
   template <typename DerivedQ, typename Derivedb>
-  std::shared_ptr<QuadraticConstraint> AddQuadraticProgramCost(
+  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b) {
-    return AddQuadraticProgramCost(Q, b, variable_views_);
+    return AddQuadraticCost(Q, b, variable_views_);
   }
 
   /** AddGenericConstraint
