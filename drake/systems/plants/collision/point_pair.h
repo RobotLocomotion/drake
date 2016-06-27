@@ -8,8 +8,7 @@
 
 namespace DrakeCollision {
 
-class DRAKECOLLISION_EXPORT PointPair {
- public:
+struct DRAKECOLLISION_EXPORT PointPair {
   PointPair() {}
 
   PointPair(const Element* elementA, const Element* elementB,
@@ -58,7 +57,6 @@ class DRAKECOLLISION_EXPORT PointPair {
     return (distance_ >= pt.distance_);
   }
 
- protected:
   const Element* elementA_{nullptr};
   const Element* elementB_{nullptr};
   ElementId idA_{0};

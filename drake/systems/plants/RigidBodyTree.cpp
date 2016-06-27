@@ -594,7 +594,7 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   }
 }
 
-std::vector<RigidBodyCollisionPair>
+std::vector<DrakeCollision::PointPair>
 RigidBodyTree::ComputeMaximumDepthCollisionPoints(
     const KinematicsCache<double>& cache, bool use_margins) {
   updateDynamicCollisionElements(cache);
@@ -603,23 +603,9 @@ RigidBodyTree::ComputeMaximumDepthCollisionPoints(
       use_margins, contact_points);
   size_t num_contact_points = contact_points.size();
 
-  std::vector<RigidBodyCollisionPair> collision_pairs;
-  collision_pairs.reserve(num_contact_points);
-
-  Vector3d ptA, ptB, n;
-  double distance;
-
   for (size_t i = 0; i < num_contact_points; i++) {
-    contact_points[i].getResults(&ptA, &ptB, &n, &distance);
-
-    // Get body indexes.
-    const DrakeCollision::Element* elementA =
-        contact_points[i].get_elementA();
-    const DrakeCollision::Element* elementB =
-        contact_points[i].get_elementB();
-
     // Get bodies' transforms.
-    const RigidBody& bodyA = *elementA->get_body();
+    const RigidBody& bodyA = *contact_points[i].elementA_->get_body();
     Isometry3d TA;
     if (bodyA.hasParent()) {  // body is dynamic.
       TA = cache.getElement(bodyA).transform_to_world;
@@ -627,7 +613,7 @@ RigidBodyTree::ComputeMaximumDepthCollisionPoints(
       TA = Isometry3d::Identity();
     }
 
-    const RigidBody& bodyB = *elementB->get_body();
+    const RigidBody& bodyB = *contact_points[i].elementB_->get_body();
     Isometry3d TB;
     if (bodyB.hasParent()) {  // body is dynamic.
       TB = cache.getElement(bodyB).transform_to_world;
@@ -636,14 +622,12 @@ RigidBodyTree::ComputeMaximumDepthCollisionPoints(
     }
 
     // Transform to bodies' frames.
-    Vector3d ptA_body = TA.inverse() * ptA;
-    Vector3d ptB_body = TB.inverse() * ptB;
-
-    collision_pairs.push_back(RigidBodyCollisionPair(bodyA, bodyB,
-                                                     n, distance,
-                                                     ptA_body, ptB_body));
+    // Note:
+    // Eigen assumes aliasing by default and therefore this operation is safe.
+    contact_points[i].ptA_ = TA.inverse() * contact_points[i].ptA_;
+    contact_points[i].ptB_ = TB.inverse() * contact_points[i].ptB_;
   }
-  return collision_pairs;
+  return contact_points;
 }
 
 bool RigidBodyTree::collidingPointsCheckOnly(

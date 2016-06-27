@@ -13,7 +13,6 @@
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
-#include "drake/systems/plants/rigid_body_collision_pair.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
@@ -575,7 +574,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    @param use_margins[in] If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
    **/
-  std::vector<RigidBodyCollisionPair> ComputeMaximumDepthCollisionPoints(
+  std::vector<DrakeCollision::PointPair> ComputeMaximumDepthCollisionPoints(
       const KinematicsCache<double>& cache, bool use_margins = true);
 
   virtual bool collidingPointsCheckOnly(

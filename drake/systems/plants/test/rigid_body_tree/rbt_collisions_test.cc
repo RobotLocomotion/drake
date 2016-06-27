@@ -1,5 +1,9 @@
 #include <memory>
 
+
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 #include "drake/Path.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -40,7 +44,7 @@ class RBTCollisionTest: public ::testing::Test {
   void SetUp() override {
     tree_.addRobotFromSDF(
         Drake::getDrakePath() +
-            "/systems/plants/test/rigid_body_tree/small_box_on_large_box.sdf",
+            "/systems/plants/test/rigid_body_tree/small_sphere_on_large_box.sdf",
         DrakeJoint::QUATERNION);
 
     small_sphere_id_ = tree_.FindBody("small_sphere")->collision_element_ids[0];
@@ -69,7 +73,7 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  tolerance_ = 1.0e-15;
+  tolerance_ = 4.0*Eigen::NumTraits<double>::epsilon();
 
   int nq = tree_.number_of_positions();
   int nv = tree_.number_of_velocities();
@@ -82,7 +86,7 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
 
   KinematicsCache<double> kinsol = tree_.doKinematics(q, v);
 
-  std::vector<RigidBodyCollisionPair> collision_pairs =
+  std::vector<DrakeCollision::PointPair> collision_pairs =
       tree_.ComputeMaximumDepthCollisionPoints(
       kinsol, false);
 
@@ -91,16 +95,22 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   ASSERT_EQ(1, collision_pairs.size());
 
   ElementId bodyA_collision_element_id =
-      collision_pairs[0].bodyA_.collision_element_ids[0];
+      collision_pairs[0].elementA_->getId();
   ElementId bodyB_collision_element_id =
-      collision_pairs[0].bodyB_.collision_element_ids[0];
+      collision_pairs[0].elementB_->getId();
 
   EXPECT_NEAR(-0.1, collision_pairs[0].distance_, tolerance_);
   EXPECT_TRUE(collision_pairs[0].normal_.isApprox(Vector3d(0.0, -1.0, 0.0)));
 
+  PRINT_VAR(collision_pairs[0].ptA_.transpose());
+  PRINT_VAR(solution_[bodyA_collision_element_id].body_frame.transpose());
+
   // Collision points are reported on each of the respective bodies' frames.
   EXPECT_TRUE(collision_pairs[0].ptA_.isApprox(
       solution_[bodyA_collision_element_id].body_frame, tolerance_));
+
+  PRINT_VAR(collision_pairs[0].ptB_.transpose());
+  PRINT_VAR(solution_[bodyB_collision_element_id].body_frame.transpose());
 
   // In body's frame, which is rotated 90 degrees in pitch from
   // collision_test.sdf, the collision point is on the z-axis.
