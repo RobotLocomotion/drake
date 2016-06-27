@@ -13,8 +13,8 @@ struct DRAKECOLLISION_EXPORT PointPair {
   PointPair() {}
 
   PointPair(const Element* elementA, const Element* elementB,
-            const Eigen::Vector3d ptA, const Eigen::Vector3d ptB,
-            const Eigen::Vector3d normal, double distance)
+            const Eigen::Vector3d& ptA, const Eigen::Vector3d& ptB,
+            const Eigen::Vector3d& normal, double distance)
       : elementA(elementA), elementB(elementB),
         idA(elementA->getId()), idB(elementB->getId()),
         ptA(ptA), ptB(ptB),

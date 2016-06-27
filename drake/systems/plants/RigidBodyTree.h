@@ -553,8 +553,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
    @param cache[in] a KinematicsCache constructed by RigidBodyTree::doKinematics
    given `q` and `v`.
 
-   Collision points are returned as a vector of PontPair's.
-   See the documentation for PointPair for details.
+   Collision points are returned as a vector of PointPair's.
+   See the documentation for PointPair for details. The collision point on the
+   surface of each body is stored in the PointPair structure in the frame of the
+   corresponding body.
 
    @param use_margins[in] If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.

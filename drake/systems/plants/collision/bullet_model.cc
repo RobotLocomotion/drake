@@ -1,4 +1,5 @@
 #include "drake/systems/plants/collision/bullet_model.h"
+#include "drake/common/drake_assert.h"
 
 #include <iostream>
 
@@ -478,14 +479,12 @@ PointPair BulletModel::findClosestPointsBetweenElements(
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
 
   auto bt_objA_iter = bt_world.bt_collision_objects.find(idA);
-  if (bt_objA_iter == bt_world.bt_collision_objects.end())
-    throw std::runtime_error(
-        "In BulletModel::findClosestPointsBetweenElements: "
-            "invalid ElementId for body A.");
+  DRAKE_ASSERT(bt_objA_iter != bt_world.bt_collision_objects.end() &&
+      "In BulletModel::findClosestPointsBetweenElements: "
+          "invalid ElementId for body A.");
 
   auto bt_objB_iter = bt_world.bt_collision_objects.find(idB);
-  if (bt_objB_iter == bt_world.bt_collision_objects.end())
-    throw std::runtime_error(
+  DRAKE_ASSERT(bt_objB_iter != bt_world.bt_collision_objects.end() &&
         "In BulletModel::findClosestPointsBetweenElements: "
             "invalid ElementId for body B.");
 

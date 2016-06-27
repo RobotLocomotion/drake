@@ -68,7 +68,7 @@ class RBTCollisionTest: public ::testing::Test {
 // This unit test assesses the correct return from
 // RigidBodyTree::ComputeMaximumDepthCollisionPoints.
 // The test consists on finding the maximum depth penetration point between a
-// sphere and a box. The collision point is reported in the frame of the body.
+// sphere and a box.
 TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
