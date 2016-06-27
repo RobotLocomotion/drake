@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "FixedAxisOneDoFJoint.h"
 
 class DRAKEJOINTS_EXPORT PrismaticJoint
@@ -37,7 +38,7 @@ class DRAKEJOINTS_EXPORT PrismaticJoint
   virtual ~PrismaticJoint() {}
 
  private:
-  static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(
+  static drake::TwistVector<double> spatialJointAxis(
       const Eigen::Vector3d& translation_axis);
 
  public:

@@ -4,6 +4,7 @@
 
 #include "spruce.hh"
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/thirdParty/tinyxml2/tinyxml2.h"
 #include "joints/DrakeJoints.h"
@@ -35,8 +36,7 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
   body->com = T_link.inverse() * T.translation();
 
-  Matrix<double, TWIST_SIZE, TWIST_SIZE> I =
-      Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+  drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
   I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");

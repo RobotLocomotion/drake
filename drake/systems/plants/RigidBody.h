@@ -8,10 +8,10 @@
 #include <set>
 #include <string>
 
+#include "drake/common/eigen_types.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 class DRAKERBM_EXPORT RigidBody {
  private:
@@ -177,7 +177,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   double mass;
   Eigen::Vector3d com;
-  Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> I;
+  drake::SquareTwistMatrix<double> I;
 
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 

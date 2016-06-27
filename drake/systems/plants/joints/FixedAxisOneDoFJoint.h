@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include "DrakeJointImpl.h"
+#include "drake/common/eigen_types.h"
 #include "drake/util/drakeGradientUtil.h"
 
 template <typename Derived>
@@ -17,7 +18,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   // FixedAxisOneDoFJoint& operator=(const FixedAxisOneDoFJoint&) = delete;
 
  private:
-  Eigen::Matrix<double, TWIST_SIZE, 1> joint_axis;
+  drake::TwistVector<double> joint_axis;
   double damping;
   double coulomb_friction;
   double coulomb_window;
@@ -25,7 +26,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
  protected:
   FixedAxisOneDoFJoint(Derived& derived, const std::string& name,
                        const Eigen::Isometry3d& transform_to_parent_body,
-                       const Eigen::Matrix<double, TWIST_SIZE, 1>& _joint_axis)
+                       const drake::TwistVector<double>& _joint_axis)
       : DrakeJointImpl<Derived>(derived, name, transform_to_parent_body, 1, 1),
         joint_axis(_joint_axis),
         damping(0.0),
@@ -65,11 +66,11 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     motion_subspace_dot_times_v.setZero();
 
     if (dmotion_subspace_dot_times_vdq) {
-      dmotion_subspace_dot_times_vdq->setZero(TWIST_SIZE, 1);
+      dmotion_subspace_dot_times_vdq->setZero(drake::kTwistSize, 1);
     }
 
     if (dmotion_subspace_dot_times_vdv) {
-      dmotion_subspace_dot_times_vdv->setZero(TWIST_SIZE, 1);
+      dmotion_subspace_dot_times_vdv->setZero(drake::kTwistSize, 1);
     }
   }
 

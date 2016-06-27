@@ -1,11 +1,14 @@
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/drakeGeometryUtil.h"
+
 #include <iostream>
 #include <cstdlib>
 #include <random>
 #include <memory>
 #include <stdexcept>
 #include <map>
+
+#include "drake/common/eigen_types.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -35,7 +38,7 @@ void checkForErrors(bool expect_error, O &object, F function,
 
 void performChecks(RigidBodyTree &model, KinematicsCache<double> &cache,
                    const CheckSettings &settings) {
-  auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
+  auto points = drake::Matrix3X<double>::Random(3, 5).eval();
   typedef decltype(points) PointsType;
   int body_or_frame_ind = 8;
   int base_or_frame_ind = 0;
@@ -45,9 +48,9 @@ void performChecks(RigidBodyTree &model, KinematicsCache<double> &cache,
   bool in_terms_of_qdot = false;
   std::vector<int> v_or_qdot_indices;
   int npoints = 3;
-  Matrix<double, TWIST_SIZE, 1> spatial_acceleration;
+  drake::TwistVector<double> spatial_acceleration;
   spatial_acceleration.setRandom();
-  eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> >
+  eigen_aligned_unordered_map<RigidBody const *, drake::TwistVector<double>>
       f_ext;
 
   checkForErrors(settings.expect_error_on_configuration_methods, model,

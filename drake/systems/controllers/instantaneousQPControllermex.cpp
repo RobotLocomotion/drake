@@ -12,8 +12,11 @@
  */
 
 #include "InstantaneousQPController.h"
+
 #include <limits>
 #include <cmath>
+
+#include "drake/common/eigen_types.h"
 #include "drake/util/drakeMexUtil.h"
 
 using namespace std;
@@ -89,12 +92,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       foot_force_torque_measurements[Side::LEFT].frame_idx =
           controller->getRobot().FindBodyIndex("l_foot");
       foot_force_torque_measurements[Side::LEFT].wrench =
-          matlabToEigenMap<TWIST_SIZE, 1>(
+          matlabToEigenMap<drake::kTwistSize, 1>(
               mxGetFieldSafe(mex_foot_force_torque_measurements, "left"));
       foot_force_torque_measurements[Side::RIGHT].frame_idx =
           controller->getRobot().FindBodyIndex("r_foot");
       foot_force_torque_measurements[Side::RIGHT].wrench =
-          matlabToEigenMap<TWIST_SIZE, 1>(
+          matlabToEigenMap<drake::kTwistSize, 1>(
               mxGetFieldSafe(mex_foot_force_torque_measurements, "right"));
     }
   }

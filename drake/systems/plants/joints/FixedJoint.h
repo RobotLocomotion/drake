@@ -2,6 +2,8 @@
 
 #include "DrakeJointImpl.h"
 
+#include "drake/common/eigen_types.h"
+
 class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
  public:
   FixedJoint(const std::string& name,
@@ -23,7 +25,7 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
-    motion_subspace.resize(TWIST_SIZE, getNumVelocities());
+    motion_subspace.resize(drake::kTwistSize, getNumVelocities());
     if (dmotion_subspace) {
       dmotion_subspace->resize(motion_subspace.size(), getNumPositions());
     }
@@ -44,11 +46,11 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
     motion_subspace_dot_times_v.setZero();
 
     if (dmotion_subspace_dot_times_vdq) {
-      dmotion_subspace_dot_times_vdq->setZero(TWIST_SIZE, 1);
+      dmotion_subspace_dot_times_vdq->setZero(drake::kTwistSize, 1);
     }
 
     if (dmotion_subspace_dot_times_vdv) {
-      dmotion_subspace_dot_times_vdv->setZero(TWIST_SIZE, 1);
+      dmotion_subspace_dot_times_vdv->setZero(drake::kTwistSize, 1);
     }
   }
 

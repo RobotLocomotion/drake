@@ -4,6 +4,7 @@
 #include <Eigen/Sparse>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/rigidBodyTreeMexConversions.h"
 #include "drake/util/makeFunction.h"
@@ -289,7 +290,7 @@ void geometricJacobianDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs,
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, Dynamic> geometricJacobianTemp(
+drake::TwistMatrix<Scalar> geometricJacobianTemp(
     const RigidBodyTree &model, const KinematicsCache<Scalar> &cache,
     int base_body_or_frame_ind, int end_effector_body_or_frame_ind,
     int expressed_in_body_or_frame_ind, bool in_terms_of_qdot) {
