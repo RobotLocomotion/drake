@@ -34,7 +34,8 @@ struct SimulationOptions {
   /**
    * Enables a custom simulation termination condition. This function is called
    * each cycle of the simulation loop. If the function returns true, the
-   * simulation is terminated.
+   * simulation is terminated. The default for this is a function that always
+   * returns false.
    */
   std::function<bool()> should_stop;
 
