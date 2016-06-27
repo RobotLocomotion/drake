@@ -293,6 +293,7 @@ endif()
 # Setup ROS if it is available on the local system
 find_package(roscpp QUIET)
 if(roscpp_FOUND)
+  set(ROS_FOUND ON)
   message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
   include_directories(${roscpp_INCLUDE_DIRS})
 
@@ -311,6 +312,7 @@ if(roscpp_FOUND)
   find_package(tf REQUIRED)
   include_directories(${tf_INCLUDE_DIRS})
 else()
+  set(ROS_FOUND OFF)
   message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
 endif()
 
@@ -329,7 +331,7 @@ add_subdirectory(thirdParty/tinyxml2)
 add_subdirectory(examples)
 add_subdirectory(bindings)
 
-if(roscpp_FOUND AND catkin_FOUND AND genmsg_FOUND AND std_msgs_FOUND AND sensor_msgs_FOUND AND ackermann_msgs_FOUND AND tf_FOUND)
+if(ROS_FOUND)
   add_subdirectory(ros)
 endif()
 
