@@ -717,16 +717,16 @@ GTEST_TEST(ModelTest, StaticElements) {
   ElementId ball3_id = model->addElement(ball3);
   ElementId ball4_id = model->addElement(ball4);
 
-  pose.translation() = Vector3d( 0.45,  0.45, 0.0);
+  pose.translation() = Vector3d(0.45, 0.45, 0.0);
   model->updateElementWorldTransform(ball1_id, pose);
 
-  pose.translation() = Vector3d(-0.45,  0.45, 0.0);
+  pose.translation() = Vector3d(-0.45, 0.45, 0.0);
   model->updateElementWorldTransform(ball2_id, pose);
 
   pose.translation() = Vector3d(-0.45, -0.45, 0.0);
   model->updateElementWorldTransform(ball3_id, pose);
 
-  pose.translation() = Vector3d( 0.45, -0.45, 0.0);
+  pose.translation() = Vector3d(0.45, -0.45, 0.0);
   model->updateElementWorldTransform(ball4_id, pose);
 
   // List of collision points.
