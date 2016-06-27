@@ -13,6 +13,7 @@ class OptimizationProblem;
 // variables and constraints are added to the program
 // note that there is dynamic allocation happening in here, but on a structure
 // of negligible size.  (is there a better way?)
+// TODO(naveenoid) : extensive rewrite needed to cope with design defects.
 class DRAKEOPTIMIZATION_EXPORT MathematicalProgramInterface {
  public:
   virtual ~MathematicalProgramInterface();
@@ -20,15 +21,14 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramInterface {
   /* these would be used to fill out the optimization hierarchy:
 
      virtual MathematicalProgramInterface* AddIntegerVariable() = 0;
-     virtual MathematicalProgramInterface* AddLinearCost() = 0;
-     virtual MathematicalProgramInterface* AddQuadraticCost() = 0;
-     virtual MathematicalProgramInterface* AddCost() = 0;
      virtual MathematicalProgramInterface* AddSumsOfSquaresConstraint() = 0;
      virtual MathematicalProgramInterface* AddLinearMatrixInequalityConstraint()
      = 0;
      virtual MathematicalProgramInterface* AddSecondOrderConeConstraint() = 0;
      virtual MathematicalProgramInterface* AddComplementarityConstraint() = 0;
   */
+  virtual MathematicalProgramInterface* AddLinearCost() = 0;
+  virtual MathematicalProgramInterface* AddQuadraticCost() = 0;
   virtual MathematicalProgramInterface* AddGenericObjective() = 0;
   virtual MathematicalProgramInterface* AddGenericConstraint() = 0;
   virtual MathematicalProgramInterface* AddLinearConstraint() = 0;

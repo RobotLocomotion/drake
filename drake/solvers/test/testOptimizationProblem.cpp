@@ -61,6 +61,7 @@ struct Unique {
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
+// TODO(naveenoid) : tests need to be purged of Random initializations.
 
 GTEST_TEST(testOptimizationProblem, testAddFunction) {
   OptimizationProblem prog;
@@ -86,10 +87,9 @@ void RunNonlinearProgram(OptimizationProblem& prog,
   SnoptSolver snopt_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
-    std::make_pair("SNOPT", &snopt_solver),
-    std::make_pair("NLopt", &nlopt_solver),
-    std::make_pair("Ipopt", &ipopt_solver)
-  };
+      std::make_pair("SNOPT", &snopt_solver),
+      std::make_pair("NLopt", &nlopt_solver),
+      std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
     if (!solver.second->available()) {
@@ -203,9 +203,40 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
 
   // IPOPT has difficulty with this problem depending on the initial
   // conditions, which is why the initial guess varies so little.
+  std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
+                                MatrixCompareType::absolute));
+  });
+}
+
+// This test is identical to testProblem1 above but the cost is
+// framed as a QP instead.
+GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
+  OptimizationProblem prog;
+  auto x = prog.AddContinuousVariables(5);
+
+  Eigen::MatrixXd Q = -100 * Eigen::Matrix<double, 5, 5>::Identity();
+  Eigen::VectorXd c(5);
+  c << 42, 44, 45, 47, 47.5;
+
+  prog.AddQuadraticProgramCost(Q, c);
+
+  VectorXd constraint(5);
+  constraint << 20, 12, 11, 7, 4;
+  prog.AddLinearConstraint(
+      constraint.transpose(),
+      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Drake::Vector1d::Constant(40));
+  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
+                                MatrixXd::Constant(5, 1, 1));
+  VectorXd expected(5);
+  expected << 1, 1, 0, 1, 0;
+  std::srand(0);
+  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
+  RunNonlinearProgram(prog, [&]() {
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
                                 MatrixCompareType::absolute));
   });
 }
@@ -250,9 +281,58 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
   prog.AddBoundingBoxConstraint(lower, upper);
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
-  prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(6));
+  std::srand(0);
+  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
+  // This test seems to be fairly sensitive to how much the randomness
+  // causes the initial guess to deviate, so the tolerance is a bit
+  // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
+                                MatrixCompareType::absolute));
+  });
+}
+
+
+// This test is identical to testProblem2 above but the cost is
+// framed as a QP instead.
+GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
+  OptimizationProblem prog;
+  auto x = prog.AddContinuousVariables(6);
+  MatrixXd Q = -100.0 * MatrixXd::Identity(6, 6);
+  Q(5, 5) = 0.0;
+  VectorXd c(6);
+  c << -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
+
+  prog.AddQuadraticProgramCost(Q, c);
+
+  VectorXd constraint1(6), constraint2(6);
+  constraint1 << 6, 3, 3, 2, 1, 0;
+  prog.AddLinearConstraint(
+      constraint1.transpose(),
+      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Drake::Vector1d::Constant(6.5));
+  constraint2 << 10, 0, 10, 0, 0, 1;
+  prog.AddLinearConstraint(
+      constraint2.transpose(),
+      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Drake::Vector1d::Constant(20));
+
+  Eigen::VectorXd lower(6);
+  lower << 0, 0, 0, 0, 0, 0;
+  Eigen::VectorXd upper(6);
+  upper << 1, 1, 1, 1, 1, std::numeric_limits<double>::infinity();
+  prog.AddBoundingBoxConstraint(lower, upper);
+
+  VectorXd expected(6);
+  expected << 0, 1, 0, 1, 1, 20;
+  std::srand(0);
+  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
+
+  // This test seems to be fairly sensitive to how much the randomness
+  // causes the initial guess to deviate, so the tolerance is a bit
+  // larger than others.  IPOPT is particularly sensitive here.
+  RunNonlinearProgram(prog, [&]() {
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
                                 MatrixCompareType::absolute));
   });
 }
@@ -339,6 +419,7 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
 
   Eigen::VectorXd expected(6);
   expected << 5, 1, 5, 0, 5, 10;
+  std::srand(0);
   Eigen::VectorXd delta = .05 * Eigen::VectorXd::Random(6);
   prog.SetInitialGuess({x}, expected + delta);
 
@@ -346,16 +427,16 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-      EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                  MatrixCompareType::absolute));
-    });
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
+                                MatrixCompareType::absolute));
+  });
 
   // Try again with the offsets in the opposite direction.
   prog.SetInitialGuess({x}, expected - delta);
   RunNonlinearProgram(prog, [&]() {
-      EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                  MatrixCompareType::absolute));
-    });
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
+                                MatrixCompareType::absolute));
+  });
 }
 
 class SixHumpCamelObjective {

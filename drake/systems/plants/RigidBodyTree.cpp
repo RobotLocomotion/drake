@@ -1,6 +1,8 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/gradient.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -16,6 +18,7 @@
 
 using namespace std;
 using namespace Eigen;
+
 using drake::AutoDiffUpTo73d;
 using drake::AutoDiffXd;
 using drake::Matrix3X;
@@ -23,6 +26,9 @@ using drake::Matrix4X;
 using drake::MatrixX;
 using drake::Vector3;
 using drake::VectorX;
+
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::Gradient;
 
 /// A column vector consisting of one twist.
 template <typename Scalar>
@@ -424,10 +430,8 @@ void RigidBodyTree::collisionDetectFromPoints(
     body_x.col(i) = ptA;
     normal.col(i) = n;
     phi[i] = distance;
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(closest_points[i].getIdB()));
-    body_idx.push_back(elementB->getBody().body_index);
+    const DrakeCollision::Element* elementB = closest_points[i].get_elementB();
+    body_idx.push_back(elementB->get_body()->body_index);
   }
 }
 
@@ -475,14 +479,10 @@ bool RigidBodyTree::collisionDetect(
     xB.col(i) = ptB;
     normal.col(i) = n;
     phi[i] = distance;
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(points[i].getIdA()));
-    bodyA_idx.push_back(elementA->getBody().body_index);
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(points[i].getIdB()));
-    bodyB_idx.push_back(elementB->getBody().body_index);
+    const DrakeCollision::Element* elementA = points[i].get_elementA();
+    bodyA_idx.push_back(elementA->get_body()->body_index);
+    const DrakeCollision::Element* elementB = points[i].get_elementB();
+    bodyB_idx.push_back(elementB->get_body()->body_index);
   }
   return points_found;
 }
@@ -580,19 +580,17 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   double distance;
 
   for (size_t i = 0; i < num_potential_collisions; i++) {
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(potential_collisions[i].getIdA()));
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(potential_collisions[i].getIdB()));
+    const DrakeCollision::Element* elementA =
+        potential_collisions[i].get_elementA();
+    const DrakeCollision::Element* elementB =
+        potential_collisions[i].get_elementB();
     potential_collisions[i].getResults(&ptA, &ptB, &n, &distance);
     xA.col(i) = ptA;
     xB.col(i) = ptB;
     normal.col(i) = n;
     phi[i] = distance;
-    bodyA_idx.push_back(elementA->getBody().body_index);
-    bodyB_idx.push_back(elementB->getBody().body_index);
+    bodyA_idx.push_back(elementA->get_body()->body_index);
+    bodyB_idx.push_back(elementB->get_body()->body_index);
   }
 }
 
@@ -631,14 +629,10 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
     xA_in_world.col(i) = ptA;
     xB_in_world.col(i) = ptB;
 
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(points[i].getIdA()));
-    bodyA_idx.push_back(elementA->getBody().body_index);
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
-            collision_model->readElement(points[i].getIdB()));
-    bodyB_idx.push_back(elementB->getBody().body_index);
+    const DrakeCollision::Element* elementA = points[i].get_elementA();
+    bodyA_idx.push_back(elementA->get_body()->body_index);
+    const DrakeCollision::Element* elementB = points[i].get_elementB();
+    bodyB_idx.push_back(elementB->get_body()->body_index);
   }
   return points_found;
 }
@@ -1649,14 +1643,14 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   return ret;
 }
 
-RigidBody* RigidBodyTree::findLink(const std::string& link_name,
+RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
                                    const std::string& model_name,
                                    int model_id) const {
-  // Obtains lower case versions of the link name and model name.
-  std::string link_name_lower = link_name;
+  // Obtains lower case versions of the body name and model name.
+  std::string body_name_lower = body_name;
   std::string model_name_lower = model_name;
-  std::transform(link_name_lower.begin(), link_name_lower.end(),
-                 link_name_lower.begin(), ::tolower);  // convert to lower case
+  std::transform(body_name_lower.begin(), body_name_lower.end(),
+                 body_name_lower.begin(), ::tolower);  // convert to lower case
   std::transform(model_name_lower.begin(), model_name_lower.end(),
                  model_name_lower.begin(), ::tolower);  // convert to lower case
 
@@ -1666,50 +1660,56 @@ RigidBody* RigidBodyTree::findLink(const std::string& link_name,
   int match_index = -1;
 
   for (size_t ii = 0; ii < bodies.size(); ++ii) {
-    // Skips the current link if model_id is not -1 and the link's robot ID is
+    // Skips the current body if model_id is not -1 and the body's robot ID is
     // not equal to the desired model ID.
     if (model_id != -1 && model_id != bodies[ii]->get_model_id()) continue;
 
-    // Obtains a lower case version of the current link's model name.
+    // Obtains a lower case version of the current body's model name.
     string current_model_name = bodies[ii]->model_name();
     std::transform(current_model_name.begin(), current_model_name.end(),
                    current_model_name.begin(), ::tolower);
 
-    // Skips the current link if model_name is not empty and the link's model
+    // Skips the current body if model_name is not empty and the body's model
     // name is not equal to the desired model name.
     if (!model_name_lower.empty() && model_name_lower != current_model_name)
       continue;
 
-    // Obtains a lower case version of the current link's name.
-    string current_link_name = bodies[ii]->name_;
-    std::transform(current_link_name.begin(), current_link_name.end(),
-                   current_link_name.begin(), ::tolower);
+    // Obtains a lower case version of the current body's name.
+    string current_body_name = bodies[ii]->name_;
+    std::transform(current_body_name.begin(), current_body_name.end(),
+                   current_body_name.begin(), ::tolower);
 
-    // Checks if the link names match. If so, checks whether this is the first
-    // match. If so, it saves the current link's index. Otherwise it throws
+    // Checks if the body names match. If so, checks whether this is the first
+    // match. If so, it saves the current body's index. Otherwise it throws
     // an exception indicating there are multiple matches.
-    if (current_link_name == link_name_lower) {
+    if (current_body_name == body_name_lower) {
       if (match_index < 0) {
         match_index = ii;
       } else {
         throw std::logic_error(
-            "RigidBodyTree::findLink: ERROR: found multiple links named \"" +
-            link_name + "\", model name = \"" + model_name + "\", model id = " +
+            "RigidBodyTree::FindBody: ERROR: found multiple bodys named \"" +
+            body_name + "\", model name = \"" + model_name + "\", model id = " +
             std::to_string(model_id) + ".");
       }
     }
   }
 
   // Checks if a match was found. If so, returns a pointer to the matching
-  // link. Otherwise, throws an exception indicating no match was found.
+  // body. Otherwise, throws an exception indicating no match was found.
   if (match_index >= 0) {
     return bodies[match_index].get();
   } else {
     throw std::logic_error(
-        "RigidBodyTree::findLink: ERROR: Could not find link named \"" +
-        link_name + "\", model name = \"" + model_name + "\", model id = " +
+        "RigidBodyTree::FindBody: ERROR: Could not find body named \"" +
+        body_name + "\", model name = \"" + model_name + "\", model id = " +
         std::to_string(model_id) + ".");
   }
+}
+
+RigidBody* RigidBodyTree::findLink(const std::string& link_name,
+                    const std::string& model_name,
+                    int model_id) const {
+  return FindBody(link_name, model_name, model_id);
 }
 
 shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
@@ -1762,14 +1762,19 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
 
 int RigidBodyTree::FindBodyIndex(const std::string& body_name,
                                  int model_id) const {
-  RigidBody* link = findLink(body_name, "", model_id);
-  if (link == nullptr) {
+  RigidBody* body = FindBody(body_name, "", model_id);
+  if (body == nullptr) {
     throw std::logic_error(
         "RigidBodyTree::FindBodyIndex: ERROR: Could not find index for rigid "
         "body \"" +
         body_name + "\", model_id = " + std::to_string(model_id) + ".");
   }
-  return link->body_index;
+  return body->body_index;
+}
+
+int RigidBodyTree::findLinkId(const std::string& link_name, int model_id)
+                              const {
+  return FindBodyIndex(link_name, model_id);
 }
 
 RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,

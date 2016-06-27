@@ -1,3 +1,7 @@
+/// @file
+/// THIS FILE IS DEPRECATED.
+/// Its contents are moving into drake/math.
+
 #pragma once
 
 #include <Eigen/Core>
@@ -5,7 +9,6 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
-#include "drake/util/drakeGradientUtil.h"  // todo: pull the core tools into this file and zap the old gradient util.
 
 namespace Drake {
 // todo: recursive template to get arbitrary gradient order
