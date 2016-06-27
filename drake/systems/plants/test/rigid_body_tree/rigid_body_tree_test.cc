@@ -190,8 +190,11 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 // with vector block input parameters. For more information, see:
 // https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
-  tree->addRobotFromURDF(Drake::getDrakePath() +
-          "/systems/plants/test/two_dof_robot.urdf");
+  std::string file_name = Drake::getDrakePath() +
+          "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+  std::cout << "file name: " << file_name << std::endl;
+  tree->addRobotFromURDF(file_name);
+
   VectorX<double> q;
   VectorX<double> v;
   q.resize(tree->number_of_positions());
@@ -199,9 +202,9 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
   q.setZero();
   v.setZero();
 
-  Eigen::MatrixBase<Eigen::Block<Eigen::VectorXd, -1, 1, false>>
+  Eigen::VectorBlock<Eigen::Matrix<double, -1, 1>, -1>
     q_block = q.head(q.size());
-  Eigen::MatrixBase<Eigen::Block<Eigen::VectorXd, -1, 1, false>>
+  Eigen::VectorBlock<Eigen::Matrix<double, -1, 1>, -1>
     v_block = v.head(v.size());
 
   KinematicsCache<double> cache = tree->doKinematics(q_block, v_block);
