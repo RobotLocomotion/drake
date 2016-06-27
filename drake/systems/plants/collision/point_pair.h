@@ -21,8 +21,6 @@ struct DRAKECOLLISION_EXPORT PointPair {
         normal_(normal),
         distance_(distance) {}
 
-  ElementId getIdA() const;
-  ElementId getIdB() const;
   const Element* get_elementA() const;
   const Element* get_elementB() const;
   Eigen::Vector3d getNormal() const;
