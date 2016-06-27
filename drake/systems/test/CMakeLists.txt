@@ -18,9 +18,9 @@ add_executable(n_ary_system_test n_ary_system_test.cc)
 target_link_libraries(n_ary_system_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME n_ary_system_test COMMAND n_ary_system_test)
 
-add_executable(simulation_test simulation_test.cc)
-target_link_libraries(simulation_test drakeCommon ${GTEST_BOTH_LIBRARIES})
-add_test(NAME simulation_test COMMAND simulation_test)
+add_executable(simulation_termination_test simulation_termination_test.cc)
+target_link_libraries(simulation_termination_test drakeCommon ${GTEST_BOTH_LIBRARIES})
+add_test(NAME simulation_termination_test COMMAND simulation_termination_test)
 
 add_matlab_test(NAME systems/test/HybridSystemSampleTimeTest.run COMMAND HybridSystemSampleTimeTest.run)
 add_matlab_test(NAME systems/test/LinearGaussianDT.run COMMAND LinearGaussianDT.run)
