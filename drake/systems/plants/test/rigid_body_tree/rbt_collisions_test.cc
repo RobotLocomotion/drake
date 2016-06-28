@@ -63,6 +63,8 @@ class RBTCollisionTest: public ::testing::Test {
   RigidBodyTree tree_;
   const RigidBody *small_sphere_, *large_box_;
   BodyToSurfacePointMap solution_;
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // This unit test assesses the correct return from
