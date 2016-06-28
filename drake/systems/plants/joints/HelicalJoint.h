@@ -38,7 +38,7 @@ class DRAKEJOINTS_EXPORT HelicalJoint
   }
 
  private:
-  static Eigen::Matrix<double, drake::kTwistSize, 1> spatialJointAxis(
+  static drake::TwistVector<double> spatialJointAxis(
       const Eigen::Vector3d& axis, double pitch);
 
  public:
