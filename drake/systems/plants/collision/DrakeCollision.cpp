@@ -21,7 +21,7 @@ enum DRAKECOLLISION_EXPORT ModelType { NONE, AUTO, BULLET };
 unique_ptr<Model> newModel(ModelType model_type) {
   switch (model_type) {
     case NONE:
-      return unique_ptr<Model>(new Model());
+      return nullptr;
       break;
     case BULLET:
 #ifdef BULLET_COLLISION
@@ -42,7 +42,7 @@ unique_ptr<Model> newModel() {
 #ifdef BULLET_COLLISION
   return newModel(BULLET);
 #else
-  return newModel(NONE);
+  DRAKE_ABORT_UNLESS("DrakeCollision must be compiled with Bullet.");
 #endif
 }
 };
