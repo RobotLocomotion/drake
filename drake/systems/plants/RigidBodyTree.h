@@ -547,6 +547,23 @@ class DRAKERBM_EXPORT RigidBodyTree {
                            std::vector<int>& bodyB_idx,
                            bool use_margins = true);
 
+  /** Computes the point of closest approach between bodies in the
+   RigidBodyTree that are in contact.
+
+   @param cache[in] a KinematicsCache constructed by RigidBodyTree::doKinematics
+   given `q` and `v`.
+
+   Collision points are returned as a vector of PointPair's.
+   See the documentation for PointPair for details. The collision point on the
+   surface of each body is stored in the PointPair structure in the frame of the
+   corresponding body.
+
+   @param use_margins[in] If `true` the model uses the representation with
+   margins. If `false`, the representation without margins is used instead.
+   **/
+  std::vector<DrakeCollision::PointPair> ComputeMaximumDepthCollisionPoints(
+      const KinematicsCache<double>& cache, bool use_margins = true);
+
   virtual bool collidingPointsCheckOnly(
       const KinematicsCache<double>& cache,
       const std::vector<Eigen::Vector3d>& points, double collision_threshold);

@@ -1,4 +1,4 @@
-set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp point_pair.cc Model.cpp ResultCollector.cpp)
+set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp Model.cpp)
 pods_find_pkg_config(bullet)
 
 if(bullet_FOUND)
@@ -12,7 +12,7 @@ add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_S
 if(bullet_FOUND)
   pods_use_pkg_config_packages(drakeCollision bullet)
 endif()
-target_link_libraries(drakeCollision drakeShapes)
+target_link_libraries(drakeCollision drakeShapes drakeCommon)
 
 enable_testing()
 add_subdirectory(test)
