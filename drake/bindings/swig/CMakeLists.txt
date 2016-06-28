@@ -13,7 +13,7 @@ set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w503")
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # The autodiff.i in swig has for-loop variable warnings.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare -Wno-deprecated-declarations")
 endif()
 
 if(PYTHON_EXECUTABLE)
