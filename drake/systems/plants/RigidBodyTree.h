@@ -129,7 +129,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   void surfaceTangents(
       Eigen::Map<Eigen::Matrix3Xd> const& normals,
-      std::vector<Eigen::Map<Eigen::Matrix3Xd> >& tangents) const;
+      std::vector<Eigen::Map<Eigen::Matrix3Xd>>& tangents) const;
 
   /*!
    * Updates the frame of collision elements to be equal to the joint's frame.
@@ -197,24 +197,24 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> worldMomentumMatrix(
+  drake::TwistMatrix<Scalar> worldMomentumMatrix(
       KinematicsCache<Scalar>& cache,
       const std::set<int>& robotnum = default_robot_num_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, TWIST_SIZE, 1> worldMomentumMatrixDotTimesV(
+  drake::TwistVector<Scalar> worldMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
       const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(
+  drake::TwistMatrix<Scalar> centroidalMomentumMatrix(
       KinematicsCache<Scalar>& cache,
       const std::set<int>& robotnum = default_robot_num_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(
+  drake::TwistVector<Scalar> centroidalMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
       const std::set<int>& robotnum = default_robot_num_set) const;
 
@@ -283,8 +283,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<
-          RigidBody const*, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext,
+      const eigen_aligned_unordered_map<RigidBody const*,
+                                        drake::TwistVector<Scalar>>& f_ext,
       bool include_velocity_terms = true) const;
 
   /** \brief Compute
@@ -316,8 +316,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<
-          RigidBody const*, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext,
+      const eigen_aligned_unordered_map<RigidBody const*,
+                                        drake::TwistVector<Scalar>>& f_ext,
       const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd,
       bool include_velocity_terms = true) const;
 
@@ -401,27 +401,27 @@ class DRAKERBM_EXPORT RigidBodyTree {
                                         int to_body_or_frame_ind) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(
+  drake::TwistMatrix<Scalar> geometricJacobian(
       const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
       int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind,
       bool in_terms_of_qdot = false,
       std::vector<int>* v_indices = nullptr) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, TWIST_SIZE, 1> geometricJacobianDotTimesV(
+  drake::TwistVector<Scalar> geometricJacobianDotTimesV(
       const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
       int end_effector_body_or_frame_ind,
       int expressed_in_body_or_frame_ind) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, TWIST_SIZE, 1> relativeTwist(
+  drake::TwistVector<Scalar> relativeTwist(
       const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
       int body_or_frame_ind, int expressed_in_body_or_frame_ind) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, TWIST_SIZE, 1> transformSpatialAcceleration(
+  drake::TwistVector<Scalar> transformSpatialAcceleration(
       const KinematicsCache<Scalar>& cache,
-      const Eigen::Matrix<Scalar, TWIST_SIZE, 1>& spatial_acceleration,
+      const drake::TwistVector<Scalar>& spatial_acceleration,
       int base_or_frame_ind, int body_or_frame_ind, int old_body_or_frame_ind,
       int new_body_or_frame_ind) const;
 
@@ -574,13 +574,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       const std::string& model_name = "",
                       int model_id = -1) const;
 
-  /**
-   * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
-   * instead.
-   */
+/**
+ * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
+ * instead.
+ */
 #ifndef SWIG
-      DRAKE_DEPRECATED(
-          "Please use RigidBodyTree::FindBody instead.")
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBody instead.")
 #endif
   RigidBody* findLink(const std::string& link_name,
                       const std::string& model_name = "",
@@ -604,13 +603,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   int FindBodyIndex(const std::string& body_name, int model_id = -1) const;
 
-  /**
-   * This is a deprecated version of `FindBodyIndex(...)`. Please use
-   * `FindBodyIndex(...)` instead.
-   */
+/**
+ * This is a deprecated version of `FindBodyIndex(...)`. Please use
+ * `FindBodyIndex(...)` instead.
+ */
 #ifndef SWIG
-      DRAKE_DEPRECATED(
-          "Pleasse use RigidBodyTree::FindBodyIndex instead.")
+  DRAKE_DEPRECATED("Pleasse use RigidBodyTree::FindBodyIndex instead.")
 #endif
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
@@ -695,8 +693,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic>
-        full(compact.rows(), ncols);
+                  Eigen::Dynamic> full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -790,19 +787,19 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // TODO(amcastro-tri): make private and start using accessors body(int).
   // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once.
   // accessors are used throughout the code.
-  std::vector<std::unique_ptr<RigidBody> > bodies;
+  std::vector<std::unique_ptr<RigidBody>> bodies;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame> > frames;
+  std::vector<std::shared_ptr<RigidBodyFrame>> frames;
 
   // Rigid body actuators
-  std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator> >
+  std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>
       actuators;
 
   // Rigid body loops
-  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop> > loops;
+  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> loops;
 
-  Eigen::Matrix<double, TWIST_SIZE, 1> a_grav;
+  drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
  private:

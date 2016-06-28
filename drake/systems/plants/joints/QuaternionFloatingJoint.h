@@ -1,15 +1,12 @@
 #pragma once
 
-#include "DrakeJointImpl.h"
+#include "drake/common/eigen_types.h"
+#include "drake/systems/plants/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/drakeGradientUtil.h"
 
 class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
     : public DrakeJointImpl<QuaternionFloatingJoint> {
-  // disable copy construction and assignment
-  // QuaternionFloatingJoint(const QuaternionFloatingJoint&) = delete;
-  // QuaternionFloatingJoint& operator=(const QuaternionFloatingJoint&) =
-  // delete;
-
  public:
   QuaternionFloatingJoint(const std::string& name,
                           const Eigen::Isometry3d& transform_to_parent_body)
@@ -33,7 +30,7 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
-    motion_subspace.setIdentity(TWIST_SIZE, getNumVelocities());
+    motion_subspace.setIdentity(drake::kTwistSize, getNumVelocities());
     if (dmotion_subspace) {
       dmotion_subspace->setZero(motion_subspace.size(), getNumPositions());
     }

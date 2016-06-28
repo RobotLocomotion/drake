@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/eigen_types.h"
 #include "drake/core/Gradient.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -205,8 +206,8 @@ GTEST_TEST(DrakeGeometryUtilTest, NormalizeVec) {
 }
 
 GTEST_TEST(DrakeGeometryUtilTest, SpatialCrossProduct) {
-  auto a = (Matrix<double, TWIST_SIZE, 1>::Random()).eval();
-  auto b = (Matrix<double, TWIST_SIZE, TWIST_SIZE>::Identity()).eval();
+  auto a = (drake::TwistVector<double>::Random()).eval();
+  auto b = (drake::SquareTwistMatrix<double>::Identity()).eval();
   auto a_crm_b = crossSpatialMotion(a, b);
   auto a_crf_b = crossSpatialForce(a, b);
   EXPECT_TRUE(CompareMatrices(a_crf_b, -a_crm_b.transpose(), 1e-8,

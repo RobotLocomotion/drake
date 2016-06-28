@@ -42,4 +42,19 @@ using AutoDiffUpTo73d = Eigen::AutoDiffScalar<VectorUpTo73d>;
 /// An autodiff variable with a dynamic number of partials.
 using AutoDiffXd = Eigen::AutoDiffScalar<Eigen::VectorXd>;
 
+/// https://en.wikipedia.org/wiki/Screw_theory#Twist
+constexpr int kTwistSize = 6;
+
+/// A column vector consisting of one twist.
+template <typename Scalar>
+using TwistVector = Eigen::Matrix<Scalar, kTwistSize, 1>;
+
+/// A matrix with one twist per column, and dynamically many columns.
+template <typename Scalar>
+using TwistMatrix = Eigen::Matrix<Scalar, kTwistSize, Eigen::Dynamic>;
+
+/// A six-by-six matrix.
+template <typename Scalar>
+using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
+
 }  // namespace drake

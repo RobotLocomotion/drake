@@ -1,10 +1,14 @@
-#include "drake/systems/plants/RigidBodyTree.h"
 #include <iostream>
 #include <cstdlib>
 #include <memory>
 
+#include "drake/common/eigen_types.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+
 using namespace std;
-using namespace Eigen;
+
+using Eigen::VectorXd;
+
 int main() {
   RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
@@ -13,7 +17,7 @@ int main() {
   VectorXd v = VectorXd::Random(model.number_of_velocities());
   KinematicsCache<double> cache = model.doKinematics(q, v);
 
-  auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
+  auto points = drake::Matrix3X<double>::Random(3, 5).eval();
   int body_or_frame_ind = 8;
   int base_or_frame_ind = 0;
   model.transformPointsJacobianDotTimesV(cache, points, body_or_frame_ind,
@@ -22,13 +26,13 @@ int main() {
   auto M = model.massMatrix<double>(cache);
   cout << M << endl << endl;
 
-  eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> >
+  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
-  Matrix<double, TWIST_SIZE, 1> f_ext_r_foot;
+  drake::TwistVector<double> f_ext_r_foot;
   f_ext_r_foot.setRandom();
   f_ext.insert({model.FindBody("r_foot"), f_ext_r_foot});
 
-  Matrix<double, Eigen::Dynamic, 1> vd(model.number_of_velocities());
+  VectorXd vd(model.number_of_velocities());
   vd.setRandom();
 
   auto C = model.inverseDynamics(cache, f_ext, vd);

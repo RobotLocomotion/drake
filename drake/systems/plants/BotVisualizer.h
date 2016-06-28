@@ -8,7 +8,6 @@
 // these could all go in the cpp file:
 #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
-#include "drake/util/drakeGeometryUtil.h"
 
 namespace Drake {
 

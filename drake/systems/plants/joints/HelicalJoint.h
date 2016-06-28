@@ -2,6 +2,8 @@
 
 #include "FixedAxisOneDoFJoint.h"
 
+#include "drake/common/eigen_types.h"
+
 class DRAKEJOINTS_EXPORT HelicalJoint
     : public FixedAxisOneDoFJoint<HelicalJoint> {
   // disable copy construction and assignment
@@ -36,7 +38,7 @@ class DRAKEJOINTS_EXPORT HelicalJoint
   }
 
  private:
-  static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(
+  static drake::TwistVector<double> spatialJointAxis(
       const Eigen::Vector3d& axis, double pitch);
 
  public:
