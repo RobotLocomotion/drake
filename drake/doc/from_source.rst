@@ -1,3 +1,5 @@
+.. _build_from_source:
+
 *****************************************
 Source installation (mac, linux, windows)
 *****************************************
