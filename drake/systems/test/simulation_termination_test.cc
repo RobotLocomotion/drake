@@ -9,6 +9,8 @@
 
 using Eigen::Dynamic;
 
+#define EIGEN_DONT_ALIGN 1
+
 namespace drake {
 namespace systems {
 namespace test {
