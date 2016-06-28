@@ -162,14 +162,14 @@ class DRAKERBM_EXPORT RigidBody {
   int body_index;
 
   /// The starting index of this rigid body's joint's position value(s) within
-  /// the output of a RigidBodySystem.
+  /// the parent tree's state vector.
   int position_num_start;
 
   /// The starting index of this rigid body's joint's velocity value(s) within
-  /// the output of a RigidBodySystem.
+  /// the parent tree's state vector.
   int velocity_num_start;
 
-  /// The visualization of this rigid body.
+  /// A list of visual elements for this RigidBody
   DrakeShapes::VectorOfVisualElements visual_elements;
 
   std::vector<DrakeCollision::ElementId> collision_element_ids;
@@ -184,7 +184,7 @@ class DRAKERBM_EXPORT RigidBody {
   /// The center of mass of this rigid body.
   Eigen::Vector3d com;
 
-  /// The inertia matrix of this rigid body.
+  /// The spatial rigid body inertia of this rigid body.
   drake::SquareTwistMatrix<double> I;
 
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
