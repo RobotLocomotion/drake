@@ -1,10 +1,10 @@
-if(LCM_FOUND)
+if(lcm_FOUND)
   add_executable(runPendulumDynamics runDynamics.cpp)
-  target_link_libraries(runPendulumDynamics drakeRBM drakeLCMSystem)
+  target_link_libraries(runPendulumDynamics drakeRBM drakeLCMSystem threads)
   add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics --non-realtime)
 
   add_executable(runPendulumEnergyShaping runEnergyShaping.cpp)
-  target_link_libraries(runPendulumEnergyShaping drakeRBM drakeLCMSystem)
+  target_link_libraries(runPendulumEnergyShaping drakeRBM drakeLCMSystem threads)
   # add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping --non-realtime)  # FIXME: disabled for now since it's not a good test, since it will always timeout
 
   add_executable(runPendulumLQR runLQR.cpp)

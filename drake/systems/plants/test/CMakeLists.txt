@@ -70,7 +70,7 @@ add_executable(bullet_collision_zero_rad_sphere_test bullet_collision_zero_rad_s
 target_link_libraries(bullet_collision_zero_rad_sphere_test drakeRBM)
 add_test(NAME bullet_collision_zero_rad_sphere_test COMMAND bullet_collision_zero_rad_sphere_test)
 
-if(LCM_FOUND)
+if(lcm_FOUND)
   if(GTEST_FOUND)
     add_executable(testMassSpringDamper testMassSpringDamper.cpp)
     target_link_libraries(testMassSpringDamper drakeRBSystem ${GTEST_BOTH_LIBRARIES})
@@ -79,8 +79,8 @@ if(LCM_FOUND)
 
   if(bullet_FOUND)
     add_executable(testLidar lidarTest.cpp)
-    add_dependencies(testLidar drake_lcmtypes lcmtype_agg_hpp)
-    target_link_libraries(testLidar drakeRBSystem)
+    add_dependencies(testLidar drake_lcmtypes_hpp)
+    target_link_libraries(testLidar drakeRBSystem lcm)
     add_test(NAME testLidar COMMAND testLidar)
   endif()
 

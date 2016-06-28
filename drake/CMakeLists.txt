@@ -1,3 +1,4 @@
+project(drake)
 cmake_minimum_required(VERSION 3.5)
 
 cmake_policy(SET CMP0025 NEW)
@@ -235,6 +236,11 @@ set(drake_jar_requires)
 
 include(cmake/procman.cmake)  # helper script for writing procman files
 
+# set up pseudo-target for threads
+find_package(Threads)
+add_library(threads INTERFACE)
+target_link_libraries(threads INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+
 # Setup ROS if it is available on the local system. Note that this occurs before
 # LCM configuration to prevent ROS message generation from conflicting with LCM
 # message generation. This prevent ROS from generating its own custom messages.
@@ -264,16 +270,10 @@ else()
 endif()
 
 # set up and build lcm types
-include(cmake/lcmtypes.cmake)
-
-if(LCM_FOUND)
-  # TODO(liang.fok) Remove the generation of LCM messages from this top-level
-  # CMakeLists.txt. It should instead be co-located with the message
-  # definitions. Furthermore, the LCM messages are currently defined in
-  # drake/lcmtypes/. They should be moved to be co-located with the code that
-  # actually uses them.
-  lcmtypes_build()
-  pods_use_pkg_config_classpath(lcm-java)
+find_package(lcm)
+if(lcm_FOUND)
+  add_subdirectory(lcmtypes)
+  include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
 
   list(APPEND drake_jar_javafiles
     util/MyLCMTypeDatabase.java
@@ -300,7 +300,7 @@ if(LCM_FOUND)
   endif()
 endif()
 
-add_jar(drake SOURCES ${drake_jar_javafiles})
+add_jar(drake SOURCES ${drake_jar_javafiles} INCLUDE_JARS ${drake_jar_requires})
 install_jar(drake share/java)
 pods_install_pkg_config_file(drake-java
   CLASSPATH drake
@@ -367,9 +367,6 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
 find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin)
 find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin)
 find_program(ffmpeg ffmpeg)
-
-# write some additional information to the CMake cache
-set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
 
 if(APPLE)
   set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
