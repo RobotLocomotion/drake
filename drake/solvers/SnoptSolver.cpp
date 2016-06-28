@@ -17,8 +17,8 @@ namespace snopt {
 
 // todo(sammy-tri) :  implement sparsity inside each cost/constraint
 // todo(sammy-tri) :  handle snopt options
-// todo(sammy-tri) :  return more information that just the solution (INFO, infeasible
-// constraints, ...)
+// todo(sammy-tri) :  return more information that just the solution (INFO,
+// infeasible constraints, ...)
 // todo(sammy-tri) :  avoid all dynamic allocation
 
 namespace drake {
