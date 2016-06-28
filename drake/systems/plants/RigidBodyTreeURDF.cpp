@@ -476,9 +476,11 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                         " has a collision element without geometry");
 
   RigidBody::CollisionElement element(T_element_to_link, body);
-  // By default all collision elements added to the world are flagged as static.
-  // We would also like to flag as static bodies connected to the world with a
-  // DrakeJoint::FloatingBaseType::FIXED joint.
+  // By default all collision elements added to the world from an URDF file are
+  // flagged as static. If the user decides to add static collision elements
+  // manually then an explicit call to CollisionElement::set_static() will be
+  // needed. We would also like to flag as static bodies connected
+  // to the world with a DrakeJoint::FloatingBaseType::FIXED joint.
   // However this is not possible at this stage since joints were not parsed
   // yet.
   // Solutions to this problem would be:
@@ -489,7 +491,8 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   //  2. Load collision elements on a separate pass after links and joints were
   //     already loaded.
   //  Issue 2661 was created to track this problem.
-  // TODO(amcastro-tri): fix the above issue tracked by 2661.
+  // TODO(amcastro-tri): fix the above issue tracked by 2661.  Similarly for
+  // parseSDFCollision in RigidBodyTreeSDF.cpp.
   if (body->name().compare(std::string(RigidBodyTree::kWorldLinkName)) == 0)
     element.set_static();
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
