@@ -403,7 +403,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     cost_cache_->result[0] = 0;
     cost_cache_->grad.assign(n, 0);
 
-    for (auto const& binding : problem_->generic_costs()) {
+    for (auto const& binding : problem_->GetAllCosts()) {
       size_t index = 0;
       for (const DecisionVariableView& v : binding.variable_list()) {
         this_x.conservativeResize(index + v.size());
