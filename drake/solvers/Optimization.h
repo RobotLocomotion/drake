@@ -281,7 +281,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   void AddCost(std::shared_ptr<Constraint> const& obj,
                VariableList const& vars) {
-    problem_type_.AddGenericObjective();
+    problem_type_.AddGenericCost();
     generic_costs_.push_back(Binding<Constraint>(obj, vars));
   }
 

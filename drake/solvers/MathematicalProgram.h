@@ -12,8 +12,15 @@ class OptimizationProblem;
 /// Interface used by implementations of individual solvers.
 class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
  public:
-  virtual ~MathematicalProgramSolverInterface() {};
+  virtual ~MathematicalProgramSolverInterface() = default;
+
+  /// Returns true iff this solver was enabled at compile-time.
   virtual bool available() const = 0;
+
+  /// Sets values for the decision variables on the given OptimizationProblem
+  /// @p prog, or:
+  ///  * If no solver is available, throws std::runtime_error
+  ///  * If the solver returns an error, returns a nonzero SolutionResult.
   virtual SolutionResult Solve(OptimizationProblem& prog) const = 0;
 };
 
@@ -32,33 +39,54 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
  public:
   MathematicalProgram();
 
-  /* these would be used to fill out the optimization hierarchy:
+  /* TODO(ggould-tri) The following methods might be desirable to fill out the
+     optimization hierarchy:
 
-     virtual MathematicalProgramInterface* AddIntegerVariable() = 0;
-     virtual MathematicalProgramInterface* AddSumsOfSquaresConstraint() = 0;
-     virtual MathematicalProgramInterface* AddLinearMatrixInequalityConstraint()
-     = 0;
-     virtual MathematicalProgramInterface* AddSecondOrderConeConstraint() = 0;
-     virtual MathematicalProgramInterface* AddComplementarityConstraint() = 0;
+     void AddIntegerVariable();
+     void AddSumsOfSquaresConstraint();
+     void AddLinearMatrixInequalityConstraint();
+     void AddSecondOrderConeConstraint();
+     void AddComplementarityConstraint();
   */
-  void AddGenericObjective();
+
+  /// Call if problem requires minimizing some f(x).
+  void AddGenericCost();
+
+  /// Call if problem requires bounding some f(x).
   void AddGenericConstraint();
-  void AddLinearObjective();
-  void AddLinearConstraint();
-  void AddQuadraticObjective();
+
+  /// Call if problem requires minimizing some quadratic.
+  void AddQuadraticCost();
+
+  /// Call if problem requires bounding some quadratic.
   void AddQuadraticConstraint();
+
+  /// Call if problem requires minimizing some linear expression.
+  void AddLinearCost();
+
+  /// Call if problem requires bounding some linear expression.
+  void AddLinearConstraint();
+
+  /// Call if problem requires exact satisfaction of linear equation.
   void AddLinearEqualityConstraint();
+
+  /// Call if problem contains a linear complementarity optimization.
   void AddLinearComplementarityConstraint();
 
+  /// Solve the given OptimizationProblem with an appropriate solver.
+  /// Throws std::runtime_error if no appropriate solver is available.
   SolutionResult Solve(OptimizationProblem& prog) const;
 
  private:
-  int required_capabilities_;
+  uint32_t required_capabilities_ {0};
   std::unique_ptr<MathematicalProgramSolverInterface> ipopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> snopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> moby_lcp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> least_squares_solver_;
+  // TODO(ggould-tri) Add Gurobi here.
+  // TODO(ggould-tri) Add Mosek here.
+  // TODO(ggould-tri) Add SeDuMi here.
 };
 
 }  // namespace solvers

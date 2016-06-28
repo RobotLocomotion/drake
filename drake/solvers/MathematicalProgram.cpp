@@ -13,17 +13,17 @@ namespace {
 
 enum ProblemAttributes {
   kNoCapabilities = 0,
-  kError = 1 << 0, ///< Do not use, to avoid & vs. && typos.
-  kGenericObjective                = 1 << 1,  ///< minimize f(x)
-  kGenericConstraint               = 1 << 2,  ///< require f(x) == 0
-  kQuadraticObjective              = 1 << 3,  ///< minimize x^2
-  kQuadraticConstraint             = 1 << 4,  ///< require x^2 - k == 0
-  kLinearObjective                 = 1 << 5,  ///< minimize x
-  kLinearConstraint                = 1 << 6,  ///< require x - k >/< 0
-  kLinearEqualityConstraint        = 1 << 7,  ///< require x - k == 0
-  kLinearComplementarityConstraint = 1 << 8,  ///< require x * y == 0
+  kError = 1 << 0,  ///< Do not use, to avoid & vs. && typos.
+  kGenericCost                     = 1 << 1,
+  kGenericConstraint               = 1 << 2,
+  kQuadraticCost                   = 1 << 3,
+  kQuadraticConstraint             = 1 << 4,
+  kLinearCost                      = 1 << 5,
+  kLinearConstraint                = 1 << 6,
+  kLinearEqualityConstraint        = 1 << 7,
+  kLinearComplementarityConstraint = 1 << 8
 };
-typedef int AttributesSet;
+typedef uint32_t AttributesSet;
 
 // TODO(ggould-tri) Refactor these capability advertisements into the
 // solver wrappers themselves.
@@ -38,15 +38,15 @@ AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
 // to land.
 // AttributesSet kGurobiCapabilities = (
 //     kLinearEqualityConstraint | kLinearInequalityConstraint |
-//     kLinearObjective | kQuadraticObjective);
+//     kLinearCost | kQuadraticCost);
 
-// Solvers for generic systems of constraints and consts.
+// Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities = (
-    kGenericObjective | kGenericConstraint |
-    kQuadraticObjective | kQuadraticConstraint |
-    kLinearObjective | kLinearConstraint | kLinearEqualityConstraint);
+    kGenericCost | kGenericConstraint |
+    kQuadraticCost | kQuadraticConstraint |
+    kLinearCost | kLinearConstraint | kLinearEqualityConstraint);
 
-/// Returns true iff no capabilities are in required and not in available.
+// Returns true iff no capabilities are in required and not in available.
 bool is_satisfied(AttributesSet required, AttributesSet available) {
   return ((required & ~available) == kNoCapabilities);
 }
@@ -92,7 +92,7 @@ class DRAKEOPTIMIZATION_EXPORT LeastSquaresSolver :
   }
 };
 
-} // anon namespace
+}  // anon namespace
 
 
 MathematicalProgram::MathematicalProgram()
@@ -103,20 +103,20 @@ MathematicalProgram::MathematicalProgram()
       moby_lcp_solver_(new MobyLCPSolver()),
       least_squares_solver_(new LeastSquaresSolver()) {}
 
-void MathematicalProgram::AddGenericObjective() {
-  required_capabilities_ |= kGenericObjective;
+void MathematicalProgram::AddGenericCost() {
+  required_capabilities_ |= kGenericCost;
 }
 void MathematicalProgram::AddGenericConstraint() {
   required_capabilities_ |= kGenericConstraint;
 }
-void MathematicalProgram::AddQuadraticObjective() {
-  required_capabilities_ |= kQuadraticObjective;
+void MathematicalProgram::AddQuadraticCost() {
+  required_capabilities_ |= kQuadraticCost;
 }
 void MathematicalProgram::AddQuadraticConstraint() {
   required_capabilities_ |= kQuadraticConstraint;
 }
-void MathematicalProgram::AddLinearObjective() {
-  required_capabilities_ |= kLinearObjective;
+void MathematicalProgram::AddLinearCost() {
+  required_capabilities_ |= kLinearCost;
 }
 void MathematicalProgram::AddLinearConstraint() {
   required_capabilities_ |= kLinearConstraint;
@@ -155,7 +155,7 @@ SolutionResult MathematicalProgram::Solve(OptimizationProblem& prog) const {
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");
   }
-};
+}
 
 }  // namespace solvers
 }  // namespace drake
