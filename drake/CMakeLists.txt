@@ -267,7 +267,11 @@ endif()
 include(cmake/lcmtypes.cmake)
 
 if(LCM_FOUND)
-  #add_subdirectory(lcmtypes)
+  # TODO(liang.fok) Remove the generation of LCM messages from this top-level
+  # CMakeLists.txt. It should instead be co-located with the message
+  # definitions. Furthermore, the LCM messages are currently defined in
+  # drake/lcmtypes/. They should be moved to be co-located with the code that
+  # actually uses them.
   lcmtypes_build()
   pods_use_pkg_config_classpath(lcm-java)
 
