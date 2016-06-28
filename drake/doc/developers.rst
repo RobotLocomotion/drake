@@ -165,6 +165,7 @@ Documentation Instructions
 .. toctree::
     :maxdepth: 1
 
+    documentation_instructions
     doxygen_instructions
     sphinx_instructions
 

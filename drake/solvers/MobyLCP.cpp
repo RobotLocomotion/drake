@@ -125,7 +125,7 @@ SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
   // variables sit at 0.
 
   DRAKE_ASSERT(prog.generic_constraints().empty());
-  DRAKE_ASSERT(prog.generic_objectives().empty());
+  DRAKE_ASSERT(prog.generic_costs().empty());
   DRAKE_ASSERT(prog.GetAllLinearConstraints().empty());
   DRAKE_ASSERT(prog.bounding_box_constraints().empty());
 

@@ -84,9 +84,9 @@ class Context {
 
     // Make a deep copy of the state using LeafStateVector::Clone().
     const ContinuousState<T>& xc = *this->get_state().continuous_state;
-    const int64_t num_q = xc.get_generalized_position().size();
-    const int64_t num_v = xc.get_generalized_velocity().size();
-    const int64_t num_z = xc.get_misc_continuous_state().size();
+    const int num_q = xc.get_generalized_position().size();
+    const int num_v = xc.get_generalized_velocity().size();
+    const int num_z = xc.get_misc_continuous_state().size();
     const LeafStateVector<T>& xc_vector =
         dynamic_cast<const LeafStateVector<T>&>(xc.get_state());
     context->get_mutable_state()->continuous_state.reset(
