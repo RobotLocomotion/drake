@@ -112,7 +112,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
-   * Returns an integer than can be used to uniquely identify a model
+   * Returns an integer that can be used to uniquely identify a model
    * within this rigid body tree. Note that this method is not thread safe!
    */
   int get_next_model_id() { return next_model_id_++; }
