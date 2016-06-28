@@ -25,16 +25,16 @@
       <visual name='box'>
         <geometry>
           <sphere>
-	    <radius>0.5</radius>
-	  </sphere>
+            <radius>0.5</radius>
+          </sphere>
         </geometry>
       </visual>
       <collision name='sphere'>
-	<pose>0 0.0 0.1 0 0 0</pose>
+        <pose>0 0.0 0.1 0 0 0</pose>
         <geometry>
           <sphere>
-	    <radius>0.5</radius>
-	  </sphere>
+            <radius>0.5</radius>
+          </sphere>
         </geometry>
       </collision>
     </link>
