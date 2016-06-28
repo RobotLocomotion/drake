@@ -45,8 +45,8 @@ using VectorQD = VectorQ<double>;
 GTEST_TEST(TestNAryState, UnitCountFromRows) {
   NAryState<NullVector<double> >::UnitCountFromRows(0);
 
-  EXPECT_EQ((NAryState<VectorQD>::UnitCountFromRows(0)), 0);
-  EXPECT_EQ((NAryState<VectorQD>::UnitCountFromRows(15)), 5);
+  EXPECT_EQ((NAryState<VectorQD>::UnitCountFromRows(0)), 0u);
+  EXPECT_EQ((NAryState<VectorQD>::UnitCountFromRows(15)), 5u);
   EXPECT_THROW((NAryState<VectorQD>::UnitCountFromRows(17)),
                std::domain_error);
 
@@ -56,15 +56,15 @@ GTEST_TEST(TestNAryState, UnitCountFromRows) {
 
 
 GTEST_TEST(TestNAryState, RowsFromUnitCount) {
-  EXPECT_EQ((NAryState<VectorQD>::RowsFromUnitCount(0)),  0);
-  EXPECT_EQ((NAryState<VectorQD>::RowsFromUnitCount(1)),  3);
-  EXPECT_EQ((NAryState<VectorQD>::RowsFromUnitCount(5)), 15);
+  EXPECT_EQ((NAryState<VectorQD>::RowsFromUnitCount(0)),  0u);
+  EXPECT_EQ((NAryState<VectorQD>::RowsFromUnitCount(1)),  3u);
+  EXPECT_EQ((NAryState<VectorQD>::RowsFromUnitCount(5)), 15u);
   EXPECT_THROW((NAryState<VectorQD>::RowsFromUnitCount(-1)),
                std::domain_error);
 
-  EXPECT_EQ((NAryState<NullVector<double> >::RowsFromUnitCount(1)), 0);
-  EXPECT_EQ((NAryState<NullVector<double> >::RowsFromUnitCount(5)), 0);
-  EXPECT_EQ((NAryState<NullVector<double> >::RowsFromUnitCount(-1)), 0);
+  EXPECT_EQ((NAryState<NullVector<double> >::RowsFromUnitCount(1)), 0u);
+  EXPECT_EQ((NAryState<NullVector<double> >::RowsFromUnitCount(5)), 0u);
+  EXPECT_EQ((NAryState<NullVector<double> >::RowsFromUnitCount(-1)), 0u);
 }
 
 
@@ -74,21 +74,21 @@ GTEST_TEST(TestNAryState, DefaultConstructor) {
 
   // Test default-constructed instance.
   NAryState<VectorQD> dut;
-  EXPECT_EQ(dut.count(), 0);
-  EXPECT_EQ(dut.size(), 0);
+  EXPECT_EQ(dut.count(), 0u);
+  EXPECT_EQ(dut.size(), 0u);
   EXPECT_THROW(dut.get(0), std::out_of_range);
   EXPECT_THROW(dut.set(0, VectorQD()), std::out_of_range);
   EXPECT_EQ(toEigen(dut), (Eigen::Matrix<double, 0, 1>()));
 
   dut.Append(vq0);
-  EXPECT_EQ(dut.count(), 1);
-  EXPECT_EQ(dut.size(), 3);
+  EXPECT_EQ(dut.count(), 1u);
+  EXPECT_EQ(dut.size(), 3u);
   EXPECT_EQ(dut.get(0).v, vq0.v);
   EXPECT_EQ(toEigen(dut), vq0.v);
 
   dut.Append(vq1);
-  EXPECT_EQ(dut.count(), 2);
-  EXPECT_EQ(dut.size(), 6);
+  EXPECT_EQ(dut.count(), 2u);
+  EXPECT_EQ(dut.size(), 6u);
   EXPECT_EQ(dut.get(0).v, vq0.v);
   EXPECT_EQ(dut.get(1).v, vq1.v);
   EXPECT_EQ(toEigen(dut),
@@ -112,8 +112,8 @@ GTEST_TEST(TestNAryState, PreAllocated) {
 
   // Test construction with pre-allocated size.
   NAryState<VectorQD> dut(2);
-  EXPECT_EQ(dut.count(), 2);
-  EXPECT_EQ(dut.size(), 6);
+  EXPECT_EQ(dut.count(), 2u);
+  EXPECT_EQ(dut.size(), 6u);
 
   dut.set(0, vq0);
   dut.set(1, vq1);
@@ -135,8 +135,8 @@ GTEST_TEST(TestNAryState, FromEigen) {
   NAryState<VectorQD> dut((
       Eigen::VectorXd(6) << vq0.v, vq1.v).finished());
 
-  EXPECT_EQ(dut.count(), 2);
-  EXPECT_EQ(dut.size(), 6);
+  EXPECT_EQ(dut.count(), 2u);
+  EXPECT_EQ(dut.size(), 6u);
   EXPECT_EQ(dut.get(0).v, vq0.v);
   EXPECT_EQ(dut.get(1).v, vq1.v);
   EXPECT_EQ(toEigen(dut),
@@ -147,14 +147,14 @@ GTEST_TEST(TestNAryState, FromEigen) {
 
   // Test assignment from Eigen type.
   dut = vq0.v;
-  EXPECT_EQ(dut.count(), 1);
-  EXPECT_EQ(dut.size(), 3);
+  EXPECT_EQ(dut.count(), 1u);
+  EXPECT_EQ(dut.size(), 3u);
   EXPECT_EQ(dut.get(0).v, vq0.v);
   EXPECT_EQ(toEigen(dut), vq0.v);
 
   dut = Eigen::VectorXd(0);
-  EXPECT_EQ(dut.count(), 0);
-  EXPECT_EQ(dut.size(), 0);
+  EXPECT_EQ(dut.count(), 0u);
+  EXPECT_EQ(dut.size(), 0u);
   EXPECT_THROW(dut.get(0), std::out_of_range);
   EXPECT_EQ(toEigen(dut), Eigen::VectorXd(0));
 }
@@ -166,7 +166,7 @@ GTEST_TEST(TestNAryState, NullUnitVectors) {
   // Test default-constructed instance.
   NAryState<NullVector<double> > dut;
   EXPECT_EQ(dut.count(), -1);
-  EXPECT_EQ(dut.size(), 0);
+  EXPECT_EQ(dut.size(), 0u);
   EXPECT_EQ(dut.get(0), nv);
   EXPECT_EQ(dut.get(1000), nv);
   dut.set(0, nv);
@@ -176,7 +176,7 @@ GTEST_TEST(TestNAryState, NullUnitVectors) {
   // Appending nothing to nothing should not change nothing.
   dut.Append(nv);
   EXPECT_EQ(dut.count(), -1);
-  EXPECT_EQ(dut.size(), 0);
+  EXPECT_EQ(dut.size(), 0u);
   EXPECT_EQ(dut.get(0), nv);
   EXPECT_EQ(dut.get(1000), nv);
   dut.set(0, nv);
@@ -186,7 +186,7 @@ GTEST_TEST(TestNAryState, NullUnitVectors) {
   // Test assignment from Eigen type.
   dut = Eigen::Matrix<double, 0, 1>();
   EXPECT_EQ(dut.count(), -1);
-  EXPECT_EQ(dut.size(), 0);
+  EXPECT_EQ(dut.size(), 0u);
   EXPECT_EQ(dut.get(0), nv);
   EXPECT_EQ(dut.get(1000), nv);
   dut.set(0, nv);
@@ -196,7 +196,7 @@ GTEST_TEST(TestNAryState, NullUnitVectors) {
   // Test construction from Eigen type.
   NAryState<NullVector<double> > dut2(Eigen::VectorXd(0));
   EXPECT_EQ(dut2.count(), -1);
-  EXPECT_EQ(dut2.size(), 0);
+  EXPECT_EQ(dut2.size(), 0u);
   EXPECT_EQ(dut2.get(0), nv);
   EXPECT_EQ(dut2.get(1000), nv);
   dut2.set(0, nv);
@@ -206,7 +206,7 @@ GTEST_TEST(TestNAryState, NullUnitVectors) {
   // Test construction with pre-allocated size.
   NAryState<NullVector<double> > dut3(7);
   EXPECT_EQ(dut3.count(), -1);
-  EXPECT_EQ(dut3.size(), 0);
+  EXPECT_EQ(dut3.size(), 0u);
   EXPECT_EQ(dut3.get(0), nv);
   EXPECT_EQ(dut3.get(1000), nv);
   dut3.set(0, nv);
@@ -215,7 +215,7 @@ GTEST_TEST(TestNAryState, NullUnitVectors) {
 
   NAryState<NullVector<double> > dut4(-1);
   EXPECT_EQ(dut4.count(), -1);
-  EXPECT_EQ(dut4.size(), 0);
+  EXPECT_EQ(dut4.size(), 0u);
   EXPECT_EQ(dut4.get(0), nv);
   EXPECT_EQ(dut4.get(1000), nv);
   dut4.set(0, nv);

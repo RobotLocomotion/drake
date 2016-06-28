@@ -35,10 +35,10 @@ MakeFeedbackLoopOfAffineSystems(size_t num_states_1, size_t num_inputs_1,
 GTEST_TEST(FeedbackSystemTest, ConstantSizes) {
   auto combined =
       MakeFeedbackLoopOfAffineSystems<4, 2, 3, 5>(4, 2, 3, 5, true, false);
-  EXPECT_EQ(4 + 5, getNumStates(*combined));
-  EXPECT_EQ(4 + 5, createStateVector<double>(*combined).size());
-  EXPECT_EQ(2, getNumInputs(*combined));
-  EXPECT_EQ(3, getNumOutputs(*combined));
+  EXPECT_EQ(4u + 5u, getNumStates(*combined));
+  EXPECT_EQ(4u + 5u, createStateVector<double>(*combined).size());
+  EXPECT_EQ(2u, getNumInputs(*combined));
+  EXPECT_EQ(3u, getNumOutputs(*combined));
 }
 
 // Tests that, if the number of inputs and outputs for each system in the
@@ -48,10 +48,10 @@ GTEST_TEST(FeedbackSystemTest, DynamicSizes) {
   auto combined =
       MakeFeedbackLoopOfAffineSystems<Dynamic, Dynamic, Dynamic, Dynamic>(
           4, 2, 3, 5, false, true);
-  EXPECT_EQ(4 + 5, getNumStates(*combined));
-  EXPECT_EQ(4 + 5, createStateVector<double>(*combined).size());
-  EXPECT_EQ(2, getNumInputs(*combined));
-  EXPECT_EQ(3, getNumOutputs(*combined));
+  EXPECT_EQ(4u + 5u, getNumStates(*combined));
+  EXPECT_EQ(4u + 5u, createStateVector<double>(*combined).size());
+  EXPECT_EQ(2u, getNumInputs(*combined));
+  EXPECT_EQ(3u, getNumOutputs(*combined));
 }
 
 // Tests that algebraic loops are rejected.

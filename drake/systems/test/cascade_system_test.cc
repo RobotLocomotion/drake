@@ -35,10 +35,10 @@ MakeCascadeOfAffineSystems(size_t num_states_1, size_t num_inputs_1,
 // outputs for the combined system matches up.
 GTEST_TEST(CascadeSystemTest, ConstantSizes) {
   auto combined = MakeCascadeOfAffineSystems<3, 4, 5, 6, 7>(3, 4, 5, 6, 7);
-  EXPECT_EQ(3 + 6, getNumStates(*combined));
-  EXPECT_EQ(3 + 6, createStateVector<double>(*combined).size());
-  EXPECT_EQ(4, getNumInputs(*combined));
-  EXPECT_EQ(7, getNumOutputs(*combined));
+  EXPECT_EQ(3u + 6u, getNumStates(*combined));
+  EXPECT_EQ(3u + 6u, createStateVector<double>(*combined).size());
+  EXPECT_EQ(4u, getNumInputs(*combined));
+  EXPECT_EQ(7u, getNumOutputs(*combined));
 }
 
 // Tests that, if the number of inputs and outputs for each element in the
@@ -48,10 +48,10 @@ GTEST_TEST(CascadeSystemTest, DynamicSizes) {
   auto combined =
       MakeCascadeOfAffineSystems<Dynamic, Dynamic, Dynamic, Dynamic, Dynamic>(
           3, 4, 5, 6, 7);
-  EXPECT_EQ(3 + 6, getNumStates(*combined));
-  EXPECT_EQ(3 + 6, createStateVector<double>(*combined).size());
-  EXPECT_EQ(4, getNumInputs(*combined));
-  EXPECT_EQ(7, getNumOutputs(*combined));
+  EXPECT_EQ(3u + 6u, getNumStates(*combined));
+  EXPECT_EQ(3u + 6u, createStateVector<double>(*combined).size());
+  EXPECT_EQ(4u, getNumInputs(*combined));
+  EXPECT_EQ(7u, getNumOutputs(*combined));
 }
 
 }  // namespace

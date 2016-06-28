@@ -28,9 +28,9 @@ GTEST_TEST(SystemIdentificationTest, LumpedSingle) {
     c.getSimpleVariable()};
   SID::LumpingMapType lump_map =
       SID::GetLumpedParametersFromPolynomial(input, parameters);
-  EXPECT_EQ(lump_map.size(), 2);
-  EXPECT_EQ(lump_map.count(a + b), 1);
-  EXPECT_EQ(lump_map.count(a * c), 1);
+  EXPECT_EQ(lump_map.size(), 2u);
+  EXPECT_EQ(lump_map.count(a + b), 1u);
+  EXPECT_EQ(lump_map.count(a * c), 1u);
 }
 
 GTEST_TEST(SystemIdentificationTest, LumpedMulti) {
@@ -54,10 +54,10 @@ GTEST_TEST(SystemIdentificationTest, LumpedMulti) {
       SID::GetLumpedParametersFromPolynomials(input, parameters);
 
   // Note that we expect that 'a' and '2*a' will collapse to one lumped param.
-  EXPECT_EQ(lump_map.size(), 3);
-  EXPECT_EQ(lump_map.count(a), 1);
-  EXPECT_EQ(lump_map.count(a + b), 1);
-  EXPECT_EQ(lump_map.count(a * c), 1);
+  EXPECT_EQ(lump_map.size(), 3u);
+  EXPECT_EQ(lump_map.count(a), 1u);
+  EXPECT_EQ(lump_map.count(a + b), 1u);
+  EXPECT_EQ(lump_map.count(a * c), 1u);
 
   // TODO(ggould-tri) The above code should be able to be more cleanly written
   // using gmock as something like:
@@ -112,9 +112,9 @@ GTEST_TEST(SystemIdentificationTest, LumpedParameterRewrite) {
         SID::RewritePolynomialWithLumpedParameters(poly, lump_map);
 
     // No non-lumped parameters should remain in rewritten.
-    EXPECT_EQ(rewritten.getVariables().count(a.getSimpleVariable()), 0);
-    EXPECT_EQ(rewritten.getVariables().count(b.getSimpleVariable()), 0);
-    EXPECT_EQ(rewritten.getVariables().count(c.getSimpleVariable()), 0);
+    EXPECT_EQ(rewritten.getVariables().count(a.getSimpleVariable()), 0u);
+    EXPECT_EQ(rewritten.getVariables().count(b.getSimpleVariable()), 0u);
+    EXPECT_EQ(rewritten.getVariables().count(c.getSimpleVariable()), 0u);
 
     // Rewritten has the same or smaller number of variables and terms.
     EXPECT_LE(rewritten.getVariables().size(), poly.getVariables().size());
@@ -174,7 +174,7 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
                                 sample_points);
 
     EXPECT_LT(error, 1e-5);
-    EXPECT_EQ(estimated_params.size(), 3);
+    EXPECT_EQ(estimated_params.size(), 3u);
     for (const auto& var : {a_var, b_var, c_var}) {
       EXPECT_NEAR(estimated_params[var], expected_params.at(var), 4 * error);
     }
@@ -197,7 +197,7 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
                                 sample_points);
 
     EXPECT_LT(error, 0.1);
-    EXPECT_EQ(estimated_params.size(), 3);
+    EXPECT_EQ(estimated_params.size(), 3u);
     for (const auto& var : {a_var, b_var, c_var}) {
       EXPECT_NEAR(estimated_params[var], expected_params.at(var), 4 * error);
     }
@@ -333,7 +333,7 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   // to catch changes that heavily regress accuracy.
   EXPECT_LT(error, 0.3);
 
-  EXPECT_EQ(estimated_params.size(), 3);
+  EXPECT_EQ(estimated_params.size(), 3u);
   EXPECT_NEAR(estimated_params[mass_var], kMass, kNoise);
   EXPECT_NEAR(estimated_params[damping_var], kDamping,
               measurements.size() * error);
