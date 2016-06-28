@@ -846,10 +846,9 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
 }
 
 template <typename Scalar>
-TwistMatrix<Scalar>
-RigidBodyTree::centroidalMomentumMatrix(KinematicsCache<Scalar>& cache,
-                                        const std::set<int>& robotnum,
-                                        bool in_terms_of_qdot) const {
+TwistMatrix<Scalar> RigidBodyTree::centroidalMomentumMatrix(
+    KinematicsCache<Scalar>& cache, const std::set<int>& robotnum,
+    bool in_terms_of_qdot) const {
   // kinematics cache checks already being done in worldMomentumMatrix.
   auto ret = worldMomentumMatrix(cache, robotnum, in_terms_of_qdot);
 
@@ -1204,8 +1203,8 @@ TwistVector<Scalar> RigidBodyTree::relativeTwist(
 template <typename Scalar>
 TwistVector<Scalar> RigidBodyTree::transformSpatialAcceleration(
     const KinematicsCache<Scalar>& cache,
-    const TwistVector<Scalar>& spatial_acceleration, int base_ind,
-    int body_ind, int old_expressed_in_body_or_frame_ind,
+    const TwistVector<Scalar>& spatial_acceleration, int base_ind, int body_ind,
+    int old_expressed_in_body_or_frame_ind,
     int new_expressed_in_body_or_frame_ind) const {
   cache.checkCachedKinematicsSettings(true, true,
                                       "transformSpatialAcceleration");
@@ -1298,8 +1297,8 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
     KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const*,
-                                      TwistVector<Scalar>>& f_ext,
+    const eigen_aligned_unordered_map<RigidBody const*, TwistVector<Scalar>>&
+        f_ext,
     bool include_velocity_terms) const {
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities_, 1);
   vd.setZero();
@@ -1309,8 +1308,8 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
     KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const*,
-                                      TwistVector<Scalar>>& f_ext,
+    const eigen_aligned_unordered_map<RigidBody const*, TwistVector<Scalar>>&
+        f_ext,
     const Matrix<Scalar, Eigen::Dynamic, 1>& vd,
     bool include_velocity_terms) const {
   cache.checkCachedKinematicsSettings(
@@ -1698,8 +1697,8 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
 }
 
 RigidBody* RigidBodyTree::findLink(const std::string& link_name,
-                    const std::string& model_name,
-                    int model_id) const {
+                                   const std::string& model_name,
+                                   int model_id) const {
   return FindBody(link_name, model_name, model_id);
 }
 
@@ -1763,8 +1762,8 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
   return body->body_index;
 }
 
-int RigidBodyTree::findLinkId(const std::string& link_name, int model_id)
-                              const {
+int RigidBodyTree::findLinkId(const std::string& link_name,
+                              int model_id) const {
   return FindBodyIndex(link_name, model_id);
 }
 
@@ -2394,8 +2393,7 @@ template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     bool) const;
 template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&,
-    Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&,
-    bool) const;
+    Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&, bool) const;
 template DRAKERBM_EXPORT KinematicsCache<AutoDiffXd>
 RigidBodyTree::doKinematics(Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
                             Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,

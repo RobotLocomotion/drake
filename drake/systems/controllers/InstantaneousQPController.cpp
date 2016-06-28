@@ -288,8 +288,7 @@ InstantaneousQPController::loadAvailableSupports(
   // Parse a qp_input LCM message to extract its available supports as a vector
   // of SupportStateElements
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>>
-      available_supports;
+              Eigen::aligned_allocator<SupportStateElement>> available_supports;
   available_supports.resize(qp_input.num_support_data);
   for (int i = 0; i < qp_input.num_support_data; i++) {
     available_supports[i].body_idx =
@@ -647,10 +646,10 @@ int InstantaneousQPController::setupAndSolveQP(
               Eigen::aligned_allocator<SupportStateElement>>
       available_supports = loadAvailableSupports(qp_input);
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>>
-      active_supports = getActiveSupports(*robot, robot_state.q, robot_state.qd,
-                                          available_supports, contact_detected,
-                                          params.contact_threshold);
+              Eigen::aligned_allocator<SupportStateElement>> active_supports =
+      getActiveSupports(*robot, robot_state.q, robot_state.qd,
+                        available_supports, contact_detected,
+                        params.contact_threshold);
 
   // // whole_body_data
   if (qp_input.whole_body_data.num_positions != nq)

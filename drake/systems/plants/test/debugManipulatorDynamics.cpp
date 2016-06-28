@@ -26,7 +26,7 @@ int main() {
   auto M = model.massMatrix<double>(cache);
   cout << M << endl << endl;
 
-  eigen_aligned_unordered_map<RigidBody const *, drake::TwistVector<double>>
+  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
   drake::TwistVector<double> f_ext_r_foot;
   f_ext_r_foot.setRandom();

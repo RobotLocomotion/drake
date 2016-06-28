@@ -384,7 +384,7 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
   jAvar_ = jAvar;
   A_ = A;
   A_mat_.resize(num_constraint_,
-    this->getRobotPointer()->number_of_positions());
+                this->getRobotPointer()->number_of_positions());
   A_mat_.reserve(lenA);
 
   for (int i = 0; i < lenA; i++) {
@@ -1416,7 +1416,7 @@ void Point2PointDistanceConstraint::eval(const double* t,
     int num_cnst = this->getNumConstraint(t);
     MatrixXd posA(3, ptA_.cols());
     MatrixXd dposA(3 * ptA_.cols(),
-      this->getRobotPointer()->number_of_positions());
+                   this->getRobotPointer()->number_of_positions());
     if (bodyA_ != 0) {
       posA = getRobotPointer()->transformPoints(cache, ptA_, bodyA_, 0);
       dposA = getRobotPointer()->transformPointsJacobian(cache, ptA_, bodyA_, 0,
@@ -1428,7 +1428,7 @@ void Point2PointDistanceConstraint::eval(const double* t,
     }
     MatrixXd posB(3, ptB_.cols());
     MatrixXd dposB(3 * ptB_.cols(),
-      this->getRobotPointer()->number_of_positions());
+                   this->getRobotPointer()->number_of_positions());
     if (bodyB_ != 0) {
       posB = getRobotPointer()->transformPoints(cache, ptB_, bodyB_, 0);
       dposB = getRobotPointer()->transformPointsJacobian(cache, ptB_, bodyB_, 0,
@@ -1446,9 +1446,9 @@ void Point2PointDistanceConstraint::eval(const double* t,
     c = tmp2.transpose();
     dc.resize(num_cnst, this->getRobotPointer()->number_of_positions());
     for (int i = 0; i < num_cnst; i++) {
-      dc.row(i) = 2 * d.col(i).transpose() *
-                  dd.block(3 * i, 0, 3,
-                    this->getRobotPointer()->number_of_positions());
+      dc.row(i) =
+          2 * d.col(i).transpose() *
+          dd.block(3 * i, 0, 3, this->getRobotPointer()->number_of_positions());
     }
   } else {
     c.resize(0);
@@ -1988,8 +1988,8 @@ void MinDistanceConstraint::eval(const double* t,
     }
 
     int num_pts = static_cast<int>(xA.cols());
-    ddist_dq = MatrixXd::Zero(num_pts,
-      getRobotPointer()->number_of_positions());
+    ddist_dq =
+        MatrixXd::Zero(num_pts, getRobotPointer()->number_of_positions());
 
     // Compute Jacobian of closest distance vector
     // DEBUG
@@ -2312,9 +2312,10 @@ void GravityCompensationTorqueConstraint::eval(const double* t,
   // FIXME: very inefficient:
   typedef AutoDiffScalar<VectorXd> Scalar;
   auto q = cache.getQ().cast<Scalar>().eval();
-  gradientMatrixToAutoDiff(MatrixXd::Identity(
-    getRobotPointer()->number_of_positions(),
-    getRobotPointer()->number_of_positions()), q);
+  gradientMatrixToAutoDiff(
+      MatrixXd::Identity(getRobotPointer()->number_of_positions(),
+                         getRobotPointer()->number_of_positions()),
+      q);
   KinematicsCache<Scalar> cache_with_gradients =
       getRobotPointer()->doKinematics(q);
   eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<Scalar>>
@@ -2330,9 +2331,8 @@ void GravityCompensationTorqueConstraint::eval(const double* t,
 
   for (int i = 0; i < num_constraint; ++i) {
     c(i) = G(joint_indices_(i));
-    dc.row(i) =
-        dG.block(joint_indices_(i), 0, 1,
-          getRobotPointer()->number_of_positions());
+    dc.row(i) = dG.block(joint_indices_(i), 0, 1,
+                         getRobotPointer()->number_of_positions());
   }
 }
 
