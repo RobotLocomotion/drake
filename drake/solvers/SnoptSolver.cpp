@@ -192,7 +192,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   // evaluate objective
   auto tx = Drake::initializeAutoDiff(xvec);
   Drake::TaylorVecXd ty(1), this_x;
-  for (auto const& binding : current_problem->generic_objectives()) {
+  for (auto const& binding : current_problem->generic_costs()) {
     auto const& obj = binding.constraint();
     size_t index = 0;
     for (const DecisionVariableView& v : binding.variable_list()) {

@@ -61,7 +61,7 @@ double EvaluateCosts(const std::vector<double>& x,
     grad.assign(grad.size(), 0);
   }
 
-  for (auto const& binding : prog->generic_objectives()) {
+  for (auto const& binding : prog->generic_costs()) {
     size_t index = 0;
     for (const DecisionVariableView& v : binding.variable_list()) {
       this_x.conservativeResize(index + v.size());

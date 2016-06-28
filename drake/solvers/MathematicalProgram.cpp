@@ -39,8 +39,7 @@ class MathematicalProgram : public MathematicalProgramInterface {
   MathematicalProgramInterface* AddLinearCost() override {
     return new MathematicalProgram;
   }
-  // TODO(naveenoid) : Objective to be refactored to Cost.
-  MathematicalProgramInterface* AddGenericObjective() override {
+  MathematicalProgramInterface* AddGenericCost() override {
     return new MathematicalProgram;
   };
   MathematicalProgramInterface* AddGenericConstraint() override {
@@ -66,7 +65,7 @@ class NonlinearProgram : public MathematicalProgram {
  public:
   // TODO(naveenoid) : bug exists in adding a Linear Quadratic or
   // Generic Cost to a NonlinearProgram
-  MathematicalProgramInterface* AddGenericObjective() override {
+  MathematicalProgramInterface* AddGenericCost() override {
     return new NonlinearProgram;
   };
   MathematicalProgramInterface* AddGenericConstraint() override {

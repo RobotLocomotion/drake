@@ -276,8 +276,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   void AddCost(std::shared_ptr<Constraint> const& obj,
                VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddGenericObjective());
-    generic_objectives_.push_back(Binding<Constraint>(obj, vars));
+    problem_type_.reset(problem_type_->AddGenericCost());
+    generic_costs_.push_back(Binding<Constraint>(obj, vars));
   }
 
   void AddCost(std::shared_ptr<Constraint> const& obj) {
@@ -329,11 +329,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired, const VariableList& vars) {
-    std::shared_ptr<QuadraticConstraint> objective(new QuadraticConstraint(
+    std::shared_ptr<QuadraticConstraint> cost(new QuadraticConstraint(
         2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity()));
-    AddCost(objective, vars);
-    return objective;
+    AddCost(cost, vars);
+    return cost;
   }
 
   template <typename DerivedQ, typename Derivedb>
@@ -351,12 +351,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   std::shared_ptr<QuadraticConstraint> AddQuadraticProgramCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b, const VariableList& vars) {
-    std::shared_ptr<QuadraticConstraint> objective(
+    std::shared_ptr<QuadraticConstraint> cost(
         new QuadraticConstraint(Q, b, -std::numeric_limits<double>::infinity(),
                                 std::numeric_limits<double>::infinity()));
     // TODO(naveenoid) : Call to MathematicalProgram::AddQuadraticCost required
-    AddCost(objective, vars);
-    return objective;
+    AddCost(cost, vars);
+    return cost;
   }
 
   /** AddQuadraticProgramCost
@@ -547,11 +547,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     problem_type_.reset(problem_type_->AddLinearComplementarityConstraint());
 
     // Linear Complementarity Constraint cannot currently coexist with any
-    // other types of constraint or objective.
+    // other types of constraint or cost.
     // (TODO(ggould-tri) relax this to non-overlapping bindings, possibly by
     // calling multiple solvers.)
     DRAKE_ASSERT(generic_constraints_.empty());
-    DRAKE_ASSERT(generic_objectives_.empty());
+    DRAKE_ASSERT(generic_costs_.empty());
     DRAKE_ASSERT(linear_constraints_.empty());
     DRAKE_ASSERT(linear_equality_constraints_.empty());
     DRAKE_ASSERT(bbox_constraints_.empty());
@@ -636,7 +636,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   //    template <typename Derived>
   //    bool solve(const Eigen::MatrixBase<Derived>& x0);
 
-  //    getObjectiveValue();
+  //    getCostValue();
   //    getExitFlag();
   //    getInfeasibleConstraintNames();
 
@@ -722,8 +722,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     solver_result_ = solver_result;
   }
 
-  const std::list<Binding<Constraint>>& generic_objectives() const {
-    return generic_objectives_;
+  const std::list<Binding<Constraint>>& generic_costs() const {
+    return generic_costs_;
   }  // e.g. for snopt_user_fun
   const std::list<Binding<Constraint>>& generic_constraints() const {
     return generic_constraints_;
@@ -779,7 +779,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   // invalidates existing references to the elements
   std::list<DecisionVariable> variables_;
   VariableList variable_views_;
-  std::list<Binding<Constraint>> generic_objectives_;
+  std::list<Binding<Constraint>> generic_costs_;
   std::list<Binding<Constraint>> generic_constraints_;
   // note: linear_constraints_ does not include linear_equality_constraints_
   std::list<Binding<LinearConstraint>> linear_constraints_;
