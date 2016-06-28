@@ -725,13 +725,29 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   const std::list<Binding<Constraint>>& generic_costs() const {
     return generic_costs_;
   }  // e.g. for snopt_user_fun
+
   const std::list<Binding<Constraint>>& generic_constraints() const {
     return generic_constraints_;
   }  // e.g. for snopt_user_fun
+
   const std::list<Binding<LinearEqualityConstraint>>&
   linear_equality_constraints() const {
     return linear_equality_constraints_;
   }
+
+  const std::list<Binding<Constraint>>& quadratic_costs() const {
+    return quadratic_costs_;
+  }
+
+  const std::list<Binding<Constraint>>& quadratic_constraints() const {
+    return quadratic_constraints_;
+  }
+
+  const std::list<Binding<LinearEqualityConstraint>>&
+  linear_equality_constraints() const {
+    return linear_equality_constraints_;
+  }
+
   const std::list<Binding<LinearConstraint>>& linear_constraints() const {
     return linear_constraints_;
   }
@@ -781,8 +797,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   VariableList variable_views_;
   std::list<Binding<Constraint>> generic_costs_;
   std::list<Binding<Constraint>> generic_constraints_;
-  std::list<Binding<Constraint>> generic_costs_;
-  std::list<Binding<Constraint>> generic_constraints_;
+  std::list<Binding<Constraint>> quadratic_costs_;
+  std::list<Binding<Constraint>> quadratic_constraints_;
 
   // note: linear_constraints_ does not include linear_equality_constraints_
   std::list<Binding<LinearConstraint>> linear_constraints_;
