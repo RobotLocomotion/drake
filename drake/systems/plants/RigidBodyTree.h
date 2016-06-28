@@ -197,19 +197,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, drake::kTwistSize, Eigen::Dynamic> worldMomentumMatrix(
+  drake::TwistMatrix<Scalar> worldMomentumMatrix(
       KinematicsCache<Scalar>& cache,
       const std::set<int>& robotnum = default_robot_num_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, drake::kTwistSize, 1> worldMomentumMatrixDotTimesV(
+  drake::TwistVector<Scalar> worldMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
       const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, drake::kTwistSize, Eigen::Dynamic>
-  centroidalMomentumMatrix(
+  drake::TwistMatrix<Scalar> centroidalMomentumMatrix(
       KinematicsCache<Scalar>& cache,
       const std::set<int>& robotnum = default_robot_num_set,
       bool in_terms_of_qdot = false) const;
