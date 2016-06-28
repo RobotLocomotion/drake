@@ -235,11 +235,43 @@ set(drake_jar_requires)
 
 include(cmake/procman.cmake)  # helper script for writing procman files
 
+# Setup ROS if it is available on the local system. Note that this occurs before
+# LCM configuration to prevent ROS message generation from conflicting with LCM
+# message generation. This prevent ROS from generating its own custom messages.
+find_package(roscpp QUIET)
+if(roscpp_FOUND)
+  set(ROS_FOUND ON)
+  message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
+  include_directories(${roscpp_INCLUDE_DIRS})
+
+  find_package(catkin REQUIRED)
+  find_package(genmsg REQUIRED)
+
+  find_package(std_msgs REQUIRED)
+  include_directories(${std_msgs_INCLUDE_DIRS})
+
+  find_package(sensor_msgs REQUIRED)
+  include_directories(${sensor_msgs_INCLUDE_DIRS})
+
+  find_package(ackermann_msgs REQUIRED)
+  include_directories(${ackermann_msgs_INCLUDE_DIRS})
+
+  find_package(tf REQUIRED)
+  include_directories(${tf_INCLUDE_DIRS})
+else()
+  set(ROS_FOUND OFF)
+  message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
+endif()
+
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
 
 if(LCM_FOUND)
-  #add_subdirectory(lcmtypes)
+  # TODO(liang.fok) Remove the generation of LCM messages from this top-level
+  # CMakeLists.txt. It should instead be co-located with the message
+  # definitions. Furthermore, the LCM messages are currently defined in
+  # drake/lcmtypes/. They should be moved to be co-located with the code that
+  # actually uses them.
   lcmtypes_build()
   pods_use_pkg_config_classpath(lcm-java)
 
@@ -288,32 +320,6 @@ else()
   else()
     message(FATAL_ERROR "Could not find eigen, which is a required depedency")
   endif()
-endif()
-
-# Setup ROS if it is available on the local system
-find_package(roscpp QUIET)
-if(roscpp_FOUND)
-  set(ROS_FOUND ON)
-  message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
-  include_directories(${roscpp_INCLUDE_DIRS})
-
-  find_package(catkin REQUIRED)
-  find_package(genmsg REQUIRED)
-
-  find_package(std_msgs REQUIRED)
-  include_directories(${std_msgs_INCLUDE_DIRS})
-
-  find_package(sensor_msgs REQUIRED)
-  include_directories(${sensor_msgs_INCLUDE_DIRS})
-
-  find_package(ackermann_msgs REQUIRED)
-  include_directories(${ackermann_msgs_INCLUDE_DIRS})
-
-  find_package(tf REQUIRED)
-  include_directories(${tf_INCLUDE_DIRS})
-else()
-  set(ROS_FOUND OFF)
-  message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
 endif()
 
 include_directories(thirdParty/spruce/include)

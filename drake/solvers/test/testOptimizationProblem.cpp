@@ -177,8 +177,8 @@ class TestProblem1Cost {
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(x.rows() == numInputs());
-    DRAKE_ASSERT(y.rows() == numOutputs());
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
            (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
            (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
@@ -250,8 +250,8 @@ class TestProblem2Cost {
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(x.rows() == numInputs());
-    DRAKE_ASSERT(y.rows() == numOutputs());
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
            (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
            (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
@@ -346,8 +346,8 @@ class LowerBoundTestCost {
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(x.rows() == numInputs());
-    DRAKE_ASSERT(y.rows() == numOutputs());
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
            (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
            (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
@@ -446,8 +446,8 @@ class SixHumpCamelCost {
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(x.rows() == numInputs());
-    DRAKE_ASSERT(y.rows() == numOutputs());
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) =
         x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) +
         x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
@@ -477,8 +477,8 @@ class GloptipolyConstrainedExampleCost {
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(x.rows() == numInputs());
-    DRAKE_ASSERT(y.rows() == numOutputs());
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) = -2 * x(0) + x(1) - x(2);
   }
 };
