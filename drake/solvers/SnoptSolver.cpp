@@ -15,11 +15,11 @@ namespace snopt {
 }
 
 
-// todo:  implement sparsity inside each objective/constraint
-// todo:  handle snopt options
-// todo:  return more information that just the solution (INFO, infeasible
+// todo(sammy-tri) :  implement sparsity inside each cost/constraint
+// todo(sammy-tri) :  handle snopt options
+// todo(sammy-tri) :  return more information that just the solution (INFO, infeasible
 // constraints, ...)
-// todo:  avoid all dynamic allocation
+// todo(sammy-tri) :  avoid all dynamic allocation
 
 namespace drake {
 namespace solvers {
@@ -189,7 +189,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   F[0] = 0.0;
   memset(G, 0, (*n) * sizeof(snopt::doublereal));
 
-  // evaluate objective
+  // evaluate cost
   auto tx = Drake::initializeAutoDiff(xvec);
   Drake::TaylorVecXd ty(1), this_x;
   for (auto const& binding : current_problem->generic_costs()) {
@@ -211,10 +211,10 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     }
   }
 
-  // The constraint index starts at 1 because the objective is the
+  // The constraint index starts at 1 because the cost is the
   // first row.
   size_t constraint_index = 1;
-  // The gradient_index also starts after the objective.
+  // The gradient_index also starts after the cost.
   size_t grad_index = *n;
 
   for (auto const& binding : current_problem->generic_constraints()) {
@@ -329,7 +329,7 @@ SolutionResult SnoptSolver::Solve(OptimizationProblem& prog) const {
   }
 
   size_t constraint_index = 1, grad_index = nx;  // constraint index starts at 1
-                                                 // because the objective is the
+                                                 // because the cost is the
                                                  // first row
   for (auto const& binding : prog.generic_constraints()) {
     auto const& c = binding.constraint();
