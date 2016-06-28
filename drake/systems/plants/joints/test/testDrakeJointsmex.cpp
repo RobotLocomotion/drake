@@ -89,8 +89,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     safelySetField(joint_struct_out, "joint_transform",
                    eigenToMatlab(joint_transform.matrix()));
 
-    Eigen::Matrix<double, drake::kTwistSize, Eigen::Dynamic, 0, drake::kTwistSize,
-                  DrakeJoint::MAX_NUM_VELOCITIES>
+    Eigen::Matrix<double, drake::kTwistSize, Eigen::Dynamic, 0,
+                  drake::kTwistSize, DrakeJoint::MAX_NUM_VELOCITIES>
         motion_subspace(6, joint->getNumVelocities());
     MatrixXd dmotion_subspace;
     joint->motionSubspace(q, motion_subspace, &dmotion_subspace);

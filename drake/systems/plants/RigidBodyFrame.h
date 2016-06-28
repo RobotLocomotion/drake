@@ -18,9 +18,7 @@ class DRAKERBM_EXPORT RigidBodyFrame {
    */
   RigidBodyFrame(const std::string& _name, RigidBody* _body,
                  const Eigen::Isometry3d& _transform_to_body)
-      : name(_name),
-        body(_body),
-        transform_to_body(_transform_to_body) {}
+      : name(_name), body(_body), transform_to_body(_transform_to_body) {}
 
   /**
    * A constructor where the transform-to-body is specified using

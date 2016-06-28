@@ -1060,8 +1060,8 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
   std::string body_name = link->Attribute("link");
   RigidBody* body = model.FindBody(body_name);
   if (body == nullptr) {
-    throw runtime_error("ERROR: Couldn't find body \"" + body_name + "\""
-                        " referenced in frame \"" + name + "\".");
+    throw runtime_error("ERROR: Couldn't find body \"" + body_name +
+                        "\" referenced in frame \"" + name + "\".");
   }
 
   Vector3d xyz = Vector3d::Zero(), rpy = Vector3d::Zero();

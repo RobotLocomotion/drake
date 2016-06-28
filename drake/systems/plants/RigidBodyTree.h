@@ -129,7 +129,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   void surfaceTangents(
       Eigen::Map<Eigen::Matrix3Xd> const& normals,
-      std::vector<Eigen::Map<Eigen::Matrix3Xd> >& tangents) const;
+      std::vector<Eigen::Map<Eigen::Matrix3Xd>>& tangents) const;
 
   /*!
    * Updates the frame of collision elements to be equal to the joint's frame.
@@ -284,8 +284,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<
-          RigidBody const*, drake::TwistVector<Scalar>>& f_ext,
+      const eigen_aligned_unordered_map<RigidBody const*,
+                                        drake::TwistVector<Scalar>>& f_ext,
       bool include_velocity_terms = true) const;
 
   /** \brief Compute
@@ -317,8 +317,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<
-          RigidBody const*, drake::TwistVector<Scalar>>& f_ext,
+      const eigen_aligned_unordered_map<RigidBody const*,
+                                        drake::TwistVector<Scalar>>& f_ext,
       const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd,
       bool include_velocity_terms = true) const;
 
@@ -575,13 +575,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       const std::string& model_name = "",
                       int model_id = -1) const;
 
-  /**
-   * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
-   * instead.
-   */
+/**
+ * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
+ * instead.
+ */
 #ifndef SWIG
-      DRAKE_DEPRECATED(
-          "Please use RigidBodyTree::FindBody instead.")
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBody instead.")
 #endif
   RigidBody* findLink(const std::string& link_name,
                       const std::string& model_name = "",
@@ -605,13 +604,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   int FindBodyIndex(const std::string& body_name, int model_id = -1) const;
 
-  /**
-   * This is a deprecated version of `FindBodyIndex(...)`. Please use
-   * `FindBodyIndex(...)` instead.
-   */
+/**
+ * This is a deprecated version of `FindBodyIndex(...)`. Please use
+ * `FindBodyIndex(...)` instead.
+ */
 #ifndef SWIG
-      DRAKE_DEPRECATED(
-          "Pleasse use RigidBodyTree::FindBodyIndex instead.")
+  DRAKE_DEPRECATED("Pleasse use RigidBodyTree::FindBodyIndex instead.")
 #endif
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
@@ -696,8 +694,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic>
-        full(compact.rows(), ncols);
+                  Eigen::Dynamic> full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -791,17 +788,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // TODO(amcastro-tri): make private and start using accessors body(int).
   // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once.
   // accessors are used throughout the code.
-  std::vector<std::unique_ptr<RigidBody> > bodies;
+  std::vector<std::unique_ptr<RigidBody>> bodies;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame> > frames;
+  std::vector<std::shared_ptr<RigidBodyFrame>> frames;
 
   // Rigid body actuators
-  std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator> >
+  std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>
       actuators;
 
   // Rigid body loops
-  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop> > loops;
+  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> loops;
 
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces

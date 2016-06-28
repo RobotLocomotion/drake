@@ -20,11 +20,11 @@ struct CheckSettings {
 };
 
 template <typename O, typename F, typename... Args>
-void checkForErrors(bool expect_error, O &object, F function,
-                    Args &&... arguments) {
+void checkForErrors(bool expect_error, O& object, F function,
+                    Args&&... arguments) {
   try {
     (object.*function)(std::forward<Args>(arguments)...);
-  } catch (runtime_error &e) {
+  } catch (runtime_error& e) {
     if (expect_error)
       return;
     else
@@ -36,8 +36,8 @@ void checkForErrors(bool expect_error, O &object, F function,
         "Expected a runtime error, but did not catch one.");
 }
 
-void performChecks(RigidBodyTree &model, KinematicsCache<double> &cache,
-                   const CheckSettings &settings) {
+void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
+                   const CheckSettings& settings) {
   auto points = drake::Matrix3X<double>::Random(3, 5).eval();
   typedef decltype(points) PointsType;
   int body_or_frame_ind = 8;
@@ -50,7 +50,7 @@ void performChecks(RigidBodyTree &model, KinematicsCache<double> &cache,
   int npoints = 3;
   drake::TwistVector<double> spatial_acceleration;
   spatial_acceleration.setRandom();
-  eigen_aligned_unordered_map<RigidBody const *, drake::TwistVector<double>>
+  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
 
   checkForErrors(settings.expect_error_on_configuration_methods, model,

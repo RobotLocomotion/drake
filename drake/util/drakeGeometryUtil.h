@@ -1196,8 +1196,7 @@ bool isRegularInertiaMatrix(const Eigen::MatrixBase<DerivedI>& I) {
 }
 
 template <typename DerivedI>
-drake::SquareTwistMatrix<typename DerivedI::Scalar>
-transformSpatialInertia(
+drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     const Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION,
                            Eigen::Isometry>& T_current_to_new,
     const Eigen::MatrixBase<DerivedI>& I) {
@@ -1295,12 +1294,12 @@ typename TransformSpatial<DerivedB>::type crossSpatialForce(
 }
 
 template <typename DerivedA, typename DerivedB>
-drake::TwistMatrix<typename DerivedA::Scalar>
-dCrossSpatialMotion(
+drake::TwistMatrix<typename DerivedA::Scalar> dCrossSpatialMotion(
     const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b,
     const typename drake::math::Gradient<DerivedA, Eigen::Dynamic>::type& da,
     const typename drake::math::Gradient<DerivedB, Eigen::Dynamic>::type& db) {
-  drake::TwistMatrix<typename DerivedA::Scalar> ret(drake::kTwistSize, da.cols());
+  drake::TwistMatrix<typename DerivedA::Scalar> ret(drake::kTwistSize,
+                                                    da.cols());
   ret.row(0) = -da.row(2) * b[1] + da.row(1) * b[2] - a[2] * db.row(1) +
                a[1] * db.row(2);
   ret.row(1) =
@@ -1320,12 +1319,12 @@ dCrossSpatialMotion(
 }
 
 template <typename DerivedA, typename DerivedB>
-drake::TwistMatrix<typename DerivedA::Scalar>
-dCrossSpatialForce(
+drake::TwistMatrix<typename DerivedA::Scalar> dCrossSpatialForce(
     const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b,
     const typename drake::math::Gradient<DerivedA, Eigen::Dynamic>::type& da,
     const typename drake::math::Gradient<DerivedB, Eigen::Dynamic>::type& db) {
-  drake::TwistMatrix<typename DerivedA::Scalar> ret(drake::kTwistSize, da.cols());
+  drake::TwistMatrix<typename DerivedA::Scalar> ret(drake::kTwistSize,
+                                                    da.cols());
   ret.row(0) = da.row(2) * b[1] - da.row(1) * b[2] + da.row(5) * b[4] -
                da.row(4) * b[5] + a[2] * db.row(1) - a[1] * db.row(2) +
                a[5] * db.row(4) - a[4] * db.row(5);
