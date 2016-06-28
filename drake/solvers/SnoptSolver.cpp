@@ -74,7 +74,7 @@ struct SNOPTData : public OptimizationProblem::SolverData {
   }
 
   void min_alloc_x(snopt::integer nx) {
-    if (nx > x.size()) {
+    if (nx > static_cast<snopt::integer>(x.size())) {
       x.resize(nx);
       xlow.resize(nx);
       xupp.resize(nx);
@@ -84,7 +84,7 @@ struct SNOPTData : public OptimizationProblem::SolverData {
   }
 
   void min_alloc_F(snopt::integer nF) {
-    if (nF > F.size()) {
+    if (nF > static_cast<snopt::integer>(F.size())) {
       F.resize(nF);
       Flow.resize(nF);
       Fupp.resize(nF);
@@ -94,7 +94,7 @@ struct SNOPTData : public OptimizationProblem::SolverData {
   }
 
   void min_alloc_A(snopt::integer nA) {
-    if (nA > A.size()) {
+    if (nA > static_cast<snopt::integer>(A.size())) {
       A.resize(nA);
       iAfun.resize(nA);
       jAvar.resize(nA);
@@ -102,7 +102,7 @@ struct SNOPTData : public OptimizationProblem::SolverData {
   }
 
   void min_alloc_G(snopt::integer nG) {
-    if (nG > iGfun.size()) {
+    if (nG > static_cast<snopt::integer>(iGfun.size())) {
       iGfun.resize(nG);
       jGvar.resize(nG);
     }
@@ -229,12 +229,12 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     ty.resize(num_constraints);
     c->eval(this_x, ty);
 
-    for (i = 0; i < num_constraints; i++) {
+    for (i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
       F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value());
     }
 
     for (const DecisionVariableView& v : binding.variable_list()) {
-      for (i = 0; i < num_constraints; i++) {
+      for (i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
         for (size_t j = v.index(); j < v.index() + v.size(); j++) {
           G[grad_index++] =
               static_cast<snopt::doublereal>(ty(i).derivatives()(j));
@@ -286,7 +286,7 @@ SolutionResult SnoptSolver::Solve(OptimizationProblem& prog) const {
     auto const& c = binding.constraint();
     for (const DecisionVariableView& v : binding.variable_list()) {
       auto const lb = c->lower_bound(), ub = c->upper_bound();
-      for (int k = 0; k < v.size(); k++) {
+      for (size_t k = 0; k < v.size(); k++) {
         xlow[v.index() + k] = std::max<snopt::doublereal>(
             static_cast<snopt::doublereal>(lb(k)), xlow[v.index() + k]);
         xupp[v.index() + k] = std::min<snopt::doublereal>(
@@ -336,7 +336,7 @@ SolutionResult SnoptSolver::Solve(OptimizationProblem& prog) const {
     size_t n = c->num_constraints();
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
       Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
       Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
     }
@@ -377,7 +377,7 @@ SolutionResult SnoptSolver::Solve(OptimizationProblem& prog) const {
     }
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
       Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
       Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
     }
