@@ -658,7 +658,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * http://www.coin-or.org/Ipopt/documentation/node40.html
    *
    *"Mosek" -- Accepts two parameters: "maxormin" -- maximize or minimize
-   * current problem
+   * current problem using either "max" or "min"
    * "problemtype" -- currently only accepts "linear", plan to add "quadratic"
    * soon. SDP will take longer.
    */

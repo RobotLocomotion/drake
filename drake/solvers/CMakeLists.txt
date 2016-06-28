@@ -1,5 +1,3 @@
-# TODO: still build something useful if Gurobi does not exist
-
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # TODO(#2372) These are warnings that we can't handle yet.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
@@ -33,8 +31,6 @@ if(MATLAB_FOUND)
   target_link_libraries(lqrmex drakeUtil)
 endif()
 
-pods_find_pkg_config(mosek)
-
 set(optimization_files)
 list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp system_identification.cpp)
 pods_find_pkg_config(ipopt)
@@ -56,39 +52,29 @@ else()
   list(APPEND optimization_files NoSnopt.cpp)
 endif()
 
-#if(mosek_FOUND)
-#  message("FOUND IT!!")
-#  list(APPEND optimization_files mosekLP.cpp)
-#endif()
-
+pods_find_pkg_config(mosek)
 
 if(mosek_FOUND)
-  set(MOSEK_PLATFORM_PATH "${CMAKE_SOURCE_DIR}/externals/mosek/pod-build/mosek/7/tools/platform/${PLATFORM_NAME}")
-  add_library_with_exports(LIB_NAME mosekLP SOURCE_FILES mosekLP.cpp)
-  # Check for the mosek license file
-  if (NOT EXISTS $ENV{HOME}/mosek/mosek.lic)
-      message(WARNING "You do not appear to have a license for mosek installed in $ENV{HOME}/mosek/mosek.lic\n If you are an academic user, you can open the following url in your favorite browser and request the license:\n     http://license.mosek.com/license2/academic/\n Then check your email for the license file and put it in $ENV{HOME}/mosek/mosek.lic\n Otherwise visit https://mosek.com/resources/trial-license to request a trial license.")
-  endif()
-  pods_use_pkg_config_packages(mosekLP mosek)
-  #pods_install_headers(${MOSEK_PLATFORM_PATH}/h/mosek.h DESTINATION mosek)
-  #drake_install_headers(mosekLP.h)
-  pods_install_libraries(mosekLP)
+
+  list(APPEND optimization_files mosekLP.cpp)
 endif()
 
-
-add_library_with_exports(LIB_NAME drakeOmakeptimization SOURCE_FILES ${optimization_files})
+add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakePolynomial)
-if(mosek_FOUND)
-  target_link_libraries(drakeOptimization mosekLP)
-endif()
 drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h)
+if(mosek_FOUND)
+  pods_use_pkg_config_packages(drakeOptimization mosek)
+  drake_install_headers(${CMAKE_INSTALL_PREFIX}/include/mosek/mosek.h)
+  #pods_install_libraries(mosek) #${CMAKE_INSTALL_PREFIX}/lib/libmosek64.so
+  set(CMAKE_SHARED_LINKER_FLAGS
+    "${CMAKE_SHARED_LINKER_FLAGS} -L${CMAKE_INSTALL_PREFIX}/lib -Wl,-rpath-link=${CMAKE_INSTALL_PREFIX}/lib")
+  #target_link_libraries(drakeOptimization ${CMAKE_INSTALL_PREFIX}/lib/libmosek64)
+endif()
 pods_install_libraries(drakeOptimization)
 pods_install_pkg_config_file(drake-optimization
   LIBS -ldrakeOptimization
   REQUIRES
   VERSION 0.0.1)
-
-
 
 if(ipopt_FOUND)
   pods_use_pkg_config_packages(drakeOptimization ipopt)
@@ -119,6 +105,12 @@ endif()
 if(snopt_c_FOUND AND MATLAB_FOUND)
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
+endif()
+
+if(mosek_FOUND)
+  #pods_use_pkg_config_packages(drakeOptimization mosek)
+  #drake_install_headers(${CMAKE_INSTALL_PREFIX}/include/mosek.h)
+  #pods_install_libraries()
 endif()
 
 add_subdirectory(qpSpline)

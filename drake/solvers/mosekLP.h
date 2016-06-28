@@ -3,7 +3,7 @@
 
 
 extern "C" {
-  #include "mosek.h"  // Make sure to figure out how to put in makefile
+  #include "build/include/mosek/mosek.h"  // Make sure to figure out how to put in makefile
 }
 
 #include <Eigen/Sparse>
@@ -11,8 +11,9 @@ extern "C" {
 #include <vector>
 #include <string>
 
-#include "solution_result.h"
-#include "optimization.h"
+#include "drake/solvers/solution_result.h"
+#include "drake/solvers/Optimization.h"
+#include "drake/solvers/MathematicalProgram.h"
 
 /*Definitions and program flow taken from
 http://docs.mosek.com/7.1/capi/Linear_optimization.html
@@ -24,26 +25,28 @@ namespace drake {
 namespace solvers {
 
 class DRAKEOPTIMIZATION_EXPORT mosekLP :
-      public Drake::MathematicalProgramSolverInterface {
+      public MathematicalProgramSolverInterface {
   /*mosekLP
    *@brief this class allows the creation and solution of a linear programming
    *problem using the mosek solver.
    */
  public:
+  mosekLP() {}
   /* Create a mosek linear programming environment using a constraint matrix
   * Takes the number of variables and constraints, the linear eqn to
   * optimize, the constraint matrix, and the constraint and variable bounds
   * @p environment is created and must be told to optimize.
   */
   mosekLP(int num_variables, int num_constraints,
-          std::vector<double> equationScalars,
-          Eigen::MatrixXd cons_,
-          std::vector<MSKboundkeye> mosek_constraint_bounds_,
-          std::vector<double> upper_constraint_bounds_,
-          std::vector<double> lower_constraint_bounds_,
-          std::vector<MSKboundkeye> mosek_variable_bounds_,
-          std::vector<double> upper_variable_bounds_,
-          std::vector<double> lower_variable_bounds_);
+      std::vector<double> equationScalars,
+      Eigen::MatrixXd cons_,
+      std::vector<MSKboundkeye> mosek_constraint_bounds_,
+      std::vector<double> upper_constraint_bounds_,
+      std::vector<double> lower_constraint_bounds_,
+      std::vector<MSKboundkeye> mosek_variable_bounds_,
+      std::vector<double> upper_variable_bounds_,
+      std::vector<double> lower_variable_bounds_,
+      std::vector<double> *soln_);
 
   /* Create a mosek linear programming environment using a sparse column
   * constraint matrix
@@ -52,14 +55,15 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
   * @p environment is created and must be told to optimize.
   */
   mosekLP(int num_variables, int num_constraints,
-          std::vector<double> equationScalars,
-          Eigen::SparseMatrix<double> sparsecons_,
-          std::vector<MSKboundkeye> mosek_constraint_bounds_,
-          std::vector<double> upper_constraint_bounds_,
-          std::vector<double> lower_constraint_bounds_,
-          std::vector<MSKboundkeye> mosek_variable_bounds_,
-          std::vector<double> upper_variable_bounds_,
-          std::vector<double> lower_variable_bounds_);
+      std::vector<double> equationScalars,
+      Eigen::SparseMatrix<double> sparsecons_,
+      std::vector<MSKboundkeye> mosek_constraint_bounds_,
+      std::vector<double> upper_constraint_bounds_,
+      std::vector<double> lower_constraint_bounds_,
+      std::vector<MSKboundkeye> mosek_variable_bounds_,
+      std::vector<double> upper_variable_bounds_,
+      std::vector<double> lower_variable_bounds_,
+      std::vector<double> *soln_);
 
   ~mosekLP() {
     MSK_deletetask(&task);
@@ -84,10 +88,11 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
 
   bool available() const override;
 
-  std::vector GetSolution() { return solutions_ }
+  std::vector<double>  GetSolution() const { return *solutions_; }
 
-  Eigen::VectorXd GetEigenVectorSolutions {
-      return Eigen::VectorXd soln_(solutions_.data());
+  Eigen::VectorXd GetEigenVectorSolutions() {
+    Eigen::Map<Eigen::VectorXd> soln_(&(*solutions_)[0], (*solutions_).size());
+    return soln_;
   }
 
  private:
@@ -131,7 +136,7 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
    * equivalent Mosek bound keys.
    */
   std::vector<MSKboundkeye> FindMosekBounds(std::vector<double> upper_bounds_,
-                                            std::vector<double> lower_bounds_);
+      std::vector<double> lower_bounds_) const;
 
   SolutionResult OptimizeTask(std::string maxormin, std::string ptype);
 
@@ -150,7 +155,7 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
                       // correctly
   MSKtask_t task;     // internal definition of task
   MSKrescodee r;      // used for validity checking
-  std::vector<double> solutions_;  // Contains the solutions of the system
+  std::vector<double> *solutions_;  // Contains the solutions of the system
 };
 
 }  // namespace solvers
