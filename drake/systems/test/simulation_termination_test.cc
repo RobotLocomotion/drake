@@ -9,8 +9,6 @@
 
 using Eigen::Dynamic;
 
-#define EIGEN_DONT_ALIGN 1
-
 namespace drake {
 namespace systems {
 namespace test {
@@ -26,6 +24,8 @@ class SimulationTerminationTest : public ::testing::Test {
 
     xi_.setZero();
   }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   // The system to simulate.
   std::shared_ptr<Drake::AffineSystem<EigenVector<10>::template type,
