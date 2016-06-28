@@ -142,8 +142,7 @@ class DRAKECOLLISION_EXPORT Model {
    * \return a vector of PointPair objects containing the potential
    * collision points
    */
-  virtual std::vector<PointPair> potentialCollisionPoints(
-      const bool use_margins) {
+  virtual std::vector<PointPair> potentialCollisionPoints(bool use_margins) {
     return std::vector<PointPair>();
   }
 
