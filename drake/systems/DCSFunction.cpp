@@ -491,7 +491,8 @@ static void mdlUpdate(SimStruct *S, int_T tid) {
   if (mexCallMATLABsafe(S, 1, plhs, sds ? 5 : 4, prhs,
                         sds ? "stochasticUpdate" : "update"))
     return;
-  if (!mxIsDouble(plhs[0]) || mxGetNumberOfElements(plhs[0]) != num_xd) {
+  if (!mxIsDouble(plhs[0]) || (
+          static_cast<int>(mxGetNumberOfElements(plhs[0])) != num_xd)) {
     mexPrintf("I expected xdn to have %d elements, but got  %d.\n", num_xd,
               mxGetNumberOfElements(plhs[0]));
     ssSetErrorStatus(S,

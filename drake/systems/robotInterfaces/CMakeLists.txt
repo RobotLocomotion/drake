@@ -1,3 +1,9 @@
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # TODO(#2372) These are warnings that we can't handle yet.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+endif()
+
 add_library_with_exports(LIB_NAME drakeSide SOURCE_FILES Side.cpp)
 drake_install_headers(Side.h)
 pods_install_libraries(drakeSide)
