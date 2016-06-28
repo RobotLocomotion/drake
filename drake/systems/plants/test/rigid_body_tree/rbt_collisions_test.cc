@@ -40,6 +40,9 @@ typedef std::unordered_map<const RigidBody*, SurfacePoint>
     BodyToSurfacePointMap;
 
 class RBTCollisionTest: public ::testing::Test {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  protected:
   void SetUp() override {
     tree_.addRobotFromSDF(
