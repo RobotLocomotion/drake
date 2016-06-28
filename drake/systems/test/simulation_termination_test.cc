@@ -53,14 +53,16 @@ TEST_F(SimulationTerminationTest, TerminationConditionDefault) {
 // Tests whether Drake::simulate() can be called using simulation options
 // with a custom termination function. This function returns true after the
 // simulation has advanced 0.5 seconds in simulation time. Thus, the final
-// simulation time should be greater than or equal to 0.5 seconds.
+// simulation time should be greater than or equal to 0.5 seconds, and less than
+// or equal to 0.5 seconds plus the step size.
 TEST_F(SimulationTerminationTest, TerminationConditionAfterHalfSecond) {
   double termination_time = 0.5;
   options_.should_stop = [&termination_time](double sim_time) {
     return sim_time >= termination_time;
   };
-  EXPECT_GE(Drake::simulate(*sys_ptr_, ti_, tf_, xi_, options_),
-    termination_time);
+  double final_sim_time = Drake::simulate(*sys_ptr_, ti_, tf_, xi_, options_);
+  EXPECT_GE(final_sim_time, termination_time);
+  EXPECT_LE(final_sim_time, termination_time + options_.initial_step_size);
 }
 
 // Tests whether Drake::simulate() can be called using simulation options
@@ -70,18 +72,6 @@ TEST_F(SimulationTerminationTest, TerminationConditionAfterHalfSecond) {
 TEST_F(SimulationTerminationTest, TerminationConditionTrue) {
   options_.should_stop = [](double sim_time) { return true; };
   EXPECT_EQ(Drake::simulate(*sys_ptr_, ti_, tf_, xi_, options_), ti_);
-}
-
-// Tests whether Drake::simulate() can be called using simulation options
-// customized with a different termination function. This function throws an
-// exception, which should be caught.
-TEST_F(SimulationTerminationTest, TerminationConditionThrow) {
-  options_.should_stop = [](double sim_time) {
-    throw std::runtime_error("Terminate now!");
-    return true;
-  };
-  EXPECT_THROW(Drake::simulate(*sys_ptr_, ti_, tf_, xi_, options_),
-    std::runtime_error);
 }
 
 }  // namespace
