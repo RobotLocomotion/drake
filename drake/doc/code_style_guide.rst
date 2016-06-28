@@ -60,6 +60,16 @@ Clarifications
 * The test file for the library declarations in ``drake/foo/bar.h`` should be
   ``drake/foo/test/bar_test.cc``.
   (`#2182 <https://github.com/RobotLocomotion/drake/issues/2182>`_)
+* When using `Integer Types
+  <https://google.github.io/styleguide/cppguide.html#Integer>`_
+  within Drake, the only allowed uses of unsigned types are (per `#2514
+  <https://github.com/RobotLocomotion/drake/issues/2514>`_):
+
+  * for bitfields -- where only ``uint32_t`` or ``uint64_t`` are allowed -- or,
+  * when a (1) non-Drake API uses unsigned types, and (2) casting to a signed
+    type during Drake's interactions with the non-Drake API would obscure the
+    readability of our code, and (3) subtraction underflow below zero is
+    obviously not at risk -- then ``size_t`` may be used.
 
 .. _code-style-guide-cpp-exceptions:
 
