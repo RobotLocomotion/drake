@@ -3,61 +3,56 @@
 #include <iostream>
 #include <Eigen/Core>
 
-using Eigen::MatrixXd;
-
 using namespace std;
 
 namespace drake {
 namespace solvers {
-namespace {
 
-void setupVariables(OptimizationProblem optProblem, size_t N, int numStates,
-                    int numInputs) {
-  int nH = N - 1;
-  int nX = numStates;
-  int nU = numInputs;
-  //  int numVars = nH + N * (nX + nU);
-
-  //  DecisionVariableView h_vars =
-  optProblem.AddContinuousVariables(nH, "h");
-  //  DecisionVariableView x_vars =
-  optProblem.AddContinuousVariables(N * nX, "x");
-  //  DecisionVariableView u_vars =
-  optProblem.AddContinuousVariables(N * nU, "u");
-}
-}  // unnamed namespace
-
+/**
+ *  DirectTrajectoryOptimization
+ *
+ *  N number of timesteps
+ *  h timesteps (there are N-1 of these)
+ *  x state
+ *  u control input
+ */
 DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     const int numInputs, const int numStates,
     const size_t numTimeSamples /* N */, const int trajectoryTimeLowerBound,
     const int trajectoryTimeUpperBound)
-    : numInputs_(numInputs), numStates_(numStates), N(numTimeSamples) {
-  setupVariables(optProblem_, N, numStates_, numInputs_);
+    : numInputs_(numInputs),
+      numStates_(numStates),
+      N(numTimeSamples),
+      h_vars_(optProblem_.AddContinuousVariables(N - 1, "h")) {
+  // Construct total time linear constraint.
+  // TODO(tri-lucy) add case for all timesteps independent (if needed).
+  MatrixXd id_zero(N - 2, N - 1);
+  id_zero << MatrixXd::Identity(N - 2, N - 2), MatrixXd::Zero(N - 2, 1);
+  MatrixXd zero_id(N - 2, N - 1);
+  zero_id << MatrixXd::Zero(N - 2, 1), MatrixXd::Identity(N - 2, N - 2);
+  MatrixXd a_time(N - 1, N - 1);
+  a_time << MatrixXd::Ones(1, N - 1), id_zero - zero_id;
+  //  cout << a_time << endl;
+  VectorXd lower(N - 1);
+  lower << trajectoryTimeLowerBound, MatrixXd::Zero(N - 2, 1);
+  VectorXd upper(N - 1);
+  upper << trajectoryTimeUpperBound, MatrixXd::Zero(N - 2, 1);
+  optProblem_.AddLinearConstraint(a_time, lower, upper, {h_vars_});
 
-  MatrixXd a_time(N - 2, N - 1);
-  cout << "Identity + Zero:" << endl;
-  a_time << MatrixXd::Identity(N - 2, N - 2), MatrixXd::Zero(N - 2, 1);
-  cout << a_time << endl;
+  // Ensure that all h values are non-negative.
+  // TODO(tri-lucy): add bounding box constraint. See testOpt Problem.cpp
 
-  cout << "Zero + Identity:" << endl;
-  MatrixXd a_time2(N - 2, N - 1);
-  a_time2 << MatrixXd::Zero(N - 2, 1), MatrixXd::Identity(N - 2, N - 2);
-  cout << a_time2 << endl;
+  // Create constraints for dynamics and add them.
 
-  cout << "Difference:" << endl;
-  a_time -= a_time2;
-  cout << a_time << endl;
-
-  cout << "Final:" << endl;
-  MatrixXd a_time3(N - 1, N - 1);
-  a_time3 << MatrixXd::Ones(1, N - 1), a_time;
-  cout << a_time3 << endl;
-
-  // Add costs.
-  // TODO(tri-lucy) create LinearConstraint from upper & lower bounds.
-  // AddLinearConstraint
-  // create and add bounding box constraint.
-  // addDynamicConstraints
+  // Add control inputs (upper and lower bounds) as bounding box constraints.
+  // TODO(tri-lucy): also add if !inf (see Matlab).
+  /*
+    VectorXd lower(N - 1);
+    lower << trajectoryTimeLowerBound; // TODO add more here.
+    VectorXd upper(N - 1);
+    upper << trajectoryTimeUpperBound;
+    optProblem_.AddBoundingBoxConstraint(lower, upper);
+  */
 }
 
 }  // solvers
