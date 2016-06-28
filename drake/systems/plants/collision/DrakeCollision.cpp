@@ -42,7 +42,7 @@ unique_ptr<Model> newModel() {
 #ifdef BULLET_COLLISION
   return newModel(BULLET);
 #else
-  DRAKE_ABORT_UNLESS("DrakeCollision must be compiled with Bullet.");
+  DRAKE_ABORT_UNLESS(!"DrakeCollision must be compiled with Bullet.");
 #endif
 }
 };
