@@ -25,6 +25,8 @@ class SimulationTerminationTest : public ::testing::Test {
     xi_.setZero();
   }
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   // The system to simulate.
   std::shared_ptr<Drake::AffineSystem<EigenVector<10>::template type,
                              EigenVector<10>::template type,
