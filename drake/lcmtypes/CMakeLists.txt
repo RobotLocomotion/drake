@@ -62,7 +62,7 @@ endif()
 
 if(JAVA_FOUND)
   if(NOT TARGET lcm-java)
-    message(FATAL_ERROR "lcm-java not found; was LCM build with Java support?")
+    message(FATAL_ERROR "lcm-java not found; was LCM built with Java support?")
   endif()
 
   add_jar(lcmtypes_drake-java
