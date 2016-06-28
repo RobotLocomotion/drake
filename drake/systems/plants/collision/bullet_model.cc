@@ -284,14 +284,18 @@ ElementId BulletModel::addElement(const Element& element) {
 
       bool is_dynamic = !elements[id]->is_static();
       short collision_filter_group =  is_dynamic?    // NOLINT(runtime/int)
-          short(btBroadphaseProxy::DefaultFilter) :  // NOLINT(runtime/int)
-          short(btBroadphaseProxy::StaticFilter);    // NOLINT(runtime/int)
+          // NOLINTNEXTLINE(runtime/int)
+          static_cast<short>(btBroadphaseProxy::DefaultFilter) :
+          // NOLINTNEXTLINE(runtime/int)
+          static_cast<short>(btBroadphaseProxy::StaticFilter);
       short collision_filter_mask = is_dynamic?  // NOLINT(runtime/int)
-          short(btBroadphaseProxy::AllFilter) :  // NOLINT(runtime/int)
+          // NOLINTNEXTLINE(runtime/int)
+          static_cast<short>(btBroadphaseProxy::AllFilter) :
           // The exclusive or flips the one bit position corresponding to the
           // StaticFilter group (group 2 by default, bit 1).
           // NOLINTNEXTLINE(runtime/int)
-          short(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
+          static_cast<short>(
+             btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
       bullet_world_.bt_collision_world->
           addCollisionObject(bt_obj.get(),
