@@ -743,8 +743,6 @@ GTEST_TEST(ModelTest, StaticElements) {
 
 GTEST_TEST(ModelTest, StaticMeshes) {
   // Numerical precision tolerance to perform floating point comparisons.
-  // For these very simple setup tests are expected to pass to machine
-  // precision. More complex geometries might require a looser tolerance.
   const double tolerance = 1.0e-8;
 
   DrakeShapes::Sphere sphere(0.5);
@@ -754,8 +752,9 @@ GTEST_TEST(ModelTest, StaticMeshes) {
       "/systems/plants/collision/test/spherical_cap.obj";
   DrakeShapes::Mesh cap(file_name, file_name);
 
-  // Create collision elements.
-  // Flag ball1 and ball4 to be static.
+  // Creates collision elements.
+  // Flag cap_element to be static. If not, Drake will create a convex hull for
+  // dynamic collision elements out of the points in the mesh.
   Element sphere_element(sphere);
   Element cap_element(cap); cap_element.set_static();
 
@@ -772,6 +771,7 @@ GTEST_TEST(ModelTest, StaticMeshes) {
       {sphere_id, {{0.0, 0.0, 0.1}, {0.0,  0.0, -0.5}}},
       {cap_id   , {{0.0, 0.0, 0.2}, {0.0, -0.5,  0.2}}}};
 
+  // Sets the collision elements' pose.
   pose.translation() = Vector3d(0.0, 0.0, 0.6);
   model->updateElementWorldTransform(sphere_id, pose);
 
@@ -781,11 +781,10 @@ GTEST_TEST(ModelTest, StaticMeshes) {
   // List of collision points.
   std::vector<PointPair> points;
 
-  // Compute all points of contact.
+  // Computes all points of contact.
   model->ComputeMaximumDepthCollisionPoints(false, points);
 
-  // Only three points are expected (instead of four) since ball1 and ball4 are
-  // flagged as static.
+  // Expects one collision point for this test.
   ASSERT_EQ(1, points.size());
 
   EXPECT_NEAR(-0.1, points[0].distance, tolerance);
