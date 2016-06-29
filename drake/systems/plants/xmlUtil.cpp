@@ -291,11 +291,11 @@ bool rospack(const string& package, const map<string, string>& package_map,
 }
 }
 
-string resolveFilename(const string& file_name,
+string resolveFilename(const string& filename,
                        const map<string, string>& package_map,
                        const string& root_dir) {
   spruce::path mesh_filename_s;
-  spruce::path raw_filename_s(file_name);
+  spruce::path raw_filename_s(filename);
 
   auto split_filename = raw_filename_s.split();
 
@@ -310,7 +310,7 @@ string resolveFilename(const string& file_name,
         mesh_filename_s.append(split_raw.at(i + 2));
       }
     } else {
-      cerr << "Warning: Mesh '" << file_name
+      cerr << "Warning: Mesh '" << filename
            << "' could not be resolved and will be ignored by Drake." << endl;
       return string();
     }
@@ -334,12 +334,12 @@ string resolveFilename(const string& file_name,
       mesh_filename_s = spruce::path(normalized_root_dir);
     }
 
-    mesh_filename_s.append(file_name);
+    mesh_filename_s.append(filename);
   }
   if (!mesh_filename_s.exists()) {
     cerr << "Warning: File '" << mesh_filename_s.getStr()
          << "' could not be found." << endl;
-    cerr << "Warning: Mesh '" << file_name
+    cerr << "Warning: Mesh '" << filename
          << "' could not be resolved and will be ignored by Drake." << endl;
     return string();
   }

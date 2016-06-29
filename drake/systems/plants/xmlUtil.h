@@ -159,20 +159,20 @@ DRAKEXMLUTIL_EXPORT void poseValueToTransform(
 typedef std::map<std::string, std::string> PackageMap;
 DRAKEXMLUTIL_EXPORT void populatePackageMap(PackageMap& package_map);
 
-/// Resolves the fully-qualified name of a file. If @p file_name starts with
+/// Resolves the fully-qualified name of a file. If @p filename starts with
 /// "package:", the ROS packages specified in @p package_map are searched.
-/// Otherwise, @p file_name is appended to the end of @p root_dir and checked
+/// Otherwise, @p filename is appended to the end of @p root_dir and checked
 /// for existence. If the file does not exist or is not found, an empty string
 /// is returned.
 ///
-/// @param[in] file_name The name of the file to find.
+/// @param[in] filename The name of the file to find.
 ///
 /// @param[in] package_map A map where the keys are ROS package names and the
-/// values are the paths to the packages. This is only used if @p file_name
+/// values are the paths to the packages. This is only used if @p filename
 /// starts with "package:".
 ///
 /// @param[in] root_dir The root directory to look in. This is only used when
-/// assuming @p file_name does not start with "package:".
+/// assuming @p filename does not start with "package:".
 ///
 /// @return The file's fully-qualified name or an empty string if the file is
 /// not found or does not exist.
