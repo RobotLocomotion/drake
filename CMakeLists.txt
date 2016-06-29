@@ -341,6 +341,10 @@ foreach(proj ${EXTERNAL_PROJECTS})
 
     if(AUTO_UPDATE_EXTERNALS)
       set(${proj}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_DOWNLOAD_COMMAND})
+
+      # Synchronize the submodule url now so parallel updates do not conflict later.
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule sync -- ${${proj}_GIT_SUBMODULE_PATH}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     else()
       set(${proj}_UPDATE_COMMAND "")
     endif()
@@ -496,6 +500,10 @@ foreach(example IN ITEMS LittleDog)
     set(${example}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- drake/examples/${example})
     if(AUTO_UPDATE_EXTERNALS)
       set(${example}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${example}_DOWNLOAD_COMMAND})
+
+      # Synchronize the submodule url now so parallel updates do not conflict later.
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule sync -- drake/examples/${example}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     else()
       set(${example}_UPDATE_COMMAND "")
     endif()
