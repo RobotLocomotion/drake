@@ -341,19 +341,31 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return cost;
   }
 
+  /** AddQuadraticErrorCost
+  * @brief Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
+  * Applied to all (currently existing) variables.
+  */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired) {
     return AddQuadraticErrorCost(Q, x_desired, variable_views_);
   }
-
+  /** AddQuadraticCost
+   * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
+   * Applied to subset of the variables and pushes onto
+   * the quadratic cost data structure.
+   */
   void AddQuadraticCost(std::shared_ptr<Constraint> const& obj,
-  VariableList const& vars) {
+    VariableList const& vars) {
     problem_type_.AddQuadraticCost();
     quadratic_costs_.push_back(Binding<Constraint>(obj, vars));
   }
 
+  /** AddQuadraticCost
+   * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
+   * Applied to subset of the variables.
+   */
   void AddQuadraticCost(std::shared_ptr<Constraint> const& obj) {
     AddQuadraticCost(obj, variable_views_);
   }
@@ -375,7 +387,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddQuadraticCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
-   * Applies to all of the continuous variables.
+   * Applies to all (currently existing) variables.
    */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
@@ -749,7 +761,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return linear_equality_constraints_;
   }
 
-
+  /** quadratic_cost
+  *
+  * @brief Getter for quadratic costs.
+  */
   const std::list<Binding<Constraint>>& quadratic_costs() const {
     return quadratic_costs_;
   }
@@ -759,7 +774,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return linear_constraints_;
   }
 
-  const std::list<Binding<Constraint>> GetAllCosts() const {
+  /** GetAllCosts
+  *
+  * @brief Getter returning all costs (for now quadratic costs appended to
+  * generic costs).
+  */
+  std::list<Binding<Constraint>> GetAllCosts() const {
     std::list<Binding<Constraint>> costlist = generic_costs_;
     costlist.insert(costlist.end(), quadratic_costs_.begin(),
                     quadratic_costs_.end());
