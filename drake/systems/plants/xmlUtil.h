@@ -176,6 +176,6 @@ DRAKEXMLUTIL_EXPORT void populatePackageMap(PackageMap& package_map);
 ///
 /// @return The file's fully-qualified name or an empty string if the file is
 /// not found or does not exist.
-DRAKEXMLUTIL_EXPORT std::string resolveFilename(const std::string& file_name,
+DRAKEXMLUTIL_EXPORT std::string resolveFilename(const std::string& filename,
                                                 const PackageMap& package_map,
                                                 const std::string& root_dir);
