@@ -88,9 +88,9 @@ pods_install_pkg_config_file(drake-convex-hull
 
 if(MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
-  target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil)
+  target_link_libraries(cylindrical2cartesianmex drakeMath)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
-  target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil)
+  target_link_libraries(cartesian2cylindricalmex drakeMath)
 
   add_mex(quat2expmapmex quat2expmapmex.cpp)
   target_link_libraries(quat2expmapmex drakeMexUtil drakeGeometryUtil)
