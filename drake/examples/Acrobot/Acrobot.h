@@ -9,8 +9,6 @@ using namespace std;
 template <typename ScalarType = double>
 class AcrobotState {  // models the Drake::Vector concept
  public:
-  static std::string channel() { return "AcrobotState"; }
-
   AcrobotState(void) : shoulder(0), elbow(0), shoulder_dot(0), elbow_dot(0) {}
 
   template <typename Derived>
@@ -56,8 +54,6 @@ class AcrobotState {  // models the Drake::Vector concept
 template <typename ScalarType = double>
 class AcrobotInput {
  public:
-  static std::string channel() { return "AcrobotInput"; }
-
   AcrobotInput(void) : tau(0) {}
 
   template <typename Derived>
