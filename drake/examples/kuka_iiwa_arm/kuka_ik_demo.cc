@@ -30,7 +30,7 @@ const char* lcm_command_channel = "IIWA_COMMAND";
 
 // This is a really simple demo class to run a trajectory which is the
 // output of an IK plan.  It lacks a lot of useful things, like a
-// controller which does a remotely goodf job of mapping the
+// controller which does a remotely good job of mapping the
 // trajectory onto the robot.
 class TrajectoryRunner {
  public:
@@ -56,10 +56,10 @@ class TrajectoryRunner {
     iiwa_command.joint_position.resize(num_joints_, 0.);
 
     while (cur_step < nT_) {
-      int handled  = lcm_->handleTimeout(10); // timeout is in msec -
-                                              // should be safely
-                                              // bigger than e.g. a
-                                              // 200Hz input rate
+      int handled  = lcm_->handleTimeout(10);  // timeout is in msec -
+                                               // should be safely
+                                               // bigger than e.g. a
+                                               // 200Hz input rate
       if (handled <= 0) {
         std::cerr << "Failed to receive LCM status." << std::endl;
         return;
@@ -134,7 +134,6 @@ int do_main(int argc, const char* argv[]) {
   pos_end << -0.4, 0, 1.1;
   Vector3d pos_lb = pos_end - Vector3d::Constant(0.1);
   Vector3d pos_ub = pos_end + Vector3d::Constant(0.1);
-  //std::cerr << "link: " << rbm.FindBodyIndex("iiwa_link_7") << std::endl;
   WorldPositionConstraint wpc(&rbm, rbm.FindBodyIndex("iiwa_link_7"),
                               pos_end, pos_lb, pos_ub, Vector2d(1, 3));
 
@@ -149,10 +148,10 @@ int do_main(int argc, const char* argv[]) {
   WorldPositionConstraint wpc2(&rbm, rbm.FindBodyIndex("iiwa_link_7"),
                                pos_end, pos_lb, pos_ub, Vector2d(6, 9));
 
-  int nT = 5;
-  double t[nT] = { 0.0, 2.0, 5.0, 7.0, 9.0 };
-  MatrixXd q0(rbm.number_of_positions(), nT);
-  for (int i = 0; i < nT; i++) {
+  const int kNumTimesteps = 5;
+  double t[kNumTimesteps] = { 0.0, 2.0, 5.0, 7.0, 9.0 };
+  MatrixXd q0(rbm.number_of_positions(), kNumTimesteps);
+  for (int i = 0; i < kNumTimesteps; i++) {
     q0.col(i) = zero_conf;
   }
 
@@ -163,43 +162,28 @@ int do_main(int argc, const char* argv[]) {
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
   IKoptions ikoptions(&rbm);
-  int info[nT];
-  MatrixXd q_sol(rbm.number_of_positions(), nT);
+  int info[kNumTimesteps];
+  MatrixXd q_sol(rbm.number_of_positions(), kNumTimesteps);
   std::vector<std::string> infeasible_constraint;
 
-#if 1
-  inverseKinPointwise(&rbm, nT, t, q0, q0, constraint_array.size(),
+  inverseKinPointwise(&rbm, kNumTimesteps, t, q0, q0, constraint_array.size(),
                       constraint_array.data(), ikoptions, &q_sol, info,
                       &infeasible_constraint);
-  for (int i = 0; i < nT; i++) {
+  for (int i = 0; i < kNumTimesteps; i++) {
     printf("INFO[%d] = %d ", i, info[i]);
   }
   printf("\n");
-#else
-  VectorXd qdot0 = VectorXd::Zero(rbm.number_of_velocities());
-  MatrixXd qdot_sol(rbm.number_of_velocities(), nT);
-  MatrixXd qddot_sol(rbm.number_of_positions(), nT);
-
-  inverseKinTraj(&rbm, nT, t, qdot0, q0, q0, constraint_array.size(),
-                 constraint_array.data(), ikoptions, &q_sol, &qdot_sol,
-                 &qddot_sol, info, &infeasible_constraint);
-  printf("INFO[%d] = %d ", 0, info[0]);
-  for (int i = 0; i < nT; i++) {
-    std::cerr << q_sol.col(i).transpose() << std::endl;
-  }
-#endif
 
   // Now run through the plan.
-  TrajectoryRunner runner(lcm, nT, t, q_sol);
+  TrajectoryRunner runner(lcm, kNumTimesteps, t, q_sol);
   runner.Run();
   return 0;
-
 }
 
-} // namespace
-} // namespace kuka_iiwa_arm
-} // namespace examples
-} // namespace drake
+}  // namespace
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake
 
 
 int main(int argc, const char* argv[]) {

@@ -46,10 +46,10 @@ int do_main(int argc, const char* argv[]) {
   return 0;
 }
 
-} // namespace
-} // namespace kuka_iiwa_arm
-} // namespace examples
-} // namespace drake
+}  // namespace
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake
 
 
 int main(int argc, const char* argv[]) {
