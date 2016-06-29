@@ -61,7 +61,6 @@ GTEST_TEST(testIK, iiwaIK) {
   Vector2d tspan;
   tspan << 0, 1;
   VectorXd q0 = model.getZeroConfiguration();
-  //q0(1) = 0.8;
 
   Vector3d pos_end;
   pos_end << -0.4, 0, 1.1;
