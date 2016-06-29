@@ -13,6 +13,7 @@
 #include "drake/math/expmap.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/solvers/qpSpline/splineGeneration.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
@@ -316,7 +317,8 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         body_motion.isPoseControlledWhenInContact(body_motion_segment_index);
     const Isometry3d& transform_task_to_world =
         body_motion.getTransformTaskToWorld();
-    Vector4d quat_task_to_world = rotmat2quat(transform_task_to_world.linear());
+    Vector4d quat_task_to_world =
+        drake::math::rotmat2quat(transform_task_to_world.linear());
     Vector3d translation_task_to_world = transform_task_to_world.translation();
     eigenVectorToCArray(quat_task_to_world,
                         body_motion_data_for_support_lcm.quat_task_to_world);
@@ -544,7 +546,7 @@ void QPLocomotionPlan::updateSwingTrajectory(
   auto x0_twist =
       robot.relativeTwist(cache, 0, body_motion_data.getBodyOrFrameId(), 0);
 
-  Vector4d x0_quat = rotmat2quat(x0_pose.linear());
+  Vector4d x0_quat = drake::math::rotmat2quat(x0_pose.linear());
   Matrix<double, QUAT_SIZE, SPACE_DIMENSION> Phi;
   angularvel2quatdotMatrix(
       x0_quat, Phi,
@@ -582,9 +584,8 @@ void QPLocomotionPlan::updateSwingTrajectory(
   Vector3d unit_x_rotated_0 = quatRotateVec(x0_quat, unit_x);
   Vector3d unit_x_rotated_1 = quatRotateVec(expmap2quat(x1.tail<3>()), unit_x);
   if (unit_x_rotated_0(2) < unit_x_rotated_1(2)) {
-    x1.tail<3>() = quat2expmap(drake::math::Slerp(x0_quat,
-                                                  expmap2quat(x2.tail<3>()),
-                                                  0.1));
+    x1.tail<3>() = quat2expmap(
+        drake::math::Slerp(x0_quat, expmap2quat(x2.tail<3>()), 0.1));
   }
 
   // TODO(rdeits): find a less expensive way of doing this

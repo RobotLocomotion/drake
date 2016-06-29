@@ -9,6 +9,7 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
@@ -367,7 +368,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, 4, 1> relativeQuaternion(
       const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
       int to_body_or_frame_ind) const {
-    return rotmat2quat(
+    return drake::math::rotmat2quat(
         relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind)
             .linear());
   }
@@ -376,7 +377,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, 3, 1> relativeRollPitchYaw(
       const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
       int to_body_or_frame_ind) const {
-    return rotmat2rpy(
+    return drake::math::rotmat2rpy(
         relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind)
             .linear());
   }
