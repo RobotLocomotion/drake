@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/Path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
@@ -66,7 +67,8 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
     Eigen::Vector3d xyz, rpy;
     xyz << 1, 1, 1;
     rpy = Eigen::Vector3d::Zero();
-    T_second_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_second_model_to_world.matrix()
+        << ::drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
@@ -204,7 +206,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
     // Asserts that the exception is thrown when FindBodyIndexByJointName()
     // fails to find a non-existing joint.
     EXPECT_TRUE(std::string(error.what()).find("FindBodyIndexByJointName") !=
-      std::string::npos);
+                std::string::npos);
   }
 }
 
