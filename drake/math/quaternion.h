@@ -131,5 +131,75 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
   return ret;
 }
 
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 4, 1> quat2axis(
+    const Eigen::MatrixBase<Derived>& q) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
+  auto q_normalized = q.normalized();
+  auto s = std::sqrt(1.0 - q_normalized(0) * q_normalized(0)) +
+           std::numeric_limits<typename Derived::Scalar>::epsilon();
+  Eigen::Matrix<typename Derived::Scalar, 4, 1> a;
+
+  a << q_normalized.template tail<3>() / s, 2.0 * std::acos(q_normalized(0));
+  return a;
+}
+
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 3, 3> quat2rotmat(
+    const Eigen::MatrixBase<Derived>& q) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
+  auto q_normalized = q.normalized();
+  auto w = q_normalized(0);
+  auto x = q_normalized(1);
+  auto y = q_normalized(2);
+  auto z = q_normalized(3);
+
+  Eigen::Matrix<typename Derived::Scalar, 3, 3> M;
+  M.row(0) << w * w + x * x - y * y - z * z, 2.0 * x * y - 2.0 * w * z,
+      2.0 * x * z + 2.0 * w * y;
+  M.row(1) << 2.0 * x * y + 2.0 * w * z, w * w + y * y - x * x - z * z,
+      2.0 * y * z - 2.0 * w * x;
+  M.row(2) << 2.0 * x * z - 2.0 * w * y, 2.0 * y * z + 2.0 * w * x,
+      w * w + z * z - x * x - y * y;
+
+  return M;
+}
+
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 3, 1> quat2rpy(
+    const Eigen::MatrixBase<Derived>& q) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
+  auto q_normalized = q.normalized();
+  auto w = q_normalized(0);
+  auto x = q_normalized(1);
+  auto y = q_normalized(2);
+  auto z = q_normalized(3);
+
+  Eigen::Matrix<typename Derived::Scalar, 3, 1> ret;
+  ret << std::atan2(2.0 * (w * x + y * z), w * w + z * z - (x * x + y * y)),
+      std::asin(2.0 * (w * y - z * x)),
+      std::atan2(2.0 * (w * z + x * y), w * w + x * x - (y * y + z * z));
+  return ret;
+}
+
+template <typename Derived>
+Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
+    const Eigen::MatrixBase<Derived>& q) {
+  // The Eigen Quaterniond constructor when used with 4 arguments, uses the (w,
+  // x, y, z) ordering, just as we do.
+  // HOWEVER: when the constructor is called on a 4-element Vector, the elements
+  // must be in (x, y, z, w) order.
+  // So, the following two calls will give you the SAME quaternion:
+  // Quaternion<double>(q(0), q(1), q(2), q(3));
+  // Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
+  // which is gross and will cause you much pain.
+  // see:
+  // http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
+  //
+  // This method takes a nice, normal (w, x, y, z) order vector and gives you
+  // the Quaternion you expect.
+  return Eigen::Quaternion<typename Derived::Scalar>(q(0), q(1), q(2), q(3));
+}
+
 }  // namespace math
 }  // namespace drake

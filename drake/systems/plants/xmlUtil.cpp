@@ -5,8 +5,8 @@
 
 #include "drake/Path.h"
 #include "drake/common/drake_assert.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/thirdParty/tinydir/tinydir.h"
-#include "drake/util/drakeGeometryUtil.h"
 #include "xmlUtil.h"
 
 using namespace std;
@@ -186,7 +186,7 @@ void originAttributesToTransform(tinyxml2::XMLElement* node,
   parseVectorAttribute(node, "xyz", xyz);
   parseVectorAttribute(node, "rpy", rpy);
 
-  T.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  T.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 }
 
 void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
@@ -199,7 +199,7 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
     s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
   }
 
-  T.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  T.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 
   const char* attr = node->Attribute("frame");
   if (attr && strlen(attr) > 0) {
