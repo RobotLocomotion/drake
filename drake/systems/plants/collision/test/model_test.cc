@@ -2,6 +2,7 @@
 #include <vector>
 #include <unordered_map>
 
+#include "drake/Path.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/collision/Model.h"
 #include "gtest/gtest.h"
@@ -749,7 +750,8 @@ GTEST_TEST(ModelTest, StaticMeshes) {
   DrakeShapes::Sphere sphere(0.5);
   Isometry3d pose = Isometry3d::Identity();
 
-  std::string file_name("/home/amcastro/Drake/drake-distro/drake/systems/plants/collision/test/spherical_cap.obj");
+  std::string file_name = Drake::getDrakePath() +
+      "/systems/plants/collision/test/spherical_cap.obj";
   DrakeShapes::Mesh cap(file_name, file_name);
 
   // Create collision elements.
