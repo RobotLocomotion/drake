@@ -2,16 +2,13 @@
 
 #include <iostream>
 #include <cmath>
-#include "drake/systems/LCMSystem.h"
+#include <Eigen/Core>
 
 using namespace std;
 
 template <typename ScalarType = double>
 class AcrobotState {  // models the Drake::Vector concept
  public:
-  typedef drake::lcmt_drake_signal LCMMessageType;
-  static std::string channel() { return "AcrobotState"; }
-
   AcrobotState(void) : shoulder(0), elbow(0), shoulder_dot(0), elbow_dot(0) {}
 
   template <typename Derived>
@@ -57,9 +54,6 @@ class AcrobotState {  // models the Drake::Vector concept
 template <typename ScalarType = double>
 class AcrobotInput {
  public:
-  typedef drake::lcmt_drake_signal LCMMessageType;
-  static std::string channel() { return "AcrobotInput"; }
-
   AcrobotInput(void) : tau(0) {}
 
   template <typename Derived>
