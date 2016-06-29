@@ -241,44 +241,24 @@ ElementId BulletModel::addElement(const Element& element) {
       // if masks are sufficient for your purposes, use them; they perform
       // better and are a lot simpler to use.
       //
-      // Filter groups are specified by bitmasks. For a 16 bit short this means
-      // that the maximum number of groups is 16 and a collision element could
-      // belong to several groups at the same time (more than one bit on).
-      // To specify a group, the one bit corresponding to the group position
-      // needs to be turned on. Specifying several groups corresponds to turning
-      // several bits on. E.g.: if group = 0101, the collision element belongs
-      // to groups 1 and 3.
-      //
-      // In addition, a collision mask needs to be specified. The default
-      // collision mask is btBroadphaseProxy::DefaultFilter which corresponds
-      // to all 16 bits being turned on. The collision masks specify the groups
-      // a collision element does not collide with. This is done by setting to
-      // zero (off) the bit (or bits) corresponding to the group(s) the
-      // collision element does not collide with.
-      // E.g.: if mask = 1001, the collision element does not collide with
-      // groups 2 and 3.
-      //
-      // With this information two elements A and B are checked for
-      // collision if: (A.group & B.mask) != 0 && (B.group & A.mask) != 0
-      // Note: btBroadphaseProxy::AllFilter corresponds to all bits set to 1.
-      //
-      // Consider for example (four bits for simplicity):
-      // Element | filter_group | groups | filter_mask | groups
-      //   A     |      0101    |  1, 3  |      1111   |  ---
-      //   B     |      0110    |  2, 3  |      1101   |   2
-      //   C     |      0011    |  1, 2  |      0010   |  1, 3, 4
-      //
-      // Therefore:
-      //   - A and B do collide since B does not collide with elements in
-      //     group 2 and A is only in groups 1 and 3.
-      //   - A and C do not collide since C does not collide with elements in
-      //     groups 1 and 3 which A belongs to.
-      //   - B and C do collide since B does not collide with elements in group
-      //     2 (but C is also in 1) and C does not collide with elements in
-      //     groups 1, 3, and 4 (but B is also in 2).
+      // Bullet's collision filtering model assigns two independent sets of
+      // "groups" to each body:
+      //  - the set of groups the body belongs to, and
+      //  - the set of groups the body can collide with.
+      // A pair of bodies A and B are checked for possible collision only if A
+      // belongs to a group B can collide with and B belongs to a group A can
+      // collide with.
+      // Groups are identified with small integers. The sets are represented as
+      // bitsets using the group number as a bit position. Using short provides
+      // up to 16 groups.
+      // A body thus has two shorts:
+      //   - 'group' has a bit set for each group the body belongs to, and
+      //   - 'mask' has a bit set for each group the body can collide with.
+      // So A and B can collide if A.group & B.mask and B.group & A.mask are
+      // both non-zero.
       //
       // Notes:
-      //   1. In general it is not true that group = ~mask. See example.
+      //   1. In general it is not true that group = ~mask.
       //   2. The exclusive or operator (^) is an easy way to turn on/off
       //      specific bits (since A^0 = A and A^1 = ~A).
 
@@ -292,7 +272,7 @@ ElementId BulletModel::addElement(const Element& element) {
           // NOLINTNEXTLINE(runtime/int)
           static_cast<short>(btBroadphaseProxy::AllFilter) :
           // The exclusive or flips the one bit position corresponding to the
-          // StaticFilter group (group 2 by default, bit 1).
+          // StaticFilter group.
           // NOLINTNEXTLINE(runtime/int)
           static_cast<short>(
              btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);

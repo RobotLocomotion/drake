@@ -216,10 +216,9 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   RigidBody::CollisionElement element(
       transform_parent_to_model.inverse() * transform_to_model, body);
   // By default all collision elements added to the world from an SDF file are
-  // flagged as static. If the user decides to add static collision elements
-  // manually then an explicit call to CollisionElement::set_static() will be
-  // needed. We would also like to flag as static bodies connected
-  // to the world with a DrakeJoint::FloatingBaseType::FIXED joint.
+  // flagged as static.
+  // We would also like to flag as static bodies connected to the world with a
+  // DrakeJoint::FloatingBaseType::FIXED joint.
   // However this is not possible at this stage since joints were not parsed
   // yet.
   // Solutions to this problem would be:
