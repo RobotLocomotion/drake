@@ -12,7 +12,8 @@ namespace drake {
 namespace systems {
 
 /// The InputPort describes a single input to a System, from another
-/// System or from an external driver.
+/// System or from an external driver. Users should not subclass InputPort:
+/// all InputPorts are either DependentInputPorts or FreestandingInputPorts.
 ///
 /// @tparam T The type of the input port. Must be a valid Eigen scalar.
 template <typename T>
@@ -56,24 +57,24 @@ class InputPort : public OutputPortListenerInterface {
   std::function<void()> invalidation_callback_ = nullptr;
 };
 
-/// The ConnectedInputPort wraps a pointer to the OutputPort of a System for use
-/// as an input to another System. Many ConnectedInputPorts may wrap a single
+/// The DependentInputPort wraps a pointer to the OutputPort of a System for use
+/// as an input to another System. Many DependentInputPorts may wrap a single
 /// OutputPort.
 ///
 /// @tparam T The type of the input port. Must be a valid Eigen scalar.
 template <typename T>
-class ConnectedInputPort : public InputPort<T> {
+class DependentInputPort : public InputPort<T> {
  public:
   /// Creates an input port with the given @p sample_time_sec, connected
   /// to the given @p output_port, which must not be nullptr. The output
   /// port must outlive this input port.
-  ConnectedInputPort(OutputPort<T>* output_port, double sample_time_sec)
+  DependentInputPort(OutputPort<T>* output_port, double sample_time_sec)
       : output_port_(output_port), sample_time_sec_(sample_time_sec) {
     output_port_->add_dependent(this);
   }
 
   /// Disconnects from the output port.
-  ~ConnectedInputPort() override {
+  ~DependentInputPort() override {
     output_port_->remove_dependent(this);
   }
 
@@ -91,11 +92,11 @@ class ConnectedInputPort : public InputPort<T> {
   }
 
  private:
-  // ConnectedInputPort objects are neither copyable nor moveable.
-  ConnectedInputPort(const ConnectedInputPort& other) = delete;
-  ConnectedInputPort& operator=(const ConnectedInputPort& other) = delete;
-  ConnectedInputPort(ConnectedInputPort&& other) = delete;
-  ConnectedInputPort& operator=(ConnectedInputPort&& other) = delete;
+  // DependentInputPort objects are neither copyable nor moveable.
+  DependentInputPort(const DependentInputPort& other) = delete;
+  DependentInputPort& operator=(const DependentInputPort& other) = delete;
+  DependentInputPort(DependentInputPort&& other) = delete;
+  DependentInputPort& operator=(DependentInputPort&& other) = delete;
 
   OutputPort<T>* output_port_;
   double sample_time_sec_;
