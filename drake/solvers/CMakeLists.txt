@@ -51,7 +51,7 @@ endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakePolynomial)
-drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h)
+drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h Constraint.h solution_result.h)
 pods_install_libraries(drakeOptimization)
 pods_install_pkg_config_file(drake-optimization
   LIBS -ldrakeOptimization

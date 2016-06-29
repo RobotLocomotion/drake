@@ -14,6 +14,7 @@ set(installed_headers
   drake_assert.h
   drake_deprecated.h
   nice_type_name.h
+  eigen_types.h
   )
 
 # List headers that are needed by code here but should not
