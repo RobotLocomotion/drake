@@ -27,13 +27,13 @@ add_subdirectory(controllers)
 add_subdirectory(robotInterfaces)
 
 drake_install_headers(
-  System.h
-  LinearSystem.h
-  Simulation.h
   cascade_system.h
   feedback_system.h
+  LinearSystem.h
   n_ary_state.h
   n_ary_system.h
-  pd_control_system.h)
+  pd_control_system.h
+  Simulation.h
+  System.h)
 
 add_subdirectory(test)
