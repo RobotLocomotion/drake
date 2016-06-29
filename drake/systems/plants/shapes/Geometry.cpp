@@ -3,6 +3,7 @@
 
 #include "Geometry.h"
 #include "spruce.hh"
+#include "stdio.h"
 
 using std::string;
 using std::istringstream;
