@@ -1,4 +1,4 @@
-if(lcm_FOUND AND GTEST_FOUND)
+if(lcm_FOUND)
   add_executable(quadrotorURDFDynamicsTest urdfDynamicsTest.cpp)
   target_link_libraries(quadrotorURDFDynamicsTest drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME quadrotorURDFDynamicsTest COMMAND quadrotorURDFDynamicsTest)
