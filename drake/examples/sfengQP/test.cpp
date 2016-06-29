@@ -24,6 +24,15 @@ QPOutput testGravityCompensation(const HumanoidState &rs) {
   // print result
   output.print();
 
+
+  // call QP2
+  QPController2 con2;
+  QPOutput output2(*rs.robot);
+  con2.control(rs, input, output2);
+  output2.print();
+
+  std::cout << "output1 == output2 " << (output == output2) << std::endl;
+
   return output;
 }
 

@@ -101,10 +101,37 @@ class QPOutput {
   }
 
   void print() const;
+  
 
  private:
   bool _inited;
 };
+  
+inline bool operator== (const QPOutput &a, const QPOutput &b) {
+  double e = 1e-10;
+  bool ret = a.comdd.isApprox(b.comdd, e);
+  std::cout << ret << std::endl;
+  ret &= a.pelvdd.isApprox(b.pelvdd, e);
+  std::cout << ret << std::endl;
+  ret &= a.torsodd.isApprox(b.torsodd, e);
+  std::cout << ret << std::endl;
+  for (int i = 0; i < 2; i++) {
+    ret &= a.footdd[i].isApprox(b.footdd[i], e);
+    std::cout << ret << std::endl;
+  }
+  ret &= a.qdd.isApprox(b.qdd, e);
+  std::cout << ret << std::endl;
+  ret &= a.trq.isApprox(b.trq, e);
+  std::cout << ret << std::endl;
+  for (int i = 0; i < 2; i++) {
+    ret &= a.foot_wrench_w[i].isApprox(b.foot_wrench_w[i], e);
+  std::cout << ret << std::endl;
+    ret &= a.foot_wrench_in_sensor_frame[i].isApprox(b.foot_wrench_in_sensor_frame[i], e);
+  std::cout << ret << std::endl;
+  }
+
+  return ret;
+}
 
 class QPParam {
  public:
@@ -125,9 +152,18 @@ class QPParam {
   }
 };
 
+// this does it the old fashion
 class QPController : public sfQP {
  public:
   QPParam param;
 
   int control(const HumanoidState &rs, const QPInput &input, QPOutput &output);
 };
+
+// really uses Optimization.h
+class QPController2 {
+ public:
+  QPParam param;
+
+  int control(const HumanoidState &rs, const QPInput &input, QPOutput &output); 
+}; 

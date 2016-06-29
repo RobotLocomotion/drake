@@ -200,6 +200,7 @@ int QPController::control(
   for (size_t i = 0; i < rs.robot->actuators.size(); i++) {
     _ci_l(rowIdx+i) += rs.robot->actuators[i].effort_limit_min;
     _ci_u(rowIdx+i) += rs.robot->actuators[i].effort_limit_max;
+    printf("%g %g\n", _ci_l[rowIdx+i], _ci_u[rowIdx+i]);
   }
   rowIdx += nTrq;
 
@@ -329,3 +330,257 @@ void QPOutput::print() const {
     std::cout << jointNames[i+6] << ": " << trq[i] << std::endl;
 }
 
+using namespace drake::solvers;
+int QPController2::control(
+    const HumanoidState &rs,
+    const QPInput &input,
+    QPOutput &output) {
+  if (!input.isSane()) {
+    return -1;
+  }
+ 
+  int nContacts = 2;
+  int nQdd = rs.robot->number_of_velocities();
+  int nWrench = 6 * nContacts;
+  int nTrq = nQdd - 6;
+  int nVar = nQdd + nWrench;
+  //int nEq = 6 + 6 * nContacts;
+  //int nInEq = 11 * nContacts + nTrq;
+  
+  OptimizationProblem prog;
+  const DecisionVariableView qdd = prog.AddContinuousVariables(nQdd, "qdd");
+  const DecisionVariableView lambda = prog.AddContinuousVariables(nWrench, "lambda");
+  
+  int qdd_start = qdd.index();
+  int lambda_start = lambda.index();
+
+  // tau = M_l * qdd + h_l - J^T_l * lambda,
+  // tau = TAU * _X + tau0
+  MatrixXd Tau(MatrixXd::Zero(nTrq, nVar));
+  Tau.block(0, qdd_start, nTrq, nQdd) = rs.M.bottomRows(nTrq);
+  for (int i = 0; i < nContacts; i++) {
+    Tau.block(0, lambda_start+i*6, nTrq, 6) =
+      -rs.foot[i]->J.block(0, 6, 6, nTrq).transpose();
+  }
+  VectorXd tau0 = rs.h.tail(nTrq);
+
+  ////////////////////////////////////////////////////////////////////
+  // equality constraints:
+  // equations of motion part, 6 rows
+  MatrixXd DynEq = MatrixXd::Zero(6, nVar);
+  DynEq.block(0, qdd_start, 6, nQdd) = rs.M.topRows(6);
+
+  for (int i = 0; i < nContacts; i++) {
+    DynEq.block(0, lambda_start+i*6, 6, 6) =
+      -rs.foot[i]->J.block<6, 6>(0, 0).transpose();
+  }
+  prog.AddLinearEqualityConstraint(DynEq, -rs.h.head(6));
+
+  // contact constraints, 6 rows per contact
+  for (int i = 0; i < nContacts; i++) {
+    prog.AddLinearEqualityConstraint(rs.foot[i]->J, -(rs.foot[i]->Jdv - input.footdd_d[i]), {qdd});
+  }
+ 
+  ////////////////////////////////////////////////////////////////////
+  // set up inequality constraints
+  // these are for contact wrench, 11 rows per contact.
+  // NOTE: these constraints are specified for the contact wrench in the body
+  // frame, but lambda are in world frame. So need to transform it by R^-1
+  // 2 for Fx, Fy, Mz within friction cone, 6
+  // 2 for CoP x within foot, 2
+  // 2 for CoP y within foot, 2
+  // 1 for Fz >= 0,
+  int rowIdx = 0;
+  MatrixXd CI = MatrixXd::Zero(11*nContacts, nWrench);
+  VectorXd ci_u = VectorXd::Constant(11*nContacts, std::numeric_limits<double>::infinity());
+  VectorXd ci_l = VectorXd::Constant(11*nContacts, -std::numeric_limits<double>::infinity());
+
+  // Fz >= 0;
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+5) = 1;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Fx <= mu * Fz, Fx - mu * Fz <= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+3) = 1;
+    CI(rowIdx, i*6+5) = -param.mu;
+    ci_u(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Fx >= -mu * Fz, Fx + mu * Fz >= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+3) = 1;
+    CI(rowIdx, i*6+5) = param.mu;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Fy <= mu * Fz, Fy - mu * Fz <= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+4) = 1;
+    CI(rowIdx, i*6+5) = -param.mu;
+    ci_u(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Fy >= -mu * Fz, Fy + mu * Fz >= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+4) = 1;
+    CI(rowIdx, i*6+5) = param.mu;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Mz <= mu * Fz, Mz - mu * Fz <= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+2) = 1;
+    CI(rowIdx, i*6+5) = -param.mu_Mz;
+    ci_u(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Mz >= -mu * Fz, Mz + mu * Fz >= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+2) = 1;
+    CI(rowIdx, i*6+5) = param.mu_Mz;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // cop_x <= x_max, -My / Fz <= x_max, -My - x_max * Fz <= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+1) = -1;
+    CI(rowIdx, i*6+5) = -param.x_max;
+    ci_u(rowIdx) = 0;
+    rowIdx++;
+  }
+  // cop_x >= x_min, -My / Fz >= x_min, -My - x_min * Fz >= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+1) = -1;
+    CI(rowIdx, i*6+5) = -param.x_min;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // cop_y <= y_max, Mx / Fz <= y_max, Mx - y_max * Fz <= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+0) = 1;
+    CI(rowIdx, i*6+5) = -param.y_max;
+    ci_u(rowIdx) = 0;
+    rowIdx++;
+  }
+  // cop_y >= y_min, Mx / Fz >= y_min, Mx - y_min * Fz >= 0
+  for (int i = 0; i < nContacts; i++) {
+    CI(rowIdx, i*6+0) = 1;
+    CI(rowIdx, i*6+5) = -param.y_min;
+    ci_l(rowIdx) = 0;
+    rowIdx++;
+  }
+  // Since all of the above are constraints on wrench expressed in the body
+  // frame, we need to rotate the lambda into body frame.
+  MatrixXd world_to_foot(MatrixXd::Zero(nWrench, nWrench));
+  for (int i = 0; i < nContacts; i++) {
+    world_to_foot.block<3, 3>(i*6, i*6) = rs.foot[i]->pose.linear().transpose();
+    world_to_foot.block<3, 3>(i*6+3, i*6+3) =
+      world_to_foot.block<3, 3>(i*6, i*6);
+  }
+  CI = CI * world_to_foot;
+  prog.AddLinearConstraint(CI, ci_l, ci_u, {lambda});
+
+  // torque limits: min <= tau <= max, nTrq rows
+  // min <= M_l * qdd + h_l - J^T_l * lambda <= max
+  // min - h_l <= M_l * qdd - J^T_l * lambda <= max - h_l
+  // tau = rs.robot->B.bottomRows(nTrq) * u,
+  // u = rs.robot->B.bottomRows(nTrq).transpose() * tau
+  // since B should be orthonormal.
+  // tau is joint space indexed, and u is actuator space indexed.
+  // constraints are specified with u index. 
+  CI = rs.robot->B.bottomRows(nTrq).transpose() * Tau;
+  ci_u = ci_l = -rs.robot->B.bottomRows(nTrq).transpose() * tau0;
+  for (size_t i = 0; i < rs.robot->actuators.size(); i++) {
+    ci_l[i] += rs.robot->actuators[i].effort_limit_min;
+    ci_u[i] += rs.robot->actuators[i].effort_limit_max;
+    printf("%g %g\n", ci_l[i], ci_u[i]);
+  }
+  prog.AddLinearConstraint(CI, ci_l, ci_u, {lambda});
+
+  ////////////////////////////////////////////////////////////////////
+  // cost function:
+  // CoM term (task space acceleration costs)
+  // w * (J * qdd + Jdv - comdd_d)^T * (J * qdd + Jdv - comdd_d)
+  prog.AddQuadraticCost(input.w_com*rs.J_com.transpose()*rs.J_com, input.w_com*(rs.Jdv_com-input.comdd_d).transpose()*rs.J_com, {qdd});
+  prog.AddQuadraticCost(input.w_pelv*rs.pelv.J.transpose()*rs.pelv.J, input.w_pelv * (rs.pelv.Jdv-input.pelvdd_d).transpose()*rs.pelv.J, {qdd});
+  
+  // regularize qdd to qdd_d 
+  prog.AddQuadraticCost(input.w_qdd*MatrixXd::Identity(nQdd, nQdd), input.w_qdd*(-input.qdd_d), {qdd});
+  
+  // regularize lambda to lambda_d
+  VectorXd lambda_d(VectorXd::Zero(nWrench)); 
+  lambda_d[5] = 660;
+  lambda_d[11] = 660;
+  prog.AddQuadraticCost(input.w_wrench_reg*MatrixXd::Identity(nWrench, nWrench), input.w_wrench_reg*(-lambda_d), {lambda});
+
+
+  ////////////////////////////////////////////////////////////////////
+  // solve
+  prog.SetInitialGuess(qdd, VectorXd::Zero(nQdd));
+  prog.SetInitialGuess(lambda, VectorXd::Zero(nWrench));
+  SolutionResult result;
+  SnoptSolver snopt;
+  result = snopt.Solve(prog);
+  if (result != drake::solvers::SolutionResult::kSolutionFound) {
+    return -1;
+  }
+
+  ////////////////////////////////////////////////////////////////////
+  // parse result
+  output.qdd = qdd.value();
+  output.comdd = rs.J_com * output.qdd + rs.Jdv_com;
+  output.pelvdd = rs.pelv.J * output.qdd + rs.pelv.Jdv;
+  output.torsodd = rs.torso.J * output.qdd + rs.torso.Jdv;
+  
+  for (int i = 0; i < nContacts; i++) {
+    output.footdd[i] = (rs.foot[i]->J * output.qdd + rs.foot[i]->Jdv);
+    output.foot_wrench_w[i] = lambda.value().segment(i*6, 6);
+  }
+
+  output.trq = rs.M.bottomRows(nTrq) * output.qdd + rs.h.tail(nTrq);
+  for (int i = 0; i < nContacts; i++) {
+    output.trq -= rs.foot[i]->J.block(0, 6, 6, nTrq).transpose() * output.foot_wrench_w[i];
+  }
+
+  for (int i = 0; i < nContacts; i++) {
+    Isometry3d T(Isometry3d::Identity());
+    T.translation() = rs.foot[i]->pose.translation()
+                    - rs.foot_sensor[i]->pose.translation();
+
+    output.foot_wrench_in_sensor_frame[i] =
+      transformSpatialForce(T, output.foot_wrench_w[i]);
+
+    output.foot_wrench_in_sensor_frame[i].head<3>() =
+      rs.foot_sensor[i]->pose.linear().transpose() *
+      output.foot_wrench_in_sensor_frame[i].head<3>();
+    output.foot_wrench_in_sensor_frame[i].tail<3>() =
+      rs.foot_sensor[i]->pose.linear().transpose() *
+      output.foot_wrench_in_sensor_frame[i].tail<3>();
+  }
+
+  ////////////////////////////////////////////////////////////////////
+  // sanity checks,
+  // check dynamics
+  VectorXd residual = rs.M * output.qdd + rs.h;
+  for (int i = 0; i < nContacts; i++)
+    residual -= rs.foot[i]->J.transpose() * output.foot_wrench_w[i];
+  residual.tail(nTrq) -= output.trq;
+
+  if (!residual.isZero()) {
+    return -1;
+  }
+
+  for (int i = 0; i < nContacts; i++) {
+    if (!output.footdd[i].isZero()) {
+      return -1;
+    }
+  }
+
+  if (!output.isSane()) {
+    return -1;
+  }
+
+  return 0;
+}
