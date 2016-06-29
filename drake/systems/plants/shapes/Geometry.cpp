@@ -253,42 +253,48 @@ bool Mesh::ReadMeshConnectivities(Matrix3Xi& connectivities) const {
 
   FILE* file;
   if (ext.compare(".obj") == 0) {
-    file = fopen(spath.getStr().c_str(),"r");
+    file = fopen(spath.getStr().c_str(), "r");
+    if (!file) throw std::runtime_error(
+          "Could not open mesh file \"" + spath.getStr() + "\".");
   } else {
+    // Tries to change the extension to obj and load.
     spath.setExtension(".obj");
     if (spath.exists()) {
-      // try changing the extension to obj and loading.
-      file = fopen(spath.getStr().c_str(),"r");
+      file = fopen(spath.getStr().c_str(), "r");
+      if (!file) throw std::runtime_error(
+            "Could not open mesh file \"" + spath.getStr() + "\".");
+    } else {
+      throw std::runtime_error(
+          "Could not find and obj file mesh file in the same directory as \"" +
+              spath.getStr() + "\".");
     }
   }
 
-  if (!file) {
-    throw std::logic_error(
-        "Could not open mesh file \""+spath.getStr() + "\".");
-  }
-
-  // Count the number of triangles and resize connectivities.
+  // Counts the number of triangles and resizes connectivities.
   int num_triangles = 0;
   char *line = NULL;
   size_t len = 0;
   ssize_t read;
   char key[128];
   while ((read = getline(&line, &len, file)) != -1) {
-    sscanf(line,"%s",key);
+    sscanf(line, "%s", key);
     if (strcmp(key, "f") == 0) ++num_triangles;
   }
 
-  // Allocate memory.
+  // Allocates memory.
   connectivities.resize(3, num_triangles);
 
-  // Read triangles.
+  // Reads triangles.
+  // This simple parser assumes connectivities are in the obj format variant in
+  // which indexes for both triangles and normals are provided.
+  // TODO(amcastro-tri): use a library to parse obj files instead.
   rewind(file);
   int itri = 0;
   int ignored_entry;
   int tri[3];
-  while(true) {
+  while (true) {
     // Get first word in the line.
-    if(fscanf(file, "%s", key) == EOF) break;
+    if (fscanf(file, "%s", key) == EOF) break;
     if (strcmp(key, "f") == 0) {
       int matches = fscanf(file,
                            "%d//%d %d//%d %d//%d\n",
@@ -298,14 +304,14 @@ bool Mesh::ReadMeshConnectivities(Matrix3Xi& connectivities) const {
                            &ignored_entry,
                            tri + 2,
                            &ignored_entry);
-      if(matches != 6)
+      if (matches != 6)
         throw std::logic_error(
             "File \""+filename+"\" cannot be parsed. Format not supported.");
-      connectivities.col(itri++) = Vector3i(tri[0]-1,tri[1]-1,tri[2]-1);
-      if(itri>num_triangles)
+      connectivities.col(itri++) = Vector3i(tri[0]-1, tri[1]-1, tri[2]-1);
+      if (itri > num_triangles)
         throw(std::logic_error("Number of triangles exceeded previous count."));
     }
-  } // while
+  }  // while
   fclose(file);
 
   return true;
