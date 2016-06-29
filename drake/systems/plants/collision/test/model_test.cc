@@ -788,16 +788,15 @@ GTEST_TEST(ModelTest, StaticMeshes) {
   // flagged as static.
   ASSERT_EQ(1, points.size());
 
-  EXPECT_NEAR(-0.1, points[0].getDistance(), tolerance);
+  EXPECT_NEAR(-0.1, points[0].distance, tolerance);
 
-  EXPECT_TRUE(points[0].getNormal().isApprox(Vector3d(0, 0, 1), tolerance));
+  EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0, 0, 1), tolerance));
 
-  EXPECT_TRUE(points[0].getPtA().isApprox(
-      solution[points[0].getIdA()].world_frame, tolerance));
+  EXPECT_TRUE(points[0].ptA.isApprox(
+      solution[points[0].idA].world_frame, tolerance));
 
-  EXPECT_TRUE(points[0].getPtB().isApprox(
-      solution[points[0].getIdB()].world_frame, tolerance));
-
+  EXPECT_TRUE(points[0].ptB.isApprox(
+      solution[points[0].idB].world_frame, tolerance));
 }
 
 }  // namespace
