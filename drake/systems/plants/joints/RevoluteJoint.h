@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "FixedAxisOneDoFJoint.h"
 #include <Eigen/Geometry>
 
@@ -37,7 +38,7 @@ class DRAKEJOINTS_EXPORT RevoluteJoint
   }
 
  private:
-  static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(
+  static drake::TwistVector<double> spatialJointAxis(
       const Eigen::Vector3d& rotation_axis);
 
  public:

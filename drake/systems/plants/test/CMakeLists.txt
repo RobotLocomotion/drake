@@ -70,7 +70,7 @@ add_executable(bullet_collision_zero_rad_sphere_test bullet_collision_zero_rad_s
 target_link_libraries(bullet_collision_zero_rad_sphere_test drakeRBM)
 add_test(NAME bullet_collision_zero_rad_sphere_test COMMAND bullet_collision_zero_rad_sphere_test)
 
-if(LCM_FOUND)
+if(lcm_FOUND)
   if(GTEST_FOUND)
     add_executable(testMassSpringDamper testMassSpringDamper.cpp)
     target_link_libraries(testMassSpringDamper drakeRBSystem ${GTEST_BOTH_LIBRARIES})
@@ -79,8 +79,8 @@ if(LCM_FOUND)
 
   if(bullet_FOUND)
     add_executable(testLidar lidarTest.cpp)
-    add_dependencies(testLidar drake_lcmtypes lcmtype_agg_hpp)
-    target_link_libraries(testLidar drakeRBSystem)
+    add_dependencies(testLidar drake_lcmtypes_hpp)
+    target_link_libraries(testLidar drakeRBSystem lcm)
     add_test(NAME testLidar COMMAND testLidar)
   endif()
 
@@ -108,10 +108,6 @@ if(LCM_FOUND)
     add_executable(load_model_test load_model_test.cc)
     target_link_libraries(load_model_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
     add_test(NAME load_model_test COMMAND load_model_test)
-
-    add_executable(rigid_body_tree_test rigid_body_tree_test.cc)
-    target_link_libraries(rigid_body_tree_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-    add_test(NAME rigid_body_tree_test COMMAND rigid_body_tree_test)
   endif()
 endif()
 
@@ -225,3 +221,4 @@ if(LONG_RUNNING_TESTS)
 endif()
 
 add_subdirectory(rigid_body_system)
+add_subdirectory(rigid_body_tree)

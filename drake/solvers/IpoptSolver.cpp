@@ -88,7 +88,7 @@ size_t GetGradientMatrix(
 
 Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
   Eigen::VectorXd xvec(n);
-  for (size_t i = 0; i < n; i++) {
+  for (Index i = 0; i < n; i++) {
     xvec[i] = x[i];
   }
   return xvec;
@@ -162,7 +162,7 @@ struct ResultCache {
 
   /// @param n The size of the array located at @p x_in.
   bool is_x_equal(Index n, const Number* x_in) {
-    DRAKE_ASSERT(n == x.size());
+    DRAKE_ASSERT(n == static_cast<Index>(x.size()));
     return !std::memcmp(x.data(), x_in, x.size() * sizeof(Number));
   }
 
@@ -221,7 +221,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
   virtual bool get_bounds_info(Index n, Number* x_l, Number* x_u,
                                Index m, Number* g_l, Number* g_u) {
-    DRAKE_ASSERT(n == problem_->num_vars());
+    DRAKE_ASSERT(n == static_cast<Index>(problem_->num_vars()));
     for (Index i = 0; i < n; i++) {
       x_l[i] = -std::numeric_limits<double>::infinity();
       x_u[i] = std::numeric_limits<double>::infinity();
@@ -232,7 +232,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       const Eigen::VectorXd& lower_bound = c->lower_bound();
       const Eigen::VectorXd& upper_bound = c->upper_bound();
       for (const DecisionVariableView& v : binding.variable_list()) {
-        for (int k = 0; k < v.size(); k++) {
+        for (size_t k = 0; k < v.size(); k++) {
           const int idx = v.index() + k;
           x_l[idx] = std::max(lower_bound(k), x_l[idx]);
           x_u[idx] = std::min(upper_bound(k), x_u[idx]);
@@ -263,7 +263,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     if (init_x) {
       const Eigen::VectorXd& initial_guess = problem_->initial_guess();
       DRAKE_ASSERT(initial_guess.size() == n);
-      for (size_t i = 0; i < n; i++) {
+      for (Index i = 0; i < n; i++) {
         x[i] = initial_guess[i];
       }
     }
@@ -292,7 +292,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       EvaluateCosts(n, x);
     }
 
-    DRAKE_ASSERT(cost_cache_->grad.size() == n);
+    DRAKE_ASSERT(static_cast<Index>(cost_cache_->grad.size()) == n);
     std::memcpy(grad_f, cost_cache_->grad.data(), n * sizeof(Number));
     return true;
   }
@@ -303,7 +303,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       EvaluateConstraints(n, x);
     }
 
-    DRAKE_ASSERT(constraint_cache_->result.size() == m);
+    DRAKE_ASSERT(static_cast<Index>(constraint_cache_->result.size()) == m);
     std::memcpy(g, constraint_cache_->result.data(), m * sizeof(Number));
     return true;
   }
@@ -340,7 +340,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
             iRow + grad_idx, jCol + grad_idx);
         constraint_idx += c.constraint()->num_constraints();
       }
-      DRAKE_ASSERT(grad_idx == nele_jac);
+      DRAKE_ASSERT(static_cast<Index>(grad_idx) == nele_jac);
       return true;
     }
 
@@ -352,7 +352,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       EvaluateConstraints(n, x);
     }
 
-    DRAKE_ASSERT(constraint_cache_->grad.size() == nele_jac);
+    DRAKE_ASSERT(static_cast<Index>(constraint_cache_->grad.size()) ==
+                 nele_jac);
     std::memcpy(
         values, constraint_cache_->grad.data(), nele_jac * sizeof(Number));
     return true;
@@ -383,7 +384,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     }
 
     Eigen::VectorXd solution(n);
-    for (size_t i = 0; i < n; i++) {
+    for (Index i = 0; i < n; i++) {
       solution(i) = x[i];
     }
     problem_->SetDecisionVariableValues(solution);
@@ -403,7 +404,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     cost_cache_->result[0] = 0;
     cost_cache_->grad.assign(n, 0);
 
-    for (auto const& binding : problem_->generic_objectives()) {
+    for (auto const& binding : problem_->generic_costs()) {
       size_t index = 0;
       for (const DecisionVariableView& v : binding.variable_list()) {
         this_x.conservativeResize(index + v.size());

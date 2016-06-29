@@ -26,9 +26,9 @@ namespace solvers {
 class Constraint {
   void check(size_t num_constraints) {
     static_cast<void>(num_constraints);
-    DRAKE_ASSERT(lower_bound_.size() == num_constraints &&
+    DRAKE_ASSERT(static_cast<size_t>(lower_bound_.size()) == num_constraints &&
                  "Size of lower bound must match number of constraints.");
-    DRAKE_ASSERT(upper_bound_.size() == num_constraints &&
+    DRAKE_ASSERT(static_cast<size_t>(upper_bound_.size()) == num_constraints &&
                  "Size of upper bound must match number of constraints.");
   }
 
@@ -133,7 +133,7 @@ class PolynomialConstraint : public Constraint {
       double_evaluation_point_[poly_vars_[i]] = x[i];
     }
     y.resize(num_constraints());
-    for (int i = 0; i < num_constraints(); i++) {
+    for (size_t i = 0; i < num_constraints(); i++) {
       y[i] = polynomials_[i].evaluateMultivariate(double_evaluation_point_);
     }
   }
@@ -145,7 +145,7 @@ class PolynomialConstraint : public Constraint {
       taylor_evaluation_point_[poly_vars_[i]] = x[i];
     }
     y.resize(num_constraints());
-    for (int i = 0; i < num_constraints(); i++) {
+    for (size_t i = 0; i < num_constraints(); i++) {
       y[i] = polynomials_[i].evaluateMultivariate(taylor_evaluation_point_);
     }
   }

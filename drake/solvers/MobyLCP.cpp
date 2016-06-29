@@ -125,7 +125,7 @@ SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
   // variables sit at 0.
 
   DRAKE_ASSERT(prog.generic_constraints().empty());
-  DRAKE_ASSERT(prog.generic_objectives().empty());
+  DRAKE_ASSERT(prog.generic_costs().empty());
   DRAKE_ASSERT(prog.GetAllLinearConstraints().empty());
   DRAKE_ASSERT(prog.bounding_box_constraints().empty());
 
@@ -650,7 +650,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
   Eigen::Index min_x;
   const double min_x_val = _x.topRows(n).minCoeff(&min_x);
   double tval = -min_x_val;
-  for (int i = 0; i < _nonbas.size(); i++) {
+  for (size_t i = 0; i < _nonbas.size(); i++) {
     _bas.push_back(_nonbas[i] + n);
   }
   lvindex = min_x;
@@ -779,7 +779,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
 
     // check whether artificial index among these
     _tlist.clear();
-    for (int i = 0; i < _j.size(); i++) {
+    for (size_t i = 0; i < _j.size(); i++) {
       _tlist.push_back(_bas[_j[i]]);
     }
     if (std::find(_tlist.begin(), _tlist.end(), t) != _tlist.end()) {
@@ -1044,7 +1044,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
         }
       }
     }
-    for (int i = 0, j = _bas.size(); i < _nonbas.size(); i++, j++) {
+    for (size_t i = 0, j = _bas.size(); i < _nonbas.size(); i++, j++) {
       triplet_list.push_back(Triplet(_nonbas[i], j, 1.0));
     }
 
@@ -1074,7 +1074,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   Eigen::Index min_x;
   const double min_x_val = _x.topRows(n).minCoeff(&min_x);
   double tval = -min_x_val;
-  for (int i = 0; i < _nonbas.size(); i++) {
+  for (size_t i = 0; i < _nonbas.size(); i++) {
     _bas.push_back(_nonbas[i] + n);
   }
   lvindex = min_x;
@@ -1177,7 +1177,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
 
     // check whether artificial index among these
     _tlist.clear();
-    for (int i = 0; i < _j.size(); i++) {
+    for (size_t i = 0; i < _j.size(); i++) {
       _tlist.push_back(_bas[_j[i]]);
     }
     if (std::find(_tlist.begin(), _tlist.end(), t) != _tlist.end()) {

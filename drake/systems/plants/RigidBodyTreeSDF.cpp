@@ -4,6 +4,7 @@
 
 #include "spruce.hh"
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/thirdParty/tinyxml2/tinyxml2.h"
 #include "joints/DrakeJoints.h"
@@ -35,8 +36,7 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
   body->com = T_link.inverse() * T.translation();
 
-  Matrix<double, TWIST_SIZE, TWIST_SIZE> I =
-      Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+  drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
   I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");
@@ -216,10 +216,9 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   RigidBody::CollisionElement element(
       transform_parent_to_model.inverse() * transform_to_model, body);
   // By default all collision elements added to the world from an SDF file are
-  // flagged as static. If the user decides to add static collision elements
-  // manually then an explicit call to CollisionElement::set_static() will be
-  // needed. We would also like to flag as static bodies connected
-  // to the world with a DrakeJoint::FloatingBaseType::FIXED joint.
+  // flagged as static.
+  // We would also like to flag as static bodies connected to the world with a
+  // DrakeJoint::FloatingBaseType::FIXED joint.
   // However this is not possible at this stage since joints were not parsed
   // yet.
   // Solutions to this problem would be:

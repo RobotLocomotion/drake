@@ -31,11 +31,21 @@ struct SimulationOptions {
    */
   bool warn_real_time_violation;
 
+  /**
+   * Enables a custom simulation termination condition. This function is called
+   * each cycle of the simulation loop. The input parameter of type double is
+   * the current simulation time. If the function returns true, the simulation
+   * is terminated. The default for this is a function that always returns
+   * false.
+   */
+  std::function<bool(double)> should_stop;
+
   SimulationOptions()
       : realtime_factor(-1.0),
         initial_step_size(0.01),
         timeout_seconds(1.0),
-        warn_real_time_violation(false) {}
+        warn_real_time_violation(false),
+        should_stop([](double sim_time) { return false; }) {}
 };
 static const SimulationOptions default_simulation_options;
 
@@ -98,9 +108,10 @@ inline bool handle_realtime_factor(const TimePoint& wall_clock_start_time,
  * @param tf The final time of the simulation.
  * @param xi The state vector of the system being simulated.
  * @param options The simulation options.
+ * @return The final simulation time.
  */
 template <typename System>
-void simulate(const System& sys, double ti, double tf,
+double simulate(const System& sys, double ti, double tf,
               const typename System::template StateVector<double>& xi,
               const SimulationOptions& options) {
   TimePoint start = TimeClock::now();
@@ -113,7 +124,7 @@ void simulate(const System& sys, double ti, double tf,
 
   // Take steps from ti to tf.
   double t = ti;
-  while (t < tf) {
+  while (t < tf && !options.should_stop(t)) {
     double realtime_factor = options.realtime_factor;
     if (realtime_factor < 0.0) {
       realtime_factor = 0.0;
@@ -152,6 +163,8 @@ void simulate(const System& sys, double ti, double tf,
     // 2nd order result: x = x0 + dt (xd0+xd1)/2.
     x = toEigen(x) + (dt / 2) * (toEigen(xdot0) + toEigen(xdot1));
   }
+
+  return t;
 }
 
 /** simulate

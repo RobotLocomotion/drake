@@ -1,6 +1,8 @@
-#include "RigidBody.h"
+#include "drake/systems/plants/RigidBody.h"
 
 #include <stdexcept>
+
+#include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
@@ -22,7 +24,7 @@ RigidBody::RigidBody()
   body_index = 0;
   mass = 0.0;
   com = Vector3d::Zero();
-  I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+  I << drake::SquareTwistMatrix<double>::Zero();
 }
 
 const std::string& RigidBody::name() const { return name_; }
@@ -41,8 +43,9 @@ const DrakeJoint& RigidBody::getJoint() const {
   if (joint) {
     return (*joint);
   } else {
-    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_
-      + "\" in model " + model_name_ + " does not have a joint!");
+    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_ +
+                        "\" in model " + model_name_ +
+                        " does not have a joint!");
   }
 }
 
@@ -113,6 +116,12 @@ RigidBody::CollisionElement::CollisionElement(
     const RigidBody* const body)
     : DrakeCollision::Element(geometry, T_element_to_link) {
   set_body(body);
+  // This is a temporary hack to avoid having the user to set collision
+  // elements to static when added to the world.
+  // Collision elements should be set to static in a later Initialize() stage as
+  // described in issue #2661.
+  // TODO(amcastro-tri): remove this hack.
+  if (body->name() == "world") set_static();
 }
 
 RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {

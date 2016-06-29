@@ -42,10 +42,12 @@ class NArySystem {
   StateVector<ScalarType> dynamics(const ScalarType& time,
                                    const StateVector<ScalarType>& state,
                                    const InputVector<ScalarType>& input) const {
-    if ((state.count() >= 0) && (state.count() != systems_.size())) {
+    if ((state.count() >= 0) && (
+            state.count() != static_cast<ptrdiff_t>(systems_.size()))) {
       throw std::invalid_argument("State count differs from systems count.");
     }
-    if ((input.count() >= 0) && (input.count() != systems_.size())) {
+    if ((input.count() >= 0) && (
+            input.count() != static_cast<ptrdiff_t>(systems_.size()))) {
       throw std::invalid_argument("Input count differs from systems count.");
     }
     StateVector<ScalarType> xdot(systems_.size());
@@ -60,10 +62,12 @@ class NArySystem {
   OutputVector<ScalarType> output(const ScalarType& time,
                                   const StateVector<ScalarType>& state,
                                   const InputVector<ScalarType>& input) const {
-    if ((state.count() >= 0) && (state.count() != systems_.size())) {
+    if ((state.count() >= 0) && (
+            state.count() != static_cast<ptrdiff_t>(systems_.size()))) {
       throw std::invalid_argument("State count differs from systems count.");
     }
-    if ((input.count() >= 0) && (input.count() != systems_.size())) {
+    if ((input.count() >= 0) && (
+            input.count() != static_cast<ptrdiff_t>(systems_.size()))) {
       throw std::invalid_argument("Input count differs from systems count.");
     }
     OutputVector<ScalarType> y(systems_.size());

@@ -3,6 +3,7 @@
 #include <tuple>
 
 #include "drake/math/autodiff.h"
+#include "drake/math/quaternion.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/core/Gradient.h"
 
@@ -12,6 +13,10 @@ using namespace Drake;
 
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
+using drake::math::quatDiff;
+using drake::math::quatDiffAxisInvar;
+using drake::math::quatProduct;
+using drake::math::quatRotateVec;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 5) {

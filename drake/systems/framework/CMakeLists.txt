@@ -1,3 +1,9 @@
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # TODO(#2372) These are warnings that we can't handle yet.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+endif()
+
 # Source files used to build drakeSystemFramework.
 set(sources
   basic_vector.cc
@@ -8,6 +14,7 @@ set(sources
   state_subvector.cc
   state_vector.cc
   system_interface.cc
+  system_input.cc
   system_output.cc
   basic_state_vector.cc
   value.cc
@@ -26,6 +33,7 @@ set(installed_headers
   state_subvector.h
   state_vector.h
   system_interface.h
+  system_input.h
   system_output.h
   basic_state_vector.h
   value.h

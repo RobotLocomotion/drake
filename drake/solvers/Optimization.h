@@ -78,7 +78,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   DecisionVariableView(const DecisionVariable& var, size_t start, size_t n)
       : var_(var), start_index_(start), size_(n) {
-    DRAKE_ASSERT(start + n < var.value().rows());
+    DRAKE_ASSERT((start + n) < static_cast<size_t>(var.value().rows()));
   }
 
   /** index()
@@ -101,7 +101,8 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   }
 
   std::string name() const {
-    if (start_index_ == 0 && size_ == var_.value().size()) {
+    if ((start_index_ == 0) &&
+        (size_ == static_cast<size_t>(var_.value().size()))) {
       return var_.name();
     } else {
       return var_.name() + "(" + std::to_string(start_index_) + ":" +
@@ -197,7 +198,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
      */
     void WriteThrough(const Eigen::VectorXd& solution,
                       Eigen::VectorXd* output) const {
-      DRAKE_ASSERT(solution.rows() == GetNumElements());
+      DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
       size_t solution_index = 0;
       for (auto view : variable_list_) {
         const auto& solution_segment =
@@ -230,15 +231,19 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override {
       y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
-      DRAKE_ASSERT(x.rows() == Drake::FunctionTraits<F>::numInputs(f_));
-      DRAKE_ASSERT(y.rows() == Drake::FunctionTraits<F>::numOutputs(f_));
+      DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
+                   Drake::FunctionTraits<F>::numInputs(f_));
+      DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
+                   Drake::FunctionTraits<F>::numOutputs(f_));
       Drake::FunctionTraits<F>::eval(f_, x, y);
     }
     void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
               Drake::TaylorVecXd& y) const override {
       y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
-      DRAKE_ASSERT(x.rows() == Drake::FunctionTraits<F>::numInputs(f_));
-      DRAKE_ASSERT(y.rows() == Drake::FunctionTraits<F>::numOutputs(f_));
+      DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
+                   Drake::FunctionTraits<F>::numInputs(f_));
+      DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
+                   Drake::FunctionTraits<F>::numOutputs(f_));
       Drake::FunctionTraits<F>::eval(f_, x, y);
     }
   };
@@ -253,7 +258,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       : num_vars_(0),
         x_initial_guess_(
             static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
-        problem_type_(MathematicalProgramInterface::GetLeastSquaresProgram()),
+        problem_type_(),
         solver_result_(0) {}
 
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
@@ -276,8 +281,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   void AddCost(std::shared_ptr<Constraint> const& obj,
                VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddGenericObjective());
-    generic_objectives_.push_back(Binding<Constraint>(obj, vars));
+    problem_type_.AddGenericCost();
+    generic_costs_.push_back(Binding<Constraint>(obj, vars));
   }
 
   void AddCost(std::shared_ptr<Constraint> const& obj) {
@@ -322,52 +327,52 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddCost(std::forward<std::unique_ptr<F>>(f), variable_views_);
   }
 
-  /** AddQuadraticCost
+  /** AddQuadraticErrorCost
    * @brief Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
   template <typename DerivedQ, typename Derivedb>
-  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
+  std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired, const VariableList& vars) {
-    std::shared_ptr<QuadraticConstraint> objective(new QuadraticConstraint(
+    std::shared_ptr<QuadraticConstraint> cost(new QuadraticConstraint(
         2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity()));
-    AddCost(objective, vars);
-    return objective;
+    AddCost(cost, vars);
+    return cost;
   }
 
   template <typename DerivedQ, typename Derivedb>
-  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
+  std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired) {
-    return AddQuadraticCost(Q, x_desired, variable_views_);
+    return AddQuadraticErrorCost(Q, x_desired, variable_views_);
   }
 
-  /** AddQuadraticProgramCost
+  /** AddQuadraticCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to subset of the variables
    */
   template <typename DerivedQ, typename Derivedb>
-  std::shared_ptr<QuadraticConstraint> AddQuadraticProgramCost(
+  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b, const VariableList& vars) {
-    std::shared_ptr<QuadraticConstraint> objective(
+    std::shared_ptr<QuadraticConstraint> cost(
         new QuadraticConstraint(Q, b, -std::numeric_limits<double>::infinity(),
                                 std::numeric_limits<double>::infinity()));
     // TODO(naveenoid) : Call to MathematicalProgram::AddQuadraticCost required
-    AddCost(objective, vars);
-    return objective;
+    AddCost(cost, vars);
+    return cost;
   }
 
-  /** AddQuadraticProgramCost
+  /** AddQuadraticCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applies to all of the continuous variables.
    */
   template <typename DerivedQ, typename Derivedb>
-  std::shared_ptr<QuadraticConstraint> AddQuadraticProgramCost(
+  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b) {
-    return AddQuadraticProgramCost(Q, b, variable_views_);
+    return AddQuadraticCost(Q, b, variable_views_);
   }
 
   /** AddGenericConstraint
@@ -379,7 +384,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   void AddGenericConstraint(std::shared_ptr<Constraint> con,
                             VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddGenericConstraint());
+    problem_type_.AddGenericConstraint();
     generic_constraints_.push_back(Binding<Constraint>(con, vars));
   }
   void AddGenericConstraint(std::shared_ptr<Constraint> con) {
@@ -393,7 +398,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   void AddLinearConstraint(std::shared_ptr<LinearConstraint> con,
                            VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddLinearConstraint());
+    problem_type_.AddLinearConstraint();
     linear_constraints_.push_back(Binding<LinearConstraint>(con, vars));
   }
 
@@ -441,7 +446,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   void AddLinearEqualityConstraint(
       std::shared_ptr<LinearEqualityConstraint> con, VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddLinearEqualityConstraint());
+    problem_type_.AddLinearEqualityConstraint();
     linear_equality_constraints_.push_back(
         Binding<LinearEqualityConstraint>(con, vars));
   }
@@ -494,7 +499,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   void AddBoundingBoxConstraint(std::shared_ptr<BoundingBoxConstraint> con,
                                 VariableList const& vars) {
-    problem_type_.reset(problem_type_->AddLinearConstraint());
+    problem_type_.AddLinearConstraint();
     bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, vars));
   }
 
@@ -544,14 +549,14 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                      const Eigen::MatrixBase<Derivedq>& q,
                                      const VariableList& vars) {
-    problem_type_.reset(problem_type_->AddLinearComplementarityConstraint());
+    problem_type_.AddLinearComplementarityConstraint();
 
     // Linear Complementarity Constraint cannot currently coexist with any
-    // other types of constraint or objective.
+    // other types of constraint or cost.
     // (TODO(ggould-tri) relax this to non-overlapping bindings, possibly by
     // calling multiple solvers.)
     DRAKE_ASSERT(generic_constraints_.empty());
-    DRAKE_ASSERT(generic_objectives_.empty());
+    DRAKE_ASSERT(generic_costs_.empty());
     DRAKE_ASSERT(linear_constraints_.empty());
     DRAKE_ASSERT(linear_equality_constraints_.empty());
     DRAKE_ASSERT(bbox_constraints_.empty());
@@ -592,7 +597,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     // performance purposes, as automatically generated rigid body manipulator
     // equations subject to lumped parameter rewriting may frequently come out
     // as degree 1.
-    problem_type_.reset(problem_type_->AddGenericConstraint());
+    problem_type_.AddGenericConstraint();
     std::shared_ptr<PolynomialConstraint> constraint(
         new PolynomialConstraint(polynomials, poly_vars, lb, ub));
     AddGenericConstraint(constraint, vars);
@@ -630,13 +635,13 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * @return SolutionResult indicating if the solution was successful.
    */
   SolutionResult Solve() {
-    return problem_type_->Solve(*this);
+    return problem_type_.Solve(*this);
   }  // TODO(naveenoid) : add argument for options
 
   //    template <typename Derived>
   //    bool solve(const Eigen::MatrixBase<Derived>& x0);
 
-  //    getObjectiveValue();
+  //    getCostValue();
   //    getExitFlag();
   //    getInfeasibleConstraintNames();
 
@@ -648,7 +653,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   template <typename Derived>
   void SetDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
-    DRAKE_ASSERT(x.rows() == num_vars_);
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == num_vars_);
     size_t index = 0;
     for (auto& v : variables_) {
       v.set_value(x.middleRows(index, v.value().rows()));
@@ -722,8 +727,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     solver_result_ = solver_result;
   }
 
-  const std::list<Binding<Constraint>>& generic_objectives() const {
-    return generic_objectives_;
+  const std::list<Binding<Constraint>>& generic_costs() const {
+    return generic_costs_;
   }  // e.g. for snopt_user_fun
   const std::list<Binding<Constraint>>& generic_constraints() const {
     return generic_constraints_;
@@ -779,7 +784,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   // invalidates existing references to the elements
   std::list<DecisionVariable> variables_;
   VariableList variable_views_;
-  std::list<Binding<Constraint>> generic_objectives_;
+  std::list<Binding<Constraint>> generic_costs_;
   std::list<Binding<Constraint>> generic_constraints_;
   // note: linear_constraints_ does not include linear_equality_constraints_
   std::list<Binding<LinearConstraint>> linear_constraints_;
@@ -794,7 +799,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   size_t num_vars_;
   Eigen::VectorXd x_initial_guess_;
   std::shared_ptr<SolverData> solver_data_;
-  std::shared_ptr<MathematicalProgramInterface> problem_type_;
+  MathematicalProgram problem_type_;
   std::string solver_name_;
   int solver_result_;
   std::map<std::string, std::map<std::string, double>> solver_options_double_;

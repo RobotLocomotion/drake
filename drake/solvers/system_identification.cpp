@@ -267,7 +267,7 @@ SystemIdentification<T>::EstimateParameters(
 
   // Make sure we have as many data points as vars we are estimating, or else
   // our solution will be meaningless.
-  DRAKE_ASSERT(num_data >= vars_to_estimate.size());
+  DRAKE_ASSERT(num_data >= num_to_estimate);
 
   // Build up our optimization problem's decision variables.
   OptimizationProblem problem;

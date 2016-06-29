@@ -24,19 +24,14 @@ using drake::AutoDiffXd;
 using drake::Matrix3X;
 using drake::Matrix4X;
 using drake::MatrixX;
+using drake::TwistMatrix;
+using drake::TwistVector;
 using drake::Vector3;
 using drake::VectorX;
+using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::Gradient;
-
-/// A column vector consisting of one twist.
-template <typename Scalar>
-using TwistVector = Eigen::Matrix<Scalar, TWIST_SIZE, 1>;
-
-/// A matrix with one twist per column, and dynamically many columns.
-template <typename Scalar>
-using TwistMatrix = Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic>;
 
 const set<int> RigidBodyTree::default_robot_num_set = {0};
 const char* const RigidBodyTree::kWorldLinkName = "world";
@@ -422,15 +417,12 @@ void RigidBodyTree::collisionDetectFromPoints(
   normal.resize(3, closest_points.size());
   phi.resize(closest_points.size());
 
-  Vector3d ptA, ptB, n;
-  double distance;
   for (size_t i = 0; i < closest_points.size(); ++i) {
-    closest_points[i].getResults(&ptA, &ptB, &n, &distance);
-    x.col(i) = ptB;
-    body_x.col(i) = ptA;
-    normal.col(i) = n;
-    phi[i] = distance;
-    const DrakeCollision::Element* elementB = closest_points[i].get_elementB();
+    x.col(i) = closest_points[i].ptB;
+    body_x.col(i) = closest_points[i].ptA;
+    normal.col(i) = closest_points[i].normal;
+    phi[i] = closest_points[i].distance;
+    const DrakeCollision::Element* elementB = closest_points[i].elementB;
     body_idx.push_back(elementB->get_body()->body_index);
   }
 }
@@ -471,17 +463,14 @@ bool RigidBodyTree::collisionDetect(
   normal = MatrixXd::Zero(3, points.size());
   phi = VectorXd::Zero(points.size());
 
-  Vector3d ptA, ptB, n;
-  double distance;
   for (size_t i = 0; i < points.size(); ++i) {
-    points[i].getResults(&ptA, &ptB, &n, &distance);
-    xA.col(i) = ptA;
-    xB.col(i) = ptB;
-    normal.col(i) = n;
-    phi[i] = distance;
-    const DrakeCollision::Element* elementA = points[i].get_elementA();
+    xA.col(i) = points[i].ptA;
+    xB.col(i) = points[i].ptB;
+    normal.col(i) = points[i].normal;
+    phi[i] = points[i].distance;
+    const DrakeCollision::Element* elementA = points[i].elementA;
     bodyA_idx.push_back(elementA->get_body()->body_index);
-    const DrakeCollision::Element* elementB = points[i].get_elementB();
+    const DrakeCollision::Element* elementB = points[i].elementB;
     bodyB_idx.push_back(elementB->get_body()->body_index);
   }
   return points_found;
@@ -576,22 +565,54 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   bodyA_idx.clear();
   bodyB_idx.clear();
 
-  Vector3d ptA, ptB, n;
-  double distance;
-
   for (size_t i = 0; i < num_potential_collisions; i++) {
     const DrakeCollision::Element* elementA =
-        potential_collisions[i].get_elementA();
+        potential_collisions[i].elementA;
     const DrakeCollision::Element* elementB =
-        potential_collisions[i].get_elementB();
-    potential_collisions[i].getResults(&ptA, &ptB, &n, &distance);
-    xA.col(i) = ptA;
-    xB.col(i) = ptB;
-    normal.col(i) = n;
-    phi[i] = distance;
+        potential_collisions[i].elementB;
+    xA.col(i) = potential_collisions[i].ptA;
+    xB.col(i) = potential_collisions[i].ptB;
+    normal.col(i) = potential_collisions[i].normal;
+    phi[i] = potential_collisions[i].distance;
     bodyA_idx.push_back(elementA->get_body()->body_index);
     bodyB_idx.push_back(elementB->get_body()->body_index);
   }
+}
+
+std::vector<DrakeCollision::PointPair>
+RigidBodyTree::ComputeMaximumDepthCollisionPoints(
+    const KinematicsCache<double>& cache, bool use_margins) {
+  updateDynamicCollisionElements(cache);
+  vector<DrakeCollision::PointPair> contact_points;
+  collision_model->ComputeMaximumDepthCollisionPoints(
+      use_margins, contact_points);
+  size_t num_contact_points = contact_points.size();
+
+  for (size_t i = 0; i < num_contact_points; i++) {
+    // Get bodies' transforms.
+    const RigidBody& bodyA = *contact_points[i].elementA->get_body();
+    Isometry3d TA;
+    if (bodyA.hasParent()) {
+      TA = cache.getElement(bodyA).transform_to_world;
+    } else {  // body is the world.
+      TA = Isometry3d::Identity();
+    }
+
+    const RigidBody& bodyB = *contact_points[i].elementB->get_body();
+    Isometry3d TB;
+    if (bodyB.hasParent()) {
+      TB = cache.getElement(bodyB).transform_to_world;
+    } else {  // body is the world.
+      TB = Isometry3d::Identity();
+    }
+
+    // Transform to bodies' frames.
+    // Note:
+    // Eigen assumes aliasing by default and therefore this operation is safe.
+    contact_points[i].ptA = TA.inverse() * contact_points[i].ptA;
+    contact_points[i].ptB = TB.inverse() * contact_points[i].ptB;
+  }
+  return contact_points;
 }
 
 bool RigidBodyTree::collidingPointsCheckOnly(
@@ -622,16 +643,13 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
   xA_in_world = Matrix3Xd::Zero(3, points.size());
   xB_in_world = Matrix3Xd::Zero(3, points.size());
 
-  Vector3d ptA, ptB, n;
-  double distance;
   for (size_t i = 0; i < points.size(); ++i) {
-    points[i].getResults(&ptA, &ptB, &n, &distance);
-    xA_in_world.col(i) = ptA;
-    xB_in_world.col(i) = ptB;
+    xA_in_world.col(i) = points[i].ptA;
+    xB_in_world.col(i) = points[i].ptB;
 
-    const DrakeCollision::Element* elementA = points[i].get_elementA();
+    const DrakeCollision::Element* elementA = points[i].elementA;
     bodyA_idx.push_back(elementA->get_body()->body_index);
-    const DrakeCollision::Element* elementB = points[i].get_elementB();
+    const DrakeCollision::Element* elementB = points[i].elementB;
     bodyB_idx.push_back(elementB->get_body()->body_index);
   }
   return points_found;
@@ -709,7 +727,7 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
           auto v_body =
               v.middleRows(body.velocity_num_start, joint.getNumVelocities());
 
-          Eigen::Matrix<Scalar, TWIST_SIZE, 1> joint_twist =
+          TwistVector<Scalar> joint_twist =
               element.motion_subspace_in_world * v_body;
           element.twist_in_world = parent_element.twist_in_world;
           element.twist_in_world.noalias() += joint_twist;
@@ -783,7 +801,7 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::worldMomentumMatrix(
+TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
     KinematicsCache<Scalar>& cache, const std::set<int>& robotnum,
     bool in_terms_of_qdot) const {
   cache.checkCachedKinematicsSettings(false, false, "worldMomentumMatrix");
@@ -792,7 +810,7 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::worldMomentumMatrix(
   int nq = num_positions_;
   int nv = num_velocities_;
   int ncols = in_terms_of_qdot ? nq : nv;
-  Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, ncols);
+  TwistMatrix<Scalar> ret(kTwistSize, ncols);
   ret.setZero();
   int gradient_row_start = 0;
   for (int i = 0; i < bodies.size(); i++) {
@@ -817,20 +835,20 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::worldMomentumMatrix(
               element.crb_in_world * element.motion_subspace_in_world;
         }
       }
-      gradient_row_start += TWIST_SIZE * ncols_joint;
+      gradient_row_start += kTwistSize * ncols_joint;
     }
   }
   return ret;
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::worldMomentumMatrixDotTimesV(
+TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
     KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const {
   cache.checkCachedKinematicsSettings(true, true,
                                       "worldMomentumMatrixDotTimesV");
   updateCompositeRigidBodyInertias(cache);
 
-  Matrix<Scalar, TWIST_SIZE, 1> ret;
+  TwistVector<Scalar> ret;
   ret.setZero();
   for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
@@ -851,10 +869,9 @@ Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::worldMomentumMatrixDotTimesV(
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic>
-RigidBodyTree::centroidalMomentumMatrix(KinematicsCache<Scalar>& cache,
-                                        const std::set<int>& robotnum,
-                                        bool in_terms_of_qdot) const {
+TwistMatrix<Scalar> RigidBodyTree::centroidalMomentumMatrix(
+    KinematicsCache<Scalar>& cache, const std::set<int>& robotnum,
+    bool in_terms_of_qdot) const {
   // kinematics cache checks already being done in worldMomentumMatrix.
   auto ret = worldMomentumMatrix(cache, robotnum, in_terms_of_qdot);
 
@@ -873,7 +890,7 @@ RigidBodyTree::centroidalMomentumMatrix(KinematicsCache<Scalar>& cache,
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV(
+TwistVector<Scalar> RigidBodyTree::centroidalMomentumMatrixDotTimesV(
     KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const {
   // kinematics cache checks already being done in worldMomentumMatrixDotTimesV
   auto ret = worldMomentumMatrixDotTimesV(cache, robotnum);
@@ -971,8 +988,7 @@ std::pair<Eigen::Vector3d, double> RigidBodyTree::resolveCenterOfPressure(
     const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane) const {
   // kinematics cache checks are already being done in relativeTransform
   typedef typename DerivedNormal::Scalar Scalar;
-  typedef Matrix<Scalar, 6, 1> Vector6;
-  Vector6 total_wrench = Vector6::Zero();
+  TwistVector<Scalar> total_wrench = TwistVector<Scalar>::Zero();
   for (auto it = force_torque_measurements.begin();
        it != force_torque_measurements.end(); ++it) {
     auto transform_to_world = relativeTransform(cache, 0, it->frame_idx);
@@ -1100,7 +1116,7 @@ KinematicPath RigidBodyTree::findKinematicPath(
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::geometricJacobian(
+TwistMatrix<Scalar> RigidBodyTree::geometricJacobian(
     const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
     int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind,
     bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices) const {
@@ -1119,7 +1135,7 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::geometricJacobian(
         in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
   }
 
-  Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> J(TWIST_SIZE, cols);
+  TwistMatrix<Scalar> J(kTwistSize, cols);
 
   if (v_or_qdot_indices != nullptr) {
     v_or_qdot_indices->clear();
@@ -1135,8 +1151,8 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::geometricJacobian(
     int ncols_block =
         in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
     int sign = kinematic_path.joint_direction_signs[i];
-    auto J_block = J.template block<TWIST_SIZE, Dynamic>(
-        0, col_start, TWIST_SIZE, ncols_block);
+    auto J_block = J.template block<kTwistSize, Dynamic>(
+        0, col_start, kTwistSize, ncols_block);
     if (in_terms_of_qdot) {
       J_block.noalias() =
           sign * element.motion_subspace_in_world * element.qdot_to_v;
@@ -1164,13 +1180,13 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::geometricJacobian(
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::geometricJacobianDotTimesV(
+TwistVector<Scalar> RigidBodyTree::geometricJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
     int end_effector_body_or_frame_ind,
     int expressed_in_body_or_frame_ind) const {
   cache.checkCachedKinematicsSettings(true, true, "geometricJacobianDotTimesV");
 
-  Matrix<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1);
+  TwistVector<Scalar> ret(kTwistSize, 1);
 
   int base_body_ind = parseBodyOrFrameID(base_body_or_frame_ind);
   int end_effector_body_ind =
@@ -1190,7 +1206,7 @@ Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::geometricJacobianDotTimesV(
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::relativeTwist(
+TwistVector<Scalar> RigidBodyTree::relativeTwist(
     const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
     int body_or_frame_ind, int expressed_in_body_or_frame_ind) const {
   cache.checkCachedKinematicsSettings(true, false, "relativeTwist");
@@ -1202,16 +1218,16 @@ Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::relativeTwist(
 
   const auto& base_element = cache.getElement(*bodies[base_ind]);
   const auto& body_element = cache.getElement(*bodies[body_ind]);
-  Matrix<Scalar, TWIST_SIZE, 1> relative_twist_in_world =
+  TwistVector<Scalar> relative_twist_in_world =
       body_element.twist_in_world - base_element.twist_in_world;
   return transformSpatialMotion(T, relative_twist_in_world);
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::transformSpatialAcceleration(
+TwistVector<Scalar> RigidBodyTree::transformSpatialAcceleration(
     const KinematicsCache<Scalar>& cache,
-    const Matrix<Scalar, TWIST_SIZE, 1>& spatial_acceleration, int base_ind,
-    int body_ind, int old_expressed_in_body_or_frame_ind,
+    const TwistVector<Scalar>& spatial_acceleration, int base_ind, int body_ind,
+    int old_expressed_in_body_or_frame_ind,
     int new_expressed_in_body_or_frame_ind) const {
   cache.checkCachedKinematicsSettings(true, true,
                                       "transformSpatialAcceleration");
@@ -1230,7 +1246,7 @@ Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::transformSpatialAcceleration(
       relativeTransform(cache, new_expressed_in_body_or_frame_ind,
                         old_expressed_in_body_or_frame_ind);
 
-  Matrix<Scalar, TWIST_SIZE, 1> spatial_accel_temp =
+  TwistVector<Scalar> spatial_accel_temp =
       crossSpatialMotion(twist_of_old_wrt_new, twist_of_body_wrt_base);
   spatial_accel_temp += spatial_acceleration;
   return transformSpatialMotion(T_old_to_new, spatial_accel_temp);
@@ -1304,8 +1320,8 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
     KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const*,
-                                      Matrix<Scalar, TWIST_SIZE, 1>>& f_ext,
+    const eigen_aligned_unordered_map<RigidBody const*, TwistVector<Scalar>>&
+        f_ext,
     bool include_velocity_terms) const {
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities_, 1);
   vd.setZero();
@@ -1315,8 +1331,8 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
     KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const*,
-                                      Matrix<Scalar, TWIST_SIZE, 1>>& f_ext,
+    const eigen_aligned_unordered_map<RigidBody const*, TwistVector<Scalar>>&
+        f_ext,
     const Matrix<Scalar, Eigen::Dynamic, 1>& vd,
     bool include_velocity_terms) const {
   cache.checkCachedKinematicsSettings(
@@ -1324,11 +1340,8 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
   updateCompositeRigidBodyInertias(cache);
 
-  typedef typename Eigen::Matrix<Scalar, TWIST_SIZE, 1> Vector6;
-
-  Vector6 root_accel = -a_grav.cast<Scalar>();
-  Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> net_wrenches(TWIST_SIZE,
-                                                          bodies.size());
+  TwistVector<Scalar> root_accel = -a_grav.cast<Scalar>();
+  TwistMatrix<Scalar> net_wrenches(kTwistSize, bodies.size());
   net_wrenches.col(0).setZero();
 
   for (size_t i = 0; i < bodies.size(); i++) {
@@ -1336,7 +1349,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
     if (body.hasParent()) {
       const auto& element = cache.getElement(body);
 
-      Vector6 spatial_accel = root_accel;
+      TwistVector<Scalar> spatial_accel = root_accel;
       if (include_velocity_terms)
         spatial_accel += element.motion_subspace_in_world_dot_times_v;
 
@@ -1707,8 +1720,8 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
 }
 
 RigidBody* RigidBodyTree::findLink(const std::string& link_name,
-                    const std::string& model_name,
-                    int model_id) const {
+                                   const std::string& model_name,
+                                   int model_id) const {
   return FindBody(link_name, model_name, model_id);
 }
 
@@ -1772,8 +1785,8 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
   return body->body_index;
 }
 
-int RigidBodyTree::findLinkId(const std::string& link_name, int model_id)
-                              const {
+int RigidBodyTree::findLinkId(const std::string& link_name,
+                              int model_id) const {
   return FindBodyIndex(link_name, model_id);
 }
 
@@ -2401,6 +2414,9 @@ template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Block<VectorXd const, -1, 1, false>> const&,
     Eigen::MatrixBase<Eigen::Block<VectorXd const, -1, 1, false>> const&,
     bool) const;
+template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&,
+    Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&, bool) const;
 template DRAKERBM_EXPORT KinematicsCache<AutoDiffXd>
 RigidBodyTree::doKinematics(Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
                             Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,

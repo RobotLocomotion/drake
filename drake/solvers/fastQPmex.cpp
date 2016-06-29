@@ -92,7 +92,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   set<int> active;
   if (nrhs > arg) {
     double* pact = mxGetPr(prhs[arg]);
-    for (int i = 0; i < mxGetNumberOfElements(prhs[arg]); i++)
+    for (size_t i = 0; i < mxGetNumberOfElements(prhs[arg]); i++)
       active.insert((int)pact[i] - 1);
   }
 

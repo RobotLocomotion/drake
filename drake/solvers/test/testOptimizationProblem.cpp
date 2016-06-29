@@ -170,15 +170,15 @@ GTEST_TEST(testOptimizationProblem, trivialLinearEquality) {
 
 // This test comes from Section 2.2 of "Handbook of Test Problems in
 // Local and Global Optimization."
-class TestProblem1Objective {
+class TestProblem1Cost {
  public:
   static size_t numInputs() { return 5; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(x.rows() == numInputs());
-    DRAKE_ASSERT(y.rows() == numOutputs());
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
            (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
            (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
@@ -189,7 +189,7 @@ class TestProblem1Objective {
 GTEST_TEST(testOptimizationProblem, testProblem1) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(5);
-  prog.AddCost(TestProblem1Objective());
+  prog.AddCost(TestProblem1Cost());
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
   prog.AddLinearConstraint(
@@ -221,7 +221,7 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
   Eigen::VectorXd c(5);
   c << 42, 44, 45, 47, 47.5;
 
-  prog.AddQuadraticProgramCost(Q, c);
+  prog.AddQuadraticCost(Q, c);
 
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
@@ -243,15 +243,15 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
 
 // This test comes from Section 2.3 of "Handbook of Test Problems in
 // Local and Global Optimization."
-class TestProblem2Objective {
+class TestProblem2Cost {
  public:
   static size_t numInputs() { return 6; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(x.rows() == numInputs());
-    DRAKE_ASSERT(y.rows() == numOutputs());
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
            (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
            (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
@@ -262,7 +262,7 @@ class TestProblem2Objective {
 GTEST_TEST(testOptimizationProblem, testProblem2) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(6);
-  prog.AddCost(TestProblem2Objective());
+  prog.AddCost(TestProblem2Cost());
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
   prog.AddLinearConstraint(
@@ -303,7 +303,7 @@ GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
   VectorXd c(6);
   c << -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
 
-  prog.AddQuadraticProgramCost(Q, c);
+  prog.AddQuadraticCost(Q, c);
 
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
@@ -339,15 +339,15 @@ GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
 
 // This test comes from Section 3.4 of "Handbook of Test Problems in
 // Local and Global Optimization."
-class LowerBoundTestObjective {
+class LowerBoundTestCost {
  public:
   static size_t numInputs() { return 6; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(x.rows() == numInputs());
-    DRAKE_ASSERT(y.rows() == numOutputs());
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
            (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
            (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
@@ -388,7 +388,7 @@ class LowerBoundTestConstraint : public Constraint {
 GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(6);
-  prog.AddCost(LowerBoundTestObjective());
+  prog.AddCost(LowerBoundTestCost());
   std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
   prog.AddGenericConstraint(con1);
   std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
@@ -439,15 +439,15 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   });
 }
 
-class SixHumpCamelObjective {
+class SixHumpCamelCost {
  public:
   static size_t numInputs() { return 2; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(x.rows() == numInputs());
-    DRAKE_ASSERT(y.rows() == numOutputs());
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) =
         x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) +
         x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
@@ -457,28 +457,28 @@ class SixHumpCamelObjective {
 GTEST_TEST(testOptimizationProblem, sixHumpCamel) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(2);
-  auto objective = prog.AddCost(SixHumpCamelObjective());
+  auto cost = prog.AddCost(SixHumpCamelCost());
 
   RunNonlinearProgram(prog, [&]() {
     // check (numerically) if it is a local minimum
     VectorXd ystar, y;
-    objective->eval(x.value(), ystar);
+    cost->eval(x.value(), ystar);
     for (int i = 0; i < 10; i++) {
-      objective->eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
+      cost->eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
       if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
     }
   });
 }
 
-class GloptipolyConstrainedExampleObjective {
+class GloptipolyConstrainedExampleCost {
  public:
   static size_t numInputs() { return 3; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(x.rows() == numInputs());
-    DRAKE_ASSERT(y.rows() == numOutputs());
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) = -2 * x(0) + x(1) - x(2);
   }
 };
@@ -524,11 +524,11 @@ GTEST_TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
 
   // This test is run twice on different collections of continuous
   // variables to make sure that the solvers correctly handle mapping
-  // variables to constraints/objectives.
+  // variables to constraints/costs.
   auto x = prog.AddContinuousVariables(3);
   auto y = prog.AddContinuousVariables(3);
-  prog.AddCost(GloptipolyConstrainedExampleObjective(), {x});
-  prog.AddCost(GloptipolyConstrainedExampleObjective(), {y});
+  prog.AddCost(GloptipolyConstrainedExampleCost(), {x});
+  prog.AddCost(GloptipolyConstrainedExampleCost(), {y});
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
   prog.AddGenericConstraint(qp_con, {x});
