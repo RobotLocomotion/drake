@@ -165,35 +165,63 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
   Matrix3Xd vertices;
   Matrix3Xi connectivities;
 
-  // Gather vertices and connectivities from the mesh's file.
+  // Gathers vertices and connectivities from the mesh_interface's file.
   geometry.extractMeshVertices(vertices);
   geometry.ReadMeshConnectivities(connectivities);
 
-  // Preallocated memory.
-  btTriangleMesh* mesh = new btTriangleMesh();
+
+  // Creates a btTriangleMesh (a btStridingMeshInterface) to privide the
+  // iformation needed by the more complex btBvhTriangleMeshShape.
+  // Example (the only one) in Bullet includes:
+  // - RaytestDemo.cpp (see RaytestDemo::initPhysics).
+  //   Accessible from the ExampleBrowser:
+  //     - Raycast -> Raytest
+  //
+  // Another example of mesh_interface interface (with a
+  // btTriangleIndexVertexArray):
+  // - BenchmarkDemo.cpp (see BenchmarkDemo::createLargeMeshBody).
+  //   Accessible from the ExampleBrowser:
+  //     - Benchmarks -> Prim vs Mesh
+  //     - Benchmarks -> Convex vs Mesh
+  //     - Benchmarks -> Raycast
+  // In none of those example the interface is ever freed.
+  // TODO(amcastro-tri): in none of the mentioned Bullet's examples the
+  // mesh interface is ever freed. However looking at Bullet's internals it does
+  // not seem like btBvhTriangleMeshShape takes ownership of this pointer.
+  // Therefore there seems to be a memory leak here.
+  // However, who would hold a pointer to this object? Drake does not have the
+  // infrastructure to keep track of this data right now. See isue #### which
+  // proposes a solution.
+  btTriangleMesh* mesh_interface = new btTriangleMesh();
+
+  // Preallocates memory.
   int ntris = connectivities.cols();
   int nverts = vertices.cols();
 
-  mesh->preallocateIndices(ntris);
-  mesh->preallocateVertices(nverts);
+  mesh_interface->preallocateIndices(ntris);
+  mesh_interface->preallocateVertices(nverts);
 
-  // Load individual triangles.
-  for(int itri=0; itri <  ntris; ++itri) {
+  // Loads individual triangles.
+  for (int itri = 0; itri <  ntris; ++itri) {
     Vector3i tri = connectivities.col(itri);
-    btVector3 vertex0(vertices(0,tri(0)),vertices(1,tri(0)),vertices(2,tri(0)));
-    btVector3 vertex1(vertices(0,tri(1)),vertices(1,tri(1)),vertices(2,tri(1)));
-    btVector3 vertex2(vertices(0,tri(2)),vertices(1,tri(2)),vertices(2,tri(2)));
-    mesh->addTriangle(vertex0, vertex1, vertex2);
+    btVector3 vertex0(
+        vertices(0, tri(0)), vertices(1, tri(0)), vertices(2, tri(0)));
+    btVector3 vertex1(
+        vertices(0, tri(1)), vertices(1, tri(1)), vertices(2, tri(1)));
+    btVector3 vertex2(
+        vertices(0, tri(2)), vertices(1, tri(2)), vertices(2, tri(2)));
+    mesh_interface->addTriangle(vertex0, vertex1, vertex2);
   }
 
-  // Instantiate a bullet collision object for triangle mesh shapes:
-  // btBvhTriangleMeshShape.
+  // Instantiates a Bullet collision object with a btBvhTriangleMeshShape shape.
+  // btBvhTriangleMeshShape is a static-triangle mesh_interface shape with
+  // Bounding Volume Hierarchy optimization.
   bool useQuantizedAabbCompression = true;
   btBvhTriangleMeshShape* bvh_mesh_shape =
-      new btBvhTriangleMeshShape(mesh,useQuantizedAabbCompression);
+      new btBvhTriangleMeshShape(mesh_interface, useQuantizedAabbCompression);
   std::unique_ptr<btCollisionShape> bt_shape(bvh_mesh_shape);
 
-  // Set margins.
+  // Sets margins.
   if (use_margins)
       bt_shape->setMargin(kLargeMargin);
   else
@@ -248,10 +276,10 @@ ElementId BulletModel::addElement(const Element& element) {
       case DrakeShapes::MESH: {
         const auto mesh =
             static_cast<const DrakeShapes::Mesh&>(elements[id]->getGeometry());
-        if(elements[id]->is_static()) { // A static mesh shape.
+        if (elements[id]->is_static()) {  // A static mesh representation.
           bt_shape = newBulletStaticMeshShape(mesh, true);
           bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
-        } else { // Actually, the convex hull of the mesh points.
+        } else {  // A convex hull representation of the mesh points.
           bt_shape = newBulletMeshShape(mesh, true);
           bt_shape_no_margin = newBulletMeshShape(mesh, false);
         }
