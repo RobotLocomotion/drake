@@ -755,7 +755,6 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   }
 
   // TODO(naveenoid) : getter for quadratic_constraints
-
   const std::list<Binding<LinearConstraint>>& linear_constraints() const {
     return linear_constraints_;
   }
