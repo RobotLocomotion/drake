@@ -46,7 +46,7 @@ TEST_F(AdderTest, AddTwoVectors) {
 
   adder_->Output(*context_, output_.get());
 
-  ASSERT_EQ(1, output_->ports.size());
+  ASSERT_EQ(1u, output_->ports.size());
   const BasicVector<double>* output_port =
       dynamic_cast<const BasicVector<double>*>(
           output_->ports[0]->get_vector_data());
