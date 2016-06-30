@@ -19,7 +19,6 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   parser_urdf.cc
   RigidBodyTree.cpp
   RigidBody.cpp
-  RigidBodyTreeURDF.cpp
   RigidBodyTreeSDF.cpp
   RigidBodyTreeContact.cpp
   rigid_body_frame.cc)
@@ -31,7 +30,9 @@ pods_install_pkg_config_file(drake-rbm
   REQUIRES
   VERSION 0.0.1)
 
-drake_install_headers(BotVisualizer.h, parser_urdf.h)
+drake_install_headers(
+  BotVisualizer.h
+  parser_urdf.h)
 
 pods_find_pkg_config(gurobi)
 pods_find_pkg_config(snopt_c)

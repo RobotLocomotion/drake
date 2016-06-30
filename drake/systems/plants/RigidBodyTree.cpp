@@ -5,6 +5,7 @@
 #include "drake/math/gradient.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
+#include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
@@ -65,7 +66,7 @@ RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type)
     : RigidBodyTree() {
-  addRobotFromURDF(urdf_filename, floating_base_type);
+  drake::parsers::addRobotFromURDF(urdf_filename, floating_base_type, this);
 }
 
 RigidBodyTree::RigidBodyTree(void)

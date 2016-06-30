@@ -888,7 +888,8 @@ void RigidBodySystem::addRobotFromURDFString(
     const string& urdf_string, const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type) {
   // first add the urdf to the rigid body tree
-  addRobotFromURDFString(urdf_string, root_dir, floating_base_type, this);
+  drake::parsers::addRobotFromURDFString(urdf_string, root_dir,
+    floating_base_type, tree.get());
 
   // now parse additional tags understood by rigid body system (actuators,
   // sensors, etc)
@@ -903,7 +904,8 @@ void RigidBodySystem::addRobotFromURDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   // Adds the URDF to the rigid body tree.
-  addRobotFromURDF(urdf_filename, floating_base_type, weld_to_frame, this);
+  drake::parsers::addRobotFromURDF(urdf_filename, floating_base_type,
+    weld_to_frame, tree.get());
 
   // Parses additional tags understood by rigid body system (e.g., actuators,
   // sensors, etc).
