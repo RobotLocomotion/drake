@@ -200,7 +200,7 @@ int QPController::control(
   for (size_t i = 0; i < rs.robot->actuators.size(); i++) {
     _ci_l(rowIdx+i) += rs.robot->actuators[i].effort_limit_min;
     _ci_u(rowIdx+i) += rs.robot->actuators[i].effort_limit_max;
-    printf("%g %g\n", _ci_l[rowIdx+i], _ci_u[rowIdx+i]);
+    //printf("%g %g\n", _ci_l[rowIdx+i], _ci_u[rowIdx+i]);
   }
   rowIdx += nTrq;
 
@@ -331,6 +331,7 @@ void QPOutput::print() const {
 }
 
 using namespace drake::solvers;
+
 int QPController2::control(
     const HumanoidState &rs,
     const QPInput &input,
@@ -348,11 +349,11 @@ int QPController2::control(
   //int nInEq = 11 * nContacts + nTrq;
   
   OptimizationProblem prog;
-  const DecisionVariableView qdd = prog.AddContinuousVariables(nQdd, "qdd");
   const DecisionVariableView lambda = prog.AddContinuousVariables(nWrench, "lambda");
+  const DecisionVariableView qdd = prog.AddContinuousVariables(nQdd, "qdd");
   
-  int qdd_start = qdd.index();
   int lambda_start = lambda.index();
+  int qdd_start = qdd.index();
 
   // tau = M_l * qdd + h_l - J^T_l * lambda,
   // tau = TAU * _X + tau0
@@ -495,7 +496,7 @@ int QPController2::control(
   for (size_t i = 0; i < rs.robot->actuators.size(); i++) {
     ci_l[i] += rs.robot->actuators[i].effort_limit_min;
     ci_u[i] += rs.robot->actuators[i].effort_limit_max;
-    printf("%g %g\n", ci_l[i], ci_u[i]);
+    //printf("%g %g\n", ci_l[i], ci_u[i]);
   }
   prog.AddLinearConstraint(CI, ci_l, ci_u, {lambda});
 
@@ -510,16 +511,32 @@ int QPController2::control(
   prog.AddQuadraticCost(input.w_qdd*MatrixXd::Identity(nQdd, nQdd), input.w_qdd*(-input.qdd_d), {qdd});
   
   // regularize lambda to lambda_d
-  VectorXd lambda_d(VectorXd::Zero(nWrench)); 
-  lambda_d[5] = 660;
-  lambda_d[11] = 660;
-  prog.AddQuadraticCost(input.w_wrench_reg*MatrixXd::Identity(nWrench, nWrench), input.w_wrench_reg*(-lambda_d), {lambda});
-
+  //VectorXd lambda_d(VectorXd::Zero(nWrench)); 
+  //lambda_d[5] = 660;
+  //lambda_d[11] = 660;
+  MatrixXd weight_l = MatrixXd::Zero(1, nWrench);
+  weight_l(0, 5) = 1;
+  weight_l(0, 11) = -1;
+  prog.AddQuadraticCost(input.w_wrench_reg*weight_l.transpose()*weight_l, input.w_wrench_reg*VectorXd::Zero(nWrench), {lambda});
 
   ////////////////////////////////////////////////////////////////////
   // solve
   prog.SetInitialGuess(qdd, VectorXd::Zero(nQdd));
-  prog.SetInitialGuess(lambda, VectorXd::Zero(nWrench));
+  VectorXd lambda0(nWrench);
+  lambda0[0] = -0.0697559;
+  lambda0[1] = -42.4376;
+  lambda0[2] = -0.027666;
+  lambda0[3] = 0.0550052;
+  lambda0[4] = 0.00504018;
+  lambda0[5] = 666.603;
+  lambda0[6] = -0.0662433;
+  lambda0[7] = -42.4341;
+  lambda0[8] = 0.0238017;
+  lambda0[9] = 0.0544796;
+  lambda0[10] = -0.00522695;
+  lambda0[11] = 666.621;
+
+  prog.SetInitialGuess(lambda, lambda0);
   SolutionResult result;
   SnoptSolver snopt;
   result = snopt.Solve(prog);
@@ -563,6 +580,14 @@ int QPController2::control(
   ////////////////////////////////////////////////////////////////////
   // sanity checks,
   // check dynamics
+  auto costs = prog.generic_costs();
+  VectorXd val;
+  for (auto cost_b : costs) {
+    std::shared_ptr<Constraint> cost = cost_b.constraint();
+    cost->eval(cost_b.variable_list().begin()->value(), val);
+    std::cout << "cost on qdd: " << val.transpose() << std::endl;
+  }
+  
   VectorXd residual = rs.M * output.qdd + rs.h;
   for (int i = 0; i < nContacts; i++)
     residual -= rs.foot[i]->J.transpose() * output.foot_wrench_w[i];
