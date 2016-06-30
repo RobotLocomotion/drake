@@ -222,7 +222,7 @@ ElementId BulletModel::addElement(const Element& element) {
         break;
     }
     if (bt_shape) {
-      // Create the collision objects
+      // Create the actual Bullet collision objects.
       std::unique_ptr<btCollisionObject> bt_obj(new btCollisionObject());
       std::unique_ptr<btCollisionObject> bt_obj_no_margin(
           new btCollisionObject());
@@ -231,22 +231,59 @@ ElementId BulletModel::addElement(const Element& element) {
       bt_obj->setUserPointer(elements[id].get());
       bt_obj_no_margin->setUserPointer(elements[id].get());
 
-      // Add the collision objects to the collision worlds
-      bullet_world_.bt_collision_world->addCollisionObject(bt_obj.get());
-      bullet_world_no_margin_.bt_collision_world->addCollisionObject(
-          bt_obj_no_margin.get());
+      // Here bit masks are set so that static collision elements are not even
+      // checked for collisions between them.
+      //
+      // From Bullet's user manual, Ch. 5:
+      // Bullet provides three easy ways to ensure that only certain objects
+      // collide with each other: masks, broadphase filter callbacks and
+      // nearcallbacks. It is worth noting that mask-based collision selection
+      // happens a lot further up the toolchain than the callbacks do. In short,
+      // if masks are sufficient for your purposes, use them; they perform
+      // better and are a lot simpler to use.
+      //
+      // Bullet's collision filtering model assigns two independent sets of
+      // "groups" to each body:
+      //  - the set of groups the body belongs to, and
+      //  - the set of groups the body can collide with.
+      // A pair of bodies A and B are checked for possible collision only if A
+      // belongs to a group B can collide with and B belongs to a group A can
+      // collide with.
+      // Groups are identified with small integers. The sets are represented as
+      // bitsets using the group number as a bit position. Using short provides
+      // up to 16 groups.
+      // A body thus has two shorts:
+      //   - 'group' has a bit set for each group the body belongs to, and
+      //   - 'mask' has a bit set for each group the body can collide with.
+      // So A and B can collide if A.group & B.mask and B.group & A.mask are
+      // both non-zero.
+      //
+      // Notes:
+      //   1. In general it is not true that group = ~mask.
+      //   2. The exclusive or operator (^) is an easy way to turn on/off
+      //      specific bits (since A^0 = A and A^1 = ~A).
 
-      if (elements[id]->isStatic()) {
-        bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-        bt_obj->activate();
-        bt_obj_no_margin->setCollisionFlags(
-            btCollisionObject::CF_KINEMATIC_OBJECT);
-        bt_obj_no_margin->activate();
-      } else {
-        bt_obj->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
-        bt_obj_no_margin->setCollisionFlags(
-            btCollisionObject::CF_STATIC_OBJECT);
-      }
+      bool is_dynamic = !elements[id]->is_static();
+      short collision_filter_group =  is_dynamic?    // NOLINT(runtime/int)
+          // NOLINTNEXTLINE(runtime/int)
+          static_cast<short>(btBroadphaseProxy::DefaultFilter) :
+          // NOLINTNEXTLINE(runtime/int)
+          static_cast<short>(btBroadphaseProxy::StaticFilter);
+      short collision_filter_mask = is_dynamic?  // NOLINT(runtime/int)
+          // NOLINTNEXTLINE(runtime/int)
+          static_cast<short>(btBroadphaseProxy::AllFilter) :
+          // The exclusive or flips the one bit position corresponding to the
+          // StaticFilter group.
+          // NOLINTNEXTLINE(runtime/int)
+          static_cast<short>(
+             btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
+
+      bullet_world_.bt_collision_world->
+          addCollisionObject(bt_obj.get(),
+                             collision_filter_group, collision_filter_mask);
+      bullet_world_no_margin_.bt_collision_world->
+          addCollisionObject(bt_obj_no_margin.get(),
+                             collision_filter_group, collision_filter_mask);
 
       // Take ownership of the Bullet collision objects.
       bullet_world_.bt_collision_objects.insert(

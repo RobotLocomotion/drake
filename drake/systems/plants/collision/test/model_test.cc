@@ -691,5 +691,54 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   }
 }
 
+// Tests that static collision elements do not collide with other static
+// collision elements.
+// This test sets four spheres in a box arrangement so that they collide with
+// their neighboring spheres. In this configuration, the collision dispatcher
+// will return four collision points.
+// However, two collision elements (ball1 and ball4) are flagged as static and
+// therefore only three collision points are reported. Dynamic (non-static)
+// collision elements can still collide with static elements.
+GTEST_TEST(ModelTest, StaticElements) {
+  DrakeShapes::Sphere sphere(0.5);
+  Isometry3d pose = Isometry3d::Identity();
+
+  // Create collision elements.
+  // Flag ball1 and ball4 to be static.
+  Element ball1(sphere); ball1.set_static();
+  Element ball2(sphere);
+  Element ball3(sphere);
+  Element ball4(sphere); ball4.set_static();
+
+  // Populate the model.
+  std::shared_ptr<Model> model = newModel();
+  ElementId ball1_id = model->addElement(ball1);
+  ElementId ball2_id = model->addElement(ball2);
+  ElementId ball3_id = model->addElement(ball3);
+  ElementId ball4_id = model->addElement(ball4);
+
+  pose.translation() = Vector3d(0.45, 0.45, 0.0);
+  model->updateElementWorldTransform(ball1_id, pose);
+
+  pose.translation() = Vector3d(-0.45, 0.45, 0.0);
+  model->updateElementWorldTransform(ball2_id, pose);
+
+  pose.translation() = Vector3d(-0.45, -0.45, 0.0);
+  model->updateElementWorldTransform(ball3_id, pose);
+
+  pose.translation() = Vector3d(0.45, -0.45, 0.0);
+  model->updateElementWorldTransform(ball4_id, pose);
+
+  // List of collision points.
+  std::vector<PointPair> points;
+
+  // Compute all points of contact.
+  model->ComputeMaximumDepthCollisionPoints(false, points);
+
+  // Only three points are expected (instead of four) since ball1 and ball4 are
+  // flagged as static.
+  ASSERT_EQ(3, points.size());
+}
+
 }  // namespace
 }  // namespace DrakeCollision
