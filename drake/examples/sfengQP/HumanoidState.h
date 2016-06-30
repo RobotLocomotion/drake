@@ -5,6 +5,11 @@
 
 using namespace Eigen;
 
+/**
+ * For all the velocty / acceleraion / wrench, the first 3 are always angualar,
+ * and the last 3 are linear.
+ */
+
 class BodyOfInterest {
  public:
   std::string name;
@@ -30,6 +35,11 @@ class BodyOfInterest {
   }
 };
 
+/**
+ * Mostly a thin wrapper on RigidBodyTree.
+ * It has kinematic values such as task space velocity of various body parts,
+ * some measured contact force / torque information, joint torque, etc.
+ */
 class HumanoidState {
  public:
   double time;
@@ -85,9 +95,6 @@ class HumanoidState {
     for (auto it = robot->bodies.begin(); it != robot->bodies.end(); ++it) {
       bodyName2ID[(*it)->name()] = it - robot->bodies.begin();
     }
-    for (auto it = robot->frames.begin(); it != robot->frames.end(); ++it) {
-      bodyName2ID[(*it)->name] = -(it - robot->frames.begin()) - 2;
-    }
 
     jointName2ID = std::unordered_map<std::string, int>();
     for (int i = 0; i < robot->number_of_positions(); i++) {
@@ -110,6 +117,22 @@ class HumanoidState {
     trq.resize(robot->actuators.size());
   }
 
+  /**
+   * @brief Do kinematics and compute useful information based on kinematics and
+   * measured force torque information.
+   *
+   * @param t is in seconds
+   * @param q is position
+   * @param v is velocity
+   * @param trq is joint torque, should be in the same order as @param v, not
+   * in robot->actuators order
+   * @param l_ft is force / torque measued at the foot force torque sensor
+   * location.
+   * @param r_ft is the same as @param l_ft
+   * @param rot rotates @param l_ft and @param r_ft in the same orientation as
+   * the foot frame. This is useful if the foot ft sensor has a different
+   * orientation than the foot.
+   */
   void update(double t, const VectorXd& q, const VectorXd& v,
               const VectorXd& trq, const Vector6d& l_ft, const Vector6d& r_ft,
               const Matrix3d& rot = Matrix3d::Identity());
@@ -117,6 +140,17 @@ class HumanoidState {
  private:
   double _time0;
 
+  /**
+   * @brief computes kinematic related values
+   *
+   * @param name of BodyOfInterest
+   * @param pose stores the output transformation
+   * @param vel stores the output task space velocity
+   * @param J stores the task space Jacobian
+   * @param Jdv stores the task space Jacobian_dot * v
+   * @param local_offset offset between point of interest to body origin in 
+   * body frame
+   */
   void _fillKinematics(const std::string& name, Isometry3d& pose, Vector6d& vel,
                        MatrixXd& J, Vector6d& Jdv,
                        const Vector3d& local_offset = Vector3d::Zero());
