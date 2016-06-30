@@ -2474,4 +2474,3 @@ template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
 template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&, bool) const;
-200
