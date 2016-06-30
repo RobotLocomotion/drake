@@ -15,18 +15,21 @@ namespace solvers {
 
 class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  public:
-  DirectTrajectoryOptimization(const int numInputs, const int numStates,
-                               const size_t numTimeSamples,
-                               const int trajectoryTimeLowerBound,
-                               const int trajectoryTimeUpperBound);
-  // TODO(tri-lucy) add options params
+  DirectTrajectoryOptimization(const int num_inputs, const int num_states,
+                               const size_t num_time_samples,
+                               const int trajectory_time_lower_bound,
+                               const int trajectory_time_upper_bound);
+  // TODO(lucy-tri) add options params
  private:
-  const int numInputs_;
-  const int numStates_;
+  void addStateConstraint(const Constraint& constraint, const int time_index); 
+  
+  const int kNumInputs;
+  const int kNumStates;
   const size_t N;  // Number of time samples
 
-  OptimizationProblem optProblem_;
+  OptimizationProblem opt_problem_;
   DecisionVariableView h_vars_;
+  DecisionVariableView u_vars_;
 };
 
 }  // solvers
