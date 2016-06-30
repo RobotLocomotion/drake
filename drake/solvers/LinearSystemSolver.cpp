@@ -12,13 +12,6 @@ using Drake::TaylorVecXd;
 
 namespace drake {
 namespace solvers {
-
-
-/*
-TODO: 
-      separate into an object file for linear system and rename appropriately
-      flesh out unconstrainted / equality-constrained QP?
-*/
       
 bool LinearSystemSolver::available() const { 
   return true; 
