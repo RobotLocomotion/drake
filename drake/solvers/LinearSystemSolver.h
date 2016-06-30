@@ -10,8 +10,6 @@ namespace solvers {
 class DRAKEOPTIMIZATION_EXPORT LinearSystemSolver :
       public MathematicalProgramSolverInterface  {
  public:
-  // This solver is implemented in various pieces depending on if
-  // Ipopt was available during compilation.
   bool available() const override;
   SolutionResult Solve(OptimizationProblem& prog) const override;
 };
