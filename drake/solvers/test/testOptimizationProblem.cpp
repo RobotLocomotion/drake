@@ -789,7 +789,7 @@ GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
   EXPECT_TRUE(
     CompareMatrices(expected_answer, x.value(), 1e-10, MatrixCompareType::absolute));
 
-  // this should be solved with a NonInequalityConstrainedQP solver
+  // this is an Equality Constrained QP
   std::string solver_name;
   int solver_result;
   prog.GetSolverResult(&solver_name, &solver_result);
@@ -825,13 +825,12 @@ OptimizationProblem prog;
   EXPECT_TRUE(
     CompareMatrices(expected_answer, x.value(), 1e-10, MatrixCompareType::absolute));
 
-  // this should be solved with a NonInequalityConstrainedQP solver
+  // this is an Equality Constrained QP
   std::string solver_name;
   int solver_result;
   prog.GetSolverResult(&solver_name, &solver_result);
   EXPECT_EQ( solver_name, std::string("Equality Constrained QP Solver") );
 }
-
 
 }  // namespace
 }  // namespace solvers

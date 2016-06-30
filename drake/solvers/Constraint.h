@@ -98,6 +98,21 @@ class QuadraticConstraint : public Constraint {
         b_.cast<Drake::TaylorVarXd>().transpose() * x;
   };
 
+  virtual Eigen::SparseMatrix<double> GetSparseQ() const {
+    return Q_.sparseView();
+  }
+  virtual Eigen::SparseMatrix<double> GetSparseB() const {
+    return b_.sparseView();
+  }
+  virtual const Eigen::MatrixXd&
+  Q() const {
+    return Q_;
+  }
+  virtual const Eigen::VectorXd&
+  b() const {
+    return b_;
+  }
+
  private:
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
