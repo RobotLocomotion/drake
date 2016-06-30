@@ -1,3 +1,4 @@
+#include "drake/Path.h"
 #include "QPController.h"
 
 QPOutput TestGravityCompensation(const HumanoidState& rs) {
@@ -42,8 +43,7 @@ QPOutput TestGravityCompensation(const HumanoidState& rs) {
 int main() {
   ////////////////////////////////////////////////////////////////////
   // load model
-  std::string urdf =
-      std::string(VALKYRIE_URDF_PATH) + std::string("/valkyrie_sim_drake.urdf");
+  std::string urdf = Drake::getDrakePath() + std::string("/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
   HumanoidState rs(std::unique_ptr<RigidBodyTree>(
       new RigidBodyTree(urdf, DrakeJoint::ROLLPITCHYAW)));
 
