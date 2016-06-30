@@ -4,6 +4,9 @@
 #include <iostream>
 #include <fstream>
 
+/**
+ * Input to the QP inverse dynamics controller
+ */
 class QPInput {
  public:
   std::vector<std::string> jointNames;
@@ -47,6 +50,9 @@ class QPInput {
   bool _inited;
 };
 
+/**
+ * Output of the QP inverse dynamics controller
+ */
 class QPOutput {
  public:
   std::vector<std::string> jointNames;
@@ -88,13 +94,16 @@ class QPOutput {
   bool _inited;
 };
 
+/**
+ * Parameter for the QP inverse dynamics controller.
+ */
 class QPParam {
  public:
-  double mu;     // Fx, Fy < |mu * Fz|
-  double mu_Mz;  // Mz < |mu * Mz|
-  double x_max;
+  double mu;     // Friction approx for tangential force. Fx, Fy < |mu * Fz|
+  double mu_Mz;  // Friction approx for normal torque. Mz < |mu * Mz|
+  double x_max;  // Size of the foot in the x direction, in the foot frame
   double x_min;
-  double y_max;
+  double y_max;  // Size of the foot in the y direction, in the foot frame
   double y_min;
 
   QPParam() {
@@ -107,9 +116,15 @@ class QPParam {
   }
 };
 
+/**
+ * The QP inverse dynamics controller
+ */
 class QPController {
  public:
   QPParam param;
 
+  /**
+   * @return 0 if success, < if error.
+   */
   int control(const HumanoidState& rs, const QPInput& input, QPOutput& output);
 };

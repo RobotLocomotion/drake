@@ -28,6 +28,33 @@ int QPController::control(const HumanoidState& rs, const QPInput& input,
     return -1;
   }
 
+  ////////////////////////////////////////////////////////////////////
+  // Inverse dynamics looks like:
+  // M(q) * qdd + h(q,qd) = S * tau + J^T * lambda
+  // M(q) is the intertia matrix, h(q, qd) is the gravitational and centrifugal
+  // force, qdd is acceleration, S is the selection matrix (top 6 rows are
+  // zeros due to the floating base), tau is joint torque, J^T is the transpose
+  // of all contact Jacobian, and lambda is the contact wrench in the world
+  // frame.
+  // Note that since S.topRows(6) is zero,
+  // tau = M_l * qdd + h_l - J^T_l * lamda, _l means the lower nTrq rows of
+  // those matrices.
+  // So we just need to solve for qdd and lambda, and tau can be computed as
+  // above.
+  //
+  // We are assuming two foot contacts in this example.
+  //
+  // For the QP problem:
+  // the unknown is _X = [qdd, lambda]
+  // equality constraints:
+  //  M_u * qdd + h_u = J^T_u * lambda (equations of motion)
+  //  J * qdd + Jd * v = 0, (contact constraints)
+  // inEquality: a bunch, joint torque limit, limits on lambda, etc
+  // cost func:
+  //  min (Jcom*qdd + Jcomd*v - comdd_d)^2
+  //    + (qdd - qdd_d)^2
+  //    + (lambda - lambda_d)^2
+  //    + all_kinds_of_body_acceleration_cost_terms
   int nContacts = 2;
   int nQdd = rs.robot->number_of_velocities();
   int nWrench = 6 * nContacts;
@@ -336,7 +363,7 @@ double QPOutput::computeCost(const HumanoidState& rs,
         input.w_wrench_reg * (-input.wrench_d[i]).transpose() *
             foot_wrench_w[i];
     tot += c;
-    std::cout << "wrench cost: " << c << std::endl;
+    std::cout << "wrench cost " << i << ": " << c << std::endl;
   }
 
   std::cout << "total cost: " << tot << std::endl;
@@ -377,4 +404,5 @@ void QPOutput::print() const {
   std::cout << "torque:\n";
   for (int i = 0; i < trq.rows(); i++)
     std::cout << jointNames[i + 6] << ": " << trq[i] << std::endl;
+  std::cout << "===============================================\n";
 }
