@@ -15,7 +15,7 @@ QPOutput testGravityCompensation(const HumanoidState &rs) {
   input.wrench_d[Side::LEFT].setZero();
   input.wrench_d[Side::RIGHT].setZero();
   input.qdd_d.setZero();
-  
+
   // [5] is Fz, 660N * 2 is about robot weight
   input.wrench_d[Side::LEFT][5] = 660;
   input.wrench_d[Side::RIGHT][5] = 660;
@@ -25,26 +25,17 @@ QPOutput testGravityCompensation(const HumanoidState &rs) {
   input.w_torso = 1e1;
   input.w_foot = 1e1;
   input.w_qdd = 1e3;
-  input.w_wrench_reg = 1e-8;
+  input.w_wrench_reg = 1e-5;
 
   ////////////////////////////////////////////////////////////////////
   // call QP
-  con.control(rs, input, output);
+  assert(con.control(rs, input, output) == 0);
 
   // print result
   output.print();
 
-  // call QP2
-  QPController2 con2;
-  QPOutput output2(*rs.robot);
-  con2.control(rs, input, output2);
-  output2.print();
-
-  std::cout << "output1 == output2 " << (output == output2) << std::endl;
-
   output.computeCost(rs, input);
-  output2.computeCost(rs, input);
-  
+
   return output;
 }
 
