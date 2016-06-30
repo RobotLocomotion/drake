@@ -6,16 +6,18 @@ QPOutput testGravityCompensation(const HumanoidState &rs) {
   QPInput input(*rs.robot);
   QPOutput output(*rs.robot);
 
-  // setup input
-  input.loadParamFromFile(
-      std::string(VALKYRIE_URDF_PATH) + std::string("/config/qpc_params"));
-
   input.comdd_d.setZero();
   input.pelvdd_d.setZero();
   input.torsodd_d.setZero();
   input.footdd_d[Side::LEFT].setZero();
   input.footdd_d[Side::RIGHT].setZero();
   input.qdd_d.setZero();
+  input.w_com = 1e2;
+  input.w_pelv = 1e1;
+  input.w_torso = 1e1;
+  input.w_foot = 1e1;
+  input.w_qdd = 1e4;
+  input.w_wrench_reg = 1e-5;
 
   ////////////////////////////////////////////////////////////////////
   // call QP
@@ -23,7 +25,6 @@ QPOutput testGravityCompensation(const HumanoidState &rs) {
 
   // print result
   output.print();
-
 
   // call QP2
   QPController2 con2;
@@ -40,7 +41,7 @@ int main() {
   ////////////////////////////////////////////////////////////////////
   // load model
   std::string urdf = std::string(VALKYRIE_URDF_PATH)
-                   + std::string("/config/valkyrie_sim_drake.urdf");
+                   + std::string("/valkyrie_sim_drake.urdf");
   HumanoidState rs(
       std::unique_ptr<RigidBodyTree>(
         new RigidBodyTree(urdf, DrakeJoint::ROLLPITCHYAW)));

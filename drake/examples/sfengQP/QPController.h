@@ -1,12 +1,11 @@
 #pragma once
 
-#include "sfConfig.h"
 #include "HumanoidState.h"
 #include "sfQP.h"
 #include <iostream>
 #include <fstream>
 
-class QPInput : public Configurable {
+class QPInput {
  public:
   std::vector<std::string> jointNames;
 
@@ -26,14 +25,12 @@ class QPInput : public Configurable {
 
   QPInput() {
     _inited = false;
-    _setupParamLookup();
   }
 
   explicit QPInput(const RigidBodyTree &r) {
     init(r);
     qdd_d.resize(r.number_of_velocities());
     _inited = true;
-    _setupParamLookup();
   }
 
   bool isSane() const {
@@ -46,18 +43,6 @@ class QPInput : public Configurable {
     for (int i = 0; i < r.number_of_positions(); i++)
       jointNames.push_back(r.getPositionName(i));
     _inited = true;
-  }
-
- protected:
-  bool _setupParamLookup() {
-    _paramLookup["w_com"] = &w_com;
-    _paramLookup["w_pelv"] = &w_pelv;
-    _paramLookup["w_torso"] = &w_torso;
-    _paramLookup["w_foot"] = &w_foot;
-    _paramLookup["w_hand"] = &w_hand;
-    _paramLookup["w_qdd"] = &w_qdd;
-    _paramLookup["w_wrench_reg"] = &w_wrench_reg;
-    return true;
   }
 
  private:

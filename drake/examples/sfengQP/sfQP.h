@@ -47,7 +47,7 @@ protected:
     /*
     drake::solvers::OptimizationProblem prog;
     auto x = prog.AddContinuousVariables(_nVar);
-    prog.AddQuadraticProgramCost(_H, _h0);
+    prog.AddQuadraticCost(_H, _h0);
     prog.AddLinearEqualityConstraint(_CE, -_ce0);
     prog.AddLinearConstraint(_CI, _ci_l, _ci_u);
     prog.SetInitialGuess({x}, VectorXd::Zero(_nVar));
@@ -56,7 +56,7 @@ protected:
     assert(result == drake::solvers::SolutionResult::kSolutionFound);
     _X = x.value();
     */
-
+    
     int ctr = 0;
     for (int i = 0; i < _nInEq; i++) {
       if (!isinf(_ci_l[i]))
