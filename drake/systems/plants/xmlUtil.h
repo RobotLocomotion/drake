@@ -162,8 +162,8 @@ DRAKEXMLUTIL_EXPORT void populatePackageMap(PackageMap& package_map);
 /// Resolves the fully-qualified name of a file. If @p filename starts with
 /// "package:", the ROS packages specified in @p package_map are searched.
 /// Otherwise, @p filename is appended to the end of @p root_dir and checked
-/// for existence. If the file does not exist or is not found, an empty string
-/// is returned.
+/// for existence. If the file does not exist or is not found, a warning is
+/// printed to `std::cerr` and an empty string is returned.
 ///
 /// @param[in] filename The name of the file to find.
 ///
