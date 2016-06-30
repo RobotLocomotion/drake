@@ -2073,6 +2073,51 @@ int RigidBodyTree::AddFloatingJoint(
   return num_floating_joints_added;
 }
 
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+void RigidBodyTree::addRobotFromURDFString(
+    const std::string& xml_string, const std::string& root_dir = ".",
+    const DrakeJoint::FloatingBaseType floating_base_type =
+        DrakeJoint::ROLLPITCHYAW,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
+  PackageMap package_map;
+  ::drake::parsers::addRobotfromURDFString(xml_string, package_map, root_dir,
+    floating_base_type, weld_to_frame, this);
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+void RigidBodyTree::addRobotFromURDFString(
+    const std::string& xml_string,
+    std::map<std::string, std::string>& package_map,
+    const std::string& root_dir = ".",
+    const DrakeJoint::FloatingBaseType floating_base_type =
+        DrakeJoint::ROLLPITCHYAW,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
+  ::drake::parsers::addRobotfromURDFString(xml_string, package_map, root_dir,
+    floating_base_type, weld_to_frame, this);
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+void RigidBodyTree::addRobotFromURDF(
+    const std::string& urdf_filename,
+    const DrakeJoint::FloatingBaseType floating_base_type =
+        DrakeJoint::ROLLPITCHYAW,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
+  PackageMap package_map;
+  ::drake::parsers::addRobotfromURDF(urdf_filename, package_map,
+    floating_base_type, weld_to_frame, this);
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+void RigidBodyTree::addRobotFromURDF(
+    const std::string& urdf_filename,
+    std::map<std::string, std::string>& package_map,
+    const DrakeJoint::FloatingBaseType floating_base_type =
+        DrakeJoint::ROLLPITCHYAW,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
+  ::drake::parsers::addRobotfromURDF(urdf_filename, package_map,
+    floating_base_type, weld_to_frame, this);
+}
+
 // Explicit template instantiations for massMatrix.
 template DRAKERBM_EXPORT MatrixX<AutoDiffUpTo73d> RigidBodyTree::massMatrix<
     AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d>&) const;
