@@ -26,7 +26,6 @@ set(installed_headers
   state.h
   state_subvector.h
   state_vector.h
-  state_vector_arithmetic.h
   system_interface.h
   system_output.h
   basic_state_vector.h

@@ -60,14 +60,16 @@ class BasicStateVector : public LeafStateVector<T> {
 
   VectorX<T> CopyToVector() const override { return vector_->get_value(); }
 
-  void AddToVector(Eigen::Ref<VectorX<T>> vec) const override {
+  void ScaleAndAddToVector(const T& scale,
+                           Eigen::Ref<VectorX<T>> vec) const override {
     assert(vec.rows() == size());
-    vec += vector_->get_value();
+    vec += scale * vector_->get_value();
   }
 
-  BasicStateVector& operator+=(const StateVector<T>& rhs) override {
+  BasicStateVector& PlusEqScaled(const T& scale,
+                                 const StateVector<T>& rhs) override {
     assert(size() == rhs.size());
-    rhs.AddToVector(vector_->get_mutable_value());
+    rhs.ScaleAndAddToVector(scale, vector_->get_mutable_value());
     return *this;
   }
 

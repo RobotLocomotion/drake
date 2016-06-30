@@ -50,33 +50,43 @@ class StateVector {
   /// value and allocates only the O(N) memory that it returns.
   virtual VectorX<T> CopyToVector() const = 0;
 
-  /// Adds this vector to @p vec, which must be the same size.
+  /// Adds a scaled version of this state vector to Eigen vector @p vec, which
+  /// must be the same size.
   ///
   /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if the vector is contiguous.
+  /// efficient approach, for instance if this vector is contiguous.
   /// Implementations should ensure this operation remains O(N) in the size of
   /// the value and allocates no memory.
-  virtual void AddToVector(Eigen::Ref<VectorX<T>> vec) const {
+  virtual void ScaleAndAddToVector(const T& scale,
+                                   Eigen::Ref<VectorX<T>> vec) const {
     assert(vec.rows() == size());
-    for (ptrdiff_t i = 0; i < size(); ++i) {
-      vec[i] += GetAtIndex(i);
-    }
+    for (ptrdiff_t i = 0; i < size(); ++i) 
+      vec[i] += scale * GetAtIndex(i);
   }
 
-  /// Adds the vector @rhs to this vector. Both vectors must be the same size.
+  /// Add in scaled state vector @p rhs to this state vector. Both vectors must
+  /// be the same size.
   ///
   /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if the vector is contiguous.
+  /// efficient approach, for instance if this vector is contiguous.
   /// Implementations should ensure this operation remains O(N) in the size of
   /// the value and allocates no memory.
-  virtual StateVector& operator+=(const StateVector<T>& rhs) {
+  virtual StateVector& PlusEqScaled(const T& scale, const StateVector<T>& rhs) {
     assert(size() == rhs.size());
-    for (ptrdiff_t i = 0; i < size(); ++i) {
-      SetAtIndex(i, GetAtIndex(i) + rhs.GetAtIndex(i));
-    }
+    for (ptrdiff_t i = 0; i < size(); ++i)
+      SetAtIndex(i, GetAtIndex(i) + scale * rhs.GetAtIndex(i));
     return *this;
   }
 
+  /// Add in state vector @p rhs to this state vector.
+  StateVector& operator+=(const StateVector<T>& rhs) {
+    return PlusEqScaled(T(1), rhs);
+  }
+
+  /// Subtract in state vector @p rhs to this state vector.
+  StateVector& operator-=(const StateVector<T>& rhs) {
+      return PlusEqScaled(T(-1), rhs);
+  }
  protected:
   StateVector() {}
 

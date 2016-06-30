@@ -87,10 +87,10 @@ TEST_F(BasicStateVectorTest, SizeBasedConstructor) {
 }
 
 // Tests that the BasicStateVector can be added to an Eigen vector.
-TEST_F(BasicStateVectorTest, AddToVector) {
+TEST_F(BasicStateVectorTest, ScaleAndAddToVector) {
   Eigen::Vector2i target;
   target << 3, 4;
-  state_vector_->AddToVector(target);
+  state_vector_->ScaleAndAddToVector(1, target);
 
   Eigen::Vector2i expected;
   expected << 4, 6;

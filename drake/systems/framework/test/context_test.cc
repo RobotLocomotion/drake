@@ -24,7 +24,7 @@ constexpr double kTime = 12.0;
 class ContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    context_.get_mutable_time()->time_sec = kTime;
+    context_.set_time(kTime);
     context_.get_mutable_input()->ports.resize(kNumInputPorts);
     for (int i = 0; i < kNumInputPorts; ++i) {
       input_data_.emplace_back(new BasicVector<double>(kInputSize[i]));
@@ -51,7 +51,7 @@ TEST_F(ContextTest, Clone) {
   std::unique_ptr<Context<double>> clone = context_.Clone();
 
   // Verify that the time was copied.
-  EXPECT_EQ(kTime, clone->get_time().time_sec);
+  EXPECT_EQ(kTime, clone->get_time());
 
   // Verify that the cloned input ports point to the same data.
   EXPECT_EQ(kNumInputPorts, clone->get_input().ports.size());

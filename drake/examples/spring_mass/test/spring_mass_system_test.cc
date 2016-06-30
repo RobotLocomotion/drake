@@ -293,7 +293,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
                       ->get_mutable_state()
                       ->continuous_state->get_mutable_state();
       const auto& dxc = derivs[kXe]->get_state();
-      PlusEq(&xc, h, dxc);  // xc += h*dxc
+      xc.PlusEqScaled(h, dxc); // xc += h*dxc
       contexts[kXe]->set_time(std::min(t + h, kTfinal));
     }
 
@@ -310,7 +310,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
                       ->continuous_state->get_mutable_state();
       const auto vx0 = x1.CopyToVector();
       const auto& dx0 = derivs[kIe]->get_state();
-      PlusEq(&x1, h, dx0);  // x1 += h*dx0 (initial guess)
+      x1.PlusEqScaled(h, dx0);  // x1 += h*dx0 (initial guess)
       contexts[kIe]->set_time(std::min(t + h, kTfinal));  // t=t1
       const ptrdiff_t nx = vx0.size();
       const auto I = MatrixX<double>::Identity(nx, nx);
@@ -340,13 +340,13 @@ TEST_F(SpringMassSystemTest, Integrate) {
       auto& xz = *contexts[kSxe]->get_state()
                       .continuous_state->get_mutable_misc_continuous_state();
       const auto& dxz = derivs[kSxe]->get_misc_continuous_state();
-      PlusEq(&xz, h, dxz);  // xz += h*dxz
+      xz.PlusEqScaled(h, dxz);  // xz += h*dxz
 
       // Invalidate v-dependent quantities.
       auto& xv = *contexts[kSxe]->get_state()
                       .continuous_state->get_mutable_generalized_velocity();
       const auto& dxv = derivs[kSxe]->get_generalized_velocity();
-      PlusEq(&xv, h, dxv);
+      xv.PlusEqScaled(h, dxv);
       contexts[kSxe]->set_time(std::min(t + h, kTfinal));
 
       // Invalidate q-dependent quantities.
@@ -354,7 +354,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
                       .continuous_state->get_mutable_generalized_position();
       system_->MapVelocityToConfigurationDerivatives(
           *contexts[kSxe], xv, configuration_derivatives_.get());
-      PlusEq(&xq, h, *configuration_derivatives_);
+      xq.PlusEqScaled(h, *configuration_derivatives_);
     }
   }
 

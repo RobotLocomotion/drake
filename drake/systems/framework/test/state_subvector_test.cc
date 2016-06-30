@@ -94,7 +94,7 @@ TEST_F(StateSubvectorTest, AddToVector) {
   target << 100, 1000;
 
   StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
-  subvec.AddToVector(target);
+  subvec.ScaleAndAddToVector(1, target);
 
   Eigen::Vector2i expected;
   expected << 102, 1003;
