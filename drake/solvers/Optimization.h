@@ -369,12 +369,6 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   void AddQuadraticCost(std::shared_ptr<Constraint> const& obj) {
     AddQuadraticCost(obj, variable_views_);
   }
-//
-//  void AddQuadraticCost(std::shared_ptr<Constraint> const& obj,
-//  VariableList const& vars) {
-//    problem_type_.AddQuadraticCost();
-//    quadratic_costs_.push_back(Binding<Constraint>(obj, vars));
-//  }
 
   /** AddQuadraticCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
