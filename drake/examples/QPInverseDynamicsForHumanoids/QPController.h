@@ -124,6 +124,9 @@ class QPController {
   QPParam param;
 
   /**
+   * @brief The current version uses SNOPT, and instantiates
+   * an OptimizationProblem every call.
+   *
    * @return 0 if success, < if error.
    */
   int control(const HumanoidState& rs, const QPInput& input, QPOutput& output);
