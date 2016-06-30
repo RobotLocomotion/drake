@@ -12,6 +12,36 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+template <template <typename> class Vector>
+class SinkSystem {
+ public:
+  template <typename ScalarType>
+  using StateVector = Drake::NullVector<ScalarType>;
+  template <typename ScalarType>
+  using InputVector = Vector<ScalarType>;
+  template <typename ScalarType>
+  using OutputVector = Drake::NullVector<ScalarType>;
+
+  SinkSystem() {};
+
+  template <typename ScalarType>
+  StateVector<ScalarType> dynamics(const double &t,
+                                   const StateVector<ScalarType> &x,
+                                   const InputVector<ScalarType> &u) const {
+    return StateVector<ScalarType>();
+  }
+
+  template <typename ScalarType>
+  OutputVector<ScalarType> output(const double &t,
+                                  const StateVector<ScalarType> &x,
+                                  const InputVector<ScalarType> &u) const {
+    return OutputVector<ScalarType>();
+  }
+
+  bool isTimeVarying() const { return false; }
+
+};
+
 int do_main(int argc, const char* argv[]) {
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
@@ -41,8 +71,9 @@ int do_main(int argc, const char* argv[]) {
 
   auto visualizer =
       std::make_shared<Drake::BotVisualizer<IiwaStatus>>(lcm, tree);
-
-  Drake::runLCM(visualizer, lcm, 0, 1e9);
+  auto sink = std::make_shared<SinkSystem<IiwaStatus>>();
+  auto sys = Drake::cascade(visualizer, sink);
+  Drake::runLCM(sys, lcm, 0, 1e9);
   return 0;
 }
 

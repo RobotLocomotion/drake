@@ -131,22 +131,22 @@ int do_main(int argc, const char* argv[]) {
   pc1.setJointLimits(joint_idx, joint_lb, joint_ub);
 
   Vector3d pos_end;
-  pos_end << -0.4, 0, 1.1;
-  Vector3d pos_lb = pos_end - Vector3d::Constant(0.1);
-  Vector3d pos_ub = pos_end + Vector3d::Constant(0.1);
-  WorldPositionConstraint wpc(&rbm, rbm.FindBodyIndex("iiwa_link_7"),
-                              pos_end, pos_lb, pos_ub, Vector2d(1, 3));
+  pos_end << 0.56, 0, 0.315;
+  Vector3d pos_lb = pos_end - Vector3d::Constant(0.01);
+  Vector3d pos_ub = pos_end + Vector3d::Constant(0.01);
+  WorldPositionConstraint wpc(&rbm, rbm.FindBodyIndex("iiwa_link_ee"),
+                              Vector3d::Zero(), pos_lb, pos_ub, Vector2d(1, 3));
 
   PostureConstraint pc2(&rbm, Vector2d(4, 5.9));
   pc2.setJointLimits(joint_idx, joint_lb, joint_ub);
 
   Eigen::VectorXi joint_idx_3(1);
-  joint_idx_3(0) = rbm.findJointId("iiwa_joint_2");
+  joint_idx_3(0) = rbm.findJoint("iiwa_joint_2")->position_num_start;
   PostureConstraint pc3(&rbm, Vector2d(6, 8));
-  pc3.setJointLimits(joint_idx_3, Vector1d(0.9), Vector1d(1.0));
+  pc3.setJointLimits(joint_idx_3, Vector1d(0.3), Vector1d(0.4));
 
-  WorldPositionConstraint wpc2(&rbm, rbm.FindBodyIndex("iiwa_link_7"),
-                               pos_end, pos_lb, pos_ub, Vector2d(6, 9));
+  WorldPositionConstraint wpc2(&rbm, rbm.FindBodyIndex("iiwa_link_ee"),
+                               Vector3d::Zero(), pos_lb, pos_ub, Vector2d(6, 9));
 
   const int kNumTimesteps = 5;
   double t[kNumTimesteps] = { 0.0, 2.0, 5.0, 7.0, 9.0 };
@@ -169,10 +169,19 @@ int do_main(int argc, const char* argv[]) {
   inverseKinPointwise(&rbm, kNumTimesteps, t, q0, q0, constraint_array.size(),
                       constraint_array.data(), ikoptions, &q_sol, info,
                       &infeasible_constraint);
+  bool info_good = true;
   for (int i = 0; i < kNumTimesteps; i++) {
     printf("INFO[%d] = %d ", i, info[i]);
+    if (info[i] != 1) {
+      info_good = false;
+    }
   }
   printf("\n");
+
+  if (!info_good) {
+    std::cerr << "Solution failed, not sending." << std::endl;
+    return 1;
+  }
 
   // Now run through the plan.
   TrajectoryRunner runner(lcm, kNumTimesteps, t, q_sol);
