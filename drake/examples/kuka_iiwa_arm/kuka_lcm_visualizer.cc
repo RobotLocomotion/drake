@@ -12,6 +12,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+// This class exists to keep the LCM messages which are passing
+// through BotVisualizer from being sent back out via LCM again.
 template <template <typename> class Vector>
 class SinkSystem {
  public:
