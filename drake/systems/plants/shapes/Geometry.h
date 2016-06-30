@@ -152,6 +152,11 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
 
   /** Read mesh triangles into the provided array connectivities.
 
+  @param[out] connectivities Each column holds the connectivities for a
+  particular triangle in the mesh. Therefore the number of columns equals the
+  number of triangles. The i-th column, of size 3, holds the indexes to the
+  three vertices of the i-th triangle in the mesh.
+
   The array `connectivities` is resized to hold the number of triangles in the
   mesh. If successful, `connectivities` will be a matrix with as many columns as
   triangles in the mesh and three rows. Each column corresponds to a triangle

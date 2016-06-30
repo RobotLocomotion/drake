@@ -1,9 +1,10 @@
+#include "Geometry.h"
+
+#include <cstdio>
 #include <fstream>
 #include <stdexcept>
 
-#include "Geometry.h"
 #include "spruce.hh"
-#include "stdio.h"
 
 using std::string;
 using std::istringstream;
@@ -131,7 +132,7 @@ Cylinder *Cylinder::clone() const { return new Cylinder(*this); }
 void Cylinder::getPoints(Matrix3Xd &points) const {
   static bool warnOnce = true;
   if (warnOnce) {
-    std::cerr << "Warning: DrakeShapes::Cylinder::getPoints(): """
+    std::cerr << "Warning: DrakeShapes::Cylinder::getPoints(): "
         "This method returns the vertices of the cylinder''s bounding-box."
          << std::endl;
     warnOnce = false;
@@ -281,6 +282,7 @@ bool Mesh::ReadMeshConnectivities(Matrix3Xi& connectivities) const {
     sscanf(line, "%s", key);
     if (strcmp(key, "f") == 0) ++num_triangles;
   }
+  free(line);
 
   // Allocates memory.
   connectivities.resize(3, num_triangles);
@@ -305,12 +307,14 @@ bool Mesh::ReadMeshConnectivities(Matrix3Xi& connectivities) const {
                            &ignored_entry,
                            tri + 2,
                            &ignored_entry);
-      if (matches != 6)
+      if (matches != 6) {
         throw std::logic_error(
-            "File \""+filename+"\" cannot be parsed. Format not supported.");
+            "File \"" + filename
+                + "\" cannot be parsed. Format not supported.");
+      }
       connectivities.col(itri++) = Vector3i(tri[0]-1, tri[1]-1, tri[2]-1);
       if (itri > num_triangles)
-        throw(std::logic_error("Number of triangles exceeded previous count."));
+        throw std::logic_error("Number of triangles exceeded previous count.");
     }
   }  // while
   fclose(file);

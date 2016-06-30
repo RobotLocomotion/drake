@@ -166,8 +166,8 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
   geometry.ReadMeshConnectivities(connectivities);
 
 
-  // Creates a btTriangleMesh (a btStridingMeshInterface) to privide the
-  // iformation needed by the more complex btBvhTriangleMeshShape.
+  // Creates a btTriangleMesh (a btStridingMeshInterface) to provide the
+  // information needed by the more complex btBvhTriangleMeshShape.
   // Example (the only one) in Bullet includes:
   // - RaytestDemo.cpp (see RaytestDemo::initPhysics).
   //   Accessible from the ExampleBrowser:
@@ -186,19 +186,19 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
   // not seem like btBvhTriangleMeshShape takes ownership of this pointer.
   // Therefore there seems to be a memory leak here.
   // However, who would hold a pointer to this object? Drake does not have the
-  // infrastructure to keep track of this data right now. See isue #### which
+  // infrastructure to keep track of this data right now. See issue 2710 which
   // proposes a solution.
   btTriangleMesh* mesh_interface = new btTriangleMesh();
 
   // Preallocates memory.
-  int ntris = connectivities.cols();
-  int nverts = vertices.cols();
+  int num_triangles = connectivities.cols();
+  int num_vertices = vertices.cols();
 
-  mesh_interface->preallocateIndices(ntris);
-  mesh_interface->preallocateVertices(nverts);
+  mesh_interface->preallocateIndices(num_triangles);
+  mesh_interface->preallocateVertices(num_vertices);
 
   // Loads individual triangles.
-  for (int itri = 0; itri <  ntris; ++itri) {
+  for (int itri = 0; itri <  num_triangles; ++itri) {
     Vector3i tri = connectivities.col(itri);
     btVector3 vertex0(
         vertices(0, tri(0)), vertices(1, tri(0)), vertices(2, tri(0)));
@@ -219,9 +219,9 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
 
   // Sets margins.
   if (use_margins)
-      bt_shape->setMargin(kLargeMargin);
+    bt_shape->setMargin(kLargeMargin);
   else
-      bt_shape->setMargin(kSmallMargin);
+    bt_shape->setMargin(kSmallMargin);
 
   return bt_shape;
 }
