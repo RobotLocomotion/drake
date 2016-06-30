@@ -364,7 +364,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddQuadraticCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
-   * Applied to subset of the variables.
+   * Applied to all (currently existing) variables.
    */
   void AddQuadraticCost(std::shared_ptr<Constraint> const& obj) {
     AddQuadraticCost(obj, variable_views_);
@@ -762,10 +762,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   }
 
 
-  /** quadratic_cost
-   *
-   * @brief Getter for quadratic costs.
-   */
+  /** Getter for quadratic costs. */
   const std::list<Binding<Constraint>>& quadratic_costs() const {
     return quadratic_costs_;
   }
