@@ -118,10 +118,9 @@ int do_main(int argc, const char* argv[]) {
       Drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
 
-  Vector2d tspan;
-  tspan << 0, 10;
+  // Create a basic pointwise IK trajectory for moving the iiwa arm.
+  // We start in the zero configuration (straight up).
   VectorXd zero_conf = rbm.getZeroConfiguration();
-
   VectorXd joint_lb = zero_conf - VectorXd::Constant(7, 0.01);
   VectorXd joint_ub = zero_conf + VectorXd::Constant(7, 0.01);
 
@@ -130,6 +129,8 @@ int do_main(int argc, const char* argv[]) {
   joint_idx << 0, 1, 2, 3, 4, 5, 6;
   pc1.setJointLimits(joint_idx, joint_lb, joint_ub);
 
+  // Define an end effector constraint and make it active for the
+  // timespan from 1 to 3 seconds.
   Vector3d pos_end;
   pos_end << 0.6, 0, 0.325;
   Vector3d pos_lb = pos_end - Vector3d::Constant(0.005);
@@ -137,16 +138,24 @@ int do_main(int argc, const char* argv[]) {
   WorldPositionConstraint wpc(&rbm, rbm.FindBodyIndex("iiwa_link_ee"),
                               Vector3d::Zero(), pos_lb, pos_ub, Vector2d(1, 3));
 
+  // After the end effector constraint is released, apply the straight
+  // up configuration again.
   PostureConstraint pc2(&rbm, Vector2d(4, 5.9));
   pc2.setJointLimits(joint_idx, joint_lb, joint_ub);
 
+  // Bring back the end effector constraint through second 9 of the
+  // demo.
+  WorldPositionConstraint wpc2(&rbm, rbm.FindBodyIndex("iiwa_link_ee"),
+                               Vector3d::Zero(), pos_lb, pos_ub,
+                               Vector2d(6, 9));
+
+  // For part of the remaining time, constrain the second joint while
+  // preserving the end effector constraint.
   Eigen::VectorXi joint_idx_3(1);
   joint_idx_3(0) = rbm.findJoint("iiwa_joint_2")->position_num_start;
   PostureConstraint pc3(&rbm, Vector2d(6, 8));
   pc3.setJointLimits(joint_idx_3, Vector1d(0.63), Vector1d(0.7));
 
-  WorldPositionConstraint wpc2(&rbm, rbm.FindBodyIndex("iiwa_link_ee"),
-                               Vector3d::Zero(), pos_lb, pos_ub, Vector2d(6, 9));
 
   const int kNumTimesteps = 5;
   double t[kNumTimesteps] = { 0.0, 2.0, 5.0, 7.0, 9.0 };

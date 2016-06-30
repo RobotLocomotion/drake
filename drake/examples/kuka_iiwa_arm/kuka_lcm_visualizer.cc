@@ -24,7 +24,7 @@ class SinkSystem {
   template <typename ScalarType>
   using OutputVector = Drake::NullVector<ScalarType>;
 
-  SinkSystem() {};
+  SinkSystem() {}
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const double &t,
@@ -41,7 +41,6 @@ class SinkSystem {
   }
 
   bool isTimeVarying() const { return false; }
-
 };
 
 int do_main(int argc, const char* argv[]) {
