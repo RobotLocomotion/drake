@@ -44,7 +44,6 @@ protected:
 
   virtual void solve()
   {
-    /*
     drake::solvers::OptimizationProblem prog;
     auto x = prog.AddContinuousVariables(_nVar);
     prog.AddQuadraticCost(_H, _h0);
@@ -55,8 +54,8 @@ protected:
     result = _solver.Solve(prog);
     assert(result == drake::solvers::SolutionResult::kSolutionFound);
     _X = x.value();
-    */
     
+    /*
     int ctr = 0;
     for (int i = 0; i < _nInEq; i++) {
       if (!isinf(_ci_l[i]))
@@ -84,6 +83,7 @@ protected:
     }
     
     qp.solve_quadprog(_H, _h0, _CE.transpose(), _ce0, CI.transpose(), ci0, _X);
+    */
   }
 
 private:

@@ -14,6 +14,7 @@ class QPInput {
   Vector6d torsodd_d;
   Vector6d footdd_d[2];
   VectorXd qdd_d;
+  Vector6d wrench_d[2];
 
   double w_com;
   double w_pelv;

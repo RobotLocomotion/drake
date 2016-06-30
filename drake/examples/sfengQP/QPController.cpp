@@ -331,6 +331,7 @@ void QPOutput::print() const {
 }
 
 using namespace drake::solvers;
+static VectorXd variableList2VectorXd(VariableList const &vlist);
 
 int QPController2::control(
     const HumanoidState &rs,
@@ -498,7 +499,7 @@ int QPController2::control(
     ci_u[i] += rs.robot->actuators[i].effort_limit_max;
     //printf("%g %g\n", ci_l[i], ci_u[i]);
   }
-  prog.AddLinearConstraint(CI, ci_l, ci_u, {lambda});
+  prog.AddLinearConstraint(CI, ci_l, ci_u, {qdd, lambda});
 
   ////////////////////////////////////////////////////////////////////
   // cost function:
@@ -511,37 +512,50 @@ int QPController2::control(
   prog.AddQuadraticCost(input.w_qdd*MatrixXd::Identity(nQdd, nQdd), input.w_qdd*(-input.qdd_d), {qdd});
   
   // regularize lambda to lambda_d
-  //VectorXd lambda_d(VectorXd::Zero(nWrench)); 
-  //lambda_d[5] = 660;
-  //lambda_d[11] = 660;
-  MatrixXd weight_l = MatrixXd::Zero(1, nWrench);
-  weight_l(0, 5) = 1;
-  weight_l(0, 11) = -1;
-  prog.AddQuadraticCost(input.w_wrench_reg*weight_l.transpose()*weight_l, input.w_wrench_reg*VectorXd::Zero(nWrench), {lambda});
+  VectorXd lambda_d(VectorXd::Zero(nWrench));
+  for (int i = 0; i < 2; i++)
+    lambda_d.segment<6>(6*i) = input.wrench_d[i];
+  prog.AddQuadraticCost(input.w_wrench_reg*MatrixXd::Identity(nWrench, nWrench), input.w_wrench_reg*lambda_d, {lambda});
 
   ////////////////////////////////////////////////////////////////////
   // solve
   prog.SetInitialGuess(qdd, VectorXd::Zero(nQdd));
-  VectorXd lambda0(nWrench);
-  lambda0[0] = -0.0697559;
-  lambda0[1] = -42.4376;
-  lambda0[2] = -0.027666;
-  lambda0[3] = 0.0550052;
-  lambda0[4] = 0.00504018;
-  lambda0[5] = 666.603;
-  lambda0[6] = -0.0662433;
-  lambda0[7] = -42.4341;
-  lambda0[8] = 0.0238017;
-  lambda0[9] = 0.0544796;
-  lambda0[10] = -0.00522695;
-  lambda0[11] = 666.621;
-
+  VectorXd lambda0 = VectorXd::Zero(nWrench);
   prog.SetInitialGuess(lambda, lambda0);
   SolutionResult result;
   SnoptSolver snopt;
   result = snopt.Solve(prog);
   if (result != drake::solvers::SolutionResult::kSolutionFound) {
     return -1;
+  }
+
+  ////////////////////////////////////////////////////////////////////
+  // example of inspecting each cost / eq, ineq term
+  auto costs = prog.generic_costs();
+  auto eqs = prog.linear_equality_constraints();
+  auto ineqs = prog.linear_constraints();
+
+  // would be nice to have a variable list -> flat VectorXd method
+  for (auto cost_b : costs) {
+    VectorXd val;
+    std::shared_ptr<Constraint> cost = cost_b.constraint();
+    cost->eval(variableList2VectorXd(cost_b.variable_list()), val);
+    std::cout << "cost term 0.5 x^T * H * x + h0 * x: " << val.transpose() << std::endl;
+  }
+ 
+  for (auto eq_b : eqs) {
+    std::shared_ptr<LinearEqualityConstraint> eq = eq_b.constraint();
+    VectorXd X = variableList2VectorXd(eq_b.variable_list());
+    assert((eq->A() * X - eq->lower_bound()).isZero());
+  }
+  
+  for (auto ineq_b : ineqs) {
+    std::shared_ptr<LinearConstraint> ineq = ineq_b.constraint();
+    VectorXd X = variableList2VectorXd(ineq_b.variable_list());
+    X = ineq->A() * X;
+    for (size_t i = 0; i < X.size(); i++) {
+      assert(X[i] >= ineq->lower_bound()[i] && X[i] <= ineq->upper_bound()[i]);
+    }
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -553,7 +567,7 @@ int QPController2::control(
   
   for (int i = 0; i < nContacts; i++) {
     output.footdd[i] = (rs.foot[i]->J * output.qdd + rs.foot[i]->Jdv);
-    output.foot_wrench_w[i] = lambda.value().segment(i*6, 6);
+    output.foot_wrench_w[i] = lambda.value().segment<6>(i*6);
   }
 
   output.trq = rs.M.bottomRows(nTrq) * output.qdd + rs.h.tail(nTrq);
@@ -576,36 +590,37 @@ int QPController2::control(
       rs.foot_sensor[i]->pose.linear().transpose() *
       output.foot_wrench_in_sensor_frame[i].tail<3>();
   }
-
-  ////////////////////////////////////////////////////////////////////
-  // sanity checks,
-  // check dynamics
-  auto costs = prog.generic_costs();
-  VectorXd val;
-  for (auto cost_b : costs) {
-    std::shared_ptr<Constraint> cost = cost_b.constraint();
-    cost->eval(cost_b.variable_list().begin()->value(), val);
-    std::cout << "cost on qdd: " << val.transpose() << std::endl;
-  }
   
+  // sanity checks,
+  // check dynamics, foot not moving, should check ineq as well
   VectorXd residual = rs.M * output.qdd + rs.h;
   for (int i = 0; i < nContacts; i++)
     residual -= rs.foot[i]->J.transpose() * output.foot_wrench_w[i];
   residual.tail(nTrq) -= output.trq;
-
-  if (!residual.isZero()) {
-    return -1;
-  }
+  assert(residual.isZero());
 
   for (int i = 0; i < nContacts; i++) {
-    if (!output.footdd[i].isZero()) {
-      return -1;
-    }
+    assert(output.footdd[i].isZero());
   }
 
   if (!output.isSane()) {
     return -1;
   }
-
+   
   return 0;
+}
+
+VectorXd variableList2VectorXd(VariableList const &vlist)
+{
+  size_t dim = 0;
+  for (auto var : vlist) {
+    dim += var.size(); 
+  }
+  VectorXd X(dim);
+  dim = 0;
+  for (auto var : vlist) {
+    X.segment(dim, var.size()) = var.value();
+    dim += var.size();
+  }
+  return X;
 }
