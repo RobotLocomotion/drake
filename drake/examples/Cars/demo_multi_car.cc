@@ -66,9 +66,9 @@ int do_main(int argc, const char* argv[]) {
   // Add all of the desired cars.
   for (int i = 0; i < num_cars; ++i) {
     // Add the visualization entity.
-    ::drake::parsers::urdf::addRobotFromURDF((i % 5) ? kSedanUrdf : kBreadtruckUrdf,
-                                 DrakeJoint::ROLLPITCHYAW,
-                                 nullptr /*weld_to_frame*/, world_tree.get());
+    ::drake::parsers::urdf::addRobotFromURDF(
+      (i % 5) ? kSedanUrdf : kBreadtruckUrdf, DrakeJoint::ROLLPITCHYAW,
+      nullptr /*weld_to_frame*/,world_tree.get());
     world_tree->bodies.back()->robotnum = i + 1;
 
     // Add the trajectory car, and its visualization adapter.

@@ -66,7 +66,8 @@ RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type)
     : RigidBodyTree() {
-  ::drake::parsers::urdf::addRobotFromURDF(urdf_filename, floating_base_type, this);
+  ::drake::parsers::urdf::addRobotFromURDF(urdf_filename, floating_base_type,
+    this);
 }
 
 RigidBodyTree::RigidBodyTree(void)
@@ -2079,8 +2080,8 @@ void RigidBodyTree::addRobotFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
-  ::drake::parsers::urdf::addRobotFromURDFString(xml_string, package_map, root_dir,
-    floating_base_type, weld_to_frame, this);
+  ::drake::parsers::urdf::addRobotFromURDFString(xml_string, package_map,
+    root_dir, floating_base_type, weld_to_frame, this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -2090,8 +2091,8 @@ void RigidBodyTree::addRobotFromURDFString(
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  ::drake::parsers::urdf::addRobotFromURDFString(xml_string, package_map, root_dir,
-    floating_base_type, weld_to_frame, this);
+  ::drake::parsers::urdf::addRobotFromURDFString(xml_string, package_map,
+    root_dir, floating_base_type, weld_to_frame, this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -2473,3 +2474,4 @@ template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
 template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&, bool) const;
+200
