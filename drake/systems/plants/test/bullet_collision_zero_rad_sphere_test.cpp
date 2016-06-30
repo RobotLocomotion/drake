@@ -12,11 +12,11 @@ int main(int argc, char* argv[]) {
   RigidBodyTree tree;
 
   for (int i = 0; i < 10; i++) {
-    ::drake::parsers::addRobotFromURDF(
+    ::drake::parsers::urdf::addRobotFromURDF(
         getDrakePath() + "/systems/plants/test/PointMass.urdf",
         DrakeJoint::ROLLPITCHYAW, &tree);
   }
-  ::drake::parsers::addRobotFromURDF(
+  ::drake::parsers::urdf::addRobotFromURDF(
       getDrakePath() + "/systems/plants/test/FallingBrick.urdf",
       DrakeJoint::FIXED, &tree);
 

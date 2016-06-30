@@ -3,11 +3,23 @@
 #include <map>
 #include <string>
 
+#include "drake/drakeRBM_export.h"
+#include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/xmlUtil.h"
+#include "drake/thirdParty/tinyxml2/tinyxml2.h"
 
 namespace drake {
 namespace parsers {
+namespace urdf {
+
+/// Manufactures a RigidBodyFrame from the given URDF \p link
+/// and \p pose nodes.  The link name must exist in the given
+/// \p model.
+DRAKERBM_EXPORT
+std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
+    const RigidBodyTree& model, const tinyxml2::XMLElement* link,
+    const tinyxml2::XMLElement* pose, const std::string& name);
 
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
@@ -142,5 +154,6 @@ void addRobotFromURDF(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
+}  // namespace urdf
 }  // namespace parsers
 }  // namespace drake

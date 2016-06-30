@@ -7,7 +7,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/material_map.h"
-#include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "drake/systems/plants/xmlUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
 
@@ -34,6 +33,7 @@ using tinyxml2::XMLElement;
 
 namespace drake {
 namespace parsers {
+namespace urdf {
 namespace {
 
 // todo: rectify this with FindBodyIndex in the class (which makes more
@@ -847,12 +847,12 @@ void parseLoop(RigidBodyTree* tree, XMLElement* node) {
 
   XMLElement* link_node = node->FirstChildElement("link1");
   std::shared_ptr<RigidBodyFrame> frameA =
-      drake::systems::MakeRigidBodyFrameFromURDFNode(
+      MakeRigidBodyFrameFromURDFNode(
           *tree, link_node, link_node, name + "FrameA");
 
   link_node = node->FirstChildElement("link2");
   std::shared_ptr<RigidBodyFrame> frameB =
-      drake::systems::MakeRigidBodyFrameFromURDFNode(
+      MakeRigidBodyFrameFromURDFNode(
           *tree, link_node, link_node, name + "FrameB");
 
   XMLElement* axis_node = node->FirstChildElement("axis");
@@ -870,8 +870,7 @@ void parseFrame(RigidBodyTree* tree, XMLElement* node) {
   if (!frame_name) throw runtime_error("ERROR parsing Drake frame name");
 
   std::shared_ptr<RigidBodyFrame> frame =
-      drake::systems::MakeRigidBodyFrameFromURDFNode(*tree, node, node,
-                                                     frame_name);
+      MakeRigidBodyFrameFromURDFNode(*tree, node, node, frame_name);
   tree->addFrame(frame);
 }
 
@@ -1165,13 +1164,6 @@ void addRobotFromURDF(
             weld_to_frame, tree);
 }
 
-}  // namespace parsers
-}  // namespace drake
-
-// TODO(liang.fok) make this part of drake::parers::
-namespace drake {
-namespace systems {
-
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     const RigidBodyTree& tree, const tinyxml2::XMLElement* link,
     const tinyxml2::XMLElement* pose, const std::string& name) {
@@ -1191,5 +1183,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
       Eigen::aligned_allocator<RigidBodyFrame>(), name, body, xyz, rpy);
 }
 
-}  // namespace systems
+
+}  // namespace urdf
+}  // namespace parsers
 }  // namespace drake

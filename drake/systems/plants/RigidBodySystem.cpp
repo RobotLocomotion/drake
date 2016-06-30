@@ -10,7 +10,6 @@
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/pose_map.h"
-#include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "spruce.hh"
 #include "xmlUtil.h"
 
@@ -344,7 +343,7 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem& sys, XMLElement* node,
   XMLElement* parent_node = node->FirstChildElement("parent");
   if (!parent_node)
     throw runtime_error("propellor " + name + " is missing the parent node");
-  frame = drake::systems::MakeRigidBodyFrameFromURDFNode(
+  frame = drake::parsers::urdf::MakeRigidBodyFrameFromURDFNode(
       *tree, parent_node, node->FirstChildElement("origin"), name + "Frame");
   tree->addFrame(frame);
 
@@ -382,7 +381,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
   if (!link_ref_node)
     throw runtime_error("linear_spring_damper " + name +
                         " is missing the link1 node");
-  frameA = drake::systems::MakeRigidBodyFrameFromURDFNode(
+  frameA = drake::parsers::urdf::MakeRigidBodyFrameFromURDFNode(
       *tree, link_ref_node, link_ref_node, name + "FrameA");
   tree->addFrame(frameA);
 
@@ -390,7 +389,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
   if (!link_ref_node)
     throw runtime_error("linear_spring_damper " + name +
                         " is missing the link2 node");
-  frameB = drake::systems::MakeRigidBodyFrameFromURDFNode(
+  frameB = drake::parsers::urdf::MakeRigidBodyFrameFromURDFNode(
       *tree, link_ref_node, link_ref_node, name + "FrameB");
   tree->addFrame(frameB);
 }
@@ -888,7 +887,7 @@ void RigidBodySystem::addRobotFromURDFString(
     const string& urdf_string, const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type) {
   // first add the urdf to the rigid body tree
-  ::drake::parsers::addRobotFromURDFString(urdf_string, root_dir,
+  ::drake::parsers::urdf::addRobotFromURDFString(urdf_string, root_dir,
     floating_base_type, tree.get());
 
   // now parse additional tags understood by rigid body system (actuators,
@@ -907,7 +906,7 @@ void RigidBodySystem::addRobotFromURDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   // Adds the URDF to the rigid body tree.
-  drake::parsers::addRobotFromURDF(urdf_filename, floating_base_type,
+  drake::parsers::urdf::addRobotFromURDF(urdf_filename, floating_base_type,
     weld_to_frame, tree.get());
 
   // Parses additional tags understood by rigid body system (e.g., actuators,
