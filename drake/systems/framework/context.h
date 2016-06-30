@@ -54,14 +54,6 @@ class Context {
   /// effect of invaliding any computation that is dependent on them.
   TimeStep<T>* get_mutable_time_step() { return &time_step_; }
 
-  /// Returns a const reference to the Input object, which references the
-  /// current input values.
-  const Input<T>& get_input() const { return input_; }
-
-  /// Provides writable access to the Input object. This can be used to set
-  /// the input specifications (for example, number of ports) but cannot be
-  /// used to set the input values, which are provided externally.
-  Input<T>* get_mutable_input() { return &input_; }
   /// Connects the input port @p port to this Context at the given @p index.
   /// Disconnects whatever input port was previously there, and deregisters
   /// it from the output port on which it depends.
@@ -86,7 +78,7 @@ class Context {
     inputs_.resize(n);
   }
 
-  int get_num_input_ports() const { return inputs_.size(); }
+  int get_num_input_ports() const { return static_cast<int>(inputs_.size()); }
 
   /// Returns the vector data of the input port at @p index. Returns nullptr
   /// if that port is not a vector-valued port, or if it is not connected.

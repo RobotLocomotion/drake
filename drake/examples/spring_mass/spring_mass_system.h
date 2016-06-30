@@ -190,12 +190,12 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
 
   static const SpringMassOutputVector& get_output(const MyOutput& output) {
     return dynamic_cast<const SpringMassOutputVector&>(
-        *output.ports[0].vector_output);
+        *output.ports[0]->get_vector_data());
   }
 
   static SpringMassOutputVector* get_mutable_output(MyOutput* output) {
     return dynamic_cast<SpringMassOutputVector*>(
-        output->ports[0].vector_output.get());
+        output->ports[0]->GetMutableVectorData());
   }
 
   static const SpringMassStateVector& get_state(const MyContext& context) {

@@ -66,7 +66,7 @@ class StateVector {
     if (vec.rows() != size()) {
       throw std::out_of_range("Addends must be the same length.");
     }
-    for (ptrdiff_t i = 0; i < size(); ++i) 
+    for (int i = 0; i < size(); ++i) 
       vec[i] += scale * GetAtIndex(i);
   }
 
@@ -78,8 +78,10 @@ class StateVector {
   /// Implementations should ensure this operation remains O(N) in the size of
   /// the value and allocates no memory.
   virtual StateVector& PlusEqScaled(const T& scale, const StateVector<T>& rhs) {
-    assert(size() == rhs.size());
-    for (ptrdiff_t i = 0; i < size(); ++i)
+    if (rhs.size() != size()) {
+      throw std::out_of_range("Addends must be the same length.");
+    }
+    for (int i = 0; i < size(); ++i)
       SetAtIndex(i, GetAtIndex(i) + scale * rhs.GetAtIndex(i));
     return *this;
   }

@@ -35,7 +35,9 @@ class BasicStateVector : public LeafStateVector<T> {
   explicit BasicStateVector(std::unique_ptr<VectorInterface<T>> vector)
       : vector_(std::move(vector)) {}
 
-  int size() const override { return vector_->get_value().rows(); }
+  int size() const override {
+    return static_cast<int>(vector_->get_value().rows());
+  }
 
   const T GetAtIndex(int index) const override {
     if (index >= size()) {
@@ -63,29 +65,15 @@ class BasicStateVector : public LeafStateVector<T> {
 
   void ScaleAndAddToVector(const T& scale,
                            Eigen::Ref<VectorX<T>> vec) const override {
-    assert(vec.rows() == size());
+    if (vec.rows() != size()) {
+      throw std::out_of_range("Addends must be the same length.");
+    }
     vec += scale * vector_->get_value();
   }
 
   BasicStateVector& PlusEqScaled(const T& scale,
                                  const StateVector<T>& rhs) override {
-    assert(size() == rhs.size());
     rhs.ScaleAndAddToVector(scale, vector_->get_mutable_value());
-    return *this;
-  }
-
-  void AddToVector(Eigen::Ref<VectorX<T>> vec) const override {
-    if (vec.rows() != size()) {
-      throw std::out_of_range("Addends must be the same length.");
-    }
-    vec += vector_->get_value();
-  }
-
-  BasicStateVector& operator+=(const StateVector<T>& rhs) override {
-    if (size() != rhs.size()) {
-      throw std::out_of_range("Addends must be the same length.");
-    }
-    rhs.AddToVector(vector_->get_mutable_value());
     return *this;
   }
 

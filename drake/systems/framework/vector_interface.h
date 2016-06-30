@@ -10,9 +10,6 @@
 namespace drake {
 namespace systems {
 
-template <typename T>
-using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
-
 /// VectorInterface is a pure abstract interface that real-valued signals
 /// between Systems must satisfy. Classes that inherit from VectorInterface
 /// will typically provide names for the elements of the vector, and may also

@@ -44,8 +44,6 @@ using systems::StateSubvector;
 using systems::StateVector;
 using systems::SystemOutput;
 using systems::VectorInterface;
-using systems::VectorX;
-using systems::MatrixX;
 using util::MatrixCompareType;
 
 namespace examples {
@@ -112,7 +110,7 @@ TEST_F(SpringMassSystemTest, CloneState) {
 
 TEST_F(SpringMassSystemTest, CloneOutput) {
   InitializeState(1.0, 2.0);
-  system_->Output(*context_, system_output_.get());
+  system_->GetOutput(*context_, system_output_.get());
   std::unique_ptr<VectorInterface<double>> clone = output_->Clone();
 
   SpringMassOutputVector* typed_clone =
@@ -220,7 +218,7 @@ MatrixX<double> CalcDxdotDx(const ContinuousSystem<double>& system,
   // This is a temp that holds one column of the result as a ContinuousState.
   auto derivs = system.AllocateDerivatives();
 
-  for (ptrdiff_t i = 0; i < x->size(); ++i) {
+  for (int i = 0; i < x->size(); ++i) {
     const double xi = x->GetAtIndex(i);
     x->SetAtIndex(i, xi + perturb);
     system.GetDerivatives(*temp_context, derivs.get());

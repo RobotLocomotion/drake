@@ -38,7 +38,7 @@ class BasicVector : public VectorInterface<T> {
     values_ = value;
   }
 
-  int size() const override { return values_.rows(); }
+  int size() const override { return static_cast<int>(values_.rows()); }
 
   Eigen::VectorBlock<const VectorX<T>> get_value() const override {
     return values_.head(values_.rows());
