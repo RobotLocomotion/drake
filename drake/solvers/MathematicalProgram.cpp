@@ -2,6 +2,7 @@
 
 #include "IpoptSolver.h"
 #include "LinearSystemSolver.h"
+#include "EqualityConstrainedQPSolver.h"
 #include "MobyLCP.h"
 #include "NloptSolver.h"
 #include "Optimization.h"
@@ -32,6 +33,10 @@ typedef uint32_t AttributesSet;
 // Solver for simple linear systems of equalities
 AttributesSet kLinearSystemSolverCapabilities = kLinearEqualityConstraint;
 
+// Solver for equality-constrained QPs
+AttributesSet kEqualityConstrainedQPCapabilities = (
+  kQuadraticCost | kLinearCost | kLinearEqualityConstraint );
+
 // Solver for Linear Complementarity Problems (LCPs)
 AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
 
@@ -61,7 +66,8 @@ MathematicalProgram::MathematicalProgram()
       nlopt_solver_(new NloptSolver()),
       snopt_solver_(new SnoptSolver()),
       moby_lcp_solver_(new MobyLCPSolver()),
-      linear_system_solver_(new LinearSystemSolver()) {}
+      linear_system_solver_(new LinearSystemSolver()),
+      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()) {}
 
 void MathematicalProgram::AddGenericCost() {
   required_capabilities_ |= kGenericCost;
@@ -92,12 +98,17 @@ SolutionResult MathematicalProgram::Solve(OptimizationProblem& prog) const {
   // This implementation is simply copypasta for now; in the future we will
   // want to tweak the order of preference of solvers based on the types of
   // constraints present.
+
   if (is_satisfied(required_capabilities_, kLinearSystemSolverCapabilities) &&
       linear_system_solver_->available()) {
     // TODO(ggould-tri) Also allow quadratic objectives whose matrix is
     // Identity: This is the objective function the solver uses anyway when
     // underconstrainted, and is fairly common in real-world problems.
     return linear_system_solver_->Solve(prog);
+  } else if (is_satisfied(required_capabilities_, 
+                          kEqualityConstrainedQPCapabilities) &&
+            equality_constrained_qp_solver_->available()) {
+    return equality_constrained_qp_solver_->Solve(prog);
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(prog);

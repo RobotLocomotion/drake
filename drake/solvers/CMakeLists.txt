@@ -29,7 +29,9 @@ if(MATLAB_FOUND)
 endif()
 
 set(optimization_files)
-list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp system_identification.cpp LinearSystemSolver.cpp)
+list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp 
+            system_identification.cpp LinearSystemSolver.cpp 
+            EqualityConstrainedQPSolver.cpp)
 pods_find_pkg_config(ipopt)
 if (ipopt_FOUND)
   list(APPEND optimization_files IpoptSolver.cpp)
