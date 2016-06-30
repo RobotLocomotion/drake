@@ -17,15 +17,17 @@ namespace solvers {
  *  u control input
  */
 DirectTrajectoryOptimization::DirectTrajectoryOptimization(
-    const int numInputs, const int numStates,
-    const size_t numTimeSamples /* N */, const int trajectoryTimeLowerBound,
-    const int trajectoryTimeUpperBound)
-    : numInputs_(numInputs),
-      numStates_(numStates),
-      N(numTimeSamples),
-      h_vars_(optProblem_.AddContinuousVariables(N - 1, "h")) {
+    const int num_inputs, const int num_states,
+    const size_t num_time_samples /* N */, 
+    const int trajectory_time_lower_bound,
+    const int trajectory_time_upper_bound)
+    : kNumInputs(num_inputs),
+      kNumStates(num_states),
+      N(num_time_samples),
+      h_vars_(opt_problem_.AddContinuousVariables(N - 1, "h")),
+      u_vars_(opt_problem_.AddContinuousVariables(N - 1, "h")) {
   // Construct total time linear constraint.
-  // TODO(tri-lucy) add case for all timesteps independent (if needed).
+  // TODO(lucy-tri) add case for all timesteps independent (if needed).
   MatrixXd id_zero(N - 2, N - 1);
   id_zero << MatrixXd::Identity(N - 2, N - 2), MatrixXd::Zero(N - 2, 1);
   MatrixXd zero_id(N - 2, N - 1);
@@ -34,26 +36,35 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   a_time << MatrixXd::Ones(1, N - 1), id_zero - zero_id;
   //  cout << a_time << endl;
   VectorXd lower(N - 1);
-  lower << trajectoryTimeLowerBound, MatrixXd::Zero(N - 2, 1);
+  lower << trajectory_time_lower_bound, MatrixXd::Zero(N - 2, 1);
   VectorXd upper(N - 1);
-  upper << trajectoryTimeUpperBound, MatrixXd::Zero(N - 2, 1);
-  optProblem_.AddLinearConstraint(a_time, lower, upper, {h_vars_});
+  upper << trajectory_time_upper_bound, MatrixXd::Zero(N - 2, 1);
+  opt_problem_.AddLinearConstraint(a_time, lower, upper, {h_vars_});
 
   // Ensure that all h values are non-negative.
-  // TODO(tri-lucy): add bounding box constraint. See testOpt Problem.cpp
+  VectorXd all_inf(N - 1);
+  all_inf.fill(std::numeric_limits<double>::infinity());
+  opt_problem_.AddBoundingBoxConstraint(MatrixXd::Zero(N - 1, 1), all_inf,
+    {h_vars_});
 
-  // Create constraints for dynamics and add them.
+  // TODO(lucy-tri) Create constraints for dynamics and add them.
+  // Matlab: obj.addDynamicConstraints();
 
   // Add control inputs (upper and lower bounds) as bounding box constraints.
-  // TODO(tri-lucy): also add if !inf (see Matlab).
-  /*
-    VectorXd lower(N - 1);
-    lower << trajectoryTimeLowerBound; // TODO add more here.
-    VectorXd upper(N - 1);
-    upper << trajectoryTimeUpperBound;
-    optProblem_.AddBoundingBoxConstraint(lower, upper);
-  */
+  if ((trajectory_time_lower_bound != std::numeric_limits<double>::infinity()) ||
+      (trajectory_time_upper_bound != std::numeric_limits<double>::infinity())) {
+    VectorXd lower_control(N);
+    lower_control.fill(trajectory_time_lower_bound);
+    VectorXd upper_control(N);
+    upper_control.fill(trajectory_time_upper_bound);
+    opt_problem_.AddBoundingBoxConstraint(lower_control, upper_control, {u_vars_});
+  }
 }
+
+// TODO(Lucy-tri) add optional x_indices. Do: time_index as cell array.
+void DirectTrajectoryOptimization::addStateConstraint(
+  const Constraint& constraint, const int time_index) {
+} 
 
 }  // solvers
 }  // drake
