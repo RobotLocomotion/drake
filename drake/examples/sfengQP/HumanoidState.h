@@ -6,7 +6,7 @@
 using namespace Eigen;
 
 /**
- * For all the velocty / acceleraion / wrench, the first 3 are always angualar,
+ * For all the velocity / acceleration / wrench, the first 3 are always angular,
  * and the last 3 are linear.
  */
 
@@ -76,7 +76,7 @@ class HumanoidState {
   BodyOfInterest* foot_sensor[2];
 
   Vector2d cop;       // center of pressure
-  Vector2d cop_b[2];  // individual center of pressue in foot frame
+  Vector2d cop_b[2];  // individual center of pressure in foot frame
 
   Vector6d footFT_b[2];  // wrench measured in the body frame
   Vector6d footFT_w[2];  // wrench rotated to world frame
@@ -126,7 +126,7 @@ class HumanoidState {
    * @param v is velocity
    * @param trq is joint torque, should be in the same order as @param v, not
    * in robot->actuators order
-   * @param l_ft is force / torque measued at the foot force torque sensor
+   * @param l_ft is force / torque measured at the foot force torque sensor
    * location.
    * @param r_ft is the same as @param l_ft
    * @param rot rotates @param l_ft and @param r_ft in the same orientation as
@@ -148,7 +148,7 @@ class HumanoidState {
    * @param vel stores the output task space velocity
    * @param J stores the task space Jacobian
    * @param Jdv stores the task space Jacobian_dot * v
-   * @param local_offset offset between point of interest to body origin in 
+   * @param local_offset offset between point of interest to body origin in
    * body frame
    */
   void _fillKinematics(const std::string& name, Isometry3d& pose, Vector6d& vel,
