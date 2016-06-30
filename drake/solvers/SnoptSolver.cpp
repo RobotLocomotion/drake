@@ -9,30 +9,28 @@
 
 #include "drake/solvers/Optimization.h"
 
-using drake::solvers::SolutionResult;
-
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
 }
 
 
-// todo:  implement sparsity inside each objective/constraint
-// todo:  handle snopt options
-// todo:  return more information that just the solution (INFO, infeasible
-// constraints, ...)
-// todo:  avoid all dynamic allocation
+// todo(sammy-tri) :  implement sparsity inside each cost/constraint
+// todo(sammy-tri) :  handle snopt options
+// todo(sammy-tri) :  return more information that just the solution (INFO,
+// infeasible constraints, ...)
+// todo(sammy-tri) :  avoid all dynamic allocation
+
+namespace drake {
+namespace solvers {
+namespace {
 
 // snopt minimum workspace requirements
 unsigned int constexpr snopt_mincw = 500;
 unsigned int constexpr snopt_miniw = 500;
 unsigned int constexpr snopt_minrw = 500;
 
-bool Drake::SnoptSolver::available() const {
-  return true;
-}
-
-struct SNOPTData : public Drake::OptimizationProblem::SolverData {
+struct SNOPTData : public OptimizationProblem::SolverData {
   std::vector<char> cw;
   std::vector<snopt::integer> iw;
   std::vector<snopt::doublereal> rw;
@@ -76,7 +74,7 @@ struct SNOPTData : public Drake::OptimizationProblem::SolverData {
   }
 
   void min_alloc_x(snopt::integer nx) {
-    if (nx > x.size()) {
+    if (nx > static_cast<snopt::integer>(x.size())) {
       x.resize(nx);
       xlow.resize(nx);
       xupp.resize(nx);
@@ -86,7 +84,7 @@ struct SNOPTData : public Drake::OptimizationProblem::SolverData {
   }
 
   void min_alloc_F(snopt::integer nF) {
-    if (nF > F.size()) {
+    if (nF > static_cast<snopt::integer>(F.size())) {
       F.resize(nF);
       Flow.resize(nF);
       Fupp.resize(nF);
@@ -96,7 +94,7 @@ struct SNOPTData : public Drake::OptimizationProblem::SolverData {
   }
 
   void min_alloc_A(snopt::integer nA) {
-    if (nA > A.size()) {
+    if (nA > static_cast<snopt::integer>(A.size())) {
       A.resize(nA);
       iAfun.resize(nA);
       jAvar.resize(nA);
@@ -104,7 +102,7 @@ struct SNOPTData : public Drake::OptimizationProblem::SolverData {
   }
 
   void min_alloc_G(snopt::integer nG) {
-    if (nG > iGfun.size()) {
+    if (nG > static_cast<snopt::integer>(iGfun.size())) {
       iGfun.resize(nG);
       jGvar.resize(nG);
     }
@@ -166,7 +164,7 @@ struct SNOPTRun {
   }
 };
 
-static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
+int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                          snopt::doublereal x[], snopt::integer* needF,
                          snopt::integer* neF, snopt::doublereal F[],
                          snopt::integer* needG, snopt::integer* neG,
@@ -175,7 +173,7 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                          snopt::doublereal ru[], snopt::integer* lenru) {
   // Our snOptA call passes the snopt workspace as the user workspace and
   // reserves one 8-char of space to pass the problem pointer.
-  Drake::OptimizationProblem const* current_problem = NULL;
+  OptimizationProblem const* current_problem = NULL;
   {
     char* const pcp = reinterpret_cast<char*>(&current_problem);
     char const* const cu_cp = cu + 8 * snopt_mincw;
@@ -191,13 +189,13 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   F[0] = 0.0;
   memset(G, 0, (*n) * sizeof(snopt::doublereal));
 
-  // evaluate objective
+  // evaluate cost
   auto tx = Drake::initializeAutoDiff(xvec);
   Drake::TaylorVecXd ty(1), this_x;
-  for (auto const& binding : current_problem->generic_objectives()) {
+  for (auto const& binding : current_problem->generic_costs()) {
     auto const& obj = binding.constraint();
     size_t index = 0;
-    for (const Drake::DecisionVariableView& v : binding.variable_list()) {
+    for (const DecisionVariableView& v : binding.variable_list()) {
       this_x.conservativeResize(index + v.size());
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
@@ -206,23 +204,23 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
     F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
-    for (const Drake::DecisionVariableView& v : binding.variable_list()) {
+    for (const DecisionVariableView& v : binding.variable_list()) {
       for (size_t j = v.index(); j < v.index() + v.size(); j++) {
         G[j] += static_cast<snopt::doublereal>(ty(0).derivatives()(j));
       }
     }
   }
 
-  // The constraint index starts at 1 because the objective is the
+  // The constraint index starts at 1 because the cost is the
   // first row.
   size_t constraint_index = 1;
-  // The gradient_index also starts after the objective.
+  // The gradient_index also starts after the cost.
   size_t grad_index = *n;
 
   for (auto const& binding : current_problem->generic_constraints()) {
     auto const& c = binding.constraint();
     size_t index = 0, num_constraints = c->num_constraints();
-    for (const Drake::DecisionVariableView& v : binding.variable_list()) {
+    for (const DecisionVariableView& v : binding.variable_list()) {
       this_x.conservativeResize(index + v.size());
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
@@ -231,12 +229,12 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     ty.resize(num_constraints);
     c->eval(this_x, ty);
 
-    for (i = 0; i < num_constraints; i++) {
+    for (i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
       F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value());
     }
 
-    for (const Drake::DecisionVariableView& v : binding.variable_list()) {
-      for (i = 0; i < num_constraints; i++) {
+    for (const DecisionVariableView& v : binding.variable_list()) {
+      for (i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
         for (size_t j = v.index(); j < v.index() + v.size(); j++) {
           G[grad_index++] =
               static_cast<snopt::doublereal>(ty(i).derivatives()(j));
@@ -248,12 +246,17 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   return 0;
 }
 
-SolutionResult Drake::SnoptSolver::Solve(
-    OptimizationProblem& prog) const {
+}  // anon namespace
+
+bool SnoptSolver::available() const {
+  return true;
+}
+
+SolutionResult SnoptSolver::Solve(OptimizationProblem& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
   SNOPTRun cur(*d);
 
-  Drake::OptimizationProblem const* current_problem = &prog;
+  OptimizationProblem const* current_problem = &prog;
 
   // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
   // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
@@ -283,7 +286,7 @@ SolutionResult Drake::SnoptSolver::Solve(
     auto const& c = binding.constraint();
     for (const DecisionVariableView& v : binding.variable_list()) {
       auto const lb = c->lower_bound(), ub = c->upper_bound();
-      for (int k = 0; k < v.size(); k++) {
+      for (size_t k = 0; k < v.size(); k++) {
         xlow[v.index() + k] = std::max<snopt::doublereal>(
             static_cast<snopt::doublereal>(lb(k)), xlow[v.index() + k]);
         xupp[v.index() + k] = std::min<snopt::doublereal>(
@@ -326,14 +329,14 @@ SolutionResult Drake::SnoptSolver::Solve(
   }
 
   size_t constraint_index = 1, grad_index = nx;  // constraint index starts at 1
-                                                 // because the objective is the
+                                                 // because the cost is the
                                                  // first row
   for (auto const& binding : prog.generic_constraints()) {
     auto const& c = binding.constraint();
     size_t n = c->num_constraints();
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
       Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
       Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
     }
@@ -374,7 +377,7 @@ SolutionResult Drake::SnoptSolver::Solve(
     }
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
       Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
       Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
     }
@@ -472,3 +475,6 @@ SolutionResult Drake::SnoptSolver::Solve(
   }
   return SolutionResult::kUnknownError;
 }
+
+}  // namespace solvers
+}  // namespace drake

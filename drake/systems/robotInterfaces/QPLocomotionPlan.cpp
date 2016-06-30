@@ -1,17 +1,23 @@
 #include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
-#include <stdexcept>
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include "drake/util/drakeGeometryUtil.h"
+#include <stdexcept>
+#include <string>
+
+#include "drake/core/Gradient.h"
+#include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
+#include "drake/examples/Atlas/atlasUtil.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/expmap.h"
+#include "drake/math/gradient.h"
+#include "drake/math/quaternion.h"
 #include "drake/solvers/qpSpline/splineGeneration.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"
-#include <string>
 #include "drake/util/convexHull.h"
-#include "drake/examples/Atlas/atlasUtil.h"
-#include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
-#include "drake/core/Gradient.h"
 
 // TODO(tkoolen): discuss possibility of chatter in knee control
 // TODO(tkoolen): make body_motions a map from RigidBody* to BodyMotionData,
@@ -20,6 +26,14 @@
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+
+using drake::math::Gradient;
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::autoDiffToValueMatrix;
+using drake::math::expmap2quat;
+using drake::math::closestExpmap;
+using drake::math::quat2expmap;
+using drake::math::quatRotateVec;
 
 const std::map<SupportLogicType, std::vector<bool>>
     QPLocomotionPlan::support_logic_maps =
@@ -45,7 +59,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree& robot,
       knee_indices(createJointIndicesMap(robot, settings.knee_names)),
       aky_indices(createJointIndicesMap(robot, settings.aky_names)),
       akx_indices(createJointIndicesMap(robot, settings.akx_names)),
-      pelvis_id(robot.findLinkId(settings.pelvis_name)),
+      pelvis_id(robot.FindBodyIndex(settings.pelvis_name)),
       start_time(std::numeric_limits<double>::quiet_NaN()),
       plan_shift(Vector3d::Zero()),
       last_foot_shift_time(0.0),
@@ -571,7 +585,9 @@ void QPLocomotionPlan::updateSwingTrajectory(
   Vector3d unit_x_rotated_0 = quatRotateVec(x0_quat, unit_x);
   Vector3d unit_x_rotated_1 = quatRotateVec(expmap2quat(x1.tail<3>()), unit_x);
   if (unit_x_rotated_0(2) < unit_x_rotated_1(2)) {
-    x1.tail<3>() = quat2expmap(slerp(x0_quat, expmap2quat(x2.tail<3>()), 0.1));
+    x1.tail<3>() = quat2expmap(drake::math::Slerp(x0_quat,
+                                                  expmap2quat(x2.tail<3>()),
+                                                  0.1));
   }
 
   // TODO(rdeits): find a less expensive way of doing this
@@ -868,7 +884,7 @@ const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(
     RigidBodyTree& robot, const std::map<Side, std::string>& foot_names) {
   std::map<Side, int> foot_body_ids;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
-    foot_body_ids[*it] = robot.findLinkId(foot_names.at(*it));
+    foot_body_ids[*it] = robot.FindBodyIndex(foot_names.at(*it));
   }
   return foot_body_ids;
 }

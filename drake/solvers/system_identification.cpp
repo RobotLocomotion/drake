@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "drake/common/drake_assert.h"
 #include "drake/solvers/Optimization.h"
-
 
 namespace drake {
 namespace solvers {
@@ -240,7 +240,7 @@ std::pair<typename SystemIdentification<T>::PartialEvalType, T>
 SystemIdentification<T>::EstimateParameters(
     const VectorXPoly& polys,
     const std::vector<PartialEvalType>& active_var_values) {
-  assert(active_var_values.size() > 0);
+  DRAKE_ASSERT(active_var_values.size() > 0);
   const int num_data = active_var_values.size();
   const int num_err_terms = num_data * polys.rows();
 
@@ -267,10 +267,10 @@ SystemIdentification<T>::EstimateParameters(
 
   // Make sure we have as many data points as vars we are estimating, or else
   // our solution will be meaningless.
-  assert(num_data >= vars_to_estimate.size());
+  DRAKE_ASSERT(num_data >= num_to_estimate);
 
   // Build up our optimization problem's decision variables.
-  Drake::OptimizationProblem problem;
+  OptimizationProblem problem;
   const auto parameter_variables =
       problem.AddContinuousVariables(num_to_estimate, "param");
   const auto error_variables =
@@ -314,7 +314,7 @@ SystemIdentification<T>::EstimateParameters(
   auto cost = problem.AddQuadraticCost(
       Eigen::MatrixXd::Identity(num_err_terms, num_err_terms),
       Eigen::VectorXd::Zero(num_err_terms),
-      std::list<Drake::DecisionVariableView> { error_variables });
+      std::list<DecisionVariableView> { error_variables });
 
   // Solve the problem and copy out the result.
   SolutionResult solution_result = problem.Solve();

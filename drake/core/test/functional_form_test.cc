@@ -1,5 +1,6 @@
 #include "drake/core/functional_form.h"
 
+#include <cmath>
 #include <sstream>
 
 #include <Eigen/Core>
@@ -17,7 +18,7 @@ GTEST_TEST(FunctionalFormVariableTest, NilVariant) {
   using Variable = FunctionalForm::Variable;
   Variable const v_nil;
   EXPECT_TRUE(v_nil.is_nil());
-  EXPECT_NE(v_nil.index(), 0);
+  EXPECT_NE(v_nil.index(), 0u);
 
   // copy ctor
   Variable v(v_nil);
@@ -98,7 +99,7 @@ GTEST_TEST(FunctionalFormVariableTest, IndexVariant) {
   // move assign from conversion temporary
   v = 123;
   EXPECT_TRUE(v.is_index());
-  EXPECT_EQ(v.index(), 123);
+  EXPECT_EQ(v.index(), 123u);
 
   // comparison
   EXPECT_TRUE(v_index == v_index);
@@ -196,7 +197,7 @@ GTEST_TEST(FunctionalFormVariablesTest, Basic) {
 
   FunctionalForm::Variables a({"a1", "a2", 3});
   {
-    ASSERT_EQ(a.size(), 3);
+    ASSERT_EQ(a.size(), 3u);
     FunctionalForm::Variables::const_iterator i = a.begin();
     EXPECT_EQ(*i, FunctionalForm::Variable(3));
     ++i;
@@ -209,7 +210,7 @@ GTEST_TEST(FunctionalFormVariablesTest, Basic) {
 
   FunctionalForm::Variables b({"b1", "b2", 3});
   {
-    ASSERT_EQ(b.size(), 3);
+    ASSERT_EQ(b.size(), 3u);
     FunctionalForm::Variables::const_iterator i = b.begin();
     EXPECT_EQ(*i, FunctionalForm::Variable(3));
     ++i;
@@ -224,7 +225,7 @@ GTEST_TEST(FunctionalFormVariablesTest, Basic) {
 
   FunctionalForm::Variables u = FunctionalForm::Variables::Union(a, b);
   {
-    ASSERT_EQ(u.size(), 5);
+    ASSERT_EQ(u.size(), 5u);
     FunctionalForm::Variables::const_iterator i = u.begin();
     EXPECT_EQ(*i, FunctionalForm::Variable(3));
     ++i;
@@ -268,6 +269,9 @@ GTEST_TEST(FunctionalFormTest, Construct) {
 
   FunctionalForm double_nonzero(0.1);
   EXPECT_TRUE(double_nonzero.IsConstant());
+
+  FunctionalForm double_nan(std::nan(""));
+  EXPECT_TRUE(double_nan.IsUndefined());
 }
 
 GTEST_TEST(FunctionalFormTest, Basic) {

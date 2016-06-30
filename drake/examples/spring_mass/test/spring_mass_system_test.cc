@@ -23,6 +23,7 @@
 #include "drake/systems/framework/state_subvector.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/vector_interface.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 using std::unique_ptr;
@@ -42,6 +43,7 @@ using systems::LeafStateVector;
 using systems::StateSubvector;
 using systems::StateVector;
 using systems::SystemOutput;
+using systems::VectorInterface;
 using systems::VectorX;
 using systems::MatrixX;
 using util::MatrixCompareType;
@@ -68,8 +70,8 @@ class SpringMassSystemTest : public ::testing::Test {
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector*>(
         context_->get_mutable_state()->continuous_state->get_mutable_state());
-    output_ = dynamic_cast<SpringMassOutputVector*>(
-        system_output_->ports[0].vector_output.get());
+    output_ = dynamic_cast<const SpringMassOutputVector*>(
+        system_output_->ports[0]->get_vector_data());
     derivatives_ = dynamic_cast<SpringMassStateVector*>(
         system_derivatives_->get_mutable_state());
   }
@@ -87,7 +89,7 @@ class SpringMassSystemTest : public ::testing::Test {
   std::unique_ptr<BasicStateVector<double>> configuration_derivatives_;
 
   SpringMassStateVector* state_;
-  SpringMassOutputVector* output_;
+  const SpringMassOutputVector* output_;
   SpringMassStateVector* derivatives_;
 
  private:
@@ -104,6 +106,17 @@ TEST_F(SpringMassSystemTest, CloneState) {
   SpringMassStateVector* typed_clone =
       dynamic_cast<SpringMassStateVector*>(clone.get());
   ASSERT_NE(nullptr, typed_clone);
+  EXPECT_EQ(1.0, typed_clone->get_position());
+  EXPECT_EQ(2.0, typed_clone->get_velocity());
+}
+
+TEST_F(SpringMassSystemTest, CloneOutput) {
+  InitializeState(1.0, 2.0);
+  system_->Output(*context_, system_output_.get());
+  std::unique_ptr<VectorInterface<double>> clone = output_->Clone();
+
+  SpringMassOutputVector* typed_clone =
+      dynamic_cast<SpringMassOutputVector*>(clone.get());
   EXPECT_EQ(1.0, typed_clone->get_position());
   EXPECT_EQ(2.0, typed_clone->get_velocity());
 }

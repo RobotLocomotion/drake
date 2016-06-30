@@ -2,11 +2,14 @@
 #include <matrix.h>
 
 #include "drake/systems/plants/joints/DrakeJoints.h"
+
 #include <memory>
 #include <vector>
 #include <string>
 #include <iostream>
+
 #include <Eigen/Core>
+
 #include "drake/util/drakeMexUtil.h"
 
 using namespace Eigen;
@@ -86,8 +89,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     safelySetField(joint_struct_out, "joint_transform",
                    eigenToMatlab(joint_transform.matrix()));
 
-    Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE,
-                  DrakeJoint::MAX_NUM_VELOCITIES>
+    Eigen::Matrix<double, drake::kTwistSize, Eigen::Dynamic, 0,
+                  drake::kTwistSize, DrakeJoint::MAX_NUM_VELOCITIES>
         motion_subspace(6, joint->getNumVelocities());
     MatrixXd dmotion_subspace;
     joint->motionSubspace(q, motion_subspace, &dmotion_subspace);

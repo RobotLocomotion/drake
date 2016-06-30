@@ -1,4 +1,3 @@
-
 #include "drake/solvers/NloptSolver.h"
 
 #include <stdexcept>
@@ -7,12 +6,15 @@
 
 #include <nlopt.hpp>
 
+#include "drake/common/drake_assert.h"
 #include "drake/core/Gradient.h"
 #include "drake/solvers/Optimization.h"
 
-using drake::solvers::SolutionResult;
+using Drake::TaylorVecXd;
 
-namespace Drake {
+namespace drake {
+namespace solvers {
+
 namespace {
 Eigen::VectorXd MakeEigenVector(const std::vector<double>& x) {
   Eigen::VectorXd xvec(x.size());
@@ -29,7 +31,7 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
     var_count += v.size();
   }
 
-  auto tx = initializeAutoDiff(xvec);
+  auto tx = Drake::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
   for (const DecisionVariableView& v : variable_list) {
@@ -42,6 +44,8 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
 // This function meets the signature requirements for nlopt::vfunc as
 // described in
 // http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#Objective_function
+// Note : NLopt uses the term "Objective" which corresponds to the Drake usage
+// of "Cost".
 double EvaluateCosts(const std::vector<double>& x,
                      std::vector<double>& grad,
                      void* f_data) {
@@ -51,7 +55,7 @@ double EvaluateCosts(const std::vector<double>& x,
   double cost = 0;
   Eigen::VectorXd xvec = MakeEigenVector(x);
 
-  auto tx = initializeAutoDiff(xvec);
+  auto tx = Drake::initializeAutoDiff(xvec);
   TaylorVecXd ty(1);
   TaylorVecXd this_x;
 
@@ -59,7 +63,7 @@ double EvaluateCosts(const std::vector<double>& x,
     grad.assign(grad.size(), 0);
   }
 
-  for (auto const& binding : prog->generic_objectives()) {
+  for (auto const& binding : prog->generic_costs()) {
     size_t index = 0;
     for (const DecisionVariableView& v : binding.variable_list()) {
       this_x.conservativeResize(index + v.size());
@@ -162,8 +166,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
 
   const Constraint* c = wrapped->constraint;
   const size_t num_constraints = c->num_constraints();
-  assert(num_constraints >= m);
-  assert(wrapped->active_constraints.size() == m);
+  DRAKE_ASSERT(num_constraints >= m);
+  DRAKE_ASSERT(wrapped->active_constraints.size() == m);
 
   TaylorVecXd ty(num_constraints);
   TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_list));
@@ -189,7 +193,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
           ty(i).value(), lower_bound(i), upper_bound(i));
     }
     result_idx++;
-    assert(result_idx <= m);
+    DRAKE_ASSERT(result_idx <= m);
   }
 
   if (grad) {
@@ -208,9 +212,9 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
           grad[(result_idx * n) + j] = ty(i).derivatives()(j) * grad_sign;
         }
         result_idx++;
-        assert(result_idx <= m);
+        DRAKE_ASSERT(result_idx <= m);
       }
-      assert(result_idx == m);
+      DRAKE_ASSERT(result_idx == m);
     }
   }
 }
@@ -237,8 +241,8 @@ void WrapConstraint(const _Binding& binding,
   bool is_pure_inequality = true;
   const Eigen::VectorXd& lower_bound = binding.constraint()->lower_bound();
   const Eigen::VectorXd& upper_bound = binding.constraint()->upper_bound();
-  assert(lower_bound.size() == upper_bound.size());
-  for (size_t i = 0; i < lower_bound.size(); i++) {
+  DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
+  for (size_t i = 0; i < static_cast<size_t>(lower_bound.size()); i++) {
     if (lower_bound(i) == upper_bound(i)) {
       wrapped_eq.active_constraints.insert(i);
     } else {
@@ -306,7 +310,7 @@ SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
     const Eigen::VectorXd& lower_bound = c->lower_bound();
     const Eigen::VectorXd& upper_bound = c->upper_bound();
     for (const DecisionVariableView& v : binding.variable_list()) {
-      for (int k = 0; k < v.size(); k++) {
+      for (size_t k = 0; k < v.size(); k++) {
         const int idx = v.index() + k;
         xlow[idx] = std::max(lower_bound(k), xlow[idx]);
         xupp[idx] = std::min(upper_bound(k), xupp[idx]);
@@ -374,4 +378,6 @@ SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
   prog.SetSolverResult("NLopt", nlopt_result);
   return result;
 }
-}
+
+}  // namespace solvers
+}  // namespace drake

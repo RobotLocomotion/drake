@@ -18,11 +18,20 @@ Element::Element(const DrakeShapes::Geometry& geometry,
 }
 
 Element::Element(const Element& other)
-    : DrakeShapes::Element(other), id((ElementId) this) {}
+    : DrakeShapes::Element(other),
+      // Id's should be assigned by the model, not here.
+      // In addition casting to an int is a bad idea.
+      // Issue #2662 tracks the resolution of these problems.
+      id(reinterpret_cast<ElementId>(this)),
+      is_static_(other.is_static_), body_(other.body_) {}
 
 Element* Element::clone() const { return new Element(*this); }
 
 ElementId Element::getId() const { return id; }
+
+const RigidBody* Element::get_body() const { return body_; }
+
+void Element::set_body(const RigidBody *body) { body_ = body; }
 
 ostream& operator<<(ostream& out, const Element& ee) {
   out << "DrakeCollision::Element:\n"

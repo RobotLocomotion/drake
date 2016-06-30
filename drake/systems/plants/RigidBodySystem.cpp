@@ -1,10 +1,13 @@
-
 #include "drake/systems/plants/RigidBodySystem.h"
+
 #include <list>
 #include <stdexcept>
+
+#include "drake/common/drake_assert.h"
+#include "drake/math/quaternion.h"
 #include "drake/solvers/Optimization.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "spruce.hh"
@@ -26,6 +29,8 @@ using std::numeric_limits;
 using std::runtime_error;
 using std::shared_ptr;
 using std::string;
+
+using drake::math::quatRotateVec;
 
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
@@ -93,7 +98,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // happily, this clunkier version seems fast enough for now
   // the optimization framework should support this (though it has not been
   // tested thoroughly yet)
-  OptimizationProblem prog;
+  drake::solvers::OptimizationProblem prog;
   auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree->massMatrix(kinsol);
@@ -250,8 +255,8 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
                                    x.bottomRows(tree->number_of_velocities()));
   Eigen::VectorXd y(getNumOutputs());
 
-  assert(getNumStates() == x.size());
-  assert(getNumInputs() == u.size());
+  DRAKE_ASSERT(getNumStates() == x.size());
+  DRAKE_ASSERT(getNumInputs() == u.size());
 
   y.segment(0, getNumStates()) << x;
   int index = getNumStates();
@@ -284,7 +289,7 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
   if (sys.tree->getNumPositionConstraints()) {
     // todo: move this up to the system level?
 
-    OptimizationProblem prog;
+    drake::solvers::OptimizationProblem prog;
     std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> const&
         loops = sys.tree->loops;
 
@@ -711,7 +716,7 @@ void parseURDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   parseRobot(sys, node);
 }
 
-void parseSDFJoint(RigidBodySystem& sys, string model_name, XMLElement* node,
+void parseSDFJoint(RigidBodySystem& sys, int model_id, XMLElement* node,
                    PoseMap& pose_map) {
   // Obtains the name of the joint.
   const char* attr = node->Attribute("name");
@@ -727,15 +732,15 @@ void parseSDFJoint(RigidBodySystem& sys, string model_name, XMLElement* node,
   }
 }
 
-void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
+void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
                   PoseMap& pose_map) {
-  // Obtains the name of the link.
+  // Obtains the name of the body.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
-  string link_name(attr);
+  string body_name(attr);
 
-  // Obtains the corresponding rigid body from the rigid body tree.
-  auto body = sys.getRigidBodyTree()->findLink(link_name, model_name);
+  // Obtains the corresponding body from the rigid body tree.
+  auto body = sys.getRigidBodyTree()->FindBody(body_name, "", model_id);
 
   // Obtains the transform from the link to the model.
   Isometry3d transform_link_to_model = Isometry3d::Identity();
@@ -782,7 +787,7 @@ void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
   }
 }
 
-void parseSDFModel(RigidBodySystem& sys, XMLElement* node) {
+void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node) {
   // A pose map is necessary since SDF specifies almost everything in the
   // global coordinate frame. The pose map contains transforms from a link's
   // coordinate frame to the model's coordinate frame.
@@ -791,27 +796,91 @@ void parseSDFModel(RigidBodySystem& sys, XMLElement* node) {
   // Obtains the name of the model.
   if (!node->Attribute("name"))
     throw runtime_error("Error: your model must have a name attribute");
-  string model_name = node->Attribute("name");
 
   // Parses each link element within the model.
   for (XMLElement* elnode = node->FirstChildElement("link"); elnode;
        elnode = elnode->NextSiblingElement("link"))
-    parseSDFLink(sys, model_name, elnode, pose_map);
+    parseSDFLink(sys, model_id, elnode, pose_map);
 
   // Parses each joint element within the model.
   for (XMLElement* elnode = node->FirstChildElement("joint"); elnode;
        elnode = elnode->NextSiblingElement("joint"))
-    parseSDFJoint(sys, model_name, elnode, pose_map);
+    parseSDFJoint(sys, model_id, elnode, pose_map);
 }
 
 void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   XMLElement* node = xml_doc->FirstChildElement("sdf");
-  if (!node)
+
+  if (!node) {
     throw std::runtime_error(
         "ERROR: This xml file does not contain an sdf tag");
+  }
+
+  // Obtains the final model ID after all models in the SDF are added to the
+  // RigidBodyTree. This is simply the current model ID since the models in this
+  // SDF were already added to the rigid body tree prior to this method being
+  // called. It's possible for final_model_id to be greater than the number of
+  // models in the SDF file since multiple SDF files can be loaded into this
+  // RigidBodySystem. In fact, the same SDF file can be added to this
+  // RigidBodySystem multiple times. This is feasible since the rigid bodies
+  // that belong to a particular model are all assigned a model ID that's unique
+  // to that model.
+  int final_model_id = sys.getRigidBodyTree()->get_current_model_id();
+
+  // Computes the number of models in the SDF. This includes only the models
+  // that are not part of the world. This is correct because even though
+  // RigidBodyTree assigns a unique model ID to each model regardless of whether
+  // it is part of the world, the models that are part of the world are added
+  // first and thus have smaller model IDs. Since the models that are not part
+  // of the world are the ones that need to be parsed by the RigidBodySystem,
+  // we only count the models that are not part of the world.
+  int number_of_models_in_sdf = 0;
+  {
+    for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
+         elnode = elnode->NextSiblingElement("model")) {
+      ++number_of_models_in_sdf;
+    }
+  }
+
+  // Computes the ID of the first model in the SDF. Since this SDF was just
+  // added to the RigidBodyTree, the model ID of the first model in the SDF
+  // is simply the final_model_id minus the number of models in the SDF that
+  // are not part of the world..
+  int model_id = final_model_id - number_of_models_in_sdf;
+
+  // Parses each model in the SDF. This includes parsing and instantiating
+  // simulated sensors as specified by the SDF description.
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
-       elnode = node->NextSiblingElement("model"))
-    parseSDFModel(sys, elnode);
+       elnode = elnode->NextSiblingElement("model")) {
+    parseSDFModel(sys, model_id++, elnode);
+  }
+
+  // Verifies that the model_id is equal to the final_model_id. They should
+  // match since the number of models we just parsed is equal to:
+  //
+  //     number_of_models_in_sdf
+  //
+  // And initially prior to parsing the models in the SDF:
+  //
+  //     model_id = final_model_id - number_of_models_in_sdf
+  //
+  // Since model_id is incremented each time a model in the SDF is parsed, its
+  // final value is equal to its original value plus number_of_models_in_sdf.
+  // Thus:
+  //
+  //     model_id = final_model_id - number_of_models_in_sdf +
+  //                number_of_models_in_sdf
+  //              = final_model_id
+  //
+  // Hence, at this point in the code, model_id should equal final_model_id.
+  if (model_id != final_model_id) {
+    throw std::runtime_error(
+        "RigidBodySystem.cpp: parseSDF: ERROR: the final model ID (" +
+        std::to_string(model_id) +
+        ") is not equal to the expected final model "
+        "ID (" +
+        std::to_string(final_model_id) + ")");
+  }
 }
 
 void RigidBodySystem::addRobotFromURDFString(
@@ -841,8 +910,9 @@ void RigidBodySystem::addRobotFromURDF(
   xml_doc.LoadFile(urdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
     throw std::runtime_error(
-      "RigidBodySystem::addRobotFromURDF: ERROR: Failed to parse xml in file "
-      + urdf_filename + "\n" + xml_doc.ErrorName());
+        "RigidBodySystem::addRobotFromURDF: ERROR: Failed to parse xml in "
+        "file " +
+        urdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseURDF(*this, &xml_doc);
 }
@@ -860,8 +930,9 @@ void RigidBodySystem::addRobotFromSDF(
   xml_doc.LoadFile(sdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
     throw std::runtime_error(
-      "RigidBodySystem::addRobotFromSDF: ERROR: Failed to parse xml in file "
-      + sdf_filename + "\n" + xml_doc.ErrorName());
+        "RigidBodySystem::addRobotFromSDF: ERROR: Failed to parse xml in "
+        "file " +
+        sdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseSDF(*this, &xml_doc);
 }
@@ -882,8 +953,8 @@ void RigidBodySystem::addRobotFromFile(
     addRobotFromSDF(filename, floating_base_type, weld_to_frame);
   } else {
     throw runtime_error(
-      "RigidBodySystem::addRobotFromFile: ERROR: Unknown file extension: "
-      + ext);
+        "RigidBodySystem::addRobotFromFile: ERROR: Unknown file extension: " +
+        ext);
   }
 }
 

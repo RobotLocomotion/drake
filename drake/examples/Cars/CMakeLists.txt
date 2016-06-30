@@ -1,5 +1,5 @@
 add_subdirectory(test)
-if(LCM_FOUND)
+if(lcm_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
 
   add_library_with_exports(LIB_NAME drakeCars SOURCE_FILES
@@ -7,7 +7,7 @@ if(LCM_FOUND)
     curve2.cc
     simple_car.cc
     trajectory_car.cc)
-  target_link_libraries(drakeCars drakeRBSystem drakeShapes)
+  target_link_libraries(drakeCars drakeRBSystem drakeShapes drakeCommon)
   pods_install_libraries(drakeCars)
   drake_install_headers(
     curve2.h
@@ -22,14 +22,20 @@ if(LCM_FOUND)
     REQUIRES
     VERSION 0.0.1)
 
-  add_dependencies(drakeCars drake_lcmtypes lcmtype_agg_hpp)
+  add_dependencies(drakeCars drake_lcmtypes_hpp)
   add_executable(simple_car_demo simple_car_demo.cc)
-  target_link_libraries(simple_car_demo drakeCars drakeRBSystem drakeLCMSystem)
+  target_link_libraries(simple_car_demo drakeCars drakeRBSystem drakeLCMSystem threads)
 
   add_executable(car_sim_lcm car_sim_lcm.cc)
-  add_dependencies(car_sim_lcm drake_lcmtypes lcmtype_agg_hpp)
-  target_link_libraries(car_sim_lcm drakeCars drakeRBSystem drakeLCMSystem)
+  add_dependencies(car_sim_lcm drake_lcmtypes_hpp)
+  target_link_libraries(car_sim_lcm drakeCars drakeRBSystem drakeLCMSystem threads)
+
+  add_executable(multi_car_sim_lcm multi_car_sim_lcm.cc)
+  add_dependencies(multi_car_sim_lcm drake_lcmtypes_hpp)
+  target_link_libraries(multi_car_sim_lcm drakeCars drakeRBSystem drakeLCMSystem threads)
+
+  add_test(NAME multi_car_sim_lcm COMMAND multi_car_sim_lcm --duration 0.05)
 
   add_executable(demo_multi_car demo_multi_car.cc)
-  target_link_libraries(demo_multi_car drakeCars drakeRBSystem drakeLCMSystem)
+  target_link_libraries(demo_multi_car drakeCars drakeRBSystem drakeLCMSystem threads)
 endif()

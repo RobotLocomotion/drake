@@ -1,3 +1,4 @@
+project(drake)
 cmake_minimum_required(VERSION 3.5)
 
 cmake_policy(SET CMP0025 NEW)
@@ -34,7 +35,7 @@ option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
 option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random seed" OFF)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -89,13 +90,7 @@ include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all")
-
-  # TODO(#2372) These are warnings that we can't handle yet.
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field")
-  endif()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
 elseif(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
   # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
@@ -241,13 +236,44 @@ set(drake_jar_requires)
 
 include(cmake/procman.cmake)  # helper script for writing procman files
 
-# set up and build lcm types
-include(cmake/lcmtypes.cmake)
+# set up pseudo-target for threads
+find_package(Threads)
+add_library(threads INTERFACE)
+target_link_libraries(threads INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
-if(LCM_FOUND)
-  #add_subdirectory(lcmtypes)
-  lcmtypes_build()
-  pods_use_pkg_config_classpath(lcm-java)
+# Setup ROS if it is available on the local system. Note that this occurs before
+# LCM configuration to prevent ROS message generation from conflicting with LCM
+# message generation. This prevent ROS from generating its own custom messages.
+find_package(roscpp QUIET)
+if(roscpp_FOUND)
+  set(ROS_FOUND ON)
+  message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
+  include_directories(${roscpp_INCLUDE_DIRS})
+
+  find_package(catkin REQUIRED)
+  find_package(genmsg REQUIRED)
+
+  find_package(std_msgs REQUIRED)
+  include_directories(${std_msgs_INCLUDE_DIRS})
+
+  find_package(sensor_msgs REQUIRED)
+  include_directories(${sensor_msgs_INCLUDE_DIRS})
+
+  find_package(ackermann_msgs REQUIRED)
+  include_directories(${ackermann_msgs_INCLUDE_DIRS})
+
+  find_package(tf REQUIRED)
+  include_directories(${tf_INCLUDE_DIRS})
+else()
+  set(ROS_FOUND OFF)
+  message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
+endif()
+
+# set up and build lcm types
+find_package(lcm)
+if(lcm_FOUND)
+  add_subdirectory(lcmtypes)
+  include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
 
   list(APPEND drake_jar_javafiles
     util/MyLCMTypeDatabase.java
@@ -274,7 +300,7 @@ if(LCM_FOUND)
   endif()
 endif()
 
-add_jar(drake SOURCES ${drake_jar_javafiles})
+add_jar(drake SOURCES ${drake_jar_javafiles} INCLUDE_JARS ${drake_jar_requires})
 install_jar(drake share/java)
 pods_install_pkg_config_file(drake-java
   CLASSPATH drake
@@ -296,34 +322,11 @@ else()
   endif()
 endif()
 
-# Setup ROS if it is available on the local system
-find_package(roscpp QUIET)
-if(roscpp_FOUND)
-  message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
-  include_directories(${roscpp_INCLUDE_DIRS})
-
-  find_package(catkin REQUIRED)
-  find_package(genmsg REQUIRED)
-
-  find_package(std_msgs REQUIRED)
-  include_directories(${std_msgs_INCLUDE_DIRS})
-
-  find_package(sensor_msgs REQUIRED)
-  include_directories(${sensor_msgs_INCLUDE_DIRS})
-
-  find_package(ackermann_msgs REQUIRED)
-  include_directories(${ackermann_msgs_INCLUDE_DIRS})
-
-  find_package(tf REQUIRED)
-  include_directories(${tf_INCLUDE_DIRS})
-else()
-  message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
-endif()
-
 include_directories(thirdParty/spruce/include)
 include_directories(thirdParty/cimg)
 
 add_subdirectory(common)
+add_subdirectory(math)
 add_subdirectory(core)
 add_subdirectory(util)
 add_subdirectory(solvers)
@@ -334,7 +337,7 @@ add_subdirectory(thirdParty/tinyxml2)
 add_subdirectory(examples)
 add_subdirectory(bindings)
 
-if(roscpp_FOUND AND catkin_FOUND AND genmsg_FOUND AND std_msgs_FOUND AND sensor_msgs_FOUND AND ackermann_msgs_FOUND AND tf_FOUND)
+if(ROS_FOUND)
   add_subdirectory(ros)
 endif()
 
@@ -365,9 +368,6 @@ find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin)
 find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin)
 find_program(ffmpeg ffmpeg)
 
-# write some additional information to the CMake cache
-set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
-
 if(APPLE)
   set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
   set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
@@ -385,9 +385,9 @@ if(MATLAB_FOUND)
     PROPERTIES TIMEOUT 300)
 endif()
 
-option(BUILD_DOCUMENTATION "Build Doxygen and Sphinx documentation." OFF)
+option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)
 
-if(BUILD_DOCUMENTATION)
+if(ENABLE_DOCUMENTATION)
   add_subdirectory(doc)
 endif()
 

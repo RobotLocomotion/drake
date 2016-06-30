@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "FixedAxisOneDoFJoint.h"
 #include <Eigen/Geometry>
 
@@ -20,7 +22,7 @@ class DRAKEJOINTS_EXPORT RevoluteJoint
                                             transform_to_parent_body,
                                             spatialJointAxis(_rotation_axis)),
         rotation_axis(_rotation_axis) {
-    assert(std::abs(rotation_axis.norm() - 1.0) < 1e-10);
+    DRAKE_ASSERT(std::abs(rotation_axis.norm() - 1.0) < 1e-10);
   }
 
   virtual ~RevoluteJoint() {}
@@ -36,7 +38,7 @@ class DRAKEJOINTS_EXPORT RevoluteJoint
   }
 
  private:
-  static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(
+  static drake::TwistVector<double> spatialJointAxis(
       const Eigen::Vector3d& rotation_axis);
 
  public:

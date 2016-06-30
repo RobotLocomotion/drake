@@ -12,6 +12,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/common/drake_assert.h"
 #include "drake/examples/Cars/gen/driving_command.h"
 #include "drake/examples/Cars/gen/simple_car_state.h"
 
@@ -36,8 +37,8 @@ SimpleCar::StateVector<ScalarType> SimpleCar::dynamics(
 
   // Apply steering.
   ScalarType sane_steering_angle = input.steering_angle();
-  assert(static_cast<ScalarType>(-M_PI) < sane_steering_angle);
-  assert(sane_steering_angle < static_cast<ScalarType>(M_PI));
+  DRAKE_ASSERT(static_cast<ScalarType>(-M_PI) < sane_steering_angle);
+  DRAKE_ASSERT(sane_steering_angle < static_cast<ScalarType>(M_PI));
   sane_steering_angle = std::min(
       sane_steering_angle,
       static_cast<ScalarType>(config_.max_abs_steering_angle));

@@ -98,7 +98,7 @@ class Value : public AbstractValue {
   ~Value() override {}
 
   std::unique_ptr<AbstractValue> Clone() const override {
-    return std::unique_ptr<Value<T>>(new Value<T>(*this));
+    return std::make_unique<Value<T>>(*this);
   }
 
   /// Returns a const reference to the stored value.

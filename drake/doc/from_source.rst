@@ -1,3 +1,5 @@
+.. _build_from_source:
+
 *****************************************
 Source installation (mac, linux, windows)
 *****************************************
@@ -71,16 +73,78 @@ Before running build, you will need to follow the instructions for your host sys
 
 Build the collection
 ====================
+There are two supported ways to build Drake:
+`Ninja <https://ninja-build.org/>`_ and
+`Make <https://www.gnu.org/software/make/>`_.
+Because the Drake build is not entirely out-of-source, you must pick one build
+system and stick to it. Switching build systems within the same working tree
+will produce CMake errors.
+
+Make support is more mature, but Ninja is faster, more modern, and will
+receive more investment from the Drake development team going forward.
+The following features are known not to work in Ninja yet:
+
+* Gurobi
+
+.. _build_with_ninja:
+
+Build with Ninja
+----------------
+First, confirm that `Ninja <https://ninja-build.org/>`_ is installed
+on your system:
+
+::
+
+    ninja --version
+
+Drake uses `CMake <https://cmake.org/>`_ to generate Ninja files within an
+out-of-source build directory. You can configure CMake options by passing
+them at the ``cmake`` command line with ``-D``, or in a GUI by running
+``ccmake`` instead of ``cmake``. For instance, the following sequence of
+commands generates Ninja files with build type ``Debug``, and then runs the 
+Ninja build.
+
+::
+
+    mkdir drake-build
+    cd drake-build
+    cmake path/to/drake-distro -G Ninja -DCMAKE_BUILD_TYPE:STRING=Debug
+    ninja
+
+Ninja can rebuild Drake from within ``drake-build/drake`` without
+rebuilding the entire superbuild.  It can also build specific targets.
+Tab-completion is supported.
+
+::
+
+    cd drake-build/drake
+    ninja
+
+To review the raw shell commands, compiler flags, and linker flags that CMake
+generated, consult ``build.ninja`` and ``drake/build.ninja``, or run
+``ninja -v`` for a verbose build.
+
+.. _build_with_make:
+
+Build with Make
+---------------
+First, confirm that `Make <https://www.gnu.org/software/make/>`_ is installed
+on your system:
+
+::
+
+    make --version
+
+Drake includes a Makefile, which invokes `CMake <https://cmake.org/>`_ to 
+generate and execute platform-specific build scripts. To build with Make:
 
 ::
 
 	cd drake-distro
 	make
 
-**NOTE: do not use sudo here**.
-Following the pods guidelines, make will automatically perform a local installation.  Just ``make`` is sufficient, and will prevent problems later.
-
-Feel free to use ``make -j`` if your platform supports it.
+**Do NOT use sudo.** Just ``make`` is sufficient, and will prevent problems
+later. Feel free to use ``make -j`` if your platform supports it.
 
 To include all of the symbols for debugging purposes, execute:
 
@@ -93,7 +157,6 @@ To include all symbols and get details about the actual compiler and linker comm
 ::
 
     BUILD_TYPE=Debug make VERBOSE=true
-
 
 Test Your Installation
 ======================

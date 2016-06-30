@@ -1,6 +1,9 @@
 #pragma once
 
 #include "DrakeJointImpl.h"
+#include "drake/common/eigen_types.h"
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/drakeGradientUtil.h"
 
 class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
     : public DrakeJointImpl<RollPitchYawFloatingJoint> {
@@ -11,15 +14,15 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
   // delete;
 
  public:
-  RollPitchYawFloatingJoint(const std::string &name,
-                            const Eigen::Isometry3d &transform_to_parent_body)
+  RollPitchYawFloatingJoint(const std::string& name,
+                            const Eigen::Isometry3d& transform_to_parent_body)
       : DrakeJointImpl(*this, name, transform_to_parent_body, 6, 6) {}
 
   virtual ~RollPitchYawFloatingJoint() {}
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
-  jointTransform(const Eigen::MatrixBase<DerivedQ> &q) const {
+  jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
     Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret;
     auto pos = q.template middleRows<SPACE_DIMENSION>(0);
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
@@ -30,12 +33,13 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
   }
 
   template <typename DerivedQ, typename DerivedMS>
-  void motionSubspace(const Eigen::MatrixBase<DerivedQ> &q,
-                      Eigen::MatrixBase<DerivedMS> &motion_subspace,
-                      typename Gradient<DerivedMS, Eigen::Dynamic>::type *
-                          dmotion_subspace = nullptr) const {
+  void motionSubspace(
+      const Eigen::MatrixBase<DerivedQ>& q,
+      Eigen::MatrixBase<DerivedMS>& motion_subspace,
+      typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
+          dmotion_subspace = nullptr) const {
     typedef typename DerivedQ::Scalar Scalar;
-    motion_subspace.resize(TWIST_SIZE, getNumVelocities());
+    motion_subspace.resize(drake::kTwistSize, getNumVelocities());
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
     Eigen::Matrix<Scalar, SPACE_DIMENSION, RPY_SIZE> E;
     rpydot2angularvelMatrix(rpy, E);
@@ -85,18 +89,18 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
 
   template <typename DerivedQ, typename DerivedV>
   void motionSubspaceDotTimesV(
-      const Eigen::MatrixBase<DerivedQ> &q,
-      const Eigen::MatrixBase<DerivedV> &v,
-      Eigen::Matrix<typename DerivedQ::Scalar, 6, 1> &
+      const Eigen::MatrixBase<DerivedQ>& q,
+      const Eigen::MatrixBase<DerivedV>& v,
+      Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>&
           motion_subspace_dot_times_v,
-      typename Gradient<Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>,
-                        Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdq =
-          nullptr,
-      typename Gradient<Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>,
-                        Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdv =
-          nullptr) const {
+      typename drake::math::Gradient<
+          Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type*
+          dmotion_subspace_dot_times_vdq = nullptr,
+      typename drake::math::Gradient<
+          Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type*
+          dmotion_subspace_dot_times_vdv = nullptr) const {
     typedef typename DerivedQ::Scalar Scalar;
-    motion_subspace_dot_times_v.resize(TWIST_SIZE, 1);
+    motion_subspace_dot_times_v.resize(drake::kTwistSize, 1);
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
     Scalar roll = rpy(0);
     Scalar pitch = rpy(1);
@@ -214,12 +218,12 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
   }
 
   template <typename DerivedQ>
-  void qdot2v(const Eigen::MatrixBase<DerivedQ> &q,
+  void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES,
-                            DrakeJoint::MAX_NUM_POSITIONS> &qdot_to_v,
+                            DrakeJoint::MAX_NUM_POSITIONS>& qdot_to_v,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
-                            Eigen::Dynamic> *dqdot_to_v) const {
+                            Eigen::Dynamic>* dqdot_to_v) const {
     qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
     Drake::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
 
@@ -229,12 +233,12 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
   }
 
   template <typename DerivedQ>
-  void v2qdot(const Eigen::MatrixBase<DerivedQ> &q,
+  void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS,
-                            DrakeJoint::MAX_NUM_VELOCITIES> &v_to_qdot,
+                            DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
-                            Eigen::Dynamic> *dv_to_qdot) const {
+                            Eigen::Dynamic>* dv_to_qdot) const {
     v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
     Drake::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
 
@@ -245,7 +249,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
 
   template <typename DerivedV>
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(
-      const Eigen::MatrixBase<DerivedV> &v) const {
+      const Eigen::MatrixBase<DerivedV>& v) const {
     return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>::Zero(
         getNumVelocities(), 1);
   }
@@ -253,7 +257,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
   bool isFloating() const override { return true; }
   Eigen::VectorXd zeroConfiguration() const override;
   Eigen::VectorXd randomConfiguration(
-      std::default_random_engine &generator) const override;
+      std::default_random_engine& generator) const override;
   std::string getPositionName(int index) const override;
 
  public:

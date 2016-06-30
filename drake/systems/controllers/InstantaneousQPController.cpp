@@ -1,8 +1,12 @@
-#include "InstantaneousQPController.h"
+#include "drake/systems/controllers/InstantaneousQPController.h"
+
 #include <lcm/lcm-cpp.hpp>
 #include <map>
 #include <memory>
+
 #include "drake/Path.h"
+#include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/solvers/fastQP.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -144,9 +148,9 @@ PIDOutput InstantaneousQPController::wholeBodyPID(
   PIDOutput out;
   double dt = 0;
   int nq = robot->number_of_positions();
-  assert(q.size() == nq);
-  assert(qd.size() == robot->number_of_velocities());
-  assert(q_des.size() == params.integrator.gains.size());
+  DRAKE_ASSERT(q.size() == nq);
+  DRAKE_ASSERT(qd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(q_des.size() == params.integrator.gains.size());
   if (nq != robot->number_of_velocities()) {
     throw std::runtime_error(
         "this function will need to be rewritten when num_pos != num_vel");
@@ -195,7 +199,7 @@ VectorXd InstantaneousQPController::velocityReference(
   // Integrate expected accelerations to determine a target feed-forward
   // velocity, which we can pass in to Atlas
   int i;
-  assert(qdd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(qdd.size() == robot->number_of_velocities());
 
   double dt = 0;
   if (controller_state.t_prev != 0) {
@@ -284,8 +288,7 @@ InstantaneousQPController::loadAvailableSupports(
   // Parse a qp_input LCM message to extract its available supports as a vector
   // of SupportStateElements
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>>
-      available_supports;
+              Eigen::aligned_allocator<SupportStateElement>> available_supports;
   available_supports.resize(qp_input.num_support_data);
   for (int i = 0; i < qp_input.num_support_data; i++) {
     available_supports[i].body_idx =
@@ -511,8 +514,8 @@ void checkCentroidalMomentumMatchesTotalWrench(
         active_supports,
     const MatrixXd& B, const VectorXd& beta) {
   std::map<int, Side> foot_body_index_to_side;
-  foot_body_index_to_side[robot.findLinkId("l_foot")] = Side::LEFT;
-  foot_body_index_to_side[robot.findLinkId("r_foot")] = Side::RIGHT;
+  foot_body_index_to_side[robot.FindBodyIndex("l_foot")] = Side::LEFT;
+  foot_body_index_to_side[robot.FindBodyIndex("r_foot")] = Side::RIGHT;
   // compute sum of wrenches, compare to rate of change of momentum from vd
   Vector6d total_wrench_in_world = Vector6d::Zero();
   const int n_basis_vectors_per_contact = 2 * m_surface_tangents;
@@ -643,10 +646,10 @@ int InstantaneousQPController::setupAndSolveQP(
               Eigen::aligned_allocator<SupportStateElement>>
       available_supports = loadAvailableSupports(qp_input);
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>>
-      active_supports = getActiveSupports(*robot, robot_state.q, robot_state.qd,
-                                          available_supports, contact_detected,
-                                          params.contact_threshold);
+              Eigen::aligned_allocator<SupportStateElement>> active_supports =
+      getActiveSupports(*robot, robot_state.q, robot_state.qd,
+                        available_supports, contact_detected,
+                        params.contact_threshold);
 
   // // whole_body_data
   if (qp_input.whole_body_data.num_positions != nq)
@@ -691,7 +694,7 @@ int InstantaneousQPController::setupAndSolveQP(
       nd = 2 *
            m_surface_tangents;  // for friction cone approx, hard coded for now
 
-  assert(nu + 6 == nq);
+  DRAKE_ASSERT(nu + 6 == nq);
 
   std::vector<DesiredBodyAcceleration> desired_body_accelerations;
   desired_body_accelerations.resize(qp_input.num_tracked_bodies);
@@ -787,14 +790,14 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   // handle external wrenches to compensate for
-  eigen_aligned_unordered_map<RigidBody const*, Matrix<double, TWIST_SIZE, 1>>
+  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
   for (auto it = qp_input.body_wrench_data.begin();
        it != qp_input.body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_or_frame_name_to_id.at(body_wrench_data.body_name);
     auto f_ext_i =
-        Map<const Matrix<double, TWIST_SIZE, 1>>(body_wrench_data.wrench);
+        Map<const drake::TwistVector<double>>(body_wrench_data.wrench);
     f_ext.insert({robot->bodies[body_id].get(), f_ext_i});
   }
 

@@ -33,6 +33,20 @@ endif()
 message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 
 include(ExternalProject)
+find_package(Git REQUIRED)
+
+function(drake_forceupdate proj)
+  # CMake < 3.6 forget to mark the update step as "ALWAYS" when an explicit
+  # UPDATE_COMMAND is used.  Add our own "ALWAYS" step to force updates.
+  if(AUTO_UPDATE_EXTERNALS AND CMAKE_VERSION VERSION_LESS 3.6)
+    ExternalProject_Add_Step(${proj} forceupdate
+      DEPENDEES download
+      DEPENDERS update
+      ALWAYS 1
+      )
+  endif()
+endfunction()
+
 function(drake_forcebuild proj)
   if(CMAKE_CONFIGURATION_TYPES)
     set(build_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/${proj}-prefix/src/${proj}-stamp/${CMAKE_CFG_INTDIR}/${proj}-build")
@@ -79,6 +93,11 @@ else()
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_NLOPT "nonlinear optimization solver" ON)
+  # IPOPT is currently disabled on Mac due to MATLAB compatibility
+  # issues: https://github.com/RobotLocomotion/drake/issues/2578
+  if (NOT APPLE)
+    option(WITH_IPOPT "nonlinear optimization solver" ON)
+  endif()
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
@@ -148,111 +167,65 @@ set(signalscope_dependencies director)
 # List compilation and runtime dependencies. Runtime dependencies are needed
 # because the drake project must configure only after any dependencies used by
 # MATLAB have been installed.
-set(drake_dependencies bertini bot_core_lcmtypes bullet cmake eigen gloptipoly3 googletest gurobi iris lcm libbot mosek nlop octomap sedumi snopt spotless swig_matlab swigmake yalmip yaml_cpp)
+set(drake_dependencies bertini bot_core_lcmtypes bullet cmake eigen gloptipoly3 googletest gurobi iris lcm libbot mosek nlopt ipopt octomap sedumi snopt spotless swig_matlab swigmake yalmip yaml_cpp)
 
 # download information, in alphabetical order
-set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
-set(avl_GIT_TAG 9b927f90619460b29f7454c714369f65bc4536a1)
 set(avl_IS_PUBLIC TRUE)
-set(bertini_GIT_REPOSITORY git@github.com:RobotLocomotion/bertini.git)
-set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
 set(bertini_IS_PUBLIC FALSE)
-set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
-set(bullet_GIT_TAG f7cfcf6a24977b57dc832593743c770548799e45)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
-set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
-set(cmake_GIT_TAG abe1a22d0bb767423de4e3bd1123cc2deae1c82a)
 set(cmake_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)
-set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
-set(director_GIT_TAG cfc7702bf9278707bca82d0393bba8611513ea15)
-set(director_BINARY_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
+set(director_BUILD_COMMAND_DIR distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
 set(drake_java_args -DJava_JAVA_EXECUTABLE=${Java_JAVA_EXECUTABLE} -DJava_JAVAC_EXECUTABLE=${Java_JAVAC_EXECUTABLE} -DJava_JAVAH_EXECUTABLE=${Java_JAVAH_EXECUTABLE} -DJava_VERSION_STRING=${Java_VERSION_STRING})
 set(drake_ADDITIONAL_CMAKE_CONFIGURE_ARGS ${drake_java_args} -DWITH_PYTHON_3=${WITH_PYTHON_3} -DDISABLE_MATLAB=${DISABLE_MATLAB})
-set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
-set(eigen_GIT_TAG 20a633e8f0a285edf9dcc5a06cc9e80774920a7f)
 set(eigen_IS_CMAKE_POD TRUE)
 set(eigen_IS_PUBLIC TRUE)
-set(googletest_GIT_REPOSITORY https://github.com/google/googletest.git)
-set(googletest_GIT_TAG ff07a5de0e81580547f1685e101194ed1a4fcd56)
 set(googletest_IS_CMAKE_POD TRUE)
 set(googletest_IS_PUBLIC TRUE)
 set(googletest_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib -DGTEST_CREATE_SHARED_LIBRARY=1) # The "-DGTEST_CREATE_SHARED_LIBRARY=1" is needed to support parameterized Google tests on Windows.
-set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
-set(gtk_GIT_TAG 4730a7d3274a35280f1c2c6337eb182935c87fc2)
 set(gtk_IS_CMAKE_POD TRUE)
 set(gtk_IS_PUBLIC TRUE)
-set(gloptipoly_GIT_REPOSITORY git@github.com:RobotLocomotion/gloptipoly3.git)  # TODO: rename that repo
-set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gloptipoly_IS_PUBLIC FALSE)
-set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
-set(gurobi_GIT_TAG fbbdbbc0152ddb37df209d221aff37448b8ff29f)
 set(gurobi_IS_PUBLIC FALSE)
-set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
-set(iris_GIT_TAG 1533f20cff57504a46773f01e1730f11931d0ea6)
+set(ipopt_IS_PUBLIC TRUE)
+# TODO(sam.creasey) add an alternate build command for WIN32 which
+# downloads the precopiled binary and installs that.
+set(ipopt_BUILD_COMMAND ./configure  --with-blas=BUILD --with-lapack=BUILD --prefix=${CMAKE_INSTALL_PREFIX} --includedir=${CMAKE_INSTALL_PREFIX}/include/ipopt --disable-shared --with-pic && make install)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
-set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-set(lcm_GIT_TAG a0181fc5e86677af9bfbc21622df3d074b612c95) # note: cmake branch
 set(lcm_IS_CMAKE_POD TRUE)
 set(lcm_IS_PUBLIC TRUE)
-set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
-set(libbot_GIT_TAG cc8d228b50847c4c55e6963b8ee95c237287547f)
+set(lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON)
+if(WITH_GTK)
+  set(lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS ${lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS} -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_SOURCE_DIR}/externals/gtk/gtk3)
+endif()
 set(libbot_IS_CMAKE_POD TRUE)
 set(libbot_IS_PUBLIC TRUE)
-set(bot_core_lcmtypes_GIT_REPOSITORY  https://github.com/jhoare/bot_core_lcmtypes)
-set(bot_core_lcmtypes_GIT_TAG fc70d061005f52000cf8af7658c34e86bc2bac68)
 set(bot_core_lcmtypes_IS_CMAKE_POD TRUE)
 set(bot_core_lcmtypes_IS_PUBLIC TRUE)
-set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
-set(meshconverters_GIT_TAG d50a79b80d74dd7a924daba7bd2011e03d9e66b4)
 set(meshconverters_IS_PUBLIC TRUE)
-set(mosek_GIT_REPOSITORY https://github.com/rdeits/mosek-pod.git)
-set(mosek_GIT_TAG 1919b622df17b7584ac644406f360bd07cdf5fba)
 set(mosek_IS_PUBLIC TRUE)
-set(nlopt_GIT_REPOSITORY https://github.com/stevengj/nlopt.git)
-set(nlopt_GIT_TAG 78e165f9defbac487e915219b7a0866fd25e4c62)
 set(nlopt_BUILD_COMMAND ./autogen.sh --no-configure && ./configure --without-matlab --without-python --without-octave --without-guile --enable-maintainer-mode --enable-shared --prefix=${CMAKE_INSTALL_PREFIX} --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt && make install)
 set(nlopt_IS_PUBLIC TRUE)
-set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
-set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
 set(octomap_IS_PUBLIC TRUE)
-set(sedumi_GIT_REPOSITORY git@github.com:RobotLocomotion/sedumi.git)
-set(sedumi_GIT_TAG 8263577d4ab375524060c19369ccf410133bb9eb)
 set(sedumi_IS_PUBLIC FALSE)
-set(signalscope_GIT_REPOSITORY https://github.com/mitdrc/signal-scope.git)
-set(signalscope_GIT_TAG f22243169381f99f29e534931014557b50b4af95)
 set(signalscope_IS_PUBLIC TRUE)
-set(snopt_GIT_REPOSITORY git@github.com:RobotLocomotion/snopt.git)
-set(snopt_GIT_TAG 95d908275156f2665ef3941f08cb89c767480a6e)
 set(snopt_IS_CMAKE_POD TRUE)
 set(snopt_IS_PUBLIC FALSE)
-set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
-set(spotless_GIT_TAG 86275d25eecebe5e85d33e1074cdb274a1b32d49)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
-set(swigmake_GIT_REPOSITORY https://github.com/rdeits/swigmake.git)
-set(swigmake_GIT_TAG 7e4fcbeb46c5fc7b1efb651b4365ba8b777ef184)
 set(swigmake_IS_PUBLIC TRUE)
 set(swigmake_IS_CMAKE_POD TRUE)
 set(swigmake_NO_CLEAN TRUE)
-set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
-set(swig_matlab_GIT_TAG a763cac0a0862849f2f33d295cc398014531acf4)
 set(swig_matlab_IS_PUBLIC TRUE)
 set(swig_matlab_IS_CMAKE_POD TRUE)
-set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
-set(textbook_GIT_TAG master)
 set(textbook_SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
 set(textbook_BUILD_COMMAND ${PYTHON_EXECUTABLE} extract_examples.py underactuated.html ./examples)
 set(textbook_IS_PUBLIC TRUE)
-set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
-set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(yalmip_IS_PUBLIC TRUE)
-set(yaml_cpp_GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git)
-set(yaml_cpp_GIT_TAG 57805dfd6a741e55477ea8d4d5b3b6f0272d1f0e)
 set(yaml_cpp_IS_PUBLIC TRUE)
 set(yaml_cpp_IS_CMAKE_POD TRUE)
 if(APPLE OR WIN32)
@@ -260,13 +233,7 @@ if(APPLE OR WIN32)
 else()
   set(yaml_cpp_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON)
 endif()
-set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
-set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 set(xfoil_IS_PUBLIC TRUE)
-
-# and now for the examples
-set(LittleDog_GIT_REPOSITORY https://github.com/RobotLocomotion/LittleDog.git)
-set(LittleDog_GIT_TAG b1e2740a183afdcb8c27bbdee461b8ada1c3550e)
 
 find_program(MAKE_EXECUTABLE make)
 if(NOT MAKE_EXECUTABLE)
@@ -309,6 +276,7 @@ foreach(proj IN ITEMS
   swigmake
   swig_matlab
   yaml_cpp
+  ipopt
   nlopt
   drake)
   string(TOUPPER ${proj} proj_upper)
@@ -361,25 +329,24 @@ foreach(proj ${EXTERNAL_PROJECTS})
 
     message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
-    # separate download target so I can make the download-all custom command as recommended in:
-    #   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
+    # Compute the path to the submodule for this external.
+    file(RELATIVE_PATH ${proj}_GIT_SUBMODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_SOURCE_DIR})
+
+    # Initialize the submodule configuration now so parallel downloads do not conflict later.
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- ${${proj}_GIT_SUBMODULE_PATH}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+    # Download externals as Git submodules.
+    set(${proj}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${${proj}_GIT_SUBMODULE_PATH})
+
     if(AUTO_UPDATE_EXTERNALS)
-      ExternalProject_Add(download-${proj}
-        SOURCE_DIR ${${proj}_SOURCE_DIR}
-        GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
-        GIT_TAG ${${proj}_GIT_TAG}
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND "")
+      set(${proj}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_DOWNLOAD_COMMAND})
+
+      # Synchronize the submodule url now so parallel updates do not conflict later.
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule sync -- ${${proj}_GIT_SUBMODULE_PATH}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     else()
-      ExternalProject_Add(download-${proj}
-        SOURCE_DIR ${${proj}_SOURCE_DIR}
-        GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
-        GIT_TAG ${${proj}_GIT_TAG}
-        UPDATE_COMMAND ""
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND "")
+      set(${proj}_UPDATE_COMMAND "")
     endif()
 
     # now the actual project
@@ -387,6 +354,10 @@ foreach(proj ${EXTERNAL_PROJECTS})
       if(NOT ${proj}_BINARY_DIR)
         if(POD_BUILD)
           set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}/pod-build")
+          # Make sure the source tree is empty before cloning into it.
+          set(${proj}_DOWNLOAD_COMMAND ${CMAKE_COMMAND} -E remove_directory ${${proj}_GIT_SUBMODULE_PATH}/pod-build
+            COMMAND ${${proj}_DOWNLOAD_COMMAND}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${${proj}_GIT_SUBMODULE_PATH}/pod-build)
         else()
           set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
         endif()
@@ -397,14 +368,17 @@ foreach(proj ${EXTERNAL_PROJECTS})
       endif()
       ExternalProject_Add(${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
-        DOWNLOAD_COMMAND ""
-        UPDATE_COMMAND ""
         BINARY_DIR ${${proj}_BINARY_DIR}
-        DEPENDS download-${proj} ${deps}
+        DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
+        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+        UPDATE_COMMAND ${${proj}_UPDATE_COMMAND}
+        INDEPENDENT_STEP_TARGETS update
+        DEPENDS ${deps}
         ${COMMON_CMAKE_ARGS}
         ${PODS_VERBOSE_MAKEFILE}
         ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
         ${${proj}_ADDITIONAL_BUILD_ARGS})
+      drake_forceupdate(${proj})
       drake_forcebuild(${proj})
     else() # not a CMake POD
       if(NOT ${proj}_BINARY_DIR)
@@ -420,19 +394,25 @@ foreach(proj ${EXTERNAL_PROJECTS})
             set(PODS_VERBOSE_MAKEFILE "V=1 VERBOSE=1")
           endif()
           set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} ${PODS_VERBOSE_MAKEFILE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION>)
+          if(${proj}_BUILD_COMMAND_DIR)
+            set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_BUILD_COMMAND_DIR} ${${proj}_BUILD_COMMAND})
+          endif()
         endif()
       endif()
 
       ExternalProject_Add(${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
         BINARY_DIR ${${proj}_BINARY_DIR}
-        DOWNLOAD_COMMAND ""
-        UPDATE_COMMAND ""
+        DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
+        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+        UPDATE_COMMAND ${${proj}_UPDATE_COMMAND}
+        INDEPENDENT_STEP_TARGETS update
         CONFIGURE_COMMAND ""
         BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
         INSTALL_COMMAND ""
-        DEPENDS download-${proj} ${deps}
+        DEPENDS ${deps}
         ${${proj}_ADDITIONAL_BUILD_ARGS})
+      drake_forceupdate(${proj})
       if(${proj}_BUILD_COMMAND)
         drake_forcebuild(${proj})
       endif()
@@ -473,8 +453,8 @@ add_custom_target(status)
 set(PROJECT_LIST)
 foreach(proj ${EXTERNAL_PROJECTS})
   if(NOT ${proj} STREQUAL "drake")
-    add_dependencies(download-all download-${proj})
-    ExternalProject_Get_Property(download-${proj} SOURCE_DIR)
+    add_dependencies(download-all ${proj}-update)
+    ExternalProject_Get_Property(${proj} SOURCE_DIR)
     add_custom_target(status-${proj}
       COMMAND ${GIT_EXECUTABLE} status
       WORKING_DIRECTORY ${SOURCE_DIR})
@@ -511,14 +491,32 @@ foreach(example IN ITEMS LittleDog)
   string(TOUPPER ${example} example_upper)
   if(EXAMPLES_${example_upper})
     message(STATUS "Installation will include extra example: ${example}")
+
+    # Initialize the submodule configuration now so parallel downloads do not conflict later.
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- drake/examples/${example}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+    # Download examples as Git submodules.
+    set(${example}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- drake/examples/${example})
+    if(AUTO_UPDATE_EXTERNALS)
+      set(${example}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${example}_DOWNLOAD_COMMAND})
+
+      # Synchronize the submodule url now so parallel updates do not conflict later.
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule sync -- drake/examples/${example}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    else()
+      set(${example}_UPDATE_COMMAND "")
+    endif()
+
     ExternalProject_Add(download-${example}
-      DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
       SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
-      GIT_REPOSITORY ${${example}_GIT_REPOSITORY}
-      GIT_TAG ${${example}_GIT_TAG}
+      DOWNLOAD_COMMAND ${${example}_DOWNLOAD_COMMAND}
+      DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+      UPDATE_COMMAND ${${example}_UPDATE_COMMAND}
       CONFIGURE_COMMAND ""
       BUILD_COMMAND ""
       INSTALL_COMMAND "")
+    drake_forceupdate(download-${example})
     add_dependencies(drake download-${example})
     add_dependencies(download-all download-${example})
   endif()

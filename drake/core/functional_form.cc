@@ -1,10 +1,12 @@
 #include "drake/core/functional_form.h"
 
 #include <algorithm>
-#include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <ostream>
 #include <type_traits>
+
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 
@@ -59,17 +61,27 @@ class FunctionalForm::Internal {
   static bool need_vars(Form f) {
     return f != Form::kZero && f != Form::kConstant;
   }
+
+  static Form FormFromDouble(double d) {
+    if (d == 0) {
+      return Form::kZero;
+    }
+    if (std::isnan(d)) {
+      return Form::kUndefined;
+    }
+    return Form::kConstant;
+  }
 };
 
 FunctionalForm::FunctionalForm() : FunctionalForm(Form::kUndefined, {}) {}
 
 FunctionalForm::FunctionalForm(double d)
-    : FunctionalForm(d == 0 ? Form::kZero : Form::kConstant, {}) {}
+    : FunctionalForm(Internal::FormFromDouble(d), {}) {}
 
 FunctionalForm::FunctionalForm(Form f, Variables&& v)
     : vars_(std::move(v)), form_(f) {
-  assert(form_ == Form::kUndefined ||
-         Internal::need_vars(form_) == !vars_.empty());
+  DRAKE_ASSERT(form_ == Form::kUndefined ||
+               Internal::need_vars(form_) == !vars_.empty());
 }
 
 FunctionalForm FunctionalForm::Zero() {
@@ -296,7 +308,7 @@ FunctionalForm::Variable::Variable(std::size_t index)
 
 FunctionalForm::Variable::Variable(std::string name)
     : name_(std::move(name)), tag_(Tag::kNamed) {
-  assert(!name_.empty());
+  DRAKE_ASSERT(!name_.empty());
 }
 
 FunctionalForm::Variable::Variable(Variable const& v) : tag_(v.tag_) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 
@@ -25,7 +26,7 @@ class BasicStateVector : public LeafStateVector<T> {
  public:
   /// Constructs a BasicStateVector that owns a generic BasicVector of the
   /// specified @p size.
-  explicit BasicStateVector(int64_t size)
+  explicit BasicStateVector(int size)
       : BasicStateVector(
             std::unique_ptr<VectorInterface<T>>(new BasicVector<T>(size))) {}
 
@@ -34,9 +35,9 @@ class BasicStateVector : public LeafStateVector<T> {
   explicit BasicStateVector(std::unique_ptr<VectorInterface<T>> vector)
       : vector_(std::move(vector)) {}
 
-  ptrdiff_t size() const override { return vector_->get_value().rows(); }
+  int size() const override { return vector_->get_value().rows(); }
 
-  const T GetAtIndex(ptrdiff_t index) const override {
+  const T GetAtIndex(int index) const override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
                               " out of bounds for state vector of size " +
@@ -45,7 +46,7 @@ class BasicStateVector : public LeafStateVector<T> {
     return vector_->get_value()[index];
   }
 
-  void SetAtIndex(ptrdiff_t index, const T& value) override {
+  void SetAtIndex(int index, const T& value) override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
                               " out of bounds for state vector of size " +
@@ -70,6 +71,21 @@ class BasicStateVector : public LeafStateVector<T> {
                                  const StateVector<T>& rhs) override {
     assert(size() == rhs.size());
     rhs.ScaleAndAddToVector(scale, vector_->get_mutable_value());
+    return *this;
+  }
+
+  void AddToVector(Eigen::Ref<VectorX<T>> vec) const override {
+    if (vec.rows() != size()) {
+      throw std::out_of_range("Addends must be the same length.");
+    }
+    vec += vector_->get_value();
+  }
+
+  BasicStateVector& operator+=(const StateVector<T>& rhs) override {
+    if (size() != rhs.size()) {
+      throw std::out_of_range("Addends must be the same length.");
+    }
+    rhs.AddToVector(vector_->get_mutable_value());
     return *this;
   }
 

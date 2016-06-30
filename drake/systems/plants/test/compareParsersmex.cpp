@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <iostream>
+
+#include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeMexUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -103,8 +105,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         cpp_model->doKinematics(cpp_q, cpp_v, true);
 
     {  // compare H, C, and B
-      eigen_aligned_unordered_map<RigidBody const*,
-                                  Matrix<double, TWIST_SIZE, 1>>
+      eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
           f_ext;
 
       auto matlab_H = matlab_model->massMatrix(matlab_cache);

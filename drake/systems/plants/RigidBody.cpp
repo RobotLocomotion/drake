@@ -1,7 +1,8 @@
-
-#include "RigidBody.h"
+#include "drake/systems/plants/RigidBody.h"
 
 #include <stdexcept>
+
+#include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
@@ -23,12 +24,16 @@ RigidBody::RigidBody()
   body_index = 0;
   mass = 0.0;
   com = Vector3d::Zero();
-  I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+  I << drake::SquareTwistMatrix<double>::Zero();
 }
 
 const std::string& RigidBody::name() const { return name_; }
 
 const std::string& RigidBody::model_name() const { return model_name_; }
+
+int RigidBody::get_model_id() const { return robotnum; }
+
+void RigidBody::set_model_id(int model_id) { robotnum = model_id; }
 
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
   this->joint = move(new_joint);
@@ -38,8 +43,9 @@ const DrakeJoint& RigidBody::getJoint() const {
   if (joint) {
     return (*joint);
   } else {
-    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_
-      + "\" in model " + model_name_ + " does not have a joint!");
+    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_ +
+                        "\" in model " + model_name_ +
+                        " does not have a joint!");
   }
 }
 
@@ -58,6 +64,12 @@ void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
                                    const DrakeCollision::bitmask& ignores) {
   setCollisionFilterGroup(group);
   setCollisionFilterIgnores(ignores);
+}
+
+bool RigidBody::adjacentTo(const RigidBody& other) const {
+  return ((has_as_parent(other) && !(joint && joint->isFloating())) ||
+          (other.has_as_parent(*this) &&
+           !(other.joint && other.joint->isFloating())));
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
@@ -91,29 +103,37 @@ void RigidBody::ApplyTransformToJointFrame(
 }
 
 RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
-    : DrakeCollision::Element(other), body(other.body) {}
+    : DrakeCollision::Element(other) {}
 
 RigidBody::CollisionElement::CollisionElement(
     const Isometry3d& T_element_to_link, const RigidBody* const body)
-    : DrakeCollision::Element(T_element_to_link), body(body) {}
+    : DrakeCollision::Element(T_element_to_link) {
+  set_body(body);
+}
 
 RigidBody::CollisionElement::CollisionElement(
     const DrakeShapes::Geometry& geometry, const Isometry3d& T_element_to_link,
     const RigidBody* const body)
-    : DrakeCollision::Element(geometry, T_element_to_link), body(body) {}
+    : DrakeCollision::Element(geometry, T_element_to_link) {
+  set_body(body);
+  // This is a temporary hack to avoid having the user to set collision
+  // elements to static when added to the world.
+  // Collision elements should be set to static in a later Initialize() stage as
+  // described in issue #2661.
+  // TODO(amcastro-tri): remove this hack.
+  if (body->name() == "world") set_static();
+}
 
 RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
   return new CollisionElement(*this);
 }
-
-const RigidBody& RigidBody::CollisionElement::getBody() const { return *body; }
 
 bool RigidBody::CollisionElement::CollidesWith(
     const DrakeCollision::Element* other) const {
   auto other_rb = dynamic_cast<const RigidBody::CollisionElement*>(other);
   bool collides = true;
   if (other_rb != nullptr) {
-    collides = this->body->CollidesWith(*other_rb->body);
+    collides = get_body()->CollidesWith(*other_rb->get_body());
   }
   return collides;
 }

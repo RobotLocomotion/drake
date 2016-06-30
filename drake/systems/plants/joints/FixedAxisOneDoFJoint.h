@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include "DrakeJointImpl.h"
+#include "drake/common/eigen_types.h"
 #include "drake/util/drakeGradientUtil.h"
 
 template <typename Derived>
@@ -17,7 +18,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   // FixedAxisOneDoFJoint& operator=(const FixedAxisOneDoFJoint&) = delete;
 
  private:
-  Eigen::Matrix<double, TWIST_SIZE, 1> joint_axis;
+  drake::TwistVector<double> joint_axis;
   double damping;
   double coulomb_friction;
   double coulomb_window;
@@ -25,7 +26,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
  protected:
   FixedAxisOneDoFJoint(Derived& derived, const std::string& name,
                        const Eigen::Isometry3d& transform_to_parent_body,
-                       const Eigen::Matrix<double, TWIST_SIZE, 1>& _joint_axis)
+                       const drake::TwistVector<double>& _joint_axis)
       : DrakeJointImpl<Derived>(derived, name, transform_to_parent_body, 1, 1),
         joint_axis(_joint_axis),
         damping(0.0),
@@ -39,10 +40,11 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   using DrakeJoint::getNumVelocities;
 
   template <typename DerivedQ, typename DerivedMS>
-  void motionSubspace(const Eigen::MatrixBase<DerivedQ>& q,
-                      Eigen::MatrixBase<DerivedMS>& motion_subspace,
-                      typename Gradient<DerivedMS, Eigen::Dynamic>::type*
-                          dmotion_subspace = nullptr) const {
+  void motionSubspace(
+      const Eigen::MatrixBase<DerivedQ>& q,
+      Eigen::MatrixBase<DerivedMS>& motion_subspace,
+      typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
+          dmotion_subspace = nullptr) const {
     motion_subspace = joint_axis.cast<typename DerivedQ::Scalar>();
     if (dmotion_subspace) {
       dmotion_subspace->setZero(motion_subspace.size(), getNumPositions());
@@ -55,20 +57,20 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
       const Eigen::MatrixBase<DerivedV>& v,
       Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>&
           motion_subspace_dot_times_v,
-      typename Gradient<Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>,
-                        Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq =
-          nullptr,
-      typename Gradient<Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>,
-                        Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv =
-          nullptr) const {
+      typename drake::math::Gradient<
+          Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type*
+          dmotion_subspace_dot_times_vdq = nullptr,
+      typename drake::math::Gradient<
+          Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type*
+          dmotion_subspace_dot_times_vdv = nullptr) const {
     motion_subspace_dot_times_v.setZero();
 
     if (dmotion_subspace_dot_times_vdq) {
-      dmotion_subspace_dot_times_vdq->setZero(TWIST_SIZE, 1);
+      dmotion_subspace_dot_times_vdq->setZero(drake::kTwistSize, 1);
     }
 
     if (dmotion_subspace_dot_times_vdv) {
-      dmotion_subspace_dot_times_vdv->setZero(TWIST_SIZE, 1);
+      dmotion_subspace_dot_times_vdv->setZero(drake::kTwistSize, 1);
     }
   }
 
@@ -115,8 +117,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return ret;
   }
 
-  void setJointLimits(
-      double joint_limit_min, double joint_limit_max) {
+  void setJointLimits(double joint_limit_min, double joint_limit_max) {
     if (joint_limit_min > joint_limit_max) {
       throw std::logic_error(
           "ERROR: joint_limit_min cannot be larger than joint_limit_max");

@@ -1,7 +1,11 @@
 #pragma once
 
+#include <cstdint>
+#include <stdexcept>
+
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
 #include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
@@ -21,21 +25,21 @@ class StateVector {
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual ptrdiff_t size() const = 0;
+  virtual int size() const = 0;
 
   /// Returns the element at the given index in the vector. Throws
   /// std::out_of_range if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual const T GetAtIndex(ptrdiff_t index) const = 0;
+  virtual const T GetAtIndex(int index) const = 0;
 
   /// Replaces the state at the given index with the value. Throws
   /// std::out_of_range if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual void SetAtIndex(ptrdiff_t index, const T& value) = 0;
+  virtual void SetAtIndex(int index, const T& value) = 0;
 
   /// Replaces the entire state with the contents of value. Throws
   /// std::out_of_range if value is not a column vector with size() rows.
@@ -59,7 +63,9 @@ class StateVector {
   /// the value and allocates no memory.
   virtual void ScaleAndAddToVector(const T& scale,
                                    Eigen::Ref<VectorX<T>> vec) const {
-    assert(vec.rows() == size());
+    if (vec.rows() != size()) {
+      throw std::out_of_range("Addends must be the same length.");
+    }
     for (ptrdiff_t i = 0; i < size(); ++i) 
       vec[i] += scale * GetAtIndex(i);
   }
@@ -87,6 +93,8 @@ class StateVector {
   StateVector& operator-=(const StateVector<T>& rhs) {
       return PlusEqScaled(T(-1), rhs);
   }
+
+
  protected:
   StateVector() {}
 
