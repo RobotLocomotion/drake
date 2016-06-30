@@ -1,10 +1,10 @@
 #include "HumanoidState.h"
 #include <iostream>
 
-void HumanoidState::_fillKinematics(const std::string& name, Isometry3d& pose,
+void HumanoidState::FillKinematics(const std::string& name, Isometry3d& pose,
                                     Vector6d& vel, MatrixXd& J, Vector6d& Jdv,
                                     const Vector3d& local_offset) {
-  int id = bodyName2ID.at(name);
+  int id = body_name_to_id.at(name);
   pose = Isometry3d::Identity();
   pose.translation() = local_offset;
   pose = robot->relativeTransform(cache, 0, id) * pose;
@@ -14,7 +14,7 @@ void HumanoidState::_fillKinematics(const std::string& name, Isometry3d& pose,
   Jdv = getTaskSpaceJacobianDotTimesV(*(robot), cache, id, local_offset);
 }
 
-void HumanoidState::update(double t, const VectorXd& q, const VectorXd& v,
+void HumanoidState::Update(double t, const VectorXd& q, const VectorXd& v,
                            const VectorXd& trq, const Vector6d& l_ft,
                            const Vector6d& r_ft, const Matrix3d& rot) {
   if (q.size() != this->pos.size() || v.size() != this->vel.size() ||
@@ -42,18 +42,18 @@ void HumanoidState::update(double t, const VectorXd& q, const VectorXd& v,
   comd = J_com * v;
 
   // body parts
-  _fillKinematics(pelv.link_name, pelv.pose, pelv.vel, pelv.J, pelv.Jdv);
+  FillKinematics(pelv.link_name, pelv.pose, pelv.vel, pelv.J, pelv.Jdv);
   // the fictional contact point is 9cm below the ankle joint
-  _fillKinematics(l_foot.link_name, l_foot.pose, l_foot.vel, l_foot.J,
+  FillKinematics(l_foot.link_name, l_foot.pose, l_foot.vel, l_foot.J,
                   l_foot.Jdv, Vector3d(0, 0, -0.09));
-  _fillKinematics(r_foot.link_name, r_foot.pose, r_foot.vel, r_foot.J,
+  FillKinematics(r_foot.link_name, r_foot.pose, r_foot.vel, r_foot.J,
                   r_foot.Jdv, Vector3d(0, 0, -0.09));
-  _fillKinematics(torso.link_name, torso.pose, torso.vel, torso.J, torso.Jdv);
+  FillKinematics(torso.link_name, torso.pose, torso.vel, torso.J, torso.Jdv);
 
-  _fillKinematics(l_foot_sensor.link_name, l_foot_sensor.pose,
+  FillKinematics(l_foot_sensor.link_name, l_foot_sensor.pose,
                   l_foot_sensor.vel, l_foot_sensor.J, l_foot_sensor.Jdv,
                   Vector3d(0.0215646, 0.0, -0.051054));
-  _fillKinematics(r_foot_sensor.link_name, r_foot_sensor.pose,
+  FillKinematics(r_foot_sensor.link_name, r_foot_sensor.pose,
                   r_foot_sensor.vel, r_foot_sensor.J, r_foot_sensor.Jdv,
                   Vector3d(0.0215646, 0.0, -0.051054));
 

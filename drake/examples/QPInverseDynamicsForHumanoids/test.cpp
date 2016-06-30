@@ -1,6 +1,6 @@
 #include "QPController.h"
 
-QPOutput testGravityCompensation(const HumanoidState& rs) {
+QPOutput TestGravityCompensation(const HumanoidState& rs) {
   // make controller
   QPController con;
   QPInput input(*rs.robot);
@@ -29,12 +29,12 @@ QPOutput testGravityCompensation(const HumanoidState& rs) {
 
   ////////////////////////////////////////////////////////////////////
   // call QP
-  assert(con.control(rs, input, output) == 0);
+  assert(con.Control(rs, input, output) == 0);
 
   // print result
-  output.print();
+  output.Print();
 
-  output.computeCost(rs, input);
+  output.ComputeCost(rs, input);
 
   return output;
 }
@@ -55,31 +55,31 @@ int main() {
   q.setZero();
   qd.setZero();
 
-  q[rs.jointName2ID.at("rightHipRoll")] = 0.01;
-  q[rs.jointName2ID.at("rightHipPitch")] = -0.5432;
-  q[rs.jointName2ID.at("rightKneePitch")] = 1.2195;
-  q[rs.jointName2ID.at("rightAnklePitch")] = -0.7070;
-  q[rs.jointName2ID.at("rightAnkleRoll")] = -0.0069;
+  q[rs.joint_name_to_id.at("rightHipRoll")] = 0.01;
+  q[rs.joint_name_to_id.at("rightHipPitch")] = -0.5432;
+  q[rs.joint_name_to_id.at("rightKneePitch")] = 1.2195;
+  q[rs.joint_name_to_id.at("rightAnklePitch")] = -0.7070;
+  q[rs.joint_name_to_id.at("rightAnkleRoll")] = -0.0069;
 
-  q[rs.jointName2ID.at("leftHipRoll")] = -0.01;
-  q[rs.jointName2ID.at("leftHipPitch")] = -0.5432;
-  q[rs.jointName2ID.at("leftKneePitch")] = 1.2195;
-  q[rs.jointName2ID.at("leftAnklePitch")] = -0.7070;
-  q[rs.jointName2ID.at("leftAnkleRoll")] = 0.0069;
+  q[rs.joint_name_to_id.at("leftHipRoll")] = -0.01;
+  q[rs.joint_name_to_id.at("leftHipPitch")] = -0.5432;
+  q[rs.joint_name_to_id.at("leftKneePitch")] = 1.2195;
+  q[rs.joint_name_to_id.at("leftAnklePitch")] = -0.7070;
+  q[rs.joint_name_to_id.at("leftAnkleRoll")] = 0.0069;
 
-  q[rs.jointName2ID.at("rightShoulderRoll")] = 1;
-  q[rs.jointName2ID.at("rightShoulderYaw")] = 0.5;
-  q[rs.jointName2ID.at("rightElbowPitch")] = M_PI / 2.;
+  q[rs.joint_name_to_id.at("rightShoulderRoll")] = 1;
+  q[rs.joint_name_to_id.at("rightShoulderYaw")] = 0.5;
+  q[rs.joint_name_to_id.at("rightElbowPitch")] = M_PI / 2.;
 
-  q[rs.jointName2ID.at("leftShoulderRoll")] = -1;
-  q[rs.jointName2ID.at("leftShoulderYaw")] = 0.5;
-  q[rs.jointName2ID.at("leftElbowPitch")] = -M_PI / 2.;
+  q[rs.joint_name_to_id.at("leftShoulderRoll")] = -1;
+  q[rs.joint_name_to_id.at("leftShoulderYaw")] = 0.5;
+  q[rs.joint_name_to_id.at("leftElbowPitch")] = -M_PI / 2.;
 
-  rs.update(0, q, qd, VectorXd::Zero(rs.robot->actuators.size()),
+  rs.Update(0, q, qd, VectorXd::Zero(rs.robot->actuators.size()),
             Vector6d::Zero(), Vector6d::Zero());
 
   // test QP controller
-  QPOutput output = testGravityCompensation(rs);
+  QPOutput output = TestGravityCompensation(rs);
 
   return 0;
 }
