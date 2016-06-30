@@ -337,15 +337,37 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     std::shared_ptr<QuadraticConstraint> cost(new QuadraticConstraint(
         2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity()));
-    AddCost(cost, vars);
+    AddQuadraticCost(cost, vars);
     return cost;
   }
 
+  /** AddQuadraticErrorCost
+   * @brief Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
+   * Applied to all (currently existing) variables.
+   */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired) {
     return AddQuadraticErrorCost(Q, x_desired, variable_views_);
+  }
+  /** AddQuadraticCost
+   * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
+   * Applied to subset of the variables and pushes onto
+   * the quadratic cost data structure.
+   */
+  void AddQuadraticCost(std::shared_ptr<Constraint> const& obj,
+    VariableList const& vars) {
+    problem_type_.AddQuadraticCost();
+    quadratic_costs_.push_back(Binding<Constraint>(obj, vars));
+  }
+
+  /** AddQuadraticCost
+   * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
+   * Applied to subset of the variables.
+   */
+  void AddQuadraticCost(std::shared_ptr<Constraint> const& obj) {
+    AddQuadraticCost(obj, variable_views_);
   }
 
   /** AddQuadraticCost
@@ -359,14 +381,13 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     std::shared_ptr<QuadraticConstraint> cost(
         new QuadraticConstraint(Q, b, -std::numeric_limits<double>::infinity(),
                                 std::numeric_limits<double>::infinity()));
-    // TODO(naveenoid) : Call to MathematicalProgram::AddQuadraticCost required
-    AddCost(cost, vars);
+    AddQuadraticCost(cost, vars);
     return cost;
   }
 
   /** AddQuadraticCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
-   * Applies to all of the continuous variables.
+   * Applies to all (currently existing) variables.
    */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
@@ -730,16 +751,42 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   const std::list<Binding<Constraint>>& generic_costs() const {
     return generic_costs_;
   }  // e.g. for snopt_user_fun
+
   const std::list<Binding<Constraint>>& generic_constraints() const {
     return generic_constraints_;
   }  // e.g. for snopt_user_fun
+
   const std::list<Binding<LinearEqualityConstraint>>&
   linear_equality_constraints() const {
     return linear_equality_constraints_;
   }
+
+
+  /** quadratic_cost
+   *
+   * @brief Getter for quadratic costs.
+   */
+  const std::list<Binding<Constraint>>& quadratic_costs() const {
+    return quadratic_costs_;
+  }
+
+  // TODO(naveenoid) : getter for quadratic_constraints
   const std::list<Binding<LinearConstraint>>& linear_constraints() const {
     return linear_constraints_;
   }
+
+  /** GetAllCosts
+   *
+   * @brief Getter returning all costs (for now quadratic costs appended to
+   * generic costs).
+   */
+  std::list<Binding<Constraint>> GetAllCosts() const {
+    std::list<Binding<Constraint>> costlist = generic_costs_;
+    costlist.insert(costlist.end(), quadratic_costs_.begin(),
+                    quadratic_costs_.end());
+    return costlist;
+  }
+
   std::list<Binding<LinearConstraint>> GetAllLinearConstraints() const {
     std::list<Binding<LinearConstraint>> conlist = linear_constraints_;
     conlist.insert(conlist.end(), linear_equality_constraints_.begin(),
@@ -786,6 +833,9 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   VariableList variable_views_;
   std::list<Binding<Constraint>> generic_costs_;
   std::list<Binding<Constraint>> generic_constraints_;
+  std::list<Binding<Constraint>> quadratic_costs_;
+  // TODO(naveenoid) : quadratic_constraints_
+
   // note: linear_constraints_ does not include linear_equality_constraints_
   std::list<Binding<LinearConstraint>> linear_constraints_;
   std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
