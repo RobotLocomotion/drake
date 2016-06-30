@@ -25,7 +25,7 @@ QPOutput testGravityCompensation(const HumanoidState &rs) {
   input.w_torso = 1e1;
   input.w_foot = 1e1;
   input.w_qdd = 1e3;
-  input.w_wrench_reg = 1e-5;
+  input.w_wrench_reg = 1e-8;
 
   ////////////////////////////////////////////////////////////////////
   // call QP
@@ -42,6 +42,9 @@ QPOutput testGravityCompensation(const HumanoidState &rs) {
 
   std::cout << "output1 == output2 " << (output == output2) << std::endl;
 
+  output.computeCost(rs, input);
+  output2.computeCost(rs, input);
+  
   return output;
 }
 

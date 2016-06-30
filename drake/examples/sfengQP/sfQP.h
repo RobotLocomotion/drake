@@ -4,6 +4,22 @@
 #include "EigenQuadProg.h"
 
 using namespace Eigen;
+using namespace drake::solvers;
+
+inline VectorXd variableList2VectorXd(VariableList const &vlist)
+{
+  size_t dim = 0;
+  for (auto var : vlist) {
+    dim += var.size(); 
+  }
+  VectorXd X(dim);
+  dim = 0;
+  for (auto var : vlist) {
+    X.segment(dim, var.size()) = var.value();
+    dim += var.size();
+  }
+  return X;
+}
 
 class sfQP 
 {
@@ -55,6 +71,33 @@ protected:
     assert(result == drake::solvers::SolutionResult::kSolutionFound);
     _X = x.value();
     
+    auto costs = prog.generic_costs();
+    auto eqs = prog.linear_equality_constraints();
+    auto ineqs = prog.linear_constraints();
+
+    // would be nice to have a variable list -> flat VectorXd method
+    for (auto cost_b : costs) {
+      VectorXd val;
+      std::shared_ptr<Constraint> cost = cost_b.constraint();
+      cost->eval(variableList2VectorXd(cost_b.variable_list()), val);
+      std::cout << "cost term 0.5 x^T * H * x + h0 * x: " << val.transpose() << std::endl;
+    }
+
+    for (auto eq_b : eqs) {
+      std::shared_ptr<LinearEqualityConstraint> eq = eq_b.constraint();
+      VectorXd X = variableList2VectorXd(eq_b.variable_list());
+      assert((eq->A() * X - eq->lower_bound()).isZero());
+    }
+
+    for (auto ineq_b : ineqs) {
+      std::shared_ptr<LinearConstraint> ineq = ineq_b.constraint();
+      VectorXd X = variableList2VectorXd(ineq_b.variable_list());
+      X = ineq->A() * X;
+      for (size_t i = 0; i < X.size(); i++) {
+        assert(X[i] >= ineq->lower_bound()[i] && X[i] <= ineq->upper_bound()[i]);
+      }
+    }
+
     /*
     int ctr = 0;
     for (int i = 0; i < _nInEq; i++) {

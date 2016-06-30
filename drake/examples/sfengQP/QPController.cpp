@@ -46,7 +46,7 @@ int QPController::control(
 
   _nVar = nQdd + nWrench;
   _nEq = 6 + 6 * nContacts;
-  _nInEq = 11 * nContacts + nTrq;
+  _nInEq = 0; // 11 * nContacts + nTrq;
   this->resize();
   this->setZero();
 
@@ -96,6 +96,7 @@ int QPController::control(
   // 2 for CoP y within foot, 2
   // 1 for Fz >= 0,
   rowIdx = 0;
+  /*
   // Fz >= 0;
   for (int i = 0; i < nContacts; i++) {
     _CI(rowIdx, lambda_start+i*6 + 5) = 1;
@@ -200,15 +201,17 @@ int QPController::control(
   for (size_t i = 0; i < rs.robot->actuators.size(); i++) {
     _ci_l(rowIdx+i) += rs.robot->actuators[i].effort_limit_min;
     _ci_u(rowIdx+i) += rs.robot->actuators[i].effort_limit_max;
-    //printf("%g %g\n", _ci_l[rowIdx+i], _ci_u[rowIdx+i]);
   }
   rowIdx += nTrq;
+  */
 
   ////////////////////////////////////////////////////////////////////
   // cost function:
   // min 0.5 * _X^T * _H * _X + _h0.transpose() * _X, and we are sending _H, _h0
   // CoM term
   // w * (J * qdd + Jdv - comdd_d)^T * (J * qdd + Jdv - comdd_d)
+  assert(_H.isZero() && _h0.isZero());
+
   _H.block(qdd_start, qdd_start, nQdd, nQdd) +=
     input.w_com * rs.J_com.transpose() * rs.J_com;
   _h0.segment(qdd_start, nQdd) +=
@@ -227,8 +230,8 @@ int QPController::control(
 
   // regularize lambda to lambda_d
   VectorXd lambda_d(VectorXd::Zero(nWrench));
-  lambda_d[5] = 660;
-  lambda_d[11] = 660;
+  for (int i = 0; i < 2; i++)
+    lambda_d.segment<6>(6*i) = input.wrench_d[i];
   _H.block(lambda_start, lambda_start, nWrench, nWrench) +=
     input.w_wrench_reg * MatrixXd::Identity(nWrench, nWrench);
   _h0.segment(lambda_start, nWrench) += input.w_wrench_reg * (-lambda_d);
@@ -268,6 +271,7 @@ int QPController::control(
       output.foot_wrench_in_sensor_frame[i].tail<3>();
   }
 
+
   ////////////////////////////////////////////////////////////////////
   // sanity checks,
   // check dynamics
@@ -293,6 +297,30 @@ int QPController::control(
   return 0;
 }
 
+double QPOutput::computeCost(const HumanoidState &rs, const QPInput &input) const
+{
+  VectorXd c, tot;
+  c = 0.5 * qdd.transpose() * input.w_com * rs.J_com.transpose() * rs.J_com * qdd + input.w_com * (rs.Jdv_com - input.comdd_d).transpose() * rs.J_com * qdd;
+  tot = c;
+  std::cout << "com cost: " << c << std::endl;
+  
+  c = 0.5 * qdd.transpose() * input.w_pelv * rs.pelv.J.transpose() * rs.pelv.J * qdd + input.w_pelv * (rs.pelv.Jdv - input.pelvdd_d).transpose() * rs.pelv.J * qdd;
+  tot += c;
+  std::cout << "pelv cost: " << c << std::endl;
+  
+  c = 0.5 * qdd.transpose() * input.w_qdd * qdd + input.w_qdd * (-input.qdd_d).transpose() * qdd;
+  tot += c;
+  std::cout << "qdd cost: " << c << std::endl;
+  
+  for (int i = 0; i < 2; i++) {
+    c = 0.5 * foot_wrench_w[i].transpose() * input.w_wrench_reg * foot_wrench_w[i] + input.w_wrench_reg * (-input.wrench_d[i]).transpose() * foot_wrench_w[i];
+    tot += c;
+    std::cout << "wrench cost: " << c << std::endl;
+  }
+
+  std::cout << "total cost: " << tot << std::endl;
+  return tot[0];
+}
 
 void QPOutput::print() const {
   std::cout << "===============================================\n";
@@ -331,7 +359,6 @@ void QPOutput::print() const {
 }
 
 using namespace drake::solvers;
-static VectorXd variableList2VectorXd(VariableList const &vlist);
 
 int QPController2::control(
     const HumanoidState &rs,
@@ -392,6 +419,7 @@ int QPController2::control(
   // 2 for CoP x within foot, 2
   // 2 for CoP y within foot, 2
   // 1 for Fz >= 0,
+  /*
   int rowIdx = 0;
   MatrixXd CI = MatrixXd::Zero(11*nContacts, nWrench);
   VectorXd ci_u = VectorXd::Constant(11*nContacts, std::numeric_limits<double>::infinity());
@@ -497,9 +525,9 @@ int QPController2::control(
   for (size_t i = 0; i < rs.robot->actuators.size(); i++) {
     ci_l[i] += rs.robot->actuators[i].effort_limit_min;
     ci_u[i] += rs.robot->actuators[i].effort_limit_max;
-    //printf("%g %g\n", ci_l[i], ci_u[i]);
   }
   prog.AddLinearConstraint(CI, ci_l, ci_u, {qdd, lambda});
+  */
 
   ////////////////////////////////////////////////////////////////////
   // cost function:
@@ -515,7 +543,7 @@ int QPController2::control(
   VectorXd lambda_d(VectorXd::Zero(nWrench));
   for (int i = 0; i < 2; i++)
     lambda_d.segment<6>(6*i) = input.wrench_d[i];
-  prog.AddQuadraticCost(input.w_wrench_reg*MatrixXd::Identity(nWrench, nWrench), input.w_wrench_reg*lambda_d, {lambda});
+  prog.AddQuadraticCost(input.w_wrench_reg*MatrixXd::Identity(nWrench, nWrench), input.w_wrench_reg*(-lambda_d), {lambda});
 
   ////////////////////////////////////////////////////////////////////
   // solve
@@ -592,7 +620,7 @@ int QPController2::control(
   }
   
   // sanity checks,
-  // check dynamics, foot not moving, should check ineq as well
+  // check dynamics, foot not moving, should check 
   VectorXd residual = rs.M * output.qdd + rs.h;
   for (int i = 0; i < nContacts; i++)
     residual -= rs.foot[i]->J.transpose() * output.foot_wrench_w[i];
@@ -610,17 +638,3 @@ int QPController2::control(
   return 0;
 }
 
-VectorXd variableList2VectorXd(VariableList const &vlist)
-{
-  size_t dim = 0;
-  for (auto var : vlist) {
-    dim += var.size(); 
-  }
-  VectorXd X(dim);
-  dim = 0;
-  for (auto var : vlist) {
-    X.segment(dim, var.size()) = var.value();
-    dim += var.size();
-  }
-  return X;
-}

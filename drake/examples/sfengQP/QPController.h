@@ -87,7 +87,7 @@ class QPOutput {
   }
 
   void print() const;
-  
+  double computeCost(const HumanoidState &rs, const QPInput &input) const;  
 
  private:
   bool _inited;
