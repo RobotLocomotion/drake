@@ -745,6 +745,91 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   }
 }
 
+
+
+/** Test that a problem constrained linearly (Ax = b)
+    with no cost is dispatched properly as a linear system */
+GTEST_TEST(testOptimizationProblem, testLinearSystemDispatch) {
+  OptimizationProblem prog;
+
+  auto const& x = prog.AddContinuousVariables(4);
+
+  Vector4d b = Vector4d::Random();
+  auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
+
+  prog.Solve();
+
+  // Since A was identity, answer should be b.
+  EXPECT_TRUE(
+      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+
+  // this should be solved with a linear system solver
+  std::string solver_name;
+  int solver_result;
+  prog.GetSolverResult(&solver_name, &solver_result);
+  EXPECT_EQ( solver_name, std::string("Linear System Solver") );
+}
+
+/** Test how an unconstrained QP is dispatched */
+GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
+  OptimizationProblem prog;
+  auto x = prog.AddContinuousVariables(2);
+  MatrixXd Q(2, 2);
+  Q << 1.0, 0.0,
+       0.0, 1.0;
+  VectorXd c(2);
+  c << -1.0, -1.0;
+
+  prog.AddQuadraticCost(Q, c);
+
+  prog.Solve();
+
+  VectorXd expected_answer(2);
+  expected_answer << 1.0, 1.0;
+  EXPECT_TRUE(
+    CompareMatrices(expected_answer, x.value(), 1e-10, MatrixCompareType::absolute));
+
+  // this should be solved with a NonInequalityConstrainedQP solver
+  std::string solver_name;
+  int solver_result;
+  prog.GetSolverResult(&solver_name, &solver_result);
+  EXPECT_EQ( solver_name, std::string("NonInequalityConstrainedQP") );
+}
+
+/** Test how an equality-constrained QP is dispatched */
+GTEST_TEST(testOptimizationProblem, testLinearlyConstrainedQPDispatch) {
+OptimizationProblem prog;
+  auto x = prog.AddContinuousVariables(2);
+  MatrixXd Q(2, 2);
+  Q << 1, 0.0,
+       0.0, 1.0;
+  VectorXd c(2);
+  c << -1.0, -1.0;
+
+  prog.AddQuadraticCost(Q, c);
+
+  VectorXd constraint1(2);
+  // x1 + x2 = 2
+  constraint1 << 1, 1;
+  prog.AddLinearEqualityConstraint(
+      constraint1.transpose(),
+      Drake::Vector1d::Constant(2.0));
+
+  prog.Solve();
+
+  VectorXd expected_answer(2);
+  expected_answer << 1.0, 1.0;
+  EXPECT_TRUE(
+    CompareMatrices(expected_answer, x.value(), 1e-10, MatrixCompareType::absolute));
+
+  // this should be solved with a NonInequalityConstrainedQP solver
+  std::string solver_name;
+  int solver_result;
+  prog.GetSolverResult(&solver_name, &solver_result);
+  EXPECT_EQ( solver_name, std::string("NonInequalityConstrainedQP") );
+}
+
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
