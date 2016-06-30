@@ -793,7 +793,7 @@ GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
   std::string solver_name;
   int solver_result;
   prog.GetSolverResult(&solver_name, &solver_result);
-  EXPECT_EQ( solver_name, std::string("NonInequalityConstrainedQP") );
+  EXPECT_EQ( solver_name, std::string("Equality Constrained QP Solver") );
 }
 
 /** Test how an equality-constrained QP is dispatched */
@@ -809,16 +809,19 @@ OptimizationProblem prog;
   prog.AddQuadraticCost(Q, c);
 
   VectorXd constraint1(2);
-  // x1 + x2 = 2
+  // x1 + x2 = 1
   constraint1 << 1, 1;
   prog.AddLinearEqualityConstraint(
       constraint1.transpose(),
-      Drake::Vector1d::Constant(2.0));
+      Drake::Vector1d::Constant(1.0));
 
   prog.Solve();
 
   VectorXd expected_answer(2);
-  expected_answer << 1.0, 1.0;
+  // in the unconstrained case, the min is at (1, 1)
+  // but now we're restricted on the line x1 + x2 = 1
+  // so min will be at 0.5, 0.5 instead
+  expected_answer << 0.5, 0.5;
   EXPECT_TRUE(
     CompareMatrices(expected_answer, x.value(), 1e-10, MatrixCompareType::absolute));
 
@@ -826,7 +829,7 @@ OptimizationProblem prog;
   std::string solver_name;
   int solver_result;
   prog.GetSolverResult(&solver_name, &solver_result);
-  EXPECT_EQ( solver_name, std::string("NonInequalityConstrainedQP") );
+  EXPECT_EQ( solver_name, std::string("Equality Constrained QP Solver") );
 }
 
 
