@@ -1,6 +1,6 @@
 #include "QPController.h"
 
-QPOutput testGravityCompensation(const HumanoidState &rs) {
+QPOutput testGravityCompensation(const HumanoidState& rs) {
   // make controller
   QPController con;
   QPInput input(*rs.robot);
@@ -42,11 +42,10 @@ QPOutput testGravityCompensation(const HumanoidState &rs) {
 int main() {
   ////////////////////////////////////////////////////////////////////
   // load model
-  std::string urdf = std::string(VALKYRIE_URDF_PATH)
-                   + std::string("/valkyrie_sim_drake.urdf");
-  HumanoidState rs(
-      std::unique_ptr<RigidBodyTree>(
-        new RigidBodyTree(urdf, DrakeJoint::ROLLPITCHYAW)));
+  std::string urdf =
+      std::string(VALKYRIE_URDF_PATH) + std::string("/valkyrie_sim_drake.urdf");
+  HumanoidState rs(std::unique_ptr<RigidBodyTree>(
+      new RigidBodyTree(urdf, DrakeJoint::ROLLPITCHYAW)));
 
   ////////////////////////////////////////////////////////////////////
   // set state and do kinematics
@@ -70,14 +69,14 @@ int main() {
 
   q[rs.jointName2ID.at("rightShoulderRoll")] = 1;
   q[rs.jointName2ID.at("rightShoulderYaw")] = 0.5;
-  q[rs.jointName2ID.at("rightElbowPitch")] = M_PI/2.;
+  q[rs.jointName2ID.at("rightElbowPitch")] = M_PI / 2.;
 
   q[rs.jointName2ID.at("leftShoulderRoll")] = -1;
   q[rs.jointName2ID.at("leftShoulderYaw")] = 0.5;
-  q[rs.jointName2ID.at("leftElbowPitch")] = -M_PI/2.;
+  q[rs.jointName2ID.at("leftElbowPitch")] = -M_PI / 2.;
 
   rs.update(0, q, qd, VectorXd::Zero(rs.robot->actuators.size()),
-      Vector6d::Zero(), Vector6d::Zero());
+            Vector6d::Zero(), Vector6d::Zero());
 
   // test QP controller
   QPOutput output = testGravityCompensation(rs);

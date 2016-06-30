@@ -23,11 +23,9 @@ class QPInput {
   double w_qdd;
   double w_wrench_reg;
 
-  QPInput() {
-    _inited = false;
-  }
+  QPInput() { _inited = false; }
 
-  explicit QPInput(const RigidBodyTree &r) {
+  explicit QPInput(const RigidBodyTree& r) {
     init(r);
     qdd_d.resize(r.number_of_velocities());
     _inited = true;
@@ -39,7 +37,7 @@ class QPInput {
     return ret;
   }
 
-  void init(const RigidBodyTree &r) {
+  void init(const RigidBodyTree& r) {
     for (int i = 0; i < r.number_of_positions(); i++)
       jointNames.push_back(r.getPositionName(i));
     _inited = true;
@@ -63,16 +61,14 @@ class QPOutput {
   Vector6d foot_wrench_w[2];
   Vector6d foot_wrench_in_sensor_frame[2];
 
-  QPOutput() {
-    _inited = false;
-  }
+  QPOutput() { _inited = false; }
 
-  explicit QPOutput(const RigidBodyTree &r) {
+  explicit QPOutput(const RigidBodyTree& r) {
     init(r);
     _inited = true;
   }
 
-  void init(const RigidBodyTree &r) {
+  void init(const RigidBodyTree& r) {
     for (int i = 0; i < r.number_of_positions(); i++)
       jointNames.push_back(r.getPositionName(i));
     _inited = true;
@@ -86,7 +82,7 @@ class QPOutput {
   }
 
   void print() const;
-  double computeCost(const HumanoidState &rs, const QPInput &input) const;
+  double computeCost(const HumanoidState& rs, const QPInput& input) const;
 
  private:
   bool _inited;
@@ -94,7 +90,7 @@ class QPOutput {
 
 class QPParam {
  public:
-  double mu;  // Fx, Fy < |mu * Fz|
+  double mu;     // Fx, Fy < |mu * Fz|
   double mu_Mz;  // Mz < |mu * Mz|
   double x_max;
   double x_min;
@@ -115,5 +111,5 @@ class QPController {
  public:
   QPParam param;
 
-  int control(const HumanoidState &rs, const QPInput &input, QPOutput &output);
+  int control(const HumanoidState& rs, const QPInput& input, QPOutput& output);
 };
