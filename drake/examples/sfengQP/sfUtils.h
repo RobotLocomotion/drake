@@ -21,7 +21,7 @@ Vector6d getTaskSpaceVel(const RigidBodyTree& r,
 /**
  * @param local_offset from the body frame origin to the point of interest
  * in body frame
- * @return task space Jacobian, x_dot = J * v, x_dot is task space vel, v is 
+ * @return task space Jacobian, x_dot = J * v, x_dot is task space vel, v is
  * generalized velocity.
  */
 MatrixXd getTaskSpaceJacobian(const RigidBodyTree& r,
@@ -32,8 +32,8 @@ MatrixXd getTaskSpaceJacobian(const RigidBodyTree& r,
 /**
  * @param local_offset from the body frame origin to the point of interest
  * in body frame
- * @return task space Jacobian dot * v, x_ddot = J * v_dot + Jdv, x_ddot is 
- * task space acceleration, v_dot is generalized acceleration. 
+ * @return task space Jacobian dot * v, x_ddot = J * v_dot + Jdv, x_ddot is
+ * task space acceleration, v_dot is generalized acceleration.
  */
 Vector6d getTaskSpaceJacobianDotTimesV(
     const RigidBodyTree& r, KinematicsCache<double>& cache,

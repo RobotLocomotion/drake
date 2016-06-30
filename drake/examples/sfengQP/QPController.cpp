@@ -31,7 +31,7 @@ int QPController::control(const HumanoidState& rs, const QPInput& input,
   ////////////////////////////////////////////////////////////////////
   // Inverse dynamics looks like:
   // M(q) * qdd + h(q,qd) = S * tau + J^T * lambda
-  // M(q) is the intertia matrix, h(q, qd) is the gravitational and centrifugal
+  // M(q) is the inertia matrix, h(q, qd) is the gravitational and centrifugal
   // force, qdd is acceleration, S is the selection matrix (top 6 rows are
   // zeros due to the floating base), tau is joint torque, J^T is the transpose
   // of all contact Jacobian, and lambda is the contact wrench in the world
@@ -259,7 +259,6 @@ int QPController::control(const HumanoidState& rs, const QPInput& input,
   auto eqs = prog.linear_equality_constraints();
   auto ineqs = prog.linear_constraints();
 
-  // would be nice to have a variable list -> flat VectorXd method
   for (auto cost_b : costs) {
     VectorXd val;
     std::shared_ptr<Constraint> cost = cost_b.constraint();

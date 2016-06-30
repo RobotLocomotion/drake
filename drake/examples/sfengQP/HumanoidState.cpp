@@ -42,7 +42,7 @@ void HumanoidState::update(double t, const VectorXd& q, const VectorXd& v,
 
   // body parts
   _fillKinematics(pelv.link_name, pelv.pose, pelv.vel, pelv.J, pelv.Jdv);
-  // the fictionary contact point is 9cm below the ankle joint
+  // the fictional contact point is 9cm below the ankle joint
   _fillKinematics(l_foot.link_name, l_foot.pose, l_foot.vel, l_foot.J,
                   l_foot.Jdv, Vector3d(0, 0, -0.09));
   _fillKinematics(r_foot.link_name, r_foot.pose, r_foot.vel, r_foot.J,
