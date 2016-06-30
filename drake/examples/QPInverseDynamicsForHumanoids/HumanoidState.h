@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/systems/robotInterfaces/Side.h"
-#include "sfUtils.h"
+#include "RBTUtils.h"
 
 using namespace Eigen;
 

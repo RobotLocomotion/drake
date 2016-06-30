@@ -1,7 +1,6 @@
 #include "drake/solvers/Optimization.h"
 #include "drake/solvers/SnoptSolver.h"
 
-#include "sfUtils.h"
 #include "HumanoidState.h"
 #include "QPController.h"
 
