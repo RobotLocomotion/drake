@@ -142,31 +142,34 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:
-  /**
-   * The name of the body that this rigid body represents.
-   */
+  /// The name of this rigid body.
   std::string name_;
 
-  /**
-   * The name of the model to which this rigid body belongs.
-   */
+  /// The name of the model to which this rigid body belongs.
   std::string model_name_;
 
-  /**
-   * A unique ID for each model. It uses 0-index, starts from 0.
-   */
+  /// A unique ID for each model. It uses 0-index, starts from 0.
   int robotnum;
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
 
   // TODO(amcastro-tri): Make it private and change to parent_.
+  /// The rigid body that's connected to this rigid body's joint.
   RigidBody* parent;
 
+  /// The index of this rigid body in the rigid body tree.
   int body_index;
+
+  /// The starting index of this rigid body's joint's position value(s) within
+  /// the parent tree's state vector.
   int position_num_start;
+
+  /// The starting index of this rigid body's joint's velocity value(s) within
+  /// the parent tree's state vector.
   int velocity_num_start;
 
+  /// A list of visual elements for this RigidBody
   DrakeShapes::VectorOfVisualElements visual_elements;
 
   std::vector<DrakeCollision::ElementId> collision_element_ids;
@@ -175,8 +178,13 @@ class DRAKERBM_EXPORT RigidBody {
 
   Eigen::Matrix3Xd contact_pts;
 
+  /// The mass of this rigid body.
   double mass;
+
+  /// The center of mass of this rigid body.
   Eigen::Vector3d com;
+
+  /// The spatial rigid body inertia of this rigid body.
   drake::SquareTwistMatrix<double> I;
 
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);

@@ -332,18 +332,22 @@ foreach(proj ${EXTERNAL_PROJECTS})
     # Compute the path to the submodule for this external.
     file(RELATIVE_PATH ${proj}_GIT_SUBMODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_SOURCE_DIR})
 
+    # Initialize the submodule configuration now so parallel downloads do not conflict later.
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- ${${proj}_GIT_SUBMODULE_PATH}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
     # Download externals as Git submodules.
     set(${proj}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${${proj}_GIT_SUBMODULE_PATH})
 
     if(AUTO_UPDATE_EXTERNALS)
       set(${proj}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_DOWNLOAD_COMMAND})
+
+      # Synchronize the submodule url now so parallel updates do not conflict later.
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule sync -- ${${proj}_GIT_SUBMODULE_PATH}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     else()
       set(${proj}_UPDATE_COMMAND "")
     endif()
-
-    # Initialize the submodule configuration now so parallel downloads do not conflict later.
-    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- ${${proj}_GIT_SUBMODULE_PATH}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
     # now the actual project
     if(${proj}_IS_CMAKE_POD)
@@ -488,10 +492,18 @@ foreach(example IN ITEMS LittleDog)
   if(EXAMPLES_${example_upper})
     message(STATUS "Installation will include extra example: ${example}")
 
+    # Initialize the submodule configuration now so parallel downloads do not conflict later.
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- drake/examples/${example}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
     # Download examples as Git submodules.
     set(${example}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- drake/examples/${example})
     if(AUTO_UPDATE_EXTERNALS)
       set(${example}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${example}_DOWNLOAD_COMMAND})
+
+      # Synchronize the submodule url now so parallel updates do not conflict later.
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule sync -- drake/examples/${example}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     else()
       set(${example}_UPDATE_COMMAND "")
     endif()
@@ -507,10 +519,6 @@ foreach(example IN ITEMS LittleDog)
     drake_forceupdate(download-${example})
     add_dependencies(drake download-${example})
     add_dependencies(download-all download-${example})
-
-    # Initialize the submodule configuration now so parallel downloads do not conflict later.
-    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- drake/examples/${example}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
 endforeach()
 
