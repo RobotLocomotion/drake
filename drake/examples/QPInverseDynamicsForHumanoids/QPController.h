@@ -9,7 +9,7 @@
  */
 class QPInput {
  public:
-  std::vector<std::string> jointNames;
+  std::vector<std::string> joint_names;
 
   Vector3d comdd_d;
   Vector6d pelvdd_d;
@@ -26,28 +26,28 @@ class QPInput {
   double w_qdd;
   double w_wrench_reg;
 
-  QPInput() { _inited = false; }
+  QPInput() { inited_ = false; }
 
   explicit QPInput(const RigidBodyTree& r) {
-    init(r);
+    Init(r);
     qdd_d.resize(r.number_of_velocities());
-    _inited = true;
+    inited_ = true;
   }
 
-  bool isSane() const {
-    bool ret = _inited;
-    ret &= jointNames.size() == qdd_d.size();
+  bool is_sane() const {
+    bool ret = inited_;
+    ret &= joint_names.size() == qdd_d.size();
     return ret;
   }
 
-  void init(const RigidBodyTree& r) {
+  void Init(const RigidBodyTree& r) {
     for (int i = 0; i < r.number_of_positions(); i++)
-      jointNames.push_back(r.getPositionName(i));
-    _inited = true;
+      joint_names.push_back(r.getPositionName(i));
+    inited_ = true;
   }
 
  private:
-  bool _inited;
+  bool inited_;
 };
 
 /**
@@ -55,7 +55,7 @@ class QPInput {
  */
 class QPOutput {
  public:
-  std::vector<std::string> jointNames;
+  std::vector<std::string> joint_names;
 
   Vector3d comdd;
   Vector6d pelvdd;
@@ -67,31 +67,31 @@ class QPOutput {
   Vector6d foot_wrench_w[2];
   Vector6d foot_wrench_in_sensor_frame[2];
 
-  QPOutput() { _inited = false; }
+  QPOutput() { inited_ = false; }
 
   explicit QPOutput(const RigidBodyTree& r) {
-    init(r);
-    _inited = true;
+    Init(r);
+    inited_ = true;
   }
 
-  void init(const RigidBodyTree& r) {
+  void Init(const RigidBodyTree& r) {
     for (int i = 0; i < r.number_of_positions(); i++)
-      jointNames.push_back(r.getPositionName(i));
-    _inited = true;
+      joint_names.push_back(r.getPositionName(i));
+    inited_ = true;
   }
 
-  bool isSane() const {
-    bool ret = _inited;
-    ret &= jointNames.size() == qdd.size();
+  bool is_sane() const {
+    bool ret = inited_;
+    ret &= joint_names.size() == qdd.size();
     ret &= (qdd.size() == trq.size()) || (qdd.size() == trq.size() + 6);
     return ret;
   }
 
-  void print() const;
-  double computeCost(const HumanoidState& rs, const QPInput& input) const;
+  void Print() const;
+  double ComputeCost(const HumanoidState& rs, const QPInput& input) const;
 
  private:
-  bool _inited;
+  bool inited_;
 };
 
 /**
@@ -129,5 +129,5 @@ class QPController {
    *
    * @return 0 if success, < if error.
    */
-  int control(const HumanoidState& rs, const QPInput& input, QPOutput& output);
+  int Control(const HumanoidState& rs, const QPInput& input, QPOutput& output);
 };

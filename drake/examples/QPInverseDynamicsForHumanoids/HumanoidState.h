@@ -46,9 +46,9 @@ class HumanoidState {
 
   std::unique_ptr<RigidBodyTree> robot;
   KinematicsCache<double> cache;
-  std::unordered_map<std::string, int> bodyName2ID;
-  std::unordered_map<std::string, int> jointName2ID;
-  std::unordered_map<std::string, int> actuatorName2ID;
+  std::unordered_map<std::string, int> body_name_to_id;
+  std::unordered_map<std::string, int> joint_name_to_id;
+  std::unordered_map<std::string, int> actuator_name_to_id;
 
   // these have base 6
   VectorXd pos;
@@ -91,17 +91,17 @@ class HumanoidState {
         l_foot_sensor("leftFootSensor", "leftFoot"),
         r_foot_sensor("rightFootSensor", "rightFoot") {
     // build map
-    bodyName2ID = std::unordered_map<std::string, int>();
+    body_name_to_id = std::unordered_map<std::string, int>();
     for (auto it = robot->bodies.begin(); it != robot->bodies.end(); ++it) {
-      bodyName2ID[(*it)->name()] = it - robot->bodies.begin();
+      body_name_to_id[(*it)->name()] = it - robot->bodies.begin();
     }
 
-    jointName2ID = std::unordered_map<std::string, int>();
+    joint_name_to_id = std::unordered_map<std::string, int>();
     for (int i = 0; i < robot->number_of_positions(); i++) {
-      jointName2ID[robot->getPositionName(i)] = i;
+      joint_name_to_id[robot->getPositionName(i)] = i;
     }
     for (size_t i = 0; i < robot->actuators.size(); i++) {
-      actuatorName2ID[robot->actuators[i].name] = i;
+      actuator_name_to_id[robot->actuators[i].name] = i;
     }
 
     foot[Side::LEFT] = &l_foot;
@@ -110,7 +110,7 @@ class HumanoidState {
     foot_sensor[Side::LEFT] = &l_foot_sensor;
     foot_sensor[Side::RIGHT] = &r_foot_sensor;
 
-    time = _time0 = 0;
+    time = time0_ = 0;
 
     pos.resize(robot->number_of_positions());
     vel.resize(robot->number_of_velocities());
@@ -133,12 +133,12 @@ class HumanoidState {
    * the foot frame. This is useful if the foot ft sensor has a different
    * orientation than the foot.
    */
-  void update(double t, const VectorXd& q, const VectorXd& v,
+  void Update(double t, const VectorXd& q, const VectorXd& v,
               const VectorXd& trq, const Vector6d& l_ft, const Vector6d& r_ft,
               const Matrix3d& rot = Matrix3d::Identity());
 
  private:
-  double _time0;
+  double time0_;
 
   /**
    * @brief computes kinematic related values
@@ -151,7 +151,7 @@ class HumanoidState {
    * @param local_offset offset between point of interest to body origin in
    * body frame
    */
-  void _fillKinematics(const std::string& name, Isometry3d& pose, Vector6d& vel,
-                       MatrixXd& J, Vector6d& Jdv,
-                       const Vector3d& local_offset = Vector3d::Zero());
+  void FillKinematics(const std::string& name, Isometry3d& pose, Vector6d& vel,
+                      MatrixXd& J, Vector6d& Jdv,
+                      const Vector3d& local_offset = Vector3d::Zero());
 };
