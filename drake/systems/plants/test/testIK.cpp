@@ -1,13 +1,14 @@
 #include <cstdlib>
 #include <Eigen/Dense>
 
+#include "gtest/gtest.h"
+
 #include "drake/core/Vector.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/eigen_matrix_compare.h"
-#include "gtest/gtest.h"
 
 using namespace std;
 using namespace Eigen;
@@ -33,7 +34,8 @@ GTEST_TEST(testIK, atlasIK) {
   constraint_array.push_back(&com_kc);
   IKoptions ikoptions(&model);
   VectorXd q_sol(model.number_of_positions());
-  int info;
+  q_sol.setZero();
+  int info = 0;
   vector<string> infeasible_constraint;
   inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),
              ikoptions, &q_sol, &info, &infeasible_constraint);
@@ -68,7 +70,7 @@ GTEST_TEST(testIK, iiwaIK) {
   // pointing straight up).
   VectorXd q0 = model.getZeroConfiguration();
 
-  // Constraint iiwa_link_7 (the end effector) to move 0.57 on the X
+  // Constrain iiwa_link_7 (the end effector) to move 0.58 on the X
   // axis and down slightly (to make room for the X axis motion).
   Vector3d pos_end;
   pos_end << 0.58, 0, 0.77;
@@ -93,7 +95,8 @@ GTEST_TEST(testIK, iiwaIK) {
   IKoptions ikoptions(&model);
 
   VectorXd q_sol(model.number_of_positions());
-  int info;
+  q_sol.setZero();
+  int info = 0;
   vector<string> infeasible_constraint;
   inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),
              ikoptions, &q_sol, &info, &infeasible_constraint);
