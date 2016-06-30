@@ -28,6 +28,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 /// @param[in] urdf_string The URDF string.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+DRAKERBM_EXPORT
 void addRobotFromURDFString(
     const std::string& urdf_string,
     RigidBodyTree* tree);
@@ -42,6 +43,7 @@ void addRobotFromURDFString(
 /// the packages to search through when finding files referenced in the URDF.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+DRAKERBM_EXPORT
 void addRobotFromURDFString(
     const std::string& urdf_string,
     std::map<std::string, std::string>& package_map,
@@ -59,6 +61,7 @@ void addRobotFromURDFString(
 /// root to the existing rigid body tree.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+DRAKERBM_EXPORT
 void addRobotFromURDFString(
     const std::string& urdf_string,
     const std::string& root_dir,
@@ -81,6 +84,7 @@ void addRobotFromURDFString(
 /// @param[in] weld_to_frame The frame to which to connect the new model.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+DRAKERBM_EXPORT
 void addRobotFromURDFString(
     const std::string& urdf_string,
     PackageMap& package_map,
@@ -96,6 +100,7 @@ void addRobotFromURDFString(
 /// @param[in] urdf_filename The URDF file containing the model to be added.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+DRAKERBM_EXPORT
 void addRobotFromURDF(const std::string& urdf_filename,
     RigidBodyTree* tree);
 
@@ -109,6 +114,7 @@ void addRobotFromURDF(const std::string& urdf_filename,
 /// root to the existing rigid body tree.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+DRAKERBM_EXPORT
 void addRobotFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
@@ -126,6 +132,7 @@ void addRobotFromURDF(
 /// @param[in] weld_to_frame The frame to which to connect the new model.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+DRAKERBM_EXPORT
 void addRobotFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
@@ -147,6 +154,7 @@ void addRobotFromURDF(
 /// @param[in] weld_to_frame The frame to which to connect the new model.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+DRAKERBM_EXPORT
 void addRobotFromURDF(
     const std::string& urdf_filename,
     std::map<std::string, std::string>& package_map,
