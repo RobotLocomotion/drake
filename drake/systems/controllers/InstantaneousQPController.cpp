@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/solvers/fastQP.h"
 #include "drake/systems/controllers/controlUtil.h"
+#include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
