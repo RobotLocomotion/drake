@@ -888,7 +888,7 @@ void RigidBodySystem::addRobotFromURDFString(
     const string& urdf_string, const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type) {
   // first add the urdf to the rigid body tree
-  drake::parsers::addRobotFromURDFString(urdf_string, root_dir,
+  ::drake::parsers::addRobotFromURDFString(urdf_string, root_dir,
     floating_base_type, tree.get());
 
   // now parse additional tags understood by rigid body system (actuators,
@@ -899,6 +899,9 @@ void RigidBodySystem::addRobotFromURDFString(
   parseURDF(*this, &xml_doc);
 }
 
+// TODO(liang.fok) Remove this method once the URDF parser emits a Model
+// container that contains information needed by both the RigidBodySystem and
+// RigidBodyTree.
 void RigidBodySystem::addRobotFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
