@@ -216,6 +216,15 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
     return tree;
   }
 
+  // TODO(liang.fok) Remove this method once parsers pass Models to the
+  // rigid body system.
+  //
+  /// Returns a mutable pointer to the rigid body tree contained within this
+  /// rigid body system.
+  RigidBodyTree* get_rigid_body_tree() const {
+    return tree.get();
+  }
+
   // This class overrides the System method. See System's documentation for more
   // details. The state includes both joint position and velocity values. See
   // class overview description.

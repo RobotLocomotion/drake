@@ -82,29 +82,29 @@ class DRAKERBM_EXPORT RigidBodyTree {
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
-  void addRobotFromURDFString(
-      const std::string& xml_string, const std::string& root_dir = ".",
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-  void addRobotFromURDFString(
-      const std::string& xml_string,
-      std::map<std::string, std::string>& package_map,
-      const std::string& root_dir = ".",
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-  void addRobotFromURDF(
-      const std::string& urdf_filename,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-  void addRobotFromURDF(
-      const std::string& urdf_filename,
-      std::map<std::string, std::string>& package_map,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+  // void addRobotFromURDFString(
+  //     const std::string& xml_string, const std::string& root_dir = ".",
+  //     const DrakeJoint::FloatingBaseType floating_base_type =
+  //         DrakeJoint::ROLLPITCHYAW,
+  //     std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+  // void addRobotFromURDFString(
+  //     const std::string& xml_string,
+  //     std::map<std::string, std::string>& package_map,
+  //     const std::string& root_dir = ".",
+  //     const DrakeJoint::FloatingBaseType floating_base_type =
+  //         DrakeJoint::ROLLPITCHYAW,
+  //     std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+  // void addRobotFromURDF(
+  //     const std::string& urdf_filename,
+  //     const DrakeJoint::FloatingBaseType floating_base_type =
+  //         DrakeJoint::ROLLPITCHYAW,
+  //     std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+  // void addRobotFromURDF(
+  //     const std::string& urdf_filename,
+  //     std::map<std::string, std::string>& package_map,
+  //     const DrakeJoint::FloatingBaseType floating_base_type =
+  //         DrakeJoint::ROLLPITCHYAW,
+  //     std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =

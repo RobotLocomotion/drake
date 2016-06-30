@@ -1,3 +1,5 @@
+#include "drake/system/plants/parser_urdf.h"
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -30,6 +32,8 @@ using std::vector;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
+namespace drake {
+namespace parsers {
 namespace {
 
 // todo: rectify this with FindBodyIndex in the class (which makes more
@@ -1033,16 +1037,18 @@ void parseRobot(RigidBodyTree* tree, XMLElement* node,
                           weld_to_frame);
 }
 
-void parseURDF(RigidBodyTree* tree, XMLDocument* xml_doc,
+void parseURDF(XMLDocument* xml_doc,
                PackageMap& package_map, const string& root_dir,
                const DrakeJoint::FloatingBaseType floating_base_type,
-               std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
+               std::shared_ptr<RigidBodyFrame> weld_to_frame,
+               RigidBodySystem* system) {
   populatePackageMap(package_map);
   XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node) {
     throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
   }
 
+  RigidBodyTree* tree = system->get_rigid_body_tree();
   parseRobot(tree, node, package_map, root_dir, floating_base_type,
              weld_to_frame);
 
@@ -1051,63 +1057,62 @@ void parseURDF(RigidBodyTree* tree, XMLDocument* xml_doc,
 
 }  // namespace
 
-namespace drake {
-namespace systems {
-
-std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
-    const RigidBodyTree& tree, const tinyxml2::XMLElement* link,
-    const tinyxml2::XMLElement* pose, const std::string& name) {
-  std::string body_name = link->Attribute("link");
-  RigidBody* body = tree.FindBody(body_name);
-  if (body == nullptr) {
-    throw runtime_error("ERROR: Couldn't find body \"" + body_name +
-                        "\" referenced in frame \"" + name + "\".");
-  }
-
-  Vector3d xyz = Vector3d::Zero(), rpy = Vector3d::Zero();
-  if (pose) {
-    parseVectorAttribute(pose, "xyz", xyz);
-    parseVectorAttribute(pose, "rpy", rpy);
-  }
-  return allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), name, body, xyz, rpy);
-}
-
-}  // namespace systems
-}  // namespace drake
-
-void RigidBodyTree::addRobotFromURDFString(
-    const string& xml_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+void addRobotFromURDFString(
+    const std::string& urdf_string,
+    RigidBodySystem* system) {
   PackageMap package_map;
-  addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type,
-                         weld_to_frame);
+  addRobotFromURDFString(urdf_string, package_map, system);
 }
 
-void RigidBodyTree::addRobotFromURDFString(
-    const string& xml_string, PackageMap& package_map, const string& root_dir,
+void addRobotFromURDFString(
+    const string& urdf_string,
+    PackageMap& package_map,
+    RigidBodySystem* system) {
+  const std::string root_dir = ".";
+  addRobotFromURDFString(urdf_string, package_map, root_dir,
+                         DrakeJoint::ROLLPITCHYAW, nullptr, system);
+}
+
+void addRobotFromURDFString(
+    const string& urdf_string,
+    const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  XMLDocument xml_doc;
-  xml_doc.Parse(xml_string.c_str());
-  parseURDF(this, &xml_doc, package_map, root_dir, floating_base_type,
-            weld_to_frame);
+    RigidBodySystem* system) {
+  const std::string root_dir = ".";
+  PackageMap package_map;
+  addRobotFromURDFString(urdf_string, package_map, root_dir,
+                         floating_base_type, nullptr, system);
 }
 
-void RigidBodyTree::addRobotFromURDF(
+void addRobotFromURDFString(
+    const string& urdf_string,
+    PackageMap& package_map,
+    const std::string& root_dir,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame
+    RigidBodySystem* system) {
+  XMLDocument xml_doc;
+  xml_doc.Parse(urdf_string.c_str());
+  parseURDF(&xml_doc, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
+            weld_to_frame, system);
+}
+
+void addRobotFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodySystem* system) {
   PackageMap package_map;
   addRobotFromURDF(urdf_filename, package_map, floating_base_type,
-                   weld_to_frame);
+                   weld_to_frame, system);
 }
 
-void RigidBodyTree::addRobotFromURDF(
+void addRobotFromURDF(
     const string& urdf_filename, PackageMap& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodySystem* system) {
+  // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;
   xml_doc.LoadFile(urdf_filename.data());
   if (xml_doc.ErrorID()) {
@@ -1115,12 +1120,17 @@ void RigidBodyTree::addRobotFromURDF(
                              "\n" + xml_doc.ErrorName());
   }
 
+  // Uses the directory holding the URDF to be the root directory
+  // in which to search for files referenced within the URDF file.
   string root_dir = ".";
   size_t found = urdf_filename.find_last_of("/\\");
   if (found != string::npos) {
     root_dir = urdf_filename.substr(0, found);
   }
 
-  parseURDF(this, &xml_doc, package_map, root_dir, floating_base_type,
-            weld_to_frame);
+  parseURDF(&xml_doc, package_map, root_dir, floating_base_type,
+            weld_to_frame, system);
 }
+
+}  // namespace parsers
+}  // namespace drake
