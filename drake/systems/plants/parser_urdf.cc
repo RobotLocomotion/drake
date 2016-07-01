@@ -1180,8 +1180,8 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 
   Vector3d xyz = Vector3d::Zero(), rpy = Vector3d::Zero();
   if (pose) {
-    parseVectorAttribute(&link, "xyz", xyz);
-    parseVectorAttribute(&link, "rpy", rpy);
+    parseVectorAttribute(pose, "xyz", xyz);
+    parseVectorAttribute(pose, "rpy", rpy);
   }
   return allocate_shared<RigidBodyFrame>(
       Eigen::aligned_allocator<RigidBodyFrame>(), name, body, xyz, rpy);
