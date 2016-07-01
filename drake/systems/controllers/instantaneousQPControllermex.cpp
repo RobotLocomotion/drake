@@ -43,7 +43,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // x
   int nq = controller->getRobot().number_of_positions();
   int nv = controller->getRobot().number_of_velocities();
-  if (mxGetNumberOfElements(prhs[narg]) != (nq + nv))
+  if (static_cast<int>(mxGetNumberOfElements(prhs[narg])) != (nq + nv))
     mexErrMsgTxt("size of x should be nq + nv\n");
   if (nq != nv) mexErrMsgTxt("still assume nv==nq");
   double* q_ptr = mxGetPrSafe(prhs[narg]);
