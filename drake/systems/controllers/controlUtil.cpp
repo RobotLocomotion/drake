@@ -12,7 +12,7 @@ using drake::math::expmap2quat;
 template <typename DerivedA, typename DerivedB>
 void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M,
              MatrixBase<DerivedB> &Msub) {
-  if (rows.size() == M.rows()) {
+  if (static_cast<int>(rows.size()) == M.rows()) {
     Msub = M;
     return;
   }
@@ -25,7 +25,7 @@ void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M,
 template <typename DerivedA, typename DerivedB>
 void getCols(std::set<int> &cols, MatrixBase<DerivedA> const &M,
              MatrixBase<DerivedB> &Msub) {
-  if (cols.size() == M.cols()) {
+  if (static_cast<int>(cols.size()) == M.cols()) {
     Msub = M;
     return;
   }

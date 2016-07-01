@@ -37,7 +37,7 @@ void constraints(mxArray* c_out, mxArray* ceq_out, mxArray* dc_out,
   int con_dndx;
   double dx, dy, si, co;
 
-  for (j = 2; j <= nsteps; j++) {
+  for (j = 2; j <= static_cast<int>(nsteps); j++) {
     con_ndx = (j - 1) * 2;
     con_dndx = 2;
     si = sin(steps(5, j - 2));

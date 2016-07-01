@@ -60,7 +60,7 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
           A2i * ((i + 1) * beta[j].col(i + 1) - B2 * poly_coeffs.col(i));
     }
 
-    if (j == n - 1) {
+    if (j == static_cast<int>(n) - 1) {
       s1dt = VectorXd::Zero(4);
     } else {
       s1dt = alpha.col(j + 1) + beta[j + 1].col(0);

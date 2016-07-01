@@ -36,7 +36,7 @@ void InstantaneousQPController::initialize() {
 
   umin.resize(nu);
   umax.resize(nu);
-  for (int i = 0; i < robot->actuators.size(); i++) {
+  for (size_t i = 0; i < robot->actuators.size(); i++) {
     umin(i) = robot->actuators.at(i).effort_limit_min;
     umax(i) = robot->actuators.at(i).effort_limit_max;
   }
@@ -200,7 +200,6 @@ VectorXd InstantaneousQPController::velocityReference(
     const VRefIntegratorParams& params) {
   // Integrate expected accelerations to determine a target feed-forward
   // velocity, which we can pass in to Atlas
-  int i;
   DRAKE_ASSERT(qdd.size() == robot->number_of_velocities());
 
   double dt = 0;
@@ -210,8 +209,7 @@ VectorXd InstantaneousQPController::velocityReference(
 
   VectorXd qdd_limited = qdd;
   // Do not wind the vref integrator up against the joint limits for the legs
-  for (i = 0; i < rpc.position_indices.legs.at(Side::RIGHT).size(); i++) {
-    int pos_ind = rpc.position_indices.legs.at(Side::RIGHT)[i];
+  for (const int& pos_ind : rpc.position_indices.legs.at(Side::RIGHT)) {
     if (q(pos_ind) <=
         robot->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
@@ -220,8 +218,7 @@ VectorXd InstantaneousQPController::velocityReference(
       qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
     }
   }
-  for (i = 0; i < rpc.position_indices.legs.at(Side::LEFT).size(); i++) {
-    int pos_ind = rpc.position_indices.legs.at(Side::LEFT)[i];
+  for (const int& pos_ind : rpc.position_indices.legs.at(Side::LEFT)) {
     if (q(pos_ind) <=
         robot->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
@@ -236,29 +233,25 @@ VectorXd InstantaneousQPController::velocityReference(
       params.eta * qd + qdd_limited * dt;
 
   if (params.zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i = 0; i < rpc.position_indices.ankles.at(Side::LEFT).size(); i++) {
-      controller_state.vref_integrator_state(
-          rpc.position_indices.ankles.at(Side::LEFT)[i]) = 0;
+    for (const int& pos_ind : rpc.position_indices.ankles.at(Side::LEFT)) {
+      controller_state.vref_integrator_state(pos_ind) = 0;
     }
   }
   if (params.zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i = 0; i < rpc.position_indices.ankles.at(Side::RIGHT).size(); i++) {
-      controller_state.vref_integrator_state(
-          rpc.position_indices.ankles.at(Side::RIGHT)[i]) = 0;
+    for (const int& pos_ind : rpc.position_indices.ankles.at(Side::RIGHT)) {
+      controller_state.vref_integrator_state(pos_ind) = 0;
     }
   }
   if (controller_state.foot_contact_prev[0] != foot_contact[0]) {
     // contact state changed, reset integrated velocities
-    for (i = 0; i < rpc.position_indices.legs.at(Side::LEFT).size(); i++) {
-      controller_state.vref_integrator_state(rpc.position_indices.legs.at(
-          Side::LEFT)[i]) = qd(rpc.position_indices.legs.at(Side::LEFT)[i]);
+    for (const int& pos_ind : rpc.position_indices.legs.at(Side::LEFT)) {
+      controller_state.vref_integrator_state(pos_ind) = qd(pos_ind);
     }
   }
   if (controller_state.foot_contact_prev[1] != foot_contact[1]) {
     // contact state changed, reset integrated velocities
-    for (i = 0; i < rpc.position_indices.legs.at(Side::RIGHT).size(); i++) {
-      controller_state.vref_integrator_state(rpc.position_indices.legs.at(
-          Side::RIGHT)[i]) = qd(rpc.position_indices.legs.at(Side::RIGHT)[i]);
+    for (const int& pos_ind : rpc.position_indices.legs.at(Side::RIGHT)) {
+      controller_state.vref_integrator_state(pos_ind) = qd(pos_ind);
     }
   }
 
@@ -269,13 +262,13 @@ VectorXd InstantaneousQPController::velocityReference(
 
   // do not velocity control ankles when in contact
   if (params.zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i = 0; i < rpc.position_indices.ankles.at(Side::LEFT).size(); i++) {
-      qd_err(rpc.position_indices.ankles.at(Side::LEFT)[i]) = 0;
+    for (const int& pos_ind : rpc.position_indices.ankles.at(Side::LEFT)) {
+      qd_err(pos_ind) = 0;
     }
   }
   if (params.zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i = 0; i < rpc.position_indices.ankles.at(Side::RIGHT).size(); i++) {
-      qd_err(rpc.position_indices.ankles.at(Side::RIGHT)[i]) = 0;
+    for (const int& pos_ind : rpc.position_indices.ankles.at(Side::RIGHT)) {
+      qd_err(pos_ind) = 0;
     }
   }
 
@@ -658,7 +651,7 @@ int InstantaneousQPController::setupAndSolveQP(
     throw std::runtime_error(
         "number of positions doesn't match num_dof for this robot");
   Map<const VectorXd> q_des(qp_input.whole_body_data.q_des.data(), nq);
-  if (qp_input.whole_body_data.constrained_dofs.size() !=
+  if (static_cast<int32_t>(qp_input.whole_body_data.constrained_dofs.size()) !=
       qp_input.whole_body_data.num_constrained_dofs) {
     throw std::runtime_error(
         "size of constrained dofs does not match num_constrained_dofs");
@@ -772,7 +765,7 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   int n_body_accel_eq_constraints = 0;
-  for (int i = 0; i < desired_body_accelerations.size(); i++) {
+  for (size_t i = 0; i < desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight < 0) n_body_accel_eq_constraints++;
   }
 
@@ -844,7 +837,7 @@ int InstantaneousQPController::setupAndSolveQP(
   MatrixXd B, JB, Jp, normals;
   VectorXd Jpdotv;
   std::vector<double> adjusted_mus(active_supports.size());
-  for (int i = 0; i < active_supports.size(); ++i) {
+  for (size_t i = 0; i < active_supports.size(); ++i) {
     int body_id = active_supports[i].body_idx;
     if ((body_id == rpc.foot_ids.at(Side::RIGHT) ||
          body_id == rpc.foot_ids.at(Side::LEFT)) &&
@@ -958,7 +951,7 @@ int InstantaneousQPController::setupAndSolveQP(
   int equality_ind = 6 + neps;
   MatrixXd Jb(6, nq);
   Vector6d Jbdotv;
-  for (int i = 0; i < desired_body_accelerations.size(); i++) {
+  for (size_t i = 0; i < desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight <
         0) {  // negative implies constraint
       int body_id0 = robot->parseBodyOrFrameID(
@@ -1016,7 +1009,7 @@ int InstantaneousQPController::setupAndSolveQP(
   bin.segment(nu, nu) = B_act.transpose() * C_act - umin;
 
   int constraint_start_index = 2 * nu;
-  for (int i = 0; i < desired_body_accelerations.size(); i++) {
+  for (size_t i = 0; i < desired_body_accelerations.size(); i++) {
     Matrix<double, 6, Dynamic> Jb_compact = robot->geometricJacobian(
         cache, 0, desired_body_accelerations[i].body_or_frame_id0,
         desired_body_accelerations[i].body_or_frame_id0, true);
@@ -1160,7 +1153,7 @@ int InstantaneousQPController::setupAndSolveQP(
     }
 
     // add in body spatial acceleration cost terms
-    for (int i = 0; i < desired_body_accelerations.size(); i++) {
+    for (size_t i = 0; i < desired_body_accelerations.size(); i++) {
       if (desired_body_accelerations[i].weight > 0) {
         int body_id0 = robot->parseBodyOrFrameID(
             desired_body_accelerations[i].body_or_frame_id0);
@@ -1286,7 +1279,7 @@ int InstantaneousQPController::setupAndSolveQP(
   // If a debug pointer was passed in, fill it with useful data
   if (debug) {
     debug->active_supports.resize(active_supports.size());
-    for (int i = 0; i < active_supports.size(); i++) {
+    for (size_t i = 0; i < active_supports.size(); i++) {
       debug->active_supports[i] = active_supports[i];
     }
     debug->nc = nc;
