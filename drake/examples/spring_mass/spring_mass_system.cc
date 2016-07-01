@@ -13,7 +13,7 @@ using systems::VectorInterface;
 namespace examples {
 
 namespace {
-constexpr int kStateSize = 3; // position, velocity, power integral
+constexpr int kStateSize = 3;  // position, velocity, power integral
 }  // namespace
 
 SpringMassStateVector::SpringMassStateVector(double initial_position,
@@ -46,7 +46,7 @@ SpringMassStateVector* SpringMassStateVector::DoClone() const {
 }
 
 SpringMassOutputVector::SpringMassOutputVector()
-    : BasicVector<double>(kStateSize-1) {} // don't output conservative energy
+    : BasicVector<double>(kStateSize-1) {}  // don't output conservative energy
 
 SpringMassOutputVector::~SpringMassOutputVector() {}
 

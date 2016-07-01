@@ -238,7 +238,7 @@ void StepExplicitEuler(double h,
   StateVector<double>* xc =
       context.get_mutable_state()->continuous_state->get_mutable_state();
   const auto& dxc = derivs.get_state();
-  xc->PlusEqScaled(h, dxc); // xc += h*dxc
+  xc->PlusEqScaled(h, dxc);  // xc += h*dxc
   context.set_time(t + h);
 }
 
@@ -292,7 +292,7 @@ void StepSemiExplicitEuler(double h, const ContinuousSystem<double>& system,
         x1 = x1 - dx
     while (norm(dx)/norm(x0) > tol) */
 void StepImplicitEuler(double h, const ContinuousSystem<double>& system,
-                       ContinuousState<double>& derivs, // in/out
+                       ContinuousState<double>& derivs,  // in/out
                        Context<double>& context) {
   const double t = context.get_time();
 
@@ -427,7 +427,7 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
   context->set_time(0);
   system_->set_position(context.get(), 0.1);  // Displacement 0.1m, vel. 0m/s.
   system_->set_velocity(context.get(), 0.);
-  system_->set_conservative_work(context.get(), 0.); // W(0)=0
+  system_->set_conservative_work(context.get(), 0.);  // W(0)=0
 
   // Save the initial energy.
   const double pe0 = system_->EvalPotentialEnergy(*context);
@@ -449,7 +449,7 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
 
     // Due to a quirk of semi-explicit Euler, this integral was evaluated
     // using the previous step's q's rather than the ones current now so
-    // there is a larger discrepency than would be expected from accuracy 
+    // there is a larger discrepency than would be expected from accuracy
     // alone.
     const double w = system_->get_conservative_work(*context);
     EXPECT_NEAR(ke, ke0 + w, 1e-2);

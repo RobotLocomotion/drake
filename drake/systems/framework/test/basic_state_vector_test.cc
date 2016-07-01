@@ -112,11 +112,11 @@ TEST_F(BasicStateVectorTest, PlusEq) {
 // test case demonstrating that the += operator on BasicStateVector calls
 // ScaleAndAddToVector on the addend.
 
-
 TEST_F(BasicStateVectorTest, AddToVectorInvalidSize) {
   Eigen::Vector3i target;
   target << 3, 5, 7;
-  EXPECT_THROW(state_vector_->ScaleAndAddToVector(1, target), std::out_of_range);
+  EXPECT_THROW(state_vector_->ScaleAndAddToVector(1, target),
+               std::out_of_range);
 }
 
 TEST_F(BasicStateVectorTest, PlusEqInvalidSize) {

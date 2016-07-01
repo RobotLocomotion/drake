@@ -66,7 +66,7 @@ class StateVector {
     if (vec.rows() != size()) {
       throw std::out_of_range("Addends must be the same length.");
     }
-    for (int i = 0; i < size(); ++i) 
+    for (int i = 0; i < size(); ++i)
       vec[i] += scale * GetAtIndex(i);
   }
 
