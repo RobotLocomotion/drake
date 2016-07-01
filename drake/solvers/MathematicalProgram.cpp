@@ -35,7 +35,7 @@ AttributesSet kLinearSystemSolverCapabilities = kLinearEqualityConstraint;
 
 // Solver for equality-constrained QPs
 AttributesSet kEqualityConstrainedQPCapabilities = (
-  kQuadraticCost | kLinearCost | kLinearEqualityConstraint );
+  kQuadraticCost | kLinearCost | kLinearEqualityConstraint);
 
 // Solver for Linear Complementarity Problems (LCPs)
 AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
@@ -105,7 +105,7 @@ SolutionResult MathematicalProgram::Solve(OptimizationProblem& prog) const {
     // Identity: This is the objective function the solver uses anyway when
     // underconstrainted, and is fairly common in real-world problems.
     return linear_system_solver_->Solve(prog);
-  } else if (is_satisfied(required_capabilities_, 
+  } else if (is_satisfied(required_capabilities_,
                           kEqualityConstrainedQPCapabilities) &&
             equality_constrained_qp_solver_->available()) {
     return equality_constrained_qp_solver_->Solve(prog);

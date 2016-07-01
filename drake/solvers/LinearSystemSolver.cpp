@@ -12,9 +12,9 @@ using Drake::TaylorVecXd;
 
 namespace drake {
 namespace solvers {
-      
-bool LinearSystemSolver::available() const { 
-  return true; 
+
+bool LinearSystemSolver::available() const {
+  return true;
 }
 
 SolutionResult LinearSystemSolver::Solve(OptimizationProblem& prog) const {
