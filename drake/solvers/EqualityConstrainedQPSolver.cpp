@@ -27,7 +27,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(OptimizationProblem& prog) con
   // going in, as well as with quadratic costs that cover different
   // views and don't cover the complete Q matrix together (to see
   // how this responds to underdetermined situations)
-  
+
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     num_constraints += binding.constraint()->A().rows();
@@ -38,17 +38,18 @@ SolutionResult EqualityConstrainedQPSolver::Solve(OptimizationProblem& prog) con
   size_t num_full_vars = prog.num_vars() + num_constraints;
   Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero( num_full_vars,
     num_full_vars);
-  Eigen::VectorXd b_full(num_full_vars);
+  Eigen::VectorXd b_full = Eigen::VectorXd::Zero(num_full_vars);
 
   // assemble the A and b matrices -- first by summing over 
   //   quadratic costs
   for (auto const& binding : prog.quadratic_costs()) {
+    size_t index = 0;
     for (const DecisionVariableView& v : binding.variable_list()) {
       A_full.block(v.index(), v.index(), v.size(), v.size()) += 
-        binding.constraint()->Q().block(v.index(), v.index(), 
-                                        v.size(), v.size());
-      b_full.segment(v.index(), v.size()) += 
-        - binding.constraint()->b().segment(v.index(), v.size());
+        binding.constraint()->Q().block(index, index, v.size(), v.size());
+      b_full.segment(v.index(), v.size()) -= 
+        binding.constraint()->b().segment(index, v.size());
+      index += v.size();
     }
   }
 
@@ -66,11 +67,11 @@ SolutionResult EqualityConstrainedQPSolver::Solve(OptimizationProblem& prog) con
       var_index += v.size();
     }
     b_full.segment(constraint_index, n) =
-        c->lower_bound();  // = c->upper_bound() since it's an equality
+      c->lower_bound().segment(0, n);  // = c->upper_bound() since it's an equality
     // constraint
     constraint_index += n;
   }
-
+  
   // least-squares solution
   Eigen::VectorXd sol = A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
   prog.SetDecisionVariableValues(sol.segment(0, prog.num_vars()));
