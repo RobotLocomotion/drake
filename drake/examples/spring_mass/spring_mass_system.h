@@ -149,7 +149,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
             = -power_pe
   @endverbatim
   (assuming the only force is due to the spring). Energy is in joules.
-  @see GetSpringForce(), GetPotentialEnergy() **/
+  @see EvalSpringForce(), EvalPotentialEnergy() **/
   double EvalKineticEnergy(const MyContext& context) const override;
 
   /** Return the rate at which mechanical energy is being converted from 
