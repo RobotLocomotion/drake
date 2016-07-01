@@ -36,8 +36,8 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
   // of all contact Jacobian, and lambda is the contact wrench in the world
   // frame.
   // Note that since S.topRows(6) is zero,
-  // tau = M_l * qdd + h_l - J^T_l * lamda, _l means the lower num_torque rows of
-  // those matrices.
+  // tau = M_l * qdd + h_l - J^T_l * lamda, _l means the lower num_torque rows
+  // of those matrices.
   // So we just need to solve for qdd and lambda, and tau can be computed as
   // above.
   //
