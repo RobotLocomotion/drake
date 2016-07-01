@@ -94,7 +94,7 @@ PiecewisePolynomial<double> matlabCoefsAndBreaksToPiecewisePolynomial(
   const int kNumDims = 3;
   mwSize dims[kNumDims];
   size_t num_dims_mex = mxGetNumberOfDimensions(mex_coefs);
-  for (int i = 0; i < num_dims_mex; i++) {
+  for (size_t i = 0; i < num_dims_mex; i++) {
     dims[i] = mxGetDimensions(mex_coefs)[i];
   }
   for (int i = num_dims_mex; i < kNumDims; i++) {
@@ -163,7 +163,7 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports) {
     auto body_ids = matlabToStdVector<int>(
         mxGetFieldOrPropertySafe(mex_supports, support_num, "bodies"));
     support_state.reserve(body_ids.size());
-    for (int i = 0; i < body_ids.size(); ++i) {
+    for (size_t i = 0; i < body_ids.size(); ++i) {
       RigidBodySupportStateElement support_state_element;
       support_state_element.body = body_ids[i] - 1;  // base 1 to base zero
       support_state_element.contact_points = matlabToEigenMap<3, Dynamic>(
@@ -188,7 +188,7 @@ setUpContactGroups(RigidBodyTree* robot, const mxArray* mex_contact_groups) {
   std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap>
       contact_groups;
   contact_groups.reserve(robot->bodies.size());
-  for (int body_id = 0; body_id < robot->bodies.size(); body_id++) {
+  for (size_t body_id = 0; body_id < robot->bodies.size(); body_id++) {
     const mxArray* mex_contact_group = mxGetCell(mex_contact_groups, body_id);
     QPLocomotionPlanSettings::ContactNameToContactPointsMap contact_group;
     for (int field_number = 0;
