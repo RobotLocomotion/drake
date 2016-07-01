@@ -13,12 +13,10 @@ using Drake::TaylorVecXd;
 namespace drake {
 namespace solvers {
 
-bool EqualityConstrainedQPSolver::available() const {
-  return true;
-}
+bool EqualityConstrainedQPSolver::available() const { return true; }
 
-SolutionResult EqualityConstrainedQPSolver::Solve(OptimizationProblem& prog)
-  const {
+SolutionResult EqualityConstrainedQPSolver::Solve(
+    OptimizationProblem& prog) const {
   // Given a QP with equality constraints, we can use the KKT conditions
   // for the optimal solution to write a linear system that produces
   // our answer.
@@ -37,8 +35,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(OptimizationProblem& prog)
   // expanded problem introduces a lagragian multiplier for each
   // linear equality constraint
   size_t num_full_vars = prog.num_vars() + num_constraints;
-  Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero(num_full_vars,
-    num_full_vars);
+  Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero(num_full_vars, num_full_vars);
   Eigen::VectorXd b_full = Eigen::VectorXd::Zero(num_full_vars);
 
   // assemble the A and b matrices -- first by summing over
@@ -47,9 +44,9 @@ SolutionResult EqualityConstrainedQPSolver::Solve(OptimizationProblem& prog)
     size_t index = 0;
     for (const DecisionVariableView& v : binding.variable_list()) {
       A_full.block(v.index(), v.index(), v.size(), v.size()) +=
-        binding.constraint()->Q().block(index, index, v.size(), v.size());
+          binding.constraint()->Q().block(index, index, v.size(), v.size());
       b_full.segment(v.index(), v.size()) -=
-        binding.constraint()->b().segment(index, v.size());
+          binding.constraint()->b().segment(index, v.size());
       index += v.size();
     }
   }
@@ -68,14 +65,14 @@ SolutionResult EqualityConstrainedQPSolver::Solve(OptimizationProblem& prog)
       var_index += v.size();
     }
     b_full.segment(constraint_index, n) =
-      c->lower_bound().segment(0, n);  // = c->upper_bound() since it's
-                                       //  an equality constraint
+        c->lower_bound().segment(0, n);  // = c->upper_bound() since it's
+                                         //  an equality constraint
     constraint_index += n;
   }
 
   // least-squares solution
-  Eigen::VectorXd sol = A_full.jacobiSvd(
-    Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
+  Eigen::VectorXd sol =
+      A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
   prog.SetDecisionVariableValues(sol.segment(0, prog.num_vars()));
 
   prog.SetSolverResult("Equality Constrained QP Solver", 0);

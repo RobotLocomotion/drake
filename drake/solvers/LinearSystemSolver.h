@@ -7,8 +7,8 @@
 namespace drake {
 namespace solvers {
 
-class DRAKEOPTIMIZATION_EXPORT LinearSystemSolver :
-      public MathematicalProgramSolverInterface  {
+class DRAKEOPTIMIZATION_EXPORT LinearSystemSolver
+    : public MathematicalProgramSolverInterface {
  public:
   bool available() const override;
   SolutionResult Solve(OptimizationProblem& prog) const override;

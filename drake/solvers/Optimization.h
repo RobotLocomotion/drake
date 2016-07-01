@@ -357,7 +357,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * the quadratic cost data structure.
    */
   void AddQuadraticCost(std::shared_ptr<QuadraticConstraint> const& obj,
-    VariableList const& vars) {
+                        VariableList const& vars) {
     problem_type_.AddQuadraticCost();
     quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
   }
@@ -760,7 +760,6 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   linear_equality_constraints() const {
     return linear_equality_constraints_;
   }
-
 
   /** Getter for quadratic costs. */
   const std::list<Binding<QuadraticConstraint>>& quadratic_costs() const {

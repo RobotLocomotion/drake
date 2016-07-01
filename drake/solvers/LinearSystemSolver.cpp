@@ -13,9 +13,7 @@ using Drake::TaylorVecXd;
 namespace drake {
 namespace solvers {
 
-bool LinearSystemSolver::available() const {
-  return true;
-}
+bool LinearSystemSolver::available() const { return true; }
 
 SolutionResult LinearSystemSolver::Solve(OptimizationProblem& prog) const {
   size_t num_constraints = 0;
@@ -23,8 +21,7 @@ SolutionResult LinearSystemSolver::Solve(OptimizationProblem& prog) const {
     num_constraints += binding.constraint()->A().rows();
   }
 
-  Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(
-      num_constraints, prog.num_vars());
+  Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
   // TODO(naveenoid) : use a sparse matrix here?
   Eigen::VectorXd beq(num_constraints);
 
