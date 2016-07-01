@@ -15,7 +15,7 @@ namespace drake {
 namespace examples {
 
 /// The state of a one-dimensional spring-mass system, consisting of the
-/// position and velocity of the mass, in meters.
+/// position and velocity of the mass, in meters and meters/s.
 class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
     : public systems::BasicStateVector<double> {
  public:
@@ -29,13 +29,19 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
   double get_position() const;
 
   /// Sets the position of the mass in meters.
-  void set_position(double v);
+  void set_position(double q);
 
   /// Returns the velocity of the mass in meters per second.
   double get_velocity() const;
 
   /// Sets the velocity of the mass in meters per second.
   void set_velocity(double v);
+
+  /// Returns the integral of conservative power, in watts.
+  double get_conservative_work() const;
+
+  /// Initialize the conservative work integral to a given value.
+  void set_conservative_work(double e);
 
  private:
   SpringMassStateVector* DoClone() const override;
@@ -95,6 +101,12 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
     return get_state(context).get_velocity();
   }
 
+  /// Get the current value of the conservative power integral in the given
+  /// Context.
+  double get_conservative_work(const MyContext& context) const {
+    return get_state(context).get_conservative_work();
+  }
+
   /// Set the position of the mass in the given Context.
   void set_position(MyContext* context, double position) const {
     get_mutable_state(context)->set_position(position);
@@ -105,29 +117,28 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
     get_mutable_state(context)->set_velocity(velocity);
   }
 
+  /// Set the initial value of the conservative power integral in the given
+  /// Context.
+  void set_conservative_work(MyContext* context, double energy) const {
+    get_mutable_state(context)->set_conservative_work(energy);
+  }
+
   /** Return the force being applied by the spring to the mass in the given
   Context. This force f is given by `f = -k (x-x0)`; the spring applies the
   opposite force -f to the world attachment point at the other end. The force is
   in newtons N (kg-m/s^2). **/
-  double GetSpringForce(const MyContext& context) const;
+  double EvalSpringForce(const MyContext& context) const;
 
   /** Return the potential energy currently stored in the spring in the given
   Context. For this linear spring, `pe = k (x-x0)^2 / 2`, so that spring force
-  `f = -k (x-x0)` is the negative gradient of pe. Power due to potential energy
-  will then be @verbatim
+  `f = -k (x-x0)` is the negative gradient of pe. Power that is being stored
+  as potential energy will then be @verbatim
     power_pe = d/dt pe
              = k (x-x0) v
              = -f v.
   @endverbatim
-  Energy is in joules J (N-m).
-
-  TODO(david-german-tri) These energy and power methods ought to be part of the
-  system interface so that everyone has to think about them. System diagrams
-  should be able to implement them by summing over contained Systems. There
-  should be an option for whether to allocate a "misc" continuous state variable
-  z to integrate power into work so that we can check for conservation of energy
-  during a simulation. **/
-  double GetPotentialEnergy(const MyContext& context) const;
+  Energy is in joules J (N-m).**/
+  double EvalPotentialEnergy(const MyContext& context) const override;
 
   /** Return the current kinetic energy of the moving mass in the given Context.
   This is `ke = m v^2 / 2` for this system. The rate of change of kinetic energy
@@ -139,20 +150,26 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   @endverbatim
   (assuming the only force is due to the spring). Energy is in joules.
   @see GetSpringForce(), GetPotentialEnergy() **/
-  double GetKineticEnergy(const MyContext& context) const;
+  double EvalKineticEnergy(const MyContext& context) const override;
 
-  /** Return the rate at which mechanical energy is being generated (positive)
-  or dissipated (negative) *other than* by conversion between potential and
-  kinetic energy (in the given Context). Integrating this quantity yields work
-  W, and the total energy `E=PE+KE-W` should be conserved by any
-  physically-correct model, to within integration accuracy of W. Power is in
-  watts (J/s). (Watts are abbreviated W but not to be confused with work!)
+  /** Return the rate at which mechanical energy is being converted from 
+  potential energy in the spring to kinetic energy of the mass by this 
+  spring-mass system in the given Context. For this
+  system, we have conservative power @verbatim
+    power_c = f v
+            = -power_pe
+  @endverbatim
+  That quantity is positive when the spring is accelerating the mass and 
+  negative when the spring is decelerating the mass. **/
+  double EvalConservativePower(const MyContext& context) const override;
 
-  TODO(sherm1) Currently this is a conservative system so there is no power
-  generated or consumed. Add some kind of dissipation and/or actuation to make
-  this more interesting. **/
-  double GetPower(const MyContext& context) const;
+  // TODO(sherm1) Currently this is a conservative system so there is no power
+  // generated or consumed. Add some kind of dissipation and/or actuation to
+  // make this more interesting.
 
+  /** Return power that doesn't involve the conservative spring element. (There
+  is none in this system.) **/
+  double EvalNonConservativePower(const MyContext& context) const override;
 
   // Implement base class methods.
 
@@ -168,12 +185,12 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   std::unique_ptr<MyOutput> AllocateOutput() const override;
 
   /// Allocates state derivatives of type SpringMassStateVector.
-  std::unique_ptr<MyContinuousState> AllocateDerivatives() const override;
+  std::unique_ptr<MyContinuousState> AllocateTimeDerivatives() const override;
 
-  void GetOutput(const MyContext& context, MyOutput* output) const override;
+  void EvalOutput(const MyContext& context, MyOutput* output) const override;
 
-  void GetDerivatives(const MyContext& context,
-                      MyContinuousState* derivatives) const override;
+  void EvalTimeDerivatives(const MyContext& context,
+                           MyContinuousState* derivatives) const override;
 
  private:
   // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,
