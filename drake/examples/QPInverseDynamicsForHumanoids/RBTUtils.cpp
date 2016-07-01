@@ -1,6 +1,6 @@
 #include "RBTUtils.h"
 
-Vector6d getTaskSpaceVel(const RigidBodyTree& r,
+Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
                          const KinematicsCache<double>& cache,
                          int body_or_frame_id, const Vector3d& local_offset) {
   Isometry3d H_body_to_frame;
@@ -28,7 +28,7 @@ Vector6d getTaskSpaceVel(const RigidBodyTree& r,
   return v;
 }
 
-MatrixXd getTaskSpaceJacobian(const RigidBodyTree& r,
+MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
                               KinematicsCache<double>& cache, int body,
                               const Vector3d& local_offset) {
   std::vector<int> v_or_q_indices;
@@ -54,7 +54,7 @@ MatrixXd getTaskSpaceJacobian(const RigidBodyTree& r,
   return J;
 }
 
-Vector6d getTaskSpaceJacobianDotTimesV(const RigidBodyTree& r,
+Vector6d GetTaskSpaceJacobianDotTimesV(const RigidBodyTree& r,
                                        KinematicsCache<double>& cache,
                                        int body_or_frame_id,
                                        const Vector3d& local_offset) {
