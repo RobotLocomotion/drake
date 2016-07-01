@@ -29,7 +29,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
   double get_position() const;
 
   /// Sets the position of the mass in meters.
-  void set_position(double v);
+  void set_position(double q);
 
   /// Returns the velocity of the mass in meters per second.
   double get_velocity() const;
@@ -54,7 +54,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassOutputVector
   double get_position() const;
 
   /// Sets the position of the mass in meters.
-  void set_position(double v);
+  void set_position(double q);
 
   /// Returns the velocity of the mass in meters per second.
   double get_velocity() const;
