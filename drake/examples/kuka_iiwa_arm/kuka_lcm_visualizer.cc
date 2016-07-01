@@ -50,7 +50,11 @@ int do_main(int argc, const char* argv[]) {
       Drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
 
-    // Adds the ground.
+  // TODO(sam.creasey) This code is duplicated with
+  // run_kuka_iiwa_arm_dynamics.cc, and quite possibly other places
+  // too.  We should stop doing that.
+
+  // Adds the ground.
   {
     double box_width = 3;
     double box_depth = 0.2;
