@@ -82,7 +82,6 @@ GTEST_TEST(testOptimizationProblem, testAddFunction) {
 
 void CheckSolverType(OptimizationProblem& prog,
                      std::string desired_solver_name){
-  // this should be solved with a linear system solver
   std::string solver_name;
   int solver_result;
   prog.GetSolverResult(&solver_name, &solver_result);
