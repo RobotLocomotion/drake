@@ -4,6 +4,10 @@ if(GTEST_FOUND)
     ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testOptimizationProblem COMMAND testOptimizationProblem)
 
+  add_executable(testMosek testMosek.cpp)
+  target_link_libraries(testMosek drakeOptimization ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME testMosek COMMAND testMosek)
+
   add_executable(testMobyLCP testMobyLCP.cpp)
   target_link_libraries(testMobyLCP drakeOptimization ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testMobyLCP COMMAND testMobyLCP)

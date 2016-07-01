@@ -31,7 +31,20 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
    *problem using the mosek solver.
    */
  public:
-  mosekLP() {}
+    mosekLP() {
+      task = NULL;
+      env = NULL;
+      aptrb = (MSKint32t *) malloc(sizeof(MSKint32t));
+      aptre = (MSKint32t *) malloc(sizeof(MSKint32t));
+      asub = (MSKint32t *) malloc(sizeof(MSKint32t));
+      aval = (double *) malloc(sizeof(double));
+      bkc = (MSKboundkeye *) malloc(sizeof(MSKboundkeye));
+      blc = (double *) malloc(sizeof(double));
+      buc = (double *) malloc(sizeof(double));
+      bkx = (MSKboundkeye *) malloc(sizeof(MSKboundkeye));
+      blx = (double *) malloc(sizeof(double));
+      bux = (double *) malloc(sizeof(double));
+    }
   /* Create a mosek linear programming environment using a constraint matrix
   * Takes the number of variables and constraints, the linear eqn to
   * optimize, the constraint matrix, and the constraint and variable bounds
@@ -45,8 +58,7 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
       std::vector<double> lower_constraint_bounds_,
       std::vector<MSKboundkeye> mosek_variable_bounds_,
       std::vector<double> upper_variable_bounds_,
-      std::vector<double> lower_variable_bounds_,
-      std::vector<double> *soln_);
+      std::vector<double> lower_variable_bounds_);
 
   /* Create a mosek linear programming environment using a sparse column
   * constraint matrix
@@ -62,12 +74,13 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
       std::vector<double> lower_constraint_bounds_,
       std::vector<MSKboundkeye> mosek_variable_bounds_,
       std::vector<double> upper_variable_bounds_,
-      std::vector<double> lower_variable_bounds_,
-      std::vector<double> *soln_);
+      std::vector<double> lower_variable_bounds_);
 
   ~mosekLP() {
-    MSK_deletetask(&task);
-    MSK_deleteenv(&env);
+    if (task != NULL)
+      MSK_deletetask(&task);
+    if (env != NULL)
+      MSK_deleteenv(&env);
     free(aptrb);
     free(aptre);
     free(asub);
@@ -88,10 +101,18 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
 
   bool available() const override;
 
-  std::vector<double>  GetSolution() const { return *solutions_; }
+  std::vector<double>  GetSolution() const { return solutions_; }
 
-  Eigen::VectorXd GetEigenVectorSolutions() {
-    Eigen::Map<Eigen::VectorXd> soln_(&(*solutions_)[0], (*solutions_).size());
+  Eigen::VectorXd GetEigenVectorSolutions() const {
+    if (solutions_.empty())
+      return Eigen::VectorXd();
+    Eigen::VectorXd soln_(solutions_.size());
+    if (solutions_.empty())
+      return soln_;
+    int i = 0;
+    for (i = 0; i < solutions_.size(); ++i) {
+      soln_(i) = solutions_[i];
+    }
     return soln_;
   }
 
@@ -155,7 +176,7 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
                       // correctly
   MSKtask_t task;     // internal definition of task
   MSKrescodee r;      // used for validity checking
-  std::vector<double> *solutions_;  // Contains the solutions of the system
+  std::vector<double> solutions_;  // Contains the solutions of the system
 };
 
 }  // namespace solvers
