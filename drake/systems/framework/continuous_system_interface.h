@@ -29,7 +29,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// the derivatives.
   ///
   /// Implementations may assume that the output is of the type constructed in
-  /// AllocateDerivatives.
+  /// AllocateTimeDerivatives.
   ///
   /// @param derivatives The output vector. Will be the same length as the
   ///                    state vector Context.state.continuous_state.
