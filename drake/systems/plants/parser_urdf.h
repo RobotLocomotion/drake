@@ -38,7 +38,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     const RigidBodyTree& tree, const tinyxml2::XMLElement& link,
     const tinyxml2::XMLElement* pose, const std::string& name);
 
-// TODO(liang.fok) Replace with method with one that returns a Model object.
+// TODO(liang.fok) Replace this method with one that returns a Model object.
 //
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
@@ -54,7 +54,7 @@ void addRobotFromURDFString(
     const std::string& urdf_string,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace with method with one that returns a Model object.
+// TODO(liang.fok) Replace this method with one that returns a Model object.
 //
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
@@ -75,7 +75,7 @@ void addRobotFromURDFString(
     RigidBodyTree* tree);
 
 
-// TODO(liang.fok) Replace with method with one that returns a Model object.
+// TODO(liang.fok) Replace this method with one that returns a Model object.
 //
 /// Adds a URDF model to a rigid body system.
 ///
@@ -97,7 +97,7 @@ void addRobotFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace with method with one that returns a Model object.
+// TODO(liang.fok) Replace this method with one that returns a Model object.
 //
 /// Adds a URDF model to a rigid body system.
 ///
@@ -126,7 +126,7 @@ void addRobotFromURDFString(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace with method with one that returns a Model object.
+// TODO(liang.fok) Replace this method with one that returns a Model object.
 //
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
@@ -140,7 +140,7 @@ DRAKERBM_EXPORT
 void addRobotFromURDF(const std::string& urdf_filename,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace with method with one that returns a Model object.
+// TODO(liang.fok) Replace this method with one that returns a Model object.
 //
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
@@ -159,7 +159,7 @@ void addRobotFromURDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace with method with one that returns a Model object.
+// TODO(liang.fok) Replace this method with one that returns a Model object.
 //
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
@@ -181,7 +181,7 @@ void addRobotFromURDF(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace with method with one that returns a Model object.
+// TODO(liang.fok) Replace this method with one that returns a Model object.
 //
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
