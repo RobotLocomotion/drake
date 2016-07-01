@@ -5,6 +5,7 @@
 #include "drake/math/gradient.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
+#include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
@@ -2113,6 +2114,14 @@ void RigidBodyTree::addRobotFromURDF(
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   ::drake::parsers::urdf::addRobotFromURDF(urdf_filename, package_map,
     floating_base_type, weld_to_frame, this);
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+void RigidBodyTree::addRobotFromSDF(const std::string& sdf_filename,
+                     const DrakeJoint::FloatingBaseType floating_base_type,
+                     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+  ::drake::parsers::sdf::addRobotFromSDF(sdf_filename, floating_base_type,
+    weld_to_frame, this);
 }
 
 // Explicit template instantiations for massMatrix.

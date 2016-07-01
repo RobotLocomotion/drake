@@ -16,10 +16,10 @@ pods_install_pkg_config_file(drake-xml-util
   VERSION 0.0.1)
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
+  parser_sdf.cc
   parser_urdf.cc
   RigidBodyTree.cpp
   RigidBody.cpp
-  RigidBodyTreeSDF.cpp
   RigidBodyTreeContact.cpp
   rigid_body_frame.cc)
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
@@ -32,6 +32,7 @@ pods_install_pkg_config_file(drake-rbm
 
 drake_install_headers(
   BotVisualizer.h
+  parser_sdf.h
   parser_urdf.h)
 
 pods_find_pkg_config(gurobi)

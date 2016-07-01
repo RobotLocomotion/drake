@@ -121,6 +121,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
+  #ifndef SWIG
+  DRAKE_DEPRECATED("Please use ::drake::parsers::sdf::addRobotFromSDF.")
+  #endif
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
                            DrakeJoint::QUATERNION,
