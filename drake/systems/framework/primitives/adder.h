@@ -30,8 +30,8 @@ class Adder : public SystemInterface<T> {
 
   /// Sums the input ports into the output port. If the input ports are not
   /// of number num_inputs_ or size length_, std::runtime_error will be thrown.
-  void Output(const Context<T>& context,
-              SystemOutput<T>* output) const override;
+  void EvalOutput(const Context<T>& context,
+                  SystemOutput<T>* output) const override;
 
   /// TODO(david-german-tri): Make this configurable in the constructor.
   std::string get_name() const override { return "adder"; }
