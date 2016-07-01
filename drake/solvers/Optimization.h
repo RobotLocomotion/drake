@@ -356,17 +356,17 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
    */
-  void AddQuadraticCost(std::shared_ptr<Constraint> const& obj,
+  void AddQuadraticCost(std::shared_ptr<QuadraticConstraint> const& obj,
     VariableList const& vars) {
     problem_type_.AddQuadraticCost();
-    quadratic_costs_.push_back(Binding<Constraint>(obj, vars));
+    quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
   }
 
   /** AddQuadraticCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to all (currently existing) variables.
    */
-  void AddQuadraticCost(std::shared_ptr<Constraint> const& obj) {
+  void AddQuadraticCost(std::shared_ptr<QuadraticConstraint> const& obj) {
     AddQuadraticCost(obj, variable_views_);
   }
 
@@ -763,7 +763,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
 
   /** Getter for quadratic costs. */
-  const std::list<Binding<Constraint>>& quadratic_costs() const {
+  const std::list<Binding<QuadraticConstraint>>& quadratic_costs() const {
     return quadratic_costs_;
   }
 
@@ -830,7 +830,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   VariableList variable_views_;
   std::list<Binding<Constraint>> generic_costs_;
   std::list<Binding<Constraint>> generic_constraints_;
-  std::list<Binding<Constraint>> quadratic_costs_;
+  std::list<Binding<QuadraticConstraint>> quadratic_costs_;
   // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_
