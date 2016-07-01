@@ -1,6 +1,6 @@
 package drake;
 
-// Command a single state of the arm
+// Command a single set of joint states for the arm.
 struct lcmt_iiwa_command
 {
   int64_t timestamp;

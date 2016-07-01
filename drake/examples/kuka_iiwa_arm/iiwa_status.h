@@ -9,41 +9,52 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-/// Models the Drake::LCMVector concept
+/// This class holds various information about the joint positions of
+/// the IIWA robot (intneded for use as a state vector to pass into
+/// BotVisualizer).  As a generic receiver of the lcmt_iiwa_status
+/// message, it could in the future be expanded to hold additional
+/// data from that message as needed.  Models the Drake::LCMVector
+/// concept.
 template <typename ScalarType = double>
 class IiwaStatus {
  public:
   IiwaStatus()
-      : value_(Eigen::Matrix<ScalarType, num_joints, 1>::Zero()) {}
+      : joint_posiiton_values_(
+            Eigen::Matrix<ScalarType, kNumJoints, 1>::Zero()) {}
 
   typedef drake::lcmt_iiwa_status LCMMessageType;
   // TODO(sam.creasey) stop duplicating this
   static std::string channel() { return "IIWA_STATUS"; }
 
   // TODO(sam.creasey) stop duplicating this
-  static const int num_joints = 7;
+  static const int kNumJoints = 7;
   static const int RowsAtCompileTime = Eigen::Dynamic;
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
-  size_t size() const { return num_joints; }
+  size_t size() const { return kNumJoints; }
 
-  const EigenType& value() const { return value_; }
-  void set_value(const EigenType& value_in) { value_ = value_in; }
+  const EigenType& value() const { return joint_posiiton_values_; }
+  void set_value(const EigenType& joint_posiiton_values_in) {
+    joint_posiiton_values_ = joint_posiiton_values_in;
+  }
 
   /// Magic conversion specialization back to Eigen.
   friend EigenType toEigen(const IiwaStatus<ScalarType>& vec) {
-    return vec.value_;
+    return vec.joint_posiiton_values_;
   }
 
  private:
-  EigenType value_;
+  EigenType joint_posiiton_values_;
 };
 
+/// Implemented per the Drake::LCMVector concept for the encode
+/// function.  Currently only handles measured joint position (since
+/// that's all IiwaStatus does).
 template <typename ScalarType>
 bool encode(const double& t, const IiwaStatus<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_iiwa_status& msg) {
   msg.timestamp = static_cast<int64_t>(t * 1000);
-  msg.num_joints = wrap.num_joints;
+  msg.num_joints = wrap.kNumJoints;
   msg.joint_position_measured.resize(msg.num_joints);
   for (int i = 0; i <  msg.num_joints; i++) {
     msg.joint_position_measured[i] = wrap.value()[i];
@@ -56,6 +67,9 @@ bool encode(const double& t, const IiwaStatus<ScalarType>& wrap,
   return true;
 }
 
+/// Implemented per the Drake::LCMVector concept for the decode
+/// function.  Currently only handles measured joint position (since
+/// that's all IiwaStatus does).
 template <typename ScalarType>
 bool decode(const drake::lcmt_iiwa_status& msg,
             // NOLINTNEXTLINE(runtime/references)
