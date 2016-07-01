@@ -9,9 +9,9 @@ void HumanoidState::FillKinematics(const std::string& name, Isometry3d& pose,
   pose.translation() = local_offset;
   pose = robot->relativeTransform(cache, 0, id) * pose;
 
-  vel = getTaskSpaceVel(*(robot), cache, id, local_offset);
-  J = getTaskSpaceJacobian(*(robot), cache, id, local_offset);
-  Jdv = getTaskSpaceJacobianDotTimesV(*(robot), cache, id, local_offset);
+  vel = GetTaskSpaceVel(*(robot), cache, id, local_offset);
+  J = GetTaskSpaceJacobian(*(robot), cache, id, local_offset);
+  Jdv = GetTaskSpaceJacobianDotTimesV(*(robot), cache, id, local_offset);
 }
 
 void HumanoidState::Update(double t, const VectorXd& q, const VectorXd& v,
