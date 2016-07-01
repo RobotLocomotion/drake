@@ -91,45 +91,45 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
 
   // Provide methods specific to this System.
 
-  /// Get the current position of the mass in the given Context.
+  /// Gets the current position of the mass in the given Context.
   double get_position(const MyContext& context) const {
     return get_state(context).get_position();
   }
 
-  /// Get the current velocity of the mass in the given Context.
+  /// Gets the current velocity of the mass in the given Context.
   double get_velocity(const MyContext& context) const {
     return get_state(context).get_velocity();
   }
 
-  /// Get the current value of the conservative power integral in the given
+  /// Gets the current value of the conservative power integral in the given
   /// Context.
   double get_conservative_work(const MyContext& context) const {
     return get_state(context).get_conservative_work();
   }
 
-  /// Set the position of the mass in the given Context.
+  /// Sets the position of the mass in the given Context.
   void set_position(MyContext* context, double position) const {
     get_mutable_state(context)->set_position(position);
   }
 
-  /// Set the velocity of the mass in the given Context.
+  /// Sets the velocity of the mass in the given Context.
   void set_velocity(MyContext* context, double velocity) const {
     get_mutable_state(context)->set_velocity(velocity);
   }
 
-  /// Set the initial value of the conservative power integral in the given
+  /// Sets the initial value of the conservative power integral in the given
   /// Context.
   void set_conservative_work(MyContext* context, double energy) const {
     get_mutable_state(context)->set_conservative_work(energy);
   }
 
-  /** Return the force being applied by the spring to the mass in the given
+  /** Returns the force being applied by the spring to the mass in the given
   Context. This force f is given by `f = -k (x-x0)`; the spring applies the
   opposite force -f to the world attachment point at the other end. The force is
   in newtons N (kg-m/s^2). **/
   double EvalSpringForce(const MyContext& context) const;
 
-  /** Return the potential energy currently stored in the spring in the given
+  /** Returns the potential energy currently stored in the spring in the given
   Context. For this linear spring, `pe = k (x-x0)^2 / 2`, so that spring force
   `f = -k (x-x0)` is the negative gradient of pe. Power that is being stored
   as potential energy will then be @verbatim
@@ -140,7 +140,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   Energy is in joules J (N-m).**/
   double EvalPotentialEnergy(const MyContext& context) const override;
 
-  /** Return the current kinetic energy of the moving mass in the given Context.
+  /** Returns the current kinetic energy of the moving mass in the given Context.
   This is `ke = m v^2 / 2` for this system. The rate of change of kinetic energy
   is @verbatim
     d/dt ke = m v a
@@ -152,7 +152,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   @see EvalSpringForce(), EvalPotentialEnergy() **/
   double EvalKineticEnergy(const MyContext& context) const override;
 
-  /** Return the rate at which mechanical energy is being converted from 
+  /** Returns the rate at which mechanical energy is being converted from 
   potential energy in the spring to kinetic energy of the mass by this 
   spring-mass system in the given Context. For this
   system, we have conservative power @verbatim
@@ -167,7 +167,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   // generated or consumed. Add some kind of dissipation and/or actuation to
   // make this more interesting.
 
-  /** Return power that doesn't involve the conservative spring element. (There
+  /** Returns power that doesn't involve the conservative spring element. (There
   is none in this system.) **/
   double EvalNonConservativePower(const MyContext& context) const override;
 
