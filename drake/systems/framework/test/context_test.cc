@@ -30,8 +30,7 @@ constexpr double kTime = 12.0;
 class ContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    // Time
-    context_.get_mutable_time()->time_sec = kTime;
+    context_.set_time(kTime);
 
     // Input
     context_.SetNumInputPorts(kNumInputPorts);
@@ -99,7 +98,7 @@ TEST_F(ContextTest, Clone) {
   std::unique_ptr<Context<double>> clone = context_.Clone();
 
   // Verify that the time was copied.
-  EXPECT_EQ(kTime, clone->get_time().time_sec);
+  EXPECT_EQ(kTime, clone->get_time());
 
   // Verify that the cloned input ports contain the same data,
   // but are different pointers.

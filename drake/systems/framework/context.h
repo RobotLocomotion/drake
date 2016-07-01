@@ -13,9 +13,9 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-struct Time {
-  /// The time, in seconds.  For typical T implementations based on
-  /// doubles, time precision will gradually degrade as time increases.
+struct TimeStep {
+  /// The time, in seconds. For typical T implementations based on
+  /// doubles, time resolution will gradually degrade as time increases.
   /// TODO(sherm1): Consider whether this is sufficiently robust.
   T time_sec{};
 };
@@ -38,8 +38,21 @@ class Context {
   Context() {}
   virtual ~Context() {}
 
-  const Time<T>& get_time() const { return time_; }
-  Time<T>* get_mutable_time() { return &time_; }
+  /// Returns the current time in seconds.
+  const T& get_time() const { return get_time_step().time_sec; }
+
+  /// Set the current time in seconds, with the side effect that all cached
+  /// time-dependent computations are invalidated.
+  void set_time(const T& time_sec) {
+    get_mutable_time_step()->time_sec = time_sec;
+  }
+
+  /// Returns a const reference to current time and step information.
+  const TimeStep<T>& get_time_step() const { return time_step_; }
+
+  /// Provides writable access to time and step information, with the side
+  /// effect of invaliding any computation that is dependent on them.
+  TimeStep<T>* get_mutable_time_step() { return &time_step_; }
 
   /// Connects the input port @p port to this Context at the given @p index.
   /// Disconnects whatever input port was previously there, and deregisters
@@ -65,7 +78,7 @@ class Context {
     inputs_.resize(n);
   }
 
-  int get_num_input_ports() const { return inputs_.size(); }
+  int get_num_input_ports() const { return static_cast<int>(inputs_.size()); }
 
   /// Returns the vector data of the input port at @p index. Returns nullptr
   /// if that port is not a vector-valued port, or if it is not connected.
@@ -81,10 +94,19 @@ class Context {
   }
 
   const State<T>& get_state() const { return state_; }
+
+  /// Returns writable access to the State. No cache invalidation occurs until
+  /// mutable access is requested for particular blocks of state variables.
   State<T>* get_mutable_state() { return &state_; }
 
+  /// Returns a const reference to the Cache, which is expected to contain
+  /// precalculated values of interest. Use this only to access known-valid
+  /// cache entries; use `get_mutable_cache()` if computations may be needed.
+  const Cache<T>& get_cache() const { return &cache_; }
+
   /// Access to the cache is always read-write, and is permitted even on
-  /// const references to the Context.
+  /// const references to the Context. No invalidation of downstream dependents
+  /// occurs until mutable access is requested for a particular cache entry.
   Cache<T>* get_mutable_cache() const { return &cache_; }
 
   /// Returns a deep copy of this Context. The clone's input ports will hold
@@ -120,7 +142,7 @@ class Context {
     }
 
     // Make deep copies of everything else using the default copy constructors.
-    *context->get_mutable_time() = this->get_time();
+    *context->get_mutable_time_step() = this->get_time_step();
     *context->get_mutable_cache() = *this->get_mutable_cache();
     return context;
   }
@@ -131,13 +153,13 @@ class Context {
   Context(Context&& other) = delete;
   Context& operator=(Context&& other) = delete;
 
-  /// The current time.
-  Time<T> time_;
+  // Current time and step information.
+  TimeStep<T> time_step_;
 
-  /// The external inputs to the System.
+  // The external inputs to the System.
   std::vector<std::unique_ptr<InputPort<T>>> inputs_;
 
-  /// The internal state of the System.
+  // The internal state of the System.
   State<T> state_;
 
   /// The cache. The System may insert arbitrary key-value pairs, and configure

@@ -26,10 +26,8 @@ class TestContinuousSystem : public ContinuousSystem<double> {
 
   std::string get_name() const override { return "TestContinuousSystem"; }
 
-  std::unique_ptr<StateVector<double>> AllocateStateDerivatives()
-      const override {
-    return nullptr;
-  }
+  std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
+      const override { return nullptr; }
 
   std::unique_ptr<Context<double>> CreateDefaultContext() const override {
     return nullptr;
@@ -39,11 +37,12 @@ class TestContinuousSystem : public ContinuousSystem<double> {
     return nullptr;
   }
 
-  void Output(const Context<double>& context,
-              SystemOutput<double>* output) const override {}
+  void EvalOutput(const Context<double>& context,
+                  SystemOutput<double>* output) const override {}
 
-  void Dynamics(const Context<double>& context,
-                StateVector<double>* derivatives) const override {}
+  void EvalTimeDerivatives(
+      const Context<double>& context,
+      ContinuousState<double>* derivatives) const override {}
 };
 
 class ContinuousSystemTest : public ::testing::Test {

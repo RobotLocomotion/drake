@@ -22,7 +22,7 @@ namespace systems {
 template <typename T>
 class BasicVector : public VectorInterface<T> {
  public:
-  explicit BasicVector(int size)
+  explicit BasicVector(ptrdiff_t size)
       : values_(VectorX<T>::Constant(
             size, std::numeric_limits<
                       typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
@@ -38,7 +38,7 @@ class BasicVector : public VectorInterface<T> {
     values_ = value;
   }
 
-  int size() const override { return values_.rows(); }
+  int size() const override { return static_cast<int>(values_.rows()); }
 
   Eigen::VectorBlock<const VectorX<T>> get_value() const override {
     return values_.head(values_.rows());
