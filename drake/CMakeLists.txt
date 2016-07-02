@@ -270,7 +270,7 @@ else()
 endif()
 
 # set up and build lcm types
-find_package(lcm)
+find_package(lcm HINTS ${CMAKE_INSTALL_PREFIX}/lib/lcm/cmake)
 if(lcm_FOUND)
   add_subdirectory(lcmtypes)
   include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
