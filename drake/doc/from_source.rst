@@ -21,7 +21,7 @@ Note: If you are using Windows, you will want to make sure that ``git`` is set t
 
 Now run::
 
-	git clone https://github.com/RobotLocomotion/drake.git drake-distro
+    git clone https://github.com/RobotLocomotion/drake.git drake-distro
 
 
 Note: the build process may encounter problems if you have unusual characters like parentheses in the absolute path to the drake-distro directory (see `#394 <https://github.com/RobotLocomotion/drake/issues/394>`_).
@@ -64,12 +64,12 @@ Mandatory platform specific instructions
 Before running build, you will need to follow the instructions for your host system:
 
 .. toctree::
-	:maxdepth: 1
+    :maxdepth: 1
 
-	fedora
-	homebrew
-	ubuntu
-	windows
+    fedora
+    homebrew
+    ubuntu
+    windows
 
 Build the collection
 ====================
@@ -101,23 +101,23 @@ Drake uses `CMake <https://cmake.org/>`_ to generate Ninja files within an
 out-of-source build directory. You can configure CMake options by passing
 them at the ``cmake`` command line with ``-D``, or in a GUI by running
 ``ccmake`` instead of ``cmake``. For instance, the following sequence of
-commands generates Ninja files with build type ``Debug``, and then runs the 
+commands generates Ninja files with build type ``Debug``, and then runs the
 Ninja build.
 
 ::
 
-    mkdir drake-build
-    cd drake-build
-    cmake path/to/drake-distro -G Ninja -DCMAKE_BUILD_TYPE:STRING=Debug
+    cd drake-distro
+    mkdir build
+    cmake ../ -G Ninja -DCMAKE_BUILD_TYPE:STRING=Debug
     ninja
 
-Ninja can rebuild Drake from within ``drake-build/drake`` without
+Ninja can rebuild Drake from within ``drake-distro/build/drake/`` without
 rebuilding the entire superbuild.  It can also build specific targets.
 Tab-completion is supported.
 
 ::
 
-    cd drake-build/drake
+    cd drake-distro/build/drake
     ninja
 
 To review the raw shell commands, compiler flags, and linker flags that CMake
@@ -140,8 +140,11 @@ generate and execute platform-specific build scripts. To build with Make:
 
 ::
 
-	cd drake-distro
-	make
+    cd drake-distro
+    mkdir build
+    cd build
+    cmake ../ -DCMAKE_BUILD_TYPE:STRING=Debug
+    make
 
 **Do NOT use sudo.** Just ``make`` is sufficient, and will prevent problems
 later. Feel free to use ``make -j`` if your platform supports it.
@@ -152,7 +155,8 @@ To include all of the symbols for debugging purposes, execute:
 
     BUILD_TYPE=Debug make
 
-To include all symbols and get details about the actual compiler and linker commands, execute:
+To include all symbols and get details about the actual compiler and linker
+commands, execute:
 
 ::
 
@@ -163,8 +167,8 @@ Test Your Installation
 
 Start MATLAB, then at the MATLAB prompt do::
 
-	cd drake-distro/drake
-	addpath_drake
+    cd drake-distro/drake
+    addpath_drake
 
 Then ``cd`` into the examples directories and try some things out.  Here are a few
 fun ones to get you started:
@@ -176,7 +180,7 @@ fun ones to get you started:
 
 To run some unit tests, execute the following::
 
-    cd drake-distro/drake/pod-build
+    cd drake-distro/build/drake
     ctest -VV
 
 For more details on how to run Drake's unit tests, see the instructions
@@ -194,10 +198,12 @@ Stay up to date
 
 To work on the bleeding edge, do::
 
-	cd drake-distro
-	git checkout master
-	git pull
-	make
+    cd drake-distro
+    git checkout master
+    git pull
+    make
 
-This is especially useful if you are ready to contribute your work back to the main repository with a `pull request <https://help.github.com/articles/using-pull-requests/>`_.
+This is especially useful if you are ready to contribute your work back to the
+main repository with a
+`pull request <https://help.github.com/articles/using-pull-requests/>`_.
 
