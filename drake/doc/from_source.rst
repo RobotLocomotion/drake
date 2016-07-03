@@ -19,12 +19,29 @@ Drake is compliant with the `PODs <http://sourceforge.net/p/pods/home/Home/>`_ s
 
 Note: If you are using Windows, you will want to make sure that ``git`` is set to `handle cross-platform linefeed issues <https://git-scm.com/book/tr/v2/Customizing-Git-Git-Configuration#idp31554304>`_.  These options appear to be enabled by default in the cygwin installation of ``git``, but must be set manually on the native windows version.
 
+We recommend that you `setup SSH access to Github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_
+to avoid needing to type your password each time you access it. The following
+instructions assume you have uploaded your public SSH key to your Github
+account.
+
 Now run::
 
-    git clone https://github.com/RobotLocomotion/drake.git drake-distro
+    git clone git@github.com:RobotLocomotion/drake.git drake-distro
 
 
-Note: the build process may encounter problems if you have unusual characters like parentheses in the absolute path to the drake-distro directory (see `#394 <https://github.com/RobotLocomotion/drake/issues/394>`_).
+Note: the build process may encounter problems if you have unusual characters
+like parentheses in the absolute path to the drake-distro directory
+(see `#394 <https://github.com/RobotLocomotion/drake/issues/394>`_).
+
+The above ``git clone`` command will configure Drake's primary repository as a
+remote called ``origin``. We recommend that you configure your fork of Drake's
+primary repository as the ``origin`` remote and Drake's primary repository as
+the ``upstream`` remote. This can be done by executing the following commands::
+
+    cd drake-distro
+    git remote add upstream git@github.com:RobotLocomotion/drake.git
+    git remote add origin git@github.com:[your github user name]/drake.git
+    git remote set-url --push upstream no_push
 
 
 If you want to use the private externals
@@ -200,7 +217,7 @@ To work on the bleeding edge, do::
 
     cd drake-distro
     git checkout master
-    git pull
+    git pull upstream master
     make
 
 This is especially useful if you are ready to contribute your work back to the
