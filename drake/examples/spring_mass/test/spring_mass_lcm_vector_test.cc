@@ -83,7 +83,8 @@ GTEST_TEST(SpringMassLCMVectorTest, SetAndGetValueTest) {
     EXPECT_TRUE(drake::util::CompareMatrices(const_value, vector, 1e-10,
       drake::util::MatrixCompareType::relative));
 
-    Eigen::VectorBlock<VectorX<double>> mutable_value = dut->get_mutable_value();
+    Eigen::VectorBlock<VectorX<double>> mutable_value =
+      dut->get_mutable_value();
     EXPECT_TRUE(drake::util::CompareMatrices(mutable_value, vector, 1e-10,
       drake::util::MatrixCompareType::relative));
   }
@@ -98,7 +99,8 @@ GTEST_TEST(SpringMassLCMVectorTest, SetAndGetValueTest) {
     EXPECT_FALSE(drake::util::CompareMatrices(const_value, vector, 1e-10,
       drake::util::MatrixCompareType::relative));
 
-    Eigen::VectorBlock<VectorX<double>> mutable_value = dut->get_mutable_value();
+    Eigen::VectorBlock<VectorX<double>> mutable_value =
+      dut->get_mutable_value();
     EXPECT_FALSE(drake::util::CompareMatrices(mutable_value, vector, 1e-10,
       drake::util::MatrixCompareType::relative));
   }
@@ -146,7 +148,8 @@ GTEST_TEST(SpringMassLCMVectorTest, EncodeDecodeAndCloneTest) {
     EXPECT_TRUE(drake::util::CompareMatrices(const_value, vector, 1e-10,
       drake::util::MatrixCompareType::relative));
 
-    Eigen::VectorBlock<VectorX<double>> mutable_value = dut->get_mutable_value();
+    Eigen::VectorBlock<VectorX<double>> mutable_value =
+      dut->get_mutable_value();
     EXPECT_TRUE(drake::util::CompareMatrices(mutable_value, vector, 1e-10,
       drake::util::MatrixCompareType::relative));
 

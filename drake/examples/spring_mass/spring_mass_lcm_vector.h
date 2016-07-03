@@ -22,16 +22,16 @@ class SpringMassLCMVector :
   /// be -1.
   SpringMassLCMVector() : timestamp_(-1), values_(VectorX<T>::Constant(
             kStateSize, std::numeric_limits<
-                      typename Eigen::NumTraits<T>::Real>::quiet_NaN())){}
+                      typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
 
   /// The destructor.
   virtual ~SpringMassLCMVector() {}
 
-  virtual int size() const override {
+  int size() const override {
     return kStateSize;
   }
 
-  virtual void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
+  void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
     if (value.size() != 2)
       throw std::runtime_error("SpringMassLCMVector: set_value: ERROR: "
         "Attempted to set value using a vector of length not equal to two.");
@@ -42,26 +42,25 @@ class SpringMassLCMVector :
     return timestamp_;
   }
 
-  virtual Eigen::VectorBlock<const VectorX<T>> get_value() const override {
+  Eigen::VectorBlock<const VectorX<T>> get_value() const override {
     return values_.head(values_.rows());
   }
 
-  virtual Eigen::VectorBlock<VectorX<T>> get_mutable_value() override {
+  Eigen::VectorBlock<VectorX<T>> get_mutable_value() override {
     return values_.head(values_.rows());
   }
 
-  virtual std::unique_ptr<drake::systems::VectorInterface<T>> Clone() const
-      override {
+  std::unique_ptr<drake::systems::VectorInterface<T>> Clone() const override {
     return std::unique_ptr<SpringMassLCMVector<T>>(DoClone());
   }
 
-  virtual void Encode(const lcmt_spring_mass_state_t& message) override {
+  void Encode(const lcmt_spring_mass_state_t& message) override {
     timestamp_ = message.timestamp;
     values_[0] = message.position;
     values_[1] = message.velocity;
   }
 
-  virtual void Decode(lcmt_spring_mass_state_t* message) override {
+  void Decode(lcmt_spring_mass_state_t* message) override {
     message->timestamp = timestamp_;
     message->position = values_[0];
     message->velocity = values_[1];
