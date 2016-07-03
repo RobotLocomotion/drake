@@ -23,11 +23,15 @@ process and :ref:`Continuous Integration (CI) <continuous_integration_notes>`
 tests before it is merged into
 `Drake's primary repository <https://github.com/RobotLocomotion/drake>`_.
 
-Drake's :ref:`CI service <continuous_integration_notes>` continuously runs on all pull requests each time they are
+Drake's :ref:`CI service <continuous_integration_notes>` runs on all pull requests each time they are
 submitted and updated. Pull requests cannot be merged into master unless all
 unit tests pass on all
 :ref:`supported platform configurations <supported-configurations>`.
-If problems are detected on the master, the build cop will
+
+Drake's CI server also runs continuously on
+`Drake's primary master branch <https://github.com/RobotLocomotion/drake>`_
+using an even more comprehensive set of unit tests.
+If problems are detected on this branch, the build cop will
 :ref:`revert the PRs that most likely caused the problem <build_cop>`.
 To increase the likelihood that your pull requests pass CI tests and are not
 reverted, you can run the unit tests locally. Instructions for how to do that
