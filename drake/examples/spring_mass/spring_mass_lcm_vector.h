@@ -38,7 +38,9 @@ class SpringMassLCMVector :
     values_ = value;
   }
 
-  virtual int64_t get_timestamp() {
+  // Returns the timestamp that was stored in the lcmt_spring_mass_state_t
+  // message.
+  virtual int64_t get_timestamp() const {
     return timestamp_;
   }
 
