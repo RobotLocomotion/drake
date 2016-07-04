@@ -8,6 +8,6 @@ add_test(NAME spring_mass_lcm_vector_test COMMAND spring_mass_lcm_vector_test)
 
 if(lcm_FOUND)
   add_executable(lcm_input_system_test lcm_input_system_test.cc)
-  target_link_libraries(lcm_input_system_test lcm drakeSpringMassSystem drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
+  target_link_libraries(lcm_input_system_test lcm drakeLCMSystem2 drakeSpringMassSystem drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
   add_test(NAME lcm_input_system_test COMMAND lcm_input_system_test)
 endif()

@@ -38,7 +38,7 @@ class SpringMassLCMVector :
     values_ = value;
   }
 
-  virtual int64_t get_timestamp() {
+  virtual int64_t get_timestamp() const {
     return timestamp_;
   }
 

@@ -17,23 +17,50 @@
 namespace drake {
 namespace systems {
 
+namespace internal {
+
+class LCMLoop {
+ public:
+  explicit LCMLoop(lcm::LCM& lcm) : stop_(false), lcm_(lcm) {}
+
+  void LoopWithSelect();
+
+  // Stops the LCM loop's thread. This stops the receival of LCM messages.
+  void Stop();
+
+ private:
+  bool stop_{false};
+  lcm::LCM& lcm_;
+};
+
+}  // end namespace internal
+
 template <typename T, typename LCMVectorInterfaceType, typename LCMMessageType>
 class LCMInputSystem : public SystemInterface<T> {
  public:
-  LCMInputSystem(const std::string& channel) : channel_(channel) {
+  LCMInputSystem(const std::string& channel, lcm::LCM& lcm) :
+      channel_(channel),
+      lcm_loop_(lcm) {
     // Initializes the communication layer.
-    lcm::LCM lcm;
     lcm::Subscription* sub =
       lcm.subscribe(channel_,
                     &LCMInputSystem<T, LCMVectorInterfaceType,
                                     LCMMessageType>::handleMessage, this);
     sub->setQueueCapacity(1);
+
+    // Spawns a thread that accepts incomming LCM messages.
+    lcm_thread_ = std::thread(&internal::LCMLoop::LoopWithSelect,
+      &lcm_loop_);
   }
-  ~LCMInputSystem() override {}
+
+  ~LCMInputSystem() override {
+    lcm_loop_.Stop();
+    lcm_thread_.join();
+  }
 
   std::string get_name() const override {
     // TODO(liang.fok) Can the name include the templated types?
-    return "LCMInputSystem";
+    return "LCMInputSystem::" + channel_;
   }
 
   std::unique_ptr<Context<T>> CreateDefaultContext() const override {
@@ -87,6 +114,12 @@ class LCMInputSystem : public SystemInterface<T> {
 
   // The channel on which to receive LCM messages.
   const std::string channel_;
+
+  // The thread responsible for receiving LCM messages.
+  std::thread lcm_thread_;
+
+  // Implements the loop that receives LCM messages.
+  internal::LCMLoop lcm_loop_;
 
   // A mutex for protecting data that's shared by the LCM receive thread and
   // the thread that calls LCMInputSystem::Output().
