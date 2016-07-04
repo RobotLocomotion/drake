@@ -102,7 +102,8 @@ double SpringMassSystem::EvalConservativePower(const MyContext& context) const {
   return power_c;
 }
 
-// TODO(sherm1) Make this more interesting.
+// TODO(sherm1) Make this more interesting. Russ suggests adding an Input which
+// is a horizontal force on the mass, like wind blowing on it.
 double SpringMassSystem::EvalNonConservativePower(const MyContext&) const {
   const double power_nc = 0.;
   return power_nc;

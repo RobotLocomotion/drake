@@ -48,7 +48,9 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
 };
 
 /// The output of a one-dimensional spring-mass system, consisting of the
-/// position and velocity of the mass, in meters.
+/// position and velocity of the mass, in meters. Note that although this 
+/// system tracks work done as a state variable, we are not reporting that
+/// as an Output.
 class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassOutputVector
     : public systems::BasicVector<double> {
  public:
@@ -82,6 +84,8 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassOutputVector
 class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
     : public systems::ContinuousSystem<double> {
  public:
+  /// Construct a spring-mass system with a fixed spring constant and given
+  /// mass.
   SpringMassSystem(const std::string& name, double spring_constant_N_per_m,
                    double mass_kg);
 
@@ -123,52 +127,52 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
     get_mutable_state(context)->set_conservative_work(energy);
   }
 
-  /** Returns the force being applied by the spring to the mass in the given
-  Context. This force f is given by `f = -k (x-x0)`; the spring applies the
-  opposite force -f to the world attachment point at the other end. The force is
-  in newtons N (kg-m/s^2). **/
+  /// Returns the force being applied by the spring to the mass in the given
+  /// Context. This force f is given by `f = -k (x-x0)`; the spring applies the
+  /// opposite force -f to the world attachment point at the other end. The
+  /// force is in newtons N (kg-m/s^2).
   double EvalSpringForce(const MyContext& context) const;
 
-  /** Returns the potential energy currently stored in the spring in the given
-  Context. For this linear spring, `pe = k (x-x0)^2 / 2`, so that spring force
-  `f = -k (x-x0)` is the negative gradient of pe. Power that is being stored
-  as potential energy will then be @verbatim
-    power_pe = d/dt pe
-             = k (x-x0) v
-             = -f v.
-  @endverbatim
-  Energy is in joules J (N-m).**/
+  /// Returns the potential energy currently stored in the spring in the given
+  /// Context. For this linear spring, `pe = k (x-x0)^2 / 2`, so that spring
+  /// force `f = -k (x-x0)` is the negative gradient of pe. Power that is being
+  /// stored as potential energy will then be @verbatim
+  ///   power_pe = d/dt pe
+  ///            = k (x-x0) v
+  ///            = -f v.
+  /// @endverbatim
+  /// Energy is in joules J (N-m).
   double EvalPotentialEnergy(const MyContext& context) const override;
 
-  /** Returns the current kinetic energy of the moving mass in the given Context.
-  This is `ke = m v^2 / 2` for this system. The rate of change of kinetic energy
-  is @verbatim
-    d/dt ke = m v a
-            = m v (f/m)
-            = f v
-            = -power_pe
-  @endverbatim
-  (assuming the only force is due to the spring). Energy is in joules.
-  @see EvalSpringForce(), EvalPotentialEnergy() **/
+  /// Returns the current kinetic energy of the moving mass in the given Context.
+  /// This is `ke = m v^2 / 2` for this system. The rate of change of kinetic
+  /// energy is @verbatim
+  ///   d/dt ke = m v a
+  ///           = m v (f/m)
+  ///           = f v
+  ///           = -power_pe
+  /// @endverbatim
+  /// (assuming the only force is due to the spring). Energy is in joules.
+  /// @see EvalSpringForce(), EvalPotentialEnergy()
   double EvalKineticEnergy(const MyContext& context) const override;
 
-  /** Returns the rate at which mechanical energy is being converted from 
-  potential energy in the spring to kinetic energy of the mass by this 
-  spring-mass system in the given Context. For this
-  system, we have conservative power @verbatim
-    power_c = f v
-            = -power_pe
-  @endverbatim
-  That quantity is positive when the spring is accelerating the mass and 
-  negative when the spring is decelerating the mass. **/
+  /// Returns the rate at which mechanical energy is being converted from 
+  /// potential energy in the spring to kinetic energy of the mass by this 
+  /// spring-mass system in the given Context. For this
+  /// system, we have conservative power @verbatim
+  ///   power_c = f v
+  ///           = -power_pe
+  /// @endverbatim
+  /// That quantity is positive when the spring is accelerating the mass and 
+  /// negative when the spring is decelerating the mass.
   double EvalConservativePower(const MyContext& context) const override;
 
   // TODO(sherm1) Currently this is a conservative system so there is no power
   // generated or consumed. Add some kind of dissipation and/or actuation to
   // make this more interesting.
 
-  /** Returns power that doesn't involve the conservative spring element. (There
-  is none in this system.) **/
+  /// Returns power that doesn't involve the conservative spring element. (There
+  /// is none in this system.)
   double EvalNonConservativePower(const MyContext& context) const override;
 
   // Implement base class methods.

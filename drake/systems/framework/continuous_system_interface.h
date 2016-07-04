@@ -66,24 +66,25 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   // zero defaults so that these don't have to be implemented in non-physical
   // systems.
 
-  /** Return the rate at which mechanical energy is being converted *from* 
-  potential energy *to* kinetic energy by this system in the given Context. This
-  quantity will be positive when potential energy is decreasing. Note that
-  kinetic energy will also be affected by non-conservative forces so we can't
-  say which direction it is moving, only whether the conservative power is 
-  increasing or decreasing the kinetic energy. Power is in watts (J/s). This
-  method is meaningful only for physical systems; others return 0. **/
+  /// Return the rate at which mechanical energy is being converted *from* 
+  /// potential energy *to* kinetic energy by this system in the given Context.
+  /// This quantity will be positive when potential energy is decreasing. Note
+  /// that kinetic energy will also be affected by non-conservative forces so we
+  /// can't say which direction it is moving, only whether the conservative
+  /// power is increasing or decreasing the kinetic energy. Power is in watts
+  /// (J/s). This method is meaningful only for physical systems; others
+  /// return 0.
   virtual T EvalConservativePower(const Context<T>& context) const {
     return T(0);
   }
 
-  /** Return the rate at which mechanical energy is being generated (positive)
-  or dissipated (negative) *other than* by conversion between potential and
-  kinetic energy (in the given Context). Integrating this quantity yields work
-  W, and the total energy `E=PE+KE-W` should be conserved by any
-  physically-correct model, to within integration accuracy of W. Power is in
-  watts (J/s). (Watts are abbreviated W but not to be confused with work!) This
-  method is meaningful only for physical systems; others return 0. **/
+  /// Return the rate at which mechanical energy is being generated (positive)
+  /// or dissipated (negative) *other than* by conversion between potential and
+  /// kinetic energy (in the given Context). Integrating this quantity yields
+  /// work W, and the total energy `E=PE+KE-W` should be conserved by any
+  /// physically-correct model, to within integration accuracy of W. Power is in
+  /// watts (J/s). (Watts are abbreviated W but not to be confused with work!)
+  /// This method is meaningful only for physical systems; others return 0.
   virtual T EvalNonConservativePower(const Context<T>& context) const {
     return T(0);
   }
