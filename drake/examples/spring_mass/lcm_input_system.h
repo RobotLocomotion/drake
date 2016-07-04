@@ -1,24 +1,99 @@
 #pragma once
 
+// TODO(liang.fok) Move this class into a directory that is dedicated to
+// LCM-based systems after it is mature and proven useful.
+
+#include <mutex>
+#include <stdexcept>
+#include <thread>
+
+#include <lcm/lcm-cpp.hpp>
+
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/basic_state_vector.h"
+#include "drake/systems/framework/system_interface.h"
 #include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
 namespace systems {
 
-template <typename ScalarType, typename LCMMessageType>
-class LCMInputSystem<ScalarType> :
-    public LCMVector<ScalarType, > {
+template <typename T, typename LCMVectorInterfaceType, typename LCMMessageType>
+class LCMInputSystem : public SystemInterface<T> {
  public:
-  virtual ~LCMVector() {}
+  LCMInputSystem(const std::string& channel) : channel_(channel) {
+    // Initializes the communication layer.
+    lcm::LCM lcm;
+    lcm::Subscription* sub =
+      lcm.subscribe(channel_,
+                    &LCMInputSystem<T, LCMVectorInterfaceType,
+                                    LCMMessageType>::handleMessage, this);
+    sub->setQueueCapacity(1);
+  }
+  ~LCMInputSystem() override {}
 
-  /// Encodes an LCM message as an LCMVector.
-  virtual void Encode(const double& t, const LCMMessageType& message) = 0;
+  std::string get_name() const override {
+    // TODO(liang.fok) Can the name include the templated types?
+    return "LCMInputSystem";
+  }
 
-  /// Decodes an LCMVector into an LCM message.
-  virtual void Decode() = 0;
+  std::unique_ptr<Context<T>> CreateDefaultContext() const override {
+    // Creates a new context for this system and sets the number of input ports
+    // to be zero.
+    std::unique_ptr<Context<T>> context(new Context<T>());
+    context->SetNumInputPorts(0);
 
- protected:
-  LCMVector() {}
+    // Creates a BasicStateVector of size zero for this system.
+    std::unique_ptr<BasicStateVector<T>> state(new BasicStateVector<T>(0));
+    context->get_mutable_state()->continuous_state.reset(
+        new ContinuousState<double>(std::move(state), 0 /* size of q */,
+                                    0 /* size of v */, 0 /* size of z */));
+    return context;
+  }
+
+  std::unique_ptr<SystemOutput<T>> AllocateOutput() const override {
+    std::unique_ptr<SystemOutput<T>> output(new SystemOutput<T>);
+    {
+      std::unique_ptr<LCMVectorInterfaceType>
+        data(new LCMVectorInterfaceType());
+      std::unique_ptr<OutputPort<double>> port(
+          new OutputPort<T>(std::move(data)));
+      output->ports.push_back(std::move(port));
+    }
+    return output;
+  }
+
+  // Computes the output for the given context, possibly updating values
+  // in the cache. Note that the context is ignored since it contains no
+  // information.
+  void Output(const Context<T>& context, SystemOutput<T>* output) const
+      override {
+    LCMVectorInterfaceType* output_vector =
+      dynamic_cast<LCMVectorInterfaceType*>(
+        output->ports[0]->GetMutableVectorData());
+
+    data_mutex.lock();
+    output_vector->Encode(lcm_message_);
+    data_mutex.unlock();
+  }
+
+ private:
+
+  void handleMessage(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
+                     const LCMMessageType* msg) {
+    data_mutex.lock();
+    lcm_message_ = *msg;
+    data_mutex.unlock();
+  }
+
+  // The channel on which to receive LCM messages.
+  const std::string channel_;
+
+  // A mutex for protecting data that's shared by the LCM receive thread and
+  // the thread that calls LCMInputSystem::Output().
+  mutable std::mutex data_mutex;
+
+  // A buffer for the most recently received LCM message.
+  LCMMessageType lcm_message_;
 };
 
 }  // namespace systems
