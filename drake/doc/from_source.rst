@@ -91,26 +91,63 @@ Before running build, you will need to follow the instructions for your host sys
 Build the collection
 ====================
 There are two supported ways to build Drake:
-`Ninja <https://ninja-build.org/>`_ and
-`Make <https://www.gnu.org/software/make/>`_.
+`Make <https://www.gnu.org/software/make/>`_ and
+`Ninja <https://ninja-build.org/>`_.
+
 Because the Drake build is not entirely out-of-source, you must pick one build
 system and stick to it. Switching build systems within the same working tree
 will produce CMake errors.
 
 Make support is more mature, but Ninja is faster, more modern, and will
 receive more investment from the Drake development team going forward.
-The following features are known not to work in Ninja yet:
+However, the following features are known not to work in Ninja yet:
 
 * Gurobi
+
+.. _build_with_make:
+
+Build with Make
+---------------
+First, confirm that `Make <https://www.gnu.org/software/make/>`_ is installed
+on your system by executing::
+
+    make --version
+
+To build with ``Make``, execute::
+
+    cd drake-distro
+    mkdir build
+    cd build
+    cmake ../ -DCMAKE_BUILD_TYPE:STRING=Debug
+    make
+
+**Do NOT use sudo.** Just ``make`` is sufficient, and will prevent problems
+later. Feel free to use ``make -j`` if your platform supports it. Note that the
+above ``cmake`` command uses build type "Debug". Alternative build modes include
+"RelWithDebInfo" and "Release". They differ in terms of the amount of debug
+symbols included in the resulting binaries and how efficiently the code
+executes.
+
+In addition to the build mode, Drake has many other build options. You can view
+them in ``drake-distro/CMakeLists.txt``. The build options typically start with
+"WITH\_". The options can be included in the above ``cmake`` command by adding
+additional ``-D`` flags. You can also specify them using a text-based GUI by
+executing::
+
+    cd drake-distro/build
+    ccmake ../
+
+To get details about the actual compiler and linker commands, execute::
+
+    cd drake-distro/build
+    make VERBOSE=true
 
 .. _build_with_ninja:
 
 Build with Ninja
 ----------------
 First, confirm that `Ninja <https://ninja-build.org/>`_ is installed
-on your system:
-
-::
+on your system::
 
     ninja --version
 
@@ -141,44 +178,6 @@ Tab-completion is supported.
 To review the raw shell commands, compiler flags, and linker flags that CMake
 generated, consult ``build.ninja`` and ``drake/build.ninja``, or run
 ``ninja -v`` for a verbose build.
-
-.. _build_with_make:
-
-Build with Make
----------------
-First, confirm that `Make <https://www.gnu.org/software/make/>`_ is installed
-on your system:
-
-::
-
-    make --version
-
-Drake includes a Makefile, which invokes `CMake <https://cmake.org/>`_ to 
-generate and execute platform-specific build scripts. To build with Make:
-
-::
-
-    cd drake-distro
-    mkdir build
-    cd build
-    cmake ../ -DCMAKE_BUILD_TYPE:STRING=Debug
-    make
-
-**Do NOT use sudo.** Just ``make`` is sufficient, and will prevent problems
-later. Feel free to use ``make -j`` if your platform supports it.
-
-To include all of the symbols for debugging purposes, execute:
-
-::
-
-    BUILD_TYPE=Debug make
-
-To include all symbols and get details about the actual compiler and linker
-commands, execute:
-
-::
-
-    BUILD_TYPE=Debug make VERBOSE=true
 
 Test Your Installation
 ======================
