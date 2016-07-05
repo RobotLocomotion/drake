@@ -44,7 +44,7 @@ TEST_F(AdderTest, AddTwoVectors) {
   context_->SetInputPort(0, MakeInput(std::move(input0_)));
   context_->SetInputPort(1, MakeInput(std::move(input1_)));
 
-  adder_->Output(*context_, output_.get());
+  adder_->EvalOutput(*context_, output_.get());
 
   ASSERT_EQ(1u, output_->ports.size());
   const BasicVector<double>* output_port =
@@ -61,7 +61,7 @@ TEST_F(AdderTest, AddTwoVectors) {
 TEST_F(AdderTest, WrongNumberOfInputPorts) {
   // Hook up just one input.
   context_->SetInputPort(0, MakeInput(std::move(input0_)));
-  EXPECT_THROW(adder_->Output(*context_, output_.get()), std::out_of_range);
+  EXPECT_THROW(adder_->EvalOutput(*context_, output_.get()), std::out_of_range);
 }
 
 // Tests that std::out_of_range is thrown when input ports of the wrong size
@@ -76,7 +76,7 @@ TEST_F(AdderTest, WrongSizeOfInputPorts) {
   context_->SetInputPort(0, MakeInput(std::move(input0_)));
   context_->SetInputPort(1, MakeInput(std::move(short_input)));
 
-  EXPECT_THROW(adder_->Output(*context_, output_.get()), std::out_of_range);
+  EXPECT_THROW(adder_->EvalOutput(*context_, output_.get()), std::out_of_range);
 }
 
 // Tests that Adder allocates no state variables in the context_.
