@@ -78,7 +78,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   DecisionVariableView(const DecisionVariable& var, size_t start, size_t n)
       : var_(var), start_index_(start), size_(n) {
-    DRAKE_ASSERT((start + n) < static_cast<size_t>(var.value().rows()));
+    DRAKE_ASSERT((start + n) <= static_cast<size_t>(var.value().rows()));
   }
 
   /** index()
