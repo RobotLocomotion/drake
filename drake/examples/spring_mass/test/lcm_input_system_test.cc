@@ -42,7 +42,7 @@ class MessagePublisher {
 
  private:
   void doPublish() {
-    while(!stop_) {
+    while (!stop_) {
       lcm_.publish(channel_name_, &message_);
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
@@ -100,7 +100,7 @@ GTEST_TEST(LCMInputSystemTest, InstantiateTest) {
   const int kMaxCount = 10;
   const int kDelayMS = 500;
 
-  while(!done && count++ < kMaxCount) {
+  while (!done && count++ < kMaxCount) {
     dut->Output(*context.get(), output.get());
 
     const drake::systems::VectorInterface<double>* vector =

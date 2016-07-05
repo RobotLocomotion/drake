@@ -104,7 +104,6 @@ class LCMInputSystem : public SystemInterface<T> {
   }
 
  private:
-
   void handleMessage(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
                      const LCMMessageType* msg) {
     data_mutex.lock();
