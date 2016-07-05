@@ -24,7 +24,24 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   rigid_body_frame.cc)
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
 pods_install_libraries(drakeRBM)
-drake_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h)
+drake_install_headers(
+  BotVisualizer.h
+  ConstraintWrappers.h
+  ForceTorqueMeasurement.h
+  IKoptions.h
+  inverseKinBackend.h
+  KinematicPath.h
+  KinematicsCache.h
+  material_map.h
+  pose_map.h
+  RigidBodyFrame.h
+  RigidBody.h
+  RigidBodyIK.h
+  RigidBodySystem.h
+  RigidBodyTree.h
+  rigid_body_tree_urdf.h
+  xmlUtil.h)
+
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
   REQUIRES
