@@ -27,7 +27,6 @@ pods_install_libraries(drakeRBM)
 drake_install_headers(
   BotVisualizer.h
   ConstraintWrappers.h
-  eiquadprog.h
   ForceTorqueMeasurement.h
   IKoptions.h
   inverseKinBackend.h
@@ -40,8 +39,6 @@ drake_install_headers(
   RigidBodyIK.h
   RigidBodySystem.h
   RigidBodyTree.h
-  rigidBodyTreeMexConversions.h
-  rigidBodyTreeMexFunctions.h
   rigid_body_tree_urdf.h
   xmlUtil.h)
 
