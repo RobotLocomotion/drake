@@ -48,7 +48,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
 };
 
 /// The output of a one-dimensional spring-mass system, consisting of the
-/// position and velocity of the mass, in meters. Note that although this 
+/// position and velocity of the mass, in meters. Note that although this
 /// system tracks work done as a state variable, we are not reporting that
 /// as an Output.
 class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassOutputVector
@@ -164,15 +164,15 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   /// @see EvalSpringForce(), EvalPotentialEnergy()
   double EvalKineticEnergy(const MyContext& context) const override;
 
-  /// Returns the rate at which mechanical energy is being converted from 
-  /// potential energy in the spring to kinetic energy of the mass by this 
+  /// Returns the rate at which mechanical energy is being converted from
+  /// potential energy in the spring to kinetic energy of the mass by this
   /// spring-mass system in the given Context. For this
   /// system, we have conservative power @verbatim
   ///   power_c = f v
   ///           = power_ke
   ///           = -power_pe
   /// @endverbatim
-  /// This quantity is positive when the spring is accelerating the mass and 
+  /// This quantity is positive when the spring is accelerating the mass and
   /// negative when the spring is decelerating the mass.
   double EvalConservativePower(const MyContext& context) const override;
 

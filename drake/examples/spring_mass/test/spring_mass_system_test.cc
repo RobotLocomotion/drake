@@ -196,8 +196,8 @@ TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
   EXPECT_NEAR(-kSpring * -0.1 / kMass, derivatives_->get_velocity(), 1e-8);
 }
 
-TEST_F(SpringMassSystemTest,ForceEnergyAndPower) {
-  InitializeState(1,2);
+TEST_F(SpringMassSystemTest, ForceEnergyAndPower) {
+  InitializeState(1, 2);
   const double m = system_->get_mass();
   const double k = system_->get_spring_constant();
   const double q0 = 0;  // TODO(david-german-tri) should be a parameter.

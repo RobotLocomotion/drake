@@ -64,7 +64,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   // zero defaults so that these don't have to be implemented in non-physical
   // systems.
 
-  /// Return the rate at which mechanical energy is being converted *from* 
+  /// Return the rate at which mechanical energy is being converted *from*
   /// potential energy *to* kinetic energy by this system in the given Context.
   /// This quantity will be positive when potential energy is decreasing. Note
   /// that kinetic energy will also be affected by non-conservative forces so we
