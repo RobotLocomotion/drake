@@ -21,6 +21,13 @@ SolutionResult LinearSystemSolver::Solve(OptimizationProblem& prog) const {
     num_constraints += binding.constraint()->A().rows();
   }
 
+  DRAKE_ASSERT(prog.generic_constraints().empty());
+  DRAKE_ASSERT(prog.generic_costs().empty());
+  DRAKE_ASSERT(prog.quadratic_costs().empty());
+  DRAKE_ASSERT(prog.linear_constraints().empty());
+  DRAKE_ASSERT(prog.bounding_box_constraints().empty());
+  DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
+
   Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
   // TODO(naveenoid) : use a sparse matrix here?
   Eigen::VectorXd beq(num_constraints);

@@ -21,11 +21,13 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // for the optimal solution to write a linear system that produces
   // our answer.
   // (see https://www.math.uh.edu/~rohop/fall_06/Chapter3.pdf)
+  // Does not explicitly handle undertermined cases.
 
-  // todo: this needs to be tested with sums of quadratic costs
-  // going in, as well as with quadratic costs that cover different
-  // views and don't cover the complete Q matrix together (to see
-  // how this responds to underdetermined situations)
+  DRAKE_ASSERT(prog.generic_constraints().empty());
+  DRAKE_ASSERT(prog.generic_costs().empty());
+  DRAKE_ASSERT(prog.linear_constraints().empty());
+  DRAKE_ASSERT(prog.bounding_box_constraints().empty());
+  DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
 
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
