@@ -179,7 +179,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   // TODO(sherm1) Currently this is a conservative system so there is no power
   // generated or consumed. Add some kind of dissipation and/or actuation to
   // make this more interesting. Russ suggests adding an Input which is a
-  // horizontal force on the mass, like wind blowing on it.
+  // horizontal control force on the mass.
 
   /// Returns power that doesn't involve the conservative spring element. (There
   /// is none in this system.)
