@@ -22,7 +22,7 @@ namespace systems {
 template <typename T>
 class BasicVector : public VectorInterface<T> {
  public:
-  explicit BasicVector(ptrdiff_t size)
+  explicit BasicVector(int size)
       : values_(VectorX<T>::Constant(
             size, std::numeric_limits<
                       typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
