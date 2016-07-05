@@ -762,7 +762,18 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   }
 }
 
-/** Test how an unconstrained QP is dispatched and solved */
+/**
+ * Test how an unconstrained QP is dispatched and solved:
+ *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
+ *     at (x1=1, x2=1).
+ *   - on the same problem plus the additional problem
+ *     (2*x2 - 5)^2 + (2*x3 - 2)^2, which, when combined
+ *     with the first problem, has min at (x1=1, x2=2, x3=1)
+ * The first case tests a single quadratic cost, and the
+ * second case tests multiple quadratic costs affecting
+ * different variable views. All fall under the
+ * umbrella of the Equality Constrained QP Solver.
+ */
 GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(2);
@@ -811,7 +822,15 @@ GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
   CheckSolverType(prog, "Equality Constrained QP Solver");
 }
 
-/** Test how an equality-constrained QP is dispatched */
+/**
+ * Test how an equality-constrained QP is dispatched
+ *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
+ *     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
+ *     The resulting constrained min is at (x1=0.5, x2=0.5).
+ *   - on the same problem with an additional variable x3,
+ *     with (2*x1 - x3 = 0). Resulting solution should be
+ *     (x1=0.5, x2=0.5, x3=1.0)
+ */
 GTEST_TEST(testOptimizationProblem, testLinearlyConstrainedQPDispatch) {
 OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(2);
@@ -833,9 +852,6 @@ OptimizationProblem prog;
   prog.Solve();
 
   VectorXd expected_answer(2);
-  // in the unconstrained case, the min is at (1, 1)
-  // but now we're restricted on the line x1 + x2 = 1
-  // so min will be at 0.5, 0.5 instead
   expected_answer << 0.5, 0.5;
   EXPECT_TRUE(
     CompareMatrices(expected_answer, x.value(), 1e-10,
