@@ -23,6 +23,12 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // (see https://www.math.uh.edu/~rohop/fall_06/Chapter3.pdf)
   // Does not explicitly handle undertermined cases.
 
+  // TODO(gizatt@mit.edu): This way of detecting whether our
+  // constraints are satisfied will scale poorly as we add
+  // more constraint and cost types, and more solvers, as
+  // a change to any of these accessors or addition of new
+  // cost or constraint types will require editing this check
+  // in every solver.
   DRAKE_ASSERT(prog.generic_constraints().empty());
   DRAKE_ASSERT(prog.generic_costs().empty());
   DRAKE_ASSERT(prog.linear_constraints().empty());
