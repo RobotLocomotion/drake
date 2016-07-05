@@ -46,6 +46,7 @@ mosekLP::mosekLP(int num_variables, int num_constraints,
   bkx = (MSKboundkeye *) malloc(sizeof(MSKboundkeye));
   blx = (double *) malloc(sizeof(double));
   bux = (double *) malloc(sizeof(double));
+  solutions_.clear();
   r = MSK_makeenv(&env, NULL);
   if (r == MSK_RES_OK) {
     // Creates optimization task
@@ -97,6 +98,7 @@ mosekLP::mosekLP(int num_variables, int num_constraints,
   bkx = (MSKboundkeye *) malloc(sizeof(MSKboundkeye));
   blx = (double *) malloc(sizeof(double));
   bux = (double *) malloc(sizeof(double));
+  solutions_.clear();
   // Adapted from http://docs.mosek.com/7.1/capi/Linear_optimization.html
   r = MSK_makeenv(&env, NULL);
   if (r == MSK_RES_OK) {
@@ -130,7 +132,7 @@ mosekLP::mosekLP(int num_variables, int num_constraints,
 
 bool mosekLP::available() const { return true; }
 
-void mosekLP::AddLinearConstraintMatrix(Eigen::MatrixXd cons_) {
+void mosekLP::AddLinearConstraintMatrix(const Eigen::MatrixXd& cons_) {
   // Create sparse matrix vectors by column, then send them to
   // addLinearConstraintSparseColumnMatrix()
   std::vector<MSKint32t> ptrb_;
@@ -144,7 +146,7 @@ void mosekLP::AddLinearConstraintMatrix(Eigen::MatrixXd cons_) {
 }
 
 void mosekLP::AddLinearConstraintSparseColumnMatrix(
-    Eigen::SparseMatrix<double> sparsecons_) {
+    const Eigen::SparseMatrix<double>& sparsecons_) {
   int j = 0;  // iterator
   // Define sparse matrix representation to be the same size as the desired
   // constraints
@@ -177,9 +179,10 @@ void mosekLP::AddLinearConstraintSparseColumnMatrix(
   }
 }
 
-void mosekLP::AddLinearConstraintBounds(std::vector<MSKboundkeye> mosek_bounds_,
-                                        std::vector<double> upper_bounds_,
-                                        std::vector<double> lower_bounds_) {
+void mosekLP::AddLinearConstraintBounds(
+    const std::vector<MSKboundkeye>& mosek_bounds_,
+    const std::vector<double>& upper_bounds_,
+    const std::vector<double>& lower_bounds_) {
   int i = 0;
   for (; i < numcon && r == MSK_RES_OK; i++) {
     r = MSK_putconbound(task, i, mosek_bounds_[i],
@@ -187,9 +190,9 @@ void mosekLP::AddLinearConstraintBounds(std::vector<MSKboundkeye> mosek_bounds_,
   }
 }
 
-void mosekLP::AddVariableBounds(std::vector<MSKboundkeye> mosek_bounds_,
-                                std::vector<double> upper_bounds_,
-                                std::vector<double> lower_bounds_) {
+void mosekLP::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
+                                const std::vector<double>& upper_bounds_,
+                                const std::vector<double>& lower_bounds_) {
   int j = 0;
   for (; j < numvar && r == MSK_RES_OK; j++) {
     r = MSK_putvarbound(task, j, mosek_bounds_[j], lower_bounds_[j],
@@ -198,30 +201,25 @@ void mosekLP::AddVariableBounds(std::vector<MSKboundkeye> mosek_bounds_,
 }
 
 std::vector<MSKboundkeye> mosekLP::FindMosekBounds(
-    std::vector<double> upper_bounds_,
-    std::vector<double> lower_bounds_) const {
+    const std::vector<double>& upper_bounds_,
+    const std::vector<double>& lower_bounds_) const {
   assert(upper_bounds_.size() == lower_bounds_.size());
-  std::vector<MSKboundkeye> mosek_bounds_(upper_bounds_.size());
+  std::vector<MSKboundkeye> mosek_bounds_;
   int i = 0;
   for (i = 0; i < upper_bounds_.size(); i++) {
-    if (upper_bounds_[i] == +std::numeric_limits<double>::infinity()) {
-      if (lower_bounds_[i] == -std::numeric_limits<double>::infinity()) {
+    if (upper_bounds_[i] == +MSK_INFINITY) {
+      if (lower_bounds_[i] == -MSK_INFINITY) {
         mosek_bounds_.push_back(MSK_BK_FR);
-        std::cout << "MSK_BK_FR\n";
       } else {
         mosek_bounds_.push_back(MSK_BK_LO);
-        std::cout << "MSK_BK_LO\n";
       }
     } else {
       if (upper_bounds_[i] == lower_bounds_[i]) {
         mosek_bounds_.push_back(MSK_BK_FX);
-        std::cout << "-MSK_BK_FX\n";
-      } else if (lower_bounds_[i] == -std::numeric_limits<double>::infinity()) {
+      } else if (lower_bounds_[i] == -MSK_INFINITY) {
         mosek_bounds_.push_back(MSK_BK_UP);
-        std::cout << "MSK_BK_UP\n";
       } else {
         mosek_bounds_.push_back(MSK_BK_RA);
-        std::cout << "MSK_BK_RA\n";
       }
     }
   }
@@ -234,7 +232,6 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
   // something at least.
   // assume that the problem type is linear currently.
   // TODO(adunyak): Add support for quadratic objective and constraints
-  std::cout << "\nEntering Mosek solve\n" << std::flush;
   if (!prog.GetSolverOptionsStr("Mosek").empty()) {
     if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
         == std::string::npos) {
@@ -244,7 +241,6 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
       return kUnknownError;
   }
   int totalconnum = 0, i = 0;
-  std::cout << "Checking constraints\n"<< std::flush;
   for (auto&& con_ : prog.linear_constraints()) {
     // check to see if the constraint references a single variable,
     // which is handles as a variable bound by mosek
@@ -254,20 +250,16 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
         totalconnum++;
     }
   }
-  std::cout << "constraints counted, "<< totalconnum << std::endl << std::flush;
   Eigen::MatrixXd linear_cons_(totalconnum, prog.num_vars());
   std::vector<double> upper_constraint_bounds_(totalconnum);
   std::vector<double> lower_constraint_bounds_(totalconnum);
   std::vector<MSKboundkeye> mosek_constraint_bounds_(totalconnum);
   std::vector<MSKboundkeye> mosek_variable_bounds_(prog.num_vars());
-  //std::vector<double> upper_variable_bounds_(prog.num_vars());
-  //std::vector<double> lower_variable_bounds_(prog.num_vars());
   linear_cons_.setZero(totalconnum, prog.num_vars());
   int connum = 0;
   i = 0;
 
   // expect only one boundingbox constraint
-  std::cout << "boundingbox\n" << std::flush;
   auto bbox = *(prog.bounding_box_constraints().front().constraint());
   std::vector<double> lower_variable_bounds_(bbox.lower_bound().data(),
       bbox.lower_bound().data() +
@@ -275,17 +267,16 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
   std::vector<double> upper_variable_bounds_(bbox.upper_bound().data(),
       bbox.upper_bound().data() +
       bbox.upper_bound().rows() * bbox.upper_bound().cols());
-    std::cout << "boundingbox found \n";
-  for (auto i : lower_variable_bounds_)
-    std::cout << i << " ";
-  std::cout << std::endl;
-  for (auto i : upper_variable_bounds_)
-    std::cout << i << " ";
-  std::cout << "Mosek bounds:\n";
+  for (auto& i : lower_variable_bounds_) {
+    if (i == -std::numeric_limits<double>::infinity())
+      i = -MSK_INFINITY;
+  }
+  for (auto& i : upper_variable_bounds_) {
+    if (i == +std::numeric_limits<double>::infinity())
+      i = MSK_INFINITY;
+  }
   mosek_variable_bounds_ = FindMosekBounds(upper_variable_bounds_,
-                                         lower_constraint_bounds_);
-
-  std::cout << std::endl << "Now try constraints\n" << std::flush;
+                                         lower_variable_bounds_);
 
   for (const auto& con_ : prog.linear_constraints()) {  // type is
                                                    // Binding<LinearConstraint>
@@ -300,56 +291,24 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
       }
       // lower bounds first
       lower_constraint_bounds_[connum] = (con_.constraint())->lower_bound()(i);
+      if (lower_constraint_bounds_[connum] ==
+          -std::numeric_limits<double>::infinity())
+        lower_constraint_bounds_[connum] = -MSK_INFINITY;
       // upper bound
       upper_constraint_bounds_[connum] = (con_.constraint())->upper_bound()(i);
+      if (upper_constraint_bounds_[connum] ==
+          +std::numeric_limits<double>::infinity())
+        upper_constraint_bounds_[connum] = +MSK_INFINITY;
       ++connum;
     }
   }
-  std::cout << "\nMade it out???\n" << std::flush;
   mosek_constraint_bounds_ = FindMosekBounds(upper_constraint_bounds_,
                                              lower_constraint_bounds_);
-  std::cout << "bounds set\n"<< std::flush;
   // find the linear objective here
   LinearConstraint *obj_ = static_cast<LinearConstraint * >(
       &(*(prog.generic_objectives().front().constraint())));
   std::vector<double> linobj_((*obj_).A().data(),
       (*obj_).A().data() + (*obj_).A().rows() * (*obj_).A().cols());
-  std::cout << "sending to opt\n\n " << std::flush;
-  std::cout << "Numvars: " << prog.num_vars() << '\n';
-  std::cout << "Constraint num: " << totalconnum << '\n';
-  std::cout << "linear objective: ";
-  for (auto i : linobj_) {
-    std::cout << i << " ";
-  }
-  std::cout << "\nConstraints:\n" << linear_cons_;
-  std::cout << "\nupper_constraint_bounds:\n";
-  for (auto& i : upper_constraint_bounds_) {
-      if (i == std::numeric_limits<double>::infinity())
-        i = +MSK_INFINITY;
-  }
-  for (auto i : upper_constraint_bounds_)
-    std::cout << i << '\n';
-  std::cout << "lower_constraint_bounds:\n";
-  for (auto& i : lower_constraint_bounds_) {
-    if (i == -std::numeric_limits<double>::infinity())
-        i = -MSK_INFINITY;
-  }
-  for (auto i : lower_constraint_bounds_)
-    std::cout << i << '\n';
-  std::cout << "upper_var_bounds:\n";
-  for (auto& i : upper_variable_bounds_) {
-    if (i == std::numeric_limits<double>::infinity())
-        i = +MSK_INFINITY;
-  }
-  for (auto i : upper_variable_bounds_)
-    std::cout << i << '\n';
-  std::cout << "lower_var_bounds:\n";
-  for (auto& i : lower_variable_bounds_) {
-    if (i == -std::numeric_limits<double>::infinity())
-        i = -MSK_INFINITY;
-  }
-  for (auto i : lower_variable_bounds_)
-    std::cout << i << '\n';
   mosekLP opt(prog.num_vars(),
               totalconnum,
               linobj_,
@@ -360,19 +319,16 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
               mosek_variable_bounds_,
               upper_variable_bounds_,
               lower_variable_bounds_);
-  std::cout << "Sent to opt for solving\n"<< std::flush;
   std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
   std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
   SolutionResult s = opt.OptimizeTask(mom, ptype);
-  std::cout << "task solved\n"<< std::flush;
-  //*solutions_ = opt.GetSolution();
   prog.SetDecisionVariableValues(opt.GetEigenVectorSolutions());
   return s;
 }
 
-SolutionResult mosekLP::OptimizeTask(std::string maxormin, std::string ptype) {
+SolutionResult mosekLP::OptimizeTask(const std::string& maxormin,
+                                     const std::string& ptype) {
   solutions_.clear();
-  std::cout << maxormin << "\n\n" << ptype <<'\n';
   MSKsoltypee problemtype = MSK_SOL_BAS;
   if (ptype.find("quad") != std::string::npos)
     problemtype = MSK_SOL_ITR;
@@ -404,7 +360,7 @@ SolutionResult mosekLP::OptimizeTask(std::string maxormin, std::string ptype) {
             if (xx) {
               /* Request the basic solution. */
               MSK_getxx(task, problemtype, xx);
-              //printf("Optimal primal solution\n");
+              // printf("Optimal primal solution\n");
               for (int j = 0; j < numvar; ++j) {
                 printf("x[%d]: %e\n", j, xx[j]);
                 solutions_.push_back(xx[j]);

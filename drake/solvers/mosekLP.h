@@ -104,16 +104,14 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
   std::vector<double>  GetSolution() const { return solutions_; }
 
   Eigen::VectorXd GetEigenVectorSolutions() const {
-    if (solutions_.empty())
-      return Eigen::VectorXd();
-    Eigen::VectorXd soln_(solutions_.size());
+    Eigen::VectorXd soln_(numvar);
     if (solutions_.empty())
       return soln_;
     int i = 0;
     for (i = 0; i < solutions_.size(); ++i) {
       soln_(i) = solutions_[i];
     }
-    return soln_;
+    return soln_.transpose();
   }
 
  private:
@@ -127,39 +125,41 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
    /*AddLinearConstraintMatrix()
    *@brief adds linear constraints to mosek environment
    */
-  void AddLinearConstraintMatrix(Eigen::MatrixXd cons_);
+  void AddLinearConstraintMatrix(const Eigen::MatrixXd& cons_);
 
   /*addLinearConstraintSparseColumnMatrix()
   *@brief adds linear constraints in sparse column matrix form
   *just uses Eigen's sparse matrix library to implement expected format
   */
   void AddLinearConstraintSparseColumnMatrix(
-    Eigen::SparseMatrix<double> sparsecons_);
+    const Eigen::SparseMatrix<double>& sparsecons_);
 
   /*AddLinearConstraintBounds()
   *@brief bounds constraints, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
   *for details on how to set mosek_bounds_
   */
-  void AddLinearConstraintBounds(std::vector<MSKboundkeye> mosek_bounds_,
-      std::vector<double> upper_bounds_,
-      std::vector<double> lower_bounds_);
+  void AddLinearConstraintBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
+      const std::vector<double>& upper_bounds_,
+      const std::vector<double>& lower_bounds_);
 
   /*AddVariableBounds()
    * @brief bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
    * for details on how to set mosek_bounds_
    */
-  void AddVariableBounds(std::vector<MSKboundkeye> mosek_bounds_,
-      std::vector<double> upper_bounds_,
-      std::vector<double> lower_bounds_);
+  void AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
+                         const std::vector<double>& upper_bounds_,
+                         const std::vector<double>& lower_bounds_);
 
   /*FindMosekBounds()
    * Given upper and lower bounds for a variable or constraint, finds the
    * equivalent Mosek bound keys.
    */
-  std::vector<MSKboundkeye> FindMosekBounds(std::vector<double> upper_bounds_,
-      std::vector<double> lower_bounds_) const;
+  std::vector<MSKboundkeye> FindMosekBounds(
+      const std::vector<double>& upper_bounds_,
+      const std::vector<double>& lower_bounds_) const;
 
-  SolutionResult OptimizeTask(std::string maxormin, std::string ptype);
+  SolutionResult OptimizeTask(const std::string& maxormin,
+                              const std::string& ptype);
 
   MSKint32t numvar, numcon;
   MSKint32t* aptrb;   // Where ptrb[j] is the position of the first

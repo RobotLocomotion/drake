@@ -55,8 +55,8 @@ endif()
 pods_find_pkg_config(mosek)
 
 if(mosek_FOUND)
-
   list(APPEND optimization_files mosekLP.cpp)
+  list(APPEND optimization_files MosekSolver.h)
 endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
@@ -65,10 +65,8 @@ drake_install_headers(MathematicalProgram.h Optimization.h system_identification
 if(mosek_FOUND)
   pods_use_pkg_config_packages(drakeOptimization mosek)
   drake_install_headers(${CMAKE_INSTALL_PREFIX}/include/mosek/mosek.h)
-  #pods_install_libraries(mosek) #${CMAKE_INSTALL_PREFIX}/lib/libmosek64.so
   set(CMAKE_SHARED_LINKER_FLAGS
     "${CMAKE_SHARED_LINKER_FLAGS} -L${CMAKE_INSTALL_PREFIX}/lib -Wl,-rpath-link=${CMAKE_INSTALL_PREFIX}/lib")
-  #target_link_libraries(drakeOptimization ${CMAKE_INSTALL_PREFIX}/lib/libmosek64)
 endif()
 pods_install_libraries(drakeOptimization)
 pods_install_pkg_config_file(drake-optimization
