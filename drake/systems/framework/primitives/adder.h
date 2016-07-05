@@ -19,7 +19,6 @@ class Adder : public SystemInterface<T> {
   /// @param num_inputs is the number of input ports to be added.
   /// @param length is the size of each input port.
   Adder(int num_inputs, int length);
-  ~Adder() override {}
 
   /// Allocates the number of input ports specified in the constructor.
   /// Allocates no state.

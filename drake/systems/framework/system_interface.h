@@ -46,8 +46,6 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractSystemInterface {
 template <typename T>
 class SystemInterface : public AbstractSystemInterface {
  public:
-  ~SystemInterface() override {}
-
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.
   /// Since input port pointers are not owned by the Context, they should

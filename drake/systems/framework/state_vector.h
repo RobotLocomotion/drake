@@ -96,7 +96,6 @@ class StateVector {
       return PlusEqScaled(T(-1), rhs);
   }
 
-
  protected:
   StateVector() {}
 

@@ -12,26 +12,28 @@
 namespace drake {
 namespace systems {
 
+/// Contains information about the independent variable including time and
+/// step number.
+// TODO(sherm1) Add step information.
 template <typename T>
-struct TimeStep {
+struct StepInfo {
   /// The time, in seconds. For typical T implementations based on
   /// doubles, time resolution will gradually degrade as time increases.
-  /// TODO(sherm1): Consider whether this is sufficiently robust.
+  // TODO(sherm1): Consider whether this is sufficiently robust.
   T time_sec{};
 };
 
-/// The Context is a container for all of the data necessary to compute the
-/// dynamics of any System. Specifically, a Context contains and owns the
-/// State, and also contains (but does not own) pointers to the Input, as
-/// well as the simulation time and the cache.
+/// The Context is a container for all of the data necessary to uniquely
+/// determine the computations performed by a System. Specifically, a Context
+/// contains and owns the State, and also contains (but does not own) pointers
+/// to the Input, as well as the simulation time and the cache.
 ///
 /// Context may be subclassed within the framework to support specialized kinds
 /// of Systems, such as Diagrams, but should not be subclassed by users.
 ///
-/// TODO(david-german-tri): Manage cache invalidation.
-///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
+// TODO(david-german-tri): Manage cache invalidation.
 template <typename T>
 class Context {
  public:
@@ -39,20 +41,12 @@ class Context {
   virtual ~Context() {}
 
   /// Returns the current time in seconds.
-  const T& get_time() const { return get_time_step().time_sec; }
+  const T& get_time() const { return get_step_info().time_sec; }
 
-  /// Set the current time in seconds, with the side effect that all cached
-  /// time-dependent computations are invalidated.
+  /// Set the current time in seconds.
   void set_time(const T& time_sec) {
-    get_mutable_time_step()->time_sec = time_sec;
+    get_mutable_step_info()->time_sec = time_sec;
   }
-
-  /// Returns a const reference to current time and step information.
-  const TimeStep<T>& get_time_step() const { return time_step_; }
-
-  /// Provides writable access to time and step information, with the side
-  /// effect of invaliding any computation that is dependent on them.
-  TimeStep<T>* get_mutable_time_step() { return &time_step_; }
 
   /// Connects the input port @p port to this Context at the given @p index.
   /// Disconnects whatever input port was previously there, and deregisters
@@ -102,7 +96,7 @@ class Context {
   /// Returns a const reference to the Cache, which is expected to contain
   /// precalculated values of interest. Use this only to access known-valid
   /// cache entries; use `get_mutable_cache()` if computations may be needed.
-  const Cache<T>& get_cache() const { return &cache_; }
+  const Cache<T>& get_cache() const { return cache_; }
 
   /// Access to the cache is always read-write, and is permitted even on
   /// const references to the Context. No invalidation of downstream dependents
@@ -116,7 +110,7 @@ class Context {
     return std::unique_ptr<Context<T>>(DoClone());
   }
 
- private:
+ protected:
   /// The Context implementation for Diagrams must override this method, since
   /// the state of a Diagram will not be a LeafStateVector. The caller owns the
   /// returned memory.
@@ -142,10 +136,20 @@ class Context {
     }
 
     // Make deep copies of everything else using the default copy constructors.
-    *context->get_mutable_time_step() = this->get_time_step();
-    *context->get_mutable_cache() = *this->get_mutable_cache();
+    *context->get_mutable_step_info() = this->get_step_info();
+    *context->get_mutable_cache() = this->get_cache();
     return context;
   }
+
+ private:
+  // Returns a const reference to current time and step information.
+  const StepInfo<T>& get_step_info() const { return step_info_; }
+
+  // Provides writable access to time and step information, with the side
+  // effect of invaliding any computation that is dependent on them.
+  // TODO(david-german-tri) Invalidate all cached time- and step-dependent
+  // computations.
+  StepInfo<T>* get_mutable_step_info() { return &step_info_; }
 
   // Context objects are neither copyable nor moveable.
   Context(const Context& other) = delete;
@@ -154,7 +158,7 @@ class Context {
   Context& operator=(Context&& other) = delete;
 
   // Current time and step information.
-  TimeStep<T> time_step_;
+  StepInfo<T> step_info_;
 
   // The external inputs to the System.
   std::vector<std::unique_ptr<InputPort<T>>> inputs_;
@@ -162,8 +166,8 @@ class Context {
   // The internal state of the System.
   State<T> state_;
 
-  /// The cache. The System may insert arbitrary key-value pairs, and configure
-  /// invalidation on a per-line basis.
+  // The cache. The System may insert arbitrary key-value pairs, and configure
+  // invalidation on a per-line basis.
   mutable Cache<T> cache_;
 };
 

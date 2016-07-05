@@ -55,7 +55,6 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassOutputVector
     : public systems::BasicVector<double> {
  public:
   SpringMassOutputVector();
-  ~SpringMassOutputVector() override;
 
   /// Returns the position of the mass in meters, where zero is the point
   /// where the spring exerts no force.
@@ -94,6 +93,12 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   using MyOutput = systems::SystemOutput<double>;
 
   // Provide methods specific to this System.
+
+  /// Returns the spring constant k that was provided at construction, in N/m.
+  double get_spring_constant() const { return spring_constant_N_per_m_; }
+
+  /// Returns the mass m that was provided at construction, in kg.
+  double get_mass() const { return mass_kg_; }
 
   /// Gets the current position of the mass in the given Context.
   double get_position(const MyContext& context) const {
@@ -135,8 +140,9 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
 
   /// Returns the potential energy currently stored in the spring in the given
   /// Context. For this linear spring, `pe = k (x-x0)^2 / 2`, so that spring
-  /// force `f = -k (x-x0)` is the negative gradient of pe. Power that is being
-  /// stored as potential energy will then be @verbatim
+  /// force `f = -k (x-x0)` is the negative gradient of pe. The rate of change
+  /// of potential energy (that is, power that adding to potential energy) is
+  /// @verbatim
   ///   power_pe = d/dt pe
   ///            = k (x-x0) v
   ///            = -f v.
@@ -144,13 +150,15 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   /// Energy is in joules J (N-m).
   double EvalPotentialEnergy(const MyContext& context) const override;
 
-  /// Returns the current kinetic energy of the moving mass in the given Context.
-  /// This is `ke = m v^2 / 2` for this system. The rate of change of kinetic
-  /// energy is @verbatim
-  ///   d/dt ke = m v a
-  ///           = m v (f/m)
-  ///           = f v
-  ///           = -power_pe
+  /// Returns the current kinetic energy of the moving mass in the given
+  /// Context. This is `ke = m v^2 / 2` for this system. The rate of change of
+  /// kinetic energy (that is, power that adding to kinetic energy) is
+  /// @verbatim
+  ///   power_ke = d/dt ke
+  ///            = m v a
+  ///            = m v (f/m)
+  ///            = f v
+  ///            = -power_pe
   /// @endverbatim
   /// (assuming the only force is due to the spring). Energy is in joules.
   /// @see EvalSpringForce(), EvalPotentialEnergy()
@@ -161,15 +169,17 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   /// spring-mass system in the given Context. For this
   /// system, we have conservative power @verbatim
   ///   power_c = f v
+  ///           = power_ke
   ///           = -power_pe
   /// @endverbatim
-  /// That quantity is positive when the spring is accelerating the mass and 
+  /// This quantity is positive when the spring is accelerating the mass and 
   /// negative when the spring is decelerating the mass.
   double EvalConservativePower(const MyContext& context) const override;
 
   // TODO(sherm1) Currently this is a conservative system so there is no power
   // generated or consumed. Add some kind of dissipation and/or actuation to
-  // make this more interesting.
+  // make this more interesting. Russ suggests adding an Input which is a
+  // horizontal force on the mass, like wind blowing on it.
 
   /// Returns power that doesn't involve the conservative spring element. (There
   /// is none in this system.)
@@ -177,8 +187,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
 
   // Implement base class methods.
 
-  ~SpringMassSystem() override;
-
+  /// Returns the name supplied at construction.
   std::string get_name() const override;
 
   /// Allocates a state of type SpringMassStateVector.

@@ -27,8 +27,6 @@ class BasicVector : public VectorInterface<T> {
             size, std::numeric_limits<
                       typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
 
-  ~BasicVector() override {}
-
   void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
     if (value.rows() != values_.rows()) {
       throw std::out_of_range(

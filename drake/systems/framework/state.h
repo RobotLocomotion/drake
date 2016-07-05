@@ -44,7 +44,7 @@ class ContinuousState {
   ///
   /// @param num_q The number of position variables.
   /// @param num_v The number of velocity variables.
-  /// @param num_z  The number of other variables.
+  /// @param num_z The number of other variables.
   ContinuousState(std::unique_ptr<StateVector<T>> state, int num_q,
                   int num_v, int num_z) {
     state_ = std::move(state);

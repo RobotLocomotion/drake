@@ -14,8 +14,6 @@ namespace systems {
 template <typename T>
 class ContinuousSystemInterface : public SystemInterface<T> {
  public:
-  ~ContinuousSystemInterface() override {}
-
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. Solvers will provide this state as the
   /// output argument to EvalTimeDerivatives.
@@ -28,8 +26,8 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// the Context has second-order structure, that same structure applies to
   /// the derivatives.
   ///
-  /// Implementations may assume that the output is of the type constructed in
-  /// AllocateTimeDerivatives.
+  /// Implementations may assume that the given @p derivatives argument has the
+  /// same constituent structure as was produced by AllocateTimeDerivatives.
   ///
   /// @param derivatives The output vector. Will be the same length as the
   ///                    state vector Context.state.continuous_state.
@@ -37,7 +35,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
                                    ContinuousState<T>* derivatives) const = 0;
 
   /// Transforms the velocity (v) in the given Context state to the derivative
-  /// of the configuration (qdot). The transformation must be linear
+  /// of the configuration (qdot). The transformation must be linear in velocity
   /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
   /// in the number of generalized velocity states.
   ///

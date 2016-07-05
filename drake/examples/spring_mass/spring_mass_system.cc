@@ -35,8 +35,8 @@ double SpringMassStateVector::get_conservative_work() const {
 }
 void SpringMassStateVector::set_position(double q) { SetAtIndex(0, q); }
 void SpringMassStateVector::set_velocity(double v) { SetAtIndex(1, v); }
-void SpringMassStateVector::set_conservative_work(double e) {
-  SetAtIndex(2, e);
+void SpringMassStateVector::set_conservative_work(double work) {
+  SetAtIndex(2, work);
 }
 
 SpringMassStateVector* SpringMassStateVector::DoClone() const {
@@ -47,8 +47,6 @@ SpringMassStateVector* SpringMassStateVector::DoClone() const {
 
 SpringMassOutputVector::SpringMassOutputVector()
     : BasicVector<double>(kStateSize-1) {}  // don't output conservative energy
-
-SpringMassOutputVector::~SpringMassOutputVector() {}
 
 double SpringMassOutputVector::get_position() const { return get_value()[0]; }
 double SpringMassOutputVector::get_velocity() const { return get_value()[1]; }
@@ -102,14 +100,10 @@ double SpringMassSystem::EvalConservativePower(const MyContext& context) const {
   return power_c;
 }
 
-// TODO(sherm1) Make this more interesting. Russ suggests adding an Input which
-// is a horizontal force on the mass, like wind blowing on it.
 double SpringMassSystem::EvalNonConservativePower(const MyContext&) const {
   const double power_nc = 0.;
   return power_nc;
 }
-
-SpringMassSystem::~SpringMassSystem() {}
 
 std::string SpringMassSystem::get_name() const { return name_; }
 
@@ -172,8 +166,9 @@ void SpringMassSystem::EvalTimeDerivatives(
   const double force_applied_to_body = EvalSpringForce(context);
   derivative_vector->set_velocity(force_applied_to_body / mass_kg_);
 
-  // We are integrating conservative power to get the conservative energy, that
-  // is, the net energy transferred between the spring and the mass over time.
+  // We are integrating conservative power to get the work done by conservative
+  // force elements, that is, the net energy transferred between the spring and
+  // the mass over time.
   derivative_vector->set_conservative_work(EvalConservativePower(context));
 }
 

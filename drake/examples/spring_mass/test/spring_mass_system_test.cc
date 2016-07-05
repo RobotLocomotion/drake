@@ -77,6 +77,7 @@ class SpringMassSystemTest : public ::testing::Test {
   void InitializeState(const double position, const double velocity) {
     state_->set_position(position);
     state_->set_velocity(velocity);
+    state_->set_conservative_work(0);
   }
 
  protected:
@@ -94,18 +95,22 @@ class SpringMassSystemTest : public ::testing::Test {
   std::unique_ptr<StateVector<double>> erased_derivatives_;
 };
 
-TEST_F(SpringMassSystemTest, Name) {
+TEST_F(SpringMassSystemTest, Construction) {
   EXPECT_EQ("test_system", system_->get_name());
+  EXPECT_EQ(kSpring, system_->get_spring_constant());
+  EXPECT_EQ(kMass, system_->get_mass());
 }
 
 TEST_F(SpringMassSystemTest, CloneState) {
   InitializeState(1.0, 2.0);
+  state_->set_conservative_work(3.0);
   std::unique_ptr<LeafStateVector<double>> clone = state_->Clone();
   SpringMassStateVector* typed_clone =
       dynamic_cast<SpringMassStateVector*>(clone.get());
   ASSERT_NE(nullptr, typed_clone);
   EXPECT_EQ(1.0, typed_clone->get_position());
   EXPECT_EQ(2.0, typed_clone->get_velocity());
+  EXPECT_EQ(3.0, typed_clone->get_conservative_work());
 }
 
 TEST_F(SpringMassSystemTest, CloneOutput) {
@@ -121,18 +126,19 @@ TEST_F(SpringMassSystemTest, CloneOutput) {
 
 // Tests that state is passed through to the output.
 TEST_F(SpringMassSystemTest, Output) {
-  InitializeState(0.1, 0.0);  // Displacement 100cm, no velocity.
+  // Displacement 100cm, vel 250cm/s (.25 is exact in binary).
+  InitializeState(0.1, 0.25);
   system_->EvalOutput(*context_, system_output_.get());
   ASSERT_EQ(1, system_output_->ports.size());
 
   // Check the output through the application-specific interface.
-  EXPECT_NEAR(0.1, output_->get_position(), 1e-8);
-  EXPECT_EQ(0.0, output_->get_velocity());
+  EXPECT_NEAR(0.1, output_->get_position(), 1e-14);
+  EXPECT_EQ(0.25, output_->get_velocity());
 
   // Check the output through the VectorInterface API.
   ASSERT_EQ(2, output_->size());
-  EXPECT_NEAR(0.1, output_->get_value()[0], 1e-8);
-  EXPECT_EQ(0.0, output_->get_value()[1]);
+  EXPECT_NEAR(0.1, output_->get_value()[0], 1e-14);
+  EXPECT_EQ(0.25, output_->get_value()[1]);
 }
 
 // Tests that second-order structure is exposed in the state.
@@ -190,8 +196,31 @@ TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
   EXPECT_NEAR(-kSpring * -0.1 / kMass, derivatives_->get_velocity(), 1e-8);
 }
 
+TEST_F(SpringMassSystemTest,ForceEnergyAndPower) {
+  InitializeState(1,2);
+  const double m = system_->get_mass();
+  const double k = system_->get_spring_constant();
+  const double q0 = 0;  // TODO(david-german-tri) should be a parameter.
+  const double q = system_->get_position(*context_);
+  const double v = system_->get_velocity(*context_);
+  const double w_c = system_->get_conservative_work(*context_);
+  const double f = system_->EvalSpringForce(*context_);
+  const double pe = system_->EvalPotentialEnergy(*context_);
+  const double ke = system_->EvalKineticEnergy(*context_);
+  const double power_c = system_->EvalConservativePower(*context_);
+  const double power_nc = system_->EvalNonConservativePower(*context_);
+
+  EXPECT_EQ(q, 1.0);
+  EXPECT_EQ(v, 2.0);
+  EXPECT_EQ(w_c, 0.0);
+  EXPECT_NEAR(f, -k * (q - q0), 1e-14);
+  EXPECT_NEAR(pe, k * (q-q0) * (q-q0) / 2, 1e-14);
+  EXPECT_NEAR(ke, m * v * v / 2, 1e-14);
+  EXPECT_NEAR(power_c, f * v, 1e-14);
+  EXPECT_EQ(power_nc, 0.0);
+}
+
 // These are helper functions for the Integrate test below.
-//
 
 /* Given a System and a Context, calculate the partial derivative matrix
 D xdot / D x. Here x has only continuous variables; in general we would have
