@@ -85,7 +85,8 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
   std::unique_ptr<MathematicalProgramSolverInterface> snopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> moby_lcp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> linear_system_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> equality_constrained_qp_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface>
+      equality_constrained_qp_solver_;
   // TODO(ggould-tri) Add Gurobi here.
   // TODO(ggould-tri) Add Mosek here.
   // TODO(ggould-tri) Add SeDuMi here.

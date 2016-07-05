@@ -81,11 +81,11 @@ GTEST_TEST(testOptimizationProblem, testAddFunction) {
 }
 
 void CheckSolverType(OptimizationProblem& prog,
-                     std::string desired_solver_name){
+                     std::string desired_solver_name) {
   std::string solver_name;
   int solver_result;
   prog.GetSolverResult(&solver_name, &solver_result);
-  EXPECT_EQ( solver_name, desired_solver_name );
+  EXPECT_EQ(solver_name, desired_solver_name);
 }
 
 void RunNonlinearProgram(OptimizationProblem& prog,
@@ -778,13 +778,16 @@ GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
 
   VectorXd expected_answer(2);
   expected_answer << 1.0, 1.0;
-  EXPECT_TRUE(
-    CompareMatrices(expected_answer, x.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+                expected_answer,
+                x.value(),
+                1e-10,
+                MatrixCompareType::absolute));
   // no inequality constraints and up to quadratic costs so this should hold:
   CheckSolverType(prog, "Equality Constrained QP Solver");
 
   // And one more variable and constrain a view into them
-  auto y = prog.AddContinuousVariables(1); 
+  auto y = prog.AddContinuousVariables(1);
   Q << 2.0, 0.0,
        0.0, 2.0;
   c << -5.0, -2.0;
@@ -799,8 +802,9 @@ GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
   VectorXd actual_answer(3);
   actual_answer << x.value(), y.value();
   EXPECT_TRUE(
-    CompareMatrices(expected_answer, actual_answer, 1e-10, MatrixCompareType::absolute))
-      << "\tExpected: " << expected_answer.transpose() 
+    CompareMatrices(expected_answer, actual_answer,
+                    1e-10, MatrixCompareType::absolute))
+      << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
 
   // no inequality constraints and up to quadratic costs so this should hold:
@@ -834,13 +838,14 @@ OptimizationProblem prog;
   // so min will be at 0.5, 0.5 instead
   expected_answer << 0.5, 0.5;
   EXPECT_TRUE(
-    CompareMatrices(expected_answer, x.value(), 1e-10, MatrixCompareType::absolute));
+    CompareMatrices(expected_answer, x.value(), 1e-10,
+                    MatrixCompareType::absolute));
 
   // this is an Equality Constrained QP
   CheckSolverType(prog, "Equality Constrained QP Solver");
 
   // And one more variable and constrain it in a different way
-  auto y = prog.AddContinuousVariables(1); 
+  auto y = prog.AddContinuousVariables(1);
   Vector2d constraint2(2);
   constraint2 << 2., -1.;
   // 2*x1 - x3 = 0, so x3 should wind up as 1.0
@@ -857,12 +862,11 @@ OptimizationProblem prog;
   VectorXd actual_answer(3);
   actual_answer << x.value(), y.value();
   EXPECT_TRUE(
-    CompareMatrices(expected_answer, actual_answer, 1e-10, MatrixCompareType::absolute))
-      << "\tExpected: " << expected_answer.transpose() 
+    CompareMatrices(expected_answer, actual_answer,
+                    1e-10, MatrixCompareType::absolute))
+      << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
-
 }
-
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
