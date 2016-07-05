@@ -9,17 +9,20 @@
 
 #include <lcm/lcm-cpp.hpp>
 
+#include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/system_interface.h"
 #include "drake/systems/framework/vector_interface.h"
+
+
 
 namespace drake {
 namespace systems {
 
 namespace internal {
 
-class LCMLoop {
+class DRAKELCMSYSTEM2_EXPORT LCMLoop {
  public:
   explicit LCMLoop(lcm::LCM& lcm) : stop_(false), lcm_(lcm) {}
 
