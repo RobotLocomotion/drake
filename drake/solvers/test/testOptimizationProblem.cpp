@@ -1,5 +1,6 @@
 #include <typeinfo>
 
+#include "drake/common/drake_assert.h"
 #include "drake/solvers/IpoptSolver.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/NloptSolver.h"
@@ -83,11 +84,13 @@ void RunNonlinearProgram(OptimizationProblem& prog,
   IpoptSolver ipopt_solver;
   NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
+
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
     std::make_pair("SNOPT", &snopt_solver),
     std::make_pair("NLopt", &nlopt_solver),
     std::make_pair("Ipopt", &ipopt_solver)
   };
+
   for (const auto& solver : solvers) {
     if (!solver.second->available()) {
       continue;
@@ -103,6 +106,7 @@ void RunNonlinearProgram(OptimizationProblem& prog,
 
 GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
   OptimizationProblem prog;
+
   auto const& x = prog.AddContinuousVariables(4);
 
   auto x2 = x(2);
@@ -139,6 +143,7 @@ GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
   prog.AddBoundingBoxConstraint(bbcon, {x.head(2)});
+
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
     EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
@@ -150,6 +155,7 @@ GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
 
 GTEST_TEST(testOptimizationProblem, trivialLinearEquality) {
   OptimizationProblem prog;
+
   auto vars = prog.AddContinuousVariables(2);
 
   // Use a non-square matrix to catch row/column mistakes in the solvers.
@@ -171,8 +177,8 @@ class TestProblem1Objective {
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    assert(x.rows() == numInputs());
-    assert(y.rows() == numOutputs());
+    DRAKE_ASSERT(x.rows() == numInputs());
+    DRAKE_ASSERT(y.rows() == numOutputs());
     y(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
            (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
            (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
@@ -213,8 +219,8 @@ class TestProblem2Objective {
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    assert(x.rows() == numInputs());
-    assert(y.rows() == numOutputs());
+    DRAKE_ASSERT(x.rows() == numInputs());
+    DRAKE_ASSERT(y.rows() == numOutputs());
     y(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
            (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
            (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
@@ -260,8 +266,8 @@ class LowerBoundTestObjective {
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    assert(x.rows() == numInputs());
-    assert(y.rows() == numOutputs());
+    DRAKE_ASSERT(x.rows() == numInputs());
+    DRAKE_ASSERT(y.rows() == numOutputs());
     y(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
            (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
            (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
@@ -359,8 +365,8 @@ class SixHumpCamelObjective {
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    assert(x.rows() == numInputs());
-    assert(y.rows() == numOutputs());
+    DRAKE_ASSERT(x.rows() == numInputs());
+    DRAKE_ASSERT(y.rows() == numOutputs());
     y(0) =
         x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) +
         x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
@@ -390,8 +396,8 @@ class GloptipolyConstrainedExampleObjective {
 
   template <typename ScalarType>
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    assert(x.rows() == numInputs());
-    assert(y.rows() == numOutputs());
+    DRAKE_ASSERT(x.rows() == numInputs());
+    DRAKE_ASSERT(y.rows() == numOutputs());
     y(0) = -2 * x(0) + x(1) - x(2);
   }
 };
