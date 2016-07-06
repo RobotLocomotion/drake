@@ -2,7 +2,8 @@
 #include <iostream>
 
 const Vector3d HumanoidState::kFootToContactOffset = Vector3d(0, 0, -0.09);
-const Vector3d HumanoidState::kFootToSensorOffset = Vector3d(0.0215646, 0.0, -0.051054);
+const Vector3d HumanoidState::kFootToSensorOffset =
+    Vector3d(0.0215646, 0.0, -0.051054);
 
 void HumanoidState::FillKinematics(const std::string& name, Isometry3d& pose,
                                    Vector6d& vel, MatrixXd& J, Vector6d& Jdv,
@@ -53,12 +54,10 @@ void HumanoidState::Update(double t, const VectorXd& q, const VectorXd& v,
                  r_foot.Jdv, kFootToContactOffset);
   FillKinematics(torso.link_name, torso.pose, torso.vel, torso.J, torso.Jdv);
 
-  FillKinematics(l_foot_sensor.link_name, l_foot_sensor.pose,
-                 l_foot_sensor.vel, l_foot_sensor.J, l_foot_sensor.Jdv,
-                 kFootToSensorOffset);
-  FillKinematics(r_foot_sensor.link_name, r_foot_sensor.pose,
-                 r_foot_sensor.vel, r_foot_sensor.J, r_foot_sensor.Jdv,
-                 kFootToSensorOffset);
+  FillKinematics(l_foot_sensor.link_name, l_foot_sensor.pose, l_foot_sensor.vel,
+                 l_foot_sensor.J, l_foot_sensor.Jdv, kFootToSensorOffset);
+  FillKinematics(r_foot_sensor.link_name, r_foot_sensor.pose, r_foot_sensor.vel,
+                 r_foot_sensor.J, r_foot_sensor.Jdv, kFootToSensorOffset);
 
   // ft sensor
   footFT_b[Side::LEFT] = l_ft;
