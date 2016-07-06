@@ -71,6 +71,15 @@ Clarifications
     would obscure the readability of our code, and (3) subtraction underflow
     below zero is obviously not at risk.
 
+* When using `Integer Types
+  <https://google.github.io/styleguide/cppguide.html#Integer>`_
+  within Drake, `ptrdiff_t` is forbidden, with the following exceptions
+  (per `#2514 <https://github.com/RobotLocomotion/drake/issues/2514>`_):
+
+  * ``ptrdiff_t`` is allowed when doing arithmetic on bare pointers (this is
+    very rare).  Do not use it as a generic "large signed integer" type, nor
+    as a generic "index into a matrix" type.
+
 .. _code-style-guide-cpp-exceptions:
 
 Exceptions
@@ -143,9 +152,9 @@ Additional Rules
   left uninitialized; if you want yours zero-initialized you can
   member-initialize it by passing an appropriate ``Zero``, for example:
   ``Eigen::Matrix3d mat_{Eigen::Matrix3d::Zero()};``.
-* After including ``<cstddef>``, assume that ``size_t`` and ``ptrdiff_t``
-  are defined in the global namespace. Do not preface them with ``std::``
-  and do not write ``using std::size_t`` or ``using std::ptrdiff_t`` in
+* After including ``<cstddef>``, assume that ``size_t``
+  is defined in the global namespace. Do not preface it with ``std::``
+  and do not write ``using std::size_t`` in
   your code. There is a hypothetical possibility that this won't work on
   some compiler someday but we deem the risk acceptable in trade for
   allowing this common, clutter-reducing practice. For discussion, see
