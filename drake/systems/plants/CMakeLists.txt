@@ -39,7 +39,7 @@ drake_install_headers(
   RigidBodyIK.h
   RigidBodySystem.h
   RigidBodyTree.h
-  rigid_body_tree_urdf.h
+  parser_urdf.h
   xmlUtil.h)
 
 pods_install_pkg_config_file(drake-rbm
