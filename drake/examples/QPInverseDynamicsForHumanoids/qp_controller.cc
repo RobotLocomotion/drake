@@ -6,7 +6,7 @@
 
 using namespace drake::solvers;
 
-// TODO(siyuan.feng@tri.global): some version of this should go to 
+// TODO(siyuan.feng@tri.global): some version of this should go to
 // Optimization.h
 static VectorXd VariableList2VectorXd(VariableList const& vlist) {
   size_t dim = 0;
@@ -36,7 +36,7 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
   // zeros due to the floating base), tau is joint torque, J^T is the transpose
   // of all contact Jacobian, and lambda is the contact wrench in the world
   // frame.
-  // Note that since S.topRows(6) is zero, 
+  // Note that since S.topRows(6) is zero,
   // tau = M_l * qdd + h_l - J^T_l * lamda,
   // where _l means the lower num_torque rows of those matrices.
   // So we just need to solve for qdd and lambda, and tau can be computed as
@@ -257,9 +257,9 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
     return -1;
   }
 
+#if !defined(NDEBUG)
   ////////////////////////////////////////////////////////////////////
   // example of inspecting each cost / eq, ineq term
-#if !defined(NDEBUG)  
   auto costs = prog.generic_costs();
   auto eqs = prog.linear_equality_constraints();
   auto ineqs = prog.linear_constraints();
@@ -287,6 +287,7 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
     }
   }
 #endif
+
   ////////////////////////////////////////////////////////////////////
   // parse result
   output.qdd = qdd.value();

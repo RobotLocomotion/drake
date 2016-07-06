@@ -15,8 +15,8 @@ class BodyOfInterest {
   std::string name;
   std::string link_name;
   Eigen::Isometry3d pose;
-  // This is the task space velocity, or twist of a frame that has the same 
-  // orientation as the world frame, but located at the origin of the body 
+  // This is the task space velocity, or twist of a frame that has the same
+  // orientation as the world frame, but located at the origin of the body
   // frame.
   Vector6d vel;
 
@@ -43,9 +43,9 @@ class BodyOfInterest {
  */
 class HumanoidState {
  public:
-  ///< Offset from the foot frame to contact position in the foot frame. 
+  ///< Offset from the foot frame to contact position in the foot frame.
   static const Vector3d kFootToContactOffset;
-  ///< Offset from the foot frame to force torque sensor in the foot frame. 
+  ///< Offset from the foot frame to force torque sensor in the foot frame.
   static const Vector3d kFootToSensorOffset;
 
   double time;
@@ -60,7 +60,7 @@ class HumanoidState {
   VectorXd pos;  ///< Position in generalized coordinate
   VectorXd vel;  ///< Velocity in generalized coordinate
   // In the same order as vel, but trq contains only actuated joints.
-  VectorXd trq;  ///< Joint torque 
+  VectorXd trq;  ///< Joint torque
 
   MatrixXd M;  ///< Inertial matrix
   VectorXd h;  ///< Bias term: M * qdd + h = tau + J^T * lambda
@@ -71,7 +71,7 @@ class HumanoidState {
   MatrixXd J_com;    ///< Com Jacobian: comd = J_com * v
   Vector3d Jdv_com;  ///< J_com_dot * v
 
-  // These are at the origin of the each body (defined by the urdf) unless 
+  // These are at the origin of the each body (defined by the urdf) unless
   // specified otherwise.
   BodyOfInterest pelv;    ///< Pelvis link
   BodyOfInterest torso;   ///< Torso
