@@ -5,7 +5,7 @@
 
 using namespace Eigen;
 
-// These should go in RigidBodyTree eventually.
+// TODO(siyuan.feng@tri): These should go in RigidBodyTree eventually.
 
 /**
  * @param local_offset from the body frame origin to the point of interest
@@ -25,7 +25,7 @@ Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
  * generalized velocity.
  */
 MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
-                              KinematicsCache<double>& cache,
+                              const KinematicsCache<double>& cache,
                               int body_or_frame_id,
                               const Vector3d& local_offset = Vector3d::Zero());
 
@@ -36,5 +36,5 @@ MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
  * task space acceleration, v_dot is generalized acceleration.
  */
 Vector6d GetTaskSpaceJacobianDotTimesV(
-    const RigidBodyTree& r, KinematicsCache<double>& cache,
+    const RigidBodyTree& r, const KinematicsCache<double>& cache,
     int body_or_frame_id, const Vector3d& local_offset = Vector3d::Zero());

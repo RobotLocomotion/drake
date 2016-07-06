@@ -1,13 +1,13 @@
 #include "drake/Path.h"
-#include "QPController.h"
+#include "qp_controller.h"
 
 QPOutput TestGravityCompensation(const HumanoidState& rs) {
-  // make controller
+  // Make controller.
   QPController con;
   QPInput input(*rs.robot);
   QPOutput output(*rs.robot);
 
-  // make input
+  // Make input.
   input.comdd_d.setZero();
   input.pelvdd_d.setZero();
   input.torsodd_d.setZero();
@@ -17,7 +17,7 @@ QPOutput TestGravityCompensation(const HumanoidState& rs) {
   input.wrench_d[Side::RIGHT].setZero();
   input.qdd_d.setZero();
 
-  // [5] is Fz, 660N * 2 is about robot weight
+  // [5] is Fz, 660N * 2 is about robot weight.
   input.wrench_d[Side::LEFT][5] = 660;
   input.wrench_d[Side::RIGHT][5] = 660;
 
@@ -29,12 +29,13 @@ QPOutput TestGravityCompensation(const HumanoidState& rs) {
   input.w_wrench_reg = 1e-5;
 
   ////////////////////////////////////////////////////////////////////
-  // call QP
+  // Call QP.
   assert(con.Control(rs, input, output) == 0);
 
-  // print result
+  // Print results.
   output.Print();
 
+  // Print quadratic costs for all the terms.
   output.ComputeCost(rs, input);
 
   return output;
@@ -42,7 +43,7 @@ QPOutput TestGravityCompensation(const HumanoidState& rs) {
 
 int main() {
   ////////////////////////////////////////////////////////////////////
-  // load model
+  // Load model.
   std::string urdf =
       Drake::getDrakePath() +
       std::string(
@@ -51,13 +52,15 @@ int main() {
       new RigidBodyTree(urdf, DrakeJoint::ROLLPITCHYAW)));
 
   ////////////////////////////////////////////////////////////////////
-  // set state and do kinematics
+  // Set state and do kinematics.
   VectorXd q(rs.robot->number_of_positions());
   VectorXd qd(rs.robot->number_of_velocities());
 
   q.setZero();
   qd.setZero();
 
+  // These corresponds to a nominal pose for the Valkyrie robot: slightly 
+  // crouched, arm raised a bit.
   q[rs.joint_name_to_id.at("rightHipRoll")] = 0.01;
   q[rs.joint_name_to_id.at("rightHipPitch")] = -0.5432;
   q[rs.joint_name_to_id.at("rightKneePitch")] = 1.2195;
@@ -81,7 +84,6 @@ int main() {
   rs.Update(0, q, qd, VectorXd::Zero(rs.robot->actuators.size()),
             Vector6d::Zero(), Vector6d::Zero());
 
-  // test QP controller
   QPOutput output = TestGravityCompensation(rs);
 
   return 0;
