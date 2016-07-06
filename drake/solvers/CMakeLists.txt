@@ -30,8 +30,8 @@ endif()
 
 set(optimization_files)
 list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp 
-            system_identification.cpp LinearSystemSolver.cpp 
-            EqualityConstrainedQPSolver.cpp)
+            system_identification.cpp linear_system_solver.cpp 
+            equality_constrained_qp_solver.cpp)
 pods_find_pkg_config(ipopt)
 if (ipopt_FOUND)
   list(APPEND optimization_files IpoptSolver.cpp)
