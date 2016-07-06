@@ -35,16 +35,16 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractSystemInterface {
 };
 
 /// A superclass template for systems that receive input, maintain state, and
-/// produce output of a given mathematical type T.
+/// produce numerical output using a specified scalar type T.
 ///
 /// Concrete systems with no state should inherit directly from this interface.
 /// Concrete systems with state should use a more specific interface in the
 /// SystemInterface family.
 ///
-/// TODO(david-german-tri): Add static_asserts on T.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
 class SystemInterface : public AbstractSystemInterface {
+  // TODO(david-german-tri): Add static_asserts on T.
  public:
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.

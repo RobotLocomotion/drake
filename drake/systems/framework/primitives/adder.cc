@@ -25,11 +25,11 @@ template <typename T>
 std::unique_ptr<SystemOutput<T>> Adder<T>::AllocateOutput() const {
   // An adder has just one output port, a BasicVector of the size specified
   // at construction time.
-  std::unique_ptr<SystemOutput<T>> output(new SystemOutput<T>);
+  auto output = std::make_unique<SystemOutput<T>>(1);
   {
-    std::unique_ptr<BasicVector<T>> data(new BasicVector<T>(length_));
-    std::unique_ptr<OutputPort<T>> port(new OutputPort<T>(std::move(data)));
-    output->ports.push_back(std::move(port));
+    auto data = std::make_unique<BasicVector<T>>(length_);
+    auto port = std::make_unique<VectorOutputPort<T>>(std::move(data));
+    output->set_port(0, std::move(port));
   }
   return output;
 }
@@ -42,11 +42,12 @@ void Adder<T>::EvalOutput(const Context<T>& context,
   // since failures would reflect a bug in the Adder implementation, not
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
-  DRAKE_ASSERT(output->ports.size() == 1);
-  VectorInterface<T>* output_port = output->ports[0]->GetMutableVectorData();
-  DRAKE_ASSERT(output_port != nullptr);
-  DRAKE_ASSERT(output_port->get_value().rows() == length_);
-  output_port->get_mutable_value() = VectorX<T>::Zero(length_);
+  DRAKE_ASSERT(output->get_num_ports() == 1);
+  VectorOutputPort<T>* output_port = output->get_mutable_vector_port(0);
+  VectorInterface<T>* output_vector = output_port->GetMutableVectorData();
+  DRAKE_ASSERT(output_vector != nullptr);
+  DRAKE_ASSERT(output_vector->get_value().rows() == length_);
+  output_vector->get_mutable_value() = VectorX<T>::Zero(length_);
 
   // Check that there are the expected number of input ports.
   if (context.get_num_input_ports() != num_inputs_) {
@@ -63,7 +64,7 @@ void Adder<T>::EvalOutput(const Context<T>& context,
       throw std::out_of_range("Input port " + std::to_string(i) +
                               "is nullptr or has incorrect size.");
     }
-    output_port->get_mutable_value() += input->get_value();
+    output_vector->get_mutable_value() += input->get_value();
   }
 }
 

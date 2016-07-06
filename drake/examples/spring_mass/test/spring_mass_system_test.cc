@@ -69,7 +69,7 @@ class SpringMassSystemTest : public ::testing::Test {
     state_ = dynamic_cast<SpringMassStateVector*>(
         context_->get_mutable_state()->continuous_state->get_mutable_state());
     output_ = dynamic_cast<const SpringMassOutputVector*>(
-        system_output_->ports[0]->get_vector_data());
+        system_output_->get_vector_port(0).get_vector_data());
     derivatives_ = dynamic_cast<SpringMassStateVector*>(
         system_derivatives_->get_mutable_state());
   }
@@ -129,7 +129,7 @@ TEST_F(SpringMassSystemTest, Output) {
   // Displacement 100cm, vel 250cm/s (.25 is exact in binary).
   InitializeState(0.1, 0.25);
   system_->EvalOutput(*context_, system_output_.get());
-  ASSERT_EQ(1, system_output_->ports.size());
+  ASSERT_EQ(1, system_output_->get_num_ports());
 
   // Check the output through the application-specific interface.
   EXPECT_NEAR(0.1, output_->get_position(), 1e-14);
