@@ -1,4 +1,4 @@
-#include "drake/solvers/EqualityConstrainedQPSolver.h"
+#include "drake/solvers/equality_constrained_qp_solver.h"
 
 #include <cstring>
 #include <memory>

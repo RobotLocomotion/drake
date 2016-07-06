@@ -1,4 +1,4 @@
-#include "drake/solvers/LinearSystemSolver.h"
+#include "drake/solvers/linear_system_solver.h"
 
 #include <cstring>
 #include <memory>
