@@ -26,7 +26,6 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
 pods_install_libraries(drakeRBM)
 drake_install_headers(
-  BotVisualizer.h
   ConstraintWrappers.h
   ForceTorqueMeasurement.h
   KinematicPath.h
@@ -181,6 +180,7 @@ if(lcm_FOUND)
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
   target_link_libraries(rigidBodyLCMNode drakeRBSystem drakeLCMSystem threads)
   pods_install_executables(rigidBodyLCMNode)
+  drake_install_headers(BotVisualizer.h)
 endif()
 
 add_subdirectory(test)
