@@ -35,8 +35,8 @@ void HumanoidState::Update(double t, const VectorXd& q, const VectorXd& v,
   robot->doKinematics(cache, true);
 
   M = robot->massMatrix(cache);
-  eigen_aligned_unordered_map<RigidBody const*,
-    Matrix<double, TWIST_SIZE, 1>> f_ext;
+  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
+      f_ext;
   h = robot->dynamicsBiasTerm(cache, f_ext);
 
   // com
