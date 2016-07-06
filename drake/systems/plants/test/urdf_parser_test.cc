@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 namespace drake {
@@ -49,7 +50,8 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 
   // Instantiates a rigid body tree using the above-defined URDF string.
   std::unique_ptr<RigidBodyTree> rigid_body_tree(new RigidBodyTree());
-  rigid_body_tree->addRobotFromURDFString(urdf_string);
+  drake::parsers::urdf::addRobotFromURDFString(urdf_string,
+    rigid_body_tree.get());
 
   // Obtains the child link of food_joint.
   RigidBody* foo_joint_link = rigid_body_tree->findJoint("foo_joint");

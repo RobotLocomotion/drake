@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/solvers/fastQP.h"
 #include "drake/systems/controllers/controlUtil.h"
+#include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
@@ -116,8 +117,9 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
       throw std::runtime_error(
           "Could not find attachment frame when handling urdf modifications");
     }
-    robot->addRobotFromURDF(Drake::getDrakePath() + "/" + it->urdf_filename,
-                            it->joint_type, attach_to_frame);
+    drake::parsers::urdf::addRobotFromURDF(
+      Drake::getDrakePath() + "/" + it->urdf_filename,
+      it->joint_type, attach_to_frame, robot.get());
   }
 
   auto filter = [&](const std::string& group_name) {
