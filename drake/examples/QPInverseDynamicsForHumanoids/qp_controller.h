@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HumanoidState.h"
+#include "humanoid_state.h"
 #include <iostream>
 #include <fstream>
 

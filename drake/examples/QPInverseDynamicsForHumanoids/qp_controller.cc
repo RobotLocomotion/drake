@@ -1,12 +1,13 @@
 #include "drake/solvers/Optimization.h"
 #include "drake/solvers/SnoptSolver.h"
 
-#include "HumanoidState.h"
-#include "QPController.h"
+#include "humanoid_state.h"
+#include "qp_controller.h"
 
 using namespace drake::solvers;
 
-// some version of this should go in Optimization.h
+// TODO(siyuan.feng@tri.global): some version of this should go to 
+// Optimization.h
 static VectorXd VariableList2VectorXd(VariableList const& vlist) {
   size_t dim = 0;
   for (auto var : vlist) {
@@ -35,9 +36,9 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
   // zeros due to the floating base), tau is joint torque, J^T is the transpose
   // of all contact Jacobian, and lambda is the contact wrench in the world
   // frame.
-  // Note that since S.topRows(6) is zero,
-  // tau = M_l * qdd + h_l - J^T_l * lamda, _l means the lower num_torque rows
-  // of those matrices.
+  // Note that since S.topRows(6) is zero, 
+  // tau = M_l * qdd + h_l - J^T_l * lamda,
+  // where _l means the lower num_torque rows of those matrices.
   // So we just need to solve for qdd and lambda, and tau can be computed as
   // above.
   //
@@ -247,6 +248,10 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
   prog.SetInitialGuess(lambda, lambda0);
   SolutionResult result;
   SnoptSolver snopt;
+  if (!snopt.available()) {
+    std::cerr << "Solver (SNOPT) not available.\n";
+    return -1;
+  }
   result = snopt.Solve(prog);
   if (result != drake::solvers::SolutionResult::kSolutionFound) {
     return -1;
@@ -254,6 +259,7 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
 
   ////////////////////////////////////////////////////////////////////
   // example of inspecting each cost / eq, ineq term
+#if !defined(NDEBUG)  
   auto costs = prog.generic_costs();
   auto eqs = prog.linear_equality_constraints();
   auto ineqs = prog.linear_constraints();
@@ -280,7 +286,7 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
       assert(X[i] >= ineq->lower_bound()[i] && X[i] <= ineq->upper_bound()[i]);
     }
   }
-
+#endif
   ////////////////////////////////////////////////////////////////////
   // parse result
   output.qdd = qdd.value();
@@ -315,8 +321,9 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
         output.foot_wrench_in_sensor_frame[i].tail<3>();
   }
 
-  // sanity checks,
-  // check dynamics, foot not moving, should check
+  // Check equality constraints:
+  // Dynamics: M(q) * qdd + h(q,qd) = S * tau + J^T * lambda
+  // Foot not moving: J * qdd + Jd * v = 0
   VectorXd residual = rs.M * output.qdd + rs.h;
   for (int i = 0; i < num_contacts; i++)
     residual -= rs.foot[i]->J.transpose() * output.foot_wrench_w[i];

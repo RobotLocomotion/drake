@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/systems/robotInterfaces/Side.h"
-#include "RBTUtils.h"
+#include "rigid_body_tree_utils.h"
 
 using namespace Eigen;
 
@@ -15,8 +15,9 @@ class BodyOfInterest {
   std::string name;
   std::string link_name;
   Eigen::Isometry3d pose;
-  // task space velocity, or twist of a frame that has the same orientation
-  // as the world frame, but located at the origin of the body frame
+  // This is the task space velocity, or twist of a frame that has the same 
+  // orientation as the world frame, but located at the origin of the body 
+  // frame.
   Vector6d vel;
 
   // task space Jacobian, xdot = J * v
@@ -42,6 +43,11 @@ class BodyOfInterest {
  */
 class HumanoidState {
  public:
+  ///< Offset from the foot frame to contact position in the foot frame. 
+  static const Vector3d kFootToContactOffset;
+  ///< Offset from the foot frame to force torque sensor in the foot frame. 
+  static const Vector3d kFootToSensorOffset;
+
   double time;
 
   std::unique_ptr<RigidBodyTree> robot;
@@ -50,36 +56,39 @@ class HumanoidState {
   std::unordered_map<std::string, int> joint_name_to_id;
   std::unordered_map<std::string, int> actuator_name_to_id;
 
-  // these have base 6
-  VectorXd pos;
-  VectorXd vel;
-  VectorXd trq;  // in the same order as vel, but only has actuated joints
+  // Pos and Vel include 6 dof for the floating base.
+  VectorXd pos;  ///< Position in generalized coordinate
+  VectorXd vel;  ///< Velocity in generalized coordinate
+  // In the same order as vel, but trq contains only actuated joints.
+  VectorXd trq;  ///< Joint torque 
 
-  MatrixXd M;  // inertial matrix
-  VectorXd h;  // bias term: M * qdd + h = tau + J^T * lambda
+  MatrixXd M;  ///< Inertial matrix
+  VectorXd h;  ///< Bias term: M * qdd + h = tau + J^T * lambda
 
   // computed from kinematics
-  Vector3d com;      // center of mass
-  Vector3d comd;     // com velocity
-  MatrixXd J_com;    // com Jacobian: comd = J_com * v
-  Vector3d Jdv_com;  // J_com_dot * v
+  Vector3d com;      ///< Center of mass
+  Vector3d comd;     ///< Com velocity
+  MatrixXd J_com;    ///< Com Jacobian: comd = J_com * v
+  Vector3d Jdv_com;  ///< J_com_dot * v
 
-  BodyOfInterest pelv;    // pelvis
-  BodyOfInterest torso;   // torso
-  BodyOfInterest l_foot;  // at the bottom of foot
+  // These are at the origin of the each body (defined by the urdf) unless 
+  // specified otherwise.
+  BodyOfInterest pelv;    ///< Pelvis link
+  BodyOfInterest torso;   ///< Torso
+  BodyOfInterest l_foot;  ///< At the bottom of foot, right below the ankle.
   BodyOfInterest r_foot;
-  BodyOfInterest l_foot_sensor;  // at the foot sensor
+  BodyOfInterest l_foot_sensor;  ///< At the foot sensor, inside foot
   BodyOfInterest r_foot_sensor;
 
   // easy access to l_foot, r_foot
   BodyOfInterest* foot[2];
   BodyOfInterest* foot_sensor[2];
 
-  Vector2d cop;       // center of pressure
-  Vector2d cop_b[2];  // individual center of pressure in foot frame
+  Vector2d cop;       ///< Center of pressure
+  Vector2d cop_b[2];  ///< Individual center of pressure in foot frame
 
-  Vector6d footFT_b[2];  // wrench measured in the body frame
-  Vector6d footFT_w[2];  // wrench rotated to world frame
+  Vector6d footFT_b[2];  ///< Wrench measured in the body frame
+  Vector6d footFT_w[2];  ///< Wrench rotated to world frame
 
   explicit HumanoidState(std::unique_ptr<RigidBodyTree> robot_in)
       : robot(std::move(robot_in)),
@@ -153,5 +162,5 @@ class HumanoidState {
    */
   void FillKinematics(const std::string& name, Isometry3d& pose, Vector6d& vel,
                       MatrixXd& J, Vector6d& Jdv,
-                      const Vector3d& local_offset = Vector3d::Zero());
+                      const Vector3d& local_offset = Vector3d::Zero()) const;
 };
