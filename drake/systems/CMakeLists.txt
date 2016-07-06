@@ -1,17 +1,15 @@
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # TODO(#2372) These are warnings that we can't handle yet.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
-endif()
-
 if(simulink_FOUND)
   add_mex(DCSFunction DCSFunction.cpp)
 endif()
 
-if(LCM_FOUND)
+if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
-  add_dependencies(drakeLCMSystem drake_lcmtypes lcmtype_agg_hpp)
-  pods_use_pkg_config_packages(drakeLCMSystem lcm)
+  add_dependencies(drakeLCMSystem drake_lcmtypes_hpp)
+  target_link_libraries(drakeLCMSystem lcm)
+  if(WIN32)
+    target_link_libraries(drakeLCMSystem ws2_32)
+  endif()
 
   pods_install_libraries(drakeLCMSystem)
   drake_install_headers(LCMSystem.h)
@@ -28,6 +26,14 @@ add_subdirectory(trajectories)
 add_subdirectory(controllers)
 add_subdirectory(robotInterfaces)
 
-drake_install_headers(System.h LinearSystem.h Simulation.h)
+drake_install_headers(
+  cascade_system.h
+  feedback_system.h
+  LinearSystem.h
+  n_ary_state.h
+  n_ary_system.h
+  pd_control_system.h
+  Simulation.h
+  System.h)
 
 add_subdirectory(test)

@@ -1,44 +1,43 @@
 .. _unit-test-instructions:
 
-***************************************
-Detailed Notes on How to Run Unit Tests
-***************************************
+************************************
+Detailed Notes on Drake's Unit Tests
+************************************
 
-When you create a pull request, a number of unit and regression tests will
-automatically run on Drake's build servers.  You can run those tests locally by
-executing the commands shown below. Note, however, that there are many
-computationally-demanding tests and running the entire test suite can take
-several hours depending on your machine.
+.. _introduction:
 
-Your change must include unit tests that demonstrate the code's correctness and
-protect it against regressions. These tests must pass on all
-:ref:`supported platform configurations <supported-configurations>`.
+Introduction
+============
 
-**For C++ changes,** please use the
+Unit tests are essential for software maintainability. They demonstrate the
+correctness of existing code and prevent future changes from breaking the
+past functionality (i.e., regressions). They are the only
+way for developers to inform Drake's
+:ref:`Continuous Integration (CI) <continuous_integration_notes>` service how
+the software is *supposed* to behave.
+
+.. _unit-testing-frameworks:
+
+Unit Testing Frameworks
+=======================
+
+.. _unit-testing-framework-cpp:
+
+C++ Code
+--------
+
+Please use the
 `Google Test Framework <https://github.com/google/googletest>`_. It is already
-available as an external in Drake's super-build level.
+available as a required external in Drake's super-build level.
 
-**For MATLAB changes,** please write an example and add it as a test in the
-directory's ``CMakeLists.txt`` using ``add_matlab_test()``.  ``ctest`` will
-consider the test failed if it times out or calls ``error``.
+.. _unit-testing-framework-matlab:
 
-.. _define-build-artifacts-directory:
+MATLAB Code
+-----------
 
-Defining the Build Artifacts Directory
-======================================
-
-The instructions below frequently cite ``[drake build artifacts directory]``.
-This is the directory where build artifacts are stored while compiling Drake.
-The location of this directory depends on whether you're building Drake
-in-source (i.e., using the ``pod-build`` directory within your clone of Drake's
-repository) or out-of-source (i.e., within a directory that is outside of your
-clone of Drake's repository).
-
-For in-source builds, the build artifacts directory is typically
-``[drake distro]/drake/pod-build``.
-
-For out-of-source builds, the build artifacts directory is typically
-``[out of source directory]/drake``.
+Please write an example and add it as a test in the directory's
+``CMakeLists.txt`` using ``add_matlab_test()``.  ``ctest`` will consider the
+test failed if it times out or calls ``error``.
 
 .. _enable-long-running-unit-test:
 
@@ -49,15 +48,29 @@ Drake disables a number of long-running unit tests by default. To reduce
 continuous integration turnaround time, these tests run on the build servers
 post-submit, but not pre-submit. To enable these tests locally, execute::
 
-    $ cd [drake build artifacts directory]
-    $ cmake -DLONG_RUNNING_TESTS=ON ..
+    cd drake-distro/build/drake
+    cmake -DLONG_RUNNING_TESTS=ON .
 
 The last command above saves your new build option in
 ``[drake build artifacts directory]/CMakeCache.txt``.
 
-See :ref:`Defining the Build Artifacts Directory
-<define-build-artifacts-directory>` above for the definition of
-``[drake build artifacts directory]``.
+Before the long-running unit tests can be executed, you need to re-build Drake.
+``make`` users should run::
+
+    cd drake-distro/build/drake
+    make clean
+    make
+
+``ninja`` users should run::
+
+    cd drake-distro/build/drake
+    ninja clean
+    ninja
+
+Note that even after enabling long-running unit tests, certain tests may still
+be disabled due to required dependencies not being available. The following
+Github issue is tracking the documentation of unit tests dependencies:
+https://github.com/RobotLocomotion/drake/issues/2733.
 
 .. _run-all-unit-tests:
 
@@ -66,8 +79,8 @@ Running Every Unit Test
 
 To run every enabled unit test, execute::
 
-    $ cd [drake build artifacts directory]
-    $ ctest -VV
+    cd drake-distro/build/drake
+    ctest -VV
 
 .. _list-all-unit-tests:
 
@@ -77,12 +90,8 @@ Finding a Specific Unit Test
 To find a specific unit test you can print a list of all enabled unit tests by
 executing the following commands::
 
-  $ cd [drake build artifacts directory]
-  $ ctest -N
-
-See :ref:`Defining the Build Artifacts Directory
-<define-build-artifacts-directory>` above for the definition of
-``[drake build artifacts directory]``.
+  cd drake-distro/build/drake
+  ctest -N
 
 If you have a clue about a particular unit test's name, you can pipe the output
 of the `ctest -N` command to `grep`. One way to learn the name of a unit test is
@@ -95,7 +104,8 @@ Running a Specific Test
 
 Once you know the unit tests' name, you can run it by executing::
 
-  $ ctest -VV -C [build mode] -R [test name]
+  cd drake-distro/build/drake
+  ctest -VV -C [build mode] -R [test name]
 
 where: ``[build mode]`` is the build mode, e.g., ``Debug``, ``RelWithDebInfo``,
 or ``Release``, and ``[test name]`` is the name of the test exactly as printed
@@ -104,15 +114,15 @@ screen.
 
 .. _example-running-unit-test:
 
-Example: Find and run unit test named `cascade_system`
-======================================================
+Example: Find And Run A Unit Test Named `cascade_system`
+========================================================
 
 Find test::
 
-  $ cd [drake build artifacts directory]
-  $ ctest -N | grep -i cascade
+  cd drake-distro/build/drake
+  ctest -N | grep -i cascade
 
 Run the test::
 
-  $ ctest -VV -C RelWithDebInfo -R cascade_system_test
+  ctest -VV -C RelWithDebInfo -R cascade_system_test
 

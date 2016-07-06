@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 
@@ -15,8 +16,6 @@ namespace systems {
 template <typename T>
 class ContinuousSystem : public ContinuousSystemInterface<T> {
  public:
-  ~ContinuousSystem() override {}
-
   /// Applies the identity mapping. Throws std::out_of_range if the
   /// @p generalized_velocity and @p configuration_derivatives are not the
   /// same size. Child classes should override this function if qdot != v.
@@ -33,7 +32,7 @@ class ContinuousSystem : public ContinuousSystemInterface<T> {
           "MapVelocityToConfigurationDerivatives?");
     }
 
-    for (ptrdiff_t i = 0; i < generalized_velocity.size(); ++i) {
+    for (int i = 0; i < generalized_velocity.size(); ++i) {
       configuration_derivatives->SetAtIndex(i,
                                             generalized_velocity.GetAtIndex(i));
     }

@@ -4,11 +4,11 @@ set(sources
   cache.cc
   context.cc
   continuous_system.cc
-  named_value_vector.cc
   state.cc
   state_subvector.cc
   state_vector.cc
   system_interface.cc
+  system_input.cc
   system_output.cc
   basic_state_vector.cc
   value.cc
@@ -22,11 +22,12 @@ set(installed_headers
   cache.h
   context.h
   continuous_system.h
-  named_value_vector.h
+  continuous_system_interface.h
   state.h
   state_subvector.h
   state_vector.h
   system_interface.h
+  system_input.h
   system_output.h
   basic_state_vector.h
   value.h
@@ -39,12 +40,13 @@ set(private_headers)
 
 add_library_with_exports(LIB_NAME drakeSystemFramework
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
+target_link_libraries(drakeSystemFramework drakeCommon)
 
 drake_install_headers(${installed_headers})
 
 pods_install_libraries(drakeSystemFramework)
 pods_install_pkg_config_file(drake-system-framework
-  LIBS -ldrakeSystemFramework
+  LIBS -ldrakeSystemFramework -ldrakeCommon
   REQUIRES
   VERSION 0.0.1)
 

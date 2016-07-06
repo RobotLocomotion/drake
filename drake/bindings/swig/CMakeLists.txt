@@ -14,6 +14,11 @@ set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w503")
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # The autodiff.i in swig has for-loop variable warnings.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+
+  # Suppresses warnings due to the existence of deprecated methods. These
+  # deprecated methods should still be made available through the SWIG-generated
+  # APIs until they are actually removed from the original C++ APIs.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 endif()
 
 if(PYTHON_EXECUTABLE)

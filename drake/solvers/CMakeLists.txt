@@ -1,10 +1,5 @@
 # TODO: still build something useful if Gurobi does not exist
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # TODO(#2372) These are warnings that we can't handle yet.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
-endif()
-
 pods_find_pkg_config(gurobi)
 
 if(gurobi_FOUND)
@@ -56,7 +51,7 @@ endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakePolynomial)
-drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h)
+drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h Constraint.h solution_result.h)
 pods_install_libraries(drakeOptimization)
 pods_install_pkg_config_file(drake-optimization
   LIBS -ldrakeOptimization

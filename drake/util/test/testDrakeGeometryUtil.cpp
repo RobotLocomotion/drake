@@ -1,6 +1,9 @@
-#include <Eigen/Core>
 #include <cmath>
 #include <iostream>
+
+#include <Eigen/Core>
+
+#include "drake/common/eigen_types.h"
 #include "drake/core/Gradient.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -18,13 +21,10 @@ using Eigen::Quaterniond;
 using Eigen::Translation3d;
 using std::default_random_engine;
 using drake::util::MatrixCompareType;
-using Drake::initializeAutoDiff;
 
 namespace drake {
 namespace util {
 namespace {
-
-void testExpmap2quat(const Vector4d &quat);
 
 GTEST_TEST(DrakeGeometryUtilTest, RotationConversionFunctions) {
   int ntests = 1;
@@ -71,16 +71,6 @@ GTEST_TEST(DrakeGeometryUtilTest, RotationConversionFunctions) {
     Vector3d rpy_back = axis2rpy(axis);
     EXPECT_TRUE(
         CompareMatrices(rpy, rpy_back, 1e-6, MatrixCompareType::absolute));
-  }
-  // expmap2quat, quat2expmap
-  Vector4d quat_degenerate = Vector4d::Zero();
-  quat_degenerate(0) = 1.0;
-  testExpmap2quat(quat_degenerate);
-  quat_degenerate(0) = -1.0;
-  testExpmap2quat(quat_degenerate);
-  for (int i = 0; i < ntests; i++) {
-    Vector4d quat = uniformlyRandomQuat(generator);
-    testExpmap2quat(quat);
   }
   // quat2eigenQuaternion
   Vector4d quat = uniformlyRandomQuat(generator);
@@ -216,8 +206,8 @@ GTEST_TEST(DrakeGeometryUtilTest, NormalizeVec) {
 }
 
 GTEST_TEST(DrakeGeometryUtilTest, SpatialCrossProduct) {
-  auto a = (Matrix<double, TWIST_SIZE, 1>::Random()).eval();
-  auto b = (Matrix<double, TWIST_SIZE, TWIST_SIZE>::Identity()).eval();
+  auto a = (drake::TwistVector<double>::Random()).eval();
+  auto b = (drake::SquareTwistMatrix<double>::Identity()).eval();
   auto a_crm_b = crossSpatialMotion(a, b);
   auto a_crf_b = crossSpatialForce(a, b);
   EXPECT_TRUE(CompareMatrices(a_crf_b, -a_crm_b.transpose(), 1e-8,
@@ -241,20 +231,6 @@ GTEST_TEST(DrakeGeometryUtilTest, drpy2rotmat) {
       valuecheck(dR(j, i), dR_num(j, i), 1e-3);
     }
   }
-}
-
-void testExpmap2quat(const Vector4d &quat) {
-  auto quat_autodiff = initializeAutoDiff(quat);
-  auto expmap_autodiff = quat2expmap(quat_autodiff);
-  auto expmap = autoDiffToValueMatrix(expmap_autodiff);
-  auto expmap_grad = autoDiffToGradientMatrix(expmap_autodiff);
-  auto quat_back_autodiff = expmap2quat(initializeAutoDiff(expmap));
-  auto quat_back = autoDiffToValueMatrix(quat_back_autodiff);
-  auto quat_back_grad = autoDiffToGradientMatrix(quat_back_autodiff);
-  valuecheck(std::abs((quat.transpose() * quat_back).value()), 1.0, 1e-8);
-  Matrix3d identity = Matrix3d::Identity();
-  EXPECT_TRUE(CompareMatrices((expmap_grad * quat_back_grad).eval(), identity,
-                              1e-10, MatrixCompareType::absolute));
 }
 
 }  // namespace

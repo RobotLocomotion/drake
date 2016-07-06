@@ -4,13 +4,17 @@
 #include <Eigen/Geometry>
 #include <unordered_map>
 #include <vector>
-#include <cassert>
 #include <numeric>
 #include <type_traits>
 #include <stdexcept>
 #include <utility>
+
+#include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
+#include "drake/systems/plants/RigidBody.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeGradientUtil.h"
-#include "RigidBody.h"
 
 template <typename Scalar>
 class KinematicsCacheElement {
@@ -18,11 +22,12 @@ class KinematicsCacheElement {
   /*
    * Configuration dependent
    */
+
   Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> transform_to_world;
-  Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE,
+  Eigen::Matrix<Scalar, drake::kTwistSize, Eigen::Dynamic, 0, drake::kTwistSize,
                 DrakeJoint::MAX_NUM_VELOCITIES>
       motion_subspace_in_body;  // gradient w.r.t. q_i only
-  Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE,
+  Eigen::Matrix<Scalar, drake::kTwistSize, Eigen::Dynamic, 0, drake::kTwistSize,
                 DrakeJoint::MAX_NUM_VELOCITIES>
       motion_subspace_in_world;  // gradient w.r.t. q
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0,
@@ -31,24 +36,25 @@ class KinematicsCacheElement {
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0,
                 DrakeJoint::MAX_NUM_POSITIONS,
                 DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot;  // gradient w.r.t. q
-  Eigen::Matrix<Scalar, TWIST_SIZE, TWIST_SIZE> inertia_in_world;
-  Eigen::Matrix<Scalar, TWIST_SIZE, TWIST_SIZE> crb_in_world;
+  drake::SquareTwistMatrix<Scalar> inertia_in_world;
+  drake::SquareTwistMatrix<Scalar> crb_in_world;
 
   /*
    * Configuration and velocity dependent
    */
-  Eigen::Matrix<Scalar, TWIST_SIZE, 1>
-      twist_in_world;  // gradient w.r.t. q only; gradient w.r.t. v is
-                       // motion_subspace_in_world
-  Eigen::Matrix<Scalar, TWIST_SIZE, 1>
-      motion_subspace_in_body_dot_times_v;  // gradient w.r.t. q_i and v_i only
-  Eigen::Matrix<Scalar, TWIST_SIZE, 1>
-      motion_subspace_in_world_dot_times_v;  // gradient w.r.t. q and v
+
+  // Gradient with respect to q only.  The gradient with respect to v is
+  // motion_subspace_in_world.
+  drake::TwistVector<Scalar> twist_in_world;
+  // Gradient with respect to q_i and v_i only.
+  drake::TwistVector<Scalar> motion_subspace_in_body_dot_times_v;
+  // Gradient with respect to q and v.
+  drake::TwistVector<Scalar> motion_subspace_in_world_dot_times_v;
 
  public:
   KinematicsCacheElement(int num_positions_joint, int num_velocities_joint)
-      : motion_subspace_in_body(TWIST_SIZE, num_velocities_joint),
-        motion_subspace_in_world(TWIST_SIZE, num_velocities_joint),
+      : motion_subspace_in_body(drake::kTwistSize, num_velocities_joint),
+        motion_subspace_in_world(drake::kTwistSize, num_velocities_joint),
         qdot_to_v(num_velocities_joint, num_positions_joint),
         v_to_qdot(num_positions_joint, num_velocities_joint) {
     // empty
@@ -119,7 +125,7 @@ class KinematicsCache {
     static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");
     static_assert(std::is_same<typename Derived::Scalar, Scalar>::value,
                   "scalar type of q must match scalar type of KinematicsCache");
-    assert(this->q.rows() == q.rows());
+    DRAKE_ASSERT(this->q.rows() == q.rows());
     this->q = q;
     invalidate();
     velocity_vector_valid = false;
@@ -132,7 +138,7 @@ class KinematicsCache {
     static_assert(DerivedV::ColsAtCompileTime == 1, "v must be a vector");
     static_assert(std::is_same<typename DerivedV::Scalar, Scalar>::value,
                   "scalar type of v must match scalar type of KinematicsCache");
-    assert(this->v.rows() == v.rows());
+    DRAKE_ASSERT(this->v.rows() == v.rows());
     this->v = v;
     velocity_vector_valid = true;
   }

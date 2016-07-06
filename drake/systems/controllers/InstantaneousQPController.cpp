@@ -1,10 +1,15 @@
-#include "InstantaneousQPController.h"
+#include "drake/systems/controllers/InstantaneousQPController.h"
+
 #include <lcm/lcm-cpp.hpp>
 #include <map>
 #include <memory>
+
 #include "drake/Path.h"
+#include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/solvers/fastQP.h"
 #include "drake/systems/controllers/controlUtil.h"
+#include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
@@ -31,7 +36,7 @@ void InstantaneousQPController::initialize() {
 
   umin.resize(nu);
   umax.resize(nu);
-  for (int i = 0; i < robot->actuators.size(); i++) {
+  for (size_t i = 0; i < robot->actuators.size(); i++) {
     umin(i) = robot->actuators.at(i).effort_limit_min;
     umax(i) = robot->actuators.at(i).effort_limit_max;
   }
@@ -112,8 +117,9 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
       throw std::runtime_error(
           "Could not find attachment frame when handling urdf modifications");
     }
-    robot->addRobotFromURDF(Drake::getDrakePath() + "/" + it->urdf_filename,
-                            it->joint_type, attach_to_frame);
+    drake::parsers::urdf::addRobotFromURDF(
+      Drake::getDrakePath() + "/" + it->urdf_filename,
+      it->joint_type, attach_to_frame, robot.get());
   }
 
   auto filter = [&](const std::string& group_name) {
@@ -144,9 +150,9 @@ PIDOutput InstantaneousQPController::wholeBodyPID(
   PIDOutput out;
   double dt = 0;
   int nq = robot->number_of_positions();
-  assert(q.size() == nq);
-  assert(qd.size() == robot->number_of_velocities());
-  assert(q_des.size() == params.integrator.gains.size());
+  DRAKE_ASSERT(q.size() == nq);
+  DRAKE_ASSERT(qd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(q_des.size() == params.integrator.gains.size());
   if (nq != robot->number_of_velocities()) {
     throw std::runtime_error(
         "this function will need to be rewritten when num_pos != num_vel");
@@ -194,8 +200,7 @@ VectorXd InstantaneousQPController::velocityReference(
     const VRefIntegratorParams& params) {
   // Integrate expected accelerations to determine a target feed-forward
   // velocity, which we can pass in to Atlas
-  int i;
-  assert(qdd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(qdd.size() == robot->number_of_velocities());
 
   double dt = 0;
   if (controller_state.t_prev != 0) {
@@ -204,8 +209,7 @@ VectorXd InstantaneousQPController::velocityReference(
 
   VectorXd qdd_limited = qdd;
   // Do not wind the vref integrator up against the joint limits for the legs
-  for (i = 0; i < rpc.position_indices.legs.at(Side::RIGHT).size(); i++) {
-    int pos_ind = rpc.position_indices.legs.at(Side::RIGHT)[i];
+  for (const int& pos_ind : rpc.position_indices.legs.at(Side::RIGHT)) {
     if (q(pos_ind) <=
         robot->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
@@ -214,8 +218,7 @@ VectorXd InstantaneousQPController::velocityReference(
       qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
     }
   }
-  for (i = 0; i < rpc.position_indices.legs.at(Side::LEFT).size(); i++) {
-    int pos_ind = rpc.position_indices.legs.at(Side::LEFT)[i];
+  for (const int& pos_ind : rpc.position_indices.legs.at(Side::LEFT)) {
     if (q(pos_ind) <=
         robot->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
@@ -230,29 +233,25 @@ VectorXd InstantaneousQPController::velocityReference(
       params.eta * qd + qdd_limited * dt;
 
   if (params.zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i = 0; i < rpc.position_indices.ankles.at(Side::LEFT).size(); i++) {
-      controller_state.vref_integrator_state(
-          rpc.position_indices.ankles.at(Side::LEFT)[i]) = 0;
+    for (const int& pos_ind : rpc.position_indices.ankles.at(Side::LEFT)) {
+      controller_state.vref_integrator_state(pos_ind) = 0;
     }
   }
   if (params.zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i = 0; i < rpc.position_indices.ankles.at(Side::RIGHT).size(); i++) {
-      controller_state.vref_integrator_state(
-          rpc.position_indices.ankles.at(Side::RIGHT)[i]) = 0;
+    for (const int& pos_ind : rpc.position_indices.ankles.at(Side::RIGHT)) {
+      controller_state.vref_integrator_state(pos_ind) = 0;
     }
   }
   if (controller_state.foot_contact_prev[0] != foot_contact[0]) {
     // contact state changed, reset integrated velocities
-    for (i = 0; i < rpc.position_indices.legs.at(Side::LEFT).size(); i++) {
-      controller_state.vref_integrator_state(rpc.position_indices.legs.at(
-          Side::LEFT)[i]) = qd(rpc.position_indices.legs.at(Side::LEFT)[i]);
+    for (const int& pos_ind : rpc.position_indices.legs.at(Side::LEFT)) {
+      controller_state.vref_integrator_state(pos_ind) = qd(pos_ind);
     }
   }
   if (controller_state.foot_contact_prev[1] != foot_contact[1]) {
     // contact state changed, reset integrated velocities
-    for (i = 0; i < rpc.position_indices.legs.at(Side::RIGHT).size(); i++) {
-      controller_state.vref_integrator_state(rpc.position_indices.legs.at(
-          Side::RIGHT)[i]) = qd(rpc.position_indices.legs.at(Side::RIGHT)[i]);
+    for (const int& pos_ind : rpc.position_indices.legs.at(Side::RIGHT)) {
+      controller_state.vref_integrator_state(pos_ind) = qd(pos_ind);
     }
   }
 
@@ -263,13 +262,13 @@ VectorXd InstantaneousQPController::velocityReference(
 
   // do not velocity control ankles when in contact
   if (params.zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i = 0; i < rpc.position_indices.ankles.at(Side::LEFT).size(); i++) {
-      qd_err(rpc.position_indices.ankles.at(Side::LEFT)[i]) = 0;
+    for (const int& pos_ind : rpc.position_indices.ankles.at(Side::LEFT)) {
+      qd_err(pos_ind) = 0;
     }
   }
   if (params.zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i = 0; i < rpc.position_indices.ankles.at(Side::RIGHT).size(); i++) {
-      qd_err(rpc.position_indices.ankles.at(Side::RIGHT)[i]) = 0;
+    for (const int& pos_ind : rpc.position_indices.ankles.at(Side::RIGHT)) {
+      qd_err(pos_ind) = 0;
     }
   }
 
@@ -284,8 +283,7 @@ InstantaneousQPController::loadAvailableSupports(
   // Parse a qp_input LCM message to extract its available supports as a vector
   // of SupportStateElements
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>>
-      available_supports;
+              Eigen::aligned_allocator<SupportStateElement>> available_supports;
   available_supports.resize(qp_input.num_support_data);
   for (int i = 0; i < qp_input.num_support_data; i++) {
     available_supports[i].body_idx =
@@ -643,17 +641,17 @@ int InstantaneousQPController::setupAndSolveQP(
               Eigen::aligned_allocator<SupportStateElement>>
       available_supports = loadAvailableSupports(qp_input);
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>>
-      active_supports = getActiveSupports(*robot, robot_state.q, robot_state.qd,
-                                          available_supports, contact_detected,
-                                          params.contact_threshold);
+              Eigen::aligned_allocator<SupportStateElement>> active_supports =
+      getActiveSupports(*robot, robot_state.q, robot_state.qd,
+                        available_supports, contact_detected,
+                        params.contact_threshold);
 
   // // whole_body_data
   if (qp_input.whole_body_data.num_positions != nq)
     throw std::runtime_error(
         "number of positions doesn't match num_dof for this robot");
   Map<const VectorXd> q_des(qp_input.whole_body_data.q_des.data(), nq);
-  if (qp_input.whole_body_data.constrained_dofs.size() !=
+  if (static_cast<int32_t>(qp_input.whole_body_data.constrained_dofs.size()) !=
       qp_input.whole_body_data.num_constrained_dofs) {
     throw std::runtime_error(
         "size of constrained dofs does not match num_constrained_dofs");
@@ -691,7 +689,7 @@ int InstantaneousQPController::setupAndSolveQP(
       nd = 2 *
            m_surface_tangents;  // for friction cone approx, hard coded for now
 
-  assert(nu + 6 == nq);
+  DRAKE_ASSERT(nu + 6 == nq);
 
   std::vector<DesiredBodyAcceleration> desired_body_accelerations;
   desired_body_accelerations.resize(qp_input.num_tracked_bodies);
@@ -767,7 +765,7 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   int n_body_accel_eq_constraints = 0;
-  for (int i = 0; i < desired_body_accelerations.size(); i++) {
+  for (size_t i = 0; i < desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight < 0) n_body_accel_eq_constraints++;
   }
 
@@ -787,14 +785,14 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   // handle external wrenches to compensate for
-  eigen_aligned_unordered_map<RigidBody const*, Matrix<double, TWIST_SIZE, 1>>
+  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
   for (auto it = qp_input.body_wrench_data.begin();
        it != qp_input.body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_or_frame_name_to_id.at(body_wrench_data.body_name);
     auto f_ext_i =
-        Map<const Matrix<double, TWIST_SIZE, 1>>(body_wrench_data.wrench);
+        Map<const drake::TwistVector<double>>(body_wrench_data.wrench);
     f_ext.insert({robot->bodies[body_id].get(), f_ext_i});
   }
 
@@ -839,7 +837,7 @@ int InstantaneousQPController::setupAndSolveQP(
   MatrixXd B, JB, Jp, normals;
   VectorXd Jpdotv;
   std::vector<double> adjusted_mus(active_supports.size());
-  for (int i = 0; i < active_supports.size(); ++i) {
+  for (size_t i = 0; i < active_supports.size(); ++i) {
     int body_id = active_supports[i].body_idx;
     if ((body_id == rpc.foot_ids.at(Side::RIGHT) ||
          body_id == rpc.foot_ids.at(Side::LEFT)) &&
@@ -953,7 +951,7 @@ int InstantaneousQPController::setupAndSolveQP(
   int equality_ind = 6 + neps;
   MatrixXd Jb(6, nq);
   Vector6d Jbdotv;
-  for (int i = 0; i < desired_body_accelerations.size(); i++) {
+  for (size_t i = 0; i < desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight <
         0) {  // negative implies constraint
       int body_id0 = robot->parseBodyOrFrameID(
@@ -1011,7 +1009,7 @@ int InstantaneousQPController::setupAndSolveQP(
   bin.segment(nu, nu) = B_act.transpose() * C_act - umin;
 
   int constraint_start_index = 2 * nu;
-  for (int i = 0; i < desired_body_accelerations.size(); i++) {
+  for (size_t i = 0; i < desired_body_accelerations.size(); i++) {
     Matrix<double, 6, Dynamic> Jb_compact = robot->geometricJacobian(
         cache, 0, desired_body_accelerations[i].body_or_frame_id0,
         desired_body_accelerations[i].body_or_frame_id0, true);
@@ -1155,7 +1153,7 @@ int InstantaneousQPController::setupAndSolveQP(
     }
 
     // add in body spatial acceleration cost terms
-    for (int i = 0; i < desired_body_accelerations.size(); i++) {
+    for (size_t i = 0; i < desired_body_accelerations.size(); i++) {
       if (desired_body_accelerations[i].weight > 0) {
         int body_id0 = robot->parseBodyOrFrameID(
             desired_body_accelerations[i].body_or_frame_id0);
@@ -1281,7 +1279,7 @@ int InstantaneousQPController::setupAndSolveQP(
   // If a debug pointer was passed in, fill it with useful data
   if (debug) {
     debug->active_supports.resize(active_supports.size());
-    for (int i = 0; i < active_supports.size(); i++) {
+    for (size_t i = 0; i < active_supports.size(); i++) {
       debug->active_supports[i] = active_supports[i];
     }
     debug->nc = nc;

@@ -26,44 +26,10 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
     exit(EXIT_FAILURE);
   }
 
-  // The Z-axis offset between Drake's world frame and the vehicle's world
-  // frame.
-  double z_offset = 0;
-
-  // TODO(liangfok): Once PR 2171 is merged, modify prius.urdf to contain a
-  // world link and proper offset of the chassis_floor. For more information,
-  // see: https://github.com/RobotLocomotion/drake/pull/2171 and
-  // https://github.com/RobotLocomotion/drake/issues/2247
-  if (std::string(argv[1]).find("prius.urdf") != std::string::npos)
-    z_offset = 0.378326;
-
-  // The following variable, weld_to_frame, is only needed if the model is a
-  // URDF file. It is needed since URDF does not specify the location and
-  // orientation of the car's root node in the world. If the model is an SDF,
-  // weld_to_frame is ignored by the parser.
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(),
-      // Weld the model to the world link.
-      "world",
-
-      // A pointer to a rigid body to which to weld the model is not needed
-      // since the model will be welded to the world, which can by automatically
-      // found within the rigid body tree.
-      nullptr,
-
-      // The following parameter specifies the X,Y,Z position of the car's root
-      // link in the world's frame.
-      Eigen::Vector3d(0, 0, z_offset),
-
-      // The following parameter specifies the roll, pitch, and yaw of the car's
-      // root link in the world's frame.
-      Eigen::Vector3d(0, 0, 0));
-
   // Instantiates a rigid body system and adds the robot to it.
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
-  rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION,
-                                   weld_to_frame);
+  rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION);
 
   // Initializes duration to be infinity.
   *duration = std::numeric_limits<double>::infinity();
@@ -79,7 +45,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
       }
       *duration = atof(argv[i]);
     } else {
-      tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);
+      rigid_body_sys->addRobotFromFile(argv[i], DrakeJoint::FIXED);
     }
   }
 

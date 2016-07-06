@@ -14,16 +14,52 @@ namespace {
 
 using Drake::RigidBodySystem;
 
+// Tests the ability to load a URDF as part of the world of a rigid body system.
+GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
+  // Instantiates a rigid body system.
+  std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
+
+  // Adds a URDF to the rigid body system. This URDF contains only fixed joints
+  // and is attached to the world via a fixed joint. Thus, everything in the
+  // URDF becomes part of the world.
+  rigid_body_sys->addRobotFromFile(
+      Drake::getDrakePath() +
+          "/systems/plants/test/rigid_body_system/world.urdf",
+      DrakeJoint::FIXED);
+
+  // Verifies that the number of states, inputs, and outputs are all zero.
+  EXPECT_EQ(rigid_body_sys->getNumStates(), 0);
+  EXPECT_EQ(rigid_body_sys->getNumInputs(), 0);
+  EXPECT_EQ(rigid_body_sys->getNumOutputs(), 0);
+
+  // Obtains a const pointer to the rigid body tree within the rigid body
+  // system.
+  const std::shared_ptr<RigidBodyTree>& tree =
+      rigid_body_sys->getRigidBodyTree();
+
+  // Checks that the bodies in the world can be obtained and they have the
+  // correct model name.
+  for (auto& body_name :
+       {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
+    RigidBody* body = tree->FindBody(body_name);
+    EXPECT_NE(body, nullptr);
+    EXPECT_EQ(body->model_name(), "dual_ramps");
+  }
+}
+
+// Tests the ability to load a SDF multiple times into the same rigid body
+// system. The SDF contains more than one model and a sensor on each body.
 GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // Instantiates a rigid body system.
   std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
 
   // Adds the same SDF to the rigid body system twice. Both models are connected
-  // to the world using a quaternion joint. The first model's root frame match
+  // to the world using a quaternion joint. The first model's root frame matches
   // the world's coordinate frame. The second model's root frame is offset from
-  // the world's coordinate fram by X = 1, Y = 1, and Z = 1.
-  rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
-    "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf");
+  // the world's coordinate frame by X = 1, Y = 1, and Z = 1.
+  rigid_body_sys->addRobotFromFile(
+      Drake::getDrakePath() +
+      "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf");
 
   Eigen::Isometry3d T_second_model_to_world;
   {
@@ -37,16 +73,17 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
       Eigen::aligned_allocator<RigidBodyFrame>(), "world", nullptr,
       T_second_model_to_world);
 
-  rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
-    "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf",
-    DrakeJoint::QUATERNION, weld_to_frame);
+  rigid_body_sys->addRobotFromFile(
+      Drake::getDrakePath() +
+          "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf",
+      DrakeJoint::QUATERNION, weld_to_frame);
 
   // Checks that the rigid body system has the correct number of states. The
   // rigid body system has 36 positions + 32 velocities = 68 states.
   EXPECT_EQ(rigid_body_sys->getNumStates(), 68);
 
   // Checks that the rigid body system has the correct number of inputs. The
-  // rigid body system has 2 joints * 4 robots = 8 inputs.
+  // rigid body system has 2 joints * 4 models = 8 inputs.
   EXPECT_EQ(rigid_body_sys->getNumInputs(), 8);
 
   // Checks that the number of sensors in the rigid body system is correct.
@@ -56,55 +93,77 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // Checks that the rigid body system has the correct number of outputs. The
   // rigid body system has:
   //   (640 outputs / sensor * 3 sensors / models * 4 models) +
-  //   36 position outputs + 32 velocity outputs = 7748.
+  //   36 position outputs + 32 velocity outputs = 7748 outputs.
   EXPECT_EQ(rigid_body_sys->getNumOutputs(), 7748);
 
   // Checks that the rigid body system has the correct number of positions.
-  // (7 floating DOFs + 2 joint DOFs) * 4 models = 36
+  // The rigid body system has:
+  //   (7 floating DOFs + 2 joint DOFs) * 4 models = 36 positions.
   EXPECT_EQ(rigid_body_sys->number_of_positions(), 36);
 
   // Checks that the rigid body system has the correct number of velocities.
-  // (6 floating DOFs + 2 joint DOFs) * 4 models = 32
+  // (6 floating DOFs + 2 joint DOFs) * 4 models = 32 velocities.
   EXPECT_EQ(rigid_body_sys->number_of_velocities(), 32);
 
+  // Obtains a const pointer to the rigid body tree within the rigid body
+  // system.
   const std::shared_ptr<RigidBodyTree>& tree =
-    rigid_body_sys->getRigidBodyTree();
+      rigid_body_sys->getRigidBodyTree();
 
-  // Checks that an exception is thrown if we try to find a link using a
-  // non-existent link name.
-  EXPECT_THROW(tree->findLink("non-existent-link"), std::logic_error);
+  // Checks that an exception is thrown if we try to find a body using a
+  // non-existent body name.
+  EXPECT_THROW(tree->FindBody("non-existent-link"), std::logic_error);
 
-  // Checks that an exception is thrown if we try to find a link using a
-  // non-unique link name.
-  EXPECT_THROW(tree->findLink("link_1"), std::logic_error);
+  // Checks that an exception is thrown if we try to find a body using a
+  // non-unique body name.
+  EXPECT_THROW(tree->FindBody("link_1"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_2"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_3"), std::logic_error);
 
-  // Checks that an exception is thrown if we try to find a link using a
-  // non-unique link name and model name.
-  EXPECT_THROW(tree->findLink("link_1", "model_1"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_2", "model_1"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_3", "model_1"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_1", "model_2"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_2", "model_2"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_3", "model_2"), std::logic_error);
+  // Checks that an exception is thrown if we try to find a body using a
+  // non-unique body name and model name.
+  EXPECT_THROW(tree->FindBody("link_1", "model_1"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_2", "model_1"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_3", "model_1"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_1", "model_2"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_2", "model_2"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_3", "model_2"), std::logic_error);
 
-  // Checks that a link can be obtained when we specify the link's name and
+  // Checks that a body can be obtained when we specify the body's name and
   // model ID.
-  EXPECT_NE(tree->findLink("link_1", "", 0), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "", 1), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "", 2), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "", 3), nullptr);
 
-  // Checks that a link can be obtained when we specify the link's name, model
+  // Checks that a body can be obtained when we specify the body's name, model
   // name, and model ID.
-  EXPECT_NE(tree->findLink("link_1", "model_1", 0), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "model_2", 1), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "model_1", 2), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "model_2", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_1", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_2", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_1", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_2", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_1", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_2", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_1", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_2", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_1", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_2", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_1", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_2", 3), nullptr);
 
   // Checks that we cannot access a non-existent joint.
   EXPECT_THROW(tree->findJoint("non-existent-joint"), std::logic_error);
 
   // Checks that we cannot access a joint using just the joint name.
+  // This is impossible because there are multiple joints with the same name.
   EXPECT_THROW(tree->findJoint("joint_1"), std::logic_error);
   EXPECT_THROW(tree->findJoint("joint_2"), std::logic_error);
 
@@ -117,6 +176,36 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_NE(tree->findJoint("joint_2", 1), nullptr);
   EXPECT_NE(tree->findJoint("joint_2", 2), nullptr);
   EXPECT_NE(tree->findJoint("joint_2", 3), nullptr);
+}
+
+// Tests whether the URDF parser is robust against an improperly specified
+// transmission element. In this case, the transmission element specifies a
+// non-existent joint. For more information, see:
+// https://github.com/RobotLocomotion/drake/issues/1864
+GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
+  // Instantiates a rigid body system.
+  std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
+
+  // Tests whether an exception is properly thrown when loading a URDF with a
+  // transmission that specifies a non-existent joint. This is done by first
+  // verifying that an exception is thrown, and then verifying that the thrown
+  // exception is the correct one.
+  EXPECT_THROW(
+      rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
+                                       "/systems/plants/test/rigid_body_system/"
+                                       "bad_transmission_no_joint.urdf"),
+      std::runtime_error);
+
+  try {
+    rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
+                                     "/systems/plants/test/rigid_body_system/"
+                                     "bad_transmission_no_joint.urdf");
+  } catch (std::runtime_error& error) {
+    // Asserts that the exception is thrown when FindBodyIndexByJointName()
+    // fails to find a non-existing joint.
+    EXPECT_TRUE(std::string(error.what()).find("FindBodyIndexByJointName") !=
+      std::string::npos);
+  }
 }
 
 }  // namespace

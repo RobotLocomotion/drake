@@ -10,7 +10,6 @@
 
 #include "Element.h"
 #include "Model.h"
-#include "BulletResultCollector.h"
 
 namespace DrakeCollision {
 
@@ -72,8 +71,8 @@ class BulletModel : public Model {
                              const bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
-  bool collisionPointsAllToAll(const bool use_margins,
-                               std::vector<PointPair>& points) override;
+  bool ComputeMaximumDepthCollisionPoints(
+      const bool use_margins, std::vector<PointPair>& points) override;
 
   /**
    * Finds the points where each pair of elements in id_pairs are
@@ -140,7 +139,7 @@ class BulletModel : public Model {
   static constexpr double kLargeMargin = 0.05;
 
   // BulletModel objects are not copyable
-  BulletModel(const BulletModel&) =  delete;
+  BulletModel(const BulletModel&) = delete;
   BulletModel& operator=(const BulletModel&) = delete;
 
   /**
@@ -150,9 +149,8 @@ class BulletModel : public Model {
    * the closest points can be identified.  Otherwise emits nothing and
    * returns false.
    */
-  virtual bool findClosestPointsBetweenElements(
-      const ElementId idA, const ElementId idB, const bool use_margins,
-      ResultCollector* result_collector);
+  virtual PointPair findClosestPointsBetweenElements(
+      const ElementId idA, const ElementId idB, const bool use_margins);
 
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletBoxShape(

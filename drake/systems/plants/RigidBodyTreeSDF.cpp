@@ -4,6 +4,7 @@
 
 #include "spruce.hh"
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/thirdParty/tinyxml2/tinyxml2.h"
 #include "joints/DrakeJoints.h"
@@ -35,8 +36,7 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
   body->com = T_link.inverse() * T.translation();
 
-  Matrix<double, TWIST_SIZE, TWIST_SIZE> I =
-      Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+  drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
   I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");
@@ -215,6 +215,24 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
   RigidBody::CollisionElement element(
       transform_parent_to_model.inverse() * transform_to_model, body);
+  // By default all collision elements added to the world from an SDF file are
+  // flagged as static.
+  // We would also like to flag as static bodies connected to the world with a
+  // DrakeJoint::FloatingBaseType::FIXED joint.
+  // However this is not possible at this stage since joints were not parsed
+  // yet.
+  // Solutions to this problem would be:
+  //  1. To load the model with DrakeCollision::Element's here but flag them as
+  //     static later at a the compile stage. This means that Bullet objects are
+  //     not created here (with addCollisionElement) but later on with the call
+  //     to RBT::compile when all the connectivity information is available.
+  //  2. Load collision elements on a separate pass after links and joints were
+  //     already loaded.
+  //  Issue 2661 was created to track this problem.
+  // TODO(amcastro-tri): fix the above issue tracked by 2661. Similarly for
+  // parseCollision in RigidBodyTreeURDF.cpp.
+  if (body->name().compare(std::string(RigidBodyTree::kWorldLinkName)) == 0)
+    element.set_static();
   if (!parseSDFGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse collision element in link " +
@@ -318,16 +336,16 @@ void parseSDFFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
   }
   string name(attr);
 
-  // Parse the link
-  string link_name;
-  if (!parseStringValue(node, "link", link_name)) {
+  // Parses the body.
+  string body_name;
+  if (!parseStringValue(node, "link", body_name)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Frame \"" + name +
                         "\" doesn't have a link node.");
   }
 
   // The following will throw a std::runtime_error if the link doesn't exist.
-  RigidBody* link = rigid_body_tree->findLink(link_name, "", model_id);
+  RigidBody* link = rigid_body_tree->FindBody(body_name, "", model_id);
 
   // Get the frame's pose
   XMLElement* pose = node->FirstChildElement("pose");
@@ -381,7 +399,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                         "\" doesn't have a parent node.");
   }
 
-  auto parent = model->findLink(parent_name, "", model_id);
+  auto parent = model->FindBody(parent_name, "", model_id);
   if (!parent) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to find a parent link named \"" +
@@ -396,7 +414,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                         "\" doesn't have a child node.");
   }
 
-  auto child = model->findLink(child_name, "", model_id);
+  auto child = model->FindBody(child_name, "", model_id);
   if (!child) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to find a child link named " +

@@ -93,7 +93,11 @@ else()
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_NLOPT "nonlinear optimization solver" ON)
-  option(WITH_IPOPT "nonlinear optimization solver" ON)
+  # IPOPT is currently disabled on Mac due to MATLAB compatibility
+  # issues: https://github.com/RobotLocomotion/drake/issues/2578
+  if (NOT APPLE)
+    option(WITH_IPOPT "nonlinear optimization solver" ON)
+  endif()
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
@@ -194,6 +198,10 @@ set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
 set(lcm_IS_CMAKE_POD TRUE)
 set(lcm_IS_PUBLIC TRUE)
+set(lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON)
+if(WITH_GTK)
+  set(lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS ${lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS} -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_SOURCE_DIR}/externals/gtk/gtk3)
+endif()
 set(libbot_IS_CMAKE_POD TRUE)
 set(libbot_IS_PUBLIC TRUE)
 set(bot_core_lcmtypes_IS_CMAKE_POD TRUE)
@@ -324,18 +332,22 @@ foreach(proj ${EXTERNAL_PROJECTS})
     # Compute the path to the submodule for this external.
     file(RELATIVE_PATH ${proj}_GIT_SUBMODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_SOURCE_DIR})
 
+    # Initialize the submodule configuration now so parallel downloads do not conflict later.
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- ${${proj}_GIT_SUBMODULE_PATH}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
     # Download externals as Git submodules.
     set(${proj}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${${proj}_GIT_SUBMODULE_PATH})
 
     if(AUTO_UPDATE_EXTERNALS)
       set(${proj}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_DOWNLOAD_COMMAND})
+
+      # Synchronize the submodule url now so parallel updates do not conflict later.
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule sync -- ${${proj}_GIT_SUBMODULE_PATH}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     else()
       set(${proj}_UPDATE_COMMAND "")
     endif()
-
-    # Initialize the submodule configuration now so parallel downloads do not conflict later.
-    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- ${${proj}_GIT_SUBMODULE_PATH}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
     # now the actual project
     if(${proj}_IS_CMAKE_POD)
@@ -480,10 +492,18 @@ foreach(example IN ITEMS LittleDog)
   if(EXAMPLES_${example_upper})
     message(STATUS "Installation will include extra example: ${example}")
 
+    # Initialize the submodule configuration now so parallel downloads do not conflict later.
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- drake/examples/${example}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
     # Download examples as Git submodules.
     set(${example}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- drake/examples/${example})
     if(AUTO_UPDATE_EXTERNALS)
       set(${example}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${example}_DOWNLOAD_COMMAND})
+
+      # Synchronize the submodule url now so parallel updates do not conflict later.
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule sync -- drake/examples/${example}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     else()
       set(${example}_UPDATE_COMMAND "")
     endif()
@@ -499,10 +519,6 @@ foreach(example IN ITEMS LittleDog)
     drake_forceupdate(download-${example})
     add_dependencies(drake download-${example})
     add_dependencies(download-all download-${example})
-
-    # Initialize the submodule configuration now so parallel downloads do not conflict later.
-    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- drake/examples/${example}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
 endforeach()
 

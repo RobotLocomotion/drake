@@ -85,7 +85,7 @@ std::vector<double> PiecewiseFunction::randomSegmentTimes(
 bool PiecewiseFunction::segmentTimesEqual(const PiecewiseFunction& other,
                                           double tol) const {
   if (segment_times.size() != other.segment_times.size()) return false;
-  for (int i = 0; i < segment_times.size(); i++) {
+  for (size_t i = 0; i < segment_times.size(); i++) {
     if (std::abs(segment_times[i] - other.segment_times[i]) > tol) return false;
   }
   return true;

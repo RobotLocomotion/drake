@@ -9,7 +9,7 @@ namespace drake {
 namespace systems {
 namespace {
 
-const size_t kLength = 2;
+const int kLength = 2;
 
 class BasicStateVectorTest : public ::testing::Test {
  protected:
@@ -30,7 +30,7 @@ TEST_F(BasicStateVectorTest, Access) {
   EXPECT_THROW(state_vector_->GetAtIndex(2), std::out_of_range);
 }
 
-TEST_F(BasicStateVectorTest, Copy) {
+TEST_F(BasicStateVectorTest, CopyToVector) {
   Eigen::Vector2i expected;
   expected << 1, 2;
   EXPECT_EQ(expected, state_vector_->CopyToVector());
@@ -87,20 +87,14 @@ TEST_F(BasicStateVectorTest, SizeBasedConstructor) {
 }
 
 // Tests that the BasicStateVector can be added to an Eigen vector.
-TEST_F(BasicStateVectorTest, AddToVector) {
+TEST_F(BasicStateVectorTest, ScaleAndAddToVector) {
   Eigen::Vector2i target;
   target << 3, 4;
-  state_vector_->AddToVector(target);
+  state_vector_->ScaleAndAddToVector(1, target);
 
   Eigen::Vector2i expected;
   expected << 4, 6;
   EXPECT_EQ(expected, target);
-}
-
-TEST_F(BasicStateVectorTest, AddToVectorInvalidSize) {
-  Eigen::Vector3i target;
-  target << 3, 5, 7;
-  EXPECT_THROW(state_vector_->AddToVector(target), std::out_of_range);
 }
 
 // Tests that another StateVector can be added to the BasicStateVector.
@@ -112,6 +106,17 @@ TEST_F(BasicStateVectorTest, PlusEq) {
 
   EXPECT_EQ(6, state_vector_->GetAtIndex(0));
   EXPECT_EQ(8, state_vector_->GetAtIndex(1));
+}
+
+// TODO(david-german-tri): Once GMock is available in the Drake build, add a
+// test case demonstrating that the += operator on BasicStateVector calls
+// ScaleAndAddToVector on the addend.
+
+TEST_F(BasicStateVectorTest, AddToVectorInvalidSize) {
+  Eigen::Vector3i target;
+  target << 3, 5, 7;
+  EXPECT_THROW(state_vector_->ScaleAndAddToVector(1, target),
+               std::out_of_range);
 }
 
 TEST_F(BasicStateVectorTest, PlusEqInvalidSize) {

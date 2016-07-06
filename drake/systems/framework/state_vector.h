@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #include <stdexcept>
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
 #include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
@@ -23,21 +25,21 @@ class StateVector {
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual ptrdiff_t size() const = 0;
+  virtual int size() const = 0;
 
   /// Returns the element at the given index in the vector. Throws
   /// std::out_of_range if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual const T GetAtIndex(ptrdiff_t index) const = 0;
+  virtual const T GetAtIndex(int index) const = 0;
 
   /// Replaces the state at the given index with the value. Throws
   /// std::out_of_range if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual void SetAtIndex(ptrdiff_t index, const T& value) = 0;
+  virtual void SetAtIndex(int index, const T& value) = 0;
 
   /// Replaces the entire state with the contents of value. Throws
   /// std::out_of_range if value is not a column vector with size() rows.
@@ -52,36 +54,46 @@ class StateVector {
   /// value and allocates only the O(N) memory that it returns.
   virtual VectorX<T> CopyToVector() const = 0;
 
-  /// Adds this vector to @p vec, which must be the same size.
+  /// Adds a scaled version of this state vector to Eigen vector @p vec, which
+  /// must be the same size.
   ///
   /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if the vector is contiguous.
+  /// efficient approach, for instance if this vector is contiguous.
   /// Implementations should ensure this operation remains O(N) in the size of
   /// the value and allocates no memory.
-  virtual void AddToVector(Eigen::Ref<VectorX<T>> vec) const {
+  virtual void ScaleAndAddToVector(const T& scale,
+                                   Eigen::Ref<VectorX<T>> vec) const {
     if (vec.rows() != size()) {
       throw std::out_of_range("Addends must be the same length.");
     }
-    for (ptrdiff_t i = 0; i < size(); ++i) {
-      vec[i] += GetAtIndex(i);
-    }
+    for (int i = 0; i < size(); ++i)
+      vec[i] += scale * GetAtIndex(i);
   }
 
-  /// Adds the vector @p rhs to this vector. Both vectors must be the same size.
+  /// Add in scaled state vector @p rhs to this state vector. Both vectors must
+  /// be the same size.
   ///
   /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if the vector is contiguous.
+  /// efficient approach, for instance if this vector is contiguous.
   /// Implementations should ensure this operation remains O(N) in the size of
   /// the value and allocates no memory.
-  virtual StateVector& operator+=(const StateVector<T>& rhs) {
-    if (size() != rhs.size()) {
+  virtual StateVector& PlusEqScaled(const T& scale, const StateVector<T>& rhs) {
+    if (rhs.size() != size()) {
       throw std::out_of_range("Addends must be the same length.");
     }
-    assert(size() == rhs.size());
-    for (ptrdiff_t i = 0; i < size(); ++i) {
-      SetAtIndex(i, GetAtIndex(i) + rhs.GetAtIndex(i));
-    }
+    for (int i = 0; i < size(); ++i)
+      SetAtIndex(i, GetAtIndex(i) + scale * rhs.GetAtIndex(i));
     return *this;
+  }
+
+  /// Add in state vector @p rhs to this state vector.
+  StateVector& operator+=(const StateVector<T>& rhs) {
+    return PlusEqScaled(T(1), rhs);
+  }
+
+  /// Subtract in state vector @p rhs to this state vector.
+  StateVector& operator-=(const StateVector<T>& rhs) {
+      return PlusEqScaled(T(-1), rhs);
   }
 
  protected:

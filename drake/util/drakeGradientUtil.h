@@ -1,13 +1,22 @@
+/// @file
+/// THIS FILE IS DEPRECATED.
+/// Its contents are moving into drake/math.
+
 #pragma once
+
+#include <array>
+
+#include <cmath>
+#include <stdexcept>
+#include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
-#include <cmath>
-#include <vector>
-#include <array>
-#include <cassert>
-#include <stdexcept>
+
+#include "drake/math/gradient.h"
+
+#include "drake/common/drake_assert.h"
 
 template <std::size_t Size>
 std::array<int, Size> intRange(int start) {
@@ -17,30 +26,6 @@ std::array<int, Size> intRange(int start) {
   }
   return ret;
 }
-
-/*
- * Recursively defined template specifying a matrix type of the correct size for
- * a gradient of a matrix function with respect to Nq variables, of any order.
- */
-template <typename Derived, int Nq, int DerivativeOrder = 1>
-struct Gradient {
-  typedef typename Eigen::Matrix<
-      typename Derived::Scalar,
-      ((Derived::SizeAtCompileTime == Eigen::Dynamic || Nq == Eigen::Dynamic)
-           ? Eigen::Dynamic
-           : Gradient<Derived, Nq,
-                      DerivativeOrder - 1>::type::SizeAtCompileTime),
-      Nq> type;
-};
-
-/*
- * Base case for recursively defined gradient template.
- */
-template <typename Derived, int Nq>
-struct Gradient<Derived, Nq, 1> {
-  typedef typename Eigen::Matrix<typename Derived::Scalar,
-                                 Derived::SizeAtCompileTime, Nq> type;
-};
 
 /*
  * Output type of matGradMultMat
@@ -95,21 +80,6 @@ struct GetSubMatrixGradientSingleElement {
                                      : QSubvectorSize)> type;
 };
 
-template <typename Derived>
-struct AutoDiffToValueMatrix {
-  typedef typename Eigen::Matrix<typename Derived::Scalar::Scalar,
-                                 Derived::RowsAtCompileTime,
-                                 Derived::ColsAtCompileTime> type;
-};
-
-template <typename Derived>
-struct AutoDiffToGradientMatrix {
-  typedef typename Gradient<
-      Eigen::Matrix<typename Derived::Scalar::Scalar,
-                    Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>,
-      Eigen::Dynamic>::type type;
-};
-
 /*
  * Profile results: looks like return value optimization works; a version that
  * sets a reference
@@ -137,7 +107,7 @@ typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type matGradMultMat(
     const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedB>& B,
     const Eigen::MatrixBase<DerivedDA>& dA,
     const Eigen::MatrixBase<DerivedDB>& dB) {
-  assert(dA.cols() == dB.cols());
+  DRAKE_ASSERT(dA.cols() == dB.cols());
 
   typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type ret(
       A.rows() * B.cols(), dA.cols());
@@ -173,7 +143,7 @@ template <typename DerivedDA, typename DerivedB>
 typename MatGradMult<DerivedDA, DerivedB>::type matGradMult(
     const Eigen::MatrixBase<DerivedDA>& dA,
     const Eigen::MatrixBase<DerivedB>& B) {
-  assert(B.rows() == 0 ? dA.rows() == 0 : dA.rows() % B.rows() == 0);
+  DRAKE_ASSERT(B.rows() == 0 ? dA.rows() == 0 : dA.rows() % B.rows() == 0);
   typename DerivedDA::Index A_rows = B.rows() == 0 ? 0 : dA.rows() / B.rows();
   const int A_rows_at_compile_time =
       (DerivedDA::RowsAtCompileTime == Eigen::Dynamic ||
@@ -322,57 +292,6 @@ void setSubMatrixGradient(
                                        q_subvector_size) = dM_submatrix;
 }
 
-template <typename Derived>
-typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(
-    const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
-  typename AutoDiffToValueMatrix<Derived>::type ret(auto_diff_matrix.rows(),
-                                                    auto_diff_matrix.cols());
-  for (int i = 0; i < auto_diff_matrix.rows(); i++) {
-    for (int j = 0; j < auto_diff_matrix.cols(); ++j) {
-      ret(i, j) = auto_diff_matrix(i, j).value();
-    }
-  }
-  return ret;
-}
-
-template <typename Derived>
-typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
-    const Eigen::MatrixBase<Derived>& auto_diff_matrix,
-    int num_variables = Eigen::Dynamic) {
-  int num_variables_from_matrix = 0;
-  for (int i = 0; i < auto_diff_matrix.size(); ++i) {
-    num_variables_from_matrix =
-        std::max(num_variables_from_matrix,
-                 static_cast<int>(auto_diff_matrix(i).derivatives().size()));
-  }
-  if (num_variables == Eigen::Dynamic) {
-    num_variables = num_variables_from_matrix;
-  } else if (num_variables_from_matrix != 0 &&
-             num_variables_from_matrix != num_variables) {
-    std::stringstream buf;
-    buf << "Input matrix has derivatives w.r.t " << num_variables_from_matrix
-        << " variables, whereas num_variables is " << num_variables << ".\n";
-    buf << "Either num_variables_from_matrix should be zero, or it should "
-           "match num_variables.";
-    throw std::runtime_error(buf.str());
-  }
-
-  typename AutoDiffToGradientMatrix<Derived>::type gradient(
-      auto_diff_matrix.size(), num_variables);
-  for (int row = 0; row < auto_diff_matrix.rows(); row++) {
-    for (int col = 0; col < auto_diff_matrix.cols(); col++) {
-      auto gradient_row =
-          gradient.row(row + col * auto_diff_matrix.rows()).transpose();
-      if (auto_diff_matrix(row, col).derivatives().size() == 0) {
-        gradient_row.setZero();
-      } else {
-        gradient_row = auto_diff_matrix(row, col).derivatives();
-      }
-    }
-  }
-  return gradient;
-}
-
 template <typename DerivedGradient, typename DerivedAutoDiff>
 void gradientMatrixToAutoDiff(
     const Eigen::MatrixBase<DerivedGradient>& gradient,
@@ -409,7 +328,7 @@ struct ResizeDerivativesToMatchScalarImpl<Derived,
     }
   }
 };
-}
+}  // namespace internal
 
 /** Resize derivatives vector of each element of a matrix to to match the size
  * of the derivatives vector of a given scalar.
@@ -429,4 +348,4 @@ void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat,
   internal::ResizeDerivativesToMatchScalarImpl<
       Derived, typename Derived::Scalar>::run(mat, scalar);
 }
-}
+}  // namespace Drake
