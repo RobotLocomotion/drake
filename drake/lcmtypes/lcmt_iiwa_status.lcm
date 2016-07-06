@@ -7,7 +7,7 @@ struct lcmt_iiwa_status
   int32_t num_joints;
 
   // TODO(sam.creasey) add link to documentation(if I can) for what
-  these values are.
+  // these values are.
   double joint_position_measured[num_joints];
   double joint_position_commanded[num_joints];
   double joint_position_ipo[num_joints];

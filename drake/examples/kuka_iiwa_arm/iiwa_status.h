@@ -10,16 +10,16 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 /// This class holds various information about the joint positions of
-/// the IIWA robot (intneded for use as a state vector to pass into
-/// BotVisualizer).  As a generic receiver of the lcmt_iiwa_status
+/// the IIWA robot (intended for use as a state vector to pass into
+/// BotVisualizer).  As a generic receiver of the `lcmt_iiwa_status`
 /// message, it could in the future be expanded to hold additional
-/// data from that message as needed.  Models the Drake::LCMVector
+/// data from that message as needed.  Models the `Drake::LCMVector`
 /// concept.
 template <typename ScalarType = double>
 class IiwaStatus {
  public:
   IiwaStatus()
-      : joint_posiiton_values_(
+      : joint_position_values_(
             Eigen::Matrix<ScalarType, kNumJoints, 1>::Zero()) {}
 
   typedef drake::lcmt_iiwa_status LCMMessageType;
@@ -32,23 +32,23 @@ class IiwaStatus {
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
   size_t size() const { return kNumJoints; }
 
-  const EigenType& value() const { return joint_posiiton_values_; }
-  void set_value(const EigenType& joint_posiiton_values_in) {
-    joint_posiiton_values_ = joint_posiiton_values_in;
+  const EigenType& value() const { return joint_position_values_; }
+  void set_value(const EigenType& joint_position_values_in) {
+    joint_position_values_ = joint_position_values_in;
   }
 
   /// Magic conversion specialization back to Eigen.
   friend EigenType toEigen(const IiwaStatus<ScalarType>& vec) {
-    return vec.joint_posiiton_values_;
+    return vec.joint_position_values_;
   }
 
  private:
-  EigenType joint_posiiton_values_;
+  EigenType joint_position_values_;
 };
 
-/// Implemented per the Drake::LCMVector concept for the encode
-/// function.  Currently only handles measured joint position (since
-/// that's all IiwaStatus does).
+/// Implemented per the `Drake::LCMVector` concept for the encode
+/// function.  Currently only handles measured joint positions (since
+/// that's all `IiwaStatus` does).
 template <typename ScalarType>
 bool encode(const double& t, const IiwaStatus<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
@@ -67,9 +67,9 @@ bool encode(const double& t, const IiwaStatus<ScalarType>& wrap,
   return true;
 }
 
-/// Implemented per the Drake::LCMVector concept for the decode
+/// Implemented per the `Drake::LCMVector` concept for the decode
 /// function.  Currently only handles measured joint position (since
-/// that's all IiwaStatus does).
+/// that's all `IiwaStatus` does).
 template <typename ScalarType>
 bool decode(const drake::lcmt_iiwa_status& msg,
             // NOLINTNEXTLINE(runtime/references)
