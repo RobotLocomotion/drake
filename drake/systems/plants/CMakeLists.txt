@@ -10,6 +10,7 @@ endif()
 add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
 target_link_libraries(drakeXMLUtil drakeCommon tinyxml2 spruce)
 pods_install_libraries(drakeXMLUtil)
+drake_install_headers(xmlUtil.h)
 pods_install_pkg_config_file(drake-xml-util
   LIBS -ldrakeXMLUtil -ldrakeCommmon -ltinyxml2 -lspruce
   REQUIRES
@@ -24,16 +25,23 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   rigid_body_frame.cc)
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
 pods_install_libraries(drakeRBM)
-drake_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h)
+drake_install_headers(
+  ConstraintWrappers.h
+  ForceTorqueMeasurement.h
+  KinematicPath.h
+  KinematicsCache.h
+  material_map.h
+  pose_map.h
+  RigidBodyFrame.h
+  RigidBody.h
+  RigidBodyTree.h
+  parser_urdf.h
+  parser_sdf.h)
+
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
   REQUIRES
   VERSION 0.0.1)
-
-drake_install_headers(
-  BotVisualizer.h
-  parser_sdf.h
-  parser_urdf.h)
 
 pods_find_pkg_config(gurobi)
 pods_find_pkg_config(snopt_c)
@@ -132,7 +140,7 @@ if(drakeIK_SRC_FILES)
   target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
   pods_install_libraries(drakeIK)
   pods_install_libraries(drakeIKoptions)
-  drake_install_headers(RigidBodyIK.h IKoptions.h)
+  drake_install_headers(RigidBodyIK.h IKoptions.h inverseKinBackend.h)
   pods_install_pkg_config_file(drake-ik
     LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
     REQUIRES drake-rbm
@@ -173,6 +181,7 @@ if(lcm_FOUND)
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
   target_link_libraries(rigidBodyLCMNode drakeRBSystem drakeLCMSystem threads)
   pods_install_executables(rigidBodyLCMNode)
+  drake_install_headers(BotVisualizer.h)
 endif()
 
 add_subdirectory(test)

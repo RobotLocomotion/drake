@@ -30,7 +30,7 @@ PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(
     : PiecewisePolynomialBase(segment_times) {
   DRAKE_ASSERT(segment_times.size() == (polynomials.size() + 1));
 
-  for (int i = 0; i < polynomials.size(); i++) {
+  for (size_t i = 0; i < polynomials.size(); i++) {
     PolynomialMatrix matrix(1, 1);
     matrix(0, 0) = polynomials[i];
     this->polynomials.push_back(matrix);
@@ -142,7 +142,7 @@ operator+=(const PiecewisePolynomial<CoefficientType>& other) {
   if (!segmentTimesEqual(other, 1e-10))
     throw runtime_error(
         "Addition not yet implemented when segment times are not equal");
-  for (int i = 0; i < polynomials.size(); i++)
+  for (size_t i = 0; i < polynomials.size(); i++)
     polynomials[i] += other.polynomials[i];
   return *this;
 }
@@ -153,7 +153,7 @@ operator-=(const PiecewisePolynomial<CoefficientType>& other) {
   if (!segmentTimesEqual(other, 1e-10))
     throw runtime_error(
         "Addition not yet implemented when segment times are not equal");
-  for (int i = 0; i < polynomials.size(); i++)
+  for (size_t i = 0; i < polynomials.size(); i++)
     polynomials[i] -= other.polynomials[i];
   return *this;
 }
@@ -164,7 +164,7 @@ operator*=(const PiecewisePolynomial<CoefficientType>& other) {
   if (!segmentTimesEqual(other, 1e-10))
     throw runtime_error(
         "Multiplication not yet implemented when segment times are not equal");
-  for (int i = 0; i < polynomials.size(); i++)
+  for (size_t i = 0; i < polynomials.size(); i++)
     polynomials[i] *= other.polynomials[i];
   return *this;
 }
@@ -173,7 +173,7 @@ template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::
 operator+=(const typename PiecewisePolynomial<
     CoefficientType>::CoefficientMatrix& offset) {
-  for (int i = 0; i < polynomials.size(); i++)
+  for (size_t i = 0; i < polynomials.size(); i++)
     polynomials[i] += offset.template cast<PolynomialType>();
   return *this;
 }
@@ -182,7 +182,7 @@ template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::
 operator-=(const typename PiecewisePolynomial<
     CoefficientType>::CoefficientMatrix& offset) {
-  for (int i = 0; i < polynomials.size(); i++)
+  for (size_t i = 0; i < polynomials.size(); i++)
     polynomials[i] -= offset.template cast<PolynomialType>();
   return *this;
 }
