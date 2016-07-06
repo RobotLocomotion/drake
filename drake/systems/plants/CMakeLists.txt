@@ -35,8 +35,8 @@ drake_install_headers(
   RigidBodyFrame.h
   RigidBody.h
   RigidBodyTree.h
-  parser_urdf.h
-  parser_sdf.h)
+  parser_sdf.h
+  parser_urdf.h)
 
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
