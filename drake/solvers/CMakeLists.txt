@@ -51,9 +51,7 @@ if(snopt_c_FOUND)
 else()
   list(APPEND optimization_files NoSnopt.cpp)
 endif()
-
 pods_find_pkg_config(mosek)
-
 if(mosek_FOUND)
   list(APPEND optimization_files mosekLP.cpp)
   list(APPEND optimization_files MosekSolver.h)
@@ -62,12 +60,6 @@ endif()
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakePolynomial)
 drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h)
-if(mosek_FOUND)
-  pods_use_pkg_config_packages(drakeOptimization mosek)
-  drake_install_headers(${CMAKE_INSTALL_PREFIX}/include/mosek/mosek.h)
-  set(CMAKE_SHARED_LINKER_FLAGS
-    "${CMAKE_SHARED_LINKER_FLAGS} -L${CMAKE_INSTALL_PREFIX}/lib -Wl,-rpath-link=${CMAKE_INSTALL_PREFIX}/lib")
-endif()
 pods_install_libraries(drakeOptimization)
 pods_install_pkg_config_file(drake-optimization
   LIBS -ldrakeOptimization
@@ -106,9 +98,10 @@ if(snopt_c_FOUND AND MATLAB_FOUND)
 endif()
 
 if(mosek_FOUND)
-  #pods_use_pkg_config_packages(drakeOptimization mosek)
-  #drake_install_headers(${CMAKE_INSTALL_PREFIX}/include/mosek.h)
-  #pods_install_libraries()
+  pods_use_pkg_config_packages(drakeOptimization mosek)
+  drake_install_headers(${CMAKE_INSTALL_PREFIX}/include/mosek/mosek.h)
+  set(CMAKE_SHARED_LINKER_FLAGS
+    "${CMAKE_SHARED_LINKER_FLAGS} -L${CMAKE_INSTALL_PREFIX}/lib -Wl,-rpath-link=${CMAKE_INSTALL_PREFIX}/lib")
 endif()
 
 add_subdirectory(qpSpline)
