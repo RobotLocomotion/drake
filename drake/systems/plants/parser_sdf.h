@@ -13,6 +13,8 @@ namespace drake {
 namespace parsers {
 namespace sdf {
 
+// TODO(liang.fok) Replace this method with one that returns a Model object.
+//
 /// Adds a SDF model to a rigid body system. The model's frame is equal to the
 /// world's coordinate frame.
 ///
@@ -30,6 +32,8 @@ void addRobotFromSDFInWorldFrame(const std::string& sdf_filename,
                      const DrakeJoint::FloatingBaseType floating_base_type,
                      RigidBodyTree* tree);
 
+// TODO(liang.fok) Replace this method with one that returns a Model object.
+//
 /// Adds a SDF model to a rigid body system.
 ///
 /// @param[in] urdf_filename The URDF file containing the model to be added.
