@@ -1,8 +1,8 @@
 #include "MathematicalProgram.h"
 
+#include "EqualityConstrainedQPSolver.h"
 #include "IpoptSolver.h"
 #include "LinearSystemSolver.h"
-#include "EqualityConstrainedQPSolver.h"
 #include "MobyLCP.h"
 #include "NloptSolver.h"
 #include "Optimization.h"

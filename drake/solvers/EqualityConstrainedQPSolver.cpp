@@ -40,14 +40,14 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     num_constraints += binding.constraint()->A().rows();
   }
 
-  // expanded problem introduces a lagragian multiplier for each
-  // linear equality constraint
+  // The expanded problem introduces a lagragian multiplier for each
+  // linear equality constraint.
   size_t num_full_vars = prog.num_vars() + num_constraints;
   Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero(num_full_vars, num_full_vars);
   Eigen::VectorXd b_full = Eigen::VectorXd::Zero(num_full_vars);
 
-  // assemble the A and b matrices -- first by summing over
-  //   quadratic costs
+  // Assemble the A and b matrices -- first by summing over
+  // quadratic costs ...
   for (auto const& binding : prog.quadratic_costs()) {
     size_t index = 0;
     for (const DecisionVariableView& v : binding.variable_list()) {
@@ -59,7 +59,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     }
   }
 
-  // then the lagrangian multiplier penalty entries
+  // ... and then the lagrangian multiplier penalty entries:
   size_t constraint_index = prog.num_vars();
   for (auto const& binding : prog.linear_equality_constraints()) {
     auto const& c = binding.constraint();
@@ -78,7 +78,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     constraint_index += n;
   }
 
-  // least-squares solution
+  // Compute the least-squares solution.
   Eigen::VectorXd sol =
       A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
   prog.SetDecisionVariableValues(sol.segment(0, prog.num_vars()));

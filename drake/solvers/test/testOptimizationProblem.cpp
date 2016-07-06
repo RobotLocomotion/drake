@@ -794,10 +794,11 @@ GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
                 x.value(),
                 1e-10,
                 MatrixCompareType::absolute));
-  // no inequality constraints and up to quadratic costs so this should hold:
+  // There are no inequality constraints, and only quadratic costs,
+  // so this should hold:
   CheckSolverType(prog, "Equality Constrained QP Solver");
 
-  // And one more variable and constrain a view into them
+  // Add one more variable and constrain a view into them.
   auto y = prog.AddContinuousVariables(1);
   Q << 2.0, 0.0,
        0.0, 2.0;
@@ -818,7 +819,7 @@ GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
 
-  // no inequality constraints and up to quadratic costs so this should hold:
+  // Problem still has only quadratic costs, so solver should be the same.
   CheckSolverType(prog, "Equality Constrained QP Solver");
 }
 
@@ -857,10 +858,11 @@ OptimizationProblem prog;
     CompareMatrices(expected_answer, x.value(), 1e-10,
                     MatrixCompareType::absolute));
 
-  // this is an Equality Constrained QP
+  // This problem is now an Equality Constrained QP and should
+  // use this solver:
   CheckSolverType(prog, "Equality Constrained QP Solver");
 
-  // And one more variable and constrain it in a different way
+  // Add one more variable and constrain it in a different way
   auto y = prog.AddContinuousVariables(1);
   Vector2d constraint2(2);
   constraint2 << 2., -1.;
