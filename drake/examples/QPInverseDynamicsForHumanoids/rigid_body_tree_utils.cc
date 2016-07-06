@@ -29,15 +29,16 @@ Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
 }
 
 MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
-                              const KinematicsCache<double>& cache, int body,
+                              const KinematicsCache<double>& cache,
+                              int body_or_frame_id,
                               const Vector3d& local_offset) {
   std::vector<int> v_or_q_indices;
-  KinematicPath body_path = r.findKinematicPath(0, body);
-  MatrixXd Jg = r.geometricJacobian(cache, 0, body, 0, true, &v_or_q_indices);
+  MatrixXd Jg =
+      r.geometricJacobian(cache, 0, body_or_frame_id, 0, true, &v_or_q_indices);
   MatrixXd J(6, r.number_of_velocities());
   J.setZero();
 
-  Vector3d points = r.transformPoints(cache, local_offset, body, 0);
+  Vector3d points = r.transformPoints(cache, local_offset, body_or_frame_id, 0);
 
   int col = 0;
   for (auto it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {

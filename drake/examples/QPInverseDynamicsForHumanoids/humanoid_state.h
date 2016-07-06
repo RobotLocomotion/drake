@@ -5,11 +5,8 @@
 
 using namespace Eigen;
 
-/**
- * For all the velocity / acceleration / wrench, the first 3 are always angular,
- * and the last 3 are linear.
- */
-
+// For all the velocity / acceleration / wrench, the first 3 are always angular,
+// and the last 3 are linear.
 class BodyOfInterest {
  public:
   std::string name;
