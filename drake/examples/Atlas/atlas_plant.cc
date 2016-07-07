@@ -1,4 +1,4 @@
-#include "drake/examples/Atlas/atlas_system.h"
+#include "drake/examples/Atlas/atlas_plant.h"
 
 namespace drake {
 

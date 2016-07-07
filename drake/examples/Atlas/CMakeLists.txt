@@ -2,7 +2,7 @@ add_library_with_exports(LIB_NAME drakeAtlasUtil SOURCE_FILES atlasUtil.cpp)
 pods_install_libraries(drakeAtlasUtil)
 drake_install_headers(
         atlasUtil.h
-        atlas_system.h
+        atlas_plant.h
         )
 pods_install_pkg_config_file(drake-atlas-util
   LIBS -ldrakeAtlasUtil
@@ -10,7 +10,7 @@ pods_install_pkg_config_file(drake-atlas-util
   VERSION 0.0.1)
 
 if (lcm_FOUND)
-  add_executable(atlas_dynamics_demo atlas_dynamics_demo.cc atlas_system.cc)
+  add_executable(atlas_dynamics_demo atlas_dynamics_demo.cc atlas_plant.cc)
   target_link_libraries(atlas_dynamics_demo drakeRBSystem drakeLCMSystem)
   add_dependencies(atlas_dynamics_demo drake_lcmtypes drake_lcmtypes_hpp)
   pods_use_pkg_config_packages(atlas_dynamics_demo lcm)
