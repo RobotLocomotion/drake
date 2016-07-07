@@ -6,8 +6,8 @@ QPOutput TestGravityCompensation(const HumanoidStatus& rs) {
   QPController con;
   QPInput input;
   QPOutput output;
-  InitQPOutput(*rs.robot, output);
-  InitQPInput(*rs.robot, input);
+  InitQPOutput(rs.robot(), output);
+  InitQPInput(rs.robot(), input);
 
   // Setup QP controller's parameter.
   con.param.mu = 1;
@@ -63,35 +63,35 @@ int main() {
 
   ////////////////////////////////////////////////////////////////////
   // Set state and do kinematics.
-  VectorXd q(rs.robot->number_of_positions());
-  VectorXd qd(rs.robot->number_of_velocities());
+  VectorXd q(rs.robot().number_of_positions());
+  VectorXd qd(rs.robot().number_of_velocities());
 
   q.setZero();
   qd.setZero();
 
-  // These corresponds to a nominal pose for the Valkyrie robot: slightly 
+  // These corresponds to a nominal pose for the Valkyrie robot: slightly
   // crouched, arm raised a bit.
-  q[rs.joint_name_to_id.at("rightHipRoll")] = 0.01;
-  q[rs.joint_name_to_id.at("rightHipPitch")] = -0.5432;
-  q[rs.joint_name_to_id.at("rightKneePitch")] = 1.2195;
-  q[rs.joint_name_to_id.at("rightAnklePitch")] = -0.7070;
-  q[rs.joint_name_to_id.at("rightAnkleRoll")] = -0.0069;
+  q[rs.joint_name_to_id().at("rightHipRoll")] = 0.01;
+  q[rs.joint_name_to_id().at("rightHipPitch")] = -0.5432;
+  q[rs.joint_name_to_id().at("rightKneePitch")] = 1.2195;
+  q[rs.joint_name_to_id().at("rightAnklePitch")] = -0.7070;
+  q[rs.joint_name_to_id().at("rightAnkleRoll")] = -0.0069;
 
-  q[rs.joint_name_to_id.at("leftHipRoll")] = -0.01;
-  q[rs.joint_name_to_id.at("leftHipPitch")] = -0.5432;
-  q[rs.joint_name_to_id.at("leftKneePitch")] = 1.2195;
-  q[rs.joint_name_to_id.at("leftAnklePitch")] = -0.7070;
-  q[rs.joint_name_to_id.at("leftAnkleRoll")] = 0.0069;
+  q[rs.joint_name_to_id().at("leftHipRoll")] = -0.01;
+  q[rs.joint_name_to_id().at("leftHipPitch")] = -0.5432;
+  q[rs.joint_name_to_id().at("leftKneePitch")] = 1.2195;
+  q[rs.joint_name_to_id().at("leftAnklePitch")] = -0.7070;
+  q[rs.joint_name_to_id().at("leftAnkleRoll")] = 0.0069;
 
-  q[rs.joint_name_to_id.at("rightShoulderRoll")] = 1;
-  q[rs.joint_name_to_id.at("rightShoulderYaw")] = 0.5;
-  q[rs.joint_name_to_id.at("rightElbowPitch")] = M_PI / 2.;
+  q[rs.joint_name_to_id().at("rightShoulderRoll")] = 1;
+  q[rs.joint_name_to_id().at("rightShoulderYaw")] = 0.5;
+  q[rs.joint_name_to_id().at("rightElbowPitch")] = M_PI / 2.;
 
-  q[rs.joint_name_to_id.at("leftShoulderRoll")] = -1;
-  q[rs.joint_name_to_id.at("leftShoulderYaw")] = 0.5;
-  q[rs.joint_name_to_id.at("leftElbowPitch")] = -M_PI / 2.;
+  q[rs.joint_name_to_id().at("leftShoulderRoll")] = -1;
+  q[rs.joint_name_to_id().at("leftShoulderYaw")] = 0.5;
+  q[rs.joint_name_to_id().at("leftElbowPitch")] = -M_PI / 2.;
 
-  rs.Update(0, q, qd, VectorXd::Zero(rs.robot->actuators.size()),
+  rs.Update(0, q, qd, VectorXd::Zero(rs.robot().actuators.size()),
             Vector6d::Zero(), Vector6d::Zero());
 
   QPOutput output = TestGravityCompensation(rs);
