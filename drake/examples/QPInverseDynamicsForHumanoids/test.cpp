@@ -1,11 +1,21 @@
 #include "drake/Path.h"
 #include "qp_controller.h"
 
-QPOutput TestGravityCompensation(const HumanoidState& rs) {
+QPOutput TestGravityCompensation(const HumanoidStatus& rs) {
   // Make controller.
   QPController con;
-  QPInput input(*rs.robot);
-  QPOutput output(*rs.robot);
+  QPInput input;
+  QPOutput output;
+  InitQPOutput(*rs.robot, output);
+  InitQPInput(*rs.robot, input);
+
+  // Setup QP controller's parameter.
+  con.param.mu = 1;
+  con.param.mu_Mz = 0.1;
+  con.param.x_max = 0.2;
+  con.param.x_min = -0.05;
+  con.param.y_max = 0.05;
+  con.param.y_min = -0.05;
 
   // Make input.
   input.comdd_d.setZero();
@@ -15,7 +25,7 @@ QPOutput TestGravityCompensation(const HumanoidState& rs) {
   input.footdd_d[Side::RIGHT].setZero();
   input.wrench_d[Side::LEFT].setZero();
   input.wrench_d[Side::RIGHT].setZero();
-  input.qdd_d.setZero();
+  input.vd_d.setZero();
 
   // [5] is Fz, 660N * 2 is about robot weight.
   input.wrench_d[Side::LEFT][5] = 660;
@@ -25,7 +35,7 @@ QPOutput TestGravityCompensation(const HumanoidState& rs) {
   input.w_pelv = 1e1;
   input.w_torso = 1e1;
   input.w_foot = 1e1;
-  input.w_qdd = 1e3;
+  input.w_vd = 1e3;
   input.w_wrench_reg = 1e-5;
 
   ////////////////////////////////////////////////////////////////////
@@ -33,10 +43,10 @@ QPOutput TestGravityCompensation(const HumanoidState& rs) {
   assert(con.Control(rs, input, output) == 0);
 
   // Print results.
-  output.Print();
+  PrintQPOutput(output);
 
   // Print quadratic costs for all the terms.
-  output.ComputeCost(rs, input);
+  ComputeQPCost(rs, input, output);
 
   return output;
 }
@@ -48,7 +58,7 @@ int main() {
       Drake::getDrakePath() +
       std::string(
           "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
-  HumanoidState rs(std::unique_ptr<RigidBodyTree>(
+  HumanoidStatus rs(std::unique_ptr<RigidBodyTree>(
       new RigidBodyTree(urdf, DrakeJoint::ROLLPITCHYAW)));
 
   ////////////////////////////////////////////////////////////////////

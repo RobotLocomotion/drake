@@ -1,7 +1,6 @@
 #include "drake/solvers/Optimization.h"
 #include "drake/solvers/SnoptSolver.h"
 
-#include "humanoid_state.h"
 #include "qp_controller.h"
 
 using namespace drake::solvers;
@@ -22,79 +21,79 @@ static VectorXd VariableList2VectorXd(VariableList const& vlist) {
   return X;
 }
 
-int QPController::Control(const HumanoidState& rs, const QPInput& input,
+int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
                           QPOutput& output) {
-  if (!input.is_sane()) {
+  if (!is_qp_input_sane(input)) {
     return -1;
   }
 
   ////////////////////////////////////////////////////////////////////
   // Inverse dynamics looks like:
-  // M(q) * qdd + h(q,qd) = S * tau + J^T * lambda
+  // M(q) * vd + h(q,qd) = S * tau + J^T * lambda
   // M(q) is the inertia matrix, h(q, qd) is the gravitational and centrifugal
-  // force, qdd is acceleration, S is the selection matrix (top 6 rows are
+  // force, vd is acceleration, S is the selection matrix (top 6 rows are
   // zeros due to the floating base), tau is joint torque, J^T is the transpose
   // of all contact Jacobian, and lambda is the contact wrench in the world
   // frame.
   // Note that since S.topRows(6) is zero,
-  // tau = M_l * qdd + h_l - J^T_l * lamda,
+  // tau = M_l * vd + h_l - J^T_l * lamda,
   // where _l means the lower num_torque rows of those matrices.
-  // So we just need to solve for qdd and lambda, and tau can be computed as
+  // So we just need to solve for vd and lambda, and tau can be computed as
   // above.
   //
   // We are assuming two foot contacts in this example.
   //
   // For the QP problem:
-  // the unknown is _X = [qdd, lambda]
+  // the unknown is _X = [vd, lambda]
   // equality constraints:
-  //  M_u * qdd + h_u = J^T_u * lambda (equations of motion)
-  //  J * qdd + Jd * v = 0, (contact constraints)
+  //  M_u * vd + h_u = J^T_u * lambda (equations of motion)
+  //  J * vd + Jd * v = 0, (contact constraints)
   // inEquality: a bunch, joint torque limit, limits on lambda, etc
   // cost func:
-  //  min (Jcom*qdd + Jcomd*v - comdd_d)^2
-  //    + (qdd - qdd_d)^2
+  //  min (Jcom*vd + Jcomd*v - comdd_d)^2
+  //    + (vd - vd_d)^2
   //    + (lambda - lambda_d)^2
   //    + all_kinds_of_body_acceleration_cost_terms
   int num_contacts = 2;
-  int num_qdd = rs.robot->number_of_velocities();
+  int num_vd = rs.robot->number_of_velocities();
   int num_wrench = 6 * num_contacts;
-  int num_torque = num_qdd - 6;
-  int num_variable = num_qdd + num_wrench;
+  int num_torque = num_vd - 6;
+  int num_variable = num_vd + num_wrench;
 
   OptimizationProblem prog;
-  const DecisionVariableView qdd = prog.AddContinuousVariables(num_qdd, "qdd");
+  const DecisionVariableView vd = prog.AddContinuousVariables(num_vd, "vd");
   const DecisionVariableView lambda =
       prog.AddContinuousVariables(num_wrench, "lambda");
 
   int lambda_start = lambda.index();
-  int qdd_start = qdd.index();
+  int vd_start = vd.index();
 
-  // tau = M_l * qdd + h_l - J^T_l * lambda,
+  // tau = M_l * vd + h_l - J^T_l * lambda,
   // tau = TAU * _X + tau0
   MatrixXd Tau(MatrixXd::Zero(num_torque, num_variable));
-  Tau.block(0, qdd_start, num_torque, num_qdd) = rs.M.bottomRows(num_torque);
+  Tau.block(0, vd_start, num_torque, num_vd) = rs.M().bottomRows(num_torque);
   for (int i = 0; i < num_contacts; i++) {
     Tau.block(0, lambda_start + i * 6, num_torque, 6) =
-        -rs.foot[i]->J.block(0, 6, 6, num_torque).transpose();
+        -rs.foot(i).J.block(0, 6, 6, num_torque).transpose();
   }
-  VectorXd tau0 = rs.h.tail(num_torque);
+  VectorXd tau0 = rs.bias_term().tail(num_torque);
 
   ////////////////////////////////////////////////////////////////////
   // equality constraints:
   // equations of motion part, 6 rows
   MatrixXd DynEq = MatrixXd::Zero(6, num_variable);
-  DynEq.block(0, qdd_start, 6, num_qdd) = rs.M.topRows(6);
+  DynEq.block(0, vd_start, 6, num_vd) = rs.M().topRows(6);
 
   for (int i = 0; i < num_contacts; i++) {
     DynEq.block(0, lambda_start + i * 6, 6, 6) =
-        -rs.foot[i]->J.block<6, 6>(0, 0).transpose();
+        -rs.foot(i).J.block<6, 6>(0, 0).transpose();
   }
-  prog.AddLinearEqualityConstraint(DynEq, -rs.h.head(6));
+  prog.AddLinearEqualityConstraint(DynEq, -rs.bias_term().head(6));
 
   // contact constraints, 6 rows per contact
   for (int i = 0; i < num_contacts; i++) {
     prog.AddLinearEqualityConstraint(
-        rs.foot[i]->J, -(rs.foot[i]->Jdv - input.footdd_d[i]), {qdd});
+        rs.foot(i).J, -(rs.foot(i).Jdot_times_v - input.footdd_d[i]), {vd});
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -194,7 +193,7 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
   MatrixXd world_to_foot(MatrixXd::Zero(num_wrench, num_wrench));
   for (int i = 0; i < num_contacts; i++) {
     world_to_foot.block<3, 3>(i * 6, i * 6) =
-        rs.foot[i]->pose.linear().transpose();
+        rs.foot(i).pose.linear().transpose();
     world_to_foot.block<3, 3>(i * 6 + 3, i * 6 + 3) =
         world_to_foot.block<3, 3>(i * 6, i * 6);
   }
@@ -202,8 +201,8 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
   prog.AddLinearConstraint(CI, ci_l, ci_u, {lambda});
 
   // torque limits: min <= tau <= max, num_torque rows
-  // min <= M_l * qdd + h_l - J^T_l * lambda <= max
-  // min - h_l <= M_l * qdd - J^T_l * lambda <= max - h_l
+  // min <= M_l * vd + h_l - J^T_l * lambda <= max
+  // min - h_l <= M_l * vd - J^T_l * lambda <= max - h_l
   // tau = rs.robot->B.bottomRows(num_torque) * u,
   // u = rs.robot->B.bottomRows(num_torque).transpose() * tau
   // since B should be orthonormal.
@@ -215,24 +214,24 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
     ci_l[i] += rs.robot->actuators[i].effort_limit_min;
     ci_u[i] += rs.robot->actuators[i].effort_limit_max;
   }
-  prog.AddLinearConstraint(CI, ci_l, ci_u, {qdd, lambda});
+  prog.AddLinearConstraint(CI, ci_l, ci_u, {vd, lambda});
 
   ////////////////////////////////////////////////////////////////////
   // cost function:
   // CoM term (task space acceleration costs)
-  // w * (J * qdd + Jdv - comdd_d)^T * (J * qdd + Jdv - comdd_d)
+  // w * (J * vd + Jdv - comdd_d)^T * (J * vd + Jdv - comdd_d)
   prog.AddQuadraticCost(
-      input.w_com * rs.J_com.transpose() * rs.J_com,
-      input.w_com * (rs.Jdv_com - input.comdd_d).transpose() * rs.J_com, {qdd});
+      input.w_com * rs.J_com().transpose() * rs.J_com(),
+      input.w_com * (rs.Jdot_times_v_com() - input.comdd_d).transpose() * rs.J_com(), {vd});
 
   prog.AddQuadraticCost(
-      input.w_pelv * rs.pelv.J.transpose() * rs.pelv.J,
-      input.w_pelv * (rs.pelv.Jdv - input.pelvdd_d).transpose() * rs.pelv.J,
-      {qdd});
+      input.w_pelv * rs.pelv().J.transpose() * rs.pelv().J,
+      input.w_pelv * (rs.pelv().Jdot_times_v - input.pelvdd_d).transpose() * rs.pelv().J,
+      {vd});
 
-  // regularize qdd to qdd_d
-  prog.AddQuadraticCost(input.w_qdd * MatrixXd::Identity(num_qdd, num_qdd),
-                        input.w_qdd * (-input.qdd_d), {qdd});
+  // regularize vd to vd_d
+  prog.AddQuadraticCost(input.w_vd * MatrixXd::Identity(num_vd, num_vd),
+                        input.w_vd * (-input.vd_d), {vd});
 
   // regularize lambda to lambda_d
   VectorXd lambda_d(VectorXd::Zero(num_wrench));
@@ -243,7 +242,7 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
 
   ////////////////////////////////////////////////////////////////////
   // solve
-  prog.SetInitialGuess(qdd, VectorXd::Zero(num_qdd));
+  prog.SetInitialGuess(vd, VectorXd::Zero(num_vd));
   VectorXd lambda0 = VectorXd::Zero(num_wrench);
   prog.SetInitialGuess(lambda, lambda0);
   SolutionResult result;
@@ -290,84 +289,107 @@ int QPController::Control(const HumanoidState& rs, const QPInput& input,
 
   ////////////////////////////////////////////////////////////////////
   // parse result
-  output.qdd = qdd.value();
-  output.comdd = rs.J_com * output.qdd + rs.Jdv_com;
-  output.pelvdd = rs.pelv.J * output.qdd + rs.pelv.Jdv;
-  output.torsodd = rs.torso.J * output.qdd + rs.torso.Jdv;
+  output.vd = vd.value();
+  output.comdd = rs.J_com() * output.vd + rs.Jdot_times_v_com();
+  output.pelvdd = rs.pelv().J * output.vd + rs.pelv().Jdot_times_v;
+  output.torsodd = rs.torso().J * output.vd + rs.torso().Jdot_times_v;
 
   for (int i = 0; i < num_contacts; i++) {
-    output.footdd[i] = (rs.foot[i]->J * output.qdd + rs.foot[i]->Jdv);
-    output.foot_wrench_w[i] = lambda.value().segment<6>(i * 6);
+    output.footdd[i] = (rs.foot(i).J * output.vd + rs.foot(i).Jdot_times_v);
+    output.foot_wrench_in_world_frame[i] = lambda.value().segment<6>(i * 6);
   }
 
-  output.trq = rs.M.bottomRows(num_torque) * output.qdd + rs.h.tail(num_torque);
+  output.joint_torque = rs.M().bottomRows(num_torque) * output.vd + rs.bias_term().tail(num_torque);
   for (int i = 0; i < num_contacts; i++) {
-    output.trq -= rs.foot[i]->J.block(0, 6, 6, num_torque).transpose() *
-                  output.foot_wrench_w[i];
+    output.joint_torque -= rs.foot(i).J.block(0, 6, 6, num_torque).transpose() *
+                  output.foot_wrench_in_world_frame[i];
   }
 
   for (int i = 0; i < num_contacts; i++) {
     Isometry3d T(Isometry3d::Identity());
     T.translation() =
-        rs.foot[i]->pose.translation() - rs.foot_sensor[i]->pose.translation();
+        rs.foot(i).pose.translation() - rs.foot_sensor(i).pose.translation();
 
     output.foot_wrench_in_sensor_frame[i] =
-        transformSpatialForce(T, output.foot_wrench_w[i]);
+        transformSpatialForce(T, output.foot_wrench_in_world_frame[i]);
 
     output.foot_wrench_in_sensor_frame[i].head<3>() =
-        rs.foot_sensor[i]->pose.linear().transpose() *
+        rs.foot_sensor(i).pose.linear().transpose() *
         output.foot_wrench_in_sensor_frame[i].head<3>();
     output.foot_wrench_in_sensor_frame[i].tail<3>() =
-        rs.foot_sensor[i]->pose.linear().transpose() *
+        rs.foot_sensor(i).pose.linear().transpose() *
         output.foot_wrench_in_sensor_frame[i].tail<3>();
   }
 
   // Check equality constraints:
-  // Dynamics: M(q) * qdd + h(q,qd) = S * tau + J^T * lambda
-  // Foot not moving: J * qdd + Jd * v = 0
-  VectorXd residual = rs.M * output.qdd + rs.h;
+  // Dynamics: M(q) * vd + h(q,qd) = S * tau + J^T * lambda
+  // Foot not moving: J * vd + Jd * v = 0
+  VectorXd residual = rs.M() * output.vd + rs.bias_term();
   for (int i = 0; i < num_contacts; i++)
-    residual -= rs.foot[i]->J.transpose() * output.foot_wrench_w[i];
-  residual.tail(num_torque) -= output.trq;
+    residual -= rs.foot(i).J.transpose() * output.foot_wrench_in_world_frame[i];
+  residual.tail(num_torque) -= output.joint_torque;
   assert(residual.isZero());
 
   for (int i = 0; i < num_contacts; i++) {
     assert(output.footdd[i].isZero());
   }
 
-  if (!output.is_sane()) {
+  if (!is_qp_output_sane(output)) {
     return -1;
   }
 
   return 0;
 }
 
-double QPOutput::ComputeCost(const HumanoidState& rs,
-                             const QPInput& input) const {
+
+
+void InitQPInput(const RigidBodyTree& r, QPInput &input)
+{
+  input.vd_d.resize(r.number_of_velocities());
+  input.coord_names.resize(r.number_of_velocities());
+  for (size_t i = 0; i < r.number_of_velocities(); i++) {
+    // strip out the "dot" part from name
+    input.coord_names[i] = r.getVelocityName(i).substr(0, r.getVelocityName(i).size()-3);
+  }
+}
+
+void InitQPOutput(const RigidBodyTree& r, QPOutput &output)
+{
+  output.vd.resize(r.number_of_velocities());
+  output.coord_names.resize(r.number_of_velocities());
+  for (size_t i = 0; i < r.number_of_velocities(); i++) {
+    // strip out the "dot" part from name
+    output.coord_names[i] = r.getVelocityName(i).substr(0, r.getVelocityName(i).size()-3); 
+  }
+}
+
+double ComputeQPCost(const HumanoidStatus& rs,
+    const QPInput& input,
+    const QPOutput &output) {
   VectorXd c, tot;
-  c = 0.5 * qdd.transpose() * input.w_com * rs.J_com.transpose() * rs.J_com *
-          qdd +
-      input.w_com * (rs.Jdv_com - input.comdd_d).transpose() * rs.J_com * qdd;
+  c = 0.5 * output.vd.transpose() * input.w_com * rs.J_com().transpose() * rs.J_com() *
+          output.vd +
+      input.w_com * (rs.Jdot_times_v_com() - input.comdd_d).transpose() * rs.J_com() * output.vd;
   tot = c;
   std::cout << "com cost: " << c << std::endl;
 
-  c = 0.5 * qdd.transpose() * input.w_pelv * rs.pelv.J.transpose() * rs.pelv.J *
-          qdd +
-      input.w_pelv * (rs.pelv.Jdv - input.pelvdd_d).transpose() * rs.pelv.J *
-          qdd;
+  c = 0.5 * output.vd.transpose() * input.w_pelv * rs.pelv().J.transpose() * rs.pelv().J *
+          output.vd +
+      input.w_pelv * (rs.pelv().Jdot_times_v - input.pelvdd_d).transpose() * rs.pelv().J *
+          output.vd;
   tot += c;
   std::cout << "pelv cost: " << c << std::endl;
 
-  c = 0.5 * qdd.transpose() * input.w_qdd * qdd +
-      input.w_qdd * (-input.qdd_d).transpose() * qdd;
+  c = 0.5 * output.vd.transpose() * input.w_vd * output.vd +
+      input.w_vd * (-input.vd_d).transpose() * output.vd;
   tot += c;
-  std::cout << "qdd cost: " << c << std::endl;
+  std::cout << "vd cost: " << c << std::endl;
 
   for (int i = 0; i < 2; i++) {
-    c = 0.5 * foot_wrench_w[i].transpose() * input.w_wrench_reg *
-            foot_wrench_w[i] +
+    c = 0.5 * output.foot_wrench_in_world_frame[i].transpose() * input.w_wrench_reg *
+            output.foot_wrench_in_world_frame[i] +
         input.w_wrench_reg * (-input.wrench_d[i]).transpose() *
-            foot_wrench_w[i];
+            output.foot_wrench_in_world_frame[i];
     tot += c;
     std::cout << "wrench cost " << i << ": " << c << std::endl;
   }
@@ -376,39 +398,39 @@ double QPOutput::ComputeCost(const HumanoidState& rs,
   return tot[0];
 }
 
-void QPOutput::Print() const {
+void PrintQPOutput(const QPOutput &output) {
   std::cout << "===============================================\n";
   std::cout << "accelerations:\n";
-  for (int i = 0; i < qdd.rows(); i++)
-    std::cout << joint_names[i] << ": " << qdd[i] << std::endl;
+  for (int i = 0; i < output.vd.rows(); i++)
+    std::cout << output.coord_names[i] << ": " << output.vd[i] << std::endl;
 
   std::cout << "com acc: ";
-  std::cout << comdd.transpose() << std::endl;
+  std::cout << output.comdd.transpose() << std::endl;
 
   std::cout << "pelv acc: ";
-  std::cout << pelvdd.transpose() << std::endl;
+  std::cout << output.pelvdd.transpose() << std::endl;
 
   std::cout << "torso acc: ";
-  std::cout << torsodd.transpose() << std::endl;
+  std::cout << output.torsodd.transpose() << std::endl;
 
-  std::cout << "left foot acc: " << footdd[Side::LEFT].transpose() << std::endl;
-  std::cout << "right foot acc: " << footdd[Side::RIGHT].transpose()
+  std::cout << "left foot acc: " << output.footdd[Side::LEFT].transpose() << std::endl;
+  std::cout << "right foot acc: " << output.footdd[Side::RIGHT].transpose()
             << std::endl;
 
   std::cout << "===============================================\n";
-  std::cout << "left foot wrench_w: " << foot_wrench_w[Side::LEFT].transpose()
+  std::cout << "left foot wrench_w: " << output.foot_wrench_in_world_frame[Side::LEFT].transpose()
             << std::endl;
-  std::cout << "right foot wrench_w: " << foot_wrench_w[Side::RIGHT].transpose()
+  std::cout << "right foot wrench_w: " << output.foot_wrench_in_world_frame[Side::RIGHT].transpose()
             << std::endl;
   std::cout << "left foot wrench in sensor frame: "
-            << foot_wrench_in_sensor_frame[Side::LEFT].transpose() << std::endl;
+            << output.foot_wrench_in_sensor_frame[Side::LEFT].transpose() << std::endl;
   std::cout << "right foot wrench in sensor frame: "
-            << foot_wrench_in_sensor_frame[Side::RIGHT].transpose()
+            << output.foot_wrench_in_sensor_frame[Side::RIGHT].transpose()
             << std::endl;
 
   std::cout << "===============================================\n";
   std::cout << "torque:\n";
-  for (int i = 0; i < trq.rows(); i++)
-    std::cout << joint_names[i + 6] << ": " << trq[i] << std::endl;
+  for (int i = 0; i < output.joint_torque.rows(); i++)
+    std::cout << output.coord_names[i + 6] << ": " << output.joint_torque[i] << std::endl;
   std::cout << "===============================================\n";
 }
