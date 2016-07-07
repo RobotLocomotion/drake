@@ -28,9 +28,9 @@ namespace sdf {
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
 DRAKERBM_EXPORT
-void addRobotFromSDFInWorldFrame(const std::string& sdf_filename,
-                     const DrakeJoint::FloatingBaseType floating_base_type,
-                     RigidBodyTree* tree);
+void addRobotFromSDFInWorldFrame(
+    const std::string& sdf_filename,
+    const DrakeJoint::FloatingBaseType floating_base_type, RigidBodyTree* tree);
 
 // TODO(liang.fok) Replace this method with one that returns a Model object.
 //
