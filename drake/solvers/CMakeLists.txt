@@ -54,7 +54,6 @@ endif()
 pods_find_pkg_config(mosek)
 if(mosek_FOUND)
   list(APPEND optimization_files mosekLP.cpp)
-  list(APPEND optimization_files MosekSolver.h)
 endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
@@ -99,9 +98,8 @@ endif()
 
 if(mosek_FOUND)
   pods_use_pkg_config_packages(drakeOptimization mosek)
-  drake_install_headers(${CMAKE_INSTALL_PREFIX}/include/mosek/mosek.h)
   set(CMAKE_SHARED_LINKER_FLAGS
-    "${CMAKE_SHARED_LINKER_FLAGS} -L${CMAKE_INSTALL_PREFIX}/lib -Wl,-rpath-link=${CMAKE_INSTALL_PREFIX}/lib")
+    "${CMAKE_SHARED_LINKER_FLAGS} -I${CMAKE_INSTALL_PREFIX}/include -L${CMAKE_INSTALL_PREFIX}/lib -Wl,-rpath-link=${CMAKE_INSTALL_PREFIX}/lib")
 endif()
 
 add_subdirectory(qpSpline)
