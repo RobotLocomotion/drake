@@ -55,7 +55,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   //    + (lambda - lambda_d)^2
   //    + all_kinds_of_body_acceleration_cost_terms
   int num_contacts = 2;
-  int num_vd = rs.robot->number_of_velocities();
+  int num_vd = rs.robot().number_of_velocities();
   int num_wrench = 6 * num_contacts;
   int num_torque = num_vd - 6;
   int num_variable = num_vd + num_wrench;
@@ -208,11 +208,11 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // since B should be orthonormal.
   // tau is joint space indexed, and u is actuator space indexed.
   // constraints are specified with u index.
-  CI = rs.robot->B.bottomRows(num_torque).transpose() * Tau;
-  ci_u = ci_l = -rs.robot->B.bottomRows(num_torque).transpose() * tau0;
-  for (size_t i = 0; i < rs.robot->actuators.size(); i++) {
-    ci_l[i] += rs.robot->actuators[i].effort_limit_min;
-    ci_u[i] += rs.robot->actuators[i].effort_limit_max;
+  CI = rs.robot().B.bottomRows(num_torque).transpose() * Tau;
+  ci_u = ci_l = -rs.robot().B.bottomRows(num_torque).transpose() * tau0;
+  for (size_t i = 0; i < rs.robot().actuators.size(); i++) {
+    ci_l[i] += rs.robot().actuators[i].effort_limit_min;
+    ci_u[i] += rs.robot().actuators[i].effort_limit_max;
   }
   prog.AddLinearConstraint(CI, ci_l, ci_u, {vd, lambda});
 
