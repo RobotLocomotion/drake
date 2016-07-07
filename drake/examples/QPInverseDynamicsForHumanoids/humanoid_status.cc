@@ -6,8 +6,9 @@ const Vector3d HumanoidStatus::kFootToSensorOffset =
     Vector3d(0.0215646, 0.0, -0.051054);
 
 void HumanoidStatus::FillKinematics(const std::string& name, Isometry3d& pose,
-                                   Vector6d& vel, MatrixXd& J, Vector6d& Jdot_times_v,
-                                   const Vector3d& local_offset) const {
+                                    Vector6d& vel, MatrixXd& J,
+                                    Vector6d& Jdot_times_v,
+                                    const Vector3d& local_offset) const {
   int id = body_name_to_id.at(name);
   pose = Isometry3d::Identity();
   pose.translation() = local_offset;
@@ -15,13 +16,15 @@ void HumanoidStatus::FillKinematics(const std::string& name, Isometry3d& pose,
 
   vel = GetTaskSpaceVel(*(robot), cache, id, local_offset);
   J = GetTaskSpaceJacobian(*(robot), cache, id, local_offset);
-  Jdot_times_v = GetTaskSpaceJacobianDotTimesV(*(robot), cache, id, local_offset);
+  Jdot_times_v =
+      GetTaskSpaceJacobianDotTimesV(*(robot), cache, id, local_offset);
 }
 
 void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
-                           const VectorXd& trq, const Vector6d& l_ft,
-                           const Vector6d& r_ft, const Matrix3d& rot) {
-  if (q.size() != this->position_.size() || v.size() != this->velocity_.size() ||
+                            const VectorXd& trq, const Vector6d& l_ft,
+                            const Vector6d& r_ft, const Matrix3d& rot) {
+  if (q.size() != this->position_.size() ||
+      v.size() != this->velocity_.size() ||
       trq.size() != this->joint_torque_.size()) {
     throw std::runtime_error("robot state update dimension mismatch");
   }
@@ -46,23 +49,30 @@ void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
   comd_ = J_com_ * v;
 
   // body parts
-  FillKinematics(pelv_.link_name, pelv_.pose, pelv_.vel, pelv_.J, pelv_.Jdot_times_v);
-  FillKinematics(torso_.link_name, torso_.pose, torso_.vel, torso_.J, torso_.Jdot_times_v);
+  FillKinematics(pelv_.link_name, pelv_.pose, pelv_.vel, pelv_.J,
+                 pelv_.Jdot_times_v);
+  FillKinematics(torso_.link_name, torso_.pose, torso_.vel, torso_.J,
+                 torso_.Jdot_times_v);
   for (int s = 0; s < 2; s++) {
     FillKinematics(foot_[s].link_name, foot_[s].pose, foot_[s].vel, foot_[s].J,
-        foot_[s].Jdot_times_v, kFootToContactOffset);
-    FillKinematics(foot_sensor_[s].link_name, foot_sensor_[s].pose, foot_sensor_[s].vel,
-                 foot_sensor_[s].J, foot_sensor_[s].Jdot_times_v, kFootToSensorOffset);
+                   foot_[s].Jdot_times_v, kFootToContactOffset);
+    FillKinematics(foot_sensor_[s].link_name, foot_sensor_[s].pose,
+                   foot_sensor_[s].vel, foot_sensor_[s].J,
+                   foot_sensor_[s].Jdot_times_v, kFootToSensorOffset);
   }
 
   // ft sensor
   foot_wrench_in_body_frame_[Side::LEFT] = l_ft;
   foot_wrench_in_body_frame_[Side::RIGHT] = r_ft;
   for (int i = 0; i < 2; i++) {
-    foot_wrench_in_body_frame_[i].head(3) = rot * foot_wrench_in_body_frame_[i].head(3);
-    foot_wrench_in_body_frame_[i].tail(3) = rot * foot_wrench_in_body_frame_[i].tail(3);
-    foot_wrench_in_world_frame_[i].head(3) = foot_sensor_[i].pose.linear() * foot_wrench_in_body_frame_[i].head(3);
-    foot_wrench_in_world_frame_[i].tail(3) = foot_sensor_[i].pose.linear() * foot_wrench_in_body_frame_[i].tail(3);
+    foot_wrench_in_body_frame_[i].head(3) =
+        rot * foot_wrench_in_body_frame_[i].head(3);
+    foot_wrench_in_body_frame_[i].tail(3) =
+        rot * foot_wrench_in_body_frame_[i].tail(3);
+    foot_wrench_in_world_frame_[i].head(3) =
+        foot_sensor_[i].pose.linear() * foot_wrench_in_body_frame_[i].head(3);
+    foot_wrench_in_world_frame_[i].tail(3) =
+        foot_sensor_[i].pose.linear() * foot_wrench_in_body_frame_[i].tail(3);
   }
 
   // cop
@@ -71,13 +81,15 @@ void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
   for (int i = 0; i < 2; i++) {
     Fz[i] = foot_wrench_in_world_frame_[i][5];
     // cop relative to the ft sensor
-    cop_in_body_frame_[i][0] = -foot_wrench_in_body_frame_[i][1] / foot_wrench_in_body_frame_[i][5];
-    cop_in_body_frame_[i][1] = foot_wrench_in_body_frame_[i][0] / foot_wrench_in_body_frame_[i][5];
+    cop_in_body_frame_[i][0] =
+        -foot_wrench_in_body_frame_[i][1] / foot_wrench_in_body_frame_[i][5];
+    cop_in_body_frame_[i][1] =
+        foot_wrench_in_body_frame_[i][0] / foot_wrench_in_body_frame_[i][5];
 
-    cop_w[i][0] =
-        -foot_wrench_in_world_frame_[i][1] / Fz[i] + foot_sensor_[i].pose.translation()[0];
-    cop_w[i][1] =
-        foot_wrench_in_world_frame_[i][0] / Fz[i] + foot_sensor_[i].pose.translation()[1];
+    cop_w[i][0] = -foot_wrench_in_world_frame_[i][1] / Fz[i] +
+                  foot_sensor_[i].pose.translation()[0];
+    cop_w[i][1] = foot_wrench_in_world_frame_[i][0] / Fz[i] +
+                  foot_sensor_[i].pose.translation()[1];
   }
 
   cop_ = (cop_w[Side::LEFT] * Fz[Side::LEFT] +
