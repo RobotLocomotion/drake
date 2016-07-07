@@ -4,6 +4,7 @@
     <description>A planning, control, and analysis toolbox for nonlinear dynamical systems</description>
     <maintainer email="russt@mit.edu">Russ Tedrake</maintainer>
     <license>BSD</license>
+    <buildtool_depend>cmake</buildtool_depend>
     <url type="website">http://drake.mit.edu</url>
     <url type="bugtracker">https://github.com/RobotLocomotion/drake/issues</url>
 </package>
