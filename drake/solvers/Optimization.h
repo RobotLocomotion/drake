@@ -662,6 +662,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    *  either "max" or "min"
    * -- "problemtype" -- currently only accepts "linear", plan to add
    *  "quadratic" soon. SDP will take longer.
+   * TODO: Calling OptimizationProblem::Solve will not invoke mosek at this time
    */
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option,
