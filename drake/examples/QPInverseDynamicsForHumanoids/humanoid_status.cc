@@ -9,15 +9,15 @@ void HumanoidStatus::FillKinematics(const std::string& name, Isometry3d& pose,
                                     Vector6d& vel, MatrixXd& J,
                                     Vector6d& Jdot_times_v,
                                     const Vector3d& local_offset) const {
-  int id = body_name_to_id.at(name);
+  int id = body_name_to_id_.at(name);
   pose = Isometry3d::Identity();
   pose.translation() = local_offset;
-  pose = robot->relativeTransform(cache, 0, id) * pose;
+  pose = robot_->relativeTransform(cache_, 0, id) * pose;
 
-  vel = GetTaskSpaceVel(*(robot), cache, id, local_offset);
-  J = GetTaskSpaceJacobian(*(robot), cache, id, local_offset);
+  vel = GetTaskSpaceVel(*(robot_), cache_, id, local_offset);
+  J = GetTaskSpaceJacobian(*(robot_), cache_, id, local_offset);
   Jdot_times_v =
-      GetTaskSpaceJacobianDotTimesV(*(robot), cache, id, local_offset);
+      GetTaskSpaceJacobianDotTimesV(*(robot_), cache_, id, local_offset);
 }
 
 void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
@@ -26,7 +26,7 @@ void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
   if (q.size() != this->position_.size() ||
       v.size() != this->velocity_.size() ||
       trq.size() != this->joint_torque_.size()) {
-    throw std::runtime_error("robot state update dimension mismatch");
+    throw std::runtime_error("robot_ state update dimension mismatch");
   }
 
   time_ = t;
@@ -34,18 +34,18 @@ void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
   velocity_ = v;
   joint_torque_ = trq;
 
-  cache.initialize(position_, velocity_);
-  robot->doKinematics(cache, true);
+  cache_.initialize(position_, velocity_);
+  robot_->doKinematics(cache_, true);
 
-  M_ = robot->massMatrix(cache);
+  M_ = robot_->massMatrix(cache_);
   eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
-  bias_term_ = robot->dynamicsBiasTerm(cache, f_ext);
+  bias_term_ = robot_->dynamicsBiasTerm(cache_, f_ext);
 
   // com
-  com_ = robot->centerOfMass(cache);
-  J_com_ = robot->centerOfMassJacobian(cache);
-  Jdot_times_v_com_ = robot->centerOfMassJacobianDotTimesV(cache);
+  com_ = robot_->centerOfMass(cache_);
+  J_com_ = robot_->centerOfMassJacobian(cache_);
+  Jdot_times_v_com_ = robot_->centerOfMassJacobianDotTimesV(cache_);
   comd_ = J_com_ * v;
 
   // body parts
