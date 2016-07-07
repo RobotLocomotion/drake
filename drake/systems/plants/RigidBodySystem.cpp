@@ -927,7 +927,8 @@ void RigidBodySystem::addRobotFromSDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   // Adds the robot to the rigid body tree.
-  tree->addRobotFromSDF(sdf_filename, floating_base_type, weld_to_frame);
+  drake::parsers::sdf::addRobotFromSDF(sdf_filename, floating_base_type,
+    weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).
