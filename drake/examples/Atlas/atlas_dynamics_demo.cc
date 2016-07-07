@@ -8,7 +8,7 @@
 
 using Drake::SimulationOptions;
 using Drake::BotVisualizer;
-using drake::AtlasSystem;
+using drake::AtlasPlant;
 
 int main(int argc, char* argv[]) {
   try {
@@ -36,12 +36,12 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
     if (!lcm->good()) return 1;
 
-    std::shared_ptr<AtlasSystem> atlas_sys = std::make_shared<AtlasSystem>();
+    std::shared_ptr<AtlasPlant> atlas_sys = std::make_shared<AtlasPlant>();
 
-    auto const& tree = atlas_sys->getRigidBodyTree();
+    auto const& tree = atlas_sys->get_rigid_body_tree();
 
     auto visualizer =
-        std::make_shared<BotVisualizer<AtlasSystem::StateVector>>(lcm, tree);
+        std::make_shared<BotVisualizer<AtlasPlant::StateVector>>(lcm, tree);
 
     auto sys_with_vis = cascade(atlas_sys, visualizer);
 

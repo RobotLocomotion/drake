@@ -6,12 +6,13 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::Isometry3d;
 
-AtlasSystem::AtlasSystem() {
-  addRobotFromFile(
+AtlasPlant::AtlasPlant() {
+  sys_.reset(new Drake::RigidBodySystem());
+  sys_->addRobotFromFile(
       Drake::getDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
       DrakeJoint::QUATERNION);
 
-  x0_ = VectorXd::Zero(getNumStates());
+  x0_ = VectorXd::Zero(sys_->getNumStates());
   SetInitialConfiguration();
 
   // TODO(amcastro-tri): this should not be here but there is no other way
@@ -19,10 +20,36 @@ AtlasSystem::AtlasSystem() {
   SetUpTerrain();
 }
 
-const VectorXd& AtlasSystem::get_initial_state() const { return x0_; }
+const VectorXd& AtlasPlant::get_initial_state() const { return x0_; }
 
-void AtlasSystem::SetInitialConfiguration() {
-  RigidBodyTree* tree = getRigidBodyTree().get();
+const std::shared_ptr<RigidBodyTree>& AtlasPlant::get_rigid_body_tree() const {
+  return sys_->getRigidBodyTree();
+}
+
+bool AtlasPlant::isTimeVarying() const {
+  return sys_->isTimeVarying();
+}
+
+size_t AtlasPlant::getNumInputs() const {
+  return sys_->getNumInputs();
+}
+
+AtlasPlant::StateVector<double>
+AtlasPlant::output(const double& t,
+                   const StateVector<double>& x,
+                   const InputVector<double>& u) const {
+  return sys_->output(t, x, u);
+}
+
+AtlasPlant::StateVector<double>
+AtlasPlant::dynamics(const double& t,
+                     const StateVector<double>& x,
+                     const InputVector<double>& u) const {
+  return sys_->dynamics(t, x, u);
+}
+
+void AtlasPlant::SetInitialConfiguration() {
+  RigidBodyTree* tree = sys_->getRigidBodyTree().get();
   x0_.head(tree->number_of_positions()) = tree->getZeroConfiguration();
 
   // Magic numbers are initial conditions used in runAtlasWalking.m.
@@ -56,11 +83,11 @@ void AtlasSystem::SetInitialConfiguration() {
   x0_(36) = 0.2564;  // neck_ay
 }
 
-void AtlasSystem::SetUpTerrain() {
+void AtlasPlant::SetUpTerrain() {
   // TODO(amcastro-tri): move out of here when collision materials kick in.
-  penetration_stiffness = 1500.0;
-  penetration_damping = 150.0;
-  RigidBodyTree* tree = getRigidBodyTree().get();
+  sys_->penetration_stiffness = 1500.0;
+  sys_->penetration_damping = 150.0;
+  RigidBodyTree* tree = sys_->getRigidBodyTree().get();
 
   // Adds a flat terrain.
   double box_width = 1000;
