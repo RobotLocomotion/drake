@@ -23,13 +23,6 @@ http://wiki.ros.org/catkin/package.xml
 
   <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
 
-  <depend>ackermann_msgs</depend>
-  <depend>genmsg</depend>
-  <depend>roscpp</depend>
-  <depend>sensor_msgs</depend>
-  <depend>std_msgs</depend>
-  <depend>tf</depend>
-
   <doc_depend>doxygen</doc_depend>
 
   <buildtool_depend>cmake</buildtool_depend>
