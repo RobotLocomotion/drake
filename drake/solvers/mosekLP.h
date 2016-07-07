@@ -1,15 +1,17 @@
 // Copyright 2016. Alex Dunyak
 #pragma once
 
+//#include "drake/solvers/MosekSolver.h"
 
 extern "C" {
-  #include "build/include/mosek/mosek.h"  // Make sure to figure out how to put in makefile
+  #include <mosek/mosek.h>
 }
+
+#include <vector>
+#include <string>
 
 #include <Eigen/Sparse>
 #include <Eigen/Core>
-#include <vector>
-#include <string>
 
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/Optimization.h"
@@ -24,27 +26,25 @@ http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
 namespace drake {
 namespace solvers {
 
-class DRAKEOPTIMIZATION_EXPORT mosekLP :
-      public MathematicalProgramSolverInterface {
+
+/* mosekLP solves a linear program when given a correctly formatted program.
+ * Specifically, the program options:
+ * -- "maxormin" -- must be set to "max" or "min"
+ * -- "problemtype" -- must be set to "linear"
+ *
+ * It is created by a MosekSolver object.
+ */
+class DRAKEOPTIMIZATION_EXPORT mosekLP {
   /*mosekLP
    *@brief this class allows the creation and solution of a linear programming
    *problem using the mosek solver.
    */
  public:
-    mosekLP() {
-      task = NULL;
-      env = NULL;
-      aptrb = (MSKint32t *) malloc(sizeof(MSKint32t));
-      aptre = (MSKint32t *) malloc(sizeof(MSKint32t));
-      asub = (MSKint32t *) malloc(sizeof(MSKint32t));
-      aval = (double *) malloc(sizeof(double));
-      bkc = (MSKboundkeye *) malloc(sizeof(MSKboundkeye));
-      blc = (double *) malloc(sizeof(double));
-      buc = (double *) malloc(sizeof(double));
-      bkx = (MSKboundkeye *) malloc(sizeof(MSKboundkeye));
-      blx = (double *) malloc(sizeof(double));
-      bux = (double *) malloc(sizeof(double));
-    }
+  mosekLP() {
+    task_ = NULL;
+    env_ = NULL;
+  }
+
   /* Create a mosek linear programming environment using a constraint matrix
   * Takes the number of variables and constraints, the linear eqn to
   * optimize, the constraint matrix, and the constraint and variable bounds
@@ -52,67 +52,31 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
   */
   mosekLP(int num_variables, int num_constraints,
       std::vector<double> equationScalars,
-      Eigen::MatrixXd cons_,
-      std::vector<MSKboundkeye> mosek_constraint_bounds_,
-      std::vector<double> upper_constraint_bounds_,
-      std::vector<double> lower_constraint_bounds_,
-      std::vector<MSKboundkeye> mosek_variable_bounds_,
-      std::vector<double> upper_variable_bounds_,
-      std::vector<double> lower_variable_bounds_);
-
-  /* Create a mosek linear programming environment using a sparse column
-  * constraint matrix
-  * Takes the number of variables and constraints, the linear eqn to
-  * optimize, the constraint matrix, and the constraint and variable bounds
-  * @p environment is created and must be told to optimize.
-  */
-  mosekLP(int num_variables, int num_constraints,
-      std::vector<double> equationScalars,
-      Eigen::SparseMatrix<double> sparsecons_,
-      std::vector<MSKboundkeye> mosek_constraint_bounds_,
-      std::vector<double> upper_constraint_bounds_,
-      std::vector<double> lower_constraint_bounds_,
-      std::vector<MSKboundkeye> mosek_variable_bounds_,
-      std::vector<double> upper_variable_bounds_,
-      std::vector<double> lower_variable_bounds_);
+      Eigen::MatrixXd cons,
+      std::vector<MSKboundkeye> mosek_constraint_bounds,
+      std::vector<double> upper_constraint_bounds,
+      std::vector<double> lower_constraint_bounds,
+      std::vector<MSKboundkeye> mosek_variable_bounds,
+      std::vector<double> upper_variable_bounds,
+      std::vector<double> lower_variable_bounds);
 
   ~mosekLP() {
-    if (task != NULL)
-      MSK_deletetask(&task);
-    if (env != NULL)
-      MSK_deleteenv(&env);
-    free(aptrb);
-    free(aptre);
-    free(asub);
-    free(aval);
-    free(bkc);
-    free(blc);
-    free(buc);
-    free(bkx);
-    free(blx);
-    free(bux);
+    if (task_ != NULL)
+      MSK_deletetask(&task_);
+    if (env_ != NULL)
+      MSK_deleteenv(&env_);
   }
+
 
     /* Solve()
    * @brief optimizes variables in given linear constraints, works with either
    * of the two previous object declarations.
    * */
-  SolutionResult Solve(OptimizationProblem &prog) const override;
-
-  bool available() const override;
+  SolutionResult Solve(OptimizationProblem &prog) const;
 
   std::vector<double>  GetSolution() const { return solutions_; }
 
-  Eigen::VectorXd GetEigenVectorSolutions() const {
-    Eigen::VectorXd soln_(numvar);
-    if (solutions_.empty())
-      return soln_;
-    int i = 0;
-    for (i = 0; i < solutions_.size(); ++i) {
-      soln_(i) = solutions_[i];
-    }
-    return soln_.transpose();
-  }
+  Eigen::VectorXd GetEigenVectorSolutions() const;
 
  private:
   /*The following names are consistent with the example programs given by
@@ -139,43 +103,33 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP :
   *for details on how to set mosek_bounds_
   */
   void AddLinearConstraintBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
-      const std::vector<double>& upper_bounds_,
-      const std::vector<double>& lower_bounds_);
+      const std::vector<double>& upper_bounds,
+      const std::vector<double>& lower_bounds);
 
   /*AddVariableBounds()
    * @brief bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
    * for details on how to set mosek_bounds_
    */
-  void AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
-                         const std::vector<double>& upper_bounds_,
-                         const std::vector<double>& lower_bounds_);
+  void AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds,
+                         const std::vector<double>& upper_bounds,
+                         const std::vector<double>& lower_bounds);
 
   /*FindMosekBounds()
    * Given upper and lower bounds for a variable or constraint, finds the
    * equivalent Mosek bound keys.
    */
   std::vector<MSKboundkeye> FindMosekBounds(
-      const std::vector<double>& upper_bounds_,
-      const std::vector<double>& lower_bounds_) const;
+      const std::vector<double>& upper_bounds,
+      const std::vector<double>& lower_bounds) const;
 
   SolutionResult OptimizeTask(const std::string& maxormin,
                               const std::string& ptype);
 
-  MSKint32t numvar, numcon;
-  MSKint32t* aptrb;   // Where ptrb[j] is the position of the first
-                      // value/index in aval / asub for column j.
-  MSKint32t*  aptre;  // Where ptre[j] is the position of the last
-                      // value/index plus one in aval / asub for column j.
-  MSKint32t* asub;    // list of row indices
-  double* aval;       // list of nonzero entries of A ordered by columns
-  MSKboundkeye* bkc;  // mosek notation bounds on constraints
-  double *blc, *buc;  // bounds on constraints
-  MSKboundkeye *bkx;  // mosek notation bounds on variables
-  double *blx, *bux;  // bounds on variables
-  MSKenv_t env;       // Internal environment, used to check if problem formed
+  MSKint32t numvar_, numcon_;
+  MSKenv_t env_;       // Internal environment, used to check if problem formed
                       // correctly
-  MSKtask_t task;     // internal definition of task
-  MSKrescodee r;      // used for validity checking
+  MSKtask_t task_;     // internal definition of task
+  MSKrescodee r_;      // used for validity checking
   std::vector<double> solutions_;  // Contains the solutions of the system
 };
 
