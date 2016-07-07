@@ -7,6 +7,7 @@ extern "C" {
   #include <mosek/mosek.h>
 }
 
+#include <memory>
 #include <vector>
 #include <iostream>
 #include <string>
@@ -20,11 +21,6 @@ extern "C" {
 
 namespace drake {
 namespace solvers {
-
-//static void MSKAPI printstr(void *handle,
-//                            MSKCONST char str[]) {
-//  printf("%s", str);
-//}
 
 mosekLP::mosekLP(int num_variables, int num_constraints,
     std::vector<double> equationScalars,
@@ -44,9 +40,6 @@ mosekLP::mosekLP(int num_variables, int num_constraints,
   if (r_ == MSK_RES_OK) {
     // Creates optimization task
     r_ = MSK_maketask(env_, numcon_, numvar_, &task_);
-    // Directs log task stream to the 'printstr' function
-    if (r_ == MSK_RES_OK)
-      r_ = MSK_linkfunctotaskstream(task_, MSK_STREAM_LOG, NULL, NULL);
     // Append numcon_ empty constraints
     if (r_ == MSK_RES_OK)
       r_ = MSK_appendcons(task_, numcon_);
@@ -80,14 +73,10 @@ void mosekLP::AddLinearConstraintSparseColumnMatrix(
   int j = 0;  // iterator
   // Define sparse matrix representation to be the same size as the desired
   // constraints
-  //free(aptrb);
-  std::vector<MSKint32t> aptrb;// = (MSKint32t *) malloc(sizeof(MSKint32t)*sparsecons.cols());
-  //free(aptre);
-  std::vector<MSKint32t> aptre;// = (MSKint32t *) malloc(sizeof(MSKint32t)*sparsecons.cols());
-  //free(asub);
-  std::vector<MSKint32t> asub;// = (MSKint32t *) malloc(sizeof(MSKint32t)*sparsecons.nonZeros());
-  //free(aval);
-  std::vector<double> aval;// = (double *) malloc(sizeof(double)*sparsecons.nonZeros());
+  std::vector<MSKint32t> aptrb;
+  std::vector<MSKint32t> aptre;
+  std::vector<MSKint32t> asub;
+  std::vector<double> aval;
 
   for (j = 0; j < sparsecons.cols(); j++)
     aptrb.push_back((MSKint32t) sparsecons.outerIndexPtr()[j]);
@@ -208,23 +197,24 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
   mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
                                          lower_variable_bounds);
 
-  for (const auto& con_ : prog.linear_constraints()) {  // type is
-                                                   // Binding<LinearConstraint>
+  for (const auto& con : prog.linear_constraints()) {
+    // The type of con is Binding<LinearConstraint>, but compiler complains when
+    // directly invoking that class.
     // Address the constraint matrix directly, translating back to our original
     // variable space
-    for (int i = 0; i < con_.constraint()->num_constraints(); i++) {
+    for (int i = 0; i < con.constraint()->num_constraints(); i++) {
         // if this if statement is entered, the constraint is not a var bound
         // and must be handled differently by mosek
-      for (int j = 0; j < (con_.constraint())->A().cols(); j++) {
-        linear_cons(i, j) = (con_.constraint()->A())(i, j);
+      for (int j = 0; j < (con.constraint())->A().cols(); j++) {
+        linear_cons(i, j) = (con.constraint()->A())(i, j);
       }
       // lower bounds first
-      lower_constraint_bounds[connum] = (con_.constraint())->lower_bound()(i);
+      lower_constraint_bounds[connum] = (con.constraint())->lower_bound()(i);
       if (lower_constraint_bounds[connum] ==
           -std::numeric_limits<double>::infinity())
         lower_constraint_bounds[connum] = -MSK_INFINITY;
       // upper bound
-      upper_constraint_bounds[connum] = (con_.constraint())->upper_bound()(i);
+      upper_constraint_bounds[connum] = (con.constraint())->upper_bound()(i);
       if (upper_constraint_bounds[connum] ==
           +std::numeric_limits<double>::infinity())
         upper_constraint_bounds[connum] = +MSK_INFINITY;
@@ -281,15 +271,13 @@ SolutionResult mosekLP::OptimizeTask(const std::string& maxormin,
         switch (solsta) {
           case MSK_SOL_STA_OPTIMAL:
           case MSK_SOL_STA_NEAR_OPTIMAL: {
-            double *xx = (double*) calloc(numvar_, sizeof(double));
+            std::unique_ptr<double[]> xx(new double[numvar_]);
             if (xx) {
               /* Request the basic solution. */
-              MSK_getxx(task_, problemtype, xx);
-              // printf("Optimal primal solution\n");
+              MSK_getxx(task_, problemtype, xx.get());
               for (int j = 0; j < numvar_; ++j) {
                 solutions_.push_back(xx[j]);
               }
-              free(xx);
               return kSolutionFound;
             } else {
               r_ = MSK_RES_ERR_SPACE;
