@@ -222,11 +222,14 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // w * (J * vd + Jdv - comdd_d)^T * (J * vd + Jdv - comdd_d)
   prog.AddQuadraticCost(
       input.w_com * rs.J_com().transpose() * rs.J_com(),
-      input.w_com * (rs.Jdot_times_v_com() - input.comdd_d).transpose() * rs.J_com(), {vd});
+      input.w_com * (rs.Jdot_times_v_com() - input.comdd_d).transpose() *
+          rs.J_com(),
+      {vd});
 
   prog.AddQuadraticCost(
       input.w_pelv * rs.pelv().J.transpose() * rs.pelv().J,
-      input.w_pelv * (rs.pelv().Jdot_times_v - input.pelvdd_d).transpose() * rs.pelv().J,
+      input.w_pelv * (rs.pelv().Jdot_times_v - input.pelvdd_d).transpose() *
+          rs.pelv().J,
       {vd});
 
   // regularize vd to vd_d
@@ -299,10 +302,11 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     output.foot_wrench_in_world_frame[i] = lambda.value().segment<6>(i * 6);
   }
 
-  output.joint_torque = rs.M().bottomRows(num_torque) * output.vd + rs.bias_term().tail(num_torque);
+  output.joint_torque = rs.M().bottomRows(num_torque) * output.vd +
+                        rs.bias_term().tail(num_torque);
   for (int i = 0; i < num_contacts; i++) {
     output.joint_torque -= rs.foot(i).J.block(0, 6, 6, num_torque).transpose() *
-                  output.foot_wrench_in_world_frame[i];
+                           output.foot_wrench_in_world_frame[i];
   }
 
   for (int i = 0; i < num_contacts; i++) {
@@ -341,42 +345,40 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   return 0;
 }
 
-
-
-void InitQPInput(const RigidBodyTree& r, QPInput &input)
-{
+void InitQPInput(const RigidBodyTree& r, QPInput& input) {
   input.vd_d.resize(r.number_of_velocities());
   input.coord_names.resize(r.number_of_velocities());
   for (size_t i = 0; i < r.number_of_velocities(); i++) {
     // strip out the "dot" part from name
-    input.coord_names[i] = r.getVelocityName(i).substr(0, r.getVelocityName(i).size()-3);
+    input.coord_names[i] =
+        r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
   }
 }
 
-void InitQPOutput(const RigidBodyTree& r, QPOutput &output)
-{
+void InitQPOutput(const RigidBodyTree& r, QPOutput& output) {
   output.vd.resize(r.number_of_velocities());
   output.coord_names.resize(r.number_of_velocities());
   for (size_t i = 0; i < r.number_of_velocities(); i++) {
     // strip out the "dot" part from name
-    output.coord_names[i] = r.getVelocityName(i).substr(0, r.getVelocityName(i).size()-3); 
+    output.coord_names[i] =
+        r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
   }
 }
 
-double ComputeQPCost(const HumanoidStatus& rs,
-    const QPInput& input,
-    const QPOutput &output) {
+double ComputeQPCost(const HumanoidStatus& rs, const QPInput& input,
+                     const QPOutput& output) {
   VectorXd c, tot;
-  c = 0.5 * output.vd.transpose() * input.w_com * rs.J_com().transpose() * rs.J_com() *
-          output.vd +
-      input.w_com * (rs.Jdot_times_v_com() - input.comdd_d).transpose() * rs.J_com() * output.vd;
+  c = 0.5 * output.vd.transpose() * input.w_com * rs.J_com().transpose() *
+          rs.J_com() * output.vd +
+      input.w_com * (rs.Jdot_times_v_com() - input.comdd_d).transpose() *
+          rs.J_com() * output.vd;
   tot = c;
   std::cout << "com cost: " << c << std::endl;
 
-  c = 0.5 * output.vd.transpose() * input.w_pelv * rs.pelv().J.transpose() * rs.pelv().J *
-          output.vd +
-      input.w_pelv * (rs.pelv().Jdot_times_v - input.pelvdd_d).transpose() * rs.pelv().J *
-          output.vd;
+  c = 0.5 * output.vd.transpose() * input.w_pelv * rs.pelv().J.transpose() *
+          rs.pelv().J * output.vd +
+      input.w_pelv * (rs.pelv().Jdot_times_v - input.pelvdd_d).transpose() *
+          rs.pelv().J * output.vd;
   tot += c;
   std::cout << "pelv cost: " << c << std::endl;
 
@@ -386,8 +388,8 @@ double ComputeQPCost(const HumanoidStatus& rs,
   std::cout << "vd cost: " << c << std::endl;
 
   for (int i = 0; i < 2; i++) {
-    c = 0.5 * output.foot_wrench_in_world_frame[i].transpose() * input.w_wrench_reg *
-            output.foot_wrench_in_world_frame[i] +
+    c = 0.5 * output.foot_wrench_in_world_frame[i].transpose() *
+            input.w_wrench_reg * output.foot_wrench_in_world_frame[i] +
         input.w_wrench_reg * (-input.wrench_d[i]).transpose() *
             output.foot_wrench_in_world_frame[i];
     tot += c;
@@ -398,7 +400,7 @@ double ComputeQPCost(const HumanoidStatus& rs,
   return tot[0];
 }
 
-void PrintQPOutput(const QPOutput &output) {
+void PrintQPOutput(const QPOutput& output) {
   std::cout << "===============================================\n";
   std::cout << "accelerations:\n";
   for (int i = 0; i < output.vd.rows(); i++)
@@ -413,17 +415,21 @@ void PrintQPOutput(const QPOutput &output) {
   std::cout << "torso acc: ";
   std::cout << output.torsodd.transpose() << std::endl;
 
-  std::cout << "left foot acc: " << output.footdd[Side::LEFT].transpose() << std::endl;
+  std::cout << "left foot acc: " << output.footdd[Side::LEFT].transpose()
+            << std::endl;
   std::cout << "right foot acc: " << output.footdd[Side::RIGHT].transpose()
             << std::endl;
 
   std::cout << "===============================================\n";
-  std::cout << "left foot wrench_w: " << output.foot_wrench_in_world_frame[Side::LEFT].transpose()
+  std::cout << "left foot wrench_w: "
+            << output.foot_wrench_in_world_frame[Side::LEFT].transpose()
             << std::endl;
-  std::cout << "right foot wrench_w: " << output.foot_wrench_in_world_frame[Side::RIGHT].transpose()
+  std::cout << "right foot wrench_w: "
+            << output.foot_wrench_in_world_frame[Side::RIGHT].transpose()
             << std::endl;
   std::cout << "left foot wrench in sensor frame: "
-            << output.foot_wrench_in_sensor_frame[Side::LEFT].transpose() << std::endl;
+            << output.foot_wrench_in_sensor_frame[Side::LEFT].transpose()
+            << std::endl;
   std::cout << "right foot wrench in sensor frame: "
             << output.foot_wrench_in_sensor_frame[Side::RIGHT].transpose()
             << std::endl;
@@ -431,6 +437,7 @@ void PrintQPOutput(const QPOutput &output) {
   std::cout << "===============================================\n";
   std::cout << "torque:\n";
   for (int i = 0; i < output.joint_torque.rows(); i++)
-    std::cout << output.coord_names[i + 6] << ": " << output.joint_torque[i] << std::endl;
+    std::cout << output.coord_names[i + 6] << ": " << output.joint_torque[i]
+              << std::endl;
   std::cout << "===============================================\n";
 }
