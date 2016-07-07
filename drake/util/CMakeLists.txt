@@ -36,6 +36,8 @@ pods_install_pkg_config_file(drake-util
   REQUIRES
   VERSION 0.0.1)
 
+drake_install_headers(drakeAppUtil.h)
+
 if(MATLAB_FOUND)
   add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
   target_link_libraries(drakeMexUtil drakePolynomial)

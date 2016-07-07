@@ -19,7 +19,25 @@ own Github account and then push your changes into a branch on your fork. Once
 you believe your code is ready to be merged into Drake's primary repository,
 open a `pull request <https://help.github.com/articles/using-pull-requests/>`_
 via the Github website. Your code will then undergo an interactive review
-process before it is merged into Drake's primary repository.
+process and :ref:`Continuous Integration (CI) <continuous_integration_notes>`
+tests before it is merged into
+`Drake's primary repository <https://github.com/RobotLocomotion/drake>`_.
+
+Drake's :ref:`CI service <continuous_integration_notes>` runs on all pull requests each time they are
+submitted and updated. Pull requests cannot be merged into master unless all
+unit tests pass on all
+:ref:`supported platform configurations <supported-configurations>`.
+
+Drake's CI server also runs continuously on
+`Drake's primary master branch <https://github.com/RobotLocomotion/drake>`_
+using an even more comprehensive set of unit tests.
+If problems are detected on this branch, the build cop will
+:ref:`revert the PRs that most likely caused the problem <build_cop>`.
+To increase the likelihood that your pull requests pass CI tests and are not
+reverted, you can run the unit tests locally. Instructions for how to do that
+are provided :ref:`here <unit-test-instructions>`. Note, however, that there are
+many computationally-demanding tests and running the entire test suite can take
+several hours depending on your machine.
 
 We would like to hear about your success stories if you've used Drake in your
 own projects.  Please consider contributing to our :doc:`gallery` by editing
@@ -150,6 +168,8 @@ Review Process Tooling
     :maxdepth: 1
 
     reviewable
+
+.. _continuous_integration_notes:
 
 Continuous Integration Notes
 ============================

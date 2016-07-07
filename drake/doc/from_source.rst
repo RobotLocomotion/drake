@@ -19,12 +19,29 @@ Drake is compliant with the `PODs <http://sourceforge.net/p/pods/home/Home/>`_ s
 
 Note: If you are using Windows, you will want to make sure that ``git`` is set to `handle cross-platform linefeed issues <https://git-scm.com/book/tr/v2/Customizing-Git-Git-Configuration#idp31554304>`_.  These options appear to be enabled by default in the cygwin installation of ``git``, but must be set manually on the native windows version.
 
+We recommend that you `setup SSH access to Github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_
+to avoid needing to type your password each time you access it. The following
+instructions assume you have uploaded your public SSH key to your Github
+account.
+
 Now run::
 
-	git clone https://github.com/RobotLocomotion/drake.git drake-distro
+    git clone git@github.com:RobotLocomotion/drake.git drake-distro
 
 
-Note: the build process may encounter problems if you have unusual characters like parentheses in the absolute path to the drake-distro directory (see `#394 <https://github.com/RobotLocomotion/drake/issues/394>`_).
+Note: the build process may encounter problems if you have unusual characters
+like parentheses in the absolute path to the drake-distro directory
+(see `#394 <https://github.com/RobotLocomotion/drake/issues/394>`_).
+
+The above ``git clone`` command will configure Drake's primary repository as a
+remote called ``origin``. We recommend that you configure your fork of Drake's
+primary repository as the ``origin`` remote and Drake's primary repository as
+the ``upstream`` remote. This can be done by executing the following commands::
+
+    cd drake-distro
+    git remote add upstream git@github.com:RobotLocomotion/drake.git
+    git remote add origin git@github.com:[your github user name]/drake.git
+    git remote set-url --push upstream no_push
 
 
 If you want to use the private externals
@@ -64,36 +81,73 @@ Mandatory platform specific instructions
 Before running build, you will need to follow the instructions for your host system:
 
 .. toctree::
-	:maxdepth: 1
+    :maxdepth: 1
 
-	fedora
-	homebrew
-	ubuntu
-	windows
+    fedora
+    homebrew
+    ubuntu
+    windows
 
 Build the collection
 ====================
 There are two supported ways to build Drake:
-`Ninja <https://ninja-build.org/>`_ and
-`Make <https://www.gnu.org/software/make/>`_.
+`Make <https://www.gnu.org/software/make/>`_ and
+`Ninja <https://ninja-build.org/>`_.
+
 Because the Drake build is not entirely out-of-source, you must pick one build
 system and stick to it. Switching build systems within the same working tree
 will produce CMake errors.
 
 Make support is more mature, but Ninja is faster, more modern, and will
 receive more investment from the Drake development team going forward.
-The following features are known not to work in Ninja yet:
+However, the following features are known not to work in Ninja yet:
 
 * Gurobi
+
+.. _build_with_make:
+
+Build with Make
+---------------
+First, confirm that `Make <https://www.gnu.org/software/make/>`_ is installed
+on your system by executing::
+
+    make --version
+
+To build with ``Make``, execute::
+
+    cd drake-distro
+    mkdir build
+    cd build
+    cmake ../ -DCMAKE_BUILD_TYPE:STRING=Debug
+    make
+
+**Do NOT use sudo.** Just ``make`` is sufficient, and will prevent problems
+later. Feel free to use ``make -j`` if your platform supports it. Note that the
+above ``cmake`` command uses build type "Debug". Alternative build modes include
+"RelWithDebInfo" and "Release". They differ in terms of the amount of debug
+symbols included in the resulting binaries and how efficiently the code
+executes.
+
+In addition to the build mode, Drake has many other build options. You can view
+them in ``drake-distro/CMakeLists.txt``. The build options typically start with
+"WITH\_". The options can be included in the above ``cmake`` command by adding
+additional ``-D`` flags. You can also specify them using a text-based GUI by
+executing::
+
+    cd drake-distro/build
+    ccmake ../
+
+To get details about the actual compiler and linker commands, execute::
+
+    cd drake-distro/build
+    make VERBOSE=true
 
 .. _build_with_ninja:
 
 Build with Ninja
 ----------------
 First, confirm that `Ninja <https://ninja-build.org/>`_ is installed
-on your system:
-
-::
+on your system::
 
     ninja --version
 
@@ -101,70 +155,37 @@ Drake uses `CMake <https://cmake.org/>`_ to generate Ninja files within an
 out-of-source build directory. You can configure CMake options by passing
 them at the ``cmake`` command line with ``-D``, or in a GUI by running
 ``ccmake`` instead of ``cmake``. For instance, the following sequence of
-commands generates Ninja files with build type ``Debug``, and then runs the 
+commands generates Ninja files with build type ``Debug``, and then runs the
 Ninja build.
 
 ::
 
-    mkdir drake-build
-    cd drake-build
-    cmake path/to/drake-distro -G Ninja -DCMAKE_BUILD_TYPE:STRING=Debug
+    cd drake-distro
+    mkdir build
+    cd build
+    cmake ../ -G Ninja -DCMAKE_BUILD_TYPE:STRING=Debug
     ninja
 
-Ninja can rebuild Drake from within ``drake-build/drake`` without
+Ninja can rebuild Drake from within ``drake-distro/build/drake/`` without
 rebuilding the entire superbuild.  It can also build specific targets.
 Tab-completion is supported.
 
 ::
 
-    cd drake-build/drake
+    cd drake-distro/build/drake
     ninja
 
 To review the raw shell commands, compiler flags, and linker flags that CMake
 generated, consult ``build.ninja`` and ``drake/build.ninja``, or run
 ``ninja -v`` for a verbose build.
 
-.. _build_with_make:
-
-Build with Make
----------------
-First, confirm that `Make <https://www.gnu.org/software/make/>`_ is installed
-on your system:
-
-::
-
-    make --version
-
-Drake includes a Makefile, which invokes `CMake <https://cmake.org/>`_ to 
-generate and execute platform-specific build scripts. To build with Make:
-
-::
-
-	cd drake-distro
-	make
-
-**Do NOT use sudo.** Just ``make`` is sufficient, and will prevent problems
-later. Feel free to use ``make -j`` if your platform supports it.
-
-To include all of the symbols for debugging purposes, execute:
-
-::
-
-    BUILD_TYPE=Debug make
-
-To include all symbols and get details about the actual compiler and linker commands, execute:
-
-::
-
-    BUILD_TYPE=Debug make VERBOSE=true
-
 Test Your Installation
 ======================
 
 Start MATLAB, then at the MATLAB prompt do::
 
-	cd drake-distro/drake
-	addpath_drake
+    cd drake-distro/drake
+    addpath_drake
 
 Then ``cd`` into the examples directories and try some things out.  Here are a few
 fun ones to get you started:
@@ -176,7 +197,7 @@ fun ones to get you started:
 
 To run some unit tests, execute the following::
 
-    cd drake-distro/drake/pod-build
+    cd drake-distro/build/drake
     ctest -VV
 
 For more details on how to run Drake's unit tests, see the instructions
@@ -194,10 +215,12 @@ Stay up to date
 
 To work on the bleeding edge, do::
 
-	cd drake-distro
-	git checkout master
-	git pull
-	make
+    cd drake-distro
+    git checkout master
+    git pull upstream master
+    make
 
-This is especially useful if you are ready to contribute your work back to the main repository with a `pull request <https://help.github.com/articles/using-pull-requests/>`_.
+This is especially useful if you are ready to contribute your work back to the
+main repository with a
+`pull request <https://help.github.com/articles/using-pull-requests/>`_.
 

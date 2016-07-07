@@ -558,7 +558,7 @@ string Polynomial<CoefficientType>::idToVariableName(const VarType id) {
 template <typename CoefficientType>
 void Polynomial<CoefficientType>::makeMonomialsUnique(void) {
   VarType unique_var = 0;  // also update the univariate flag
-  for (ptrdiff_t i = monomials.size() - 1; i >= 0; i--) {
+  for (int i = monomials.size() - 1; i >= 0; i--) {
     if (monomials[i].coefficient == 0) {
       monomials.erase(monomials.begin() + i);
       continue;
@@ -574,7 +574,7 @@ void Polynomial<CoefficientType>::makeMonomialsUnique(void) {
         }
       }
     }
-    for (ptrdiff_t j = 0; j < (i - 1); j++) {
+    for (int j = 0; j < (i - 1); j++) {
       Monomial& mj = monomials[j];
       if (mi.hasSameExponents(mj)) {
         // it's a match, so delete monomial i

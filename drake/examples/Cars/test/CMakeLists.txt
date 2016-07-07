@@ -1,4 +1,4 @@
-if(GTEST_FOUND AND lcm_FOUND AND NOT WIN32)
+if(lcm_FOUND AND NOT WIN32)
   add_executable(curve2_test curve2_test.cc)
   target_link_libraries(curve2_test ${GTEST_BOTH_LIBRARIES} drakeCars)
   add_test(NAME curve2_test COMMAND curve2_test)
