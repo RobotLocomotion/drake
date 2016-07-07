@@ -93,6 +93,7 @@ else()
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_NLOPT "nonlinear optimization solver" ON)
+  option(WITH_MOSEK "convex optimization solver; free for academics" OFF)
   # IPOPT is currently disabled on Mac due to MATLAB compatibility
   # issues: https://github.com/RobotLocomotion/drake/issues/2578
   if (NOT APPLE)
@@ -130,7 +131,6 @@ cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATL
 cmake_dependent_option(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32;WITH_MOSEK" OFF)
-cmake_dependent_option(WITH_MOSEK "convex optimization solver; free for academics" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
