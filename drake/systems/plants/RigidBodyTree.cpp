@@ -2117,11 +2117,12 @@ void RigidBodyTree::addRobotFromURDF(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::addRobotFromSDF(const std::string& sdf_filename,
-                     const DrakeJoint::FloatingBaseType floating_base_type,
-                     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  ::drake::parsers::sdf::addRobotFromSDF(sdf_filename, floating_base_type,
-    weld_to_frame, this);
+void RigidBodyTree::addRobotFromSDF(
+    const std::string& sdf_filename,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+  drake::parsers::sdf::addRobotFromSDF(sdf_filename, floating_base_type,
+                                         weld_to_frame, this);
 }
 
 // Explicit template instantiations for massMatrix.
