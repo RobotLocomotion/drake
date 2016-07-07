@@ -42,12 +42,13 @@ class HumanoidStatus {
   std::unordered_map<std::string, int> actuator_name_to_id;
 
   explicit HumanoidStatus(std::unique_ptr<RigidBodyTree> robot_in)
-      : robot(std::move(robot_in)),
-        cache(robot->bodies) {
+      : robot(std::move(robot_in)), cache(robot->bodies) {
     pelv_.name = pelv_.link_name = std::string("pelvis");
     torso_.name = torso_.link_name = std::string("torso");
-    foot_[Side::LEFT].name = foot_[Side::LEFT].link_name = std::string("leftFoot");
-    foot_[Side::RIGHT].name = foot_[Side::RIGHT].link_name = std::string("rightFoot");
+    foot_[Side::LEFT].name = foot_[Side::LEFT].link_name =
+        std::string("leftFoot");
+    foot_[Side::RIGHT].name = foot_[Side::RIGHT].link_name =
+        std::string("rightFoot");
     foot_sensor_[Side::LEFT].name = std::string("leftFootSensor");
     foot_sensor_[Side::LEFT].link_name = std::string("leftFoot");
     foot_sensor_[Side::RIGHT].name = std::string("rightFootSensor");
@@ -95,29 +96,47 @@ class HumanoidStatus {
               const Matrix3d& rot = Matrix3d::Identity());
 
   inline double time() const { return time_; }
-  inline const VectorXd &position() const { return position_; }
-  inline const VectorXd &velocity() const { return velocity_; }
-  inline const VectorXd &joint_torque() const { return joint_torque_; }
-  inline const MatrixXd &M() const { return M_; }
-  inline const VectorXd &bias_term() const { return bias_term_; }
-  inline const Vector3d &com() const { return com_; }
-  inline const Vector3d &comd() const { return comd_; }
-  inline const MatrixXd &J_com() const { return J_com_; }
-  inline const Vector3d &Jdot_times_v_com() const { return Jdot_times_v_com_; }
-  inline const BodyOfInterest &pelv() const { return pelv_; }
-  inline const BodyOfInterest &torso() const { return torso_; }
-  inline const BodyOfInterest &foot(Side::SideEnum s) const { return foot_[s]; }
-  inline const BodyOfInterest &foot(int s) const { return foot(Side::values.at(s)); }
-  inline const BodyOfInterest &foot_sensor(Side::SideEnum s) const { return foot_sensor_[s]; }
-  inline const Vector2d &cop() const { return cop_; }
-  inline const Vector2d &cop_in_body_frame(Side::SideEnum s) const { return cop_in_body_frame_[s]; }
-  inline const Vector6d &foot_wrench_in_body_frame(Side::SideEnum s) const { return foot_wrench_in_body_frame_[s]; }
-  inline const Vector6d &foot_wrench_in_world_frame(Side::SideEnum s) const { return foot_wrench_in_world_frame_[s]; }
-  
-  inline const BodyOfInterest &foot_sensor(int s) const { return foot_sensor(Side::values.at(s)); }
-  inline const Vector2d &cop_in_body_frame(int s) const { return cop_in_body_frame(Side::values.at(s)); }
-  inline const Vector6d &foot_wrench_in_body_frame(int s) const { return foot_wrench_in_body_frame(Side::values.at(s)); }
-  inline const Vector6d &foot_wrench_in_world_frame(int s) const { return foot_wrench_in_world_frame(Side::values.at(s)); }
+  inline const VectorXd& position() const { return position_; }
+  inline const VectorXd& velocity() const { return velocity_; }
+  inline const VectorXd& joint_torque() const { return joint_torque_; }
+  inline const MatrixXd& M() const { return M_; }
+  inline const VectorXd& bias_term() const { return bias_term_; }
+  inline const Vector3d& com() const { return com_; }
+  inline const Vector3d& comd() const { return comd_; }
+  inline const MatrixXd& J_com() const { return J_com_; }
+  inline const Vector3d& Jdot_times_v_com() const { return Jdot_times_v_com_; }
+  inline const BodyOfInterest& pelv() const { return pelv_; }
+  inline const BodyOfInterest& torso() const { return torso_; }
+  inline const BodyOfInterest& foot(Side::SideEnum s) const { return foot_[s]; }
+  inline const BodyOfInterest& foot(int s) const {
+    return foot(Side::values.at(s));
+  }
+  inline const BodyOfInterest& foot_sensor(Side::SideEnum s) const {
+    return foot_sensor_[s];
+  }
+  inline const Vector2d& cop() const { return cop_; }
+  inline const Vector2d& cop_in_body_frame(Side::SideEnum s) const {
+    return cop_in_body_frame_[s];
+  }
+  inline const Vector6d& foot_wrench_in_body_frame(Side::SideEnum s) const {
+    return foot_wrench_in_body_frame_[s];
+  }
+  inline const Vector6d& foot_wrench_in_world_frame(Side::SideEnum s) const {
+    return foot_wrench_in_world_frame_[s];
+  }
+
+  inline const BodyOfInterest& foot_sensor(int s) const {
+    return foot_sensor(Side::values.at(s));
+  }
+  inline const Vector2d& cop_in_body_frame(int s) const {
+    return cop_in_body_frame(Side::values.at(s));
+  }
+  inline const Vector6d& foot_wrench_in_body_frame(int s) const {
+    return foot_wrench_in_body_frame(Side::values.at(s));
+  }
+  inline const Vector6d& foot_wrench_in_world_frame(int s) const {
+    return foot_wrench_in_world_frame(Side::values.at(s));
+  }
 
  private:
   double time0_;
@@ -133,9 +152,9 @@ class HumanoidStatus {
   VectorXd bias_term_;  ///< Bias term: M * qdd + h = tau + J^T * lambda
 
   // computed from kinematics
-  Vector3d com_;      ///< Center of mass
-  Vector3d comd_;     ///< Com velocity
-  MatrixXd J_com_;    ///< Com Jacobian: comd = J_com * v
+  Vector3d com_;               ///< Center of mass
+  Vector3d comd_;              ///< Com velocity
+  MatrixXd J_com_;             ///< Com Jacobian: comd = J_com * v
   Vector3d Jdot_times_v_com_;  ///< J_com_dot * v
 
   // These are at the origin of the each body (defined by the urdf) unless
@@ -145,10 +164,12 @@ class HumanoidStatus {
   BodyOfInterest foot_[2];  ///< At the bottom of foot, right below the ankle.
   BodyOfInterest foot_sensor_[2];  ///< At the foot sensor, inside foot
 
-  Vector2d cop_;       ///< Center of pressure
-  Vector2d cop_in_body_frame_[2];  ///< Individual center of pressure in foot frame
+  Vector2d cop_;  ///< Center of pressure
+  Vector2d
+      cop_in_body_frame_[2];  ///< Individual center of pressure in foot frame
 
-  Vector6d foot_wrench_in_body_frame_[2];  ///< Wrench measured in the body frame
+  Vector6d
+      foot_wrench_in_body_frame_[2];  ///< Wrench measured in the body frame
   Vector6d foot_wrench_in_world_frame_[2];  ///< Wrench rotated to world frame
 
   /**
