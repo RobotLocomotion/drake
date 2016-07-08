@@ -2,11 +2,6 @@
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # TODO(#2372) These are warnings that we can't handle yet.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
-endif()
-
 add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
 target_link_libraries(drakeXMLUtil drakeCommon tinyxml2 spruce)
 pods_install_libraries(drakeXMLUtil)
@@ -52,6 +47,11 @@ add_subdirectory(joints)
 
 if(MATLAB_FOUND)
   add_mex(rbmMexFunctions SHARED rigidBodyTreeMexFunctions.cpp)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # These warnings are not worth fixing.
+    set_target_properties(
+      rbmMexFunctions PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_SIGN_COMPARE})
+  endif()
   target_link_libraries(rbmMexFunctions drakeRBM drakeMexUtil)
 
   macro(add_rbm_mex)
@@ -60,6 +60,11 @@ if(MATLAB_FOUND)
     # target_link_libraries(${ARGV} drakeRBM)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} rbmMexFunctions)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      # These warnings are not worth fixing.
+      set_target_properties(
+        ${ARGV} PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_SIGN_COMPARE})
+    endif()
   endmacro()
 
   add_rbm_mex(constructModelmex)
@@ -111,6 +116,11 @@ if(MATLAB_FOUND)
   macro(add_ikoptions_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeIKoptions)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      # These warnings are not worth fixing.
+      set_target_properties(
+        ${ARGV} PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_SIGN_COMPARE})
+    endif()
   endmacro()
   add_ikoptions_mex(IKoptionsmex)
 
