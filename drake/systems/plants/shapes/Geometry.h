@@ -149,23 +149,6 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   std::string resolved_filename;
   bool extractMeshVertices(Eigen::Matrix3Xd &vertex_coordinates) const;
 
-  /** Read mesh triangles into the provided array connectivities.
-
-  @param[out] connectivities Each column holds the connectivities for a
-  particular triangle in the mesh. Therefore the number of columns equals the
-  number of triangles. The i-th column, of size 3, holds the indexes to the
-  three vertices of the i-th triangle in the mesh.
-
-  The array `connectivities` is resized to hold the number of triangles in the
-  mesh. If successful, `connectivities` will be a matrix with as many columns as
-  triangles in the mesh and three rows. Each column corresponds to a triangle
-  and contains the indexes to the points loaded with Mesh::extractMeshVertices.
-  **/
-  bool ReadMeshConnectivities(Eigen::Matrix3Xi& connectivities) const;
-
-  // TODO(amcastro-tri): CREATE ISSUE ON HAVING TO MAKE THIS METHOD CONST!!
-  // THIS DOES NOT ALLOW TO LOAD DATA ON THE ACTUAL MESH
-
   /** Loads triangle mesh from an obj file into the provided vectors of vertices
   and triangles.
 
