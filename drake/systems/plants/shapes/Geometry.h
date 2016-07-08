@@ -2,8 +2,7 @@
 
 #include <string>
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
+#include "drake/common/eigen_types.h"
 
 #include "drake/drakeShapes_export.h"
 
@@ -163,6 +162,11 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   and contains the indexes to the points loaded with Mesh::extractMeshVertices.
   **/
   bool ReadMeshConnectivities(Eigen::Matrix3Xi& connectivities) const;
+
+  // TODO(amcastro-tri): CREATE ISSUE ON HAVING TO MAKE THIS METHOD CONST!!
+  // THIS DOES NOT ALLOW TO LOAD DATA ON THE ACTUAL MESH
+  void LoadObjFile(std::vector<Eigen::Vector3d>& vertices,
+                   std::vector<Eigen::Vector3i>& triangles) const;
 
  protected:
   std::string root_dir;

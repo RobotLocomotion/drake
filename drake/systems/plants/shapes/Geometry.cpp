@@ -187,7 +187,7 @@ Mesh::Mesh(const string &filename, const string &resolved_filename)
       filename(filename),
       resolved_filename(resolved_filename) {}
 
-bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
+bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
   if (resolved_filename.empty()) {
     return false;
   }
@@ -244,6 +244,84 @@ bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
     }
   }
   return true;
+}
+
+void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
+                       std::vector<Vector3i>& triangles) const {
+
+  // MOVE ALL THIS CODE TO A COMMON METHOD
+  spruce::path spath(resolved_filename);
+  string ext = spath.extension();
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+  ifstream file;
+  if (ext.compare(".obj") == 0) {
+    file.open(spath.getStr().c_str(), ifstream::in);
+  } else {
+    spath.setExtension(".obj");
+
+    if (spath.exists()) {
+      // try changing the extension to obj and loading.
+      file.open(spath.getStr().c_str(), ifstream::in);
+    }
+  }
+
+  if (!file.is_open()) {
+    std::cerr << "Warning: Mesh " << spath.getStr()
+        << " ignored because it does not have extension .obj (nor can I find "
+            "a juxtaposed file with a .obj extension)"
+        << std::endl;
+  }
+  std::string opened_file_name = spath.getStr();
+  // END SECTION OF COMMON CODE
+
+  std::string line;
+  int line_number = 0;
+  while (!file.eof()) {
+    ++line_number;
+    std::getline(file, line);
+    std::stringstream ss(line);
+    std::string key;
+    ss >> key;
+
+    if(key == "v") {
+      // Reads a 3D vertex.
+      double x, y, z;
+      ss >> x; ss >> y; ss >> z;
+      if(ss.fail()) {
+        throw std::runtime_error(
+            "In file \"" + opened_file_name + "\" "
+            "(L." + std::to_string(line_number) + "). "
+            "Vertex in the wrong format.");
+      }
+      vertices.push_back(Vector3d(x, y, z));
+    } else if(key == "f") {
+      // Reads the connectivity for a single triangle.
+      std::vector<int> indices;
+      int index;
+      while (ss >> index) {
+        // Ignores line until the next whitespace.
+        // This effectively ignores texture coordinates and normals.
+        // The first entry always corresponds to an index in the face.
+        ss.ignore(line.size(), ' ');
+        if(ss.fail()) {
+          throw std::runtime_error(
+              "In file \"" + opened_file_name + "\" "
+              "(L." + std::to_string(line_number) + "). "
+              "Triangle face in the wrong format.");
+        }
+        indices.push_back(index);
+      }
+      if(indices.size() != 3) {
+        throw std::runtime_error(
+            "In file \"" + opened_file_name + "\" "
+            "(L." + std::to_string(line_number) + "). "
+            "Only triangular faces supported. However "
+            + std::to_string(indices.size()) + " indices are provided.");
+      }
+      triangles.push_back(Vector3i(indices[0]-1, indices[1]-1, indices[2]-1));
+    }
+  }
 }
 
 bool Mesh::ReadMeshConnectivities(Matrix3Xi& connectivities) const {
