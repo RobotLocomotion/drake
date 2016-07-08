@@ -158,13 +158,11 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshShape(
 
 std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
     const DrakeShapes::Mesh& geometry, bool use_margins) {
-  Matrix3Xd vertices;
-  Matrix3Xi connectivities;
 
-  // Gathers vertices and connectivities from the mesh_interface's file.
-  geometry.extractMeshVertices(vertices);
-  geometry.ReadMeshConnectivities(connectivities);
-
+  // Gathers vertices and triangles from the mesh_interface's file.
+  std::vector<Vector3d> vertices;
+  std::vector<Vector3i> triangles;
+  geometry.LoadObjFile(vertices, triangles);
 
   // Creates a btTriangleMesh (a btStridingMeshInterface) to provide the
   // information needed by the more complex btBvhTriangleMeshShape.
@@ -191,21 +189,21 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
   btTriangleMesh* mesh_interface = new btTriangleMesh();
 
   // Preallocates memory.
-  int num_triangles = connectivities.cols();
-  int num_vertices = vertices.cols();
+  int num_triangles = triangles.size();
+  int num_vertices = vertices.size();
 
   mesh_interface->preallocateIndices(num_triangles);
   mesh_interface->preallocateVertices(num_vertices);
 
   // Loads individual triangles.
   for (int itri = 0; itri <  num_triangles; ++itri) {
-    Vector3i tri = connectivities.col(itri);
+    Vector3i tri = triangles[itri];
     btVector3 vertex0(
-        vertices(0, tri(0)), vertices(1, tri(0)), vertices(2, tri(0)));
+        vertices[tri(0)](0), vertices[tri(0)](1), vertices[tri(0)](2));
     btVector3 vertex1(
-        vertices(0, tri(1)), vertices(1, tri(1)), vertices(2, tri(1)));
+        vertices[tri(1)](0), vertices[tri(1)](1), vertices[tri(1)](2));
     btVector3 vertex2(
-        vertices(0, tri(2)), vertices(1, tri(2)), vertices(2, tri(2)));
+        vertices[tri(2)](0), vertices[tri(2)](1), vertices[tri(2)](2));
     mesh_interface->addTriangle(vertex0, vertex1, vertex2);
   }
 
