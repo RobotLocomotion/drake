@@ -751,7 +751,7 @@ void AddRobotFromSDFInWorldFrame(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
-  addRobotFromSDF(filename, floating_base_type, nullptr, tree);
+  AddRobotFromSDF(filename, floating_base_type, nullptr, tree);
 }
 
 void AddRobotFromSDF(
