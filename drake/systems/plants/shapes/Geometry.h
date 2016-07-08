@@ -165,6 +165,7 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
 
  protected:
   std::string root_dir;
+
  private:
   // This method finds a juxtaposed obj file from the `resolved_filename`
   // member. If unable to resolve an obj file it throws an exception.

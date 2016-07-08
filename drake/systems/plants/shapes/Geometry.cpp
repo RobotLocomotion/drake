@@ -192,7 +192,7 @@ bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
 
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
-  if(!file) {
+  if (!file) {
     throw std::runtime_error(
         "Error opening file \"" + obj_file_name + "\".");
   }
@@ -235,7 +235,7 @@ string Mesh::FindFileWithObjExtension() const {
 
   if (ext.compare(".obj") == 0) {
     // Checks if the file with the obj extension exists.
-    if(!spath.exists()) {
+    if (!spath.exists()) {
       throw std::runtime_error(
           "Unable to open file \"" + spath.getStr() + "\".");
     }
@@ -254,10 +254,9 @@ string Mesh::FindFileWithObjExtension() const {
 
 void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
                        std::vector<Vector3i>& triangles) const {
-
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
-  if(!file) {
+  if (!file) {
     throw std::runtime_error(
         "Error opening file \"" + obj_file_name + "\".");
   }
@@ -271,18 +270,18 @@ void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
     std::string key;
     ss >> key;
 
-    if(key == "v") {
+    if (key == "v") {
       // Reads a 3D vertex.
       double x, y, z;
       ss >> x; ss >> y; ss >> z;
-      if(ss.fail()) {
+      if (ss.fail()) {
         throw std::runtime_error(
             "In file \"" + obj_file_name + "\" "
             "(L." + std::to_string(line_number) + "). "
             "Vertex in the wrong format.");
       }
       vertices.push_back(Vector3d(x, y, z));
-    } else if(key == "f") {
+    } else if (key == "f") {
       // Reads the connectivity for a single triangle.
       std::vector<int> indices;
       int index;
@@ -291,7 +290,7 @@ void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
         // This effectively ignores texture coordinates and normals.
         // The first entry always corresponds to an index in the face.
         ss.ignore(line.size(), ' ');
-        if(ss.fail()) {
+        if (ss.fail()) {
           throw std::runtime_error(
               "In file \"" + obj_file_name + "\" "
               "(L." + std::to_string(line_number) + "). "
@@ -299,7 +298,7 @@ void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
         }
         indices.push_back(index);
       }
-      if(indices.size() != 3) {
+      if (indices.size() != 3) {
         throw std::runtime_error(
             "In file \"" + obj_file_name + "\" "
             "(L." + std::to_string(line_number) + "). "
