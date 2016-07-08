@@ -246,34 +246,39 @@ bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
   return true;
 }
 
-void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
-                       std::vector<Vector3i>& triangles) const {
-
-  // MOVE ALL THIS CODE TO A COMMON METHOD
+string Mesh::FindFileWithObjExtension() const {
   spruce::path spath(resolved_filename);
   string ext = spath.extension();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-  ifstream file;
   if (ext.compare(".obj") == 0) {
-    file.open(spath.getStr().c_str(), ifstream::in);
+    // Checks if the file with the obj extension exists.
+    if(!spath.exists()) {
+      throw std::runtime_error(
+          "Unable to open file \"" + spath.getStr() + "\".");
+    }
   } else {
+    // Tries changing the extension to obj.
     spath.setExtension(".obj");
-
-    if (spath.exists()) {
-      // try changing the extension to obj and loading.
-      file.open(spath.getStr().c_str(), ifstream::in);
+    if (!spath.exists()) {
+      throw std::runtime_error(
+          "Unable to resolve an obj file from the filename \""
+              + spath.getStr() + "\" provided.");
     }
   }
 
-  if (!file.is_open()) {
-    std::cerr << "Warning: Mesh " << spath.getStr()
-        << " ignored because it does not have extension .obj (nor can I find "
-            "a juxtaposed file with a .obj extension)"
-        << std::endl;
+  return spath.getStr();
+}
+
+void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
+                       std::vector<Vector3i>& triangles) const {
+
+  string opened_file_name = FindFileWithObjExtension();
+  ifstream file(opened_file_name);
+  if(!file) {
+    throw std::runtime_error(
+        "Error opening file \"" + opened_file_name + "\".");
   }
-  std::string opened_file_name = spath.getStr();
-  // END SECTION OF COMMON CODE
 
   std::string line;
   int line_number = 0;
