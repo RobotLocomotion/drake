@@ -188,31 +188,13 @@ Mesh::Mesh(const string &filename, const string &resolved_filename)
       resolved_filename(resolved_filename) {}
 
 bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
-  if (resolved_filename.empty()) {
-    return false;
-  }
-  spruce::path spath(resolved_filename);
-  string ext = spath.extension();
-  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+  if (resolved_filename.empty()) return false;
 
-  ifstream file;
-  if (ext.compare(".obj") == 0) {
-    file.open(spath.getStr().c_str(), ifstream::in);
-  } else {
-    spath.setExtension(".obj");
-
-    if (spath.exists()) {
-      // try changing the extension to obj and loading.
-      file.open(spath.getStr().c_str(), ifstream::in);
-    }
-  }
-
-  if (!file.is_open()) {
-    std::cerr << "Warning: Mesh " << spath.getStr()
-         << " ignored because it does not have extension .obj (nor can I find "
-            "a juxtaposed file with a .obj extension)"
-         << std::endl;
-    return false;
+  string opened_file_name = FindFileWithObjExtension();
+  ifstream file(opened_file_name);
+  if(!file) {
+    throw std::runtime_error(
+        "Error opening file \"" + opened_file_name + "\".");
   }
 
   string line;
