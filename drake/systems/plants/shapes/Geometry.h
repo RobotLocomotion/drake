@@ -165,6 +165,18 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
 
   // TODO(amcastro-tri): CREATE ISSUE ON HAVING TO MAKE THIS METHOD CONST!!
   // THIS DOES NOT ALLOW TO LOAD DATA ON THE ACTUAL MESH
+
+  /** Loads triangle mesh from an obj file into the provided vectors of vertices
+  and triangles.
+
+  @param[out] vertices Vector of 3D vertices in the mesh.
+  @param[out] triangles Vector of indices for each triangle in the mesh.
+  The i-th entry of @p triangles holds a 3D vector of integer indices into
+  @p vertices corresponding to the vertices forming the i-th triangle.
+
+  On output, `vertices.size()` corresponds to the number of vertices in the mesh
+  while `triangles.size()` corresponds to the number of triangles in the mesh.
+  **/
   void LoadObjFile(std::vector<Eigen::Vector3d>& vertices,
                    std::vector<Eigen::Vector3i>& triangles) const;
 
