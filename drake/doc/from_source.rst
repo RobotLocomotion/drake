@@ -90,9 +90,11 @@ Before running build, you will need to follow the instructions for your host sys
 
 Build the collection
 ====================
-There are two supported ways to build Drake:
-`Make <https://www.gnu.org/software/make/>`_ and
-`Ninja <https://ninja-build.org/>`_.
+There are three ways to build Drake:
+
+1. Using `Make <https://www.gnu.org/software/make/>`_
+2. Using `Ninja <https://ninja-build.org/>`_
+3. Using `ROS Catkin <http://wiki.ros.org/catkin>`_
 
 Because the Drake build is not entirely out-of-source, you must pick one build
 system and stick to it. Switching build systems within the same working tree
@@ -178,6 +180,18 @@ Tab-completion is supported.
 To review the raw shell commands, compiler flags, and linker flags that CMake
 generated, consult ``build.ninja`` and ``drake/build.ninja``, or run
 ``ninja -v`` for a verbose build.
+
+.. _build_with_ros_catkin:
+
+Build with ROS Catkin
+---------------------
+
+See:
+
+.. toctree::
+    :maxdepth: 1
+
+    from_source_ros
 
 Test Your Installation
 ======================
