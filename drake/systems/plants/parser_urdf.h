@@ -50,7 +50,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void addRobotFromURDFString(
+void AddRobotFromURDFString(
     const std::string& urdf_string,
     RigidBodyTree* tree);
 
@@ -69,7 +69,7 @@ void addRobotFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void addRobotFromURDFString(
+void AddRobotFromURDFString(
     const std::string& urdf_string,
     std::map<std::string, std::string>& package_map,
     RigidBodyTree* tree);
@@ -91,7 +91,7 @@ void addRobotFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void addRobotFromURDFString(
+void AddRobotFromURDFString(
     const std::string& urdf_string,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
@@ -118,7 +118,7 @@ void addRobotFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void addRobotFromURDFString(
+void AddRobotFromURDFString(
     const std::string& urdf_string,
     PackageMap& package_map,
     const std::string& root_dir,
@@ -137,7 +137,7 @@ void addRobotFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void addRobotFromURDF(const std::string& urdf_filename,
+void AddRobotFromURDF(const std::string& urdf_filename,
     RigidBodyTree* tree);
 
 // TODO(liang.fok) Replace this method with one that returns a Model object.
@@ -154,7 +154,7 @@ void addRobotFromURDF(const std::string& urdf_filename,
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void addRobotFromURDF(
+void AddRobotFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
@@ -175,7 +175,7 @@ void addRobotFromURDF(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void addRobotFromURDF(
+void AddRobotFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
@@ -200,7 +200,7 @@ void addRobotFromURDF(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void addRobotFromURDF(
+void AddRobotFromURDF(
     const std::string& urdf_filename,
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
