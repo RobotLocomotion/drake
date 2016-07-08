@@ -2,6 +2,7 @@
 This XML file is used by ROS. It declares that this directory and all of its
 subdirectories constitute a ROS package. It further enables Drake to be compiled
 by the Catkin build system. For more information see the following websites:
+
 http://wiki.ros.org/catkin
 http://wiki.ros.org/catkin/package.xml
 -->
