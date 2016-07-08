@@ -61,7 +61,7 @@ To add Drake to your ROS Catkin workspace, execute the following commands (note:
 you may need to customize the commands below if you elected to place the
 workspace in a different location)::
 
-    cd src
+    cd ~/dev/drake_catkin_workspace/
     git clone git@github.com:RobotLocomotion/drake.git
     cd ..
     catkin_make
