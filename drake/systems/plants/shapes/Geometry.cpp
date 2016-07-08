@@ -190,11 +190,11 @@ Mesh::Mesh(const string &filename, const string &resolved_filename)
 bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
   if (resolved_filename.empty()) return false;
 
-  string opened_file_name = FindFileWithObjExtension();
-  ifstream file(opened_file_name);
+  string obj_file_name = FindFileWithObjExtension();
+  ifstream file(obj_file_name);
   if(!file) {
     throw std::runtime_error(
-        "Error opening file \"" + opened_file_name + "\".");
+        "Error opening file \"" + obj_file_name + "\".");
   }
 
   string line;
@@ -255,11 +255,11 @@ string Mesh::FindFileWithObjExtension() const {
 void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
                        std::vector<Vector3i>& triangles) const {
 
-  string opened_file_name = FindFileWithObjExtension();
-  ifstream file(opened_file_name);
+  string obj_file_name = FindFileWithObjExtension();
+  ifstream file(obj_file_name);
   if(!file) {
     throw std::runtime_error(
-        "Error opening file \"" + opened_file_name + "\".");
+        "Error opening file \"" + obj_file_name + "\".");
   }
 
   std::string line;
@@ -277,7 +277,7 @@ void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
       ss >> x; ss >> y; ss >> z;
       if(ss.fail()) {
         throw std::runtime_error(
-            "In file \"" + opened_file_name + "\" "
+            "In file \"" + obj_file_name + "\" "
             "(L." + std::to_string(line_number) + "). "
             "Vertex in the wrong format.");
       }
@@ -293,7 +293,7 @@ void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
         ss.ignore(line.size(), ' ');
         if(ss.fail()) {
           throw std::runtime_error(
-              "In file \"" + opened_file_name + "\" "
+              "In file \"" + obj_file_name + "\" "
               "(L." + std::to_string(line_number) + "). "
               "Triangle face in the wrong format.");
         }
@@ -301,7 +301,7 @@ void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
       }
       if(indices.size() != 3) {
         throw std::runtime_error(
-            "In file \"" + opened_file_name + "\" "
+            "In file \"" + obj_file_name + "\" "
             "(L." + std::to_string(line_number) + "). "
             "Only triangular faces supported. However "
             + std::to_string(indices.size()) + " indices are provided.");
