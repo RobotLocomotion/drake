@@ -747,14 +747,14 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
 
 }  // namespace
 
-void addRobotFromSDFInWorldFrame(
+void AddRobotFromSDFInWorldFrame(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   addRobotFromSDF(filename, floating_base_type, nullptr, tree);
 }
 
-void addRobotFromSDF(
+void AddRobotFromSDF(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,

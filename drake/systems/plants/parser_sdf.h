@@ -28,7 +28,7 @@ namespace sdf {
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
 DRAKERBM_EXPORT
-void addRobotFromSDFInWorldFrame(
+void AddRobotFromSDFInWorldFrame(
     const std::string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type, RigidBodyTree* tree);
 
@@ -48,7 +48,7 @@ void addRobotFromSDFInWorldFrame(
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
 DRAKERBM_EXPORT
-void addRobotFromSDF(const std::string& sdf_filename,
+void AddRobotFromSDF(const std::string& sdf_filename,
                      const DrakeJoint::FloatingBaseType floating_base_type,
                      std::shared_ptr<RigidBodyFrame> weld_to_frame,
                      RigidBodyTree* tree);

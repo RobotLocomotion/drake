@@ -2121,7 +2121,7 @@ void RigidBodyTree::addRobotFromSDF(
     const std::string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::sdf::addRobotFromSDF(sdf_filename, floating_base_type,
+  drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
                                          weld_to_frame, this);
 }
 
