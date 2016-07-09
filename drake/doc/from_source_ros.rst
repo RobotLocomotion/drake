@@ -140,6 +140,4 @@ To run Drake's ROS-powered cars example, execute::
     .. TODO(liang.fok) Combine the roslaunch and rosrun commands into one!
     cd ~/dev/drake_catkin_workspace
     source devel/setup.bash
-    roslaunch drake_cars_examples rviz_prius.launch
-    rosrun drake_cars_examples car_sim_lcm_and_ros src/drake/drake/examples/Cars/models/prius/prius_with_lidar.sdf src/drake/drake/examples/Cars/models/stata_garage_p1.sdf
-
+    roslaunch drake_cars_examples drake_car_sim.launch
