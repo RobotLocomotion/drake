@@ -112,6 +112,18 @@ Later, if you want to do a clean build, you can execute::
     catkin init
     catkin build
 
+.. _drake_catkin_run_unit_tests:
+
+Step 4: Run Unit Tests:
+=======================
+
+Execute the following commands to run Drake's ROS-based unit tests::
+
+    cd ~/dev/drake_catkin_workspace
+    source devel/setup.bash
+    catkin build --verbose --no-deps drake_ros_systems --make-args run_tests
+    rostest drake_ros_systems ros_test.test
+
 .. _drake_catkin_additional_notes:
 
 Additional Notes
@@ -137,7 +149,6 @@ Running An Example: Car Simulation
 
 To run Drake's ROS-powered cars example, execute::
 
-    .. TODO(liang.fok) Combine the roslaunch and rosrun commands into one!
     cd ~/dev/drake_catkin_workspace
     source devel/setup.bash
     roslaunch drake_cars_examples drake_car_sim.launch
