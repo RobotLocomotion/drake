@@ -43,7 +43,7 @@ class AtlasPlant {
                              const StateVector<double>& x,
                              const InputVector<double>& u) const;
 
-  /** Given a an InputVector @p u of generalized forces this method computes the
+  /** Given an InputVector @p u of generalized forces, this method computes the
   dynamics of the plant at a given StateVector @p x and time @p t. **/
   StateVector<double> dynamics(const double& t,
                                const StateVector<double>& x,
