@@ -114,8 +114,8 @@ Later, if you want to do a clean build, you can execute::
 
 .. _drake_catkin_run_unit_tests:
 
-Step 4: Run Unit Tests:
-=======================
+Step 4: Run Unit Tests
+======================
 
 Execute the following commands to run Drake's ROS-based unit tests::
 
