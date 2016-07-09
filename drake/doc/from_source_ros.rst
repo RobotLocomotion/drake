@@ -82,7 +82,7 @@ Step 3: Build the Workspace
 
 Execute the following commands to build the workspace::
 
-    cd ~/dev/drake_catkin_workspace/
+    cd ~/dev/drake_catkin_workspace
     source /opt/ros/indigo/setup.bash
     catkin init
     catkin build
@@ -100,6 +100,17 @@ Note also that Catkin by default performs a multi-threaded build.
 If your computer does not have sufficient computational resources to support
 this, you can add a ``-j1`` flag after the ``catkin_make`` command to force a
 single-threaded build, which uses fewer resources.
+
+Later, if you want to do a clean build, you can execute::
+
+    cd ~/dev/drake_catkin_workspace
+    rm -rf build devel install logs
+    cd src/drake
+    git clean -fdx
+    cd ~/dev/drake_catkin_workspace
+    source /opt/ros/indigo/setup.bash
+    catkin init
+    catkin build
 
 .. _drake_catkin_additional_notes:
 
