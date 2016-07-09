@@ -83,6 +83,7 @@ Step 3: Build the Workspace
 Execute the following commands to build the workspace::
 
     cd ~/dev/drake_catkin_workspace/
+    source /opt/ros/indigo/setup.bash
     catkin init
     catkin build
 
@@ -125,6 +126,9 @@ Running An Example: Car Simulation
 
 To run Drake's ROS-powered cars example, execute::
 
-    TODO(liang.fok) Make this a single command!
+    .. TODO(liang.fok) Combine the roslaunch and rosrun commands into one!
+    cd ~/dev/drake_catkin_workspace
+    source devel/setup.bash
     roslaunch drake_cars_examples rviz_prius.launch
+    rosrun drake_cars_examples car_sim_lcm_and_ros src/drake/drake/examples/Cars/models/prius/prius_with_lidar.sdf src/drake/drake/examples/Cars/models/stata_garage_p1.sdf
 
