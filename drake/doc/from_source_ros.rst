@@ -88,7 +88,7 @@ Execute the following commands to build the workspace::
     catkin build
 
 There are numerous optional flags that can be included after the ``catkin build``
-command listed above. For example, one flag is ``-DDISABLE_MATLAB=TRUE`, which
+command listed above. For example, one flag is ``-DDISABLE_MATLAB=TRUE``, which
 disables MATLAB support, which may be useful if you have MATLAB installed but
 don't have access to a license server. There are many additional command line
 flags that, for example, enables support for certain optimizers like
