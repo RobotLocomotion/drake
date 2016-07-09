@@ -2458,6 +2458,8 @@ template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
 template DRAKERBM_EXPORT KinematicsCache<AutoDiffXd>
 RigidBodyTree::doKinematics(
     Eigen::MatrixBase<VectorX<AutoDiffXd>> const&) const;
+template DRAKERBM_EXPORT KinematicsCache<double>RigidBodyTree::doKinematics(
+    Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&) const;
 
 // Explicit template instantiations for doKinematics(q, v).
 template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
