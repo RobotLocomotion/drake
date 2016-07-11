@@ -279,7 +279,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
       if (ss.fail()) {
         throw std::runtime_error(
             "In file \"" + obj_file_name + "\" "
-            "(L." + std::to_string(line_number) + "). "
+            "(line " + std::to_string(line_number) + "). "
             "Vertex in the wrong format.");
       }
       vertices->push_back(Vector3d(x, y, z));
@@ -292,7 +292,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
         if (index < 1) {
           throw std::runtime_error(
               "In file \"" + obj_file_name + "\" "
-              "(L." + std::to_string(line_number) + "). "
+              "(line " + std::to_string(line_number) + "). "
               "Invalid vertex index is " + std::to_string(index) + " < 1.");
         }
         maximum_index = std::max(maximum_index, index);
@@ -304,7 +304,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
         if (ss.fail()) {
           throw std::runtime_error(
               "In file \"" + obj_file_name + "\" "
-              "(L." + std::to_string(line_number) + "). "
+              "(line " + std::to_string(line_number) + "). "
               "Triangle face in the wrong format.");
         }
         indices.push_back(index);
@@ -312,7 +312,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
       if (indices.size() != 3) {
         throw std::runtime_error(
             "In file \"" + obj_file_name + "\" "
-            "(L." + std::to_string(line_number) + "). "
+            "(line " + std::to_string(line_number) + "). "
             "Only triangular faces supported. However "
             + std::to_string(indices.size()) + " indices are provided.");
       }
