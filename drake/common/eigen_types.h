@@ -59,11 +59,3 @@ template <typename Scalar>
 using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
 
 }  // namespace drake
-
-/// Specializes std::vector on some Eigen types requiring alignment.
-/// This needs to be outside the drake:: namespace to compile properly since the
-/// specialization happens in the std:: namespace.
-EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2i);
-EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2d);
-EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector3i);
-EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector3d);

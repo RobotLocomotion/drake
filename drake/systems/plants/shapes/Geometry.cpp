@@ -252,8 +252,8 @@ string Mesh::FindFileWithObjExtension() const {
   return spath.getStr();
 }
 
-void Mesh::LoadObjFile(std::vector<Vector3d>* vertices,
-                       std::vector<Vector3i>* triangles) const {
+void Mesh::LoadObjFile(PointsVector* vertices,
+                       TrianglesVector* triangles) const {
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
   if (!file) {

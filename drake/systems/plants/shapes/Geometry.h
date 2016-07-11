@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "drake/common/eigen_types.h"
+#include<Eigen/StdVector>
 
 #include "drake/drakeShapes_export.h"
 
@@ -16,6 +16,11 @@ enum DRAKESHAPES_EXPORT Shape {
   MESH_POINTS = 5,
   CAPSULE = 6
 };
+
+typedef std::vector<Eigen::Vector3d,
+                    Eigen::aligned_allocator<Eigen::Vector3d>> PointsVector;
+typedef std::vector<Eigen::Vector3i,
+                    Eigen::aligned_allocator<Eigen::Vector3i>> TrianglesVector;
 
 std::string ShapeToString(Shape ss);
 
@@ -160,8 +165,8 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   On output, `vertices.size()` corresponds to the number of vertices in the mesh
   while `triangles.size()` corresponds to the number of triangles in the mesh.
   **/
-  void LoadObjFile(std::vector<Eigen::Vector3d>* vertices,
-                   std::vector<Eigen::Vector3i>* triangles) const;
+  void LoadObjFile(PointsVector* vertices,
+                   TrianglesVector* triangles) const;
 
  protected:
   std::string root_dir;
