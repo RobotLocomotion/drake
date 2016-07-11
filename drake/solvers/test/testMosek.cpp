@@ -29,14 +29,23 @@ GTEST_TEST(testMosek, MosekLinearProgram) {
   std::shared_ptr<LinearConstraint> ptrtoobj =
       std::make_shared<LinearConstraint>(obj);
   prog.AddCost(ptrtoobj);
-  Eigen::MatrixXd constraint(3, 4);
-  constraint << 3, 1, 2, 0,
-                2, 1, 3, 1,
-                0, 2, 0, 3;
-  Eigen::Vector3d lb, ub;
-  lb << 30, 15, -std::numeric_limits<double>::infinity();
-  ub << 30, +std::numeric_limits<double>::infinity(), 25;
-  prog.AddLinearConstraint(constraint, lb, ub);
+  Eigen::MatrixXd constraint1(1, 4);
+  Eigen::MatrixXd constraint2(1, 4);
+  constraint1 << 2, 1, 3, 1;
+  constraint2 << 0, 2, 0, 3;
+  Eigen::MatrixXd lineqconstraint(1,4);
+  lineqconstraint << 3, 1, 2, 0;
+  Eigen::MatrixXd lb1(1, 1), ub1(1, 1);
+  Eigen::MatrixXd lb2(1, 1), ub2(1, 1);
+  lb1 << 15;
+  ub1 << +std::numeric_limits<double>::infinity();
+  lb2 << -std::numeric_limits<double>::infinity();
+  ub2 << 25;
+  Eigen::MatrixXd lineqbounds(1,1);
+  lineqbounds << 30;
+  prog.AddLinearConstraint(constraint1, lb1, ub1);
+  prog.AddLinearConstraint(constraint2, lb2, ub2);
+  prog.AddLinearEqualityConstraint(lineqconstraint, lineqbounds);
   Eigen::Vector4d bboxlow, bboxhigh;
   bboxlow << 0, 0, 0, 0;
   bboxhigh << std::numeric_limits<double>::infinity(),
