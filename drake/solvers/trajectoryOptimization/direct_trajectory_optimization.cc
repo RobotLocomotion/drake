@@ -7,6 +7,11 @@ using namespace std;
 
 namespace drake {
 namespace solvers {
+namespace {
+  VectorXd vector_diff(VectorXd& vec) {
+    return vec.tail(vec.size() - 1) - vec.head(vec.size() - 1);
+  }
+}
 
 /**
  *  DirectTrajectoryOptimization
@@ -23,6 +28,8 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     const int trajectory_time_upper_bound)
     : kNumInputs(num_inputs),
       kNumStates(num_states),
+      kNumVars(num_time_samples - 1 + (num_time_samples * 
+        (num_states + num_inputs))),
       N(num_time_samples),
       h_vars_(opt_problem_.AddContinuousVariables(N - 1, "h")),
       u_vars_(opt_problem_.AddContinuousVariables(N - 1, "h")) {
@@ -64,8 +71,18 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   }
 }
 
+/**
+ *  Evaluate the initial trajectories at the sampled times and construct the 
+ *  nominal z0. 
+ */
+void DirectTrajectoryOptimization::GetInitialVars(int t_init_in) {
+  VectorXd t_init{VectorXd::LinSpaced(N, 0, t_init_in)};
+  opt_problem_.SetInitialGuess(h_vars_, vector_diff(t_init)); 
+  // TODO return guesses for x and u vars.
+}
+
 // TODO(Lucy-tri) add optional x_indices. Do: time_index as cell array.
-void DirectTrajectoryOptimization::addStateConstraint(
+void DirectTrajectoryOptimization::AddStateConstraint(
     const Constraint& constraint, const int time_index) {}
 
 }  // solvers
