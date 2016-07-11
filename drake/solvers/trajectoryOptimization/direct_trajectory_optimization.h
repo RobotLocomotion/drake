@@ -19,12 +19,13 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
                                const size_t num_time_samples,
                                const int trajectory_time_lower_bound,
                                const int trajectory_time_upper_bound);
+  void GetInitialVars(int t_init_in);
+  void AddStateConstraint(const Constraint& constraint, const int time_index);
   // TODO(lucy-tri) add options params
  private:
-  void addStateConstraint(const Constraint& constraint, const int time_index); 
-  
   const int kNumInputs;
   const int kNumStates;
+  const int kNumVars;
   const size_t N;  // Number of time samples
 
   OptimizationProblem opt_problem_;
