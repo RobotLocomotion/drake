@@ -36,12 +36,12 @@ Install
 `ROS Indigo <http://wiki.ros.org/indigo>`_. Other versions of the OS and ROS
 may or may not work.
 
-Once OS and ROS is installed, install
+Once the OS and ROS are installed, install
 `Catkin Tools <http://catkin-tools.readthedocs.io/en/latest/>`_ by following
 the instructions
 `here <http://catkin-tools.readthedocs.io/en/latest/installing.html>`_.
 We use ``catkin_tools`` instead of the normal ``catkin_build`` because Drake
-isn't a *real* Catkin package meaning it needs to built in a nisolated manner
+isn't a *real* Catkin package meaning it needs to built in an isolated manner
 from the rest of the packages in the ROS workspace.
 
 .. _drake_catkin_create_workspace_directories:
@@ -57,8 +57,8 @@ If you already have a ROS Catkin workspace and simply want to add Drake as a
 package within it, you can skip this step and go straight to
 :ref:`_drake_catkin_add_repos`.
 
-Execute the following commands to create that directory structure that will hold
-the ROS workspace::
+Execute the following commands to create a directory structure for holding the
+ROS workspace::
 
     mkdir -p ~/dev/drake_catkin_workspace/src
 
