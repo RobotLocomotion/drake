@@ -160,8 +160,8 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   On output, `vertices.size()` corresponds to the number of vertices in the mesh
   while `triangles.size()` corresponds to the number of triangles in the mesh.
   **/
-  void LoadObjFile(std::vector<Eigen::Vector3d>& vertices,
-                   std::vector<Eigen::Vector3i>& triangles) const;
+  void LoadObjFile(std::vector<Eigen::Vector3d>* vertices,
+                   std::vector<Eigen::Vector3i>* triangles) const;
 
  protected:
   std::string root_dir;

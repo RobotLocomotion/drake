@@ -252,8 +252,8 @@ string Mesh::FindFileWithObjExtension() const {
   return spath.getStr();
 }
 
-void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
-                       std::vector<Vector3i>& triangles) const {
+void Mesh::LoadObjFile(std::vector<Vector3d>* vertices,
+                       std::vector<Vector3i>* triangles) const {
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
   if (!file) {
@@ -280,7 +280,7 @@ void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
             "(L." + std::to_string(line_number) + "). "
             "Vertex in the wrong format.");
       }
-      vertices.push_back(Vector3d(x, y, z));
+      vertices->push_back(Vector3d(x, y, z));
     } else if (key == "f") {
       // Reads the connectivity for a single triangle.
       std::vector<int> indices;
@@ -305,7 +305,7 @@ void Mesh::LoadObjFile(std::vector<Vector3d>& vertices,
             "Only triangular faces supported. However "
             + std::to_string(indices.size()) + " indices are provided.");
       }
-      triangles.push_back(Vector3i(indices[0]-1, indices[1]-1, indices[2]-1));
+      triangles->push_back(Vector3i(indices[0]-1, indices[1]-1, indices[2]-1));
     }
   }
 }
