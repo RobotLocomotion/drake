@@ -23,6 +23,8 @@ lcm_wrap_types(
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
   lcmt_joint_pd_override.lcm
+  lcmt_matlab_array.lcm
+  lcmt_matlab_feval_data.lcm
   lcmt_piecewise_polynomial.lcm
   lcmt_polynomial.lcm
   lcmt_polynomial_matrix.lcm
