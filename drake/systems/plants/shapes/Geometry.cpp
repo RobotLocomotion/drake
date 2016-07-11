@@ -320,15 +320,15 @@ void Mesh::LoadObjFile(PointsVector* vertices,
     }
   }
 
-  // Verifies that the number of vertices provided equals the maximum index
-  // referenced when defining faces.
-  if (maximum_index != vertices->size()) {
+  // Verifies that the maximum index referenced when defining faces does not
+  // exceed the number of vertices.
+  if (maximum_index > vertices->size()) {
     throw std::runtime_error(
         "In file \"" + obj_file_name + "\". "
-        "The number of vertices provided is " +
-            std::to_string(vertices->size()) + ". "
-        "However the maximum index referenced in defining faces is " +
-            std::to_string(maximum_index) + ".");
+        "The maximum index referenced in defining faces (" +
+            std::to_string(maximum_index) + ") "
+        "exceeds the number of vertices (" +
+            std::to_string(vertices->size()) + ". ");
   }
 }
 
