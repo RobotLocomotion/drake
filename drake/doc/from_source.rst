@@ -232,6 +232,7 @@ To work on the bleeding edge, do::
     cd drake-distro
     git checkout master
     git pull upstream master
+    cd build
     make
 
 This is especially useful if you are ready to contribute your work back to the
