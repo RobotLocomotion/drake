@@ -39,8 +39,8 @@ primary repository as the ``origin`` remote and Drake's primary repository as
 the ``upstream`` remote. This can be done by executing the following commands::
 
     cd drake-distro
+    git remote set-url origin git@github.com:[your github user name]/drake.git
     git remote add upstream git@github.com:RobotLocomotion/drake.git
-    git remote add origin git@github.com:[your github user name]/drake.git
     git remote set-url --push upstream no_push
 
 
@@ -232,6 +232,7 @@ To work on the bleeding edge, do::
     cd drake-distro
     git checkout master
     git pull upstream master
+    cd build
     make
 
 This is especially useful if you are ready to contribute your work back to the

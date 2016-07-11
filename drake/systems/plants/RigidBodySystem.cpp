@@ -8,6 +8,7 @@
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/pose_map.h"
 #include "spruce.hh"
@@ -887,7 +888,7 @@ void RigidBodySystem::addRobotFromURDFString(
     const string& urdf_string, const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type) {
   // first add the urdf to the rigid body tree
-  drake::parsers::urdf::addRobotFromURDFString(urdf_string, root_dir,
+  drake::parsers::urdf::AddRobotFromURDFString(urdf_string, root_dir,
     floating_base_type, tree.get());
 
   // now parse additional tags understood by rigid body system (actuators,
@@ -906,7 +907,7 @@ void RigidBodySystem::addRobotFromURDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   // Adds the URDF to the rigid body tree.
-  drake::parsers::urdf::addRobotFromURDF(urdf_filename, floating_base_type,
+  drake::parsers::urdf::AddRobotFromURDF(urdf_filename, floating_base_type,
     weld_to_frame, tree.get());
 
   // Parses additional tags understood by rigid body system (e.g., actuators,
@@ -927,7 +928,8 @@ void RigidBodySystem::addRobotFromSDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   // Adds the robot to the rigid body tree.
-  tree->addRobotFromSDF(sdf_filename, floating_base_type, weld_to_frame);
+  drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
+    weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).
