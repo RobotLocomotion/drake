@@ -63,15 +63,15 @@ ROS workspace::
 
 .. _drake_catkin_add_repos:
 
-Step 2: Add Clones of ``drake`` and ``drake_ros_integration`` to the Workspace
-==============================================================================
+Step 2: Add ``drake`` and ``drake_ros_integration`` to the Workspace
+====================================================================
 
 Add local clones of the ``drake`` and ``drake_ros_integration`` repositories
 to your workspace::
 
     cd ~/dev/drake_catkin_workspace/src
     git clone git@github.com:RobotLocomotion/drake.git
-    git clone git@github.com:liangfok/drake_ros_integration.git
+    ln -s drake/drake/ros drake_ros_integration
 
 
 .. _drake_catkin_build_workspace:
@@ -149,8 +149,26 @@ The documentation will be located in
 Running An Example: Car Simulation
 ----------------------------------
 
-To run Drake's ROS-powered cars example, execute::
+To run Drake's ROS-powered cars example, first add the
+``ackermann_drive_teleop`` package to the ROS workspace::
+
+    cd ~/dev/drake_catkin_workspace/src
+    git clone git@github.com:liangfok/ackermann-drive-teleop.git ackermann_drive_teleop
+    cd ackermann_drive_teleop
+    git checkout feature/ackermann_drive_stamped
+
+You will also need to install the package ``ros-indigo-ackermann-msgs``::
+
+    sudo apt-get install ros-indigo-ackermann-msgs
+
+Since a new package was added to the ROS workspace, re-build the workspace::
+
+    cd ~/dev/drake_catkin_workspace
+    catkin build
+
+Finally, to run the car simulation demo, execute::
 
     cd ~/dev/drake_catkin_workspace
     source devel/setup.bash
     roslaunch drake_cars_examples drake_car_sim.launch
+    rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7
