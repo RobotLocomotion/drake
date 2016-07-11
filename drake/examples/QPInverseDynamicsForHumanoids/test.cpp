@@ -40,7 +40,8 @@ QPOutput TestGravityCompensation(const HumanoidStatus& rs) {
 
   ////////////////////////////////////////////////////////////////////
   // Call QP.
-  assert(con.Control(rs, input, output) == 0);
+  int ret = con.Control(rs, input, output) == 0;
+  assert(ret == 0);
 
   // Print results.
   PrintQPOutput(output);
