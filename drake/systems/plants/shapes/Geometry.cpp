@@ -264,6 +264,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
 
   std::string line;
   int line_number = 0;
+  int maximum_index = 0;
   while (!file.eof()) {
     ++line_number;
     std::getline(file, line);
@@ -294,6 +295,8 @@ void Mesh::LoadObjFile(PointsVector* vertices,
               "(L." + std::to_string(line_number) + "). "
               "Invalid vertex index is " + std::to_string(index) + " < 1.");
         }
+        maximum_index = std::max(maximum_index, index);
+
         // Ignores line until the next whitespace.
         // This effectively ignores texture coordinates and normals.
         // The first entry always corresponds to an index in the face.
@@ -315,6 +318,17 @@ void Mesh::LoadObjFile(PointsVector* vertices,
       }
       triangles->push_back(Vector3i(indices[0]-1, indices[1]-1, indices[2]-1));
     }
+  }
+
+  // Verifies that the number of vertices provided equals the maximum index
+  // referenced when defining faces.
+  if (maximum_index != vertices->size()) {
+    throw std::runtime_error(
+        "In file \"" + obj_file_name + "\". "
+        "The number of vertices provided is " +
+            std::to_string(vertices->size()) + ". "
+        "However the maximum index referenced in defining faces is " +
+            std::to_string(maximum_index) + ".");
   }
 }
 
