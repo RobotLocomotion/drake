@@ -40,9 +40,8 @@ Once the OS and ROS are installed, install
 `Catkin Tools <http://catkin-tools.readthedocs.io/en/latest/>`_ by following
 the instructions
 `here <http://catkin-tools.readthedocs.io/en/latest/installing.html>`_.
-We use ``catkin_tools`` instead of the normal ``catkin_build`` because Drake
-isn't a *real* Catkin package meaning it needs to built in an isolated manner
-from the rest of the packages in the ROS workspace.
+We use ``catkin_tools`` due to its better support building pure CMake packages
+alongside Catkin packages.
 
 .. _drake_catkin_create_workspace_directories:
 
@@ -104,12 +103,11 @@ single-threaded build, which uses fewer resources.
 Later, if you want to do a clean build, you can execute::
 
     cd ~/dev/drake_catkin_workspace
-    rm -rf build devel install logs
+    catkin clean
     cd src/drake
     git clean -fdx
     cd ~/dev/drake_catkin_workspace
     source /opt/ros/indigo/setup.bash
-    catkin init
     catkin build
 
 .. _drake_catkin_run_unit_tests:
@@ -122,6 +120,10 @@ Execute the following commands to run Drake's ROS-based unit tests::
     cd ~/dev/drake_catkin_workspace
     source devel/setup.bash
     catkin build --verbose --no-deps drake_ros_systems --make-args run_tests
+
+To run a single unit test like ``ros_test.test`` within package
+``drake_ros_systems``, execute::
+
     rostest drake_ros_systems ros_test.test
 
 .. _drake_catkin_additional_notes:
