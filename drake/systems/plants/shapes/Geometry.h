@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include<Eigen/StdVector>
+#include <Eigen/StdVector>
 
 #include "drake/drakeShapes_export.h"
 
