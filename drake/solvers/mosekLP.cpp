@@ -160,7 +160,7 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
       return kUnknownError;
   }
   int totalconnum = 0, i = 0;
-  for (auto&& con_ : prog.linear_constraints()) {
+  for (auto&& con_ : prog.GetAllLinearConstraints()) {
     // check to see if the constraint references a single variable,
     // which is handles as a variable bound by mosek
     for (i = 0; i < (con_.constraint())->A().rows(); ++i) {
@@ -175,10 +175,11 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
   std::vector<MSKboundkeye> mosek_constraint_bounds(totalconnum);
   std::vector<MSKboundkeye> mosek_variable_bounds(prog.num_vars());
   linear_cons.setZero(totalconnum, prog.num_vars());
-  int connum = 0;
-  i = 0;
 
   // expect only one boundingbox constraint
+  // TODO: Add support for multiple bounding boxes on specific variables.
+  assert(*(prog.bounding_box_constraints().front()) ==
+      *(prog.bounding_box_constraints().back()));
   auto bbox = *(prog.bounding_box_constraints().front().constraint());
   std::vector<double> lower_variable_bounds(bbox.lower_bound().data(),
       bbox.lower_bound().data() +
@@ -186,43 +187,45 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
   std::vector<double> upper_variable_bounds(bbox.upper_bound().data(),
       bbox.upper_bound().data() +
       bbox.upper_bound().rows() * bbox.upper_bound().cols());
-  for (auto& i : lower_variable_bounds) {
-    if (i == -std::numeric_limits<double>::infinity())
-      i = -MSK_INFINITY;
+  for (auto& b : lower_variable_bounds) {
+    if (b == -std::numeric_limits<double>::infinity())
+      b = -MSK_INFINITY;
   }
-  for (auto& i : upper_variable_bounds) {
-    if (i == +std::numeric_limits<double>::infinity())
-      i = MSK_INFINITY;
+  for (auto& b : upper_variable_bounds) {
+    if (b == +std::numeric_limits<double>::infinity())
+      b = MSK_INFINITY;
   }
   mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
                                          lower_variable_bounds);
-
-  for (const auto& con : prog.linear_constraints()) {
-    // The type of con is Binding<LinearConstraint>, but compiler complains when
-    // directly invoking that class.
+  int connum = 0;
+  i = 0;
+  // TODO: Allow constraints to affect specific variables
+  for (const auto& con : prog.GetAllLinearConstraints()) {
+    // con can call functions of  Binding<LinearConstraint>, but the actual
+    // type is const std::list<Binding<LinearConstraint>>::const_iterator&
     // Address the constraint matrix directly, translating back to our original
     // variable space
     for (int i = 0; i < con.constraint()->num_constraints(); i++) {
-        // if this if statement is entered, the constraint is not a var bound
-        // and must be handled differently by mosek
       for (int j = 0; j < (con.constraint())->A().cols(); j++) {
-        linear_cons(i, j) = (con.constraint()->A())(i, j);
+        linear_cons(connum, j) = (con.constraint()->A())(i, j);
       }
       // lower bounds first
-      lower_constraint_bounds[connum] = (con.constraint())->lower_bound()(i);
+      lower_constraint_bounds[connum] =
+          (con.constraint())->lower_bound()(i);
       if (lower_constraint_bounds[connum] ==
           -std::numeric_limits<double>::infinity())
         lower_constraint_bounds[connum] = -MSK_INFINITY;
       // upper bound
-      upper_constraint_bounds[connum] = (con.constraint())->upper_bound()(i);
+      upper_constraint_bounds[connum] =
+          (con.constraint())->upper_bound()(i);
       if (upper_constraint_bounds[connum] ==
           +std::numeric_limits<double>::infinity())
         upper_constraint_bounds[connum] = +MSK_INFINITY;
-      ++connum;
+      connum++;
     }
   }
   mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
-                                             lower_constraint_bounds);
+                                            lower_constraint_bounds);
   // find the linear objective here
   LinearConstraint *obj_ = static_cast<LinearConstraint * >(
       &(*(prog.generic_objectives().front().constraint())));
