@@ -61,13 +61,13 @@ To add Drake to your ROS Catkin workspace, execute the following commands (note:
 you may need to customize the commands below if you elected to place the
 workspace in a different location)::
 
-    cd ~/dev/drake_catkin_workspace/
+    cd ~/dev/drake_catkin_workspace/src
     git clone git@github.com:RobotLocomotion/drake.git
     cd ..
     catkin_make
 
 There are numerous optional flags that can be included after the ``catkin_make``
-command listed above. For example, one flag is ``-DDISABLE_MATLAB=TRUE`, which
+command listed above. For example, one flag is ``-DDISABLE_MATLAB=TRUE``, which
 disables MATLAB support, which may be useful if you have MATLAB installed but
 don't have access to a license server. There are many additional command line
 flags that, for example, enables support for certain optimizers like
