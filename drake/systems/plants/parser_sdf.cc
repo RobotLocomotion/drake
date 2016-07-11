@@ -8,7 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/thirdParty/tinyxml2/tinyxml2.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 #include "joints/DrakeJoints.h"
 
 #include "drake/Path.h"
