@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2666][] Changed `TWIST_SIZE` to `drake::kTwistSize`
  - [#2597][] Changed `RigidBodyTree::findLink()` to be `RigidBodyTree::FindBody()`.
  - [#2426][] Changed `RigidBodyTree::findLinkId()` to be `RigidBodyTree::FindBodyIndex()`. Updated APIs of `RigidBodyTree`, `RigidBody`, `RigidBodyTree`, and `RigidBodyFrame` to support notion of a "model ID" that uniquely identifies a model within a `RigidBodySystem`. This enables the same SDF file to be loaded multiple times into the same `RigidBodySystem`.
  - [#2303][] The following member variables should now be accessed via accessor methods: `RigidBody::linkname`, `RigidBody::model_name`, `RigidBodyTree::num_positions`, and `RigidBodyTree::num_velocities`.
@@ -77,3 +78,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2597]: https://github.com/RobotLocomotion/drake/issues/2597
 [#2602]: https://github.com/RobotLocomotion/drake/issues/2602
 [#2621]: https://github.com/RobotLocomotion/drake/issues/2621
+[#2666]: https://github.com/RobotLocomotion/drake/issues/2666
