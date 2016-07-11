@@ -7,6 +7,7 @@
 #include "spruce.hh"
 
 using std::string;
+using std::ostream;
 using std::istringstream;
 using std::ifstream;
 
@@ -21,7 +22,7 @@ const int Geometry::NUM_BBOX_POINTS = 8;
 const int Sphere::NUM_POINTS = 1;
 const int Capsule::NUM_POINTS = 2;
 
-std::string ShapeToString(Shape ss) {
+string ShapeToString(Shape ss) {
   switch (ss) {
     case UNKNOWN:
       return "UNKNOWN";
@@ -74,7 +75,7 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
   points << cx, cy, cz;
 }
 
-std::ostream &operator<<(std::ostream &out, const Geometry &gg) {
+ostream &operator<<(ostream &out, const Geometry &gg) {
   out << ShapeToString(gg.getShape()) << ", " << gg.NUM_BBOX_POINTS;
   return out;
 }
@@ -98,7 +99,7 @@ void Sphere::getTerrainContactPoints(Matrix3Xd &points) const {
     points = Matrix3Xd();
 }
 
-std::ostream &operator<<(std::ostream &out, const Sphere &ss) {
+ostream &operator<<(ostream &out, const Sphere &ss) {
   out << static_cast<const Geometry &>(ss) << ", " << ss.radius << ", "
       << ss.NUM_POINTS;
   return out;
@@ -119,7 +120,7 @@ void Box::getTerrainContactPoints(Matrix3Xd &points) const {
   getPoints(points);
 }
 
-std::ostream &operator<<(std::ostream &out, const Box &bb) {
+ostream &operator<<(ostream &out, const Box &bb) {
   out << static_cast<const Geometry &>(bb) << ", " << bb.size.transpose();
   return out;
 }
@@ -145,7 +146,7 @@ void Cylinder::getBoundingBoxPoints(Matrix3Xd &points) const {
   Geometry::getBoundingBoxPoints(radius, radius, length / 2.0, points);
 }
 
-std::ostream &operator<<(std::ostream &out, const Cylinder &cc) {
+ostream &operator<<(ostream &out, const Cylinder &cc) {
   out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", "
       << cc.length;
   return out;
@@ -172,7 +173,7 @@ void Capsule::getBoundingBoxPoints(Matrix3Xd &points) const {
                                  points);
 }
 
-std::ostream &operator<<(std::ostream &out, const Capsule &cc) {
+ostream &operator<<(ostream &out, const Capsule &cc) {
   out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", "
       << cc.length;
   return out;
@@ -331,7 +332,7 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
-std::ostream &operator<<(std::ostream &out, const Mesh &mm) {
+ostream &operator<<(ostream &out, const Mesh &mm) {
   out << static_cast<const Geometry &>(mm) << ", " << mm.scale << ", "
       << mm.filename << ", " << mm.resolved_filename << ", " << mm.root_dir;
   return out;
@@ -358,7 +359,7 @@ void MeshPoints::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
-std::ostream &operator<<(std::ostream &out, const MeshPoints &mp) {
+ostream &operator<<(ostream &out, const MeshPoints &mp) {
   out << static_cast<const Geometry &>(mp) << ",\n" << mp.points;
   return out;
 }
