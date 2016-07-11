@@ -3,9 +3,9 @@ project(drake-superbuild)
 
 include(CTest)
 
-include(DrakeConfig.cmake)
-include(DrakeExternals.cmake)
-include(DrakeExamples.cmake)
+include(cmake/DrakePlatform.cmake)
+include(cmake/DrakeExternals.cmake)
+include(cmake/DrakeExamples.cmake)
 
 ###############################################################################
 # BEGIN options
