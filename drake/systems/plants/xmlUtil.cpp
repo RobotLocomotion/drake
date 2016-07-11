@@ -5,7 +5,7 @@
 
 #include "drake/Path.h"
 #include "drake/common/drake_assert.h"
-#include "drake/thirdParty/tinydir/tinydir.h"
+#include "drake/thirdParty/bsd/tinydir/tinydir.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "xmlUtil.h"
 
