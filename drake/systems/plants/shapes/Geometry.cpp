@@ -287,6 +287,13 @@ void Mesh::LoadObjFile(PointsVector* vertices,
       std::vector<int> indices;
       int index;
       while (ss >> index) {
+        // Checks that index >= 1.
+        if (index < 1) {
+          throw std::runtime_error(
+              "In file \"" + obj_file_name + "\" "
+              "(L." + std::to_string(line_number) + "). "
+              "Invalid vertex index is " + std::to_string(index) + " < 1.");
+        }
         // Ignores line until the next whitespace.
         // This effectively ignores texture coordinates and normals.
         // The first entry always corresponds to an index in the face.
