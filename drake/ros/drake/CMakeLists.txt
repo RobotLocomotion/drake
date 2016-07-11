@@ -1,3 +1,0 @@
-add_executable(ros_test test/ros_test.cc)
-target_link_libraries(ros_test ${GTEST_BOTH_LIBRARIES} ${roscpp_LIBRARIES})
-add_test(NAME ros_test COMMAND ros_test)

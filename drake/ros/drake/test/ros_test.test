@@ -1,3 +1,0 @@
-<launch>
-  <test pkg="drake" test-name="ros_test" type="ros_test" />
-</launch>
