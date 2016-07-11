@@ -26,10 +26,10 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     const size_t num_time_samples /* N */,
     const int trajectory_time_lower_bound,
     const int trajectory_time_upper_bound)
-    : kNumInputs(num_inputs),
-      kNumStates(num_states),
-      kNumVars(num_time_samples - 1 + (num_time_samples * 
-        (num_states + num_inputs))),
+    : num_inputs_(num_inputs),
+      num_states_(num_states),
+      num_vars_(num_time_samples - 1 + (num_time_samples * 
+        (num_states_ + num_inputs))),
       N(num_time_samples),
       h_vars_(opt_problem_.AddContinuousVariables(N - 1, "h")),
       u_vars_(opt_problem_.AddContinuousVariables(N - 1, "h")) {

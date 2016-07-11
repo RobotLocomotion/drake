@@ -23,9 +23,9 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   void AddStateConstraint(const Constraint& constraint, const int time_index);
   // TODO(lucy-tri) add options params
  private:
-  const int kNumInputs;
-  const int kNumStates;
-  const int kNumVars;
+  const int num_inputs_;
+  const int num_states_;
+  const int num_vars_;
   const size_t N;  // Number of time samples
 
   OptimizationProblem opt_problem_;
