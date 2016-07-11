@@ -1,7 +1,7 @@
 // Copyright 2016, Alex Dunyak
 #pragma once
 
-#include "drake/solvers/mosekLP.h"
+#include "drake/solvers/MosekLP.h"
 
 extern "C" {
   #include <mosek/mosek.h>
@@ -22,7 +22,7 @@ extern "C" {
 namespace drake {
 namespace solvers {
 
-mosekLP::mosekLP(int num_variables, int num_constraints,
+MosekLP::MosekLP(int num_variables, int num_constraints,
     std::vector<double> equationScalars,
     Eigen::MatrixXd cons,
     std::vector<MSKboundkeye> mosek_constraint_bounds,
@@ -61,14 +61,14 @@ mosekLP::mosekLP(int num_variables, int num_constraints,
       lower_constraint_bounds);
 }
 
-void mosekLP::AddLinearConstraintMatrix(const Eigen::MatrixXd& cons) {
+void MosekLP::AddLinearConstraintMatrix(const Eigen::MatrixXd& cons) {
   Eigen::SparseMatrix<double> sparsecons = cons.sparseView();
   // Send the sparse matrix rep into addLinearConstraintSparseColumnMatrix(),
   // which will handle setting the mosek constraints
-  mosekLP::AddLinearConstraintSparseColumnMatrix(sparsecons);
+  MosekLP::AddLinearConstraintSparseColumnMatrix(sparsecons);
 }
 
-void mosekLP::AddLinearConstraintSparseColumnMatrix(
+void MosekLP::AddLinearConstraintSparseColumnMatrix(
     const Eigen::SparseMatrix<double>& sparsecons) {
   int j = 0;  // iterator
   // Define sparse matrix representation to be the same size as the desired
@@ -98,7 +98,7 @@ void mosekLP::AddLinearConstraintSparseColumnMatrix(
   }
 }
 
-void mosekLP::AddLinearConstraintBounds(
+void MosekLP::AddLinearConstraintBounds(
     const std::vector<MSKboundkeye>& mosek_bounds_,
     const std::vector<double>& upper_bounds_,
     const std::vector<double>& lower_bounds_) {
@@ -109,7 +109,7 @@ void mosekLP::AddLinearConstraintBounds(
   }
 }
 
-void mosekLP::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
+void MosekLP::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
                                 const std::vector<double>& upper_bounds_,
                                 const std::vector<double>& lower_bounds_) {
   int j = 0;
@@ -119,7 +119,7 @@ void mosekLP::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
   }
 }
 
-std::vector<MSKboundkeye> mosekLP::FindMosekBounds(
+std::vector<MSKboundkeye> MosekLP::FindMosekBounds(
     const std::vector<double>& upper_bounds_,
     const std::vector<double>& lower_bounds_) const {
   assert(upper_bounds_.size() == lower_bounds_.size());
@@ -146,7 +146,7 @@ std::vector<MSKboundkeye> mosekLP::FindMosekBounds(
 }
 
 
-SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
+SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
   // construct an object that calls all the previous work so I can salvage
   // something at least.
   // assume that the problem type is linear currently.
@@ -231,7 +231,7 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
       &(*(prog.generic_objectives().front().constraint())));
   std::vector<double> linobj_((*obj_).A().data(),
       (*obj_).A().data() + (*obj_).A().rows() * (*obj_).A().cols());
-  mosekLP opt(prog.num_vars(),
+  MosekLP opt(prog.num_vars(),
               totalconnum,
               linobj_,
               linear_cons,
@@ -248,7 +248,7 @@ SolutionResult mosekLP::Solve(OptimizationProblem &prog) const {
   return s;
 }
 
-SolutionResult mosekLP::OptimizeTask(const std::string& maxormin,
+SolutionResult MosekLP::OptimizeTask(const std::string& maxormin,
                                      const std::string& ptype) {
   solutions_.clear();
   MSKsoltypee problemtype = MSK_SOL_BAS;
@@ -316,7 +316,7 @@ SolutionResult mosekLP::OptimizeTask(const std::string& maxormin,
   return kUnknownError;
 }
 
-Eigen::VectorXd mosekLP::GetEigenVectorSolutions() const {
+Eigen::VectorXd MosekLP::GetEigenVectorSolutions() const {
   Eigen::VectorXd soln(numvar_);
   if (solutions_.empty())
     return soln;

@@ -1,5 +1,5 @@
 // Copyright 2016, Alex Dunyak
-// A wrapper file for mosekLP and mosekQP that handles constraint and
+// A wrapper file for MosekLP and mosekQP that handles constraint and
 // objective marshalling
 
 

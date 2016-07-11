@@ -26,20 +26,20 @@ http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
 namespace drake {
 namespace solvers {
 
-/** mosekLP solves a linear program when given a correctly formatted program.
+/** MosekLP solves a linear program when given a correctly formatted program.
  *  Specifically, the program options:
  *  -- "maxormin" -- must be set to "max" or "min"
  *  -- "problemtype" -- must be set to "linear"
  *
  *  It is created by a MosekSolver object.
  */
-class DRAKEOPTIMIZATION_EXPORT mosekLP {
-  /** mosekLP
+class DRAKEOPTIMIZATION_EXPORT MosekLP {
+  /** MosekLP
    *  @brief this class allows the creation and solution of a linear programming
    *  problem using the mosek solver.
    */
  public:
-  mosekLP() {
+  MosekLP() {
     task_ = NULL;
     env_ = NULL;
   }
@@ -49,7 +49,7 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP {
   * optimize, the constraint matrix, and the constraint and variable bounds
   * @p environment is created and must be told to optimize.
   */
-  mosekLP(int num_variables, int num_constraints,
+  MosekLP(int num_variables, int num_constraints,
       std::vector<double> equationScalars,
       Eigen::MatrixXd cons,
       std::vector<MSKboundkeye> mosek_constraint_bounds,
@@ -59,7 +59,7 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP {
       std::vector<double> upper_variable_bounds,
       std::vector<double> lower_variable_bounds);
 
-  ~mosekLP() {
+  ~MosekLP() {
     if (task_ != NULL)
       MSK_deletetask(&task_);
     if (env_ != NULL)
@@ -139,7 +139,7 @@ SolutionResult MosekSolver::LPSolve(OptimizationProblem& prog) const {
   if (!prog.GetSolverOptionsStr("Mosek").empty()) {
     if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
         != std::string::npos) {
-      mosekLP msk;
+      MosekLP msk;
       return msk.Solve(prog);
     }
   } else {
