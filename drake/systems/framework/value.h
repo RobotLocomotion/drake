@@ -57,8 +57,8 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
   }
 
  private:
-  /// Casts this class to a Value<T>*. In Debug builds, throws
-  /// std::bad_cast if the cast fails.
+  // Casts this class to a Value<T>*. In Debug builds, throws
+  // std::bad_cast if the cast fails.
   template <typename T>
   Value<T>* DownCastMutableOrMaybeThrow() {
     // We cast away const in this private non-const method so that we can reuse
@@ -67,9 +67,9 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
     return const_cast<Value<T>*>(DownCastOrMaybeThrow<T>());
   }
 
-  /// Casts this class to a const Value<T>*. In Debug builds, throws
-  /// std::bad_cast if the cast fails.
-  /// TODO(david-german-tri): Use static_cast in Release builds for speed.
+  // Casts this class to a const Value<T>*. In Debug builds, throws
+  // std::bad_cast if the cast fails.
+  // TODO(david-german-tri): Use static_cast in Release builds for speed.
   template <typename T>
   const Value<T>* DownCastOrMaybeThrow() const {
     const Value<T>* value = dynamic_cast<const Value<T>*>(this);
@@ -94,8 +94,6 @@ class Value : public AbstractValue {
   Value& operator=(const Value<T>& other) = default;
   Value(Value<T>&& other) = delete;
   Value& operator=(Value<T>&& other) = delete;
-
-  ~Value() override {}
 
   std::unique_ptr<AbstractValue> Clone() const override {
     return std::make_unique<Value<T>>(*this);

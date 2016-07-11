@@ -16,8 +16,6 @@ namespace systems {
 template <typename T>
 class ContinuousSystem : public ContinuousSystemInterface<T> {
  public:
-  ~ContinuousSystem() override {}
-
   /// Applies the identity mapping. Throws std::out_of_range if the
   /// @p generalized_velocity and @p configuration_derivatives are not the
   /// same size. Child classes should override this function if qdot != v.

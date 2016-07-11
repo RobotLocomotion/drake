@@ -10,6 +10,7 @@
 #include "drake/systems/n_ary_state.h"
 #include "drake/systems/n_ary_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 #include "drake/examples/Cars/car_simulation.h"
@@ -65,9 +66,9 @@ int do_main(int argc, const char* argv[]) {
   // Add all of the desired cars.
   for (int i = 0; i < num_cars; ++i) {
     // Add the visualization entity.
-    world_tree->addRobotFromURDF((i % 5) ? kSedanUrdf : kBreadtruckUrdf,
-                                 DrakeJoint::ROLLPITCHYAW,
-                                 nullptr /*weld_to_frame*/);
+    drake::parsers::urdf::AddRobotFromURDF(
+      (i % 5) ? kSedanUrdf : kBreadtruckUrdf, DrakeJoint::ROLLPITCHYAW,
+      nullptr /*weld_to_frame*/, world_tree.get());
     world_tree->bodies.back()->robotnum = i + 1;
 
     // Add the trajectory car, and its visualization adapter.

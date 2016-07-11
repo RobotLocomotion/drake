@@ -99,7 +99,7 @@ double ptToPolyBullet(double *vertsPr, size_t nRows, size_t nCols,
   btConvexHullShape polytope(btVector3(vertsPr[0], vertsPr[1], vertsPr[2]), 1);
 
   // Add rest of the points (note the indexing starts from 1 on the loop)
-  for (int i = 1; i < nCols; i++) {
+  for (size_t i = 1; i < nCols; i++) {
     polytope.addPoint(btVector3(vertsPr[i * nRows], vertsPr[i * nRows + 1],
                                 vertsPr[i * nRows + 2]));
   }
@@ -139,8 +139,8 @@ double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x,
   double *dx0 = mxGetPrSafe(x0);
   double *dx = mxGetPrSafe(x);
 
-  for (int i = 0; i < nRows; i++) {
-    for (int j = 0; j < nCols; j++) {
+  for (size_t i = 0; i < nRows; i++) {
+    for (size_t j = 0; j < nCols; j++) {
       vertsT[j * nRows + i] =
           dcSk[i] * (verts[j * nRows + 0] - dx0[k * nRows + 0] - dx[0]) +
           dcSk[nRows + i] *
@@ -271,7 +271,7 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
   bool collFree = true;
 
   // For each time sample, we need to check if we are collision free
-  for (int k = 0; k < N; k++) {
+  for (mwSize k = 0; k < N; k++) {
     // Get pointer to cholesky factorization of S at this time
     cSk = mxGetCell(cS, k);
 
@@ -603,7 +603,7 @@ bool isCollisionFree(int funnelIdx, const mxArray *x,
 
   // For each time sample, we need to check if we are collision free
 
-  for (int k = 0; k < N; k++) {
+  for (mwSize k = 0; k < N; k++) {
     // Get pointer to cholesky factorization of S at this time
     cSk = mxGetCell(cS, k);
 
@@ -829,7 +829,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   double *penetrations_array_d = mxGetPrSafe(penetrations_array_mx);
 
   // Now, try and find collision free funnel
-  for (int ii = 0; ii < numFunnels; ii++) {
+  for (mwSize ii = 0; ii < numFunnels; ii++) {
     funnelIdx = ii;  // Funnel idx is global so we have access to it in some
                      // other functions
 
@@ -938,7 +938,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     sorted_inds_mx = Out[1];
     double *sorted_inds_d = mxGetPrSafe(sorted_inds_mx);
 
-    for (int ii = 0; ii < numFunnels; ii++) {
+    for (mwSize ii = 0; ii < numFunnels; ii++) {
       // Next funnel: going through sorted funnels in sequence
       funnelIdx = sorted_inds_d[ii] - 1;
 

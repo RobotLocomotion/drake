@@ -44,7 +44,7 @@ class ContinuousState {
   ///
   /// @param num_q The number of position variables.
   /// @param num_v The number of velocity variables.
-  /// @param num_z  The number of other variables.
+  /// @param num_z The number of other variables.
   ContinuousState(std::unique_ptr<StateVector<T>> state, int num_q,
                   int num_v, int num_z) {
     state_ = std::move(state);
@@ -110,23 +110,23 @@ class ContinuousState {
   }
 
  private:
-  /// The entire state vector.  May or may not own the underlying data.
+  // The entire state vector.  May or may not own the underlying data.
   std::unique_ptr<StateVector<T>> state_;
 
-  /// Generalized coordinates representing System configuration, conventionally
-  /// denoted `q`. These are second-order state variables.
-  /// This is a subset of state_ and does not own the underlying data.
+  // Generalized coordinates representing System configuration, conventionally
+  // denoted `q`. These are second-order state variables.
+  // This is a subset of state_ and does not own the underlying data.
   std::unique_ptr<StateVector<T>> generalized_position_;
 
-  /// Generalized speeds representing System velocity. Conventionally denoted
-  /// `v`. These are first-order state variables that the System can linearly
-  /// map to time derivatives `qdot` of `q` above.
-  /// This is a subset of state_ and does not own the underlying data.
+  // Generalized speeds representing System velocity. Conventionally denoted
+  // `v`. These are first-order state variables that the System can linearly
+  // map to time derivatives `qdot` of `q` above.
+  // This is a subset of state_ and does not own the underlying data.
   std::unique_ptr<StateVector<T>> generalized_velocity_;
 
-  /// Additional continuous, first-order state variables not representing
-  /// multibody system motion.  Conventionally denoted `z`.
-  /// This is a subset of state_ and does not own the underlying data.
+  // Additional continuous, first-order state variables not representing
+  // multibody system motion.  Conventionally denoted `z`.
+  // This is a subset of state_ and does not own the underlying data.
   std::unique_ptr<StateVector<T>> misc_continuous_state_;
 };
 

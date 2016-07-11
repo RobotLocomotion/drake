@@ -82,11 +82,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDFString.")
+#endif
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDFString.")
+#endif
   void addRobotFromURDFString(
       const std::string& xml_string,
       std::map<std::string, std::string>& package_map,
@@ -94,11 +101,19 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+
+  #ifndef SWIG
+  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDF.")
+  #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+
+  #ifndef SWIG
+  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDF.")
+  #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
       std::map<std::string, std::string>& package_map,
@@ -106,6 +121,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
+  #ifndef SWIG
+  DRAKE_DEPRECATED("Please use drake::parsers::sdf::AddRobotFromSDF.")
+  #endif
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
                            DrakeJoint::QUATERNION,

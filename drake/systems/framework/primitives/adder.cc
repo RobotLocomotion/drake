@@ -35,8 +35,8 @@ std::unique_ptr<SystemOutput<T>> Adder<T>::AllocateOutput() const {
 }
 
 template <typename T>
-void Adder<T>::Output(const Context<T>& context,
-                      SystemOutput<T>* output) const {
+void Adder<T>::EvalOutput(const Context<T>& context,
+                          SystemOutput<T>* output) const {
   // Check that the single output port has the correct length, then zero it.
   // Checks on the output structure are assertions, not exceptions,
   // since failures would reflect a bug in the Adder implementation, not

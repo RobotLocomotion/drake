@@ -42,8 +42,6 @@ class StateSubvector : public StateVector<T> {
   explicit StateSubvector(StateVector<T>* vector)
       : StateSubvector(vector, 0, 0) {}
 
-  ~StateSubvector() override {}
-
   int size() const override { return num_elements_; }
 
   const T GetAtIndex(int index) const override {
