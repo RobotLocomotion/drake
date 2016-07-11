@@ -2,7 +2,6 @@
 // A wrapper file for mosekLP and mosekQP that handles constraint and
 // objective marshalling
 
-#include "drake/solvers/mosekLP.h"
 
 #include <Eigen/Core>
 
@@ -12,19 +11,23 @@
 
 namespace drake {
 namespace solvers {
+
+/** MosekSolver
+* A wrapper class that calls the correct version of MosekLP or (eventually)
+* MosekQP. The functions are defined in the relevant .h files if mosek is
+* included.
+*/
 class DRAKEOPTIMIZATION_EXPORT MosekSolver :
     public MathematicalProgramSolverInterface {
  public:
-  bool available() const override { return true; }
+  bool available() const override;
+  SolutionResult LPSolve(OptimizationProblem& prog) const;
   SolutionResult Solve(OptimizationProblem& prog) const override {
     if (!prog.GetSolverOptionsStr("Mosek").empty()) {
       if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
           != std::string::npos) {
-        mosekLP msk;
-        return msk.Solve(prog);
+        return LPSolve(prog);
       }
-    } else {
-      return kUnknownError;
     }  // TODO(alexdunyak): add more mosek solution types.
     return kUnknownError;
   }

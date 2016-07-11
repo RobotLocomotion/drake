@@ -1,7 +1,7 @@
 // Copyright 2016. Alex Dunyak
 #pragma once
 
-//#include "drake/solvers/MosekSolver.h"
+#include "drake/solvers/MosekSolver.h"
 
 extern "C" {
   #include <mosek/mosek.h>
@@ -17,7 +17,7 @@ extern "C" {
 #include "drake/solvers/Optimization.h"
 #include "drake/solvers/MathematicalProgram.h"
 
-/*Definitions and program flow taken from
+/**Definitions and program flow taken from
 http://docs.mosek.com/7.1/capi/Linear_optimization.html
 
 For further definition of terms, see
@@ -26,18 +26,17 @@ http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
 namespace drake {
 namespace solvers {
 
-
-/* mosekLP solves a linear program when given a correctly formatted program.
- * Specifically, the program options:
- * -- "maxormin" -- must be set to "max" or "min"
- * -- "problemtype" -- must be set to "linear"
+/** mosekLP solves a linear program when given a correctly formatted program.
+ *  Specifically, the program options:
+ *  -- "maxormin" -- must be set to "max" or "min"
+ *  -- "problemtype" -- must be set to "linear"
  *
- * It is created by a MosekSolver object.
+ *  It is created by a MosekSolver object.
  */
 class DRAKEOPTIMIZATION_EXPORT mosekLP {
-  /*mosekLP
-   *@brief this class allows the creation and solution of a linear programming
-   *problem using the mosek solver.
+  /** mosekLP
+   *  @brief this class allows the creation and solution of a linear programming
+   *  problem using the mosek solver.
    */
  public:
   mosekLP() {
@@ -45,7 +44,7 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP {
     env_ = NULL;
   }
 
-  /* Create a mosek linear programming environment using a constraint matrix
+  /** Create a mosek linear programming environment using a constraint matrix
   * Takes the number of variables and constraints, the linear eqn to
   * optimize, the constraint matrix, and the constraint and variable bounds
   * @p environment is created and must be told to optimize.
@@ -68,7 +67,7 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP {
   }
 
 
-    /* Solve()
+    /** Solve()
    * @brief optimizes variables in given linear constraints, works with either
    * of the two previous object declarations.
    * */
@@ -79,26 +78,26 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP {
   Eigen::VectorXd GetEigenVectorSolutions() const;
 
  private:
-  /*The following names are consistent with the example programs given by
+  /**The following names are consistent with the example programs given by
    *http://docs.mosek.com/7.1/capi/Linear_optimization.html
    *and by
    *http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
    *to ensure ease of translation and understanding.
    */
 
-   /*AddLinearConstraintMatrix()
+   /**AddLinearConstraintMatrix()
    *@brief adds linear constraints to mosek environment
    */
   void AddLinearConstraintMatrix(const Eigen::MatrixXd& cons_);
 
-  /*addLinearConstraintSparseColumnMatrix()
+  /**addLinearConstraintSparseColumnMatrix()
   *@brief adds linear constraints in sparse column matrix form
   *just uses Eigen's sparse matrix library to implement expected format
   */
   void AddLinearConstraintSparseColumnMatrix(
     const Eigen::SparseMatrix<double>& sparsecons_);
 
-  /*AddLinearConstraintBounds()
+  /**AddLinearConstraintBounds()
   *@brief bounds constraints, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
   *for details on how to set mosek_bounds_
   */
@@ -106,7 +105,7 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP {
       const std::vector<double>& upper_bounds,
       const std::vector<double>& lower_bounds);
 
-  /*AddVariableBounds()
+  /**AddVariableBounds()
    * @brief bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
    * for details on how to set mosek_bounds_
    */
@@ -114,7 +113,7 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP {
                          const std::vector<double>& upper_bounds,
                          const std::vector<double>& lower_bounds);
 
-  /*FindMosekBounds()
+  /**FindMosekBounds()
    * Given upper and lower bounds for a variable or constraint, finds the
    * equivalent Mosek bound keys.
    */
@@ -132,6 +131,22 @@ class DRAKEOPTIMIZATION_EXPORT mosekLP {
   MSKrescodee r_;      // used for validity checking
   std::vector<double> solutions_;  // Contains the solutions of the system
 };
+
+
+bool MosekSolver::available() const { return true; }
+
+SolutionResult MosekSolver::LPSolve(OptimizationProblem& prog) const {
+  if (!prog.GetSolverOptionsStr("Mosek").empty()) {
+    if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
+        != std::string::npos) {
+      mosekLP msk;
+      return msk.Solve(prog);
+    }
+  } else {
+    return kUnknownError;
+  }  // TODO(alexdunyak): add more mosek solution types.
+  return kUnknownError;
+}
 
 }  // namespace solvers
 }  // namespace drake
