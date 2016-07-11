@@ -6,7 +6,6 @@
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
-#include <Eigen/StdVector>
 
 namespace drake {
 
