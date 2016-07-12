@@ -143,7 +143,7 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
     DrakeShapes::Mesh mesh(uri, resolved_filename);
 
     if (shape_node->FirstChildElement("scale") != nullptr)
-      ParseThreeVectorValue(shape_node, "scale", &mesh.scale);
+      ParseThreeVectorValue(shape_node, "scale", &mesh.scale_);
     element.setGeometry(mesh);
   } else {
     cerr << std::string(__FILE__) + ": " + __func__ + ": WARNING: "

@@ -101,14 +101,14 @@ class BotVisualizer {
             gdata.type = gdata.MESH;
             gdata.num_float_data = 1;
             auto m = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
-            gdata.float_data.push_back(static_cast<float>(m.scale[0]));
-            gdata.float_data.push_back(static_cast<float>(m.scale[1]));
-            gdata.float_data.push_back(static_cast<float>(m.scale[2]));
+            gdata.float_data.push_back(static_cast<float>(m.scale_[0]));
+            gdata.float_data.push_back(static_cast<float>(m.scale_[1]));
+            gdata.float_data.push_back(static_cast<float>(m.scale_[2]));
 
-            if (m.uri.find("package://") == 0) {
-              gdata.string_data = m.uri;
+            if (m.uri_.find("package://") == 0) {
+              gdata.string_data = m.uri_;
             } else {
-              gdata.string_data = m.resolved_filename;
+              gdata.string_data = m.resolved_filename_;
             }
 
             break;

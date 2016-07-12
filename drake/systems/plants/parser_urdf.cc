@@ -320,7 +320,7 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
 
     // Obtains the scale of the mesh if it exists.
     if (shape_node->Attribute("scale") != nullptr)
-      ParseThreeVectorAttribute(shape_node, "scale", &mesh.scale);
+      ParseThreeVectorAttribute(shape_node, "scale", &mesh.scale_);
 
     element.setGeometry(mesh);
   } else {

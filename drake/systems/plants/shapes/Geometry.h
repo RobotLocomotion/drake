@@ -150,9 +150,9 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
                                                      const Mesh&);
 
-  Eigen::Vector3d scale;
-  std::string uri;
-  std::string resolved_filename;
+  Eigen::Vector3d scale_;
+  std::string uri_;
+  std::string resolved_filename_;
   bool extractMeshVertices(Eigen::Matrix3Xd& vertex_coordinates) const;
 
   /** Loads triangle mesh from an obj file into the provided vectors of vertices
@@ -172,10 +172,10 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   std::string root_dir;
 
  private:
-  // This method finds a juxtaposed obj file from the `resolved_filename`
+  // This method finds a juxtaposed obj file from the `resolved_filename_`
   // member. If unable to resolve an obj file it throws an exception.
-  // If `resolved_filename` already is an obj file then it returns
-  // `resolved_filename`. Otherwise it attempts to change the file extension
+  // If `resolved_filename_` already is an obj file then it returns
+  // `resolved_filename_`. Otherwise it attempts to change the file extension
   // and checks if it exists.
   std::string FindFileWithObjExtension() const;
 };
