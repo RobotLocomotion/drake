@@ -313,7 +313,7 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
 
     if (resolved_filename.empty()) {
       throw runtime_error(std::string(__FILE__) + ": " + __func__ +
-          ": ERROR: Mesh file name could not be resolved  from the "
+          ": ERROR: Mesh file name could not be resolved from the "
           "provided uri \"" + filename + "\".");
     }
     DrakeShapes::Mesh mesh(filename, resolved_filename);
