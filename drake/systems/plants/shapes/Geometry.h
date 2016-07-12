@@ -168,9 +168,6 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   **/
   void LoadObjFile(PointsVector* vertices, TrianglesVector* triangles) const;
 
- protected:
-  std::string root_dir;
-
  private:
   // This method finds a juxtaposed obj file from the `resolved_filename_`
   // member. If unable to resolve an obj file it throws an exception.

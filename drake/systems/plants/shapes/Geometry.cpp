@@ -357,7 +357,7 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {
 
 ostream& operator<<(ostream& out, const Mesh& mm) {
   out << static_cast<const Geometry&>(mm) << ", " << mm.scale_ << ", " <<
-      mm.uri_ << ", " << mm.resolved_filename_ << ", " << mm.root_dir;
+      mm.uri_ << ", " << mm.resolved_filename_;
   return out;
 }
 
