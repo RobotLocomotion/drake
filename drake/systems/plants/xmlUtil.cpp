@@ -248,7 +248,6 @@ void searchDirectory(map<string, string>& package_map, string path) {
       if (file.is_dir && (file.name[0] != '.')) {
         searchDirectory(package_map, file.path);
       } else if (file.name == target_filename) {
-
         // Parses the package.xml file to find the name of the package.
         std::string package_name;
 
