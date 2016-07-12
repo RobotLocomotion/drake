@@ -17,7 +17,7 @@ GTEST_TEST(testXmlUtil, testPopulatePackageMap) {
   PackageMap package_map;
   populatePackageMap(package_map);
 
-  std::list<std::string> expected_packages = {"drake", "test"};
+  std::list<std::string> expected_packages = {"test"};
   for (auto package : expected_packages) {
     EXPECT_TRUE(package_map.count(package))
         << std::string("Expected package not found in list: ") << package;
