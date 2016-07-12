@@ -26,7 +26,6 @@ namespace ros {
 // Holds the objects and data used to extract and publish joint state
 // information for a particular robot.
 struct RobotJointStateStruct {
-
   // The name of the robot.
   std::string robot_name_;
 
@@ -108,8 +107,8 @@ class SensorPublisherJointState {
     // Creates a ROS topic publisher for each robot in the rigid body system.
     // A robot is defined by any link that's connected to the world via a
     // non-fixed joint.
-    for (auto const& rigid_body : rigid_body_system->getRigidBodyTree()->bodies) {
-
+    for (auto const& rigid_body :
+         rigid_body_system->getRigidBodyTree()->bodies) {
       // Skips the current rigid body if it does not have the world as the
       // parent.
       if (!rigid_body->has_as_parent(world)) continue;
@@ -126,29 +125,27 @@ class SensorPublisherJointState {
       // maps that hold the joint state messages and publishers.
       const std::string& robot_name = rigid_body->model_name();
 
-      if (robot_structs_.find(robot_name) ==
-          robot_structs_.end()) {
-
+      if (robot_structs_.find(robot_name) == robot_structs_.end()) {
         std::unique_ptr<RobotJointStateStruct> robot_struct(
-          new RobotJointStateStruct());
+            new RobotJointStateStruct());
 
         robot_struct->robot_name_ = robot_name;
 
         const std::string topic_name = "drake/" + robot_name + "/joint_state";
-        robot_struct->publisher_ = nh.advertise<sensor_msgs::JointState>(
-          topic_name, 1);
+        robot_struct->publisher_ =
+            nh.advertise<sensor_msgs::JointState>(topic_name, 1);
 
         robot_struct->message_.reset(new sensor_msgs::JointState());
 
         robot_struct->message_->header.frame_id = RigidBodyTree::kWorldLinkName;
 
         InitJointStateStruct(robot_name, rigid_body_system->getRigidBodyTree(),
-          robot_struct.get());
+                             robot_struct.get());
 
         robot_structs_[robot_name] = std::move(robot_struct);
       } else {
         throw std::runtime_error(
-          "ERROR: Rigid Body System contains multiple models named \"" +
+            "ERROR: Rigid Body System contains multiple models named \"" +
             robot_name + "\".");
       }
     }
@@ -163,12 +160,12 @@ class SensorPublisherJointState {
    * @param[out] robot_struct The struct to initialize.
    */
   void InitJointStateStruct(const std::string& robot_name,
-                             const std::shared_ptr<RigidBodyTree>& tree,
-                             RobotJointStateStruct* robot_struct) {
-
+                            const std::shared_ptr<RigidBodyTree>& tree,
+                            RobotJointStateStruct* robot_struct) {
     if (robot_struct == nullptr) {
-      throw std::runtime_error("ERROR: InitJointStateMessage: robot_struct "
-        "parameter is nullptr!");
+      throw std::runtime_error(
+          "ERROR: InitJointStateMessage: robot_struct "
+          "parameter is nullptr!");
     }
 
     // robot_struct->num_positions_ = 0;
@@ -193,13 +190,13 @@ class SensorPublisherJointState {
             robot_struct->message_->name.push_back("floating_pitch");
             robot_struct->message_->name.push_back("floating_yaw");
           } else {
-
             // Verifies that the joint has the same number of position versus
             // velocity DOFs. Throws an exception if this is not true.
             if (joint.getNumPositions() != joint.getNumVelocities()) {
-              throw std::runtime_error("ERROR: Joint \"" + joint.getName() +
-                "\" in robot \"" + robot_name +
-                "\" has a different number of positions and velocities.");
+              throw std::runtime_error(
+                  "ERROR: Joint \"" + joint.getName() + "\" in robot \"" +
+                  robot_name +
+                  "\" has a different number of positions and velocities.");
             }
 
             // Adds the names of the DOFs that belong to the joint to the
@@ -227,13 +224,13 @@ class SensorPublisherJointState {
     }
   }
 
-  StateVector<double> dynamics(const double &t, const StateVector<double> &x,
-                               const InputVector<double> &u) const {
+  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
+                               const InputVector<double>& u) const {
     return StateVector<double>();
   }
 
-  OutputVector<double> output(const double &t, const StateVector<double> &x,
-                              const InputVector<double> &u) {
+  OutputVector<double> output(const double& t, const StateVector<double>& x,
+                              const InputVector<double>& u) {
     // Aborts if insufficient time has passed since the last transmission. This
     // is to avoid flooding the ROS topics.
     ::ros::Time current_time = ::ros::Time::now();
@@ -243,7 +240,7 @@ class SensorPublisherJointState {
     previous_send_time_ = current_time;
 
     const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
-      rigid_body_system_->getRigidBodyTree();
+        rigid_body_system_->getRigidBodyTree();
 
     // The input vector u contains the entire system's state. The following
     // The following code extracts the position and velocity values from it
@@ -251,7 +248,7 @@ class SensorPublisherJointState {
     auto uvec = Drake::toEigen(u);
     auto q = uvec.head(rigid_body_tree->number_of_positions());    // position
     auto v = uvec.segment(rigid_body_tree->number_of_positions(),  // velocity
-      rigid_body_tree->number_of_velocities());
+                          rigid_body_tree->number_of_velocities());
     KinematicsCache<double> cache = rigid_body_tree->doKinematics(q, v);
 
     int q_index = 0;
@@ -260,7 +257,7 @@ class SensorPublisherJointState {
     // Resets the message_index_ variable in each of the RobotJointStateStruct
     // objects in the robot_structs_ map. This is so we can keep track of where
     // in the joint state message we are saving.
-    for(auto const &map_entry : robot_structs_) {
+    for (auto const& map_entry : robot_structs_) {
       RobotJointStateStruct* robot_struct = map_entry.second.get();
       robot_struct->message_index_ = 0;
       robot_struct->updated_ = false;
@@ -271,7 +268,6 @@ class SensorPublisherJointState {
 
     // Saves the joint state information
     for (auto const& rigid_body : rigid_body_tree->bodies) {
-
       // Skips the current rigid body if it does not have a parent. Note that
       // this includes the world.
       if (!rigid_body->hasParent()) continue;
@@ -305,7 +301,8 @@ class SensorPublisherJointState {
       if (robot_struct_in_map == robot_structs_.end()) {
         throw std::runtime_error(
             "ERROR: SensorPublisherJointState: Unable to find"
-            "robot struct using key " + key);
+            "robot struct using key " +
+            key);
       }
 
       RobotJointStateStruct* robot_struct = robot_struct_in_map->second.get();
@@ -313,8 +310,8 @@ class SensorPublisherJointState {
       if (joint.getNumPositions() > 0) {
         if (joint.isFloating()) {
           auto transform = rigid_body_tree->relativeTransform(
-            cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
-            rigid_body_tree->FindBodyIndex(rigid_body->name()));
+              cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
+              rigid_body_tree->FindBodyIndex(rigid_body->name()));
           auto translation = transform.translation();
           auto rpy = rotmat2rpy(transform.linear());
 
@@ -337,13 +334,13 @@ class SensorPublisherJointState {
 
           robot_struct->message_index_ = index;
         } else {
-
           // Verifies that the joint has the same number of position versus
           // velocity DOFs. Throws an exception if this is not true.
           if (joint.getNumPositions() != joint.getNumVelocities()) {
-            throw std::runtime_error("ERROR: Joint \"" + joint.getName() +
-              "\" in robot \"" + robot_struct->robot_name_ +
-              "\" has a different number of positions and velocities.");
+            throw std::runtime_error(
+                "ERROR: Joint \"" + joint.getName() + "\" in robot \"" +
+                robot_struct->robot_name_ +
+                "\" has a different number of positions and velocities.");
           }
 
           // Adds the names of the DOFs that belong to the joint to the
@@ -358,7 +355,7 @@ class SensorPublisherJointState {
     }
 
     // Publishes the joint state messages.
-    for(auto const &map_entry : robot_structs_) {
+    for (auto const& map_entry : robot_structs_) {
       RobotJointStateStruct* robot_struct = map_entry.second.get();
       robot_struct->message_->header.stamp = current_time;
       robot_struct->publisher_.publish(*(robot_struct->message_.get()));

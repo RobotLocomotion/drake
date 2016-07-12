@@ -74,8 +74,8 @@ class SensorPublisherOdometry {
     // Creates a ROS topic publisher for each robot in the rigid body system.
     // A robot is defined by any link that's connected to the world via a
     // non-fixed joint.
-    for (auto const& rigid_body : rigid_body_system->getRigidBodyTree()->bodies) {
-
+    for (auto const& rigid_body :
+         rigid_body_system->getRigidBodyTree()->bodies) {
       // Skips the current rigid body if it does not have the world as the
       // parent.
       if (!rigid_body->has_as_parent(world)) continue;
@@ -96,30 +96,30 @@ class SensorPublisherOdometry {
         const std::string topic_name = "drake/" + key + "/odometry";
 
         odometry_publishers_.insert(std::pair<std::string, ::ros::Publisher>(
-          key, nh.advertise<nav_msgs::Odometry>(topic_name, 1)));
+            key, nh.advertise<nav_msgs::Odometry>(topic_name, 1)));
 
         std::unique_ptr<nav_msgs::Odometry> message(new nav_msgs::Odometry());
         message->header.frame_id = RigidBodyTree::kWorldLinkName;
         message->child_frame_id = rigid_body->name();
 
-        odometry_messages_.insert(std::pair<std::string,
-          std::unique_ptr<nav_msgs::Odometry>>(
-                  key, std::move(message)));
+        odometry_messages_.insert(
+            std::pair<std::string, std::unique_ptr<nav_msgs::Odometry>>(
+                key, std::move(message)));
       } else {
         throw std::runtime_error(
-          "ERROR: Rigid Body System contains multiple models named \"" + key +
-          "\".");
+            "ERROR: Rigid Body System contains multiple models named \"" + key +
+            "\".");
       }
     }
   }
 
-  StateVector<double> dynamics(const double &t, const StateVector<double> &x,
-                               const InputVector<double> &u) const {
+  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
+                               const InputVector<double>& u) const {
     return StateVector<double>();
   }
 
-  OutputVector<double> output(const double &t, const StateVector<double> &x,
-                              const InputVector<double> &u) {
+  OutputVector<double> output(const double& t, const StateVector<double>& x,
+                              const InputVector<double>& u) {
     // Aborts if insufficient time has passed since the last transmission. This
     // is to avoid flooding the ROS topics.
     ::ros::Time current_time = ::ros::Time::now();
@@ -129,7 +129,7 @@ class SensorPublisherOdometry {
     previous_send_time_ = current_time;
 
     const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
-      rigid_body_system_->getRigidBodyTree();
+        rigid_body_system_->getRigidBodyTree();
 
     // The input vector u contains the entire system's state. The following
     // The following code extracts the position and velocity values from it
@@ -137,7 +137,7 @@ class SensorPublisherOdometry {
     auto uvec = Drake::toEigen(u);
     auto q = uvec.head(rigid_body_tree->number_of_positions());    // position
     auto v = uvec.segment(rigid_body_tree->number_of_positions(),  // velocity
-      rigid_body_tree->number_of_velocities());
+                          rigid_body_tree->number_of_velocities());
     KinematicsCache<double> cache = rigid_body_tree->doKinematics(q, v);
 
     // Obtains a reference to the world link in the rigid body tree.
@@ -146,7 +146,6 @@ class SensorPublisherOdometry {
     // Publishes an odometry message for each rigid body that's connected via a
     // floating (non-fixed) joint to the world.
     for (auto const& rigid_body : rigid_body_tree->bodies) {
-
       // Skips the current rigid body if it does not have the world as the
       // parent.
       if (!rigid_body->has_as_parent(world)) continue;
@@ -166,7 +165,8 @@ class SensorPublisherOdometry {
       if (message_in_map == odometry_messages_.end()) {
         throw std::runtime_error(
             "ERROR: SensorPublisherOdmetry: Unable to find"
-            "odometry message using key " + key);
+            "odometry message using key " +
+            key);
       }
 
       // Verifies that the publisher exists in the odometry_publishers_ map.
@@ -174,14 +174,15 @@ class SensorPublisherOdometry {
       if (publisher_in_map == odometry_publishers_.end()) {
         throw std::runtime_error(
             "ERROR: SensorPublisherOdmetry: Unable to find"
-            "odometry publisher using key " + key);
+            "odometry publisher using key " +
+            key);
       }
 
-      nav_msgs::Odometry *message = message_in_map->second.get();
+      nav_msgs::Odometry* message = message_in_map->second.get();
 
       // Updates the odometry information in the odometry message.
-      auto transform = rigid_body_tree->relativeTransform(cache,
-          rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
+      auto transform = rigid_body_tree->relativeTransform(
+          cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
           rigid_body_tree->FindBodyIndex(rigid_body->name()));
       auto translation = transform.translation();
       auto quat = rotmat2quat(transform.linear());
@@ -197,8 +198,8 @@ class SensorPublisherOdometry {
       message->pose.pose.orientation.z = quat(3);
 
       // Saves the robot's linear and angular velocities in the world.
-      auto twist = rigid_body_tree->relativeTwist(cache,
-          rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
+      auto twist = rigid_body_tree->relativeTwist(
+          cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
           rigid_body_tree->FindBodyIndex(rigid_body->name()),
           rigid_body_tree->FindBodyIndex(RigidBodyTree::kWorldLinkName));
 
@@ -239,8 +240,7 @@ class SensorPublisherOdometry {
    * publishers. This is used to avoid having to allocate a new message
    * each time one needs to be sent.
    */
-  std::map<std::string, std::unique_ptr<nav_msgs::Odometry>>
-      odometry_messages_;
+  std::map<std::string, std::unique_ptr<nav_msgs::Odometry>> odometry_messages_;
 
   /**
    * The previous time the LIDAR messages were sent.

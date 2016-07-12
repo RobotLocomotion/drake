@@ -96,15 +96,14 @@ class SensorPublisherLidar {
         // #2462 is merged. See:
         // https://github.com/RobotLocomotion/drake/pull/2462
         const std::string& model_name = "prius_1";
-          // depth_sensor->frame_->body->model_name();
+        // depth_sensor->frame_->body->model_name();
 
         const std::string key = model_name + "_" + depth_sensor->get_name();
 
         // Creates the ROS topic publisher for the current LIDAR sensor.
         if (lidar_publishers_.find(key) == lidar_publishers_.end()) {
-
-          const std::string topic_name = "drake/" + model_name + "/lidar/" +
-            depth_sensor->get_name();
+          const std::string topic_name =
+              "drake/" + model_name + "/lidar/" + depth_sensor->get_name();
 
           lidar_publishers_.insert(std::pair<std::string, ::ros::Publisher>(
               key, nh.advertise<sensor_msgs::LaserScan>(topic_name, 1)));
@@ -141,9 +140,9 @@ class SensorPublisherLidar {
           } else {
             message->angle_min = depth_sensor->min_pitch();
             message->angle_max = depth_sensor->max_pitch();
-            message->angle_increment = (depth_sensor->max_pitch() -
-                                        depth_sensor->min_pitch()) /
-                                       depth_sensor->num_pixel_rows();
+            message->angle_increment =
+                (depth_sensor->max_pitch() - depth_sensor->min_pitch()) /
+                depth_sensor->num_pixel_rows();
           }
 
           // Since the RigidBodyDepthSensor does not include this information
@@ -173,13 +172,13 @@ class SensorPublisherLidar {
     }
   }
 
-  StateVector<double> dynamics(const double &t, const StateVector<double> &x,
-                               const InputVector<double> &u) const {
+  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
+                               const InputVector<double>& u) const {
     return StateVector<double>();
   }
 
-  OutputVector<double> output(const double &t, const StateVector<double> &x,
-                              const InputVector<double> &u) {
+  OutputVector<double> output(const double& t, const StateVector<double>& x,
+                              const InputVector<double>& u) {
     // Aborts if insufficient time has passed since the last transmission. This
     // is to avoid flooding the ROS topics.
     ::ros::Time current_time = ::ros::Time::now();
@@ -207,13 +206,12 @@ class SensorPublisherLidar {
              << " and number of outputs of sensor " << sensor->get_name()
              << " (" << sensor->getNumOutputs()
              << ") exceeds the total number of outputs of the rigid body "
-                "system ("
-             << rigid_body_system_->getNumOutputs();
+                "system (" << rigid_body_system_->getNumOutputs();
         throw std::runtime_error(buff.str());
       }
 
-      const RigidBodyDepthSensor *depth_sensor =
-          dynamic_cast<const RigidBodyDepthSensor *>(sensor);
+      const RigidBodyDepthSensor* depth_sensor =
+          dynamic_cast<const RigidBodyDepthSensor*>(sensor);
 
       if (depth_sensor != nullptr) {
         size_t sensor_data_index_ = output_index;
@@ -222,7 +220,7 @@ class SensorPublisherLidar {
         // #2462 is merged. See:
         // https://github.com/RobotLocomotion/drake/pull/2462
         const std::string& model_name = "prius_1";
-          // depth_sensor->frame_->body->model_name();
+        // depth_sensor->frame_->body->model_name();
 
         const std::string key = model_name + "_" + depth_sensor->get_name();
 
@@ -232,7 +230,7 @@ class SensorPublisherLidar {
               "Could not find ROS message for LIDAR sensor " +
               depth_sensor->get_name() + " in robot " + model_name + ".");
 
-        sensor_msgs::LaserScan *message = message_in_map->second.get();
+        sensor_msgs::LaserScan* message = message_in_map->second.get();
 
         // Saves the new range measurements in the ROS message.
         for (size_t ii = 0; ii < depth_sensor->getNumOutputs(); ii++) {
@@ -240,8 +238,7 @@ class SensorPublisherLidar {
         }
 
         // Publishes the ROS message containing the new range measurements.
-        auto publisher_in_map =
-            lidar_publishers_.find(key);
+        auto publisher_in_map = lidar_publishers_.find(key);
         if (publisher_in_map == lidar_publishers_.end())
           throw std::runtime_error(
               "ERROR: Failed to find ROS topic publisher for LIDAR sensor " +

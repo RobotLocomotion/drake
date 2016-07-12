@@ -14,16 +14,16 @@ namespace {
 
 class PriusToGolfCartTFConverter {
  public:
-  PriusToGolfCartTFConverter() :
-      start_time_(ros::Time::now()) {
-  }
+  PriusToGolfCartTFConverter() : start_time_(ros::Time::now()) {}
 
   void obtain_and_send_transform(const std::string drake_parent,
-      const std::string drake_child, const std::string golfcart_parent,
-      const std::string golfcart_child) {
+                                 const std::string drake_child,
+                                 const std::string golfcart_parent,
+                                 const std::string golfcart_child) {
     tf::StampedTransform transform;
     try {
-      listener_.lookupTransform(drake_parent, drake_child, ros::Time(0), transform);
+      listener_.lookupTransform(drake_parent, drake_child, ros::Time(0),
+                                transform);
       transform.frame_id_ = golfcart_parent;
       transform.child_frame_id_ = golfcart_child;
       transform.stamp_ = ros::Time::now();
@@ -46,33 +46,37 @@ class PriusToGolfCartTFConverter {
 
 class PriusToGolfCartSensorConverter {
  public:
-  PriusToGolfCartSensorConverter() {
-  }
+  PriusToGolfCartSensorConverter() {}
 
   void operator()() {
     ros::NodeHandle node;
 
     // Declares the publishers for the golf cart sensor data.
-    pub_front_lidar = node.advertise<sensor_msgs::LaserScan>("front_lidar", 1000);
-    pub_front_top_lidar = node.advertise<sensor_msgs::LaserScan>("front_top_lidar", 1000);
-    pub_rear_right_lidar = node.advertise<sensor_msgs::LaserScan>("rear_right_lidar", 1000);;
-    pub_rear_left_lidar = node.advertise<sensor_msgs::LaserScan>("rear_left_lidar", 1000);
+    pub_front_lidar =
+        node.advertise<sensor_msgs::LaserScan>("front_lidar", 1000);
+    pub_front_top_lidar =
+        node.advertise<sensor_msgs::LaserScan>("front_top_lidar", 1000);
+    pub_rear_right_lidar =
+        node.advertise<sensor_msgs::LaserScan>("rear_right_lidar", 1000);
+    ;
+    pub_rear_left_lidar =
+        node.advertise<sensor_msgs::LaserScan>("rear_left_lidar", 1000);
 
     // Subscribes to the ROS topics containing Prius sensor data.
     sub_front_laser = node.subscribe(
-      "/drake/prius_1/lidar/front_laser", 1,
-      & PriusToGolfCartSensorConverter::callback_front_laser, this);
+        "/drake/prius_1/lidar/front_laser", 1,
+        &PriusToGolfCartSensorConverter::callback_front_laser, this);
     sub_top_laser = node.subscribe(
-      "/drake/prius_1/lidar/top_laser", 1,
-      & PriusToGolfCartSensorConverter::callback_top_laser, this);
+        "/drake/prius_1/lidar/top_laser", 1,
+        &PriusToGolfCartSensorConverter::callback_top_laser, this);
     sub_rear_left_laser = node.subscribe(
-      "/drake/prius_1/lidar/rear_left_laser",
-       1, & PriusToGolfCartSensorConverter::callback_rear_left_laser, this);
+        "/drake/prius_1/lidar/rear_left_laser", 1,
+        &PriusToGolfCartSensorConverter::callback_rear_left_laser, this);
     sub_rear_right_laser = node.subscribe(
-      "/drake/prius_1/lidar/rear_right_laser", 1,
-      & PriusToGolfCartSensorConverter::callback_rear_right_laser, this);
+        "/drake/prius_1/lidar/rear_right_laser", 1,
+        &PriusToGolfCartSensorConverter::callback_rear_right_laser, this);
 
-    ros::AsyncSpinner spinner(4); // Use 4 threads
+    ros::AsyncSpinner spinner(4);  // Use 4 threads
     spinner.start();
     ros::waitForShutdown();
   }
@@ -134,11 +138,13 @@ int do_main(int argc, char* argv[]) {
   {
     int num_get_attempts = 0;
     bool continue_query = true;
-    while (continue_query && !::ros::param::get("/drake/enable_tf_publisher",
-        enable_tf_publisher)) {
+    while (
+        continue_query &&
+        !::ros::param::get("/drake/enable_tf_publisher", enable_tf_publisher)) {
       if (++num_get_attempts > 10) {
-        ROS_WARN("Failed to get parameter /drake/enable_tf_publisher. "
-                 "Assuming publisher is enabled.");
+        ROS_WARN(
+            "Failed to get parameter /drake/enable_tf_publisher. "
+            "Assuming publisher is enabled.");
         continue_query = false;
       }
     }
@@ -146,7 +152,7 @@ int do_main(int argc, char* argv[]) {
 
   // Sets the verbosity level to DEBUG.
   if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
-      ros::console::levels::Debug) ) {
+                                     ros::console::levels::Debug)) {
     ros::console::notifyLoggerLevelsChanged();
   }
 
@@ -163,23 +169,23 @@ int do_main(int argc, char* argv[]) {
   ros::Rate rate(kCycleFrequency);
   while (node.ok()) {
     if (enable_tf_publisher) {
-
       // Broadcasts an identity transform from "world" to "golfcartdj/map".
-      broadcaster.sendTransform(tf::StampedTransform(tf::Transform::getIdentity(),
-        ros::Time::now(), "world", "golfcartdj/map"));
+      broadcaster.sendTransform(
+          tf::StampedTransform(tf::Transform::getIdentity(), ros::Time::now(),
+                               "world", "golfcartdj/map"));
 
       // Broadcasts a transform from "golfcartdj/map" to "golfcartdj/odom".
       // Assumes the transform is equal to Drake's "world" to "chassis_floor".
       tf_converter.obtain_and_send_transform(
-        std::string("world"),
-        std::string("chassis_floor"),
-        std::string("golfcartdj/map"),
-        std::string("golfcartdj/odom"));
+          std::string("world"), std::string("chassis_floor"),
+          std::string("golfcartdj/map"), std::string("golfcartdj/odom"));
 
-      // Broadcasts a transform from "golfcartdj/odom" to "golfcartdj/base_link".
+      // Broadcasts a transform from "golfcartdj/odom" to
+      // "golfcartdj/base_link".
       // Assumes this transform is identity.
-      broadcaster.sendTransform(tf::StampedTransform(tf::Transform::getIdentity(),
-        ros::Time::now(), "golfcartdj/odom", "golfcartdj/base_link"));
+      broadcaster.sendTransform(
+          tf::StampedTransform(tf::Transform::getIdentity(), ros::Time::now(),
+                               "golfcartdj/odom", "golfcartdj/base_link"));
 
       // Broadcasts a transform from "golfcartdj/base_link" to "body".
       // Assumes this transform is identity.
@@ -190,36 +196,32 @@ int do_main(int argc, char* argv[]) {
       // Assumes the transform is equal to Drake's "chassis_floor" to
       // "front_laser".
       tf_converter.obtain_and_send_transform(
-        std::string("chassis_floor"),
-        std::string("front_laser"),
-        std::string("golfcartdj/base_link"),
-        std::string("front_lidar"));
+          std::string("chassis_floor"), std::string("front_laser"),
+          std::string("golfcartdj/base_link"), std::string("front_lidar"));
 
-      // Broadcasts a transform from "golfcartdj/base_link" to "front_top_lidar".
-      // Assumes the transform is equal to Drake's "chassis_floor" to "top_laser".
+      // Broadcasts a transform from "golfcartdj/base_link" to
+      // "front_top_lidar".
+      // Assumes the transform is equal to Drake's "chassis_floor" to
+      // "top_laser".
       tf_converter.obtain_and_send_transform(
-        std::string("chassis_floor"),
-        std::string("top_laser"),
-        std::string("golfcartdj/base_link"),
-        std::string("front_top_lidar"));
+          std::string("chassis_floor"), std::string("top_laser"),
+          std::string("golfcartdj/base_link"), std::string("front_top_lidar"));
 
-      // Broadcasts a transform from "golfcartdj/base_link" to "rear_right_lidar".
+      // Broadcasts a transform from "golfcartdj/base_link" to
+      // "rear_right_lidar".
       // Assumes the transform is equal to Drake's "chassis_floor" to
       // "rear_right_laser".
       tf_converter.obtain_and_send_transform(
-        std::string("chassis_floor"),
-        std::string("rear_right_laser"),
-        std::string("golfcartdj/base_link"),
-        std::string("rear_right_lidar"));
+          std::string("chassis_floor"), std::string("rear_right_laser"),
+          std::string("golfcartdj/base_link"), std::string("rear_right_lidar"));
 
-      // Broadcasts a transform from "golfcartdj/base_link" to "rear_left_lidar".
+      // Broadcasts a transform from "golfcartdj/base_link" to
+      // "rear_left_lidar".
       // Assumes the transform is equal to Drake's "chassis_floor" to
       // "rear_left_laser".
       tf_converter.obtain_and_send_transform(
-        std::string("chassis_floor"),
-        std::string("rear_left_laser"),
-        std::string("golfcartdj/base_link"),
-        std::string("rear_left_lidar"));
+          std::string("chassis_floor"), std::string("rear_left_laser"),
+          std::string("golfcartdj/base_link"), std::string("rear_left_lidar"));
     }
 
     rate.sleep();
@@ -234,7 +236,6 @@ int do_main(int argc, char* argv[]) {
 }  // namespace cars
 }  // namespace examples
 }  // namespace drake
-
 
 int main(int argc, char* argv[]) {
   return drake::examples::cars::do_main(argc, argv);
