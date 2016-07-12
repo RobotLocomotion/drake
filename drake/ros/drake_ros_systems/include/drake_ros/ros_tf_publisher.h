@@ -76,10 +76,11 @@ class DrakeRosTfPublisher {
         }
       }
 
-      if (enable_tf_publisher_)
-        std::cout << "Enabling TF publisher!" << std::endl;
-      else
-        std::cout << "Disabling TF publisher!" << std::endl;
+      if (enable_tf_publisher_) {
+        ROS_INFO("Enabling TF publisher!");
+      } else {
+        ROS_INFO("Disabling TF publisher!");
+      }
     }
 
     // Initializes the time stamp of the previous transmission to be zero.

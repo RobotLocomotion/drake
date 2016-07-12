@@ -66,13 +66,15 @@ ROS workspace::
 Step 2: Add ``drake`` and ``drake_ros_integration`` to the Workspace
 ====================================================================
 
-Add local clones of the ``drake`` and ``drake_ros_integration`` repositories
-to your workspace::
+Add ``drake`` and ``drake_ros_integration`` to the workspace::
 
     cd ~/dev/drake_catkin_workspace/src
     git clone git@github.com:RobotLocomotion/drake.git
     ln -s drake/drake/ros drake_ros_integration
 
+Note that ``drake_ros_integration`` is a symbolic link. This allows us to keep
+everything in Drake's main repository without needing to completely reorganize
+the files in it.
 
 .. _drake_catkin_build_workspace:
 
