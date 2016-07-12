@@ -55,15 +55,15 @@ template <typename System>
 class SystemDynamicConstraint : public DynamicConstraint {
  public:
   // TODO(sam.creasey) Should this be a const bare ptr?
-  SystemDynamicConstraint(std::shared_ptr<System> system)
+  SystemDynamicConstraint(explicit std::shared_ptr<System> system)
       : DynamicConstraint(Drake::getNumStates(*system),
                           Drake::getNumInputs(*system)),
         system_(system) {}
 
  private:
-  virtual void dynamics(const Drake::TaylorVecXd& state,
-                        const Drake::TaylorVecXd& input,
-                        Drake::TaylorVecXd* xdot) const override {
+  void dynamics(const Drake::TaylorVecXd& state,
+                const Drake::TaylorVecXd& input,
+                Drake::TaylorVecXd* xdot) const override {
     typename System::template StateVector<Drake::TaylorVarXd> x = state;
     typename System::template InputVector<Drake::TaylorVarXd> u = input;
     Drake::TaylorVarXd t(1);
