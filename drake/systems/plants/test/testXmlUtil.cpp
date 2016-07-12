@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/plants/xmlUtil.h"
-#include "drake/thirdParty/tinyxml2/tinyxml2.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 using Eigen::Vector3d;
 using tinyxml2::XMLDocument;
