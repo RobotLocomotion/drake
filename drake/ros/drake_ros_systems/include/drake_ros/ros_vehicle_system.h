@@ -51,7 +51,7 @@ class ROSAckermannCommandReceiverSystem {
   using OutputVector = Vector<ScalarType>;
   // static const bool has_lcm_input = true;
 
-  explicit ROSAckermannCommandReceiverSystem() : spinner_(1) {
+  ROSAckermannCommandReceiverSystem() : spinner_(1) {
     ::ros::NodeHandle nh;
 
     // Instantiates a ROS topic subscriber that receives vehicle driving
