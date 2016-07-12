@@ -17,8 +17,8 @@ namespace drake {
 namespace systems {
 namespace plants {
 namespace {
-
-std::string model_file_1, model_file_2;
+char* model_file_1 = nullptr;
+char* model_file_2 = nullptr;
 
 GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
   // Creates a rigid body system using the first model.
