@@ -58,7 +58,6 @@ class PriusToGolfCartSensorConverter {
         node.advertise<sensor_msgs::LaserScan>("front_top_lidar", 1000);
     pub_rear_right_lidar =
         node.advertise<sensor_msgs::LaserScan>("rear_right_lidar", 1000);
-    ;
     pub_rear_left_lidar =
         node.advertise<sensor_msgs::LaserScan>("rear_left_lidar", 1000);
 
