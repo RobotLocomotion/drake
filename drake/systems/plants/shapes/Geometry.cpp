@@ -44,23 +44,23 @@ string ShapeToString(Shape ss) {
 
 Geometry::Geometry() : shape(UNKNOWN) {}
 
-Geometry::Geometry(const Geometry &other) { shape = other.getShape(); }
+Geometry::Geometry(const Geometry& other) { shape = other.getShape(); }
 
 Geometry::Geometry(Shape shape) : shape(shape) {}
 
 Shape Geometry::getShape() const { return shape; }
 
-Geometry *Geometry::clone() const { return new Geometry(*this); }
+Geometry* Geometry::clone() const { return new Geometry(*this); }
 
-void Geometry::getPoints(Matrix3Xd &points) const { points = Matrix3Xd(); }
+void Geometry::getPoints(Matrix3Xd& points) const { points = Matrix3Xd(); }
 
-void Geometry::getBoundingBoxPoints(Matrix3Xd &points) const {
+void Geometry::getBoundingBoxPoints(Matrix3Xd& points) const {
   points = Matrix3Xd();
 }
 
 void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
                                     double z_half_width,
-                                    Eigen::Matrix3Xd &points) const {
+                                    Eigen::Matrix3Xd& points) const {
   // Return axis-aligned bounding-box vertices
   points.resize(3, NUM_BBOX_POINTS);
 
@@ -75,79 +75,80 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
   points << cx, cy, cz;
 }
 
-ostream &operator<<(ostream &out, const Geometry &gg) {
+ostream& operator<<(ostream& out, const Geometry& gg) {
   out << ShapeToString(gg.getShape()) << ", " << gg.NUM_BBOX_POINTS;
   return out;
 }
 
 Sphere::Sphere(double radius) : Geometry(SPHERE), radius(radius) {}
 
-Sphere *Sphere::clone() const { return new Sphere(*this); }
+Sphere* Sphere::clone() const { return new Sphere(*this); }
 
-void Sphere::getPoints(Matrix3Xd &points) const {
+void Sphere::getPoints(Matrix3Xd& points) const {
   points = Matrix3Xd::Zero(3, NUM_POINTS);
 }
 
-void Sphere::getBoundingBoxPoints(Matrix3Xd &points) const {
+void Sphere::getBoundingBoxPoints(Matrix3Xd& points) const {
   Geometry::getBoundingBoxPoints(radius, radius, radius, points);
 }
 
-void Sphere::getTerrainContactPoints(Matrix3Xd &points) const {
+void Sphere::getTerrainContactPoints(Matrix3Xd& points) const {
   if (radius < 1e-6)
     getPoints(points);
   else
     points = Matrix3Xd();
 }
 
-ostream &operator<<(ostream &out, const Sphere &ss) {
-  out << static_cast<const Geometry &>(ss) << ", " << ss.radius << ", "
+ostream& operator<<(ostream& out, const Sphere& ss) {
+  out << static_cast<const Geometry&>(ss) << ", " << ss.radius << ", "
       << ss.NUM_POINTS;
   return out;
 }
 
-Box::Box(const Eigen::Vector3d &size) : Geometry(BOX), size(size) {}
+Box::Box(const Eigen::Vector3d& size) : Geometry(BOX), size(size) {}
 
-Box *Box::clone() const { return new Box(*this); }
+Box* Box::clone() const { return new Box(*this); }
 
-void Box::getPoints(Matrix3Xd &points) const {
+void Box::getPoints(Matrix3Xd& points) const {
   Geometry::getBoundingBoxPoints(size(0) / 2.0, size(1) / 2.0, size(2) / 2.0,
                                  points);
 }
 
-void Box::getBoundingBoxPoints(Matrix3Xd &points) const { getPoints(points); }
+void Box::getBoundingBoxPoints(Matrix3Xd& points) const { getPoints(points); }
 
-void Box::getTerrainContactPoints(Matrix3Xd &points) const {
+void Box::getTerrainContactPoints(Matrix3Xd& points) const {
   getPoints(points);
 }
 
-ostream &operator<<(ostream &out, const Box &bb) {
-  out << static_cast<const Geometry &>(bb) << ", " << bb.size.transpose();
+ostream& operator<<(ostream& out, const Box& bb) {
+  out << static_cast<const Geometry&>(bb) << ", " << bb.size.transpose();
   return out;
 }
 
 Cylinder::Cylinder(double radius, double length)
     : Geometry(CYLINDER), radius(radius), length(length) {}
 
-Cylinder *Cylinder::clone() const { return new Cylinder(*this); }
+Cylinder* Cylinder::clone() const { return new Cylinder(*this); }
 
-void Cylinder::getPoints(Matrix3Xd &points) const {
+void Cylinder::getPoints(Matrix3Xd& points) const {
   static bool warnOnce = true;
   if (warnOnce) {
-    std::cerr << "Warning: DrakeShapes::Cylinder::getPoints(): "
-        "This method returns the vertices of the cylinder''s bounding-box."
-         << std::endl;
+    std::cerr
+        << "Warning: DrakeShapes::Cylinder::getPoints(): "
+           "This method returns the vertices of the cylinder''s bounding-box."
+        << std::endl;
     warnOnce = false;
   }
 
   getBoundingBoxPoints(points);
 }
 
-void Cylinder::getBoundingBoxPoints(Matrix3Xd &points) const {
+void Cylinder::getBoundingBoxPoints(Matrix3Xd& points) const {
   Geometry::getBoundingBoxPoints(radius, radius, length / 2.0, points);
 }
 
-ostream &operator<<(ostream &out, const Cylinder &cc) {
-  out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", "
+ostream& operator<<(ostream& out, const Cylinder& cc) {
+  out << static_cast<const Geometry&>(cc) << ", " << cc.radius << ", "
       << cc.length;
   return out;
 }
@@ -155,9 +156,9 @@ ostream &operator<<(ostream &out, const Cylinder &cc) {
 Capsule::Capsule(double radius, double length)
     : Geometry(CAPSULE), radius(radius), length(length) {}
 
-Capsule *Capsule::clone() const { return new Capsule(*this); }
+Capsule* Capsule::clone() const { return new Capsule(*this); }
 
-void Capsule::getPoints(Matrix3Xd &points) const {
+void Capsule::getPoints(Matrix3Xd& points) const {
   // Return segment end-points
   points.resize(Eigen::NoChange, NUM_POINTS);
   RowVectorXd cx = RowVectorXd::Zero(NUM_POINTS);
@@ -168,21 +169,21 @@ void Capsule::getPoints(Matrix3Xd &points) const {
   points << cx, cy, cz;
 }
 
-void Capsule::getBoundingBoxPoints(Matrix3Xd &points) const {
+void Capsule::getBoundingBoxPoints(Matrix3Xd& points) const {
   Geometry::getBoundingBoxPoints(radius, radius, (length / 2.0 + radius),
                                  points);
 }
 
-ostream &operator<<(ostream &out, const Capsule &cc) {
-  out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", "
+ostream& operator<<(ostream& out, const Capsule& cc) {
+  out << static_cast<const Geometry&>(cc) << ", " << cc.radius << ", "
       << cc.length;
   return out;
 }
 
-Mesh::Mesh(const string &filename)
+Mesh::Mesh(const string& filename)
     : Geometry(MESH), scale(1.0, 1.0, 1.0), uri(filename) {}
 
-Mesh::Mesh(const string &uri, const string &resolved_filename)
+Mesh::Mesh(const string& uri, const string& resolved_filename)
     : Geometry(MESH),
       scale(1.0, 1.0, 1.0),
       uri(uri),
@@ -200,8 +201,7 @@ bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
   if (!file) {
-    throw std::runtime_error(
-        "Error opening file \"" + obj_file_name + "\".");
+    throw std::runtime_error("Error opening file \"" + obj_file_name + "\".");
   }
 
   string line;
@@ -264,8 +264,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
   if (!file) {
-    throw std::runtime_error(
-        "Error opening file \"" + obj_file_name + "\".");
+    throw std::runtime_error("Error opening file \"" + obj_file_name + "\".");
   }
 
   std::string line;
@@ -338,13 +337,13 @@ void Mesh::LoadObjFile(PointsVector* vertices,
   }
 }
 
-Mesh *Mesh::clone() const { return new Mesh(*this); }
+Mesh* Mesh::clone() const { return new Mesh(*this); }
 
-void Mesh::getPoints(Eigen::Matrix3Xd &point_matrix) const {
+void Mesh::getPoints(Eigen::Matrix3Xd& point_matrix) const {
   extractMeshVertices(point_matrix);
 }
 
-void Mesh::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
+void Mesh::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {
   Matrix3Xd mesh_vertices;
   extractMeshVertices(mesh_vertices);
 
@@ -359,22 +358,22 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
-ostream &operator<<(ostream &out, const Mesh &mm) {
-  out << static_cast<const Geometry &>(mm) << ", " << mm.scale << ", "
-      << mm.uri << ", " << mm.resolved_filename << ", " << mm.root_dir;
+ostream& operator<<(ostream& out, const Mesh& mm) {
+  out << static_cast<const Geometry&>(mm) << ", " << mm.scale << ", " << mm.uri
+      << ", " << mm.resolved_filename << ", " << mm.root_dir;
   return out;
 }
 
-MeshPoints::MeshPoints(const Eigen::Matrix3Xd &points)
+MeshPoints::MeshPoints(const Eigen::Matrix3Xd& points)
     : Geometry(MESH_POINTS), points(points) {}
 
-MeshPoints *MeshPoints::clone() const { return new MeshPoints(*this); }
+MeshPoints* MeshPoints::clone() const { return new MeshPoints(*this); }
 
-void MeshPoints::getPoints(Eigen::Matrix3Xd &point_matrix) const {
+void MeshPoints::getPoints(Eigen::Matrix3Xd& point_matrix) const {
   point_matrix = points;
 }
 
-void MeshPoints::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
+void MeshPoints::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {
   Vector3d min_pos = points.rowwise().minCoeff();
   Vector3d max_pos = points.rowwise().maxCoeff();
 
@@ -386,8 +385,8 @@ void MeshPoints::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
-ostream &operator<<(ostream &out, const MeshPoints &mp) {
-  out << static_cast<const Geometry &>(mp) << ",\n" << mp.points;
+ostream& operator<<(ostream& out, const MeshPoints& mp) {
+  out << static_cast<const Geometry&>(mp) << ",\n" << mp.points;
   return out;
 }
 

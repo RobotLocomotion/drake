@@ -29,31 +29,31 @@ const double MIN_RADIUS = 1e-7;
 class DRAKESHAPES_EXPORT Geometry {
  public:
   Geometry();
-  Geometry(const Geometry &other);
+  Geometry(const Geometry& other);
 
   virtual ~Geometry() {}
 
-  virtual Geometry *clone() const;
+  virtual Geometry* clone() const;
 
   Shape getShape() const;
 
-  virtual void getPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const {
+  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const {
     points = Eigen::Matrix3Xd();
   }
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
-                                                     const Geometry &);
+  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+                                                     const Geometry&);
 
  protected:
   explicit Geometry(Shape shape);
   void getBoundingBoxPoints(double x_half_width, double y_half_width,
                             double z_half_width,
-                            Eigen::Matrix3Xd &points) const;
+                            Eigen::Matrix3Xd& points) const;
 
   Shape shape;
   static const int NUM_BBOX_POINTS;
@@ -63,16 +63,16 @@ class DRAKESHAPES_EXPORT Sphere : public Geometry {
  public:
   explicit Sphere(double radius);
   virtual ~Sphere() {}
-  virtual Sphere *clone() const;
-  virtual void getPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
+  virtual Sphere* clone() const;
+  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
-                                                     const Sphere &);
+  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+                                                     const Sphere&);
 
   double radius;
   static const int NUM_POINTS;
@@ -80,18 +80,17 @@ class DRAKESHAPES_EXPORT Sphere : public Geometry {
 
 class DRAKESHAPES_EXPORT Box : public Geometry {
  public:
-  explicit Box(const Eigen::Vector3d &size);
+  explicit Box(const Eigen::Vector3d& size);
   virtual ~Box() {}
-  virtual Box *clone() const;
-  virtual void getPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
+  virtual Box* clone() const;
+  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
-                                                     const Box &);
+  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&, const Box&);
 
   Eigen::Vector3d size;
 };
@@ -100,15 +99,15 @@ class DRAKESHAPES_EXPORT Cylinder : public Geometry {
  public:
   Cylinder(double radius, double length);
   virtual ~Cylinder() {}
-  virtual Cylinder *clone() const;
-  virtual void getPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+  virtual Cylinder* clone() const;
+  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
-                                                     const Cylinder &);
+  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+                                                     const Cylinder&);
 
   double radius;
   double length;
@@ -118,15 +117,15 @@ class DRAKESHAPES_EXPORT Capsule : public Geometry {
  public:
   Capsule(double radius, double length);
   virtual ~Capsule() {}
-  virtual Capsule *clone() const;
-  virtual void getPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+  virtual Capsule* clone() const;
+  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
-                                                     const Capsule &);
+  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+                                                     const Capsule&);
 
   double radius;
   double length;
@@ -136,26 +135,26 @@ class DRAKESHAPES_EXPORT Capsule : public Geometry {
 
 class DRAKESHAPES_EXPORT Mesh : public Geometry {
  public:
-  explicit Mesh(const std::string &filename);
+  explicit Mesh(const std::string& filename);
   /** Constructs a representation of a mesh to be loaded from
   @p resolved_filename. @p uri provides a unique identifier used to interact
   with BotVisualizer. **/
-  Mesh(const std::string &uri, const std::string &resolved_filename);
+  Mesh(const std::string& uri, const std::string& resolved_filename);
   virtual ~Mesh() {}
-  virtual Mesh *clone() const;
-  virtual void getPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+  virtual Mesh* clone() const;
+  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
-                                                     const Mesh &);
+  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+                                                     const Mesh&);
 
   Eigen::Vector3d scale;
   std::string uri;
   std::string resolved_filename;
-  bool extractMeshVertices(Eigen::Matrix3Xd &vertex_coordinates) const;
+  bool extractMeshVertices(Eigen::Matrix3Xd& vertex_coordinates) const;
 
   /** Loads triangle mesh from an obj file into the provided vectors of vertices
   and triangles.
@@ -168,8 +167,7 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   On output, `vertices.size()` corresponds to the number of vertices in the mesh
   while `triangles.size()` corresponds to the number of triangles in the mesh.
   **/
-  void LoadObjFile(PointsVector* vertices,
-                   TrianglesVector* triangles) const;
+  void LoadObjFile(PointsVector* vertices, TrianglesVector* triangles) const;
 
  protected:
   std::string root_dir;
@@ -185,18 +183,18 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
 
 class DRAKESHAPES_EXPORT MeshPoints : public Geometry {
  public:
-  explicit MeshPoints(const Eigen::Matrix3Xd &points);
+  explicit MeshPoints(const Eigen::Matrix3Xd& points);
   virtual ~MeshPoints() {}
-  virtual MeshPoints *clone() const;
+  virtual MeshPoints* clone() const;
 
-  virtual void getPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
-                                                     const MeshPoints &);
+  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+                                                     const MeshPoints&);
 
   Eigen::Matrix3Xd points;
 };
