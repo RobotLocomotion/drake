@@ -1,0 +1,10 @@
+<!--
+This XML file is used by:
+  drake-distro/drake/systems/plants/xmlUtil.cpp
+Method:
+  searchDirectory()
+-->
+
+<package format="2">
+  <name>IRB140</name>
+</package>

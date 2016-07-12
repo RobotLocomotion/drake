@@ -248,16 +248,66 @@ void searchDirectory(map<string, string>& package_map, string path) {
       if (file.is_dir && (file.name[0] != '.')) {
         searchDirectory(package_map, file.path);
       } else if (file.name == target_filename) {
-        spruce::path mypath_s(file.path);
-        auto path_split = mypath_s.split();
-        if (path_split.size() > 2) {
-          string package = path_split.at(path_split.size() - 2);
-          auto package_iter = package_map.find(package);
-          // Don't overwrite entries in the map
-          if (package_iter == package_map.end()) {
-            package_map.insert(make_pair(package, mypath_s.root().append("/")));
+
+        // Parse the package.xml file to find the name of the package.
+        std::string package_name;
+
+        {
+          std::string file_name = std::string(file.path);
+
+          std::cout<< "xmlUtil: searchDirectory: file_name = "
+            << file_name << std::endl;
+
+          XMLDocument xml_doc;
+          xml_doc.LoadFile(file_name.data());
+          if (xml_doc.ErrorID()) {
+            throw std::runtime_error(
+              "xmlUtil.cpp: searchDirectory: Failed to parse XML in file " +
+              file_name + "\n" + xml_doc.ErrorName());
           }
+
+          XMLElement* package_node = xml_doc.FirstChildElement("package");
+          if (!package_node) {
+            throw std::runtime_error(
+              "xmlUtil.cpp: searchDirectory: ERROR: XML file \"" + file_name +
+              "\" does not contain a <package> element.");
+          }
+
+          XMLElement* name_node = package_node->FirstChildElement("name");
+          if (!name_node) {
+            throw std::runtime_error(
+              "xmlUtil.cpp: searchDirectory: ERROR: <package> element does not "
+              "contain a <name> element. (XML file \"" + file_name + "\")");
+          }
+
+          package_name = name_node->FirstChild()->Value();
+
+          std::cout << "xmlUtil: searchDirectory: package_name = "
+            << package_name << std::endl;
         }
+
+        spruce::path mypath_s(file.path);
+
+        // Don't overwrite entries in the map.
+        auto package_iter = package_map.find(package_name);
+        if (package_iter == package_map.end()) {
+          package_map.insert(make_pair(package_name,
+            mypath_s.root().append("/")));
+        } else {
+          std::cerr << "xmlUtil.cpp: searchDirectory: WARNING: Package \""
+            << package_name << "\" was found more than once in the search "
+            << "space." << std::endl;
+        }
+
+        // auto path_split = mypatah_s.split();
+        // if (path_split.size() > 2) {
+        //   // string package = path_split.at(path_split.size() - 2);
+        //   auto package_iter = package_map.find(package_name);
+        //   // Don't overwrite entries in the map
+        //   if (package_iter == package_map.end()) {
+        //     package_map.insert(make_pair(package_name, mypath_s.root().append("/")));
+        //   }
+        // }
       }
       tinydir_next(&dir);
     }
