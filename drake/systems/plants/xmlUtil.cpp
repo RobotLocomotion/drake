@@ -219,6 +219,9 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
 }
 
 namespace {
+// Searches in directory @p path for a file called "package.xml".
+// Adds the package name specified in package.xml and the path to the
+// package to @p package_map.
 void searchDirectory(map<string, string>& package_map, string path) {
 #if defined(WIN32) || defined(WIN64)
   const char pathsep = ';';
@@ -270,9 +273,6 @@ void populatePackageMap(map<string, string>& package_map) {
   std::string drake_path = Drake::getDrakePath();
   std::string drake_path_parent = drake_path.substr(0,
     drake_path.find_last_of("drake") - std::string("drake").size());
-  std::cout << "xmlUtil: populatePackageMap: Finding path:\n"
-            << "  - drake_path: " << drake_path << "\n"
-            << "  - drake_path_parent: " << drake_path_parent << std::endl;
 
   searchDirectory(package_map, drake_path_parent);
 
