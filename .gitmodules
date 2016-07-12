@@ -89,3 +89,6 @@
 	path = externals/ipopt
 	url = https://github.com/RobotLocomotion/ipopt-mirror.git
 	ignore = untracked
+[submodule "externals/google_styleguide"]
+	path = externals/google_styleguide
+	url = https://github.com/google/styleguide.git
