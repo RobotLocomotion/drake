@@ -46,6 +46,10 @@ function(drake_fixup_commands PREFIX)
   foreach(_fc_command ${ARGN})
     if(${PREFIX}_${_fc_command} STREQUAL ":")
       set(${PREFIX}_${_fc_command} ${CMAKE_COMMAND} -E sleep 0 PARENT_SCOPE)
+    else()
+      string(CONFIGURE "${${PREFIX}_${_fc_command}}"
+             _fc_command_string @ONLY)
+      set(${PREFIX}_${_fc_command} "${_fc_command_string}" PARENT_SCOPE)
     endif()
   endforeach()
 endfunction()
@@ -197,7 +201,6 @@ function(drake_add_external PROJECT)
   )
   cmake_parse_arguments(_ext
     "${_ext_flags}" "${_ext_sv_args}" "${_ext_mv_args}" ${ARGN})
-  drake_fixup_commands(_ext ${_ext_extra_commands})
 
   # Determine if this project is enabled
   string(TOUPPER WITH_${PROJECT} _ext_project_option)
@@ -239,6 +242,9 @@ function(drake_add_external PROJECT)
     # One or more required packages was not found
     return()
   endif()
+
+  # Replace placeholders in commands
+  drake_fixup_commands(_ext ${_ext_extra_commands})
 
   # Set source directory for external project
   if(NOT DEFINED _ext_SOURCE_DIR)

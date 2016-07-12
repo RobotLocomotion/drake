@@ -159,7 +159,7 @@ drake_add_external(nlopt PUBLIC
 drake_add_external(textbook PUBLIC
   REQUIRES PythonInterp
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook
-  BUILD_COMMAND ${PYTHON_EXECUTABLE}
+  BUILD_COMMAND \@PYTHON_EXECUTABLE\@
     extract_examples.py underactuated.html ./examples)
 
 # yaml_cpp
