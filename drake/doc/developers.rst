@@ -149,6 +149,7 @@ make the review faster.
 - @ggould-tri (Toyota Research Institute)
 - @jwnimmer-tri (Toyota Research Institute)
 - @psiorx (MIT)
+- @sammy-tri (Toyota Research Institute)
 - @sherm1 (Toyota Research Institute)
 - @RussTedrake (MIT / Toyota Research Institute)
 
