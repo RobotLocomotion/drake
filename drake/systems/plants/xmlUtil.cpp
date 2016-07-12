@@ -244,19 +244,16 @@ void searchDirectory(map<string, string>& package_map, string path) {
       tinydir_file file;
       tinydir_readfile(&dir, &file);
 
-      // Skip hidden directories (including, importantly, "." and "..").
+      // Skips hidden directories (including, importantly, "." and "..").
       if (file.is_dir && (file.name[0] != '.')) {
         searchDirectory(package_map, file.path);
       } else if (file.name == target_filename) {
 
-        // Parse the package.xml file to find the name of the package.
+        // Parses the package.xml file to find the name of the package.
         std::string package_name;
 
         {
           std::string file_name = std::string(file.path);
-
-          std::cout<< "xmlUtil: searchDirectory: file_name = "
-            << file_name << std::endl;
 
           XMLDocument xml_doc;
           xml_doc.LoadFile(file_name.data());
@@ -281,9 +278,6 @@ void searchDirectory(map<string, string>& package_map, string path) {
           }
 
           package_name = name_node->FirstChild()->Value();
-
-          std::cout << "xmlUtil: searchDirectory: package_name = "
-            << package_name << std::endl;
         }
 
         spruce::path mypath_s(file.path);
@@ -298,16 +292,6 @@ void searchDirectory(map<string, string>& package_map, string path) {
             << package_name << "\" was found more than once in the search "
             << "space." << std::endl;
         }
-
-        // auto path_split = mypatah_s.split();
-        // if (path_split.size() > 2) {
-        //   // string package = path_split.at(path_split.size() - 2);
-        //   auto package_iter = package_map.find(package_name);
-        //   // Don't overwrite entries in the map
-        //   if (package_iter == package_map.end()) {
-        //     package_map.insert(make_pair(package_name, mypath_s.root().append("/")));
-        //   }
-        // }
       }
       tinydir_next(&dir);
     }
