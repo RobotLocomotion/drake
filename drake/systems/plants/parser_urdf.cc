@@ -306,7 +306,17 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
       return false;
     }
     string filename(attr);
+
+    // This method will return an empty string if the file is not found or
+    // resolved within a ROS package.
     string resolved_filename = resolveFilename(filename, package_map, root_dir);
+
+    if (resolved_filename.empty()) {
+      cerr << std::string(__FILE__) + ": " + __func__ + ": WARNING: " <<
+          "Mesh could not be resolved and will be ignored by Drake." << endl;
+      // Return without creating mesh object.
+      return true;
+    }
     DrakeShapes::Mesh mesh(filename, resolved_filename);
 
     // Obtains the scale of the mesh if it exists.

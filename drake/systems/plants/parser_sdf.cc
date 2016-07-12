@@ -130,7 +130,17 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
            << endl;
       return false;
     }
+
+    // This method will return an empty string if the file is not found or
+    // resolved within a ROS package.
     string resolved_filename = resolveFilename(uri, package_map, root_dir);
+
+    if (resolved_filename.empty()) {
+      cerr << std::string(__FILE__) + ": " + __func__ + ": WARNING: " <<
+          "Mesh could not be resolved and will be ignored by Drake." << endl;
+      // Return without creating mesh object.
+      return true;
+    }
     DrakeShapes::Mesh mesh(uri, resolved_filename);
 
     if (shape_node->FirstChildElement("scale") != nullptr)
