@@ -94,12 +94,37 @@ class OutputPort {
   int64_t version_ = 0;
 };
 
+template <typename T>
+class SystemOutputInterface {
+ public:
+  virtual int get_num_ports() const = 0;
+  virtual OutputPort<T>* get_mutable_port(int index) = 0;
+  virtual const OutputPort<T>& get_port(int index) const = 0;
+};
+
 /// A container for all the output of a System.
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
 template <typename T>
-struct SystemOutput {
-  std::vector<std::unique_ptr<OutputPort<T>>> ports;
+struct SystemOutput : public SystemOutputInterface<T> {
+  int get_num_ports() const override {
+    return ports_.size();
+  }
+
+  OutputPort<T>* get_mutable_port(int index) override {
+    return ports_[index].get();
+  }
+
+  const OutputPort<T>& get_port(int index) const override {
+    return *ports_[index];
+  }
+
+  std::vector<std::unique_ptr<OutputPort<T>>> get_mutable_ports() {
+    return ports_;
+  }
+
+ private:
+  std::vector<std::unique_ptr<OutputPort<T>>> ports_;
 };
 
 }  // namespace systems

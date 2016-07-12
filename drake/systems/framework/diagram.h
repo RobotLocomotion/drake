@@ -80,14 +80,22 @@ template <typename T> class Diagram
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput() const override {
     ThrowIfNotFinal();
+    // Some of the outputs of this Diagram's constituent systems are also
+    // outputs of this Diagram. Wrap those outputs in a ForwardingOutputPort.
     std::unique_ptr<SystemOutput<T>> output(new SystemOutput<T>);
-    // TODO: something.
+    for (const PortIdentifier<T>& diagram_output : diagram_outputs_) {
+      output->ports.emplace_back(new ForwardingOutputPort<T>());
+    }
     return output;
   }
 
   void EvalOutput(const Context<T>& context, SystemOutput<T>* output) const override {
     ThrowIfNotFinal();
-    // TODO: something
+    for (const SystemInterface<T>* system : sorted_systems_) {
+      const Context<T>* subsystem_context = context.GetSubsystemContext(system);
+      SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(system);
+      system->EvalOutput(*subsytem_context, subsystem_output);
+    }
   }
 
 

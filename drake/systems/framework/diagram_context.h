@@ -15,7 +15,6 @@ using PortIdentifier = std::pair<const SystemInterface<T>*, int>;
 template <typename T>
 class DiagramContext : public Context<T> {
  public:
-
   void AddConstituentSystem(const SystemInterface<T>* sys) {
     contexts_[sys] = sys->CreateDefaultContext();
     outputs_[sys] = sys->AllocateOutput();
@@ -27,6 +26,22 @@ class DiagramContext : public Context<T> {
     // TODO: Sample rate?
     auto input_port = std::make_unique<DependentInputPort<T>>(output_port, 0.0);
     contexts_[dest.first]->SetInputPort(dest.second, std::move(input_port));
+  }
+
+  SystemOutput<T>* GetSubsystemOutput(const SystemInterface<T>* sys) const {
+    auto it = outputs_.find(sys);
+    if (it == nullptr) {
+      return nullptr;
+    }
+    return (*it).get();
+  }
+
+  const Context<T>* GetSubsystemContext(const SystemInterface<T>* sys) const {
+    auto it = contexts_.find(sys);
+    if (it == nullptr) {
+      return nullptr;
+    }
+    return (*it).get();
   }
 
  private:
