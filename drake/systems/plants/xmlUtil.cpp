@@ -264,7 +264,13 @@ void searchDirectory(map<string, string>& package_map, string path) {
 }
 
 void populatePackageMap(map<string, string>& package_map) {
-  searchDirectory(package_map, Drake::getDrakePath());
+  // Since Drake's package.xml file is located at its super-build level,
+  // remove the last "drake" directory from the drake path. Also omit the
+  // trailing slash.
+  std::string drake_path = Drake::getDrakePath();
+  std::string drake_path_parent = drake_path.substr(0,
+    drake_path.find_last_of("drake") - std::string("drake").size());
+  searchDirectory(package_map, drake_path_parent);
 
   char* cstrpath = getenv("ROS_ROOT");
   if (cstrpath) searchDirectory(package_map, cstrpath);
