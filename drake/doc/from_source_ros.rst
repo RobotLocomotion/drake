@@ -54,7 +54,7 @@ customized with a different workspace name and location.
 
 If you already have a ROS Catkin workspace and simply want to add Drake as a
 package within it, you can skip this step and go straight to
-:ref:`_drake_catkin_add_repos`.
+:ref:`drake_catkin_add_repos`.
 
 Execute the following commands to create a directory structure for holding the
 ROS workspace::

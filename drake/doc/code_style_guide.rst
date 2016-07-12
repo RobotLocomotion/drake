@@ -217,6 +217,42 @@ LCM Style
   specific to a particular robot, then it begins with `lcmt_robotname_`.
 * Variable names in LCM types follow the rules above.
 
+.. _code-style-guide-package-xml:
+
+package.xml Style
+=================
+
+`Robot Operating System (ROS) <http://www.ros.org/>`_ organizes code and data
+into packages. Each package is located in its own directory, which contains a
+file called ``package.xml``. The official instructions on what this file should
+contain is given `here <http://wiki.ros.org/catkin/package.xml>`_. Drake uses
+this same file for defining and finding packages. Specifically, it is searched
+for by
+`populatePackageMap() <https://github.com/RobotLocomotion/drake/blob/7bbcb0728a06c0abdd695fd8a5db1879bb5354bb/drake/systems/plants/xmlUtil.h#L160>`_.
+
+When adding a model to Drake
+(typically in `drake-distro/drake/examples/ <https://github.com/RobotLocomotion/drake/tree/master/drake/examples>`_),
+you will need to add a ``package.xml`` file to the example's directory to enable
+modeling files like URDF and SDF to refer to resources like mesh files contained
+within the example's directory. While a full ``package.xml`` file that contains
+every `required field <http://wiki.ros.org/catkin/package.xml#Required_Tags>`_
+would be ideal, for Drake's purposes, the following minimal ``package.xml`` file
+is sufficient::
+
+    <!--
+    This XML file is used by:
+      drake-distro/drake/systems/plants/xmlUtil.cpp
+    Method:
+      searchDirectory()
+    -->
+    
+    <package format="2">
+      <name>package_name</name>
+    </package>
+
+In the above example, replace "package_name" with the name of your package. This
+is typically the name of the directory holding the ``package.xml`` file.
+
 .. _code-style-guide-shell-script:
 
 Shell Script Style
