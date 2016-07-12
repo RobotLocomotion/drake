@@ -18,9 +18,9 @@ class PendulumTestDynamicConstraint : public DynamicConstraint {
       : DynamicConstraint(num_states, num_inputs) {}
 
  protected:
-  virtual void dynamics(const Drake::TaylorVecXd& state,
-                        const Drake::TaylorVecXd& input,
-                        Drake::TaylorVecXd* xdot) const override {
+  void dynamics(const Drake::TaylorVecXd& state,
+                const Drake::TaylorVecXd& input,
+                Drake::TaylorVecXd* xdot) const override {
     // From the Pendulum example:
     const double m = 1.0;
     const double b = 0.1;
@@ -37,7 +37,6 @@ class PendulumTestDynamicConstraint : public DynamicConstraint {
 };
 
 GTEST_TEST(DynamicConstraintPendulumDynamicsTest, DynamicConstraintTest) {
-
   const int kNumStates = 2;
   const int kNumInputs = 1;
 
