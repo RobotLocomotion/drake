@@ -5,6 +5,12 @@ struct lcmt_iiwa_command
 {
   int64_t timestamp;
 
+  // Joint positions should always be sent.
   int32_t num_joints;
   double joint_position[num_joints];
+
+  // Torque values should only be sent when the arm is in torque command mode.
+  int32_t num_torques;
+  double joint_torque[num_torques];
+
 }
