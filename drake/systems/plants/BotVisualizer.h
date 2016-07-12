@@ -105,8 +105,8 @@ class BotVisualizer {
             gdata.float_data.push_back(static_cast<float>(m.scale[1]));
             gdata.float_data.push_back(static_cast<float>(m.scale[2]));
 
-            if (m.filename.find("package://") == 0) {
-              gdata.string_data = m.filename;
+            if (m.uri.find("package://") == 0) {
+              gdata.string_data = m.uri;
             } else {
               gdata.string_data = m.resolved_filename;
             }

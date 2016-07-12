@@ -137,7 +137,10 @@ class DRAKESHAPES_EXPORT Capsule : public Geometry {
 class DRAKESHAPES_EXPORT Mesh : public Geometry {
  public:
   explicit Mesh(const std::string &filename);
-  Mesh(const std::string &filename, const std::string &resolved_filename);
+  /** Constructs a representation of a mesh to be loaded from
+  @p resolved_filename. @p uri provides a unique identifier used to interact
+  with BotVisualizer. **/
+  Mesh(const std::string &uri, const std::string &resolved_filename);
   virtual ~Mesh() {}
   virtual Mesh *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
@@ -150,7 +153,7 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
                                                      const Mesh &);
 
   Eigen::Vector3d scale;
-  std::string filename;
+  std::string uri;
   std::string resolved_filename;
   bool extractMeshVertices(Eigen::Matrix3Xd &vertex_coordinates) const;
 

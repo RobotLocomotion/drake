@@ -180,13 +180,19 @@ ostream &operator<<(ostream &out, const Capsule &cc) {
 }
 
 Mesh::Mesh(const string &filename)
-    : Geometry(MESH), scale(1.0, 1.0, 1.0), filename(filename) {}
+    : Geometry(MESH), scale(1.0, 1.0, 1.0), uri(filename) {}
 
-Mesh::Mesh(const string &filename, const string &resolved_filename)
+Mesh::Mesh(const string &uri, const string &resolved_filename)
     : Geometry(MESH),
       scale(1.0, 1.0, 1.0),
-      filename(filename),
-      resolved_filename(resolved_filename) {}
+      uri(uri),
+      resolved_filename(resolved_filename) {
+  // Checks whether:
+  // - If file is an obj, if it exists.
+  // - If not an obj, if an obj file can be resolved by changing the extension.
+  // This throws an exception if an obj file cannot be resolved.
+  FindFileWithObjExtension();
+}
 
 bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
   if (resolved_filename.empty()) return false;
@@ -355,7 +361,7 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
 
 ostream &operator<<(ostream &out, const Mesh &mm) {
   out << static_cast<const Geometry &>(mm) << ", " << mm.scale << ", "
-      << mm.filename << ", " << mm.resolved_filename << ", " << mm.root_dir;
+      << mm.uri << ", " << mm.resolved_filename << ", " << mm.root_dir;
   return out;
 }
 
