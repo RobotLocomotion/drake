@@ -185,6 +185,9 @@ Mesh::Mesh(const string& uri, const string& resolved_filename)
       scale_(1.0, 1.0, 1.0),
       uri_(uri),
       resolved_filename_(resolved_filename) {
+  if (resolved_filename_.empty()) {
+    throw std::runtime_error("Error: The resolved filename provided is empty.");
+  }
   // Checks whether:
   // - If file is an obj, if it exists.
   // - If not an obj, if an obj file can be resolved by changing the extension.
@@ -193,8 +196,6 @@ Mesh::Mesh(const string& uri, const string& resolved_filename)
 }
 
 bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
-  if (resolved_filename_.empty()) return false;
-
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
   if (!file) {
