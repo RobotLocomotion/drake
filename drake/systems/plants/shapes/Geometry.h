@@ -135,7 +135,6 @@ class DRAKESHAPES_EXPORT Capsule : public Geometry {
 
 class DRAKESHAPES_EXPORT Mesh : public Geometry {
  public:
-  explicit Mesh(const std::string& filename);
   /** Constructs a representation of a mesh to be loaded from
   @p resolved_filename. @p uri provides a unique identifier used to interact
   with BotVisualizer. **/

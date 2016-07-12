@@ -180,9 +180,6 @@ ostream& operator<<(ostream& out, const Capsule& cc) {
   return out;
 }
 
-Mesh::Mesh(const string& filename)
-    : Geometry(MESH), scale(1.0, 1.0, 1.0), uri(filename) {}
-
 Mesh::Mesh(const string& uri, const string& resolved_filename)
     : Geometry(MESH),
       scale(1.0, 1.0, 1.0),
