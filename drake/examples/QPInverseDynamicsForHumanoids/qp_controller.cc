@@ -24,6 +24,7 @@ static VectorXd VariableList2VectorXd(VariableList const& vlist) {
 int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
                           QPOutput& output) {
   if (!is_qp_input_sane(input)) {
+    std::cerr << "input is not right\n";
     return -1;
   }
 
@@ -270,6 +271,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
   result = snopt.Solve(prog);
   if (result != drake::solvers::SolutionResult::kSolutionFound) {
+    std::cerr << "solution not found\n";
     return -1;
   }
 
@@ -353,6 +355,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
 
   if (!is_qp_output_sane(output)) {
+    std::cerr << "output is not right\n";
     return -1;
   }
 
