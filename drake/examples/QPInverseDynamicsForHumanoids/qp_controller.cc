@@ -28,20 +28,24 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
 
   ////////////////////////////////////////////////////////////////////
-  // Inverse dynamics looks like:
+  // The equations of motion look like:
   // M(q) * vd + h(q,qd) = S * tau + J^T * lambda
   // M(q) is the inertia matrix, h(q, qd) is the gravitational and centrifugal
   // force, vd is acceleration, S is the selection matrix (top 6 rows are
   // zeros due to the floating base), tau is joint torque, J^T is the transpose
   // of all contact Jacobian, and lambda is the contact wrench in the world
   // frame.
+  //
+  // For inverse dynamics, we are usually given desired motions, and
+  // we want to solve for tau to achieve those motions.
+  // Desired motions can be directly specified as vd_d, or as xdd_d in Cartesian
+  // space, which is linear w.r.t. vd as well: xdd_d = J * vd + Jd * v.
+  //
   // Note that since S.topRows(6) is zero,
   // tau = M_l * vd + h_l - J^T_l * lamda,
   // where _l means the lower num_torque rows of those matrices.
   // So we just need to solve for vd and lambda, and tau can be computed as
-  // above.
-  //
-  // We are assuming two foot contacts in this example.
+  // above. We can formulate inverse dynamics a QP problem.
   //
   // For the QP problem:
   // the unknown is _X = [vd, lambda]
@@ -54,6 +58,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   //    + (vd - vd_d)^2
   //    + (lambda - lambda_d)^2
   //    + all_kinds_of_body_acceleration_cost_terms
+  //
+  // I made the dynamics and stationary contact equality constraints.
+  // Alternatively, they can be setup as high weight cost terms. This is
+  // sometimes preferred as it introduce slacks for better stability.
+  //
+  // We are assuming two foot contacts in this example.
   int num_contacts = 2;
   int num_vd = rs.robot().number_of_velocities();
   int num_wrench = 6 * num_contacts;
@@ -146,6 +156,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     ci_l(row_idx) = 0;
     row_idx++;
   }
+  // These are poor approximations for the normal torque especially when the
+  // center of pressure is at a corner of the foot. I used this in this
+  // example for its simplicity. A better approximation is to use point contact
+  // forces at multiple contact positions.
   // Mz <= mu * Fz, Mz - mu * Fz <= 0
   for (int i = 0; i < num_contacts; i++) {
     CI(row_idx, i * 6 + 2) = 1;
