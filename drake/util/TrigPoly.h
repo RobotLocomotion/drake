@@ -2,6 +2,8 @@
 
 #include <map>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_assert.h"
 #include "drake/util/Polynomial.h"
 
@@ -62,6 +64,12 @@ class TrigPoly {
   /// Constructs a constant TrigPoly.
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   TrigPoly(const CoefficientType& scalar) : poly(scalar) {}
+
+  /**
+   * Constructs a TrigPoly on the associated Polynomial p with no associated
+   * trigonometric correspondences.
+   */
+  explicit TrigPoly(const PolyType& p) : poly(p) {}
 
   /**
    * Constructs a TrigPoly on the associated Polynomial p, but with the
@@ -400,3 +408,6 @@ std::ostream& operator<<(
 }
 
 typedef TrigPoly<double> TrigPolyd;
+
+/// A column vector of TrigPoly; used in several optimization classes.
+typedef Eigen::Matrix<TrigPolyd, Eigen::Dynamic, 1> VectorXTrigPoly;

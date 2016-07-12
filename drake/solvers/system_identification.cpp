@@ -244,23 +244,13 @@ SystemIdentification<T>::EstimateParameters(
   const int num_data = active_var_values.size();
   const int num_err_terms = num_data * polys.rows();
 
-  std::set<VarType> all_vars;
+  std::vector<Polynomiald> polys_vec;
   for (int i = 0; i < polys.rows(); i++) {
-    const std::set<VarType> poly_vars = polys[i].getVariables();
-    all_vars.insert(poly_vars.begin(), poly_vars.end());
+    polys_vec.push_back(polys[i]);
   }
+  const auto var_sets = ClassifyVars(polys_vec, active_var_values);
+  const std::set<VarType>& vars_to_estimate_set = std::get<1>(var_sets);
 
-  // The set of vars left unspecified in at least one of active_var_values,
-  // and thus which must appear in our return map.
-  std::set<VarType> vars_to_estimate_set;
-  for (const PartialEvalType& partial_eval_map : active_var_values) {
-    std::set<VarType> unspecified_vars = all_vars;
-    for (auto const& element : partial_eval_map) {
-      unspecified_vars.erase(element.first);
-    }
-    vars_to_estimate_set.insert(unspecified_vars.begin(),
-                                unspecified_vars.end());
-  }
   std::vector<VarType> vars_to_estimate(vars_to_estimate_set.begin(),
                                         vars_to_estimate_set.end());
   int num_to_estimate = vars_to_estimate.size();
@@ -333,6 +323,105 @@ SystemIdentification<T>::EstimateParameters(
   }
 
   return std::make_pair(estimates, std::sqrt(error_squared));
+}
+
+template<typename T>
+typename SystemIdentification<T>::SystemIdentificationResult
+SystemIdentification<T>::LumpedSystemIdentification(
+    const VectorXTrigPoly& trigpolys,
+    const std::vector<PartialEvalType>& active_var_values) {
+  SystemIdentificationResult result;
+
+  // Restructure everything as Polynomial plus a unified SinCosMap.
+  TrigPolyd::SinCosMap original_sin_cos_map;
+  std::vector<Polynomiald> polys;
+  for (int i = 0; i < trigpolys.rows(); i++) {
+    const TrigPolyd& trigpoly = trigpolys[i];
+    polys.push_back(trigpoly.getPolynomial());
+    for (const auto& k_v_pair : trigpoly.getSinCosMap()) {
+      original_sin_cos_map[k_v_pair.first] = k_v_pair.second;
+    }
+  }
+
+  // Figure out what vars we are estimating.
+  const auto var_sets = ClassifyVars(polys, active_var_values);
+  const std::set<VarType>& parameter_vars = std::get<1>(var_sets);
+
+  // Compute lumped parameters.
+  result.lumped_parameters = GetLumpedParametersFromPolynomials(
+      polys, parameter_vars);
+
+  // Compute lumped polynomials.
+  result.lumped_polys.resize(trigpolys.rows());
+  for (int i = 0; i < trigpolys.rows(); i++) {
+    result.lumped_polys[i] = TrigPolyd(
+        RewritePolynomialWithLumpedParameters(
+            polys[i], result.lumped_parameters),
+        original_sin_cos_map);
+  }
+
+  // Before we can estimated lumped parameters, we need to augment the
+  // active_var_values list with the values of any sin and cos variables.
+  std::vector<PartialEvalType> augmented_values = active_var_values;
+  for (auto& partial_eval : augmented_values) {
+    for (const auto& k_v_pair : partial_eval) {
+      if (original_sin_cos_map.find(k_v_pair.first) !=
+          original_sin_cos_map.end()) {
+        partial_eval[original_sin_cos_map[k_v_pair.first].s] =
+            sin(k_v_pair.second);
+        partial_eval[original_sin_cos_map[k_v_pair.first].c] =
+            cos(k_v_pair.second);
+      }
+    }
+  }
+
+  // Estimate the lumped parameters.
+  VectorXPoly polys_as_eigen(polys.size());
+  for (size_t i = 0; i < polys.size(); i++) {
+    polys_as_eigen[i] = polys[i];
+  }
+  std::tie(result.lumped_parameter_values, result.rms_error) =
+      EstimateParameters(polys_as_eigen, augmented_values);
+
+  // Substitute the estimates back into the lumped polynomials.
+  result.partially_evaluated_polys.resize(trigpolys.rows());
+  for (int i = 0; i < trigpolys.rows(); i++) {
+    result.partially_evaluated_polys[i] =
+        trigpolys[i].evaluatePartial(result.lumped_parameter_values);
+  }
+
+  return result;
+}
+
+template<typename T>
+std::tuple<const std::set<typename SystemIdentification<T>::VarType>,
+           const std::set<typename SystemIdentification<T>::VarType>,
+           const std::set<typename SystemIdentification<T>::VarType>>
+    SystemIdentification<T>::ClassifyVars(
+        const std::vector<Polynomiald>& polys,
+        const std::vector<PartialEvalType>& active_var_values) {
+  std::set<VarType> all_vars;
+  for (const auto& poly : polys) {
+    const std::set<VarType> poly_vars = poly.getVariables();
+    all_vars.insert(poly_vars.begin(), poly_vars.end());
+  }
+
+  std::set<VarType> parameter_vars;
+  for (const PartialEvalType& partial_eval_map : active_var_values) {
+    std::set<VarType> unspecified_vars = all_vars;
+    for (auto const& element : partial_eval_map) {
+      unspecified_vars.erase(element.first);
+    }
+    parameter_vars.insert(unspecified_vars.begin(),
+                          unspecified_vars.end());
+  }
+
+  std::set<VarType> active_vars(all_vars.begin(), all_vars.end());
+  for (const auto& param : parameter_vars) {
+    active_vars.erase(param);
+  }
+
+  return std::make_tuple(all_vars, parameter_vars, active_vars);
 }
 
 }  // namespace solvers

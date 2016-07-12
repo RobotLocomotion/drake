@@ -2,9 +2,12 @@
 
 #include <random>  // Used only with deterministic seeds!
 
+#include <Eigen/Core>
+
 #include "gtest/gtest.h"
 
 #include "drake/util/Polynomial.h"
+#include "drake/util/TrigPoly.h"
 
 namespace drake {
 namespace solvers {
@@ -258,16 +261,18 @@ std::vector<State> MakeTestData() {
 // DISABLED_ logic below ensures that we still at least get compile-time
 // checking of the test and resulting template instantiations.
 #if !defined(WIN32) && !defined(WIN64)
-#define IDENTIFICATION_TEST_NAME SpringMassIdentification
+#define SPRING_MASS_TEST_NAME SpringMassIdentification
+#define ACROBOT_TEST_NAME AcrobotIdentification
 #else
-#define IDENTIFICATION_TEST_NAME DISABLED_SpringMassIdentification
+#define SPRING_MASS_TEST_NAME DISABLED_SpringMassIdentification
+#define ACROBOT_TEST_NAME DISABLED_AcrobotIdentification
 #endif
 
 // TODO(ggould-tri) It is likely that much of the logic below will be
 // boilerplate shared by all manipulator identification; it should eventually
 // be pulled into a function of its own inside of system_identification.
 
-GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
+GTEST_TEST(SystemIdentificationTest, SPRING_MASS_TEST_NAME) {
   Polynomiald pos = Polynomiald("pos");
   auto pos_var = pos.getSimpleVariable();
   Polynomiald velocity = Polynomiald("vel");
@@ -339,8 +344,94 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
               measurements.size() * error);
   EXPECT_NEAR(estimated_params[spring_var], kSpring, kNoise);
 }
-#undef IDENTIFICATION_TEST_NAME
+#undef SPRING_MASS_TEST_NAME
 
+GTEST_TEST(SystemIdentificationTest, ACROBOT_TEST_NAME) {
+  // Apologies for the nonconformant variable names, which follow
+  // http://underactuated.csail.mit.edu/underactuated.html?chapter=3
+  const TrigPolyd theta1(Polynomiald("th",1),
+                         Polynomiald("s",1), Polynomiald("c",1));
+  const TrigPolyd theta2(Polynomiald("th",2),
+                         Polynomiald("s",2), Polynomiald("c",2));
+  VectorXTrigPoly q(2); q << theta1, theta2;
+
+  const TrigPolyd thetadot1(Polynomiald("th.",1),
+                            Polynomiald("s.",1), Polynomiald("c.",1));
+  const TrigPolyd thetadot2(Polynomiald("th.",2),
+                            Polynomiald("s.",2), Polynomiald("c.",2));
+  VectorXTrigPoly qdot(2); qdot << thetadot1, thetadot2;
+
+  const TrigPolyd thetadotdot1(Polynomiald("th..",1),
+                               Polynomiald("s..",1), Polynomiald("c..",1));
+  const TrigPolyd thetadotdot2(Polynomiald("th..",2),
+                               Polynomiald("s..",2), Polynomiald("c..",2));
+  VectorXTrigPoly qdotdot(2); qdotdot << thetadotdot1, thetadotdot2;
+
+  const TrigPolyd l1(Polynomiald("len",1));  //< Length of arm 1.
+  const TrigPolyd l2(Polynomiald("len",2));  //< Length of arm 2.
+  const TrigPolyd m1(Polynomiald("mas",1));  //< Mass of arm 1.
+  const TrigPolyd m2(Polynomiald("mas",2));  //< Mass of arm 2.
+
+  // Assume for now that the arms have uniform mass distribution; this
+  // assumption can be relaxed (ie, leaving these as independent parameters)
+  // to widen the parameter space of the problem.
+  const TrigPolyd lc1 = l1 / 2;  //< Position of center of mass along arm 1.
+  const TrigPolyd lc2 = l2 / 2;  //< Position of center of mass along arm 2.
+  const TrigPolyd i1 = m1 * l1 * l1 / 3;  //< Moment of inertia for arm 1.
+  const TrigPolyd i2 = m2 * l2 * l2 / 3;  //< Moment of inertia for arm 2.
+
+  const TrigPolyd gravity(Polynomiald("grav"));
+  const TrigPolyd torque(Polynomiald("torq"));
+
+  Eigen::Matrix<TrigPolyd, 2, 2> H;
+  H << i1 + i2 + (m2 * l1 * l1) + (m2 * l1 * lc2 * cos(theta2)),
+      i2 + (m2 * l1 * lc2 * cos(theta2)),
+      i2 + (m2 * l1 * lc2 * cos(theta2)),
+      i2;
+  Eigen::Matrix<TrigPolyd, 2, 2> C;
+  C << m2 * l1 * lc2 * sin(theta2) * thetadot2 * -2,
+      m2 * l1 * lc2 * sin(theta2) * thetadot2 * -1,
+      m2 * l1 * lc2 * sin(theta2) * thetadot2,
+      0;
+  Eigen::Matrix<TrigPolyd, 2, 1> g;
+  g << ((m1 * gravity * lc1 * sin(theta1)) +
+        (m2 * gravity * (l1 * sin(theta1) + lc2 * sin(theta1 + theta2)))),
+      m2 * gravity * lc2 * sin(theta1 + theta2);
+  Eigen::Matrix<TrigPolyd, 2, 1> B;
+  B << 0, 1;
+  Eigen::Matrix<TrigPolyd, 2, 1> f;
+  f << 0, 0;
+
+  VectorXTrigPoly u(1); u << torque;
+
+  const VectorXTrigPoly manipulator_left = (H * qdotdot) + (C * qdot) + g;
+  const VectorXTrigPoly manipulator_right = (B * u) + f;
+  const VectorXTrigPoly to_estimate = manipulator_left - manipulator_right;
+
+  // Create convenience variables for our q/qdot/u values.
+  const TrigPolyd::VarType t1 = theta1.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType t2 = theta2.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType td1 = thetadot1.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType td2 = thetadot2.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType tdd1 =
+      thetadotdot1.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType tdd2 =
+      thetadotdot2.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType tau = torque.getPolynomial().getSimpleVariable();
+
+  // Convenience constants.
+  const double kG = -9.8;  //< Acceleration (m / s^2) due to gravity.
+  const double kPi4 = 0.7853981633974483;  //< Pi / 4.
+
+  const std::vector<SID::PartialEvalType> data = {
+    // TODO(ggould-tri) obtain data for this.
+  };
+
+  SID::SystemIdentificationResult result =
+      SID::LumpedSystemIdentification(to_estimate, data);
+
+  EXPECT_NEAR(result.rms_error, 0, 1e-4);
+}
 ///@}
 
 }  // anonymous namespace
