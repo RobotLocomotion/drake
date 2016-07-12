@@ -9,12 +9,11 @@
 #include <stdexcept>
 #include <utility>
 
+#include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
-#include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeGradientUtil.h"
 
 template <typename Scalar>
 class KinematicsCacheElement {
@@ -23,7 +22,8 @@ class KinematicsCacheElement {
    * Configuration dependent
    */
 
-  Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> transform_to_world;
+  Eigen::Transform<Scalar, drake::kSpaceDimension, Eigen::Isometry>
+      transform_to_world;
   Eigen::Matrix<Scalar, drake::kTwistSize, Eigen::Dynamic, 0, drake::kTwistSize,
                 DrakeJoint::MAX_NUM_VELOCITIES>
       motion_subspace_in_body;  // gradient w.r.t. q_i only
