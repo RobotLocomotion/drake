@@ -84,11 +84,13 @@ Execute the following commands to build the workspace::
     cd ~/dev/drake_catkin_workspace
     source /opt/ros/indigo/setup.bash
     catkin init
-    catkin build
+    catkin build -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
 
 There are numerous optional flags that can be included after the ``catkin build``
-command listed above. For example, one flag is ``-DDISABLE_MATLAB=TRUE``, which
-disables MATLAB support, which may be useful if you have MATLAB installed but
+command listed above. The example above includes the build type flag that
+specifies the build should be ``RelWithDebInfo``. Alternative include
+``Release`` and ``Debug``. Another flag is ``-DDISABLE_MATLAB=TRUE``, which
+disables MATLAB support. This may be useful if you have MATLAB installed but
 don't have access to a license server. There are many additional command line
 flags that, for example, enables support for certain optimizers like
 `SNOPT <http://www.sbsi-sol-optimize.com/asp/sol_product_snopt.htm>`_.
@@ -169,10 +171,12 @@ You will also need to install the package ``ros-indigo-ackermann-msgs``::
 
     sudo apt-get install ros-indigo-ackermann-msgs
 
-Since a new package was added to the ROS workspace, re-build the workspace::
+Since a new package was added to the ROS workspace, re-build the workspace
+(note that a build type of ``RelWithDebInfo`` is selected since the simulation
+runs too slowly when compiled in the default ``Debug`` mode)::
 
     cd ~/dev/drake_catkin_workspace
-    catkin build
+    catkin build -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
 
 Finally, to run the car simulation demo, execute::
 
