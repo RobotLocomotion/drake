@@ -41,6 +41,9 @@ GTEST_TEST(DynamicConstraintPendulumDynamicsTest, DynamicConstraintTest) {
   const int kNumInputs = 1;
 
 
+  // Initial state/input and expected result values came from running
+  // the MATLAB code for PendulumPlant through the constraint function
+  // in DircolTrajectoryOptimization.m and printing the results.
   Eigen::VectorXd x(1 + 2 * kNumStates + 2 * kNumInputs);
   x(0) = 0.2;          // h
   x(1) = 0;            // x0(0)
@@ -55,9 +58,6 @@ GTEST_TEST(DynamicConstraintPendulumDynamicsTest, DynamicConstraintTest) {
   Drake::TaylorVecXd result;
   dut.eval(Drake::initializeAutoDiff(x), result);
 
-  // Expected values came from running the MATLAB code for
-  // PendulumPlant through the constraint function in
-  // DircolTrajectoryOptimization.m and printing the results.
   EXPECT_NEAR(result(0).value(), 1.1027, 1e-4);
   EXPECT_NEAR(result(1).value(), 2.2657, 1e-4);
 
