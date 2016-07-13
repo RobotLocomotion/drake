@@ -750,7 +750,7 @@ RelativePositionConstraint::RelativePositionConstraint(
       bodyB_name_(robot->getBodyOrFrameName(bodyB_idx)) {
   Isometry3d bTbp_isometry;
   bTbp_isometry.translation() = bTbp.topRows<3>();
-  bTbp_isometry.linear() = quat2rotmat(bTbp.bottomRows<4>());
+  bTbp_isometry.linear() = drake::math::quat2rotmat(bTbp.bottomRows<4>());
   bTbp_isometry.makeAffine();
   bpTb_ = bTbp_isometry.inverse();
   set_type(RigidBodyConstraint::RelativePositionConstraintType);

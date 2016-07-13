@@ -2,6 +2,8 @@
 
 #include <lcm/lcm-cpp.hpp>
 #include <Eigen/Dense>
+
+#include "drake/math/rotation_matrix.h"
 #include "drake/systems/System.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -131,7 +133,7 @@ class BotVisualizer {
         Eigen::Map<Eigen::Vector3f> position(gdata.position);
         position = T.translation().cast<float>();
         Eigen::Map<Eigen::Vector4f> quaternion(gdata.quaternion);
-        quaternion = rotmat2quat(T.rotation()).cast<float>();
+        quaternion = drake::math::rotmat2quat(T.rotation()).cast<float>();
 
         Eigen::Map<Eigen::Vector4f> color(gdata.color);
         color = v.getMaterial().template cast<float>();
@@ -159,7 +161,7 @@ class BotVisualizer {
     int i, j;
     for (i = 0; i < tree->bodies.size(); i++) {
       auto transform = tree->relativeTransform(cache, 0, i);
-      auto quat = rotmat2quat(transform.linear());
+      auto quat = drake::math::rotmat2quat(transform.linear());
       std::vector<float>& position = draw_msg.position[i];
       auto translation = transform.translation();
       for (j = 0; j < 3; j++) position[j] = static_cast<float>(translation(j));

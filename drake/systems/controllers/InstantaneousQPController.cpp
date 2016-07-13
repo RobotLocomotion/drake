@@ -7,6 +7,7 @@
 #include "drake/Path.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/quaternion.h"
 #include "drake/solvers/fastQP.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/parser_urdf.h"
@@ -118,8 +119,8 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
           "Could not find attachment frame when handling urdf modifications");
     }
     drake::parsers::urdf::AddRobotFromURDF(
-      Drake::getDrakePath() + "/" + it->urdf_filename,
-      it->joint_type, attach_to_frame, robot.get());
+        Drake::getDrakePath() + "/" + it->urdf_filename, it->joint_type,
+        attach_to_frame, robot.get());
   }
 
   auto filter = [&](const std::string& group_name) {
@@ -714,7 +715,7 @@ int InstantaneousQPController::setupAndSolveQP(
     Map<const Vector3d> translation_task_to_world(
         qp_input.body_motion_data[i].translation_task_to_world);
     desired_body_accelerations[i].T_task_to_world.linear() =
-        quat2rotmat(quat_task_to_world);
+        drake::math::quat2rotmat(quat_task_to_world);
     desired_body_accelerations[i].T_task_to_world.translation() =
         translation_task_to_world;
     Map<const Vector3d> xyz_kp_multiplier(
