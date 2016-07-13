@@ -55,7 +55,7 @@ template <typename System>
 class SystemDynamicConstraint : public DynamicConstraint {
  public:
   // TODO(sam.creasey) Should this be a const bare ptr?
-  SystemDynamicConstraint(explicit std::shared_ptr<System> system)
+  explicit SystemDynamicConstraint(std::shared_ptr<System> system)
       : DynamicConstraint(Drake::getNumStates(*system),
                           Drake::getNumInputs(*system)),
         system_(system) {}
