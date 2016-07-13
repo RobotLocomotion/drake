@@ -43,7 +43,7 @@ void DynamicConstraint::eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
   // h - current time (knot) value
   // x0, x1 state vector at time steps k, k+1
   // u0, u1 input vector at time steps k, k+1
-  const auto h = x.segment(0, 1);
+  const Drake::TaylorVarXd h = x(0);
   const auto x0 = x.segment(1, num_states_);
   const auto x1 = x.segment(1 + num_states_, num_states_);
   const auto u0 = x.segment(1 + (2 * num_states_), num_inputs_);
@@ -60,9 +60,9 @@ void DynamicConstraint::eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
   Eigen::MatrixXd dxdot1 = ExtractDerivativesMatrix(xdot1);
 
   // Cubic interpolation to get xcol and xdotcol.
-  const Drake::TaylorVecXd xcol = 0.5 * (x0 + x1) + h(0) / 8 * (xdot0 - xdot1);
+  const Drake::TaylorVecXd xcol = 0.5 * (x0 + x1) + h / 8 * (xdot0 - xdot1);
   const Drake::TaylorVecXd xdotcol =
-      -1.5 * (x0 - x1) / h(0) - .25 * (xdot0 + xdot1);
+      -1.5 * (x0 - x1) / h - .25 * (xdot0 + xdot1);
 
   Drake::TaylorVecXd g;
   dynamics(xcol, 0.5 * (u0 + u1), &g);

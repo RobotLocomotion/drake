@@ -36,10 +36,10 @@ class DRAKEDYNAMICCONSTRAINT_EXPORT DynamicConstraint :
   DynamicConstraint(int num_states, int num_inputs);
   virtual ~DynamicConstraint();
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    Eigen::VectorXd& y) const;
-  virtual void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
-                    Drake::TaylorVecXd& y) const;
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                    Eigen::VectorXd& y) const override;
+  void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
+                    Drake::TaylorVecXd& y) const override;
 
  protected:
   virtual void dynamics(const Drake::TaylorVecXd& state,
