@@ -5,21 +5,25 @@
 
 using namespace Eigen;
 
-// For all the velocity / acceleration / wrench, the first 3 are always angular,
-// and the last 3 are linear.
-
+/**
+ * A handy struct that stores important kinematic properties.
+ * For all the velocity / acceleration / wrench, the first 3 are always angular,
+ * and the last 3 are linear.
+ */
 struct BodyOfInterest {
+  /// Name of the BodyOfInterest
   std::string name;
+  /// The name of the link name which this BOI is attached to
   std::string link_name;
   Eigen::Isometry3d pose;
-  // This is the task space velocity, or twist of a frame that has the same
-  // orientation as the world frame, but located at the origin of the body
-  // frame.
+  /// This is the task space velocity, or twist of a frame that has the same
+  /// orientation as the world frame, but located at the origin of the body
+  /// frame.
   Vector6d vel;
 
-  // task space Jacobian, xdot = J * v
+  /// task space Jacobian, xdot = J * v
   MatrixXd J;
-  // task space Jd * v
+  /// task space Jd * v
   Vector6d Jdot_times_v;
 };
 
@@ -148,8 +152,11 @@ class HumanoidStatus {
  private:
   std::unique_ptr<RigidBodyTree> robot_;
   KinematicsCache<double> cache_;
+  /// Maps body name to its index
   std::unordered_map<std::string, int> body_name_to_id_;
+  /// Maps joint name to its index
   std::unordered_map<std::string, int> joint_name_to_id_;
+  /// Maps actuator name to its index
   std::unordered_map<std::string, int> actuator_name_to_id_;
 
   double time0_;
