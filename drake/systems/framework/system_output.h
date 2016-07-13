@@ -79,16 +79,16 @@ class OutputPort {
   OutputPort(OutputPort&& other) = delete;
   OutputPort& operator=(OutputPort&& other) = delete;
 
-  /// The port data, if the port is vector-valued.
-  /// TODO(david-german-tri): Add abstract-valued ports.
+  // The port data, if the port is vector-valued.
+  // TODO(sherm1): Add abstract-valued ports.
   std::unique_ptr<VectorInterface<T>> vector_data_;
 
-  /// The list of consumers that should be notified when the value on this
-  /// output port changes.
+  // The list of consumers that should be notified when the value on this
+  // output port changes.
   std::set<OutputPortListenerInterface*> dependents_;
 
-  /// The rate at which this port produces output, in seconds.
-  /// If zero, the port is continuous.
+  // The rate at which this port produces output, in seconds.
+  // If zero, the port is continuous.
   double sample_time_sec_{};
 
   int64_t version_ = 0;

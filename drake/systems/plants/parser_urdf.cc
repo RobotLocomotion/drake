@@ -1,3 +1,5 @@
+#include "drake/systems/plants/parser_urdf.h"
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -5,7 +7,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/material_map.h"
-#include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "drake/systems/plants/xmlUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
 
@@ -30,6 +31,9 @@ using std::vector;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
+namespace drake {
+namespace parsers {
+namespace urdf {
 namespace {
 
 // todo: rectify this with FindBodyIndex in the class (which makes more
@@ -130,7 +134,7 @@ void parseInertial(RigidBody* body, XMLElement* node) {
 // The range of values is [0, 1].
 // @param[out] materials A pointer to the map in which to store the material.
 // If this pointer is a null, a `std::logic_error` is thrown.
-void AddMaterialToMaterialMap(const std::string& material_name,
+void AddMaterialToMaterialMap(const string& material_name,
                               const Vector4d& color_rgba,
                               MaterialMap* materials) {
   // Throws an exception if parameter materials is null.
@@ -154,7 +158,7 @@ void AddMaterialToMaterialMap(const std::string& material_name,
             drake::util::MatrixCompareType::absolute)) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
-      std::stringstream error_buff;
+      stringstream error_buff;
       error_buff << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
                  << "Error: Material \"" + material_name + "\" was previously "
                  << "defined but was associated with different RGBA color "
@@ -302,12 +306,21 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
       return false;
     }
     string filename(attr);
+
+    // This method will return an empty string if the file is not found or
+    // resolved within a ROS package.
     string resolved_filename = resolveFilename(filename, package_map, root_dir);
+
+    if (resolved_filename.empty()) {
+      throw runtime_error(std::string(__FILE__) + ": " + __func__ +
+          ": ERROR: Mesh file name could not be resolved from the "
+          "provided uri \"" + filename + "\".");
+    }
     DrakeShapes::Mesh mesh(filename, resolved_filename);
 
     // Obtains the scale of the mesh if it exists.
     if (shape_node->Attribute("scale") != nullptr)
-      ParseThreeVectorAttribute(shape_node, "scale", &mesh.scale);
+      ParseThreeVectorAttribute(shape_node, "scale", &mesh.scale_);
 
     element.setGeometry(mesh);
   } else {
@@ -387,13 +400,13 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
 
     // Checks and remembers whether a "name" attribute exists. If so, parses the
     // name value.
-    std::string material_name;
+    string material_name;
     bool name_specified = false;
     {
       const char* attr = material_node->Attribute("name");
 
       if (attr != nullptr && strlen(attr) != 0) {
-        material_name = std::string(attr);
+        material_name = string(attr);
         name_specified = true;
       }
     }
@@ -438,7 +451,7 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
     // TODO(liang.fok): Update this logic once texture-based materials are
     // supported. See: https://github.com/RobotLocomotion/drake/issues/2588.
     if (!material_set) {
-      std::stringstream error_buff;
+      stringstream error_buff;
       error_buff
           << "RigidBodyTreeURDF.cpp: parseVisual(): "
           << "WARNING: Visual element has a material whose color could not"
@@ -492,7 +505,7 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   //  Issue 2661 was created to track this problem.
   // TODO(amcastro-tri): fix the above issue tracked by 2661.  Similarly for
   // parseSDFCollision in RigidBodyTreeSDF.cpp.
-  if (body->name().compare(std::string(RigidBodyTree::kWorldLinkName)) == 0)
+  if (body->name().compare(string(RigidBodyTree::kWorldLinkName)) == 0)
     element.set_static();
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
@@ -503,7 +516,7 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   }
 }
 
-bool parseLink(RigidBodyTree* tree, std::string robot_name, XMLElement* node,
+bool parseLink(RigidBodyTree* tree, string robot_name, XMLElement* node,
                MaterialMap* materials, const PackageMap& package_map,
                const string& root_dir, int* index) {
   const char* attr = node->Attribute("drake_ignore");
@@ -518,7 +531,7 @@ bool parseLink(RigidBodyTree* tree, std::string robot_name, XMLElement* node,
 
   // World links are handled by parseWorldJoint().
   body->name_ = attr;
-  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName)) return false;
+  if (body->name_ == string(RigidBodyTree::kWorldLinkName)) return false;
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node) parseInertial(body, inertial_node);
@@ -578,13 +591,13 @@ void setDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
  * @param[out] child_link_name A reference to a string where the name of the
  * child link should be saved.
  */
-void parseJointKeyParams(XMLElement* node, std::string& name, std::string& type,
-                         std::string& parent_link_name,
-                         std::string& child_link_name) {
+void parseJointKeyParams(XMLElement* node, string& name, string& type,
+                         string& parent_link_name,
+                         string& child_link_name) {
   // Obtains the joint's name.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: joint tag is missing name attribute");
-  name = std::string(attr);
+  name = string(attr);
 
   // Obtains the joint's type.
   attr = node->Attribute("type");
@@ -592,7 +605,7 @@ void parseJointKeyParams(XMLElement* node, std::string& name, std::string& type,
     throw runtime_error("ERROR: joint " + name +
                         " is missing type "
                         "attribute");
-  type = std::string(attr);
+  type = string(attr);
 
   // Obtains the name of the joint's parent link.
   XMLElement* parent_node = node->FirstChildElement("parent");
@@ -603,7 +616,7 @@ void parseJointKeyParams(XMLElement* node, std::string& name, std::string& type,
   if (!attr)
     throw runtime_error("ERROR: joint " + name +
                         "'s parent does not have a link attribute!");
-  parent_link_name = std::string(attr);
+  parent_link_name = string(attr);
 
   // Obtains the name of the joint's child link.
   XMLElement* child_node = node->FirstChildElement("child");
@@ -613,7 +626,7 @@ void parseJointKeyParams(XMLElement* node, std::string& name, std::string& type,
   if (!attr)
     throw runtime_error("ERROR: joint " + name +
                         "'s child does not have a link attribute");
-  child_link_name = std::string(attr);
+  child_link_name = string(attr);
 }
 
 void parseJoint(RigidBodyTree* tree, XMLElement* node) {
@@ -621,13 +634,13 @@ void parseJoint(RigidBodyTree* tree, XMLElement* node) {
   if (attr && (std::strcmp(attr, "true") == 0)) return;
 
   // Parses the parent and child link names.
-  std::string name, type, parent_name, child_name;
+  string name, type, parent_name, child_name;
   parseJointKeyParams(node, name, type, parent_name, child_name);
 
   // Checks if this joint connects to the world and, if so, terminates this
   // method call. This is because joints that connect to the world are processed
   // separately.
-  if (parent_name == std::string(RigidBodyTree::kWorldLinkName)) return;
+  if (parent_name == string(RigidBodyTree::kWorldLinkName)) return;
 
   int parent_index = findLinkIndex(tree, parent_name);
   if (parent_index < 0)
@@ -699,7 +712,7 @@ void parseJoint(RigidBodyTree* tree, XMLElement* node) {
 // @throws std::runtime_error if the name of the actuator's joint cannot be
 // determined or if the named joint could not be found.
 void GetActuatorEffortLimit(XMLElement* robot_node,
-                            const std::string& joint_name, double* min_effort,
+                            const string& joint_name, double* min_effort,
                             double* max_effort) {
   for (XMLElement* joint_node = robot_node->FirstChildElement("joint");
        joint_node; joint_node = joint_node->NextSiblingElement("joint")) {
@@ -719,7 +732,7 @@ void GetActuatorEffortLimit(XMLElement* robot_node,
           "RigidBodyTreeURDF.cpp: GetActuatorEffortLimit: ERROR: Joint tag is "
           "missing name attribute.");
     }
-    std::string name = std::string(attr);
+    string name = string(attr);
 
     // Checks if the current joint's name matches parameter joint_name.
     if (name == joint_name) {
@@ -843,13 +856,13 @@ void parseLoop(RigidBodyTree* tree, XMLElement* node) {
 
   XMLElement* link_node = node->FirstChildElement("link1");
   std::shared_ptr<RigidBodyFrame> frameA =
-      drake::systems::MakeRigidBodyFrameFromURDFNode(
-          *tree, link_node, link_node, name + "FrameA");
+      MakeRigidBodyFrameFromURDFNode(
+          *tree, *link_node, link_node, name + "FrameA");
 
   link_node = node->FirstChildElement("link2");
   std::shared_ptr<RigidBodyFrame> frameB =
-      drake::systems::MakeRigidBodyFrameFromURDFNode(
-          *tree, link_node, link_node, name + "FrameB");
+      MakeRigidBodyFrameFromURDFNode(
+          *tree, *link_node, link_node, name + "FrameB");
 
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis))
@@ -866,8 +879,7 @@ void parseFrame(RigidBodyTree* tree, XMLElement* node) {
   if (!frame_name) throw runtime_error("ERROR parsing Drake frame name");
 
   std::shared_ptr<RigidBodyFrame> frame =
-      drake::systems::MakeRigidBodyFrameFromURDFNode(*tree, node, node,
-                                                     frame_name);
+      MakeRigidBodyFrameFromURDFNode(*tree, *node, node, frame_name);
   tree->addFrame(frame);
 }
 
@@ -904,11 +916,11 @@ void parseWorldJoint(XMLElement* node,
     if (attr && (std::strcmp(attr, "true") == 0)) continue;
 
     // Parses the names of the joint, joint type, parent link, and child link.
-    std::string joint_name, joint_type, parent_name, child_name;
+    string joint_name, joint_type, parent_name, child_name;
     parseJointKeyParams(joint_node, joint_name, joint_type, parent_name,
                         child_name);
 
-    if (parent_name == std::string(RigidBodyTree::kWorldLinkName)) {
+    if (parent_name == string(RigidBodyTree::kWorldLinkName)) {
       // Ensures only one joint connects the model to the world.
       if (found_world_joint)
         throw runtime_error(
@@ -928,7 +940,7 @@ void parseWorldJoint(XMLElement* node,
       // a nullptr.
       if (weld_to_frame == nullptr) weld_to_frame.reset(new RigidBodyFrame());
 
-      weld_to_frame->name = std::string(RigidBodyTree::kWorldLinkName);
+      weld_to_frame->name = string(RigidBodyTree::kWorldLinkName);
       weld_to_frame->transform_to_body = transform_to_parent_body;
 
       if (joint_type == "fixed") {
@@ -990,8 +1002,8 @@ void parseRobot(RigidBodyTree* tree, XMLElement* node,
       if (!name_attr)
         throw runtime_error("ERROR: link tag is missing name attribute");
 
-      if (std::string(name_attr) ==
-          std::string(RigidBodyTree::kWorldLinkName)) {
+      if (string(name_attr) ==
+          string(RigidBodyTree::kWorldLinkName)) {
         // A world link was specified within the URDF. The following code
         // verifies that parameter weld_to_frame is not specified. It throws an
         // exception if it is since the model being added is connected to the
@@ -1051,10 +1063,11 @@ void parseRobot(RigidBodyTree* tree, XMLElement* node,
                           weld_to_frame);
 }
 
-void parseURDF(RigidBodyTree* tree, XMLDocument* xml_doc,
+void parseURDF(XMLDocument* xml_doc,
                PackageMap& package_map, const string& root_dir,
                const DrakeJoint::FloatingBaseType floating_base_type,
-               std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
+               std::shared_ptr<RigidBodyFrame> weld_to_frame,
+               RigidBodyTree* tree) {
   populatePackageMap(package_map);
   XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node) {
@@ -1069,13 +1082,105 @@ void parseURDF(RigidBodyTree* tree, XMLDocument* xml_doc,
 
 }  // namespace
 
-namespace drake {
-namespace systems {
+void AddRobotFromURDFString(
+    const string& urdf_string,
+    RigidBodyTree* tree) {
+  PackageMap package_map;
+  AddRobotFromURDFString(urdf_string, package_map, tree);
+}
+
+void AddRobotFromURDFString(
+    const string& urdf_string,
+    PackageMap& package_map,
+    RigidBodyTree* tree) {
+  const string root_dir = ".";
+  AddRobotFromURDFString(urdf_string, package_map, root_dir,
+                         DrakeJoint::ROLLPITCHYAW, nullptr, tree);
+}
+
+void AddRobotFromURDFString(
+    const string& urdf_string,
+    const string& root_dir,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    RigidBodyTree* tree) {
+  PackageMap package_map;
+  AddRobotFromURDFString(urdf_string, package_map, root_dir,
+                         floating_base_type, nullptr, tree);
+}
+
+void AddRobotFromURDFString(
+    const string& urdf_string,
+    PackageMap& package_map,
+    const string& root_dir,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree) {
+  XMLDocument xml_doc;
+  xml_doc.Parse(urdf_string.c_str());
+  parseURDF(&xml_doc, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
+            weld_to_frame, tree);
+}
+
+void AddRobotFromURDF(
+    const string& urdf_filename,
+    RigidBodyTree* tree) {
+  PackageMap package_map;
+  AddRobotFromURDF(urdf_filename, package_map, DrakeJoint::ROLLPITCHYAW,
+                   nullptr, tree);
+}
+
+void AddRobotFromURDF(
+    const string& urdf_filename,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    RigidBodyTree* tree) {
+  PackageMap package_map;
+  AddRobotFromURDF(urdf_filename, package_map, floating_base_type,
+                   nullptr, tree);
+}
+
+void AddRobotFromURDF(
+    const string& urdf_filename,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree) {
+  PackageMap package_map;
+  AddRobotFromURDF(urdf_filename, package_map, floating_base_type,
+                   weld_to_frame, tree);
+}
+
+void AddRobotFromURDF(
+    const string& urdf_filename, PackageMap& package_map,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree) {
+  // Checks whether tree is nullptr and throws an exception if it is.
+  if (tree == nullptr)
+    throw std::runtime_error("The rigid body tree pointer was null.");
+
+  // Opens the URDF file and feeds it into the XML parser.
+  XMLDocument xml_doc;
+  xml_doc.LoadFile(urdf_filename.data());
+  if (xml_doc.ErrorID()) {
+    throw std::runtime_error("failed to parse xml in file " + urdf_filename +
+                             "\n" + xml_doc.ErrorName());
+  }
+
+  // Uses the directory holding the URDF to be the root directory
+  // in which to search for files referenced within the URDF file.
+  string root_dir = ".";
+  size_t found = urdf_filename.find_last_of("/\\");
+  if (found != string::npos) {
+    root_dir = urdf_filename.substr(0, found);
+  }
+
+  parseURDF(&xml_doc, package_map, root_dir, floating_base_type,
+            weld_to_frame, tree);
+}
 
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
-    const RigidBodyTree& tree, const tinyxml2::XMLElement* link,
-    const tinyxml2::XMLElement* pose, const std::string& name) {
-  std::string body_name = link->Attribute("link");
+    const RigidBodyTree& tree, const tinyxml2::XMLElement& link,
+    const tinyxml2::XMLElement* pose, const string& name) {
+  string body_name = link.Attribute("link");
   RigidBody* body = tree.FindBody(body_name);
   if (body == nullptr) {
     throw runtime_error("ERROR: Couldn't find body \"" + body_name +
@@ -1091,54 +1196,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
       Eigen::aligned_allocator<RigidBodyFrame>(), name, body, xyz, rpy);
 }
 
-}  // namespace systems
+
+}  // namespace urdf
+}  // namespace parsers
 }  // namespace drake
-
-void RigidBodyTree::addRobotFromURDFString(
-    const string& xml_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  PackageMap package_map;
-  addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type,
-                         weld_to_frame);
-}
-
-void RigidBodyTree::addRobotFromURDFString(
-    const string& xml_string, PackageMap& package_map, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  XMLDocument xml_doc;
-  xml_doc.Parse(xml_string.c_str());
-  parseURDF(this, &xml_doc, package_map, root_dir, floating_base_type,
-            weld_to_frame);
-}
-
-void RigidBodyTree::addRobotFromURDF(
-    const string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  PackageMap package_map;
-  addRobotFromURDF(urdf_filename, package_map, floating_base_type,
-                   weld_to_frame);
-}
-
-void RigidBodyTree::addRobotFromURDF(
-    const string& urdf_filename, PackageMap& package_map,
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  XMLDocument xml_doc;
-  xml_doc.LoadFile(urdf_filename.data());
-  if (xml_doc.ErrorID()) {
-    throw std::runtime_error("failed to parse xml in file " + urdf_filename +
-                             "\n" + xml_doc.ErrorName());
-  }
-
-  string root_dir = ".";
-  size_t found = urdf_filename.find_last_of("/\\");
-  if (found != string::npos) {
-    root_dir = urdf_filename.substr(0, found);
-  }
-
-  parseURDF(this, &xml_doc, package_map, root_dir, floating_base_type,
-            weld_to_frame);
-}

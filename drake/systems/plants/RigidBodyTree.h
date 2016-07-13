@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
+#include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
@@ -18,6 +19,7 @@
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
@@ -82,11 +84,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDFString.")
+#endif
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDFString.")
+#endif
   void addRobotFromURDFString(
       const std::string& xml_string,
       std::map<std::string, std::string>& package_map,
@@ -94,11 +103,19 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDF.")
+#endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDF.")
+#endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
       std::map<std::string, std::string>& package_map,
@@ -106,6 +123,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use drake::parsers::sdf::AddRobotFromSDF.")
+#endif
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
                            DrakeJoint::QUATERNION,
@@ -192,7 +212,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   double getMass(const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> centerOfMass(
+  Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
       KinematicsCache<Scalar>& cache,
       const std::set<int>& robotnum = default_robot_num_set) const;
 
@@ -219,13 +239,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(
-      KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set,
-      bool in_terms_of_qdot = false) const;
+  Eigen::Matrix<Scalar, drake::kSpaceDimension, Eigen::Dynamic>
+  centerOfMassJacobian(KinematicsCache<Scalar>& cache,
+                       const std::set<int>& robotnum = default_robot_num_set,
+                       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(
+  Eigen::Matrix<Scalar, drake::kSpaceDimension, 1>
+  centerOfMassJacobianDotTimesV(
       KinematicsCache<Scalar>& cache,
       const std::set<int>& robotnum = default_robot_num_set) const;
 
@@ -368,14 +389,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
       bool in_terms_of_qdot) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, QUAT_SIZE, Eigen::Dynamic> relativeQuaternionJacobian(
-      const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
-      int to_body_or_frame_ind, bool in_terms_of_qdot) const;
+  Eigen::Matrix<Scalar, drake::kQuaternionSize, Eigen::Dynamic>
+  relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache,
+                             int from_body_or_frame_ind,
+                             int to_body_or_frame_ind,
+                             bool in_terms_of_qdot) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, RPY_SIZE, Eigen::Dynamic> relativeRollPitchYawJacobian(
-      const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
-      int to_body_or_frame_ind, bool in_terms_of_qdot) const;
+  Eigen::Matrix<Scalar, drake::kRpySize, Eigen::Dynamic>
+  relativeRollPitchYawJacobian(const KinematicsCache<Scalar>& cache,
+                               int from_body_or_frame_ind,
+                               int to_body_or_frame_ind,
+                               bool in_terms_of_qdot) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
@@ -426,9 +451,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
       int new_body_or_frame_ind) const;
 
   template <typename Scalar>
-  Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> relativeTransform(
-      const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
-      int body_or_frame_ind) const;
+  Eigen::Transform<Scalar, drake::kSpaceDimension, Eigen::Isometry>
+  relativeTransform(const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
+                    int body_or_frame_ind) const;
 
   /** computeContactJacobians
    * @brief Computes the jacobian for many points in the format currently used

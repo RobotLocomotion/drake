@@ -1,3 +1,5 @@
+#include "drake/systems/plants/parser_sdf.h"
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -6,7 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/thirdParty/tinyxml2/tinyxml2.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 #include "joints/DrakeJoints.h"
 
 #include "drake/Path.h"
@@ -25,6 +27,11 @@
 using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
+
+namespace drake {
+namespace parsers {
+namespace sdf {
+namespace {
 
 void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                       PoseMap& pose_map, const Isometry3d& T_link) {
@@ -123,11 +130,20 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
            << endl;
       return false;
     }
+
+    // This method will return an empty string if the file is not found or
+    // resolved within a ROS package.
     string resolved_filename = resolveFilename(uri, package_map, root_dir);
+
+    if (resolved_filename.empty()) {
+      throw runtime_error(std::string(__FILE__) + ": " + __func__ +
+          ": ERROR: Mesh file name could not be resolved from the "
+          "provided uri \"" + uri + "\".");
+    }
     DrakeShapes::Mesh mesh(uri, resolved_filename);
 
     if (shape_node->FirstChildElement("scale") != nullptr)
-      ParseThreeVectorValue(shape_node, "scale", &mesh.scale);
+      ParseThreeVectorValue(shape_node, "scale", &mesh.scale_);
     element.setGeometry(mesh);
   } else {
     cerr << std::string(__FILE__) + ": " + __func__ + ": WARNING: "
@@ -738,26 +754,41 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
   model->compile();
 }
 
-void RigidBodyTree::addRobotFromSDF(
-    const string& urdf_filename,
+}  // namespace
+
+void AddRobotFromSDFInWorldFrame(
+    const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    RigidBodyTree* tree) {
+  AddRobotFromSDF(filename, floating_base_type, nullptr, tree);
+}
+
+void AddRobotFromSDF(
+    const string& filename,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree) {
   PackageMap package_map;
 
   XMLDocument xml_doc;
-  xml_doc.LoadFile(urdf_filename.data());
+  xml_doc.LoadFile(filename.data());
   if (xml_doc.ErrorID()) {
     throw std::runtime_error(std::string(__FILE__) + ": " + __func__ +
                              ": ERROR: Failed to parse XML in file " +
-                             urdf_filename + "\n" + xml_doc.ErrorName() + ".");
+                             filename + "\n" + xml_doc.ErrorName() + ".");
   }
 
   string root_dir = ".";
-  size_t found = urdf_filename.find_last_of("/\\");
+  size_t found = filename.find_last_of("/\\");
   if (found != string::npos) {
-    root_dir = urdf_filename.substr(0, found);
+    root_dir = filename.substr(0, found);
   }
 
-  parseSDF(this, &xml_doc, package_map, root_dir, floating_base_type,
+  parseSDF(tree, &xml_doc, package_map, root_dir, floating_base_type,
            weld_to_frame);
 }
+
+}  // namespace sdf
+}  // namespace parsers
+}  // namespace drake
+
