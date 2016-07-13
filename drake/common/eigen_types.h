@@ -19,9 +19,21 @@ using Vector3 = Eigen::Matrix<Scalar, 3, 1>;
 template <typename Scalar>
 using Vector4 = Eigen::Matrix<Scalar, 4, 1>;
 
+/// A column vector of size 6.
+template <typename Scalar>
+using Vector6 = Eigen::Matrix<Scalar, 6, 1>;
+
 /// A column vector of any size, templated on scalar type.
 template <typename Scalar>
 using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+
+/// A matrix of 3 rows and 3 columns, templated on scalar type.
+template <typename Scalar>
+using Matrix3 = Eigen::Matrix<Scalar, 3, 3>;
+
+/// A matrix of 3 rows and 3 columns, templated on scalar type.
+template <typename Scalar>
+using Matrix6 = Eigen::Matrix<Scalar, 6, 6>;
 
 /// A matrix of 3 rows, dynamic columns, templated on scalar type.
 template <typename Scalar>

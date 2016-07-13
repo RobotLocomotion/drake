@@ -3,6 +3,7 @@
 #include "DrakeJointImpl.h"
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
@@ -27,7 +28,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
     auto pos = q.template middleRows<drake::kSpaceDimension>(0);
     auto rpy =
         q.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
-    ret.linear() = rpy2rotmat(rpy);
+    ret.linear() = drake::math::rpy2rotmat(rpy);
     ret.translation() = pos;
     ret.makeAffine();
     return ret;
@@ -45,7 +46,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
         q.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
     Eigen::Matrix<Scalar, drake::kSpaceDimension, drake::kRpySize> E;
     rpydot2angularvelMatrix(rpy, E);
-    Eigen::Matrix<Scalar, 3, 3> R = rpy2rotmat(rpy);
+    Eigen::Matrix<Scalar, 3, 3> R = drake::math::rpy2rotmat(rpy);
     motion_subspace.template block<3, 3>(0, 0).setZero();
     motion_subspace.template block<3, 3>(0, 3) = R.transpose() * E;
     motion_subspace.template block<3, 3>(3, 0) = R.transpose();

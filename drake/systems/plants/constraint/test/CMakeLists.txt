@@ -1,3 +1,8 @@
+add_executable(dynamic_constraint_test dynamic_constraint_test.cc)
+target_link_libraries(dynamic_constraint_test drakeDynamicConstraint
+  ${GTEST_BOTH_LIBRARIES})
+add_test(NAME dynamic_constraint_test COMMAND dynamic_constraint_test)
+
 add_matlab_test(NAME systems/plants/constraint/test/AllBodiesClosestDistanceConstraintTest COMMAND AllBodiesClosestDistanceConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/RelativeGazeTargetConstraintTest COMMAND RelativeGazeTargetConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/RelativePositionConstraintTest COMMAND RelativePositionConstraintTest)

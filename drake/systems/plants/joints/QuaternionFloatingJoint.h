@@ -2,6 +2,7 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/quaternion.h"
 #include "drake/systems/plants/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -18,7 +19,7 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
     Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret;
-    ret.linear() = quat2rotmat(q.template bottomRows<4>());
+    ret.linear() = drake::math::quat2rotmat(q.template bottomRows<4>());
     ret.translation() << q[0], q[1], q[2];
     ret.makeAffine();
     return ret;
@@ -74,7 +75,7 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
     typedef typename DerivedQ::Scalar Scalar;
     auto quat =
         q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
-    auto R = quat2rotmat(quat);
+    auto R = drake::math::quat2rotmat(quat);
 
     Eigen::Matrix<Scalar, 4, 1> quattilde;
     typename drake::math::Gradient<Eigen::Matrix<Scalar, 4, 1>,
@@ -101,7 +102,7 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
 
     auto quat =
         q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
-    auto R = quat2rotmat(quat);
+    auto R = drake::math::quat2rotmat(quat);
 
     Eigen::Matrix<Scalar, drake::kQuaternionSize, drake::kSpaceDimension> M;
     if (dv_to_qdot) {

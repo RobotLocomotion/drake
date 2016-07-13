@@ -28,6 +28,7 @@ rmpath(fullfile(root,'util','geometry'));
 rmpath(fullfile(root,'util','visualization'));
 rmpath(fullfile(root,'thirdParty'));
 rmpath(fullfile(root,'thirdParty','bsd'));
+rmpath(fullfile(root,'thirdParty','bsd','arrow3d'));
 rmpath(fullfile(root,'thirdParty','bsd','cprintf'));
 rmpath(fullfile(root,'thirdParty','bsd','GetFullPath'));
 rmpath(fullfile(root,'thirdParty','bsd','plotregion'));

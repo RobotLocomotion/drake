@@ -50,6 +50,7 @@ addpath(fullfile(root,'util','geometry'));
 addpath(fullfile(root,'util','visualization'));
 addpath(fullfile(root,'thirdParty'));
 addpath(fullfile(root,'thirdParty','bsd'));
+addpath(fullfile(root,'thirdParty','bsd','arrow3d'));
 addpath(fullfile(root,'thirdParty','bsd','cprintf'));
 addpath(fullfile(root,'thirdParty','bsd','GetFullPath'));
 addpath(fullfile(root,'thirdParty','bsd','plotregion'));
