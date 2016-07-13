@@ -6,7 +6,7 @@
 namespace drake {
 namespace solvers {
 
-bool SnoptSolver::available() const {
+bool MosekSolver::available() const {
   return false;
 }
 
