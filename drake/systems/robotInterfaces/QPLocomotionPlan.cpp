@@ -1,17 +1,24 @@
 #include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
-#include <stdexcept>
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include "drake/util/drakeGeometryUtil.h"
+#include <stdexcept>
+#include <string>
+
+#include "drake/core/Gradient.h"
+#include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
+#include "drake/examples/Atlas/atlasUtil.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/expmap.h"
+#include "drake/math/gradient.h"
+#include "drake/math/quaternion.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/solvers/qpSpline/splineGeneration.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"
-#include <string>
 #include "drake/util/convexHull.h"
-#include "drake/examples/Atlas/atlasUtil.h"
-#include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
-#include "drake/core/Gradient.h"
 
 // TODO(tkoolen): discuss possibility of chatter in knee control
 // TODO(tkoolen): make body_motions a map from RigidBody* to BodyMotionData,
@@ -21,13 +28,21 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
+using drake::math::Gradient;
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::autoDiffToValueMatrix;
+using drake::math::expmap2quat;
+using drake::math::closestExpmap;
+using drake::math::quat2expmap;
+using drake::math::quatRotateVec;
+
 const std::map<SupportLogicType, std::vector<bool>>
     QPLocomotionPlan::support_logic_maps =
         QPLocomotionPlan::createSupportLogicMaps();
 
 std::string primaryBodyOrFrameName(const std::string& full_body_name) {
-  int i;
-  for (i = 0; i < full_body_name.size(); i++) {
+  size_t i = 0;
+  for (; i < full_body_name.size(); i++) {
     if (std::strncmp(&full_body_name[i], "+", 1) == 0) {
       break;
     }
@@ -50,7 +65,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree& robot,
       plan_shift(Vector3d::Zero()),
       last_foot_shift_time(0.0),
       shifted_zmp_trajectory(settings.zmp_trajectory) {
-  for (int i = 1; i < settings.support_times.size(); i++) {
+  for (int i = 1; i < static_cast<int>(settings.support_times.size()); i++) {
     if (settings.support_times[i] < settings.support_times[i - 1])
       throw std::runtime_error("support times must be increasing");
   }
@@ -157,8 +172,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   qp_input.zmp_data = createZMPData(t_plan);
 
   bool pelvis_has_tracking = false;
-  for (int j = 0; j < settings.body_motions.size(); ++j) {
-    BodyMotionData& body_motion = settings.body_motions[j];
+  for (BodyMotionData& body_motion : settings.body_motions) {
     int body_or_frame_id = body_motion.getBodyOrFrameId();
     int body_id = robot.parseBodyOrFrameID(body_or_frame_id);
     int body_motion_segment_index = body_motion.findSegmentIndex(t_plan);
@@ -184,9 +198,8 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         bool ankle_close_to_limit = Atlas::ankleCloseToLimits(
             q[akx_index], q[aky_index], settings.ankle_limits_tolerance);
         Matrix<double, 2, Dynamic> reduced_support_pts(2, 0);
-        for (int i = 0; i < support_state.size(); ++i) {
-          RigidBodySupportStateElement& support_state_element =
-              support_state[i];
+        for (RigidBodySupportStateElement& support_state_element :
+             support_state) {
           Matrix3Xd pts;
           if (support_state_element.body == body_id) {
             // pts = settings.contact_groups[body_id].at("toe");
@@ -241,9 +254,8 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
       }
 
       if (toe_off_active[side]) {
-        for (int i = 0; i < support_state.size(); ++i) {
-          RigidBodySupportStateElement& support_state_element =
-              support_state[i];
+        for (RigidBodySupportStateElement& support_state_element :
+             support_state) {
           if (support_state_element.body == body_id)
             support_state_element.contact_points =
                 getFrontTwoContactPoints(support_state_element.contact_points);
@@ -305,7 +317,8 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         body_motion.isPoseControlledWhenInContact(body_motion_segment_index);
     const Isometry3d& transform_task_to_world =
         body_motion.getTransformTaskToWorld();
-    Vector4d quat_task_to_world = rotmat2quat(transform_task_to_world.linear());
+    Vector4d quat_task_to_world =
+        drake::math::rotmat2quat(transform_task_to_world.linear());
     Vector3d translation_task_to_world = transform_task_to_world.translation();
     eigenVectorToCArray(quat_task_to_world,
                         body_motion_data_for_support_lcm.quat_task_to_world);
@@ -502,7 +515,7 @@ drake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(
   support_data_element_lcm.num_contact_pts = element.contact_points.cols();
   eigenToStdVectorOfStdVectors(element.contact_points,
                                support_data_element_lcm.contact_pts);
-  for (int i = 0; i < support_logic.size(); i++)
+  for (size_t i = 0; i < support_logic.size(); i++)
     support_data_element_lcm.support_logic_map[i] = support_logic[i];
   support_data_element_lcm.mu = settings.mu;
   Vector4f support_surface_float = element.support_surface.cast<float>();
@@ -533,7 +546,7 @@ void QPLocomotionPlan::updateSwingTrajectory(
   auto x0_twist =
       robot.relativeTwist(cache, 0, body_motion_data.getBodyOrFrameId(), 0);
 
-  Vector4d x0_quat = rotmat2quat(x0_pose.linear());
+  Vector4d x0_quat = drake::math::rotmat2quat(x0_pose.linear());
   Matrix<double, QUAT_SIZE, SPACE_DIMENSION> Phi;
   angularvel2quatdotMatrix(
       x0_quat, Phi,
@@ -571,7 +584,8 @@ void QPLocomotionPlan::updateSwingTrajectory(
   Vector3d unit_x_rotated_0 = quatRotateVec(x0_quat, unit_x);
   Vector3d unit_x_rotated_1 = quatRotateVec(expmap2quat(x1.tail<3>()), unit_x);
   if (unit_x_rotated_0(2) < unit_x_rotated_1(2)) {
-    x1.tail<3>() = quat2expmap(slerp(x0_quat, expmap2quat(x2.tail<3>()), 0.1));
+    x1.tail<3>() = quat2expmap(
+        drake::math::Slerp(x0_quat, expmap2quat(x2.tail<3>()), 0.1));
   }
 
   // TODO(rdeits): find a less expensive way of doing this
@@ -687,7 +701,7 @@ void QPLocomotionPlan::findPlannedSupportFraction(
     // Now look forwards until we find the next single support
     bool found_future_single_support = false;
     double t_next_single_support_begin;
-    for (int i = support_index + 1; i < settings.supports.size(); ++i) {
+    for (size_t i = support_index + 1; i < settings.supports.size(); ++i) {
       support_sides = this->getSupportSides(settings.supports[i]);
       if (support_sides.size() == 1) {
         found_future_single_support = true;
@@ -717,7 +731,7 @@ PiecewisePolynomial<double> firstOrderHold(
     const std::vector<Matrix<double, Dynamic, Dynamic>>& knots) {
   std::vector<PiecewisePolynomial<double>::PolynomialMatrix> polys;
   polys.reserve(segment_times.size() - 1);
-  for (int i = 0; i < segment_times.size() - 1; ++i) {
+  for (int i = 0; i < static_cast<int>(segment_times.size()) - 1; ++i) {
     Matrix<Polynomial<double>, Dynamic, Dynamic> poly_matrix(knots[0].rows(),
                                                              knots[0].cols());
     for (int j = 0; j < knots[i].rows(); ++j) {
@@ -747,7 +761,7 @@ void QPLocomotionPlan::updateZMPTrajectory(const double t_plan,
       settings.zmp_trajectory.getSegmentTimes();
   std::vector<MatrixXd> zmp_knots;
   zmp_knots.reserve(segment_times.size());
-  for (int i = 0; i < segment_times.size(); ++i) {
+  for (size_t i = 0; i < segment_times.size(); ++i) {
     zmp_knots.push_back(settings.zmp_trajectory.value(segment_times[i]));
   }
   // std::cout << "right: " << foot_shifts.at(Side::RIGHT).transpose() << "
@@ -762,13 +776,13 @@ void QPLocomotionPlan::updateZMPTrajectory(const double t_plan,
   // next_support_fraction << " transition_fraction: " << transition_fraction <<
   // std::endl;
 
-  if (segment_index + 1 < zmp_knots.size()) {
+  if ((segment_index + 1) < static_cast<int>(zmp_knots.size())) {
     zmp_knots[segment_index + 1] -=
         next_support_fraction * foot_shifts.at(Side(Side::RIGHT)).head<2>() +
         (1.0 - next_support_fraction) *
             foot_shifts.at(Side(Side::LEFT)).head<2>();
   }
-  if (segment_index + 2 < zmp_knots.size()) {
+  if ((segment_index + 2) < static_cast<int>(zmp_knots.size())) {
     if (transition_fraction >= 0.05 && transition_fraction <= 0.95) {
       // If we're in double support, then we need to update the next TWO zmp
       // knots
@@ -794,7 +808,8 @@ void QPLocomotionPlan::updateZMPController(const double t_plan,
 void QPLocomotionPlan::updatePlanShift(
     const KinematicsCache<double>& cache, double t_plan,
     const std::vector<bool>& contact_force_detected, int support_index) {
-  const bool is_last_support = support_index == settings.supports.size() - 1;
+  const bool is_last_support =
+      (support_index == (static_cast<int>(settings.supports.size()) - 1));
   const RigidBodySupportState& next_support =
       is_last_support ? settings.supports[support_index]
                       : settings.supports[support_index + 1];

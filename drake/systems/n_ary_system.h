@@ -42,14 +42,14 @@ class NArySystem {
   StateVector<ScalarType> dynamics(const ScalarType& time,
                                    const StateVector<ScalarType>& state,
                                    const InputVector<ScalarType>& input) const {
-    if ((state.count() >= 0) && (state.count() != systems_.size())) {
+    if ((state.count() >= 0) && (state.count() != systems_size())) {
       throw std::invalid_argument("State count differs from systems count.");
     }
-    if ((input.count() >= 0) && (input.count() != systems_.size())) {
+    if ((input.count() >= 0) && (input.count() != systems_size())) {
       throw std::invalid_argument("Input count differs from systems count.");
     }
-    StateVector<ScalarType> xdot(systems_.size());
-    for (std::size_t i = 0; i < systems_.size(); ++i) {
+    StateVector<ScalarType> xdot(systems_size());
+    for (int i = 0; i < systems_size(); ++i) {
       xdot.set(i, systems_[i]->dynamics(time, state.get(i), input.get(i)));
     }
     return xdot;
@@ -60,14 +60,14 @@ class NArySystem {
   OutputVector<ScalarType> output(const ScalarType& time,
                                   const StateVector<ScalarType>& state,
                                   const InputVector<ScalarType>& input) const {
-    if ((state.count() >= 0) && (state.count() != systems_.size())) {
+    if ((state.count() >= 0) && (state.count() != systems_size())) {
       throw std::invalid_argument("State count differs from systems count.");
     }
-    if ((input.count() >= 0) && (input.count() != systems_.size())) {
+    if ((input.count() >= 0) && (input.count() != systems_size())) {
       throw std::invalid_argument("Input count differs from systems count.");
     }
-    OutputVector<ScalarType> y(systems_.size());
-    for (std::size_t i = 0; i < systems_.size(); ++i) {
+    OutputVector<ScalarType> y(systems_size());
+    for (int i = 0; i < systems_size(); ++i) {
       y.set(i, systems_[i]->output(time, state.get(i), input.get(i)));
     }
     return y;
@@ -91,20 +91,22 @@ class NArySystem {
 
   // Required by Drake::System concept.
   std::size_t getNumStates() const {
-    return StateVector<double>::RowsFromUnitCount(systems_.size());
+    return StateVector<double>::RowsFromUnitCount(systems_size());
   }
 
   // Required by Drake::System concept.
   std::size_t getNumInputs() const {
-    return InputVector<double>::RowsFromUnitCount(systems_.size());
+    return InputVector<double>::RowsFromUnitCount(systems_size());
   }
 
   // Required by Drake::System concept.
   std::size_t getNumOutputs() const {
-    return OutputVector<double>::RowsFromUnitCount(systems_.size());
+    return OutputVector<double>::RowsFromUnitCount(systems_size());
   }
 
  private:
+  int systems_size() const { return systems_.size(); }
+
   std::vector<std::shared_ptr<UnitSystem> > systems_;
 };
 

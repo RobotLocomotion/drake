@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/Path.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
@@ -35,12 +36,12 @@ TEST_P(LoadModelTest, TestNoOffset) {
       DrakeJoint::QUATERNION);
 
   // Verifies that RigidBodyTree cannot find a link thatn does not exist.
-  EXPECT_THROW(rbs.getRigidBodyTree()->findLink("not_a_link"),
-    std::logic_error);
+  EXPECT_THROW(rbs.getRigidBodyTree()->FindBody("not_a_link"),
+               std::logic_error);
 
   // Verifies that the world link within the rigid body tree
   // can be found and obtained.
-  auto world_body = rbs.getRigidBodyTree()->findLink("world");
+  auto world_body = rbs.getRigidBodyTree()->FindBody("world");
   EXPECT_TRUE(world_body != nullptr);
 
   // Verifies that the world link does not have a parent.
@@ -70,7 +71,7 @@ TEST_P(LoadModelTest, TestNoOffset) {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero(),
                     xyz = Eigen::Vector3d::Zero();
     xyz(2) = 0.6;
-    T_link2_to_link1.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_link2_to_link1.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
   EXPECT_TRUE(link2_body->getJoint().getTransformToParentBody().matrix() ==
@@ -84,7 +85,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
   {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero(),
                     xyz = Eigen::Vector3d::Ones();
-    T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
@@ -122,7 +123,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero(),
                     xyz = Eigen::Vector3d::Zero();
     xyz(2) = 0.6;
-    T_link2_to_link1.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_link2_to_link1.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
   EXPECT_TRUE(link2_body->getJoint().getTransformToParentBody().matrix() ==
@@ -144,10 +145,10 @@ TEST_P(LoadModelTest, TestWeld) {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
     xyz(2) = 0.06;
-    T_model2_to_link2.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_model2_to_link2.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto link2_body = rbs.getRigidBodyTree()->findLink("link2");
+  auto link2_body = rbs.getRigidBodyTree()->FindBody("link2");
   EXPECT_TRUE(link2_body != nullptr);
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
@@ -159,7 +160,7 @@ TEST_P(LoadModelTest, TestWeld) {
       DrakeJoint::FIXED, weld_to_frame);
 
   // Verifies that the newly added link exists and is in the correct location.
-  auto link_body = rbs.getRigidBodyTree()->findLink("link");
+  auto link_body = rbs.getRigidBodyTree()->FindBody("link");
   EXPECT_TRUE(link_body != nullptr);
   EXPECT_TRUE(link_body->getJoint().getTransformToParentBody().matrix() ==
               T_model2_to_link2.matrix());
@@ -185,10 +186,10 @@ GTEST_TEST(LoadSDFTest, TestInternalOffset) {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
     xyz(2) = 1;
-    T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
   EXPECT_TRUE(link1_body != nullptr);
   EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix() ==
               T_model_to_world.matrix());
@@ -203,7 +204,8 @@ GTEST_TEST(LoadSDFTest, TestDualOffset1) {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
     xyz(0) = 2;
-    T_model_world_to_drake_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_model_world_to_drake_world.matrix()
+        << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
@@ -224,10 +226,11 @@ GTEST_TEST(LoadSDFTest, TestDualOffset1) {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     Eigen::Vector3d xyz;
     xyz << 2, 0, 1;
-    T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_model_to_world.matrix()
+        << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
   EXPECT_TRUE(link1_body != nullptr);
   EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix() ==
               T_model_to_world.matrix());
@@ -246,7 +249,8 @@ GTEST_TEST(LoadSDFTest, TestDualOffset2) {
     Eigen::Vector3d xyz, rpy;
     xyz << 0, -1, 0;
     rpy << -1.570796326794896557998982, 0, 0;
-    T_model_world_to_drake_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_model_world_to_drake_world.matrix()
+        << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
@@ -262,16 +266,15 @@ GTEST_TEST(LoadSDFTest, TestDualOffset2) {
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to identity.
-  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
   EXPECT_TRUE(link1_body != nullptr);
   EXPECT_TRUE(
       link1_body->getJoint().getTransformToParentBody().matrix().isApprox(
           Eigen::Isometry3d::Identity().matrix(), 1e-10))
       << "Incorrect transform from the link1's frame to Drake's world frame."
-      << "Got:\n"
-      << link1_body->getJoint().getTransformToParentBody().matrix() << "\n"
-      << "Expected:\n"
-      << Eigen::Isometry3d::Identity().matrix();
+      << "Got:\n" << link1_body->getJoint().getTransformToParentBody().matrix()
+      << "\n"
+      << "Expected:\n" << Eigen::Isometry3d::Identity().matrix();
 }
 
 class ModelToWorldTransformTestParams {
@@ -299,8 +302,7 @@ class ModelToWorldTransformTestParams {
  * is a ModelToWorldTransformTestParams.
  */
 class ModelToWorldTransformTest
-    : public ::testing::TestWithParam<ModelToWorldTransformTestParams> {
-};
+    : public ::testing::TestWithParam<ModelToWorldTransformTestParams> {};
 
 TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
   std::unique_ptr<RigidBodySystem> rbs(new RigidBodySystem());
@@ -318,10 +320,10 @@ TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
     Eigen::Vector3d xyz, rpy;
     xyz << params.x_, params.y_, params.z_;
     rpy << params.roll_, params.pitch_, params.yaw_;
-    T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto link1_body = rbs->getRigidBodyTree()->findLink(params.root_link_name_);
+  auto link1_body = rbs->getRigidBodyTree()->FindBody(params.root_link_name_);
   EXPECT_TRUE(link1_body != nullptr);
 
   // Note: The following two local variables are necessary to avoid a transient
@@ -330,17 +332,15 @@ TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
   //
   // https://github.com/robotlocomotion/drake/pull/2171#issuecomment-219770037
   auto actual_matrix =
-    link1_body->getJoint().getTransformToParentBody().matrix();
+      link1_body->getJoint().getTransformToParentBody().matrix();
 
   auto expected_matrix = T_model_to_world.matrix();
 
   EXPECT_TRUE(actual_matrix.isApprox(expected_matrix, 1e-10))
-    << "ERROR: "
-    << "Incorrect transform from link1's frame to Drake's world frame.\n"
-    << "Got:\n"
-    << actual_matrix << "\n"
-    << "Expected:\n"
-    << expected_matrix;
+      << "ERROR: "
+      << "Incorrect transform from link1's frame to Drake's world frame.\n"
+      << "Got:\n" << actual_matrix << "\n"
+      << "Expected:\n" << expected_matrix;
 }
 
 INSTANTIATE_TEST_CASE_P(

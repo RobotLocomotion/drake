@@ -1,6 +1,8 @@
 #include "MathematicalProgram.h"
 
+#include "equality_constrained_qp_solver.h"
 #include "IpoptSolver.h"
+#include "linear_system_solver.h"
 #include "MobyLCP.h"
 #include "NloptSolver.h"
 #include "Optimization.h"
@@ -8,195 +10,123 @@
 
 namespace drake {
 namespace solvers {
-MathematicalProgramInterface::~MathematicalProgramInterface() {}
 
 namespace {
 
-class MathematicalProgram : public MathematicalProgramInterface {
- public:
-  virtual ~MathematicalProgram() {}
+enum ProblemAttributes {
+  kNoCapabilities = 0,
+  kError = 1 << 0,  ///< Do not use, to avoid & vs. && typos.
+  kGenericCost                     = 1 << 1,
+  kGenericConstraint               = 1 << 2,
+  kQuadraticCost                   = 1 << 3,
+  kQuadraticConstraint             = 1 << 4,
+  kLinearCost                      = 1 << 5,
+  kLinearConstraint                = 1 << 6,
+  kLinearEqualityConstraint        = 1 << 7,
+  kLinearComplementarityConstraint = 1 << 8
+};
+typedef uint32_t AttributesSet;
 
-  /* these would be used to fill out the optimization hierarchy prototyped
-     below
-     virtual MathematicalProgramInterface* AddIntegerVariable() { return new
-     MathematicalProgram; }
+// TODO(ggould-tri) Refactor these capability advertisements into the
+// solver wrappers themselves.
 
-     virtual MathematicalProgramInterface* AddLinearCost() { return new
-     MathematicalProgram; }
-     virtual MathematicalProgramInterface* AddQuadraticCost() { return new
-     MathematicalProgram; }
-     virtual MathematicalProgramInterface* AddCost() { return new
-     MathematicalProgram; }
+// Solver for simple linear systems of equalities
+AttributesSet kLinearSystemSolverCapabilities = kLinearEqualityConstraint;
 
-     virtual MathematicalProgramInterface* AddSumsOfSquaresConstraint() { return
-     new
-     MathematicalProgram; }
-     virtual MathematicalProgramInterface* AddLinearMatrixInequalityConstraint()
-     {
-     return new MathematicalProgram; }
-     virtual MathematicalProgramInterface* AddSecondOrderConeConstraint() {
-     return new
-     MathematicalProgram; }
-     virtual MathematicalProgramInterface* AddComplementarityConstraint() {
-     return new
-     MathematicalProgram; };
-  */
-  MathematicalProgramInterface* AddGenericObjective() override {
-    return new MathematicalProgram;
-  };
-  MathematicalProgramInterface* AddGenericConstraint() override {
-    return new MathematicalProgram;
-  };
-  MathematicalProgramInterface* AddLinearConstraint() override {
-    return new MathematicalProgram;
-  };
-  MathematicalProgramInterface* AddLinearEqualityConstraint() override {
-    return new MathematicalProgram;
-  };
-  MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
-    return new MathematicalProgram;
-  };
-  SolutionResult Solve(OptimizationProblem& prog) const override {
+// Solver for equality-constrained QPs
+AttributesSet kEqualityConstrainedQPCapabilities = (
+  kQuadraticCost | kLinearCost | kLinearEqualityConstraint);
+
+// Solver for Linear Complementarity Problems (LCPs)
+AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
+
+// Solver for Quadratic Programs (QPs); commented out until Gurobi is ready
+// to land.
+// AttributesSet kGurobiCapabilities = (
+//     kLinearEqualityConstraint | kLinearInequalityConstraint |
+//     kLinearCost | kQuadraticCost);
+
+// Solvers for generic systems of constraints and costs.
+AttributesSet kGenericSolverCapabilities = (
+    kGenericCost | kGenericConstraint |
+    kQuadraticCost | kQuadraticConstraint |
+    kLinearCost | kLinearConstraint | kLinearEqualityConstraint);
+
+// Returns true iff no capabilities are in required and not in available.
+bool is_satisfied(AttributesSet required, AttributesSet available) {
+  return ((required & ~available) == kNoCapabilities);
+}
+
+}  // anon namespace
+
+
+MathematicalProgram::MathematicalProgram()
+    : required_capabilities_(kNoCapabilities),
+      ipopt_solver_(new IpoptSolver()),
+      nlopt_solver_(new NloptSolver()),
+      snopt_solver_(new SnoptSolver()),
+      moby_lcp_solver_(new MobyLCPSolver()),
+      linear_system_solver_(new LinearSystemSolver()),
+      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()) {}
+
+void MathematicalProgram::AddGenericCost() {
+  required_capabilities_ |= kGenericCost;
+}
+void MathematicalProgram::AddGenericConstraint() {
+  required_capabilities_ |= kGenericConstraint;
+}
+void MathematicalProgram::AddQuadraticCost() {
+  required_capabilities_ |= kQuadraticCost;
+}
+void MathematicalProgram::AddQuadraticConstraint() {
+  required_capabilities_ |= kQuadraticConstraint;
+}
+void MathematicalProgram::AddLinearCost() {
+  required_capabilities_ |= kLinearCost;
+}
+void MathematicalProgram::AddLinearConstraint() {
+  required_capabilities_ |= kLinearConstraint;
+}
+void MathematicalProgram::AddLinearEqualityConstraint() {
+  required_capabilities_ |= kLinearEqualityConstraint;
+}
+void MathematicalProgram::AddLinearComplementarityConstraint() {
+  required_capabilities_ |= kLinearComplementarityConstraint;
+}
+
+SolutionResult MathematicalProgram::Solve(OptimizationProblem& prog) const {
+  // This implementation is simply copypasta for now; in the future we will
+  // want to tweak the order of preference of solvers based on the types of
+  // constraints present.
+
+  if (is_satisfied(required_capabilities_, kLinearSystemSolverCapabilities) &&
+      linear_system_solver_->available()) {
+    // TODO(ggould-tri) Also allow quadratic objectives whose matrix is
+    // Identity: This is the objective function the solver uses anyway when
+    // underconstrainted, and is fairly common in real-world problems.
+    return linear_system_solver_->Solve(prog);
+  } else if (is_satisfied(required_capabilities_,
+                          kEqualityConstrainedQPCapabilities) &&
+            equality_constrained_qp_solver_->available()) {
+    return equality_constrained_qp_solver_->Solve(prog);
+  } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
+             moby_lcp_solver_->available()) {
+    return moby_lcp_solver_->Solve(prog);
+  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+             snopt_solver_->available()) {
+    return snopt_solver_->Solve(prog);
+  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+             ipopt_solver_->available()) {
+    return ipopt_solver_->Solve(prog);
+  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+             nlopt_solver_->available()) {
+    return nlopt_solver_->Solve(prog);
+  } else {
     throw std::runtime_error(
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");
   }
-};
-
-class NonlinearProgram : public MathematicalProgram {
- public:
-  MathematicalProgramInterface* AddGenericObjective() override {
-    return new NonlinearProgram;
-  };
-  MathematicalProgramInterface* AddGenericConstraint() override {
-    return new NonlinearProgram;
-  };
-  MathematicalProgramInterface* AddLinearConstraint() override {
-    return new NonlinearProgram;
-  };
-  MathematicalProgramInterface* AddLinearEqualityConstraint() override {
-    return new NonlinearProgram;
-  };
-  MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
-    return new NonlinearProgram;
-  }
-
-  SolutionResult Solve(OptimizationProblem& prog) const override {
-    if (snopt_solver.available()) {
-      return snopt_solver.Solve(prog);
-    }
-    if (ipopt_solver.available()) {
-      return ipopt_solver.Solve(prog);
-    }
-    if (nlopt_solver.available()) {
-      return nlopt_solver.Solve(prog);
-    }
-    return MathematicalProgram::Solve(prog);
-  }
-
- private:
-  IpoptSolver ipopt_solver;
-  NloptSolver nlopt_solver;
-  SnoptSolver snopt_solver;
-};
-
-/*  // Prototype of the more complete optimization problem class hiearchy (to
-    be implemented only as needed)
-    struct MixedIntegerNonlinearProgram : public MathematicalProgramInterface
-   {};
-    struct MixedIntegerSemidefiniteProgram : public
-    MixedIntegerNonlinearProgram {};
-    struct MixedIntegerSecondOrderConeProgram : public
-    MixedIntegerSemidefiniteProgram {};
-    struct MixedIntegerQuadraticProgram : public
-    MixedIntegerSecondOrderConeProgram {};
-    struct MixedIntegerLinearProgram : public MixedIntegerQuadraticProgram {};
-
-    struct NonlinearProgram : public MixedIntegerNonlinearProgram {};
-    struct SemidefiniteProgram : public NonlinearProgram, public
-    MixedIntegerSemidefiniteProgram {};
-    struct SecondOrderConeProgram : public SemidefiniteProgram, public
-    MixedIntegerSecondOrderConeProgram {};
-    struct QuadraticProgram : public SecondOrderConeProgram, public
-    MixedIntegerQuadraticProgram {};
-    struct LinearProgram : public QuadraticProgram, public
-    MixedIntegerLinearProgram {
-    virtual MathematicalProgramInterface* AddLinearEqualityConstraint() { return
-   new
-    LinearProgram; };
-    virtual MathematicalProgramInterface* AddLinearInequalityConstraint() { return
-    new LinearProgram; };
-    };
-
-    struct NonlinearComplementarityProblem : public NonlinearProgram {};
-    struct LinearComplementarityProblem : public
-    NonlinearComplementarityProblem {};
-*/
-
-class LinearComplementarityProblem : public MathematicalProgram {
- public:
-  SolutionResult Solve(OptimizationProblem& prog) const override {
-    // TODO(ggould-tri) given the Moby solver's meticulous use of temporaries,
-    // it would be an easy performance win to reuse this solver object by making
-    // a static place to store it.
-    MobyLCPSolver solver;
-    return solver.Solve(prog);
-  }
-  MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
-    return new LinearComplementarityProblem;
-  };
-};
-
-class LeastSquares : public NonlinearProgram {  // public LinearProgram, public
- public:
-  // LinearComplementarityProblem
-  MathematicalProgramInterface* AddLinearEqualityConstraint() override {
-    return new LeastSquares;
-  };
-  MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
-    return new LinearComplementarityProblem;
-  };
-
-  SolutionResult Solve(OptimizationProblem& prog) const override {
-    size_t num_constraints = 0;
-    for (auto const& binding : prog.linear_equality_constraints()) {
-      num_constraints += binding.constraint()->A().rows();
-    }
-
-    Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(
-        num_constraints, prog.num_vars());  // todo: use a sparse matrix here?
-    Eigen::VectorXd beq(num_constraints);
-
-    size_t constraint_index = 0;
-    for (auto const& binding : prog.linear_equality_constraints()) {
-      auto const& c = binding.constraint();
-      size_t n = c->A().rows();
-      size_t var_index = 0;
-      for (const DecisionVariableView& v : binding.variable_list()) {
-        Aeq.block(constraint_index, v.index(), n, v.size()) =
-            c->A().middleCols(var_index, v.size());
-        var_index += v.size();
-      }
-      beq.segment(constraint_index, n) =
-          c->lower_bound();  // = c->upper_bound() since it's an equality
-      // constraint
-      constraint_index += n;
-    }
-
-    // least-squares solution
-    prog.SetDecisionVariableValues(
-        Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
-    return SolutionResult::kSolutionFound;
-  }
-};
 }
-
-std::shared_ptr<MathematicalProgramInterface>
-MathematicalProgramInterface::GetLeastSquaresProgram() {
-  return std::shared_ptr<MathematicalProgramInterface>(new LeastSquares);
-}
-
-MathematicalProgramSolverInterface::~MathematicalProgramSolverInterface() {}
 
 }  // namespace solvers
 }  // namespace drake

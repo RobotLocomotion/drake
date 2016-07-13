@@ -7,15 +7,33 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/constants.h"
+
 namespace drake {
 
 /// A column vector of size 3, templated on scalar type.
 template <typename Scalar>
 using Vector3 = Eigen::Matrix<Scalar, 3, 1>;
 
+/// A column vector of size 4, templated on scalar type.
+template <typename Scalar>
+using Vector4 = Eigen::Matrix<Scalar, 4, 1>;
+
+/// A column vector of size 6.
+template <typename Scalar>
+using Vector6 = Eigen::Matrix<Scalar, 6, 1>;
+
 /// A column vector of any size, templated on scalar type.
 template <typename Scalar>
 using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+
+/// A matrix of 3 rows and 3 columns, templated on scalar type.
+template <typename Scalar>
+using Matrix3 = Eigen::Matrix<Scalar, 3, 3>;
+
+/// A matrix of 3 rows and 3 columns, templated on scalar type.
+template <typename Scalar>
+using Matrix6 = Eigen::Matrix<Scalar, 6, 6>;
 
 /// A matrix of 3 rows, dynamic columns, templated on scalar type.
 template <typename Scalar>
@@ -37,5 +55,17 @@ using AutoDiffUpTo73d = Eigen::AutoDiffScalar<VectorUpTo73d>;
 
 /// An autodiff variable with a dynamic number of partials.
 using AutoDiffXd = Eigen::AutoDiffScalar<Eigen::VectorXd>;
+
+/// A column vector consisting of one twist.
+template <typename Scalar>
+using TwistVector = Eigen::Matrix<Scalar, kTwistSize, 1>;
+
+/// A matrix with one twist per column, and dynamically many columns.
+template <typename Scalar>
+using TwistMatrix = Eigen::Matrix<Scalar, kTwistSize, Eigen::Dynamic>;
+
+/// A six-by-six matrix.
+template <typename Scalar>
+using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
 
 }  // namespace drake

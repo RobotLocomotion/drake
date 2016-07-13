@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
+#include "drake/common/drake_assert.h"
 #include "drake/util/Polynomial.h"
 
 namespace drake {
@@ -25,10 +26,10 @@ namespace solvers {
 class Constraint {
   void check(size_t num_constraints) {
     static_cast<void>(num_constraints);
-    assert(lower_bound_.size() == num_constraints &&
-           "Size of lower bound must match number of constraints.");
-    assert(upper_bound_.size() == num_constraints &&
-           "Size of upper bound must match number of constraints.");
+    DRAKE_ASSERT(static_cast<size_t>(lower_bound_.size()) == num_constraints &&
+                 "Size of lower bound must match number of constraints.");
+    DRAKE_ASSERT(static_cast<size_t>(upper_bound_.size()) == num_constraints &&
+                 "Size of upper bound must match number of constraints.");
   }
 
  public:
@@ -96,6 +97,14 @@ class QuadraticConstraint : public Constraint {
     y = .5 * x.transpose() * Q_.cast<Drake::TaylorVarXd>() * x +
         b_.cast<Drake::TaylorVarXd>().transpose() * x;
   };
+  virtual const Eigen::MatrixXd&
+  Q() const {
+    return Q_;
+  }
+  virtual const Eigen::VectorXd&
+  b() const {
+    return b_;
+  }
 
  private:
   Eigen::MatrixXd Q_;
@@ -132,7 +141,7 @@ class PolynomialConstraint : public Constraint {
       double_evaluation_point_[poly_vars_[i]] = x[i];
     }
     y.resize(num_constraints());
-    for (int i = 0; i < num_constraints(); i++) {
+    for (size_t i = 0; i < num_constraints(); i++) {
       y[i] = polynomials_[i].evaluateMultivariate(double_evaluation_point_);
     }
   }
@@ -144,7 +153,7 @@ class PolynomialConstraint : public Constraint {
       taylor_evaluation_point_[poly_vars_[i]] = x[i];
     }
     y.resize(num_constraints());
-    for (int i = 0; i < num_constraints(); i++) {
+    for (size_t i = 0; i < num_constraints(); i++) {
       y[i] = polynomials_[i].evaluateMultivariate(taylor_evaluation_point_);
     }
   }
@@ -174,7 +183,7 @@ class LinearConstraint : public Constraint {
                    const Eigen::MatrixBase<DerivedLB>& lb,
                    const Eigen::MatrixBase<DerivedUB>& ub)
       : Constraint(a.rows(), lb, ub), A_(a) {
-    assert(a.rows() == lb.rows());
+    DRAKE_ASSERT(a.rows() == lb.rows());
   }
 
   ~LinearConstraint() override {}
@@ -224,7 +233,7 @@ class LinearEqualityConstraint : public LinearConstraint {
   template <typename DerivedA, typename DerivedB>
   void updateConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
                         const Eigen::MatrixBase<DerivedB>& beq) {
-    assert(Aeq.rows() == beq.rows());
+    DRAKE_ASSERT(Aeq.rows() == beq.rows());
     if (Aeq.cols() != A_.cols())
       throw std::runtime_error("Can't change the number of decision variables");
     A_.resize(Aeq.rows(), Eigen::NoChange);

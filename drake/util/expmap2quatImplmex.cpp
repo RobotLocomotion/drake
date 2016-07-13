@@ -1,13 +1,19 @@
 #include <Eigen/Core>
+
+#include "drake/math/autodiff.h"
+#include "drake/math/expmap.h"
 #include "drake/util/mexify.h"
 #include "drake/util/standardMexConversions.h"
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/makeFunction.h"
 #include "drake/core/Gradient.h"
 
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+
+using drake::math::autoDiffToValueMatrix;
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::expmap2quat;
 
 pair<Vector4d, typename Gradient<Vector4d, 3>::type> expmap2quatWithGradient(
     const MatrixBase<Map<const Vector3d>>& expmap) {

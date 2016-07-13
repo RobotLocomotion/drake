@@ -13,8 +13,8 @@ namespace drake {
 namespace systems {
 namespace {
 
-const size_t kLength = 4;
-const size_t kSubVectorLength = 2;
+const int kLength = 4;
+const int kSubVectorLength = 2;
 
 class StateSubvectorTest : public ::testing::Test {
  protected:
@@ -88,29 +88,33 @@ TEST_F(StateSubvectorTest, PlusEq) {
   EXPECT_EQ(4, state_vector_->GetAtIndex(3));
 }
 
-TEST_F(StateSubvectorTest, PlusEqInvalidSize) {
-  BasicStateVector<int> addend(1);
-  StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
-  EXPECT_THROW(subvec += addend, std::out_of_range);
-}
-
 // Tests that a StateSubvector can be added to an Eigen vector.
-TEST_F(StateSubvectorTest, AddToVector) {
+TEST_F(StateSubvectorTest, ScaleAndAddToVector) {
   VectorX<int> target(2);
   target << 100, 1000;
 
   StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
-  subvec.AddToVector(target);
+  subvec.ScaleAndAddToVector(1, target);
 
   Eigen::Vector2i expected;
   expected << 102, 1003;
   EXPECT_EQ(expected, target);
 }
 
+// TODO(david-german-tri): Once GMock is available in the Drake build, add a
+// test case demonstrating that the += operator on StateSubvector calls
+// ScaleAndAddToVector on the addend.
+
+TEST_F(StateSubvectorTest, PlusEqInvalidSize) {
+  BasicStateVector<int> addend(1);
+  StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
+  EXPECT_THROW(subvec += addend, std::out_of_range);
+}
+
 TEST_F(StateSubvectorTest, AddToVectorInvalidSize) {
   VectorX<int> target(3);
   StateSubvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
-  EXPECT_THROW(subvec.AddToVector(target), std::out_of_range);
+  EXPECT_THROW(subvec.ScaleAndAddToVector(1, target), std::out_of_range);
 }
 
 }  // namespace

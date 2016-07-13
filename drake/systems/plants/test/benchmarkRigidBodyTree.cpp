@@ -1,9 +1,15 @@
 #include <cmath>
+
+#include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;
+
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::autoDiffToValueMatrix;
 
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
@@ -49,8 +55,7 @@ void scenario2(
     const vector<pair<Matrix<Scalar, Dynamic, 1>, Matrix<Scalar, Dynamic, 1>>>&
         states) {
   const eigen_aligned_unordered_map<RigidBody const*,
-                                    Matrix<Scalar, TWIST_SIZE, 1>>
-      f_ext;
+                                    drake::TwistVector<Scalar>> f_ext;
   for (const auto& state : states) {
     cache.initialize(state.first, state.second);
     model.doKinematics(cache, true);
@@ -140,11 +145,9 @@ void testScenario2(const RigidBodyTree& model) {
 
   vector<pair<VectorXd, VectorXd>> states_double;
   vector<pair<Matrix<AutoDiffFixedMaxSize, Dynamic, 1>,
-              Matrix<AutoDiffFixedMaxSize, Dynamic, 1>>>
-      states_autodiff_fixed;
+              Matrix<AutoDiffFixedMaxSize, Dynamic, 1>>> states_autodiff_fixed;
   vector<pair<Matrix<AutoDiffDynamicSize, Dynamic, 1>,
-              Matrix<AutoDiffDynamicSize, Dynamic, 1>>>
-      states_autodiff_dynamic;
+              Matrix<AutoDiffDynamicSize, Dynamic, 1>>> states_autodiff_dynamic;
   default_random_engine generator;
 
   for (int i = 0; i < ntests; i++) {

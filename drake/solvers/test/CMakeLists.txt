@@ -1,8 +1,7 @@
-if(GTEST_FOUND)
-  add_executable(testOptimizationProblem testOptimizationProblem.cpp)
-  target_link_libraries(testOptimizationProblem drakeOptimization
-    ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME testOptimizationProblem COMMAND testOptimizationProblem)
+add_executable(testOptimizationProblem testOptimizationProblem.cpp)
+target_link_libraries(testOptimizationProblem drakeOptimization
+  ${GTEST_BOTH_LIBRARIES})
+add_test(NAME testOptimizationProblem COMMAND testOptimizationProblem)
 
   if(mosek_FOUND)
     add_executable(testMosek testMosek.cpp)
@@ -10,15 +9,14 @@ if(GTEST_FOUND)
     add_test(NAME testMosek COMMAND testMosek)
   endif()
 
-  add_executable(testMobyLCP testMobyLCP.cpp)
-  target_link_libraries(testMobyLCP drakeOptimization ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME testMobyLCP COMMAND testMobyLCP)
+add_executable(testMobyLCP testMobyLCP.cpp)
+target_link_libraries(testMobyLCP drakeOptimization ${GTEST_BOTH_LIBRARIES})
+add_test(NAME testMobyLCP COMMAND testMobyLCP)
 
-  add_executable(system_identification_test system_identification_test.cpp)
-  target_link_libraries(system_identification_test
-    drakeOptimization drakePolynomial ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME system_identification_test COMMAND system_identification_test)
-endif()
+add_executable(system_identification_test system_identification_test.cpp)
+target_link_libraries(system_identification_test
+  drakeOptimization drakePolynomial ${GTEST_BOTH_LIBRARIES})
+add_test(NAME system_identification_test COMMAND system_identification_test)
 
 add_matlab_test(NAME solvers/test/gloptipoly_constrained_test COMMAND gloptipoly_constrained_test)
 add_matlab_test(NAME solvers/test/rrt_basic COMMAND rrt_basic)

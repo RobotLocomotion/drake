@@ -4,31 +4,39 @@ endif()
 
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
-if(LCM_FOUND AND MATLAB_FOUND)
+if(lcm_FOUND AND MATLAB_FOUND)
   if(simulink_FOUND)
     add_mex(lcmLogger lcmLogger.cpp)
-    pods_use_pkg_config_packages(lcmLogger lcm)
+    target_link_libraries(lcmLogger lcm)
+    if(WIN32)
+      target_link_libraries(lcmLogger ws2_32)
+    endif()
   endif()
 
   add_mex(publishLCMLog publishLCMLog.cpp)
-  pods_use_pkg_config_packages(publishLCMLog lcm)
+  target_link_libraries(publishLCMLog lcm)
 endif()
 
 add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
+target_link_libraries(drakePolynomial drakeCommon)
+
 pods_install_libraries(drakePolynomial)
 drake_install_headers(Polynomial.h)
 pods_install_pkg_config_file(drake-polynomial
-  LIBS -ldrakePolynomial
+  LIBS -ldrakePolynomial -ldrakeCommon
   REQUIRES
   VERSION 0.0.2)
 
 add_library_with_exports(LIB_NAME drakeUtil SOURCE_FILES drakeUtil.cpp)
+target_link_libraries(drakeUtil drakeCommon)
 drake_install_headers(drakeUtil.h)
 pods_install_libraries(drakeUtil)
 pods_install_pkg_config_file(drake-util
   LIBS -ldrakeUtil
   REQUIRES
   VERSION 0.0.1)
+
+drake_install_headers(drakeAppUtil.h)
 
 if(MATLAB_FOUND)
   add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
@@ -44,12 +52,12 @@ if(MATLAB_FOUND)
     VERSION 0.0.1)
 endif()
 
-if(LCM_FOUND)
+if(lcm_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
   # we only need methods that are templated and defined in the header
 
   add_library_with_exports(LIB_NAME drakeLCMUtil SOURCE_FILES lcmUtil.cpp)
-  add_dependencies(drakeLCMUtil drake_lcmtypes lcmtype_agg_hpp)
+  add_dependencies(drakeLCMUtil drake_lcmtypes_hpp)
   target_link_libraries(drakeLCMUtil drakeTrajectories)
   drake_install_headers(lcmUtil.h)
   pods_install_libraries(drakeLCMUtil)
@@ -62,10 +70,11 @@ endif()
 drake_install_headers(drakeGradientUtil.h)
 
 add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUtil.cpp)
+target_link_libraries(drakeGeometryUtil drakeCommon)
 pods_install_libraries(drakeGeometryUtil)
 drake_install_headers(drakeGeometryUtil.h)
 pods_install_pkg_config_file(drake-geometry-util
-  LIBS -ldrakeGeometryUtil
+  LIBS -ldrakeGeometryUtil -ldrakeCommon
   REQUIRES
   VERSION 0.0.1)
 
@@ -79,9 +88,9 @@ pods_install_pkg_config_file(drake-convex-hull
 
 if(MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
-  target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil)
+  target_link_libraries(cylindrical2cartesianmex drakeMath)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
-  target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil)
+  target_link_libraries(cartesian2cylindricalmex drakeMath)
 
   add_mex(quat2expmapmex quat2expmapmex.cpp)
   target_link_libraries(quat2expmapmex drakeMexUtil drakeGeometryUtil)

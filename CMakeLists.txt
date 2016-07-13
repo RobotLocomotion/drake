@@ -47,19 +47,6 @@ function(drake_forceupdate proj)
   endif()
 endfunction()
 
-function(drake_forcebuild proj)
-  if(CMAKE_CONFIGURATION_TYPES)
-    set(build_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/${proj}-prefix/src/${proj}-stamp/${CMAKE_CFG_INTDIR}/${proj}-build")
-  else()
-    set(build_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/${proj}-prefix/src/${proj}-stamp/${proj}-build")
-  endif()
-  ExternalProject_Add_Step(${proj} forcebuild
-    COMMAND ${CMAKE_COMMAND} -E remove ${build_stamp_file}
-    COMMENT "Forcing build step for '${proj}'"
-    DEPENDEES build
-    ALWAYS 1)
-endfunction()
-
 # Require Java at the super-build level since libbot cannot configure without finding Java
 find_package(Java 1.6 REQUIRED)
 include(UseJava)
@@ -198,6 +185,10 @@ set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
 set(lcm_IS_CMAKE_POD TRUE)
 set(lcm_IS_PUBLIC TRUE)
+set(lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON)
+if(WITH_GTK)
+  set(lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS ${lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS} -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_SOURCE_DIR}/externals/gtk/gtk3)
+endif()
 set(libbot_IS_CMAKE_POD TRUE)
 set(libbot_IS_PUBLIC TRUE)
 set(bot_core_lcmtypes_IS_CMAKE_POD TRUE)
@@ -328,18 +319,22 @@ foreach(proj ${EXTERNAL_PROJECTS})
     # Compute the path to the submodule for this external.
     file(RELATIVE_PATH ${proj}_GIT_SUBMODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_SOURCE_DIR})
 
+    # Initialize the submodule configuration now so parallel downloads do not conflict later.
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- ${${proj}_GIT_SUBMODULE_PATH}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
     # Download externals as Git submodules.
     set(${proj}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${${proj}_GIT_SUBMODULE_PATH})
 
     if(AUTO_UPDATE_EXTERNALS)
       set(${proj}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${proj}_DOWNLOAD_COMMAND})
+
+      # Synchronize the submodule url now so parallel updates do not conflict later.
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule sync -- ${${proj}_GIT_SUBMODULE_PATH}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     else()
       set(${proj}_UPDATE_COMMAND "")
     endif()
-
-    # Initialize the submodule configuration now so parallel downloads do not conflict later.
-    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- ${${proj}_GIT_SUBMODULE_PATH}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
     # now the actual project
     if(${proj}_IS_CMAKE_POD)
@@ -364,6 +359,7 @@ foreach(proj ${EXTERNAL_PROJECTS})
         DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
         DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
         UPDATE_COMMAND ${${proj}_UPDATE_COMMAND}
+        BUILD_ALWAYS 1
         INDEPENDENT_STEP_TARGETS update
         DEPENDS ${deps}
         ${COMMON_CMAKE_ARGS}
@@ -371,7 +367,6 @@ foreach(proj ${EXTERNAL_PROJECTS})
         ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
         ${${proj}_ADDITIONAL_BUILD_ARGS})
       drake_forceupdate(${proj})
-      drake_forcebuild(${proj})
     else() # not a CMake POD
       if(NOT ${proj}_BINARY_DIR)
         # In-source build for non-CMake projects.
@@ -392,6 +387,12 @@ foreach(proj ${EXTERNAL_PROJECTS})
         endif()
       endif()
 
+      if(${proj}_BUILD_COMMAND)
+        set(${proj}_BUILD_ALWAYS 1)
+      else()
+        set(${proj}_BUILD_ALWAYS 0)
+      endif()
+
       ExternalProject_Add(${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
         BINARY_DIR ${${proj}_BINARY_DIR}
@@ -401,13 +402,11 @@ foreach(proj ${EXTERNAL_PROJECTS})
         INDEPENDENT_STEP_TARGETS update
         CONFIGURE_COMMAND ""
         BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
+        BUILD_ALWAYS "${${proj}_BUILD_ALWAYS}"
         INSTALL_COMMAND ""
         DEPENDS ${deps}
         ${${proj}_ADDITIONAL_BUILD_ARGS})
       drake_forceupdate(${proj})
-      if(${proj}_BUILD_COMMAND)
-        drake_forcebuild(${proj})
-      endif()
       # message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
     endif()
   else()
@@ -426,12 +425,12 @@ foreach(proj ${EXTERNAL_PROJECTS})
       DOWNLOAD_COMMAND ""
       UPDATE_COMMAND ""
       BINARY_DIR ${drake_BINARY_DIR}
+      BUILD_ALWAYS 1
       DEPENDS ${deps}
       ${COMMON_CMAKE_ARGS}
       ${PODS_VERBOSE_MAKEFILE}
       ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
       ${${proj}_ADDITIONAL_BUILD_ARGS})
-    drake_forcebuild(${proj})
   endif()
 
 endforeach()
@@ -484,10 +483,18 @@ foreach(example IN ITEMS LittleDog)
   if(EXAMPLES_${example_upper})
     message(STATUS "Installation will include extra example: ${example}")
 
+    # Initialize the submodule configuration now so parallel downloads do not conflict later.
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- drake/examples/${example}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
     # Download examples as Git submodules.
     set(${example}_DOWNLOAD_COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- drake/examples/${example})
     if(AUTO_UPDATE_EXTERNALS)
       set(${example}_UPDATE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR} ${${example}_DOWNLOAD_COMMAND})
+
+      # Synchronize the submodule url now so parallel updates do not conflict later.
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule sync -- drake/examples/${example}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     else()
       set(${example}_UPDATE_COMMAND "")
     endif()
@@ -503,10 +510,6 @@ foreach(example IN ITEMS LittleDog)
     drake_forceupdate(download-${example})
     add_dependencies(drake download-${example})
     add_dependencies(download-all download-${example})
-
-    # Initialize the submodule configuration now so parallel downloads do not conflict later.
-    execute_process(COMMAND ${GIT_EXECUTABLE} submodule init -- drake/examples/${example}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
 endforeach()
 

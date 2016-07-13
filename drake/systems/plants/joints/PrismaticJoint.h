@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "FixedAxisOneDoFJoint.h"
 
 class DRAKEJOINTS_EXPORT PrismaticJoint
@@ -19,7 +21,7 @@ class DRAKEJOINTS_EXPORT PrismaticJoint
             *this, name, transform_to_parent_body,
             spatialJointAxis(translation_axis)),
         translation_axis(translation_axis) {
-    assert(std::abs(translation_axis.norm() - 1.0) < 1e-10);
+    DRAKE_ASSERT(std::abs(translation_axis.norm() - 1.0) < 1e-10);
   }
 
   template <typename DerivedQ>
@@ -36,7 +38,7 @@ class DRAKEJOINTS_EXPORT PrismaticJoint
   virtual ~PrismaticJoint() {}
 
  private:
-  static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(
+  static drake::TwistVector<double> spatialJointAxis(
       const Eigen::Vector3d& translation_axis);
 
  public:

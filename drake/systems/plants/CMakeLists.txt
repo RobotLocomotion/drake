@@ -2,24 +2,46 @@
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # TODO(#2372) These are warnings that we can't handle yet.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+endif()
+
 add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
-target_link_libraries(drakeXMLUtil tinyxml2 spruce)
+target_link_libraries(drakeXMLUtil drakeCommon tinyxml2 spruce)
 pods_install_libraries(drakeXMLUtil)
+drake_install_headers(xmlUtil.h)
 pods_install_pkg_config_file(drake-xml-util
-  LIBS -ldrakeXMLUtil
+  LIBS -ldrakeXMLUtil -ldrakeCommmon -ltinyxml2 -lspruce
   REQUIRES
   VERSION 0.0.1)
 
-add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeSDF.cpp RigidBodyTreeContact.cpp)
+add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
+  parser_sdf.cc
+  parser_urdf.cc
+  RigidBodyTree.cpp
+  RigidBody.cpp
+  RigidBodyTreeContact.cpp
+  rigid_body_frame.cc)
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
 pods_install_libraries(drakeRBM)
-drake_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h)
+drake_install_headers(
+  ConstraintWrappers.h
+  ForceTorqueMeasurement.h
+  KinematicPath.h
+  KinematicsCache.h
+  material_map.h
+  pose_map.h
+  RigidBodyFrame.h
+  RigidBody.h
+  RigidBodyTree.h
+  parser_sdf.h
+  parser_urdf.h)
+
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
   REQUIRES
   VERSION 0.0.1)
-
-drake_install_headers(BotVisualizer.h)
 
 pods_find_pkg_config(gurobi)
 pods_find_pkg_config(snopt_c)
@@ -76,7 +98,7 @@ if(MATLAB_FOUND)
   target_link_libraries(computeS1Trajmex drakeZMPUtil)
 
   if(gurobi_FOUND)
-    add_definitions(-DPATHLCP_MEXFILE=\"${PROJECT_SOURCE_DIR}/thirdParty/path/lcppath.${MEX_EXT}\")
+    add_definitions(-DPATHLCP_MEXFILE=\"${PROJECT_SOURCE_DIR}/thirdParty/misc/pathlcp/lcppath.${MEX_EXT}\")
     add_mex(solveLCPmex solveLCPmex.cpp)
     target_link_libraries(solveLCPmex drakeRBM drakeMexUtil drakeQP)
   endif()
@@ -118,7 +140,7 @@ if(drakeIK_SRC_FILES)
   target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
   pods_install_libraries(drakeIK)
   pods_install_libraries(drakeIKoptions)
-  drake_install_headers(RigidBodyIK.h IKoptions.h)
+  drake_install_headers(RigidBodyIK.h IKoptions.h inverseKinBackend.h)
   pods_install_pkg_config_file(drake-ik
     LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
     REQUIRES drake-rbm
@@ -145,21 +167,21 @@ if(MATLAB_FOUND)
   endif()
 endif()
 
-if(LCM_FOUND)
-  add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
-  target_link_libraries(drakeRBSystem drakeRBM drakeLCMSystem drakeOptimization drakeRigidBodyConstraint)
+add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
+target_link_libraries(drakeRBSystem drakeRBM drakeOptimization drakeRigidBodyConstraint)
 
-  drake_install_headers(RigidBodySystem.h)
-  pods_install_libraries(drakeRBSystem)
-  pods_install_pkg_config_file(drake-rbsystem
-    CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
-    LIBS -ldrakeRBSystem -ldrakeRBM -ldrakeLCMSystem -ldrakeOptimization -ldrakeRigidBodyConstraint
-    REQUIRES lcm
-    VERSION 0.0.1)
+drake_install_headers(RigidBodySystem.h)
+pods_install_libraries(drakeRBSystem)
+pods_install_pkg_config_file(drake-rbsystem
+  CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
+  LIBS -ldrakeRBSystem -ldrakeRBM -ldrakeOptimization -ldrakeRigidBodyConstraint
+  VERSION 0.0.1)
 
+if(lcm_FOUND)
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
-  target_link_libraries(rigidBodyLCMNode drakeRBSystem)
+  target_link_libraries(rigidBodyLCMNode drakeRBSystem drakeLCMSystem threads)
   pods_install_executables(rigidBodyLCMNode)
+  drake_install_headers(BotVisualizer.h)
 endif()
 
 add_subdirectory(test)

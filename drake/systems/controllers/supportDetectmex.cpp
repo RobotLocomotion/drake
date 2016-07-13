@@ -1,3 +1,4 @@
+#include "drake/common/drake_assert.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/util/drakeMexUtil.h"
 
@@ -19,7 +20,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   struct SupportDetectData* pdata;
   //   mxArray* pm;
   double* pr;
-  int i, j;
 
   if (mxGetScalar(prhs[0]) == 0) {  // then construct the data object and return
     pdata = new struct SupportDetectData;
@@ -75,7 +75,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   double* double_contact_sensor = mxGetPr(prhs[narg]);
   int len = static_cast<int>(mxGetNumberOfElements(prhs[narg++]));
   VectorXi contact_sensor(len);
-  for (i = 0; i < len; i++) contact_sensor(i) = (int)double_contact_sensor[i];
+  for (int i = 0; i < len; i++)
+    contact_sensor(i) = (int)double_contact_sensor[i];
   double contact_threshold = mxGetScalar(prhs[narg++]);
 
   int contact_logic_AND =
@@ -109,9 +110,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       mxContactPts = mxGetField(prhs[desired_support_argid], 0, "contact_pts");
     if (!mxContactPts) mexErrMsgTxt("couldn't get contact points");
 
-    for (i = 0; i < mxGetNumberOfElements(mxBodies); i++) {
+    for (size_t i = 0; i < mxGetNumberOfElements(mxBodies); i++) {
       mxArray* mxBodyContactPts = mxGetCell(mxContactPts, i);
-      assert(mxGetM(mxBodyContactPts) == 3);
+      DRAKE_ASSERT(mxGetM(mxBodyContactPts) == 3);
       int nc = static_cast<int>(mxGetN(mxBodyContactPts));
       if (nc < 1) continue;
 
@@ -121,7 +122,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
       SupportStateElement se;
       se.body_idx = (int)pBodies[i] - 1;
-      for (j = 0; j < nc; j++) {
+      for (int j = 0; j < nc; j++) {
         se.contact_pts.push_back(all_body_contact_pts.col(j));
       }
 

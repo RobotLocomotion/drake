@@ -4,8 +4,9 @@
 #include <string>
 
 #include "drake/Path.h"
-#include "drake/thirdParty/tinydir/tinydir.h"
-#include "drake/util/drakeGeometryUtil.h"
+#include "drake/common/drake_assert.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/thirdParty/bsd/tinydir/tinydir.h"
 #include "xmlUtil.h"
 
 using namespace std;
@@ -185,7 +186,7 @@ void originAttributesToTransform(tinyxml2::XMLElement* node,
   parseVectorAttribute(node, "xyz", xyz);
   parseVectorAttribute(node, "rpy", rpy);
 
-  T.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  T.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 }
 
 void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
@@ -198,18 +199,16 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
     s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
   }
 
-  T.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  T.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 
   const char* attr = node->Attribute("frame");
   if (attr && strlen(attr) > 0) {
     std::string frame;
     std::stringstream s(attr);
     s >> frame;
-    assert(0 && "this has not been tested yet");  // and could cause problems
-                                                  // with the default pose
-                                                  // assumptions in the sdf
-                                                  // parser, which I simply had
-                                                  // to guess
+    // This could cause problems with the default pose assumptions in
+    // the sdf parser, which I simply had to guess.
+    DRAKE_ASSERT(0 && "this has not been tested yet");
     Eigen::Isometry3d T_frame =
         pose_map.at(frame);  // will throw an exception if the frame is not
                              // found.  that is the desired behavior.

@@ -10,7 +10,6 @@
 
 #include "Element.h"
 #include "Model.h"
-#include "BulletResultCollector.h"
 
 namespace DrakeCollision {
 
@@ -150,9 +149,8 @@ class BulletModel : public Model {
    * the closest points can be identified.  Otherwise emits nothing and
    * returns false.
    */
-  virtual bool findClosestPointsBetweenElements(
-      const ElementId idA, const ElementId idB, const bool use_margins,
-      ResultCollector* result_collector);
+  virtual PointPair findClosestPointsBetweenElements(
+      const ElementId idA, const ElementId idB, const bool use_margins);
 
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletBoxShape(
@@ -164,6 +162,8 @@ class BulletModel : public Model {
   static std::unique_ptr<btCollisionShape> newBulletCapsuleShape(
       const DrakeShapes::Capsule& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletMeshShape(
+      const DrakeShapes::Mesh& geometry, bool use_margins);
+  static std::unique_ptr<btCollisionShape> newBulletStaticMeshShape(
       const DrakeShapes::Mesh& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletMeshPointsShape(
       const DrakeShapes::MeshPoints& geometry, bool use_margins);

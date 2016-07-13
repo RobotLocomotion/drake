@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <limits>
 #include <stdexcept>
 #include <vector>
@@ -26,8 +27,6 @@ class BasicVector : public VectorInterface<T> {
             size, std::numeric_limits<
                       typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
 
-  ~BasicVector() override {}
-
   void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
     if (value.rows() != values_.rows()) {
       throw std::out_of_range(
@@ -37,9 +36,9 @@ class BasicVector : public VectorInterface<T> {
     values_ = value;
   }
 
-  ptrdiff_t size() const override { return values_.rows(); }
+  int size() const override { return static_cast<int>(values_.rows()); }
 
-  const Eigen::VectorBlock<const VectorX<T>> get_value() const override {
+  Eigen::VectorBlock<const VectorX<T>> get_value() const override {
     return values_.head(values_.rows());
   }
 
@@ -47,7 +46,24 @@ class BasicVector : public VectorInterface<T> {
     return values_.head(values_.rows());
   }
 
+  /// Copies the entire state to a new BasicVector.
+  ///
+  /// Uses the Non-Virtual Interface idiom because smart pointers do not have
+  /// type covariance.
+  std::unique_ptr<VectorInterface<T>> Clone() const final {
+    return std::unique_ptr<VectorInterface<T>>(DoClone());
+  }
+
  private:
+  // Returns a new BasicStateVector containing a copy of the entire state.
+  // Subclasses of BasicVector must override DoClone to return their covariant
+  // type.
+  virtual BasicVector<T>* DoClone() const {
+    BasicVector* clone = new BasicVector(size());
+    clone->values_ = values_;
+    return clone;
+  }
+
   // The column vector of T values.
   VectorX<T> values_;
 };

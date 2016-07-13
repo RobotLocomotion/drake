@@ -1,3 +1,5 @@
+#include "drake/common/drake_assert.h"
+#include "drake/math/quaternion.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/drakeMexUtil.h"
 #include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
@@ -93,7 +95,7 @@ PiecewisePolynomial<double> matlabCoefsAndBreaksToPiecewisePolynomial(
   const int kNumDims = 3;
   mwSize dims[kNumDims];
   size_t num_dims_mex = mxGetNumberOfDimensions(mex_coefs);
-  for (int i = 0; i < num_dims_mex; i++) {
+  for (size_t i = 0; i < num_dims_mex; i++) {
     dims[i] = mxGetDimensions(mex_coefs)[i];
   }
   for (int i = num_dims_mex; i < kNumDims; i++) {
@@ -162,7 +164,7 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports) {
     auto body_ids = matlabToStdVector<int>(
         mxGetFieldOrPropertySafe(mex_supports, support_num, "bodies"));
     support_state.reserve(body_ids.size());
-    for (int i = 0; i < body_ids.size(); ++i) {
+    for (size_t i = 0; i < body_ids.size(); ++i) {
       RigidBodySupportStateElement support_state_element;
       support_state_element.body = body_ids[i] - 1;  // base 1 to base zero
       support_state_element.contact_points = matlabToEigenMap<3, Dynamic>(
@@ -182,11 +184,12 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports) {
 
 std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap>
 setUpContactGroups(RigidBodyTree* robot, const mxArray* mex_contact_groups) {
-  assert(mxGetNumberOfElements(mex_contact_groups) == robot->bodies.size());
+  DRAKE_ASSERT(mxGetNumberOfElements(mex_contact_groups) ==
+               robot->bodies.size());
   std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap>
       contact_groups;
   contact_groups.reserve(robot->bodies.size());
-  for (int body_id = 0; body_id < robot->bodies.size(); body_id++) {
+  for (size_t body_id = 0; body_id < robot->bodies.size(); body_id++) {
     const mxArray* mex_contact_group = mxGetCell(mex_contact_groups, body_id);
     QPLocomotionPlanSettings::ContactNameToContactPointsMap contact_group;
     for (int field_number = 0;
@@ -223,7 +226,7 @@ std::vector<BodyMotionData> setUpBodyMotions(const mxArray* mex_body_motions) {
     auto quat_task_to_world = matlabToEigenMap<4, 1>(
         mxGetPropertySafe(mex_body_motions, i, "quat_task_to_world"));
     body_motion_data.transform_task_to_world.linear() =
-        quat2rotmat(quat_task_to_world);
+        drake::math::quat2rotmat(quat_task_to_world);
     body_motion_data.transform_task_to_world.translation() =
         matlabToEigenMap<3, 1>(mxGetPropertySafe(mex_body_motions, i,
                                                  "translation_task_to_world"));
@@ -338,7 +341,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   settings.plan_shift_body_motion_indices = matlabToStdVector<Eigen::Index>(
       mxGetPropertySafe(mex_settings, "plan_shift_body_motion_inds"));
   addOffset(settings.plan_shift_body_motion_indices,
-            (Eigen::Index) - 1);  // base 1 to base 0
+            (Eigen::Index)-1);  // base 1 to base 0
   settings.g = mxGetScalar(mxGetPropertySafe(mex_settings, "g"));
   settings.is_quasistatic =
       mxGetLogicals(mxGetPropertySafe(mex_settings, "is_quasistatic"))[0];

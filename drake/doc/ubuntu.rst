@@ -15,7 +15,7 @@ Install Prerequisites
 C++ Compiler
 ------------
 
-A compiler supporting C++11 or higher is required. The installation process
+A compiler supporting C++14 or higher is required. The installation process
 differs depending on which version of Ubuntu is being used.
 
 Ubuntu 15.10 (Wily)

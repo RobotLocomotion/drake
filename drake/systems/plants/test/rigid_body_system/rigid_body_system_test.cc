@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/Path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
@@ -37,18 +38,18 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   const std::shared_ptr<RigidBodyTree>& tree =
       rigid_body_sys->getRigidBodyTree();
 
-  // Checks that the links in the world can be obtained and they have the
+  // Checks that the bodies in the world can be obtained and they have the
   // correct model name.
-  for (auto& link_name :
+  for (auto& body_name :
        {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
-    RigidBody* link_ptr = tree->findLink(link_name);
-    EXPECT_NE(link_ptr, nullptr);
-    EXPECT_EQ(link_ptr->model_name(), "dual_ramps");
+    RigidBody* body = tree->FindBody(body_name);
+    EXPECT_NE(body, nullptr);
+    EXPECT_EQ(body->model_name(), "dual_ramps");
   }
 }
 
 // Tests the ability to load a SDF multiple times into the same rigid body
-// system. The SDF contains more than one model and sensor on each link.
+// system. The SDF contains more than one model and a sensor on each body.
 GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // Instantiates a rigid body system.
   std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
@@ -66,7 +67,8 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
     Eigen::Vector3d xyz, rpy;
     xyz << 1, 1, 1;
     rpy = Eigen::Vector3d::Zero();
-    T_second_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_second_model_to_world.matrix()
+        << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
@@ -110,54 +112,54 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   const std::shared_ptr<RigidBodyTree>& tree =
       rigid_body_sys->getRigidBodyTree();
 
-  // Checks that an exception is thrown if we try to find a link using a
-  // non-existent link name.
-  EXPECT_THROW(tree->findLink("non-existent-link"), std::logic_error);
+  // Checks that an exception is thrown if we try to find a body using a
+  // non-existent body name.
+  EXPECT_THROW(tree->FindBody("non-existent-link"), std::logic_error);
 
-  // Checks that an exception is thrown if we try to find a link using a
-  // non-unique link name.
-  EXPECT_THROW(tree->findLink("link_1"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_2"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_3"), std::logic_error);
+  // Checks that an exception is thrown if we try to find a body using a
+  // non-unique body name.
+  EXPECT_THROW(tree->FindBody("link_1"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_2"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_3"), std::logic_error);
 
-  // Checks that an exception is thrown if we try to find a link using a
-  // non-unique link name and model name.
-  EXPECT_THROW(tree->findLink("link_1", "model_1"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_2", "model_1"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_3", "model_1"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_1", "model_2"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_2", "model_2"), std::logic_error);
-  EXPECT_THROW(tree->findLink("link_3", "model_2"), std::logic_error);
+  // Checks that an exception is thrown if we try to find a body using a
+  // non-unique body name and model name.
+  EXPECT_THROW(tree->FindBody("link_1", "model_1"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_2", "model_1"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_3", "model_1"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_1", "model_2"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_2", "model_2"), std::logic_error);
+  EXPECT_THROW(tree->FindBody("link_3", "model_2"), std::logic_error);
 
-  // Checks that a link can be obtained when we specify the link's name and
+  // Checks that a body can be obtained when we specify the body's name and
   // model ID.
-  EXPECT_NE(tree->findLink("link_1", "", 0), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "", 1), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "", 2), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "", 3), nullptr);
-  EXPECT_NE(tree->findLink("link_2", "", 0), nullptr);
-  EXPECT_NE(tree->findLink("link_2", "", 1), nullptr);
-  EXPECT_NE(tree->findLink("link_2", "", 2), nullptr);
-  EXPECT_NE(tree->findLink("link_2", "", 3), nullptr);
-  EXPECT_NE(tree->findLink("link_3", "", 0), nullptr);
-  EXPECT_NE(tree->findLink("link_3", "", 1), nullptr);
-  EXPECT_NE(tree->findLink("link_3", "", 2), nullptr);
-  EXPECT_NE(tree->findLink("link_3", "", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "", 3), nullptr);
 
-  // Checks that a link can be obtained when we specify the link's name, model
+  // Checks that a body can be obtained when we specify the body's name, model
   // name, and model ID.
-  EXPECT_NE(tree->findLink("link_1", "model_1", 0), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "model_2", 1), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "model_1", 2), nullptr);
-  EXPECT_NE(tree->findLink("link_1", "model_2", 3), nullptr);
-  EXPECT_NE(tree->findLink("link_2", "model_1", 0), nullptr);
-  EXPECT_NE(tree->findLink("link_2", "model_2", 1), nullptr);
-  EXPECT_NE(tree->findLink("link_2", "model_1", 2), nullptr);
-  EXPECT_NE(tree->findLink("link_2", "model_2", 3), nullptr);
-  EXPECT_NE(tree->findLink("link_3", "model_1", 0), nullptr);
-  EXPECT_NE(tree->findLink("link_3", "model_2", 1), nullptr);
-  EXPECT_NE(tree->findLink("link_3", "model_1", 2), nullptr);
-  EXPECT_NE(tree->findLink("link_3", "model_2", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_1", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_2", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_1", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_2", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_1", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_2", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_1", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_2", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_1", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_2", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_1", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_2", 3), nullptr);
 
   // Checks that we cannot access a non-existent joint.
   EXPECT_THROW(tree->findJoint("non-existent-joint"), std::logic_error);
@@ -204,7 +206,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
     // Asserts that the exception is thrown when FindBodyIndexByJointName()
     // fails to find a non-existing joint.
     EXPECT_TRUE(std::string(error.what()).find("FindBodyIndexByJointName") !=
-      std::string::npos);
+                std::string::npos);
   }
 }
 

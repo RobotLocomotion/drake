@@ -1,5 +1,6 @@
 #include "ContinuityConstraint.h"
-#include <cassert>
+
+#include "drake/common/drake_assert.h"
 
 ContinuityConstraint::ContinuityConstraint(int derivative_order,
                                            int first_spline_index,
@@ -7,10 +8,10 @@ ContinuityConstraint::ContinuityConstraint(int derivative_order,
     : derivative_order(derivative_order),
       first_spline_index(first_spline_index),
       second_spline_index(second_spline_index) {
-  assert(derivative_order >= 0);
-  assert(first_spline_index >= 0);
-  assert(second_spline_index >= 0);
-  assert(first_spline_index != second_spline_index);
+  DRAKE_ASSERT(derivative_order >= 0);
+  DRAKE_ASSERT(first_spline_index >= 0);
+  DRAKE_ASSERT(second_spline_index >= 0);
+  DRAKE_ASSERT(first_spline_index != second_spline_index);
 }
 
 int ContinuityConstraint::getDerivativeOrder() const {

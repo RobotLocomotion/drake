@@ -8,7 +8,7 @@
 
 #include "drake/drakeXMLUtil_export.h"
 #include "drake/systems/plants/pose_map.h"
-#include "drake/thirdParty/tinyxml2/tinyxml2.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 template <typename Scalar>
 bool parseScalarValue(tinyxml2::XMLElement* node, Scalar& val) {
@@ -158,6 +158,24 @@ DRAKEXMLUTIL_EXPORT void poseValueToTransform(
 
 typedef std::map<std::string, std::string> PackageMap;
 DRAKEXMLUTIL_EXPORT void populatePackageMap(PackageMap& package_map);
+
+/// Resolves the fully-qualified name of a file. If @p filename starts with
+/// "package:", the ROS packages specified in @p package_map are searched.
+/// Otherwise, @p filename is appended to the end of @p root_dir and checked
+/// for existence. If the file does not exist or is not found, a warning is
+/// printed to `std::cerr` and an empty string is returned.
+///
+/// @param[in] filename The name of the file to find.
+///
+/// @param[in] package_map A map where the keys are ROS package names and the
+/// values are the paths to the packages. This is only used if @p filename
+/// starts with "package:".
+///
+/// @param[in] root_dir The root directory to look in. This is only used when
+/// assuming @p filename does not start with "package:".
+///
+/// @return The file's fully-qualified name or an empty string if the file is
+/// not found or does not exist.
 DRAKEXMLUTIL_EXPORT std::string resolveFilename(const std::string& filename,
                                                 const PackageMap& package_map,
                                                 const std::string& root_dir);

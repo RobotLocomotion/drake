@@ -16,11 +16,15 @@ Unreleased: changes on master, not yet released
 [//]: # "New functionality or APIs."
 ### Added
 
- - None
+ - [#2602][] Added `DRAKE_ASSERT` and `DRAKE_ABORT_UNLESS` macros to replace
+ built-in `assert()` macro.
+ - [#2621][] Added `DRAKE_DEPRECATED` macro for portable deprecation.
 
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2666][] Changed `TWIST_SIZE` to `drake::kTwistSize`
+ - [#2597][] Changed `RigidBodyTree::findLink()` to be `RigidBodyTree::FindBody()`.
  - [#2426][] Changed `RigidBodyTree::findLinkId()` to be `RigidBodyTree::FindBodyIndex()`. Updated APIs of `RigidBodyTree`, `RigidBody`, `RigidBodyTree`, and `RigidBodyFrame` to support notion of a "model ID" that uniquely identifies a model within a `RigidBodySystem`. This enables the same SDF file to be loaded multiple times into the same `RigidBodySystem`.
  - [#2303][] The following member variables should now be accessed via accessor methods: `RigidBody::linkname`, `RigidBody::model_name`, `RigidBodyTree::num_positions`, and `RigidBodyTree::num_velocities`.
  - [#2325][] The following member variable should now be accessed via an accessor method: `RigidBodyConstraint::robot`.
@@ -29,6 +33,7 @@ Unreleased: changes on master, not yet released
  - [#1953][] Replace `valuecheckMatrix()` with `CompareMatrices()`.
  - [#2018][] Fix capitalization of `Constraint` and `OptimizationProblem` APIs to match style guide.
  - [#2415][] Require CMake 3.5 or higher to configure and build.
+ - [#2779][] Move some rotation functions from drakeGeometryUtil to drake/math.
 
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
@@ -71,3 +76,8 @@ Changes in version v0.9.11 and before are not provided.
 [#2303]: https://github.com/RobotLocomotion/drake/issues/2303
 [#2325]: https://github.com/RobotLocomotion/drake/issues/2325
 [#2426]: https://github.com/RobotLocomotion/drake/issues/2426
+[#2597]: https://github.com/RobotLocomotion/drake/issues/2597
+[#2602]: https://github.com/RobotLocomotion/drake/issues/2602
+[#2621]: https://github.com/RobotLocomotion/drake/issues/2621
+[#2666]: https://github.com/RobotLocomotion/drake/issues/2666
+[#2779]: https://github.com/RobotLocomotion/drake/issues/2779

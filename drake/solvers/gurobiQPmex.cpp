@@ -104,7 +104,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   arg++;
 
   if (nrhs > arg && mxGetNumberOfElements(prhs[arg]) > 0) {
-    if (nparams != mxGetNumberOfElements(prhs[arg]))
+    if (nparams != static_cast<int>(mxGetNumberOfElements(prhs[arg])))
       mexErrMsgTxt("lb must be the same size as f");
     memcpy(lb.data(), mxGetPr(prhs[arg]), sizeof(double) * lb.rows());
   } else {
@@ -113,7 +113,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   arg++;
 
   if (nrhs > arg && mxGetNumberOfElements(prhs[arg]) > 0) {
-    if (nparams != mxGetNumberOfElements(prhs[arg]))
+    if (nparams != static_cast<int>(mxGetNumberOfElements(prhs[arg])))
       mexErrMsgTxt("ub must be the same size as f");
     memcpy(ub.data(), mxGetPr(prhs[arg]), sizeof(double) * ub.rows());
   } else {
@@ -124,7 +124,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   set<int> active;
   if (nrhs > arg) {
     double* pact = mxGetPr(prhs[arg]);
-    for (int i = 0; i < mxGetNumberOfElements(prhs[arg]); i++)
+    for (int i = 0; i < static_cast<int>(mxGetNumberOfElements(prhs[arg])); i++)
       active.insert((int)pact[i]);
   }
 

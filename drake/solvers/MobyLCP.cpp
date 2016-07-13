@@ -14,6 +14,7 @@
 #include <sstream>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "Optimization.h"
 
 namespace drake {
@@ -50,9 +51,9 @@ void selectSubVec(const Eigen::MatrixBase<Derived>& in,
 template <typename DerivedA, typename DerivedB, typename F>
 void transformVecElements(const Eigen::MatrixBase<DerivedA>& in,
                           Eigen::MatrixBase<DerivedB>* out, F func) {
-  assert(in.cols() == 1);
-  assert(out->cols() == 1);
-  assert(in.rows() == out->rows());
+  DRAKE_ASSERT(in.cols() == 1);
+  DRAKE_ASSERT(out->cols() == 1);
+  DRAKE_ASSERT(in.rows() == out->rows());
   for (int i = 0; i < in.rows(); i++) {
     (*out)(i) = func(in(i), (*out)(i));
   }
@@ -61,7 +62,7 @@ void transformVecElements(const Eigen::MatrixBase<DerivedA>& in,
 template <typename Derived>
 Eigen::SparseVector<double> makeSparseVector(
     const Eigen::MatrixBase<Derived>& in) {
-  assert(in.cols() == 1);
+  DRAKE_ASSERT(in.cols() == 1);
   Eigen::SparseVector<double> out(in.rows());
   for (int i = 0; i < in.rows(); i++) {
     if (in(i) != 0.0) {
@@ -123,10 +124,10 @@ SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
   // Restriction 3 could reasonably be relaxed to simply let unbound
   // variables sit at 0.
 
-  assert(prog.generic_constraints().empty());
-  assert(prog.generic_objectives().empty());
-  assert(prog.GetAllLinearConstraints().empty());
-  assert(prog.bounding_box_constraints().empty());
+  DRAKE_ASSERT(prog.generic_constraints().empty());
+  DRAKE_ASSERT(prog.generic_costs().empty());
+  DRAKE_ASSERT(prog.GetAllLinearConstraints().empty());
+  DRAKE_ASSERT(prog.bounding_box_constraints().empty());
 
   const auto& bindings = prog.linear_complementarity_constraints();
 
@@ -139,7 +140,7 @@ SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
         coverings++;
       }
     }
-    assert(coverings == 1);
+    DRAKE_ASSERT(coverings == 1);
   }
 
   // Solve each individual LCP, writing the result back to the decision
@@ -649,7 +650,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
   Eigen::Index min_x;
   const double min_x_val = _x.topRows(n).minCoeff(&min_x);
   double tval = -min_x_val;
-  for (int i = 0; i < _nonbas.size(); i++) {
+  for (size_t i = 0; i < _nonbas.size(); i++) {
     _bas.push_back(_nonbas[i] + n);
   }
   lvindex = min_x;
@@ -778,7 +779,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
 
     // check whether artificial index among these
     _tlist.clear();
-    for (int i = 0; i < _j.size(); i++) {
+    for (size_t i = 0; i < _j.size(); i++) {
       _tlist.push_back(_bas[_j[i]]);
     }
     if (std::find(_tlist.begin(), _tlist.end(), t) != _tlist.end()) {
@@ -1043,7 +1044,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
         }
       }
     }
-    for (int i = 0, j = _bas.size(); i < _nonbas.size(); i++, j++) {
+    for (size_t i = 0, j = _bas.size(); i < _nonbas.size(); i++, j++) {
       triplet_list.push_back(Triplet(_nonbas[i], j, 1.0));
     }
 
@@ -1073,7 +1074,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   Eigen::Index min_x;
   const double min_x_val = _x.topRows(n).minCoeff(&min_x);
   double tval = -min_x_val;
-  for (int i = 0; i < _nonbas.size(); i++) {
+  for (size_t i = 0; i < _nonbas.size(); i++) {
     _bas.push_back(_nonbas[i] + n);
   }
   lvindex = min_x;
@@ -1176,7 +1177,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
 
     // check whether artificial index among these
     _tlist.clear();
-    for (int i = 0; i < _j.size(); i++) {
+    for (size_t i = 0; i < _j.size(); i++) {
       _tlist.push_back(_bas[_j[i]]);
     }
     if (std::find(_tlist.begin(), _tlist.end(), t) != _tlist.end()) {
