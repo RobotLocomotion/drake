@@ -1,8 +1,6 @@
 // Copyright 2016. Alex Dunyak
 #pragma once
 
-#include "drake/solvers/MosekSolver.h"
-
 extern "C" {
   #include <mosek/mosek.h>
 }
@@ -131,22 +129,6 @@ class DRAKEOPTIMIZATION_EXPORT MosekLP {
   MSKrescodee r_;      // used for validity checking
   std::vector<double> solutions_;  // Contains the solutions of the system
 };
-
-
-bool MosekSolver::available() const { return true; }
-
-SolutionResult MosekSolver::LPSolve(OptimizationProblem& prog) const {
-  if (!prog.GetSolverOptionsStr("Mosek").empty()) {
-    if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
-        != std::string::npos) {
-      MosekLP msk;
-      return msk.Solve(prog);
-    }
-  } else {
-    return kUnknownError;
-  }  // TODO(alexdunyak): add more mosek solution types.
-  return kUnknownError;
-}
 
 }  // namespace solvers
 }  // namespace drake

@@ -20,17 +20,12 @@ namespace solvers {
 class DRAKEOPTIMIZATION_EXPORT MosekSolver :
     public MathematicalProgramSolverInterface {
  public:
+  /** available()
+  * Defined true if Mosek was included during compilation, false otherwise.
+  */
   bool available() const override;
-  SolutionResult LPSolve(OptimizationProblem& prog) const;
-  SolutionResult Solve(OptimizationProblem& prog) const override {
-    if (!prog.GetSolverOptionsStr("Mosek").empty()) {
-      if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
-          != std::string::npos) {
-        return LPSolve(prog);
-      }
-    }  // TODO(alexdunyak): add more mosek solution types.
-    return kUnknownError;
-  }
+
+  SolutionResult Solve(OptimizationProblem& prog) const override;
 };
 
 }
