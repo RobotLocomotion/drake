@@ -9,20 +9,25 @@
 #include <cmath>
 #include <random>
 
+#include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/drakeGeometryUtil_export.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeGradientUtil.h"
 
-const int QUAT_SIZE = 4;
-const int EXPMAP_SIZE = 3;
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
-const int AXIS_ANGLE_SIZE = 4;
-const int SPACE_DIMENSION = 3;
-const int RotmatSize = SPACE_DIMENSION * SPACE_DIMENSION;
+
+DRAKE_DEPRECATED("Use drake::kQuaternionSize instead.")
+const int QUAT_SIZE = 4;
+DRAKE_DEPRECATED("Use drake::kRpySize instead.")
 const int RPY_SIZE = 3;
+DRAKE_DEPRECATED("Use drake::kSpaceDimension instead.")
+const int SPACE_DIMENSION = 3;
+
+const int RotmatSize = drake::kSpaceDimension * drake::kSpaceDimension;
 
 DRAKEGEOMETRYUTIL_EXPORT double angleDiff(double phi1, double phi2);
 
@@ -349,15 +354,15 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(
  */
 template <typename Derived>
 typename drake::math::Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
-                               QUAT_SIZE>::type
+                               drake::kQuaternionSize>::type
 dquat2rotmat(const Eigen::MatrixBase<Derived>& q) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>,
-                                           QUAT_SIZE);
+                                           drake::kQuaternionSize);
 
   typename drake::math::Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
-                                 QUAT_SIZE>::type ret;
+                                 drake::kQuaternionSize>::type ret;
   typename Eigen::MatrixBase<Derived>::PlainObject qtilde;
-  typename drake::math::Gradient<Derived, QUAT_SIZE>::type dqtilde;
+  typename drake::math::Gradient<Derived, drake::kQuaternionSize>::type dqtilde;
   normalizeVec(q, qtilde, &dqtilde);
 
   typedef typename Derived::Scalar Scalar;
@@ -375,22 +380,23 @@ dquat2rotmat(const Eigen::MatrixBase<Derived>& q) {
 
 template <typename DerivedR, typename DerivedDR>
 typename drake::math::Gradient<
-    Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>,
+    Eigen::Matrix<typename DerivedR::Scalar, drake::kRpySize, 1>,
     DerivedDR::ColsAtCompileTime>::type
 drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
             const Eigen::MatrixBase<DerivedDR>& dR) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedR>,
-                                           SPACE_DIMENSION, SPACE_DIMENSION);
+                                           drake::kSpaceDimension,
+                                           drake::kSpaceDimension);
   EIGEN_STATIC_ASSERT(
       Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == RotmatSize,
       THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   typename DerivedDR::Index nq = dR.cols();
   typedef typename DerivedR::Scalar Scalar;
-  typedef typename drake::math::Gradient<Eigen::Matrix<Scalar, RPY_SIZE, 1>,
-                                         DerivedDR::ColsAtCompileTime>::type
-      ReturnType;
-  ReturnType drpy(RPY_SIZE, nq);
+  typedef typename drake::math::Gradient<
+      Eigen::Matrix<Scalar, drake::kRpySize, 1>,
+      DerivedDR::ColsAtCompileTime>::type ReturnType;
+  ReturnType drpy(drake::kRpySize, nq);
 
   auto dR11_dq =
       getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 0, 0, R.rows());
@@ -424,20 +430,21 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
 
 template <typename DerivedR, typename DerivedDR>
 typename drake::math::Gradient<
-    Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 1>,
+    Eigen::Matrix<typename DerivedR::Scalar, drake::kQuaternionSize, 1>,
     DerivedDR::ColsAtCompileTime>::type
 drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
              const Eigen::MatrixBase<DerivedDR>& dR) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedR>,
-                                           SPACE_DIMENSION, SPACE_DIMENSION);
+                                           drake::kSpaceDimension,
+                                           drake::kSpaceDimension);
   EIGEN_STATIC_ASSERT(
       Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == RotmatSize,
       THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   typedef typename DerivedR::Scalar Scalar;
-  typedef typename drake::math::Gradient<Eigen::Matrix<Scalar, QUAT_SIZE, 1>,
-                                         DerivedDR::ColsAtCompileTime>::type
-      ReturnType;
+  typedef typename drake::math::Gradient<
+      Eigen::Matrix<Scalar, drake::kQuaternionSize, 1>,
+      DerivedDR::ColsAtCompileTime>::type ReturnType;
   typename DerivedDR::Index nq = dR.cols();
 
   auto dR11_dq =
@@ -468,7 +475,7 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
   typename Eigen::Matrix<Scalar, 4, 1>::Index ind, max_col;
   Scalar val = B.maxCoeff(&ind, &max_col);
 
-  ReturnType dq(QUAT_SIZE, nq);
+  ReturnType dq(drake::kQuaternionSize, nq);
   using namespace std;
   switch (ind) {
     case 0: {
@@ -571,7 +578,7 @@ template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(
     const Eigen::MatrixBase<Derived>& p) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>,
-                                           SPACE_DIMENSION);
+                                           drake::kSpaceDimension);
   Eigen::Matrix<typename Derived::Scalar, 3, 3> ret;
   ret << 0.0, -p(2), p(1), p(2), 0.0, -p(0), -p(1), p(0), 0.0;
   return ret;
@@ -597,7 +604,7 @@ void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
                               Eigen::MatrixBase<DerivedDM>* dM = nullptr) {
   // note: not normalizing to match MATLAB implementation
   using Scalar = typename DerivedQ::Scalar;
-  M.resize(QUAT_SIZE, SPACE_DIMENSION);
+  M.resize(drake::kQuaternionSize, drake::kSpaceDimension);
   M.row(0) << -q(1), -q(2), -q(3);
   M.row(1) << q(0), q(3), -q(2);
   M.row(2) << -q(3), q(0), q(1);
@@ -624,7 +631,7 @@ void angularvel2rpydotMatrix(
     typename Eigen::MatrixBase<DerivedPhi>& phi,
     typename Eigen::MatrixBase<DerivedDPhi>* dphi = nullptr,
     typename Eigen::MatrixBase<DerivedDDPhi>* ddphi = nullptr) {
-  phi.resize(RPY_SIZE, SPACE_DIMENSION);
+  phi.resize(drake::kRpySize, drake::kSpaceDimension);
 
   typedef typename DerivedRPY::Scalar Scalar;
   Scalar p = rpy(1);
@@ -640,7 +647,7 @@ void angularvel2rpydotMatrix(
   phi << cy / cp, sy / cp, Scalar(0), -sy, cy, Scalar(0), cy * tp, tp * sy,
       Scalar(1);
   if (dphi) {
-    dphi->resize(phi.size(), RPY_SIZE);
+    dphi->resize(phi.size(), drake::kRpySize);
     Scalar sp2 = sp * sp;
     Scalar cp2 = cp * cp;
     (*dphi) << Scalar(0), (cy * sp) / cp2, -sy / cp, Scalar(0), Scalar(0), -cy,
@@ -650,7 +657,7 @@ void angularvel2rpydotMatrix(
         Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0);
 
     if (ddphi) {
-      ddphi->resize(dphi->size(), RPY_SIZE);
+      ddphi->resize(dphi->size(), drake::kRpySize);
       Scalar cp3 = cp2 * cp;
       (*ddphi) << Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0),
           Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0),
@@ -676,11 +683,13 @@ void angularvel2rpydotMatrix(
 template <typename DerivedRPY, typename DerivedE>
 void rpydot2angularvelMatrix(
     const Eigen::MatrixBase<DerivedRPY>& rpy, Eigen::MatrixBase<DerivedE>& E,
-    typename drake::math::Gradient<DerivedE, RPY_SIZE, 1>::type* dE = nullptr) {
+    typename drake::math::Gradient<DerivedE, drake::kRpySize, 1>::type*
+        dE = nullptr) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
-                                           RPY_SIZE);
+                                           drake::kRpySize);
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedE>,
-                                           SPACE_DIMENSION, RPY_SIZE);
+                                           drake::kSpaceDimension,
+                                           drake::kRpySize);
   typedef typename DerivedRPY::Scalar Scalar;
   Scalar p = rpy(1);
   Scalar y = rpy(2);
@@ -701,7 +710,7 @@ template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 4> quatdot2angularvelMatrix(
     const Eigen::MatrixBase<Derived>& q) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>,
-                                           QUAT_SIZE);
+                                           drake::kQuaternionSize);
   typedef typename Derived::Scalar Scalar;
   auto qtilde = q.normalized();
   Eigen::Matrix<Scalar, 3, 4> ret;
@@ -716,14 +725,14 @@ void rpydot2angularvel(
     const Eigen::MatrixBase<DerivedRPY>& rpy,
     const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
     Eigen::MatrixBase<DerivedOMEGA>& omega,
-    typename drake::math::Gradient<DerivedOMEGA, RPY_SIZE, 1>::type* domega =
-        nullptr) {
+    typename drake::math::Gradient<DerivedOMEGA, drake::kRpySize,
+                                   1>::type* domega = nullptr) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
-                                           RPY_SIZE);
+                                           drake::kRpySize);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>,
-                                           RPY_SIZE);
+                                           drake::kRpySize);
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedOMEGA>,
-                                           RPY_SIZE, 1);
+                                           drake::kRpySize, 1);
 
   Eigen::Matrix<typename DerivedOMEGA::Scalar, 3, 3> E;
   if (domega) {
@@ -1062,7 +1071,7 @@ bool isRegularInertiaMatrix(const Eigen::MatrixBase<DerivedI>& I) {
 
 template <typename DerivedI>
 drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
-    const Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION,
+    const Eigen::Transform<typename DerivedI::Scalar, drake::kSpaceDimension,
                            Eigen::Isometry>& T_current_to_new,
     const Eigen::MatrixBase<DerivedI>& I) {
   using namespace Eigen;

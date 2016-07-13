@@ -56,6 +56,8 @@ class TrajectoryRunner {
     lcmt_iiwa_command iiwa_command;
     iiwa_command.num_joints = kNumJoints;
     iiwa_command.joint_position.resize(kNumJoints, 0.);
+    iiwa_command.num_torques = 0;
+    iiwa_command.joint_torque.resize(kNumJoints, 0.);
 
     while (cur_step < nT_) {
       int handled  = lcm_->handleTimeout(10);  // timeout is in msec -
