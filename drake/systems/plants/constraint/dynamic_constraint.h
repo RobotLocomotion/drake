@@ -4,6 +4,7 @@
 
 #include <Eigen/Core>
 
+#include <drake/drakeDynamicConstraint_export.h>
 #include <drake/core/Gradient.h>
 #include <drake/solvers/Constraint.h>
 #include <drake/systems/System.h>
@@ -19,7 +20,8 @@ namespace systems {
 ///
 /// Each evaluation of the constraint considers a pair of state
 /// vectors + input vectors along with an accompanying timestep.
-class DynamicConstraint : public solvers::Constraint {
+class DRAKEDYNAMICCONSTRAINT_EXPORT DynamicConstraint :
+      public solvers::Constraint {
  public:
   /// The format of the input to the eval() function is defined by @p
   /// num_states and @p num_inputs.  The length of the vector will be
