@@ -275,9 +275,9 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     return -1;
   }
 
-#if !defined(NDEBUG)
   ////////////////////////////////////////////////////////////////////
   // example of inspecting each cost / eq, ineq term
+  // These will not be called in a real controller
   auto costs = prog.generic_costs();
   auto eqs = prog.linear_equality_constraints();
   auto ineqs = prog.linear_constraints();
@@ -304,7 +304,6 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
       assert(X[i] >= ineq->lower_bound()[i] && X[i] <= ineq->upper_bound()[i]);
     }
   }
-#endif
 
   ////////////////////////////////////////////////////////////////////
   // parse result
