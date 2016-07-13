@@ -17,8 +17,6 @@
 #include "drake/systems/framework/system_interface.h"
 #include "drake/systems/framework/vector_interface.h"
 
-
-
 namespace drake {
 namespace systems {
 namespace lcm {
@@ -30,7 +28,6 @@ namespace internal {
  */
 class DRAKELCMSYSTEM2_EXPORT LcmLoop {
  public:
-
   /**
    * The constructor.
    *
@@ -72,19 +69,19 @@ class LcmSubscriberSystem : public SystemInterface<double> {
    * @param[in] lcm The LCM subsystem.
    */
   LcmSubscriberSystem(const std::string& channel,
-      const LcmBasicVectorTranslator& translator, ::lcm::LCM& lcm) :
-      channel_(channel),
-      translator_(translator),
-      lcm_loop_(lcm),
-      basic_vector_(translator.get_basic_vector_size()) {
+                      const LcmBasicVectorTranslator& translator,
+                      ::lcm::LCM& lcm)
+      : channel_(channel),
+        translator_(translator),
+        lcm_loop_(lcm),
+        basic_vector_(translator.get_basic_vector_size()) {
     // Initializes the communication layer.
     ::lcm::Subscription* sub =
-      lcm.subscribe(channel_, &LcmSubscriberSystem::handleMessage, this);
+        lcm.subscribe(channel_, &LcmSubscriberSystem::handleMessage, this);
     sub->setQueueCapacity(1);
 
     // Spawns a thread that accepts incomming LCM messages.
-    lcm_thread_ = std::thread(&internal::LcmLoop::LoopWithSelect,
-      &lcm_loop_);
+    lcm_thread_ = std::thread(&internal::LcmLoop::LoopWithSelect, &lcm_loop_);
   }
 
   ~LcmSubscriberSystem() override {
@@ -107,8 +104,8 @@ class LcmSubscriberSystem : public SystemInterface<double> {
     context->SetNumInputPorts(0);
 
     // Creates a BasicStateVector of size zero for this system.
-    std::unique_ptr<BasicStateVector<double>>
-      state(new BasicStateVector<double>(0));
+    std::unique_ptr<BasicStateVector<double>> state(
+        new BasicStateVector<double>(0));
 
     context->get_mutable_state()->continuous_state.reset(
         new ContinuousState<double>(std::move(state), 0 /* size of q */,
@@ -122,8 +119,8 @@ class LcmSubscriberSystem : public SystemInterface<double> {
   std::unique_ptr<SystemOutput<double>> AllocateOutput() const override {
     std::unique_ptr<SystemOutput<double>> output(new SystemOutput<double>);
     {
-      std::unique_ptr<BasicVector<double>> data(new BasicVector<double>(
-        translator_.get_basic_vector_size()));
+      std::unique_ptr<BasicVector<double>> data(
+          new BasicVector<double>(translator_.get_basic_vector_size()));
       std::unique_ptr<OutputPort<double>> port(
           new OutputPort<double>(std::move(data)));
       output->ports.push_back(std::move(port));
@@ -134,10 +131,9 @@ class LcmSubscriberSystem : public SystemInterface<double> {
   // Computes the output for the given context, possibly updating values
   // in the cache. Note that the context is ignored since it contains no
   // information.
-  void EvalOutput(const Context<double>& context, SystemOutput<double>* output)
-      const override {
-    BasicVector<double>* output_vector =
-      dynamic_cast<BasicVector<double>*>(
+  void EvalOutput(const Context<double>& context,
+                  SystemOutput<double>* output) const override {
+    BasicVector<double>* output_vector = dynamic_cast<BasicVector<double>*>(
         output->ports[0]->GetMutableVectorData());
 
     data_mutex.lock();
@@ -149,15 +145,16 @@ class LcmSubscriberSystem : public SystemInterface<double> {
   // Translates the message contained within the recieve buffer by storing its
   // information in basic_vector_.
   void handleMessage(const ::lcm::ReceiveBuffer* rbuf,
-      const std::string& channel) {
+                     const std::string& channel) {
     if (channel == channel_) {
       data_mutex.lock();
       translator_.TranslateLcmToBasicVector(rbuf, &basic_vector_);
       data_mutex.unlock();
     } else {
       std::cerr << "LcmSubscriberSystem: handleMessage: WARNING: Received a "
-        << "message for channel \"" << channel << "\" instead of channel \""
-        << channel_ << "\". Ignoring it." << std::endl;
+                << "message for channel \"" << channel
+                << "\" instead of channel \"" << channel_ << "\". Ignoring it."
+                << std::endl;
     }
   }
 

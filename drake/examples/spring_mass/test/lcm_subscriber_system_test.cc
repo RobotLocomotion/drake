@@ -25,8 +25,8 @@ const int64_t kTimestamp = 123456;
  */
 class MessagePublisher {
  public:
-  MessagePublisher(const std::string& channel_name, lcm::LCM& lcm) :
-      channel_name_(channel_name), lcm_(lcm) {
+  MessagePublisher(const std::string& channel_name, lcm::LCM& lcm)
+      : channel_name_(channel_name), lcm_(lcm) {
     message_.dim = kDim;
     message_.val.resize(kDim);
     message_.coord.resize(kDim);
@@ -116,24 +116,22 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
 
     // Gets the output of the LcmSubscriberSystem.
     const drake::systems::VectorInterface<double>* vector =
-      output->ports[0]->get_vector_data();
+        output->ports[0]->get_vector_data();
 
     // Downcasts the output vector to be a pointer to a BasicVector.
     const BasicVector<double>* basic_vector =
-      dynamic_cast<const BasicVector<double>*>(vector);
+        dynamic_cast<const BasicVector<double>*>(vector);
 
     // Verifies that the size of the basic vector is correct.
     if (basic_vector->size() == kDim) {
-
       // Verifies that the values in the basic vector are correct.
       Eigen::VectorBlock<const VectorX<double>> value =
-        basic_vector->get_value();
+          basic_vector->get_value();
 
       bool values_match = true;
 
       for (int ii = 0; ii < kDim && values_match; ++ii) {
-        if (value[ii] != ii)
-          values_match = false;
+        if (value[ii] != ii) values_match = false;
       }
 
       // At this point, the basic vector contains the expected values, which
