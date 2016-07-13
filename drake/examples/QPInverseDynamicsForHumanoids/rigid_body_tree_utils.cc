@@ -2,11 +2,8 @@
 
 Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
                          const KinematicsCache<double>& cache,
-                         int body_or_frame_id, const Vector3d& local_offset) {
-  Isometry3d H_body_to_frame;
-  int body_idx = r.parseBodyOrFrameID(body_or_frame_id, &H_body_to_frame);
-
-  const auto& element = cache.getElement(*(r.bodies[body_idx]));
+                         const RigidBody& body, const Vector3d& local_offset) {
+  const auto& element = cache.getElement(body);
   Vector6d T = element.twist_in_world;
   Vector3d pt = element.transform_to_world.translation();
 
@@ -15,10 +12,9 @@ Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
   v.tail<3>() += v.head<3>().cross(pt);
 
   // Get the global offset between pt and body.
-  auto H_world_to_frame = element.transform_to_world * H_body_to_frame;
   Isometry3d H_frame_to_pt(Isometry3d::Identity());
   H_frame_to_pt.translation() = local_offset;
-  auto H_world_to_pt = H_world_to_frame * H_frame_to_pt;
+  auto H_world_to_pt = element.transform_to_world * H_frame_to_pt;
   Vector3d world_offset =
       H_world_to_pt.translation() - element.transform_to_world.translation();
 
@@ -30,15 +26,15 @@ Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
 
 MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
                               const KinematicsCache<double>& cache,
-                              int body_or_frame_id,
+                              const RigidBody& body,
                               const Vector3d& local_offset) {
   std::vector<int> v_or_q_indices;
   MatrixXd Jg =
-      r.geometricJacobian(cache, 0, body_or_frame_id, 0, true, &v_or_q_indices);
+      r.geometricJacobian(cache, 0, body.body_index, 0, true, &v_or_q_indices);
   MatrixXd J(6, r.number_of_velocities());
   J.setZero();
 
-  Vector3d points = r.transformPoints(cache, local_offset, body_or_frame_id, 0);
+  Vector3d points = r.transformPoints(cache, local_offset, body.body_index, 0);
 
   int col = 0;
   for (auto it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
@@ -57,13 +53,13 @@ MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
 
 Vector6d GetTaskSpaceJacobianDotTimesV(const RigidBodyTree& r,
                                        const KinematicsCache<double>& cache,
-                                       int body_or_frame_id,
+                                       const RigidBody& body,
                                        const Vector3d& local_offset) {
   // position of point in world
-  Vector3d p = r.transformPoints(cache, local_offset, body_or_frame_id, 0);
-  Vector6d twist = r.relativeTwist(cache, 0, body_or_frame_id, 0);
+  Vector3d p = r.transformPoints(cache, local_offset, body.body_index, 0);
+  Vector6d twist = r.relativeTwist(cache, 0, body.body_index, 0);
   Vector6d J_geometric_dot_times_v =
-      r.geometricJacobianDotTimesV(cache, 0, body_or_frame_id, 0);
+      r.geometricJacobianDotTimesV(cache, 0, body.body_index, 0);
 
   // linear vel of r
   Vector3d pdot = twist.head<3>().cross(p) + twist.tail<3>();
