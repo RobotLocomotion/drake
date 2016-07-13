@@ -9,15 +9,16 @@ void HumanoidStatus::FillKinematics(const std::string& name, Isometry3d& pose,
                                     Vector6d& vel, MatrixXd& J,
                                     Vector6d& Jdot_times_v,
                                     const Vector3d& local_offset) const {
-  int id = body_name_to_id_.at(name);
+  // int id = body_name_to_id_.at(name);
+  const RigidBody* body = robot_->FindBody(name);
   pose = Isometry3d::Identity();
   pose.translation() = local_offset;
-  pose = robot_->relativeTransform(cache_, 0, id) * pose;
+  pose = robot_->relativeTransform(cache_, 0, body->body_index) * pose;
 
-  vel = GetTaskSpaceVel(*(robot_), cache_, id, local_offset);
-  J = GetTaskSpaceJacobian(*(robot_), cache_, id, local_offset);
+  vel = GetTaskSpaceVel(*(robot_), cache_, *body, local_offset);
+  J = GetTaskSpaceJacobian(*(robot_), cache_, *body, local_offset);
   Jdot_times_v =
-      GetTaskSpaceJacobianDotTimesV(*(robot_), cache_, id, local_offset);
+      GetTaskSpaceJacobianDotTimesV(*(robot_), cache_, *body, local_offset);
 }
 
 void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
