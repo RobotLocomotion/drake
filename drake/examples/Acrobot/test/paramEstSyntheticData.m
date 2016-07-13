@@ -12,7 +12,7 @@ mode = 'measnoise';
 % Parameter Estimation model
 % 'dynamic'     = use dynamic model - requires qdd
 % 'energetic'   = use energetic model - doesn't require qdd
-parameterEstimationOptions.model = 'energetic';
+parameterEstimationOptions.model = 'dynamic';
 
 % Method by which to obtain qdd (not used if using energetic model)
 % 'manipul':   Use acrobot manipulator equations to estimate true qdd
@@ -103,8 +103,10 @@ if ~strcmp(parameterEstimationOptions.model,'energetic')
 %     legend('True Acceleration','Derivative of Vel');
 end
 
+disp(usamples)
 
-
+disp(outputFrameNames)
+disp(xsamples)
 
 
 

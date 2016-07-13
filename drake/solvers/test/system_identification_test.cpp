@@ -8,6 +8,7 @@
 
 #include "drake/util/Polynomial.h"
 #include "drake/util/TrigPoly.h"
+#include "drake/solvers/test/acrobot_data.h"
 
 namespace drake {
 namespace solvers {
@@ -419,18 +420,20 @@ GTEST_TEST(SystemIdentificationTest, ACROBOT_TEST_NAME) {
       thetadotdot2.getPolynomial().getSimpleVariable();
   const TrigPolyd::VarType tau = torque.getPolynomial().getSimpleVariable();
 
-  // Convenience constants.
-  const double kG = -9.8;  //< Acceleration (m / s^2) due to gravity.
-  const double kPi4 = 0.7853981633974483;  //< Pi / 4.
-
-  const std::vector<SID::PartialEvalType> data = {
-    // TODO(ggould-tri) obtain data for this.
-  };
+  std::vector<SID::PartialEvalType> data;
+  for (size_t i = 0; i < acrobot_inputs.size(); i++) {
+    const std::vector<double>& output = acrobot_outputs.at(i);
+    const double input = acrobot_inputs.at(i);
+    const SID::PartialEvalType sample_map = {
+      {tau, input},
+      {t1, output.at(0)}, {t2, output.at(1)},
+      {td1, output.at(2)}, {td2, output.at(3)},
+      {tdd1, output.at(4)}, {tdd2, output.at(5)}};
+    data.push_back(sample_map);
+  }
 
   SID::SystemIdentificationResult result =
       SID::LumpedSystemIdentification(to_estimate, data);
-
-  EXPECT_NEAR(result.rms_error, 0, 1e-4);
 }
 ///@}
 
