@@ -159,6 +159,9 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * each of its terms. */
   int getDegree() const;
 
+  /// Returns true iff this is a sum of terms of degree 1, plus a constant.
+  bool isAffine() const;
+
   /// If the polynomial is "simple" -- e.g. just a single term with
   /// coefficient 1 -- then returns that variable; otherwise returns 0.
   VarType getSimpleVariable() const;

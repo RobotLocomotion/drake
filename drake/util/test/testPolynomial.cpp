@@ -188,7 +188,21 @@ GTEST_TEST(PolynomialTest, Roots) { testRoots<double>(); }
 
 GTEST_TEST(PolynomialTest, EvalType) { testEvalType(); }
 
-GTEST_TEST(PolynomialTest, PolynomialMatrix) { testPolynomialMatrix<double>(); }
+GTEST_TEST(PolynomialTest, IsAffine) {
+  Polynomiald x("x");
+  Polynomiald y("y");
+
+  EXPECT_TRUE(x.isAffine());
+  EXPECT_TRUE(y.isAffine());
+  EXPECT_TRUE((2 + x).isAffine());
+  EXPECT_TRUE((2 * x).isAffine());
+  EXPECT_FALSE((x * x).isAffine());
+  EXPECT_FALSE((x * y).isAffine());
+  EXPECT_TRUE((x + y).isAffine());
+  EXPECT_TRUE((2 + x + y).isAffine());
+  EXPECT_TRUE((2 + (2 * x) + y).isAffine());
+  EXPECT_FALSE((2 + (y * x) + y).isAffine());
+}
 
 GTEST_TEST(PolynomialTest, VariableIdGeneration) {
   // Probe the outer edge cases of variable ID generation.
