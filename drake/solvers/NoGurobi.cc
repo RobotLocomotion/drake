@@ -1,0 +1,21 @@
+
+#include "drake/solvers/GurobiSolver.h"
+
+#include <stdexcept>
+
+namespace drake {
+namespace solvers {
+
+bool GurobiSolver::available() const {
+  return false;
+}
+
+SolutionResult GurobiSolver::Solve(
+    OptimizationProblem &prog) const {
+  throw std::runtime_error(
+      "The Gurobi bindings were not compiled.  You'll need to use a different "
+          "solver.");
+}
+
+}
+}
