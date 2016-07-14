@@ -73,7 +73,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(const std::string& channel,
       lcm.subscribe(channel_, &LcmSubscriberSystem::handleMessage, this);
   sub->setQueueCapacity(1);
 
-  // Spawns a thread that accepts incomming LCM messages.
+  // Spawns a thread that accepts incoming LCM messages.
   lcm_thread_ = std::thread(&internal::LcmLoop::LoopWithSelect, &lcm_loop_);
 }
 

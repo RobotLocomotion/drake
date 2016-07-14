@@ -42,7 +42,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmLoop {
   void LoopWithSelect();
 
   /**
-   * Stops the LCM loop's thread. This stops the receival of LCM messages.
+   * Stops the LCM loop's thread. This stops the reception of LCM messages.
    */
   void Stop();
 
