@@ -2,7 +2,8 @@
 // A wrapper file for MosekLP and mosekQP that handles constraint and
 // objective marshalling
 
-#include "MosekLP.h"
+#include "drake/solvers/MosekSolver.h"
+#include "drake/solvers/MosekLP.h"
 
 #include <Eigen/Core>
 
@@ -15,7 +16,7 @@ namespace solvers {
 
 bool MosekSolver::available() const { return true; }
 
-SolutionResult MosekSolver::Solve(OptimizationProblem& prog) const override {
+SolutionResult MosekSolver::Solve(OptimizationProblem& prog) const {
   if (!prog.GetSolverOptionsStr("Mosek").empty()) {
     if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
         != std::string::npos) {
