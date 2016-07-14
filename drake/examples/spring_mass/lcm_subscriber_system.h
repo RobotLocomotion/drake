@@ -97,7 +97,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
                   SystemOutput<double>* output) const override;
 
  private:
-  // Translates the message contained within the recieve buffer by storing its
+  // Translates the message contained within the receive buffer by storing its
   // information in basic_vector_.
   void handleMessage(const ::lcm::ReceiveBuffer* rbuf,
                      const std::string& channel);
@@ -105,7 +105,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
   // The channel on which to receive LCM messages.
   const std::string channel_;
 
-  // The translator that converts betweeen LCM messages and
+  // The translator that converts between LCM messages and
   // drake::systems::BasicVector.
   const LcmBasicVectorTranslator& translator_;
 
