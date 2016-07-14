@@ -1,5 +1,4 @@
 // Copyright 2016, Alex Dunyak
-#pragma once
 
 #include "drake/solvers/MosekLP.h"
 
@@ -124,8 +123,8 @@ std::vector<MSKboundkeye> MosekLP::FindMosekBounds(
     const std::vector<double>& lower_bounds_) const {
   assert(upper_bounds_.size() == lower_bounds_.size());
   std::vector<MSKboundkeye> mosek_bounds_;
-  int i = 0;
-  for (i = 0; i < upper_bounds_.size(); i++) {
+  unsigned int i = 0;
+  for (i = 0; i != upper_bounds_.size(); i++) {
     if (upper_bounds_[i] == +MSK_INFINITY) {
       if (lower_bounds_[i] == -MSK_INFINITY) {
         mosek_bounds_.push_back(MSK_BK_FR);
@@ -174,12 +173,14 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
   std::vector<double> lower_constraint_bounds(totalconnum);
   std::vector<MSKboundkeye> mosek_constraint_bounds(totalconnum);
   std::vector<MSKboundkeye> mosek_variable_bounds(prog.num_vars());
+  std::vector<double> upper_variable_bounds(numvar_);
+  std::vector<double> lower_variable_bounds(numvar_);
   linear_cons.setZero(totalconnum, prog.num_vars());
 
   // Expect only one boundingbox constraint or no such constraint.
-  if (prog.bounding_box_constraints().front() != NULL) {
-    assert(*(prog.bounding_box_constraints().front()) ==
-        *(prog.bounding_box_constraints().back()));
+  if (!(prog.bounding_box_constraints().empty())) {
+    assert(&(prog.bounding_box_constraints().front()) ==
+        &(prog.bounding_box_constraints().back()));
     auto bbox = *(prog.bounding_box_constraints().front().constraint());
     std::vector<double> lower_variable_bounds(bbox.lower_bound().data(),
         bbox.lower_bound().data() +
@@ -199,8 +200,6 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
                                            lower_variable_bounds);
   } else {
     // No bounding box constraint
-    std::vector<double> upper_variable_bounds(numvar_);
-    std::vector<double> lower_variable_bounds(numvar_);
     for (i = 0; i < numvar_; i++) {
       upper_variable_bounds[i] = +MSK_INFINITY;
       lower_variable_bounds[i] = -MSK_INFINITY;
@@ -216,7 +215,8 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
     // type is const std::list<Binding<LinearConstraint>>::const_iterator&
     // Address the constraint matrix directly, translating back to our original
     // variable space
-    for (int i = 0; i < con.constraint()->num_constraints(); i++) {
+    for (int i = 0; (unsigned int) i < con.constraint()->num_constraints();
+        i++) {
       for (int j = 0; j < (con.constraint())->A().cols(); j++) {
         linear_cons(connum, j) = (con.constraint()->A())(i, j);
       }
@@ -238,8 +238,8 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
   mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
                                             lower_constraint_bounds);
   // find the linear objective here
-  LinearConstraint *obj_ = static_cast<LinearConstraint * >(
-      &(*(prog.generic_objectives().front().constraint())));
+  LinearConstraint *obj_ = static_cast<LinearConstraint *>(
+      &(*(prog.generic_costs().front().constraint())));
   std::vector<double> linobj_((*obj_).A().data(),
       (*obj_).A().data() + (*obj_).A().rows() * (*obj_).A().cols());
   MosekLP opt(prog.num_vars(),
@@ -332,7 +332,7 @@ Eigen::VectorXd MosekLP::GetEigenVectorSolutions() const {
   if (solutions_.empty())
     return soln;
   int i = 0;
-  for (i = 0; i < solutions_.size(); ++i) {
+  for (i = 0; (unsigned int) i < solutions_.size(); ++i) {
     soln(i) = solutions_[i];
   }
   return soln.transpose();
