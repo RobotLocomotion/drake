@@ -16,7 +16,7 @@ endif()
 # Set Default build type to Release if none specified
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-    "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
+    "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
     FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
