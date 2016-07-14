@@ -35,18 +35,6 @@
       <origin rpy="0 0 0" xyz="-0.00532 -0.003512 -0.0036"/>
       <inertia ixx="0.11866378" ixy="-0.000143482" ixz="0.003271293" iyy="0.097963425" iyz="0.002159545" izz="0.083854638"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/pelvis/pelvis.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/pelvis/pelvis.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="torsoYawLink">
     <inertial>
@@ -54,18 +42,6 @@
       <origin rpy="0 0 0" xyz="0.000000 0.000000 -0.010000"/>
       <inertia ixx="0.000608427" ixy="-1.172e-06" ixz="1.647e-06" iyy="0.000620328" iyz="-2.33e-07" izz="0.001078108"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/torso/torsoyaw.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/torso/torsoyaw.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="torsoPitchLink">
     <inertial>
@@ -73,18 +49,6 @@
       <origin rpy="0 0 0" xyz="0.000000 0.000000  0.005000"/>
       <inertia ixx="3.032e-05" ixy="0.0" ixz="-1.145e-06" iyy="2.1274e-05" iyz="0.0" izz="2.8285e-05"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/torso/torsopitch.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/torso/torsopitch.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="torso">
     <inertial>
@@ -92,18 +56,6 @@
       <origin rpy="0 0 0" xyz="-0.095548 -0.003337 0.243098"/>
       <inertia ixx="0.87326933" ixy="9.9563e-05" ixz="0.061345211" iyy="1.0108485" iyz="0.00181849" izz="0.77839801"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/torso/torso.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/torso/torso.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="torsoYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
@@ -150,18 +102,6 @@
       <origin rpy="0 0 0" xyz="-0.020000 0.000000  0.040000"/>
       <inertia ixx="0.001470716" ixy="-0.000126021" ixz="0.000632521" iyy="0.001851919" iyz="0.000243012" izz="0.000832117"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/head/neckj1.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/head/neckj1.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="neckYawLink">
     <inertial>
@@ -169,18 +109,6 @@
       <origin rpy="0 0 0" xyz="-0.030000  -0.010000 0.150000"/>
       <inertia ixx="0.001997698" ixy="-0.000180062" ixz="0.000723677" iyy="0.002919928" iyz="0.000246467" izz="0.002119751"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/head/neckj2.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/head/neckj2.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="upperNeckPitchLink">
     <inertial>
@@ -188,18 +116,6 @@
       <origin rpy="0 0 0" xyz="0.100912 0.005783 0.034787"/>
       <inertia ixx="0.039847525" ixy="-0.000470418" ixz="-0.002829842" iyy="0.041418564" iyz="-0.000782564" izz="0.036841236"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/head/head_multisense_no_visor.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/head/head_multisense_no_visor.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="lowerNeckPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0203518 0.0 0.33845"/>
@@ -246,18 +162,6 @@
       <origin rpy="0 0 0" xyz="0.012 -0.251 0.000000"/>
       <inertia ixx="0.013718167" ixy="0.0" ixz="0.0" iyy="0.010502833" iyz="0.0" izz="0.014806433"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj1_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj1_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightShoulderRollLink">
     <inertial>
@@ -265,18 +169,6 @@
       <origin rpy="0 0 0" xyz="0.008513 -0.02068 -0.001088"/>
       <inertia ixx="0.014598842" ixy="-0.00066764" ixz="3.629e-05" iyy="0.006452136" iyz="8.283e-05" izz="0.016848319"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj2_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj2_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightShoulderYawLink">
     <inertial>
@@ -284,18 +176,6 @@
       <origin rpy="0 0 0" xyz="-0.004304 -0.209832 -0.007295"/>
       <inertia ixx="0.039355177" ixy="0.007827077" ixz="0.000753947" iyy="0.004905765" iyz="-0.002723873" izz="0.041879481"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj3_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj3_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightElbowPitchLink">
     <inertial>
@@ -303,18 +183,6 @@
       <origin rpy="0 0 0" xyz="-0.020344 -0.014722 -0.0223"/>
       <inertia ixx="0.003314516" ixy="-0.000535099" ixz="-0.000728077" iyy="0.003505669" iyz="-0.000423865" izz="0.003011283"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj4_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj4_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="rightShoulderPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0316 0.0 0.2984"/>
@@ -374,18 +242,6 @@
       <origin rpy="0 0 0" xyz="0.015000 -0.13 0.019564"/>
       <inertia ixx="0.01175543" ixy="-0.001300853" ixz="-0.000727141" iyy="0.005071567" iyz="-0.001695416" izz="0.011365657"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj5_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj5_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightWristRollLink">
     <inertial>
@@ -393,18 +249,6 @@
       <origin rpy="0 0 0" xyz="0 -0.0 0"/>
       <inertia ixx="3.0251e-05" ixy="-1.25e-07" ixz="-3.6e-08" iyy="3.772e-05" iyz="0.0" izz="9.395e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj6_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj6_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightPalm">
     <inertial>
@@ -412,18 +256,6 @@
       <origin rpy="0 0 0" xyz="0.002954 -0.052034 -0.000236"/>
       <inertia ixx="0.000943493" ixy="3.4393e-05" ixz="-3.8828e-05" iyy="0.000711024" iyz="2.3429e-05" izz="0.000610199"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/palm_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision group="right_hand">
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/palm_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="rightForearmYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0254 0 0"/>
@@ -470,18 +302,6 @@
       <origin rpy="0 0 0" xyz="0 -0.0 0.01"/>
       <inertia ixx="2.7778767e-06" ixy="5.6718533e-09" ixz="-9.5523207e-08" iyy="3.5462642e-06" iyz="3.663718e-08" izz="1.3553297e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj1_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj1_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightThumbPitch1Link">
     <inertial>
@@ -489,18 +309,6 @@
       <origin rpy="0 0 0" xyz="0.0 -0.005 0.02"/>
       <inertia ixx="4.239e-06" ixy="0.0" ixz="-0.0" iyy="4.582e-06" iyz="0.0" izz="1.47e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj2_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj2_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightThumbPitch2Link">
     <inertial>
@@ -508,18 +316,6 @@
       <origin rpy="0 0 0" xyz="0 -0.004 0.017"/>
       <inertia ixx="1.266e-06" ixy="0.0" ixz="-0.0" iyy="1.503e-06" iyz="-0.0" izz="6.99e-07"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj3_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj3_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightThumbPitch3Link">
     <inertial>
@@ -527,18 +323,6 @@
       <origin rpy="0 0 0" xyz="0 -0.004 0.01"/>
       <inertia ixx="3.22e-07" ixy="0.0" ixz="0.0" iyy="4.06e-07" iyz="0.0" izz="2.1e-07"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj4_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj4_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="rightThumbRoll" type="fixed">
     <origin rpy="0.3491 0.0 0.0" xyz="0.0049 -0.0351 0.0228"/>
@@ -582,18 +366,6 @@
       <origin rpy="0 0 0" xyz="0 -0.02 0"/>
       <inertia ixx="4.232e-06" ixy="-6e-08" ixz="-8e-09" iyy="1.215e-06" iyz="-7e-09" izz="3.892e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj1_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj1_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightIndexFingerPitch2Link">
     <inertial>
@@ -601,18 +373,6 @@
       <origin rpy="0 0 0" xyz="0 -0.013 0"/>
       <inertia ixx="1.562e-06" ixy="-1.7e-08" ixz="-1.3e-08" iyy="7.22e-07" iyz="3.1e-08" izz="1.255e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj2_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj2_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightIndexFingerPitch3Link">
     <inertial>
@@ -620,18 +380,6 @@
       <origin rpy="0 0 0" xyz="0 -0.01 0"/>
       <inertia ixx="6.02e-07" ixy="-2.4e-08" ixz="0.0" iyy="2.09e-07" iyz="1.7e-08" izz="5.02e-07"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj3_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj3_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="rightIndexFingerPitch1" type="fixed">
     <origin rpy="-0.1745 0.0 0.0" xyz="0.0022 -0.0976 0.0235"/>
@@ -666,18 +414,6 @@
       <origin rpy="0 0 0" xyz="0 -0.02 0"/>
       <inertia ixx="5.148e-06" ixy="-4.2e-08" ixz="-1.1e-08" iyy="1.322e-06" iyz="-4e-09" izz="4.592e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej1_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej1_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightMiddleFingerPitch2Link">
     <inertial>
@@ -685,18 +421,6 @@
       <origin rpy="0 0 0" xyz="0 -0.013 0"/>
       <inertia ixx="1.97e-06" ixy="3.4e-08" ixz="-1.1e-08" iyy="5.54e-07" iyz="-7.8e-08" izz="2.272e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej2_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej2_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightMiddleFingerPitch3Link">
     <inertial>
@@ -704,18 +428,6 @@
       <origin rpy="0 0 0" xyz="0 -0.01 0"/>
       <inertia ixx="3.96e-07" ixy="-9e-09" ixz="-1e-09" iyy="1.6e-07" iyz="1.6e-08" izz="3.03e-07"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej3_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej3_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="rightMiddleFingerPitch1" type="fixed">
     <origin rpy="0.1222 0.0 0.0" xyz="0.0022 -0.097 -0.0119"/>
@@ -750,18 +462,6 @@
       <origin rpy="0 0 0" xyz="0 -0.02 0"/>
       <inertia ixx="5.148e-06" ixy="-4.2e-08" ixz="-1.1e-08" iyy="1.322e-06" iyz="-4e-09" izz="4.592e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj1_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj1_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightPinkyPitch2Link">
     <inertial>
@@ -769,18 +469,6 @@
       <origin rpy="0 0 0" xyz="0 -0.013 0"/>
       <inertia ixx="1.97e-06" ixy="3.4e-08" ixz="-1.1e-08" iyy="5.54e-07" iyz="-7.8e-08" izz="2.272e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj2_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj2_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightPinkyPitch3Link">
     <inertial>
@@ -788,18 +476,6 @@
       <origin rpy="0 0 0" xyz="0 -0.01 0"/>
       <inertia ixx="3.96e-07" ixy="-9e-09" ixz="-1e-09" iyy="1.6e-07" iyz="1.6e-08" izz="3.03e-07"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj3_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj3_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="rightPinkyPitch1" type="fixed">
     <origin rpy="0.1222 0.0 0.0" xyz="0.0022 -0.0838 -0.041"/>
@@ -834,18 +510,6 @@
       <origin rpy="0 0 0" xyz="-0.012 0.251 0.000000"/>
       <inertia ixx="0.013718167" ixy="0.0" ixz="0.0" iyy="0.010502833" iyz="0.0" izz="0.014806433"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj1_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj1_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftShoulderRollLink">
     <inertial>
@@ -853,18 +517,6 @@
       <origin rpy="0 0 0" xyz="-0.008513 0.02068 -0.001088"/>
       <inertia ixx="0.014598842" ixy="-0.00066764" ixz="-3.629e-05" iyy="0.006452136" iyz="-8.283e-05" izz="0.016848319"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj2_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj2_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftShoulderYawLink">
     <inertial>
@@ -872,18 +524,6 @@
       <origin rpy="0 0 0" xyz="-0.004304 0.209832 0.007295"/>
       <inertia ixx="0.039355177" ixy="-0.007827077" ixz="-0.000753947" iyy="0.004905765" iyz="0.002723873" izz="0.041879481"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj3_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj3_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftElbowPitchLink">
     <inertial>
@@ -891,18 +531,6 @@
       <origin rpy="0 0 0" xyz="-0.020344 0.014722 0.0223"/>
       <inertia ixx="0.003314516" ixy="0.000535099" ixz="0.000728077" iyy="0.003505669" iyz="-0.000423865" izz="0.003011283"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj4_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj4_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="leftShoulderPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0316 0.0 0.2984"/>
@@ -962,18 +590,6 @@
       <origin rpy="0 0 0" xyz="0.015000 0.13 0.019564"/>
       <inertia ixx="0.01175543" ixy="0.001300853" ixz="-0.000727141" iyy="0.005071567" iyz="0.001695416" izz="0.011365657"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj5_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj5_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftWristRollLink">
     <inertial>
@@ -981,18 +597,6 @@
       <origin rpy="0 0 0" xyz="0 0.0 0"/>
       <inertia ixx="3.0251e-05" ixy="1.25e-07" ixz="3.6e-08" iyy="3.772e-05" iyz="0.0" izz="9.395e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj6_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/aj6_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftPalm">
     <inertial>
@@ -1000,18 +604,6 @@
       <origin rpy="0 0 0" xyz="0.002954 0.052034 -0.000236"/>
       <inertia ixx="0.000943493" ixy="3.4393e-05" ixz="3.8828e-05" iyy="0.000711024" iyz="-2.3429e-05" izz="0.000610199"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/palm_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision group="left_hand">
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/arms/palm_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="leftForearmYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0254 0 0"/>
@@ -1058,18 +650,6 @@
       <origin rpy="0 0 0" xyz="0 0.0 0.01"/>
       <inertia ixx="2.7778767e-06" ixy="5.6718533e-09" ixz="9.5523207e-08" iyy="3.5462642e-06" iyz="-3.663718e-08" izz="1.3553297e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj1_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj1_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftThumbPitch1Link">
     <inertial>
@@ -1077,18 +657,6 @@
       <origin rpy="0 0 0" xyz="0.0 0.005 0.02"/>
       <inertia ixx="4.239e-06" ixy="0.0" ixz="0.0" iyy="4.582e-06" iyz="-0.0" izz="1.47e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj2_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj2_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftThumbPitch2Link">
     <inertial>
@@ -1096,18 +664,6 @@
       <origin rpy="0 0 0" xyz="0 0.004 0.017"/>
       <inertia ixx="1.266e-06" ixy="0.0" ixz="0.0" iyy="1.503e-06" iyz="0.0" izz="6.99e-07"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj3_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj3_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftThumbPitch3Link">
     <inertial>
@@ -1115,18 +671,6 @@
       <origin rpy="0 0 0" xyz="0 0.004 0.01"/>
       <inertia ixx="3.22e-07" ixy="0.0" ixz="0.0" iyy="4.06e-07" iyz="0.0" izz="2.1e-07"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj4_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/thumbj4_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="leftThumbRoll" type="fixed">
     <origin rpy="-0.3491 0.0 0.0" xyz="0.0049 0.0351 0.0228"/>
@@ -1170,18 +714,6 @@
       <origin rpy="0 0 0" xyz="0 0.02 0"/>
       <inertia ixx="4.232e-06" ixy="6e-08" ixz="8e-09" iyy="1.215e-06" iyz="-7e-09" izz="3.892e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj1_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj1_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftIndexFingerPitch2Link">
     <inertial>
@@ -1189,18 +721,6 @@
       <origin rpy="0 0 0" xyz="0 0.013 0"/>
       <inertia ixx="1.562e-06" ixy="1.7e-08" ixz="1.3e-08" iyy="7.22e-07" iyz="3.1e-08" izz="1.255e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj2_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj2_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftIndexFingerPitch3Link">
     <inertial>
@@ -1208,18 +728,6 @@
       <origin rpy="0 0 0" xyz="0 0.01 0"/>
       <inertia ixx="6.02e-07" ixy="2.4e-08" ixz="-0.0" iyy="2.09e-07" iyz="1.7e-08" izz="5.02e-07"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj3_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/indexj3_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="leftIndexFingerPitch1" type="fixed">
     <origin rpy="0.1745 0.0 0.0" xyz="0.0022 0.0976 0.0235"/>
@@ -1254,18 +762,6 @@
       <origin rpy="0 0 0" xyz="0 0.02 0"/>
       <inertia ixx="5.148e-06" ixy="4.2e-08" ixz="1.1e-08" iyy="1.322e-06" iyz="-4e-09" izz="4.592e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej1_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej1_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftMiddleFingerPitch2Link">
     <inertial>
@@ -1273,18 +769,6 @@
       <origin rpy="0 0 0" xyz="0 0.013 0"/>
       <inertia ixx="1.97e-06" ixy="-3.4e-08" ixz="1.1e-08" iyy="5.54e-07" iyz="-7.8e-08" izz="2.272e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej2_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej2_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftMiddleFingerPitch3Link">
     <inertial>
@@ -1292,18 +776,6 @@
       <origin rpy="0 0 0" xyz="0 0.01 0"/>
       <inertia ixx="3.96e-07" ixy="9e-09" ixz="1e-09" iyy="1.6e-07" iyz="1.6e-08" izz="3.03e-07"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej3_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/middlej3_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="leftMiddleFingerPitch1" type="fixed">
     <origin rpy="-0.1222 0.0 0.0" xyz="0.0022 0.097 -0.0119"/>
@@ -1338,18 +810,6 @@
       <origin rpy="0 0 0" xyz="0 0.02 0"/>
       <inertia ixx="5.148e-06" ixy="4.2e-08" ixz="1.1e-08" iyy="1.322e-06" iyz="-4e-09" izz="4.592e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj1_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj1_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftPinkyPitch2Link">
     <inertial>
@@ -1357,18 +817,6 @@
       <origin rpy="0 0 0" xyz="0 0.013 0"/>
       <inertia ixx="1.97e-06" ixy="-3.4e-08" ixz="1.1e-08" iyy="5.54e-07" iyz="-7.8e-08" izz="2.272e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj2_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj2_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftPinkyPitch3Link">
     <inertial>
@@ -1376,18 +824,6 @@
       <origin rpy="0 0 0" xyz="0 0.01 0"/>
       <inertia ixx="3.96e-07" ixy="9e-09" ixz="1e-09" iyy="1.6e-07" iyz="1.6e-08" izz="3.03e-07"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj3_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/fingers/pinkyj3_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <joint name="leftPinkyPitch1" type="fixed">
     <origin rpy="-0.1222 0.0 0.0" xyz="0.0022 0.0838 -0.041"/>
@@ -1422,18 +858,6 @@
       <origin rpy="0 0 0" xyz="0.02176 0.00131 0.03867"/>
       <inertia ixx="0.017260978" ixy="0.0" ixz="0.0" iyy="0.014866198" iyz="0.0" izz="0.011238178"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj1_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj1_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightHipRollLink">
     <inertial>
@@ -1441,18 +865,6 @@
       <origin rpy="0 0 0" xyz="0.012959 -0.00755 -0.015950"/>
       <inertia ixx="0.005978962" ixy="0.000234823" ixz="0.000553962" iyy="0.009372646" iyz="-0.000778956" izz="0.008193117"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj2_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj2_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightHipPitchLink">
     <inertial>
@@ -1460,18 +872,6 @@
       <origin rpy="0 0 0" xyz="0.016691 -0.091397 -0.207875"/>
       <inertia ixx="0.24083413" ixy="-3.5915e-05" ixz="0.003699383" iyy="0.25689705" iyz="0.001333005" izz="0.023276352"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj3_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj3_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightKneePitchLink">
     <inertial>
@@ -1479,18 +879,6 @@
       <origin rpy="0 0 0" xyz="-0.022183  0.001703  -0.189418"/>
       <inertia ixx="0.086935683" ixy="9.929e-05" ixz="0.000573207" iyy="0.091584066" iyz="0.000313745" izz="0.014017272"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj4_right.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj4_right.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightAnklePitchLink">
     <inertial>
@@ -1498,18 +886,6 @@
       <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
       <inertia ixx="4.377e-06" ixy="0.0" ixz="0.0" iyy="4.322e-06" iyz="0.0" izz="7.015e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj5.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj5.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="rightFoot">
     <inertial>
@@ -1517,12 +893,6 @@
       <origin rpy="0 0 0" xyz="0.037702  0.005161  -0.047634"/>
       <inertia ixx="0.00623936" ixy="0.000217174" ixz="0.001340587" iyy="0.017786991" iyz="-0.000187749" izz="0.020774433"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/foot.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </visual>
     <collision>
       <geometry>
         <box size="0.27 0.16 0.064"/>
@@ -1535,96 +905,48 @@
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot_rear">
-      <origin rpy="0 0 0" xyz="0.032 0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="midfoot_rear">
       <origin rpy="0 0 0" xyz="0.032 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot_rear">
-      <origin rpy="0 0 0" xyz="0.032 -0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="midfoot_front">
       <origin rpy="0 0 0" xyz="0.102 0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot_front">
-      <origin rpy="0 0 0" xyz="0.102 0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="midfoot_front">
       <origin rpy="0 0 0" xyz="0.102 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot_front">
-      <origin rpy="0 0 0" xyz="0.102 -0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>    
     <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.058 0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.058 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 -0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.172 0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="toe">
-      <origin rpy="0 0 0" xyz="0.172 0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.172 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="toe">
-      <origin rpy="0 0 0" xyz="0.172 -0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
   </link>
   <joint name="rightHipYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.1016 -0.1853"/>
@@ -1710,18 +1032,6 @@
       <origin rpy="0 0 0" xyz="0.02176 -0.00131 0.03867"/>
       <inertia ixx="0.017260978" ixy="0.0" ixz="0.0" iyy="0.014866198" iyz="0.0" izz="0.011238178"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj1_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj1_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftHipRollLink">
     <inertial>
@@ -1729,18 +1039,6 @@
       <origin rpy="0 0 0" xyz="0.012959 0.00755 -0.015950"/>
       <inertia ixx="0.005978962" ixy="-0.000234823" ixz="0.000553962" iyy="0.009372646" iyz="0.000778956" izz="0.008193117"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj2_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj2_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftHipPitchLink">
     <inertial>
@@ -1748,18 +1046,6 @@
       <origin rpy="0 0 0" xyz="0.016691 0.091397 -0.207875"/>
       <inertia ixx="0.24083413" ixy="3.5915e-05" ixz="0.003699383" iyy="0.25689705" iyz="-0.001333005" izz="0.023276352"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj3_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj3_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftKneePitchLink">
     <inertial>
@@ -1767,18 +1053,6 @@
       <origin rpy="0 0 0" xyz="-0.022183  0.001703  -0.189418"/>
       <inertia ixx="0.086935683" ixy="9.929e-05" ixz="0.000573207" iyy="0.091584066" iyz="0.000313745" izz="0.014017272"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj4_left.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj4_left.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftAnklePitchLink">
     <inertial>
@@ -1786,18 +1060,6 @@
       <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
       <inertia ixx="4.377e-06" ixy="0.0" ixz="0.0" iyy="4.322e-06" iyz="0.0" izz="7.015e-06"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj5.dae"/>
-      </geometry>
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/lj5.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </collision>
   </link>
   <link name="leftFoot">
     <inertial>
@@ -1805,12 +1067,6 @@
       <origin rpy="0 0 0" xyz="0.037702  0.005161  -0.047634"/>
       <inertia ixx="0.00623936" ixy="0.000217174" ixz="0.001340587" iyy="0.017786991" iyz="-0.000187749" izz="0.020774433"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/legs/foot.dae"/>
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </visual>
     <collision>
       <geometry>
         <box size="0.27 0.16 0.064"/>
@@ -1823,96 +1079,48 @@
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot_rear">
-      <origin rpy="0 0 0" xyz="0.032 0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="midfoot_rear">
       <origin rpy="0 0 0" xyz="0.032 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot_rear">
-      <origin rpy="0 0 0" xyz="0.032 -0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="midfoot_front">
       <origin rpy="0 0 0" xyz="0.102 0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot_front">
-      <origin rpy="0 0 0" xyz="0.102 0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="midfoot_front">
       <origin rpy="0 0 0" xyz="0.102 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot_front">
-      <origin rpy="0 0 0" xyz="0.102 -0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>    
     <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.058 0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.058 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 -0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.172 0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="toe">
-      <origin rpy="0 0 0" xyz="0.172 0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.172 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="toe">
-      <origin rpy="0 0 0" xyz="0.172 -0.055 -0.09"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
   </link>
   <joint name="leftHipYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.1016 -0.1853"/>
@@ -2623,15 +1831,6 @@
       <mass value="1.41984"/>
       <inertia ixx="0.0039688" ixy="-1.5797E-06" ixz="-0.00089293" iyy="0.0041178" iyz="-6.8415E-07" izz="0.0035243"/>
     </inertial>
-    <!--     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/multisense/head.dae" />
-      </geometry>
-      <material name="">
-        <color rgba="0.9098 0.44314 0.031373 1" />
-      </material>
-    </visual> -->
     <collision>
       <origin rpy="0 0 0" xyz="-0.0503 0 -0.00195"/>
       <geometry>
@@ -2651,17 +1850,6 @@
       <mass value="0.057654"/>
       <inertia ixx="3.7174E-05" ixy="4.9927E-08" ixz="1.1015E-05" iyy="4.2412E-05" iyz="-9.8165E-09" izz="4.167E-05"/>
     </inertial>
-    <visual>
-      <!--origin xyz="0.065774 -0.001163 -0.08809" rpy="0 0 0" /-->
-      <!--origin xyz="0.045 -0.001163 -0.08809" rpy="-0.314 0 0" /-->
-      <origin rpy="-0.314 0 0" xyz="0.045 -0.0261018277 -0.08342369"/>
-      <geometry>
-        <mesh filename="package://val_description/model/meshes/multisense/head_camera.dae"/>
-      </geometry>
-      <material name="">
-        <color rgba="0.72941 0.35686 0.023529 1"/>
-      </material>
-    </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.01885 0 -0.02119"/>
       <geometry>
