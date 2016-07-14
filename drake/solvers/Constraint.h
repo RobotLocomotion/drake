@@ -73,13 +73,12 @@ class Constraint {
 class QuadraticConstraint : public Constraint {
  public:
   static const int kNumConstraints = 1;
-
+  // TODO(naveenoid) : ASSERT check on dimensions of Q and b.
   template <typename DerivedQ, typename Derivedb>
   QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
                       const Eigen::MatrixBase<Derivedb>& b, double lb,
                       double ub)
-      : Constraint(kNumConstraints,
-                   Drake::Vector1d::Constant(lb),
+      : Constraint(kNumConstraints, Drake::Vector1d::Constant(lb),
                    Drake::Vector1d::Constant(ub)),
         Q_(Q),
         b_(b) {}
@@ -97,14 +96,10 @@ class QuadraticConstraint : public Constraint {
     y = .5 * x.transpose() * Q_.cast<Drake::TaylorVarXd>() * x +
         b_.cast<Drake::TaylorVarXd>().transpose() * x;
   };
-  virtual const Eigen::MatrixXd&
-  Q() const {
-    return Q_;
-  }
-  virtual const Eigen::VectorXd&
-  b() const {
-    return b_;
-  }
+
+  virtual const Eigen::MatrixXd& Q() { return Q_; }
+
+  virtual const Eigen::VectorXd& b()  { return b_; }
 
  private:
   Eigen::MatrixXd Q_;
@@ -124,10 +119,9 @@ class QuadraticConstraint : public Constraint {
  */
 class PolynomialConstraint : public Constraint {
  public:
-  PolynomialConstraint(
-      const VectorXPoly& polynomials,
-      const std::vector<Polynomiald::VarType>& poly_vars,
-      const Eigen::VectorXd& lb, const Eigen::VectorXd& ub)
+  PolynomialConstraint(const VectorXPoly& polynomials,
+                       const std::vector<Polynomiald::VarType>& poly_vars,
+                       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub)
       : Constraint(polynomials.rows(), lb, ub),
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}
@@ -164,8 +158,8 @@ class PolynomialConstraint : public Constraint {
 
   /// To avoid repeated allocation, reuse a map for the evaluation point.
   mutable std::map<Polynomiald::VarType, double> double_evaluation_point_;
-  mutable std::map<Polynomiald::VarType,
-                   Drake::TaylorVarXd> taylor_evaluation_point_;
+  mutable std::map<Polynomiald::VarType, Drake::TaylorVarXd>
+      taylor_evaluation_point_;
 };
 
 // todo: consider implementing DifferentiableConstraint,
@@ -202,8 +196,8 @@ class LinearConstraint : public Constraint {
   virtual Eigen::SparseMatrix<double> GetSparseMatrix() const {
     return A_.sparseView();
   }
-  virtual const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>&
-  A() const {
+  virtual const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& A()
+      const {
     return A_;
   }
 
@@ -275,7 +269,6 @@ class BoundingBoxConstraint : public LinearConstraint {
     y = x;
   }
 };
-
 
 /**
  * Implements a constraint of the form:
