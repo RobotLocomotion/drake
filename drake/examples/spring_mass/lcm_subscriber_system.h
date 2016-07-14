@@ -56,7 +56,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmLoop {
 /**
  * Receives LCM messages and outputs them to a SystemInterface<double>'s port.
  */
-class LcmSubscriberSystem : public SystemInterface<double> {
+class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
+    public SystemInterface<double> {
  public:
   /**
    * The constructor.
@@ -70,93 +71,36 @@ class LcmSubscriberSystem : public SystemInterface<double> {
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmBasicVectorTranslator& translator,
-                      ::lcm::LCM& lcm)
-      : channel_(channel),
-        translator_(translator),
-        lcm_loop_(lcm),
-        basic_vector_(translator.get_basic_vector_size()) {
-    // Initializes the communication layer.
-    ::lcm::Subscription* sub =
-        lcm.subscribe(channel_, &LcmSubscriberSystem::handleMessage, this);
-    sub->setQueueCapacity(1);
+                      ::lcm::LCM& lcm);
 
-    // Spawns a thread that accepts incomming LCM messages.
-    lcm_thread_ = std::thread(&internal::LcmLoop::LoopWithSelect, &lcm_loop_);
-  }
+  ~LcmSubscriberSystem() override;
 
-  ~LcmSubscriberSystem() override {
-    lcm_loop_.Stop();
-    lcm_thread_.join();
-  }
-
-  std::string get_name() const override {
-    return "LcmSubscriberSystem::" + channel_;
-  }
+  std::string get_name() const override;
 
   /**
    * The default context for this system is one that has zero input ports and
    * no state.
    */
-  std::unique_ptr<Context<double>> CreateDefaultContext() const override {
-    // Creates a new context for this system and sets the number of input ports
-    // to be zero.
-    std::unique_ptr<Context<double>> context(new Context<double>());
-    context->SetNumInputPorts(0);
-
-    // Creates a BasicStateVector of size zero for this system.
-    std::unique_ptr<BasicStateVector<double>> state(
-        new BasicStateVector<double>(0));
-
-    context->get_mutable_state()->continuous_state.reset(
-        new ContinuousState<double>(std::move(state), 0 /* size of q */,
-                                    0 /* size of v */, 0 /* size of z */));
-    return context;
-  }
+  std::unique_ptr<Context<double>> CreateDefaultContext() const override;
 
   /**
    * The output consists of a single port containing a `BasicVector<double>`.
    */
-  std::unique_ptr<SystemOutput<double>> AllocateOutput() const override {
-    std::unique_ptr<SystemOutput<double>> output(new SystemOutput<double>);
-    {
-      std::unique_ptr<BasicVector<double>> data(
-          new BasicVector<double>(translator_.get_basic_vector_size()));
-      std::unique_ptr<OutputPort<double>> port(
-          new OutputPort<double>(std::move(data)));
-      output->ports.push_back(std::move(port));
-    }
-    return output;
-  }
+  std::unique_ptr<SystemOutput<double>> AllocateOutput() const override;
 
-  // Computes the output for the given context, possibly updating values
-  // in the cache. Note that the context is ignored since it contains no
-  // information.
+  /**
+   * Computes the output for the given context, possibly updating values
+   * in the cache. Note that the context is ignored since it contains no
+   * information.
+   */
   void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
-    BasicVector<double>* output_vector = dynamic_cast<BasicVector<double>*>(
-        output->ports[0]->GetMutableVectorData());
-
-    data_mutex.lock();
-    output_vector->set_value(basic_vector_.get_value());
-    data_mutex.unlock();
-  }
+                  SystemOutput<double>* output) const override;
 
  private:
   // Translates the message contained within the recieve buffer by storing its
   // information in basic_vector_.
   void handleMessage(const ::lcm::ReceiveBuffer* rbuf,
-                     const std::string& channel) {
-    if (channel == channel_) {
-      data_mutex.lock();
-      translator_.TranslateLcmToBasicVector(rbuf, &basic_vector_);
-      data_mutex.unlock();
-    } else {
-      std::cerr << "LcmSubscriberSystem: handleMessage: WARNING: Received a "
-                << "message for channel \"" << channel
-                << "\" instead of channel \"" << channel_ << "\". Ignoring it."
-                << std::endl;
-    }
-  }
+                     const std::string& channel);
 
   // The channel on which to receive LCM messages.
   const std::string channel_;
