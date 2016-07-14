@@ -637,19 +637,27 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
             int var_num = (std::find(poly_vars.begin(), poly_vars.end(),
                                      term_var) -
                            poly_vars.begin());
-            DRAKE_ASSERT(var_num < (int)poly_vars.size());
+            DRAKE_ASSERT(var_num < static_cast<int>(poly_vars.size()));
             linear_constraint_matrix(poly_num, var_num) = monomial.coefficient;
           } else {
             DRAKE_ABORT();  // Can't happen (unless isAffine() lied to us).
           }
         }
       }
-      std::shared_ptr<LinearConstraint> constraint(
-          new LinearConstraint(linear_constraint_matrix,
-                               linear_constraint_lb,
+      if (ub == lb) {
+        std::shared_ptr<LinearEqualityConstraint> constraint(
+            new LinearEqualityConstraint(linear_constraint_matrix,
+                                         linear_constraint_ub));
+        AddLinearEqualityConstraint(constraint, vars);
+        return constraint;
+      } else {
+        std::shared_ptr<LinearConstraint> constraint(
+            new LinearConstraint(linear_constraint_matrix,
+                                 linear_constraint_lb,
                                linear_constraint_ub));
-      AddLinearConstraint(constraint, vars);
-      return constraint;
+        AddLinearConstraint(constraint, vars);
+        return constraint;
+      }
     } else {
       std::shared_ptr<PolynomialConstraint> constraint(
           new PolynomialConstraint(polynomials, poly_vars, lb, ub));
