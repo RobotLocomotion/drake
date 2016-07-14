@@ -24,10 +24,11 @@ GTEST_TEST(testMosek, MosekLinearProgram) {
   auto x = prog.AddContinuousVariables(4);
   Eigen::Vector4d A;
   A << 3, 1, 5, 1;
-  LinearConstraint obj(A.transpose(), Eigen::Vector4d::Constant(0),
+  LinearConstraint obj(A, Eigen::Vector4d::Constant(0),
                        Eigen::Vector4d::Constant(0));
   std::shared_ptr<LinearConstraint> ptrtoobj =
       std::make_shared<LinearConstraint>(obj);
+
   prog.AddCost(ptrtoobj);
   Eigen::MatrixXd constraint1(1, 4);
   Eigen::MatrixXd constraint2(1, 4);
@@ -43,6 +44,7 @@ GTEST_TEST(testMosek, MosekLinearProgram) {
   ub2 << 25;
   Eigen::MatrixXd lineqbounds(1,1);
   lineqbounds << 30;
+
   prog.AddLinearConstraint(constraint1, lb1, ub1);
   prog.AddLinearConstraint(constraint2, lb2, ub2);
   prog.AddLinearEqualityConstraint(lineqconstraint, lineqbounds);
