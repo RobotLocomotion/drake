@@ -120,12 +120,15 @@ To build with ``Make``, execute::
     cd drake-distro
     mkdir build
     cd build
-    cmake ../ -DCMAKE_BUILD_TYPE:STRING=Debug
+    cmake ../
     make
 
 **Do NOT use sudo.** Just ``make`` is sufficient, and will prevent problems
 later. Feel free to use ``make -j`` if your platform supports it. Note that the
-above ``cmake`` command uses build type "Debug". Alternative build modes include
+above ``cmake`` command does not specify a build type, so drake will be built
+with ``Release`` by default. If you wish to build with a different build type,
+change the cmake command to ``cmake ../ -DCMAKE_BUILD_TYPE:STRING=Debug``
+to build with build type "Debug". Alternative build modes include
 "RelWithDebInfo" and "Release". They differ in terms of the amount of debug
 symbols included in the resulting binaries and how efficiently the code
 executes.
@@ -165,7 +168,7 @@ Ninja build.
     cd drake-distro
     mkdir build
     cd build
-    cmake ../ -G Ninja -DCMAKE_BUILD_TYPE:STRING=Debug
+    cmake ../ -G Ninja
     ninja
 
 Ninja can rebuild Drake from within ``drake-distro/build/drake/`` without

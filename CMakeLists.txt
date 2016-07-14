@@ -13,6 +13,13 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERS
   message(FATAL_ERROR "MSVC version must be at least 14")
 endif()
 
+# Set Default build type to Release if none specified
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+    "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
+    FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
 # PODs out-of-source build logic
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   if(POD_BUILD)
