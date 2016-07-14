@@ -215,8 +215,8 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
     // type is const std::list<Binding<LinearConstraint>>::const_iterator&
     // Address the constraint matrix directly, translating back to our original
     // variable space
-    for (int i = 0; (unsigned int) i < con.constraint()->num_constraints();
-        i++) {
+    for (int i = 0; static_cast<unsigned int>(i) <
+        con.constraint()->num_constraints(); i++) {
       for (int j = 0; j < (con.constraint())->A().cols(); j++) {
         linear_cons(connum, j) = (con.constraint()->A())(i, j);
       }
@@ -331,8 +331,8 @@ Eigen::VectorXd MosekLP::GetEigenVectorSolutions() const {
   Eigen::VectorXd soln(numvar_);
   if (solutions_.empty())
     return soln;
-  int i = 0;
-  for (i = 0; (unsigned int) i < solutions_.size(); ++i) {
+  unsigned int i = 0;
+  for (i = 0; i < solutions_.size(); ++i) {
     soln(i) = solutions_[i];
   }
   return soln.transpose();
