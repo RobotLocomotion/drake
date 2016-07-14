@@ -1,8 +1,5 @@
 #pragma once
 
-// TODO(liang.fok) Move this class into a directory that is dedicated to
-// LCM-based systems after it is mature and proven useful.
-
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
