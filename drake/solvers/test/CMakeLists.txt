@@ -3,11 +3,11 @@ target_link_libraries(testOptimizationProblem drakeOptimization
   ${GTEST_BOTH_LIBRARIES})
 add_test(NAME testOptimizationProblem COMMAND testOptimizationProblem)
 
-  if(mosek_FOUND)
-    add_executable(testMosek testMosek.cpp)
-    target_link_libraries(testMosek drakeOptimization ${GTEST_BOTH_LIBRARIES})
-    add_test(NAME testMosek COMMAND testMosek)
-  endif()
+if(mosek_FOUND)
+  add_executable(testMosek testMosek.cpp)
+  target_link_libraries(testMosek drakeOptimization ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME testMosek COMMAND testMosek)
+endif()
 
 add_executable(testMobyLCP testMobyLCP.cpp)
 target_link_libraries(testMobyLCP drakeOptimization ${GTEST_BOTH_LIBRARIES})
