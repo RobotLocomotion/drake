@@ -44,22 +44,31 @@ std::unique_ptr<Context<double>> LcmSubscriberSystem::CreateDefaultContext()
   std::unique_ptr<BasicStateVector<double>> state(
       new BasicStateVector<double>(0));
 
+  // Stores the BasicStateVector in a ContinuousState. Then store the
+  // ContinuousState inside this system's context.
   context->get_mutable_state()->continuous_state.reset(
       new ContinuousState<double>(std::move(state), 0 /* size of q */,
                                   0 /* size of v */, 0 /* size of z */));
+
+  // Returns this system's context.
   return context;
 }
 
 std::unique_ptr<SystemOutput<double>> LcmSubscriberSystem::AllocateOutput()
     const {
+  // Instantiates a BasicVector object and stores it in a managed pointer.
+  std::unique_ptr<BasicVector<double>> data(
+      new BasicVector<double>(translator_.get_basic_vector_size()));
+
+  // Instantiates an OutputPort with the above BasicVector as the data type.
+  std::unique_ptr<OutputPort<double>> port(
+      new OutputPort<double>(std::move(data)));
+
+  // Stores the above-defined OutputPort in this system output.
   std::unique_ptr<SystemOutput<double>> output(new SystemOutput<double>);
-  {
-    std::unique_ptr<BasicVector<double>> data(
-        new BasicVector<double>(translator_.get_basic_vector_size()));
-    std::unique_ptr<OutputPort<double>> port(
-        new OutputPort<double>(std::move(data)));
-    output->ports.push_back(std::move(port));
-  }
+  output->ports.push_back(std::move(port));
+
+  // Returns this system's output.
   return output;
 }
 
