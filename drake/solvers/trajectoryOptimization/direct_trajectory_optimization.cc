@@ -8,9 +8,9 @@ using namespace std;
 namespace drake {
 namespace solvers {
 namespace {
-  VectorXd vector_diff(VectorXd& vec) {
-    return vec.tail(vec.size() - 1) - vec.head(vec.size() - 1);
-  }
+VectorXd vector_diff(VectorXd& vec) {
+  return vec.tail(vec.size() - 1) - vec.head(vec.size() - 1);
+}
 }
 
 /**
@@ -28,12 +28,12 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     const int trajectory_time_upper_bound)
     : num_inputs_(num_inputs),
       num_states_(num_states),
-      num_vars_(num_time_samples - 1 + (num_time_samples * 
-        (num_states_ + num_inputs))),
+      num_vars_(num_time_samples - 1 +
+                (num_time_samples * (num_states_ + num_inputs))),
       N(num_time_samples),
       h_vars_(opt_problem_.AddContinuousVariables(N - 1, "h")),
-      u_vars_(opt_problem_.AddContinuousVariables(num_inputs, "u")),
-      x_vars_(opt_problem_.AddContinuousVariables(num_states, "x")) {
+      u_vars_(opt_problem_.AddContinuousVariables(num_inputs * N, "u")),
+      x_vars_(opt_problem_.AddContinuousVariables(num_states * N, "x")) {
   // Construct total time linear constraint.
   // TODO(lucy-tri) add case for all timesteps independent (if needed).
   MatrixXd id_zero(N - 2, N - 1);
@@ -73,16 +73,40 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
 }
 
 /**
- *  Evaluate the initial trajectories at the sampled times and construct the 
- *  nominal z0. 
+ *  Evaluate the initial trajectories at the sampled times and construct the
+ *  nominal initial vectors.
  */
 void DirectTrajectoryOptimization::GetInitialVars(
     int t_init_in, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   VectorXd t_init{VectorXd::LinSpaced(N, 0, t_init_in)};
-  opt_problem_.SetInitialGuess(h_vars_, vector_diff(t_init)); 
-  // TODO return guesses for x and u vars.
-//  opt_problem_.SetInitialGuess(x_vars_, traj_init_x.value(t_init)); 
+  opt_problem_.SetInitialGuess(h_vars_, vector_diff(t_init));
+
+  VectorXd guess_u(u_vars_.size());
+  if (traj_init_u.empty()) {
+    guess_u = 0.01 * VectorXd::Random(u_vars_.size());
+  } else {
+    // cout << "u_vars_.size()= " << u_vars_.size() << endl;
+    for (int t = 0; t < N; ++t) {
+      // cout << "u size= " << traj_init_u.value(t_init[t]).size() << endl;
+      guess_u.segment(num_inputs_ * t, num_inputs_) =
+          traj_init_u.value(t_init[t]);
+    }
+  }
+  opt_problem_.SetInitialGuess(u_vars_, guess_u);
+
+  DRAKE_ASSERT(!traj_init_x.empty());  // TODO(lucy-tri) see below.
+  VectorXd guess_x(x_vars_.size());
+  if (traj_init_x.empty()) {
+    // TODO(lucy-tri) Do what DirectTrajectoryOptimization.m does.
+  } else {
+    for (int t = 0; t < N; ++t) {
+      // cout << "x size= " << traj_init_x.value(t_init[t]).size() << endl;
+      guess_x.segment(num_states_ * t, num_states_) =
+          traj_init_x.value(t_init[t]);
+    }
+  }
+  opt_problem_.SetInitialGuess(x_vars_, guess_x);
 }
 
 // TODO(Lucy-tri) add optional x_indices. Do: time_index as cell array.

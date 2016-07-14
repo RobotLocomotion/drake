@@ -20,7 +20,7 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
                                const size_t num_time_samples,
                                const int trajectory_time_lower_bound,
                                const int trajectory_time_upper_bound);
-  void GetInitialVars(int t_init_in, 
+  void GetInitialVars(int t_init_in,
                       const PiecewisePolynomial<double>& traj_init_u,
                       const PiecewisePolynomial<double>& traj_init_x);
   void AddStateConstraint(const Constraint& constraint, const int time_index);
@@ -29,7 +29,7 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   const int num_inputs_;
   const int num_states_;
   const int num_vars_;
-  const size_t N;  // Number of time samples
+  const int N;  // Number of time samples
 
   OptimizationProblem opt_problem_;
   DecisionVariableView h_vars_;
