@@ -55,7 +55,7 @@ struct Copyable {
 struct Unique {
   Unique() = default;
   Unique(Unique&&) = delete;
-  Unique(Unique const&) = delete;Auto-merging drake/solvers/test/C
+  Unique(Unique const&) = delete;
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
