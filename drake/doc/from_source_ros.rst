@@ -70,7 +70,7 @@ Add ``drake`` and ``drake_ros_integration`` to the workspace::
 
     cd ~/dev/drake_catkin_workspace/src
     git clone git@github.com:RobotLocomotion/drake.git
-    ln -s drake/drake/ros drake_ros_integration
+    ln -s drake/ros drake_ros_integration
 
 Note that ``drake_ros_integration`` is a symbolic link. This allows us to keep
 everything in Drake's main repository without needing to completely reorganize
