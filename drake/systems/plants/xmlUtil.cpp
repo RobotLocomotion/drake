@@ -259,21 +259,21 @@ void searchDirectory(map<string, string>& package_map, string path) {
           if (xml_doc.ErrorID()) {
             throw std::runtime_error(
               "xmlUtil.cpp: searchDirectory: Failed to parse XML in file " +
-              file_name + "\n" + xml_doc.ErrorName());
+                  file_name + "\n" + xml_doc.ErrorName());
           }
 
           XMLElement* package_node = xml_doc.FirstChildElement("package");
           if (!package_node) {
             throw std::runtime_error(
               "xmlUtil.cpp: searchDirectory: ERROR: XML file \"" + file_name +
-              "\" does not contain a <package> element.");
+                  "\" does not contain a <package> element.");
           }
 
           XMLElement* name_node = package_node->FirstChildElement("name");
           if (!name_node) {
             throw std::runtime_error(
               "xmlUtil.cpp: searchDirectory: ERROR: <package> element does not "
-              "contain a <name> element. (XML file \"" + file_name + "\")");
+                  "contain a <name> element. (XML file \"" + file_name + "\")");
           }
 
           package_name = name_node->FirstChild()->Value();
@@ -286,10 +286,6 @@ void searchDirectory(map<string, string>& package_map, string path) {
         if (package_iter == package_map.end()) {
           package_map.insert(make_pair(package_name,
             mypath_s.root().append("/")));
-        } else {
-          std::cerr << "xmlUtil.cpp: searchDirectory: WARNING: Package \""
-            << package_name << "\" was found more than once in the search "
-            << "space." << std::endl;
         }
       }
       tinydir_next(&dir);
@@ -303,8 +299,8 @@ void populatePackageMap(map<string, string>& package_map) {
   // Since Drake's package.xml file is located at its super-build level,
   // remove the last "drake" directory from the drake path. Also omit the
   // trailing slash.
-  std::string drake_path = Drake::getDrakePath();
-  std::string drake_path_parent = drake_path.substr(0,
+  const std::string drake_path = Drake::getDrakePath();
+  const std::string drake_path_parent = drake_path.substr(0,
     drake_path.find_last_of("drake") - std::string("drake").size());
 
   searchDirectory(package_map, drake_path_parent);

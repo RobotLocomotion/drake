@@ -91,13 +91,7 @@ class SensorPublisherLidar {
         // sensor's output. The ROS topic is
         // "drake/lidar/[name of robot]/[name of sensor]/".
         // It then creates a sensor_msgs::LaserScan message for each publisher.
-
-        // TODO(liangfok): Replace "prius_1" with the actual model name once
-        // #2462 is merged. See:
-        // https://github.com/RobotLocomotion/drake/pull/2462
-        const std::string& model_name = "prius_1";
-        // depth_sensor->frame_->body->model_name();
-
+        const std::string model_name = depth_sensor->get_model_name();
         const std::string key = model_name + "_" + depth_sensor->get_name();
 
         // Creates the ROS topic publisher for the current LIDAR sensor.
@@ -151,7 +145,7 @@ class SensorPublisherLidar {
           // to be zero.
           //
           // See:
-          // https://github.com/RobotStateVectortLocomotion/drake/issues/2210
+          // https://github.com/RobotLocomotion/drake/issues/2210
           message->time_increment = 0;
           message->scan_time = 0;
 
@@ -198,7 +192,7 @@ class SensorPublisherLidar {
     // Iterates through each sensor in the rigid body system. If the sensor is
     // a LIDAR sensor, store the range measurements in a ROS message and publish
     // it on the appropriate ROS topic.
-    for (auto sensor : sensor_vector) {
+    for (const RigidBodySensor* sensor : sensor_vector) {
       if (output_index + sensor->getNumOutputs() >
           rigid_body_system_->getNumOutputs()) {
         std::stringstream buff;
@@ -210,18 +204,15 @@ class SensorPublisherLidar {
         throw std::runtime_error(buff.str());
       }
 
+      // TODO(liang.fok): Update API to not require type dispatch!
+      // See: https://github.com/RobotLocomotion/drake/issues/2802.
       const RigidBodyDepthSensor* depth_sensor =
           dynamic_cast<const RigidBodyDepthSensor*>(sensor);
 
       if (depth_sensor != nullptr) {
         size_t sensor_data_index_ = output_index;
 
-        // TODO(liangfok): Replace model name with the actual model name once
-        // #2462 is merged. See:
-        // https://github.com/RobotLocomotion/drake/pull/2462
-        const std::string& model_name = "prius_1";
-        // depth_sensor->frame_->body->model_name();
-
+        const std::string& model_name = depth_sensor->get_model_name();
         const std::string key = model_name + "_" + depth_sensor->get_name();
 
         auto message_in_map = lidar_messages_.find(key);

@@ -89,7 +89,7 @@ class DrakeRosTfPublisher {
 
     // Instantiates a geometry_msgs::TransformStamped message for each rigid
     // body in the rigid body tree.
-    for (auto& rigid_body : rigid_body_tree->bodies) {
+    for (auto const& rigid_body : rigid_body_tree->bodies) {
       // Skips the current rigid body if it should be skipped.
       if (!PublishTfForRigidBody(rigid_body.get())) continue;
 
@@ -135,7 +135,7 @@ class DrakeRosTfPublisher {
 
     // Instantiates a geometry_msgs::TransformStamped message for each frame
     // in the rigid body tree.
-    for (auto& frame : rigid_body_tree->frames) {
+    for (auto const& frame : rigid_body_tree->frames) {
       std::string key = frame->body->model_name() + frame->name;
 
       // Checks whether a transform message for the current frame was already
@@ -248,7 +248,7 @@ class DrakeRosTfPublisher {
     }
 
     // Publishes the transform for each frame in the rigid body tree.
-    for (auto& frame : rigid_body_tree_->frames) {
+    for (auto const& frame : rigid_body_tree_->frames) {
       std::string key = frame->body->model_name() + frame->name;
 
       // Verifies that a geometry_msgs::TransformStamped message for the current

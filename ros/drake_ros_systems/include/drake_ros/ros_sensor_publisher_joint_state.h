@@ -27,29 +27,18 @@ namespace ros {
 // information for a particular robot.
 struct RobotJointStateStruct {
   // The name of the robot.
-  std::string robot_name_;
+  std::string robot_name;
 
   // The ROS topic publisher for publishing the robot's joint state
   // information.
-  ::ros::Publisher publisher_;
+  ::ros::Publisher publisher;
 
   // The joint state message for the robot.
-  std::unique_ptr<sensor_msgs::JointState> message_;
+  std::unique_ptr<sensor_msgs::JointState> message;
 
   // An index into the message that remembers where in the message
   // we are saving data.
-  int message_index_;
-
-  // Records whether this struct was updated.
-  bool updated_;
-
-  // The number of position DOFs in input vector `u` that belong to the
-  // robot.
-  // int num_positions_;
-
-  // The number of velocity DOFs in input vector `u` that belong to the
-  // robot.
-  // int num_velocities_;
+  int message_index;
 };
 
 /**
@@ -129,15 +118,15 @@ class SensorPublisherJointState {
         std::unique_ptr<RobotJointStateStruct> robot_struct(
             new RobotJointStateStruct());
 
-        robot_struct->robot_name_ = robot_name;
+        robot_struct->robot_name = robot_name;
 
         const std::string topic_name = "drake/" + robot_name + "/joint_state";
-        robot_struct->publisher_ =
+        robot_struct->publisher =
             nh.advertise<sensor_msgs::JointState>(topic_name, 1);
 
-        robot_struct->message_.reset(new sensor_msgs::JointState());
+        robot_struct->message.reset(new sensor_msgs::JointState());
 
-        robot_struct->message_->header.frame_id = RigidBodyTree::kWorldLinkName;
+        robot_struct->message->header.frame_id = RigidBodyTree::kWorldLinkName;
 
         InitJointStateStruct(robot_name, rigid_body_system->getRigidBodyTree(),
                              robot_struct.get());
@@ -183,12 +172,12 @@ class SensorPublisherJointState {
           // robot_struct->num_velocities_ += joint.getNumVelocities();
 
           if (joint.isFloating()) {
-            robot_struct->message_->name.push_back("floating_x");
-            robot_struct->message_->name.push_back("floating_y");
-            robot_struct->message_->name.push_back("floating_z");
-            robot_struct->message_->name.push_back("floating_roll");
-            robot_struct->message_->name.push_back("floating_pitch");
-            robot_struct->message_->name.push_back("floating_yaw");
+            robot_struct->message->name.push_back("floating_x");
+            robot_struct->message->name.push_back("floating_y");
+            robot_struct->message->name.push_back("floating_z");
+            robot_struct->message->name.push_back("floating_roll");
+            robot_struct->message->name.push_back("floating_pitch");
+            robot_struct->message->name.push_back("floating_yaw");
           } else {
             // Verifies that the joint has the same number of position versus
             // velocity DOFs. Throws an exception if this is not true.
@@ -202,23 +191,23 @@ class SensorPublisherJointState {
             // Adds the names of the DOFs that belong to the joint to the
             // message.
             for (int ii = 0; ii < joint.getNumPositions(); ii++) {
-              robot_struct->message_->name.push_back(joint.getPositionName(ii));
+              robot_struct->message->name.push_back(joint.getPositionName(ii));
             }
           }
         }
 
         // Resizes the vectors in the message and initialize them to have zero
         // state.
-        int num_states = robot_struct->message_->name.size();
+        int num_states = robot_struct->message->name.size();
 
-        robot_struct->message_->position.resize(num_states);
-        robot_struct->message_->velocity.resize(num_states);
-        robot_struct->message_->effort.resize(num_states);
+        robot_struct->message->position.resize(num_states);
+        robot_struct->message->velocity.resize(num_states);
+        robot_struct->message->effort.resize(num_states);
 
         for (int ii = 0; ii < num_states; ii++) {
-          robot_struct->message_->position[ii] = 0;
-          robot_struct->message_->velocity[ii] = 0;
-          robot_struct->message_->effort[ii] = 0;
+          robot_struct->message->position[ii] = 0;
+          robot_struct->message->velocity[ii] = 0;
+          robot_struct->message->effort[ii] = 0;
         }
       }
     }
@@ -254,13 +243,12 @@ class SensorPublisherJointState {
     int q_index = 0;
     int v_index = 0;
 
-    // Resets the message_index_ variable in each of the RobotJointStateStruct
+    // Resets the message_index variable in each of the RobotJointStateStruct
     // objects in the robot_structs_ map. This is so we can keep track of where
     // in the joint state message we are saving.
     for (auto const& map_entry : robot_structs_) {
       RobotJointStateStruct* robot_struct = map_entry.second.get();
-      robot_struct->message_index_ = 0;
-      robot_struct->updated_ = false;
+      robot_struct->message_index = 0;
     }
 
     // Obtains a reference to the world link in the rigid body tree.
@@ -283,18 +271,6 @@ class SensorPublisherJointState {
       // there should only be one RobotJointStateStruct per robot.
       const std::string& key = rigid_body->model_name();
 
-      // Obtains the RobotJointStateStruct for the robot that owns the current
-      // rigid body.
-
-      // RobotJointStateStruct* robot_struct =
-      //   robot_structs_[rigid_body->model_name()];
-
-      // if (robot_struct == nullptr) {
-      //   throw std::runtime_error(
-      //       "ERROR: SensorPublisherJointState: Unable to find"
-      //       "robot struct using key " + rigid_body->model_name());
-      // }
-
       // Verifies that a RobotJointStateStruct for the current robot
       // exists in the robot_structs_ map.
       auto robot_struct_in_map = robot_structs_.find(key);
@@ -315,40 +291,40 @@ class SensorPublisherJointState {
           auto translation = transform.translation();
           auto rpy = rotmat2rpy(transform.linear());
 
-          size_t index = robot_struct->message_index_;
+          size_t index = robot_struct->message_index;
 
-          robot_struct->message_->position[index++] = translation(0);
-          robot_struct->message_->position[index++] = translation(1);
-          robot_struct->message_->position[index++] = translation(2);
+          robot_struct->message->position[index++] = translation(0);
+          robot_struct->message->position[index++] = translation(1);
+          robot_struct->message->position[index++] = translation(2);
 
-          robot_struct->message_->position[index++] = rpy(0);
-          robot_struct->message_->position[index++] = rpy(1);
-          robot_struct->message_->position[index++] = rpy(2);
+          robot_struct->message->position[index++] = rpy(0);
+          robot_struct->message->position[index++] = rpy(1);
+          robot_struct->message->position[index++] = rpy(2);
 
           q_index += joint.getNumPositions();
-          index = robot_struct->message_index_;
+          index = robot_struct->message_index;
 
           for (size_t ii = 0; ii < joint.getNumVelocities(); ii++) {
-            robot_struct->message_->velocity[index++] = v[v_index++];
+            robot_struct->message->velocity[index++] = v[v_index++];
           }
 
-          robot_struct->message_index_ = index;
+          robot_struct->message_index = index;
         } else {
           // Verifies that the joint has the same number of position versus
           // velocity DOFs. Throws an exception if this is not true.
           if (joint.getNumPositions() != joint.getNumVelocities()) {
             throw std::runtime_error(
                 "ERROR: Joint \"" + joint.getName() + "\" in robot \"" +
-                robot_struct->robot_name_ +
+                robot_struct->robot_name +
                 "\" has a different number of positions and velocities.");
           }
 
           // Adds the names of the DOFs that belong to the joint to the
           // message.
           for (int ii = 0; ii < joint.getNumPositions(); ii++) {
-            size_t index = robot_struct->message_index_++;
-            robot_struct->message_->position[index] = q[q_index++];
-            robot_struct->message_->velocity[index] = v[v_index++];
+            size_t index = robot_struct->message_index++;
+            robot_struct->message->position[index] = q[q_index++];
+            robot_struct->message->velocity[index] = v[v_index++];
           }
         }
       }
@@ -357,8 +333,8 @@ class SensorPublisherJointState {
     // Publishes the joint state messages.
     for (auto const& map_entry : robot_structs_) {
       RobotJointStateStruct* robot_struct = map_entry.second.get();
-      robot_struct->message_->header.stamp = current_time;
-      robot_struct->publisher_.publish(*(robot_struct->message_.get()));
+      robot_struct->message->header.stamp = current_time;
+      robot_struct->publisher.publish(*(robot_struct->message.get()));
     }
 
     return u;  // Passes the output through to the next system in the cascade.

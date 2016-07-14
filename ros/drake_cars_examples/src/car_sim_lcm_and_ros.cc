@@ -19,9 +19,13 @@ using Drake::cascade;
 using Eigen::VectorXd;
 
 namespace drake {
-namespace examples {
+namespace ros {
 namespace cars {
 namespace {
+
+using drake::examples::cars::CreateRigidBodySystem;
+using drake::examples::cars::CreateVehicleSystem;
+using drake::examples::cars::GetCarSimulationDefaultOptions;
 
 /** Driving Simulator
  * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
@@ -86,16 +90,16 @@ int do_main(int argc, const char* argv[]) {
   // Defines the start time of the simulation.
   const double kStartTime = 0;
 
-  ::drake::ros::run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
+  drake::ros::run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
 
   return 0;
 }
 
 }  // namespace
 }  // namespace cars
-}  // namespace examples
+}  // namespace ros
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::cars::do_main(argc, argv);
+  return drake::ros::cars::do_main(argc, argv);
 }

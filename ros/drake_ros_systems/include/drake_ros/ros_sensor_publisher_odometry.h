@@ -214,9 +214,6 @@ class SensorPublisherOdometry {
       // Updates the time stamp in the transform message.
       message->header.stamp = current_time;
 
-      // Publishes the transform message onto ROS topic /tf.
-      // tf_broadcaster_.sendTransform(*message);
-
       publisher_in_map->second.publish(*message);
     }
 
