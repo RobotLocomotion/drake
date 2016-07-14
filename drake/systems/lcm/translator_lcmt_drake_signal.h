@@ -6,7 +6,7 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
-#include "drake/examples/spring_mass/lcm_basic_vector_translator.h"
+#include "drake/systems/lcm/lcm_basic_vector_translator.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {

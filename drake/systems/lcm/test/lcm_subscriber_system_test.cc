@@ -3,13 +3,14 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/examples/spring_mass/lcm_subscriber_system.h"
-#include "drake/examples/spring_mass/translator_lcmt_drake_signal.h"
+#include "drake/systems/lcm/lcm_receive_thread.h"
+#include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/lcm/translator_lcmt_drake_signal.h"
 #include "drake/lcmt_drake_signal.hpp"
 
 namespace drake {
-namespace examples {
-namespace spring_mass {
+namespace systems {
+namespace lcm {
 namespace {
 
 using drake::systems::lcm::LcmSubscriberSystem;
@@ -25,7 +26,7 @@ const int64_t kTimestamp = 123456;
  */
 class MessagePublisher {
  public:
-  MessagePublisher(const std::string& channel_name, lcm::LCM& lcm)
+  MessagePublisher(const std::string& channel_name, ::lcm::LCM& lcm)
       : channel_name_(channel_name), lcm_(lcm) {
     message_.dim = kDim;
     message_.val.resize(kDim);
@@ -56,7 +57,7 @@ class MessagePublisher {
 
   const std::string& channel_name_;
 
-  lcm::LCM& lcm_;
+  ::lcm::LCM& lcm_;
 
   drake::lcmt_drake_signal message_;
 
@@ -68,13 +69,16 @@ class MessagePublisher {
 // Tests the functionality of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // Instantiates LCM.
-  lcm::LCM lcm;
+  ::lcm::LCM lcm;
+
+  // Instantiates an LcmReceiveThread
+  LcmReceiveThread lcm_receive_thread(&lcm);
 
   // Defines a channel name.
   std::string channel_name = "test_channel_name";
 
   // Instantiates a LCM-System 2.0 Vector translator.
-  drake::systems::lcm::TranslatorLcmtDrakeSignal translator(kDim);
+  TranslatorLcmtDrakeSignal translator(kDim);
 
   // Instantiates an LcmSubscriberSystem that receives LCM messages of type
   // 'drake::lcmt_drake_signal' and outputs System 2.0 Vectors of type
@@ -84,7 +88,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // in a unique_ptr. The unique_ptr variable is called "dut" to indicate it is
   // the "device under test".
   std::unique_ptr<LcmSubscriberSystem> dut(
-      new LcmSubscriberSystem(channel_name, translator, lcm));
+      new LcmSubscriberSystem(channel_name, translator, &lcm_receive_thread));
 
   EXPECT_NE(dut.get(), nullptr);
   EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem::" + channel_name);
@@ -158,6 +162,6 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
 }
 
 }  // namespace
-}  // namespace spring_mass
-}  // namespace examples
+}  // namespace lcm
+}  // namespace systems
 }  // namespace drake

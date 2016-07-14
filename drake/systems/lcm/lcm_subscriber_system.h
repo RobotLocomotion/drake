@@ -11,47 +11,16 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
-#include "drake/examples/spring_mass/lcm_basic_vector_translator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/system_interface.h"
 #include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/lcm/lcm_basic_vector_translator.h"
+#include "drake/systems/lcm/lcm_receive_thread.h"
 
 namespace drake {
 namespace systems {
 namespace lcm {
-
-namespace internal {
-
-/**
- * Implements the loop that receives LCM messages.
- */
-class DRAKELCMSYSTEM2_EXPORT LcmLoop {
- public:
-  /**
-   * The constructor.
-   *
-   * @param[in] lcm The LCM subsystem to loop through.
-   */
-  explicit LcmLoop(::lcm::LCM& lcm) : stop_(false), lcm_(lcm) {}
-
-  /**
-   * Sits in a loop waiting for LCM messages to arrive and processes them as
-   * they arrive.
-   */
-  void LoopWithSelect();
-
-  /**
-   * Stops the LCM loop's thread. This stops the reception of LCM messages.
-   */
-  void Stop();
-
- private:
-  bool stop_{false};
-  ::lcm::LCM& lcm_;
-};
-
-}  // end namespace internal
 
 /**
  * Receives LCM messages and outputs them to a SystemInterface<double>'s port.
@@ -67,11 +36,14 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
    * @param[in] translator The translator that converts between LCM message
    * objects and `drake::systems::BasicVector` objects.
    *
-   * @param[in] lcm The LCM subsystem.
+   * @param[in] lcm_receive_thread A pointer to the LCM receive thread, which
+   * contains the LCM subsystem.
+   *
+   * @throws std::runtime_error if @plcm_receive_thread is nullptr.
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmBasicVectorTranslator& translator,
-                      ::lcm::LCM& lcm);
+                      LcmReceiveThread* lcm_receive_thread);
 
   ~LcmSubscriberSystem() override;
 
@@ -109,11 +81,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
   // drake::systems::BasicVector.
   const LcmBasicVectorTranslator& translator_;
 
-  // The thread responsible for receiving LCM messages.
-  std::thread lcm_thread_;
-
   // Implements the loop that receives LCM messages.
-  internal::LcmLoop lcm_loop_;
+  LcmReceiveThread* lcm_receive_thread_;
 
   // A mutex for protecting data that's shared by the LCM receive thread and
   // the thread that calls LcmSubscriberSystem::Output().

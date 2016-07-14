@@ -25,6 +25,7 @@ add_subdirectory(plants)
 add_subdirectory(trajectories)
 add_subdirectory(controllers)
 add_subdirectory(robotInterfaces)
+add_subdirectory(lcm)
 
 drake_install_headers(
   cascade_system.h
