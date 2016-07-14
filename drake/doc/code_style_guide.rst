@@ -229,6 +229,10 @@ contain is given `here <http://wiki.ros.org/catkin/package.xml>`_. Drake uses
 this same file for defining and finding packages. Specifically, it is searched
 for by
 `populatePackageMap() <https://github.com/RobotLocomotion/drake/blob/7bbcb0728a06c0abdd695fd8a5db1879bb5354bb/drake/systems/plants/xmlUtil.h#L160>`_.
+Note that ``package.xml`` files are necessary even if you're *not* using Drake
+with ROS because the model files used by Drake (e.g., URDF and SDF), frequently
+refer to resources like mesh files via a ``package://`` syntax, whose full paths
+are resolved by the ``package.xml`` files.
 
 When adding a model to Drake
 (typically in `drake-distro/drake/examples/ <https://github.com/RobotLocomotion/drake/tree/master/drake/examples>`_),
