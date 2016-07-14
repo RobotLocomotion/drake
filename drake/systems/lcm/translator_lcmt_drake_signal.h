@@ -33,4 +33,4 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorLcmtDrakeSignal :
 
 }  // namespace lcm
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake

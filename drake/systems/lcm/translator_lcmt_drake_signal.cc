@@ -54,4 +54,4 @@ void TranslatorLcmtDrakeSignal::TranslateLcmToBasicVector(
 
 }  // namespace lcm
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake

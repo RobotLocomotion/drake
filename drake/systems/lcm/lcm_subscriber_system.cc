@@ -89,4 +89,4 @@ void LcmSubscriberSystem::handleMessage(const ::lcm::ReceiveBuffer* rbuf,
 
 }  // namespace lcm
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake

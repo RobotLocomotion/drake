@@ -66,7 +66,8 @@ void LcmReceiveThread::LoopWithSelect() {
 
     if (lcmReady) {
       if (lcm_->handle() != 0) {
-        std::cout << "LcmThread: LoopWithSelect: lcm->handle() returned non-zero"
+        std::cout << "LcmReceiverThread: LoopWithSelect: lcm->handle() "
+                  << "returned non-zero value."
                   << std::endl;
         break;
       }
@@ -80,4 +81,4 @@ void LcmReceiveThread::Stop() {
 
 }  // namespace lcm
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake

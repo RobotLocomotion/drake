@@ -172,4 +172,4 @@ class Context {
 };
 
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake

@@ -139,7 +139,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
       }
 
       // At this point, the basic vector contains the expected values, which
-      // must have been delivered by the recival of an drake::lcmt_drake_signal
+      // must have been delivered by the receipt of an drake::lcmt_drake_signal
       // message.
       //
       // We cannot check whether the following member variables of

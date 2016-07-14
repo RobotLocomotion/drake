@@ -65,4 +65,4 @@ class DRAKELCMSYSTEM2_EXPORT LcmReceiveThread {
 
 }  // namespace lcm
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake

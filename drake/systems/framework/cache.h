@@ -22,4 +22,4 @@ class Cache {
 };
 
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake

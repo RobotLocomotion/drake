@@ -60,4 +60,4 @@ class LcmBasicVectorTranslator {
 
 }  // namespace lcm
 }  // namespace systems
-}  // namesapce drake
+}  // namespace drake
