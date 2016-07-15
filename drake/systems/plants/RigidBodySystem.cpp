@@ -55,7 +55,7 @@ size_t RigidBodySystem::getNumInputs(void) const {
 }
 
 size_t RigidBodySystem::getNumOutputs() const {
-  int n = getNumStates();
+  size_t n = getNumStates();
   for (const auto& s : sensors) {
     n += s->getNumOutputs();
   }
@@ -211,7 +211,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   }
 
   if (tree->getNumPositionConstraints()) {
-    int nc = tree->getNumPositionConstraints();
+    size_t nc = tree->getNumPositionConstraints();
     const double alpha = 5.0;  // 1/time constant of position constraint
                                // satisfaction (see my latex rigid body notes)
 
@@ -259,7 +259,7 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
   DRAKE_ASSERT(getNumInputs() == u.size());
 
   y.segment(0, getNumStates()) << x;
-  int index = getNumStates();
+  Eigen::Index index = getNumStates();
   for (const auto& s : sensors) {
     y.segment(index, s->getNumOutputs()) = s->output(t, kinsol, u);
     index += s->getNumOutputs();

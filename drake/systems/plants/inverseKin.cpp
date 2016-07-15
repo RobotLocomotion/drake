@@ -48,7 +48,7 @@ IKResults inverseKinSimple(
     const IKoptions& ikoptions) {
   auto results = IKResults();
   results.q_sol.resize(q_nom.size());
-  int num_constraints = constraint_array.size();
+  int num_constraints = (int)constraint_array.size();
   RigidBodyConstraint **const constraint_array_ptr =
       (RigidBodyConstraint * *const)constraint_array.data();
   inverseKin<Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd>(

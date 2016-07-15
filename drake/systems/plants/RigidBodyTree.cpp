@@ -944,7 +944,7 @@ Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyTree::centerOfMass(
   com.setZero();
   double m = 0.0;
 
-  for (size_t i = 0; i < bodies.size(); i++) {
+  for (int i = 0; i < (int)bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (isBodyPartOfRobot(body, robotnum)) {
       if (body.mass > 0) {
@@ -1672,7 +1672,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   // indicate that no frame was found.
   int match_index = -1;
 
-  for (size_t ii = 0; ii < bodies.size(); ++ii) {
+  for (int ii = 0; ii < (int)bodies.size(); ++ii) {
     // Skips the current body if model_id is not -1 and the body's robot ID is
     // not equal to the desired model ID.
     if (model_id != -1 && model_id != bodies[ii]->get_model_id()) continue;
@@ -1738,7 +1738,7 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   // indicate that no matching frame was found.
   int match_index = -1;
 
-  for (size_t ii = 0; ii < frames.size(); ++ii) {
+  for (int ii = 0; ii < (int)frames.size(); ++ii) {
     // Skips the current frame if model_id is not -1 and the frame's robot ID is
     // not equal to the desired robot ID.
     if (model_id != -1 && model_id != frames[ii]->get_model_id()) continue;
