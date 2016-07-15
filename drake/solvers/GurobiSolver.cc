@@ -151,8 +151,8 @@ SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
 
   error = GRBoptimize(model);
 
-  int optimstatus;
-  double objval;
+  int optimstatus = 0;
+  double objval = 0.0;
 
   if (error) {
     // TODO(naveenoid) : log error message using GRBgeterrormsg(env)
