@@ -18,7 +18,7 @@ const int kDim = 10;
 const int64_t kTimestamp = 123456;
 
 /**
- * Periodically publishes an LCM message of `type drake::lcmt_drake_signal`.
+ * Periodically publishes an LCM message of type `drake::lcmt_drake_signal`.
  */
 class MessagePublisher {
  public:
@@ -71,14 +71,14 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   LcmReceiveThread lcm_receive_thread(&lcm);
 
   // Defines a channel name.
-  std::string channel_name = "drake_system2_lcm_test_channel_name";
+  std::string channel_name = "drake_system2_lcm_test_subscriber_channel_name";
 
   // Instantiates a LCM-System 2.0 Vector translator.
   TranslatorLcmtDrakeSignal translator(kDim);
 
   // Instantiates an LcmSubscriberSystem that receives LCM messages of type
-  // 'drake::lcmt_drake_signal' and outputs System 2.0 Vectors of type
-  // `drake::systems::BasicVector`.
+  // drake::lcmt_drake_signal and outputs System 2.0 Vectors of type
+  // drake::systems::BasicVector.
   //
   // It then verifies that the LcmSubscriberSystem was successfully stored
   // in a unique_ptr. The unique_ptr variable is called "dut" to indicate it is
@@ -107,7 +107,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   const int kMaxCount = 10;
   const int kDelayMS = 500;
 
-  // We must periodically call dut->Output(...) since we do not precisely when
+  // We must periodically call dut->EvalOutput(...) since we do not know when
   // the LcmSubscriberSystem will receive the LCM message and thus return a
   // valid output.
   while (!done && count++ < kMaxCount) {
