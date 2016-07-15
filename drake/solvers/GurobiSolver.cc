@@ -3,7 +3,7 @@
 #include <Eigen/Core>
 #include "gurobi_c++.h"
 
-#include "Optimization.h"
+#include "drake/solvers/Optimization.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {
@@ -22,26 +22,107 @@ bool GurobiSolver::available() const { return true; }
 //    return(error);
 
 template <typename DerivedA, typename DerivedB>
-int myGRBaddconstrs(GRBmodel* model, Eigen::MatrixBase<DerivedA> const& A,
+int AddConstraints(GRBmodel* model, Eigen::MatrixBase<DerivedA> const& A,
                     Eigen::MatrixBase<DerivedB> const& b, char sense,
-                    double sparseness_threshold = 1e-14) {
-  int error = 0, nnz = 0;
-
+                    double sparseness_threshold = 1e-8) {
   std::vector<int> cind(A.cols(), 0);
   std::vector<double> cval(A.cols(), 0.0);
 
+  int error = 0;
   for (size_t i = 0; i < A.rows(); i++) {
-    nnz = 0;
+    int nnz = 0;
     for (size_t j = 0; j < A.cols(); j++) {
       if (std::abs(A(i, j)) > sparseness_threshold) {
         cval[nnz] = A(i, j);
         cind[nnz++] = j;
       }
     }
-    error = GRBaddconstr(model, nnz, &cind[0], &cval[0], sense, b(i), NULL);
+    error += GRBaddconstr(model, nnz, &cind[0], &cval[0], sense, b(i), NULL);
     if (error) break;
   }
   return error;
+}
+
+// Splits out the quadratic costs and makes calls to add them individually.
+int AddCosts(GRBmodel *model, OptimizationProblem& prog,
+             double sparseness_threshold = 1e-8) {
+  int error = 0;
+  int num_constraint_vars = 0;
+  int start_row = 0;
+  for (const auto& binding : prog.quadratic_costs()) {
+    const auto& c = binding.constraint();
+
+    num_constraint_vars = binding.GetNumElements();
+
+    Eigen::MatrixXd Q = 0.5 * (c->Q());
+    Eigen::VectorXd b = c->b();
+
+    // Check for square matrices.
+    DRAKE_ASSERT(Q.rows() == Q.cols());
+    // Check for symmetric matrices.
+    DRAKE_ASSERT(Q.transpose() == Q);
+    // Check for Quadratic and Linear Cost dimensions.
+    DRAKE_ASSERT(Q.rows() == num_constraint_vars);
+    DRAKE_ASSERT(b.cols() == 1);
+    DRAKE_ASSERT(b.rows() == num_constraint_vars);
+
+    double individual_quadratic_cost_value = 0.0;
+    int row_ind = 0, col_ind = 0;
+
+    // adding each Q term (only upper triangular).
+    for (size_t i = 0; i < num_constraint_vars; i++) {
+      for (size_t j = i; j < num_constraint_vars; j++) {
+        if (std::abs(Q(i, j)) > sparseness_threshold) {
+          row_ind = i + start_row;
+          col_ind = j + start_row;
+          // TODO(naveenoid) : Port to batch addition mode of this function
+          // by utilising the Upper right (or lower left) triangular matrix.
+          // The single element addition method used below is recommended
+          // initially by Gurobi since it has a low cost.
+          individual_quadratic_cost_value = Q(i, j);
+          error += GRBaddqpterms(model, 1, &row_ind, &col_ind,
+                        &individual_quadratic_cost_value);
+          if (error) break;
+        }
+        if (error) break;
+      }
+      if (error) break;
+    }
+    error += GRBsetdblattrarray(model, "Obj", start_row,
+                                num_constraint_vars, b.data());
+    start_row = start_row + Q.rows();
+    if (error) break;
+  }
+  return(error);
+}
+// Splits out the equality and inequality constraints and makes call to
+// add any non-inf constraints.
+int ProcessConstraints(GRBmodel *model, OptimizationProblem& prog,
+                       double sparseness_threshold = 1e-8) {
+  int error = 0;
+  // TODO(naveenoid) : needs test coverage.
+  for (const auto& binding : prog.linear_equality_constraints()) {
+    const auto& c = binding.constraint();
+    error += AddConstraints(model, c->A(), c->lower_bound(), GRB_EQUAL, 1e-18);
+  }
+
+  for (const auto& binding : prog.linear_constraints()) {
+    const auto& c = binding.constraint();
+
+    if (c->lower_bound() !=
+        -Eigen::MatrixXd::Constant((c->lower_bound()).rows(), 1,
+                                   std::numeric_limits<double>::infinity())) {
+      error += AddConstraints(model, c->A(), c->lower_bound(),
+                              GRB_GREATER_EQUAL, sparseness_threshold);
+    }
+    if (c->upper_bound() !=
+        Eigen::MatrixXd::Constant((c->upper_bound()).rows(), 1,
+                                  std::numeric_limits<double>::infinity())) {
+      error += AddConstraints(model, c->A(), c->upper_bound(),
+                              GRB_LESS_EQUAL, sparseness_threshold);
+    }
+  }
+  return(error);
 }
 
 SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
@@ -56,15 +137,14 @@ SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
   DRAKE_ASSERT(prog.generic_costs().empty());
   DRAKE_ASSERT(prog.generic_constraints().empty());
 
-  Eigen::VectorXd solution(prog.num_vars());
   int num_vars = prog.num_vars();
 
   // bound constraints
   std::vector<double> xlow(num_vars, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(num_vars, std::numeric_limits<double>::infinity());
 
-  for (auto const& binding : prog.bounding_box_constraints()) {
-    auto const& c = binding.constraint();
+  for (const auto& binding : prog.bounding_box_constraints()) {
+    const auto& c = binding.constraint();
     const Eigen::VectorXd& lower_bound = c->lower_bound();
     const Eigen::VectorXd& upper_bound = c->upper_bound();
     for (const DecisionVariableView& v : binding.variable_list()) {
@@ -76,90 +156,25 @@ SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
     }
   }
 
-  int error = 0;
   GRBmodel* model = NULL;
-  double sparseness_threshold = 1e-14;
-
   GRBnewmodel(env, &model, "QP", num_vars, NULL, &xlow[0], &xupp[0], NULL,
               NULL);
 
-  int start_row = 0;
-  int num_constraint_vars = 0;
-  double individual_quadratic_cost_value = 0.0;
-  int row_ind = 0, col_ind = 0;
-
-  for (auto const& binding : prog.quadratic_costs()) {
-    auto const& c = binding.constraint();
-
-    num_constraint_vars = binding.GetNumElements();
-
-    Eigen::MatrixXd Q = 0.5 * (c->Q());
-    Eigen::VectorXd b = c->b();
-
-    // Check for square matrices
-    DRAKE_ASSERT(Q.rows() == Q.cols());
-    // Check for symmetric matrices
-    DRAKE_ASSERT(Q.transpose() == Q);
-    // Check for Quadratic and Linear Cost dimensions
-    DRAKE_ASSERT(Q.rows() == num_constraint_vars);
-    DRAKE_ASSERT(b.cols() == 1);
-    DRAKE_ASSERT(b.rows() == num_constraint_vars);
-
-    // adding each Q term (only upper triangular)
-    for (size_t i = 0; i < num_constraint_vars; i++) {
-      for (size_t j = i; j < num_constraint_vars; j++) {
-        if (std::abs(Q(i, j)) > sparseness_threshold) {
-          row_ind = i + start_row;
-          col_ind = j + start_row;
-          // TODO(naveenoid) : Port to batch addition mode of this function
-          // by utilising the Upper right (or lower left) triangular matrix.
-          // The single element addition method used below is recommended
-          // initiall by Gurobi since it has a low cost
-          individual_quadratic_cost_value = Q(i, j);
-          error = GRBaddqpterms(model, 1, &row_ind, &col_ind,
-                                &individual_quadratic_cost_value);
-        }
-      }
-    }
-    GRBsetdblattrarray(model, "Obj", start_row, num_constraint_vars, b.data());
-    start_row = start_row + Q.rows();
-  }
-
-  // TODO(naveenoid) : needs test coverage
-  for (auto const& binding : prog.linear_equality_constraints()) {
-    auto const& c = binding.constraint();
-    myGRBaddconstrs(model, c->A(), c->lower_bound(), GRB_EQUAL, 1e-18);
-  }
-
-  for (auto const& binding : prog.linear_constraints()) {
-    auto const& c = binding.constraint();
-
-    if (c->lower_bound() !=
-        -Eigen::MatrixXd::Constant((c->lower_bound()).rows(), 1,
-                                   std::numeric_limits<double>::infinity())) {
-      myGRBaddconstrs(model, c->A(), c->lower_bound(), GRB_GREATER_EQUAL,
-                      1e-18);
-    }
-    if (c->upper_bound() !=
-        Eigen::MatrixXd::Constant((c->upper_bound()).rows(), 1,
-                                  std::numeric_limits<double>::infinity())) {
-      myGRBaddconstrs(model, c->A(), c->upper_bound(), GRB_LESS_EQUAL, 1e-18);
-    }
-  }
+  int error = 0;
+  // TODO(naveenoid) : This needs access externally.
+  double sparseness_threshold = 1e-14;
+  error = AddCosts(model, prog, sparseness_threshold);
+  error &= ProcessConstraints(model, prog, sparseness_threshold);
 
   SolutionResult result = SolutionResult::kSolutionFound;
-
   error = GRBoptimize(model);
-
-  int optimstatus = 0;
-  double objval = 0.0;
 
   if (error) {
     // TODO(naveenoid) : log error message using GRBgeterrormsg(env)
     result = SolutionResult::kInvalidInput;
   } else {
-    error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
-    error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &objval);
+    int optimstatus = 0;
+    GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
     if (optimstatus != GRB_OPTIMAL) {
       if (optimstatus == GRB_INF_OR_UNBD) {
