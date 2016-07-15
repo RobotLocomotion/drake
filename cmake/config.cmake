@@ -91,6 +91,13 @@ endif()
 # Choose your python (major) version
 option(WITH_PYTHON_3 "Force Drake to use python 3 instead of python 2" OFF)
 
+# Set default build
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+    "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
+    FORCE)
+endif()
+
 # Set default install prefix
 if(PROJECT_NAME STREQUAL "drake-superbuild")
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
