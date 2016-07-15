@@ -21,8 +21,7 @@ default_random_engine generator;
 GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   const size_t kNumInputs(1);
   const size_t kNumStates(2);
-  // TODO(lgibson) kNumTimeSamples should be 21, using smaller # now for tests.
-  const size_t kNumTimeSamples(5);  // aka N. Segment for each time sample.
+  const size_t kNumTimeSamples(21);  // aka N. Segment for each time sample.
   DirectTrajectoryOptimization directTraj(kNumInputs, kNumStates,
       kNumTimeSamples, 2, 6);
 
@@ -39,7 +38,14 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   const PiecewisePolynomialType states_x =
       PiecewisePolynomialType::random(kNumStates, 1, 6, segment_times);
 
-  directTraj.GetInitialVars(t_init_in, inputs_u, states_x);
+  SolutionResult result = SolutionResult::kUnknownError;
+  ASSERT_NO_THROW(result = 
+    directTraj.SolveTraj(t_init_in, PiecewisePolynomialType(), states_x));
+  EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
+
+  ASSERT_NO_THROW(result = 
+    directTraj.SolveTraj(t_init_in, inputs_u, states_x));
+  EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
 }
 
 }  // anonymous namespace
