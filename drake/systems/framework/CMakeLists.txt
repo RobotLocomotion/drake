@@ -13,6 +13,7 @@ set(sources
   basic_state_vector.cc
   value.cc
   vector_interface.cc
+  diagram.cc
   primitives/adder.cc)
 
 # Headers that should be installed with Drake so that they
@@ -32,6 +33,7 @@ set(installed_headers
   basic_state_vector.h
   value.h
   vector_interface.h
+  diagram.h
   primitives/adder.h)
 
 # Headers that are needed by code here but should not

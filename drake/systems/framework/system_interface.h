@@ -54,12 +54,12 @@ class SystemInterface : public AbstractSystemInterface {
 
   /// Returns a default output, initialized with the correct number of
   /// concrete output ports for this System.
-  virtual std::unique_ptr<SystemOutput<T>> AllocateOutput() const = 0;
+  virtual std::unique_ptr<SystemOutputInterface<T>> AllocateOutput() const = 0;
 
   /// Computes the output for the given context, possibly updating values
   /// in the cache.
   virtual void EvalOutput(const Context<T>& context,
-                          SystemOutput<T>* output) const = 0;
+                          SystemOutputInterface<T>* output) const = 0;
 
   // TODO(sherm): these two energy methods should be present only for systems
   // that represent some kind of physical system that can store energy in its
