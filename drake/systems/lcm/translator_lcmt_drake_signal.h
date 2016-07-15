@@ -29,9 +29,9 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorLcmtDrakeSignal
   explicit TranslatorLcmtDrakeSignal(int size)
       : LcmBasicVectorTranslator(size) {}
 
-  void TranslateLcmToBasicVector(
+  void TranslateLcmToVectorInterface(
       const ::lcm::ReceiveBuffer* rbuf,
-      drake::systems::BasicVector<double>* basic_vector) const override;
+      VectorInterface<double>* vector_interface) const override;
 };
 
 }  // namespace lcm

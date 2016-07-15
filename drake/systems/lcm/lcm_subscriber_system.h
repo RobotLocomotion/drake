@@ -5,6 +5,7 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_interface.h"
 #include "drake/systems/lcm/lcm_basic_vector_translator.h"
@@ -27,17 +28,20 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
    *
    * @param[in] channel The LCM channel on which to subscribe.
    *
-   * @param[in] translator The translator that converts between LCM message
-   * objects and `drake::systems::BasicVector` objects.
+   * @param[in] translator A reference to the translator that converts between
+   * LCM message objects and `drake::systems::BasicVector` objects. This
+   * reference must be valid throughout the lifetime of this
+   * `LcmSubscriberSystem`.
    *
-   * @param[in] lcm_receive_thread A pointer to the LCM receive thread, which
-   * contains the LCM subsystem.
+   * @param[in] lcm A pointer to the LCM subsystem. This pointer must not be
+   * nullptr and must be valid during the construction of this
+   * `LcmSubscriberSystem`.
    *
    * @throws std::runtime_error if @p lcm_receive_thread is nullptr.
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmBasicVectorTranslator& translator,
-                      LcmReceiveThread* lcm_receive_thread);
+                      ::lcm::LCM* lcm);
 
   ~LcmSubscriberSystem() override;
 
@@ -78,9 +82,6 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
   // The translator that converts between LCM messages and
   // drake::systems::BasicVector.
   const LcmBasicVectorTranslator& translator_;
-
-  // Implements the loop that receives LCM messages.
-  const LcmReceiveThread* const lcm_receive_thread_;
 
   // A mutex for protecting data that's shared by the LCM receive thread and
   // the thread that calls LcmSubscriberSystem::Output().
