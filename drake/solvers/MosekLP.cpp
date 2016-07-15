@@ -15,6 +15,7 @@ extern "C" {
 #include <Eigen/Sparse>
 #include <Eigen/Core>
 
+#include "drake/common/drake_assert.h"
 #include "drake/solvers/Constraint.h"
 
 
@@ -238,10 +239,11 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
   mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
                                             lower_constraint_bounds);
   // find the linear objective here
-  LinearConstraint *obj = dynamic_cast<LinearConstraint *>
-      ((prog.generic_costs().front().constraint()).get());
+  LinearConstraint *obj = dynamic_cast<LinearConstraint *>(
+      prog.generic_costs().front().constraint().get());
   std::vector<double> linobj((*obj).A().data(),
       (*obj).A().data() + (*obj).A().rows() * (*obj).A().cols());
+  DRAKE_ASSERT(obj != nullptr);
   MosekLP opt(prog.num_vars(),
               totalconnum,
               linobj,
