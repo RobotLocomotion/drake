@@ -22,20 +22,8 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 # PODs out-of-source build logic
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  if(POD_BUILD)
-    find_file(_build_dir build PATHS ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.. ${PROJECT_SOURCE_DIR}/../.. ${PROJECT_SOURCE_DIR}/../../.. ${PROJECT_SOURCE_DIR}/../../../..)
-    if(_build_dir)
-      set(CMAKE_INSTALL_PREFIX "${_build_dir}" CACHE STRING
-        "Prefix for installation of sub-packages (note: required during build!)" FORCE)
-    else()
-      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/build)
-      set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build
-      CACHE STRING "install prefix" FORCE)
-    endif()
-  else()
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
-      "Prefix for installation of sub-packages (note: required during build!)" FORCE)
-  endif()
+  set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
+    "Prefix for installation of sub-packages (note: required during build!)" FORCE)
 endif()
 message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 
@@ -358,15 +346,7 @@ foreach(proj ${EXTERNAL_PROJECTS})
     # now the actual project
     if(${proj}_IS_CMAKE_POD)
       if(NOT ${proj}_BINARY_DIR)
-        if(POD_BUILD)
-          set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}/pod-build")
-          # Make sure the source tree is empty before cloning into it.
-          set(${proj}_DOWNLOAD_COMMAND ${CMAKE_COMMAND} -E remove_directory ${${proj}_GIT_SUBMODULE_PATH}/pod-build
-            COMMAND ${${proj}_DOWNLOAD_COMMAND}
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${${proj}_GIT_SUBMODULE_PATH}/pod-build)
-        else()
-          set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
-        endif()
+        set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
       endif()
       set(PODS_VERBOSE_MAKEFILE "")
       if(CMAKE_VERBOSE_MAKEFILE)
@@ -436,11 +416,7 @@ foreach(proj ${EXTERNAL_PROJECTS})
     if(CMAKE_VERBOSE_MAKEFILE)
       set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
     endif()
-    if(POD_BUILD)
-      set(drake_BINARY_DIR "${PROJECT_SOURCE_DIR}/drake/pod-build")
-    else()
-      set(drake_BINARY_DIR "${PROJECT_BINARY_DIR}/drake")
-    endif()
+    set(drake_BINARY_DIR "${PROJECT_BINARY_DIR}/drake")
     ExternalProject_Add(${proj}
       SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
       DOWNLOAD_COMMAND ""
