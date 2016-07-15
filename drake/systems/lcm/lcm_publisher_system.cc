@@ -21,13 +21,10 @@ LcmPublisherSystem::LcmPublisherSystem(const std::string& channel,
     : channel_(channel),
       translator_(translator),
       lcm_(lcm),
-      basic_vector_(translator.get_vector_size()),
-      buffer_length_(translator.get_message_data_length()) {
-  buffer_ = new uint8_t[buffer_length_];
+      basic_vector_(translator.get_vector_size()) {
 }
 
 LcmPublisherSystem::~LcmPublisherSystem() {
-  delete[] buffer_;
 }
 
 std::string LcmPublisherSystem::get_name() const {
@@ -68,15 +65,21 @@ void LcmPublisherSystem::EvalOutput(const Context<double>& context,
 
   // Translates the input vector into an LCM message. The data is stored in
   // the memory pointed to by variable buffer.
-  translator_.TranslateVectorInterfaceToLCM(basic_input_vector, &buffer_,
-      &buffer_length_);
+  translator_.TranslateAndSendVectorInterfaceToLCM(basic_input_vector, channel_,
+      lcm_);
 
-  std::cout << "LcmPublisherSystem::EvalOutput: encoded message: \n"
-            << drake::MemoryBufferToString(buffer_, buffer_length_)
-            << std::endl;
+  // std::cout << "LcmPublisherSystem::EvalOutput: encoded message (length: "
+  //           << buffer_length_ << " bytes): \n"
+  //           << drake::MemoryBufferToString(buffer_, buffer_length_)
+  //           << std::endl;
 
-  // Publishes the LCM message.
-  lcm_->publish(channel_, buffer_, buffer_length_);
+  // // Publishes the LCM message.
+  // lcm_->publish(channel_, buffer_, buffer_length_);
+
+  // if (buffer != nullptr) {
+  //   delete[] buffer_;
+  //   buffer_ = nullptr;
+  // }
 }
 
 }  // namespace lcm

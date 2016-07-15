@@ -39,7 +39,7 @@ class LcmVectorInterfaceTranslator {
   /**
    * Returns the size of the LCM message in bytes.
    */
-  virtual int get_message_data_length() const = 0;
+  // virtual int get_message_data_length() const = 0;
 
   /**
    * Translates an LCM message into a `BasicVector` object.
@@ -62,14 +62,15 @@ class LcmVectorInterfaceTranslator {
    *
    * @param[in] basic_vector The basic vector to convert into an LCM message.
    *
-   * @param[in] data A pointer to where the encoded data should be saved.
+   * @param[in] channel The name of the channel on which to publish the LCM
+   * message.
    *
-   * @param[in] data_length The number of bytes of encoded data. This is the
-   * amount of data being pointed to by @p data.
+   * @param[in] lcm A pointer to the LCM subsystem. This pointer must not be
+   * null and must remain valid for the duration of this method call.
    */
-  virtual void TranslateVectorInterfaceToLCM(
-      const VectorInterface<double>& basic_vector, uint8_t* const* data,
-      int const* data_length) const = 0;
+  virtual void TranslateAndSendVectorInterfaceToLCM(
+      const VectorInterface<double>& basic_vector, const std::string& channel,
+          ::lcm::LCM* lcm) const = 0;
 
  private:
   // The size of the basic vector and vector representation of the LCM message.

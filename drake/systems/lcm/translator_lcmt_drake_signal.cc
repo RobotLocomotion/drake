@@ -12,14 +12,14 @@ namespace lcm {
 
 using std::runtime_error;
 
-int TranslatorLcmtDrakeSignal::get_message_data_length() const {
-  drake::lcmt_drake_signal message;
-  message.dim = get_vector_size();
-  message.val.resize(message.dim);
-  message.coord.resize(message.dim);
-  unsigned int data_length = message.getEncodedSize();
-  return static_cast<int>(data_length);
-}
+// int TranslatorLcmtDrakeSignal::get_message_data_length() const {
+//   drake::lcmt_drake_signal message;
+//   message.dim = get_vector_size();
+//   message.val.resize(message.dim);
+//   message.coord.resize(message.dim);
+//   unsigned int data_length = message.getEncodedSize();
+//   return static_cast<int>(data_length);
+// }
 
 void TranslatorLcmtDrakeSignal::TranslateLcmToVectorInterface(
     const ::lcm::ReceiveBuffer* rbuf,
@@ -55,14 +55,14 @@ void TranslatorLcmtDrakeSignal::TranslateLcmToVectorInterface(
   }
 }
 
-void TranslatorLcmtDrakeSignal::TranslateVectorInterfaceToLCM(
-    const VectorInterface<double>& vector_interface, uint8_t* const* data,
-    int const* datalen) const {
+void TranslatorLcmtDrakeSignal::TranslateAndSendVectorInterfaceToLCM(
+    const VectorInterface<double>& vector_interface, const std::string& channel,
+    ::lcm::LCM* lcm) const {
 
   DRAKE_ASSERT(vector_interface.size() == get_vector_size());
 
-  // Instantiates and initializes a LCM message containing the information
-  // contained within parameter vector_interface.
+  // Instantiates and initializes a LCM message capturing the state of
+  // parameter vector_interface.
   drake::lcmt_drake_signal message;
   message.dim = vector_interface.size();
   message.val.resize(message.dim);
@@ -76,7 +76,7 @@ void TranslatorLcmtDrakeSignal::TranslateVectorInterfaceToLCM(
     message.coord[ii] = "Coord_" + std::to_string(ii);
   }
 
-  message.encode(*data, 0, *datalen);
+  lcm->publish(channel, &message);
 }
 
 }  // namespace lcm

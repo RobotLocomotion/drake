@@ -98,12 +98,12 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
   // called.
   BasicVector<double> basic_vector_;
 
-  // Points to the data that holds an encoded LCM message. This is used when
-  // publishing LCM messages.
-  uint8_t *buffer_;
+  // // Points to the data that holds an encoded LCM message. This is used when
+  // // publishing LCM messages.
+  // uint8_t *buffer_{nullptr};
 
-  // The amount of data being pointed to by buffer_.
-  int buffer_length_;
+  // // The amount of data being pointed to by buffer_.
+  // int buffer_length_{-1};
 };
 
 }  // namespace lcm

@@ -29,15 +29,15 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorLcmtDrakeSignal
   explicit TranslatorLcmtDrakeSignal(int size)
       : LcmVectorInterfaceTranslator(size) {}
 
-  int get_message_data_length() const override;
+  // int get_message_data_length() const override;
 
   void TranslateLcmToVectorInterface(
       const ::lcm::ReceiveBuffer* rbuf,
       VectorInterface<double>* vector_interface) const override;
 
-  void TranslateVectorInterfaceToLCM(
-      const VectorInterface<double>& vector_interface, uint8_t* const* data,
-      int const* data_length) const override;
+  void TranslateAndSendVectorInterfaceToLCM(
+      const VectorInterface<double>& vector_interface,
+          const std::string& channel, ::lcm::LCM* lcm) const override;
 };
 
 }  // namespace lcm
