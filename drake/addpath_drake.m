@@ -61,7 +61,7 @@ addpath(fullfile(root,'solvers','BMI','util'));
 addpath(fullfile(root,'solvers','BMI','kinematics'));
 addpath(fullfile(root,'solvers','qpSpline'));
 addpath(fullfile(root,'bindings','matlab'));
-bindings_dir = fullfile(root,'pod-build','bindings','matlab');
+bindings_dir = fullfile(get_drake_binary_dir(),'bindings','matlab');
 if exist(bindings_dir, 'dir')
   addpath(bindings_dir);
 end
@@ -88,7 +88,7 @@ if (strcmp(computer('arch'),'maci64'))
 end
 
 if ispc
-  setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(root,'pod-build','lib','Release'),';',fullfile(root,'pod-build','lib')]);
+  setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(get_drake_install_dir(),'lib','Release')]);
 end
 
 
