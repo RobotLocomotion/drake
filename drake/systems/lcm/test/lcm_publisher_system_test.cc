@@ -52,68 +52,12 @@ class MessageSubscriber {
  private:
   void HandleMessage(const ::lcm::ReceiveBuffer *rbuf,
                      const std::string &channel_name) {
-    std::cout
-        << "MessageSubscriber: HandleMessage: Received message for channel "
-        << channel_name << ", data length = " << rbuf->data_size << std::endl
-        << "data:" << std::endl
-        << MemoryBufferToString(static_cast<uint8_t*>(rbuf->data),
-                                rbuf->data_size)
-        << std::endl;
-
     if (channel_name_ == channel_name) {
       message_mutex_.lock();
-      int num_bytes_decoded =
-          received_message_.decode(rbuf->data, 0, rbuf->data_size);
-      std::cout << "MessageSubscriber: HandleMessage: num bytes decoded = "
-                << num_bytes_decoded << "." << std::endl;
-      // received_message_ = *msg;
-      // // // If necessary, resizes the data structures in received_message_ to match
-      // // // that the message that was actually received.
-      // // if (received_message_.dim != msg->dim) {
-      // //   received_message_.dim = msg->dim;
-      // //   receive_message_.val.resize(msg->dim);
-      // //   receive_message_.coord.resize(msg->dim);
-      // // }
-      // // // Save the data contained in the received message.
-      // // for (int ii = 0; ii < msg->dim; ++ii) {
-      // //   received_message_.val[ii] = msg->val[ii];
-      // //   received_message_.coord[ii] = msg->coord[ii];
-      // // }
-      // // receive_message_.timestamp.resize(msg->dim);
+      received_message_.decode(rbuf->data, 0, rbuf->data_size);
       message_mutex_.unlock();
     }
   }
-
-  // void HandleMessage(const ::lcm::ReceiveBuffer *rbuf,
-  //                    const std::string &channel_name,
-  //                    const typename drake::lcmt_drake_signal *msg) {
-  //   std::cout
-  //       << "MessageSubscriber: HandleMessage: Received message for channel "
-  //       << channel_name << ", data length = " << rbuf->data_size << std::endl
-  //       << "data:" << std::endl
-  //       << MemoryBufferToString(static_cast<uint8_t*>(rbuf->data),
-  //                               rbuf->data_size)
-  //       << std::endl;
-
-  //   if (channel_name_ == channel_name) {
-  //     message_mutex_.lock();
-  //     received_message_ = *msg;
-  //     // // If necessary, resizes the data structures in received_message_ to match
-  //     // // that the message that was actually received.
-  //     // if (received_message_.dim != msg->dim) {
-  //     //   received_message_.dim = msg->dim;
-  //     //   receive_message_.val.resize(msg->dim);
-  //     //   receive_message_.coord.resize(msg->dim);
-  //     // }
-  //     // // Save the data contained in the received message.
-  //     // for (int ii = 0; ii < msg->dim; ++ii) {
-  //     //   received_message_.val[ii] = msg->val[ii];
-  //     //   received_message_.coord[ii] = msg->coord[ii];
-  //     // }
-  //     // receive_message_.timestamp.resize(msg->dim);
-  //     message_mutex_.unlock();
-  //   }
-  // }
 
   const std::string channel_name_;
 
