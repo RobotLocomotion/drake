@@ -13,19 +13,20 @@ namespace lcm {
  * Defines an abstract parent class of all translators that convert between
  * LCM message objects and drake::systems::BasicVector objects.
  */
-class LcmBasicVectorTranslator {
+class LcmVectorInterfaceTranslator {
  public:
   /**
    * The constructor.
    *
    * @param[in] size The size of the basic vector.
    */
-  explicit LcmBasicVectorTranslator(int size) : size_(size) {
+  explicit LcmVectorInterfaceTranslator(int size) : size_(size) {
   }
 
   // Disable copy and assign.
-  LcmBasicVectorTranslator(const LcmBasicVectorTranslator&) = delete;
-  LcmBasicVectorTranslator& operator=(const LcmBasicVectorTranslator&) = delete;
+  LcmVectorInterfaceTranslator(const LcmVectorInterfaceTranslator&) = delete;
+  LcmVectorInterfaceTranslator& operator=(const LcmVectorInterfaceTranslator&)
+    = delete;
 
   /**
    * Returns the size of the basic vector and the vector representation of the

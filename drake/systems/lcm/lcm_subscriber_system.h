@@ -8,7 +8,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_interface.h"
-#include "drake/systems/lcm/lcm_basic_vector_translator.h"
+#include "drake/systems/lcm/lcm_vector_interface_translator.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 
 namespace drake {
@@ -40,7 +40,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
    * @throws std::runtime_error if @p lcm_receive_thread is nullptr.
    */
   LcmSubscriberSystem(const std::string& channel,
-                      const LcmBasicVectorTranslator& translator,
+                      const LcmVectorInterfaceTranslator& translator,
                       ::lcm::LCM* lcm);
 
   ~LcmSubscriberSystem() override;
@@ -81,7 +81,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
 
   // The translator that converts between LCM messages and
   // drake::systems::BasicVector.
-  const LcmBasicVectorTranslator& translator_;
+  const LcmVectorInterfaceTranslator& translator_;
 
   // A mutex for protecting data that's shared by the LCM receive thread and
   // the thread that calls LcmSubscriberSystem::Output().
