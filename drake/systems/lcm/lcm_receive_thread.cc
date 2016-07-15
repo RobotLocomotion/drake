@@ -27,9 +27,7 @@ LcmReceiveThread::~LcmReceiveThread() {
   Stop();
 }
 
-::lcm::LCM* LcmReceiveThread::get_lcm() const {
-  return lcm_;
-}
+::lcm::LCM* LcmReceiveThread::get_lcm() const { return lcm_; }
 
 namespace {
 
@@ -56,7 +54,7 @@ bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
   return (status > 0 && FD_ISSET(lcm_file_descriptor, &fds));
 }
 
-} // namespace
+}  // namespace
 
 void LcmReceiveThread::LoopWithSelect() {
   while (!stop_) {
@@ -68,8 +66,7 @@ void LcmReceiveThread::LoopWithSelect() {
     if (lcm_ready) {
       if (lcm_->handle() != 0) {
         std::cout << "LcmReceiverThread: LoopWithSelect: lcm->handle() "
-                  << "returned non-zero value."
-                  << std::endl;
+                  << "returned non-zero value." << std::endl;
         return;
       }
     }
