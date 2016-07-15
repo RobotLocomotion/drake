@@ -23,7 +23,8 @@ void TranslatorLcmtDrakeSignal::TranslateLcmToBasicVector(
   if (status < 0) {
     throw runtime_error(
       "drake::systems::lcm::TranslatorLcmtDrakeSignal: "
-      "TranslateLcmToBasicVector: ERROR: Failed to decode LCM message.");
+          "TranslateLcmToBasicVector: ERROR: Failed to decode LCM message, the "
+              "status is " + std::to_string(status) + ".");
   }
 
   // Verifies that the size of the LCM message matches the size of the basic

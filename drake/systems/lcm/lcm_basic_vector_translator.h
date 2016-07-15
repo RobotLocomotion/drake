@@ -36,7 +36,7 @@ class LcmBasicVectorTranslator {
   }
 
   /**
-   * Translates an LCM message a `BasicVector` object.
+   * Translates an LCM message into a `BasicVector` object.
    *
    * @param[in] rbuf A pointer to a buffer holding the LCM message's data.
    *
