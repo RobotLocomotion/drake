@@ -1,7 +1,6 @@
 #include "direct_trajectory_optimization.h"
 
 #include <iostream>
-#include <Eigen/Core>
 
 using namespace std;
 
@@ -15,6 +14,9 @@ VectorXd vector_diff(VectorXd& vec) {
 
 /**
  *  DirectTrajectoryOptimization
+ *
+ *  For readability of long lines, these single-letter variables names are 
+ *  sometimes used:
  *
  *  N number of timesteps
  *  h timesteps (there are N-1 of these)
@@ -42,7 +44,7 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   zero_id << MatrixXd::Zero(N - 2, 1), MatrixXd::Identity(N - 2, N - 2);
   MatrixXd a_time(N - 1, N - 1);
   a_time << MatrixXd::Ones(1, N - 1), id_zero - zero_id;
-  //  cout << a_time << endl;
+
   VectorXd lower(N - 1);
   lower << trajectory_time_lower_bound, MatrixXd::Zero(N - 2, 1);
   VectorXd upper(N - 1);
@@ -72,10 +74,6 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   }
 }
 
-/**
- *  Evaluate the initial trajectories at the sampled times and construct the
- *  nominal initial vectors.
- */
 void DirectTrajectoryOptimization::GetInitialVars(
     int t_init_in, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
@@ -112,6 +110,16 @@ void DirectTrajectoryOptimization::GetInitialVars(
 // TODO(Lucy-tri) add optional x_indices. Do: time_index as cell array.
 void DirectTrajectoryOptimization::AddStateConstraint(
     const Constraint& constraint, const int time_index) {}
+
+SolutionResult DirectTrajectoryOptimization::SolveTraj(
+    int t_init, const PiecewisePolynomial<double>& traj_init_u,
+    const PiecewisePolynomial<double>& traj_init_x) {
+  GetInitialVars(t_init, traj_init_u, traj_init_x);
+  SolutionResult result = opt_problem_.Solve();
+  opt_problem_.PrintSolution();
+  // TODO(lgibson) Reconstruct the state and input trajectories. 
+  return result;
+}
 
 }  // solvers
 }  // drake
