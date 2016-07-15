@@ -23,7 +23,7 @@ class LcmBasicVectorTranslator {
   explicit LcmBasicVectorTranslator(int size) : size_(size) {
   }
 
-  // Noncopyable and non-comparable.
+  // Disable copy and assign.
   LcmBasicVectorTranslator(const LcmBasicVectorTranslator&) = delete;
   LcmBasicVectorTranslator& operator=(const LcmBasicVectorTranslator&) = delete;
 

@@ -44,12 +44,12 @@ std::unique_ptr<Context<double>> LcmSubscriberSystem::CreateDefaultContext()
 std::unique_ptr<SystemOutput<double>> LcmSubscriberSystem::AllocateOutput()
     const {
   // Instantiates a BasicVector object and stores it in a managed pointer.
-  std::unique_ptr<BasicVector<double>> data =
-      make_unique<BasicVector<double>>(translator_.get_basic_vector_size());
+  std::unique_ptr<BasicVector<double>> data(
+      new BasicVector<double>(translator_.get_basic_vector_size()));
 
   // Instantiates an OutputPort with the above BasicVector as the data type.
-  std::unique_ptr<OutputPort<double>> port =
-      make_unique<OutputPort<double>>(std::move(data));
+  std::unique_ptr<OutputPort<double>> port(
+      new OutputPort<double>(std::move(data)));
 
   // Stores the above-defined OutputPort in this system output.
   std::unique_ptr<SystemOutput<double>> output(new SystemOutput<double>);

@@ -7,7 +7,6 @@
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_interface.h"
-// #include "drake/systems/framework/vector_interface.h"
 #include "drake/systems/lcm/lcm_basic_vector_translator.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 
