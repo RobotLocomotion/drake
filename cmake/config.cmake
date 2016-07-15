@@ -1,4 +1,16 @@
 #------------------------------------------------------------------------------
+function(drake_check_compiler NAME VERSION)
+  if(DEFINED ARGV2)
+    set(_version_string "${ARGV2}")
+  else()
+    set(_version_string "${VERSION}")
+  endif()
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${VERSION})
+    message(FATAL_ERROR "${NAME} version must be at least ${_version_string}")
+  endif()
+endfunction()
+
+#------------------------------------------------------------------------------
 function(drake_get_matlab_jvm_version)
   # Find matlab; this does not use find_package(Matlab) because we only want
   # to enable matlab support if the matlab executable is in the user's PATH
@@ -47,14 +59,14 @@ endfunction()
 ###############################################################################
 
 # Check minimum compiler requirements
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-  message(FATAL_ERROR "GCC version must be at least 4.9")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
-  message(FATAL_ERROR "Apple Clang version must be at least 7")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
-  message(FATAL_ERROR "Clang version must be at least 3.7")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
-  message(FATAL_ERROR "MSVC version must be at least 14")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  drake_check_compiler("GCC" 4.9)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  drake_check_compiler("Apple Clang" 7)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  drake_check_compiler("Clang" 3.7)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  drake_check_compiler("MSVC" 19 "19 (VS 2015)")
 endif()
 
 # Set default build
