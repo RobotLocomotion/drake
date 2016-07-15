@@ -37,13 +37,6 @@ class DRAKELCMSYSTEM2_EXPORT LcmReceiveThread {
   LcmReceiveThread& operator=(const LcmReceiveThread&) = delete;
 
   /**
-   * Returns a pointer to the LCM subsystem. The lifetime of this thread will
-   * be valid for the lifetime of this `LcmReciveThread`, as required by the
-   * this class' constructor's documentation.
-   */
-  ::lcm::LCM* get_lcm() const;
-
-  /**
    * Stops the LCM receive thread. This stops the reception of LCM messages.
    */
   void Stop();

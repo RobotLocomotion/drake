@@ -27,8 +27,6 @@ LcmReceiveThread::~LcmReceiveThread() {
   Stop();
 }
 
-::lcm::LCM* LcmReceiveThread::get_lcm() const { return lcm_; }
-
 namespace {
 
 // Waits for an LCM message to arrive.

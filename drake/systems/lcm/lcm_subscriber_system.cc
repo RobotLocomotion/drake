@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_state_vector.h"
 
 namespace drake {
@@ -11,15 +12,15 @@ namespace lcm {
 using std::make_unique;
 
 LcmSubscriberSystem::LcmSubscriberSystem(
-    const std::string& channel, const LcmBasicVectorTranslator& translator,
-    LcmReceiveThread* lcm_receive_thread)
+    const std::string& channel, const LcmVectorInterfaceTranslator& translator,
+    ::lcm::LCM* lcm)
     : channel_(channel),
       translator_(translator),
-      lcm_receive_thread_(lcm_receive_thread),
-      basic_vector_(translator.get_basic_vector_size()) {
+      basic_vector_(translator.get_vector_size()) {
+  DRAKE_ABORT_UNLESS(lcm);
   // Initializes the communication layer.
-  ::lcm::Subscription* sub = lcm_receive_thread_->get_lcm()->subscribe(
-      channel_, &LcmSubscriberSystem::HandleMessage, this);
+  ::lcm::Subscription* sub = lcm->subscribe(channel_,
+      &LcmSubscriberSystem::HandleMessage, this);
   sub->setQueueCapacity(1);
 }
 
@@ -45,7 +46,7 @@ std::unique_ptr<SystemOutput<double>> LcmSubscriberSystem::AllocateOutput()
     const {
   // Instantiates a BasicVector object and stores it in a managed pointer.
   std::unique_ptr<BasicVector<double>> data(
-      new BasicVector<double>(translator_.get_basic_vector_size()));
+      new BasicVector<double>(translator_.get_vector_size()));
 
   // Instantiates an OutputPort with the above BasicVector as the data type.
   std::unique_ptr<OutputPort<double>> port(
@@ -72,7 +73,7 @@ void LcmSubscriberSystem::HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                                         const std::string& channel) {
   if (channel == channel_) {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    translator_.TranslateLcmToBasicVector(rbuf, &basic_vector_);
+    translator_.TranslateLcmToVectorInterface(rbuf, &basic_vector_);
   } else {
     std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
               << "message for channel \"" << channel
