@@ -98,7 +98,7 @@ if(snopt_c_FOUND)
   pods_use_pkg_config_packages(drakeOptimization snopt_c)
 endif()
 if(gurobi_FOUND)
-    pods_use_pkg_config_packages(drakeOptimization gurobi)
+  pods_use_pkg_config_packages(drakeOptimization gurobi)
 endif()
 
 if(snopt_c_FOUND AND MATLAB_FOUND)

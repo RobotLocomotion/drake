@@ -17,5 +17,5 @@ SolutionResult GurobiSolver::Solve(
           "solver.");
 }
 
-}
-}
+}  // end namespace solvers
+}  // end namespace drake
