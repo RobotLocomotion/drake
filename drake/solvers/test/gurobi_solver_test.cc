@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/solvers/GurobiSolver.h"
+#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/util/eigen_matrix_compare.h"

@@ -1,4 +1,4 @@
-#include "GurobiSolver.h"
+#include "gurobi_solver.h"
 
 #include <Eigen/Core>
 #include "gurobi_c++.h"
