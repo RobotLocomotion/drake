@@ -13,9 +13,9 @@ import sys
 
 
 def summarize_cpplint(cmdline_and_files):
-    """Given a cpplint subprocess command line (the program, arguments, and files
-    to check), run cpplint and return a list of errors, or an empty list if
-    there were no errors.
+    """Given a cpplint subprocess command line (the program, arguments, and
+    files to check), run cpplint and return a list of errors, or an empty list
+    if there were no errors.
     """
 
     try:
@@ -38,6 +38,7 @@ def summarize_cpplint(cmdline_and_files):
             # Our filtering failed, so report everything.
             errors = [e.output or "NO OUTPUT"]
         return errors
+
 
 def multiprocess_cpplint(cmdline, files, num_processes):
     """Given a cpplint subprocess command line (just the program and arguments),
@@ -69,27 +70,28 @@ def multiprocess_cpplint(cmdline, files, num_processes):
             print >>sys.stderr, line
         return 1
 
+
 def main():
     # Find cpplint.py.
     drake_common_test_dir = os.path.dirname(os.path.abspath(__file__))
-    drake_dir = os.path.abspath(os.path.join(drake_common_test_dir, '../../'))
-    drake_distro_dir = os.path.abspath(os.path.join(drake_dir, '../'))
+    drake_dir = os.path.abspath(os.path.join(drake_common_test_dir, '../..'))
+    drake_distro_dir = os.path.abspath(os.path.join(drake_dir, '..'))
     default_cpplint = os.path.join(
         drake_distro_dir, 'externals/google_styleguide/cpplint/cpplint.py')
 
     # Prepare to parse our arguments.
     parser = argparse.ArgumentParser(
         description=__doc__.strip(),
-        usage=
-        '%(prog)s [options] [pathname [pathname ...]] [-- <cpplint.py args>]')
+        usage=('%(prog)s [options] [pathname [pathname ...]]'
+               ' [-- <cpplint.py args>]'))
     parser.add_argument(
         '--cpplint',
         default=default_cpplint,
-        help='path to cpplint.py (%(default)s)')
+        help='path to cpplint.py (default %(default)s)')
     parser.add_argument(
         '--extension', metavar='EXT', action='append', dest='extensions',
         default='c|cc|cpp|cxx|c++|h|hpp|hxx|h++'.split('|'),
-        help='add an allowed extension (%(default)s)')
+        help='add an allowed extension (default %(default)s)')
     parser.add_argument(
         '--no-summarize', action='store_false',
         dest='summarize', default='True',
@@ -101,7 +103,7 @@ def main():
     parser.add_argument(
         'pathnames', nargs='*', default=[drake_dir],
         help='list of files and/or directories to check'
-        ' (default is all of Drake)')
+        ' (default %(default)s)')
 
     # Separate out extra_args, then parse the rest of the arguments.
     argv = sys.argv[1:]
@@ -112,13 +114,23 @@ def main():
         argv[index:] = []
     args = parser.parse_args(argv)
 
-    # Find every file under args.pathnames that matches args.extensions.
+    # Search our args.pathnames.  For any directories it lists, recursively
+    # find every file within that matches args.extensions.  For any files
+    # it lists, if their extension matches then lint them; otherwise, show
+    # a warning and do not count them in the total files passed.
+    args_files = [x for x in args.pathnames if os.path.isfile(x)]
+    args_nonfiles = [x for x in args.pathnames if not os.path.isfile(x)]
     files = [
         os.path.join(dirpath, filename)
-        for pathname in args.pathnames
+        for pathname in args_nonfiles
         for dirpath, _, filenames in os.walk(pathname)
         for filename in filenames
         if os.path.splitext(filename)[1][1:] in args.extensions]
+    for filename in args_files:
+        if os.path.splitext(filename)[1][1:] not in args.extensions:
+            print "Ignoring %s; not a valid file name." % filename
+        else:
+            files.append(filename)
 
     # Invoke cpplint.py.
     cmdline = [
