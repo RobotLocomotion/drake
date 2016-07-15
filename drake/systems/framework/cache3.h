@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/systems/framework/value.h"
-#include "drake/systems/framework/value_listener.h"
+#include "drake/systems/framework/value_listener3.h"
 #include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
