@@ -8,6 +8,7 @@ if(lcm_FOUND)
   target_link_libraries(drakeLCMSystem2
     drakeSystemFramework
     lcm
+    drakeCommon
     ${CMAKE_THREAD_LIBS_INIT})
   if(WIN32)
     target_link_libraries(drakeLCMSystem2 ws2_32)

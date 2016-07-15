@@ -8,6 +8,7 @@
 #include <sys/select.h>
 #endif
 
+#include "drake/common/memory_buffer_utils.h"
 #include "drake/systems/framework/system_input.h"
 
 namespace drake {
@@ -62,16 +63,20 @@ void LcmPublisherSystem::EvalOutput(const Context<double>& context,
   const BasicVector<double>& basic_input_vector =
       dynamic_cast<const BasicVector<double>&>(*input_vector);
 
+  std::cout << "LcmPublisherSystem::EvalOutput: input vector:" << std::endl
+            << basic_input_vector.get_value() << std::endl;
+
   // Translates the input vector into an LCM message. The data is stored in
   // the memory pointed to by variable buffer.
   translator_.TranslateBasicVectorToLCM(basic_input_vector,
       &buffer_, &buffer_length_);
 
-  lcm_->publish(channel_, buffer_, buffer_length_);
+  std::cout << "LcmPublisherSystem::EvalOutput: encoded message: \n"
+            << drake::MemoryBufferToString(buffer_, buffer_length_)
+            << std::endl;
 
-  // data_mutex.lock();
-  // output_vector->set_value(basic_vector_.get_value());
-  // data_mutex.unlock();
+  // Publishes the LCM message.
+  lcm_->publish(channel_, buffer_, buffer_length_);
 }
 
 }  // namespace lcm

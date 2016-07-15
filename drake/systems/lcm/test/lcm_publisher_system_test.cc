@@ -81,16 +81,9 @@ class MessageSubscriber {
 
 // Tests the functionality of LcmPublisherSystem.
 GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
-  // Instantiates LCM.
   ::lcm::LCM lcm;
-
-  // Instantiates an LcmReceiveThread
   LcmReceiveThread lcm_receive_thread(&lcm);
-
-  // Defines a channel name.
   std::string channel_name = "drake_system2_lcm_test_publisher_channel_name";
-
-  // Instantiates a LCM-System 2.0 Vector translator.
   TranslatorLcmtDrakeSignal translator(kDim);
 
   // Instantiates an LcmPublisherSystem that takes as input System 2.0 Vectors
@@ -141,7 +134,7 @@ GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
   bool done = false;
 
   // This is used to prevent this unit test from running indefinitely when
-  // the receiveer fails to receive the LCM message published by the
+  // the receiver fails to receive the LCM message published by the
   // LcmPublisherSystem.
   int count = 0;
 
