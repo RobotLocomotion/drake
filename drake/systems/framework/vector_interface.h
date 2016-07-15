@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "drake/common/eigen_types.h"
+#include "drake/systems/framework/value.h"
 
 #include <Eigen/Dense>
 
@@ -18,6 +19,8 @@ namespace systems {
 /// contiguous memory locations.
 ///
 /// @tparam T Must be a Scalar compatible with Eigen.
+
+// TODO(sherm1) Currently these must be contiguous. Is that reasonable?
 template <typename T>
 class VectorInterface {
  public:
@@ -55,11 +58,10 @@ class VectorInterface {
   VectorInterface& operator=(VectorInterface<T>&& other) = delete;
 };
 
-/// This concrete class provides object semantics to an abstract
-/// VectorInterface by implementing a copy constructor and copy assignment using
-/// the VectorInterface's `Clone()` method. A %VectorObject is 
-/// default-constructible, copy-constructible, move-constructible, and
-/// copy- and move-assignable.
+/** This concrete class provides object semantics to an abstract
+VectorInterface by implementing a copy constructor and copy assignment using
+the VectorInterface's `Clone()` method. A %VectorObject is 
+default-, copy-, and move-constructible, and copy- and move-assignable. **/
 
 // TODO(sherm1) This wrapper would not be necessary if we had a smart
 // pointer for adding object semantics to abstract objects that support Clone(),
@@ -78,7 +80,7 @@ class VectorObject {
   /// a deep copy which is then owned by this %VectorObject.
   VectorObject(const VectorObject& source) : VectorObject() {
     if (!source.empty())
-      vector_.reset(source.get_vector().Clone());
+      vector_ = source.get_vector().Clone();
   }
 
   /// Move construction leaves `source` empty.
@@ -89,7 +91,7 @@ class VectorObject {
   /// a clone of the `source` object.
   VectorObject& operator=(const VectorObject& source) {
     vector_.reset();  // Delete current vector.
-    if (!source.empty()) vector_.reset(source.get_vector().Clone());
+    if (!source.empty()) vector_ = source.get_vector().Clone();
     return *this;
   }
 
@@ -103,7 +105,7 @@ class VectorObject {
   /// %VectorObject, if any. Don't call this on an empty object; check first
   /// with empty() if you aren't sure.
   /// @throws std::logic_error This object is empty.
-  const VectorInterface& get_vector() const {
+  const VectorInterface<T>& get_vector() const {
     if (empty())
       throw std::logic_error("VectorObject::get_vector(): object is empty.");
     return *vector_;
@@ -113,7 +115,7 @@ class VectorObject {
   /// %VectorObject, if any. Don't call this on an empty object; check first
   /// with empty() if you aren't sure.
   /// @throws std::logic_error This object is empty.
-  VectorInterface* get_mutable_vector() {
+  VectorInterface<T>* get_mutable_vector() {
     if (empty()) {
       throw std::logic_error(
           "VectorObject::get_mutable_vector(): object is empty.");
@@ -129,6 +131,21 @@ class VectorObject {
  private:
   std::unique_ptr<VectorInterface<T>> vector_;
 };
+
+/** Strip off the VectorObject so we can see the VectorInterface. **/
+template <typename T>
+inline const VectorInterface<T>& to_vector_interface(
+    const AbstractValue& value) {
+  const VectorObject<T>& object = value.GetValue<VectorObject<T>>();
+  return object.get_vector();
+}
+
+/** Strip off the VectorObject so we can see the VectorInterface. **/
+template <typename T>
+inline VectorInterface<T>* to_mutable_vector_interface(AbstractValue* value) {
+  VectorObject<T>* object = value->GetMutableValue<VectorObject<T>>();
+  return object->get_mutable_vector();
+}
 
 }  // namespace systems
 }  // namespace drake

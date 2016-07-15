@@ -9,6 +9,14 @@
 
 namespace drake {
 
+/// A column vector of size 1 (a scalar), templated on scalar type.
+template <typename Scalar>
+using Vector1 = Eigen::Matrix<Scalar, 1, 1>;
+
+/// A column vector of size 2, templated on scalar type.
+template <typename Scalar>
+using Vector2 = Eigen::Matrix<Scalar, 2, 1>;
+
 /// A column vector of size 3, templated on scalar type.
 template <typename Scalar>
 using Vector3 = Eigen::Matrix<Scalar, 3, 1>;

@@ -1,24 +1,46 @@
 # Source files used to build drakeSystemFramework.
-set(sources
+set(shared_sources
   basic_vector.cc
-  cache.cc
-  context.cc
+  value.cc
+  vector_interface.cc
+)
+
+set(system2_sources
+  basic_state_vector.cc
   continuous_system.cc
   state.cc
   state_subvector.cc
   state_vector.cc
-  system_interface.cc
   system_input.cc
+  system_interface.cc
   system_output.cc
-  basic_state_vector.cc
-  value.cc
-  vector_interface.cc
-  primitives/adder.cc)
+  primitives/adder.cc
+)
+
+set(system3_sources
+  cache3.cc
+  context3.cc
+  system3.cc
+  primitives/adder3.cc
+  primitives/gain3.cc
+)
+
+set(sources
+  ${shared_sources}
+  ${system2_sources}
+  ${system3_sources}
+)
 
 # Headers that should be installed with Drake so that they
 # are available elsewhere via #include.
-set(installed_headers
+set(shared_installed_headers
   basic_vector.h
+  value.h
+  vector_interface.h
+)
+
+set(system2_installed_headers
+  basic_state_vector.h
   cache.h
   context.h
   continuous_system.h
@@ -26,13 +48,31 @@ set(installed_headers
   state.h
   state_subvector.h
   state_vector.h
-  system_interface.h
   system_input.h
+  system_interface.h
   system_output.h
-  basic_state_vector.h
-  value.h
-  vector_interface.h
-  primitives/adder.h)
+  primitives/adder.h
+)
+
+set(system3_installed_headers
+  cache3.h
+  context3.h
+  system3.h
+  system3_input.h
+  system3_output.h
+  value_listener3.h
+  primitives/adder3.h
+  primitives/cascade3.h
+  primitives/diagram3.h
+  primitives/gain3.h
+  primitives/vector_constant3.h
+)
+
+set(installed_headers
+  ${shared_installed_headers}
+  ${system2_installed_headers}
+  ${system3_installed_headers}
+)
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.
