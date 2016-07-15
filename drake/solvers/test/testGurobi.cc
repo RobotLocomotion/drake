@@ -1,14 +1,12 @@
 #include <typeinfo>
 
-#include "drake/common/drake_assert.h"
+#include "gtest/gtest.h"
+
 #include "drake/solvers/GurobiSolver.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
-
-#include "gtest/gtest.h"
-#include "gurobi_c.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
