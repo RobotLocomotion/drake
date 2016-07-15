@@ -238,13 +238,13 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
   mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
                                             lower_constraint_bounds);
   // find the linear objective here
-  LinearConstraint *obj_ = static_cast<LinearConstraint *>(
-      (prog.generic_costs().front().constraint()).get());
-  std::vector<double> linobj_((*obj_).A().data(),
-      (*obj_).A().data() + (*obj_).A().rows() * (*obj_).A().cols());
+  LinearConstraint *obj = dynamic_cast<LinearConstraint *>
+      ((prog.generic_costs().front().constraint()).get());
+  std::vector<double> linobj((*obj).A().data(),
+      (*obj).A().data() + (*obj).A().rows() * (*obj).A().cols());
   MosekLP opt(prog.num_vars(),
               totalconnum,
-              linobj_,
+              linobj,
               linear_cons,
               mosek_constraint_bounds,
               upper_constraint_bounds,
