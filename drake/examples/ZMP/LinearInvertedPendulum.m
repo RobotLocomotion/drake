@@ -288,7 +288,11 @@ classdef LinearInvertedPendulum < LinearSystem
       if options.compute_lyapunov
         if options.build_control_objects
           s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
-          [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
+          [t,y] = ode45(@s2dynamics,fliplr(breaks),0);
+          ydot = zeros(size(y));
+          for i = 1:length(t)
+            ydot(i) = s2dynamics(t(i),y(i));
+          end
           s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
           Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
         else
