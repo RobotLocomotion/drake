@@ -24,7 +24,6 @@ class MessagePublisher {
  public:
   MessagePublisher(const std::string& channel_name, ::lcm::LCM* lcm)
       : channel_name_(channel_name), lcm_(lcm) {
-
     message_.dim = kDim;
     message_.val.resize(kDim);
     message_.coord.resize(kDim);
@@ -146,12 +145,10 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
       //   2. timestamp
       //
       // Thus, we must conclude that the experiment succeeded.
-      if (values_match)
-        done = true;
+      if (values_match) done = true;
     }
 
-    if (!done)
-      std::this_thread::sleep_for(std::chrono::milliseconds(kDelayMS));
+    if (!done) std::this_thread::sleep_for(std::chrono::milliseconds(kDelayMS));
   }
 
   EXPECT_TRUE(done);
