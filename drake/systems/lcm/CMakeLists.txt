@@ -5,7 +5,10 @@ if(lcm_FOUND)
     lcm_subscriber_system.cc
     translator_lcmt_drake_signal.cc)
   add_dependencies(drakeLCMSystem2 drake_lcmtypes_hpp)
-  target_link_libraries(drakeLCMSystem2 drakeSystemFramework lcm)
+  target_link_libraries(drakeLCMSystem2
+    drakeSystemFramework
+    lcm
+    ${CMAKE_THREAD_LIBS_INIT})
   if(WIN32)
     target_link_libraries(drakeLCMSystem2 ws2_32)
   endif()

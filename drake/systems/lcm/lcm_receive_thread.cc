@@ -8,25 +8,20 @@
 #include <sys/select.h>
 #endif
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace systems {
 namespace lcm {
 
-LcmReceiveThread::LcmReceiveThread(::lcm::LCM* lcm) : stop_(false), lcm_(lcm) {
-  // Checks if the supplied lcm parameter is nullptr. Throws an exception if it
-  // is.
-  if (lcm_ == nullptr) {
-    throw std::runtime_error(
-      "LcmReceiveThread: ERROR: lcm pointer is nullptr.");
-  }
-
+LcmReceiveThread::LcmReceiveThread(::lcm::LCM* lcm) : lcm_(lcm) {
+  DRAKE_ABORT_UNLESS(lcm);
   // Spawns a thread that calls this->LoopWithSelect().
   lcm_thread_ = std::thread(&LcmReceiveThread::LoopWithSelect, this);
 }
 
 LcmReceiveThread::~LcmReceiveThread() {
-  stop_ = true;
-  lcm_thread_.join();
+  Stop();
 }
 
 ::lcm::LCM* LcmReceiveThread::get_lcm() const {
@@ -35,7 +30,7 @@ LcmReceiveThread::~LcmReceiveThread() {
 
 // Waits for an LCM message to arrive.
 bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
-  int lcmFd = lcm->getFileno();
+  int lcm_file_descriptor = lcm->getFileno();
 
   struct timeval tv;
   tv.tv_sec = 0;
@@ -43,33 +38,32 @@ bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
 
   fd_set fds;
   FD_ZERO(&fds);
-  FD_SET(lcmFd, &fds);
+  FD_SET(lcm_file_descriptor, &fds);
 
-  int status = select(lcmFd + 1, &fds, 0, 0, &tv);
-  if (status == -1 && errno != EINTR) {
-    // throw std::runtime_error("WaitForLcm: select() returned error: " +
-    //   std::to_string(errno));
-    std::cout << "WaitForLcm: select() returned error: " << errno << std::endl;
-  } else if (status == -1 && errno == EINTR) {
-    // throw std::runtime_error("WaitForLcm: select() interrupted.");
+  int status = select(lcm_file_descriptor + 1, &fds, 0, 0, &tv);
+  int error_code = errno;
+  if (status == -1 && error_code != EINTR) {
+    std::cout << "WaitForLcm: select() returned error: " << error_code
+              << std::endl;
+  } else if (status == -1 && error_code == EINTR) {
     std::cout << "WaitForLcm: select() interrupted." << std::endl;
   }
-  return (status > 0 && FD_ISSET(lcmFd, &fds));
+  return (status > 0 && FD_ISSET(lcm_file_descriptor, &fds));
 }
 
 void LcmReceiveThread::LoopWithSelect() {
   while (!stop_) {
-    const double timeoutInSeconds = 0.3;
-    bool lcmReady = WaitForLcm(lcm_, timeoutInSeconds);
+    const double timeout_in_seconds = 0.3;
+    bool lcm_ready = WaitForLcm(lcm_, timeout_in_seconds);
 
     if (stop_) break;
 
-    if (lcmReady) {
+    if (lcm_ready) {
       if (lcm_->handle() != 0) {
         std::cout << "LcmReceiverThread: LoopWithSelect: lcm->handle() "
                   << "returned non-zero value."
                   << std::endl;
-        break;
+        return;
       }
     }
   }
@@ -77,6 +71,7 @@ void LcmReceiveThread::LoopWithSelect() {
 
 void LcmReceiveThread::Stop() {
   stop_ = true;
+  lcm_thread_.join();
 }
 
 }  // namespace lcm

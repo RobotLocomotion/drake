@@ -23,6 +23,10 @@ class LcmBasicVectorTranslator {
   explicit LcmBasicVectorTranslator(int size) : size_(size) {
   }
 
+  // Noncopyable and non-comparable.
+  LcmBasicVectorTranslator(const LcmBasicVectorTranslator&) = delete;
+  LcmBasicVectorTranslator& operator=(const LcmBasicVectorTranslator&) = delete;
+
   /**
    * Returns the size of the basic vector and the vector representation of the
    * LCM message.
@@ -50,7 +54,7 @@ class LcmBasicVectorTranslator {
    * @p basic_vector.
    */
   virtual void TranslateLcmToBasicVector(const ::lcm::ReceiveBuffer* rbuf,
-    drake::systems::BasicVector<double>* basic_vector) const = 0;
+      BasicVector<double>* basic_vector) const = 0;
 
   /**
    * Translates a `BasicVector` object into an LCM message.
@@ -64,7 +68,7 @@ class LcmBasicVectorTranslator {
 
  private:
   // The size of the basic vector and vector representation of the LCM message.
-  int size_;
+  const int size_;
 };
 
 }  // namespace lcm

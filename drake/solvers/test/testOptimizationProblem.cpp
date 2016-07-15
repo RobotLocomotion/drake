@@ -1,6 +1,7 @@
 #include <typeinfo>
 
 #include "drake/common/drake_assert.h"
+#include "drake/solvers/Constraint.h"
 #include "drake/solvers/IpoptSolver.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/NloptSolver.h"
@@ -666,6 +667,29 @@ GTEST_TEST(testOptimizationProblem, multiLCP) {
 
   EXPECT_TRUE(CompareMatrices(y.value(), Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
+}
+
+/**
+ * Test that linear polynomial constraints get turned into linear constraints.
+ */
+GTEST_TEST(testOptimizationProblem, linearPolynomialConstraint) {
+  const Polynomiald x("x");
+  OptimizationProblem problem;
+  static const double kEpsilon = 1e-7;
+  const auto x_var = problem.AddContinuousVariables(1);
+  const std::vector<Polynomiald::VarType> var_mapping = {
+    x.getSimpleVariable()};
+  std::shared_ptr<Constraint> resulting_constraint =
+      problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
+                                      Vector1d::Constant(2),
+                                      Vector1d::Constant(2));
+  // Check that the resulting constraint is a LinearConstraint.
+  EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
+            nullptr);
+  // Check that it gives the correct answer as well.
+  RunNonlinearProgram(problem, [&]() {
+      EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
+    });
 }
 
 // The current windows CI build has no solver for generic constraints.  The

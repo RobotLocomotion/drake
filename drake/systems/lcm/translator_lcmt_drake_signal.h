@@ -13,18 +13,27 @@ namespace lcm {
 /**
  * Specializes the LcmBasicVectorTranslator to handle the LCM messages of type
  * `drake::lcmt_drake_signal`.
+ *
+ * Assumes that the order of the values in the LCM Vector and the BasicVector
+ * are identical.
  */
-class DRAKELCMSYSTEM2_EXPORT TranslatorLcmtDrakeSignal :
-    public LcmBasicVectorTranslator {
+class DRAKELCMSYSTEM2_EXPORT TranslatorLcmtDrakeSignal
+    : public LcmBasicVectorTranslator {
  public:
-  explicit TranslatorLcmtDrakeSignal(int size) :
-     LcmBasicVectorTranslator(size) {
-  }
+  /**
+   * The constructor.
+   *
+   * @param[in] size The number of elements in both the Basic Vector and the
+   * LCM drake signal message.
+   */
+  explicit TranslatorLcmtDrakeSignal(int size)
+      : LcmBasicVectorTranslator(size) {}
 
   int get_message_data_length() const override;
 
-  void TranslateLcmToBasicVector(const ::lcm::ReceiveBuffer* rbuf,
-    BasicVector<double>* basic_vector) const override;
+  void TranslateLcmToBasicVector(
+      const ::lcm::ReceiveBuffer* rbuf,
+      BasicVector<double>* basic_vector) const override;
 
   void TranslateBasicVectorToLCM(const BasicVector<double>& basic_vector,
     const void *data, unsigned int datalen) const override;

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <mutex>
-#include <stdexcept>
+#include <atomic>
 #include <thread>
 #include <iostream>
 
@@ -22,6 +21,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmReceiveThread {
    * The constructor.
    *
    * @param[in] lcm A pointer to the LCM subsystem through which to loop.
+   * This parameter cannot be nullptr.
    *
    * @throws runtime_error if @p lcm is nullptr.
    */
@@ -32,6 +32,10 @@ class DRAKELCMSYSTEM2_EXPORT LcmReceiveThread {
    * stopped.
    */
   ~LcmReceiveThread();
+
+  // Noncopyable and non-comparable.
+  LcmReceiveThread(const LcmReceiveThread&) = delete;
+  LcmReceiveThread& operator=(const LcmReceiveThread&) = delete;
 
   /**
    * Returns a pointer to the LCM subsystem.
@@ -51,10 +55,10 @@ class DRAKELCMSYSTEM2_EXPORT LcmReceiveThread {
   void LoopWithSelect();
 
   // Whether to stop the lcm_thread_.
-  bool stop_{false};
+  std::atomic<bool> stop_{false};
 
   // A pointer to the LCM subsystem.
-  ::lcm::LCM* lcm_{nullptr};
+  ::lcm::LCM* const lcm_{nullptr};
 
   // The thread responsible for receiving LCM messages.
   std::thread lcm_thread_;
