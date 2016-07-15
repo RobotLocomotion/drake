@@ -14,6 +14,15 @@ namespace lcm {
 
 using std::runtime_error;
 
+int TranslatorLcmtDrakeSignal::get_message_data_length() const {
+  drake::lcmt_drake_signal message;
+  message.dim = get_basic_vector_size();
+  message.val.resize(message.dim);
+  message.coord.resize(message.dim);
+  unsigned int data_length = message->getEncodedSize();
+  return static_cast<int>(data_length);
+}
+
 void TranslatorLcmtDrakeSignal::TranslateLcmToBasicVector(
     const ::lcm::ReceiveBuffer* rbuf,
     drake::systems::BasicVector<double>* basic_vector) const {
@@ -50,6 +59,28 @@ void TranslatorLcmtDrakeSignal::TranslateLcmToBasicVector(
   for (int ii = 0; ii < message.dim; ++ii) {
     basic_vector_value[ii] = message.val[ii];
   }
+}
+
+void TranslateBasicVectorToLCM(const BasicVector<double>& basic_vector,
+    void** data, unsigned int* datalen) const {
+
+  // TODO(liang.fok) Assert that basic_vector.size == get_basic_vector_size()
+
+  // Instantiates and initializes a LCM message containing the information
+  // contained within parameter basic_vector.
+  drake::lcmt_drake_signal message;
+  message.dim = basic_vector.size();
+  message.val.resize(message.dim);
+  message.coord.resize(message.dim);
+
+  Eigen::VectorBlock<const VectorX<double>> values = basic_vector.get_value();
+
+  for (int ii = 0; ii < message.dim; ++ii) {
+    message.val[ii] = values[ii];
+    message.coord[ii] = "Coord_" + std::to_string(ii);
+  }
+
+  message.encode(*data, *datalen);
 }
 
 }  // namespace lcm

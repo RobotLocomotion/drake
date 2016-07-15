@@ -32,6 +32,11 @@ class LcmBasicVectorTranslator {
   }
 
   /**
+   * Returns the size of the LCM message in bytes.
+   */
+  int get_message_data_length() const = 0;
+
+  /**
    * Translates an LCM message a `BasicVector` object.
    *
    * @param[in] rbuf A pointer to a buffer holding the LCM message's data.
@@ -47,8 +52,15 @@ class LcmBasicVectorTranslator {
   virtual void TranslateLcmToBasicVector(const ::lcm::ReceiveBuffer* rbuf,
     drake::systems::BasicVector<double>* basic_vector) const = 0;
 
-  // virtual void TranslateBasicVectorToLCM(const BasicVector& basic_vector,
-  //   const void *data, unsigned int datalen) const = 0;
+  /**
+   * Translates a `BasicVector` object into an LCM message.
+   *
+   * @param[in] basic_vector The basic vector to convert into an LCM message.
+   *
+   * @param[in] data A pointer to
+   */
+  virtual void TranslateBasicVectorToLCM(const BasicVector& basic_vector,
+    const void *data, unsigned int datalen) const = 0;
 
  private:
   // The size of the basic vector and vector representation of the LCM message.

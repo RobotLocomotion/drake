@@ -18,14 +18,16 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorLcmtDrakeSignal :
     public LcmBasicVectorTranslator {
  public:
   explicit TranslatorLcmtDrakeSignal(int size) :
-      LcmBasicVectorTranslator(size) {
+     LcmBasicVectorTranslator(size) {
   }
 
-  void TranslateLcmToBasicVector(const ::lcm::ReceiveBuffer* rbuf,
-      drake::systems::BasicVector<double>* basic_vector) const override;
+  int get_message_data_length() const override;
 
-  // void TranslateBasicVectorToLCM(const BasicVector& basic_vector,
-  //   const void *data, unsigned int datalen) const override;
+  void TranslateLcmToBasicVector(const ::lcm::ReceiveBuffer* rbuf,
+    BasicVector<double>* basic_vector) const override;
+
+  void TranslateBasicVectorToLCM(const BasicVector<double>& basic_vector,
+    const void *data, unsigned int datalen) const override;
 };
 
 }  // namespace lcm
