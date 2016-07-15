@@ -51,9 +51,9 @@ else()
   list(APPEND optimization_files NoSnopt.cpp)
 endif()
 if(gurobi_FOUND)
-  list(APPEND optimization_files GurobiSolver.cc)
+  list(APPEND optimization_files gurobi_solver.cc)
 else()
-  list(APPEND optimization_files NoGurobi.cc)
+  list(APPEND optimization_files no_gurobi.cc)
 endif()
 
 
