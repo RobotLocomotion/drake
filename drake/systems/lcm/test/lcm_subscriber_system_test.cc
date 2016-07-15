@@ -72,7 +72,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   LcmReceiveThread lcm_receive_thread(&lcm);
 
   // Defines a channel name.
-  std::string channel_name = "test_channel_name";
+  std::string channel_name = "drake_system2_lcm_test_channel_name";
 
   // Instantiates a LCM-System 2.0 Vector translator.
   TranslatorLcmtDrakeSignal translator(kDim);
@@ -150,7 +150,8 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
         done = true;
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(kDelayMS));
+    if (!done)
+      std::this_thread::sleep_for(std::chrono::milliseconds(kDelayMS));
   }
 
   EXPECT_TRUE(done);
