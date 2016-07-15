@@ -1,3 +1,7 @@
+# NOTE: This file sets the basic configuration for both the drake superbuild
+#       and drake proper. Use project checks to isolate any logic that should
+#       not apply to both.
+
 #------------------------------------------------------------------------------
 function(drake_check_compiler NAME VERSION)
   if(DEFINED ARGV2)
@@ -69,19 +73,9 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   drake_check_compiler("MSVC" 19 "19 (VS 2015)")
 endif()
 
-# Set default build
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-    "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
-    FORCE)
-endif()
-
-# Set default install prefix
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
-    "Prefix for installation of sub-packages (note: required during build!)" FORCE)
-endif()
-message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+# Set compiler language standard level
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Require Java at the super-build level since libbot cannot configure without
 # finding Java
@@ -97,3 +91,19 @@ endif()
 
 # Choose your python (major) version
 option(WITH_PYTHON_3 "Force Drake to use python 3 instead of python 2" OFF)
+
+# Set default build
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+    "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
+    FORCE)
+endif()
+
+# Set default install prefix
+if(PROJECT_NAME STREQUAL "drake-superbuild")
+  if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
+      "Prefix for installation of sub-packages (note: required during build!)" FORCE)
+  endif()
+  message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+endif()

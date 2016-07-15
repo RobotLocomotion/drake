@@ -5,15 +5,7 @@ cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 cmake_policy(SET CMP0054 OLD)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-  message(FATAL_ERROR "GCC version must be at least 4.9")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
-  message(FATAL_ERROR "Apple Clang version must be at least 7")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
-  message(FATAL_ERROR "Clang version must be at least 3.7")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
-  message(FATAL_ERROR "MSVC version must be at least 19 (VS 2015)")
-endif()
+include(../cmake/config.cmake)
 
 # Create a cache variable that contains the
 # max number of concurent link jobs that can be run
@@ -35,8 +27,6 @@ option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
 option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random seed" OFF)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # prepend module path so we can override FindMatlab.cmake
@@ -51,9 +41,6 @@ endif()
 # set up pods
 set(POD_NAME drake)
 include(cmake/pods.cmake)
-
-find_package(Java 1.6 REQUIRED)
-include(UseJava)
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
