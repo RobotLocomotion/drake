@@ -38,7 +38,7 @@ class NAryState {
 
   NAryState() : unit_size_(unit_size()), count_(UnitCountFromRows(0)) {}
 
-  explicit NAryState(std::ptrdiff_t count)
+  explicit NAryState(int count)
       : unit_size_(unit_size()),
         // Ensure correct internal count_ (i.e., -1 if UnitVector's size
         // is zero).
@@ -51,7 +51,7 @@ class NAryState {
   ///
   /// If UnitVector is a null vector (zero rows), then the count is
   /// indeterminate and the return value is always < 0.
-  std::ptrdiff_t count() const { return count_; }
+  int count() const { return count_; }
 
   /// Appends the @param unit to the end of the list of component
   /// @param UnitVectors.
@@ -74,13 +74,13 @@ class NAryState {
   ///
   /// @throws std::out_of_range if UnitVector is a non-NullVector type
   /// and @p pos exceeds the range [0, count()].
-  UnitVector get(std::ptrdiff_t pos) const {
+  UnitVector get(int pos) const {
     if (unit_size_ > 0) {
       if ((pos < 0) || (pos >= count_)) {
         throw std::out_of_range("Position pos exceeds range [0, count()].");
       }
     }
-    const std::size_t row0 = pos * unit_size_;
+    const int row0 = pos * unit_size_;
     return UnitVector(combined_vector_.block(row0, 0,
                                              unit_size_, 1));
   }
@@ -89,13 +89,13 @@ class NAryState {
   ///
   /// @throws std::out_of_range if UnitVector is a non-NullVector type
   /// and @p pos exceeds the range [0, count()].
-  void set(std::ptrdiff_t pos, const UnitVector& unit) {
+  void set(int pos, const UnitVector& unit) {
     if (unit_size_ > 0) {
       if ((pos < 0) || (pos >= count_)) {
         throw std::out_of_range("Position pos exceeds range [0, count()].");
       }
     }
-    const std::size_t row0 = pos * unit_size_;
+    const int row0 = pos * unit_size_;
     combined_vector_.block(row0, 0, unit_size_, 1) = toEigen(unit);
   }
 
@@ -117,7 +117,7 @@ class NAryState {
   }
 
   // Required by Drake::Vector concept.
-  std::size_t size() const { return combined_vector_.rows(); }
+  int size() const { return combined_vector_.rows(); }
 
   // Required by Drake::Vector concept.
   friend EigenType toEigen(const NAryState<UnitVector>& vec) {
@@ -126,8 +126,7 @@ class NAryState {
 
   /// Calculates the size (Eigen row count) of @p UnitVector, which is
   /// presumed to be fixed for all instances of UnitVector.
-  static
-  std::size_t unit_size() { return UnitVector().size(); }
+  static int unit_size() { return UnitVector().size(); }
 
   /// Determines how many @param UnitVector units will be decoded from
   /// an Eigen column matrix with @param rows rows.  @param rows must
@@ -138,9 +137,8 @@ class NAryState {
   ///
   /// @throws std::domain_error if UnitVector is not a null vector and
   /// rows is not a multiple of UnitVector::size().
-  static
-  std::ptrdiff_t UnitCountFromRows(std::size_t rows) {
-    const std::size_t us { unit_size() };
+  static int UnitCountFromRows(int rows) {
+    const int us { unit_size() };
     if (us > 0) {
       if ((rows % us) != 0) {
         throw std::domain_error("Row count not a multiple of non-null unit.");
@@ -156,9 +154,8 @@ class NAryState {
   /// To complement UnitCountFromRows(), if @param count is negative,
   /// the return value is zero.  However, @throws std::domain_error if
   /// count is negative and UnitVector is not a null vector.
-  static
-  std::size_t RowsFromUnitCount(std::ptrdiff_t count) {
-    const std::size_t us { unit_size() };
+  static int RowsFromUnitCount(int count) {
+    const int us { unit_size() };
     if (count >= 0) {
       return count * us;
     }
@@ -169,9 +166,9 @@ class NAryState {
   }
 
  private:
-  std::size_t unit_size_;
+  int unit_size_;
   // count_ < 0 indicates "not counted", i.e., UnitVector is a null vector.
-  std::ptrdiff_t count_;
+  int count_;
   EigenType combined_vector_;
 };
 

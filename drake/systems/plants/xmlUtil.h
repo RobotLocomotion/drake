@@ -8,7 +8,7 @@
 
 #include "drake/drakeXMLUtil_export.h"
 #include "drake/systems/plants/pose_map.h"
-#include "drake/thirdParty/tinyxml2/tinyxml2.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 template <typename Scalar>
 bool parseScalarValue(tinyxml2::XMLElement* node, Scalar& val) {

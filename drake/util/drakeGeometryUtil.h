@@ -9,20 +9,25 @@
 #include <cmath>
 #include <random>
 
+#include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/drakeGeometryUtil_export.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeGradientUtil.h"
 
-const int QUAT_SIZE = 4;
-const int EXPMAP_SIZE = 3;
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
-const int AXIS_ANGLE_SIZE = 4;
-const int SPACE_DIMENSION = 3;
-const int RotmatSize = SPACE_DIMENSION * SPACE_DIMENSION;
+
+DRAKE_DEPRECATED("Use drake::kQuaternionSize instead.")
+const int QUAT_SIZE = 4;
+DRAKE_DEPRECATED("Use drake::kRpySize instead.")
 const int RPY_SIZE = 3;
+DRAKE_DEPRECATED("Use drake::kSpaceDimension instead.")
+const int SPACE_DIMENSION = 3;
+
+const int RotmatSize = drake::kSpaceDimension * drake::kSpaceDimension;
 
 DRAKEGEOMETRYUTIL_EXPORT double angleDiff(double phi1, double phi2);
 
@@ -71,293 +76,22 @@ void normalizeVec(
   }
 }
 
-/*
- * quat2x
- */
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 4, 1> quat2axis(
-    const Eigen::MatrixBase<Derived>& q) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  auto q_normalized = q.normalized();
-  auto s = std::sqrt(1.0 - q_normalized(0) * q_normalized(0)) +
-           std::numeric_limits<typename Derived::Scalar>::epsilon();
-  Eigen::Matrix<typename Derived::Scalar, 4, 1> a;
-
-  a << q_normalized.template tail<3>() / s, 2.0 * std::acos(q_normalized(0));
-  return a;
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 3, 3> quat2rotmat(
-    const Eigen::MatrixBase<Derived>& q) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  auto q_normalized = q.normalized();
-  auto w = q_normalized(0);
-  auto x = q_normalized(1);
-  auto y = q_normalized(2);
-  auto z = q_normalized(3);
-
-  Eigen::Matrix<typename Derived::Scalar, 3, 3> M;
-  M.row(0) << w * w + x * x - y * y - z * z, 2.0 * x * y - 2.0 * w * z,
-      2.0 * x * z + 2.0 * w * y;
-  M.row(1) << 2.0 * x * y + 2.0 * w * z, w * w + y * y - x * x - z * z,
-      2.0 * y * z - 2.0 * w * x;
-  M.row(2) << 2.0 * x * z - 2.0 * w * y, 2.0 * y * z + 2.0 * w * x,
-      w * w + z * z - x * x - y * y;
-
-  return M;
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 3, 1> quat2rpy(
-    const Eigen::MatrixBase<Derived>& q) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  auto q_normalized = q.normalized();
-  auto w = q_normalized(0);
-  auto x = q_normalized(1);
-  auto y = q_normalized(2);
-  auto z = q_normalized(3);
-
-  Eigen::Matrix<typename Derived::Scalar, 3, 1> ret;
-  ret << std::atan2(2.0 * (w * x + y * z), w * w + z * z - (x * x + y * y)),
-      std::asin(2.0 * (w * y - z * x)),
-      std::atan2(2.0 * (w * z + x * y), w * w + x * x - (y * y + z * z));
-  return ret;
-}
-
-template <typename Derived>
-Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
-    const Eigen::MatrixBase<Derived>& q) {
-  // The Eigen Quaterniond constructor when used with 4 arguments, uses the (w,
-  // x, y, z) ordering, just as we do.
-  // HOWEVER: when the constructor is called on a 4-element Vector, the elements
-  // must be in (x, y, z, w) order.
-  // So, the following two calls will give you the SAME quaternion:
-  // Quaternion<double>(q(0), q(1), q(2), q(3));
-  // Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
-  // which is gross and will cause you much pain.
-  // see:
-  // http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
-  //
-  // This method takes a nice, normal (w, x, y, z) order vector and gives you
-  // the Quaternion you expect.
-  return Eigen::Quaternion<typename Derived::Scalar>(q(0), q(1), q(2), q(3));
-}
-
-/*
- * axis2x
- */
-template <typename Derived>
-Eigen::Vector4d axis2quat(const Eigen::MatrixBase<Derived>& a) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  auto axis = a.template head<3>();
-  auto angle = a(3);
-  auto arg = 0.5 * angle;
-  auto c = std::cos(arg);
-  auto s = std::sin(arg);
-  Eigen::Vector4d ret;
-  ret << c, s * axis;
-  return ret;
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 3, 3> axis2rotmat(
-    const Eigen::MatrixBase<Derived>& a) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  const auto& axis = (a.template head<3>()) / (a.template head<3>()).norm();
-  const auto& theta = a(3);
-  auto x = axis(0);
-  auto y = axis(1);
-  auto z = axis(2);
-  auto ctheta = std::cos(theta);
-  auto stheta = std::sin(theta);
-  auto c = 1 - ctheta;
-  Eigen::Matrix<typename Derived::Scalar, 3, 3> R;
-  R << ctheta + x * x * c, x * y * c - z * stheta, x * z * c + y * stheta,
-      y * x * c + z * stheta, ctheta + y * y * c, y * z * c - x * stheta,
-      z * x * c - y * stheta, z * y * c + x * stheta, ctheta + z * z * c;
-
-  return R;
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(
-    const Eigen::MatrixBase<Derived>& a) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  return quat2rpy(axis2quat(a));
-}
-
-/*
- * rotmat2x
- */
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2axis(
-    const Eigen::MatrixBase<Derived>& R) {
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
-
-  typename Derived::Scalar theta = std::acos((R.trace() - 1.0) / 2.0);
-  Eigen::Vector4d a;
-  if (theta > std::numeric_limits<typename Derived::Scalar>::epsilon()) {
-    a << R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1), theta;
-    a.head<3>() *= 1.0 / (2.0 * std::sin(theta));
-  } else {
-    a << 1.0, 0.0, 0.0, 0.0;
-  }
-  return a;
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(
-    const Eigen::MatrixBase<Derived>& M) {
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
-  using namespace std;
-
-  typedef typename Derived::Scalar Scalar;
-  Eigen::Matrix<Scalar, 4, 3> A;
-  A.row(0) << 1.0, 1.0, 1.0;
-  A.row(1) << 1.0, -1.0, -1.0;
-  A.row(2) << -1.0, 1.0, -1.0;
-  A.row(3) << -1.0, -1.0, 1.0;
-  Eigen::Matrix<Scalar, 4, 1> B = A * M.diagonal();
-  Eigen::Index ind, max_col;
-  Scalar val = B.maxCoeff(&ind, &max_col);
-
-  Scalar w, x, y, z;
-  switch (ind) {
-    case 0: {
-      // val = trace(M)
-      w = sqrt(1.0 + val) / 2.0;
-      Scalar w4 = w * 4.0;
-      x = (M(2, 1) - M(1, 2)) / w4;
-      y = (M(0, 2) - M(2, 0)) / w4;
-      z = (M(1, 0) - M(0, 1)) / w4;
-      break;
-    }
-    case 1: {
-      // val = M(1, 1) - M(2, 2) - M(3, 3)
-      Scalar s = 2.0 * sqrt(1.0 + val);
-      w = (M(2, 1) - M(1, 2)) / s;
-      x = 0.25 * s;
-      y = (M(0, 1) + M(1, 0)) / s;
-      z = (M(0, 2) + M(2, 0)) / s;
-      break;
-    }
-    case 2: {
-      //  % val = M(2, 2) - M(1, 1) - M(3, 3)
-      Scalar s = 2.0 * (sqrt(1.0 + val));
-      w = (M(0, 2) - M(2, 0)) / s;
-      x = (M(0, 1) + M(1, 0)) / s;
-      y = 0.25 * s;
-      z = (M(1, 2) + M(2, 1)) / s;
-      break;
-    }
-    default: {
-      // val = M(3, 3) - M(2, 2) - M(1, 1)
-      Scalar s = 2.0 * (sqrt(1.0 + val));
-      w = (M(1, 0) - M(0, 1)) / s;
-      x = (M(0, 2) + M(2, 0)) / s;
-      y = (M(1, 2) + M(2, 1)) / s;
-      z = 0.25 * s;
-      break;
-    }
-  }
-
-  Eigen::Matrix<Scalar, 4, 1> q;
-  q << w, x, y, z;
-  return q;
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 3, 1> rotmat2rpy(
-    const Eigen::MatrixBase<Derived>& R) {
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
-  using namespace std;
-
-  Eigen::Matrix<typename Derived::Scalar, 3, 1> rpy;
-  rpy << atan2(R(2, 1), R(2, 2)),
-      atan2(-R(2, 0), sqrt(pow(R(2, 1), 2.0) + pow(R(2, 2), 2.0))),
-      atan2(R(1, 0), R(0, 0));
-  return rpy;
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, 1>
-rotmat2Representation(const Eigen::MatrixBase<Derived>& R, int rotation_type) {
-  typedef typename Derived::Scalar Scalar;
-  switch (rotation_type) {
-    case 0:
-      return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>(0, 1);
-    case 1:
-      return rotmat2rpy(R);
-    case 2:
-      return rotmat2quat(R);
-    default:
-      throw std::runtime_error("rotation representation type not recognized");
-  }
-}
-
 DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type);
-
-/*
- * rpy2x
- */
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 4, 1> rpy2quat(
-    const Eigen::MatrixBase<Derived>& rpy) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  auto rpy_2 = (rpy / 2.0).array();
-  auto s = rpy_2.sin();
-  auto c = rpy_2.cos();
-
-  Eigen::Vector4d q;
-  q << c(0) * c(1) * c(2) + s(0) * s(1) * s(2),
-      s(0) * c(1) * c(2) - c(0) * s(1) * s(2),
-      c(0) * s(1) * c(2) + s(0) * c(1) * s(2),
-      c(0) * c(1) * s(2) - s(0) * s(1) * c(2);
-
-  q /= q.norm() + std::numeric_limits<typename Derived::Scalar>::epsilon();
-  return q;
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 4, 1> rpy2axis(
-    const Eigen::MatrixBase<Derived>& rpy) {
-  return quat2axis(rpy2quat(rpy));
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(
-    const Eigen::MatrixBase<Derived>& rpy) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  auto rpy_array = rpy.array();
-  auto s = rpy_array.sin();
-  auto c = rpy_array.cos();
-
-  Eigen::Matrix<typename Derived::Scalar, 3, 3> R;
-  R.row(0) << c(2) * c(1), c(2) * s(1) * s(0) - s(2) * c(0),
-      c(2) * s(1) * c(0) + s(2) * s(0);
-  R.row(1) << s(2) * c(1), s(2) * s(1) * s(0) + c(2) * c(0),
-      s(2) * s(1) * c(0) - c(2) * s(0);
-  R.row(2) << -s(1), c(1) * s(0), c(1) * c(0);
-
-  return R;
-}
 
 /*
  * rotation conversion gradient functions
  */
 template <typename Derived>
 typename drake::math::Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
-                               QUAT_SIZE>::type
+                               drake::kQuaternionSize>::type
 dquat2rotmat(const Eigen::MatrixBase<Derived>& q) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>,
-                                           QUAT_SIZE);
+                                           drake::kQuaternionSize);
 
   typename drake::math::Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
-                                 QUAT_SIZE>::type ret;
+                                 drake::kQuaternionSize>::type ret;
   typename Eigen::MatrixBase<Derived>::PlainObject qtilde;
-  typename drake::math::Gradient<Derived, QUAT_SIZE>::type dqtilde;
+  typename drake::math::Gradient<Derived, drake::kQuaternionSize>::type dqtilde;
   normalizeVec(q, qtilde, &dqtilde);
 
   typedef typename Derived::Scalar Scalar;
@@ -375,22 +109,23 @@ dquat2rotmat(const Eigen::MatrixBase<Derived>& q) {
 
 template <typename DerivedR, typename DerivedDR>
 typename drake::math::Gradient<
-    Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>,
+    Eigen::Matrix<typename DerivedR::Scalar, drake::kRpySize, 1>,
     DerivedDR::ColsAtCompileTime>::type
 drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
             const Eigen::MatrixBase<DerivedDR>& dR) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedR>,
-                                           SPACE_DIMENSION, SPACE_DIMENSION);
+                                           drake::kSpaceDimension,
+                                           drake::kSpaceDimension);
   EIGEN_STATIC_ASSERT(
       Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == RotmatSize,
       THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   typename DerivedDR::Index nq = dR.cols();
   typedef typename DerivedR::Scalar Scalar;
-  typedef typename drake::math::Gradient<Eigen::Matrix<Scalar, RPY_SIZE, 1>,
-                                         DerivedDR::ColsAtCompileTime>::type
-      ReturnType;
-  ReturnType drpy(RPY_SIZE, nq);
+  typedef typename drake::math::Gradient<
+      Eigen::Matrix<Scalar, drake::kRpySize, 1>,
+      DerivedDR::ColsAtCompileTime>::type ReturnType;
+  ReturnType drpy(drake::kRpySize, nq);
 
   auto dR11_dq =
       getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 0, 0, R.rows());
@@ -424,20 +159,21 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
 
 template <typename DerivedR, typename DerivedDR>
 typename drake::math::Gradient<
-    Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 1>,
+    Eigen::Matrix<typename DerivedR::Scalar, drake::kQuaternionSize, 1>,
     DerivedDR::ColsAtCompileTime>::type
 drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
              const Eigen::MatrixBase<DerivedDR>& dR) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedR>,
-                                           SPACE_DIMENSION, SPACE_DIMENSION);
+                                           drake::kSpaceDimension,
+                                           drake::kSpaceDimension);
   EIGEN_STATIC_ASSERT(
       Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == RotmatSize,
       THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   typedef typename DerivedR::Scalar Scalar;
-  typedef typename drake::math::Gradient<Eigen::Matrix<Scalar, QUAT_SIZE, 1>,
-                                         DerivedDR::ColsAtCompileTime>::type
-      ReturnType;
+  typedef typename drake::math::Gradient<
+      Eigen::Matrix<Scalar, drake::kQuaternionSize, 1>,
+      DerivedDR::ColsAtCompileTime>::type ReturnType;
   typename DerivedDR::Index nq = dR.cols();
 
   auto dR11_dq =
@@ -468,7 +204,7 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
   typename Eigen::Matrix<Scalar, 4, 1>::Index ind, max_col;
   Scalar val = B.maxCoeff(&ind, &max_col);
 
-  ReturnType dq(QUAT_SIZE, nq);
+  ReturnType dq(drake::kQuaternionSize, nq);
   using namespace std;
   switch (ind) {
     case 0: {
@@ -535,35 +271,6 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
   return dq;
 }
 
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 9, 3> drpy2rotmat(
-    const Eigen::MatrixBase<Derived>& rpy) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  auto rpy_array = rpy.array();
-  auto s = rpy_array.sin();
-  auto c = rpy_array.cos();
-
-  Eigen::Matrix<typename Derived::Scalar, 9, 3> dR;
-  dR.row(0) << 0, c(2) * -s(1), c(1) * -s(2);
-  dR.row(1) << 0, -s(1) * s(2), c(2) * c(1);
-  dR.row(2) << 0, -c(1), 0;
-  dR.row(3) << c(2) * s(1) * c(0) - s(2) * -s(0), c(2) * c(1) * s(0),
-      -s(2) * s(1) * s(0) - c(2) * c(0);
-  dR.row(4) << s(2) * s(1) * c(0) + c(2) * -s(0), s(2) * c(1) * s(0),
-      c(2) * s(1) * s(0) - s(2) * c(0);
-  dR.row(5) << c(1) * c(0), -s(1) * s(0), 0;
-  dR.row(6) << c(2) * s(1) * -s(0) + s(2) * c(0), c(2) * c(1) * c(0),
-      -s(2) * s(1) * c(0) + c(2) * s(0);
-  dR.row(7) << s(2) * s(1) * -s(0) - c(2) * c(0), s(2) * c(1) * c(0),
-      c(2) * s(1) * c(0) + s(2) * s(0);
-  dR.row(8) << c(1) * -s(0), -s(1) * c(0), 0;
-
-  return dR;
-}
-
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix3d rotz(double theta);
-DRAKEGEOMETRYUTIL_EXPORT void rotz(double theta, Eigen::Matrix3d& M,
-                                   Eigen::Matrix3d& dM, Eigen::Matrix3d& ddM);
 /*
  * cross product related
  */
@@ -571,7 +278,7 @@ template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(
     const Eigen::MatrixBase<Derived>& p) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>,
-                                           SPACE_DIMENSION);
+                                           drake::kSpaceDimension);
   Eigen::Matrix<typename Derived::Scalar, 3, 3> ret;
   ret << 0.0, -p(2), p(1), p(2), 0.0, -p(0), -p(1), p(0), 0.0;
   return ret;
@@ -597,7 +304,7 @@ void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
                               Eigen::MatrixBase<DerivedDM>* dM = nullptr) {
   // note: not normalizing to match MATLAB implementation
   using Scalar = typename DerivedQ::Scalar;
-  M.resize(QUAT_SIZE, SPACE_DIMENSION);
+  M.resize(drake::kQuaternionSize, drake::kSpaceDimension);
   M.row(0) << -q(1), -q(2), -q(3);
   M.row(1) << q(0), q(3), -q(2);
   M.row(2) << -q(3), q(0), q(1);
@@ -624,7 +331,7 @@ void angularvel2rpydotMatrix(
     typename Eigen::MatrixBase<DerivedPhi>& phi,
     typename Eigen::MatrixBase<DerivedDPhi>* dphi = nullptr,
     typename Eigen::MatrixBase<DerivedDDPhi>* ddphi = nullptr) {
-  phi.resize(RPY_SIZE, SPACE_DIMENSION);
+  phi.resize(drake::kRpySize, drake::kSpaceDimension);
 
   typedef typename DerivedRPY::Scalar Scalar;
   Scalar p = rpy(1);
@@ -640,7 +347,7 @@ void angularvel2rpydotMatrix(
   phi << cy / cp, sy / cp, Scalar(0), -sy, cy, Scalar(0), cy * tp, tp * sy,
       Scalar(1);
   if (dphi) {
-    dphi->resize(phi.size(), RPY_SIZE);
+    dphi->resize(phi.size(), drake::kRpySize);
     Scalar sp2 = sp * sp;
     Scalar cp2 = cp * cp;
     (*dphi) << Scalar(0), (cy * sp) / cp2, -sy / cp, Scalar(0), Scalar(0), -cy,
@@ -650,7 +357,7 @@ void angularvel2rpydotMatrix(
         Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0);
 
     if (ddphi) {
-      ddphi->resize(dphi->size(), RPY_SIZE);
+      ddphi->resize(dphi->size(), drake::kRpySize);
       Scalar cp3 = cp2 * cp;
       (*ddphi) << Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0),
           Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0),
@@ -676,11 +383,13 @@ void angularvel2rpydotMatrix(
 template <typename DerivedRPY, typename DerivedE>
 void rpydot2angularvelMatrix(
     const Eigen::MatrixBase<DerivedRPY>& rpy, Eigen::MatrixBase<DerivedE>& E,
-    typename drake::math::Gradient<DerivedE, RPY_SIZE, 1>::type* dE = nullptr) {
+    typename drake::math::Gradient<DerivedE, drake::kRpySize, 1>::type*
+        dE = nullptr) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
-                                           RPY_SIZE);
+                                           drake::kRpySize);
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedE>,
-                                           SPACE_DIMENSION, RPY_SIZE);
+                                           drake::kSpaceDimension,
+                                           drake::kRpySize);
   typedef typename DerivedRPY::Scalar Scalar;
   Scalar p = rpy(1);
   Scalar y = rpy(2);
@@ -701,7 +410,7 @@ template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 4> quatdot2angularvelMatrix(
     const Eigen::MatrixBase<Derived>& q) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>,
-                                           QUAT_SIZE);
+                                           drake::kQuaternionSize);
   typedef typename Derived::Scalar Scalar;
   auto qtilde = q.normalized();
   Eigen::Matrix<Scalar, 3, 4> ret;
@@ -716,14 +425,14 @@ void rpydot2angularvel(
     const Eigen::MatrixBase<DerivedRPY>& rpy,
     const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
     Eigen::MatrixBase<DerivedOMEGA>& omega,
-    typename drake::math::Gradient<DerivedOMEGA, RPY_SIZE, 1>::type* domega =
-        nullptr) {
+    typename drake::math::Gradient<DerivedOMEGA, drake::kRpySize,
+                                   1>::type* domega = nullptr) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
-                                           RPY_SIZE);
+                                           drake::kRpySize);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>,
-                                           RPY_SIZE);
+                                           drake::kRpySize);
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedOMEGA>,
-                                           RPY_SIZE, 1);
+                                           drake::kRpySize, 1);
 
   Eigen::Matrix<typename DerivedOMEGA::Scalar, 3, 3> E;
   if (domega) {
@@ -736,167 +445,6 @@ void rpydot2angularvel(
   omega = E * rpydot;
 }
 
-template <typename Scalar>
-void cylindrical2cartesian(const Eigen::Matrix<Scalar, 3, 1>& m_cylinder_axis,
-                           const Eigen::Matrix<Scalar, 3, 1>& m_cylinder_x_dir,
-                           const Eigen::Matrix<Scalar, 3, 1>& cylinder_origin,
-                           const Eigen::Matrix<Scalar, 6, 1>& x_cylinder,
-                           const Eigen::Matrix<Scalar, 6, 1>& v_cylinder,
-                           Eigen::Matrix<Scalar, 6, 1>& x_cartesian,
-                           Eigen::Matrix<Scalar, 6, 1>& v_cartesian,
-                           Eigen::Matrix<Scalar, 6, 6>& J,
-                           Eigen::Matrix<Scalar, 6, 1>& Jdotv) {
-  Eigen::Matrix<Scalar, 3, 1> cylinder_axis =
-      m_cylinder_axis / m_cylinder_axis.norm();
-  Eigen::Matrix<Scalar, 3, 1> cylinder_x_dir =
-      m_cylinder_x_dir / m_cylinder_x_dir.norm();
-  Eigen::Matrix<Scalar, 3, 3> R_cylinder2cartesian;
-  R_cylinder2cartesian.col(0) = cylinder_x_dir;
-  R_cylinder2cartesian.col(1) = cylinder_axis.cross(cylinder_x_dir);
-  R_cylinder2cartesian.col(2) = cylinder_axis;
-  double radius = x_cylinder(0);
-  double theta = x_cylinder(1);
-  double c_theta = cos(theta);
-  double s_theta = sin(theta);
-  double height = x_cylinder(2);
-  double radius_dot = v_cylinder(0);
-  double theta_dot = v_cylinder(1);
-  double height_dot = v_cylinder(2);
-  Eigen::Matrix<Scalar, 3, 1> x_pos_cartesian;
-  x_pos_cartesian << radius * c_theta, radius * s_theta, height;
-  x_pos_cartesian = R_cylinder2cartesian * x_pos_cartesian + cylinder_origin;
-  Eigen::Matrix<Scalar, 3, 1> v_pos_cartesian;
-  v_pos_cartesian << radius * -s_theta * theta_dot + radius_dot * c_theta,
-      radius * c_theta * theta_dot + radius_dot * s_theta, height_dot;
-  v_pos_cartesian = R_cylinder2cartesian * v_pos_cartesian;
-  Eigen::Vector3d x_rpy_cylinder = x_cylinder.block(3, 0, 3, 1);
-  Eigen::Matrix<Scalar, 3, 3> R_tangent = rpy2rotmat(x_rpy_cylinder);
-  Eigen::Matrix<Scalar, 3, 3> R_tangent2cylinder;
-  Eigen::Matrix<Scalar, 3, 3> dR_tangent2cylinder;
-  Eigen::Matrix<Scalar, 3, 3> ddR_tangent2cylinder;
-  rotz(theta - M_PI / 2, R_tangent2cylinder, dR_tangent2cylinder,
-       ddR_tangent2cylinder);
-  Eigen::Matrix<Scalar, 3, 3> dR_tangent2cylinder_dtheta = dR_tangent2cylinder;
-  Eigen::Matrix<Scalar, 3, 3> R_cylinder = R_tangent2cylinder * R_tangent;
-  Eigen::Matrix<Scalar, 3, 3> R_cartesian = R_cylinder2cartesian * R_cylinder;
-  Eigen::Matrix<Scalar, 3, 1> x_rpy_cartesian = rotmat2rpy(R_cartesian);
-  x_cartesian.block(0, 0, 3, 1) = x_pos_cartesian;
-  x_cartesian.block(3, 0, 3, 1) = x_rpy_cartesian;
-  v_cartesian.block(0, 0, 3, 1) = v_pos_cartesian;
-  v_cartesian.block(3, 0, 3, 1) =
-      theta_dot * R_cylinder2cartesian.col(2) +
-      R_cylinder2cartesian * R_tangent2cylinder * v_cylinder.block(3, 0, 3, 1);
-  J = Eigen::Matrix<Scalar, 6, 6>::Zero();
-  J.block(0, 0, 3, 1) << c_theta, s_theta, 0;
-  J.block(0, 1, 3, 1) << radius * -s_theta, radius * c_theta, 0;
-  J.block(0, 2, 3, 1) << 0, 0, 1;
-  J.block(0, 0, 3, 3) = R_cylinder2cartesian * J.block(0, 0, 3, 3);
-  J.block(3, 1, 3, 1) = R_cylinder2cartesian.col(2);
-  J.block(3, 3, 3, 3) = R_cylinder2cartesian * R_tangent2cylinder;
-  Eigen::Matrix<Scalar, 3, 3> dJ1_dradius = Eigen::Matrix<Scalar, 3, 3>::Zero();
-  dJ1_dradius(0, 1) = -s_theta;
-  dJ1_dradius(1, 1) = c_theta;
-  Eigen::Matrix<Scalar, 3, 3> dJ1_dtheta = Eigen::Matrix<Scalar, 3, 3>::Zero();
-  dJ1_dtheta(0, 0) = -s_theta;
-  dJ1_dtheta(0, 1) = -radius * c_theta;
-  dJ1_dtheta(1, 0) = c_theta;
-  dJ1_dtheta(1, 1) = -radius * s_theta;
-  Jdotv.block(0, 0, 3, 1) = R_cylinder2cartesian * (dJ1_dradius * radius_dot +
-                                                    dJ1_dtheta * theta_dot) *
-                            v_cylinder.block(0, 0, 3, 1);
-  Jdotv.block(3, 0, 3, 1) = R_cylinder2cartesian * dR_tangent2cylinder_dtheta *
-                            theta_dot * v_cylinder.block(3, 0, 3, 1);
-}
-
-template <typename Scalar>
-void cartesian2cylindrical(const Eigen::Matrix<Scalar, 3, 1>& m_cylinder_axis,
-                           const Eigen::Matrix<Scalar, 3, 1>& m_cylinder_x_dir,
-                           const Eigen::Matrix<Scalar, 3, 1>& cylinder_origin,
-                           const Eigen::Matrix<Scalar, 6, 1>& x_cartesian,
-                           const Eigen::Matrix<Scalar, 6, 1>& v_cartesian,
-                           Eigen::Matrix<Scalar, 6, 1>& x_cylinder,
-                           Eigen::Matrix<Scalar, 6, 1>& v_cylinder,
-                           Eigen::Matrix<Scalar, 6, 6>& J,
-                           Eigen::Matrix<Scalar, 6, 1>& Jdotv) {
-  Eigen::Matrix<Scalar, 3, 1> cylinder_axis =
-      m_cylinder_axis / m_cylinder_axis.norm();
-  Eigen::Matrix<Scalar, 3, 1> cylinder_x_dir =
-      m_cylinder_x_dir / m_cylinder_x_dir.norm();
-  Eigen::Matrix<Scalar, 3, 3> R_cylinder2cartesian;
-  R_cylinder2cartesian.col(0) = cylinder_x_dir;
-  R_cylinder2cartesian.col(1) = cylinder_axis.cross(cylinder_x_dir);
-  R_cylinder2cartesian.col(2) = cylinder_axis;
-  Eigen::Matrix<Scalar, 3, 3> R_cartesian2cylinder =
-      R_cylinder2cartesian.transpose();
-  Eigen::Matrix<Scalar, 3, 1> x_pos_cylinder =
-      R_cartesian2cylinder * (x_cartesian.block(0, 0, 3, 1) - cylinder_origin);
-  Eigen::Matrix<Scalar, 3, 1> v_pos_cylinder =
-      R_cartesian2cylinder * v_cartesian.block(0, 0, 3, 1);
-  double radius = sqrt(pow(x_pos_cylinder(0), 2) + pow(x_pos_cylinder(1), 2));
-  double radius_dot = (x_pos_cylinder(0) * v_pos_cylinder(0) +
-                       x_pos_cylinder(1) * v_pos_cylinder(1)) /
-                      radius;
-  double theta = atan2(x_pos_cylinder(1), x_pos_cylinder(0));
-  double radius_square = pow(radius, 2);
-  double radius_cubic = pow(radius, 3);
-  double radius_quad = pow(radius, 4);
-  double theta_dot = (-x_pos_cylinder(1) * v_pos_cylinder(0) +
-                      x_pos_cylinder(0) * v_pos_cylinder(1)) /
-                     radius_square;
-  double height = x_pos_cylinder(2);
-  double height_dot = v_pos_cylinder(2);
-  x_cylinder(0) = radius;
-  x_cylinder(1) = theta;
-  x_cylinder(2) = height;
-  v_cylinder(0) = radius_dot;
-  v_cylinder(1) = theta_dot;
-  v_cylinder(2) = height_dot;
-  Eigen::Matrix<Scalar, 3, 3> R_tangent2cylinder;
-  Eigen::Matrix<Scalar, 3, 3> dR_tangent2cylinder;
-  Eigen::Matrix<Scalar, 3, 3> ddR_tangent2cylinder;
-  rotz(theta - M_PI / 2, R_tangent2cylinder, dR_tangent2cylinder,
-       ddR_tangent2cylinder);
-  Eigen::Matrix<Scalar, 3, 3> R_cylinder2tangent =
-      R_tangent2cylinder.transpose();
-  Eigen::Vector3d x_rpy_cartesian = x_cartesian.block(3, 0, 3, 1);
-  Eigen::Matrix<Scalar, 3, 3> R_cartesian = rpy2rotmat(x_rpy_cartesian);
-  x_cylinder.block(3, 0, 3, 1) =
-      rotmat2rpy(R_cylinder2tangent * R_cartesian2cylinder * R_cartesian);
-  J = Eigen::Matrix<Scalar, 6, 6>::Zero();
-  Eigen::Matrix<Scalar, 6, 6> Jdot = Eigen::Matrix<Scalar, 6, 6>::Zero();
-  J(0, 0) = x_pos_cylinder(0) / radius;
-  J(0, 1) = x_pos_cylinder(1) / radius;
-  J(1, 0) = -x_pos_cylinder(1) / radius_square;
-  J(1, 1) = x_pos_cylinder(0) / radius_square;
-  J(2, 2) = 1.0;
-  J.block(0, 0, 3, 3) = J.block(0, 0, 3, 3) * R_cartesian2cylinder;
-  Jdot(0, 0) =
-      pow(x_pos_cylinder(1), 2) / radius_cubic * v_pos_cylinder(0) -
-      x_pos_cylinder(0) * x_pos_cylinder(1) / radius_cubic * v_pos_cylinder(1);
-  Jdot(0, 1) = -x_pos_cylinder(0) * x_pos_cylinder(1) / radius_cubic *
-                   v_pos_cylinder(0) +
-               pow(x_pos_cylinder(0), 2) / radius_cubic * v_pos_cylinder(1);
-  Jdot(1, 0) = 2 * x_pos_cylinder(0) * x_pos_cylinder(1) / radius_quad *
-                   v_pos_cylinder(0) +
-               (pow(x_pos_cylinder(1), 2) - pow(x_pos_cylinder(0), 2)) /
-                   radius_quad * v_pos_cylinder(1);
-  Jdot(1, 1) = (pow(x_pos_cylinder(1), 2) - pow(x_pos_cylinder(0), 2)) /
-                   radius_quad * v_pos_cylinder(0) -
-               2 * x_pos_cylinder(0) * x_pos_cylinder(1) / radius_quad *
-                   v_pos_cylinder(1);
-  Jdot.block(0, 0, 3, 3) = Jdot.block(0, 0, 3, 3) * R_cartesian2cylinder;
-  v_cylinder.block(3, 0, 3, 1) = R_cylinder2tangent * R_cartesian2cylinder *
-                                     v_cartesian.block(3, 0, 3, 1) -
-                                 theta_dot * R_cylinder2tangent.col(2);
-  J.block(3, 0, 3, 3) = R_cylinder2tangent.col(2) * -J.block(1, 0, 1, 3);
-  J.block(3, 3, 3, 3) = R_cylinder2tangent * R_cartesian2cylinder;
-  Jdot.block(3, 0, 3, 3) = dR_tangent2cylinder.row(2).transpose() *
-                               -J.block(1, 0, 1, 3) * theta_dot +
-                           R_cylinder2tangent.col(2) * -Jdot.block(1, 0, 1, 3);
-  Jdot.block(3, 3, 3, 3) =
-      dR_tangent2cylinder.transpose() * theta_dot * R_cartesian2cylinder;
-  Jdotv = Jdot * v_cartesian;
-}
 /*
  * spatial transform functions
  */
@@ -1062,7 +610,7 @@ bool isRegularInertiaMatrix(const Eigen::MatrixBase<DerivedI>& I) {
 
 template <typename DerivedI>
 drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
-    const Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION,
+    const Eigen::Transform<typename DerivedI::Scalar, drake::kSpaceDimension,
                            Eigen::Isometry>& T_current_to_new,
     const Eigen::MatrixBase<DerivedI>& I) {
   using namespace Eigen;

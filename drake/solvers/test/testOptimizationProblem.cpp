@@ -1,6 +1,7 @@
 #include <typeinfo>
 
 #include "drake/common/drake_assert.h"
+#include "drake/solvers/Constraint.h"
 #include "drake/solvers/IpoptSolver.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/NloptSolver.h"
@@ -80,6 +81,14 @@ GTEST_TEST(testOptimizationProblem, testAddFunction) {
   prog.AddCost(std::unique_ptr<Unique>(new Unique));
 }
 
+void CheckSolverType(OptimizationProblem& prog,
+                     std::string desired_solver_name) {
+  std::string solver_name;
+  int solver_result;
+  prog.GetSolverResult(&solver_name, &solver_result);
+  EXPECT_EQ(solver_name, desired_solver_name);
+}
+
 void RunNonlinearProgram(OptimizationProblem& prog,
                          std::function<void(void)> test_func) {
   IpoptSolver ipopt_solver;
@@ -104,9 +113,11 @@ void RunNonlinearProgram(OptimizationProblem& prog,
   }
 }
 
-GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
+GTEST_TEST(testOptimizationProblem, trivialLinearSystem) {
   OptimizationProblem prog;
 
+  // First, add four variables set equal by four equations
+  // to equal a random vector
   auto const& x = prog.AddContinuousVariables(4);
 
   auto x2 = x(2);
@@ -125,6 +136,10 @@ GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
 
   valuecheck(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment.
 
+  CheckSolverType(prog, "Linear System Solver");
+
+  // Add two more variables with a very slightly more complicated
+  // constraint and solve again. Should still be a linear system.
   auto const& y = prog.AddContinuousVariables(2);
   prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
   prog.Solve();
@@ -132,13 +147,16 @@ GTEST_TEST(testOptimizationProblem, trivialLeastSquares) {
                               MatrixCompareType::absolute));
   EXPECT_TRUE(
       CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+  CheckSolverType(prog, "Linear System Solver");
 
+  // Now modify the original constraint by its handle
   con->updateConstraint(3 * Matrix4d::Identity(), b);
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(
       CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+  CheckSolverType(prog, "Linear System Solver");
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
@@ -651,6 +669,29 @@ GTEST_TEST(testOptimizationProblem, multiLCP) {
                               MatrixCompareType::absolute));
 }
 
+/**
+ * Test that linear polynomial constraints get turned into linear constraints.
+ */
+GTEST_TEST(testOptimizationProblem, linearPolynomialConstraint) {
+  const Polynomiald x("x");
+  OptimizationProblem problem;
+  static const double kEpsilon = 1e-7;
+  const auto x_var = problem.AddContinuousVariables(1);
+  const std::vector<Polynomiald::VarType> var_mapping = {
+    x.getSimpleVariable()};
+  std::shared_ptr<Constraint> resulting_constraint =
+      problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
+                                      Vector1d::Constant(2),
+                                      Vector1d::Constant(2));
+  // Check that the resulting constraint is a LinearConstraint.
+  EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
+            nullptr);
+  // Check that it gives the correct answer as well.
+  RunNonlinearProgram(problem, [&]() {
+      EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
+    });
+}
+
 // The current windows CI build has no solver for generic constraints.  The
 // DISABLED_ logic below ensures that we still at least get compile-time
 // checking of the test and resulting template instantiations.
@@ -745,6 +786,129 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   }
 }
 
+/**
+ * Test how an unconstrained QP is dispatched and solved:
+ *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
+ *     at (x1=1, x2=1).
+ *   - on the same problem plus the additional problem
+ *     (2*x2 - 5)^2 + (2*x3 - 2)^2, which, when combined
+ *     with the first problem, has min at (x1=1, x2=2, x3=1)
+ * The first case tests a single quadratic cost, and the
+ * second case tests multiple quadratic costs affecting
+ * different variable views. All fall under the
+ * umbrella of the Equality Constrained QP Solver.
+ */
+GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
+  OptimizationProblem prog;
+  auto x = prog.AddContinuousVariables(2);
+  MatrixXd Q(2, 2);
+  Q << 1.0, 0.0,
+       0.0, 1.0;
+  VectorXd c(2);
+  c << -1.0, -1.0;
+
+  prog.AddQuadraticCost(Q, c);
+
+  prog.Solve();
+
+  VectorXd expected_answer(2);
+  expected_answer << 1.0, 1.0;
+  EXPECT_TRUE(CompareMatrices(
+                expected_answer,
+                x.value(),
+                1e-10,
+                MatrixCompareType::absolute));
+  // There are no inequality constraints, and only quadratic costs,
+  // so this should hold:
+  CheckSolverType(prog, "Equality Constrained QP Solver");
+
+  // Add one more variable and constrain a view into them.
+  auto y = prog.AddContinuousVariables(1);
+  Q << 2.0, 0.0,
+       0.0, 2.0;
+  c << -5.0, -2.0;
+  VariableList vars;
+  vars.push_back(x.segment(1, 1));
+  vars.push_back(y);
+
+  prog.AddQuadraticCost(Q, c, vars);
+  prog.Solve();
+  expected_answer.resize(3);
+  expected_answer << 1.0, 2.0, 1.0;
+  VectorXd actual_answer(3);
+  actual_answer << x.value(), y.value();
+  EXPECT_TRUE(
+    CompareMatrices(expected_answer, actual_answer,
+                    1e-10, MatrixCompareType::absolute))
+      << "\tExpected: " << expected_answer.transpose()
+      << "\tActual: " << actual_answer.transpose();
+
+  // Problem still has only quadratic costs, so solver should be the same.
+  CheckSolverType(prog, "Equality Constrained QP Solver");
+}
+
+/**
+ * Test how an equality-constrained QP is dispatched
+ *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
+ *     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
+ *     The resulting constrained min is at (x1=0.5, x2=0.5).
+ *   - on the same problem with an additional variable x3,
+ *     with (2*x1 - x3 = 0). Resulting solution should be
+ *     (x1=0.5, x2=0.5, x3=1.0)
+ */
+GTEST_TEST(testOptimizationProblem, testLinearlyConstrainedQPDispatch) {
+OptimizationProblem prog;
+  auto x = prog.AddContinuousVariables(2);
+  MatrixXd Q(2, 2);
+  Q << 1, 0.0,
+       0.0, 1.0;
+  VectorXd c(2);
+  c << -1.0, -1.0;
+
+  prog.AddQuadraticCost(Q, c);
+
+  VectorXd constraint1(2);
+  // x1 + x2 = 1
+  constraint1 << 1, 1;
+  prog.AddLinearEqualityConstraint(
+      constraint1.transpose(),
+      Drake::Vector1d::Constant(1.0));
+
+  prog.Solve();
+
+  VectorXd expected_answer(2);
+  expected_answer << 0.5, 0.5;
+  EXPECT_TRUE(
+    CompareMatrices(expected_answer, x.value(), 1e-10,
+                    MatrixCompareType::absolute));
+
+  // This problem is now an Equality Constrained QP and should
+  // use this solver:
+  CheckSolverType(prog, "Equality Constrained QP Solver");
+
+  // Add one more variable and constrain it in a different way
+  auto y = prog.AddContinuousVariables(1);
+  Vector2d constraint2(2);
+  constraint2 << 2., -1.;
+  // 2*x1 - x3 = 0, so x3 should wind up as 1.0
+  VariableList vars;
+  vars.push_back(x.segment(0, 1));
+  vars.push_back(y);
+
+  prog.AddLinearEqualityConstraint(
+      constraint2.transpose(),
+      Drake::Vector1d::Constant(0.0), vars);
+  prog.Solve();
+  expected_answer.resize(3);
+  expected_answer << 0.5, 0.5, 1.0;
+  VectorXd actual_answer(3);
+  actual_answer << x.value(), y.value();
+  EXPECT_TRUE(
+    CompareMatrices(expected_answer, actual_answer,
+                    1e-10, MatrixCompareType::absolute))
+      << "\tExpected: " << expected_answer.transpose()
+      << "\tActual: " << actual_answer.transpose();
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

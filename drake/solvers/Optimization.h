@@ -78,7 +78,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   DecisionVariableView(const DecisionVariable& var, size_t start, size_t n)
       : var_(var), start_index_(start), size_(n) {
-    DRAKE_ASSERT((start + n) < static_cast<size_t>(var.value().rows()));
+    DRAKE_ASSERT((start + n) <= static_cast<size_t>(var.value().rows()));
   }
 
   /** index()
@@ -356,17 +356,17 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
    */
-  void AddQuadraticCost(std::shared_ptr<Constraint> const& obj,
-    VariableList const& vars) {
+  void AddQuadraticCost(std::shared_ptr<QuadraticConstraint> const& obj,
+                        VariableList const& vars) {
     problem_type_.AddQuadraticCost();
-    quadratic_costs_.push_back(Binding<Constraint>(obj, vars));
+    quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
   }
 
   /** AddQuadraticCost
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to all (currently existing) variables.
    */
-  void AddQuadraticCost(std::shared_ptr<Constraint> const& obj) {
+  void AddQuadraticCost(std::shared_ptr<QuadraticConstraint> const& obj) {
     AddQuadraticCost(obj, variable_views_);
   }
 
@@ -606,23 +606,64 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * @brief Adds a polynomial constraint to the program referencing a subset
    * of the decision variables (defined in the vars parameter).
    */
-  std::shared_ptr<PolynomialConstraint> AddPolynomialConstraint(
+  std::shared_ptr<Constraint> AddPolynomialConstraint(
       const VectorXPoly& polynomials,
       const std::vector<Polynomiald::VarType>& poly_vars,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const VariableList& vars) {
-    // TODO(ggould-tri) We treat polynomial constraints as generic for now,
-    // but that need not be so.  Polynomials of degree 1 are linear
-    // constraints, and some polynomial constraints may map to linear
-    // complementarity constraints.  That will certainly be needed for
-    // performance purposes, as automatically generated rigid body manipulator
-    // equations subject to lumped parameter rewriting may frequently come out
-    // as degree 1.
-    problem_type_.AddGenericConstraint();
-    std::shared_ptr<PolynomialConstraint> constraint(
-        new PolynomialConstraint(polynomials, poly_vars, lb, ub));
-    AddGenericConstraint(constraint, vars);
-    return constraint;
+    // Polynomials that are actually affine (a sum of linear terms + a
+    // constant) can be special-cased.  Other polynomials are treated as
+    // generic for now.
+    // TODO(ggould-tri) There may be other such special easy cases.
+    bool all_affine = true;
+    for (int i = 0; i < polynomials.rows(); i++) {
+      if (!polynomials[i].isAffine()) {
+        all_affine = false;
+        break;
+      }
+    }
+    if (all_affine) {
+      Eigen::MatrixXd linear_constraint_matrix =
+          Eigen::MatrixXd::Zero(polynomials.rows(), poly_vars.size());
+      Eigen::VectorXd linear_constraint_lb = lb;
+      Eigen::VectorXd linear_constraint_ub = ub;
+      for (int poly_num = 0; poly_num < polynomials.rows(); poly_num++) {
+        for (const auto& monomial : polynomials[poly_num].getMonomials()) {
+          if (monomial.terms.size() == 0) {
+            linear_constraint_lb[poly_num] -= monomial.coefficient;
+            linear_constraint_ub[poly_num] -= monomial.coefficient;
+          } else if (monomial.terms.size() == 1) {
+            const Polynomiald::VarType term_var = monomial.terms[0].var;
+            int var_num = (std::find(poly_vars.begin(), poly_vars.end(),
+                                     term_var) -
+                           poly_vars.begin());
+            DRAKE_ASSERT(var_num < static_cast<int>(poly_vars.size()));
+            linear_constraint_matrix(poly_num, var_num) = monomial.coefficient;
+          } else {
+            DRAKE_ABORT();  // Can't happen (unless isAffine() lied to us).
+          }
+        }
+      }
+      if (ub == lb) {
+        std::shared_ptr<LinearEqualityConstraint> constraint(
+            new LinearEqualityConstraint(linear_constraint_matrix,
+                                         linear_constraint_ub));
+        AddLinearEqualityConstraint(constraint, vars);
+        return constraint;
+      } else {
+        std::shared_ptr<LinearConstraint> constraint(
+            new LinearConstraint(linear_constraint_matrix,
+                                 linear_constraint_lb,
+                               linear_constraint_ub));
+        AddLinearConstraint(constraint, vars);
+        return constraint;
+      }
+    } else {
+      std::shared_ptr<PolynomialConstraint> constraint(
+          new PolynomialConstraint(polynomials, poly_vars, lb, ub));
+      AddGenericConstraint(constraint, vars);
+      return constraint;
+    }
   }
 
   /** AddPolynomialConstraint
@@ -630,7 +671,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * @brief Adds a polynomial constraint to the program referencing all of the
    * decision variables.
    */
-  std::shared_ptr<PolynomialConstraint> AddPolynomialConstraint(
+  std::shared_ptr<Constraint> AddPolynomialConstraint(
       const VectorXPoly& polynomials,
       const std::vector<Polynomiald::VarType>& poly_vars,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
@@ -761,9 +802,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return linear_equality_constraints_;
   }
 
-
   /** Getter for quadratic costs. */
-  const std::list<Binding<Constraint>>& quadratic_costs() const {
+  const std::list<Binding<QuadraticConstraint>>& quadratic_costs() const {
     return quadratic_costs_;
   }
 
@@ -830,7 +870,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   VariableList variable_views_;
   std::list<Binding<Constraint>> generic_costs_;
   std::list<Binding<Constraint>> generic_constraints_;
-  std::list<Binding<Constraint>> quadratic_costs_;
+  std::list<Binding<QuadraticConstraint>> quadratic_costs_;
   // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_

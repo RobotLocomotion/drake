@@ -158,15 +158,15 @@ void testPolynomialMatrix() {
   auto sum = A + C;
 
   uniform_real_distribution<double> uniform;
-  for (std::ptrdiff_t row = 0; row < A.rows(); ++row) {
-    for (std::ptrdiff_t col = 0; col < A.cols(); ++col) {
+  for (int row = 0; row < A.rows(); ++row) {
+    for (int col = 0; col < A.cols(); ++col) {
       double t = uniform(generator);
       EXPECT_NEAR(sum(row, col).evaluateUnivariate(t),
                   A(row, col).evaluateUnivariate(t) +
                   C(row, col).evaluateUnivariate(t), 1e-8);
 
       double expected_product = 0.0;
-      for (std::ptrdiff_t i = 0; i < A.cols(); ++i) {
+      for (int i = 0; i < A.cols(); ++i) {
         expected_product += A(row, i).evaluateUnivariate(t) *
                             B(i, col).evaluateUnivariate(t);
       }
@@ -188,7 +188,21 @@ GTEST_TEST(PolynomialTest, Roots) { testRoots<double>(); }
 
 GTEST_TEST(PolynomialTest, EvalType) { testEvalType(); }
 
-GTEST_TEST(PolynomialTest, PolynomialMatrix) { testPolynomialMatrix<double>(); }
+GTEST_TEST(PolynomialTest, IsAffine) {
+  Polynomiald x("x");
+  Polynomiald y("y");
+
+  EXPECT_TRUE(x.isAffine());
+  EXPECT_TRUE(y.isAffine());
+  EXPECT_TRUE((2 + x).isAffine());
+  EXPECT_TRUE((2 * x).isAffine());
+  EXPECT_FALSE((x * x).isAffine());
+  EXPECT_FALSE((x * y).isAffine());
+  EXPECT_TRUE((x + y).isAffine());
+  EXPECT_TRUE((2 + x + y).isAffine());
+  EXPECT_TRUE((2 + (2 * x) + y).isAffine());
+  EXPECT_FALSE((2 + (y * x) + y).isAffine());
+}
 
 GTEST_TEST(PolynomialTest, VariableIdGeneration) {
   // Probe the outer edge cases of variable ID generation.

@@ -13,6 +13,13 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERS
   message(FATAL_ERROR "MSVC version must be at least 14")
 endif()
 
+# Set Default build type to Release if none specified
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+    "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
+    FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
 # PODs out-of-source build logic
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   if(POD_BUILD)
@@ -45,19 +52,6 @@ function(drake_forceupdate proj)
       ALWAYS 1
       )
   endif()
-endfunction()
-
-function(drake_forcebuild proj)
-  if(CMAKE_CONFIGURATION_TYPES)
-    set(build_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/${proj}-prefix/src/${proj}-stamp/${CMAKE_CFG_INTDIR}/${proj}-build")
-  else()
-    set(build_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/${proj}-prefix/src/${proj}-stamp/${proj}-build")
-  endif()
-  ExternalProject_Add_Step(${proj} forcebuild
-    COMMAND ${CMAKE_COMMAND} -E remove ${build_stamp_file}
-    COMMENT "Forcing build step for '${proj}'"
-    DEPENDEES build
-    ALWAYS 1)
 endfunction()
 
 # Require Java at the super-build level since libbot cannot configure without finding Java
@@ -372,6 +366,7 @@ foreach(proj ${EXTERNAL_PROJECTS})
         DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
         DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
         UPDATE_COMMAND ${${proj}_UPDATE_COMMAND}
+        BUILD_ALWAYS 1
         INDEPENDENT_STEP_TARGETS update
         DEPENDS ${deps}
         ${COMMON_CMAKE_ARGS}
@@ -379,7 +374,6 @@ foreach(proj ${EXTERNAL_PROJECTS})
         ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
         ${${proj}_ADDITIONAL_BUILD_ARGS})
       drake_forceupdate(${proj})
-      drake_forcebuild(${proj})
     else() # not a CMake POD
       if(NOT ${proj}_BINARY_DIR)
         # In-source build for non-CMake projects.
@@ -400,6 +394,12 @@ foreach(proj ${EXTERNAL_PROJECTS})
         endif()
       endif()
 
+      if(${proj}_BUILD_COMMAND)
+        set(${proj}_BUILD_ALWAYS 1)
+      else()
+        set(${proj}_BUILD_ALWAYS 0)
+      endif()
+
       ExternalProject_Add(${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
         BINARY_DIR ${${proj}_BINARY_DIR}
@@ -409,13 +409,11 @@ foreach(proj ${EXTERNAL_PROJECTS})
         INDEPENDENT_STEP_TARGETS update
         CONFIGURE_COMMAND ""
         BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
+        BUILD_ALWAYS "${${proj}_BUILD_ALWAYS}"
         INSTALL_COMMAND ""
         DEPENDS ${deps}
         ${${proj}_ADDITIONAL_BUILD_ARGS})
       drake_forceupdate(${proj})
-      if(${proj}_BUILD_COMMAND)
-        drake_forcebuild(${proj})
-      endif()
       # message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
     endif()
   else()
@@ -434,12 +432,12 @@ foreach(proj ${EXTERNAL_PROJECTS})
       DOWNLOAD_COMMAND ""
       UPDATE_COMMAND ""
       BINARY_DIR ${drake_BINARY_DIR}
+      BUILD_ALWAYS 1
       DEPENDS ${deps}
       ${COMMON_CMAKE_ARGS}
       ${PODS_VERBOSE_MAKEFILE}
       ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
       ${${proj}_ADDITIONAL_BUILD_ARGS})
-    drake_forcebuild(${proj})
   endif()
 
 endforeach()

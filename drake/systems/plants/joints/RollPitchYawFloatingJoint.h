@@ -1,9 +1,10 @@
 #pragma once
 
 #include "DrakeJointImpl.h"
+#include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeGradientUtil.h"
 
 class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
     : public DrakeJointImpl<RollPitchYawFloatingJoint> {
@@ -24,9 +25,10 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
     Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret;
-    auto pos = q.template middleRows<SPACE_DIMENSION>(0);
-    auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
-    ret.linear() = rpy2rotmat(rpy);
+    auto pos = q.template middleRows<drake::kSpaceDimension>(0);
+    auto rpy =
+        q.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
+    ret.linear() = drake::math::rpy2rotmat(rpy);
     ret.translation() = pos;
     ret.makeAffine();
     return ret;
@@ -40,10 +42,11 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
           dmotion_subspace = nullptr) const {
     typedef typename DerivedQ::Scalar Scalar;
     motion_subspace.resize(drake::kTwistSize, getNumVelocities());
-    auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
-    Eigen::Matrix<Scalar, SPACE_DIMENSION, RPY_SIZE> E;
+    auto rpy =
+        q.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
+    Eigen::Matrix<Scalar, drake::kSpaceDimension, drake::kRpySize> E;
     rpydot2angularvelMatrix(rpy, E);
-    Eigen::Matrix<Scalar, 3, 3> R = rpy2rotmat(rpy);
+    Eigen::Matrix<Scalar, 3, 3> R = drake::math::rpy2rotmat(rpy);
     motion_subspace.template block<3, 3>(0, 0).setZero();
     motion_subspace.template block<3, 3>(0, 3) = R.transpose() * E;
     motion_subspace.template block<3, 3>(3, 0) = R.transpose();
@@ -101,17 +104,19 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
           dmotion_subspace_dot_times_vdv = nullptr) const {
     typedef typename DerivedQ::Scalar Scalar;
     motion_subspace_dot_times_v.resize(drake::kTwistSize, 1);
-    auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
+    auto rpy =
+        q.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
     Scalar roll = rpy(0);
     Scalar pitch = rpy(1);
     Scalar yaw = rpy(2);
 
-    auto pd = v.template middleRows<SPACE_DIMENSION>(0);
+    auto pd = v.template middleRows<drake::kSpaceDimension>(0);
     Scalar xd = pd(0);
     Scalar yd = pd(1);
     Scalar zd = pd(2);
 
-    auto rpyd = v.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
+    auto rpyd =
+        v.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
     Scalar rolld = rpyd(0);
     Scalar pitchd = rpyd(1);
     Scalar yawd = rpyd(2);

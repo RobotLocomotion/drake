@@ -13,6 +13,7 @@ set(sources
 set(installed_headers
   drake_assert.h
   drake_deprecated.h
+  eigen_types.h
   nice_type_name.h
   )
 

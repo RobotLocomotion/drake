@@ -2,6 +2,8 @@
 
 #include "drake/math/autodiff.h"
 #include "drake/math/expmap.h"
+#include "drake/math/quaternion.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/util/drakeUtil.h"
 
 using namespace Eigen;
@@ -10,8 +12,8 @@ using drake::math::autoDiffToValueMatrix;
 using drake::math::expmap2quat;
 
 template <typename DerivedA, typename DerivedB>
-void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M,
-             MatrixBase<DerivedB> &Msub) {
+void getRows(std::set<int>& rows, MatrixBase<DerivedA> const& M,
+             MatrixBase<DerivedB>& Msub) {
   if (static_cast<int>(rows.size()) == M.rows()) {
     Msub = M;
     return;
@@ -23,8 +25,8 @@ void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M,
 }
 
 template <typename DerivedA, typename DerivedB>
-void getCols(std::set<int> &cols, MatrixBase<DerivedA> const &M,
-             MatrixBase<DerivedB> &Msub) {
+void getCols(std::set<int>& cols, MatrixBase<DerivedA> const& M,
+             MatrixBase<DerivedB>& Msub) {
   if (static_cast<int>(cols.size()) == M.cols()) {
     Msub = M;
     return;
@@ -35,8 +37,8 @@ void getCols(std::set<int> &cols, MatrixBase<DerivedA> const &M,
 }
 
 template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
-void angleDiff(MatrixBase<DerivedPhi1> const &phi1,
-               MatrixBase<DerivedPhi2> const &phi2, MatrixBase<DerivedD> &d) {
+void angleDiff(MatrixBase<DerivedPhi1> const& phi1,
+               MatrixBase<DerivedPhi2> const& phi2, MatrixBase<DerivedD>& d) {
   d = phi2 - phi1;
 
   for (int i = 0; i < phi1.rows(); i++) {
@@ -52,7 +54,7 @@ void angleDiff(MatrixBase<DerivedPhi1> const &phi1,
 
 bool inSupport(
     const std::vector<SupportStateElement,
-                      Eigen::aligned_allocator<SupportStateElement>> &supports,
+                      Eigen::aligned_allocator<SupportStateElement>>& supports,
     int body_idx) {
   // HANDLE IF BODY_IDX IS A FRAME ID?
   for (size_t i = 0; i < supports.size(); i++) {
@@ -61,8 +63,8 @@ bool inSupport(
   return false;
 }
 
-void surfaceTangents(const Vector3d &normal,
-                     Matrix<double, 3, m_surface_tangents> &d) {
+void surfaceTangents(const Vector3d& normal,
+                     Matrix<double, 3, m_surface_tangents>& d) {
   Vector3d t1, t2;
   double theta;
 
@@ -84,8 +86,8 @@ void surfaceTangents(const Vector3d &normal,
   }
 }
 
-int contactPhi(const RigidBodyTree &r, const KinematicsCache<double> &cache,
-               SupportStateElement &supp, VectorXd &phi) {
+int contactPhi(const RigidBodyTree& r, const KinematicsCache<double>& cache,
+               SupportStateElement& supp, VectorXd& phi) {
   int nc = static_cast<int>(supp.contact_pts.size());
   phi.resize(nc);
 
@@ -103,12 +105,12 @@ int contactPhi(const RigidBodyTree &r, const KinematicsCache<double> &cache,
 }
 
 int contactConstraintsBV(
-    const RigidBodyTree &r, const KinematicsCache<double> &cache, int nc,
+    const RigidBodyTree& r, const KinematicsCache<double>& cache, int nc,
     std::vector<double> support_mus,
     std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>> &supp,
-    MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv,
-    MatrixXd &normals) {
+                Eigen::aligned_allocator<SupportStateElement>>& supp,
+    MatrixXd& B, MatrixXd& JB, MatrixXd& Jp, VectorXd& Jpdotv,
+    MatrixXd& normals) {
   int j, k = 0, nq = r.number_of_positions();
 
   B.resize(3, nc * 2 * m_surface_tangents);
@@ -166,11 +168,11 @@ int contactConstraintsBV(
 }
 
 MatrixXd individualSupportCOPs(
-    const RigidBodyTree &r, const KinematicsCache<double> &cache,
+    const RigidBodyTree& r, const KinematicsCache<double>& cache,
     const std::vector<SupportStateElement,
-                      Eigen::aligned_allocator<SupportStateElement>> &
+                      Eigen::aligned_allocator<SupportStateElement>>&
         active_supports,
-    const MatrixXd &normals, const MatrixXd &B, const VectorXd &beta) {
+    const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta) {
   const int n_basis_vectors_per_contact =
       static_cast<int>(B.cols() / normals.cols());
   const int n = static_cast<int>(active_supports.size());
@@ -193,19 +195,19 @@ MatrixXd individualSupportCOPs(
         (normalsj.colwise().operator-(normal)).squaredNorm() < 1e-15;
 
     if (normals_identical) {  // otherwise computing a COP doesn't make sense
-      const auto &Bj = B.middleCols(beta_start, active_support_length);
-      const auto &betaj = beta.segment(beta_start, active_support_length);
+      const auto& Bj = B.middleCols(beta_start, active_support_length);
+      const auto& betaj = beta.segment(beta_start, active_support_length);
 
-      const auto &contact_positions =
+      const auto& contact_positions =
           r.bodies[active_support.body_idx]->contact_pts;
       Vector3d force = Vector3d::Zero();
       Vector3d torque = Vector3d::Zero();
 
       for (size_t k = 0; k < contact_pts.size(); k++) {
         // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) {
-        const auto &Bblock = Bj.middleCols(k * n_basis_vectors_per_contact,
+        const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact,
                                            n_basis_vectors_per_contact);
-        const auto &betablock = betaj.segment(k * n_basis_vectors_per_contact,
+        const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact,
                                               n_basis_vectors_per_contact);
         Vector3d point_force = Bblock * betablock;
         force += point_force;
@@ -229,7 +231,7 @@ MatrixXd individualSupportCOPs(
   return individual_cops;
 }
 
-bool isSupportElementActive(SupportStateElement *se,
+bool isSupportElementActive(SupportStateElement* se,
                             bool contact_force_detected,
                             bool kinematic_contact_detected) {
   bool is_active;
@@ -250,11 +252,11 @@ bool isSupportElementActive(SupportStateElement *se,
 }
 
 Matrix<bool, Dynamic, 1> getActiveSupportMask(
-    const RigidBodyTree &r, VectorXd q, VectorXd qd,
+    const RigidBodyTree& r, VectorXd q, VectorXd qd,
     std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>> &
+                Eigen::aligned_allocator<SupportStateElement>>&
         available_supports,
-    const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected,
+    const Ref<const Matrix<bool, Dynamic, 1>>& contact_force_detected,
     double contact_threshold) {
   KinematicsCache<double> cache = r.doKinematics(q, qd);
 
@@ -303,11 +305,11 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(
 
 std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement>>
 getActiveSupports(
-    const RigidBodyTree &r, const VectorXd &q, const VectorXd &qd,
+    const RigidBodyTree& r, const VectorXd& q, const VectorXd& qd,
     std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>> &
+                Eigen::aligned_allocator<SupportStateElement>>&
         available_supports,
-    const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected,
+    const Ref<const Matrix<bool, Dynamic, 1>>& contact_force_detected,
     double contact_threshold) {
   Matrix<bool, Dynamic, 1> active_supp_mask = getActiveSupportMask(
       r, q, qd, available_supports, contact_force_detected, contact_threshold);
@@ -324,11 +326,11 @@ getActiveSupports(
 }
 
 Vector6d bodySpatialMotionPD(
-    const RigidBodyTree &r, const DrakeRobotState &robot_state,
-    const int body_index, const Isometry3d &body_pose_des,
-    const Ref<const Vector6d> &body_v_des,
-    const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp,
-    const Ref<const Vector6d> &Kd, const Isometry3d &T_task_to_world) {
+    const RigidBodyTree& r, const DrakeRobotState& robot_state,
+    const int body_index, const Isometry3d& body_pose_des,
+    const Ref<const Vector6d>& body_v_des,
+    const Ref<const Vector6d>& body_vdot_des, const Ref<const Vector6d>& Kp,
+    const Ref<const Vector6d>& Kd, const Isometry3d& T_task_to_world) {
   // @param body_pose_des  desired pose in the task frame, this is the
   // homogeneous transformation from desired body frame to task frame
   // @param body_v_des    desired [xyzdot;angular_velocity] in task frame
@@ -343,9 +345,9 @@ Vector6d bodySpatialMotionPD(
   KinematicsCache<double> cache = r.doKinematics(robot_state.q, robot_state.qd);
 
   auto body_pose = r.relativeTransform(cache, 0, body_index);
-  const auto &body_xyz = body_pose.translation();
+  const auto& body_xyz = body_pose.translation();
   Vector3d body_xyz_task = T_world_to_task * body_xyz;
-  Vector4d body_quat = rotmat2quat(body_pose.linear());
+  Vector4d body_quat = drake::math::rotmat2quat(body_pose.linear());
   std::vector<int> v_indices;
   auto J_geometric =
       r.geometricJacobian(cache, 0, body_index, body_index, true, &v_indices);
@@ -354,7 +356,7 @@ Vector6d bodySpatialMotionPD(
     v_compact(i) = robot_state.qd(v_indices[i]);
   }
   Vector6d body_twist = J_geometric * v_compact;
-  Matrix3d R_body_to_world = quat2rotmat(body_quat);
+  Matrix3d R_body_to_world = drake::math::quat2rotmat(body_quat);
   Matrix3d R_world_to_body = R_body_to_world.transpose();
   Matrix3d R_body_to_task = T_world_to_task.linear() * R_body_to_world;
   Vector3d body_angular_vel =
@@ -373,7 +375,7 @@ Vector6d bodySpatialMotionPD(
 
   Matrix3d R_des = body_pose_des.linear();
   Matrix3d R_err_task = R_des * R_body_to_task.transpose();
-  Vector4d angleAxis_err_task = rotmat2axis(R_err_task);
+  Vector4d angleAxis_err_task = drake::math::rotmat2axis(R_err_task);
   Vector3d angular_err_task =
       angleAxis_err_task.head<3>() * angleAxis_err_task(3);
 
@@ -404,10 +406,10 @@ Vector6d bodySpatialMotionPD(
 }
 
 void evaluateXYZExpmapCubicSpline(double t,
-                                  const PiecewisePolynomial<double> &spline,
-                                  Isometry3d &body_pose_des,
-                                  Vector6d &xyzdot_angular_vel,
-                                  Vector6d &xyzddot_angular_accel) {
+                                  const PiecewisePolynomial<double>& spline,
+                                  Isometry3d& body_pose_des,
+                                  Vector6d& xyzdot_angular_vel,
+                                  Vector6d& xyzddot_angular_accel) {
   Vector6d xyzexp = spline.value(t);
   auto derivative = spline.derivative();
   Vector6d xyzexpdot = derivative.value(t);
@@ -442,7 +444,7 @@ void evaluateXYZExpmapCubicSpline(double t,
 
   auto quat_autodiff = expmap2quat(expmap_autodiff);
   Vector4d quat = autoDiffToValueMatrix(autoDiffToValueMatrix(quat_autodiff));
-  body_pose_des.linear() = quat2rotmat(quat);
+  body_pose_des.linear() = drake::math::quat2rotmat(quat);
 
   // angular velocity and acceleration are computed from quaternion derivative
   // meaning of derivative vectors remains the same: first and second
@@ -470,8 +472,8 @@ void evaluateXYZExpmapCubicSpline(double t,
   }
 }
 
-void getRobotJointIndexMap(JointNames *joint_names,
-                           RobotJointIndexMap *joint_map) {
+void getRobotJointIndexMap(JointNames* joint_names,
+                           RobotJointIndexMap* joint_map) {
   if (joint_names->drake.size() != joint_names->robot.size()) {
     throw std::runtime_error(
         "Cannot create joint name map: joint_names->drake and "
@@ -500,15 +502,15 @@ void getRobotJointIndexMap(JointNames *joint_names,
   return;
 }
 
-template DRAKECONTROLUTIL_EXPORT void getRows(std::set<int> &,
-                                              const MatrixBase<MatrixXd> &,
-                                              MatrixBase<MatrixXd> &);
-template DRAKECONTROLUTIL_EXPORT void getCols(std::set<int> &,
-                                              const MatrixBase<MatrixXd> &,
-                                              MatrixBase<MatrixXd> &);
-template DRAKECONTROLUTIL_EXPORT void angleDiff(const MatrixBase<MatrixXd> &,
-                                                const MatrixBase<MatrixXd> &,
-                                                MatrixBase<MatrixXd> &);
-template DRAKECONTROLUTIL_EXPORT void angleDiff(const MatrixBase<Vector3d> &,
-                                                const MatrixBase<Vector3d> &,
-                                                MatrixBase<Vector3d> &);
+template DRAKECONTROLUTIL_EXPORT void getRows(std::set<int>&,
+                                              const MatrixBase<MatrixXd>&,
+                                              MatrixBase<MatrixXd>&);
+template DRAKECONTROLUTIL_EXPORT void getCols(std::set<int>&,
+                                              const MatrixBase<MatrixXd>&,
+                                              MatrixBase<MatrixXd>&);
+template DRAKECONTROLUTIL_EXPORT void angleDiff(const MatrixBase<MatrixXd>&,
+                                                const MatrixBase<MatrixXd>&,
+                                                MatrixBase<MatrixXd>&);
+template DRAKECONTROLUTIL_EXPORT void angleDiff(const MatrixBase<Vector3d>&,
+                                                const MatrixBase<Vector3d>&,
+                                                MatrixBase<Vector3d>&);

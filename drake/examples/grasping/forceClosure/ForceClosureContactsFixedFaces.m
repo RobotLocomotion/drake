@@ -91,7 +91,11 @@ classdef ForceClosureContactsFixedFaces < BMIspotless
       else
         hold on;
         for k = 1:obj.num_contacts
-          h = arrow3D(sol.contact_pos(:,k),sol.f(:,k)*force_scalar,[1,0,0],0.7);
+          arrow_start = sol.contact_pos(:,k);
+          arrow_end = arrow_start+sol.f(:,k)*force_scalar;
+          arrow_force = [arrow_start arrow_end];
+          arrow_radius = norm(sol.f(:,k))*force_scalar*0.1;
+          h = arrow3d(arrow_force(1,:),arrow_force(2,:),arrow_force(3,:),0.7,arrow_radius,arrow_radius*2,[1,0,0]);
         end
         hold off;
       end

@@ -275,7 +275,7 @@ FunctionalForm operator/(double l, FunctionalForm const& r) {
   return FunctionalForm(l) / r;
 }
 
-static std::string const kFunctionalFormNames[] = {
+static const char* const kFunctionalFormNames[] = {
     "zero", "cons", "lin", "aff", "poly", "diff", "arb", "undf",
 };
 
@@ -384,12 +384,12 @@ std::size_t FunctionalForm::Variable::index() const {
   }
 }
 
-static std::string const kInvalidName;
-
 std::string const& FunctionalForm::Variable::name() const {
   if (is_named()) {
     return name_;
   } else {
+    static std::string const kInvalidName;
+
     return kInvalidName;
   }
 }

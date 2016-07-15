@@ -1,4 +1,5 @@
 #include "drake/common/drake_assert.h"
+#include "drake/math/quaternion.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/drakeMexUtil.h"
 #include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
@@ -225,7 +226,7 @@ std::vector<BodyMotionData> setUpBodyMotions(const mxArray* mex_body_motions) {
     auto quat_task_to_world = matlabToEigenMap<4, 1>(
         mxGetPropertySafe(mex_body_motions, i, "quat_task_to_world"));
     body_motion_data.transform_task_to_world.linear() =
-        quat2rotmat(quat_task_to_world);
+        drake::math::quat2rotmat(quat_task_to_world);
     body_motion_data.transform_task_to_world.translation() =
         matlabToEigenMap<3, 1>(mxGetPropertySafe(mex_body_motions, i,
                                                  "translation_task_to_world"));
@@ -340,7 +341,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   settings.plan_shift_body_motion_indices = matlabToStdVector<Eigen::Index>(
       mxGetPropertySafe(mex_settings, "plan_shift_body_motion_inds"));
   addOffset(settings.plan_shift_body_motion_indices,
-            (Eigen::Index) - 1);  // base 1 to base 0
+            (Eigen::Index)-1);  // base 1 to base 0
   settings.g = mxGetScalar(mxGetPropertySafe(mex_settings, "g"));
   settings.is_quasistatic =
       mxGetLogicals(mxGetPropertySafe(mex_settings, "is_quasistatic"))[0];

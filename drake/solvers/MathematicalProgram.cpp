@@ -1,6 +1,8 @@
 #include "MathematicalProgram.h"
 
+#include "equality_constrained_qp_solver.h"
 #include "IpoptSolver.h"
+#include "linear_system_solver.h"
 #include "MobyLCP.h"
 #include "NloptSolver.h"
 #include "Optimization.h"
@@ -29,7 +31,11 @@ typedef uint32_t AttributesSet;
 // solver wrappers themselves.
 
 // Solver for simple linear systems of equalities
-AttributesSet kLeastSquaresCapabilities = kLinearEqualityConstraint;
+AttributesSet kLinearSystemSolverCapabilities = kLinearEqualityConstraint;
+
+// Solver for equality-constrained QPs
+AttributesSet kEqualityConstrainedQPCapabilities = (
+  kQuadraticCost | kLinearCost | kLinearEqualityConstraint);
 
 // Solver for Linear Complementarity Problems (LCPs)
 AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
@@ -51,47 +57,6 @@ bool is_satisfied(AttributesSet required, AttributesSet available) {
   return ((required & ~available) == kNoCapabilities);
 }
 
-
-class DRAKEOPTIMIZATION_EXPORT LeastSquaresSolver :
-      public MathematicalProgramSolverInterface {
-  ~LeastSquaresSolver() override {};
-
-  bool available() const override { return true; }
-
-  SolutionResult Solve(OptimizationProblem& prog) const override {
-    size_t num_constraints = 0;
-    for (auto const& binding : prog.linear_equality_constraints()) {
-      num_constraints += binding.constraint()->A().rows();
-    }
-
-    Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(
-        num_constraints, prog.num_vars());
-    // TODO(naveenoid) : use a sparse matrix here?
-    Eigen::VectorXd beq(num_constraints);
-
-    size_t constraint_index = 0;
-    for (auto const& binding : prog.linear_equality_constraints()) {
-      auto const& c = binding.constraint();
-      size_t n = c->A().rows();
-      size_t var_index = 0;
-      for (const DecisionVariableView& v : binding.variable_list()) {
-        Aeq.block(constraint_index, v.index(), n, v.size()) =
-            c->A().middleCols(var_index, v.size());
-        var_index += v.size();
-      }
-      beq.segment(constraint_index, n) =
-          c->lower_bound();  // = c->upper_bound() since it's an equality
-      // constraint
-      constraint_index += n;
-    }
-
-    // least-squares solution
-    prog.SetDecisionVariableValues(
-        Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
-    return SolutionResult::kSolutionFound;
-  }
-};
-
 }  // anon namespace
 
 
@@ -101,7 +66,8 @@ MathematicalProgram::MathematicalProgram()
       nlopt_solver_(new NloptSolver()),
       snopt_solver_(new SnoptSolver()),
       moby_lcp_solver_(new MobyLCPSolver()),
-      least_squares_solver_(new LeastSquaresSolver()) {}
+      linear_system_solver_(new LinearSystemSolver()),
+      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()) {}
 
 void MathematicalProgram::AddGenericCost() {
   required_capabilities_ |= kGenericCost;
@@ -132,12 +98,17 @@ SolutionResult MathematicalProgram::Solve(OptimizationProblem& prog) const {
   // This implementation is simply copypasta for now; in the future we will
   // want to tweak the order of preference of solvers based on the types of
   // constraints present.
-  if (is_satisfied(required_capabilities_, kLeastSquaresCapabilities) &&
-      least_squares_solver_->available()) {
+
+  if (is_satisfied(required_capabilities_, kLinearSystemSolverCapabilities) &&
+      linear_system_solver_->available()) {
     // TODO(ggould-tri) Also allow quadratic objectives whose matrix is
     // Identity: This is the objective function the solver uses anyway when
     // underconstrainted, and is fairly common in real-world problems.
-    return least_squares_solver_->Solve(prog);
+    return linear_system_solver_->Solve(prog);
+  } else if (is_satisfied(required_capabilities_,
+                          kEqualityConstrainedQPCapabilities) &&
+            equality_constrained_qp_solver_->available()) {
+    return equality_constrained_qp_solver_->Solve(prog);
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(prog);

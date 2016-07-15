@@ -16,12 +16,6 @@
 #include "drake/util/drakeUtil.h"
 #include "drake/solvers/fastQP.h"
 
-#define USE_EIQUADPROG_BACKUP 1
-
-#if USE_EIQUADPROG_BACKUP
-#include "drake/systems/plants/eiquadprog.h"
-#endif
-
 #define MAX_CONSTRS 1000
 #define MAX_ITER 20
 using namespace std;
@@ -283,21 +277,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   blkQ.push_back(Qdiag);
   set<int> active;
   double result = fastQP(blkQ, c, Aeq, beq, Ain, bin, active, q);
-
-// Enable the block below to use stephens' qp code
-#if USE_EIQUADPROG_BACKUP
-  if (result == 1) {
-    Q += 1e-8 * MatrixXd::Identity(nq, nq);
-    result =
-        solve_quadprog(Q, c, -Aeq.transpose(), beq, -Ain.transpose(), bin, q);
-
-    if (mxIsInf(result)) {
-      result = 1;
-    } else {
-      result = 0;
-    }
-  }
-#endif
 
   plhs[0] = mxCreateDoubleMatrix(nq, 1, mxREAL);
   memcpy(mxGetPrSafe(plhs[0]), q.data(), sizeof(double) * nq);

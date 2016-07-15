@@ -1,9 +1,10 @@
 #pragma once
 
+#include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/quaternion.h"
 #include "drake/systems/plants/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeGradientUtil.h"
 
 class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
     : public DrakeJointImpl<QuaternionFloatingJoint> {
@@ -18,7 +19,7 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
     Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret;
-    ret.linear() = quat2rotmat(q.template bottomRows<4>());
+    ret.linear() = drake::math::quat2rotmat(q.template bottomRows<4>());
     ret.translation() << q[0], q[1], q[2];
     ret.makeAffine();
     return ret;
@@ -72,11 +73,13 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
 
     qdot_to_v.resize(getNumVelocities(), getNumPositions());
     typedef typename DerivedQ::Scalar Scalar;
-    auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
-    auto R = quat2rotmat(quat);
+    auto quat =
+        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
+    auto R = drake::math::quat2rotmat(quat);
 
     Eigen::Matrix<Scalar, 4, 1> quattilde;
-    typename drake::math::Gradient<Eigen::Matrix<Scalar, 4, 1>, QUAT_SIZE,
+    typename drake::math::Gradient<Eigen::Matrix<Scalar, 4, 1>,
+                                   drake::kQuaternionSize,
                                    1>::type dquattildedquat;
     normalizeVec(quat, quattilde, &dquattildedquat);
     auto RTransposeM = (R.transpose() * quatdot2angularvelMatrix(quat)).eval();
@@ -97,13 +100,15 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
     typedef typename DerivedQ::Scalar Scalar;
     v_to_qdot.resize(getNumPositions(), getNumVelocities());
 
-    auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
-    auto R = quat2rotmat(quat);
+    auto quat =
+        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
+    auto R = drake::math::quat2rotmat(quat);
 
-    Eigen::Matrix<Scalar, QUAT_SIZE, SPACE_DIMENSION> M;
+    Eigen::Matrix<Scalar, drake::kQuaternionSize, drake::kSpaceDimension> M;
     if (dv_to_qdot) {
       auto dR = dquat2rotmat(quat);
-      typename drake::math::Gradient<decltype(M), QUAT_SIZE, 1>::type dM;
+      typename drake::math::Gradient<decltype(M), drake::kQuaternionSize,
+                                     1>::type dM;
       angularvel2quatdotMatrix(quat, M, &dM);
 
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
@@ -115,8 +120,9 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
                               v_to_qdot.rows(), 3);
     } else {
       angularvel2quatdotMatrix(
-          quat, M, (typename drake::math::Gradient<decltype(M), QUAT_SIZE,
-                                                   1>::type*)nullptr);
+          quat, M,
+          (typename drake::math::Gradient<decltype(M), drake::kQuaternionSize,
+                                          1>::type*)nullptr);
     }
 
     v_to_qdot.template block<3, 3>(0, 0).setZero();

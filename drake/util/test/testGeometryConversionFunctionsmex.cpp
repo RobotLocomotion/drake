@@ -1,4 +1,5 @@
 #include "drake/math/autodiff.h"
+#include "drake/math/quaternion.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeMexUtil.h"
 #include "drake/core/Gradient.h"
@@ -22,7 +23,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   auto q = matlabToEigen<QUAT_SIZE, 1>(prhs[argnum++]);
   auto dq = matlabToEigen<QUAT_SIZE, Eigen::Dynamic>(prhs[argnum++]);
 
-  auto rpy = quat2rpy(q);
+  auto rpy = drake::math::quat2rpy(q);
 
   Matrix<double, QUAT_SIZE, SPACE_DIMENSION> omega2qd;
   Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type
@@ -48,7 +49,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   qd2omega = autoDiffToValueMatrix(qd2omega_autodiff);
   dqd2omega = autoDiffToGradientMatrix(qd2omega_autodiff);
 
-  auto R = quat2rotmat(q);
+  auto R = drake::math::quat2rotmat(q);
   auto dq2R = dquat2rotmat(q);
   Matrix<double, RotmatSize, Dynamic> dR = dq2R * dq;
   auto drpydR = drotmat2rpy(R, dR);
