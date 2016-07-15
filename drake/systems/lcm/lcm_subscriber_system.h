@@ -34,10 +34,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
    * `LcmSubscriberSystem`.
    *
    * @param[in] lcm A pointer to the LCM subsystem. This pointer must not be
-   * nullptr and must be valid during the construction of this
+   * null and must be valid during the construction of this
    * `LcmSubscriberSystem`.
-   *
-   * @throws std::runtime_error if @p lcm_receive_thread is nullptr.
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmVectorInterfaceTranslator& translator,
