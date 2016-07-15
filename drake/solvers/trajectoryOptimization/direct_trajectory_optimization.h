@@ -15,7 +15,7 @@ namespace drake {
 namespace solvers {
 
 /**
- * DirectTrajectoryOptimization An abstract class for direct method approaches
+ * DirectTrajectoryOptimization A class for direct method approaches
  * to trajectory optimization.
  *
  * This class assumes that there are a fixed number (N) time steps/samples, and
@@ -34,14 +34,6 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
                                const int trajectory_time_upper_bound);
   // TODO(lucy-tri) add param: time steps constant or independent.
 
-  /**
-   *  Evaluate the initial trajectories at the sampled times and construct the
-   *  nominal initial vectors.
-   */
-  void GetInitialVars(int t_init_in,
-                      const PiecewisePolynomial<double>& traj_init_u,
-                      const PiecewisePolynomial<double>& traj_init_x);
-
   void AddStateConstraint(const Constraint& constraint, const int time_index);
 
   /** 
@@ -50,10 +42,18 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * @p traj_init_u Initial guess for trajectory for control input.
    * @p traj_init_x Initial guess for trajectory for state input.
    */
-  SolutionResult SolveTraj(int t_init_in,
+  SolutionResult SolveTraj(int t_init,
                            const PiecewisePolynomial<double>& traj_init_u,
                            const PiecewisePolynomial<double>& traj_init_x);
  private:
+  /**
+   *  Evaluate the initial trajectories at the sampled times and construct the
+   *  nominal initial vectors.
+   */
+  void GetInitialVars(int t_init_in,
+                      const PiecewisePolynomial<double>& traj_init_u,
+                      const PiecewisePolynomial<double>& traj_init_x);
+
   const int num_inputs_;
   const int num_states_;
   const int num_vars_;
