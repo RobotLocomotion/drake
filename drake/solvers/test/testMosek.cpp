@@ -34,7 +34,7 @@ GTEST_TEST(testMosek, MosekLinearProgram) {
   Eigen::MatrixXd constraint2(1, 4);
   constraint1 << 2, 1, 3, 1;
   constraint2 << 0, 2, 0, 3;
-  Eigen::MatrixXd lineqconstraint(1,4);
+  Eigen::MatrixXd lineqconstraint(1, 4);
   lineqconstraint << 3, 1, 2, 0;
   Eigen::MatrixXd lb1(1, 1), ub1(1, 1);
   Eigen::MatrixXd lb2(1, 1), ub2(1, 1);
@@ -42,7 +42,7 @@ GTEST_TEST(testMosek, MosekLinearProgram) {
   ub1 << +std::numeric_limits<double>::infinity();
   lb2 << -std::numeric_limits<double>::infinity();
   ub2 << 25;
-  Eigen::MatrixXd lineqbounds(1,1);
+  Eigen::MatrixXd lineqbounds(1, 1);
   lineqbounds << 30;
 
   prog.AddLinearConstraint(constraint1, lb1, ub1);
