@@ -76,7 +76,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
   const LcmBasicVectorTranslator& translator_;
 
   // Implements the loop that receives LCM messages.
-  const LcmReceiveThread* lcm_receive_thread_;
+  const LcmReceiveThread* const lcm_receive_thread_;
 
   // A mutex for protecting data that's shared by the LCM receive thread and
   // the thread that calls LcmSubscriberSystem::Output().
