@@ -21,7 +21,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmReceiveThread {
    * The constructor.
    *
    * @param[in] lcm A pointer to the LCM subsystem through which to loop.
-   * This parameter cannot be nullptr.
+   * This parameter cannot be nullptr. This parameter must remain valid for the
+   * lifetime of this `LcmReceiveThread`.
    */
   explicit LcmReceiveThread(::lcm::LCM* lcm);
 
@@ -36,7 +37,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmReceiveThread {
   LcmReceiveThread& operator=(const LcmReceiveThread&) = delete;
 
   /**
-   * Returns a pointer to the LCM subsystem.
+   * Returns a pointer to the LCM subsystem. The lifetime of this thread will
+   * be valid for the lifetime of this `LcmReciveThread`, as required by the
+   * this class' constructor's documentation.
    */
   ::lcm::LCM* get_lcm() const;
 

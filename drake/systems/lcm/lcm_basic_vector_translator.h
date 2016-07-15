@@ -41,7 +41,7 @@ class LcmBasicVectorTranslator {
   virtual int get_message_data_length() const = 0;
 
   /**
-   * Translates an LCM message a `BasicVector` object.
+   * Translates an LCM message into a `BasicVector` object.
    *
    * @param[in] rbuf A pointer to a buffer holding the LCM message's data.
    *

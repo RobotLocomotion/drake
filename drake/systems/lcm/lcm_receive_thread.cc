@@ -21,12 +21,15 @@ LcmReceiveThread::LcmReceiveThread(::lcm::LCM* lcm) : lcm_(lcm) {
 }
 
 LcmReceiveThread::~LcmReceiveThread() {
+  // TODO(liang.fok) Refactor to not employ a blocking destructor. Prefer to use
+  // detach() after removing use of cross-thread bare pointers. Before this is
+  // done, do NOT use Drake in a safety critical system!
   Stop();
 }
 
-::lcm::LCM* LcmReceiveThread::get_lcm() const {
-  return lcm_;
-}
+::lcm::LCM* LcmReceiveThread::get_lcm() const { return lcm_; }
+
+namespace {
 
 // Waits for an LCM message to arrive.
 bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
@@ -51,6 +54,8 @@ bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
   return (status > 0 && FD_ISSET(lcm_file_descriptor, &fds));
 }
 
+}  // namespace
+
 void LcmReceiveThread::LoopWithSelect() {
   while (!stop_) {
     const double timeout_in_seconds = 0.3;
@@ -61,8 +66,7 @@ void LcmReceiveThread::LoopWithSelect() {
     if (lcm_ready) {
       if (lcm_->handle() != 0) {
         std::cout << "LcmReceiverThread: LoopWithSelect: lcm->handle() "
-                  << "returned non-zero value."
-                  << std::endl;
+                  << "returned non-zero value." << std::endl;
         return;
       }
     }

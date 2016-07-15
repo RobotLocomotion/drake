@@ -64,17 +64,15 @@ void LcmSubscriberSystem::EvalOutput(const Context<double>& context,
   BasicVector<double>& output_vector = dynamic_cast<BasicVector<double>&>(
       *output->ports[0]->GetMutableVectorData());
 
-  data_mutex_.lock();
+  std::lock_guard<std::mutex> lock(data_mutex_);
   output_vector.set_value(basic_vector_.get_value());
-  data_mutex_.unlock();
 }
 
 void LcmSubscriberSystem::HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                                         const std::string& channel) {
   if (channel == channel_) {
-    data_mutex_.lock();
+    std::lock_guard<std::mutex> lock(data_mutex_);
     translator_.TranslateLcmToBasicVector(rbuf, &basic_vector_);
-    data_mutex_.unlock();
   } else {
     std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
               << "message for channel \"" << channel
