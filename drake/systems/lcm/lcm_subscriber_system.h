@@ -41,6 +41,10 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
 
   ~LcmSubscriberSystem() override;
 
+  // Disable copy and assign.
+  LcmSubscriberSystem(const LcmSubscriberSystem&) = delete;
+  LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
+
   std::string get_name() const override;
 
   /**
