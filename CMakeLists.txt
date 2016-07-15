@@ -3,29 +3,7 @@ project(drake-superbuild)
 
 include(CTest)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-  message(FATAL_ERROR "GCC version must be at least 4.9")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
-  message(FATAL_ERROR "Apple Clang version must be at least 7")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
-  message(FATAL_ERROR "Clang version must be at least 3.7")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
-  message(FATAL_ERROR "MSVC version must be at least 14")
-endif()
-
-# Set Default build type to Release if none specified
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-    "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
-    FORCE)
-endif(NOT CMAKE_BUILD_TYPE)
-
-# PODs out-of-source build logic
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
-    "Prefix for installation of sub-packages (note: required during build!)" FORCE)
-endif()
-message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+include(cmake/config.cmake)
 
 include(ExternalProject)
 find_package(Git REQUIRED)
@@ -54,18 +32,11 @@ function(drake_depend_submodule_sync proj)
   endif()
 endfunction()
 
-# Require Java at the super-build level since libbot cannot configure without finding Java
-find_package(Java 1.6 REQUIRED)
-include(UseJava)
-
 # menu of extra examples
 option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF)
 
 ## External dependencies
 option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
-
-# Choose your python (major) version
-option(WITH_PYTHON_3 "Force Drake to use python 3 instead of python 2" OFF)
 
 # menu of external projects
 option(WITH_ALL_PUBLIC_EXTERNALS "enable all externals available to public academic users" OFF)
