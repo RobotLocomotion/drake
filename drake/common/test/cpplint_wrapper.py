@@ -13,9 +13,9 @@ import sys
 
 
 def summarize_cpplint(cmdline_and_files):
-    """Given a cpplint subprocess command line (the program, arguments, and files
-    to check), run cpplint and return a list of errors, or an empty list if
-    there were no errors.
+    """Given a cpplint subprocess command line (the program, arguments, and
+    files to check), run cpplint and return a list of errors, or an empty list
+    if there were no errors.
     """
 
     try:
@@ -38,6 +38,7 @@ def summarize_cpplint(cmdline_and_files):
             # Our filtering failed, so report everything.
             errors = [e.output or "NO OUTPUT"]
         return errors
+
 
 def multiprocess_cpplint(cmdline, files, num_processes):
     """Given a cpplint subprocess command line (just the program and arguments),
@@ -69,19 +70,20 @@ def multiprocess_cpplint(cmdline, files, num_processes):
             print >>sys.stderr, line
         return 1
 
+
 def main():
     # Find cpplint.py.
     drake_common_test_dir = os.path.dirname(os.path.abspath(__file__))
-    drake_dir = os.path.abspath(os.path.join(drake_common_test_dir, '../../'))
-    drake_distro_dir = os.path.abspath(os.path.join(drake_dir, '../'))
+    drake_dir = os.path.abspath(os.path.join(drake_common_test_dir, '../..'))
+    drake_distro_dir = os.path.abspath(os.path.join(drake_dir, '..'))
     default_cpplint = os.path.join(
         drake_distro_dir, 'externals/google_styleguide/cpplint/cpplint.py')
 
     # Prepare to parse our arguments.
     parser = argparse.ArgumentParser(
         description=__doc__.strip(),
-        usage=
-        '%(prog)s [options] [pathname [pathname ...]] [-- <cpplint.py args>]')
+        usage=('%(prog)s [options] [pathname [pathname ...]]'
+               ' [-- <cpplint.py args>]'))
     parser.add_argument(
         '--cpplint',
         default=default_cpplint,
