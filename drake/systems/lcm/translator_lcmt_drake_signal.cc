@@ -17,7 +17,7 @@ int TranslatorLcmtDrakeSignal::get_message_data_length() const {
   message.dim = get_basic_vector_size();
   message.val.resize(message.dim);
   message.coord.resize(message.dim);
-  unsigned int data_length = message->getEncodedSize();
+  unsigned int data_length = message.getEncodedSize();
   return static_cast<int>(data_length);
 }
 
@@ -54,8 +54,9 @@ void TranslatorLcmtDrakeSignal::TranslateLcmToBasicVector(
   }
 }
 
-void TranslateBasicVectorToLCM(const BasicVector<double>& basic_vector,
-    void** data, unsigned int* datalen) const {
+void TranslatorLcmtDrakeSignal::TranslateBasicVectorToLCM(
+    const BasicVector<double>& basic_vector, uint8_t* const* data,
+    int const* datalen) const {
 
   // TODO(liang.fok) Assert that basic_vector.size == get_basic_vector_size()
 
@@ -73,7 +74,7 @@ void TranslateBasicVectorToLCM(const BasicVector<double>& basic_vector,
     message.coord[ii] = "Coord_" + std::to_string(ii);
   }
 
-  message.encode(*data, *datalen);
+  message.encode(*data, 0, *datalen);
 }
 
 }  // namespace lcm

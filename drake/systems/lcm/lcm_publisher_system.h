@@ -29,7 +29,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
   /**
    * The constructor.
    *
-   * @param[in] channel The LCM channel on which to subscribe.
+   * @param[in] channel The LCM channel on which to publish.
    *
    * @param[in] translator The translator that converts between LCM message
    * objects and `drake::systems::BasicVector` objects.
@@ -41,6 +41,10 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
                       ::lcm::LCM* lcm);
 
   ~LcmPublisherSystem() override;
+
+  // Disable copy and assign.
+  LcmPublisherSystem(const LcmPublisherSystem&) = delete;
+  LcmPublisherSystem& operator=(const LcmPublisherSystem&) = delete;
 
   std::string get_name() const override;
 
@@ -56,9 +60,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
   std::unique_ptr<SystemOutput<double>> AllocateOutput() const override;
 
   /**
-   * Computes the output for the given context, possibly updating values
-   * in the cache. Note that the context is ignored since it contains no
-   * information.
+   * Takes the BasicVector from the input port of the context and publishes it
+   * onto an LCM channel. Note that the output is ignored since this system
+   * does not output anything.
    */
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override;
@@ -79,6 +83,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
   // drake::systems::BasicVector.
   const LcmBasicVectorTranslator& translator_;
 
+  // A pointer to the LCM subsystem.
+  ::lcm::LCM* lcm_;
+
   // Implements the loop that receives LCM messages.
   LcmReceiveThread* lcm_receive_thread_;
 
@@ -94,6 +101,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
   // Points to the data that holds an encoded LCM message. This is used when
   // publishing LCM messages.
   uint8_t *buffer_;
+
+  // The amount of data being pointed to by buffer_.
+  int buffer_length_;
 };
 
 }  // namespace lcm

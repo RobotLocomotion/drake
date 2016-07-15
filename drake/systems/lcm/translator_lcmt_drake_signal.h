@@ -35,8 +35,9 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorLcmtDrakeSignal
       const ::lcm::ReceiveBuffer* rbuf,
       BasicVector<double>* basic_vector) const override;
 
-  void TranslateBasicVectorToLCM(const BasicVector<double>& basic_vector,
-    const void *data, unsigned int datalen) const override;
+  void TranslateBasicVectorToLCM(
+      const BasicVector<double>& basic_vector, uint8_t* const* data,
+      int const* data_length) const override;
 };
 
 }  // namespace lcm

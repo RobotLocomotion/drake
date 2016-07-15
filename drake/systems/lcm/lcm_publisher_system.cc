@@ -8,6 +8,8 @@
 #include <sys/select.h>
 #endif
 
+#include "drake/systems/framework/system_input.h"
+
 namespace drake {
 namespace systems {
 namespace lcm {
@@ -18,10 +20,9 @@ LcmPublisherSystem::LcmPublisherSystem(const std::string& channel,
     : channel_(channel),
       translator_(translator),
       lcm_(lcm),
-      basic_vector_(translator.get_basic_vector_size()) {
-
-  int data_length = translator_.get_message_data_length();
-  buffer_ = new uint8_t[data_length];
+      basic_vector_(translator.get_basic_vector_size()),
+      buffer_length_(translator.get_message_data_length()) {
+  buffer_ = new uint8_t[buffer_length_];
 }
 
 LcmPublisherSystem::~LcmPublisherSystem() {
@@ -35,10 +36,10 @@ std::string LcmPublisherSystem::get_name() const {
 std::unique_ptr<Context<double>> LcmPublisherSystem::CreateDefaultContext()
     const {
   std::unique_ptr<VectorInterface<double>> vector_data(
-    new BasicVector(translator_.get_basic_vector_size()));
+    new BasicVector<double>(translator_.get_basic_vector_size()));
 
   std::unique_ptr<InputPort<double>> inputPort(
-    new FreestandingInputPort(vector_data));
+    new FreestandingInputPort<double>(std::move(vector_data)));
 
   std::unique_ptr<Context<double>> context(new Context<double>());
   context->SetNumInputPorts(kNumInputPorts);
@@ -57,16 +58,16 @@ void LcmPublisherSystem::EvalOutput(const Context<double>& context,
                 SystemOutput<double>* output) const {
   // Obtains the input vector.
   const VectorInterface<double>* input_vector =
-    context.get_vector_input(kPortIndex);
+      context.get_vector_input(kPortIndex);
   const BasicVector<double>& basic_input_vector =
-    dynamic_cast<BasicVector<double>&>(input_vector);
+      dynamic_cast<const BasicVector<double>&>(*input_vector);
 
   // Translates the input vector into an LCM message. The data is stored in
   // the memory pointed to by variable buffer.
-  translator_.TranslateBasicVectorToLCM(basic_input_vector, buffer,
-    data_length);
+  translator_.TranslateBasicVectorToLCM(basic_input_vector,
+      &buffer_, &buffer_length_);
 
-  lcm_->publish(channel, buffer_, data_length);
+  lcm_->publish(channel_, buffer_, buffer_length_);
 
   // data_mutex.lock();
   // output_vector->set_value(basic_vector_.get_value());
