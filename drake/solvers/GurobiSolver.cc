@@ -96,7 +96,11 @@ SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
     Eigen::MatrixXd Q = 0.5 * (c->Q());
     Eigen::VectorXd b = c->b();
 
+    // Check for square matrices
     DRAKE_ASSERT(Q.rows() == Q.cols());
+    // Check for symmetric matrices
+    DRAKE_ASSERT(Q.transpose() == Q);
+    // Check for Quadratic and Linear Cost dimensions
     DRAKE_ASSERT(Q.rows() == num_constraint_vars);
     DRAKE_ASSERT(b.cols() == 1);
     DRAKE_ASSERT(b.rows() == num_constraint_vars);
