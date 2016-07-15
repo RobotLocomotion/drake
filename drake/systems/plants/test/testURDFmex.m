@@ -1,7 +1,7 @@
 function testURDFmex(urdfs)
 
-urdf_kin_test = '../../../pod-build/bin/urdfKinTest';
-urdf_manipulator_dynamics_test = '../../../pod-build/bin/urdfManipulatorDynamicsTest';
+urdf_kin_test = fullfile(get_drake_binary_dir(), '/bin/urdfKinTest');
+urdf_manipulator_dynamics_test = fullfile(get_drake_binary_dir(), '/bin/urdfManipulatorDynamicsTest');
 if ispc
   urdf_kin_test = [urdf_kin_test,'.exe'];
   urdf_manipulator_dynamics_test = [urdf_manipulator_dynamics_test,'.exe'];
