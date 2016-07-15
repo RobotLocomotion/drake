@@ -1,17 +1,13 @@
 #pragma once
 
 #include <mutex>
-#include <stdexcept>
-#include <thread>
-#include <iostream>
 
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/system_interface.h"
-#include "drake/systems/framework/vector_interface.h"
+// #include "drake/systems/framework/vector_interface.h"
 #include "drake/systems/lcm/lcm_basic_vector_translator.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 
@@ -20,7 +16,9 @@ namespace systems {
 namespace lcm {
 
 /**
- * Receives LCM messages and outputs them to a SystemInterface<double>'s port.
+ * Receives LCM messages from a given channel and outputs them to a
+ * SystemInterface<double>'s port. The output port value is the most recently
+ * decoded message, modulo any network or threading delays.
  */
 class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
     public SystemInterface<double> {
@@ -36,7 +34,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
    * @param[in] lcm_receive_thread A pointer to the LCM receive thread, which
    * contains the LCM subsystem.
    *
-   * @throws std::runtime_error if @plcm_receive_thread is nullptr.
+   * @throws std::runtime_error if @p lcm_receive_thread is nullptr.
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmBasicVectorTranslator& translator,
@@ -68,7 +66,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
  private:
   // Translates the message contained within the receive buffer by storing its
   // information in basic_vector_.
-  void handleMessage(const ::lcm::ReceiveBuffer* rbuf,
+  void HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                      const std::string& channel);
 
   // The channel on which to receive LCM messages.
@@ -79,11 +77,11 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
   const LcmBasicVectorTranslator& translator_;
 
   // Implements the loop that receives LCM messages.
-  LcmReceiveThread* lcm_receive_thread_;
+  const LcmReceiveThread* lcm_receive_thread_;
 
   // A mutex for protecting data that's shared by the LCM receive thread and
   // the thread that calls LcmSubscriberSystem::Output().
-  mutable std::mutex data_mutex;
+  mutable std::mutex data_mutex_;
 
   // Holds the information contained with the latest LCM message. This
   // information is copied into this system's output port when Output(...) is

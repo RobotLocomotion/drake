@@ -1,3 +1,4 @@
+#include <atomic>
 #include <chrono>
 #include <thread>
 
@@ -13,11 +14,6 @@ namespace systems {
 namespace lcm {
 namespace {
 
-using drake::systems::lcm::LcmSubscriberSystem;
-using drake::systems::Context;
-using drake::systems::SystemOutput;
-using drake::systems::BasicVector;
-
 const int kDim = 10;
 const int64_t kTimestamp = 123456;
 
@@ -26,8 +22,9 @@ const int64_t kTimestamp = 123456;
  */
 class MessagePublisher {
  public:
-  MessagePublisher(const std::string& channel_name, ::lcm::LCM& lcm)
+  MessagePublisher(const std::string& channel_name, ::lcm::LCM* lcm)
       : channel_name_(channel_name), lcm_(lcm) {
+
     message_.dim = kDim;
     message_.val.resize(kDim);
     message_.coord.resize(kDim);
@@ -39,7 +36,7 @@ class MessagePublisher {
   }
 
   void Start() {
-    thread_.reset(new std::thread(&MessagePublisher::doPublish, this));
+    thread_.reset(new std::thread(&MessagePublisher::DoPublish, this));
   }
 
   void Stop() {
@@ -48,20 +45,20 @@ class MessagePublisher {
   }
 
  private:
-  void doPublish() {
+  void DoPublish() {
     while (!stop_) {
-      lcm_.publish(channel_name_, &message_);
+      lcm_->publish(channel_name_, &message_);
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
   }
 
-  const std::string& channel_name_;
+  const std::string channel_name_;
 
-  ::lcm::LCM& lcm_;
+  ::lcm::LCM* lcm_;
 
   drake::lcmt_drake_signal message_;
 
-  bool stop_{false};
+  std::atomic<bool> stop_{false};
 
   std::unique_ptr<std::thread> thread_;
 };
@@ -90,23 +87,22 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   std::unique_ptr<LcmSubscriberSystem> dut(
       new LcmSubscriberSystem(channel_name, translator, &lcm_receive_thread));
 
-  EXPECT_NE(dut.get(), nullptr);
   EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem::" + channel_name);
 
   // Instantiates a publisher of lcmt_drake_signal messages on the LCM network.
   // network.
-  MessagePublisher publisher(channel_name, lcm);
+  MessagePublisher publisher(channel_name, &lcm);
   publisher.Start();
 
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
 
   // Whether the LcmSubscriberSystem successfully received an LCM message and
-  // outputted it as a SpringMassLCMVector.
+  // outputted it as a BasicVector.
   bool done = false;
 
   // This is used to prevent this unit test from running indefinitely when
-  // the LcmSubscriberSystem fails to output a SpringMassLCMVector.
+  // the LcmSubscriberSystem fails to output a BasicVector.
   int count = 0;
 
   const int kMaxCount = 10;
@@ -123,14 +119,14 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
         output->ports[0]->get_vector_data();
 
     // Downcasts the output vector to be a pointer to a BasicVector.
-    const BasicVector<double>* basic_vector =
-        dynamic_cast<const BasicVector<double>*>(vector);
+    const BasicVector<double>& basic_vector =
+        dynamic_cast<const BasicVector<double>&>(*vector);
 
     // Verifies that the size of the basic vector is correct.
-    if (basic_vector->size() == kDim) {
+    if (basic_vector.size() == kDim) {
       // Verifies that the values in the basic vector are correct.
       Eigen::VectorBlock<const VectorX<double>> value =
-          basic_vector->get_value();
+          basic_vector.get_value();
 
       bool values_match = true;
 
@@ -150,7 +146,8 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
       //   2. timestamp
       //
       // Thus, we must conclude that the experiment succeeded.
-      done = true;
+      if (values_match)
+        done = true;
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(kDelayMS));

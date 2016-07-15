@@ -2,11 +2,7 @@
 
 #include <iostream>
 
-#if defined(_WIN32)
-#include <Winsock2.h>
-#else
-#include <sys/select.h>
-#endif
+#include "drake/systems/framework/basic_state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -22,7 +18,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(const std::string& channel,
   // Initializes the communication layer.
   ::lcm::Subscription* sub =
       lcm_receive_thread_->get_lcm()->subscribe(channel_,
-        &LcmSubscriberSystem::handleMessage, this);
+        &LcmSubscriberSystem::HandleMessage, this);
   sub->setQueueCapacity(1);
 }
 
@@ -74,22 +70,22 @@ std::unique_ptr<SystemOutput<double>> LcmSubscriberSystem::AllocateOutput()
 
 void LcmSubscriberSystem::EvalOutput(const Context<double>& context,
                 SystemOutput<double>* output) const {
-  BasicVector<double>* output_vector = dynamic_cast<BasicVector<double>*>(
-      output->ports[0]->GetMutableVectorData());
+  BasicVector<double>& output_vector = dynamic_cast<BasicVector<double>&>(
+      *output->ports[0]->GetMutableVectorData());
 
-  data_mutex.lock();
-  output_vector->set_value(basic_vector_.get_value());
-  data_mutex.unlock();
+  data_mutex_.lock();
+  output_vector.set_value(basic_vector_.get_value());
+  data_mutex_.unlock();
 }
 
-void LcmSubscriberSystem::handleMessage(const ::lcm::ReceiveBuffer* rbuf,
+void LcmSubscriberSystem::HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                    const std::string& channel) {
   if (channel == channel_) {
-    data_mutex.lock();
+    data_mutex_.lock();
     translator_.TranslateLcmToBasicVector(rbuf, &basic_vector_);
-    data_mutex.unlock();
+    data_mutex_.unlock();
   } else {
-    std::cerr << "LcmSubscriberSystem: handleMessage: WARNING: Received a "
+    std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
               << "message for channel \"" << channel
               << "\" instead of channel \"" << channel_ << "\". Ignoring it."
               << std::endl;
