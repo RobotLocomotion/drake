@@ -259,7 +259,7 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
   DRAKE_ASSERT(getNumInputs() == u.size());
 
   y.segment(0, getNumStates()) << x;
-  Eigen::Index index = getNumStates();
+  size_t index = getNumStates();
   for (const auto& s : sensors) {
     y.segment(index, s->getNumOutputs()) = s->output(t, kinsol, u);
     index += s->getNumOutputs();
