@@ -5,6 +5,8 @@
 
 #include <string>
 
+#include "drake/drakeCommon_export.h"
+
 namespace drake {
 
 /**
@@ -17,6 +19,7 @@ namespace drake {
  *
  * @return A string representation of the buffer.
  */
+DRAKECOMMON_EXPORT
 std::string MemoryBufferToString(const uint8_t* const buffer,
     int buffer_length);
 
