@@ -92,9 +92,9 @@ Build the collection
 ====================
 There are three ways to build Drake:
 
-1. Using `Make <https://www.gnu.org/software/make/>`_
-2. Using `Ninja <https://ninja-build.org/>`_
-3. Using `ROS Catkin <http://wiki.ros.org/catkin>`_
+1. :ref:`Using Make <build_with_make>`
+2. :ref:`Using Ninja <build_with_ninja>`
+3. :ref:`Using ROS Catkin <build_with_ros_catkin>`
 
 Because the Drake build is not entirely out-of-source, you must pick one build
 system and stick to it. Switching build systems within the same working tree
@@ -172,7 +172,7 @@ Ninja build.
     ninja
 
 Ninja can rebuild Drake from within ``drake-distro/build/drake/`` without
-rebuilding the entire superbuild.  It can also build specific targets.
+rebuilding the entire super-build.  It can also build specific targets.
 Tab-completion is supported.
 
 ::
@@ -195,6 +195,27 @@ See:
     :maxdepth: 1
 
     from_source_ros
+
+.. _build_and_install_directories:
+
+Locations of Build and Install Directories
+==========================================
+
+Builds based on `Make <https://www.gnu.org/software/make/>`_ and
+`Ninja <https://ninja-build.org/>`_ place build artifacts in
+``drake-distro/build/``. Externally visible build artifacts are placed in
+``drake-distro/build/install``.
+
+Builds using ROS Catkin place build artifacts in Catkin's
+`development space <http://wiki.ros.org/catkin/workspaces#Development_.28Devel.29_Space>`_
+and place externally-visible build artifacts in Catkin's
+`install space <http://wiki.ros.org/catkin/workspaces#Install_Space>`_. When
+following the
+:ref:`official Drake/ROS installation instructions <build_from_source_using_ros_catkin>`,
+these spaces are typically ``drake_catkin_workspace/devel`` and
+``drake_catkin_workspace/install``, respectively.
+
+.. _test_from_source_installation:
 
 Test Your Installation
 ======================
