@@ -25,36 +25,41 @@ namespace systems {
 namespace {
 
 GTEST_TEST(AdderTest, AddTwoVectors) {
-  Eigen::Vector3d input0;
-  input0 << 1, 2, 3;
-  Eigen::Vector3d input1;
-  input1 << 4, 5, 6;
+  Eigen::Vector3d vec0;
+  vec0 << 1, 2, 3;
+  Eigen::Vector3d vec1;
+  vec1 << 4, 5, 6;
 
   // Make diagram like this:
   //  --------------- DIAGRAM ------------
-  // |  ----- CASCADE -----     -------   |
-  // | | input0 -> gain*2 -|-->|       |  |
-  // |  -------------------    | adder |--|-> 2*in0 + in1
+  // |   ---- CASCADE -----     -------   |
+  // |   | vec0 -> gain*2 -|-->|       |  |
+  // |   ------------------    | adder |--|-> 2*vec0 + vec1
   // |                         |       |  |
-  // |                input1-->|       |  |
+  // |                  vec1-->|       |  |
   // |                          -------   |
   //  ------------------------------------
-  //
-  Eigen::Vector3d expected = 2 * input0 + input1;
+
+  Eigen::Vector3d expected = 2 * vec0 + vec1;
   // 6, 9, 12
 
   Diagram3<double> diagram("AddTwoVectors");
-  // Top level has three subsystems, the adder, the cascade, and input1.
-  diagram.AddSubsystem(
-      make_unique<Adder3<double>>("Adder23", 2 /*inputs*/, 3 /*length*/));
-  diagram.AddSubsystem(make_unique<Cascade3<double>>(
-      "input0x2", make_unique<VectorConstant3<double>>("input0", input0),
-      make_unique<Gain3<double>>("times2", 2., 3 /*length*/)));
-  diagram.AddSubsystem(make_unique<VectorConstant3<double>>("input1", input1));
 
-  diagram.Connect(1, 0, 0, 0);
-  diagram.Connect(2, 0, 0, 1);
-  diagram.InheritOutputPort(0, 0);
+  // Top level has three subsystems, the adder, the cascade, and vec1.
+  // AddSubsystem returns raw pointers of concrete type to the contained
+  // subsystem objects in the diagram.
+  auto adder = diagram.AddSubsystem(
+      make_unique<Adder3<double>>("Adder23", 2 /*inputs*/, 3 /*length*/));
+  auto cascade = diagram.AddSubsystem(
+      make_unique<Cascade3<double>>("vec0x2", 
+          make_unique<VectorConstant3<double>>("vec0", vec0),
+          make_unique<Gain3<double>>("times2", 2.0, 3 /*length*/)));
+  auto constant1 = diagram.AddSubsystem(
+      make_unique<VectorConstant3<double>>("vec1", vec1));
+
+  diagram.Connect(cascade, 0, adder, 0);
+  diagram.Connect(constant1, 0, adder, 1);
+  diagram.InheritOutputPort(adder, 0);
 
   auto context = diagram.CreateDefaultContext();
 
@@ -70,20 +75,30 @@ GTEST_TEST(AdderTest, AddTwoVectors) {
 // Tests that std::out_of_range is thrown when input ports of the wrong size
 // are connected.
 GTEST_TEST(AdderTest, WrongSizeOfInputPorts) {
-  Eigen::Vector3d input0;
-  input0 << 1, 2, 3;
-  Eigen::Vector4d input1; // wrong size
-  input1 << 4, 5, 6, 7;
+  Eigen::Vector3d vec0;
+  vec0 << 1, 2, 3;
+  Eigen::Vector4d vec1;  // Wrong size.
+  vec1 << 4, 5, 6, 7;
 
   Diagram3<double> diagram("AddTwoVectors");
-  // Top level has three subsystems, the adder, the input0, and input1.
-  diagram.AddSubsystem(
-      make_unique<Adder3<double>>("Adder23", 2 /*inputs*/, 3 /*length*/));
-  diagram.AddSubsystem(make_unique<VectorConstant3<double>>("input0", input0));
-  diagram.AddSubsystem(make_unique<VectorConstant3<double>>("input1", input1));
+  //  ------ DIAGRAM -------
+  // |            -------   |
+  // |    vec0-->|       |  |
+  // |           | adder |--|-> vec0 + vec1
+  // |           |       |  |
+  // |    vec1-->|       |  |
+  // |            -------   |
+  //  ----------------------
 
-  diagram.Connect(1, 0, 0, 0);
-  EXPECT_THROW(diagram.Connect(2, 0, 0, 1), std::out_of_range);
+  auto adder = diagram.AddSubsystem(
+      make_unique<Adder3<double>>("Adder23", 2 /*inputs*/, 3 /*length*/));
+  auto constant0 = diagram.AddSubsystem(
+      make_unique<VectorConstant3<double>>("vec0", vec0));
+  auto constant1 = diagram.AddSubsystem(
+      make_unique<VectorConstant3<double>>("vec1", vec1));
+
+  diagram.Connect(constant0, 0, adder, 0);
+  EXPECT_THROW(diagram.Connect(constant1, 0, adder, 1), std::out_of_range);
 }
 
 // Tests that Adder allocates no state variables in the context_.

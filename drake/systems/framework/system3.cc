@@ -35,10 +35,7 @@ const AbstractValue& AbstractSystem3::EvalOutputPort(
   const OutputPort3& port = get_output_port(port_num);
   std::pair<const AbstractSystem3*, int> owner = port.get_owner_system();
 
-  // TODO(sherm1) This should use a prebuilt index rather than searching.
-  std::vector<int> path = owner.first->get_path_from_root_system();
-  const AbstractContext3& subcontext =
-    context.get_root_context().find_subcontext(path);
+  const AbstractContext3& subcontext = owner.first->find_my_subcontext(context);
 
   CacheEntry* entry = context.get_mutable_output_entry(port_num);
   entry->RealizeCacheEntry(*owner.first, subcontext);
@@ -65,10 +62,7 @@ const AbstractValue& AbstractSystem3::EvalInputPort(
 
   std::pair<const AbstractSystem3*, int> owner = connection->get_owner_system();
 
-  // TODO(sherm1) This should use a prebuilt index rather than searching.
-  std::vector<int> path = owner.first->get_path_from_root_system();
-  const AbstractContext3& subcontext =
-    context.get_root_context().find_subcontext(path);
+  const AbstractContext3& subcontext = owner.first->find_my_subcontext(context);
 
   CacheEntry* entry = subcontext.get_mutable_output_entry(owner.second);
   entry->RealizeCacheEntry(*owner.first, subcontext);

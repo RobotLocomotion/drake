@@ -193,6 +193,22 @@ class AbstractContext3 {
   context. **/
   int get_subcontext_num() const { return subcontext_num_; }
 
+
+  /** Get const access to this subcontext's subsystem given const access to any
+  other subcontext's subsystem in the same system diagram. **/
+  const AbstractSystem3& find_my_subsystem(
+      const AbstractSystem3& some_subsystem) const;
+
+  /** Get mutable access to this subcontext's subsystem given mutable access to
+  any other subcontext's subsystem in the same system diagram. Note that
+  you don't need mutable access to the subcontext to get mutable access to its
+  subsystem. **/
+  AbstractSystem3* find_my_mutable_subsystem(
+      AbstractSystem3* some_subsystem) const {
+    return const_cast<AbstractSystem3*>(&find_my_subsystem(*some_subsystem));
+  }
+
+
   /** Find the root context of the tree of which this subcontext is a member.
   Searches up the tree so run time is roughly log(N) for an N-subcontext
   tree starting at a leaf. **/
@@ -207,6 +223,58 @@ class AbstractContext3 {
   AbstractContext3* get_mutable_root_context() {
     return const_cast<AbstractContext3*>(&get_root_context());
   }
+
+  /**@}**/
+
+ protected:
+   /** Create an empty %AbstractContext3. **/
+   AbstractContext3() = default;
+
+   /** Copy the base class data members and preserve the input and parameter
+   port values. **/
+   AbstractContext3(const AbstractContext3& source)
+       : inputs_(source.inputs_),
+         outputs_(source.outputs_),
+         cache_(source.cache_) {
+     // TODO(sherm1) input and output pointers are null now an need fixup.
+
+     // TODO(sherm1) copy subcontexts
+     //for (const auto& sub : source.subcontexts_)
+     //  subcontexts_.emplace_back(sub->Clone());
+   }
+
+   /** Create a copy of the concrete Context3 object, using the %AbstractContext3
+   copy constructor to deal with base class copying. **/
+   virtual AbstractContext3* DoClone() const = 0;
+
+ private:
+  friend class AbstractSystem3;
+
+  const InputEntryFinder& get_input_entry_finder(int port_num) const {
+    return inputs_[port_num];
+  }
+
+  const OutputEntryFinder& get_output_entry_finder(int port_num) const {
+    return outputs_[port_num];
+  }
+
+  InputEntryFinder* get_mutable_input_entry_finder(int port_num) {
+    return &inputs_[port_num];
+  }
+
+  OutputEntryFinder* get_mutable_output_entry_finder(int port_num) {
+    return &outputs_[port_num];
+  }
+
+  // Removes all the input ports, and deregisters them from the output ports
+  // on which they depend.
+  // TODO(sherm1) Actually do that.
+  void ClearInputPorts() { inputs_.clear(); }
+
+  // Removes all the output ports, and disconnects any input ports that might
+  // have been plugged in to them.
+  // TODO(sherm1) Actually do that.
+  void ClearOutputPorts() { outputs_.clear(); }
 
   /** Given a path consisting of subcontext indices starting with this
   subcontext, trace the path down the tree and return a const reference to the
@@ -242,55 +310,6 @@ class AbstractContext3 {
     }
     return path;
   }
-  /**@}**/
-
- protected:
-   /** Create an empty %AbstractContext3. **/
-   AbstractContext3() = default;
-
-   /** Copy the base class data members and preserve the input and parameter
-   port values. **/
-   AbstractContext3(const AbstractContext3& source)
-       : inputs_(source.inputs_),
-         outputs_(source.outputs_),
-         cache_(source.cache_) {
-     // TODO(sherm1) input and output pointers are null now an need fixup.
-
-     // TODO(sherm1) copy subcontexts
-     //for (const auto& sub : source.subcontexts_)
-     //  subcontexts_.emplace_back(sub->Clone());
-   }
-
-   /** Create a copy of the concrete Context3 object, using the %AbstractContext3
-   copy constructor to deal with base class copying. **/
-   virtual AbstractContext3* DoClone() const = 0;
-
- private:
-  const InputEntryFinder& get_input_entry_finder(int port_num) const {
-    return inputs_[port_num];
-  }
-
-  const OutputEntryFinder& get_output_entry_finder(int port_num) const {
-    return outputs_[port_num];
-  }
-
-  InputEntryFinder* get_mutable_input_entry_finder(int port_num) {
-    return &inputs_[port_num];
-  }
-
-  OutputEntryFinder* get_mutable_output_entry_finder(int port_num) {
-    return &outputs_[port_num];
-  }
-
-  // Removes all the input ports, and deregisters them from the output ports
-  // on which they depend.
-  // TODO(sherm1) Actually do that.
-  void ClearInputPorts() { inputs_.clear(); }
-
-  // Removes all the output ports, and disconnects any input ports that might
-  // have been plugged in to them.
-  // TODO(sherm1) Actually do that.
-  void ClearOutputPorts() { outputs_.clear(); }
 
   // Set backpointer to parent context and subcontext number by which we are
   // known there.

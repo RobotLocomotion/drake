@@ -47,17 +47,17 @@ class Cascade3 : public Diagram3<T> {
 
     // Input port numbers for Cascade match first system's.
     for (int port = 0; port < first_system->get_num_input_ports(); ++port) {
-      const int port_num = InheritInputPort(0, port);
+      const int port_num = InheritInputPort(first_system, port);
       DRAKE_ABORT_UNLESS(port_num == port);
     }
 
     // Connect up the interior ports.
     for (int port = 0; port < out1; ++port)
-      Connect(0, port, 1, port);
+      Connect(first_system, port, second_system, port);
 
     // Output port numbers for Cascade match second system's.
     for (int port = 0; port < second_system->get_num_output_ports(); ++port) {
-      const int port_num = InheritOutputPort(1, port);
+      const int port_num = InheritOutputPort(second_system, port);
       DRAKE_ABORT_UNLESS(port_num == port);
     }
   }

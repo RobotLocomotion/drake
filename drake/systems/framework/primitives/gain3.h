@@ -29,6 +29,9 @@ class Gain3 : public System3<T> {
   /** Report the gain that was supplied in the constructor. **/
   T get_gain() const { return gain_; }
 
+  /** Change the gain from its current value. **/
+  void set_gain(const T& gain) { gain_ = gain; }
+
  private:
   // Implement System<T> interface.
 
@@ -36,12 +39,12 @@ class Gain3 : public System3<T> {
     return std::make_unique<Context3<T>>();
   }
 
-  /// Set output to the product of the gain and the input port.
+  // Set output to the product of the gain and the input port.
   DRAKESYSTEMFRAMEWORK_EXPORT void DoCalcOutputPort(
       const AbstractContext3& context, int port_num,
       AbstractValue* value) const override;
 
-  const T gain_;
+  T gain_;
   const int length_;
 };
 

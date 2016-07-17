@@ -72,15 +72,25 @@ printf("SetInputPort(%s,%d): ", system.GetSubsystemPathName().c_str(), port_num)
   // locate the subcontext that owns this OutputPort.
   std::pair<const AbstractSystem3*, int> owner = connection->get_owner_system();
   DRAKE_ABORT_UNLESS(owner.first && owner.second >= 0);
-  std::vector<int> path = owner.first->get_path_from_root_system();
+
   AbstractContext3* owner_subcontext =
-      get_mutable_root_context()->find_mutable_subcontext(path);
+      owner.first->find_my_mutable_subcontext(this);
+
   OutputEntryFinder* output_entry_finder =
       owner_subcontext->get_mutable_output_entry_finder(owner.second);
 
   entry_finder.entry = output_entry_finder->entry;
   printf("connected to subsys %s oport %d, cache=%p.\n", owner.first->GetSubsystemPathName().c_str(),
          owner.second, entry_finder.entry);
+}
+
+const AbstractSystem3& AbstractContext3::find_my_subsystem(
+    const AbstractSystem3& some_subsystem) const {
+  // TODO(sherm1) This should use a prebuilt index rather than searching.
+  std::vector<int> path = get_path_from_root_context();
+  const AbstractSystem3& my_subsystem =
+      some_subsystem.get_root_system().find_subsystem(path);
+  return my_subsystem;
 }
 
 }  // namespace systems

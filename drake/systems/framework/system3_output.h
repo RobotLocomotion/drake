@@ -35,22 +35,6 @@ class OutputPort3 {
  public:
   virtual ~OutputPort3() = default;
 
-  /** Returns a const reference to a value of the type that this %OutputPort3
-  will present at run time. **/
-  const AbstractValue& get_model_value() const { return *model_value_; }
-
-  /** Returns a mutable pointer to a value of the type that this %OutputPort3
-  will present at run time. **/
-  AbstractValue* get_mutable_model_value() { return model_value_.get(); }
-
-  /** If this %OutputPort3 is owned by a system, return that system and the
-  output port number by which that system knows this port. If unowned, the
-  returned pair is `(nullptr,-1)`. **/
-  std::pair<const AbstractSystem3*, int> get_owner_system() const {
-    return std::pair<const AbstractSystem3*, int>(system_, output_port_num_);
-  }
-
- protected:
   /** Create an OutputPort3 that has no model value. **/
   OutputPort3() {}
 
@@ -66,6 +50,22 @@ class OutputPort3 {
   void set_model_value(std::unique_ptr<AbstractValue> model_value) {
     model_value_ = std::move(model_value);
   }
+
+  /** Returns a const reference to a value of the type that this %OutputPort3
+  will present at run time. **/
+  const AbstractValue& get_model_value() const { return *model_value_; }
+
+  /** Returns a mutable pointer to a value of the type that this %OutputPort3
+  will present at run time. **/
+  AbstractValue* get_mutable_model_value() { return model_value_.get(); }
+
+  /** If this %OutputPort3 is owned by a system, return that system and the
+  output port number by which that system knows this port. If unowned, the
+  returned pair is `(nullptr,-1)`. **/
+  std::pair<const AbstractSystem3*, int> get_owner_system() const {
+    return std::pair<const AbstractSystem3*, int>(system_, output_port_num_);
+  }
+
 
  private:
   // OutputPort3 objects are neither copyable nor moveable.
