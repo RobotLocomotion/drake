@@ -13,6 +13,13 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERS
   message(FATAL_ERROR "MSVC version must be at least 14")
 endif()
 
+# Set Default build type to Release if none specified
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+    "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
+    FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
 # PODs out-of-source build logic
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   if(POD_BUILD)
@@ -70,6 +77,7 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 ##########################################
 option(WITH_EIGEN "required c++ matrix library.  only disable if you have it already." ON)
 option(WITH_GOOGLETEST "required c++ unit test library.  only disable if you have it already." ON)
+option(WITH_GOOGLE_STYLEGUIDE "provides cpplint.py style checking" ON)
 option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 option(WITH_BULLET "used for collision detection" ON)
 option(WITH_LCM "interprocess communications protocol for visualizers, etc" ON)
@@ -154,7 +162,7 @@ set(signalscope_dependencies director)
 # List compilation and runtime dependencies. Runtime dependencies are needed
 # because the drake project must configure only after any dependencies used by
 # MATLAB have been installed.
-set(drake_dependencies bertini bot_core_lcmtypes bullet cmake eigen gloptipoly3 googletest gurobi iris lcm libbot mosek nlopt ipopt octomap sedumi snopt spotless swig_matlab swigmake yalmip yaml_cpp)
+set(drake_dependencies bertini bot_core_lcmtypes bullet cmake eigen gloptipoly3 googletest google_styleguide gurobi iris lcm libbot mosek nlopt ipopt octomap sedumi snopt spotless swig_matlab swigmake yalmip yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_IS_PUBLIC TRUE)
@@ -173,6 +181,8 @@ set(eigen_IS_PUBLIC TRUE)
 set(googletest_IS_CMAKE_POD TRUE)
 set(googletest_IS_PUBLIC TRUE)
 set(googletest_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib -DGTEST_CREATE_SHARED_LIBRARY=1) # The "-DGTEST_CREATE_SHARED_LIBRARY=1" is needed to support parameterized Google tests on Windows.
+set(google_styleguide_IS_PUBLIC TRUE)
+set(google_styleguide_NO_BUILD TRUE)
 set(gtk_IS_CMAKE_POD TRUE)
 set(gtk_IS_PUBLIC TRUE)
 set(gloptipoly_IS_PUBLIC FALSE)
@@ -240,6 +250,7 @@ foreach(proj IN ITEMS
   textbook
   eigen
   googletest
+  google_styleguide
   gtk
   lcm
   bot_core_lcmtypes
