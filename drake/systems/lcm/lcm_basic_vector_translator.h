@@ -10,8 +10,8 @@ namespace systems {
 namespace lcm {
 
 /**
- * Defines an abstract parent class of all translators that convert between
- * LCM message objects and drake::systems::BasicVector objects.
+ * Defines an abstract parent class of all translators that convert from
+ * LCM message objects to drake::systems::BasicVector objects.
  */
 class LcmBasicVectorTranslator {
  public:
