@@ -3,13 +3,12 @@
 #include <Eigen/Core>
 #include "gurobi_c++.h"
 
-#include "drake/solvers/Optimization.h"
 #include "drake/common/drake_assert.h"
+#include "drake/solvers/Optimization.h"
 
 namespace drake {
 namespace solvers {
-
-bool GurobiSolver::available() const { return true; }
+namespace {
 
 // TODO(naveenoid): This is currently largely copy-pasta from the deprecated
 // Gurobi wrapper in solvers. Utilise sparsity in the constraint matrices,
@@ -18,13 +17,13 @@ bool GurobiSolver::available() const { return true; }
 //    sparseA.makeCompressed();
 //    error =  GRBaddconstrs(model, A.rows(), sparseA.nonZeros(),
 //                           sparseA.InnerIndices(), sparseA.OuterStarts(),
-//                           sparseA.Values(),sense, b.data(), NULL);
+//                           sparseA.Values(),sense, b.data(), nullptr);
 //    return(error);
 
 template <typename DerivedA, typename DerivedB>
 int AddConstraints(GRBmodel* model, Eigen::MatrixBase<DerivedA> const& A,
-                    Eigen::MatrixBase<DerivedB> const& b, char sense,
-                    double sparseness_threshold = 1e-8) {
+                   Eigen::MatrixBase<DerivedB> const& b, char sense,
+                   double sparseness_threshold) {
   std::vector<int> cind(A.cols(), 0);
   std::vector<double> cval(A.cols(), 0.0);
 
@@ -37,15 +36,15 @@ int AddConstraints(GRBmodel* model, Eigen::MatrixBase<DerivedA> const& A,
         cind[nnz++] = j;
       }
     }
-    error += GRBaddconstr(model, nnz, &cind[0], &cval[0], sense, b(i), NULL);
+    error = GRBaddconstr(model, nnz, &cind[0], &cval[0], sense, b(i), nullptr);
     if (error) break;
   }
   return error;
 }
 
 // Splits out the quadratic costs and makes calls to add them individually.
-int AddCosts(GRBmodel *model, OptimizationProblem& prog,
-             double sparseness_threshold = 1e-8) {
+int AddCosts(GRBmodel* model, OptimizationProblem& prog,
+             double sparseness_threshold) {
   int error = 0;
   int num_constraint_vars = 0;
   int start_row = 0;
@@ -80,30 +79,36 @@ int AddCosts(GRBmodel *model, OptimizationProblem& prog,
           // The single element addition method used below is recommended
           // initially by Gurobi since it has a low cost.
           individual_quadratic_cost_value = Q(i, j);
-          error += GRBaddqpterms(model, 1, &row_ind, &col_ind,
-                        &individual_quadratic_cost_value);
-          if (error) break;
+          error = GRBaddqpterms(model, 1, &row_ind, &col_ind,
+                                &individual_quadratic_cost_value);
+          if (error) {
+            return (error);
+          }
         }
-        if (error) break;
       }
-      if (error) break;
     }
-    error += GRBsetdblattrarray(model, "Obj", start_row,
-                                num_constraint_vars, b.data());
+    error = GRBsetdblattrarray(model, "Obj", start_row, num_constraint_vars,
+                               b.data());
     start_row = start_row + Q.rows();
-    if (error) break;
+    if (error) {
+      return error;
+    }
   }
-  return(error);
+  return error;
 }
 // Splits out the equality and inequality constraints and makes call to
 // add any non-inf constraints.
-int ProcessConstraints(GRBmodel *model, OptimizationProblem& prog,
-                       double sparseness_threshold = 1e-8) {
+int ProcessConstraints(GRBmodel* model, OptimizationProblem& prog,
+                       double sparseness_threshold) {
   int error = 0;
   // TODO(naveenoid) : needs test coverage.
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& c = binding.constraint();
-    error += AddConstraints(model, c->A(), c->lower_bound(), GRB_EQUAL, 1e-18);
+    error = AddConstraints(model, c->A(), c->lower_bound(), GRB_EQUAL,
+                           sparseness_threshold);
+    if (error) {
+      return error;
+    }
   }
 
   for (const auto& binding : prog.linear_constraints()) {
@@ -112,25 +117,34 @@ int ProcessConstraints(GRBmodel *model, OptimizationProblem& prog,
     if (c->lower_bound() !=
         -Eigen::MatrixXd::Constant((c->lower_bound()).rows(), 1,
                                    std::numeric_limits<double>::infinity())) {
-      error += AddConstraints(model, c->A(), c->lower_bound(),
-                              GRB_GREATER_EQUAL, sparseness_threshold);
+      error = AddConstraints(model, c->A(), c->lower_bound(), GRB_GREATER_EQUAL,
+                             sparseness_threshold);
+      if (error) {
+        return error;
+      }
     }
     if (c->upper_bound() !=
         Eigen::MatrixXd::Constant((c->upper_bound()).rows(), 1,
                                   std::numeric_limits<double>::infinity())) {
-      error += AddConstraints(model, c->A(), c->upper_bound(),
-                              GRB_LESS_EQUAL, sparseness_threshold);
+      error = AddConstraints(model, c->A(), c->upper_bound(), GRB_LESS_EQUAL,
+                             sparseness_threshold);
+      if (error) {
+        return error;
+      }
     }
   }
-  return(error);
+  return error;
 }
+}  // close namespace
+
+bool GurobiSolver::available() const { return true; }
 
 SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
   // We only process quadratic costs and linear / bounding box
   // constraints
 
-  GRBenv* env = NULL;
-  GRBloadenv(&env, NULL);
+  GRBenv* env = nullptr;
+  GRBloadenv(&env, nullptr);
   // Corresponds to no console or file logging.
   GRBsetintparam(env, GRB_INT_PAR_OUTPUTFLAG, 0);
 
@@ -156,21 +170,30 @@ SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
     }
   }
 
-  GRBmodel* model = NULL;
-  GRBnewmodel(env, &model, "QP", num_vars, NULL, &xlow[0], &xupp[0], NULL,
-              NULL);
+  GRBmodel* model = nullptr;
+  GRBnewmodel(env, &model, "QP", num_vars, nullptr, &xlow[0], &xupp[0], nullptr,
+              nullptr);
 
   int error = 0;
   // TODO(naveenoid) : This needs access externally.
   double sparseness_threshold = 1e-14;
   error = AddCosts(model, prog, sparseness_threshold);
-  error &= ProcessConstraints(model, prog, sparseness_threshold);
+  if (!error) {
+    error = ProcessConstraints(model, prog, sparseness_threshold);
+  }
 
   SolutionResult result = SolutionResult::kSolutionFound;
-  error = GRBoptimize(model);
 
+  if (!error) {
+    error = GRBoptimize(model);
+  }
+
+  // If any error exists so far, its either from invalid input or
+  // from unknown errors.
+  // TODO(naveenoid) : Properly handle gurobi specific error.
+  // message.
   if (error) {
-    // TODO(naveenoid) : log error message using GRBgeterrormsg(env)
+    // TODO(naveenoid) : log error message using GRBgeterrormsg(env).
     result = SolutionResult::kInvalidInput;
   } else {
     int optimstatus = 0;
