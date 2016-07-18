@@ -28,17 +28,16 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
    *
    * @param[in] channel The LCM channel on which to subscribe.
    *
-   * @param[in] translator A reference to the translator that converts between
-   * LCM message objects and `drake::systems::BasicVector` objects. This
-   * reference must be valid throughout the lifetime of this
-   * `LcmSubscriberSystem`.
+   * @param[in] translator A pointer to the translator that converts between
+   * LCM message objects and `drake::systems::BasicVector` objects.
    *
    * @param[in] lcm A pointer to the LCM subsystem. This pointer must not be
    * null and must be valid during the construction of this
    * `LcmSubscriberSystem`.
    */
   LcmSubscriberSystem(const std::string& channel,
-                      const LcmToVectorInterfaceTranslator& translator,
+                      std::unique_ptr<const LcmToVectorInterfaceTranslator>
+                          translator,
                       ::lcm::LCM* lcm);
 
   ~LcmSubscriberSystem() override;
@@ -79,7 +78,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
 
   // The translator that converts between LCM messages and
   // drake::systems::BasicVector.
-  const LcmToVectorInterfaceTranslator& translator_;
+  std::unique_ptr<const LcmToVectorInterfaceTranslator> translator_;
 
   // A mutex for protecting data that's shared by the LCM receive thread and
   // the thread that calls LcmSubscriberSystem::Output().
