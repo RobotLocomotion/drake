@@ -242,7 +242,7 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
   std::shared_ptr<LinearConstraint> obj =
       std::dynamic_pointer_cast<LinearConstraint>(
       prog.generic_costs().front().constraint());
-  DRAKE_ASSERT(obj);
+  DRAKE_ASSERT(obj.use_count() != 0);
   std::vector<double> linobj((*obj).A().data(),
       (*obj).A().data() + (*obj).A().rows() * (*obj).A().cols());
   MosekLP opt(prog.num_vars(),
