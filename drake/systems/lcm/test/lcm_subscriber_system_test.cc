@@ -85,7 +85,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // in a unique_ptr. The unique_ptr variable is called "dut" to indicate it is
   // the "device under test".
   std::unique_ptr<LcmSubscriberSystem> dut(
-      new LcmSubscriberSystem(channel_name, &translator, &lcm));
+      new LcmSubscriberSystem(channel_name, translator, &lcm));
 
   EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem::" + channel_name);
 
