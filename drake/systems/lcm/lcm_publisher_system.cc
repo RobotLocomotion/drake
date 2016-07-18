@@ -11,8 +11,7 @@ LcmPublisherSystem::LcmPublisherSystem(const std::string& channel,
                       ::lcm::LCM* lcm)
     : channel_(channel),
       translator_(translator),
-      lcm_(lcm),
-      basic_vector_(translator.get_vector_size()) {
+      lcm_(lcm) {
 }
 
 LcmPublisherSystem::~LcmPublisherSystem() {

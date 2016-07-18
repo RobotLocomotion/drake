@@ -69,20 +69,15 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
   void handleMessage(const ::lcm::ReceiveBuffer* rbuf,
                      const std::string& channel);
 
-  // The channel on which to receive LCM messages.
+  // The channel on which to publish LCM messages.
   const std::string channel_;
 
   // The translator that converts between LCM messages and
-  // drake::systems::BasicVector.
+  // drake::systems::BasicVector objects.
   const LcmAndVectorInterfaceTranslator& translator_;
 
   // A pointer to the LCM subsystem.
   ::lcm::LCM* lcm_;
-
-  // Holds the information contained with the latest LCM message. This
-  // information is copied into this system's output port when Output(...) is
-  // called.
-  BasicVector<double> basic_vector_;
 };
 
 }  // namespace lcm
