@@ -46,11 +46,10 @@ int AddConstraints(GRBmodel* model, Eigen::MatrixBase<DerivedA> const& A,
 int AddCosts(GRBmodel* model, OptimizationProblem& prog,
              double sparseness_threshold) {
   int error = 0;
-  int num_constraint_vars = 0;
   int start_row = 0;
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& c = binding.constraint();
-
+    int num_constraint_vars = 0;
     num_constraint_vars = binding.GetNumElements();
 
     Eigen::MatrixXd Q = 0.5 * (c->Q());
@@ -65,13 +64,13 @@ int AddCosts(GRBmodel* model, OptimizationProblem& prog,
     DRAKE_ASSERT(b.cols() == 1);
     DRAKE_ASSERT(b.rows() == num_constraint_vars);
 
-    double individual_quadratic_cost_value = 0.0;
-    int row_ind = 0, col_ind = 0;
-
     // adding each Q term (only upper triangular).
     for (size_t i = 0; i < num_constraint_vars; i++) {
       for (size_t j = i; j < num_constraint_vars; j++) {
         if (std::abs(Q(i, j)) > sparseness_threshold) {
+          int row_ind = 0, col_ind = 0;
+          double individual_quadratic_cost_value = 0.0;
+
           row_ind = i + start_row;
           col_ind = j + start_row;
           // TODO(naveenoid) : Port to batch addition mode of this function
@@ -96,6 +95,7 @@ int AddCosts(GRBmodel* model, OptimizationProblem& prog,
   }
   return error;
 }
+
 // Splits out the equality and inequality constraints and makes call to
 // add any non-inf constraints.
 int ProcessConstraints(GRBmodel* model, OptimizationProblem& prog,
