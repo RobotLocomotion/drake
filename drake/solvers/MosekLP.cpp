@@ -119,7 +119,7 @@ void MosekLP::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds,
 
 std::vector<MSKboundkeye> MosekLP::FindMosekBounds(
     const std::vector<double>& upper_bounds,
-    const std::vector<double>& lower_bounds) const {
+    const std::vector<double>& lower_bounds) {
   assert(upper_bounds.size() == lower_bounds.size());
   std::vector<MSKboundkeye> mosek_bounds;
   unsigned int i = 0;
@@ -144,7 +144,7 @@ std::vector<MSKboundkeye> MosekLP::FindMosekBounds(
 }
 
 
-SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
+SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
   // construct an object that calls all the previous work so I can salvage
   // something at least.
   // assume that the problem type is linear currently.
@@ -158,11 +158,11 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
       return kUnknownError;
   }
   int totalconnum = 0, i = 0;
-  for (auto&& con_ : prog.GetAllLinearConstraints()) {
+  for (auto&& con : prog.GetAllLinearConstraints()) {
     // check to see if the constraint references a single variable,
     // which is handles as a variable bound by mosek
-    for (i = 0; i < (con_.constraint())->A().rows(); ++i) {
-      auto row = (con_.constraint())->A().row(i);
+    for (i = 0; i < (con.constraint())->A().rows(); ++i) {
+      auto row = (con.constraint())->A().row(i);
       if (row.nonZeros() != 1)
         totalconnum++;
     }
@@ -172,40 +172,29 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
   std::vector<double> lower_constraint_bounds(totalconnum);
   std::vector<MSKboundkeye> mosek_constraint_bounds(totalconnum);
   std::vector<MSKboundkeye> mosek_variable_bounds(prog.num_vars());
-  std::vector<double> upper_variable_bounds(prog.num_vars());
-  std::vector<double> lower_variable_bounds(prog.num_vars());
   linear_cons.setZero(totalconnum, prog.num_vars());
 
   // Expect only one boundingbox constraint or no such constraint.
-  if (!(prog.bounding_box_constraints().empty())) {
-    assert(&(prog.bounding_box_constraints().front()) ==
-        &(prog.bounding_box_constraints().back()));
-    auto bbox = *(prog.bounding_box_constraints().front().constraint());
-    std::vector<double> lower_variable_bounds(bbox.lower_bound().data(),
-        bbox.lower_bound().data() +
-        bbox.lower_bound().rows() * bbox.lower_bound().cols());
-    std::vector<double> upper_variable_bounds(bbox.upper_bound().data(),
-        bbox.upper_bound().data() +
-        bbox.upper_bound().rows() * bbox.upper_bound().cols());
-    for (auto& b : lower_variable_bounds) {
-      if (b == -std::numeric_limits<double>::infinity())
-        b = -MSK_INFINITY;
-    }
-    for (auto& b : upper_variable_bounds) {
-      if (b == +std::numeric_limits<double>::infinity())
-        b = MSK_INFINITY;
-    }
-    mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
-                                           lower_variable_bounds);
-  } else {
-    // No bounding box constraint
-    for (i = 0; i < numvar_; i++) {
-      upper_variable_bounds[i] = +MSK_INFINITY;
-      lower_variable_bounds[i] = -MSK_INFINITY;
-    }
-    mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
-                                            lower_variable_bounds);
+  DRAKE_ASSERT(!(prog.bounding_box_constraints().empty()));
+  DRAKE_ASSERT(&(prog.bounding_box_constraints().front()) ==
+      &(prog.bounding_box_constraints().back()));
+  auto bbox = *(prog.bounding_box_constraints().front().constraint());
+  std::vector<double> lower_variable_bounds(bbox.lower_bound().data(),
+      bbox.lower_bound().data() +
+      bbox.lower_bound().rows() * bbox.lower_bound().cols());
+  std::vector<double> upper_variable_bounds(bbox.upper_bound().data(),
+      bbox.upper_bound().data() +
+      bbox.upper_bound().rows() * bbox.upper_bound().cols());
+  for (auto& b : lower_variable_bounds) {
+    if (b == -std::numeric_limits<double>::infinity())
+      b = -MSK_INFINITY;
   }
+  for (auto& b : upper_variable_bounds) {
+    if (b == +std::numeric_limits<double>::infinity())
+      b = MSK_INFINITY;
+  }
+  mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
+                                         lower_variable_bounds);
   int connum = 0;
   i = 0;
   // TODO(alexdunyak): Allow constraints to affect specific variables

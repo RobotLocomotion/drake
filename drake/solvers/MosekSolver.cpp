@@ -20,8 +20,7 @@ SolutionResult MosekSolver::Solve(OptimizationProblem& prog) const {
   if (!prog.GetSolverOptionsStr("Mosek").empty()) {
     if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
         != std::string::npos) {
-      MosekLP msk;
-      return msk.Solve(prog);
+      return MosekLP::Solve(prog);
     }
   }  // TODO(alexdunyak): add more mosek solution types.
   return kUnknownError;

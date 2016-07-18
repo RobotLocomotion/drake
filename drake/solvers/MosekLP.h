@@ -69,7 +69,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekLP {
    * @brief optimizes variables in given linear constraints, works with either
    * of the two previous object declarations.
    * */
-  SolutionResult Solve(OptimizationProblem &prog) const;
+  static SolutionResult Solve(OptimizationProblem &prog);
 
   std::vector<double>  GetSolution() const { return solutions_; }
 
@@ -115,9 +115,9 @@ class DRAKEOPTIMIZATION_EXPORT MosekLP {
    * Given upper and lower bounds for a variable or constraint, finds the
    * equivalent Mosek bound keys.
    */
-  std::vector<MSKboundkeye> FindMosekBounds(
+  static std::vector<MSKboundkeye> FindMosekBounds(
       const std::vector<double>& upper_bounds,
-      const std::vector<double>& lower_bounds) const;
+      const std::vector<double>& lower_bounds);
 
   SolutionResult OptimizeTask(const std::string& maxormin,
                               const std::string& ptype);
