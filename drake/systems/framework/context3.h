@@ -14,8 +14,8 @@ class AbstractSystem3;
 class InputPort3;
 class OutputPort3;
 
-/** There is one of these corresponding to every InputPort in the System that
-created the containing Context. If an input port is connected, this entry
+/** There is one of these corresponding to every InputPort3 in the System3 that
+created the containing Context3. If an input port is connected, this entry
 will refer to the output port that provides its value. That output port may
 be owned by a sibling context, supercontext, supersupercontext, etc. because
 the input port may have been inherited by containing Systems. **/
@@ -45,8 +45,8 @@ struct InputEntryFinder {
   CacheEntry* entry{};     ///< Convenience pointer to output if connected.
 };
 
-/** There is one of these corresponding to every OutputPort in the System that
-created the containing Context. This references a cache entry that has the
+/** There is one of these corresponding to every OutputPort3 in the System3 that
+created the containing Context3. This references a cache entry that has the
 appropriate type and knows how to evaluate the output port. That entry may be
 owned by this context or any contained subcontext, subsubcontext, etc. because
 the output port may have been inherited by containing Systems. **/
@@ -96,7 +96,7 @@ class AbstractContext3 {
     return std::unique_ptr<AbstractContext3>(DoClone());
   }
 
-  /** Allocate input port entries corresponding to a System's InputPort
+  /** Allocate input port entries corresponding to a System3's InputPort3
   objects. These are initially unconnected. **/
   void SetNumInputPorts(int num_ports) {
     DRAKE_ABORT_UNLESS(num_ports >= 0);
@@ -104,7 +104,7 @@ class AbstractContext3 {
     inputs_.resize(num_ports);
   }
 
-  /** Allocate output port entries corresponding to a System's OutputPort
+  /** Allocate output port entries corresponding to a System3's OutputPort3
   objects. These initially have no memory allocated for their values. **/
   void SetNumOutputPorts(int num_ports) {
     DRAKE_ABORT_UNLESS(num_ports >= 0);
@@ -113,12 +113,12 @@ class AbstractContext3 {
   }
 
   /** Set the input entry for this port number appropriately, given the
-  corresponding InputPort in `system`. **/
+  corresponding InputPort3 in `system`. **/
   DRAKESYSTEMFRAMEWORK_EXPORT
   void SetInputPort(const AbstractSystem3& system, int port_num);
 
   /** Set the output entry for this port number appropriately, given the
-  corresponding OutputPort in `system`. **/
+  corresponding OutputPort3 in `system`. **/
   DRAKESYSTEMFRAMEWORK_EXPORT 
   void SetOutputPort(const AbstractSystem3& system, int port_num);
 
@@ -359,17 +359,14 @@ results of computations performed by a System. Specifically, a Context3 contains
  - cache entries for time derivatives of continuous states
  - a cache entry for update values of discrete states
 
-A Context is *compatible* with a particular System, but is otherwise independent
-of any actual System object. That is, if you had two identical System objects
-you could use the same Context object for both; there are no pointers from
-Context to non-static System data or methods.
-
-Context may be subclassed within the framework to support specialized kinds
-of Systems, such as Diagrams, but should not be subclassed by users.
+A Context3 is *compatible* with a particular System3, but is otherwise
+independent of any actual System object. That is, if you had two identical
+System3 objects you could use the same Context3 object for both; there are no
+pointers from Context3 to non-static System3 data or methods.
 
 @tparam T The mathematical type of the context, which must be a valid Eigen
           scalar. **/
-// TODO(david-german-tri): Manage cache invalidation.
+// TODO(sherm1): Manage cache invalidation.
 template <typename T>
 class Context3 : public AbstractContext3 {
  public:
@@ -407,6 +404,8 @@ class Context3 : public AbstractContext3 {
   }
 
  protected:
+  // TODO(sherm1) Fix this.
+
   /// The Context implementation for Diagrams must override this method, since
   /// the state of a Diagram will not be a LeafStateVector. The caller owns the
   /// returned memory.

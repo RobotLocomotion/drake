@@ -50,26 +50,26 @@ among the subsystems' inputs and outputs. A system that contains subsystems
 is called a "system diagram", one without subsystems is called a "leaf system",
 and the topmost system diagram is the "root system".
 
-This class is intended to be paired with a compatible AbstractContext object
+This class is intended to be paired with a compatible AbstractContext3 object
 whose internal tree structure of subcontexts is identical to the structure
 of the tree of subsystems.
 
-Input values are presented to a System through zero or more InputPort objects;
-output values are delivered through zero or more OutputPort objects. Systems are
-composed by connecting compatible OutputPort and InputPort objects together into
-a system diagram. These connections are established during extended
+Input values are presented to a System3 through zero or more InputPort3 objects;
+output values are delivered through zero or more OutputPort3 objects. Systems
+are composed by connecting compatible OutputPort3 and InputPort3 objects together
+into a system diagram. These connections are established during extended
 construction of a system diagram and must be completed prior to run time
-execution (and are hence independent of Context). InputPort objects contain
-information about their requirements for OutputPort mates.
+execution (and are hence independent of context). InputPort3 objects contain
+information about their requirements for OutputPort3 mates.
 
-Most systems should not inherit directly from %AbstractSystem. If your system
+Most systems should not inherit directly from %AbstractSystem3. If your system
 involves any numerical computations it should instead, inherit from
-`System<T>`. **/
+`System3<T>`. **/
 class AbstractSystem3 {
  public:
   virtual ~AbstractSystem3() {}
 
-  /** Returns the name of this System. This is just an arbitrary string with
+  /** Returns the name of this system. This is just an arbitrary string with
   no particular meaning attached. **/
 
   // TODO(sherm1) Consider requiring this to be unique among sibling subsystems
@@ -82,9 +82,9 @@ class AbstractSystem3 {
   These provide the ability to specify input and output ports, which are common
   to all dynamic systems. **/
   /**@{**/
-  /** Add an input port that is to be owned by this System. The assigned port
+  /** Add an input port that is to be owned by this system. The assigned port
   number is returned and can be used to retrieve this port later, and to locate
-  its value in a compatible Context. **/
+  its value in a compatible context. **/
   int AddInputPort(std::unique_ptr<InputPort3> port) {
     const int my_port_num = (int)input_ports_.size();
     port->set_owner(this, my_port_num);
@@ -95,7 +95,7 @@ class AbstractSystem3 {
 
   /** Add an output port that is to be owned by this System. The assigned port
   number is returned and can be used to retrieve this port later, and to locate
-  its value in a compatible Context. **/
+  its value in a compatible context. **/
   int AddOutputPort(std::unique_ptr<OutputPort3> port) {
     const int my_port_num = (int)output_ports_.size();
     port->set_owner(this, my_port_num);
@@ -104,32 +104,34 @@ class AbstractSystem3 {
     return my_port_num;
   }
 
-  /** Returns the current number of input ports in this System. This is also the
+  /** Returns the current number of input ports in this system. This is also the
   port number that will be assigned by the next call to `AddInputPort()`. **/
   int get_num_input_ports() const { return (int)input_ports_.size(); }
 
-  /** Returns a const reference to the InputPort with the given port number. **/
+  /** Returns a const reference to the InputPort3 with the given port
+  number. **/
   const InputPort3& get_input_port(int port_num) const {
     return *get_input_port_finder(port_num).port;
   }
 
-  /** Returns a mutable pointer to the InputPort with the given port number. **/
+  /** Returns a mutable pointer to the InputPort3 with the given port
+  number. **/
   InputPort3* get_mutable_input_port(int port_num) {
     return get_input_port_finder(port_num).port;
   }
 
-  /** Returns the current number of output ports in this System. This is also
+  /** Returns the current number of output ports in this system. This is also
   the port number that will be assigned by the next call to
   `AddOutputPort()`. **/
   int get_num_output_ports() const { return (int)output_ports_.size(); }
 
-  /** Returns a const reference to the OutputPort with the given port
+  /** Returns a const reference to the OutputPort3 with the given port
   number. **/
   const OutputPort3& get_output_port(int port_num) const {
     return *get_output_port_finder(port_num).port;
   }
 
-  /** Returns a mutable pointer to the OutputPort with the given port
+  /** Returns a mutable pointer to the OutputPort3 with the given port
   number. **/
   OutputPort3* get_mutable_output_port(int port_num) {
     return get_output_port_finder(port_num).port;
@@ -138,18 +140,18 @@ class AbstractSystem3 {
 
 
   /** Returns a default context, initialized with run time mutable memory for
-  the correct number and type of InputPort, OutputPort, and state variable
+  the correct number and type of InputPort3, OutputPort3, and state variable
   objects, as well as time, parameters, and basic computations. This will
   contain one subcontext corresponding to each subsystem of this System. **/
   DRAKESYSTEMFRAMEWORK_EXPORT std::unique_ptr<AbstractContext3>
   CreateDefaultContext() const;
 
-  /** Obtain an up-to-date value for one of this System's output ports. (Output
+  /** Obtain an up-to-date value for one of this system's output ports. (Output
   ports may have distinct sample times so must be individually evaluatable.) If
   necessary, computation of this value is initiated with the result written
-  into the supplied Context's cache.
+  into the supplied AbstractContext3's cache.
 
-  @param[in,out] context A Context that is compatible with this System.
+  @param[in,out] context A context that is compatible with this System.
   @param[in] port_num The index number of the output port to be evaluated.
   @retval value A reference into `context` containing the current value for this
                 output port. **/
@@ -160,7 +162,7 @@ class AbstractSystem3 {
   /** @name   Methods for Systems with event detection and event handlers
 
   TODO(sherm1) Provide EvalWitnessFunctions() and a way to invoke handlers
-  which are given writable access to Context so that mode variables (and
+  which are given writable access to context so that mode variables (and
   any other state) can be updated. Handlers must be able to terminate a
   simulation and be able to indicate that a structural change is required. **/
   /**@{**/
@@ -170,10 +172,10 @@ class AbstractSystem3 {
   //----------------------------------------------------------------------------
   /** @name                System diagram methods
 
-  These methods are useful for any System that contains subsystems. **/
+  These methods are useful for any system that contains subsystems. **/
   /**@{**/
 
-  /** Takes ownership of the given System and returns an unowned, raw pointer to
+  /** Takes ownership of the given system and returns an unowned, raw pointer to
   the concrete type for convenient access. This `subsystem` is assigned
   the next available index, as given by `get_num_subsystems()` prior to
   making this call. **/
@@ -185,7 +187,7 @@ class AbstractSystem3 {
     return concrete;
   }
 
-  /** The given subsystem's InputPort becomes the next InputPort of this
+  /** The given subsystem's InputPort3 becomes the next InputPort3 of this
   system diagram. The diagram's input port number is returned; it will in
   general be different from the input port number in the subsystem from
   which it was inherited. **/
@@ -199,7 +201,7 @@ class AbstractSystem3 {
     return my_port_num;
   }
 
-  /** The given subsystem's OutputPort becomes the next OutputPort of this
+  /** The given subsystem's OutputPort3 becomes the next OutputPort3 of this
   system diagram. The diagram's output port number is returned; it will in
   general be different from the output port number in the subsystem from
   which it was inherited. **/
@@ -343,22 +345,22 @@ class AbstractSystem3 {
  protected:
   explicit AbstractSystem3(const std::string& name) : name_(name) {}
 
-  /** Obtain an up-to-date value for one of this System's input ports. If 
+  /** Obtain an up-to-date value for one of this system's input ports. If 
   necessary this triggers the computation of whatever value source this input
   port is connected to, typically an output port.
 
-  @param[in,out] context A Context that is compatible with this System.
+  @param[in,out] context A %Context that is compatible with this %System.
   @param[in] port_num The index number of the input port to be evaluated.
   @retval value A reference into `context` containing the current value for this
                 output port. **/
   DRAKESYSTEMFRAMEWORK_EXPORT const AbstractValue& EvalInputPort(
       const AbstractContext3& context, int port_num) const;
 
-  /** Allocate a concrete Context type that is appropropriate for your
+  /** Allocate a concrete %Context type that is appropropriate for your
   concrete System. **/
   virtual std::unique_ptr<AbstractContext3> DoCreateEmptyContext() const = 0;
 
-  /** Acquire any private Context resources your concrete System needs, and
+  /** Acquire any private %Context resources your concrete %System needs, and
   assign them default values. The supplied `context` is in the process of
   being constructed and you may assume it already contains resources for your
   input and output ports. The default implementation acquires no resources. **/
@@ -366,7 +368,7 @@ class AbstractSystem3 {
 
   /** Unconditionally compute the given output port's value. When implementing
   this method, you may assume that error checking has been performed to validate
-  the Context and port number, and that the output value is of the same type
+  the %Context and port number, and that the output value is of the same type
   as that port's model value. **/
   virtual void DoCalcOutputPort(const AbstractContext3& context, int port_num,
                                 AbstractValue* value) const = 0;
@@ -374,19 +376,19 @@ class AbstractSystem3 {
  private:
   friend class AbstractContext3;
 
-  // Create a context that has no content but whose tree structure matches
-  // that of this system diagram, with the right kind of context in each node
+  // Create a Context that has no content but whose tree structure matches
+  // that of this system diagram, with the right kind of Context in each node
   // as provided by DoCreateEmptyContext().
   DRAKESYSTEMFRAMEWORK_EXPORT std::unique_ptr<AbstractContext3>
   CreateEmptyContext() const;
 
-  // Given an empty context with appropriate tree structure, allocate and
+  // Given an empty Context with appropriate tree structure, allocate and
   // connect input and output ports in the context to match the wiring of this
   // system diagram.
   DRAKESYSTEMFRAMEWORK_EXPORT void AllocateOutputPorts(
       AbstractContext3* context) const;
 
-  // Given an empty context with appropriate tree structure, allocate and
+  // Given an empty Context with appropriate tree structure, allocate and
   // connect input and output ports in the context to match the wiring of this
   // system diagram.
   DRAKESYSTEMFRAMEWORK_EXPORT void AllocateAndConnectInputPorts(
@@ -482,7 +484,7 @@ class System3 : public AbstractSystem3 {
   //----------------------------------------------------------------------------
   /** @name            Methods common to all Systems 
 
-  Every System can create a compatible context, and can provide values for
+  Every %System can create a compatible %Context, and can provide values for
   its output ports. **/
   /**@{**/
 
@@ -510,7 +512,7 @@ class System3 : public AbstractSystem3 {
   //----------------------------------------------------------------------------
   /** @name         Methods for all *physical* Systems
 
-  Any System that models a physical system that can store energy or carry
+  Any %System that models a physical system that can store energy or carry
   kinetic energy in moving masses should provide these methods so that
   conservation of energy can be monitored. In a conservative system (one with
   no losses or actuation), the sum of potential and kinetic energy should be
@@ -522,14 +524,14 @@ class System3 : public AbstractSystem3 {
   continuous and discrete models. **/
   /**@{**/
   /** Returns the potential energy currently stored in the configuration
-  provided in the given Context. Non-physical Systems will return 0. **/
+  provided in the given Context3. Non-physical Systems will return 0. **/
   const T& EvalPotentialEnergy(const Context3<T>& context) const {
     // TODO(sherm1) Validate the context at least in Debug.
     return DoEvalPotentialEnergy(context);
   }
 
   /** Return the kinetic energy currently present in the motion provided in the
-  given Context. Non-physical Systems will return 0. **/
+  given Context3. Non-physical Systems will return 0. **/
   const T& EvalKineticEnergy(const Context3<T>& context) const {
     // TODO(sherm1) Validate the context at least in Debug.
     return DoEvalKineticEnergy(context);
@@ -554,7 +556,7 @@ class System3 : public AbstractSystem3 {
 
   /** For continuous, *physical* systems only, returns the rate at which
   energy is being converted *from* potential energy *to* kinetic energy by this
-  system in the given Context. This quantity will be positive when potential
+  system in the given Context3. This quantity will be positive when potential
   energy is decreasing. Note that kinetic energy will also be affected by
   non-conservative forces so we can't say which direction it is moving, only
   whether the conservative power is increasing or decreasing the kinetic energy.
@@ -567,7 +569,7 @@ class System3 : public AbstractSystem3 {
   /** For continuous, *physical* systems only, returns the rate at which energy
   is being added to (positive) or dissipated from (negative) this sytem 
   *other than* by conversion between potential and kinetic energy (in the given
-  Context). Integrating this quantity yields work W, and the total energy
+  Context3). Integrating this quantity yields work W, and the total energy
   `E=PE+KE-W` should be conserved by any physically-correct model, to within
   integration accuracy of W. Power is in watts (J/s). (Watts are abbreviated W
   but not to be confused with work!) Returns zero for systems where this doesn't
@@ -578,7 +580,7 @@ class System3 : public AbstractSystem3 {
 
   /** Transforms a given generalized velocity v into qdot, the time derivative
   of the generalized configuration q. The current configuration is taken from
-  the given Context. Note that the velocity is given explicitly as an argument;
+  the given Context3. Note that the velocity is given explicitly as an argument;
   any velocity in the Context is ignored.
 
   The transformation is linear in velocity and requires no more than O(n) time
@@ -588,7 +590,7 @@ class System3 : public AbstractSystem3 {
   where N is a block diagonal matrix with small blocks.
   
   @param[in] context 
-    The complete evaluation Context, from which we obtain q. Some cache updates
+    The complete evaluation Context3, from which we obtain q. Some cache updates
     may occur.
   @param[in] generalized_velocity
       The input velocity v to transform.
@@ -605,9 +607,9 @@ class System3 : public AbstractSystem3 {
 
   /** Transforms a given generalized acceleration vdot into qdotdot, the
   second time derivative of the generalized configuration q. The current
-  configuration q and velcoity v are taken from the given Context. Note that
+  configuration q and velcoity v are taken from the given Context3. Note that
   generalized acceleration is given explicitly as an argument; any acceleration
-  present in the Context is ignored.
+  present in the Context3 is ignored.
 
   The transformation is linear in acceleration and requires no more than O(n)
   time to compute where n is the size of q. We are computing @verbatim
@@ -617,7 +619,7 @@ class System3 : public AbstractSystem3 {
   described in `MapVelocityToConfigurationDerivatives()`.
   
   @param[in] context 
-      The complete evaluation Context, from which we obtain q and v. Some cache 
+      The complete evaluation Context3, from which we obtain q and v. Some cache 
       updates may occur.
   @param[in] generalized_acceleration
       The input acceleration vdot to transform.
@@ -639,7 +641,7 @@ class System3 : public AbstractSystem3 {
   /** TODO: update discrete variables. **/
   // TODO(sherm1) Only a subset needs to be updated at any given sampling
   // time. Probably makes more sense to pass a writable Context so the
-  // System can perform the limited update.
+  // %System can perform the limited update.
   void UpdateDiscreteVariables(Context3<T>& context, int sample_key) const;
 
   /** Returns the next sample time required by any subsystem of this System.
@@ -654,7 +656,7 @@ class System3 : public AbstractSystem3 {
 
 
  protected:
-  /** Creates a System with no ports. **/
+  /** Creates a System3 with no ports. **/
   explicit System3(const std::string& name) : AbstractSystem3(name) {}
 
   /** Convenience method for obtaining the up-to-date value for an input
@@ -672,9 +674,9 @@ class System3 : public AbstractSystem3 {
 
   /** If your system is capable of storing energy, implement this method to
   return the potential energy currently stored in the configuration provided in
-  the given Context. Otherwise the default implementation will return zero. When
-  implementing this method, you may assume that error checking has been
-  performed to validate the Context. **/
+  the given Context3. Otherwise the default implementation will return zero.
+  When implementing this method, you may assume that error checking has been
+  performed to validate the Context3. **/
   virtual const T& DoEvalPotentialEnergy(const Context3<T>& context) const {
     static const T zero(0);
     return zero;
@@ -682,9 +684,9 @@ class System3 : public AbstractSystem3 {
 
   /** If your system models energy of motion, implement this method to return
   the kinetic energy currently present in the motion provided in the
-  given Context. Otherwise the default implementation will return zero. When
+  given Context3. Otherwise the default implementation will return zero. When
   implementing this method, you may assume that error checking has been
-  performed to validate the Context. **/
+  performed to validate the Context3. **/
   virtual const T& DoEvalKineticEnergy(const Context3<T>& context) const {
     static const T zero(0);
     return zero;
@@ -700,7 +702,7 @@ class System3 : public AbstractSystem3 {
   Implementations may assume that `configuration_derivatives` is of the same
   size as the generalized position q present in the given Context, and that
   `generalized_velocity` is the same size as the generalized velocities v in
-  that Context, and should populate `configuration_derivatives` with
+  that Context3, and should populate `configuration_derivatives` with
   elementwise-corresponding derivatives of configuration.
   
   @param context The complete evaluation context.
@@ -722,7 +724,7 @@ class System3 : public AbstractSystem3 {
   // dissipate energy into the simulation.
 
   /** Return the rate at which mechanical energy is being converted *from*
-  potential energy *to* kinetic energy by this system in the given Context.
+  potential energy *to* kinetic energy by this system in the given Context3.
   This quantity will be positive when potential energy is decreasing. Note
   that kinetic energy will also be affected by non-conservative forces so we
   can't say which direction it is moving, only whether the conservative
@@ -736,7 +738,7 @@ class System3 : public AbstractSystem3 {
 
   /** Return the rate at which mechanical energy is being generated (positive)
   or dissipated (negative) *other than* by conversion between potential and
-  kinetic energy (in the given Context). Integrating this quantity yields
+  kinetic energy (in the given Context3). Integrating this quantity yields
   work W, and the total energy `E=PE+KE-W` should be conserved by any
   physically-correct model, to within integration accuracy of W. Power is in
   watts (J/s). (Watts are abbreviated W but not to be confused with work!)
