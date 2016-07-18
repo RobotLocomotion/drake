@@ -69,14 +69,13 @@ int AddCosts(GRBmodel* model, OptimizationProblem& prog,
       for (size_t j = i; j < num_constraint_vars; j++) {
         if (std::abs(Q(i, j)) > sparseness_threshold) {
           int row_ind = 0, col_ind = 0;
-          double individual_quadratic_cost_value = 0.0;
-
           row_ind = i + start_row;
           col_ind = j + start_row;
           // TODO(naveenoid) : Port to batch addition mode of this function
           // by utilising the Upper right (or lower left) triangular matrix.
           // The single element addition method used below is recommended
           // initially by Gurobi since it has a low cost.
+          double individual_quadratic_cost_value = 0.0;
           individual_quadratic_cost_value = Q(i, j);
           error = GRBaddqpterms(model, 1, &row_ind, &col_ind,
                                 &individual_quadratic_cost_value);
