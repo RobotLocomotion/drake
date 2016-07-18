@@ -36,19 +36,23 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
 
   void AddStateConstraint(const Constraint& constraint, const int time_index);
 
-  /** 
+  /**
    * Solve the nonlinear program and return the resulting trajectory.
-   * @p t_init Initial timespan for solution. 
+   * @p t_init Initial timespan for solution.
    * @p traj_init_u Initial guess for trajectory for control input.
    * @p traj_init_x Initial guess for trajectory for state input.
    */
   SolutionResult SolveTraj(int t_init,
                            const PiecewisePolynomial<double>& traj_init_u,
                            const PiecewisePolynomial<double>& traj_init_x);
+
  private:
   /**
    *  Evaluate the initial trajectories at the sampled times and construct the
    *  nominal initial vectors.
+   * @p t_init Initial timespan for solution.
+   * @p traj_init_u Initial guess for trajectory for control input.
+   * @p traj_init_x Initial guess for trajectory for state input.
    */
   void GetInitialVars(int t_init_in,
                       const PiecewisePolynomial<double>& traj_init_u,

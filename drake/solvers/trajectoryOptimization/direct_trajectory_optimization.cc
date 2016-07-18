@@ -15,10 +15,10 @@ VectorXd vector_diff(VectorXd& vec) {
 /**
  *  DirectTrajectoryOptimization
  *
- *  For readability of long lines, these single-letter variables names are 
+ *  For readability of long lines, these single-letter variables names are
  *  sometimes used:
  *
- *  N number of timesteps
+ *  N number of timesteps/samples
  *  h timesteps (there are N-1 of these)
  *  x state
  *  u control input
@@ -60,18 +60,8 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   // TODO(lucy-tri) Create constraints for dynamics and add them.
   // Matlab: obj.addDynamicConstraints();
 
-  // Add control inputs (upper and lower bounds) as bounding box constraints.
-  if ((trajectory_time_lower_bound !=
-       std::numeric_limits<double>::infinity()) ||
-      (trajectory_time_upper_bound !=
-       std::numeric_limits<double>::infinity())) {
-    VectorXd lower_control(N);
-    lower_control.fill(trajectory_time_lower_bound);
-    VectorXd upper_control(N);
-    upper_control.fill(trajectory_time_upper_bound);
-    opt_problem_.AddBoundingBoxConstraint(lower_control, upper_control,
-                                          {u_vars_});
-  }
+  // TODO(lucy-tri) Add control inputs (upper and lower bounds) as bounding box
+  // constraints.
 }
 
 void DirectTrajectoryOptimization::GetInitialVars(
@@ -117,7 +107,7 @@ SolutionResult DirectTrajectoryOptimization::SolveTraj(
   GetInitialVars(t_init, traj_init_u, traj_init_x);
   SolutionResult result = opt_problem_.Solve();
   opt_problem_.PrintSolution();
-  // TODO(lgibson) Reconstruct the state and input trajectories. 
+  // TODO(lgibson) Reconstruct the state and input trajectories.
   return result;
 }
 
