@@ -38,8 +38,11 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
 
   /**
    * Solve the nonlinear program and return the resulting trajectory.
+   *
    * @p t_init Initial timespan for solution.
+   *
    * @p traj_init_u Initial guess for trajectory for control input.
+   *
    * @p traj_init_x Initial guess for trajectory for state input.
    */
   SolutionResult SolveTraj(int t_init,
@@ -50,8 +53,11 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   /**
    *  Evaluate the initial trajectories at the sampled times and construct the
    *  nominal initial vectors.
+   *
    * @p t_init Initial timespan for solution.
+   *
    * @p traj_init_u Initial guess for trajectory for control input.
+   *
    * @p traj_init_x Initial guess for trajectory for state input.
    */
   void GetInitialVars(int t_init_in,
