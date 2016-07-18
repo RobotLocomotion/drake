@@ -1,4 +1,4 @@
-#include "drake/systems/lcm/translator_lcmt_drake_signal.h"
+#include "drake/systems/lcm/translator_from_lcmt_drake_signal.h"
 
 #include <lcm/lcm-cpp.hpp>
 
@@ -12,7 +12,7 @@ namespace lcm {
 
 using std::runtime_error;
 
-void TranslatorLcmtDrakeSignal::TranslateLcmToVectorInterface(
+void TranslatorFromLcmtDrakeSignal::TranslateLcmToVectorInterface(
     const ::lcm::ReceiveBuffer* rbuf,
     VectorInterface<double>* vector_interface) const {
   DRAKE_ABORT_UNLESS(vector_interface);
@@ -22,7 +22,7 @@ void TranslatorLcmtDrakeSignal::TranslateLcmToVectorInterface(
   int status = message.decode(rbuf->data, 0, rbuf->data_size);
   if (status < 0) {
     throw runtime_error(
-      "drake::systems::lcm::TranslatorLcmtDrakeSignal: "
+      "drake::systems::lcm::TranslatorFromLcmtDrakeSignal: "
           "TranslateLcmToBasicVector: ERROR: Failed to decode LCM message, the "
               "status is " + std::to_string(status) + ".");
   }
@@ -30,7 +30,7 @@ void TranslatorLcmtDrakeSignal::TranslateLcmToVectorInterface(
   // Verifies that the size of the LCM message matches the size of the basic
   // vector. Throws an exception if the sizes do not match.
   if (message.dim != vector_interface->size()) {
-    throw runtime_error("drake::systems::lcm::TranslatorLcmtDrakeSignal: "
+    throw runtime_error("drake::systems::lcm::TranslatorFromLcmtDrakeSignal: "
       "TranslateLcmToBasicVector: ERROR: Size of LCM message (" +
       std::to_string(message.dim) +
       ") is not equal to the size of the vector vector (" +

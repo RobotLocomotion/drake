@@ -17,16 +17,17 @@ namespace lcm {
  * Assumes that the order of the values in the LCM message and the
  * `VectorInterface` are identical.
  */
-class DRAKELCMSYSTEM2_EXPORT TranslatorLcmtDrakeSignal
+class DRAKELCMSYSTEM2_EXPORT TranslatorFromLcmtDrakeSignal
     : public LcmToVectorInterfaceTranslator {
  public:
   /**
    * The constructor.
    *
-   * @param[in] size The number of elements in both the `VectorInterface` and
-   * the LCM drake signal message.
+   * @param[in] size The number of elements in the `VectorInterface`. It is
+   * assumed that the number of elements in the LCM message is equal to this
+   * size.
    */
-  explicit TranslatorLcmtDrakeSignal(int size)
+  explicit TranslatorFromLcmtDrakeSignal(int size)
       : LcmToVectorInterfaceTranslator(size) {}
 
   void TranslateLcmToVectorInterface(
