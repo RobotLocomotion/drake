@@ -2,10 +2,6 @@
 
 #include "drake/solvers/MosekLP.h"
 
-extern "C" {
-  #include <mosek/mosek.h>
-}
-
 #include <memory>
 #include <vector>
 #include <iostream>
@@ -99,50 +95,52 @@ void MosekLP::AddLinearConstraintSparseColumnMatrix(
 }
 
 void MosekLP::AddLinearConstraintBounds(
-    const std::vector<MSKboundkeye>& mosek_bounds_,
-    const std::vector<double>& upper_bounds_,
-    const std::vector<double>& lower_bounds_) {
+    const std::vector<MSKboundkeye>& mosek_bounds,
+    const std::vector<double>& upper_bounds,
+    const std::vector<double>& lower_bounds) {
   int i = 0;
-  for (; i < numcon_ && r_ == MSK_RES_OK; i++) {
-    r_ = MSK_putconbound(task_, i, mosek_bounds_[i],
-                        lower_bounds_[i], upper_bounds_[i]);
+  for (i = 0; i < numcon_ && r_ == MSK_RES_OK; i++) {
+    r_ = MSK_putconbound(task_, i, mosek_bounds[i],
+                        lower_bounds[i], upper_bounds[i]);
   }
 }
 
-void MosekLP::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
-                                const std::vector<double>& upper_bounds_,
-                                const std::vector<double>& lower_bounds_) {
+void MosekLP::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds,
+                                const std::vector<double>& upper_bounds,
+                                const std::vector<double>& lower_bounds) {
   int j = 0;
+  assert(mosek_bounds.size() == lower_bounds.size());
+  assert(mosek_bounds.size() == upper_bounds.size());
   for (; j < numvar_ && r_ == MSK_RES_OK; j++) {
-    r_ = MSK_putvarbound(task_, j, mosek_bounds_[j], lower_bounds_[j],
-        upper_bounds_[j]);
+    r_ = MSK_putvarbound(task_, j, mosek_bounds[j], lower_bounds[j],
+        upper_bounds[j]);
   }
 }
 
 std::vector<MSKboundkeye> MosekLP::FindMosekBounds(
-    const std::vector<double>& upper_bounds_,
-    const std::vector<double>& lower_bounds_) const {
-  assert(upper_bounds_.size() == lower_bounds_.size());
-  std::vector<MSKboundkeye> mosek_bounds_;
+    const std::vector<double>& upper_bounds,
+    const std::vector<double>& lower_bounds) const {
+  assert(upper_bounds.size() == lower_bounds.size());
+  std::vector<MSKboundkeye> mosek_bounds;
   unsigned int i = 0;
-  for (i = 0; i != upper_bounds_.size(); i++) {
-    if (upper_bounds_[i] == +MSK_INFINITY) {
-      if (lower_bounds_[i] == -MSK_INFINITY) {
-        mosek_bounds_.push_back(MSK_BK_FR);
+  for (i = 0; i != upper_bounds.size(); i++) {
+    if (upper_bounds[i] == +MSK_INFINITY) {
+      if (lower_bounds[i] == -MSK_INFINITY) {
+        mosek_bounds.push_back(MSK_BK_FR);
       } else {
-        mosek_bounds_.push_back(MSK_BK_LO);
+        mosek_bounds.push_back(MSK_BK_LO);
       }
     } else {
-      if (upper_bounds_[i] == lower_bounds_[i]) {
-        mosek_bounds_.push_back(MSK_BK_FX);
-      } else if (lower_bounds_[i] == -MSK_INFINITY) {
-        mosek_bounds_.push_back(MSK_BK_UP);
+      if (upper_bounds[i] == lower_bounds[i]) {
+        mosek_bounds.push_back(MSK_BK_FX);
+      } else if (lower_bounds[i] == -MSK_INFINITY) {
+        mosek_bounds.push_back(MSK_BK_UP);
       } else {
-        mosek_bounds_.push_back(MSK_BK_RA);
+        mosek_bounds.push_back(MSK_BK_RA);
       }
     }
   }
-  return mosek_bounds_;
+  return mosek_bounds;
 }
 
 
@@ -174,8 +172,8 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
   std::vector<double> lower_constraint_bounds(totalconnum);
   std::vector<MSKboundkeye> mosek_constraint_bounds(totalconnum);
   std::vector<MSKboundkeye> mosek_variable_bounds(prog.num_vars());
-  std::vector<double> upper_variable_bounds(numvar_);
-  std::vector<double> lower_variable_bounds(numvar_);
+  std::vector<double> upper_variable_bounds(prog.num_vars());
+  std::vector<double> lower_variable_bounds(prog.num_vars());
   linear_cons.setZero(totalconnum, prog.num_vars());
 
   // Expect only one boundingbox constraint or no such constraint.
@@ -207,6 +205,7 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
     }
     mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
                                             lower_variable_bounds);
+
   }
   int connum = 0;
   i = 0;
