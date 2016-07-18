@@ -135,9 +135,8 @@ GTEST_TEST(testGurobi, convexQPMultiCostExample) {
     VectorXd composed_solution = VectorXd::Constant(6, 0.0);
     composed_solution.topRows(3) = x1.value();
     composed_solution.bottomRows(3) = x2.value();
-    EXPECT_TRUE(
-        CompareMatrices(composed_solution, expected,
-        1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(composed_solution, expected, 1e-8,
+                                MatrixCompareType::absolute));
   });
 }
 
