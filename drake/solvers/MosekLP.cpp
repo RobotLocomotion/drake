@@ -205,7 +205,6 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) const {
     }
     mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
                                             lower_variable_bounds);
-
   }
   int connum = 0;
   i = 0;
