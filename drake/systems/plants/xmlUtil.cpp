@@ -60,7 +60,7 @@ void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
   if (ss.good()) {
     throw std::invalid_argument(
         "ERROR: ParseThreeVectorValue: A vector with more than three "
-            "elements was supplied.");
+        "elements was supplied.");
   }
 }
 
@@ -72,7 +72,7 @@ double StringToDouble(const string& str) {
   if (str.size() != num_chars) {
     throw std::invalid_argument(
         "ERROR: Double value contained additional characters after the "
-            "number.");
+        "number.");
   }
 
   return result;
@@ -93,14 +93,14 @@ void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
   if (!node || !element_name) {
     throw std::invalid_argument(
         "ERROR: ParseThreeVectorValue: Parameter \"node\" and/or parameter "
-            "\"element_name\" is null.");
+        "\"element_name\" is null.");
   } else {
     const tinyxml2::XMLElement* child_node =
         node->FirstChildElement(element_name);
     if (child_node == nullptr) {
       throw std::invalid_argument(
           "ERROR: ParseThreeVectorValue: Element \"" +
-              std::string(element_name) + "\" not found.");
+          std::string(element_name) + "\" not found.");
     }
     ParseThreeVectorValue(child_node, val);
   }
@@ -112,13 +112,13 @@ void ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
   if (!node || !attribute_name) {
     throw std::invalid_argument(
         "ERROR: ParseThreeVectorAttribute: Parameter"
-            "\"node\" and/or parameter \"attribute_name\" is null.");
+        "\"node\" and/or parameter \"attribute_name\" is null.");
   } else {
     const char* scale = node->Attribute(attribute_name);
     if (scale == nullptr) {
       throw std::invalid_argument(
           "ERROR: ParseThreeVectorAttribute: Attribute \"" +
-              std::string(attribute_name) + "\" not found.");
+          std::string(attribute_name) + "\" not found.");
     }
     ParseThreeVectorValue(scale, val);
   }
@@ -259,22 +259,22 @@ void searchDirectory(map<string, string>& package_map, string path) {
           if (xml_doc.ErrorID()) {
             throw std::runtime_error(
                 "xmlUtil.cpp: searchDirectory: Failed to parse XML in file " +
-                    file_name + "\n" + xml_doc.ErrorName());
+                file_name + "\n" + xml_doc.ErrorName());
           }
 
           XMLElement* package_node = xml_doc.FirstChildElement("package");
           if (!package_node) {
             throw std::runtime_error(
                 "xmlUtil.cpp: searchDirectory: ERROR: XML file \"" + file_name +
-                    "\" does not contain a <package> element.");
+                "\" does not contain a <package> element.");
           }
 
           XMLElement* name_node = package_node->FirstChildElement("name");
           if (!name_node) {
             throw std::runtime_error(
                 "xmlUtil.cpp: searchDirectory: ERROR: <package> element does "
-                    "not contain a <name> element. (XML file \"" +
-                        file_name + "\")");
+                "not contain a <name> element. (XML file \"" +
+                file_name + "\")");
           }
 
           package_name = name_node->FirstChild()->Value();
