@@ -2,7 +2,7 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem2 SOURCE_FILES
     lcm_receive_thread.cc
     lcm_subscriber_system.cc
-    translator_from_lcmt_drake_signal.cc)
+    translator_between_lcmt_drake_signal.cc)
   add_dependencies(drakeLCMSystem2 drake_lcmtypes_hpp)
   target_link_libraries(drakeLCMSystem2
     drakeSystemFramework
@@ -16,8 +16,8 @@ if(lcm_FOUND)
   drake_install_headers(
     lcm_receive_thread.h
     lcm_subscriber_system.h
-    lcm_to_vector_interface_translator.h
-    translator_from_lcmt_drake_signal.h)
+    lcm_and_vector_interface_translator.h
+    translator_between_lcmt_drake_signal.h)
   pods_install_pkg_config_file(drake-lcm-system2
     LIBS -ldrakeLCMSystem2
     REQUIRES lcm

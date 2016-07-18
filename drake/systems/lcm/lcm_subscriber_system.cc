@@ -13,10 +13,10 @@ using std::make_unique;
 
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
-    std::unique_ptr<const LcmToVectorInterfaceTranslator> translator,
+    const LcmAndVectorInterfaceTranslator* const translator,
     ::lcm::LCM* lcm)
     : channel_(channel),
-      translator_(std::move(translator)),
+      translator_(translator),
       basic_vector_(translator_->get_vector_size()) {
   DRAKE_ABORT_UNLESS(lcm);
   // Initializes the communication layer.
