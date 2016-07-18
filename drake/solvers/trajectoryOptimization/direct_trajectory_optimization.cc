@@ -19,8 +19,11 @@ VectorXd vector_diff(VectorXd& vec) {
  *  sometimes used:
  *
  *  N number of timesteps/samples
+ *
  *  h timesteps (there are N-1 of these)
+ *
  *  x state
+ *
  *  u control input
  */
 DirectTrajectoryOptimization::DirectTrajectoryOptimization(
@@ -106,7 +109,7 @@ SolutionResult DirectTrajectoryOptimization::SolveTraj(
     const PiecewisePolynomial<double>& traj_init_x) {
   GetInitialVars(t_init, traj_init_u, traj_init_x);
   SolutionResult result = opt_problem_.Solve();
-  opt_problem_.PrintSolution();
+  // opt_problem_.PrintSolution();
   // TODO(lgibson) Reconstruct the state and input trajectories.
   return result;
 }
