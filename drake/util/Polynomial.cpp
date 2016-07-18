@@ -153,6 +153,16 @@ int Polynomial<CoefficientType>::getDegree() const {
 }
 
 template <typename CoefficientType>
+bool Polynomial<CoefficientType>::isAffine() const {
+  for (const auto& monomial : monomials) {
+    if ((monomial.terms.size() > 1) || (monomial.getDegree() > 1)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename CoefficientType>
 typename Polynomial<CoefficientType>::VarType
 Polynomial<CoefficientType>::getSimpleVariable() const {
   if (monomials.size() != 1) return 0;

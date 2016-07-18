@@ -1,7 +1,12 @@
-#include "RollPitchYawFloatingJoint.h"
+#include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
+
 #include <random>
 
-using namespace Eigen;
+#include <Eigen/Dense>
+
+using Eigen::Map;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 std::string RollPitchYawFloatingJoint::getPositionName(int index) const {
   switch (index) {
@@ -23,7 +28,7 @@ std::string RollPitchYawFloatingJoint::getPositionName(int index) const {
 }
 
 VectorXd RollPitchYawFloatingJoint::zeroConfiguration() const {
-  return Eigen::VectorXd::Zero(getNumPositions());
+  return VectorXd::Zero(getNumPositions());
 }
 
 VectorXd RollPitchYawFloatingJoint::randomConfiguration(
@@ -32,7 +37,7 @@ VectorXd RollPitchYawFloatingJoint::randomConfiguration(
   std::normal_distribution<double> normal;
 
   Map<Vector3d> pos(&q[0]);
-  for (int i = 0; i < SPACE_DIMENSION; i++) {
+  for (int i = 0; i < drake::kSpaceDimension; i++) {
     pos(i) = normal(generator);
   }
 

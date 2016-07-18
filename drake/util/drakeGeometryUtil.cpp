@@ -1,6 +1,9 @@
 #include "drake/util/drakeGeometryUtil.h"
+
 #include <Eigen/Sparse>
 #include <stdexcept>
+
+#include "drake/math/axis_angle.h"
 
 using namespace Eigen;
 
@@ -27,15 +30,15 @@ Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator) {
 }
 
 Vector4d uniformlyRandomQuat(std::default_random_engine& generator) {
-  return axis2quat(uniformlyRandomAxisAngle(generator));
+  return drake::math::axis2quat(uniformlyRandomAxisAngle(generator));
 }
 
 Eigen::Matrix3d uniformlyRandomRotmat(std::default_random_engine& generator) {
-  return axis2rotmat(uniformlyRandomAxisAngle(generator));
+  return drake::math::axis2rotmat(uniformlyRandomAxisAngle(generator));
 }
 
 Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine& generator) {
-  return axis2rpy(uniformlyRandomAxisAngle(generator));
+  return drake::math::axis2rpy(uniformlyRandomAxisAngle(generator));
 }
 
 DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type) {
@@ -52,20 +55,4 @@ DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type) {
     default:
       throw std::runtime_error("rotation representation type not recognized");
   }
-}
-
-Matrix3d rotz(double theta) {
-  // returns 3D rotation matrix (about the z axis)
-  Matrix3d M;
-  double c = cos(theta);
-  double s = sin(theta);
-  M << c, -s, 0, s, c, 0, 0, 0, 1;
-  return M;
-}
-
-void rotz(double theta, Matrix3d& M, Matrix3d& dM, Matrix3d& ddM) {
-  double c = cos(theta), s = sin(theta);
-  M << c, -s, 0, s, c, 0, 0, 0, 1;
-  dM << -s, -c, 0, c, -s, 0, 0, 0, 0;
-  ddM << -c, s, 0, -s, -c, 0, 0, 0, 0;
 }

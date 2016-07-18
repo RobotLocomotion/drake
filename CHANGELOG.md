@@ -33,6 +33,7 @@ Unreleased: changes on master, not yet released
  - [#1953][] Replace `valuecheckMatrix()` with `CompareMatrices()`.
  - [#2018][] Fix capitalization of `Constraint` and `OptimizationProblem` APIs to match style guide.
  - [#2415][] Require CMake 3.5 or higher to configure and build.
+ - [#2779][] Move some rotation functions from drakeGeometryUtil to drake/math.
 
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
@@ -41,6 +42,7 @@ Unreleased: changes on master, not yet released
  - [#2102][] Macports and Cygwin are no longer supported.
  - [#2067][] `core/Core.h` is removed.
  - [#2039][] Ubuntu 12.04 Trusty is no longer supported.
+ - [#2809][] Building the Drake superbuild as a POD is no longer natively supported. Use https://sourceforge.net/p/pods/svn/HEAD/tree/Makefile if you require this functionality.
 
 [//]: # "Smaller bug fixes.  No API changes."
 ### Fixes
@@ -79,3 +81,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2602]: https://github.com/RobotLocomotion/drake/issues/2602
 [#2621]: https://github.com/RobotLocomotion/drake/issues/2621
 [#2666]: https://github.com/RobotLocomotion/drake/issues/2666
+[#2779]: https://github.com/RobotLocomotion/drake/issues/2779

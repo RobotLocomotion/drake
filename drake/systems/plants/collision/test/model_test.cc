@@ -2,6 +2,7 @@
 #include <vector>
 #include <unordered_map>
 
+#include "drake/Path.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/collision/Model.h"
 #include "gtest/gtest.h"
@@ -738,6 +739,63 @@ GTEST_TEST(ModelTest, StaticElements) {
   // Only three points are expected (instead of four) since ball1 and ball4 are
   // flagged as static.
   ASSERT_EQ(3, points.size());
+}
+
+GTEST_TEST(ModelTest, StaticMeshes) {
+  // Numerical precision tolerance to perform floating point comparisons.
+  const double tolerance = 1.0e-8;
+
+  DrakeShapes::Sphere sphere(0.5);
+  Isometry3d pose = Isometry3d::Identity();
+
+  std::string file_name = Drake::getDrakePath() +
+      "/systems/plants/collision/test/spherical_cap.obj";
+  DrakeShapes::Mesh cap(file_name, file_name);
+
+  // Creates collision elements.
+  // Flag cap_element to be static. If not, Drake will create a convex hull for
+  // dynamic collision elements out of the points in the mesh.
+  Element sphere_element(sphere);
+  Element cap_element(cap); cap_element.set_static();
+
+  // Populate the model.
+  std::shared_ptr<Model> model = newModel();
+  ElementId sphere_id = model->addElement(sphere_element);
+  ElementId cap_id = model->addElement(cap_element);
+
+  // Access the analytical solution to the contact point on the surface of
+  // each collision element by element id.
+  // Solutions are expressed in world and body frames.
+  ElementToSurfacePointMap solution = {
+      /*           world frame     , body frame  */
+      {sphere_id, {{0.0, 0.0, 0.1}, {0.0,  0.0, -0.5}}},
+      {cap_id   , {{0.0, 0.0, 0.2}, {0.0, -0.5,  0.2}}}};
+
+  // Sets the collision elements' pose.
+  pose.translation() = Vector3d(0.0, 0.0, 0.6);
+  model->updateElementWorldTransform(sphere_id, pose);
+
+  pose.translation() = Vector3d(0.0, 0.0, 0.0);
+  model->updateElementWorldTransform(cap_id, pose);
+
+  // List of collision points.
+  std::vector<PointPair> points;
+
+  // Computes all points of contact.
+  model->ComputeMaximumDepthCollisionPoints(false, points);
+
+  // Expects one collision point for this test.
+  ASSERT_EQ(1, points.size());
+
+  EXPECT_NEAR(-0.1, points[0].distance, tolerance);
+
+  EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0, 0, 1), tolerance));
+
+  EXPECT_TRUE(points[0].ptA.isApprox(
+      solution[points[0].idA].world_frame, tolerance));
+
+  EXPECT_TRUE(points[0].ptB.isApprox(
+      solution[points[0].idB].world_frame, tolerance));
 }
 
 }  // namespace

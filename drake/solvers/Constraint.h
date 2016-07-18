@@ -6,6 +6,7 @@
 #include <Eigen/SparseCore>
 
 #include "drake/common/drake_assert.h"
+#include "drake/core/Vector.h"
 #include "drake/util/Polynomial.h"
 
 namespace drake {

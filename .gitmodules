@@ -15,7 +15,7 @@
 	url = https://github.com/RobotLocomotion/gtk-pod.git
 [submodule "externals/lcm"]
 	path = externals/lcm
-	url = https://github.com/lcm-proj/lcm.git
+	url = https://github.com/mwoehlke-kitware/lcm.git
 [submodule "externals/bot_core_lcmtypes"]
 	path = externals/bot_core_lcmtypes
 	url = https://github.com/mwoehlke-kitware/bot_core_lcmtypes
@@ -89,3 +89,6 @@
 	path = externals/ipopt
 	url = https://github.com/RobotLocomotion/ipopt-mirror.git
 	ignore = untracked
+[submodule "externals/google_styleguide"]
+	path = externals/google_styleguide
+	url = https://github.com/google/styleguide.git
