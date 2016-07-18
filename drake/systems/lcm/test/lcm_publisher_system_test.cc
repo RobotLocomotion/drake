@@ -17,7 +17,6 @@ namespace {
 
 const int kDim = 10;
 const int kPortNumber = 0;
-const int64_t kTimestamp = 123456;
 
 /**
  * Subscribes to LCM messages of type `drake::lcmt_drake_signal`. Provides an
