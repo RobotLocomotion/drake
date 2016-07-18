@@ -96,6 +96,8 @@ if(snopt_c_FOUND AND MATLAB_FOUND)
 endif()
 
 if(mosek_FOUND)
+  set(CMAKE_SHARED_LINKER_FLAGS
+      "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-E")
   pods_use_pkg_config_packages(drakeOptimization mosek)
 endif()
 
