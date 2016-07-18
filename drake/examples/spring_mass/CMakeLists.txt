@@ -1,10 +1,10 @@
 # Source files used to build drakeSpringMassSystem.
-set(sources 
+set(sources
     spring_mass_system.cc)
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.
-set(private_headers 
+set(private_headers
     spring_mass_system.h)
 
 add_library_with_exports(LIB_NAME drakeSpringMassSystem
