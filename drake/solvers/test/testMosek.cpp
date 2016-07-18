@@ -59,7 +59,6 @@ GTEST_TEST(testMosek, MosekLinearProgram) {
   prog.SetSolverOption("Mosek", "problemtype", "linear");
   SolutionResult result = SolutionResult::kUnknownError;
   MosekSolver msk;
-  std::cout << "\nCalling mosek solver..." << std::endl;
   ASSERT_NO_THROW(result = msk.Solve(prog)) << "Using solver: Mosek";
   EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Using solver: Mosek";
   Eigen::Vector4d solutions;
