@@ -84,8 +84,7 @@ void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
     ParseThreeVectorValue(node->FirstChild()->Value(), val);
   } else {
     throw std::invalid_argument(
-        "ERROR: ParseThreeVectorValue: Parameter "
-        "\"node\" is null.");
+        "ERROR: ParseThreeVectorValue: Parameter \"node\" is null.");
   }
 }
 
@@ -93,14 +92,15 @@ void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
                            const char* element_name, Eigen::Vector3d* val) {
   if (!node || !element_name) {
     throw std::invalid_argument(
-        "ERROR: ParseThreeVectorValue: Parameter"
-        "\"node\" and/or parameter \"element_name\" is null.");
+        "ERROR: ParseThreeVectorValue: Parameter \"node\" and/or parameter "
+        "\"element_name\" is null.");
   } else {
     const tinyxml2::XMLElement* child_node =
         node->FirstChildElement(element_name);
     if (child_node == nullptr) {
-      throw std::invalid_argument("ERROR: ParseThreeVectorValue: Element \"" +
-                                  std::string(element_name) + "\" not found.");
+      throw std::invalid_argument(
+          "ERROR: ParseThreeVectorValue: Element \"" +
+          std::string(element_name) + "\" not found.");
     }
     ParseThreeVectorValue(child_node, val);
   }
@@ -219,6 +219,9 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
 }
 
 namespace {
+// Searches in directory @p path for a file called "package.xml".
+// Adds the package name specified in package.xml and the path to the
+// package to @p package_map.
 void searchDirectory(map<string, string>& package_map, string path) {
 #if defined(WIN32) || defined(WIN64)
   const char pathsep = ';';
@@ -241,19 +244,54 @@ void searchDirectory(map<string, string>& package_map, string path) {
       tinydir_file file;
       tinydir_readfile(&dir, &file);
 
-      // Skip hidden directories (including, importantly, "." and "..").
+      // Skips hidden directories (including, importantly, "." and "..").
       if (file.is_dir && (file.name[0] != '.')) {
         searchDirectory(package_map, file.path);
       } else if (file.name == target_filename) {
-        spruce::path mypath_s(file.path);
-        auto path_split = mypath_s.split();
-        if (path_split.size() > 2) {
-          string package = path_split.at(path_split.size() - 2);
-          auto package_iter = package_map.find(package);
-          // Don't overwrite entries in the map
-          if (package_iter == package_map.end()) {
-            package_map.insert(make_pair(package, mypath_s.root().append("/")));
+        // Parses the package.xml file to find the name of the package.
+        std::string package_name;
+
+        {
+          std::string file_name = std::string(file.path);
+
+          XMLDocument xml_doc;
+          xml_doc.LoadFile(file_name.data());
+          if (xml_doc.ErrorID()) {
+            throw std::runtime_error(
+                "xmlUtil.cpp: searchDirectory: Failed to parse XML in file " +
+                file_name + "\n" + xml_doc.ErrorName());
           }
+
+          XMLElement* package_node = xml_doc.FirstChildElement("package");
+          if (!package_node) {
+            throw std::runtime_error(
+                "xmlUtil.cpp: searchDirectory: ERROR: XML file \"" + file_name +
+                "\" does not contain a <package> element.");
+          }
+
+          XMLElement* name_node = package_node->FirstChildElement("name");
+          if (!name_node) {
+            throw std::runtime_error(
+                "xmlUtil.cpp: searchDirectory: ERROR: <package> element does "
+                "not contain a <name> element. (XML file \"" +
+                file_name + "\")");
+          }
+
+          package_name = name_node->FirstChild()->Value();
+        }
+
+        spruce::path mypath_s(file.path);
+
+        // Don't overwrite entries in the map.
+        auto package_iter = package_map.find(package_name);
+        if (package_iter == package_map.end()) {
+          package_map.insert(
+              make_pair(package_name, mypath_s.root().append("/")));
+        } else {
+          std::cerr << "xmlUtil.cpp: searchDirectory: WARNING: Package \""
+                    << package_name
+                    << "\" was found more than once in the search "
+                    << "space." << std::endl;
         }
       }
       tinydir_next(&dir);
@@ -264,7 +302,14 @@ void searchDirectory(map<string, string>& package_map, string path) {
 }
 
 void populatePackageMap(map<string, string>& package_map) {
-  searchDirectory(package_map, Drake::getDrakePath());
+  // Since Drake's package.xml file is located at its super-build level,
+  // remove the last "drake" directory from the drake path. Also omit the
+  // trailing slash.
+  const std::string drake_path = Drake::getDrakePath();
+  const std::string drake_path_parent = drake_path.substr(
+      0, drake_path.find_last_of("drake") - std::string("drake").size());
+
+  searchDirectory(package_map, drake_path_parent);
 
   char* cstrpath = getenv("ROS_ROOT");
   if (cstrpath) searchDirectory(package_map, cstrpath);
