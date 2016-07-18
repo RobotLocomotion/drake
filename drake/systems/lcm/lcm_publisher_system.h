@@ -64,11 +64,6 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
   const int kNumInputPorts = 1;
   const int kPortIndex = 0;
 
-  // Translates the message contained within the receive buffer by storing its
-  // information in basic_vector_.
-  void handleMessage(const ::lcm::ReceiveBuffer* rbuf,
-                     const std::string& channel);
-
   // The channel on which to publish LCM messages.
   const std::string channel_;
 
