@@ -201,6 +201,11 @@ See:
 Locations of Build and Install Directories
 ==========================================
 
+This section contains information about where Drake's build artifacts are
+located. They assume you are following the official from-source build
+instructions given above. The locations will differ if you're building Drake
+using an alternative method, e.g., completely out of source.
+
 Builds based on `Make <https://www.gnu.org/software/make/>`_ and
 `Ninja <https://ninja-build.org/>`_ place build artifacts in
 ``drake-distro/build/``. Externally visible build artifacts are placed in
