@@ -4,18 +4,18 @@
 
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/lcm/lcm_vector_interface_translator.h"
-#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
 namespace systems {
 namespace lcm {
 
 /**
- * Specializes the LcmBasicVectorTranslator to handle the LCM messages of type
+ * Specializes `LcmVectorInterfaceTranslator` to handle LCM messages of type
  * `drake::lcmt_drake_signal`.
  *
- * Assumes that the order of the values in the LCM Vector and the BasicVector
- * are identical.
+ * Assumes that the order of the values in the LCM message and the
+ * `VectorInterface` are identical.
  */
 class DRAKELCMSYSTEM2_EXPORT TranslatorLcmtDrakeSignal
     : public LcmVectorInterfaceTranslator {
@@ -23,8 +23,8 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorLcmtDrakeSignal
   /**
    * The constructor.
    *
-   * @param[in] size The number of elements in both the Basic Vector and the
-   * LCM drake signal message.
+   * @param[in] size The number of elements in both the `VectorInterface` and
+   * the LCM drake signal message.
    */
   explicit TranslatorLcmtDrakeSignal(int size)
       : LcmVectorInterfaceTranslator(size) {}
