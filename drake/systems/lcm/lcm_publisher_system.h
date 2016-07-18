@@ -1,9 +1,6 @@
 #pragma once
 
 #include <mutex>
-#include <stdexcept>
-#include <thread>
-#include <iostream>
 
 #include <lcm/lcm-cpp.hpp>
 
@@ -11,9 +8,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/system_interface.h"
-#include "drake/systems/framework/vector_interface.h"
 #include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
-#include "drake/systems/lcm/lcm_receive_thread.h"
 
 namespace drake {
 namespace systems {
@@ -85,9 +80,6 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
 
   // A pointer to the LCM subsystem.
   ::lcm::LCM* lcm_;
-
-  // Implements the loop that receives LCM messages.
-  LcmReceiveThread* lcm_receive_thread_;
 
   // A mutex for protecting data that's shared by the LCM receive thread and
   // the thread that calls LcmPublisherSystem::Output().
