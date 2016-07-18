@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(drake_cars_examples)
 
-if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
-endif()
+set(CMAKE_CXX_STANDARD 14)
 
 ## Finds the required macros and libraries.
 find_package(catkin REQUIRED COMPONENTS roscpp tf sensor_msgs drake_ros_systems)

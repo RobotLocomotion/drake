@@ -13,7 +13,6 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
-
 using Drake::NullVector;
 using Drake::RigidBodySensor;
 using Drake::RigidBodySystem;
@@ -60,26 +59,28 @@ class DrakeRosTfPublisher {
   explicit DrakeRosTfPublisher(
       const std::shared_ptr<RigidBodyTree> rigid_body_tree)
       : rigid_body_tree_(rigid_body_tree), enable_tf_publisher_(true) {
-
     // Queries the ROS parameter server for a boolean parameter in
     // "/drake/enable_tf_publisher". This parameter is used to control whether
     // this class publishes /tf messages.
     {
       int num_get_attempts = 0;
       bool continue_query = true;
-      while (continue_query && !::ros::param::get("/drake/enable_tf_publisher",
-          enable_tf_publisher_)) {
+      while (continue_query &&
+             !::ros::param::get("/drake/enable_tf_publisher",
+                                enable_tf_publisher_)) {
         if (++num_get_attempts > 10) {
-          ROS_WARN("Failed to get parameter /drake/enable_tf_publisher. "
-                   "Assuming publisher is enabled.");
+          ROS_WARN(
+              "Failed to get parameter /drake/enable_tf_publisher. "
+              "Assuming publisher is enabled.");
           continue_query = false;
         }
       }
 
-      if (enable_tf_publisher_)
-        std::cout << "Enabling TF publisher!" << std::endl;
-      else
-        std::cout << "Disabling TF publisher!" << std::endl;
+      if (enable_tf_publisher_) {
+        ROS_INFO("Enabling TF publisher!");
+      } else {
+        ROS_INFO("Disabling TF publisher!");
+      }
     }
 
     // Initializes the time stamp of the previous transmission to be zero.
@@ -88,8 +89,7 @@ class DrakeRosTfPublisher {
 
     // Instantiates a geometry_msgs::TransformStamped message for each rigid
     // body in the rigid body tree.
-    for (auto &rigid_body : rigid_body_tree->bodies) {
-
+    for (auto const& rigid_body : rigid_body_tree->bodies) {
       // Skips the current rigid body if it should be skipped.
       if (!PublishTfForRigidBody(rigid_body.get())) continue;
 
@@ -112,7 +112,7 @@ class DrakeRosTfPublisher {
       message->child_frame_id = rigid_body->name();
 
       // Obtains the current link's joint.
-      const DrakeJoint &joint = rigid_body->getJoint();
+      const DrakeJoint& joint = rigid_body->getJoint();
 
       // Initializes the transformation if the joint is fixed.
       // We can do this now since it will not change over time.
@@ -135,7 +135,7 @@ class DrakeRosTfPublisher {
 
     // Instantiates a geometry_msgs::TransformStamped message for each frame
     // in the rigid body tree.
-    for (auto &frame : rigid_body_tree->frames) {
+    for (auto const& frame : rigid_body_tree->frames) {
       std::string key = frame->body->model_name() + frame->name;
 
       // Checks whether a transform message for the current frame was already
@@ -173,13 +173,13 @@ class DrakeRosTfPublisher {
     }
   }
 
-  StateVector<double> dynamics(const double &t, const StateVector<double> &x,
-                               const InputVector<double> &u) const {
+  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
+                               const InputVector<double>& u) const {
     return StateVector<double>();
   }
 
-  OutputVector<double> output(const double &t, const StateVector<double> &x,
-                              const InputVector<double> &u) {
+  OutputVector<double> output(const double& t, const StateVector<double>& x,
+                              const InputVector<double>& u) {
     // Aborts if insufficient time has passed since the last transmission. This
     // is to avoid flooding the ROS topics.
     ::ros::Time current_time = ::ros::Time::now();
@@ -200,7 +200,6 @@ class DrakeRosTfPublisher {
 
     // Publishes the transform for each rigid body in the rigid body tree.
     for (auto const& rigid_body : rigid_body_tree_->bodies) {
-
       // Skips the current rigid body if it should be skipped.
       if (!PublishTfForRigidBody(rigid_body.get())) continue;
 
@@ -218,10 +217,10 @@ class DrakeRosTfPublisher {
 
       // Obtains a pointer to the geometry_msgs::TransformStamped message for
       // the current link.
-      geometry_msgs::TransformStamped *message = message_in_map->second.get();
+      geometry_msgs::TransformStamped* message = message_in_map->second.get();
 
       // Obtains the current link's joint.
-      const DrakeJoint &joint = rigid_body->getJoint();
+      const DrakeJoint& joint = rigid_body->getJoint();
 
       // Updates the transform only if the joint is not fixed.
       if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
@@ -249,7 +248,7 @@ class DrakeRosTfPublisher {
     }
 
     // Publishes the transform for each frame in the rigid body tree.
-    for (auto &frame : rigid_body_tree_->frames) {
+    for (auto const& frame : rigid_body_tree_->frames) {
       std::string key = frame->body->model_name() + frame->name;
 
       // Verifies that a geometry_msgs::TransformStamped message for the current
@@ -263,7 +262,7 @@ class DrakeRosTfPublisher {
 
       // Obtains a pointer to the geometry_msgs::TransformStamped message for
       // the current link.
-      geometry_msgs::TransformStamped *message = message_in_map->second.get();
+      geometry_msgs::TransformStamped* message = message_in_map->second.get();
 
       // Updates the message with the latest time stamp. There's no need to
       // update anything else since frames do not move relative to their
@@ -281,7 +280,6 @@ class DrakeRosTfPublisher {
   bool isDirectFeedthrough() const { return true; }
 
  private:
-
   // Determines whether a transform should be published for the specified
   // rigid body. A rigid body should be skipped if it is the world link or if
   // it is connected to the world via a fixed joint.

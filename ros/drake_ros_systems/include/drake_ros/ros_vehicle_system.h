@@ -49,9 +49,8 @@ class ROSAckermannCommandReceiverSystem {
   using InputVector = NullVector<ScalarType>;
   template <typename ScalarType>
   using OutputVector = Vector<ScalarType>;
-  // static const bool has_lcm_input = true;
 
-  explicit ROSAckermannCommandReceiverSystem() : spinner_(1) {
+  ROSAckermannCommandReceiverSystem() : spinner_(1) {
     ::ros::NodeHandle nh;
 
     // Instantiates a ROS topic subscriber that receives vehicle driving
@@ -61,9 +60,6 @@ class ROSAckermannCommandReceiverSystem {
                      &ROSAckermannCommandReceiverSystem::commandCallback, this);
 
     // Instantiates a child thread for receiving ROS messages.
-    // See:
-    // http://wiki.ros.org/roscpp/Overview/Callbacks%20and%20Spinning#Multi-threaded_Spinning
-    // ros::AsyncSpinner spinner(1); // Use 1 thread
     spinner_.start();
   }
 
