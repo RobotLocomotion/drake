@@ -1,8 +1,9 @@
+#include "drake/solvers/gurobi_solver.h"
+
 #include <typeinfo>
 
 #include "gtest/gtest.h"
 
-#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -21,7 +22,7 @@ void RunQuadraticProgram(OptimizationProblem& prog,
                          std::function<void(void)> test_func) {
   GurobiSolver gurobi_solver;
 
-  // tests wont fail with absence of Gurobi
+  // Tests won't fail with absence of Gurobi.
   if (gurobi_solver.available()) {
     SolutionResult result = SolutionResult::kUnknownError;
     ASSERT_NO_THROW(result = gurobi_solver.Solve(prog));
