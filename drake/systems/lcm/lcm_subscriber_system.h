@@ -29,7 +29,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
    * @param[in] channel The LCM channel on which to subscribe.
    *
    * @param[in] translator A reference to the translator that converts between
-   * LCM message objects and `drake::systems::VectorInterface` objects.
+   * LCM message objects and `drake::systems::VectorInterface` objects. This
+   * reference must remain valid for the lifetime of this `LcmSubscriberSystem`
+   * object.
    *
    * @param[in] lcm A pointer to the LCM subsystem. This pointer must not be
    * null and must be valid during the construction of this
