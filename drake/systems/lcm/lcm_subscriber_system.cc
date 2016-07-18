@@ -13,7 +13,7 @@ using std::make_unique;
 
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
-    const LcmAndVectorInterfaceTranslator* const translator,
+    const LcmAndVectorInterfaceTranslator* translator,
     ::lcm::LCM* lcm)
     : channel_(channel),
       translator_(translator),

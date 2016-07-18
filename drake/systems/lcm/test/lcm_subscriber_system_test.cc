@@ -74,9 +74,8 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   const std::string channel_name =
       "drake_system2_lcm_test_subscriber_channel_name";
 
-  // Instantiates a LCM-System 2.0 Vector translator.
-  std::unique_ptr<const LcmAndVectorInterfaceTranslator> translator(
-      new TranslatorBetweenLcmtDrakeSignal(kDim));
+  // Instantiates a LCM-VectorInterface translator.
+  const TranslatorBetweenLcmtDrakeSignal translator(kDim);
 
   // Instantiates an LcmSubscriberSystem that receives LCM messages of type
   // drake::lcmt_drake_signal and outputs System 2.0 Vectors of type
@@ -86,7 +85,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // in a unique_ptr. The unique_ptr variable is called "dut" to indicate it is
   // the "device under test".
   std::unique_ptr<LcmSubscriberSystem> dut(
-      new LcmSubscriberSystem(channel_name, translator.get(), &lcm));
+      new LcmSubscriberSystem(channel_name, &translator, &lcm));
 
   EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem::" + channel_name);
 

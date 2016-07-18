@@ -37,7 +37,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
    * `LcmSubscriberSystem`.
    */
   LcmSubscriberSystem(const std::string& channel,
-                      const LcmAndVectorInterfaceTranslator* const translator,
+                      const LcmAndVectorInterfaceTranslator* translator,
                       ::lcm::LCM* lcm);
 
   ~LcmSubscriberSystem() override;
