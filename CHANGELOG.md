@@ -42,6 +42,7 @@ Unreleased: changes on master, not yet released
  - [#2102][] Macports and Cygwin are no longer supported.
  - [#2067][] `core/Core.h` is removed.
  - [#2039][] Ubuntu 12.04 Trusty is no longer supported.
+ - [#2809][] Building the Drake superbuild as a POD is no longer natively supported. Use https://sourceforge.net/p/pods/svn/HEAD/tree/Makefile if you require this functionality.
 
 [//]: # "Smaller bug fixes.  No API changes."
 ### Fixes
