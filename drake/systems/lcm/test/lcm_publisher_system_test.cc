@@ -7,7 +7,7 @@
 #include "drake/common/memory_buffer_utils.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/translator_lcmt_drake_signal.h"
+#include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
 #include "drake/lcmt_drake_signal.hpp"
 
 namespace drake {
@@ -20,7 +20,8 @@ const int kPortNumber = 0;
 const int64_t kTimestamp = 123456;
 
 /**
- * Subscribes to LCM messages of type `drake::lcmt_drake_signal`.
+ * Subscribes to LCM messages of type `drake::lcmt_drake_signal`. Provides an
+ * accessor to the latest message received.
  */
 class MessageSubscriber {
  public:
@@ -71,7 +72,7 @@ GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
   ::lcm::LCM lcm;
   LcmReceiveThread lcm_receive_thread(&lcm);
   std::string channel_name = "drake_system2_lcm_test_publisher_channel_name";
-  TranslatorLcmtDrakeSignal translator(kDim);
+  TranslatorBetweenLcmtDrakeSignal translator(kDim);
 
   // Instantiates an LcmPublisherSystem that takes as input System 2.0 Vectors
   // of type drake::systems::BasicVector and publishes LCM messages of type

@@ -12,11 +12,12 @@ namespace lcm {
 using std::make_unique;
 
 LcmSubscriberSystem::LcmSubscriberSystem(
-    const std::string& channel, const LcmVectorInterfaceTranslator& translator,
+    const std::string& channel,
+    const LcmAndVectorInterfaceTranslator& translator,
     ::lcm::LCM* lcm)
     : channel_(channel),
       translator_(translator),
-      basic_vector_(translator.get_vector_size()) {
+      basic_vector_(translator_.get_vector_size()) {
   DRAKE_ABORT_UNLESS(lcm);
   // Initializes the communication layer.
   ::lcm::Subscription* sub = lcm->subscribe(channel_,

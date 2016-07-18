@@ -6,7 +6,7 @@
 
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/lcm/translator_lcmt_drake_signal.h"
+#include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
 #include "drake/lcmt_drake_signal.hpp"
 
 namespace drake {
@@ -74,8 +74,8 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   const std::string channel_name =
       "drake_system2_lcm_test_subscriber_channel_name";
 
-  // Instantiates a LCM-System 2.0 Vector translator.
-  TranslatorLcmtDrakeSignal translator(kDim);
+  // Instantiates a LCM-VectorInterface translator.
+  const TranslatorBetweenLcmtDrakeSignal translator(kDim);
 
   // Instantiates an LcmSubscriberSystem that receives LCM messages of type
   // drake::lcmt_drake_signal and outputs System 2.0 Vectors of type

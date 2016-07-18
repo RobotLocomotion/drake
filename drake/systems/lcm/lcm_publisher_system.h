@@ -12,7 +12,7 @@
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/system_interface.h"
 #include "drake/systems/framework/vector_interface.h"
-#include "drake/systems/lcm/lcm_vector_interface_translator.h"
+#include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 
 namespace drake {
@@ -37,8 +37,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
    * @param[in] lcm A pointer to the LCM subsystem.
    */
   LcmPublisherSystem(const std::string& channel,
-                      const LcmVectorInterfaceTranslator& translator,
-                      ::lcm::LCM* lcm);
+                     const LcmAndVectorInterfaceTranslator& translator,
+                     ::lcm::LCM* lcm);
 
   ~LcmPublisherSystem() override;
 
@@ -81,7 +81,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
 
   // The translator that converts between LCM messages and
   // drake::systems::BasicVector.
-  const LcmVectorInterfaceTranslator& translator_;
+  const LcmAndVectorInterfaceTranslator& translator_;
 
   // A pointer to the LCM subsystem.
   ::lcm::LCM* lcm_;

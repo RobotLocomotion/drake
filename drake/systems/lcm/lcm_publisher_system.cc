@@ -16,7 +16,7 @@ namespace systems {
 namespace lcm {
 
 LcmPublisherSystem::LcmPublisherSystem(const std::string& channel,
-                      const LcmVectorInterfaceTranslator& translator,
+                      const LcmAndVectorInterfaceTranslator& translator,
                       ::lcm::LCM* lcm)
     : channel_(channel),
       translator_(translator),
