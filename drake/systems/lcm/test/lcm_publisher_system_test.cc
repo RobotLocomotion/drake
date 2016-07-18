@@ -1,5 +1,6 @@
 #include <atomic>
 #include <chrono>
+#include <mutex>
 #include <thread>
 
 #include "gtest/gtest.h"

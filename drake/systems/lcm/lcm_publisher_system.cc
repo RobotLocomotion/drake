@@ -1,14 +1,5 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 
-#include <iostream>
-
-#if defined(_WIN32)
-#include <Winsock2.h>
-#else
-#include <sys/select.h>
-#endif
-
-#include "drake/common/memory_buffer_utils.h"
 #include "drake/systems/framework/system_input.h"
 
 namespace drake {

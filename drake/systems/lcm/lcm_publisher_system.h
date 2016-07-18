@@ -1,7 +1,5 @@
 #pragma once
 
-#include <mutex>
-
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
@@ -80,10 +78,6 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
 
   // A pointer to the LCM subsystem.
   ::lcm::LCM* lcm_;
-
-  // A mutex for protecting data that's shared by the LCM receive thread and
-  // the thread that calls LcmPublisherSystem::Output().
-  mutable std::mutex data_mutex;
 
   // Holds the information contained with the latest LCM message. This
   // information is copied into this system's output port when Output(...) is
