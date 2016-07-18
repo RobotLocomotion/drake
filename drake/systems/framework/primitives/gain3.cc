@@ -13,8 +13,8 @@ namespace systems {
 template <typename T>
 Gain3<T>::Gain3(const std::string& name, const T& gain, int length)
     : System3<T>(name), gain_(gain), length_(length) {
-  AddInputPort(std::make_unique<VectorInputPort3<T>>(length));
-  AddOutputPort(std::make_unique<VectorOutputPort3<T>>(length));
+  this->AddInputPort(std::make_unique<VectorInputPort3<T>>(length));
+  this->AddOutputPort(std::make_unique<VectorOutputPort3<T>>(length));
 
   // No state variables. No parameters. No interest in time.
 }
@@ -44,7 +44,7 @@ void Gain3<T>::DoCalcOutputPort(const AbstractContext3& abstract_context,
   }
 
   output_vector->get_mutable_value() =
-      gain_ * EvalVectorInputPort(context, 0).get_value();
+      gain_ * this->EvalVectorInputPort(context, 0).get_value();
 }
 
 template class Gain3<double>;

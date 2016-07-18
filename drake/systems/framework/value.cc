@@ -3,4 +3,11 @@
 
 #include "drake/systems/framework/value.h"
 
-template drake::systems::Value<double>;
+namespace drake {
+namespace systems {
+
+template class Value<double>;
+
+} // namespace systems
+} // namespace drake
+

@@ -14,9 +14,9 @@ template <typename T>
 Adder3<T>::Adder3(const std::string& name, int num_inputs, int length)
     : System3<T>(name), num_inputs_(num_inputs), length_(length) {
   for (int i = 0; i < num_inputs; ++i)
-    AddInputPort(std::make_unique<VectorInputPort3<T>>(length));
+    this->AddInputPort(std::make_unique<VectorInputPort3<T>>(length));
 
-  AddOutputPort(std::make_unique<VectorOutputPort3<T>>(length));
+  this->AddOutputPort(std::make_unique<VectorOutputPort3<T>>(length));
 
   // No state variables. No parameters. No interest in time.
 }
@@ -49,7 +49,7 @@ void Adder3<T>::DoCalcOutputPort(const AbstractContext3& abstract_context,
   // Sum each input port into the output.
   for (int i = 0; i < context.get_num_input_ports(); i++)
     output_vector->get_mutable_value() +=
-        EvalVectorInputPort(context, i).get_value();
+        this->EvalVectorInputPort(context, i).get_value();
 }
 
 template class Adder3<double>;

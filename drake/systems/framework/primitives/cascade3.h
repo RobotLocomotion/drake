@@ -28,7 +28,7 @@ class Cascade3 : public Diagram3<T> {
   @throws std::logic_error Number of output and input ports didn't match. **/
   Cascade3(const std::string& name, std::unique_ptr<System3<T>> first,
            std::unique_ptr<System3<T>> second)
-      : Diagram3(name) {
+      : Diagram3<T>(name) {
     if (!first || !second)
       throw std::logic_error("Cascade: empty Systems not allowed.");
 
@@ -42,22 +42,22 @@ class Cascade3 : public Diagram3<T> {
           + std::to_string(in2) + " input ports. They must match.");
     }
 
-    auto first_system = AddSubsystem(std::move(first));
-    auto second_system = AddSubsystem(std::move(second));
+    auto first_system = this->AddSubsystem(std::move(first));
+    auto second_system = this->AddSubsystem(std::move(second));
 
     // Input port numbers for Cascade match first system's.
     for (int port = 0; port < first_system->get_num_input_ports(); ++port) {
-      const int port_num = InheritInputPort(first_system, port);
+      const int port_num = this->InheritInputPort(first_system, port);
       DRAKE_ABORT_UNLESS(port_num == port);
     }
 
     // Connect up the interior ports.
     for (int port = 0; port < out1; ++port)
-      Connect(first_system, port, second_system, port);
+      this->Connect(first_system, port, second_system, port);
 
     // Output port numbers for Cascade match second system's.
     for (int port = 0; port < second_system->get_num_output_ports(); ++port) {
-      const int port_num = InheritOutputPort(second_system, port);
+      const int port_num = this->InheritOutputPort(second_system, port);
       DRAKE_ABORT_UNLESS(port_num == port);
     }
   }

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/drakeSystemFramework_export.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_listener3.h"
 #include "drake/systems/framework/vector_interface.h"
@@ -66,7 +67,6 @@ class OutputPort3 {
     return std::pair<const AbstractSystem3*, int>(system_, output_port_num_);
   }
 
-
  private:
   // OutputPort3 objects are neither copyable nor moveable.
   OutputPort3(const OutputPort3& other) = delete;
@@ -123,7 +123,8 @@ class VectorOutputPort3 : public OutputPort3 {
   /** Returns the model value of this port as a const reference to
   `VectorInterface<T>`. **/
   const VectorInterface<T>& get_model_vector() const {
-    const auto& vector_object = get_model_value().GetValue<VectorObject<T>>();
+    const auto& vector_object =
+        get_model_value().template GetValue<VectorObject<T>>();
     return vector_object.get_vector();
   }
 
@@ -131,7 +132,7 @@ class VectorOutputPort3 : public OutputPort3 {
   `VectorInterface<T>`. **/
   VectorInterface<T>* get_mutable_model_vector() {
     auto vector_object =
-        get_mutable_model_value()->GetMutableValue<VectorObject<T>>();
+        get_mutable_model_value()->template GetMutableValue<VectorObject<T>>();
     return vector_object->get_mutable_vector();
   }
 

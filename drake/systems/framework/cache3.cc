@@ -3,5 +3,12 @@
 
 #include "drake/systems/framework/cache.h"
 
+namespace drake {
+namespace systems {
+
 // Instantiate to get a compile-time check.
-template drake::systems::Cache<double>;
+template class Cache<double>;
+
+} // namespace systems
+} // namespace drake
+

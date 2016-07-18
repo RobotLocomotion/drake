@@ -93,7 +93,8 @@ const AbstractSystem3& AbstractContext3::find_my_subsystem(
   return my_subsystem;
 }
 
+template class Context3<double>;
+
 }  // namespace systems
 }  // namespace drake
 
-template drake::systems::Context3<double>;

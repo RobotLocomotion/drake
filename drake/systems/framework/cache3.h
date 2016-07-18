@@ -55,7 +55,7 @@ class CacheEntry : public ValueListenerInterface {
   of the source in the destination. The source is left empty and not current.
   **/
   CacheEntry(CacheEntry&& source) noexcept
-      : is_current_(source.is_current_), value_(std::move(source.value_)) {
+      : value_(std::move(source.value_)), is_current_(source.is_current_) {
     source.set_is_current(false);
   }
 

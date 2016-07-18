@@ -27,7 +27,7 @@ class VectorConstant3 : public System3<T> {
       : System3<T>(name) {
     // Provide this as the "model value" for the output port.
     auto port = std::make_unique<VectorOutputPort3<T>>(std::move(value));
-    AddOutputPort(std::move(port));
+    this->AddOutputPort(std::move(port));
   }
 
   /** Given an Eigen vector value, create a BasicVector containing that
@@ -61,7 +61,7 @@ class VectorConstant3 : public System3<T> {
   // Calculation consists just of copying the model value to the output.
   void DoCalcOutputPort(const AbstractContext3& /*context*/,
                         int port_num, AbstractValue* result) const override {
-    *result = get_output_port(port_num).get_model_value();
+    *result = this->get_output_port(port_num).get_model_value();
   }
 };
 

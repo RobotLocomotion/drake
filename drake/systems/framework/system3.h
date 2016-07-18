@@ -170,7 +170,7 @@ class AbstractSystem3 {
   //----------------------------------------------------------------------------
   /** @name                System diagram methods
 
-  These methods are useful for any System that contains subsystems.
+  These methods are useful for any System that contains subsystems. **/
   /**@{**/
 
   /** Takes ownership of the given System and returns an unowned, raw pointer to
