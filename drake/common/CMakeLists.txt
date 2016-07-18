@@ -5,7 +5,6 @@
 # List all source files used to build libdrakeCommon.
 set(sources
   drake_assert.cc
-  memory_buffer_utils.cc
   nice_type_name.cc
   )
 
@@ -15,7 +14,6 @@ set(installed_headers
   drake_assert.h
   drake_deprecated.h
   eigen_types.h
-  memory_buffer_utils.h
   nice_type_name.h
   )
 

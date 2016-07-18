@@ -5,11 +5,11 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/common/memory_buffer_utils.h"
+#include "drake/lcmt_drake_signal.hpp"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
-#include "drake/lcmt_drake_signal.hpp"
+
 
 namespace drake {
 namespace systems {

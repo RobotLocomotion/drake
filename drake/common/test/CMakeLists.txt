@@ -104,7 +104,3 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     drake_deprecated_test_nocompile
     PROPERTIES WILL_FAIL TRUE)
 endif()
-
-add_executable(memory_buffer_utils_test memory_buffer_utils_test.cc)
-target_link_libraries(memory_buffer_utils_test drakeCommon ${GTEST_BOTH_LIBRARIES})
-add_test(NAME memory_buffer_utils_test COMMAND memory_buffer_utils_test)
