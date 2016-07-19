@@ -36,20 +36,14 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   */
   DirectTrajectoryOptimization(const int num_inputs, const int num_states,
                                const int num_time_samples,
-                               const int trajectory_time_lower_bound,
-                               const int trajectory_time_upper_bound);
+                               const double trajectory_time_lower_bound,
+                               const double trajectory_time_upper_bound);
   // TODO(Lucy-tri) add param: time steps constant or independent.
 
   /**
    * Add constraint (or composite constraint) that is a function of the
    * state at the specified time or times.
    * @p constraint A CompositeConstraint.
-   * @p time_index A cell array of time indices.
-   *   ex1., time_index = {1, 2, 3} means the constraint is applied
-   *   individually to knot points 1, 2, and 3. 
-   *   ex2,. time_index = {{1 2}, {3 4}} means the constraint is applied to knot
-   *   points 1 and 2 together (taking the combined state as an argument)
-   *   and 3 and 4 together.
    */
   void AddStateConstraint(const Constraint& constraint, const int time_index);
 
@@ -62,7 +56,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    *
    * @p traj_init_x Initial guess for trajectory for state input.
    */
-  SolutionResult SolveTraj(int t_init,
+  SolutionResult SolveTraj(double t_init,
                            const PiecewisePolynomial<double>& traj_init_u,
                            const PiecewisePolynomial<double>& traj_init_x);
 

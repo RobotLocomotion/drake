@@ -5,7 +5,6 @@
 #include "drake/util/Polynomial.h"
 #include <vector>
 #include <random>
-#include <limits>
 #include "drake/drakeTrajectories_export.h"
 
 /// A scalar multi-variate piecewise polynomial.
