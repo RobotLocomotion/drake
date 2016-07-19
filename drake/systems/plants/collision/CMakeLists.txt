@@ -1,3 +1,9 @@
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # TODO(#2372) These are warnings that we can't handle yet.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+endif()
+
 set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp Model.cpp)
 pods_find_pkg_config(bullet)
 

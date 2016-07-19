@@ -45,7 +45,7 @@ template <typename T>
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
   finite_indexes.clear();
   const size_t n = v.size();
-  for (int x = 0; x < n; x++) {
+  for (size_t x = 0; x < n; x++) {
     if (std::isfinite(static_cast<double>(v[x]))) {
       finite_indexes.push_back(x);
     }
@@ -488,13 +488,11 @@ bool RigidBodyTree::collisionDetect(
     vector<int>& bodyB_idx, const vector<int>& bodies_idx,
     const set<string>& active_element_groups, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
-  for (auto body_idx_iter = bodies_idx.begin();
-       body_idx_iter != bodies_idx.end(); ++body_idx_iter) {
-    if (*body_idx_iter >= 0 && *body_idx_iter < bodies.size()) {
-      for (auto group_iter = active_element_groups.begin();
-           group_iter != active_element_groups.end(); ++group_iter) {
-        bodies[*body_idx_iter]->appendCollisionElementIdsFromThisBody(
-            *group_iter, ids_to_check);
+  for (const int& body_idx : bodies_idx) {
+    if (body_idx >= 0 && body_idx < static_cast<int>(bodies.size())) {
+      for (const string& group : active_element_groups) {
+        bodies[body_idx]->appendCollisionElementIdsFromThisBody(
+            group, ids_to_check);
       }
     }
   }
@@ -507,11 +505,9 @@ bool RigidBodyTree::collisionDetect(
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     vector<int>& bodyB_idx, const vector<int>& bodies_idx, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
-  for (auto body_idx_iter = bodies_idx.begin();
-       body_idx_iter != bodies_idx.end(); ++body_idx_iter) {
-    if (*body_idx_iter >= 0 && *body_idx_iter < bodies.size()) {
-      bodies[*body_idx_iter]->appendCollisionElementIdsFromThisBody(
-          ids_to_check);
+  for (const int& body_idx : bodies_idx) {
+    if (body_idx >= 0 && body_idx < static_cast<int>(bodies.size())) {
+      bodies[body_idx]->appendCollisionElementIdsFromThisBody(ids_to_check);
     }
   }
   return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx,
@@ -788,7 +784,7 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
                                       "updateCompositeRigidBodyInertias");
 
   if (!cache.areInertiasCached()) {
-    for (int i = 0; i < bodies.size(); i++) {
+    for (size_t i = 0; i < bodies.size(); i++) {
       auto& element = cache.getElement(*bodies[i]);
       element.inertia_in_world = transformSpatialInertia(
           element.transform_to_world, bodies[i]->I.cast<Scalar>());
@@ -819,7 +815,7 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
   TwistMatrix<Scalar> ret(kTwistSize, ncols);
   ret.setZero();
   int gradient_row_start = 0;
-  for (int i = 0; i < bodies.size(); i++) {
+  for (size_t i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
 
     if (body.hasParent()) {
@@ -856,7 +852,7 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
 
   TwistVector<Scalar> ret;
   ret.setZero();
-  for (int i = 0; i < bodies.size(); i++) {
+  for (size_t i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
       if (isBodyPartOfRobot(body, robotnum)) {
@@ -1032,7 +1028,7 @@ int RigidBodyTree::parseBodyOrFrameID(
   } else if (body_or_frame_id < 0) {
     int frame_ind = -body_or_frame_id - 2;
     // check that this is in range
-    if (frame_ind >= frames.size()) {
+    if (frame_ind >= static_cast<int>(frames.size())) {
       std::ostringstream stream;
       stream << "Got a frame ind greater than available!\n";
       throw std::runtime_error(stream.str());

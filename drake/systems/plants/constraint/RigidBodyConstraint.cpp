@@ -312,7 +312,7 @@ int MultipleTimeLinearPostureConstraint::numValidTime(
 void MultipleTimeLinearPostureConstraint::validTimeInd(
     const std::vector<bool>& valid_flag, VectorXi& valid_t_ind) const {
   valid_t_ind.resize(0);
-  for (int i = 0; i < valid_flag.size(); i++) {
+  for (size_t i = 0; i < valid_flag.size(); i++) {
     if (valid_flag.at(i)) {
       valid_t_ind.conservativeResize(valid_t_ind.size() + 1);
       valid_t_ind(valid_t_ind.size() - 1) = i;
@@ -363,7 +363,7 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
     std::pair<int, int> ind_pair(iAfun(i), jAvar(i));
     mat_ind_set.insert(ind_pair);
   }
-  if (mat_ind_set.size() != lenA) {
+  if (static_cast<int>(mat_ind_set.size()) != lenA) {
     throw std::runtime_error(
         "SingleTimeLinearPostureConstraint: "
         "The pair (iAfun(i), jAvar(i)) is not unique");
@@ -2020,7 +2020,7 @@ void MinDistanceConstraint::eval(const double* t,
         orig_idx_of_pt_on_bodyB.at(idxB.at(k)).push_back(k);
       }
     }
-    for (int k = 0; k < getRobotPointer()->bodies.size(); ++k) {
+    for (int k = 0; k < static_cast<int>(getRobotPointer()->bodies.size()); ++k) {
       // DEBUG
       // std::cout << "MinDistanceConstraint::eval: Second loop: " << k <<
       // std::endl;
