@@ -116,9 +116,19 @@ the command below can also be added to the ``~/.bashrc`` file::
     export CC=gcc-4.9 CXX=g++-4.9 FC=gfortran-4.9 F77=gfortran-4.9
 
 Alternatively, every call to ``make`` or ``cmake`` can be preceded with
-environment variable settings that specify the correct compiler::
+environment variable settings that specify the correct compiler. For example::
 
     env CC=gcc-4.9 CXX=g++-4.9 FC=gfortran-4.9 F77=gfortran-4.9 make ...
+
+The above examples result in the use of ``gcc`` as the compiler. If you want to
+use ``clang`` as the compiler, place the following in your ``~/.bashrc`` file::
+
+    export CC=clang-3.7 CXX=clang++-3.7 FC=gfortran-4.9 F77=gfortran-4.9
+
+Or precede every call to ``make`` or ``cmake`` with compiler specifications.
+For example::
+
+    env CC=clang-3.7 CXX=clang++-3.7 FC=gfortran-4.9 F77=gfortran-4.9 make ...
 
 CMake Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
