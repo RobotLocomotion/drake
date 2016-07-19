@@ -65,7 +65,6 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateAndSendVectorInterfaceToLCM(
 
   for (int ii = 0; ii < message.dim; ++ii) {
     message.val[ii] = values[ii];
-    message.coord[ii] = "Coord_" + std::to_string(ii);
   }
 
   lcm->publish(channel, &message);

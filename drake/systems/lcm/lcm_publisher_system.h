@@ -25,7 +25,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
    * @param[in] channel The LCM channel on which to publish.
    *
    * @param[in] translator The translator that converts between LCM message
-   * objects and `drake::systems::VectorInterface` objects.
+   * objects and `drake::systems::VectorInterface` objects. This reference
+   * is aliased by this constructor and thus must remain valid for the lifetime
+   * of this object.
    *
    * @param[in] lcm A pointer to the LCM subsystem.
    */
@@ -48,7 +50,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
   std::unique_ptr<Context<double>> CreateDefaultContext() const override;
 
   /**
-   * The output consists of a single port containing a `BasicVector<double>`.
+   * The output contains zero ports.
    */
   std::unique_ptr<SystemOutput<double>> AllocateOutput() const override;
 
@@ -61,14 +63,11 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
                   SystemOutput<double>* output) const override;
 
  private:
-  const int kNumInputPorts = 1;
-  const int kPortIndex = 0;
-
   // The channel on which to publish LCM messages.
   const std::string channel_;
 
   // The translator that converts between LCM messages and
-  // drake::systems::BasicVector objects.
+  // drake::systems::VectorInterface objects.
   const LcmAndVectorInterfaceTranslator& translator_;
 
   // A pointer to the LCM subsystem.

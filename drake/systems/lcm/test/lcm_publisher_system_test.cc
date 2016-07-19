@@ -10,7 +10,6 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
 
-
 namespace drake {
 namespace systems {
 namespace lcm {
@@ -25,11 +24,11 @@ const int kPortNumber = 0;
  */
 class MessageSubscriber {
  public:
-  MessageSubscriber(const std::string& channel_name, ::lcm::LCM* lcm) :
-      channel_name_(channel_name) {
+  MessageSubscriber(const std::string& channel_name, ::lcm::LCM* lcm)
+      : channel_name_(channel_name) {
     // Sets up the LCM message subscriber.
-    ::lcm::Subscription* sub = lcm->subscribe(
-      channel_name, &MessageSubscriber::HandleMessage, this);
+    ::lcm::Subscription* sub =
+        lcm->subscribe(channel_name, &MessageSubscriber::HandleMessage, this);
     sub->setQueueCapacity(1);
 
     // Initializes the fields of member variable received_message_ so that the
@@ -43,20 +42,22 @@ class MessageSubscriber {
   drake::lcmt_drake_signal GetReceivedMessage() {
     drake::lcmt_drake_signal message_copy;
 
-    message_mutex_.lock();
+    std::lock_guard<std::mutex> lock(message_mutex_);
     message_copy = received_message_;
-    message_mutex_.unlock();
 
     return message_copy;
   }
 
  private:
-  void HandleMessage(const ::lcm::ReceiveBuffer *rbuf,
-                     const std::string &channel_name) {
+  void HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
+                     const std::string& channel_name) {
     if (channel_name_ == channel_name) {
-      message_mutex_.lock();
+      std::lock_guard<std::mutex> lock(message_mutex_);
+      // Note: The call to decode() below returns the number of bytes decoded
+      // or a negative value indicating an error occurred. This error is
+      // ignored since the unit test below includes logic that checks every
+      // value within the received message for correctness.
       received_message_.decode(rbuf->data, 0, rbuf->data_size);
-      message_mutex_.unlock();
     }
   }
 
@@ -98,7 +99,7 @@ GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
   // Instantiates a BasicVector with known state. This is the basic vector that
   // we want the LcmPublisherSystem to publish as a drake::lcmt_drake_signal
   // message.
-  std::unique_ptr<BasicVector<double>> basic_vector(
+  std::unique_ptr<VectorInterface<double>> vector_interface(
       new BasicVector<double>(kDim));
 
   {
@@ -107,13 +108,15 @@ GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
     for (int ii = 0; ii < kDim; ++ii) {
       vector_value[ii] = ii;
     }
-    basic_vector->set_value(vector_value);
+    vector_interface->set_value(vector_value);
   }
 
   // Sets the value in the context's input port to be the above-defined
-  // BasicVector.
+  // VectorInterface. Note that we need to overwrite the original input port
+  // created by the LcmPublisherSystem since we do not have write access to its
+  // input vector.
   std::unique_ptr<InputPort<double>> input_port(
-    new FreestandingInputPort<double>(std::move(basic_vector)));
+      new FreestandingInputPort<double>(std::move(vector_interface)));
 
   context->SetInputPort(kPortNumber, std::move(input_port));
 
@@ -143,13 +146,12 @@ GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
       bool values_match = true;
 
       for (int ii = 0; ii < kDim && values_match; ++ii) {
-        if (received_message.val[ii] != ii)
-          values_match = false;
+        if (received_message.val[ii] != ii) values_match = false;
       }
 
-      // At this point, the received message contains the expected values, which
-      // implies that LcmPublisherSystem successfully published the BasicVector
-      // as a drake::lcmt_drake_signal message.
+      // At this point, if values_match is true, the received message contains
+      // the expected values, which implies that LcmPublisherSystem successfully
+      // published the VectorInterface as a drake::lcmt_drake_signal message.
       //
       // We cannot check whether the following member variables of
       // drake::lcmt_drake_signal message was successfully transferred because
