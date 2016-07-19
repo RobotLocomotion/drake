@@ -11,6 +11,7 @@ set(sources
 # List headers that should be installed with Drake so that they
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
+  constants.h
   drake_assert.h
   drake_deprecated.h
   eigen_types.h

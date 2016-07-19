@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<launch>
+  <include file="$(find drake_cars_examples)/launch/rviz_prius.launch" />
+
+  <node name="drake_car_sim" pkg="drake_cars_examples"
+    type="car_sim_lcm_and_ros" output="screen"
+    args="$(find drake)/drake/examples/Cars/models/prius/prius_with_lidar.sdf $(find drake)/drake/examples/Cars/models/stata_garage_p1.sdf"/>
+
+</launch>

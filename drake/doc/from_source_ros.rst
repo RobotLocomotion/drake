@@ -54,7 +54,7 @@ customized with a different workspace name and location.
 
 If you already have a ROS Catkin workspace and simply want to add Drake as a
 package within it, you can skip this step and go straight to
-:ref:`_drake_catkin_add_repos`.
+:ref:`drake_catkin_add_repos`.
 
 Execute the following commands to create a directory structure for holding the
 ROS workspace::
@@ -63,16 +63,18 @@ ROS workspace::
 
 .. _drake_catkin_add_repos:
 
-Step 2: Add Clones of ``drake`` and ``drake_ros_integration`` to the Workspace
-==============================================================================
+Step 2: Add ``drake`` and ``drake_ros_integration`` to the Workspace
+====================================================================
 
-Add local clones of the ``drake`` and ``drake_ros_integration`` repositories
-to your workspace::
+Add ``drake`` and ``drake_ros_integration`` to the workspace::
 
     cd ~/dev/drake_catkin_workspace/src
     git clone git@github.com:RobotLocomotion/drake.git
-    git clone git@github.com:liangfok/drake_ros_integration.git
+    ln -s drake/ros drake_ros_integration
 
+Note that ``drake_ros_integration`` is a symbolic link. This allows us to keep
+everything in Drake's main repository without needing to completely reorganize
+the files in it.
 
 .. _drake_catkin_build_workspace:
 
@@ -84,11 +86,13 @@ Execute the following commands to build the workspace::
     cd ~/dev/drake_catkin_workspace
     source /opt/ros/indigo/setup.bash
     catkin init
-    catkin build
+    catkin build -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
 
 There are numerous optional flags that can be included after the ``catkin build``
-command listed above. For example, one flag is ``-DDISABLE_MATLAB=TRUE``, which
-disables MATLAB support, which may be useful if you have MATLAB installed but
+command listed above. The example above includes the build type flag that
+specifies the build should be ``RelWithDebInfo``. Alternative include
+``Release`` and ``Debug``. Another flag is ``-DDISABLE_MATLAB=TRUE``, which
+disables MATLAB support. This may be useful if you have MATLAB installed but
 don't have access to a license server. There are many additional command line
 flags that, for example, enables support for certain optimizers like
 `SNOPT <http://www.sbsi-sol-optimize.com/asp/sol_product_snopt.htm>`_.
@@ -126,6 +130,14 @@ To run a single unit test like ``ros_test.test`` within package
 
     rostest drake_ros_systems ros_test.test
 
+To run Drake's non-ROS-based unit tests, execute::
+
+    cd ~/dev/drake_catkin_workspace/build/drake/drake
+    ctest
+
+For more information about how to run Drake's non-ROS unit tests, see
+:ref:`unit-test-instructions`.
+
 .. _drake_catkin_additional_notes:
 
 Additional Notes
@@ -149,8 +161,33 @@ The documentation will be located in
 Running An Example: Car Simulation
 ----------------------------------
 
-To run Drake's ROS-powered cars example, execute::
+To run Drake's ROS-powered cars example, first add the
+``ackermann_drive_teleop`` package to the ROS workspace::
+
+    cd ~/dev/drake_catkin_workspace/src
+    git clone git@github.com:liangfok/ackermann-drive-teleop.git ackermann_drive_teleop
+    cd ackermann_drive_teleop
+    git checkout feature/ackermann_drive_stamped
+
+You will also need to install the package ``ros-indigo-ackermann-msgs``::
+
+    sudo apt-get install ros-indigo-ackermann-msgs
+
+Since a new package was added to the ROS workspace, re-build the workspace
+(note that a build type of ``RelWithDebInfo`` is selected since the simulation
+runs too slowly when compiled in the default ``Debug`` mode)::
+
+    cd ~/dev/drake_catkin_workspace
+    catkin build -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+
+Finally, to run the car simulation demo, execute::
 
     cd ~/dev/drake_catkin_workspace
     source devel/setup.bash
     roslaunch drake_cars_examples drake_car_sim.launch
+
+To drive the vehicle around in simulation, open another terminal and execute:
+
+    cd ~/dev/drake_catkin_workspace
+    source devel/setup.bash
+    rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7
