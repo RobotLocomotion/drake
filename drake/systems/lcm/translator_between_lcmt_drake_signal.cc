@@ -47,6 +47,29 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorInterface(
   }
 }
 
+void TranslatorBetweenLcmtDrakeSignal::PublishVectorInterfaceToLCM(
+    const VectorInterface<double>& vector_interface, const std::string& channel,
+    ::lcm::LCM* lcm) const {
+
+  DRAKE_ASSERT(vector_interface.size() == get_vector_size());
+
+  // Instantiates and initializes a LCM message capturing the state of
+  // parameter vector_interface.
+  drake::lcmt_drake_signal message;
+  message.dim = vector_interface.size();
+  message.val.resize(message.dim);
+  message.coord.resize(message.dim);
+
+  Eigen::VectorBlock<const VectorX<double>> values =
+      vector_interface.get_value();
+
+  for (int ii = 0; ii < message.dim; ++ii) {
+    message.val[ii] = values[ii];
+  }
+
+  lcm->publish(channel, &message);
+}
+
 }  // namespace lcm
 }  // namespace systems
 }  // namespace drake
