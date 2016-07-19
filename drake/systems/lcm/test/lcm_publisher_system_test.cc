@@ -72,7 +72,6 @@ class MessageSubscriber {
 // Tests the functionality of LcmPublisherSystem.
 GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
   ::lcm::LCM lcm;
-  LcmReceiveThread lcm_receive_thread(&lcm);
   std::string channel_name = "drake_system2_lcm_test_publisher_channel_name";
   TranslatorBetweenLcmtDrakeSignal translator(kDim);
 
@@ -120,6 +119,13 @@ GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
       new FreestandingInputPort<double>(std::move(vector_interface)));
 
   context->SetInputPort(kPortNumber, std::move(input_port));
+
+  // Start the LCM recieve thread after all objects it can potentially use
+  // are instantiated. Since objects are destructed in the reverse order of
+  // construction, this ensures the LCM receive thread stops before any
+  // resources it uses are destroyed. If the Lcm receive thread is stopped after
+  // the resources it relies on are destroyed, a segmentation fault may occur.
+  LcmReceiveThread lcm_receive_thread(&lcm);
 
   // Whether the receiver received an LCM message published by the
   // LcmPublisherSystem.
