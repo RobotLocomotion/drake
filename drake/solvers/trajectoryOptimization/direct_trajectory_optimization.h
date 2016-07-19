@@ -56,7 +56,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   /**
    * Solve the nonlinear program and return the resulting trajectory.
    *
-   * @p t_init Initial timespan for solution.
+   * @p t_init The final time of the solution.
    *
    * @p traj_init_u Initial guess for trajectory for control input.
    *
@@ -71,7 +71,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    *  Evaluate the initial trajectories at the sampled times and construct the
    *  nominal initial vectors.
    *
-   * @p t_init Initial timespan for solution.
+   * @p t_init The final time of the solution.
    *
    * @p traj_init_u Initial guess for trajectory for control input.
    *
@@ -83,7 +83,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
 
   const int num_inputs_;
   const int num_states_;
-  const int N;  // Number of time samples
+  const int N_;  // Number of time samples
 
   OptimizationProblem opt_problem_;
   DecisionVariableView h_vars_;

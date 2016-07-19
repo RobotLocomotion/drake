@@ -29,29 +29,29 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     const int trajectory_time_upper_bound)
     : num_inputs_(num_inputs),
       num_states_(num_states),
-      N(num_time_samples),
-      h_vars_(opt_problem_.AddContinuousVariables(N - 1, "h")),
-      u_vars_(opt_problem_.AddContinuousVariables(num_inputs * N, "u")),
-      x_vars_(opt_problem_.AddContinuousVariables(num_states * N, "x")) {
+      N_(num_time_samples),
+      h_vars_(opt_problem_.AddContinuousVariables(N_ - 1, "h")),
+      u_vars_(opt_problem_.AddContinuousVariables(num_inputs * N_, "u")),
+      x_vars_(opt_problem_.AddContinuousVariables(num_states * N_, "x")) {
   // Construct total time linear constraint.
   // TODO(Lucy-tri) add case for all timesteps independent (if needed).
-  MatrixXd id_zero(N - 2, N - 1);
-  id_zero << MatrixXd::Identity(N - 2, N - 2), MatrixXd::Zero(N - 2, 1);
-  MatrixXd zero_id(N - 2, N - 1);
-  zero_id << MatrixXd::Zero(N - 2, 1), MatrixXd::Identity(N - 2, N - 2);
-  MatrixXd a_time(N - 1, N - 1);
-  a_time << MatrixXd::Ones(1, N - 1), id_zero - zero_id;
+  MatrixXd id_zero(N_ - 2, N_ - 1);
+  id_zero << MatrixXd::Identity(N_ - 2, N_ - 2), MatrixXd::Zero(N_ - 2, 1);
+  MatrixXd zero_id(N_ - 2, N_ - 1);
+  zero_id << MatrixXd::Zero(N_ - 2, 1), MatrixXd::Identity(N_ - 2, N_ - 2);
+  MatrixXd a_time(N_ - 1, N_ - 1);
+  a_time << MatrixXd::Ones(1, N_ - 1), id_zero - zero_id;
 
-  VectorXd lower(N - 1);
-  lower << trajectory_time_lower_bound, MatrixXd::Zero(N - 2, 1);
-  VectorXd upper(N - 1);
-  upper << trajectory_time_upper_bound, MatrixXd::Zero(N - 2, 1);
+  VectorXd lower(N_ - 1);
+  lower << trajectory_time_lower_bound, MatrixXd::Zero(N_ - 2, 1);
+  VectorXd upper(N_ - 1);
+  upper << trajectory_time_upper_bound, MatrixXd::Zero(N_ - 2, 1);
   opt_problem_.AddLinearConstraint(a_time, lower, upper, {h_vars_});
 
   // Ensure that all h values are non-negative.
-  VectorXd all_inf(N - 1);
+  VectorXd all_inf(N_ - 1);
   all_inf.fill(std::numeric_limits<double>::infinity());
-  opt_problem_.AddBoundingBoxConstraint(MatrixXd::Zero(N - 1, 1), all_inf,
+  opt_problem_.AddBoundingBoxConstraint(MatrixXd::Zero(N_ - 1, 1), all_inf,
                                         {h_vars_});
 
   // TODO(Lucy-tri) Create constraints for dynamics and add them.
@@ -64,14 +64,14 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
 void DirectTrajectoryOptimization::GetInitialVars(
     int t_init_in, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
-  VectorXd t_init{VectorXd::LinSpaced(N, 0, t_init_in)};
+  VectorXd t_init{VectorXd::LinSpaced(N_, 0, t_init_in)};
   opt_problem_.SetInitialGuess(h_vars_, vector_diff(t_init));
 
   VectorXd guess_u(u_vars_.size());
   if (traj_init_u.empty()) {
     guess_u = 0.01 * VectorXd::Random(u_vars_.size());
   } else {
-    for (int t = 0; t < N; ++t) {
+    for (int t = 0; t < N_; ++t) {
       guess_u.segment(num_inputs_ * t, num_inputs_) =
           traj_init_u.value(t_init[t]);
     }
@@ -83,7 +83,7 @@ void DirectTrajectoryOptimization::GetInitialVars(
   if (traj_init_x.empty()) {
     // TODO(Lucy-tri) Do what DirectTrajectoryOptimization.m does.
   } else {
-    for (int t = 0; t < N; ++t) {
+    for (int t = 0; t < N_; ++t) {
       guess_x.segment(num_states_ * t, num_states_) =
           traj_init_x.value(t_init[t]);
     }
