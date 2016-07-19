@@ -6,6 +6,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/lcmt_drake_signal.hpp"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
@@ -103,12 +104,13 @@ GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
       new BasicVector<double>(kDim));
 
   {
-    VectorX<double> vector_value;
+    Eigen::VectorBlock<VectorX<double>> vector_value =
+        vector_interface->get_mutable_value();
+
     vector_value.resize(kDim);
     for (int ii = 0; ii < kDim; ++ii) {
       vector_value[ii] = ii;
     }
-    vector_interface->set_value(vector_value);
   }
 
   // Sets the value in the context's input port to be the above-defined

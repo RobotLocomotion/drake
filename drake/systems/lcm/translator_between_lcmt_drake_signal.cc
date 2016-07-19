@@ -47,7 +47,7 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorInterface(
   }
 }
 
-void TranslatorBetweenLcmtDrakeSignal::TranslateAndSendVectorInterfaceToLCM(
+void TranslatorBetweenLcmtDrakeSignal::PublishVectorInterfaceToLCM(
     const VectorInterface<double>& vector_interface, const std::string& channel,
     ::lcm::LCM* lcm) const {
 

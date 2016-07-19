@@ -24,16 +24,8 @@ std::string LcmPublisherSystem::get_name() const {
 
 std::unique_ptr<Context<double>> LcmPublisherSystem::CreateDefaultContext()
     const {
-  std::unique_ptr<VectorInterface<double>> vector_data(
-      new BasicVector<double>(translator_.get_vector_size()));
-
-  std::unique_ptr<InputPort<double>> input_port(
-      new FreestandingInputPort<double>(std::move(vector_data)));
-
   std::unique_ptr<Context<double>> context(new Context<double>());
   context->SetNumInputPorts(kNumInputPorts);
-  context->SetInputPort(kPortIndex, std::move(input_port));
-
   return context;
 }
 
@@ -43,18 +35,18 @@ std::unique_ptr<SystemOutput<double>> LcmPublisherSystem::AllocateOutput()
   return output;
 }
 
+// TODO(liang.fok) Move the LCM message publishing logic into another method
+// that's more appropriate once it is defined by SystemInterface. See:
+// https://github.com/RobotLocomotion/drake/issues/2836.
 void LcmPublisherSystem::EvalOutput(const Context<double>& context,
                                     SystemOutput<double>* output) const {
   // Obtains the input vector.
   const VectorInterface<double>* input_vector =
       context.get_vector_input(kPortIndex);
-  const BasicVector<double>& basic_input_vector =
-      dynamic_cast<const BasicVector<double>&>(*input_vector);
 
   // Translates the input vector into an LCM message and publishes it onto the
   // specified LCM channel.
-  translator_.TranslateAndSendVectorInterfaceToLCM(basic_input_vector, channel_,
-                                                   lcm_);
+  translator_.PublishVectorInterfaceToLCM(*input_vector, channel_, lcm_);
 }
 
 }  // namespace lcm

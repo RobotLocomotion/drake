@@ -34,7 +34,7 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorBetweenLcmtDrakeSignal
       const ::lcm::ReceiveBuffer* rbuf,
       VectorInterface<double>* vector_interface) const override;
 
-  void TranslateAndSendVectorInterfaceToLCM(
+  void PublishVectorInterfaceToLCM(
       const VectorInterface<double>& vector_interface,
           const std::string& channel, ::lcm::LCM* lcm) const override;
 };

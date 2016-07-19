@@ -4,7 +4,6 @@
 
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/system_interface.h"
 #include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
 
@@ -13,8 +12,7 @@ namespace systems {
 namespace lcm {
 
 /**
- * Receives `BasicVector<double>` values from a `SystemInterface<double>`'s
- * output port.
+ * Publishes an LCM message containing information from its input port.
  */
 class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
     public SystemInterface<double> {
@@ -55,8 +53,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
   std::unique_ptr<SystemOutput<double>> AllocateOutput() const override;
 
   /**
-   * Takes the BasicVector from the input port of the context and publishes it
-   * onto an LCM channel. Note that the output is ignored since this system
+   * Takes the VectorInterface from the input port of the context and publishes
+   * it onto an LCM channel. Note that the output is ignored since this system
    * does not output anything.
    */
   void EvalOutput(const Context<double>& context,

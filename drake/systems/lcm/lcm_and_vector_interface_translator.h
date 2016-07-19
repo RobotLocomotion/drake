@@ -54,7 +54,8 @@ class LcmAndVectorInterfaceTranslator {
     VectorInterface<double>* vector_interface) const = 0;
 
   /**
-   * Translates a `drake::systems::VectorInterface` object into an LCM message.
+   * Translates a `drake::systems::VectorInterface` object into an LCM message
+   * and publishes it on the specified LCM channel.
    *
    * @param[in] vector_interface A reference to the object to convert into an
    * LCM message.
@@ -65,7 +66,7 @@ class LcmAndVectorInterfaceTranslator {
    * @param[in] lcm A pointer to the LCM subsystem. This pointer must not be
    * `nullptr`.
    */
-  virtual void TranslateAndSendVectorInterfaceToLCM(
+  virtual void PublishVectorInterfaceToLCM(
       const VectorInterface<double>& vector_interface,
       const std::string& channel, ::lcm::LCM* lcm) const = 0;
 
