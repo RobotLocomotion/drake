@@ -62,7 +62,7 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
 }
 
 void DirectTrajectoryOptimization::GetInitialVars(
-    int t_init_in, const PiecewisePolynomial<double>& traj_init_u,
+    double t_init_in, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   VectorXd t_init{VectorXd::LinSpaced(N_, 0, t_init_in)};
   opt_problem_.SetInitialGuess(h_vars_, vector_diff(t_init));
@@ -90,10 +90,6 @@ void DirectTrajectoryOptimization::GetInitialVars(
   }
   opt_problem_.SetInitialGuess(x_vars_, guess_x);
 }
-
-// TODO(Lucy-tri) add optional x_indices. Do: time_index as cell array.
-void DirectTrajectoryOptimization::AddStateConstraint(
-    const Constraint& constraint, const int time_index) {}
 
 SolutionResult DirectTrajectoryOptimization::SolveTraj(
     double t_init, const PiecewisePolynomial<double>& traj_init_u,
