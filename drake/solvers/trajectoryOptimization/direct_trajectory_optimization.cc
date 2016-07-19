@@ -25,8 +25,8 @@ VectorXd vector_diff(VectorXd& vec) {
 DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     const int num_inputs, const int num_states,
     const int num_time_samples,
-    const int trajectory_time_lower_bound,
-    const int trajectory_time_upper_bound)
+    const double trajectory_time_lower_bound,
+    const double trajectory_time_upper_bound)
     : num_inputs_(num_inputs),
       num_states_(num_states),
       N_(num_time_samples),
@@ -96,7 +96,7 @@ void DirectTrajectoryOptimization::AddStateConstraint(
     const Constraint& constraint, const int time_index) {}
 
 SolutionResult DirectTrajectoryOptimization::SolveTraj(
-    int t_init, const PiecewisePolynomial<double>& traj_init_u,
+    double t_init, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   GetInitialVars(t_init, traj_init_u, traj_init_x);
   SolutionResult result = opt_problem_.Solve();
