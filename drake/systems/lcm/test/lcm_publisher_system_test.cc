@@ -107,7 +107,6 @@ GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
     Eigen::VectorBlock<VectorX<double>> vector_value =
         vector_interface->get_mutable_value();
 
-    vector_value.resize(kDim);
     for (int ii = 0; ii < kDim; ++ii) {
       vector_value[ii] = ii;
     }
