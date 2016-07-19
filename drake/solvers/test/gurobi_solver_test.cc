@@ -25,7 +25,7 @@ void RunQuadraticProgram(OptimizationProblem* prog) {
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
 }
 
-/// Simple test from the Gurobi documentation.ggg
+/// Simple test from the Gurobi documentation.
 //  min    x^2 + x*y + y^2 + y*z + z^2 + 2 x
 //  subj to  x + 2 y + 3 z >= 4
 //           x +   y       >= 1
