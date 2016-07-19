@@ -1,3 +1,4 @@
+#include "drake/common/constants.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -6,6 +7,8 @@
 
 using namespace Eigen;
 
+using drake::kRpySize;
+using drake::kSpaceDimension;
 using drake::math::autoDiffToValueMatrix;
 using drake::math::autoDiffToGradientMatrix;
 
@@ -25,22 +28,22 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   auto rpy = drake::math::quat2rpy(q);
 
-  Matrix<double, QUAT_SIZE, SPACE_DIMENSION> omega2qd;
-  Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type
+  Matrix<double, QUAT_SIZE, kSpaceDimension> omega2qd;
+  Gradient<Matrix<double, QUAT_SIZE, kSpaceDimension>, QUAT_SIZE, 1>::type
       domega2qd;
-  Matrix<double, RPY_SIZE, SPACE_DIMENSION> omega2rpyd;
-  Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 1>::type
+  Matrix<double, kRpySize, kSpaceDimension> omega2rpyd;
+  Gradient<Matrix<double, kRpySize, kSpaceDimension>, kRpySize, 1>::type
       domega2rpyd;
-  Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 2>::type
+  Gradient<Matrix<double, kRpySize, kSpaceDimension>, kRpySize, 2>::type
       ddomega2rpyd;
-  Matrix<double, SPACE_DIMENSION, QUAT_SIZE> qd2omega;
-  Gradient<Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type
+  Matrix<double, kSpaceDimension, QUAT_SIZE> qd2omega;
+  Gradient<Matrix<double, kSpaceDimension, QUAT_SIZE>, QUAT_SIZE, 1>::type
       dqd2omega;
 
   angularvel2quatdotMatrix(q, omega2qd, &domega2qd);
   angularvel2rpydotMatrix(rpy, omega2rpyd, &domega2rpyd, &ddomega2rpyd);
-  Matrix<double, SPACE_DIMENSION, RPY_SIZE> rpyd2omega;
-  Gradient<Matrix<double, SPACE_DIMENSION, RPY_SIZE>, RPY_SIZE, 1>::type
+  Matrix<double, kSpaceDimension, kRpySize> rpyd2omega;
+  Gradient<Matrix<double, kSpaceDimension, kRpySize>, kRpySize, 1>::type
       drpyd2omega;
   rpydot2angularvelMatrix(rpy, rpyd2omega, &drpyd2omega);
 

@@ -1,5 +1,6 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
+#include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
@@ -23,6 +24,8 @@ using namespace Eigen;
 
 using drake::AutoDiffUpTo73d;
 using drake::AutoDiffXd;
+using drake::kRpySize;
+using drake::kSpaceDimension;
 using drake::Matrix3X;
 using drake::Matrix4X;
 using drake::MatrixX;
@@ -880,13 +883,13 @@ TwistMatrix<Scalar> RigidBodyTree::centroidalMomentumMatrix(
 
   // transform from world frame to COM frame
   auto com = centerOfMass(cache, robotnum);
-  auto angular_momentum_matrix = ret.template topRows<SPACE_DIMENSION>();
-  auto linear_momentum_matrix = ret.template bottomRows<SPACE_DIMENSION>();
+  auto angular_momentum_matrix = ret.template topRows<kSpaceDimension>();
+  auto linear_momentum_matrix = ret.template bottomRows<kSpaceDimension>();
   angular_momentum_matrix += linear_momentum_matrix.colwise().cross(com);
 
   //  Valid for more general frame transformations but slower:
-  //  Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry>
-  //  T(Translation<Scalar, SPACE_DIMENSION>(-com.value()));
+  //  Eigen::Transform<Scalar, kSpaceDimension, Eigen::Isometry>
+  //  T(Translation<Scalar, kSpaceDimension>(-com.value()));
   //  ret.value() = transformSpatialForce(T, ret.value());
 
   return ret;
@@ -901,15 +904,15 @@ TwistVector<Scalar> RigidBodyTree::centroidalMomentumMatrixDotTimesV(
   // transform from world frame to COM frame:
   auto com = centerOfMass(cache, robotnum);
   auto angular_momentum_matrix_dot_times_v =
-      ret.template topRows<SPACE_DIMENSION>();
+      ret.template topRows<kSpaceDimension>();
   auto linear_momentum_matrix_dot_times_v =
-      ret.template bottomRows<SPACE_DIMENSION>();
+      ret.template bottomRows<kSpaceDimension>();
   angular_momentum_matrix_dot_times_v +=
       linear_momentum_matrix_dot_times_v.cross(com);
 
   //  Valid for more general frame transformations but slower:
-  //  Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry>
-  //  T(Translation<Scalar, SPACE_DIMENSION>(-com.value()));
+  //  Eigen::Transform<Scalar, kSpaceDimension, Eigen::Isometry>
+  //  T(Translation<Scalar, kSpaceDimension>(-com.value()));
   //  ret.value() = transformSpatialForce(T, ret.value());
 
   return ret;
@@ -939,11 +942,11 @@ double RigidBodyTree::getMass(const std::set<int>& robotnum) const {
 }
 
 template <typename Scalar>
-Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyTree::centerOfMass(
+Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
     KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const {
   cache.checkCachedKinematicsSettings(false, false, "centerOfMass");
 
-  Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> com;
+  Eigen::Matrix<Scalar, kSpaceDimension, 1> com;
   com.setZero();
   double m = 0.0;
 
@@ -963,24 +966,24 @@ Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyTree::centerOfMass(
 }
 
 template <typename Scalar>
-Matrix<Scalar, SPACE_DIMENSION, Eigen::Dynamic>
+Matrix<Scalar, kSpaceDimension, Eigen::Dynamic>
 RigidBodyTree::centerOfMassJacobian(KinematicsCache<Scalar>& cache,
                                     const std::set<int>& robotnum,
                                     bool in_terms_of_qdot) const {
   cache.checkCachedKinematicsSettings(false, false, "centerOfMassJacobian");
   auto A = worldMomentumMatrix(cache, robotnum, in_terms_of_qdot);
   double total_mass = getMass(robotnum);
-  return A.template bottomRows<SPACE_DIMENSION>() / total_mass;
+  return A.template bottomRows<kSpaceDimension>() / total_mass;
 }
 
 template <typename Scalar>
-Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyTree::centerOfMassJacobianDotTimesV(
+Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMassJacobianDotTimesV(
     KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const {
   // kinematics cache checks are already being done in
   // centroidalMomentumMatrixDotTimesV
   auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV(cache, robotnum);
   double total_mass = getMass(robotnum);
-  return cmm_dot_times_v.template bottomRows<SPACE_DIMENSION>() / total_mass;
+  return cmm_dot_times_v.template bottomRows<kSpaceDimension>() / total_mass;
 }
 
 template <typename DerivedNormal, typename DerivedPoint>
@@ -1440,8 +1443,8 @@ RigidBodyTree::transformPointsJacobian(
       geometricJacobian(cache, base_ind, body_ind, to_body_or_frame_ind,
                         in_terms_of_qdot, &v_or_q_indices);
 
-  auto Jomega = J_geometric.template topRows<SPACE_DIMENSION>();
-  auto Jv = J_geometric.template bottomRows<SPACE_DIMENSION>();
+  auto Jomega = J_geometric.template topRows<kSpaceDimension>();
+  auto Jv = J_geometric.template bottomRows<kSpaceDimension>();
 
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> J(
       points_base.size(), cols);  // TODO(tkoolen): size at compile time
@@ -1453,12 +1456,12 @@ RigidBodyTree::transformPointsJacobian(
     int col = 0;
     for (std::vector<int>::iterator it = v_or_q_indices.begin();
          it != v_or_q_indices.end(); ++it) {
-      J.template block<SPACE_DIMENSION, 1>(row_start, *it) = Jv.col(col);
-      J.template block<SPACE_DIMENSION, 1>(row_start, *it).noalias() +=
+      J.template block<kSpaceDimension, 1>(row_start, *it) = Jv.col(col);
+      J.template block<kSpaceDimension, 1>(row_start, *it).noalias() +=
           Jomega.col(col).cross(points_base.col(i));
       col++;
     }
-    row_start += SPACE_DIMENSION;
+    row_start += kSpaceDimension;
   }
 
   return J;
@@ -1475,10 +1478,10 @@ RigidBodyTree::relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache,
   KinematicPath kinematic_path = findKinematicPath(base_ind, body_ind);
   auto J_geometric = geometricJacobian(cache, base_ind, body_ind,
                                        to_body_or_frame_ind, in_terms_of_qdot);
-  auto Jomega = J_geometric.template topRows<SPACE_DIMENSION>();
+  auto Jomega = J_geometric.template topRows<kSpaceDimension>();
   auto quat =
       relativeQuaternion(cache, from_body_or_frame_ind, to_body_or_frame_ind);
-  Matrix<Scalar, QUAT_SIZE, SPACE_DIMENSION> Phi;
+  Matrix<Scalar, QUAT_SIZE, kSpaceDimension> Phi;
   angularvel2quatdotMatrix(
       quat, Phi,
       static_cast<typename Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
@@ -1487,7 +1490,7 @@ RigidBodyTree::relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache,
 }
 
 template <typename Scalar>
-Eigen::Matrix<Scalar, RPY_SIZE, Eigen::Dynamic>
+Eigen::Matrix<Scalar, kRpySize, Eigen::Dynamic>
 RigidBodyTree::relativeRollPitchYawJacobian(
     const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
     int to_body_or_frame_ind, bool in_terms_of_qdot) const {
@@ -1496,10 +1499,10 @@ RigidBodyTree::relativeRollPitchYawJacobian(
   KinematicPath kinematic_path = findKinematicPath(base_ind, body_ind);
   auto J_geometric = geometricJacobian(cache, base_ind, body_ind,
                                        to_body_or_frame_ind, in_terms_of_qdot);
-  auto Jomega = J_geometric.template topRows<SPACE_DIMENSION>();
+  auto Jomega = J_geometric.template topRows<kSpaceDimension>();
   auto rpy =
       relativeRollPitchYaw(cache, from_body_or_frame_ind, to_body_or_frame_ind);
-  Matrix<Scalar, RPY_SIZE, SPACE_DIMENSION> Phi;
+  Matrix<Scalar, kRpySize, kSpaceDimension> Phi;
   angularvel2rpydotMatrix(
       rpy, Phi,
       static_cast<typename Gradient<decltype(Phi), Dynamic>::type*>(nullptr),
@@ -1520,12 +1523,12 @@ RigidBodyTree::forwardKinPositionGradient(const KinematicsCache<Scalar>& cache,
 
   auto Tinv =
       relativeTransform(cache, from_body_or_frame_ind, to_body_or_frame_ind);
-  Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(SPACE_DIMENSION * npoints,
-                                                     SPACE_DIMENSION * npoints);
+  Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(kSpaceDimension * npoints,
+                                                     kSpaceDimension * npoints);
   ret.setZero();
   for (int i = 0; i < npoints; i++) {
-    ret.template block<SPACE_DIMENSION, SPACE_DIMENSION>(
-        SPACE_DIMENSION * i, SPACE_DIMENSION * i) = Tinv.linear();
+    ret.template block<kSpaceDimension, kSpaceDimension>(
+        kSpaceDimension * i, kSpaceDimension * i) = Tinv.linear();
   }
   return ret;
 }
@@ -1548,18 +1551,18 @@ RigidBodyTree::transformPointsJacobianDotTimesV(
   const auto J_geometric_dot_times_v = geometricJacobianDotTimesV(
       cache, to_body_or_frame_ind, from_body_or_frame_ind, expressed_in);
 
-  auto omega_twist = twist.template topRows<SPACE_DIMENSION>();
-  auto v_twist = twist.template bottomRows<SPACE_DIMENSION>();
+  auto omega_twist = twist.template topRows<kSpaceDimension>();
+  auto v_twist = twist.template bottomRows<kSpaceDimension>();
 
   auto rdots = (-r.colwise().cross(omega_twist)).eval();
   rdots.colwise() += v_twist;
   auto Jposdot_times_v_mat = (-rdots.colwise().cross(omega_twist)).eval();
   Jposdot_times_v_mat -=
       (r.colwise().cross(
-           J_geometric_dot_times_v.template topRows<SPACE_DIMENSION>()))
+           J_geometric_dot_times_v.template topRows<kSpaceDimension>()))
           .eval();
   Jposdot_times_v_mat.colwise() +=
-      J_geometric_dot_times_v.template bottomRows<SPACE_DIMENSION>();
+      J_geometric_dot_times_v.template bottomRows<kSpaceDimension>();
 
   return Map<Matrix<Scalar, Dynamic, 1>>(Jposdot_times_v_mat.data(), r.size(),
                                          1);
@@ -1575,7 +1578,7 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
 
   auto quat =
       relativeQuaternion(cache, from_body_or_frame_ind, to_body_or_frame_ind);
-  Matrix<Scalar, QUAT_SIZE, SPACE_DIMENSION> Phi;
+  Matrix<Scalar, QUAT_SIZE, kSpaceDimension> Phi;
   angularvel2quatdotMatrix(
       quat, Phi,
       static_cast<typename Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
@@ -1583,7 +1586,7 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
   int expressed_in = to_body_or_frame_ind;
   const auto twist = relativeTwist(cache, to_body_or_frame_ind,
                                    from_body_or_frame_ind, expressed_in);
-  auto omega_twist = twist.template topRows<SPACE_DIMENSION>();
+  auto omega_twist = twist.template topRows<kSpaceDimension>();
   auto quatdot = (Phi * omega_twist).eval();
 
   using ADScalar = AutoDiffScalar<Matrix<Scalar, Dynamic,
@@ -1594,19 +1597,19 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
   // 32 bit
   auto quat_autodiff = quat.template cast<ADScalar>().eval();
   gradientMatrixToAutoDiff(quatdot, quat_autodiff);
-  Matrix<ADScalar, QUAT_SIZE, SPACE_DIMENSION> Phi_autodiff;
+  Matrix<ADScalar, QUAT_SIZE, kSpaceDimension> Phi_autodiff;
   angularvel2quatdotMatrix(
       quat_autodiff, Phi_autodiff,
       static_cast<typename Gradient<decltype(Phi_autodiff), Dynamic>::type*>(
           nullptr));
   auto Phidot_vector = autoDiffToGradientMatrix(Phi_autodiff);
-  Map<Matrix<Scalar, QUAT_SIZE, SPACE_DIMENSION>> Phid(Phidot_vector.data());
+  Map<Matrix<Scalar, QUAT_SIZE, kSpaceDimension>> Phid(Phidot_vector.data());
 
   const auto J_geometric_dot_times_v = geometricJacobianDotTimesV(
       cache, to_body_or_frame_ind, from_body_or_frame_ind, expressed_in);
   auto ret = (Phid * omega_twist).eval();
   ret.noalias() +=
-      Phi * J_geometric_dot_times_v.template topRows<SPACE_DIMENSION>();
+      Phi * J_geometric_dot_times_v.template topRows<kSpaceDimension>();
   return ret;
 }
 
@@ -1620,7 +1623,7 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
 
   auto rpy =
       relativeRollPitchYaw(cache, from_body_or_frame_ind, to_body_or_frame_ind);
-  Matrix<Scalar, RPY_SIZE, SPACE_DIMENSION> Phi;
+  Matrix<Scalar, kRpySize, kSpaceDimension> Phi;
   angularvel2rpydotMatrix(
       rpy, Phi,
       static_cast<typename Gradient<decltype(Phi), Dynamic>::type*>(nullptr),
@@ -1630,7 +1633,7 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   int expressed_in = to_body_or_frame_ind;
   const auto twist = relativeTwist(cache, to_body_or_frame_ind,
                                    from_body_or_frame_ind, expressed_in);
-  auto omega_twist = twist.template topRows<SPACE_DIMENSION>();
+  auto omega_twist = twist.template topRows<kSpaceDimension>();
   auto rpydot = (Phi * omega_twist).eval();
 
   using ADScalar = AutoDiffScalar<Matrix<Scalar, Dynamic,
@@ -1641,7 +1644,7 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   // 32 bit
   auto rpy_autodiff = rpy.template cast<ADScalar>().eval();
   gradientMatrixToAutoDiff(rpydot, rpy_autodiff);
-  Matrix<ADScalar, RPY_SIZE, SPACE_DIMENSION> Phi_autodiff;
+  Matrix<ADScalar, kRpySize, kSpaceDimension> Phi_autodiff;
   angularvel2rpydotMatrix(
       rpy_autodiff, Phi_autodiff,
       static_cast<typename Gradient<decltype(Phi_autodiff), Dynamic>::type*>(
@@ -1649,13 +1652,13 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
       static_cast<typename Gradient<decltype(Phi_autodiff), Dynamic, 2>::type*>(
           nullptr));
   auto Phidot_vector = autoDiffToGradientMatrix(Phi_autodiff);
-  Map<Matrix<Scalar, RPY_SIZE, SPACE_DIMENSION>> Phid(Phidot_vector.data());
+  Map<Matrix<Scalar, kRpySize, kSpaceDimension>> Phid(Phidot_vector.data());
 
   const auto J_geometric_dot_times_v = geometricJacobianDotTimesV(
       cache, to_body_or_frame_ind, from_body_or_frame_ind, expressed_in);
   auto ret = (Phid * omega_twist).eval();
   ret.noalias() +=
-      Phi * J_geometric_dot_times_v.template topRows<SPACE_DIMENSION>();
+      Phi * J_geometric_dot_times_v.template topRows<kSpaceDimension>();
   return ret;
 }
 
