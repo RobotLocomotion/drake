@@ -174,7 +174,7 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
   std::vector<MSKboundkeye> mosek_variable_bounds(prog.num_vars());
   linear_cons.setZero(totalconnum, prog.num_vars());
 
-  // Expect only one boundingbox constraint or no such constraint.
+  // Expect exactly one boundingbox constraint.
   DRAKE_ASSERT(!(prog.bounding_box_constraints().empty()));
   DRAKE_ASSERT(&(prog.bounding_box_constraints().front()) ==
       &(prog.bounding_box_constraints().back()));

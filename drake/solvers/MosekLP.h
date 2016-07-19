@@ -37,11 +37,6 @@ class DRAKEOPTIMIZATION_EXPORT MosekLP {
    *  problem using the mosek solver.
    */
  public:
-  MosekLP() {
-    task_ = NULL;
-    env_ = NULL;
-  }
-
   /** Create a mosek linear programming environment using a constraint matrix
   * Takes the number of variables and constraints, the linear eqn to
   * optimize, the constraint matrix, and the constraint and variable bounds
