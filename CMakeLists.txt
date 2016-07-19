@@ -42,6 +42,8 @@ message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 include(ExternalProject)
 find_package(Git REQUIRED)
 
+include(util/git/pre-commit.cmake)
+
 function(drake_forceupdate proj)
   # CMake < 3.6 forget to mark the update step as "ALWAYS" when an explicit
   # UPDATE_COMMAND is used.  Add our own "ALWAYS" step to force updates.

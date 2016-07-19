@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Drake pre-commit hook launcher version '1'.
+
+# Look up a configured pre-commit hook to call.
+chain="$(git config --get hooks.chain-pre-commit)" ||
+chain="$(git config -f .hooks-config --get hooks.chain.pre-commit)" ||
+chain=""
+
+# Choose a prefix needed to launch the hook without searching the PATH.
+case "$chain" in
+  '') exit 0 ;;
+  '/'*) prefix="" ;;
+  '[A-Za-z]:/'*) prefix="" ;;
+  '.'*) prefix="" ;;
+  *) prefix="./" ;;
+esac
+
+# Chain to the configured hook.
+if test -x "$prefix$chain" ; then
+  exec "$prefix$chain" "$@"
+fi

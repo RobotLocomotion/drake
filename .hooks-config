@@ -1,0 +1,2 @@
+[hooks "chain"]
+	pre-commit = util/git/pre-commit.bash
