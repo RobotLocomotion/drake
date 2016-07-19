@@ -7,6 +7,7 @@
 
 using namespace Eigen;
 
+using drake::kQuaternionSize;
 using drake::kRpySize;
 using drake::kSpaceDimension;
 using drake::math::autoDiffToValueMatrix;
@@ -23,22 +24,22 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   int argnum = 0;
   Isometry3d T;
-  auto q = matlabToEigen<QUAT_SIZE, 1>(prhs[argnum++]);
-  auto dq = matlabToEigen<QUAT_SIZE, Eigen::Dynamic>(prhs[argnum++]);
+  auto q = matlabToEigen<kQuaternionSize, 1>(prhs[argnum++]);
+  auto dq = matlabToEigen<kQuaternionSize, Eigen::Dynamic>(prhs[argnum++]);
 
   auto rpy = drake::math::quat2rpy(q);
 
-  Matrix<double, QUAT_SIZE, kSpaceDimension> omega2qd;
-  Gradient<Matrix<double, QUAT_SIZE, kSpaceDimension>, QUAT_SIZE, 1>::type
-      domega2qd;
+  Matrix<double, kQuaternionSize, kSpaceDimension> omega2qd;
+  Gradient<Matrix<double, kQuaternionSize, kSpaceDimension>, kQuaternionSize,
+      1>::type domega2qd;
   Matrix<double, kRpySize, kSpaceDimension> omega2rpyd;
   Gradient<Matrix<double, kRpySize, kSpaceDimension>, kRpySize, 1>::type
       domega2rpyd;
   Gradient<Matrix<double, kRpySize, kSpaceDimension>, kRpySize, 2>::type
       ddomega2rpyd;
-  Matrix<double, kSpaceDimension, QUAT_SIZE> qd2omega;
-  Gradient<Matrix<double, kSpaceDimension, QUAT_SIZE>, QUAT_SIZE, 1>::type
-      dqd2omega;
+  Matrix<double, kSpaceDimension, kQuaternionSize> qd2omega;
+  Gradient<Matrix<double, kSpaceDimension, kQuaternionSize>, kQuaternionSize,
+      1>::type dqd2omega;
 
   angularvel2quatdotMatrix(q, omega2qd, &domega2qd);
   angularvel2rpydotMatrix(rpy, omega2rpyd, &domega2rpyd, &ddomega2rpyd);
