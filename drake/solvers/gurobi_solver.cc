@@ -180,7 +180,6 @@ SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
   if (!error) {
     error = ProcessConstraints(model, prog, sparseness_threshold);
   }
-
   SolutionResult result = SolutionResult::kSolutionFound;
 
   if (!error) {
@@ -210,8 +209,8 @@ SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
   Eigen::VectorXd sol_vector = Eigen::VectorXd::Zero(num_vars);
 
   GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_vars, sol_vector.data());
-  prog.SetDecisionVariableValues(sol_vector);
 
+  prog.SetDecisionVariableValues(sol_vector);
   prog.SetSolverResult("Gurobi", 0);
 
   GRBfreemodel(model);
