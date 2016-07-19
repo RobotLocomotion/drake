@@ -307,14 +307,27 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-/** RigidBodyForceElement
- * @brief interface class for elements which define a generalized force acting
- * on the rigid body system
+/**
+ * An interface class for elements that define a generalized force acting
+ * on the rigid body system.
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
  public:
-  RigidBodyForceElement(RigidBodySystem& sys, const std::string& name)
-      : sys(sys), name(name) {}
+
+  /**
+   * The constructor.
+   *
+   * @param[in] sys The rigid body system upon which this force element is
+   * acting.
+   *
+   * @param[in] name The name of this force element.
+   *
+   * @param[in] model_id The ID of the model to which this force element
+   * belongs.
+   */
+  RigidBodyForceElement(RigidBodySystem& sys, const std::string& name,
+      int model_id)
+      : sys_(sys), name_(name), model_id_(model_id) {}
   virtual ~RigidBodyForceElement() {}
 
   virtual size_t getNumInputs() const { return 0; }
@@ -323,9 +336,16 @@ class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
       /* todo: add force state here */ const Eigen::VectorXd& u,
       const KinematicsCache<double>& rigid_body_state) const = 0;
 
- protected:
-  RigidBodySystem& sys;
-  std::string name;
+  int get_model_id() { return model_id_; }
+
+  RigidBodySystem& get_rigid_body_system() const { return sys_; }
+
+  const std::string& get_name() const { return name_; }
+
+ private:
+  RigidBodySystem& sys_;
+  std::string name_;
+  int model_id_;
 };
 
 /** spatialForceInFrameToJointTorque
@@ -345,7 +365,7 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
 class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
  public:
   RigidBodyPropellor(RigidBodySystem& sys, tinyxml2::XMLElement* node,
-                     const std::string& name);
+                     const std::string& name, int model_id);
   ~RigidBodyPropellor() override {}
 
   size_t getNumInputs() const override { return 1; }
@@ -365,7 +385,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
     force << scale_factor_moment * u(0) * axis,
         scale_factor_thrust * u(0) * axis;
     return spatialForceInFrameToJointTorque(
-        sys.getRigidBodyTree().get(), rigid_body_state, frame.get(), force);
+        get_rigid_body_system().getRigidBodyTree().get(), rigid_body_state,
+        frame.get(), force);
   }
 
  private:
@@ -388,7 +409,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
     : public RigidBodyForceElement {
  public:
   RigidBodySpringDamper(RigidBodySystem& sys, tinyxml2::XMLElement* node,
-                        const std::string& name);
+                        const std::string& name, int model_id);
   ~RigidBodySpringDamper() override {}
 
   Eigen::VectorXd output(
@@ -397,6 +418,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
       const KinematicsCache<double>& rigid_body_state) const override {
     using namespace Eigen;
     const Vector3d origin = Vector3d::Zero();
+    RigidBodySystem& sys = get_rigid_body_system();
     Vector3d xA_in_B = sys.getRigidBodyTree()->transformPoints(
         rigid_body_state, origin, frameA->frame_index, frameB->frame_index);
     Vector3d xB_in_A = sys.getRigidBodyTree()->transformPoints(

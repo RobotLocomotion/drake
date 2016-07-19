@@ -961,7 +961,7 @@ void parseWorldJoint(XMLElement* node,
   }
 }
 
-void parseRobot(RigidBodyTree* tree, XMLElement* node,
+void parseModel(RigidBodyTree* tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
@@ -1074,7 +1074,7 @@ void parseURDF(XMLDocument* xml_doc,
     throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
   }
 
-  parseRobot(tree, node, package_map, root_dir, floating_base_type,
+  parseModel(tree, node, package_map, root_dir, floating_base_type,
              weld_to_frame);
 
   tree->compile();

@@ -333,8 +333,8 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
 }
 
 RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem& sys, XMLElement* node,
-                                       const std::string& name)
-    : RigidBodyForceElement(sys, name),
+                                       const std::string& name, int model_id)
+    : RigidBodyForceElement(sys, name, model_id),
       scale_factor_thrust(1.0),
       scale_factor_moment(1.0),
       lower_limit(-numeric_limits<double>::infinity()),
@@ -367,8 +367,9 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem& sys, XMLElement* node,
 
 RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
                                              XMLElement* node,
-                                             const std::string& name)
-    : RigidBodyForceElement(sys, name),
+                                             const std::string& name,
+                                             int model_id)
+    : RigidBodyForceElement(sys, name, model_id),
       stiffness(0.0),
       damping(0.0),
       rest_length(0.0) {
@@ -684,30 +685,51 @@ double RigidBodyDepthSensor::min_range() const { return min_range_; }
 
 double RigidBodyDepthSensor::max_range() const { return max_range_; }
 
-void parseForceElement(RigidBodySystem& sys, XMLElement* node) {
+/**
+ * Parses a force element from a URDF and adds it to this RigidBodySystem.
+ *
+ * @param[out] sys The rigid body system to which to add the force element.
+ *
+ * @param[in] node The XML node containing the URDF force element description.
+ *
+ * @param[in] model_id The ID of the model to which the force element belongs.
+ */
+void parseForceElement(RigidBodySystem& sys, XMLElement* node, int model_id) {
   string name = node->Attribute("name");
 
   if (XMLElement* propellor_node = node->FirstChildElement("propellor")) {
     sys.addForceElement(allocate_shared<RigidBodyPropellor>(
         Eigen::aligned_allocator<RigidBodyPropellor>(), sys, propellor_node,
-        name));
+        name, model_id));
   } else if (XMLElement* spring_damper_node =
                  node->FirstChildElement("linear_spring_damper")) {
     sys.addForceElement(allocate_shared<RigidBodySpringDamper>(
         Eigen::aligned_allocator<RigidBodySpringDamper>(), sys,
-        spring_damper_node, name));
+        spring_damper_node, name, model_id));
   }
 }
 
+/**
+ * Parses a URDF specification of a model.
+ *
+ * @param[out] sys The rigid body system to which to add the model.
+ *
+ * @param[in] node The XML node containing the URDF model.
+ */
 void parseRobot(RigidBodySystem& sys, XMLElement* node) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
   string robotname = node->Attribute("name");
 
+  // Obtains the model ID for this model. Since this model was already added
+  // to the RigidBodyTree, the model ID was already incremented. Thus, the
+  // ID of the model is simply the current model ID minus one.
+  int model_id = sys.getRigidBodyTree()->get_current_model_id() - 1;
+
   // parse force elements
   for (XMLElement* force_node = node->FirstChildElement("force_element");
        force_node; force_node = force_node->NextSiblingElement("force_element"))
-    parseForceElement(sys, force_node);
+    parseForceElement(sys, force_node, model_id);
 }
 
 void parseURDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
