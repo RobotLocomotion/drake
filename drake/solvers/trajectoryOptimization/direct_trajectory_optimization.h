@@ -4,7 +4,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/drakeOptimization_export.h"
+#include "drake/drakeTrajectoryOptimization_export.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
@@ -26,7 +26,7 @@ namespace solvers {
  * implementation assumes that all constraints and costs are
  * time-invariant.
  */
-class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
+class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  public:
   DirectTrajectoryOptimization(const int num_inputs, const int num_states,
                                const size_t num_time_samples,
@@ -66,7 +66,6 @@ class DRAKEOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
 
   const int num_inputs_;
   const int num_states_;
-  const int num_vars_;
   const int N;  // Number of time samples
 
   OptimizationProblem opt_problem_;
