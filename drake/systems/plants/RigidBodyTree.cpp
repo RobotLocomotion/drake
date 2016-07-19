@@ -24,6 +24,7 @@ using namespace Eigen;
 
 using drake::AutoDiffUpTo73d;
 using drake::AutoDiffXd;
+using drake::kQuaternionSize;
 using drake::kRpySize;
 using drake::kSpaceDimension;
 using drake::Matrix3X;
@@ -1468,7 +1469,7 @@ RigidBodyTree::transformPointsJacobian(
 }
 
 template <typename Scalar>
-Eigen::Matrix<Scalar, QUAT_SIZE, Eigen::Dynamic>
+Eigen::Matrix<Scalar, kQuaternionSize, Eigen::Dynamic>
 RigidBodyTree::relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache,
                                           int from_body_or_frame_ind,
                                           int to_body_or_frame_ind,
@@ -1481,7 +1482,7 @@ RigidBodyTree::relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache,
   auto Jomega = J_geometric.template topRows<kSpaceDimension>();
   auto quat =
       relativeQuaternion(cache, from_body_or_frame_ind, to_body_or_frame_ind);
-  Matrix<Scalar, QUAT_SIZE, kSpaceDimension> Phi;
+  Matrix<Scalar, kQuaternionSize, kSpaceDimension> Phi;
   angularvel2quatdotMatrix(
       quat, Phi,
       static_cast<typename Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
@@ -1578,7 +1579,7 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
 
   auto quat =
       relativeQuaternion(cache, from_body_or_frame_ind, to_body_or_frame_ind);
-  Matrix<Scalar, QUAT_SIZE, kSpaceDimension> Phi;
+  Matrix<Scalar, kQuaternionSize, kSpaceDimension> Phi;
   angularvel2quatdotMatrix(
       quat, Phi,
       static_cast<typename Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
@@ -1597,13 +1598,14 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
   // 32 bit
   auto quat_autodiff = quat.template cast<ADScalar>().eval();
   gradientMatrixToAutoDiff(quatdot, quat_autodiff);
-  Matrix<ADScalar, QUAT_SIZE, kSpaceDimension> Phi_autodiff;
+  Matrix<ADScalar, kQuaternionSize, kSpaceDimension> Phi_autodiff;
   angularvel2quatdotMatrix(
       quat_autodiff, Phi_autodiff,
       static_cast<typename Gradient<decltype(Phi_autodiff), Dynamic>::type*>(
           nullptr));
   auto Phidot_vector = autoDiffToGradientMatrix(Phi_autodiff);
-  Map<Matrix<Scalar, QUAT_SIZE, kSpaceDimension>> Phid(Phidot_vector.data());
+  Map<Matrix<Scalar, kQuaternionSize, kSpaceDimension>>
+      Phid(Phidot_vector.data());
 
   const auto J_geometric_dot_times_v = geometricJacobianDotTimesV(
       cache, to_body_or_frame_ind, from_body_or_frame_ind, expressed_in);
