@@ -6,10 +6,7 @@
 #include <vector>
 #include <random>
 #include <limits>
-#include <iostream>
 #include "drake/drakeTrajectories_export.h"
-
-using namespace std;
 
 /// A scalar multi-variate piecewise polynomial.
 /**
@@ -107,7 +104,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
       const CoefficientMatrixRef& value_at_start_time) const;
 
   bool empty() const {
-    return (polynomials.size() == 0);
+    return polynomials.size() == 0;
   }
 
   double scalarValue(double t, Eigen::Index row = 0, Eigen::Index col = 0);
