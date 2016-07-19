@@ -351,7 +351,7 @@ string resolveFilename(const string& filename,
       mesh_filename_s = package_path_s;
 
       auto split_raw = raw_filename_s.split();
-      for (int i = 1; i < split_raw.size() - 2; ++i) {
+      for (int i = 1; i < static_cast<int>(split_raw.size()) - 2; ++i) {
         mesh_filename_s.append(split_raw.at(i + 2));
       }
     } else {
