@@ -96,9 +96,7 @@ There are three ways to build Drake:
 2. :ref:`Using Ninja <build_with_ninja>`
 3. :ref:`Using ROS Catkin <build_with_ros_catkin>`
 
-Because the Drake build is not entirely out-of-source, you must pick one build
-system and stick to it. Switching build systems within the same working tree
-will produce CMake errors. For instructions on how to switch build systems, see
+For instructions on how to switch build systems, see
 :ref:`this subsection <identifying_build_system_used>`.
 
 Make support is more mature, but Ninja is faster, more modern, and will
