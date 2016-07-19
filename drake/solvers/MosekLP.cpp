@@ -226,10 +226,9 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
   mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
                                             lower_constraint_bounds);
   // find the linear objective here
-  std::shared_ptr<LinearConstraint> obj =
-      std::dynamic_pointer_cast<LinearConstraint>(
-      prog.generic_costs().front().constraint());
-  DRAKE_ASSERT(obj.use_count() != 0);
+  LinearConstraint *obj = dynamic_cast<LinearConstraint *>(
+      prog.generic_costs().front().constraint().get());
+  DRAKE_ASSERT(obj == nullptr);
   std::vector<double> linobj((*obj).A().data(),
       (*obj).A().data() + (*obj).A().rows() * (*obj).A().cols());
   MosekLP opt(prog.num_vars(),
