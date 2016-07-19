@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "drake/common/constants.h"
 #include "drake/core/Gradient.h"
 #include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
 #include "drake/examples/Atlas/atlasUtil.h"
@@ -27,6 +28,8 @@
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+
+using drake::kSpaceDimension;
 
 using drake::math::Gradient;
 using drake::math::autoDiffToGradientMatrix;
@@ -547,7 +550,7 @@ void QPLocomotionPlan::updateSwingTrajectory(
       robot.relativeTwist(cache, 0, body_motion_data.getBodyOrFrameId(), 0);
 
   Vector4d x0_quat = drake::math::rotmat2quat(x0_pose.linear());
-  Matrix<double, QUAT_SIZE, SPACE_DIMENSION> Phi;
+  Matrix<double, QUAT_SIZE, kSpaceDimension> Phi;
   angularvel2quatdotMatrix(
       x0_quat, Phi,
       static_cast<Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
