@@ -228,7 +228,7 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
   // find the linear objective here
   LinearConstraint *obj = dynamic_cast<LinearConstraint *>(
       prog.generic_costs().front().constraint().get());
-  DRAKE_ASSERT(obj == nullptr);
+  DRAKE_ASSERT(obj != nullptr);
   std::vector<double> linobj((*obj).A().data(),
       (*obj).A().data() + (*obj).A().rows() * (*obj).A().cols());
   MosekLP opt(prog.num_vars(),
