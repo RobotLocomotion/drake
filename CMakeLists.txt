@@ -562,3 +562,7 @@ if(WITH_SNOPT_PRECOMPILED)
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
 endif()
+
+if(APPLE)
+  add_test(NAME otool_test COMMAND python ../run_otool.py ${CMAKE_INSTALL_PREFIX} liblcmtypes_bot2-core.a)
+endif()
