@@ -19,13 +19,13 @@ typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 default_random_engine generator;
 
 GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
-  const size_t kNumInputs(1);
-  const size_t kNumStates(2);
-  const size_t kNumTimeSamples(21);  // aka N.
+  const int kNumInputs(1);
+  const int kNumStates(2);
+  const int kNumTimeSamples(21);  // aka N.
   DirectTrajectoryOptimization directTraj(kNumInputs, kNumStates,
                                           kNumTimeSamples, -2, 3);
 
-  const size_t t_init_in(7);
+  const int t_init_in(7);
   VectorXd s_times{VectorXd::LinSpaced(kNumTimeSamples, 0, t_init_in)};
   vector<double> segment_times(
       s_times.data(), s_times.data() + s_times.rows() * s_times.cols());

@@ -1,9 +1,5 @@
 #include "direct_trajectory_optimization.h"
 
-#include <iostream>
-
-using namespace std;
-
 namespace drake {
 namespace solvers {
 namespace {
@@ -28,7 +24,7 @@ VectorXd vector_diff(VectorXd& vec) {
  */
 DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     const int num_inputs, const int num_states,
-    const size_t num_time_samples /* N */,
+    const int num_time_samples,
     const int trajectory_time_lower_bound,
     const int trajectory_time_upper_bound)
     : num_inputs_(num_inputs),
@@ -38,7 +34,7 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
       u_vars_(opt_problem_.AddContinuousVariables(num_inputs * N, "u")),
       x_vars_(opt_problem_.AddContinuousVariables(num_states * N, "x")) {
   // Construct total time linear constraint.
-  // TODO(lucy-tri) add case for all timesteps independent (if needed).
+  // TODO(Lucy-tri) add case for all timesteps independent (if needed).
   MatrixXd id_zero(N - 2, N - 1);
   id_zero << MatrixXd::Identity(N - 2, N - 2), MatrixXd::Zero(N - 2, 1);
   MatrixXd zero_id(N - 2, N - 1);
@@ -58,10 +54,10 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   opt_problem_.AddBoundingBoxConstraint(MatrixXd::Zero(N - 1, 1), all_inf,
                                         {h_vars_});
 
-  // TODO(lucy-tri) Create constraints for dynamics and add them.
+  // TODO(Lucy-tri) Create constraints for dynamics and add them.
   // Matlab: obj.addDynamicConstraints();
 
-  // TODO(lucy-tri) Add control inputs (upper and lower bounds) as bounding box
+  // TODO(Lucy-tri) Add control inputs (upper and lower bounds) as bounding box
   // constraints.
 }
 
@@ -75,22 +71,19 @@ void DirectTrajectoryOptimization::GetInitialVars(
   if (traj_init_u.empty()) {
     guess_u = 0.01 * VectorXd::Random(u_vars_.size());
   } else {
-    // cout << "u_vars_.size()= " << u_vars_.size() << endl;
     for (int t = 0; t < N; ++t) {
-      // cout << "u size= " << traj_init_u.value(t_init[t]).size() << endl;
       guess_u.segment(num_inputs_ * t, num_inputs_) =
           traj_init_u.value(t_init[t]);
     }
   }
   opt_problem_.SetInitialGuess(u_vars_, guess_u);
 
-  DRAKE_ASSERT(!traj_init_x.empty());  // TODO(lucy-tri) see below.
+  DRAKE_ASSERT(!traj_init_x.empty());  // TODO(Lucy-tri) see below.
   VectorXd guess_x(x_vars_.size());
   if (traj_init_x.empty()) {
-    // TODO(lucy-tri) Do what DirectTrajectoryOptimization.m does.
+    // TODO(Lucy-tri) Do what DirectTrajectoryOptimization.m does.
   } else {
     for (int t = 0; t < N; ++t) {
-      // cout << "x size= " << traj_init_x.value(t_init[t]).size() << endl;
       guess_x.segment(num_states_ * t, num_states_) =
           traj_init_x.value(t_init[t]);
     }
@@ -107,8 +100,7 @@ SolutionResult DirectTrajectoryOptimization::SolveTraj(
     const PiecewisePolynomial<double>& traj_init_x) {
   GetInitialVars(t_init, traj_init_u, traj_init_x);
   SolutionResult result = opt_problem_.Solve();
-  // opt_problem_.PrintSolution();
-  // TODO(lgibson) Reconstruct the state and input trajectories.
+  // TODO(Lucy-tri) Reconstruct the state and input trajectories.
   return result;
 }
 
