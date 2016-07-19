@@ -20,15 +20,12 @@ namespace {
 
 void RunQuadraticProgram(OptimizationProblem* prog) {
   GurobiSolver gurobi_solver;
-
-  if (gurobi_solver.available() && prog != nullptr) {
-    SolutionResult result = SolutionResult::kUnknownError;
-    ASSERT_NO_THROW(result = gurobi_solver.Solve(*prog));
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  }
+  SolutionResult result = SolutionResult::kUnknownError;
+  ASSERT_NO_THROW(result = gurobi_solver.Solve(*prog));
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
 }
 
-/// Simple test from the Gurobi documentation.
+/// Simple test from the Gurobi documentation.ggg
 //  min    x^2 + x*y + y^2 + y*z + z^2 + 2 x
 //  subj to  x + 2 y + 3 z >= 4
 //           x +   y       >= 1
