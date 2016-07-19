@@ -21,7 +21,7 @@ namespace {
 void RunQuadraticProgram(OptimizationProblem* prog) {
   GurobiSolver gurobi_solver;
 
-  if (gurobi_solver.available()) {
+  if (gurobi_solver.available() && prog != nullptr) {
     SolutionResult result = SolutionResult::kUnknownError;
     ASSERT_NO_THROW(result = gurobi_solver.Solve(*prog));
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
@@ -71,28 +71,27 @@ GTEST_TEST(testGurobi, gurobiQPExample1) {
       CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
 }
 
-/// Closed form (exact) solution test of QP problem.
+// Closed form (exact) solution test of QP problem.
 // Note that for any Positive Semi Definite matrix Q :
-// min x'Qx + bx = -Q^(-1) * b
+// min 0.5x'Qx + bx = -Q^(-1) * b
 // The values were chosen at random but were hardcoded
 // to enable test reproducibility.
 GTEST_TEST(testGurobi, convexQPExample) {
   OptimizationProblem prog;
   auto x = prog.AddContinuousVariables(5);
   MatrixXd Q = MatrixXd::Constant(5, 5, 0.0);
-  Q.row(0) << 5.5, 2.0, 1.5, 3.2, -3.7;
-  Q.row(1) << 2.0, 6.5, 1.3, 4.2, 3.1;
-  Q.row(2) << 1.5, 1.3, 6.0, 2.1, -1.1;
-  Q.row(3) << 3.2, 4.2, 2.1, 5.3, 2.2;
-  Q.row(4) << -3.7, 3.1, -1.1, 2.2, 7.5;
+  VectorXd Qdiag = VectorXd::Constant(5, 0.0);
+  Qdiag << 5.5, 6.5, 6.0, 5.3, 7.5;
+  Q = Qdiag.asDiagonal();
+
   Eigen::VectorXd b = VectorXd::Constant(5, 0.0);
-  b << 3.2, 1.3, -5.6, -9.0, 1.2;
+
+  b << 3.2, 1.3, 5.6, 9.0, 1.2;
 
   prog.AddQuadraticCost(Q, b);
 
-  // Exact solution
-  VectorXd expected = -Q.ldlt().solve(b);
-
+  // Exact solution.
+  VectorXd expected = -Q.colPivHouseholderQr().solve(b);
   RunQuadraticProgram(&prog);
   EXPECT_TRUE(
       CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
@@ -101,22 +100,22 @@ GTEST_TEST(testGurobi, convexQPExample) {
 // Closed form (exact) solution test of QP problem.
 // Added as multiple QP cost terms
 // Note that for any Positive Semi Definite matrix Q :
-// min x'Qx + bx = -Q^(-1) * b
+// min 0.5x'Qx + bx = -Q^(-1) * b
+// The values were chosen at random but were hardcoded
+// to enable test reproducibility.
 GTEST_TEST(testGurobi, convexQPMultiCostExample) {
   OptimizationProblem prog;
   const DecisionVariableView x1 = prog.AddContinuousVariables(3, "x1");
   MatrixXd Q1 = MatrixXd::Constant(3, 3, 0.0);
-  Q1.row(0) << 5.5, 2.0, 1.5;
-  Q1.row(1) << 2.0, 6.5, 1.3;
-  Q1.row(2) << 1.5, 1.3, 6.0;
+  VectorXd Q1diag = VectorXd::Constant(3, 0.0);
+  Q1diag << 5.5, 6.5, 6.0;
+  Q1 = Q1diag.asDiagonal();
 
   const DecisionVariableView x2 = prog.AddContinuousVariables(3, "x2");
-
   MatrixXd Q2 = MatrixXd::Constant(3, 3, 0.0);
-  Q2 = 10 * VectorXd::Random(3).asDiagonal();
-  Q2.row(0) << 7.0, 2.2, -1.1;
-  Q2.row(1) << 2.2, 4.2, 2.1;
-  Q2.row(2) << -1.1, 2.1, 7.1;
+  VectorXd Q2diag = VectorXd::Constant(3, 0.0);
+  Q2diag << 7.0, 2.2, 1.1;
+  Q2 = Q2diag.asDiagonal();
 
   VectorXd b1 = VectorXd::Constant(3, 3, 0.0);
   b1 << 3.1, -1.4, -5.6;
@@ -134,7 +133,7 @@ GTEST_TEST(testGurobi, convexQPMultiCostExample) {
   b.topRows(3) = b1;
   b.bottomRows(3) = b2;
 
-  // Exact solution
+  // Exact solution.
   VectorXd expected = -Q.ldlt().solve(b);
 
   RunQuadraticProgram(&prog);
