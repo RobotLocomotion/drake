@@ -223,8 +223,8 @@ these spaces are typically ``drake_catkin_workspace/devel`` and
 
 .. _identifying_build_system_used:
 
-Identifying Which Build System Is Being Used and Switching Build Systems
-========================================================================
+Identifying Which Build System Is Used and Switching Build Systems
+==================================================================
 
 If you encounter an existing from-source installation of Drake and aren't sure
 whether it was built using ``Make`` or ``Ninja``, [1]_ look
