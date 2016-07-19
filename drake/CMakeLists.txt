@@ -7,6 +7,8 @@ cmake_policy(SET CMP0054 OLD)
 
 include(../cmake/config.cmake)
 
+drake_setup_platform()
+
 # Create a cache variable that contains the
 # max number of concurent link jobs that can be run
 # in a Ninja build, if the value is 0 then let Ninja

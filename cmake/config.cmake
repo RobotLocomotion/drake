@@ -1,6 +1,6 @@
-# NOTE: This file sets the basic configuration for both the drake superbuild
-#       and drake proper. Use project checks to isolate any logic that should
-#       not apply to both.
+# NOTE: The functions in this file set the basic configuration for both the
+#       drake superbuild and drake proper. Keep logic that should only be in
+#       one or the other in separate functions.
 
 #------------------------------------------------------------------------------
 function(drake_check_compiler NAME VERSION)
@@ -59,50 +59,64 @@ function(drake_get_matlab_jvm_version)
   endif()
 endfunction()
 
-###############################################################################
-
-# Check minimum compiler requirements
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  drake_check_compiler("GCC" 4.9)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-  drake_check_compiler("Apple Clang" 7)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  drake_check_compiler("Clang" 3.7)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-  drake_check_compiler("MSVC" 19 "19 (VS 2015)")
-endif()
-
-# Set compiler language standard level
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Require Java at the super-build level since libbot cannot configure without
-# finding Java
-find_package(Java 1.6 REQUIRED)
-include(UseJava)
-
-# If matlab is in use, try to determine its JVM version, as we need to build
-# all externals to the same version (on success, this will set the Java
-# compile flags)
-if(NOT DISABLE_MATLAB)
-  drake_get_matlab_jvm_version()
-endif()
-
-# Choose your python (major) version
-option(WITH_PYTHON_3 "Force Drake to use python 3 instead of python 2" OFF)
-
-# Set default build
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-    "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
-    FORCE)
-endif()
-
-# Set default install prefix
-if(PROJECT_NAME STREQUAL "drake-superbuild")
-  if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
-      "Prefix for installation of sub-packages (note: required during build!)" FORCE)
+#------------------------------------------------------------------------------
+macro(drake_setup_compiler)
+  # Check minimum compiler requirements
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    drake_check_compiler("GCC" 4.9)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    drake_check_compiler("Apple Clang" 7)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    drake_check_compiler("Clang" 3.7)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    drake_check_compiler("MSVC" 19 "19 (VS 2015)")
   endif()
-  message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
-endif()
+
+  # Set compiler language standard level
+  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endmacro()
+
+#------------------------------------------------------------------------------
+macro(drake_setup_java)
+  # Require Java at the super-build level since libbot cannot configure without
+  # finding Java
+  find_package(Java 1.6 REQUIRED)
+  include(UseJava)
+
+  # If matlab is in use, try to determine its JVM version, as we need to build
+  # all externals to the same version (on success, this will set the Java
+  # compile flags)
+  if(NOT DISABLE_MATLAB)
+    drake_get_matlab_jvm_version()
+  endif()
+endmacro()
+
+#------------------------------------------------------------------------------
+macro(drake_setup_platform)
+  drake_setup_compiler()
+  drake_setup_java()
+
+  # Choose your python (major) version
+  option(WITH_PYTHON_3 "Force Drake to use python 3 instead of python 2" OFF)
+
+  # Set default build
+  if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+      "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
+      FORCE)
+  endif()
+endmacro()
+
+#------------------------------------------------------------------------------
+macro(drake_setup_superbuild)
+  # Set default install prefix
+  if(PROJECT_NAME STREQUAL "drake-superbuild")
+    if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+      set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
+        "Prefix for installation of sub-packages (note: required during build!)"
+        FORCE)
+    endif()
+    message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+  endif()
+endmacro()
