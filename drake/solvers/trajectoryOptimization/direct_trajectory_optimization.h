@@ -15,7 +15,7 @@ namespace drake {
 namespace solvers {
 
 /**
- * DirectTrajectoryOptimization A class for direct method approaches
+ * DirectTrajectoryOptimization is a class for direct method approaches
  * to trajectory optimization.
  *
  * This class assumes that there are a fixed number (N) time steps/samples, and
@@ -25,15 +25,32 @@ namespace solvers {
  * To maintain nominal sparsity in the optimization programs, this
  * implementation assumes that all constraints and costs are
  * time-invariant.
+ *
+ * TODO(Lucy-tri) This class is a WIP. 
  */
 class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  public:
+ /**
+  * @p trajectory_time_lower_bound Bound on total time for trajectory.
+  * @p trajectory_time_upper_bound Bound on total time for trajectory.
+  */
   DirectTrajectoryOptimization(const int num_inputs, const int num_states,
-                               const size_t num_time_samples,
+                               const int num_time_samples,
                                const int trajectory_time_lower_bound,
                                const int trajectory_time_upper_bound);
-  // TODO(lucy-tri) add param: time steps constant or independent.
+  // TODO(Lucy-tri) add param: time steps constant or independent.
 
+  /**
+   * Add constraint (or composite constraint) that is a function of the
+   * state at the specified time or times.
+   * @p constraint A CompositeConstraint.
+   * @p time_index A cell array of time indices.
+   *   ex1., time_index = {1, 2, 3} means the constraint is applied
+   *   individually to knot points 1, 2, and 3. 
+   *   ex2,. time_index = {{1 2}, {3 4}} means the constraint is applied to knot
+   *   points 1 and 2 together (taking the combined state as an argument)
+   *   and 3 and 4 together.
+   */
   void AddStateConstraint(const Constraint& constraint, const int time_index);
 
   /**
