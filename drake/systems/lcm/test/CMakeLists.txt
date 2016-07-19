@@ -4,4 +4,10 @@ if(lcm_FOUND)
     drakeLCMSystem2
     ${GTEST_BOTH_LIBRARIES})
   add_test(NAME lcm_subscriber_system_test COMMAND lcm_subscriber_system_test)
+
+  add_executable(lcm_publisher_system_test lcm_publisher_system_test.cc)
+  target_link_libraries(lcm_publisher_system_test
+    drakeLCMSystem2
+    ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME lcm_publisher_system_test COMMAND lcm_publisher_system_test)
 endif()
