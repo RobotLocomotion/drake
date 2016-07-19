@@ -41,13 +41,6 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   // TODO(Lucy-tri) add param: time steps constant or independent.
 
   /**
-   * Add constraint (or composite constraint) that is a function of the
-   * state at the specified time or times.
-   * @p constraint A CompositeConstraint.
-   */
-  void AddStateConstraint(const Constraint& constraint, const int time_index);
-
-  /**
    * Solve the nonlinear program and return the resulting trajectory.
    *
    * @p t_init The final time of the solution.
@@ -71,7 +64,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    *
    * @p traj_init_x Initial guess for trajectory for state input.
    */
-  void GetInitialVars(int t_init_in,
+  void GetInitialVars(double t_init_in,
                       const PiecewisePolynomial<double>& traj_init_u,
                       const PiecewisePolynomial<double>& traj_init_x);
 
