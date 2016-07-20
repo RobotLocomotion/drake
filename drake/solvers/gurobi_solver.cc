@@ -42,12 +42,12 @@ template <typename DerivedA, typename DerivedB>
 int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
                    const Eigen::MatrixBase<DerivedB>& b, char constraint_sense,
                    double sparseness_threshold) {
-  for (size_t i = 0; i < A.rows(); i++) {
+  for (int i = 0; i < A.rows(); i++) {
     int non_zeros_index = 0;
     std::vector<int> constraint_index(A.cols(), 0);
     std::vector<double> constraint_value(A.cols(), 0.0);
 
-    for (size_t j = 0; j < A.cols(); j++) {
+    for (int j = 0; j < A.cols(); j++) {
       if (std::abs(A(i, j)) > sparseness_threshold) {
         constraint_value[non_zeros_index] = A(i, j);
         constraint_index[non_zeros_index++] = j;
