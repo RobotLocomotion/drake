@@ -39,7 +39,7 @@ on pull requests that have not yet been merged, or on arbitrary commits in the
 3. Click on the specific build you want to schedule.
 4. Click on "Build with Parameters" in the left menu.
 5. Check the ``debug`` box if you want to build in Debug configuration.
-6. Enter ``pr/XYZ/head``, ``pr/XYZ/merge``, or the desired commit SHA in the ``sha1`` field.
+6. Enter ``pr/XYZ/head`` (HEAD of pull request), ``pr/XYZ/merge`` (pull request merged with master), or the desired commit SHA in the ``sha1`` field.
 7. Click ``Build``.
 
 The list of Experimental builds includes a build named ``experimental``, which
