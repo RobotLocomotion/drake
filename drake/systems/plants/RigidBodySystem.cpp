@@ -315,8 +315,7 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
       prog.AddGenericConstraint(con1wrapper, {qvar});
       constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), loop.axis, loop.axis, loop.axis,
-          loop.frameA->frame_index, loop.frameB->frame_index, bTbp,
-          tspan));
+          loop.frameA->frame_index, loop.frameB->frame_index, bTbp, tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
                                                    &kin_helper));
@@ -345,7 +344,8 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem& sys, XMLElement* node,
   if (!parent_node)
     throw runtime_error("propellor " + name + " is missing the parent node");
   frame = drake::parsers::urdf::MakeRigidBodyFrameFromURDFNode(
-      *tree, model_id, *parent_node, node->FirstChildElement("origin"), name + "Frame");
+      *tree, model_id, *parent_node, node->FirstChildElement("origin"),
+      name + "Frame");
   tree->addFrame(frame);
 
   axis << 1.0, 0.0, 0.0;
@@ -911,7 +911,7 @@ void RigidBodySystem::addRobotFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type) {
   // first add the urdf to the rigid body tree
   drake::parsers::urdf::AddRobotFromURDFString(urdf_string, root_dir,
-    floating_base_type, tree.get());
+                                               floating_base_type, tree.get());
 
   // now parse additional tags understood by rigid body system (actuators,
   // sensors, etc)
@@ -930,7 +930,7 @@ void RigidBodySystem::addRobotFromURDF(
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   // Adds the URDF to the rigid body tree.
   drake::parsers::urdf::AddRobotFromURDF(urdf_filename, floating_base_type,
-    weld_to_frame, tree.get());
+                                         weld_to_frame, tree.get());
 
   // Parses additional tags understood by rigid body system (e.g., actuators,
   // sensors, etc).
@@ -951,7 +951,7 @@ void RigidBodySystem::addRobotFromSDF(
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   // Adds the robot to the rigid body tree.
   drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
-    weld_to_frame, tree.get());
+                                       weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).

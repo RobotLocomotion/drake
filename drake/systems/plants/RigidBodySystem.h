@@ -313,7 +313,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
  public:
-
   /**
    * The constructor.
    *
@@ -326,7 +325,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
    * belongs.
    */
   RigidBodyForceElement(RigidBodySystem& sys, const std::string& name,
-      int model_id)
+                        int model_id)
       : sys_(sys), name_(name), model_id_(model_id) {}
   virtual ~RigidBodyForceElement() {}
 
@@ -343,17 +342,18 @@ class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
   const std::string& get_name() const { return name_; }
 
  protected:
-  // TODO(liang.fok): Make the following variable private prior to Release 1.0.
+// TODO(liang.fok): Make the following variable private prior to Release 1.0.
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_rigid_body_system().")
 #endif
   RigidBodySystem& sys_;
 
-  // TODO(liang.fok): Make the following variable private prior to Release 1.0.
+// TODO(liang.fok): Make the following variable private prior to Release 1.0.
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_name().")
 #endif
   std::string name_;
+
  private:
   int model_id_;
 };
