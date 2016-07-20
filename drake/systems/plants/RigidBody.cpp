@@ -14,11 +14,34 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
+// RigidBody::RigidBody()
+//     : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
+//       collision_filter_ignores(DrakeCollision::NONE_MASK),
+//       parent(nullptr),
+//       robot_num(0) {
+//   position_num_start = 0;
+//   velocity_num_start = 0;
+//   body_index = 0;
+//   mass = 0.0;
+//   com = Vector3d::Zero();
+//   I << drake::SquareTwistMatrix<double>::Zero();
+// }
+
 RigidBody::RigidBody()
-    : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores(DrakeCollision::NONE_MASK),
-      parent(nullptr) {
-  robotnum = 0;
+    : RigidBody(
+        "" /* model_name */,
+        0 /* model_id */,
+        "") {
+  }
+
+RigidBody::RigidBody(const std::string& model_name, int model_id,
+    const std::string& name) :
+        collision_filter_group(DrakeCollision::DEFAULT_GROUP),
+        collision_filter_ignores(DrakeCollision::NONE_MASK),
+        name_(name),
+        model_name_(model_name),
+        robotnum(model_id),
+        parent(nullptr) {
   position_num_start = 0;
   velocity_num_start = 0;
   body_index = 0;
@@ -27,13 +50,17 @@ RigidBody::RigidBody()
   I << drake::SquareTwistMatrix<double>::Zero();
 }
 
-const std::string& RigidBody::name() const { return name_; }
+const std::string& RigidBody::name() const { return get_name(); }
 
-const std::string& RigidBody::model_name() const { return model_name_; }
+const std::string& RigidBody::get_name() const { return name_; }
+
+const std::string& RigidBody::model_name() const { return get_model_name(); }
+
+const std::string& RigidBody::get_model_name() const { return model_name_; }
 
 int RigidBody::get_model_id() const { return robotnum; }
 
-void RigidBody::set_model_id(int model_id) { robotnum = model_id; }
+// void RigidBody::set_model_id(int model_id) { robotnum = model_id; }
 
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
   this->joint = move(new_joint);
@@ -121,7 +148,7 @@ RigidBody::CollisionElement::CollisionElement(
   // Collision elements should be set to static in a later Initialize() stage as
   // described in issue #2661.
   // TODO(amcastro-tri): remove this hack.
-  if (body->name() == "world") set_static();
+  if (body->get_name() == "world") set_static();
 }
 
 RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {

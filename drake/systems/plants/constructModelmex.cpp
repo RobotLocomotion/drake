@@ -78,13 +78,17 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     // DEBUG
     // mexPrintf("constructModelmex: body %d\n", i);
     // END_DEBUG
-    std::unique_ptr<RigidBody> b(new RigidBody());
-    b->body_index = i;
-
-    b->name_ = mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname"));
+    std::string body_name =
+        mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname"));
 
     pm = mxGetPropertySafe(pBodies, i, "robotnum");
-    b->robotnum = (int)mxGetScalar(pm) - 1;
+    int model_id = (int)mxGetScalar(pm) - 1;
+
+    std::string model_name = "[UNKNOWN MODEL NAME]";
+    std::unique_ptr<RigidBody> b(new RigidBody(model_name, model_id,
+        body_name));
+
+    b->body_index = i;
 
     pm = mxGetPropertySafe(pBodies, i, "mass");
     b->mass = mxGetScalar(pm);

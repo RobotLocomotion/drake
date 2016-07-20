@@ -20,6 +20,8 @@ namespace urdf {
 /// @param[in] tree The rigid body tree that holds the rigid body to which the
 /// new `RigidBodyFrame` is attached.
 ///
+/// @param[in] model_id The iD of the model to which the frame belongs.
+///
 /// @param[in] link The URDF XML node describing the rigid body to which the
 /// new `RigidBodyFrame` is attached.
 ///
@@ -35,7 +37,7 @@ namespace urdf {
 /// `RigidBodyFrame` is attached is not found.
 DRAKERBM_EXPORT
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
-    const RigidBodyTree& tree, const tinyxml2::XMLElement& link,
+    const RigidBodyTree& tree, int model_id, const tinyxml2::XMLElement& link,
     const tinyxml2::XMLElement* pose, const std::string& name);
 
 // TODO(liang.fok) Replace this method with one that returns a Model object.

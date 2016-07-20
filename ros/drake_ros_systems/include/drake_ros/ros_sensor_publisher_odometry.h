@@ -99,7 +99,7 @@ class SensorPublisherOdometry {
             key, nh.advertise<nav_msgs::Odometry>(topic_name, 1)));
 
         std::unique_ptr<nav_msgs::Odometry> message(new nav_msgs::Odometry());
-        message->header.frame_id = RigidBodyTree::kWorldLinkName;
+        message->header.frame_id = RigidBodyTree::kWorldBodyName;
         message->child_frame_id = rigid_body->name();
 
         odometry_messages_.insert(
@@ -201,7 +201,7 @@ class SensorPublisherOdometry {
       auto twist = rigid_body_tree->relativeTwist(
           cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
           rigid_body_tree->FindBodyIndex(rigid_body->name()),
-          rigid_body_tree->FindBodyIndex(RigidBodyTree::kWorldLinkName));
+          rigid_body_tree->FindBodyIndex(RigidBodyTree::kWorldBodyName));
 
       message->twist.twist.linear.x = twist(0);
       message->twist.twist.linear.y = twist(1);

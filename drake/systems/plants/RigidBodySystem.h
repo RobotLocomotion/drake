@@ -342,9 +342,19 @@ class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
 
   const std::string& get_name() const { return name_; }
 
- private:
+ protected:
+  // TODO(liang.fok): Make the following variable private prior to Release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_rigid_body_system().")
+#endif
   RigidBodySystem& sys_;
+
+  // TODO(liang.fok): Make the following variable private prior to Release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_name().")
+#endif
   std::string name_;
+ private:
   int model_id_;
 };
 

@@ -345,7 +345,7 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem& sys, XMLElement* node,
   if (!parent_node)
     throw runtime_error("propellor " + name + " is missing the parent node");
   frame = drake::parsers::urdf::MakeRigidBodyFrameFromURDFNode(
-      *tree, *parent_node, node->FirstChildElement("origin"), name + "Frame");
+      *tree, model_id, *parent_node, node->FirstChildElement("origin"), name + "Frame");
   tree->addFrame(frame);
 
   axis << 1.0, 0.0, 0.0;
@@ -384,7 +384,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
     throw runtime_error("linear_spring_damper " + name +
                         " is missing the link1 node");
   frameA = drake::parsers::urdf::MakeRigidBodyFrameFromURDFNode(
-      *tree, *link_ref_node, link_ref_node, name + "FrameA");
+      *tree, model_id, *link_ref_node, link_ref_node, name + "FrameA");
   tree->addFrame(frameA);
 
   link_ref_node = node->FirstChildElement("link2");
@@ -392,7 +392,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
     throw runtime_error("linear_spring_damper " + name +
                         " is missing the link2 node");
   frameB = drake::parsers::urdf::MakeRigidBodyFrameFromURDFNode(
-      *tree, *link_ref_node, link_ref_node, name + "FrameB");
+      *tree, model_id, *link_ref_node, link_ref_node, name + "FrameB");
   tree->addFrame(frameB);
 }
 

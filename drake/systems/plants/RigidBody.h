@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
@@ -23,22 +24,44 @@ class DRAKERBM_EXPORT RigidBody {
   RigidBody();
 
   /**
-   * @brief Name of the body.
+   * A constructor.
    *
-   * An accessor for the name of the body that this rigid body represents.
+   * @param[in] model_name The name of the model to which this rigid body
+   * belongs.
    *
-   * @return The name of the body that's modeled by this rigid body.
+   * @param[in] model_id The ID of the model to which this rigid body belongs.
+   *
+   * @param[in] name The name of the rigid body.
    */
+  explicit RigidBody(const std::string& model_name, int model_id,
+      const std::string& name);
+
+  /**
+   * Returns the name of this rigid body.
+   */
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_name().")
+#endif
   const std::string& name() const;
 
   /**
-   * An accessor for the name of the model or robot that this rigid body is
-   * a part of.
-   *
-   * @return The name of the model that this rigid body belongs to.
+   * Returns the name of this rigid body.
    */
-  // TODO(amcastro-tri): Move concept of world out of here as per #2318.
+  const std::string& get_name() const;
+
+  /**
+   * Returns the name of the model to which this rigid body belongs.
+   */
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_model_name().")
+#endif
   const std::string& model_name() const;
+
+  // TODO(amcastro-tri): Move concept of world out of here as per #2318.
+  /**
+   * Returns the name of the model to which this rigid body belongs.
+   */
+  const std::string& get_model_name() const;
 
   /**
    * Returns the ID of the model to which this rigid body belongs.
@@ -48,7 +71,7 @@ class DRAKERBM_EXPORT RigidBody {
   /**
    * Sets the ID of the model to which this rigid body belongs.
    */
-  void set_model_id(int model_id);
+  // void set_model_id(int model_id);
 
   /**
    * Sets the parent joint through which this rigid body connects to its parent
@@ -143,13 +166,18 @@ class DRAKERBM_EXPORT RigidBody {
 
  public:
   /// The name of this rigid body.
-  std::string name_;
+  const std::string name_;
 
   /// The name of the model to which this rigid body belongs.
   std::string model_name_;
 
+  // TODO(liang.fok): Make the following variable private prior to Release 1.0.
+  //                  Once private, rename it to be model_id_.
   /// A unique ID for each model. It uses 0-index, starts from 0.
-  int robotnum;
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_model_id() and set_model_id().")
+#endif
+  const int robotnum;
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
