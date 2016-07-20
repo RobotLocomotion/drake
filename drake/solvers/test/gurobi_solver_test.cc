@@ -114,9 +114,9 @@ GTEST_TEST(testGurobi, convexQPMultiCostExample) {
   Q2diag << 7.0, 2.2, 1.1;
   Q2 = Q2diag.asDiagonal();
 
-  VectorXd b1 = VectorXd::Constant(3, 3, 0.0);
+  VectorXd b1 = VectorXd::Constant(3, 0.0);
   b1 << 3.1, -1.4, -5.6;
-  VectorXd b2 = VectorXd::Constant(3, 3, 0.0);
+  VectorXd b2 = VectorXd::Constant(3, 0.0);
   b2 << 2.3, -5.8, 6.7;
 
   prog.AddQuadraticCost(Q1, b1, {x1});
