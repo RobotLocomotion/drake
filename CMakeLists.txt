@@ -5,6 +5,9 @@ include(CTest)
 
 include(cmake/config.cmake)
 
+drake_setup_superbuild()
+drake_setup_platform()
+
 include(ExternalProject)
 find_package(Git REQUIRED)
 
