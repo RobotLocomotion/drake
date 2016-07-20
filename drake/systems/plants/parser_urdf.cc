@@ -968,7 +968,9 @@ void parseModel(RigidBodyTree* tree, XMLElement* node,
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
 
-  string robotname = node->Attribute("name");
+  string model_name = node->Attribute("name");
+
+  int model_id = tree->get_next_model_id();
 
   // Parses the model's material elements.
   MaterialMap materials;
@@ -993,7 +995,7 @@ void parseModel(RigidBodyTree* tree, XMLElement* node,
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
        link_node = link_node->NextSiblingElement("link")) {
     int index;
-    if (parseLink(tree, robotname, link_node, &materials, package_map,
+    if (parseLink(tree, model_name, link_node, &materials, package_map,
                   root_dir, &index)) {
       link_indices.push_back(index);
     } else {
