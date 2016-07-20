@@ -88,6 +88,8 @@ Before running build, you will need to follow the instructions for your host sys
     ubuntu
     windows
 
+.. _build_the_collection:
+
 Build the collection
 ====================
 There are three ways to build Drake:

@@ -13,14 +13,19 @@ Setting up Drake in CLion
 =========================
 We'll set up CLion to build Drake only. The dependencies will just be built from the command line.
 
-1. Build drake-distro from the command line.
-2. In the Welcome to CLion screen, click 'Import Project from Sources'.
-3. Browse to the drake subfolder of your drake-distro install and click OK.
-4. When asked whether to overwrite the existing CMakeLists.txt, just click Open Project.
-5. Go to CLion Preferences (on OSX, CLion-EAP > Preferences, on Ubuntu, File > Settings). Note that this preferences window comprises both global settings and project-specific settings (as noted by the text 'for current project' on some of the preference pages).
-6. Browse to Build, Execution, Deployment > CMake
-7. Under CMake Options, fill in `-D CMAKE_INSTALL_PREFIX=/Users/twan/code/drake-distro/build` or whatever the path to your drake-distro build folder may be.
-8. Under Build Output Path, fill in `pod-build`
+1. :ref:`Build Drake <build_the_collection>` from the command line.
+2. In the Welcome to CLion screen, click `Import Project from Sources`. Or from the menu `File > Import Project...`
+3. Browse and select the `drake` sub-folder of your `drake-distro` install (i.e. `drake-distro/drake`) and click OK.
+4. When asked whether to overwrite the existing `CMakeLists.txt`, just click `Open Project`.
+5. Go to CLion Preferences (on OSX, `CLion-EAP > Preferences`, on Ubuntu, `File > Settings...`). Note that this preferences window comprises both global settings and project-specific settings (as noted by the text 'for current project' on some of the preference pages).
+6. Browse to `Build, Execution, Deployment > CMake`.
+7. Under `CMake Options`, fill in `-DCMAKE_INSTALL_PREFIX=/absolute_path_to_your/drake-distro/build/install` or whatever the path to your build artifacts directory may be.
+8. Under `CMake Options` expand the tab `Pass system and custom environment`. Add the following environment variables:
+  * `CC=gcc-4.9`
+  * `CXX=g++-4.9`
+  * `FC=gfortran-4.9`
+  * `F77=gfortran-4.9`      
+  You can copy these from this documentation one at a time and click on the `paste` button at the right of the environment variables dialog.
 9. Click OK. CLion will take about a minute to reload the CMake Project. If everything is in order, there should be no errors or warnings. For fun, check out the CMake Cache pane too by the way; it's pretty handy.
 10. If CLion asks you about unregistered VCS roots, you can just add them.
 
