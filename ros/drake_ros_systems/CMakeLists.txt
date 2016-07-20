@@ -15,6 +15,7 @@ if (CATKIN_ENABLE_TESTING)
   include_directories(${CMAKE_INSTALL_PREFIX}/include)
   add_rostest_gtest(ros_test test/ros_test.test test/ros_test.cc)
   target_link_libraries(ros_test ${catkin_LIBRARIES})
+  set_target_properties(ros_test PROPERTIES EXCLUDE_FROM_ALL FALSE)
 endif()
 
 install(DIRECTORY include/${PROJECT_NAME}/
