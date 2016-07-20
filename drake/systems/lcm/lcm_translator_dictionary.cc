@@ -21,8 +21,8 @@ bool LcmTranslatorDictionary::HasTranslator(const std::string& channel_name)
 }
 
 /**
-* Returns a reference to the translator to use with the specified channel.
-*/
+ * Returns a reference to the translator to use with the specified channel.
+ */
 const LcmAndVectorInterfaceTranslator& LcmTranslatorDictionary::GetTranslator(
     const std::string& channel_name) const {
   if (HasTranslator(channel_name)) {
