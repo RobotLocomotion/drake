@@ -1,50 +1,56 @@
 #include <cstdlib>
 #include <Eigen/Dense>
 
+#include "gtest/gtest.h"
+
+#include "drake/Path.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/eigen_matrix_compare.h"
-#include "gtest/gtest.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+
+using Drake::getDrakePath;
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
 GTEST_TEST(testIKpointwise, simpleIKpointwise) {
-  RigidBodyTree rbm("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree model(
+      getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
   Vector2d tspan;
   tspan << 0, 1;
   int nT = 3;
   double t[3] = {0.0, 0.5, 1.0};
-  MatrixXd q0(rbm.number_of_positions(), nT);
+  MatrixXd q0(model.number_of_positions(), nT);
   for (int i = 0; i < nT; i++) {
-    q0.col(i) = rbm.getZeroConfiguration();
+    q0.col(i) = model.getZeroConfiguration();
     q0(3, i) = 0.8;
   }
   Vector3d com_des = Vector3d::Zero();
   com_des(2) = std::numeric_limits<double>::quiet_NaN();
-  WorldCoMConstraint com_kc(&rbm, com_des, com_des);
+  WorldCoMConstraint com_kc(&model, com_des, com_des);
   Vector3d com_lb = Vector3d::Zero();
   Vector3d com_ub = Vector3d::Zero();
   com_lb(2) = 0.9;
   com_ub(2) = 1.0;
   Vector2d tspan_end;
   tspan_end << 0.9, 1;
-  WorldCoMConstraint com_kc_final(&rbm, com_lb, com_ub, tspan_end);
+  WorldCoMConstraint com_kc_final(&model, com_lb, com_ub, tspan_end);
 
   int num_constraints = 2;
   RigidBodyConstraint** constraint_array =
       new RigidBodyConstraint* [num_constraints];
   constraint_array[0] = &com_kc;
   constraint_array[1] = &com_kc_final;
-  IKoptions ikoptions(&rbm);
-  MatrixXd q_sol(rbm.number_of_positions(), nT);
+  IKoptions ikoptions(&model);
+  MatrixXd q_sol(model.number_of_positions(), nT);
   int* info = new int[nT];
-  vector<string> infeasible_constraint;
-  inverseKinPointwise(&rbm, nT, t, q0, q0, num_constraints, constraint_array,
+  std::vector<std::string> infeasible_constraint;
+  inverseKinPointwise(&model, nT, t, q0, q0, num_constraints, constraint_array,
                       ikoptions, &q_sol, info, &infeasible_constraint);
   for (int i = 0; i < nT; i++) {
     printf("INFO[%d] = %d ", i, info[i]);
@@ -55,8 +61,8 @@ GTEST_TEST(testIKpointwise, simpleIKpointwise) {
   const Vector3d expected_initial(0, 0, 0.216933);
   const Vector3d expected_final(0, 0, 0.9);
   for (int i = 0; i < nT; i++) {
-    KinematicsCache<double> cache = rbm.doKinematics(q_sol.col(i));
-    Vector3d com = rbm.centerOfMass(cache);
+    KinematicsCache<double> cache = model.doKinematics(q_sol.col(i));
+    Vector3d com = model.centerOfMass(cache);
     printf("t %d: %5.6f\n%5.6f\n%5.6f\n", i, com(0), com(1), com(2));
     if (i < (nT - 1)) {
       // SNOPT and IPOPT diverge slightly in their output, so reduce
