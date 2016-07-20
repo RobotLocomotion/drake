@@ -11,9 +11,14 @@
 /// A scalar multi-variate piecewise polynomial.
 /**
  * PiecewisePolynomial represents a list of contiguous segments in time with a
- * Polynomial defined for each segment.
+ * Matrix of Polynomials defined for each segment. The term segment is used for
+ * piece.
  *
- * An example of a piecewise function is the absolute value function:
+ * An example of a piecewise polynomial is a function of x segments in time,
+ * where for each segment a different polynomial is defined. For a more specific
+ * example, consider the absolute value function, which is a piecewise function.
+ * It uses one function for inputs values < 0, and another function for input
+ * values > 0:
  *
  * @code
  * int abs(int x)
@@ -24,7 +29,7 @@
  *   else return x;
  * }
  * @endcode
- * 
+ *
  * PiecewisePolynomials can be added, subtracted, and multiplied.
  * They cannot be divided because Polynomials are not closed
  * under division.
@@ -42,7 +47,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
 
  private:
   std::vector<PolynomialMatrix>
-      polynomials;  // a PolynomialMatrix for each piece
+      polynomials;  // a PolynomialMatrix for each piece (segment)
 
  public:
   virtual ~PiecewisePolynomial() {}
@@ -102,6 +107,10 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
    */
   PiecewisePolynomial integral(
       const CoefficientMatrixRef& value_at_start_time) const;
+
+  bool empty() const {
+    return polynomials.empty();
+  }
 
   double scalarValue(double t, Eigen::Index row = 0, Eigen::Index col = 0);
 
