@@ -1,6 +1,9 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
+
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 
@@ -34,6 +37,13 @@ bool SortedVectorsHaveIntersection(const std::vector<T>& a,
                                    const std::vector<T>& b) {
   typename std::vector<T>::const_iterator ai = a.begin();
   typename std::vector<T>::const_iterator bi = b.begin();
+
+  // Checks the precondition that the lists are sorted, only in debug builds.
+  // This means O(n) performance in Debug builds but could also catch some very
+  // obscure errors.
+  DRAKE_ASSERT(std::is_sorted(a.cbegin(), a.cend()) &&
+               std::is_sorted(b.cbegin(), b.cend()));
+
   // Quick checks first:
   // Check if either of the ranges is empty:
   if (ai == a.end() || bi == b.end()) return false;
