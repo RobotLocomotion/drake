@@ -16,6 +16,7 @@ set(installed_headers
   drake_deprecated.h
   eigen_types.h
   nice_type_name.h
+  sorted_vectors_have_intersection.h
   )
 
 # List headers that are needed by code here but should not
