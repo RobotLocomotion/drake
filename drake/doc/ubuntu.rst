@@ -23,7 +23,7 @@ Ubuntu 15.10 (Wily)
 
 On Ubuntu 15.10 (Wily) and higher the system compiler is sufficient::
 
-    sudo apt-get install g++-multilib
+    sudo apt-get install g++-multilib gfortran
 
 Ubuntu 14.04 LTS (Trusty)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
