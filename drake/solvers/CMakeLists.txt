@@ -1,5 +1,3 @@
-# TODO: still build something useful if Gurobi does not exist
-
 pods_find_pkg_config(gurobi)
 
 if(gurobi_FOUND)
@@ -50,6 +48,12 @@ if(snopt_c_FOUND)
 else()
   list(APPEND optimization_files NoSnopt.cpp)
 endif()
+pods_find_pkg_config(mosek)
+if(mosek_FOUND)
+  list(APPEND optimization_files MosekSolver.cpp MosekLP.cpp)
+else()
+  list(APPEND optimization_files NoMosek.cpp)
+endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakePolynomial)
@@ -89,6 +93,10 @@ endif()
 if(snopt_c_FOUND AND MATLAB_FOUND)
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
+endif()
+
+if(mosek_FOUND)
+  pods_use_pkg_config_packages(drakeOptimization mosek)
 endif()
 
 add_subdirectory(qpSpline)
