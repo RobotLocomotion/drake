@@ -19,7 +19,7 @@ target_link_libraries(system_identification_test
 add_test(NAME system_identification_test COMMAND system_identification_test)
 add_executable(gurobi_solver_test gurobi_solver_test.cc)
 target_link_libraries(gurobi_solver_test drakeOptimization
-        ${GTEST_BOTH_LIBRARIES})
+  ${GTEST_BOTH_LIBRARIES})
 
 if(gurobi_FOUND)
   add_test(NAME gurobi_solver_test COMMAND gurobi_solver_test)
