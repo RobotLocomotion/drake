@@ -211,6 +211,15 @@ set(lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON)
 if(WITH_GTK)
   set(lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS ${lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS} -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_SOURCE_DIR}/externals/gtk/gtk3)
 endif()
+if(WIN32)
+  # On Windows we always need a Release LCM for compatibility with Python libraries.
+  if(CMAKE_CONFIGURATION_TYPES)
+    set(lcm_BUILD_COMMAND ${CMAKE_COMMAND} --build . --config Release)
+    set(lcm_INSTALL_COMMAND ${CMAKE_COMMAND} --build . --config Release --target install)
+  else()
+    list(APPEND lcm_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DCMAKE_BUILD_TYPE:STRING=Release)
+  endif()
+endif()
 set(libbot_IS_CMAKE_POD TRUE)
 set(libbot_IS_PUBLIC TRUE)
 set(bot_core_lcmtypes_IS_CMAKE_POD TRUE)
@@ -372,12 +381,21 @@ foreach(proj ${EXTERNAL_PROJECTS})
       if(CMAKE_VERBOSE_MAKEFILE)
         set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
       endif()
+      foreach(c BUILD INSTALL)
+        if(DEFINED ${proj}_${c}_COMMAND)
+          set(maybe_${c}_COMMAND ${c}_COMMAND ${${proj}_${c}_COMMAND})
+        else()
+          set(maybe_${c}_COMMAND "")
+        endif()
+      endforeach()
       ExternalProject_Add(${proj}
         SOURCE_DIR ${${proj}_SOURCE_DIR}
         BINARY_DIR ${${proj}_BINARY_DIR}
         DOWNLOAD_COMMAND ${${proj}_DOWNLOAD_COMMAND}
         DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}
         UPDATE_COMMAND ${${proj}_UPDATE_COMMAND}
+        ${maybe_BUILD_COMMAND}
+        ${maybe_INSTALL_COMMAND}
         BUILD_ALWAYS 1
         INDEPENDENT_STEP_TARGETS update
         DEPENDS ${deps}
