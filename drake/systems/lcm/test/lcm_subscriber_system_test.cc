@@ -157,9 +157,8 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // drake::lcmt_drake_signal and outputs System 2.0 Vectors of type
   // drake::systems::BasicVector.
   //
-  // It then verifies that the LcmSubscriberSystem was successfully stored
-  // in a unique_ptr. The unique_ptr variable is called "dut" to indicate it is
-  // the "device under test".
+  // The LcmSubscriberSystem is called "dut" to indicate it is the
+  // "device under test".
   LcmSubscriberSystem dut(channel_name, translator, &lcm);
 
   TestSubscriber(&lcm, channel_name, &dut);
@@ -182,9 +181,8 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   // drake::lcmt_drake_signal and outputs System 2.0 Vectors of type
   // drake::systems::BasicVector.
   //
-  // It then verifies that the LcmSubscriberSystem was successfully stored
-  // in a unique_ptr. The unique_ptr variable is called "dut" to indicate it is
-  // the "device under test".
+  // The LcmSubscriberSystem is called "dut" to indicate it is the
+  // "device under test".
   LcmSubscriberSystem dut(channel_name, dictionary, &lcm);
 
   TestSubscriber(&lcm, channel_name, &dut);
