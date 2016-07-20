@@ -50,7 +50,7 @@ if(snopt_c_FOUND OR ipopt_FOUND)
   add_ik_gtest(testIKpointwise)
 endif()
 if (snopt_c_FOUND)
-  add_ik_cpp(testIKtraj)
+  add_ik_gtest(testIKtraj)
 endif()
 
 add_executable(debugManipulatorDynamics debugManipulatorDynamics.cpp)
