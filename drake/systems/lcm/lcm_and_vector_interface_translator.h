@@ -43,8 +43,7 @@ class LcmAndVectorInterfaceTranslator {
    * @param[in] rbuf A pointer to a buffer holding the LCM message's data.
    *
    * @param[out] vector_interface A pointer to where the translation of the LCM
-   * message should be stored. This pointer must not be `nullptr` and must
-   * be valid throughout the duration of this method call.
+   * message should be stored. This pointer must not be `nullptr`.
    *
    * @throws runtime_error If a received LCM message failed to be decoded, or
    * if the decoded LCM message is incompatible with the @p vector_interface.
@@ -53,6 +52,23 @@ class LcmAndVectorInterfaceTranslator {
    */
   virtual void TranslateLcmToVectorInterface(const ::lcm::ReceiveBuffer* rbuf,
     VectorInterface<double>* vector_interface) const = 0;
+
+  /**
+   * Translates a `drake::systems::VectorInterface` object into an LCM message
+   * and publishes it on the specified LCM channel.
+   *
+   * @param[in] vector_interface A reference to the object to convert into an
+   * LCM message.
+   *
+   * @param[in] channel The name of the channel on which to publish the LCM
+   * message.
+   *
+   * @param[in] lcm A pointer to the LCM subsystem. This pointer must not be
+   * `nullptr`.
+   */
+  virtual void PublishVectorInterfaceToLCM(
+      const VectorInterface<double>& vector_interface,
+      const std::string& channel, ::lcm::LCM* lcm) const = 0;
 
  private:
   // The size of the vector in the VectorInterface.

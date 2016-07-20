@@ -96,9 +96,8 @@ There are three ways to build Drake:
 2. :ref:`Using Ninja <build_with_ninja>`
 3. :ref:`Using ROS Catkin <build_with_ros_catkin>`
 
-Because the Drake build is not entirely out-of-source, you must pick one build
-system and stick to it. Switching build systems within the same working tree
-will produce CMake errors.
+For instructions on how to switch build systems, see
+:ref:`this subsection <identifying_build_system_used>`.
 
 Make support is more mature, but Ninja is faster, more modern, and will
 receive more investment from the Drake development team going forward.
@@ -219,6 +218,29 @@ following the
 :ref:`official Drake/ROS installation instructions <build_from_source_using_ros_catkin>`,
 these spaces are typically ``drake_catkin_workspace/devel`` and
 ``drake_catkin_workspace/install``, respectively.
+
+.. _identifying_build_system_used:
+
+Identifying Which Build System Is Used and Switching Build Systems
+==================================================================
+
+If you encounter an existing from-source installation of Drake and aren't sure
+whether it was built using ``Make`` or ``Ninja``, [1]_ look
+in ``drake-distro/build``. If there is a file called ``Makefile``, Drake was
+built using ``Make``. If there is a file called ``rules.ninja``, Drake was built
+using ``Ninja``. To switch the build system, first save and commit all of your
+work. Then delete all build artifacts::
+
+    $ cd drake-distro
+    $ rm -rf build
+    $ rm -rf externals
+    $ git clean -fdx
+    $ git reset --hard HEAD
+
+Once you've deleted all build artifacts, follow the instructions above for your
+desired build system.
+
+.. [1] ROS Catkin is not listed since you should immediately know if Drake was :ref:`compiled using ROS Catkin <build_from_source_using_ros_catkin>` based on whether it is located in a ROS workspace. Once compiled using Catkin, do not attempt to switch build systems.
 
 .. _test_from_source_installation:
 

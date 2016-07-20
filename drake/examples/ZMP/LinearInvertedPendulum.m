@@ -288,7 +288,8 @@ classdef LinearInvertedPendulum < LinearSystem
       if options.compute_lyapunov
         if options.build_control_objects
           s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
-          [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
+          [t,y] = ode45(@s2dynamics,fliplr(breaks),0);
+          ydot = s2dynamics(t,y);
           s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
           Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
         else
@@ -326,12 +327,20 @@ classdef LinearInvertedPendulum < LinearSystem
       
       function s2dot = s2dynamics(t,s2)
         [s1,j] = eval(s1traj,t);
-        trel = t-breaks(j);
-        zbar = squeeze(c(:,j,:))*trel.^(0:k-1)';
+        trel = t'-breaks(j);
+        trel_power = bsxfun(@power,trel,(0:k-1)');
+        if(length(t)==1)
+          zbar = squeeze(c(:,j,:))*trel.^(0:k-1)';
+        else
+          zbar = zeros(size(c,1),length(t));
+          for ci = 1:size(c,1)
+            zbar(ci,:) = sum(squeeze(c(ci,j,:))'.*trel_power,1);
+          end
+        end
         r2 = -2*D*Q*zbar;
         rs = 0.5*(r2 + B'*s1);
-        q3 = zbar'*Q*zbar;
-        s2dot = -q3 + rs'*R1i*rs;
+        q3 = sum((Q*zbar).*zbar,1);
+        s2dot = (-q3 + sum((R1i*rs).*rs,1))';
       end
     end
     

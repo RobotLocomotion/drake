@@ -59,7 +59,6 @@ addpath(fullfile(root,'thirdParty','bsd','psm'));
 addpath(fullfile(root,'thirdParty','bsd','xacro'));
 addpath(fullfile(root,'thirdParty','misc'));
 addpath(fullfile(root,'thirdParty','misc','pathlcp'));
-addpath(fullfile(root,'thirdParty','nonfree'));
 addpath(fullfile(root,'thirdParty','zlib'));
 addpath(fullfile(root,'solvers','BMI'));
 addpath(fullfile(root,'solvers','BMI','util'));

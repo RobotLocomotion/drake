@@ -37,7 +37,6 @@ rmpath(fullfile(root,'thirdParty','bsd','psm'));
 rmpath(fullfile(root,'thirdParty','bsd','xacro'));
 rmpath(fullfile(root,'thirdParty','misc'));
 rmpath(fullfile(root,'thirdParty','misc','pathlcp'));
-rmpath(fullfile(root,'thirdParty','nonfree'));
 rmpath(fullfile(root,'thirdParty','zlib'));
 rmpath(fullfile(root,'solvers','BMI'));
 rmpath(fullfile(root,'solvers','BMI','util'));

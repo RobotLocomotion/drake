@@ -24,6 +24,7 @@ using namespace Eigen;
 
 using drake::AutoDiffUpTo73d;
 using drake::AutoDiffXd;
+using drake::kQuaternionSize;
 using drake::kRpySize;
 using drake::kSpaceDimension;
 using drake::Matrix3X;
@@ -44,7 +45,7 @@ const char* const RigidBodyTree::kWorldLinkName = "world";
 template <typename T>
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
   finite_indexes.clear();
-  const size_t n = v.size();
+  const int n = v.size();
   for (int x = 0; x < n; x++) {
     if (std::isfinite(static_cast<double>(v[x]))) {
       finite_indexes.push_back(x);
@@ -488,13 +489,11 @@ bool RigidBodyTree::collisionDetect(
     vector<int>& bodyB_idx, const vector<int>& bodies_idx,
     const set<string>& active_element_groups, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
-  for (auto body_idx_iter = bodies_idx.begin();
-       body_idx_iter != bodies_idx.end(); ++body_idx_iter) {
-    if (*body_idx_iter >= 0 && *body_idx_iter < bodies.size()) {
-      for (auto group_iter = active_element_groups.begin();
-           group_iter != active_element_groups.end(); ++group_iter) {
-        bodies[*body_idx_iter]->appendCollisionElementIdsFromThisBody(
-            *group_iter, ids_to_check);
+  for (const int& body_idx : bodies_idx) {
+    if (body_idx >= 0 && body_idx < static_cast<int>(bodies.size())) {
+      for (const string& group : active_element_groups) {
+        bodies[body_idx]->appendCollisionElementIdsFromThisBody(
+            group, ids_to_check);
       }
     }
   }
@@ -507,11 +506,9 @@ bool RigidBodyTree::collisionDetect(
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     vector<int>& bodyB_idx, const vector<int>& bodies_idx, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
-  for (auto body_idx_iter = bodies_idx.begin();
-       body_idx_iter != bodies_idx.end(); ++body_idx_iter) {
-    if (*body_idx_iter >= 0 && *body_idx_iter < bodies.size()) {
-      bodies[*body_idx_iter]->appendCollisionElementIdsFromThisBody(
-          ids_to_check);
+  for (const int& body_idx : bodies_idx) {
+    if (body_idx >= 0 && body_idx < static_cast<int>(bodies.size())) {
+      bodies[body_idx]->appendCollisionElementIdsFromThisBody(ids_to_check);
     }
   }
   return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx,
@@ -788,17 +785,20 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
                                       "updateCompositeRigidBodyInertias");
 
   if (!cache.areInertiasCached()) {
-    for (int i = 0; i < bodies.size(); i++) {
-      auto& element = cache.getElement(*bodies[i]);
+    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+      const RigidBody& body = **it;
+      auto& element = cache.getElement(body);
       element.inertia_in_world = transformSpatialInertia(
-          element.transform_to_world, bodies[i]->I.cast<Scalar>());
+          element.transform_to_world, body.I.cast<Scalar>());
       element.crb_in_world = element.inertia_in_world;
     }
 
-    for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; i--) {
-      if (bodies[i]->hasParent()) {
-        const auto& element = cache.getElement(*bodies[i]);
-        auto& parent_element = cache.getElement(*(bodies[i]->parent));
+    // N.B. Reverse iteration.
+    for (auto it = bodies.rbegin(); it != bodies.rend(); ++it) {
+      const RigidBody& body = **it;
+      if (body.hasParent()) {
+        const auto& element = cache.getElement(body);
+        auto& parent_element = cache.getElement(*body.parent);
         parent_element.crb_in_world += element.crb_in_world;
       }
     }
@@ -819,9 +819,8 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
   TwistMatrix<Scalar> ret(kTwistSize, ncols);
   ret.setZero();
   int gradient_row_start = 0;
-  for (int i = 0; i < bodies.size(); i++) {
-    RigidBody& body = *bodies[i];
-
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    const RigidBody& body = **it;
     if (body.hasParent()) {
       const auto& element = cache.getElement(body);
       const DrakeJoint& joint = body.getJoint();
@@ -856,8 +855,8 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
 
   TwistVector<Scalar> ret;
   ret.setZero();
-  for (int i = 0; i < bodies.size(); i++) {
-    RigidBody& body = *bodies[i];
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    const RigidBody& body = **it;
     if (body.hasParent()) {
       if (isBodyPartOfRobot(body, robotnum)) {
         const auto& element = cache.getElement(body);
@@ -1032,7 +1031,7 @@ int RigidBodyTree::parseBodyOrFrameID(
   } else if (body_or_frame_id < 0) {
     int frame_ind = -body_or_frame_id - 2;
     // check that this is in range
-    if (frame_ind >= frames.size()) {
+    if (frame_ind >= static_cast<int>(frames.size())) {
       std::ostringstream stream;
       stream << "Got a frame ind greater than available!\n";
       throw std::runtime_error(stream.str());
@@ -1468,7 +1467,7 @@ RigidBodyTree::transformPointsJacobian(
 }
 
 template <typename Scalar>
-Eigen::Matrix<Scalar, QUAT_SIZE, Eigen::Dynamic>
+Eigen::Matrix<Scalar, kQuaternionSize, Eigen::Dynamic>
 RigidBodyTree::relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache,
                                           int from_body_or_frame_ind,
                                           int to_body_or_frame_ind,
@@ -1481,7 +1480,7 @@ RigidBodyTree::relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache,
   auto Jomega = J_geometric.template topRows<kSpaceDimension>();
   auto quat =
       relativeQuaternion(cache, from_body_or_frame_ind, to_body_or_frame_ind);
-  Matrix<Scalar, QUAT_SIZE, kSpaceDimension> Phi;
+  Matrix<Scalar, kQuaternionSize, kSpaceDimension> Phi;
   angularvel2quatdotMatrix(
       quat, Phi,
       static_cast<typename Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
@@ -1578,7 +1577,7 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
 
   auto quat =
       relativeQuaternion(cache, from_body_or_frame_ind, to_body_or_frame_ind);
-  Matrix<Scalar, QUAT_SIZE, kSpaceDimension> Phi;
+  Matrix<Scalar, kQuaternionSize, kSpaceDimension> Phi;
   angularvel2quatdotMatrix(
       quat, Phi,
       static_cast<typename Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
@@ -1597,13 +1596,14 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
   // 32 bit
   auto quat_autodiff = quat.template cast<ADScalar>().eval();
   gradientMatrixToAutoDiff(quatdot, quat_autodiff);
-  Matrix<ADScalar, QUAT_SIZE, kSpaceDimension> Phi_autodiff;
+  Matrix<ADScalar, kQuaternionSize, kSpaceDimension> Phi_autodiff;
   angularvel2quatdotMatrix(
       quat_autodiff, Phi_autodiff,
       static_cast<typename Gradient<decltype(Phi_autodiff), Dynamic>::type*>(
           nullptr));
   auto Phidot_vector = autoDiffToGradientMatrix(Phi_autodiff);
-  Map<Matrix<Scalar, QUAT_SIZE, kSpaceDimension>> Phid(Phidot_vector.data());
+  Map<Matrix<Scalar, kQuaternionSize, kSpaceDimension>>
+      Phid(Phidot_vector.data());
 
   const auto J_geometric_dot_times_v = geometricJacobianDotTimesV(
       cache, to_body_or_frame_ind, from_body_or_frame_ind, expressed_in);
