@@ -111,8 +111,8 @@ void testRoots() {
     Polynomial<CoefficientType> poly(coeffs);
     auto roots = poly.roots();
     valuecheck<Eigen::Index>(roots.rows(), poly.getDegree());
-    for (int i = 0; i < roots.size(); i++) {
-      auto value = poly.evaluateUnivariate(roots[i]);
+    for (int k = 0; k < roots.size(); k++) {
+      auto value = poly.evaluateUnivariate(roots[k]);
       valuecheck(std::abs(value), 0.0, 1e-8);
     }
   }

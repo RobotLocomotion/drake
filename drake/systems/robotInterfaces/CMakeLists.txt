@@ -1,3 +1,5 @@
+# TODO(#2852) We can't yet handle shadowing as a compiler error.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS_NO_ERROR_SHADOW}")
 
 add_library_with_exports(LIB_NAME drakeSide SOURCE_FILES Side.cpp)
 drake_install_headers(Side.h)
