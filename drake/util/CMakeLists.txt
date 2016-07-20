@@ -128,7 +128,7 @@ if(0)  # NOT WIN32
     "# Usage:\n"
     "#   % drake_debug_mex.sh [args]\n"
     "# will set up the environment and then run:\n"
-    "#   % args drake-debug-mex\n"
+    "#   % args pod-build/bin/drake-debug-mex\n"
     "#\n"
     "# For example,\n"
     "#   % drake_debug_mex.sh\n"
