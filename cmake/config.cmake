@@ -16,7 +16,8 @@ endfunction()
 
 #------------------------------------------------------------------------------
 function(drake_get_matlab_jvm_version)
-  # Find matlab
+  # Find matlab; this does not use find_package(Matlab) because we only want
+  # to enable matlab support if the matlab executable is in the user's PATH
   find_program(MATLAB_EXECUTABLE matlab)
 
   if(MATLAB_EXECUTABLE AND NOT MATLAB_JVM_VERSION)
