@@ -120,16 +120,16 @@ include_directories(BEFORE ${generated_dir})
 
 # set up matlab build
 include(cmake/mex.cmake)
-if(DISABLE_MATLAB)
-  message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
-else()
-  # Search for MATLAB and configure various MEX options.
-  # If MATLAB is found, MATLAB_FOUND is set.
-  mex_setup()
+if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
+  if(DISABLE_MATLAB)
+    message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
+  else()
+    # Search for MATLAB and configure various MEX options.
+    # If MATLAB is found, MATLAB_FOUND is set.
+    mex_setup()
 
-  # if MATLAB is in the PATH then use cmake find_package to find it
-  # along with what is needed to use matlab_add_unit_test
-  if(MATLAB_FOUND)
+    # Use find_package to find "all of matlab" along with what is needed to use
+    # matlab_add_unit_test
     find_package(Matlab COMPONENTS MAIN_PROGRAM REQUIRED)
   endif()
 endif()
