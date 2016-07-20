@@ -186,7 +186,7 @@ Finally, to run the car simulation demo, execute::
     source devel/setup.bash
     roslaunch drake_cars_examples drake_car_sim.launch
 
-To drive the vehicle around in simulation, open another terminal and execute:
+To drive the vehicle around in simulation, open another terminal and execute::
 
     cd ~/dev/drake_catkin_workspace
     source devel/setup.bash
