@@ -261,6 +261,15 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
         problem_type_(),
         solver_result_(0) {}
 
+  /// Add continuous variables to this OptimizationProblem.
+  /**
+   * Add continuous variables, appending them to an internal list of any
+   * existing vars.
+   * The new variables are uninitialized: callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   *
+   * @return The DecisionVariableView of the new vars (not all the vars stored).
+   */
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
     DecisionVariable v(DecisionVariable::VarType::CONTINUOUS, name,
@@ -740,6 +749,13 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * "IPOPT" -- Paramater names and values as specified in IPOPT users
    * guide section "Options Reference"
    * http://www.coin-or.org/Ipopt/documentation/node40.html
+   *
+   * "Mosek" -- Accepts two parameters:
+   * -- "maxormin" -- maximize or minimize current problem using
+   *  either "max" or "min"
+   * -- "problemtype" -- currently only accepts "linear", plan to add
+   *  "quadratic" soon. SDP will take longer.
+   * TODO: Calling OptimizationProblem::Solve will not invoke mosek at this time.
    */
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option, double option_value) {
