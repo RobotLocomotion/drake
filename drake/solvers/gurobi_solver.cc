@@ -42,12 +42,12 @@ template <typename DerivedA, typename DerivedB>
 int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
                    const Eigen::MatrixBase<DerivedB>& b, char constraint_sense,
                    double sparseness_threshold) {
-  std::vector<int> constraint_index(A.cols(), 0);
-  std::vector<double> constraint_value(A.cols(), 0.0);
 
-  int error = 0;
   for (size_t i = 0; i < A.rows(); i++) {
     int non_zeros_index = 0;
+    std::vector<int> constraint_index(A.cols(), 0);
+    std::vector<double> constraint_value(A.cols(), 0.0);
+    
     for (size_t j = 0; j < A.cols(); j++) {
       if (std::abs(A(i, j)) > sparseness_threshold) {
         constraint_value[non_zeros_index] = A(i, j);
@@ -59,7 +59,8 @@ int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
                      &constraint_value[0], constraint_sense, b(i), nullptr);
     if (error) break;
   }
-  return error;
+  // If loop completes, no errors exist so the value '0' must be returned.
+  return 0;
 }
 
 /// Splits out the quadratic costs and makes calls to add them individually.
@@ -103,10 +104,14 @@ int AddCosts(GRBmodel* model, OptimizationProblem& prog,
     }
     const int error = GRBsetdblattrarray(
         model, "Obj", start_row, constraint_variable_dimension, b.data());
-    start_row += Q.rows();
     if (error) {
       return error;
     }
+    start_row += Q.rows();
+    // Verify that the start_row does not exceed the total possible
+    // dimension of the decision variable.
+    DRAKE_ASSERT(start_row <= prog.num_vars);
+
   }
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
@@ -151,7 +156,7 @@ int ProcessConstraints(GRBmodel* model, OptimizationProblem& prog,
       }
     }
   }
-  // No errors generated thus far.
+  // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
 }
 }  // close namespace
@@ -224,12 +229,12 @@ SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
       }
     } else {
       result = SolutionResult::kSolutionFound;
+      Eigen::VectorXd sol_vector = Eigen::VectorXd::Zero(num_vars);
+      GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_vars, sol_vector.data());
     }
   }
 
-  Eigen::VectorXd sol_vector = Eigen::VectorXd::Zero(num_vars);
 
-  GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_vars, sol_vector.data());
 
   prog.SetDecisionVariableValues(sol_vector);
   prog.SetSolverResult("Gurobi", error);
