@@ -1,15 +1,10 @@
 #pragma once
 
-#include <cstddef>
-
 #include <Eigen/Core>
 
 #include "drake/drakeTrajectoryOptimization_export.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
 
 namespace drake {
 namespace solvers {
@@ -26,18 +21,18 @@ namespace solvers {
  * implementation assumes that all constraints and costs are
  * time-invariant.
  *
- * TODO(Lucy-tri) This class is a WIP. 
+ * TODO(Lucy-tri) This class is a WIP.
  */
 class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  public:
- /**
-  * @p trajectory_time_lower_bound Bound on total time for trajectory.
-  * @p trajectory_time_upper_bound Bound on total time for trajectory.
-  */
-  DirectTrajectoryOptimization(const int num_inputs, const int num_states,
-                               const int num_time_samples,
-                               const double trajectory_time_lower_bound,
-                               const double trajectory_time_upper_bound);
+  /**
+   * @p trajectory_time_lower_bound Bound on total time for trajectory.
+   * @p trajectory_time_upper_bound Bound on total time for trajectory.
+   */
+  DirectTrajectoryOptimization(int num_inputs, int num_states,
+                               int num_time_samples,
+                               double trajectory_time_lower_bound,
+                               double trajectory_time_upper_bound);
   // TODO(Lucy-tri) add param: time steps constant or independent.
 
   /**
@@ -45,24 +40,39 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    *
    * @p t_init The final time of the solution.
    *
-   * @p traj_init_u Initial guess for trajectory for control input.
+   * @p traj_init_u Initial guess for trajectory for control input. The number
+   * of rows for each segment in @p traj_init_u must be equal to num_inputs
+   * (the first param of the constructor).
    *
-   * @p traj_init_x Initial guess for trajectory for state input.
+   * @p traj_init_x Initial guess for trajectory for state input. The number
+   * of rows for each segment in @p traj_init_x must be equal to num_states
+   * (the second param of the constructor).
    */
   SolutionResult SolveTraj(double t_init,
                            const PiecewisePolynomial<double>& traj_init_u,
                            const PiecewisePolynomial<double>& traj_init_x);
+  // TODO(Lucy-tri) If t_init has any relationship to
+  // trajectory_time_{lower,upper}_bound, then add doc and asserts.
+
+  // Disable copy and assign.
+  DirectTrajectoryOptimization(const DirectTrajectoryOptimization&) = delete;
+  DirectTrajectoryOptimization& operator=(const DirectTrajectoryOptimization&) =
+      delete;
 
  private:
   /**
-   *  Evaluate the initial trajectories at the sampled times and construct the
-   *  nominal initial vectors.
+   * Evaluate the initial trajectories at the sampled times and construct the
+   * nominal initial vectors.
    *
    * @p t_init The final time of the solution.
    *
-   * @p traj_init_u Initial guess for trajectory for control input.
+   * @p traj_init_u Initial guess for trajectory for control input. The number
+   * of rows for each segment in @p traj_init_u must be equal to num_inputs
+   * (the first param of the constructor).
    *
-   * @p traj_init_x Initial guess for trajectory for state input.
+   * @p traj_init_x Initial guess for trajectory for state input. The number
+   * of rows for each segment in @p traj_init_x must be equal to num_states
+   * (the second param of the constructor).
    */
   void GetInitialVars(double t_init_in,
                       const PiecewisePolynomial<double>& traj_init_u,

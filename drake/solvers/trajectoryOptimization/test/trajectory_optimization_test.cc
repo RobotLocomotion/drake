@@ -6,6 +6,8 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 using std::vector;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace solvers {
@@ -17,14 +19,10 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   const int kNumInputs(1);
   const int kNumStates(2);
   const int kNumTimeSamples(21);  // aka N.
-  DirectTrajectoryOptimization directTraj(kNumInputs, kNumStates,
-                                          kNumTimeSamples, 0, 25);
+  DirectTrajectoryOptimization direct_traj(kNumInputs, kNumStates,
+                                           kNumTimeSamples, 0, 25);
 
   const double t_init_in(7);
-  const VectorXd s_times{VectorXd::LinSpaced(kNumTimeSamples, 0, t_init_in)};
-  const vector<double> segment_times(
-      s_times.data(), s_times.data() + s_times.rows() * s_times.cols());
-
   const Polynomiald y = Polynomiald("y");
   const Polynomiald y1 = (7 * y);
   const Polynomiald y2 = (2 * y) + 1;
@@ -40,11 +38,11 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   const PiecewisePolynomialType states_x(y_vec, times);
 
   SolutionResult result = SolutionResult::kUnknownError;
-  ASSERT_NO_THROW(result = directTraj.SolveTraj(
-                      t_init_in, PiecewisePolynomialType(), states_x));
+  result =
+      direct_traj.SolveTraj(t_init_in, PiecewisePolynomialType(), states_x);
   EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
 
-  ASSERT_NO_THROW(result = directTraj.SolveTraj(t_init_in, inputs_u, states_x));
+  result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
   EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
 }
 

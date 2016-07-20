@@ -1,30 +1,27 @@
 #include "direct_trajectory_optimization.h"
 
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
+
 namespace drake {
 namespace solvers {
 namespace {
-VectorXd vector_diff(VectorXd& vec) {
-  return vec.tail(vec.size() - 1) - vec.head(vec.size() - 1);
+VectorXd VectorDiff(const VectorXd& vec) {
+  DRAKE_ASSERT(vec.size() > 1);
+  const int len_minus1 = vec.size() - 1;
+  return vec.tail(len_minus1) - vec.head(len_minus1);
 }
 }
 
-/**
- *  DirectTrajectoryOptimization
- *
- *  For readability of long lines, these single-letter variables names are
- *  sometimes used:
- *
- *  N number of timesteps/samples
- *
- *  h timesteps (there are N-1 of these)
- *
- *  x state
- *
- *  u control input
- */
+// DirectTrajectoryOptimization
+// For readability of long lines, these single-letter variables names are
+// sometimes used:
+// N number of timesteps/samples
+// h timesteps (there are N-1 of these)
+// x state
+// u control input
 DirectTrajectoryOptimization::DirectTrajectoryOptimization(
-    const int num_inputs, const int num_states,
-    const int num_time_samples,
+    const int num_inputs, const int num_states, const int num_time_samples,
     const double trajectory_time_lower_bound,
     const double trajectory_time_upper_bound)
     : num_inputs_(num_inputs),
@@ -33,6 +30,10 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
       h_vars_(opt_problem_.AddContinuousVariables(N_ - 1, "h")),
       u_vars_(opt_problem_.AddContinuousVariables(num_inputs * N_, "u")),
       x_vars_(opt_problem_.AddContinuousVariables(num_states * N_, "x")) {
+  DRAKE_ASSERT(num_inputs > 0);
+  DRAKE_ASSERT(num_states > 0);
+  DRAKE_ASSERT(num_time_samples > 1);
+  DRAKE_ASSERT(trajectory_time_lower_bound <= trajectory_time_upper_bound);
   // Construct total time linear constraint.
   // TODO(Lucy-tri) add case for all timesteps independent (if needed).
   MatrixXd id_zero(N_ - 2, N_ - 1);
@@ -65,11 +66,11 @@ void DirectTrajectoryOptimization::GetInitialVars(
     double t_init_in, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   VectorXd t_init{VectorXd::LinSpaced(N_, 0, t_init_in)};
-  opt_problem_.SetInitialGuess(h_vars_, vector_diff(t_init));
+  opt_problem_.SetInitialGuess(h_vars_, VectorDiff(t_init));
 
   VectorXd guess_u(u_vars_.size());
   if (traj_init_u.empty()) {
-    guess_u = 0.01 * VectorXd::Random(u_vars_.size());
+    guess_u.fill(0.003);  // Start with some small number <= 0.01.
   } else {
     for (int t = 0; t < N_; ++t) {
       guess_u.segment(num_inputs_ * t, num_inputs_) =
@@ -81,6 +82,7 @@ void DirectTrajectoryOptimization::GetInitialVars(
   DRAKE_ASSERT(!traj_init_x.empty());  // TODO(Lucy-tri) see below.
   VectorXd guess_x(x_vars_.size());
   if (traj_init_x.empty()) {
+    guess_x.fill(0.003);  // Start with some small number <= 0.01.
     // TODO(Lucy-tri) Do what DirectTrajectoryOptimization.m does.
   } else {
     for (int t = 0; t < N_; ++t) {
