@@ -19,7 +19,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
     public SystemInterface<double> {
  public:
   /**
-   * The constructor.
+   * A constructor.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
@@ -35,7 +35,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
                      ::lcm::LCM* lcm);
 
   /**
-   * The constructor.
+   * A constructor.
    *
    * @param[in] channel The LCM channel on which to publish.
    *

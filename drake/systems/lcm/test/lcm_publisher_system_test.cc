@@ -9,6 +9,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/lcm_translator_dictionary.h"
 #include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
 
 namespace drake {
@@ -69,26 +70,12 @@ class MessageSubscriber {
   drake::lcmt_drake_signal received_message_;
 };
 
-// Tests the functionality of LcmPublisherSystem.
-GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
-  ::lcm::LCM lcm;
-  std::string channel_name = "drake_system2_lcm_test_publisher_channel_name";
-  TranslatorBetweenLcmtDrakeSignal translator(kDim);
-
-  // Instantiates an LcmPublisherSystem that takes as input System 2.0 Vectors
-  // of type drake::systems::BasicVector and publishes LCM messages of type
-  // drake::lcmt_drake_signal.
-  //
-  // It then verifies that the LcmPublisherSystem was successfully stored
-  // in a unique_ptr. The unique_ptr variable is called "dut" to indicate it is
-  // the "device under test".
-  std::unique_ptr<LcmPublisherSystem> dut(
-      new LcmPublisherSystem(channel_name, translator, &lcm));
-
+void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
+    LcmPublisherSystem* dut) {
   EXPECT_EQ(dut->get_name(), "LcmPublisherSystem::" + channel_name);
 
   // Instantiates a receiver of lcmt_drake_signal messages.
-  MessageSubscriber subscriber(channel_name, &lcm);
+  MessageSubscriber subscriber(channel_name, lcm);
 
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
@@ -125,7 +112,7 @@ GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
   // construction, this ensures the LCM receive thread stops before any
   // resources it uses are destroyed. If the Lcm receive thread is stopped after
   // the resources it relies on are destroyed, a segmentation fault may occur.
-  LcmReceiveThread lcm_receive_thread(&lcm);
+  LcmReceiveThread lcm_receive_thread(lcm);
 
   // Whether the receiver received an LCM message published by the
   // LcmPublisherSystem.
@@ -175,6 +162,46 @@ GTEST_TEST(LcmPublisherSystemTest, ReceiveTest) {
   }
 
   EXPECT_TRUE(done);
+}
+
+// Tests the functionality of LcmPublisherSystem.
+GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
+  ::lcm::LCM lcm;
+  std::string channel_name = "drake_system2_lcm_test_publisher_channel_name";
+  TranslatorBetweenLcmtDrakeSignal translator(kDim);
+
+  // Instantiates an LcmPublisherSystem that takes as input System 2.0 Vectors
+  // of type drake::systems::VectorInterface and publishes LCM messages of type
+  // drake::lcmt_drake_signal.
+  //
+  // The LcmPublisherSystem is called "dut" to indicate it is the
+  // "device under test".
+  LcmPublisherSystem dut(channel_name, translator, &lcm);
+
+  TestPublisher(&lcm, channel_name, &dut);
+}
+
+// Tests the functionality of LcmPublisherSystem using a dictionary
+GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
+  ::lcm::LCM lcm;
+  std::string channel_name = "drake_system2_lcm_test_publisher_channel_name";
+  TranslatorBetweenLcmtDrakeSignal translator(kDim);
+
+  LcmTranslatorDictionary dictionary;
+  dictionary.AddEntry(channel_name,
+    std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
+
+  EXPECT_TRUE(dictionary.HasTranslator(channel_name));
+
+  // Instantiates an LcmPublisherSystem that takes as input System 2.0 Vectors
+  // of type drake::systems::VectorInterface and publishes LCM messages of type
+  // drake::lcmt_drake_signal.
+  //
+  // The LcmPublisherSystem is called "dut" to indicate it is the
+  // "device under test".
+  LcmPublisherSystem dut(channel_name, dictionary, &lcm);
+
+  TestPublisher(&lcm, channel_name, &dut);
 }
 
 }  // namespace

@@ -24,6 +24,11 @@ namespace lcm {
 class DRAKELCMSYSTEM2_EXPORT LcmTranslatorDictionary {
  public:
   /**
+   * The constructor. The dictionary is initially empty.
+   */
+  LcmTranslatorDictionary() {}
+
+  /**
    * Adds a translator this dictionary.
    *
    * @param[in] channel_name The name of the LCM channel. Messages sent on and
