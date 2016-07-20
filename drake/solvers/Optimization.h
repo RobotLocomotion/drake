@@ -263,9 +263,9 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /// Add continuous variables to this OptimizationProblem.
   /**
-   * Add continuous variables, appending them to an internal list of any 
-   * existing vars. 
-   * The new variables are uninitialized: callers are expected to add costs 
+   * Add continuous variables, appending them to an internal list of any
+   * existing vars.
+   * The new variables are uninitialized: callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    *
    * @return The DecisionVariableView of the new vars (not all the vars stored).
