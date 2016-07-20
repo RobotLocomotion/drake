@@ -42,7 +42,6 @@ template <typename DerivedA, typename DerivedB>
 int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
                    const Eigen::MatrixBase<DerivedB>& b, char constraint_sense,
                    double sparseness_threshold) {
-
   for (size_t i = 0; i < A.rows(); i++) {
     int non_zeros_index = 0;
     std::vector<int> constraint_index(A.cols(), 0);
@@ -111,7 +110,6 @@ int AddCosts(GRBmodel* model, OptimizationProblem& prog,
     // Verify that the start_row does not exceed the total possible
     // dimension of the decision variable.
     DRAKE_ASSERT(start_row <= prog.num_vars());
-
   }
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
