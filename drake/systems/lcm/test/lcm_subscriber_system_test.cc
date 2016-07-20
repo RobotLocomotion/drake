@@ -67,9 +67,6 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // Instantiates LCM.
   ::lcm::LCM lcm;
 
-  // Instantiates an LcmReceiveThread
-  LcmReceiveThread lcm_receive_thread(&lcm);
-
   // Defines a channel name.
   const std::string channel_name =
       "drake_system2_lcm_test_subscriber_channel_name";
@@ -96,6 +93,13 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
 
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+
+  // Start the LCM recieve thread after all objects it can potentially use
+  // are instantiated. Since objects are destructed in the reverse order of
+  // construction, this ensures the LCM receive thread stops before any
+  // resources it uses are destroyed. If the Lcm receive thread is stopped after
+  // the resources it relies on are destroyed, a segmentation fault may occur.
+  LcmReceiveThread lcm_receive_thread(&lcm);
 
   // Whether the LcmSubscriberSystem successfully received an LCM message and
   // outputted it as a BasicVector.
