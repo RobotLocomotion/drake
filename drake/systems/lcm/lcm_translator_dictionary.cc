@@ -26,7 +26,7 @@ bool LcmTranslatorDictionary::HasTranslator(const std::string& channel_name)
 const LcmAndVectorInterfaceTranslator& LcmTranslatorDictionary::GetTranslator(
     const std::string& channel_name) const {
   if (HasTranslator(channel_name)) {
-    return *(dictionary_[channel_name].get());
+    return *(dictionary_.find(channel_name)->second.get());
   } else {
     throw std::runtime_error(
       "Translator for channel \"" + channel_name + "\" does not exist.");
