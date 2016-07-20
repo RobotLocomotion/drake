@@ -8,6 +8,7 @@
 #include "tf/transform_broadcaster.h"
 
 #include "drake/core/Vector.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/systems/System.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -118,7 +119,7 @@ class DrakeRosTfPublisher {
       // We can do this now since it will not change over time.
       if (joint.getNumPositions() == 0 && joint.getNumVelocities() == 0) {
         auto translation = joint.getTransformToParentBody().translation();
-        auto quat = rotmat2quat(joint.getTransformToParentBody().linear());
+        auto quat = drake::math::rotmat2quat(joint.getTransformToParentBody().linear());
 
         message->transform.translation.x = translation(0);
         message->transform.translation.y = translation(1);
@@ -158,7 +159,7 @@ class DrakeRosTfPublisher {
       // message. This can be done once during initialization since it will
       // not change over time.
       auto translation = frame->transform_to_body.translation();
-      auto quat = rotmat2quat(frame->transform_to_body.linear());
+      auto quat = drake::math::rotmat2quat(frame->transform_to_body.linear());
 
       message->transform.translation.x = translation(0);
       message->transform.translation.y = translation(1);
@@ -228,7 +229,7 @@ class DrakeRosTfPublisher {
             cache, rigid_body_tree_->FindBodyIndex(rigid_body->parent->name()),
             rigid_body_tree_->FindBodyIndex(rigid_body->name()));
         auto translation = transform.translation();
-        auto quat = rotmat2quat(transform.linear());
+        auto quat = drake::math::rotmat2quat(transform.linear());
 
         message->transform.translation.x = translation(0);
         message->transform.translation.y = translation(1);
