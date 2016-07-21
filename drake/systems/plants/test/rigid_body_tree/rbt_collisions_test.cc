@@ -96,7 +96,7 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
 
   // RigidBodyTree::ComputeMaximumDepthCollisionPoints returns only one point,
   // the maximum depth collision point.
-  ASSERT_EQ(1, collision_pairs.size());
+  ASSERT_EQ(1u, collision_pairs.size());
 
   const RigidBody* bodyA = collision_pairs[0].elementA->get_body();
   const RigidBody* bodyB = collision_pairs[0].elementB->get_body();

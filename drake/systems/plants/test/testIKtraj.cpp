@@ -21,7 +21,7 @@ GTEST_TEST(testIKtraj, testIKtraj) {
       getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   int r_hand{};
-  for (int i = 0; i < model.bodies.size(); i++) {
+  for (int i = 0; i < static_cast<int>(model.bodies.size()); i++) {
     if (model.bodies[i]->name_.compare(std::string("r_hand"))) {
       r_hand = i;
     }
