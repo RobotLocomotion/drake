@@ -68,6 +68,14 @@ GTEST_TEST(TestHaveIntersection, SortedVectorsHaveIntersection) {
   EXPECT_FALSE(SortedVectorsHaveIntersection(set7, set9));
   // set8 intersects set9 (element 13 in common).
   EXPECT_TRUE(SortedVectorsHaveIntersection(set8, set9));
+
+  // Tests SortedVectorsHaveIntersection on sorted vector of pointers.
+  double ds[] = {5.1, 2.0, 11.2, 3.14, 14.2, 35.0};
+  // Pointers provided in ascending order.
+  vector<double*> pointer_set1 = vector<double*>{ds + 0, ds + 3, ds + 5};
+  vector<double*> pointer_set2 = vector<double*>{ds + 1, ds + 2, ds + 3};
+  // pointer_set1 intersects pointer_set2 (pointer to ds[3]).
+  EXPECT_TRUE(SortedVectorsHaveIntersection(pointer_set1, pointer_set2));
 }
 
 }  // namespace
