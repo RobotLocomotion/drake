@@ -4,19 +4,20 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-void LcmTranslatorDictionary::AddEntry(const std::string& channel_name,
+void LcmTranslatorDictionary::AddEntry(
+    const std::string& channel_name,
     std::unique_ptr<const LcmAndVectorInterfaceTranslator> translator) {
   if (!HasTranslator(channel_name)) {
     dictionary_[channel_name] = std::move(translator);
   } else {
     throw std::runtime_error(
-      "Attempted to add more than one translator for channel \"" + channel_name
-      + "\".");
+        "Attempted to add more than one translator for channel \"" +
+        channel_name + "\".");
   }
 }
 
-bool LcmTranslatorDictionary::HasTranslator(const std::string& channel_name)
-    const {
+bool LcmTranslatorDictionary::HasTranslator(
+    const std::string& channel_name) const {
   return dictionary_.find(channel_name) != dictionary_.end();
 }
 
@@ -28,8 +29,8 @@ const LcmAndVectorInterfaceTranslator& LcmTranslatorDictionary::GetTranslator(
   if (HasTranslator(channel_name)) {
     return *(dictionary_.find(channel_name)->second.get());
   } else {
-    throw std::runtime_error(
-      "Translator for channel \"" + channel_name + "\" does not exist.");
+    throw std::runtime_error("Translator for channel \"" + channel_name +
+                             "\" does not exist.");
   }
 }
 

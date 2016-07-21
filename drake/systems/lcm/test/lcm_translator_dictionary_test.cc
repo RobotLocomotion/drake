@@ -39,7 +39,6 @@ GTEST_TEST(LcmTranslatorDictionaryTest, BasicTests) {
   // Verifies that no exception is thrown if the user attempts to get a
   // translator that exists in the dictionary.
   EXPECT_NO_THROW(dictionary.GetTranslator(channel_name));
-
 }
 
 }  // namespace
