@@ -1,9 +1,9 @@
-# TODO(#2372) These are warnings that we can't handle yet.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS_NO_SIGN_COMPARE}")
-
 macro(add_constraint_mex)
   add_mex(${ARGV} ${ARGV}.cpp)
   target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeRigidBodyConstraint drakeConstructRigidBodyConstraint)
+  # These warnings are not worth fixing.
+  set_target_properties(
+    ${ARGV} PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_SIGN_COMPARE})
 endmacro()
 
 add_library_with_exports(LIB_NAME drakeRigidBodyConstraint SOURCE_FILES RigidBodyConstraint.cpp)

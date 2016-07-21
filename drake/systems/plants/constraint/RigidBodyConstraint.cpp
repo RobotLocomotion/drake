@@ -312,7 +312,7 @@ int MultipleTimeLinearPostureConstraint::numValidTime(
 void MultipleTimeLinearPostureConstraint::validTimeInd(
     const std::vector<bool>& valid_flag, VectorXi& valid_t_ind) const {
   valid_t_ind.resize(0);
-  for (int i = 0; i < valid_flag.size(); i++) {
+  for (int i = 0; i < static_cast<int>(valid_flag.size()); i++) {
     if (valid_flag.at(i)) {
       valid_t_ind.conservativeResize(valid_t_ind.size() + 1);
       valid_t_ind(valid_t_ind.size() - 1) = i;
@@ -363,7 +363,7 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
     std::pair<int, int> ind_pair(iAfun(i), jAvar(i));
     mat_ind_set.insert(ind_pair);
   }
-  if (mat_ind_set.size() != lenA) {
+  if (static_cast<int>(mat_ind_set.size()) != lenA) {
     throw std::runtime_error(
         "SingleTimeLinearPostureConstraint: "
         "The pair (iAfun(i), jAvar(i)) is not unique");
@@ -1995,10 +1995,6 @@ void MinDistanceConstraint::eval(const double* t,
         MatrixXd::Zero(num_pts, getRobotPointer()->number_of_positions());
 
     // Compute Jacobian of closest distance vector
-    // DEBUG
-    // std:: cout << "IntegratedClosestDistanceConstraint::eval_valid: Compute
-    // distance Jacobian" << std::endl;
-    // END_DEBUG
     scaleDistance(dist, scaled_dist, dscaled_dist_ddist);
     penalty(scaled_dist, pairwise_costs, dpairwise_costs_dscaled_dist);
 
@@ -2007,24 +2003,13 @@ void MinDistanceConstraint::eval(const double* t,
     std::vector<std::vector<int>> orig_idx_of_pt_on_bodyB(
         getRobotPointer()->bodies.size());
     for (int k = 0; k < num_pts; ++k) {
-      // DEBUG
-      // std::cout << "MinDistanceConstraint::eval: First loop: " << k <<
-      // std::endl;
-      // std::cout << "pairwise_costs.size() = " << pairwise_costs.size() <<
-      // std::endl;
-      // std::cout << "pairwise_costs.size() = " << pairwise_costs.size() <<
-      // std::endl;
-      // END_DEBUG
       if (pairwise_costs(k) > 0) {
         orig_idx_of_pt_on_bodyA.at(idxA.at(k)).push_back(k);
         orig_idx_of_pt_on_bodyB.at(idxB.at(k)).push_back(k);
       }
     }
-    for (int k = 0; k < getRobotPointer()->bodies.size(); ++k) {
-      // DEBUG
-      // std::cout << "MinDistanceConstraint::eval: Second loop: " << k <<
-      // std::endl;
-      // END_DEBUG
+    for (int k = 0; k < static_cast<int>(getRobotPointer()->bodies.size());
+         ++k) {
       int l = 0;
       int numA = static_cast<int>(orig_idx_of_pt_on_bodyA.at(k).size());
       int numB = static_cast<int>(orig_idx_of_pt_on_bodyB.at(k).size());
@@ -2033,17 +2018,9 @@ void MinDistanceConstraint::eval(const double* t,
       }
       Matrix3Xd x_k(3, numA + numB);
       for (; l < numA; ++l) {
-        // DEBUG
-        // std::cout << "MinDistanceConstraint::eval: Third loop: " << l <<
-        // std::endl;
-        // END_DEBUG
         x_k.col(l) = xA.col(orig_idx_of_pt_on_bodyA.at(k).at(l));
       }
       for (; l < numA + numB; ++l) {
-        // DEBUG
-        // std::cout << "MinDistanceConstraint::eval: Fourth loop: " << l <<
-        // std::endl;
-        // END_DEBUG
         x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l - numA));
       }
 
@@ -2052,28 +2029,17 @@ void MinDistanceConstraint::eval(const double* t,
 
       l = 0;
       for (; l < numA; ++l) {
-        // DEBUG
-        // std::cout << "MinDistanceConstraint::eval: Fifth loop: " << l <<
-        // std::endl;
-        // END_DEBUG
         ddist_dq.row(orig_idx_of_pt_on_bodyA.at(k).at(l)) +=
             normal.col(orig_idx_of_pt_on_bodyA.at(k).at(l)).transpose() *
             J_k.block(3 * l, 0, 3, getRobotPointer()->number_of_positions());
       }
       for (; l < numA + numB; ++l) {
-        // DEBUG
-        // std::cout << "MinDistanceConstraint::eval: Sixth loop: " << l <<
-        // std::endl;
-        // END_DEBUG
         ddist_dq.row(orig_idx_of_pt_on_bodyB.at(k).at(l - numA)) +=
             -normal.col(orig_idx_of_pt_on_bodyB.at(k).at(l - numA))
                  .transpose() *
             J_k.block(3 * l, 0, 3, getRobotPointer()->number_of_positions());
       }
     }
-    // DEBUG
-    // std::cout << "MinDistanceConstraint::eval: Set outputs" << std::endl;
-    // END_DEBUG
     MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
     c.resize(1);
     c(0) = pairwise_costs.sum();
@@ -2082,9 +2048,6 @@ void MinDistanceConstraint::eval(const double* t,
     c.resize(0);
     dc.resize(0, 0);
   }
-  // DEBUG
-  // std::cout << "MinDistanceConstraint::eval: END" << std::endl;
-  // END_DEBUG
 }
 
 void MinDistanceConstraint::scaleDistance(
