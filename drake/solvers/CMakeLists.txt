@@ -1,3 +1,6 @@
+# TODO(#2852) We can't yet handle shadowing as a compiler error.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS_NO_ERROR_SHADOW}")
+
 pods_find_pkg_config(gurobi)
 
 if(gurobi_FOUND)
@@ -18,7 +21,6 @@ if(gurobi_FOUND)
     LIBS -ldrakeQP
     REQUIRES gurobi
     VERSION 0.0.1)
-
 endif()
 
 if(MATLAB_FOUND)
@@ -27,12 +29,12 @@ if(MATLAB_FOUND)
 endif()
 
 set(optimization_files)
-list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp 
-            system_identification.cpp linear_system_solver.cc 
-            equality_constrained_qp_solver.cc)
+list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp
+  system_identification.cpp linear_system_solver.cc
+  equality_constrained_qp_solver.cc)
 pods_find_pkg_config(ipopt)
 if (ipopt_FOUND)
-  list(APPEND optimization_files IpoptSolver.cpp)
+ list(APPEND optimization_files IpoptSolver.cpp)
 else()
   list(APPEND optimization_files NoIpopt.cpp)
 endif(ipopt_FOUND)
@@ -54,6 +56,12 @@ if(mosek_FOUND)
 else()
   list(APPEND optimization_files NoMosek.cpp)
 endif()
+if(gurobi_FOUND)
+  list(APPEND optimization_files gurobi_solver.cc)
+else()
+  list(APPEND optimization_files no_gurobi.cc)
+endif()
+
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakePolynomial)
@@ -88,6 +96,9 @@ if(nlopt_FOUND)
 endif()
 if(snopt_c_FOUND)
   pods_use_pkg_config_packages(drakeOptimization snopt_c)
+endif()
+if(gurobi_FOUND)
+  pods_use_pkg_config_packages(drakeOptimization gurobi)
 endif()
 
 if(snopt_c_FOUND AND MATLAB_FOUND)
