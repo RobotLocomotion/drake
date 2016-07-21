@@ -483,16 +483,16 @@ TEST_F(SmallBoxSittingOnLargeBox, MultiContact) {
   // Collision test performed with Model::potentialCollisionPoints.
   points = model_->potentialCollisionPoints(false);
   ASSERT_EQ(4, points.size());
-  for (int i = 0; i < points.size(); ++i) {
-    EXPECT_NEAR(-0.1, points[i].distance, tolerance_);
-    EXPECT_TRUE(points[i].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
+  for (const PointPair& point : points) {
+    EXPECT_NEAR(-0.1, point.distance, tolerance_);
+    EXPECT_TRUE(point.normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
     // Collision points are reported on each of the respective bodies' frames.
     // This is consistent with the return by Model::closestPointsAllToAll.
     // Only test for vertical position.
-    EXPECT_NEAR(points[i].ptA.y(),
-                solution_[points[i].idA].body_frame.y(), tolerance_);
-    EXPECT_NEAR(points[i].ptB.y(),
-                solution_[points[i].idB].body_frame.y(), tolerance_);
+    EXPECT_NEAR(point.ptA.y(),
+                solution_[point.idA].body_frame.y(), tolerance_);
+    EXPECT_NEAR(point.ptB.y(),
+                solution_[point.idB].body_frame.y(), tolerance_);
   }
 }
 
@@ -621,16 +621,16 @@ TEST_F(NonAlignedBoxes, MultiContact) {
   points = model_->potentialCollisionPoints(false);
   ASSERT_EQ(4, points.size());
 
-  for (int i = 0; i < points.size(); ++i) {
-    EXPECT_NEAR(-0.1, points[i].distance, tolerance_);
-    EXPECT_TRUE(points[i].normal.isApprox(Vector3d(0.0, -1.0, 0.0),
+  for (const PointPair& point : points) {
+    EXPECT_NEAR(-0.1, point.distance, tolerance_);
+    EXPECT_TRUE(point.normal.isApprox(Vector3d(0.0, -1.0, 0.0),
                                                tolerance_ * 50));
     // Collision points are reported on each of the respective bodies' frames.
     // This is consistent with the return by Model::closestPointsAllToAll.
     // Only test for vertical position.
-    EXPECT_NEAR(points[i].ptA.y(),
+    EXPECT_NEAR(point.ptA.y(),
                 solution_[points[0].idA].body_frame.y(), tolerance_);
-    EXPECT_NEAR(points[i].ptB.y(),
+    EXPECT_NEAR(point.ptB.y(),
                 solution_[points[0].idB].body_frame.y(), tolerance_);
   }
 }
@@ -680,14 +680,14 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   // If the model does not cache results there should only be one result.
   ASSERT_EQ(1, points.size());
 
-  for (int i = 0; i < points.size(); ++i) {
-    EXPECT_NEAR(-0.1, points[i].distance, tolerance_);
+  for (const PointPair& point : points) {
+    EXPECT_NEAR(-0.1, point.distance, tolerance_);
     EXPECT_TRUE(
-        points[i].normal.isApprox(Vector3d(0.0, -1.0, 0.0), tolerance_));
+        point.normal.isApprox(Vector3d(0.0, -1.0, 0.0), tolerance_));
     // Only test for vertical position.
-    EXPECT_NEAR(points[i].ptA.y(),
+    EXPECT_NEAR(point.ptA.y(),
                 solution_[points[0].idA].world_frame.y(), tolerance_);
-    EXPECT_NEAR(points[i].ptB.y(),
+    EXPECT_NEAR(point.ptB.y(),
                 solution_[points[0].idB].world_frame.y(), tolerance_);
   }
 }
