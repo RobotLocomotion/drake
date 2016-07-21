@@ -13,7 +13,7 @@ namespace drake {
 @param[in]  a  First vector.
 @param[in]  b  Second vector.
 @tparam T The type of the elements in the input vectors @p a and @p b. This is
-expected to be an integral type.
+expected to be an integral type or a pointer type.
 @returns `true` if there is a non-empty intersection between vectors;
 `false` otherwise.
 
@@ -40,8 +40,8 @@ bool SortedVectorsHaveIntersection(const std::vector<T>& a,
   typename std::vector<T>::const_iterator ai = a.begin();
   typename std::vector<T>::const_iterator bi = b.begin();
 
-  static_assert(std::is_integral<T>::value,
-                "Input vectors must hold integral type elements.");
+  static_assert(std::is_integral<T>::value || std::is_pointer<T>::value,
+                "Input vectors must hold integral types or pointers.");
 
   // Checks the precondition that the lists are sorted, only in debug builds.
   // This means O(n) performance in Debug builds but could also catch some very
