@@ -143,7 +143,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
       QinvAt.resize(QinvAteq.rows(), QinvAteq.cols() + Aact.rows());
 
       if (n_active > 0) {
-        int startrow = 0;
+        int start_row = 0;
         for (vector<MatrixXd*>::iterator iterQinv = QinvblkDiag.begin();
              iterQinv != QinvblkDiag.end(); iterQinv++) {
           MatrixXd* thisQinv = (*iterQinv);
@@ -151,18 +151,18 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
           int numCol = thisQinv->cols();
 
           if (numCol == 1) {  // it's a vector
-            QinvAt.block(startrow, 0, d, M + n_active)
-                << QinvAteq.block(startrow, 0, d, M),
+            QinvAt.block(start_row, 0, d, M + n_active)
+                << QinvAteq.block(start_row, 0, d, M),
                 thisQinv->asDiagonal() *
-                    Aact.block(0, startrow, n_active, d).transpose();
+                    Aact.block(0, start_row, n_active, d).transpose();
           } else {  // it's a matrix
-            QinvAt.block(startrow, 0, d, M + n_active)
-                << QinvAteq.block(startrow, 0, d, M),
+            QinvAt.block(start_row, 0, d, M + n_active)
+                << QinvAteq.block(start_row, 0, d, M),
                 thisQinv->operator*(
-                    Aact.block(0, startrow, n_active, d).transpose());
+                    Aact.block(0, start_row, n_active, d).transpose());
           }
 
-          startrow = startrow + d;
+          start_row = start_row + d;
         }
       } else {
         QinvAt = QinvAteq;
@@ -467,19 +467,19 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
 
   int offset = 0;
   active.clear();
-  for (int i = 0; i < Ain.rows(); i++) {
-    if (slack(i) < active_set_slack_tolerance) active.insert(i);
+  for (int k = 0; k < Ain.rows(); k++) {
+    if (slack(k) < active_set_slack_tolerance) active.insert(k);
   }
   offset = Ain.rows();
   if (lb.rows() == nparams) {
-    for (int i = 0; i < nparams; i++) {
-      if (x(i) - lb(i) < active_set_slack_tolerance) active.insert(offset + i);
+    for (int k = 0; k < nparams; k++) {
+      if (x(k) - lb(k) < active_set_slack_tolerance) active.insert(offset + k);
     }
   }
   if (ub.rows() == nparams) {
-    for (int i = 0; i < nparams; i++) {
-      if (ub(i) - x(i) < active_set_slack_tolerance) {
-        active.insert(offset + i + nparams);
+    for (int k = 0; k < nparams; k++) {
+      if (ub(k) - x(k) < active_set_slack_tolerance) {
+        active.insert(offset + k + nparams);
       }
     }
   }

@@ -157,11 +157,11 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
   } else {
       return kUnknownError;
   }
-  int totalconnum = 0, i = 0;
+  int totalconnum = 0;
   for (auto&& con : prog.GetAllLinearConstraints()) {
     // check to see if the constraint references a single variable,
     // which is handles as a variable bound by mosek
-    for (i = 0; i < (con.constraint())->A().rows(); ++i) {
+    for (int i = 0; i < (con.constraint())->A().rows(); ++i) {
       auto row = (con.constraint())->A().row(i);
       if (row.nonZeros() != 1)
         totalconnum++;
@@ -196,7 +196,6 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
   mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
                                          lower_variable_bounds);
   int connum = 0;
-  i = 0;
   // TODO(alexdunyak): Allow constraints to affect specific variables
   for (const auto& con : prog.GetAllLinearConstraints()) {
     // con can call functions of  Binding<LinearConstraint>, but the actual
