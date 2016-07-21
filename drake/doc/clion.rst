@@ -2,31 +2,31 @@
 CLion IDE setup (experimental)
 *****************************************
 
-This guide describes how to set up Drake in the new JetBrains CLion IDE and has been tested with CLion 1.1. It is assumed that drake-distro is [already installed.](Installation-and-QuickStart) CLion support is currently experimental. I wrote this guide based on my OSX setup. I tried it on Ubuntu, and CLion got stuck loading the CMake Project forever on my machine. This happened because a call to Matlab wouldn't return and required setting _matlab_root manually in mex.cmake.
+This guide describes how to set up Drake in the new JetBrains CLion IDE and has been tested with CLion 1.1. It is assumed that `drake-distro` is :ref:`already installed <installation_and_quick_start>`. CLion support is currently experimental. I wrote this guide based on my OSX setup. I tried it on Ubuntu, and CLion got stuck loading the CMake Project forever on my machine. This happened because a call to Matlab wouldn't return and required setting _matlab_root manually in mex.cmake.
 
 Installing CLion
 ================
 1. Go to https://www.jetbrains.com/clion/download/. Download the latest version of CLion. For OSX, choose the version with bundled custom JDK.
-2. Install CLion. Exact steps depend on your platform, but it's straightforward. Just using defaults for everything is fine. You now have a 30-day trial version of CLion. Either try it out as is, or get a free academic license [here](https://www.jetbrains.com/shop/eform/students).
+2. Install CLion. Exact steps depend on your platform, but it's straightforward. Just using defaults for everything is fine. You now have a 30-day trial version of CLion. Either try it out as is, or get a free academic license `here <https://www.jetbrains.com/shop/eform/students>`_.
 
 Setting up Drake in CLion
 =========================
-We'll set up CLion to build Drake only. The dependencies will just be built from the command line.
+We'll set up CLion to build Drake only. The dependencies will just be built from the command line. It is assumed Drake was cloned into a `drake-distro` directory as described in the :ref:`installation instructions <getting_drake>`.
 
 1. :ref:`Build Drake <build_the_collection>` from the command line.
 2. In the Welcome to CLion screen, click `Import Project from Sources`. Or from the menu `File > Import Project...`
-3. Browse and select the `drake` sub-folder of your `drake-distro` install (i.e. `drake-distro/drake`) and click OK.
+3. Browse and select `drake-distro/drake` and click OK.
 4. When asked whether to overwrite the existing `CMakeLists.txt`, just click `Open Project`.
 5. Go to CLion Preferences (on OSX, `CLion-EAP > Preferences`, on Ubuntu, `File > Settings...`). Note that this preferences window comprises both global settings and project-specific settings (as noted by the text 'for current project' on some of the preference pages).
 6. Browse to `Build, Execution, Deployment > CMake`.
-7. Under `CMake Options`, fill in `-DCMAKE_INSTALL_PREFIX=/absolute_path_to_your/drake-distro/build/install` or whatever the path to your build artifacts directory may be.
+7. Under `CMake Options`, fill in `-DCMAKE_INSTALL_PREFIX=/absolute_path_to_your/drake-distro/build/install`.
 8. Under `CMake Options` expand the tab `Pass system and custom environment`. Add the following environment variables:
   * `CC=gcc-4.9`
   * `CXX=g++-4.9`
   * `FC=gfortran-4.9`
   * `F77=gfortran-4.9`      
   You can copy these from this documentation one at a time and click on the `paste` button at the right of the environment variables dialog.
-9. Click OK. CLion will take about a minute to reload the CMake Project. If everything is in order, there should be no errors or warnings. For fun, check out the CMake Cache pane too by the way; it's pretty handy.
+9. Click OK. CLion will take about a minute to reload the CMake Project. If everything is in order, there should be no errors or warnings. For fun, check out the `cache pane <https://www.jetbrains.com/help/clion/2016.1/cmake-cache.html>`_ in the `CMake tool window <https://www.jetbrains.com/help/clion/2016.1/cmake.html>`_ (the CMake icon in the lower left corner of the workspace); it's pretty handy.
 10. If CLion asks you about unregistered VCS roots, you can just add them.
 
 Building
