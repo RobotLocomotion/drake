@@ -314,12 +314,12 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
       }
       if (minz < UINF && _z[minz] < -zero_tol) {
         // move index to basic set and continue looping
-        unsigned idx = _nonbas[minz];
-        LOG() << "MobyLCPSolver::SolveLcpFast() - moving index " << idx
+        unsigned k = _nonbas[minz];
+        LOG() << "MobyLCPSolver::SolveLcpFast() - moving index " << k
               << " to basic set" << std::endl;
 
         _nonbas.erase(_nonbas.begin() + minz);
-        _bas.push_back(idx);
+        _bas.push_back(k);
         std::sort(_bas.begin(), _bas.end());
       }
     }
