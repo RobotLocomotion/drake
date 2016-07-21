@@ -12,7 +12,7 @@ namespace {
 // below.
 const int kDim = 10;
 
-// Tests the functionality of LcmSubscriberSystem.
+// Tests the functionality of LcmTranslatorDictionary.
 GTEST_TEST(LcmTranslatorDictionaryTest, BasicTests) {
   // Defines a channel name.
   const std::string channel_name = "_=?+pYa8J9c!Hg;V";
