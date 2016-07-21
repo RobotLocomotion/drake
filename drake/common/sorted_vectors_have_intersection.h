@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <type_traits>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -38,6 +39,9 @@ bool SortedVectorsHaveIntersection(const std::vector<T>& a,
                                    const std::vector<T>& b) {
   typename std::vector<T>::const_iterator ai = a.begin();
   typename std::vector<T>::const_iterator bi = b.begin();
+
+  static_assert(std::is_integral<T>::value,
+                "Input vectors must hold integral type elements.");
 
   // Checks the precondition that the lists are sorted, only in debug builds.
   // This means O(n) performance in Debug builds but could also catch some very
