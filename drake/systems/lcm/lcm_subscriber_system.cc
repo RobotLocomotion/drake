@@ -25,6 +25,16 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   sub->setQueueCapacity(1);
 }
 
+LcmSubscriberSystem::LcmSubscriberSystem(
+    const std::string& channel,
+    const LcmTranslatorDictionary& translator_dictionary,
+    ::lcm::LCM* lcm)
+    : LcmSubscriberSystem(
+          channel,
+          translator_dictionary.GetTranslator(channel),
+          lcm) {
+}
+
 LcmSubscriberSystem::~LcmSubscriberSystem() {}
 
 std::string LcmSubscriberSystem::get_name() const {

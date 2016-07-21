@@ -6,6 +6,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_interface.h"
 #include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
+#include "drake/systems/lcm/lcm_translator_dictionary.h"
 
 namespace drake {
 namespace systems {
@@ -18,7 +19,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
     public SystemInterface<double> {
  public:
   /**
-   * The constructor.
+   * A constructor.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
@@ -32,6 +33,21 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorInterfaceTranslator& translator,
                      ::lcm::LCM* lcm);
+
+  /**
+   * A constructor.
+   *
+   * @param[in] channel The LCM channel on which to publish.
+   *
+   * @param[in] translator_dictionary A dictionary for obtaining the appropriate
+   * translator for a particular LCM channel.
+   *
+   * @param[in] lcm A pointer to the LCM subsystem.
+   */
+  LcmPublisherSystem(const std::string& channel,
+                     const LcmTranslatorDictionary& translator_dictionary,
+                     ::lcm::LCM* lcm);
+
 
   ~LcmPublisherSystem() override;
 
