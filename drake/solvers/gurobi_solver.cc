@@ -109,7 +109,7 @@ int AddCosts(GRBmodel* model, OptimizationProblem& prog,
     start_row += Q.rows();
     // Verify that the start_row does not exceed the total possible
     // dimension of the decision variable.
-    DRAKE_ASSERT(start_row <= prog.num_vars());
+    DRAKE_ASSERT(start_row <= static_cast<int>(prog.num_vars()));
   }
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
