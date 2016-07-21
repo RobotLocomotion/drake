@@ -23,10 +23,9 @@ respect to the same operator.
 This algorithm only works on `std::vector`'s to take advantage of their fast
 and random access.
 
-Entries can be repeated as long as they are sorted.
-For vector `a` of size \f$ N_a \f$  and vector `b` of size \f$ N_b \f$ the
-complexity is at most \f$\mathcal{O}(N_a + N_b)\f$. The algorithm executes in
-constant time for vectors with disjoint entries.
+Entries can be repeated as long as they are sorted. For vector `a` of size `Na`
+and vector `b` of size `Nb` the complexity is at most Order(Na + Nb).
+The algorithm executes in constant time for vectors with disjoint entries.
 An example of worst case is given below:
 @verbatim
  a = (10, 20, 30)
