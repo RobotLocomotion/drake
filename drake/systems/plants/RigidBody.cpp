@@ -14,26 +14,6 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
-// RigidBody::RigidBody()
-//     : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
-//       collision_filter_ignores(DrakeCollision::NONE_MASK),
-//       parent(nullptr),
-//       robot_num(0) {
-//   position_num_start = 0;
-//   velocity_num_start = 0;
-//   body_index = 0;
-//   mass = 0.0;
-//   com = Vector3d::Zero();
-//   I << drake::SquareTwistMatrix<double>::Zero();
-// }
-
-RigidBody::RigidBody()
-    : RigidBody(
-        "" /* model_name */,
-        0 /* model_id */,
-        "") {
-  }
-
 RigidBody::RigidBody(const std::string& model_name, int model_id,
     const std::string& name) :
         collision_filter_group(DrakeCollision::DEFAULT_GROUP),

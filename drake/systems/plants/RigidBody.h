@@ -21,10 +21,8 @@ class DRAKERBM_EXPORT RigidBody {
   DrakeCollision::bitmask collision_filter_ignores;
 
  public:
-  RigidBody();
-
   /**
-   * A constructor.
+   * This constructor.
    *
    * @param[in] model_name The name of the model to which this rigid body
    * belongs.
@@ -33,8 +31,8 @@ class DRAKERBM_EXPORT RigidBody {
    *
    * @param[in] name The name of the rigid body.
    */
-  explicit RigidBody(const std::string& model_name, int model_id,
-      const std::string& name);
+  explicit RigidBody(const std::string& model_name = "", int model_id = 0,
+    const std::string& name = "");
 
   /**
    * Returns the name of this rigid body.
@@ -67,11 +65,6 @@ class DRAKERBM_EXPORT RigidBody {
    * Returns the ID of the model to which this rigid body belongs.
    */
   int get_model_id() const;
-
-  /**
-   * Sets the ID of the model to which this rigid body belongs.
-   */
-  // void set_model_id(int model_id);
 
   /**
    * Sets the parent joint through which this rigid body connects to its parent
