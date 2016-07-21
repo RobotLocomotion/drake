@@ -49,9 +49,11 @@ function(drake_get_matlab_jvm_version)
         # If JDK is newer, set build options to build Java code compatible
         # with the matlab JVM
         if(MATLAB_JVM_VERSION VERSION_LESS _jdk_version)
-          set(CMAKE_JAVA_COMPILE_FLAGS
-            "-source ${MATLAB_JVM_VERSION} -target ${MATLAB_JVM_VERSION}"
-            CACHE INTERNAL "")
+          set(_java_flags
+            -source ${MATLAB_JVM_VERSION}
+            -target ${MATLAB_JVM_VERSION})
+          string(REPLACE ";" "\\\\\\\\\\\\\\;" _java_flags "${_java_flags}")
+          set(CMAKE_JAVA_COMPILE_FLAGS "${_java_flags}" CACHE INTERNAL "")
         endif()
       endif()
     else()
