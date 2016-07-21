@@ -16,6 +16,14 @@ LcmPublisherSystem::LcmPublisherSystem(
     const LcmAndVectorInterfaceTranslator& translator, ::lcm::LCM* lcm)
     : channel_(channel), translator_(translator), lcm_(lcm) {}
 
+LcmPublisherSystem::LcmPublisherSystem(
+    const std::string& channel,
+    const LcmTranslatorDictionary& translator_dictionary, ::lcm::LCM* lcm)
+    : LcmPublisherSystem(
+          channel,
+          translator_dictionary.GetTranslator(channel),
+          lcm) {}
+
 LcmPublisherSystem::~LcmPublisherSystem() {}
 
 std::string LcmPublisherSystem::get_name() const {
