@@ -1,15 +1,13 @@
 #pragma once
 
 #include <map>
+#include <memory>
+#include <string>
 
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
-#include "drake/systems/framework/system_interface.h"
 #include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
-#include "drake/systems/lcm/lcm_receive_thread.h"
 
 namespace drake {
 namespace systems {
@@ -32,7 +30,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmTranslatorDictionary {
    * Adds a translator this dictionary.
    *
    * @param[in] channel_name The name of the LCM channel. Messages sent on and
-   * received from this channel are assumed to be compatibl with @p translator.
+   * received from this channel are assumed to be compatible with @p translator.
    *
    * @param[in] translator A pointer to the translator to use with the LCM
    * channel.
@@ -51,6 +49,11 @@ class DRAKELCMSYSTEM2_EXPORT LcmTranslatorDictionary {
 
   /**
    * Returns a reference to the translator to use with the specified channel.
+   * This reference is guaranteed to remain valid for the lifetime of this
+   * dictionary.
+   *
+   * @throws std::runtime_error if a translator for @p channel_name does not
+   * exist in this dictionary.
    */
   const LcmAndVectorInterfaceTranslator& GetTranslator(
       const std::string& channel_name) const;

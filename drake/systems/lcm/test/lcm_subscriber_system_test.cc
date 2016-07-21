@@ -173,9 +173,12 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   const std::string channel_name =
       "drake_system2_lcm_test_subscriber_channel_name";
 
+  // Creates a dictionary with one translator.
   LcmTranslatorDictionary dictionary;
   dictionary.AddEntry(channel_name,
     std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
+
+  EXPECT_TRUE(dictionary.HasTranslator(channel_name));
 
   // Instantiates an LcmSubscriberSystem that receives LCM messages of type
   // drake::lcmt_drake_signal and outputs System 2.0 Vectors of type
