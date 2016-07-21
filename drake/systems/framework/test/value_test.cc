@@ -40,10 +40,14 @@ GTEST_TEST(ValueTest, Mutation) {
   EXPECT_EQ(7, erased.GetValue<int>());
 }
 
+// Attempting to unerase the type to the wrong concrete type should throw.
+// Although you might think it should be std::bad_cast you can't provide an
+// error message with that. Instead we throw std::logic_error with a nice
+// message.
 GTEST_TEST(ValueTest, BadCast) {
   Value<double> value(4);
   const AbstractValue& erased = value;
-  EXPECT_THROW(erased.GetValue<int>(), std::bad_cast);
+  EXPECT_THROW(erased.GetValue<int>(), std::logic_error);
 }
 
 class PrintInterface {
@@ -76,7 +80,7 @@ GTEST_TEST(ValueTest, ClassType) {
   Point point(1, 2);
   Value<Point> value(point);
   AbstractValue& erased = value;
-  erased.GetMutableValue<Point>().set_x(-1);
+  erased.GetMutableValue<Point>()->set_x(-1);
   EXPECT_EQ(-1, erased.GetValue<Point>().x());
   EXPECT_EQ(2, erased.GetValue<Point>().y());
 }
@@ -87,12 +91,12 @@ class SubclassOfPoint : public Point {
 };
 
 // Tests that attempting to unerase an AbstractValue to a parent class of the
-// original class throws std::bad_cast.
+// original class throws std::logic_error.
 GTEST_TEST(ValueTest, CannotUneraseToParentClass) {
   SubclassOfPoint point;
   Value<SubclassOfPoint> value(point);
   AbstractValue& erased = value;
-  EXPECT_THROW(erased.GetMutableValue<Point>(), std::bad_cast);
+  EXPECT_THROW(erased.GetMutableValue<Point>(), std::logic_error);
 }
 
 // A child class of Value<T> that requires T to satisfy PrintInterface, and

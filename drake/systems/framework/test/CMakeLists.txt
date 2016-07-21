@@ -1,3 +1,4 @@
+# Shared between Systems 2 & 3
 add_executable(value_test value_test.cc)
 target_link_libraries(value_test drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
 add_test(NAME value_test COMMAND value_test)
@@ -7,6 +8,7 @@ target_link_libraries(basic_vector_test drakeSystemFramework drakePolynomial
   drakeCore ${GTEST_BOTH_LIBRARIES})
 add_test(NAME basic_vector_test COMMAND basic_vector_test)
 
+# System 2
 add_executable(basic_state_vector_test basic_state_vector_test.cc)
 target_link_libraries(basic_state_vector_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
@@ -41,3 +43,9 @@ add_executable(context_test context_test.cc)
 target_link_libraries(context_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
 add_test(NAME context_test COMMAND context_test)
+
+# System 3
+add_executable(system3_test system3_test.cc)
+target_link_libraries(system3_test drakeSystemFramework
+                      ${GTEST_BOTH_LIBRARIES})
+add_test(NAME system3_test COMMAND system3_test)

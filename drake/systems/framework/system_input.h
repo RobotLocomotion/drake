@@ -68,7 +68,7 @@ class DependentInputPort : public InputPort<T> {
   /// Creates an input port with the given @p sample_time_sec, connected
   /// to the given @p output_port, which must not be nullptr. The output
   /// port must outlive this input port.
-  DependentInputPort(OutputPort<T>* output_port, double sample_time_sec)
+  DependentInputPort(VectorOutputPort<T>* output_port, double sample_time_sec)
       : output_port_(output_port), sample_time_sec_(sample_time_sec) {
     output_port_->add_dependent(this);
   }
@@ -98,7 +98,7 @@ class DependentInputPort : public InputPort<T> {
   DependentInputPort(DependentInputPort&& other) = delete;
   DependentInputPort& operator=(DependentInputPort&& other) = delete;
 
-  OutputPort<T>* output_port_;
+  VectorOutputPort<T>* output_port_;
   double sample_time_sec_;
 };
 
@@ -163,7 +163,7 @@ class FreestandingInputPort : public InputPort<T> {
   FreestandingInputPort(FreestandingInputPort&& other) = delete;
   FreestandingInputPort& operator=(FreestandingInputPort&& other) = delete;
 
-  OutputPort<T> output_port_;
+  VectorOutputPort<T> output_port_;
   double sample_time_sec_ = 0.0;
 };
 

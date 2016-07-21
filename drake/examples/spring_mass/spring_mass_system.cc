@@ -6,6 +6,7 @@ using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
 using systems::OutputPort;
+using systems::VectorOutputPort;
 using systems::StateVector;
 using systems::SystemOutput;
 using systems::VectorInterface;
@@ -119,12 +120,11 @@ std::unique_ptr<Context<double>> SpringMassSystem::CreateDefaultContext()
 }
 
 std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput() const {
-  std::unique_ptr<SystemOutput<double>> output(new SystemOutput<double>);
+  auto output = std::make_unique<SystemOutput<double>>(1);
   {
     std::unique_ptr<VectorInterface<double>> data(new SpringMassOutputVector());
-    std::unique_ptr<OutputPort<double>> port(
-        new OutputPort<double>(std::move(data)));
-    output->ports.push_back(std::move(port));
+    auto port = std::make_unique<VectorOutputPort<double>>(std::move(data));
+    output->set_port(0, std::move(port));
   }
   return output;
 }

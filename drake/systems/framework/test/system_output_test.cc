@@ -12,7 +12,7 @@ namespace systems {
 class TestOutputPortListener : public OutputPortListenerInterface {
  public:
   void Invalidate() override {
-    invalidations_++;
+    ++invalidations_;
   };
 
   int get_invalidations() { return invalidations_; }
@@ -21,24 +21,24 @@ class TestOutputPortListener : public OutputPortListenerInterface {
   int invalidations_ = 0;
 };
 
-class OutputPortTest : public ::testing::Test {
+class VectorOutputPortTest : public ::testing::Test {
  protected:
   void SetUp() override {
     std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
     vec->get_mutable_value() << 5, 6;
-    port_.reset(new OutputPort<int>(std::move(vec)));
+    port_.reset(new VectorOutputPort<int>(std::move(vec)));
   }
 
-  std::unique_ptr<OutputPort<int>> port_;
+  std::unique_ptr<VectorOutputPort<int>> port_;
 };
 
-TEST_F(OutputPortTest, Access) {
+TEST_F(VectorOutputPortTest, Access) {
   VectorX<int> expected(2);
   expected << 5, 6;
   EXPECT_EQ(expected, port_->get_vector_data()->get_value());
 }
 
-TEST_F(OutputPortTest, Mutation) {
+TEST_F(VectorOutputPortTest, Mutation) {
   EXPECT_EQ(0, port_->get_version());
   port_->GetMutableVectorData()->get_mutable_value() << 7, 8;
 
@@ -51,7 +51,7 @@ TEST_F(OutputPortTest, Mutation) {
   EXPECT_EQ(expected, port_->get_vector_data()->get_value());
 }
 
-TEST_F(OutputPortTest, Listeners) {
+TEST_F(VectorOutputPortTest, Listeners) {
   TestOutputPortListener a, b, c;
   port_->add_dependent(&a);
   port_->add_dependent(&b);

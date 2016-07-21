@@ -5,6 +5,7 @@
 #include <string>
 #include <typeinfo>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/drakeSystemFramework_export.h"
 
 namespace drake {
@@ -42,7 +43,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
   /// Intentionally not const: holders of const references to the AbstractValue
   /// should not be able to mutate the value it contains.
   template <typename T>
-  T& GetMutableValue() {
+  T* GetMutableValue() {
     return DownCastMutableOrMaybeThrow<T>()->get_mutable_value();
   }
 
@@ -68,13 +69,15 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
   }
 
   // Casts this class to a const Value<T>*. In Debug builds, throws
-  // std::bad_cast if the cast fails.
+  // std::logic_error if the cast fails.
   // TODO(david-german-tri): Use static_cast in Release builds for speed.
   template <typename T>
   const Value<T>* DownCastOrMaybeThrow() const {
     const Value<T>* value = dynamic_cast<const Value<T>*>(this);
     if (value == nullptr) {
-      throw std::bad_cast();
+      throw std::logic_error(
+          "AbstractValue::DownCastOrMaybeThrow(): Can't downcast to type " +
+          NiceTypeName::Get<T>() + ".");
     }
     return value;
   }
@@ -102,8 +105,8 @@ class Value : public AbstractValue {
   /// Returns a const reference to the stored value.
   const T& get_value() const { return value_; }
 
-  /// Returns a mutable reference to the stored value.
-  T& get_mutable_value() { return value_; }
+  /// Returns a mutable pointer to the stored value (never null).
+  T* get_mutable_value() { return &value_; }
 
   /// Replaces the stored value with a new one.
   void set_value(const T& v) { value_ = v; }

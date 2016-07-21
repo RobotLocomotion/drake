@@ -46,10 +46,10 @@ TEST_F(AdderTest, AddTwoVectors) {
 
   adder_->EvalOutput(*context_, output_.get());
 
-  ASSERT_EQ(1u, output_->ports.size());
+  ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_port =
       dynamic_cast<const BasicVector<double>*>(
-          output_->ports[0]->get_vector_data());
+          output_->get_vector_port(0).get_vector_data());
   ASSERT_NE(nullptr, output_port);
   Eigen::Vector3d expected;
   expected << 5, 7, 9;

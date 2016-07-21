@@ -63,13 +63,13 @@ class DependentInputPortTest : public ::testing::Test {
   void SetUp() override {
     std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
     vec->get_mutable_value() << 5, 6;
-    output_port_.reset(new OutputPort<int>(std::move(vec)));
+    output_port_.reset(new VectorOutputPort<int>(std::move(vec)));
     port_.reset(new DependentInputPort<int>(output_port_.get(), 42.0));
     port_->set_invalidation_callback(
         std::bind(&DependentInputPortTest::Invalidate, this));
   }
 
-  std::unique_ptr<OutputPort<int>> output_port_;
+  std::unique_ptr<VectorOutputPort<int>> output_port_;
   std::unique_ptr<DependentInputPort<int>> port_;
   int64_t latest_version_ = -1;
 
