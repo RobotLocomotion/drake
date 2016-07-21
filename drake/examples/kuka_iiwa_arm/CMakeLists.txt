@@ -30,6 +30,7 @@ if(lcm_FOUND)
     threads)
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
   target_link_libraries(kuka_ik_demo drakeIK
+    drakeTrajectories
     drakeRBM
     drakeLCMSystem)
 
