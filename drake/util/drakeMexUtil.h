@@ -232,7 +232,7 @@ mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald, _Rows, _Cols>& poly) {
            iter != monomials.end(); iter++) {
         sub(index, 0) = i + 1;
         sub(index, 1) = j + 1;
-        for (int k = 0; k < iter->terms.size(); k++) {
+        for (int k = 0; k < static_cast<int>(iter->terms.size()); k++) {
           var(index, k) = (double)iter->terms[k].var;
           pow(index, k) = (double)iter->terms[k].power;
         }
