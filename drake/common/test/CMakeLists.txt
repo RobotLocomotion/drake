@@ -7,7 +7,7 @@ add_test(NAME nice_type_name_test COMMAND nice_type_name_test)
 add_executable(sorted_vectors_have_intersection_test
         sorted_vectors_have_intersection_test.cc)
 target_link_libraries(sorted_vectors_have_intersection_test
-        ${GTEST_BOTH_LIBRARIES})
+        drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME sorted_vectors_have_intersection_test
          COMMAND sorted_vectors_have_intersection_test)
 
