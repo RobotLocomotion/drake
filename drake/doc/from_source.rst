@@ -11,6 +11,7 @@ If you'd like to build the MATLAB interface, you will need a `C/C++ compiler tha
 
 Make sure that the MATLAB executable is in your path.  (e.g., typing ``matlab`` at the system command line should start an instance of MATLAB).  For example, on Mac you might consider ``sudo ln -s /Applications/MATLAB_R2014a.app/bin/matlab /usr/bin/matlab``, or you can actually add the MATLAB/bin directory to your system path.  On windows, you should `edit your path environment variable <http://www.java.com/en/download/help/path.xml>`_ to include e.g. ``C:\Program Files\MATLAB\R2014a\bin``.
 
+.. _getting_drake:
 
 Getting Drake
 =============
@@ -87,6 +88,8 @@ Before running build, you will need to follow the instructions for your host sys
     homebrew
     ubuntu
     windows
+
+.. _build_the_collection:
 
 Build the collection
 ====================
