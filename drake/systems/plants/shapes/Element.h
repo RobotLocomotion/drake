@@ -13,19 +13,20 @@
 namespace DrakeShapes {
 class DRAKESHAPES_EXPORT Element {
  public:
-  Element(const Geometry& geometry, const Eigen::Isometry3d& T_element_to_local)
+  Element(const Geometry& _geometry,
+          const Eigen::Isometry3d& _T_element_to_local)
       : T_element_to_world(Eigen::Isometry3d::Identity()),
-        T_element_to_local(T_element_to_local),
-        geometry(geometry.clone()) {}
+        T_element_to_local(_T_element_to_local),
+        geometry(_geometry.clone()) {}
 
-  explicit Element(const Geometry& geometry)
+  explicit Element(const Geometry& _geometry)
       : T_element_to_world(Eigen::Isometry3d::Identity()),
         T_element_to_local(Eigen::Isometry3d::Identity()),
-        geometry(geometry.clone()) {}
+        geometry(_geometry.clone()) {}
 
-  explicit Element(const Eigen::Isometry3d& T_element_to_local)
+  explicit Element(const Eigen::Isometry3d& _T_element_to_local)
       : T_element_to_world(Eigen::Isometry3d::Identity()),
-        T_element_to_local(T_element_to_local),
+        T_element_to_local(_T_element_to_local),
         geometry() {}
 
   virtual ~Element() {}

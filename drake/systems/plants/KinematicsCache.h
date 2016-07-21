@@ -92,13 +92,13 @@ class KinematicsCache {
 
  public:
   explicit KinematicsCache(
-      const std::vector<std::unique_ptr<RigidBody> >& bodies)
-      : num_positions(getNumPositions(bodies)),
-        num_velocities(getNumVelocities(bodies)),
+      const std::vector<std::unique_ptr<RigidBody> >& _bodies)
+      : num_positions(getNumPositions(_bodies)),
+        num_velocities(getNumVelocities(_bodies)),
         q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
         v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_velocities)),
         velocity_vector_valid(false) {
-    for (const auto& body_unique_ptr : bodies) {
+    for (const auto& body_unique_ptr : _bodies) {
       const RigidBody& body = *body_unique_ptr;
       int num_positions_joint =
           body.hasParent() ? body.getJoint().getNumPositions() : 0;
@@ -121,25 +121,25 @@ class KinematicsCache {
   }
 
   template <typename Derived>
-  void initialize(const Eigen::MatrixBase<Derived>& q) {
+  void initialize(const Eigen::MatrixBase<Derived>& _q) {
     static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");
     static_assert(std::is_same<typename Derived::Scalar, Scalar>::value,
                   "scalar type of q must match scalar type of KinematicsCache");
-    DRAKE_ASSERT(this->q.rows() == q.rows());
-    this->q = q;
+    DRAKE_ASSERT(q.rows() == _q.rows());
+    q = _q;
     invalidate();
     velocity_vector_valid = false;
   }
 
   template <typename DerivedQ, typename DerivedV>
-  void initialize(const Eigen::MatrixBase<DerivedQ>& q,
-                  const Eigen::MatrixBase<DerivedV>& v) {
-    initialize(q);  // also invalidates
+  void initialize(const Eigen::MatrixBase<DerivedQ>& _q,
+                  const Eigen::MatrixBase<DerivedV>& _v) {
+    initialize(_q);  // also invalidates
     static_assert(DerivedV::ColsAtCompileTime == 1, "v must be a vector");
     static_assert(std::is_same<typename DerivedV::Scalar, Scalar>::value,
                   "scalar type of v must match scalar type of KinematicsCache");
-    DRAKE_ASSERT(this->v.rows() == v.rows());
-    this->v = v;
+    DRAKE_ASSERT(v.rows() == _v.rows());
+    v = _v;
     velocity_vector_valid = true;
   }
 
@@ -242,7 +242,7 @@ class KinematicsCache {
 
   void setPositionKinematicsCached() { position_kinematics_cached = true; }
 
-  void setJdotVCached(bool jdotV_cached) { this->jdotV_cached = jdotV_cached; }
+  void setJdotVCached(bool _jdotV_cached) { jdotV_cached = _jdotV_cached; }
 
   int getNumPositions() const { return num_positions; }
 
