@@ -9,22 +9,23 @@ namespace drake {
 
 /** Checks for non-empty intersection of two sorted `std::vector`'s.
 
-@param  a  First vector.
-@param  b  Second vector.
+@param[in]  a  First vector.
+@param[in]  b  Second vector.
+@tparam T The type of the elements in the input vectors @p a and @p b. This is
+expected to be an integral type.
 @returns `true` if there is a non-empty intersection between vectors;
 `false` otherwise.
 
-Elements are compared using operator< and the vectors must be sorted with
+Elements are compared using `operator<` and the vectors must be sorted with
 respect to the same operator.
 
 This algorithm only works on `std::vector`'s to take advantage of their fast
 and random access.
 
-This algorithm only works on sorted vectors. Entries can be repeated as long as
-they are sorted.
-For vector a of size Na and vector b of size Nb the complexity is at most
-Order(Na+Nb). The algorithm executes in constant time for vectors with disjoint
-entries.
+Entries can be repeated as long as they are sorted.
+For vector `a` of size \f$ N_a \f$  and vector `b` of size \f$ N_b \f$ the
+complexity is at most \f$\mathcal{O}(N_a + N_b)\f$. The algorithm executes in
+constant time for vectors with disjoint entries.
 An example of worst case is given below:
 @verbatim
  a = (10, 20, 30)
