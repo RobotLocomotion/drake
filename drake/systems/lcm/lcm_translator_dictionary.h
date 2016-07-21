@@ -38,8 +38,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmTranslatorDictionary {
    * @throws std::runtime_error If a translator for the @p channel_name is
    * already in the dictionary.
    */
-  void AddEntry(const std::string& channel_name,
-    std::unique_ptr<const LcmAndVectorInterfaceTranslator> translator);
+  void AddEntry(
+      const std::string& channel_name,
+      std::unique_ptr<const LcmAndVectorInterfaceTranslator> translator);
 
   /**
    * Returns true if and only if a translator for @p channel_name exists in the
@@ -59,8 +60,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmTranslatorDictionary {
       const std::string& channel_name) const;
 
   // Disable copy and assign.
-  LcmTranslatorDictionary(const LcmTranslatorDictionary&)
-      = delete;
+  LcmTranslatorDictionary(const LcmTranslatorDictionary&) = delete;
   LcmTranslatorDictionary& operator=(const LcmTranslatorDictionary&) = delete;
 
  private:

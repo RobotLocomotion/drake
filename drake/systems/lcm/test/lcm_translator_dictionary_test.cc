@@ -20,14 +20,17 @@ GTEST_TEST(LcmTranslatorDictionaryTest, BasicTests) {
   // Creates a dictionary with one translator for the above-defined channel
   // name.
   LcmTranslatorDictionary dictionary;
-  dictionary.AddEntry(channel_name,
-    std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
+  dictionary.AddEntry(
+      channel_name,
+      std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
 
   // Verifies that an exception is thrown when the user attempts to add a
   // duplicate translator to the dictionary.
-  EXPECT_THROW(dictionary.AddEntry(channel_name,
-      std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim)),
-          std::runtime_error);
+  EXPECT_THROW(
+      dictionary.AddEntry(
+          channel_name,
+          std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim)),
+      std::runtime_error);
 
   EXPECT_FALSE(dictionary.HasTranslator("Boo"));
   EXPECT_TRUE(dictionary.HasTranslator(channel_name));
