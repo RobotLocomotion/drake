@@ -29,9 +29,9 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
       DrakeJoint::FIXED);
 
   // Verifies that the number of states, inputs, and outputs are all zero.
-  EXPECT_EQ(rigid_body_sys->getNumStates(), 0);
-  EXPECT_EQ(rigid_body_sys->getNumInputs(), 0);
-  EXPECT_EQ(rigid_body_sys->getNumOutputs(), 0);
+  EXPECT_EQ(rigid_body_sys->getNumStates(), 0u);
+  EXPECT_EQ(rigid_body_sys->getNumInputs(), 0u);
+  EXPECT_EQ(rigid_body_sys->getNumOutputs(), 0u);
 
   // Obtains a const pointer to the rigid body tree within the rigid body
   // system.
@@ -82,21 +82,21 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
 
   // Checks that the rigid body system has the correct number of states. The
   // rigid body system has 36 positions + 32 velocities = 68 states.
-  EXPECT_EQ(rigid_body_sys->getNumStates(), 68);
+  EXPECT_EQ(rigid_body_sys->getNumStates(), 68u);
 
   // Checks that the rigid body system has the correct number of inputs. The
   // rigid body system has 2 joints * 4 models = 8 inputs.
-  EXPECT_EQ(rigid_body_sys->getNumInputs(), 8);
+  EXPECT_EQ(rigid_body_sys->getNumInputs(), 8u);
 
   // Checks that the number of sensors in the rigid body system is correct.
   // The rigid body system has 3 sensors / model * 4 models = 12 sensors.
-  EXPECT_EQ(rigid_body_sys->GetSensors().size(), 12);
+  EXPECT_EQ(rigid_body_sys->GetSensors().size(), 12u);
 
   // Checks that the rigid body system has the correct number of outputs. The
   // rigid body system has:
   //   (640 outputs / sensor * 3 sensors / models * 4 models) +
   //   36 position outputs + 32 velocity outputs = 7748 outputs.
-  EXPECT_EQ(rigid_body_sys->getNumOutputs(), 7748);
+  EXPECT_EQ(rigid_body_sys->getNumOutputs(), 7748u);
 
   // Checks that the rigid body system has the correct number of positions.
   // The rigid body system has:
