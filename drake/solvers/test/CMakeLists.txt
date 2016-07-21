@@ -17,13 +17,6 @@ add_executable(system_identification_test system_identification_test.cpp)
 target_link_libraries(system_identification_test
   drakeOptimization drakePolynomial ${GTEST_BOTH_LIBRARIES})
 add_test(NAME system_identification_test COMMAND system_identification_test)
-add_executable(gurobi_solver_test gurobi_solver_test.cc)
-target_link_libraries(gurobi_solver_test drakeOptimization
-  ${GTEST_BOTH_LIBRARIES})
-
-if(gurobi_FOUND)
-  add_test(NAME gurobi_solver_test COMMAND gurobi_solver_test)
-endif()
 
 add_matlab_test(NAME solvers/test/gloptipoly_constrained_test COMMAND gloptipoly_constrained_test)
 add_matlab_test(NAME solvers/test/rrt_basic COMMAND rrt_basic)
