@@ -112,7 +112,7 @@ GTEST_TEST(SimpleCarTest, Accelerating) {
   double step_size = Drake::default_simulation_options.initial_step_size;
   int steps = (end_time - start_time) / step_size;
 
-  EXPECT_EQ(history_system->states_.size(), steps);
+  EXPECT_EQ(static_cast<int>(history_system->states_.size()), steps);
 
   double max_time = history_system->states_.rbegin()->first;
   EXPECT_NEAR(max_time, end_time - step_size, 1e-5);
@@ -161,7 +161,7 @@ GTEST_TEST(SimpleCarTest, Braking) {
   double step_size = Drake::default_simulation_options.initial_step_size;
   int steps = (end_time - start_time) / step_size;
 
-  EXPECT_EQ(history_system->states_.size(), steps);
+  EXPECT_EQ(static_cast<int>(history_system->states_.size()), steps);
 
   double max_time = history_system->states_.rbegin()->first;
   EXPECT_NEAR(max_time, end_time - step_size, 1e-5);
@@ -202,7 +202,7 @@ GTEST_TEST(SimpleCarTest, Steering) {
   double step_size = Drake::default_simulation_options.initial_step_size;
   int steps = (end_time - start_time) / step_size;
 
-  EXPECT_EQ(history_system->states_.size(), steps);
+  EXPECT_EQ(static_cast<int>(history_system->states_.size()), steps);
 
   double max_time = history_system->states_.rbegin()->first;
   EXPECT_NEAR(max_time, end_time - step_size, 1e-5);

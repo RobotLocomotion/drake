@@ -117,7 +117,8 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
       tree->number_of_positions() + tree->number_of_velocities(), 3);
   map_driving_cmd_to_x_d.setZero();
 
-  for (int actuator_idx = 0; actuator_idx < tree->actuators.size();
+  for (int actuator_idx = 0;
+       actuator_idx < static_cast<int>(tree->actuators.size());
        actuator_idx++) {
     const std::string& actuator_name = tree->actuators[actuator_idx].name;
 

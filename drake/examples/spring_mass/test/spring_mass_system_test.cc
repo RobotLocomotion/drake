@@ -129,7 +129,7 @@ TEST_F(SpringMassSystemTest, Output) {
   // Displacement 100cm, vel 250cm/s (.25 is exact in binary).
   InitializeState(0.1, 0.25);
   system_->EvalOutput(*context_, system_output_.get());
-  ASSERT_EQ(1, system_output_->ports.size());
+  ASSERT_EQ(1u, system_output_->ports.size());
 
   // Check the output through the application-specific interface.
   EXPECT_NEAR(0.1, output_->get_position(), 1e-14);

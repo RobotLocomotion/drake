@@ -35,12 +35,13 @@ class PDControlSystem {
   PDControlSystem(const SystemPtr& sys, const Eigen::MatrixBase<DerivedA>& Kp,
                   const Eigen::MatrixBase<DerivedB>& Kd)
       : sys(sys), Kp(Kp), Kd(Kd) {
-    DRAKE_ASSERT(Drake::getNumInputs(*sys) == Kp.rows() &&
+    DRAKE_ASSERT(static_cast<int>(Drake::getNumInputs(*sys)) == Kp.rows() &&
                  "Kp must have the same number of rows as the system has"
                  " inputs");
     DRAKE_ASSERT(Kp.rows() == Kd.rows() &&
                  "Kd must have the same number of rows as Kp");
-    DRAKE_ASSERT(Drake::getNumStates(*sys) == Kp.cols() + Kd.cols() &&
+    DRAKE_ASSERT(static_cast<int>(Drake::getNumStates(*sys)) ==
+                 (Kp.cols() + Kd.cols()) &&
                  "Kp and Kd must match the number of states");
   }
 
