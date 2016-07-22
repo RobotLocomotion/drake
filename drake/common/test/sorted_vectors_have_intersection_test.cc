@@ -9,12 +9,11 @@ namespace drake {
 
 namespace {
 
-// Test with std::vector specific SortedVectorsHaveIntersection.
 GTEST_TEST(TestHaveIntersection, SortedVectorsHaveIntersection) {
   // In order for drake::SortedVectorsHaveIntersection to work vectors must be
   // sorted.
-  // An std::vector can have non sorted repeated elements. Therefore the user
-  // must ensure that the previous conditions are met.
+  // Since an std::vector can have non sorted repeated elements, the user must
+  // ensure that entries are sorted.
   vector<int> set1 = vector<int>{2, 9, 11, 15, 23};
   vector<int> set2 = vector<int>{9, 11, 13};
   vector<int> set3 = vector<int>{1, 8, 13};

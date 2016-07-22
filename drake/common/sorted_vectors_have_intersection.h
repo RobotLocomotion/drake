@@ -8,7 +8,8 @@
 
 namespace drake {
 
-/** Checks for non-empty intersection of two sorted `std::vector`'s.
+/** Checks for the existence of a non-empty intersection between two sorted
+`std::vector`'s.
 
 @param[in]  a  First vector.
 @param[in]  b  Second vector.
@@ -26,7 +27,7 @@ and random access.
 Entries can be repeated as long as they are sorted. For vector `a` of size `Na`
 and vector `b` of size `Nb` the complexity is at most Order(Na + Nb).
 The algorithm executes in constant time for vectors with disjoint entries.
-An example of worst case is given below:
+An example of the worst case scenario is given below:
 @verbatim
  a = (10, 20, 30)
  b = (15, 25, 35)
@@ -41,8 +42,8 @@ bool SortedVectorsHaveIntersection(const std::vector<T>& a,
                 "Input vectors must hold integral types or pointers.");
 
   // Checks the precondition that the lists are sorted, only in debug builds.
-  // This means O(n) performance in Debug builds but could also catch some very
-  // obscure errors.
+  // This means O(n) performance in Debug builds but it could also catch some
+  // very obscure errors.
   DRAKE_ASSERT(std::is_sorted(a.cbegin(), a.cend()) &&
                std::is_sorted(b.cbegin(), b.cend()));
 
@@ -68,7 +69,7 @@ bool SortedVectorsHaveIntersection(const std::vector<T>& a,
       return true;
     }
   }
-  // One of the ranges run out of elements before a match was found.
+  // One of the ranges ran out of elements before a match was found.
   return false;
 }
 
