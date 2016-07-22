@@ -47,7 +47,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
 
  private:
   std::vector<PolynomialMatrix>
-      polynomials;  // a PolynomialMatrix for each piece (segment)
+      polynomials_;  // a PolynomialMatrix for each piece (segment)
 
  public:
   virtual ~PiecewisePolynomial() {}
@@ -60,7 +60,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
   explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value)
       : PiecewisePolynomialBase(std::vector<double>(
             {{0.0, std::numeric_limits<double>::infinity()}})) {
-    polynomials.push_back(value.template cast<PolynomialType>());
+    polynomials_.push_back(value.template cast<PolynomialType>());
   }
 
   // Matrix constructor
@@ -89,8 +89,8 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
    * Any rules or limitations of Polynomial::integral also apply to this
    * function.
    *
-   * If \p value_at_start_time is given, it does the following only for the 
-   * first segment: adds that constant as the constant term 
+   * If \p value_at_start_time is given, it does the following only for the
+   * first segment: adds that constant as the constant term
    * (zeroth-order coefficient) of the resulting Polynomial.
    */
   PiecewisePolynomial integral(double value_at_start_time = 0.0) const;
@@ -101,15 +101,15 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
    * Any rules or limitations of Polynomial::integral also apply to this
    * function.
    *
-   * If \p value_at_start_time is given, it does the following only for the 
-   * first segment: adds value_at_start_time(row,col) as the constant term 
+   * If \p value_at_start_time is given, it does the following only for the
+   * first segment: adds value_at_start_time(row,col) as the constant term
    * (zeroth-order coefficient) of the resulting Polynomial.
    */
   PiecewisePolynomial integral(
       const CoefficientMatrixRef& value_at_start_time) const;
 
   bool empty() const {
-    return polynomials.empty();
+    return polynomials_.empty();
   }
 
   double scalarValue(double t, Eigen::Index row = 0, Eigen::Index col = 0);

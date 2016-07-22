@@ -289,7 +289,7 @@ class SensorPublisherJointState {
               cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
               rigid_body_tree->FindBodyIndex(rigid_body->name()));
           auto translation = transform.translation();
-          auto rpy = rotmat2rpy(transform.linear());
+          auto rpy = drake::math::rotmat2rpy(transform.linear());
 
           size_t index = robot_struct->message_index;
 
