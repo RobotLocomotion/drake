@@ -53,15 +53,6 @@ void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
   }
 }
 
-std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj) {
-  os << "loop connects pt "
-     << obj.frameA->transform_to_body.matrix().topRightCorner(3, 1).transpose()
-     << " on " << obj.frameA->body->name_ << " to pt "
-     << obj.frameB->transform_to_body.matrix().topRightCorner(3, 1).transpose()
-     << " on " << obj.frameB->body->name_ << std::endl;
-  return os;
-}
-
 std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
   os << *tree.collision_model.get();
   return os;
