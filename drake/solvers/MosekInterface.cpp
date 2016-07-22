@@ -232,7 +232,7 @@ SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
   mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
                                          lower_variable_bounds);
 
-  int totalconnum = 0, connum = 0, i = 0;
+  int totalconnum = 0, connum = 0, i = 0, j = 0;
   // This block of code handles constraints, depending on if the program is
   // linear or quadratic.
   // TODO(alexdunyak): Allow constraints to affect specific variables
@@ -256,9 +256,9 @@ SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
     for (const auto& con : prog.GetAllLinearConstraints()) {
       // con can call functions of  Binding<LinearConstraint>, but the actual
       // type is const std::list<Binding<LinearConstraint>>::const_iterator&
-      for (int i = 0; static_cast<unsigned int>(i) <
+      for (i = 0; static_cast<unsigned int>(i) <
           con.constraint()->num_constraints(); i++) {
-        for (int j = 0; j < (con.constraint())->A().cols(); j++) {
+        for (j = 0; j < (con.constraint())->A().cols(); j++) {
           linear_cons(connum, j) = (con.constraint()->A())(i, j);
         }
         // lower bounds first
