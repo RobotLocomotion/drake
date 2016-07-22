@@ -49,6 +49,18 @@ def summarize_cpplint(cmdline_and_files, args):
     return errors
 
 
+def worker_summarize_cpplint(cmdline_and_files, args):
+    """Escalate keyboard interrupts (Ctrl-C) in worker processes up to the
+    master process.  There are still Ctrl-C race conditions where the pool
+    keeps going, but this substantially reduces the window.
+    """
+
+    try:
+        return summarize_cpplint(cmdline_and_files, args)
+    except KeyboardInterrupt:
+        raise Exception
+
+
 def multiprocess_cpplint(cmdline, files, args):
     """Given a cpplint subprocess command line (just the program and arguments),
     separate list of files, and number of processess (None for "all CPUs"), run
@@ -66,7 +78,7 @@ def multiprocess_cpplint(cmdline, files, args):
         sys.stdout.write('Checking ...')
         sys.stdout.flush()
     pool = multiprocessing.Pool(processes=args.num_processes)
-    function = functools.partial(summarize_cpplint, args=args)
+    function = functools.partial(worker_summarize_cpplint, args=args)
     errors = [
         error
         for errors in pool.map(function, cmdlines)
