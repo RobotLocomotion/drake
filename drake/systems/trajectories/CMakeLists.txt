@@ -1,6 +1,3 @@
-# TODO(#2852) We can't yet handle shadowing as a compile error.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS_NO_ERROR_SHADOW}")
-
 if(MATLAB_FOUND)
   add_mex(PPTmex PPTmex.cpp)
   add_mex(ExpPlusPPTrajectoryEvalmex ExpPlusPPTrajectoryEvalmex.cpp)

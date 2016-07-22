@@ -20,8 +20,8 @@ using drake::util::MatrixCompareType;
 namespace drake {
 namespace {
 
-default_random_engine generator;
-uniform_real_distribution<double> uniform;
+default_random_engine g_generator;
+uniform_real_distribution<double> g_uniform;
 
 template <typename CoefficientType>
 void testIntegralAndDerivative() {
@@ -34,7 +34,7 @@ void testIntegralAndDerivative() {
   typedef typename PiecewisePolynomialType::CoefficientMatrix CoefficientMatrix;
 
   vector<double> segment_times =
-      PiecewiseFunction::randomSegmentTimes(num_segments, generator);
+      PiecewiseFunction::randomSegmentTimes(num_segments, g_generator);
   PiecewisePolynomialType piecewise =
       PiecewisePolynomial<CoefficientType>::random(rows, cols, num_coefficients,
                                                    segment_times);
