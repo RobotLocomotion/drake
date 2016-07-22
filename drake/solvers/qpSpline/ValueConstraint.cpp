@@ -4,12 +4,12 @@
 
 ValueConstraint::ValueConstraint(int derivative_order, double time,
                                  double value)
-    : derivative_order(derivative_order), time(time), value(value) {
+    : derivative_order_(derivative_order), time_(time), value_(value) {
   DRAKE_ASSERT(derivative_order >= 0);
 }
 
-int ValueConstraint::getDerivativeOrder() const { return derivative_order; }
+int ValueConstraint::getDerivativeOrder() const { return derivative_order_; }
 
-double ValueConstraint::getTime() const { return time; }
+double ValueConstraint::getTime() const { return time_; }
 
-double ValueConstraint::getValue() const { return value; }
+double ValueConstraint::getValue() const { return value_; }

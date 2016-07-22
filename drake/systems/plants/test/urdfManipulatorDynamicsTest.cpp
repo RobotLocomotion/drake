@@ -23,8 +23,8 @@ int main(int argc, char* argv[]) {
   // the order of the bodies may be different in matlab, so print it out once
   // here
   cout << model->bodies.size() << endl;
-  for (int i = 0; i < model->bodies.size(); i++) {
-    cout << model->bodies[i]->name_ << endl;
+  for (const auto& body : model->bodies) {
+    cout << body->name_ << endl;
   }
 
   VectorXd q = model->getZeroConfiguration();

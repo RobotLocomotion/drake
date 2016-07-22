@@ -11,9 +11,14 @@
 /// A scalar multi-variate piecewise polynomial.
 /**
  * PiecewisePolynomial represents a list of contiguous segments in time with a
- * Polynomial defined for each segment.
+ * Matrix of Polynomials defined for each segment. The term segment is used for
+ * piece.
  *
- * An example of a piecewise function is the absolute value function:
+ * An example of a piecewise polynomial is a function of x segments in time,
+ * where for each segment a different polynomial is defined. For a more specific
+ * example, consider the absolute value function, which is a piecewise function.
+ * It uses one function for inputs values < 0, and another function for input
+ * values > 0:
  *
  * @code
  * int abs(int x)
@@ -24,7 +29,7 @@
  *   else return x;
  * }
  * @endcode
- * 
+ *
  * PiecewisePolynomials can be added, subtracted, and multiplied.
  * They cannot be divided because Polynomials are not closed
  * under division.
@@ -42,7 +47,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
 
  private:
   std::vector<PolynomialMatrix>
-      polynomials;  // a PolynomialMatrix for each piece
+      polynomials_;  // a PolynomialMatrix for each piece (segment)
 
  public:
   virtual ~PiecewisePolynomial() {}
@@ -55,7 +60,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
   explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value)
       : PiecewisePolynomialBase(std::vector<double>(
             {{0.0, std::numeric_limits<double>::infinity()}})) {
-    polynomials.push_back(value.template cast<PolynomialType>());
+    polynomials_.push_back(value.template cast<PolynomialType>());
   }
 
   // Matrix constructor
@@ -84,8 +89,8 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
    * Any rules or limitations of Polynomial::integral also apply to this
    * function.
    *
-   * If \p value_at_start_time is given, it does the following only for the 
-   * first segment: adds that constant as the constant term 
+   * If \p value_at_start_time is given, it does the following only for the
+   * first segment: adds that constant as the constant term
    * (zeroth-order coefficient) of the resulting Polynomial.
    */
   PiecewisePolynomial integral(double value_at_start_time = 0.0) const;
@@ -96,12 +101,16 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
    * Any rules or limitations of Polynomial::integral also apply to this
    * function.
    *
-   * If \p value_at_start_time is given, it does the following only for the 
-   * first segment: adds value_at_start_time(row,col) as the constant term 
+   * If \p value_at_start_time is given, it does the following only for the
+   * first segment: adds value_at_start_time(row,col) as the constant term
    * (zeroth-order coefficient) of the resulting Polynomial.
    */
   PiecewisePolynomial integral(
       const CoefficientMatrixRef& value_at_start_time) const;
+
+  bool empty() const {
+    return polynomials_.empty();
+  }
 
   double scalarValue(double t, Eigen::Index row = 0, Eigen::Index col = 0);
 

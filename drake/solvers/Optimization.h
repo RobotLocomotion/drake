@@ -261,6 +261,15 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
         problem_type_(),
         solver_result_(0) {}
 
+  /// Add continuous variables to this OptimizationProblem.
+  /**
+   * Add continuous variables, appending them to an internal list of any
+   * existing vars.
+   * The new variables are uninitialized: callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   *
+   * @return The DecisionVariableView of the new vars (not all the vars stored).
+   */
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
     DecisionVariable v(DecisionVariable::VarType::CONTINUOUS, name,

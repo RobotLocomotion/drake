@@ -10,6 +10,7 @@
 #include "drake/systems/framework/system_interface.h"
 #include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
+#include "drake/systems/lcm/lcm_translator_dictionary.h"
 
 namespace drake {
 namespace systems {
@@ -24,7 +25,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
     public SystemInterface<double> {
  public:
   /**
-   * The constructor.
+   * A constructor.
    *
    * @param[in] channel The LCM channel on which to subscribe.
    *
@@ -39,6 +40,21 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmAndVectorInterfaceTranslator& translator,
+                      ::lcm::LCM* lcm);
+
+  /**
+   * A constructor.
+   *
+   * @param[in] channel The LCM channel on which to subscribe.
+   *
+   * @param[in] translator_dictionary A dictionary for obtaining the appropriate
+   * translator for a particular LCM channel.
+   *
+   * @param[in] lcm A pointer to the LCM subsystem. This pointer must not be
+   * null.
+   */
+  LcmSubscriberSystem(const std::string& channel,
+                      const LcmTranslatorDictionary& translator_dictionary,
                       ::lcm::LCM* lcm);
 
   ~LcmSubscriberSystem() override;

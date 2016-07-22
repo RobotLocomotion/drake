@@ -107,9 +107,9 @@ administrators managing the PR queue will respect them.
   are responsible for finding reviewers, as documented in `developers`.
   This flag simply protects you from unsolicited review.
 * ``do not merge``: Use this status to indicate you do not want anyone to
-  merge your PR right now, even if it passes all presubmit checks. This is
+  merge your PR right now, even if it passes all pre-merge checks. This is
   useful if you have minor post-LGTM changes to make, or if you need to
-  coordinate the precise timing of the merge. If presubmit checks are green
+  coordinate the precise timing of the merge. If pre-merge checks are green
   and this flag is absent, a Drake administrator may merge your PR at any
   time.
 

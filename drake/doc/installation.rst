@@ -1,4 +1,6 @@
 
+.. _installation_and_quick_start:
+
 ***************************
 Installation and Quickstart
 ***************************

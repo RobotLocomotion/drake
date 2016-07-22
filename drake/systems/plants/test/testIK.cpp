@@ -3,6 +3,7 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/Path.h"
 #include "drake/core/Vector.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
@@ -10,13 +11,17 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/eigen_matrix_compare.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
+
+using Drake::getDrakePath;
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
 GTEST_TEST(testIK, atlasIK) {
-  RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree model(
+      getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
   tspan << 0, 1;
@@ -36,7 +41,7 @@ GTEST_TEST(testIK, atlasIK) {
   VectorXd q_sol(model.number_of_positions());
   q_sol.setZero();
   int info = 0;
-  vector<string> infeasible_constraint;
+  std::vector<std::string> infeasible_constraint;
   inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),
              ikoptions, &q_sol, &info, &infeasible_constraint);
   printf("INFO = %d\n", info);
@@ -48,17 +53,11 @@ GTEST_TEST(testIK, atlasIK) {
   EXPECT_TRUE(
       CompareMatrices(com, Vector3d(0, 0, 1), 1e-6,
                       MatrixCompareType::absolute));
-
-  /*MATFile *presultmat;
-  presultmat = matOpen("q_sol.mat","w");
-  mxArray* pqsol = mxCreateDoubleMatrix(model.num_dof, 1, mxREAL);
-  memcpy(mxGetPrSafe(pqsol), q_sol.data(), sizeof(double)model.num_dof);
-  matPutVariable(presultmat,"q_sol", pqsol);
-  matClose(presultmat);*/
 }
 
 GTEST_TEST(testIK, iiwaIK) {
-  RigidBodyTree model("examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+  RigidBodyTree model(
+      getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
 
   // Create a timespan for the constraints.  It's not particularly
   // meaningful in this test since inverseKin() only tests a single
@@ -97,7 +96,7 @@ GTEST_TEST(testIK, iiwaIK) {
   VectorXd q_sol(model.number_of_positions());
   q_sol.setZero();
   int info = 0;
-  vector<string> infeasible_constraint;
+  std::vector<std::string> infeasible_constraint;
   inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),
              ikoptions, &q_sol, &info, &infeasible_constraint);
   EXPECT_EQ(info, 1);

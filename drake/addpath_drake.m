@@ -87,7 +87,7 @@ if (strcmp(computer('arch'),'maci64'))
 end
 
 if ispc
-  setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(get_drake_install_dir(),'lib','Release')]);
+  setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(get_drake_binary_dir(),'lib','Release'),';',fullfile(get_drake_binary_dir(),'lib')]);
 end
 
 
