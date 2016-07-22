@@ -19,14 +19,17 @@ namespace drake {
 namespace solvers {
 
 MosekLP::MosekLP(int num_variables, int num_constraints,
-    std::vector<double> equationScalars,
-    Eigen::MatrixXd cons,
+    std::vector<double> equation_scalars,
+    Eigen::MatrixXd linear_cons,
     std::vector<MSKboundkeye> mosek_constraint_bounds,
     std::vector<double> upper_constraint_bounds,
     std::vector<double> lower_constraint_bounds,
     std::vector<MSKboundkeye> mosek_variable_bounds,
     std::vector<double> upper_variable_bounds,
-    std::vector<double> lower_variable_bounds) {
+    std::vector<double> lower_variable_bounds,
+    double constant_eqn_term,
+    Eigen::MatrixXd quad_objective,
+    Eigen::MatrixXd quad_cons) {
   numvar_ = num_variables;
   numcon_ = num_constraints;
   env_ = NULL;
@@ -39,22 +42,64 @@ MosekLP::MosekLP(int num_variables, int num_constraints,
     // Append numcon_ empty constraints
     if (r_ == MSK_RES_OK)
       r_ = MSK_appendcons(task_, numcon_);
-
     // Append numvar_ variables, initially fixed at zero
     if (r_ == MSK_RES_OK)
       r_ = MSK_appendvars(task_, numvar_);
+    // Add fixed term, optional
+    if (r_ == MSK_RES_OK && constant_eqn_term != 0)
+      r_ = MSK_putcfix(task_, constant_eqn_term);
   }
   // add the equation to maximize to the environment.
   int j = 0;
   for (j = 0; j < numvar_ && r_ == MSK_RES_OK; j++) {
     if (r_ == MSK_RES_OK)
-      r_ = MSK_putcj(task_, j, equationScalars[j]);
+      r_ = MSK_putcj(task_, j, equation_scalars[j]);
   }
+  if (!quad_objective.isZero())
+    AddQuadraticObjective(quad_objective);
+  if (!quad_cons.isZero())
+    AddQuadraticConstraintMatrix(quad_cons);
   AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
       lower_variable_bounds);
-  AddLinearConstraintMatrix(cons);
+  AddLinearConstraintMatrix(linear_cons);
   AddLinearConstraintBounds(mosek_constraint_bounds, upper_constraint_bounds,
       lower_constraint_bounds);
+}
+
+void MosekLP::AddQuadraticObjective(Eigen::MatrixXd quad_objective) {
+  std::vector<int> qsubi, qsubj;
+  std::vector<double> qval;
+  int lowtrinonzero = 0, i = 0, j = 0;
+  for (i = 0; i < quad_objective.rows(); i++) {
+    for (j = 0; j <= i; j++) {
+      if (quad_objective(i, j) != 0) {
+        qsubi.push_back(i);
+        qsubj.push_back(j);
+        qval.push_back(quad_objective(i, j));
+        lowtrinonzero++;
+      }
+    }
+  }
+  if (r_ == MSK_RES_OK)
+    r_ = MSK_putqobj(task_, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
+}
+
+void MosekLP::AddQuadraticConstraintMatrix(Eigen::MatrixXd quad_cons) {
+  std::vector<int> qsubi, qsubj;
+  std::vector<double> qval;
+  int lowtrinonzero = 0, i = 0, j = 0;
+  for (i = 0; i < quad_cons.rows(); i++) {
+    for (j = 0; j <= i; j++) {
+      if (quad_cons(i, j) != 0) {
+        qsubi.push_back(i);
+        qsubj.push_back(j);
+        qval.push_back(quad_cons(i, j));
+        lowtrinonzero++;
+      }
+    }
+  }
+  if (r_ == MSK_RES_OK)
+    r_ = MSK_putqconk(task_, 0, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
 }
 
 void MosekLP::AddLinearConstraintMatrix(const Eigen::MatrixXd& cons) {
@@ -151,33 +196,23 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
   // TODO(adunyak): Add support for quadratic objective and constraints
   if (!prog.GetSolverOptionsStr("Mosek").empty()) {
     if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
-        == std::string::npos) {
-      return kUnknownError;  // Not a linear optimization
+            == std::string::npos &&
+        prog.GetSolverOptionsStr("Mosek").at("problemtype").find("quadratic")
+            == std::string::npos) {
+      return kUnknownError;  // Not a linear or quadratic optimization
     }
   } else {
       return kUnknownError;
   }
-  int totalconnum = 0, i = 0;
-  for (auto&& con : prog.GetAllLinearConstraints()) {
-    // check to see if the constraint references a single variable,
-    // which is handles as a variable bound by mosek
-    for (i = 0; i < (con.constraint())->A().rows(); ++i) {
-      auto row = (con.constraint())->A().row(i);
-      if (row.nonZeros() != 1)
-        totalconnum++;
-    }
-  }
-  Eigen::MatrixXd linear_cons(totalconnum, prog.num_vars());
-  std::vector<double> upper_constraint_bounds(totalconnum);
-  std::vector<double> lower_constraint_bounds(totalconnum);
-  std::vector<MSKboundkeye> mosek_constraint_bounds(totalconnum);
-  std::vector<MSKboundkeye> mosek_variable_bounds(prog.num_vars());
-  linear_cons.setZero(totalconnum, prog.num_vars());
+  Eigen::MatrixXd linear_cons;
+  Eigen::MatrixXd quad_cons;
+  std::vector<double> upper_constraint_bounds;
+  std::vector<double> lower_constraint_bounds;
+  std::vector<MSKboundkeye> mosek_constraint_bounds;
+  std::vector<MSKboundkeye> mosek_variable_bounds;
 
   // Expect exactly one boundingbox constraint.
-  DRAKE_ASSERT(!(prog.bounding_box_constraints().empty()));
-  DRAKE_ASSERT(&(prog.bounding_box_constraints().front()) ==
-      &(prog.bounding_box_constraints().back()));
+  DRAKE_ASSERT(prog.bounding_box_constraints().size() == 1);
   auto bbox = *(prog.bounding_box_constraints().front().constraint());
   std::vector<double> lower_variable_bounds(bbox.lower_bound().data(),
       bbox.lower_bound().data() +
@@ -195,64 +230,148 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
   }
   mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
                                          lower_variable_bounds);
-  int connum = 0;
-  i = 0;
+
+  int totalconnum = 0, connum = 0, i = 0;
+  // This block of code handles constraints, depending on if the program is
+  // linear or quadratic.
   // TODO(alexdunyak): Allow constraints to affect specific variables
-  for (const auto& con : prog.GetAllLinearConstraints()) {
-    // con can call functions of  Binding<LinearConstraint>, but the actual
-    // type is const std::list<Binding<LinearConstraint>>::const_iterator&
-    // Address the constraint matrix directly, translating back to our original
-    // variable space
-    for (int i = 0; static_cast<unsigned int>(i) <
-        con.constraint()->num_constraints(); i++) {
-      for (int j = 0; j < (con.constraint())->A().cols(); j++) {
-        linear_cons(connum, j) = (con.constraint()->A())(i, j);
+  if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
+      != std::string::npos) {
+    // count all linear constraints
+    for (auto&& con : prog.GetAllLinearConstraints()) {
+      // check to see if the constraint references a single variable,
+      // which is handles as a variable bound by mosek
+      for (i = 0; i < (con.constraint())->A().rows(); ++i) {
+        auto row = (con.constraint())->A().row(i);
+        if (row.nonZeros() != 1)
+          totalconnum++;
       }
-      // lower bounds first
-      lower_constraint_bounds[connum] =
-          (con.constraint())->lower_bound()(i);
-      if (lower_constraint_bounds[connum] ==
-          -std::numeric_limits<double>::infinity())
-        lower_constraint_bounds[connum] = -MSK_INFINITY;
-      // upper bound
-      upper_constraint_bounds[connum] =
-          (con.constraint())->upper_bound()(i);
-      if (upper_constraint_bounds[connum] ==
-          +std::numeric_limits<double>::infinity())
-        upper_constraint_bounds[connum] = +MSK_INFINITY;
-      connum++;
     }
-  }
-  mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
+    linear_cons.resize(totalconnum, prog.num_vars());
+    quad_cons.resize(0, 0);
+    upper_constraint_bounds.resize(totalconnum);
+    lower_constraint_bounds.resize(totalconnum);
+    // mosek_constraint_bounds.resize(totalconnum);
+    for (const auto& con : prog.GetAllLinearConstraints()) {
+      // con can call functions of  Binding<LinearConstraint>, but the actual
+      // type is const std::list<Binding<LinearConstraint>>::const_iterator&
+      for (int i = 0; static_cast<unsigned int>(i) <
+          con.constraint()->num_constraints(); i++) {
+        for (int j = 0; j < (con.constraint())->A().cols(); j++) {
+          linear_cons(connum, j) = (con.constraint()->A())(i, j);
+        }
+        // lower bounds first
+        lower_constraint_bounds[connum] =
+            (con.constraint())->lower_bound()(i);
+        if (lower_constraint_bounds[connum] ==
+            -std::numeric_limits<double>::infinity())
+          lower_constraint_bounds[connum] = -MSK_INFINITY;
+        // upper bound
+        upper_constraint_bounds[connum] =
+            (con.constraint())->upper_bound()(i);
+        if (upper_constraint_bounds[connum] ==
+            +std::numeric_limits<double>::infinity())
+          upper_constraint_bounds[connum] = +MSK_INFINITY;
+        connum++;
+      }
+    }
+    mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
                                             lower_constraint_bounds);
-  // find the linear objective here
-  LinearConstraint *obj = dynamic_cast<LinearConstraint *>(
-      prog.generic_costs().front().constraint().get());
-  DRAKE_ASSERT(obj != nullptr);
-  std::vector<double> linobj((*obj).A().data(),
-      (*obj).A().data() + (*obj).A().rows() * (*obj).A().cols());
-  MosekLP opt(prog.num_vars(),
-              totalconnum,
-              linobj,
-              linear_cons,
-              mosek_constraint_bounds,
-              upper_constraint_bounds,
-              lower_constraint_bounds,
-              mosek_variable_bounds,
-              upper_variable_bounds,
-              lower_variable_bounds);
-  std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
-  std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
-  SolutionResult s = opt.OptimizeTask(mom, ptype);
-  prog.SetDecisionVariableValues(opt.GetEigenVectorSolutions());
-  return s;
+    // find the linear objective here
+    LinearConstraint *obj = dynamic_cast<LinearConstraint *>(
+        prog.generic_costs().front().constraint().get());
+    DRAKE_ASSERT(obj != nullptr);
+    std::vector<double> linobj((*obj).A().data(),
+        (*obj).A().data() + (*obj).A().rows() * (*obj).A().cols());
+    MosekLP opt(prog.num_vars(),
+            totalconnum,
+            linobj,
+            linear_cons,
+            mosek_constraint_bounds,
+            upper_constraint_bounds,
+            lower_constraint_bounds,
+            mosek_variable_bounds,
+            upper_variable_bounds,
+            lower_variable_bounds);
+
+    std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
+    std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
+    SolutionResult s = opt.OptimizeTask(mom, ptype);
+    prog.SetDecisionVariableValues(opt.GetEigenVectorSolutions());
+    return s;
+  } else if //NOLINT
+      (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("quadratic")
+        != std::string::npos) {
+    /* QUADRATIC STUFF HERE */
+    // Because there's no getter for quadratic constraints yet, we have to
+    // use generic constraints and dynamically cast them to quadratic
+    // constraints.
+    // For now assume a single quadratic constraint
+    // TODO(alexdunyak): Allow multiple quadratic constraints
+    DRAKE_ASSERT(prog.generic_constraints().size() == 1);
+    QuadraticConstraint *quad_con_ptr = dynamic_cast<QuadraticConstraint *>(
+        prog.generic_constraints().front().constraint().get());
+    DRAKE_ASSERT(quad_con_ptr != nullptr);
+    linear_cons = (*quad_con_ptr).b().transpose();
+    quad_cons = (*quad_con_ptr).Q();
+    upper_constraint_bounds.resize(1);
+    lower_constraint_bounds.resize(1);
+    mosek_constraint_bounds.resize(1);
+    upper_constraint_bounds[0] = (*quad_con_ptr).upper_bound()(0);
+    if (upper_constraint_bounds[0] == +std::numeric_limits<double>::infinity())
+      upper_constraint_bounds[0] = +MSK_INFINITY;
+    lower_constraint_bounds[0] = (*quad_con_ptr).lower_bound()(0);
+    if (lower_constraint_bounds[0] == -std::numeric_limits<double>::infinity())
+      lower_constraint_bounds[0] = -MSK_INFINITY;
+    mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
+                                              lower_constraint_bounds);
+    double constant_eqn_term;
+    if (prog.GetSolverOptionsDouble("Mosek").count("quadraticconstant")
+         == 0) {
+      constant_eqn_term = 0;
+    } else {
+      constant_eqn_term = prog.GetSolverOptionsDouble("Mosek").at(
+          "quadraticconstant");
+    }
+    Eigen::MatrixXd quad_obj(0, 0);
+
+    // Assume only one quadratic objective over the whole problem.
+    DRAKE_ASSERT(prog.quadratic_costs().size() == 1);
+    QuadraticConstraint *quad_obj_ptr =
+        prog.quadratic_costs().front().constraint().get();
+    quad_obj = (*quad_obj_ptr).Q();
+    std::vector<double> linobj((*quad_obj_ptr).b().data(),
+        (*quad_obj_ptr).b().data() +
+        (*quad_obj_ptr).b().rows() * (*quad_obj_ptr).b().cols());
+    totalconnum = 1;  // Defined for object declaration below
+    MosekLP opt(prog.num_vars(),
+            totalconnum,
+            linobj,
+            linear_cons,
+            mosek_constraint_bounds,
+            upper_constraint_bounds,
+            lower_constraint_bounds,
+            mosek_variable_bounds,
+            upper_variable_bounds,
+            lower_variable_bounds,
+            constant_eqn_term,
+            quad_obj,
+            quad_cons);
+
+    std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
+    std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
+    SolutionResult s = opt.OptimizeTask(mom, ptype);
+    prog.SetDecisionVariableValues(opt.GetEigenVectorSolutions());
+    return s;
+  }
+  return kUnknownError;
 }
 
 SolutionResult MosekLP::OptimizeTask(const std::string& maxormin,
                                      const std::string& ptype) {
   solutions_.clear();
   MSKsoltypee problemtype = MSK_SOL_BAS;
-  if (ptype.find("quad") != std::string::npos)
+  if (ptype.find("quadratic") != std::string::npos)
     problemtype = MSK_SOL_ITR;
   else if (ptype.find("linear") != std::string::npos)
     problemtype = MSK_SOL_BAS;
@@ -264,13 +383,11 @@ SolutionResult MosekLP::OptimizeTask(const std::string& maxormin,
     r_ = MSK_putobjsense(task_, MSK_OBJECTIVE_SENSE_MINIMIZE);
   if (r_ == MSK_RES_OK) {
     MSKrescodee trmcode;
-
     r_ = MSK_optimizetrm(task_, &trmcode);
     if (r_ == MSK_RES_OK) {
       MSKsolstae solsta;
       if (r_ == MSK_RES_OK) {
         r_ = MSK_getsolsta(task_, problemtype, &solsta);
-
         switch (solsta) {
           case MSK_SOL_STA_OPTIMAL:
           case MSK_SOL_STA_NEAR_OPTIMAL: {

@@ -19,7 +19,9 @@ bool MosekSolver::available() const { return true; }
 SolutionResult MosekSolver::Solve(OptimizationProblem& prog) const {
   if (!prog.GetSolverOptionsStr("Mosek").empty()) {
     if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
-        != std::string::npos) {
+            != std::string::npos ||
+        prog.GetSolverOptionsStr("Mosek").at("problemtype").find("quadratic")
+            != std::string::npos) {
       return MosekLP::Solve(prog);
     }
   }  // TODO(alexdunyak): add more mosek solution types.

@@ -43,14 +43,17 @@ class DRAKEOPTIMIZATION_EXPORT MosekLP {
   * @p environment is created and must be told to optimize.
   */
   MosekLP(int num_variables, int num_constraints,
-      std::vector<double> equationScalars,
-      Eigen::MatrixXd cons,
-      std::vector<MSKboundkeye> mosek_constraint_bounds,
-      std::vector<double> upper_constraint_bounds,
-      std::vector<double> lower_constraint_bounds,
-      std::vector<MSKboundkeye> mosek_variable_bounds,
-      std::vector<double> upper_variable_bounds,
-      std::vector<double> lower_variable_bounds);
+    std::vector<double> equation_scalars,
+    Eigen::MatrixXd linear_cons,
+    std::vector<MSKboundkeye> mosek_constraint_bounds,
+    std::vector<double> upper_constraint_bounds,
+    std::vector<double> lower_constraint_bounds,
+    std::vector<MSKboundkeye> mosek_variable_bounds,
+    std::vector<double> upper_variable_bounds,
+    std::vector<double> lower_variable_bounds,
+    double constant_eqn_term = 0,
+    Eigen::MatrixXd quad_objective = Eigen::MatrixXd(0, 0),
+    Eigen::MatrixXd quad_cons = Eigen::MatrixXd(0, 0));
 
   ~MosekLP() {
     if (task_ != NULL)
@@ -97,6 +100,10 @@ class DRAKEOPTIMIZATION_EXPORT MosekLP {
   void AddLinearConstraintBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
       const std::vector<double>& upper_bounds,
       const std::vector<double>& lower_bounds);
+
+  void AddQuadraticConstraintMatrix(Eigen::MatrixXd cons);
+
+  void AddQuadraticObjective(Eigen::MatrixXd obj);
 
   /**AddVariableBounds()
    * @brief bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
