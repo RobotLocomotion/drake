@@ -150,9 +150,10 @@ void MosekInterface::AddLinearConstraintBounds(
   }
 }
 
-void MosekInterface::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds,
-                                const std::vector<double>& upper_bounds,
-                                const std::vector<double>& lower_bounds) {
+void MosekInterface::AddVariableBounds(
+    const std::vector<MSKboundkeye>& mosek_bounds,
+    const std::vector<double>& upper_bounds,
+    const std::vector<double>& lower_bounds) {
   int j = 0;
   assert(mosek_bounds.size() == lower_bounds.size());
   assert(mosek_bounds.size() == upper_bounds.size());
