@@ -132,6 +132,7 @@ macro(drake_add_cmake_external PROJECT)
   # Set arguments for cache propagation
   set(_ext_LIST_SEPARATOR "!")
   drake_build_cache_args(_ext_PROPAGATE_CACHE ${_ext_LIST_SEPARATOR}
+    CMAKE_PREFIX_PATH
     CMAKE_INSTALL_PREFIX
     CMAKE_BUILD_TYPE
     BUILD_SHARED_LIBS
