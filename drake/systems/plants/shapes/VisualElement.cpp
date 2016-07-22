@@ -7,11 +7,11 @@ namespace DrakeShapes {
 //: Element(move(geometry), T_element_to_local), material(material)
 //{}
 
-void VisualElement::setMaterial(const Eigen::Vector4d& material) {
-  this->material = material;
+void VisualElement::setMaterial(const Eigen::Vector4d& material_in) {
+  material = material_in;
 }
 
 const Eigen::Vector4d& VisualElement::getMaterial() const {
-  return this->material;
+  return material;
 }
 }

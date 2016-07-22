@@ -40,14 +40,14 @@ int main(int argc, char* argv[]) {
   cout << "=======" << endl;
   for (int j = 0; j < phi.rows(); ++j) {
     cout << phi(j) << " ";
-    for (int i = 0; i < 3; ++i) {
-      cout << normal(i, j) << " ";
+    for (int k = 0; k < 3; ++k) {
+      cout << normal(k, j) << " ";
     }
-    for (int i = 0; i < 3; ++i) {
-      cout << xA(i, j) << " ";
+    for (int k = 0; k < 3; ++k) {
+      cout << xA(k, j) << " ";
     }
-    for (int i = 0; i < 3; ++i) {
-      cout << xB(i, j) << " ";
+    for (int k = 0; k < 3; ++k) {
+      cout << xB(k, j) << " ";
     }
     cout << model->bodies[bodyA_idx.at(j)]->name_ << " ";
     cout << model->bodies[bodyB_idx.at(j)]->name_ << endl;
