@@ -19,6 +19,7 @@
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/pose_map.h"
+#include "drake/systems/plants/rigid_body_actuator.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
@@ -28,26 +29,6 @@
 #define EPSILON 10e-8
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
-
-class DRAKERBM_EXPORT RigidBodyActuator {
- public:
-  RigidBodyActuator(
-      const std::string& name_in, const RigidBody* body_in,
-      double reduction_in = 1.0,
-      double effort_limit_min_in = -std::numeric_limits<double>::infinity(),
-      double effort_limit_max_in = std::numeric_limits<double>::infinity())
-      : name(name_in),
-        body(body_in),
-        reduction(reduction_in),
-        effort_limit_min(effort_limit_min_in),
-        effort_limit_max(effort_limit_max_in) {}
-
-  const std::string name;
-  const RigidBody* const body;
-  const double reduction;
-  const double effort_limit_min;
-  const double effort_limit_max;
-};
 
 class DRAKERBM_EXPORT RigidBodyLoop {
  public:
