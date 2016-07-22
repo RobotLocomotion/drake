@@ -3,41 +3,10 @@ project(drake-superbuild)
 
 include(CTest)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-  message(FATAL_ERROR "GCC version must be at least 4.9")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
-  message(FATAL_ERROR "Apple Clang version must be at least 7")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
-  message(FATAL_ERROR "Clang version must be at least 3.7")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
-  message(FATAL_ERROR "MSVC version must be at least 14")
-endif()
+include(cmake/config.cmake)
 
-# Set Default build type to Release if none specified
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-    "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
-    FORCE)
-endif(NOT CMAKE_BUILD_TYPE)
-
-# PODs out-of-source build logic
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  if(POD_BUILD)
-    find_file(_build_dir build PATHS ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.. ${PROJECT_SOURCE_DIR}/../.. ${PROJECT_SOURCE_DIR}/../../.. ${PROJECT_SOURCE_DIR}/../../../..)
-    if(_build_dir)
-      set(CMAKE_INSTALL_PREFIX "${_build_dir}" CACHE STRING
-        "Prefix for installation of sub-packages (note: required during build!)" FORCE)
-    else()
-      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/build)
-      set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build
-      CACHE STRING "install prefix" FORCE)
-    endif()
-  else()
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
-      "Prefix for installation of sub-packages (note: required during build!)" FORCE)
-  endif()
-endif()
-message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+drake_setup_superbuild()
+drake_setup_platform()
 
 include(ExternalProject)
 find_package(Git REQUIRED)
@@ -69,18 +38,11 @@ function(drake_depend_submodule_sync proj)
   endif()
 endfunction()
 
-# Require Java at the super-build level since libbot cannot configure without finding Java
-find_package(Java 1.6 REQUIRED)
-include(UseJava)
-
 # menu of extra examples
 option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF)
 
 ## External dependencies
 option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
-
-# Choose your python (major) version
-option(WITH_PYTHON_3 "Force Drake to use python 3 instead of python 2" OFF)
 
 # menu of external projects
 option(WITH_ALL_PUBLIC_EXTERNALS "enable all externals available to public academic users" OFF)
@@ -189,8 +151,7 @@ set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)
 set(director_BUILD_COMMAND_DIR distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
-set(drake_java_args -DJava_JAVA_EXECUTABLE=${Java_JAVA_EXECUTABLE} -DJava_JAVAC_EXECUTABLE=${Java_JAVAC_EXECUTABLE} -DJava_JAVAH_EXECUTABLE=${Java_JAVAH_EXECUTABLE} -DJava_VERSION_STRING=${Java_VERSION_STRING})
-set(drake_ADDITIONAL_CMAKE_CONFIGURE_ARGS ${drake_java_args} -DWITH_PYTHON_3=${WITH_PYTHON_3} -DDISABLE_MATLAB=${DISABLE_MATLAB})
+set(drake_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DWITH_PYTHON_3=${WITH_PYTHON_3} -DDISABLE_MATLAB=${DISABLE_MATLAB})
 set(eigen_IS_CMAKE_POD TRUE)
 set(eigen_IS_PUBLIC TRUE)
 set(googletest_IS_CMAKE_POD TRUE)
@@ -320,8 +281,10 @@ foreach(proj IN ITEMS
   endif()
 endforeach()
 
+string(REPLACE ";" "!" CMAKE_JAVA_COMPILE_FLAGS "${CMAKE_JAVA_COMPILE_FLAGS}")
 set(COMMON_CMAKE_ARGS
   CMAKE_GENERATOR ${CMAKE_GENERATOR}
+  LIST_SEPARATOR "!"
   CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}
     -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
@@ -333,7 +296,12 @@ set(COMMON_CMAKE_ARGS
     -DCMAKE_EXE_LINKER_FLAGS:STRING=${CMAKE_EXE_LINKER_FLAGS}
     -DCMAKE_MODULE_LINKER_FLAGS:STRING=${CMAKE_MODULE_LINKER_FLAGS}
     -DCMAKE_SHARED_LINKER_FLAGS:STRING=${CMAKE_SHARED_LINKER_FLAGS}
-    -DCMAKE_STATIC_LINKER_FLAGS:STRING=${CMAKE_STATIC_LINKER_FLAGS})
+    -DCMAKE_STATIC_LINKER_FLAGS:STRING=${CMAKE_STATIC_LINKER_FLAGS}
+    -DJava_JAVA_EXECUTABLE:FILEPATH=${Java_JAVA_EXECUTABLE}
+    -DJava_JAVAC_EXECUTABLE:FILEPATH=${Java_JAVAC_EXECUTABLE}
+    -DJava_JAVAH_EXECUTABLE:FILEPATH=${Java_JAVAH_EXECUTABLE}
+    -DJava_VERSION_STRING:STRING=${Java_VERSION_STRING}
+    -DCMAKE_JAVA_COMPILE_FLAGS:STRING=${CMAKE_JAVA_COMPILE_FLAGS})
 
 set(EXTERNAL_SOURCE_DIRS)
 foreach(proj ${EXTERNAL_PROJECTS})
@@ -372,15 +340,7 @@ foreach(proj ${EXTERNAL_PROJECTS})
     # now the actual project
     if(${proj}_IS_CMAKE_POD)
       if(NOT ${proj}_BINARY_DIR)
-        if(POD_BUILD)
-          set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}/pod-build")
-          # Make sure the source tree is empty before cloning into it.
-          set(${proj}_DOWNLOAD_COMMAND ${CMAKE_COMMAND} -E remove_directory ${${proj}_GIT_SUBMODULE_PATH}/pod-build
-            COMMAND ${${proj}_DOWNLOAD_COMMAND}
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${${proj}_GIT_SUBMODULE_PATH}/pod-build)
-        else()
-          set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
-        endif()
+        set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
       endif()
       set(PODS_VERBOSE_MAKEFILE "")
       if(CMAKE_VERBOSE_MAKEFILE)
@@ -459,11 +419,7 @@ foreach(proj ${EXTERNAL_PROJECTS})
     if(CMAKE_VERBOSE_MAKEFILE)
       set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
     endif()
-    if(POD_BUILD)
-      set(drake_BINARY_DIR "${PROJECT_SOURCE_DIR}/drake/pod-build")
-    else()
-      set(drake_BINARY_DIR "${PROJECT_BINARY_DIR}/drake")
-    endif()
+    set(drake_BINARY_DIR "${PROJECT_BINARY_DIR}/drake")
     ExternalProject_Add(${proj}
       SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
       DOWNLOAD_COMMAND ""
