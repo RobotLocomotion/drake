@@ -101,8 +101,14 @@ class DRAKEOPTIMIZATION_EXPORT MosekInterface {
       const std::vector<double>& upper_bounds,
       const std::vector<double>& lower_bounds);
 
+  /**AddQuadraticConstraintMatrix
+  * @brief adds a single quadratic matrix to mosek constraint.
+  */
   void AddQuadraticConstraintMatrix(Eigen::MatrixXd cons);
 
+  /**AddQuadraticConstraintMatrix
+  * @brief adds a single quadratic matrix to mosek objective.
+  */
   void AddQuadraticObjective(Eigen::MatrixXd obj);
 
   /**AddVariableBounds()
