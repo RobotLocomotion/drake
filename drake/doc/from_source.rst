@@ -11,6 +11,7 @@ If you'd like to build the MATLAB interface, you will need a `C/C++ compiler tha
 
 Make sure that the MATLAB executable is in your path.  (e.g., typing ``matlab`` at the system command line should start an instance of MATLAB).  For example, on Mac you might consider ``sudo ln -s /Applications/MATLAB_R2014a.app/bin/matlab /usr/bin/matlab``, or you can actually add the MATLAB/bin directory to your system path.  On windows, you should `edit your path environment variable <http://www.java.com/en/download/help/path.xml>`_ to include e.g. ``C:\Program Files\MATLAB\R2014a\bin``.
 
+.. _getting_drake:
 
 Getting Drake
 =============
@@ -88,6 +89,8 @@ Before running build, you will need to follow the instructions for your host sys
     ubuntu
     windows
 
+.. _build_the_collection:
+
 Build the collection
 ====================
 There are three ways to build Drake:
@@ -119,14 +122,14 @@ To build with ``Make``, execute::
     cd drake-distro
     mkdir build
     cd build
-    cmake ../
+    cmake ..
     make
 
 **Do NOT use sudo.** Just ``make`` is sufficient, and will prevent problems
 later. Feel free to use ``make -j`` if your platform supports it. Note that the
 above ``cmake`` command does not specify a build type, so drake will be built
 with ``Release`` by default. If you wish to build with a different build type,
-change the cmake command to ``cmake ../ -DCMAKE_BUILD_TYPE:STRING=Debug``
+change the cmake command to ``cmake .. -DCMAKE_BUILD_TYPE:STRING=Debug``
 to build with build type "Debug". Alternative build modes include
 "RelWithDebInfo" and "Release". They differ in terms of the amount of debug
 symbols included in the resulting binaries and how efficiently the code
@@ -139,7 +142,7 @@ additional ``-D`` flags. You can also specify them using a text-based GUI by
 executing::
 
     cd drake-distro/build
-    ccmake ../
+    ccmake ..
 
 To get details about the actual compiler and linker commands, execute::
 
@@ -167,7 +170,7 @@ Ninja build.
     cd drake-distro
     mkdir build
     cd build
-    cmake ../ -G Ninja
+    cmake .. -G Ninja
     ninja
 
 Ninja can rebuild Drake from within ``drake-distro/build/drake/`` without

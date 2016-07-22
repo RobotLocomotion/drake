@@ -91,6 +91,12 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
+    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
+  endif()
+  set(CXX_FLAGS_NO_ERROR_SHADOW "-Wno-error=shadow -Wno-shadow")
   set(CXX_FLAGS_NO_SIGN_COMPARE "-Wno-sign-compare")
 elseif(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
@@ -118,6 +124,7 @@ elseif(MSVC)
 
   add_definitions(-D_USE_MATH_DEFINES) # to get math constants on MSVC (see https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx)
 
+  set(CXX_FLAGS_NO_ERROR_SHADOW "/wd4456 /wd4457")
   set(CXX_FLAGS_NO_SIGN_COMPARE "/wd4018")
 endif()
 

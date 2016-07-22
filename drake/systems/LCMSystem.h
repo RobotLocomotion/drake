@@ -179,7 +179,7 @@ class LCMOutputSystem<
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  explicit LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm) {}
+  explicit LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm_(lcm) {}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -192,12 +192,12 @@ class LCMOutputSystem<
     if (!encode(t, u, msg))
       throw std::runtime_error(std::string("failed to encode") +
                                msg.getTypeName());
-    lcm->publish(u.channel(), &msg);
+    lcm_->publish(u.channel(), &msg);
     return OutputVector<double>();
   }
 
  private:
-  const std::shared_ptr<lcm::LCM> lcm;
+  const std::shared_ptr<lcm::LCM> lcm_;
 };
 
 // todo: template specialization for the CombinedVector case

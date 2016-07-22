@@ -92,13 +92,13 @@ class KinematicsCache {
 
  public:
   explicit KinematicsCache(
-      const std::vector<std::unique_ptr<RigidBody> >& bodies)
-      : num_positions(getNumPositions(bodies)),
-        num_velocities(getNumVelocities(bodies)),
+      const std::vector<std::unique_ptr<RigidBody> >& bodies_in)
+      : num_positions(getNumPositions(bodies_in)),
+        num_velocities(getNumVelocities(bodies_in)),
         q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
         v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_velocities)),
         velocity_vector_valid(false) {
-    for (const auto& body_unique_ptr : bodies) {
+    for (const auto& body_unique_ptr : bodies_in) {
       const RigidBody& body = *body_unique_ptr;
       int num_positions_joint =
           body.hasParent() ? body.getJoint().getNumPositions() : 0;
@@ -106,7 +106,7 @@ class KinematicsCache {
           body.hasParent() ? body.getJoint().getNumVelocities() : 0;
       elements.insert({&body, KinematicsCacheElement<Scalar>(
                                   num_positions_joint, num_velocities_joint)});
-      this->bodies.push_back(&body);
+      bodies.push_back(&body);
     }
     invalidate();
   }
@@ -121,25 +121,25 @@ class KinematicsCache {
   }
 
   template <typename Derived>
-  void initialize(const Eigen::MatrixBase<Derived>& q) {
+  void initialize(const Eigen::MatrixBase<Derived>& q_in) {
     static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");
     static_assert(std::is_same<typename Derived::Scalar, Scalar>::value,
                   "scalar type of q must match scalar type of KinematicsCache");
-    DRAKE_ASSERT(this->q.rows() == q.rows());
-    this->q = q;
+    DRAKE_ASSERT(q.rows() == q_in.rows());
+    q = q_in;
     invalidate();
     velocity_vector_valid = false;
   }
 
   template <typename DerivedQ, typename DerivedV>
-  void initialize(const Eigen::MatrixBase<DerivedQ>& q,
-                  const Eigen::MatrixBase<DerivedV>& v) {
-    initialize(q);  // also invalidates
+  void initialize(const Eigen::MatrixBase<DerivedQ>& q_in,
+                  const Eigen::MatrixBase<DerivedV>& v_in) {
+    initialize(q_in);  // also invalidates
     static_assert(DerivedV::ColsAtCompileTime == 1, "v must be a vector");
     static_assert(std::is_same<typename DerivedV::Scalar, Scalar>::value,
                   "scalar type of v must match scalar type of KinematicsCache");
-    DRAKE_ASSERT(this->v.rows() == v.rows());
-    this->v = v;
+    DRAKE_ASSERT(v.rows() == v_in.rows());
+    v = v_in;
     velocity_vector_valid = true;
   }
 
@@ -242,7 +242,7 @@ class KinematicsCache {
 
   void setPositionKinematicsCached() { position_kinematics_cached = true; }
 
-  void setJdotVCached(bool jdotV_cached) { this->jdotV_cached = jdotV_cached; }
+  void setJdotVCached(bool jdotV_cached_in) { jdotV_cached = jdotV_cached_in; }
 
   int getNumPositions() const { return num_positions; }
 

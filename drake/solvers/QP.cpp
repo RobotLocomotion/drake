@@ -143,7 +143,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
       QinvAt.resize(QinvAteq.rows(), QinvAteq.cols() + Aact.rows());
 
       if (n_active > 0) {
-        int startrow = 0;
+        startrow = 0;
         for (vector<MatrixXd*>::iterator iterQinv = QinvblkDiag.begin();
              iterQinv != QinvblkDiag.end(); iterQinv++) {
           MatrixXd* thisQinv = (*iterQinv);
@@ -467,19 +467,19 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
 
   int offset = 0;
   active.clear();
-  for (int i = 0; i < Ain.rows(); i++) {
-    if (slack(i) < active_set_slack_tolerance) active.insert(i);
+  for (int k = 0; k < Ain.rows(); k++) {
+    if (slack(k) < active_set_slack_tolerance) active.insert(k);
   }
   offset = Ain.rows();
   if (lb.rows() == nparams) {
-    for (int i = 0; i < nparams; i++) {
-      if (x(i) - lb(i) < active_set_slack_tolerance) active.insert(offset + i);
+    for (int k = 0; k < nparams; k++) {
+      if (x(k) - lb(k) < active_set_slack_tolerance) active.insert(offset + k);
     }
   }
   if (ub.rows() == nparams) {
-    for (int i = 0; i < nparams; i++) {
-      if (ub(i) - x(i) < active_set_slack_tolerance) {
-        active.insert(offset + i + nparams);
+    for (int k = 0; k < nparams; k++) {
+      if (ub(k) - x(k) < active_set_slack_tolerance) {
+        active.insert(offset + k + nparams);
       }
     }
   }

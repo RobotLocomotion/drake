@@ -18,8 +18,8 @@ class DRAKESHAPES_EXPORT VisualElement : public Element {
 
   VisualElement(const Geometry& geometry,
                 const Eigen::Isometry3d& T_element_to_local,
-                const Eigen::Vector4d& material)
-      : Element(geometry, T_element_to_local), material(material) {}
+                const Eigen::Vector4d& material_in)
+      : Element(geometry, T_element_to_local), material(material_in) {}
 
   virtual ~VisualElement() {}
 

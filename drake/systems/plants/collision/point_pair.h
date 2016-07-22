@@ -12,14 +12,14 @@ namespace DrakeCollision {
 struct DRAKECOLLISION_EXPORT PointPair {
   PointPair() {}
 
-  PointPair(const Element* elementA, const Element* elementB,
-            const Eigen::Vector3d& ptA, const Eigen::Vector3d& ptB,
-            const Eigen::Vector3d& normal, double distance)
-      : elementA(elementA), elementB(elementB),
-        idA(elementA->getId()), idB(elementB->getId()),
-        ptA(ptA), ptB(ptB),
-        normal(normal),
-        distance(distance) {}
+  PointPair(const Element* elementA_in, const Element* elementB_in,
+            const Eigen::Vector3d& ptA_in, const Eigen::Vector3d& ptB_in,
+            const Eigen::Vector3d& normal_in, double distance_in)
+      : elementA(elementA_in), elementB(elementB_in),
+        idA(elementA_in->getId()), idB(elementB_in->getId()),
+        ptA(ptA_in), ptB(ptB_in),
+        normal(normal_in),
+        distance(distance_in) {}
 
   /** Element A in the pair participating in the collision. **/
   const Element* elementA{nullptr};
