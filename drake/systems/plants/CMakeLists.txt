@@ -20,7 +20,8 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   RigidBodyTree.cpp
   RigidBody.cpp
   RigidBodyTreeContact.cpp
-  rigid_body_frame.cc)
+  rigid_body_frame.cc
+  rigid_body_loop.cc)
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
 pods_install_libraries(drakeRBM)
 drake_install_headers(
@@ -34,7 +35,8 @@ drake_install_headers(
   RigidBody.h
   RigidBodyTree.h
   parser_sdf.h
-  parser_urdf.h)
+  parser_urdf.h
+  rigid_body_loop.h)
 
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
