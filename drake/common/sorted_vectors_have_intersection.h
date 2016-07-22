@@ -36,9 +36,7 @@ In this case the algorithm needs to scan both vectors from start to end. **/
 template <typename T>
 bool SortedVectorsHaveIntersection(const std::vector<T>& a,
                                    const std::vector<T>& b) {
-  typename std::vector<T>::const_iterator ai = a.begin();
-  typename std::vector<T>::const_iterator bi = b.begin();
-
+  // Asserts that T is either an integral type or a pointer type.
   static_assert(std::is_integral<T>::value || std::is_pointer<T>::value,
                 "Input vectors must hold integral types or pointers.");
 
@@ -47,6 +45,9 @@ bool SortedVectorsHaveIntersection(const std::vector<T>& a,
   // obscure errors.
   DRAKE_ASSERT(std::is_sorted(a.cbegin(), a.cend()) &&
                std::is_sorted(b.cbegin(), b.cend()));
+
+  typename std::vector<T>::const_iterator ai = a.begin();
+  typename std::vector<T>::const_iterator bi = b.begin();
 
   // Quick checks first:
   // Check if either of the ranges is empty:
