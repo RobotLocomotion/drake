@@ -185,7 +185,7 @@ class SensorPublisherOdometry {
           cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
           rigid_body_tree->FindBodyIndex(rigid_body->name()));
       auto translation = transform.translation();
-      auto quat = rotmat2quat(transform.linear());
+      auto quat = drake::math::rotmat2quat(transform.linear());
 
       // Saves the robot's position and orientation in the world.
       message->pose.pose.position.x = translation(0);
