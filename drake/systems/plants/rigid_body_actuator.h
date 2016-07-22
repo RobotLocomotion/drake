@@ -3,7 +3,8 @@
 #include <string>
 
 #include "drake/drakeRBM_export.h"
-#include "drake/systems/plants/RigidBody.h"
+
+class RigidBody;
 
 class DRAKERBM_EXPORT RigidBodyActuator {
  public:
