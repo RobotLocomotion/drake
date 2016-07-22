@@ -1,9 +1,9 @@
 // Copyright 2016, Alex Dunyak
-// A wrapper file for MosekLP and mosekQP that handles constraint and
+// A wrapper file for MosekInterface and mosekQP that handles constraint and
 // objective marshalling
 
 #include "drake/solvers/MosekSolver.h"
-#include "drake/solvers/MosekLP.h"
+#include "drake/solvers/MosekInterface.h"
 
 #include <Eigen/Core>
 
@@ -22,7 +22,7 @@ SolutionResult MosekSolver::Solve(OptimizationProblem& prog) const {
             != std::string::npos ||
         prog.GetSolverOptionsStr("Mosek").at("problemtype").find("quadratic")
             != std::string::npos) {
-      return MosekLP::Solve(prog);
+      return MosekInterface::Solve(prog);
     }
   }  // TODO(alexdunyak): add more mosek solution types.
   return kUnknownError;

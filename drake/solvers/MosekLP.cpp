@@ -1,6 +1,6 @@
 // Copyright 2016, Alex Dunyak
 
-#include "drake/solvers/MosekLP.h"
+#include "drake/solvers/MosekInterface.h"
 
 #include <memory>
 #include <vector>
@@ -18,7 +18,7 @@
 namespace drake {
 namespace solvers {
 
-MosekLP::MosekLP(int num_variables, int num_constraints,
+MosekInterface::MosekInterface(int num_variables, int num_constraints,
     std::vector<double> equation_scalars,
     Eigen::MatrixXd linear_cons,
     std::vector<MSKboundkeye> mosek_constraint_bounds,
@@ -66,7 +66,7 @@ MosekLP::MosekLP(int num_variables, int num_constraints,
       lower_constraint_bounds);
 }
 
-void MosekLP::AddQuadraticObjective(Eigen::MatrixXd quad_objective) {
+void MosekInterface::AddQuadraticObjective(Eigen::MatrixXd quad_objective) {
   std::vector<int> qsubi, qsubj;
   std::vector<double> qval;
   int lowtrinonzero = 0, i = 0, j = 0;
@@ -84,7 +84,7 @@ void MosekLP::AddQuadraticObjective(Eigen::MatrixXd quad_objective) {
     r_ = MSK_putqobj(task_, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
 }
 
-void MosekLP::AddQuadraticConstraintMatrix(Eigen::MatrixXd quad_cons) {
+void MosekInterface::AddQuadraticConstraintMatrix(Eigen::MatrixXd quad_cons) {
   std::vector<int> qsubi, qsubj;
   std::vector<double> qval;
   int lowtrinonzero = 0, i = 0, j = 0;
@@ -102,14 +102,14 @@ void MosekLP::AddQuadraticConstraintMatrix(Eigen::MatrixXd quad_cons) {
     r_ = MSK_putqconk(task_, 0, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
 }
 
-void MosekLP::AddLinearConstraintMatrix(const Eigen::MatrixXd& cons) {
+void MosekInterface::AddLinearConstraintMatrix(const Eigen::MatrixXd& cons) {
   Eigen::SparseMatrix<double> sparsecons = cons.sparseView();
   // Send the sparse matrix rep into addLinearConstraintSparseColumnMatrix(),
   // which will handle setting the mosek constraints
-  MosekLP::AddLinearConstraintSparseColumnMatrix(sparsecons);
+  MosekInterface::AddLinearConstraintSparseColumnMatrix(sparsecons);
 }
 
-void MosekLP::AddLinearConstraintSparseColumnMatrix(
+void MosekInterface::AddLinearConstraintSparseColumnMatrix(
     const Eigen::SparseMatrix<double>& sparsecons) {
   int j = 0;  // iterator
   // Define sparse matrix representation to be the same size as the desired
@@ -139,7 +139,7 @@ void MosekLP::AddLinearConstraintSparseColumnMatrix(
   }
 }
 
-void MosekLP::AddLinearConstraintBounds(
+void MosekInterface::AddLinearConstraintBounds(
     const std::vector<MSKboundkeye>& mosek_bounds,
     const std::vector<double>& upper_bounds,
     const std::vector<double>& lower_bounds) {
@@ -150,7 +150,7 @@ void MosekLP::AddLinearConstraintBounds(
   }
 }
 
-void MosekLP::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds,
+void MosekInterface::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds,
                                 const std::vector<double>& upper_bounds,
                                 const std::vector<double>& lower_bounds) {
   int j = 0;
@@ -162,7 +162,7 @@ void MosekLP::AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds,
   }
 }
 
-std::vector<MSKboundkeye> MosekLP::FindMosekBounds(
+std::vector<MSKboundkeye> MosekInterface::FindMosekBounds(
     const std::vector<double>& upper_bounds,
     const std::vector<double>& lower_bounds) {
   assert(upper_bounds.size() == lower_bounds.size());
@@ -189,7 +189,7 @@ std::vector<MSKboundkeye> MosekLP::FindMosekBounds(
 }
 
 
-SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
+SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
   // construct an object that calls all the previous work so I can salvage
   // something at least.
   // assume that the problem type is linear currently.
@@ -283,7 +283,7 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
     DRAKE_ASSERT(obj != nullptr);
     std::vector<double> linobj((*obj).A().data(),
         (*obj).A().data() + (*obj).A().rows() * (*obj).A().cols());
-    MosekLP opt(prog.num_vars(),
+    MosekInterface opt(prog.num_vars(),
             totalconnum,
             linobj,
             linear_cons,
@@ -344,7 +344,7 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
         (*quad_obj_ptr).b().data() +
         (*quad_obj_ptr).b().rows() * (*quad_obj_ptr).b().cols());
     totalconnum = 1;  // Defined for object declaration below
-    MosekLP opt(prog.num_vars(),
+    MosekInterface opt(prog.num_vars(),
             totalconnum,
             linobj,
             linear_cons,
@@ -367,7 +367,7 @@ SolutionResult MosekLP::Solve(OptimizationProblem &prog) {
   return kUnknownError;
 }
 
-SolutionResult MosekLP::OptimizeTask(const std::string& maxormin,
+SolutionResult MosekInterface::OptimizeTask(const std::string& maxormin,
                                      const std::string& ptype) {
   solutions_.clear();
   MSKsoltypee problemtype = MSK_SOL_BAS;
@@ -433,7 +433,7 @@ SolutionResult MosekLP::OptimizeTask(const std::string& maxormin,
   return kUnknownError;
 }
 
-Eigen::VectorXd MosekLP::GetEigenVectorSolutions() const {
+Eigen::VectorXd MosekInterface::GetEigenVectorSolutions() const {
   Eigen::VectorXd soln(numvar_);
   if (solutions_.empty())
     return soln;
