@@ -392,7 +392,8 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
           throw runtime_error(
               "ERROR: Failed to parse color of material for "
               "model \"" +
-              body->get_model_name() + "\", link \"" + body->get_name() + "\".");
+              body->get_model_name() + "\", link \"" + body->get_name() +
+              "\".");
         }
         color_specified = true;
       }
