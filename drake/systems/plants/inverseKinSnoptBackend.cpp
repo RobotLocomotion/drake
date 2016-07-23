@@ -96,13 +96,13 @@ static snopt::integer nx_tmp;
 static void gevalNumerical(void (*func_ptr)(const VectorXd&, VectorXd&),
                            const VectorXd& x, VectorXd& c, MatrixXd& dc,
                            int order = 2) {
-  int nx = static_cast<int>(x.rows());
+  int xrows = static_cast<int>(x.rows());
   (*func_ptr)(x, c);
   int nc = static_cast<int>(c.rows());
-  dc.resize(nc, nx);
+  dc.resize(nc, xrows);
   double err = 1e-10;
-  for (int i = 0; i < nx; i++) {
-    VectorXd dx = VectorXd::Zero(nx);
+  for (int i = 0; i < xrows; i++) {
+    VectorXd dx = VectorXd::Zero(xrows);
     dx(i) = err;
     VectorXd c1(nc);
     (*func_ptr)(x + dx, c1);
