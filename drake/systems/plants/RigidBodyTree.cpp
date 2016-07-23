@@ -73,7 +73,7 @@ RigidBodyTree::RigidBodyTree(void)
 
   // Adds the rigid body representing the world.
   std::unique_ptr<RigidBody> b(new RigidBody());
-  b->name_ = std::string(RigidBodyTree::kWorldLinkName);
+  b->set_name(std::string(RigidBodyTree::kWorldLinkName));
   b->robotnum = 0;
   b->body_index = 0;
   bodies.push_back(std::move(b));
@@ -290,14 +290,14 @@ void RigidBodyTree::drawKinematicTree(
   dotfile.open(graphviz_dotfile_filename);
   dotfile << "digraph {" << endl;
   for (const auto& body : bodies) {
-    dotfile << "  " << body->name_ << " [label=\"" << body->name_ << endl;
+    dotfile << "  " << body->get_name() << " [label=\"" << body->get_name() << endl;
     dotfile << "mass=" << body->mass << ", com=" << body->com.transpose()
             << endl;
     dotfile << "inertia=" << endl << body->I << endl;
     dotfile << "\"];" << endl;
     if (body->hasParent()) {
       const auto& joint = body->getJoint();
-      dotfile << "  " << body->name_ << " -> " << body->parent->name_
+      dotfile << "  " << body->get_name() << " -> " << body->parent->get_name()
               << " [label=\"" << joint.getName() << endl;
       dotfile << "transform_to_parent_body=" << endl
               << joint.getTransformToParentBody().matrix() << endl;
@@ -308,7 +308,7 @@ void RigidBodyTree::drawKinematicTree(
   for (const auto& frame : frames) {
     dotfile << "  " << frame->name << " [label=\"" << frame->name
             << " (frame)\"];" << endl;
-    dotfile << "  " << frame->name << " -> " << frame->body->name_
+    dotfile << "  " << frame->name << " -> " << frame->body->get_name()
             << " [label=\"";
     dotfile << "transform_to_body=" << endl
             << frame->transform_to_body.matrix() << endl;
@@ -316,8 +316,8 @@ void RigidBodyTree::drawKinematicTree(
   }
 
   for (const auto& loop : loops) {
-    dotfile << "  " << loop.frameA->body->name_ << " -> "
-            << loop.frameB->body->name_ << " [label=\"loop " << endl;
+    dotfile << "  " << loop.frameA->body->get_name() << " -> "
+            << loop.frameB->body->get_name() << " [label=\"loop " << endl;
     dotfile << "transform_to_parent_body=" << endl
             << loop.frameA->transform_to_body.matrix() << endl;
     dotfile << "transform_to_child_body=" << endl
@@ -1084,8 +1084,8 @@ KinematicPath RigidBodyTree::findKinematicPath(
 
   if (!least_common_ancestor_found) {
     std::ostringstream stream;
-    stream << "There is no path between " << bodies[start_body]->name_
-           << " and " << bodies[end_body]->name_ << ".";
+    stream << "There is no path between " << bodies[start_body]->get_name()
+           << " and " << bodies[end_body]->get_name() << ".";
     throw std::runtime_error(stream.str());
   }
   int least_common_ancestor = *start_body_lca_it;
@@ -1685,7 +1685,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
       continue;
 
     // Obtains a lower case version of the current body's name.
-    string current_body_name = bodies[ii]->name_;
+    string current_body_name = bodies[ii]->get_name();
     std::transform(current_body_name.begin(), current_body_name.end(),
                    current_body_name.begin(), ::tolower);
 
@@ -1853,7 +1853,7 @@ int RigidBodyTree::findJointId(const std::string& joint_name, int robot) const {
 
 std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
   if (body_or_frame_id >= 0) {
-    return bodies[body_or_frame_id]->name_;
+    return bodies[body_or_frame_id]->get_name();
   } else if (body_or_frame_id < -1) {
     return frames[-body_or_frame_id - 2]->name;
   } else {
@@ -2028,8 +2028,8 @@ int RigidBodyTree::AddFloatingJoint(
 
       Eigen::Isometry3d transform_to_model = Eigen::Isometry3d::Identity();
       if (pose_map != nullptr &&
-          pose_map->find(bodies[i]->name_) != pose_map->end())
-        transform_to_model = pose_map->at(bodies[i]->name_);
+          pose_map->find(bodies[i]->get_name()) != pose_map->end())
+        transform_to_model = pose_map->at(bodies[i]->get_name());
 
       switch (floating_base_type) {
         case DrakeJoint::FIXED: {

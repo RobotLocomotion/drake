@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     x << pt, rpy;
     //    cout << i << ": forward kin: " << model->bodies[i].name_ << " is at
     //    " << pt.transpose() << endl;
-    cout << model->bodies[i]->name_ << " ";
+    cout << model->bodies[i]->get_name() << " ";
     cout << x.transpose() << endl;
     //    for (int j=0; j<pt.size(); j++)
     //        cout << pt(j) << " ";

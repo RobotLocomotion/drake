@@ -749,7 +749,7 @@ void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
   if (pose) {
     poseValueToTransform(pose, pose_map, transform_link_to_model);
     pose_map.insert(
-        std::pair<string, Isometry3d>(body->name_, transform_link_to_model));
+        std::pair<string, Isometry3d>(body->get_name(), transform_link_to_model));
   }
 
   // Processes each sensor element within the link.

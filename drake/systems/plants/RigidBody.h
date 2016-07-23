@@ -29,7 +29,12 @@ class DRAKERBM_EXPORT RigidBody {
    *
    * @return The name of the body that's modeled by this rigid body.
    */
-  const std::string& name() const;
+  const std::string& get_name() const;
+
+  /**
+   * Sets the name of this rigid body.
+   */
+  void set_name(const std::string& name);
 
   /**
    * An accessor for the name of the model or robot that this rigid body is
@@ -142,8 +147,7 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:
-  /// The name of this rigid body.
-  std::string name_;
+
 
   /// The name of the model to which this rigid body belongs.
   std::string model_name_;
@@ -216,4 +220,8 @@ class DRAKERBM_EXPORT RigidBody {
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
+
+ private:
+  // The name of this rigid body.
+  std::string name_;
 };
