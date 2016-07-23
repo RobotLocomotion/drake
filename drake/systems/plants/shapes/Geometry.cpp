@@ -46,7 +46,7 @@ Geometry::Geometry() : shape(UNKNOWN) {}
 
 Geometry::Geometry(const Geometry& other) { shape = other.getShape(); }
 
-Geometry::Geometry(Shape shape) : shape(shape) {}
+Geometry::Geometry(Shape shape_in) : shape(shape_in) {}
 
 Shape Geometry::getShape() const { return shape; }
 
@@ -80,7 +80,7 @@ ostream& operator<<(ostream& out, const Geometry& gg) {
   return out;
 }
 
-Sphere::Sphere(double radius) : Geometry(SPHERE), radius(radius) {}
+Sphere::Sphere(double radius_in) : Geometry(SPHERE), radius(radius_in) {}
 
 Sphere* Sphere::clone() const { return new Sphere(*this); }
 
@@ -105,7 +105,7 @@ ostream& operator<<(ostream& out, const Sphere& ss) {
   return out;
 }
 
-Box::Box(const Eigen::Vector3d& size) : Geometry(BOX), size(size) {}
+Box::Box(const Eigen::Vector3d& size_in) : Geometry(BOX), size(size_in) {}
 
 Box* Box::clone() const { return new Box(*this); }
 
@@ -125,8 +125,8 @@ ostream& operator<<(ostream& out, const Box& bb) {
   return out;
 }
 
-Cylinder::Cylinder(double radius, double length)
-    : Geometry(CYLINDER), radius(radius), length(length) {}
+Cylinder::Cylinder(double radius_in, double length_in)
+    : Geometry(CYLINDER), radius(radius_in), length(length_in) {}
 
 Cylinder* Cylinder::clone() const { return new Cylinder(*this); }
 
@@ -153,8 +153,8 @@ ostream& operator<<(ostream& out, const Cylinder& cc) {
   return out;
 }
 
-Capsule::Capsule(double radius, double length)
-    : Geometry(CAPSULE), radius(radius), length(length) {}
+Capsule::Capsule(double radius_in, double length_in)
+    : Geometry(CAPSULE), radius(radius_in), length(length_in) {}
 
 Capsule* Capsule::clone() const { return new Capsule(*this); }
 
@@ -362,8 +362,8 @@ ostream& operator<<(ostream& out, const Mesh& mm) {
   return out;
 }
 
-MeshPoints::MeshPoints(const Eigen::Matrix3Xd& points)
-    : Geometry(MESH_POINTS), points(points) {}
+MeshPoints::MeshPoints(const Eigen::Matrix3Xd& points_in)
+    : Geometry(MESH_POINTS), points(points_in) {}
 
 MeshPoints* MeshPoints::clone() const { return new MeshPoints(*this); }
 

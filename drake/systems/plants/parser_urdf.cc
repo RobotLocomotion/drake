@@ -387,7 +387,6 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
     {
       XMLElement* color_node = material_node->FirstChildElement("color");
       if (color_node) {
-        Vector4d rgba;
         if (!parseVectorAttribute(color_node, "rgba", rgba)) {
           throw runtime_error(
               "ERROR: Failed to parse color of material for "
