@@ -33,13 +33,34 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
-  /**
-   * Defines the name of the rigid body within a rigid body tree that represents
-   * the world.
-   */
   // TODO(amcastro-tri): Move the concept of world to an actual world
   // abstraction. See issue #2318.
+  /**
+   * Defines the name of the body that represents the world.
+   */
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use kWorldBodyName.")
+#endif
   static const char* const kWorldLinkName;
+
+  // TODO(amcastro-tri): Move the concept of world to an actual world
+  // abstraction. See issue #2318.
+  /**
+   * Defines the name of the body that represents the world.
+   */
+  static const char* const kWorldBodyName;
+
+  /**
+   * Defines the name of the model to which the body that represents the
+   * world belongs.
+   */
+  static const char* const kWorldModelName;
+
+  /**
+   * Defines the model ID of the model to which the body that represents the
+   * world belongs.
+   */
+  static const int kWorldModelId = 0;
 
   RigidBodyTree(const std::string& urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type =
@@ -169,49 +190,66 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void doKinematics(KinematicsCache<Scalar>& cache,
                     bool compute_JdotV = false) const;
 
+  // TODO(liang.fok): Delete this method prior to Release 1.0.
+  /**
+   * Returns true if and only if @p body is part of a model with an ID that's in
+   * @p model_id_list.
+   */
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use IsBodyPartOfRobot().")
+#endif
   bool isBodyPartOfRobot(const RigidBody& body,
-                         const std::set<int>& robotnum) const;
+                         const std::set<int>& model_id_list) const;
 
-  double getMass(const std::set<int>& robotnum = default_robot_num_set) const;
+  /**
+   * Returns true if and only if @p body is part of a model with an ID that's in
+   * @p model_id_list.
+   */
+  bool IsBodyPartOfRobot(const RigidBody& body,
+                         const std::set<int>& model_id_list) const;
+
+  double getMass(const std::set<int>& model_id_list = default_robot_num_set)
+      const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_id_list = default_robot_num_set) const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set,
+      const std::set<int>& model_id_list = default_robot_num_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> worldMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_id_list = default_robot_num_set) const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> centroidalMomentumMatrix(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set,
+      const std::set<int>& model_id_list = default_robot_num_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> centroidalMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_id_list = default_robot_num_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, Eigen::Dynamic>
   centerOfMassJacobian(KinematicsCache<Scalar>& cache,
-                       const std::set<int>& robotnum = default_robot_num_set,
+                       const std::set<int>& model_id_list =
+                           default_robot_num_set,
                        bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1>
   centerOfMassJacobianDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_id_list = default_robot_num_set) const;
 
   template <typename DerivedA, typename DerivedB, typename DerivedC>
   void jointLimitConstraints(Eigen::MatrixBase<DerivedA> const& q,
@@ -733,6 +771,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   void add_rigid_body(std::unique_ptr<RigidBody> body);
 
+  // TODO(liang.fok): Should the floating joint also contain the model ID?
   /**
    * Adds one floating joint to each link specified in the list of link indicies
    * that does not already have a parent. Typically, the list of link indices is

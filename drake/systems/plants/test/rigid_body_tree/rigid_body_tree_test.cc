@@ -19,22 +19,26 @@ class RigidBodyTreeTest : public ::testing::Test {
   virtual void SetUp() {
     tree.reset(new RigidBodyTree());
 
-    // Defines four rigid bodies.
-    r1b1 = new RigidBody();
-    r1b1->model_name_ = "robot1";
-    r1b1->name_ = "body1";
+    // Defines four rigid bodies each belonging to a different model.
+    std::string rb1_model_name = "robot1";
+    int rb1_model_id = 0;
+    std::string rb1_name = "body1";
+    r1b1 = new RigidBody(rb1_model_name, rb1_model_id, rb1_name);
 
-    r2b1 = new RigidBody();
-    r2b1->model_name_ = "robot2";
-    r2b1->name_ = "body1";
+    std::string rb2_model_name = "robot2";
+    int rb2_model_id = 1;
+    std::string rb2_name = "body1";
+    r2b1 = new RigidBody(rb2_model_name, rb2_model_id, rb2_name);
 
-    r3b1 = new RigidBody();
-    r3b1->model_name_ = "robot3";
-    r3b1->name_ = "body1";
+    std::string rb3_model_name = "robot3";
+    int rb3_model_id = 2;
+    std::string rb3_name = "body1";
+    r3b1 = new RigidBody(rb3_model_name, rb3_model_id, rb3_name);
 
-    r4b1 = new RigidBody();
-    r4b1->model_name_ = "robot4";
-    r4b1->name_ = "body1";
+    std::string rb4_model_name = "robot4";
+    int rb4_model_id = 3;
+    std::string rb4_name = "body1";
+    r4b1 = new RigidBody(rb4_model_name, rb4_model_id, rb4_name);
   }
 
  public:

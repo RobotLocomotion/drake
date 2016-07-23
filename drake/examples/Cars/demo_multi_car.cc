@@ -69,7 +69,6 @@ int do_main(int argc, const char* argv[]) {
     drake::parsers::urdf::AddRobotFromURDF(
       (i % 5) ? kSedanUrdf : kBreadtruckUrdf, DrakeJoint::ROLLPITCHYAW,
       nullptr /*weld_to_frame*/, world_tree.get());
-    world_tree->bodies.back()->robotnum = i + 1;
 
     // Add the trajectory car, and its visualization adapter.
     cars_system->AddSystem(CreateTrajectoryCarSystem(i));

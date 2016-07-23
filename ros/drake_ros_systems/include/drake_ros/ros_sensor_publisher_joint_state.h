@@ -126,7 +126,7 @@ class SensorPublisherJointState {
 
         robot_struct->message.reset(new sensor_msgs::JointState());
 
-        robot_struct->message->header.frame_id = RigidBodyTree::kWorldLinkName;
+        robot_struct->message->header.frame_id = RigidBodyTree::kWorldBodyName;
 
         InitJointStateStruct(robot_name, rigid_body_system->getRigidBodyTree(),
                              robot_struct.get());

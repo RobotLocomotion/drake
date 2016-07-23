@@ -247,7 +247,7 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   //  Issue 2661 was created to track this problem.
   // TODO(amcastro-tri): fix the above issue tracked by 2661. Similarly for
   // parseCollision in RigidBodyTreeURDF.cpp.
-  if (body->name().compare(std::string(RigidBodyTree::kWorldLinkName)) == 0)
+  if (body->get_name().compare(std::string(RigidBodyTree::kWorldBodyName)) == 0)
     element.set_static();
   if (!parseSDFGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
@@ -266,19 +266,18 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  RigidBody* body{nullptr};
-  std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
-  body->model_name_ = model_name;
-  body->set_model_id(model_id);
-
   attr = node->Attribute("name");
   if (!attr) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Link tag is missing a name attribute.");
   }
-  body->name_ = attr;
+  std::string rigid_body_name = std::string(attr);
 
-  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName)) {
+  RigidBody* body{nullptr};
+  std::unique_ptr<RigidBody> owned_body(body =
+      new RigidBody(model_name, model_id, rigid_body_name));
+
+  if (body->get_name() == std::string(RigidBodyTree::kWorldBodyName)) {
     throw runtime_error(
         std::string(__FILE__) + ": " + __func__ +
         ": ERROR: Do not name a link 'world' because it is a reserved name.");
@@ -684,7 +683,7 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
     if (weld_to_frame == nullptr) {
       weld_to_frame = std::allocate_shared<RigidBodyFrame>(
           Eigen::aligned_allocator<RigidBodyFrame>(),
-          std::string(RigidBodyTree::kWorldLinkName),
+          std::string(RigidBodyTree::kWorldBodyName),
           nullptr,  // Valid since the robot is attached to the world.
           Eigen::Isometry3d::Identity());
     }
@@ -732,11 +731,11 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
 
   // Loads the world if it is defined.
   XMLElement* world_node =
-      node->FirstChildElement(RigidBodyTree::kWorldLinkName);
+      node->FirstChildElement(RigidBodyTree::kWorldBodyName);
   if (world_node) {
     // If we have more than one world, it is ambiguous which one the user
     // wishes to use.
-    if (world_node->NextSiblingElement(RigidBodyTree::kWorldLinkName)) {
+    if (world_node->NextSiblingElement(RigidBodyTree::kWorldBodyName)) {
       throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                           ": ERROR: Multiple worlds in one file.");
     }
