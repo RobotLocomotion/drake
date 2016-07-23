@@ -27,7 +27,9 @@ RigidBody::RigidBody()
   I << drake::SquareTwistMatrix<double>::Zero();
 }
 
-const std::string& RigidBody::name() const { return name_; }
+const std::string& RigidBody::get_name() const { return name_; }
+
+void RigidBody::set_name(const std::string& name) { name_ = name; }
 
 const std::string& RigidBody::model_name() const { return model_name_; }
 
@@ -121,7 +123,7 @@ RigidBody::CollisionElement::CollisionElement(
   // Collision elements should be set to static in a later Initialize() stage as
   // described in issue #2661.
   // TODO(amcastro-tri): remove this hack.
-  if (body->name() == "world") set_static();
+  if (body->get_name() == "world") set_static();
 }
 
 RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {

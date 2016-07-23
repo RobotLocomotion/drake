@@ -573,7 +573,7 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
     const RigidBodyTree& robot) {
   auto id_map = std::unordered_map<std::string, int>();
   for (auto it = robot.bodies.begin(); it != robot.bodies.end(); ++it) {
-    id_map[(*it)->name_] = it - robot.bodies.begin();
+    id_map[(*it)->get_name()] = it - robot.bodies.begin();
   }
 
   for (auto it = robot.frames.begin(); it != robot.frames.end(); ++it) {
