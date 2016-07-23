@@ -111,7 +111,7 @@ void RigidBodyTree::SortTree() {
   }
 
   // Reasign body_index to be the i-th entry in RBT::bodies
-  for (size_t i = 0; i < bodies.size(); i++) {
+  for (i = 0; i < bodies.size(); i++) {
     bodies[i]->body_index = static_cast<int>(i);
   }
 }
@@ -334,7 +334,7 @@ void RigidBodyTree::drawKinematicTree(
 map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
   map<string, int> name_to_index_map;
 
-  for (int i = 0; i < this->num_positions_; ++i) {
+  for (int i = 0; i < num_positions_; ++i) {
     name_to_index_map[getPositionName(i)] = i;
   }
   return name_to_index_map;
@@ -1795,11 +1795,11 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
                  joint_name_lower.begin(), ::tolower);
 
   vector<bool> name_match;
-  name_match.resize(this->bodies.size());
+  name_match.resize(bodies.size());
 
-  for (size_t ii = 0; ii < this->bodies.size(); ii++) {
+  for (size_t ii = 0; ii < bodies.size(); ii++) {
     if (bodies[ii]->hasParent()) {
-      string current_joint_name = this->bodies[ii]->getJoint().getName();
+      string current_joint_name = bodies[ii]->getJoint().getName();
       std::transform(current_joint_name.begin(), current_joint_name.end(),
                      current_joint_name.begin(),
                      ::tolower);  // convert to lower case
@@ -1812,9 +1812,9 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
   }
 
   if (model_id != -1) {
-    for (size_t ii = 0; ii < this->bodies.size(); ii++) {
+    for (size_t ii = 0; ii < bodies.size(); ii++) {
       if (name_match[ii]) {
-        name_match[ii] = this->bodies[ii]->robotnum == model_id;
+        name_match[ii] = bodies[ii]->robotnum == model_id;
       }
     }
   }
@@ -1822,7 +1822,7 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
   // Unlike the MATLAB implementation, I am not handling the fixed joints
   size_t ind_match = 0;
   bool match_found = false;
-  for (size_t ii = 0; ii < this->bodies.size(); ++ii) {
+  for (size_t ii = 0; ii < bodies.size(); ++ii) {
     if (name_match[ii]) {
       if (match_found) {
         throw std::logic_error(
@@ -1840,7 +1840,7 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
         std::string("named \"") + joint_name + "\", model_id = " +
         std::to_string(model_id));
   } else {
-    return this->bodies[ind_match].get();
+    return bodies[ind_match].get();
   }
 }
 

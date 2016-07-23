@@ -184,8 +184,8 @@ void inverseKinMode1(
 
         typedef Eigen::Triplet<double> T;
         std::vector<T> triplet_list;
-        for (int i = 0; i < iAfun.size(); i++) {
-          triplet_list.push_back(T(iAfun[i], jAvar[i], A[i]));
+        for (int k = 0; k < iAfun.size(); k++) {
+          triplet_list.push_back(T(iAfun[k], jAvar[k], A[k]));
         }
 
         Eigen::SparseMatrix<double> A_sparse(
@@ -213,9 +213,9 @@ void inverseKinMode1(
         prog.AddBoundingBoxConstraint(VectorXd::Constant(num_vars, 0.),
                                       VectorXd::Constant(num_vars, 1.),
                                       {qsc_vars});
-        VectorXd constraint(num_vars);
-        constraint.fill(1.);
-        prog.AddLinearEqualityConstraint(constraint.transpose(),
+        VectorXd constraint_vars(num_vars);
+        constraint_vars.fill(1.);
+        prog.AddLinearEqualityConstraint(constraint_vars.transpose(),
                                          Vector1d::Constant(1.), {qsc_vars});
         prog.SetInitialGuess(qsc_vars,
                              VectorXd::Constant(num_vars, 1.0 / num_vars));

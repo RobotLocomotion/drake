@@ -1,6 +1,3 @@
-# TODO(#2852) We can't yet handle shadowing as a compiler error.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS_NO_ERROR_SHADOW}")
-
 # IMPORTANT NOTE!!
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
