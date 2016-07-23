@@ -17,8 +17,8 @@ using Eigen::VectorXd;
 using Drake::getDrakePath;
 
 GTEST_TEST(testIKtraj, testIKtraj) {
-  RigidBodyTree model(getDrakePath() +
-                      "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree model(
+      getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   int r_hand{};
   for (int i = 0; i < static_cast<int>(model.bodies.size()); i++) {
@@ -58,8 +58,8 @@ GTEST_TEST(testIKtraj, testIKtraj) {
   rhand_pos_ub(2) += 0.25;
   Vector2d tspan_end;
   tspan_end << t[nT - 1], t[nT - 1];
-  WorldPositionConstraint kc_rhand(&model, r_hand, r_hand_pt, rhand_pos_lb,
-                                   rhand_pos_ub, tspan_end);
+  WorldPositionConstraint kc_rhand(
+      &model, r_hand, r_hand_pt, rhand_pos_lb, rhand_pos_ub, tspan_end);
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&com_kc);
   constraint_array.push_back(&kc_rhand);

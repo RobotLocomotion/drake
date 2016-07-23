@@ -1,4 +1,4 @@
-#include "drake/systems/plants/RigidBodyTree.h"
+  #include "drake/systems/plants/RigidBodyTree.h"
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
@@ -73,7 +73,7 @@ RigidBodyTree::RigidBodyTree(void)
 
   // Adds the rigid body representing the world.
   std::unique_ptr<RigidBody> b(new RigidBody());
-  b->set_name(std::string(RigidBodyTree::kWorldLinkName));
+  b->set_name(RigidBodyTree::kWorldLinkName);
   b->robotnum = 0;
   b->body_index = 0;
   bodies.push_back(std::move(b));
