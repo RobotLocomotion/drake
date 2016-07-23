@@ -90,7 +90,7 @@ class SensorPublisherOdometry {
 
       // The key is simply the model name since there should only be one
       // odometry message and publisher per robot.
-      const std::string& key = rigid_body->model_name();
+      const std::string& key = rigid_body->get_model_name();
 
       if (odometry_messages_.find(key) == odometry_messages_.end()) {
         const std::string topic_name = "drake/" + key + "/odometry";
@@ -100,7 +100,7 @@ class SensorPublisherOdometry {
 
         std::unique_ptr<nav_msgs::Odometry> message(new nav_msgs::Odometry());
         message->header.frame_id = RigidBodyTree::kWorldLinkName;
-        message->child_frame_id = rigid_body->name();
+        message->child_frame_id = rigid_body->get_name();
 
         odometry_messages_.insert(
             std::pair<std::string, std::unique_ptr<nav_msgs::Odometry>>(
@@ -157,7 +157,7 @@ class SensorPublisherOdometry {
       // Defines the key that can be used to obtain the publisher and message.
       // The key is simply the model name since there should only be one
       // odometry message and publisher per model.
-      const std::string& key = rigid_body->model_name();
+      const std::string& key = rigid_body->get_model_name();
 
       // Verifies that a nav_msgs::Odometry message for the current link exists
       // in the odometry_messages_ map.

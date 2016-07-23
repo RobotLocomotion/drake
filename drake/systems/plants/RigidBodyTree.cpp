@@ -1674,7 +1674,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
     if (model_id != -1 && model_id != bodies[ii]->get_model_id()) continue;
 
     // Obtains a lower case version of the current body's model name.
-    string current_model_name = bodies[ii]->model_name();
+    string current_model_name = bodies[ii]->get_model_name();
     std::transform(current_model_name.begin(), current_model_name.end(),
                    current_model_name.begin(), ::tolower);
 
