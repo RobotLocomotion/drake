@@ -4,6 +4,13 @@ add_executable(nice_type_name_test nice_type_name_test.cc)
 target_link_libraries(nice_type_name_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME nice_type_name_test COMMAND nice_type_name_test)
 
+add_executable(sorted_vectors_have_intersection_test
+        sorted_vectors_have_intersection_test.cc)
+target_link_libraries(sorted_vectors_have_intersection_test
+        drakeCommon ${GTEST_BOTH_LIBRARIES})
+add_test(NAME sorted_vectors_have_intersection_test
+         COMMAND sorted_vectors_have_intersection_test)
+
 # Adds "drake_assert.h" unit testing.
 add_executable(drake_assert_test_default drake_assert_test.cc)
 target_link_libraries(drake_assert_test_default drakeCommon ${GTEST_BOTH_LIBRARIES})

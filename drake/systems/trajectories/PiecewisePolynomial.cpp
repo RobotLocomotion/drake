@@ -9,7 +9,7 @@ template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(
     std::vector<PolynomialMatrix> const& polynomials,
     std::vector<double> const& segment_times)
-    : PiecewisePolynomialBase(segment_times), polynomials(polynomials) {
+    : PiecewisePolynomialBase(segment_times), polynomials_(polynomials) {
   DRAKE_ASSERT(segment_times.size() == (polynomials.size() + 1));
   for (int i = 1; i < getNumberOfSegments(); i++) {
     if (polynomials[i].rows() != polynomials[0].rows())
@@ -33,7 +33,7 @@ PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(
   for (size_t i = 0; i < polynomials.size(); i++) {
     PolynomialMatrix matrix(1, 1);
     matrix(0, 0) = polynomials[i];
-    this->polynomials.push_back(matrix);
+    polynomials_.push_back(matrix);
   }
 }
 
@@ -46,7 +46,7 @@ template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::derivative(int derivative_order) const {
   PiecewisePolynomial ret = *this;
-  for (auto it = ret.polynomials.begin(); it != ret.polynomials.end(); ++it) {
+  for (auto it = ret.polynomials_.begin(); it != ret.polynomials_.end(); ++it) {
     PolynomialMatrix& matrix = *it;
     for (Eigen::Index row = 0; row < rows(); row++) {
       for (Eigen::Index col = 0; col < cols(); col++) {
@@ -59,7 +59,7 @@ PiecewisePolynomial<CoefficientType>::derivative(int derivative_order) const {
 
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType> PiecewisePolynomial<
-    CoefficientType>::integral(double value_at_start_time) const {
+  CoefficientType>::integral(double value_at_start_time) const {
   CoefficientMatrix matrix_value_at_start_time =
       CoefficientMatrix::Constant(rows(), cols(), value_at_start_time);
   return integral(matrix_value_at_start_time);
@@ -69,11 +69,11 @@ template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::integral(
     const typename PiecewisePolynomial<CoefficientType>::CoefficientMatrixRef&
-        value_at_start_time) const {
+    value_at_start_time) const {
   PiecewisePolynomial ret = *this;
   for (int segment_index = 0; segment_index < getNumberOfSegments();
        segment_index++) {
-    PolynomialMatrix& matrix = ret.polynomials[segment_index];
+    PolynomialMatrix& matrix = ret.polynomials_[segment_index];
     for (Eigen::Index row = 0; row < rows(); row++) {
       for (Eigen::Index col = 0; col < cols(); col++) {
         if (segment_index == 0) {
@@ -81,8 +81,10 @@ PiecewisePolynomial<CoefficientType>::integral(
               matrix(row, col).integral(value_at_start_time(row, col));
         } else {
           matrix(row, col) =
-              matrix(row, col).integral(ret.segmentValueAtGlobalAbscissa(
-                  segment_index - 1, getStartTime(segment_index), row, col));
+              matrix(row, col).integral(
+                  ret.segmentValueAtGlobalAbscissa(
+                      segment_index - 1,
+                      getStartTime(segment_index), row, col));
         }
       }
     }
@@ -117,7 +119,7 @@ template <typename CoefficientType>
 const typename PiecewisePolynomial<CoefficientType>::PolynomialMatrix&
 PiecewisePolynomial<CoefficientType>::getPolynomialMatrix(
     int segment_index) const {
-  return polynomials[segment_index];
+  return polynomials_[segment_index];
 }
 
 template <typename CoefficientType>
@@ -126,14 +128,14 @@ PiecewisePolynomial<CoefficientType>::getPolynomial(int segment_index,
                                                     Eigen::Index row,
                                                     Eigen::Index col) const {
   segmentNumberRangeCheck(segment_index);
-  return polynomials[segment_index](row, col);
+  return polynomials_[segment_index](row, col);
 }
 
 template <typename CoefficientType>
 int PiecewisePolynomial<CoefficientType>::getSegmentPolynomialDegree(
     int segment_index, Eigen::Index row, Eigen::Index col) const {
   segmentNumberRangeCheck(segment_index);
-  return polynomials[segment_index](row, col).getDegree();
+  return polynomials_[segment_index](row, col).getDegree();
 }
 
 template <typename CoefficientType>
@@ -142,8 +144,8 @@ operator+=(const PiecewisePolynomial<CoefficientType>& other) {
   if (!segmentTimesEqual(other, 1e-10))
     throw runtime_error(
         "Addition not yet implemented when segment times are not equal");
-  for (size_t i = 0; i < polynomials.size(); i++)
-    polynomials[i] += other.polynomials[i];
+  for (size_t i = 0; i < polynomials_.size(); i++)
+    polynomials_[i] += other.polynomials_[i];
   return *this;
 }
 
@@ -153,8 +155,8 @@ operator-=(const PiecewisePolynomial<CoefficientType>& other) {
   if (!segmentTimesEqual(other, 1e-10))
     throw runtime_error(
         "Addition not yet implemented when segment times are not equal");
-  for (size_t i = 0; i < polynomials.size(); i++)
-    polynomials[i] -= other.polynomials[i];
+  for (size_t i = 0; i < polynomials_.size(); i++)
+    polynomials_[i] -= other.polynomials_[i];
   return *this;
 }
 
@@ -164,33 +166,33 @@ operator*=(const PiecewisePolynomial<CoefficientType>& other) {
   if (!segmentTimesEqual(other, 1e-10))
     throw runtime_error(
         "Multiplication not yet implemented when segment times are not equal");
-  for (size_t i = 0; i < polynomials.size(); i++)
-    polynomials[i] *= other.polynomials[i];
+  for (size_t i = 0; i < polynomials_.size(); i++)
+    polynomials_[i] *= other.polynomials_[i];
   return *this;
 }
 
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::
 operator+=(const typename PiecewisePolynomial<
-    CoefficientType>::CoefficientMatrix& offset) {
-  for (size_t i = 0; i < polynomials.size(); i++)
-    polynomials[i] += offset.template cast<PolynomialType>();
+             CoefficientType>::CoefficientMatrix& offset) {
+  for (size_t i = 0; i < polynomials_.size(); i++)
+    polynomials_[i] += offset.template cast<PolynomialType>();
   return *this;
 }
 
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::
 operator-=(const typename PiecewisePolynomial<
-    CoefficientType>::CoefficientMatrix& offset) {
-  for (size_t i = 0; i < polynomials.size(); i++)
-    polynomials[i] -= offset.template cast<PolynomialType>();
+             CoefficientType>::CoefficientMatrix& offset) {
+  for (size_t i = 0; i < polynomials_.size(); i++)
+    polynomials_[i] -= offset.template cast<PolynomialType>();
   return *this;
 }
 
 template <typename CoefficientType>
 const PiecewisePolynomial<CoefficientType>
-    PiecewisePolynomial<CoefficientType>::operator+(
-        const PiecewisePolynomial<CoefficientType>& other) const {
+PiecewisePolynomial<CoefficientType>::operator+(
+    const PiecewisePolynomial<CoefficientType>& other) const {
   PiecewisePolynomial<CoefficientType> ret = *this;
   ret += other;
   return ret;
@@ -198,8 +200,8 @@ const PiecewisePolynomial<CoefficientType>
 
 template <typename CoefficientType>
 const PiecewisePolynomial<CoefficientType>
-    PiecewisePolynomial<CoefficientType>::operator-(
-        const PiecewisePolynomial<CoefficientType>& other) const {
+PiecewisePolynomial<CoefficientType>::operator-(
+    const PiecewisePolynomial<CoefficientType>& other) const {
   PiecewisePolynomial<CoefficientType> ret = *this;
   ret -= other;
   return ret;
@@ -207,8 +209,8 @@ const PiecewisePolynomial<CoefficientType>
 
 template <typename CoefficientType>
 const PiecewisePolynomial<CoefficientType>
-    PiecewisePolynomial<CoefficientType>::operator*(
-        const PiecewisePolynomial<CoefficientType>& other) const {
+PiecewisePolynomial<CoefficientType>::operator*(
+    const PiecewisePolynomial<CoefficientType>& other) const {
   PiecewisePolynomial<CoefficientType> ret = *this;
   ret *= other;
   return ret;
@@ -216,9 +218,9 @@ const PiecewisePolynomial<CoefficientType>
 
 template <typename CoefficientType>
 const PiecewisePolynomial<CoefficientType>
-    PiecewisePolynomial<CoefficientType>::operator+(
-        const typename PiecewisePolynomial<CoefficientType>::CoefficientMatrix&
-            offset) const {
+PiecewisePolynomial<CoefficientType>::operator+(
+    const typename PiecewisePolynomial<CoefficientType>::CoefficientMatrix&
+    offset) const {
   PiecewisePolynomial<CoefficientType> ret = *this;
   ret += offset;
   return ret;
@@ -226,9 +228,9 @@ const PiecewisePolynomial<CoefficientType>
 
 template <typename CoefficientType>
 const PiecewisePolynomial<CoefficientType>
-    PiecewisePolynomial<CoefficientType>::operator-(
-        const typename PiecewisePolynomial<CoefficientType>::CoefficientMatrix&
-            offset) const {
+PiecewisePolynomial<CoefficientType>::operator-(
+    const typename PiecewisePolynomial<CoefficientType>::CoefficientMatrix&
+    offset) const {
   PiecewisePolynomial<CoefficientType> ret = *this;
   ret -= offset;
   return ret;
@@ -243,8 +245,8 @@ bool PiecewisePolynomial<CoefficientType>::isApprox(
 
   for (int segment_index = 0; segment_index < getNumberOfSegments();
        segment_index++) {
-    const PolynomialMatrix& matrix = polynomials[segment_index];
-    const PolynomialMatrix& other_matrix = other.polynomials[segment_index];
+    const PolynomialMatrix& matrix = polynomials_[segment_index];
+    const PolynomialMatrix& other_matrix = other.polynomials_[segment_index];
     for (Eigen::Index row = 0; row < rows(); row++) {
       for (Eigen::Index col = 0; col < cols(); col++) {
         if (!matrix(row, col).isApprox(other_matrix(row, col), tol))
@@ -265,11 +267,11 @@ void PiecewisePolynomial<CoefficientType>::shiftRight(double offset) {
 template <typename CoefficientType>
 void PiecewisePolynomial<CoefficientType>::setPolynomialMatrixBlock(
     const typename PiecewisePolynomial<CoefficientType>::PolynomialMatrix&
-        replacement,
+    replacement,
     int segment_number, Eigen::Index row_start, Eigen::Index col_start) {
   segmentNumberRangeCheck(segment_number);
-  polynomials[segment_number].block(row_start, col_start, replacement.rows(),
-                                    replacement.cols()) = replacement;
+  polynomials_[segment_number].block(row_start, col_start, replacement.rows(),
+                                     replacement.cols()) = replacement;
 }
 
 template <typename CoefficientType>
@@ -283,9 +285,9 @@ PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
   auto segment_times_slice = vector<double>(
       segment_times_start_it,
       segment_times_start_it + num_segments +
-          1);  // + 1 because there's one more segment times than segments
+      1);  // + 1 because there's one more segment times than segments
 
-  auto polynomials_start_it = polynomials.begin() + start_segment_index;
+  auto polynomials_start_it = polynomials_.begin() + start_segment_index;
   auto polynomials_slice = vector<PolynomialMatrix>(
       polynomials_start_it, polynomials_start_it + num_segments);
 
@@ -296,14 +298,14 @@ PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
 template <typename CoefficientType>
 double PiecewisePolynomial<CoefficientType>::segmentValueAtGlobalAbscissa(
     int segment_index, double t, Eigen::Index row, Eigen::Index col) const {
-  return polynomials[segment_index](row, col)
+  return polynomials_[segment_index](row, col)
       .evaluateUnivariate(t - getStartTime(segment_index));
 }
 
 template <typename CoefficientType>
 Eigen::Index PiecewisePolynomial<CoefficientType>::rows() const {
-  if (polynomials.size() > 0)
-    return polynomials[0].rows();
+  if (polynomials_.size() > 0)
+    return polynomials_[0].rows();
   else
     throw std::runtime_error(
         "PiecewisePolynomial has no segments. Number of rows is undefined.");
@@ -311,8 +313,8 @@ Eigen::Index PiecewisePolynomial<CoefficientType>::rows() const {
 
 template <typename CoefficientType>
 Eigen::Index PiecewisePolynomial<CoefficientType>::cols() const {
-  if (polynomials.size() > 0)
-    return polynomials[0].cols();
+  if (polynomials_.size() > 0)
+    return polynomials_[0].cols();
   else
     throw std::runtime_error(
         "PiecewisePolynomial has no segments. Number of columns is undefined.");
@@ -320,16 +322,17 @@ Eigen::Index PiecewisePolynomial<CoefficientType>::cols() const {
 
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType> PiecewisePolynomial<
-    CoefficientType>::random(Eigen::Index rows, Eigen::Index cols,
-                             Eigen::Index num_coefficients_per_polynomial,
-                             const std::vector<double>& segment_times) {
+  CoefficientType>::random(Eigen::Index rows, Eigen::Index cols,
+                           Eigen::Index num_coefficients_per_polynomial,
+                           const std::vector<double>& segment_times) {
   Eigen::Index num_segments =
       static_cast<Eigen::Index>(segment_times.size() - 1);
   std::vector<PolynomialMatrix> polynomials;
   for (Eigen::Index segment_index = 0; segment_index < num_segments;
        ++segment_index) {
-    polynomials.push_back(PolynomialType::randomPolynomialMatrix(
-        num_coefficients_per_polynomial, rows, cols));
+    polynomials.push_back(
+        PolynomialType::randomPolynomialMatrix(
+            num_coefficients_per_polynomial, rows, cols));
   }
   return PiecewisePolynomial<CoefficientType>(polynomials, segment_times);
 }

@@ -21,10 +21,10 @@ class DRAKETRAJECTORIES_EXPORT ExponentialPlusPiecewisePolynomial
   typedef Eigen::Matrix<double, Eigen::Dynamic, 1> ValueType;
 
  private:
-  MatrixX K;
-  MatrixX A;
-  MatrixX alpha;
-  PiecewisePolynomial<CoefficientType> piecewise_polynomial_part;
+  MatrixX K_;
+  MatrixX A_;
+  MatrixX alpha_;
+  PiecewisePolynomial<CoefficientType> piecewise_polynomial_part_;
 
  public:
   ExponentialPlusPiecewisePolynomial();
@@ -36,10 +36,10 @@ class DRAKETRAJECTORIES_EXPORT ExponentialPlusPiecewisePolynomial
       const Eigen::MatrixBase<DerivedAlpha>& alpha,
       const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part)
       : PiecewiseFunction(piecewise_polynomial_part),
-        K(K),
-        A(A),
-        alpha(alpha),
-        piecewise_polynomial_part(piecewise_polynomial_part) {
+        K_(K),
+        A_(A),
+        alpha_(alpha),
+        piecewise_polynomial_part_(piecewise_polynomial_part) {
     DRAKE_ASSERT(K.rows() == rows());
     DRAKE_ASSERT(K.cols() == A.rows());
     DRAKE_ASSERT(A.rows() == A.cols());
