@@ -3,11 +3,11 @@
 
 #include "gtest/gtest.h"
 
+#include "../constraint/RigidBodyConstraint.h"
 #include "drake/Path.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "../constraint/RigidBodyConstraint.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -17,12 +17,12 @@ using Eigen::VectorXd;
 using Drake::getDrakePath;
 
 GTEST_TEST(testIKtraj, testIKtraj) {
-  RigidBodyTree model(
-      getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree model(getDrakePath() +
+                      "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   int r_hand{};
   for (int i = 0; i < static_cast<int>(model.bodies.size()); i++) {
-    if (model.bodies[i]->name_.compare(std::string("r_hand"))) {
+    if (model.bodies[i]->get_name().compare(std::string("r_hand"))) {
       r_hand = i;
     }
   }
@@ -58,8 +58,8 @@ GTEST_TEST(testIKtraj, testIKtraj) {
   rhand_pos_ub(2) += 0.25;
   Vector2d tspan_end;
   tspan_end << t[nT - 1], t[nT - 1];
-  WorldPositionConstraint kc_rhand(
-      &model, r_hand, r_hand_pt, rhand_pos_lb, rhand_pos_ub, tspan_end);
+  WorldPositionConstraint kc_rhand(&model, r_hand, r_hand_pt, rhand_pos_lb,
+                                   rhand_pos_ub, tspan_end);
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&com_kc);
   constraint_array.push_back(&kc_rhand);
@@ -70,26 +70,23 @@ GTEST_TEST(testIKtraj, testIKtraj) {
   MatrixXd qddot_sol(model.number_of_positions(), nT);
   int info = 0;
   std::vector<std::string> infeasible_constraint;
-  inverseKinTraj(&model, nT, t.data(), qdot0, q0, q0,
-                 constraint_array.size(), constraint_array.data(),
-                 ikoptions,
-                 &q_sol, &qdot_sol, &qddot_sol, &info, &infeasible_constraint);
+  inverseKinTraj(&model, nT, t.data(), qdot0, q0, q0, constraint_array.size(),
+                 constraint_array.data(), ikoptions, &q_sol, &qdot_sol,
+                 &qddot_sol, &info, &infeasible_constraint);
   EXPECT_EQ(info, 1);
 
   ikoptions.setFixInitialState(false);
   ikoptions.setMajorIterationsLimit(500);
-  inverseKinTraj(&model, nT, t.data(), qdot0, q0, q0,
-                 constraint_array.size(), constraint_array.data(),
-                 ikoptions,
-                 &q_sol, &qdot_sol, &qddot_sol, &info, &infeasible_constraint);
+  inverseKinTraj(&model, nT, t.data(), qdot0, q0, q0, constraint_array.size(),
+                 constraint_array.data(), ikoptions, &q_sol, &qdot_sol,
+                 &qddot_sol, &info, &infeasible_constraint);
   EXPECT_EQ(info, 1);
 
   Eigen::RowVectorXd t_inbetween(5);
   t_inbetween << 0.1, 0.15, 0.3, 0.4, 0.6;
   ikoptions.setAdditionaltSamples(t_inbetween);
-  inverseKinTraj(&model, nT, t.data(), qdot0, q0, q0,
-                 constraint_array.size(), constraint_array.data(),
-                 ikoptions,
-                 &q_sol, &qdot_sol, &qddot_sol, &info, &infeasible_constraint);
+  inverseKinTraj(&model, nT, t.data(), qdot0, q0, q0, constraint_array.size(),
+                 constraint_array.data(), ikoptions, &q_sol, &qdot_sol,
+                 &qddot_sol, &info, &infeasible_constraint);
   EXPECT_EQ(info, 1);
 }

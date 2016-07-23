@@ -1571,10 +1571,11 @@ void Point2LineSegDistConstraint::name(
     const double* t, std::vector<std::string>& name_str) const {
   if (this->isTimeValid(t)) {
     std::string time_str = this->getTimeString(t);
-    name_str.push_back(
-        "Distance from " + this->getRobotPointer()->bodies[pt_body_]->get_name() +
-        " pt to a line on " +
-        this->getRobotPointer()->bodies[line_body_]->get_name() + time_str);
+    name_str.push_back("Distance from " +
+                       this->getRobotPointer()->bodies[pt_body_]->get_name() +
+                       " pt to a line on " +
+                       this->getRobotPointer()->bodies[line_body_]->get_name() +
+                       time_str);
     name_str.push_back("Fraction of point projection onto line segment " +
                        time_str);
   }

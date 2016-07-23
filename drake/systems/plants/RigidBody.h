@@ -147,8 +147,6 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:
-
-
   /// The name of the model to which this rigid body belongs.
   std::string model_name_;
 
