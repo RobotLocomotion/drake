@@ -766,7 +766,7 @@ void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
     string type(attr);
 
     Isometry3d transform_sensor_to_model = transform_link_to_model;
-    XMLElement* pose = elnode->FirstChildElement("pose");
+    pose = elnode->FirstChildElement("pose");
     if (pose) {
       poseValueToTransform(pose, pose_map, transform_sensor_to_model,
                            transform_link_to_model);
