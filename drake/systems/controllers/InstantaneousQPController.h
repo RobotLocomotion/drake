@@ -117,6 +117,7 @@ class InstantaneousQPController {
 
   void initialize();
   void loadConfigurationFromYAML(const std::string& control_config_filename);
+  const QPControllerParams& findParams(const std::string& param_set_name);
 };
 
 void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,

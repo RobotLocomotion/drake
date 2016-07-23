@@ -7,26 +7,26 @@ class RigidBodyTree;
 
 class DRAKEIKOPTIONS_EXPORT IKoptions {
  private:
-  RigidBodyTree *robot;
-  int nq;
-  Eigen::MatrixXd Q;
-  Eigen::MatrixXd Qa;
-  Eigen::MatrixXd Qv;
-  bool debug_mode;
-  bool sequentialSeedFlag;
-  double SNOPT_MajorFeasibilityTolerance;
-  int SNOPT_MajorIterationsLimit;
-  int SNOPT_IterationsLimit;
-  int SNOPT_SuperbasicsLimit;
-  double SNOPT_MajorOptimalityTolerance;
-  Eigen::RowVectorXd additional_tSamples;
-  bool fixInitialState;
-  Eigen::VectorXd q0_lb;
-  Eigen::VectorXd q0_ub;
-  Eigen::VectorXd qd0_lb;
-  Eigen::VectorXd qd0_ub;
-  Eigen::VectorXd qdf_lb;
-  Eigen::VectorXd qdf_ub;
+  RigidBodyTree *robot_;
+  int nq_;
+  Eigen::MatrixXd Q_;
+  Eigen::MatrixXd Qa_;
+  Eigen::MatrixXd Qv_;
+  bool debug_mode_;
+  bool sequentialSeedFlag_;
+  double SNOPT_MajorFeasibilityTolerance_;
+  int SNOPT_MajorIterationsLimit_;
+  int SNOPT_IterationsLimit_;
+  int SNOPT_SuperbasicsLimit_;
+  double SNOPT_MajorOptimalityTolerance_;
+  Eigen::RowVectorXd additional_tSamples_;
+  bool fixInitialState_;
+  Eigen::VectorXd q0_lb_;
+  Eigen::VectorXd q0_ub_;
+  Eigen::VectorXd qd0_lb_;
+  Eigen::VectorXd qd0_ub_;
+  Eigen::VectorXd qdf_lb_;
+  Eigen::VectorXd qdf_ub_;
 
  protected:
   void setDefaultParams(RigidBodyTree *robot);
