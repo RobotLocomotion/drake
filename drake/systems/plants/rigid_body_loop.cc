@@ -1,9 +1,9 @@
 #include "drake/systems/plants/rigid_body_loop.h"
 
-RigidBodyLoop::RigidBodyLoop(std::shared_ptr<RigidBodyFrame> _frameA,
-                             std::shared_ptr<RigidBodyFrame> _frameB,
-                             const Eigen::Vector3d& _axis)
-    : frameA(_frameA), frameB(_frameB), axis(_axis) {}
+RigidBodyLoop::RigidBodyLoop(std::shared_ptr<RigidBodyFrame> frameA_in,
+                             std::shared_ptr<RigidBodyFrame> frameB_in,
+                             const Eigen::Vector3d& axis_in)
+    : frameA(frameA_in), frameB(frameB_in), axis(axis_in) {}
 
 std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj) {
   os << "loop connects pt "
