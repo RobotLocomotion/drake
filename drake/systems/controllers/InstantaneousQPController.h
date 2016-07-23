@@ -117,6 +117,10 @@ class InstantaneousQPController {
 
   void initialize();
   void loadConfigurationFromYAML(const std::string& control_config_filename);
+
+  // Select a parameter set by name from the collection of parameter sets.
+  // If not found, fall back to "standing". If that fails, throw an exception.
+  const QPControllerParams& FindParams(const std::string& param_set_name);
 };
 
 void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,

@@ -16,11 +16,11 @@ class DRAKEJOINTS_EXPORT PrismaticJoint
  public:
   PrismaticJoint(const std::string& name,
                  const Eigen::Isometry3d& transform_to_parent_body,
-                 const Eigen::Vector3d& translation_axis)
+                 const Eigen::Vector3d& translation_axis_in)
       : FixedAxisOneDoFJoint<PrismaticJoint>(
             *this, name, transform_to_parent_body,
-            spatialJointAxis(translation_axis)),
-        translation_axis(translation_axis) {
+            spatialJointAxis(translation_axis_in)),
+        translation_axis(translation_axis_in) {
     DRAKE_ASSERT(std::abs(translation_axis.norm() - 1.0) < 1e-10);
   }
 
