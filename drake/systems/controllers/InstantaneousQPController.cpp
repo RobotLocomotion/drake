@@ -604,21 +604,24 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   // look up the param set by name
-  std::map<std::string, QPControllerParams>::iterator it;
-  it = param_sets.find(qp_input.param_set_name);
-  if (it == param_sets.end()) {
-    std::cout
-        << "Got a param set I don't recognize! Using standing params instead";
-    it = param_sets.find("standing");
+  QPControllerParams& params{};
+  {
+    std::map<std::string, QPControllerParams>::iterator it;
+    it = param_sets.find(qp_input.param_set_name);
     if (it == param_sets.end()) {
-      throw std::runtime_error(
-          "Could not fall back to standing parameters either. I have to give "
-          "up here.");
+      std::cout
+          << "Got a param set I don't recognize! Using standing params instead";
+      it = param_sets.find("standing");
+      if (it == param_sets.end()) {
+        throw std::runtime_error(
+            "Could not fall back to standing parameters either. I have to give "
+            "up here.");
+      }
     }
+    // cout << "using params set: " + it->first + ", ";
+    params = it->second;
+    // mexPrintf("Kp_accel: %f, ", params.Kp_accel);
   }
-  // cout << "using params set: " + it->first + ", ";
-  const QPControllerParams& params = it->second;
-  // mexPrintf("Kp_accel: %f, ", params.Kp_accel);
 
   int nu = robot->B.cols();
   int nq = robot->number_of_positions();
