@@ -530,7 +530,7 @@ bool parseLink(RigidBodyTree* tree, string robot_name, XMLElement* node,
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
 
   // World links are handled by parseWorldJoint().
-  body->set_name(std::string(attr));
+  body->set_name(attr);
   if (body->get_name() == string(RigidBodyTree::kWorldLinkName)) return false;
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
