@@ -287,7 +287,8 @@ class SensorPublisherJointState {
         if (joint.isFloating()) {
           auto transform = rigid_body_tree->relativeTransform(
               cache,
-              rigid_body_tree->FindBodyIndex(rigid_body->parent->get_name()),
+              rigid_body_tree->FindBodyIndex(
+                  rigid_body->get_parent()->get_name()),
               rigid_body_tree->FindBodyIndex(rigid_body->get_name()));
           auto translation = transform.translation();
           auto rpy = drake::math::rotmat2rpy(transform.linear());

@@ -298,7 +298,8 @@ void RigidBodyTree::drawKinematicTree(
     dotfile << "\"];" << endl;
     if (body->hasParent()) {
       const auto& joint = body->getJoint();
-      dotfile << "  " << body->get_name() << " -> " << body->parent->get_name()
+      dotfile << "  " << body->get_name() << " -> "
+              << body->get_parent()->get_name()
               << " [label=\"" << joint.getName() << endl;
       dotfile << "transform_to_parent_body=" << endl
               << joint.getTransformToParentBody().matrix() << endl;
@@ -685,7 +686,7 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
 
     if (body.hasParent()) {
       const KinematicsCacheElement<Scalar>& parent_element =
-          cache.getElement(*body.parent);
+          cache.getElement(*body.get_parent());
       const DrakeJoint& joint = body.getJoint();
       auto q_body =
           q.middleRows(body.position_num_start, joint.getNumPositions());
@@ -788,7 +789,7 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
       const RigidBody& body = **it;
       if (body.hasParent()) {
         const auto& element = cache.getElement(body);
-        auto& parent_element = cache.getElement(*body.parent);
+        auto& parent_element = cache.getElement(*body.get_parent());
         parent_element.crb_in_world += element.crb_in_world;
       }
     }
@@ -1044,8 +1045,8 @@ void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
                                        int body_idx) const {
   const RigidBody* current_body = bodies[body_idx].get();
   while (current_body->hasParent()) {
-    ancestor_bodies.push_back(current_body->parent->body_index);
-    current_body = current_body->parent;
+    ancestor_bodies.push_back(current_body->get_parent()->body_index);
+    current_body = current_body->get_parent();
   }
 }
 
@@ -1295,7 +1296,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
           (element_i.motion_subspace_in_world.transpose() * F).eval();
 
       // Hij
-      RigidBody* body_j(body_i.parent);
+      RigidBody* body_j(body_i.get_mutable_parent());
       while (body_j->hasParent()) {
         const auto& element_j = cache.getElement(*body_j);
         int v_start_j = body_j->velocity_num_start;
@@ -1304,7 +1305,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
         ret.block(v_start_j, v_start_i, nv_j, nv_i) = Hji;
         ret.block(v_start_i, v_start_j, nv_i, nv_j) = Hji.transpose();
 
-        body_j = body_j->parent;
+        body_j = body_j->get_mutable_parent();
       }
     }
   }
@@ -1383,7 +1384,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
       auto J_transpose = element.motion_subspace_in_world.transpose();
       ret.middleRows(body.velocity_num_start, nv_joint).noalias() =
           J_transpose * joint_wrench;
-      auto parent_net_wrench = net_wrenches.col(body.parent->body_index);
+      auto parent_net_wrench = net_wrenches.col(body.get_parent()->body_index);
       parent_net_wrench += joint_wrench;
     }
   }
@@ -2020,10 +2021,10 @@ int RigidBodyTree::AddFloatingJoint(
   int num_floating_joints_added = 0;
 
   for (auto i : link_indices) {
-    if (bodies[i]->parent == nullptr) {
+    if (bodies[i]->get_parent() == nullptr) {
       // The following code connects the parent-less link to the rigid body tree
       // using a floating joint.
-      bodies[i]->parent = weld_to_body;
+      bodies[i]->set_parent(weld_to_body);
 
       Eigen::Isometry3d transform_to_model = Eigen::Isometry3d::Identity();
       if (pose_map != nullptr &&

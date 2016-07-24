@@ -182,7 +182,8 @@ class SensorPublisherOdometry {
 
       // Updates the odometry information in the odometry message.
       auto transform = rigid_body_tree->relativeTransform(
-          cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->get_name()),
+          cache, rigid_body_tree->FindBodyIndex(
+              rigid_body->get_parent()->get_name()),
           rigid_body_tree->FindBodyIndex(rigid_body->get_name()));
       auto translation = transform.translation();
       auto quat = drake::math::rotmat2quat(transform.linear());
@@ -199,7 +200,8 @@ class SensorPublisherOdometry {
 
       // Saves the robot's linear and angular velocities in the world.
       auto twist = rigid_body_tree->relativeTwist(
-          cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->get_name()),
+          cache, rigid_body_tree->FindBodyIndex(
+              rigid_body->get_parent()->get_name()),
           rigid_body_tree->FindBodyIndex(rigid_body->get_name()),
           rigid_body_tree->FindBodyIndex(RigidBodyTree::kWorldLinkName));
 

@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2904][] Made `RigidBody::parent` private. Re-named it to be `RigidBody::parent_`. Added necessary accessors.
  - [#2903][] Made `RigidBody::robotnum` private. Re-named it to be `RigidBody::model_id_`.
  - [#2902][] Made `RigidBody::model_name_` private. Re-named `RigidBody::model_name()` to be `RigidBody::get_model_name()`. Added `RigidBody::set_model_name()`.
  - [#2900][] Made `RigidBody::name_` private. Re-named `RigidBody::name()` to be `RigidBody::get_name()`. Added `RigidBody::set_name()`.
@@ -88,3 +89,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2900]: https://github.com/RobotLocomotion/drake/issues/2900
 [#2902]: https://github.com/RobotLocomotion/drake/issues/2902
 [#2903]: https://github.com/RobotLocomotion/drake/issues/2903
+[#2904]: https://github.com/RobotLocomotion/drake/issues/2904
