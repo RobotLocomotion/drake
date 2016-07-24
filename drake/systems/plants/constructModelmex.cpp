@@ -105,7 +105,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
     pm = mxGetPropertySafe(pBodies, i, "parent");
     if (!pm || mxIsEmpty(pm)) {
-      b->parent = nullptr;
+      b->set_parent(nullptr);
     } else {
       int parent_ind = static_cast<int>(mxGetScalar(pm)) - 1;
       if (parent_ind >= static_cast<int>(model->bodies.size()))
