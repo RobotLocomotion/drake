@@ -231,8 +231,9 @@ Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
   for (const auto& body_ptr : bodies) {
     if (body_ptr->hasParent()) {
       const DrakeJoint& joint = body_ptr->getJoint();
-      q.middleRows(body_ptr->get_position_start_index(), joint.getNumPositions()) =
-          joint.zeroConfiguration();
+      q.middleRows(
+          body_ptr->get_position_start_index(), joint.getNumPositions()) =
+              joint.zeroConfiguration();
     }
   }
   return q;
@@ -244,8 +245,9 @@ Eigen::VectorXd RigidBodyTree::getRandomConfiguration(
   for (const auto& body_ptr : bodies) {
     if (body_ptr->hasParent()) {
       const DrakeJoint& joint = body_ptr->getJoint();
-      q.middleRows(body_ptr->get_position_start_index(), joint.getNumPositions()) =
-          joint.randomConfiguration(generator);
+      q.middleRows(
+          body_ptr->get_position_start_index(), joint.getNumPositions()) =
+              joint.randomConfiguration(generator);
     }
   }
   return q;
@@ -689,7 +691,8 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
           cache.getElement(*body.get_parent());
       const DrakeJoint& joint = body.getJoint();
       auto q_body =
-          q.middleRows(body.get_position_start_index(), joint.getNumPositions());
+          q.middleRows(
+              body.get_position_start_index(), joint.getNumPositions());
 
       // transform
       auto T_body_to_parent = joint.getTransformToParentBody().cast<Scalar>() *
@@ -719,7 +722,8 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
         } else {
           // twist
           auto v_body =
-              v.middleRows(body.get_velocity_start_index(), joint.getNumVelocities());
+              v.middleRows(
+                  body.get_velocity_start_index(), joint.getNumVelocities());
 
           TwistVector<Scalar> joint_twist =
               element.motion_subspace_in_world * v_body;
@@ -1158,7 +1162,8 @@ TwistMatrix<Scalar> RigidBodyTree::geometricJacobian(
 
     if (v_or_qdot_indices != nullptr) {
       int cols_block_start =
-          in_terms_of_qdot ? body.get_position_start_index() : body.get_velocity_start_index();
+          in_terms_of_qdot ? body.get_position_start_index() :
+              body.get_velocity_start_index();
       for (int j = 0; j < ncols_block; j++) {
         v_or_qdot_indices->push_back(cols_block_start + j);
       }
