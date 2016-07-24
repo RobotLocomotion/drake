@@ -549,7 +549,7 @@ bool parseLink(RigidBodyTree* tree, string robot_name, XMLElement* node,
   }
 
   tree->add_rigid_body(std::move(owned_body));
-  *index = body->body_index;
+  *index = body->get_body_index();
   return true;
 }
 

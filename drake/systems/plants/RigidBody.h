@@ -109,6 +109,19 @@ class DRAKERBM_EXPORT RigidBody {
     return parent_ == &other;
   }
 
+  /**
+   * Sets the "body index" of this `RigidBody`. The "body index" is the index of
+   * this `RigidBody` within the vector of `RigidBody` objects within the
+   * `RigidBodyTree`.
+   */
+  void set_body_index(int body_index);
+
+  /**
+   * Returns the "body index" of this `RigidBody`. This is the index within the
+   * vector of `RigidBody` objects within the `RigidBodyTree`.
+   */
+  int get_body_index() const;
+
   void addVisualElement(const DrakeShapes::VisualElement& elements);
 
   const DrakeShapes::VectorOfVisualElements& getVisualElements() const;
@@ -175,9 +188,6 @@ class DRAKERBM_EXPORT RigidBody {
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
-
-  /// The index of this rigid body in the rigid body tree.
-  int body_index;
 
   /// The starting index of this rigid body's joint's position value(s) within
   /// the parent tree's state vector.
@@ -247,4 +257,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   // The rigid body that's connected to this rigid body's joint.
   RigidBody* parent_;
+
+  // The index of this rigid body in the rigid body tree.
+  int body_index_;
 };
