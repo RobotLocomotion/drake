@@ -18,7 +18,7 @@ RigidBody::RigidBody()
     : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
       collision_filter_ignores(DrakeCollision::NONE_MASK),
       parent(nullptr) {
-  robotnum = 0;
+  model_id_ = 0;
   position_num_start = 0;
   velocity_num_start = 0;
   body_index = 0;
@@ -35,9 +35,9 @@ const std::string& RigidBody::get_model_name() const { return model_name_; }
 
 void RigidBody::set_model_name(const std::string& name) { model_name_ = name; }
 
-int RigidBody::get_model_id() const { return robotnum; }
+int RigidBody::get_model_id() const { return model_id_; }
 
-void RigidBody::set_model_id(int model_id) { robotnum = model_id; }
+void RigidBody::set_model_id(int model_id) { model_id_ = model_id; }
 
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
   this->joint = move(new_joint);
