@@ -19,8 +19,8 @@ RigidBody::RigidBody()
       collision_filter_ignores(DrakeCollision::NONE_MASK),
       parent_(nullptr) {
   model_id_ = 0;
-  position_num_start = 0;
-  velocity_num_start = 0;
+  position_start_index_ = 0;
+  velocity_start_index_ = 0;
   body_index_ = 0;
   mass = 0.0;
   com = Vector3d::Zero();
@@ -64,6 +64,22 @@ bool RigidBody::hasParent() const { return parent_ != nullptr; }
 void RigidBody::set_body_index(int body_index) { body_index_ = body_index; }
 
 int RigidBody::get_body_index() const { return body_index_; }
+
+void RigidBody::set_position_start_index(int position_start_index) {
+  position_start_index_ = position_start_index;
+}
+
+int RigidBody::get_position_start_index() const {
+  return position_start_index_;
+}
+
+void RigidBody::set_velocity_start_index(int velocity_start_index) {
+  velocity_start_index_ = velocity_start_index;
+}
+
+int RigidBody::get_velocity_start_index() const {
+  return velocity_start_index_;
+}
 
 void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element) {
   visual_elements.push_back(element);
