@@ -81,13 +81,13 @@ int RigidBody::get_velocity_start_index() const {
   return velocity_start_index_;
 }
 
-void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element) {
-  visual_elements.push_back(element);
+void RigidBody::AddVisualElement(const DrakeShapes::VisualElement& element) {
+  visual_elements_.push_back(element);
 }
 
-const DrakeShapes::VectorOfVisualElements& RigidBody::getVisualElements()
+const DrakeShapes::VectorOfVisualElements& RigidBody::GetVisualElements()
     const {
-  return visual_elements;
+  return visual_elements_;
 }
 
 void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
@@ -127,7 +127,7 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
 void RigidBody::ApplyTransformToJointFrame(
     const Eigen::Isometry3d& transform_body_to_joint) {
   I = transformSpatialInertia(transform_body_to_joint, I);
-  for (auto& v : visual_elements) {
+  for (auto& v : visual_elements_) {
     v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
   }
 }

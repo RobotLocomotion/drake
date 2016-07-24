@@ -465,7 +465,7 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
     }
   }
 
-  if (element.hasGeometry()) body->addVisualElement(element);
+  if (element.hasGeometry()) body->AddVisualElement(element);
 }
 
 void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,

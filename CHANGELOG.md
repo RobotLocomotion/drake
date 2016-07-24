@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2906][] Made `RigidBody::visual_elements` private. Re-named it to be `RigidBody::visual_elements_`. Renamed accessors based on style guide to be `RigidBody::AddVisualElement()` and `RigidBody::GetVisualElements()`.
  - [#2905][] Made `RigidBody::body_index` private. Re-named it to be `RigidBody::body_index_`. Added necessary accessors.
  - [#2904][] Made `RigidBody::parent` private. Re-named it to be `RigidBody::parent_`. Added necessary accessors.
  - [#2903][] Made `RigidBody::robotnum` private. Re-named it to be `RigidBody::model_id_`.
@@ -92,3 +93,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2903]: https://github.com/RobotLocomotion/drake/issues/2903
 [#2904]: https://github.com/RobotLocomotion/drake/issues/2904
 [#2905]: https://github.com/RobotLocomotion/drake/issues/2905
+[#2906]: https://github.com/RobotLocomotion/drake/issues/2906

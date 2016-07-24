@@ -99,7 +99,7 @@ void AtlasPlant::SetUpTerrain() {
   RigidBody& world = tree->world();
   Vector4d color;
   color << 0.9297, 0.7930, 0.6758, 1;
-  world.addVisualElement(
+  world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
       RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
