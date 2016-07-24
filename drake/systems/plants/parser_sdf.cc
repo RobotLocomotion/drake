@@ -541,7 +541,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     child->ApplyTransformToJointFrame(transform_to_model.inverse() *
                                       transform_child_to_model);
 
-    for (const auto& c : child->collision_element_ids) {
+    for (const auto& c : child->get_collision_element_ids()) {
       if (!model->transformCollisionFrame(
               c, transform_to_model.inverse() * transform_child_to_model)) {
         std::stringstream ss;

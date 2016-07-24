@@ -90,6 +90,30 @@ const DrakeShapes::VectorOfVisualElements& RigidBody::GetVisualElements()
   return visual_elements_;
 }
 
+void RigidBody::AddCollisionElement(DrakeCollision::ElementId id) {
+  collision_element_ids_.push_back(id);
+}
+
+void RigidBody::AddCollisionElementToGroup(const std::string& group_name,
+    DrakeCollision::ElementId id) {
+  collision_element_groups_[group_name].push_back(id);
+}
+
+const std::vector<DrakeCollision::ElementId>&
+    RigidBody::get_collision_element_ids() const {
+  return collision_element_ids_;
+}
+
+const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
+    RigidBody::get_collision_element_groups() const {
+  return collision_element_groups_;
+}
+
+std::map<std::string, std::vector<DrakeCollision::ElementId>>&
+    RigidBody::get_mutable_collision_element_groups() {
+  return collision_element_groups_;
+}
+
 void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
                                    const DrakeCollision::bitmask& ignores) {
   setCollisionFilterGroup(group);
@@ -104,8 +128,8 @@ bool RigidBody::adjacentTo(const RigidBody& other) const {
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
     const string& group_name, vector<DrakeCollision::ElementId>& ids) const {
-  auto group_ids_iter = collision_element_groups.find(group_name);
-  if (group_ids_iter != collision_element_groups.end()) {
+  auto group_ids_iter = collision_element_groups_.find(group_name);
+  if (group_ids_iter != collision_element_groups_.end()) {
     ids.reserve(ids.size() + distance(group_ids_iter->second.begin(),
                                       group_ids_iter->second.end()));
     ids.insert(ids.end(), group_ids_iter->second.begin(),
@@ -118,9 +142,9 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
     vector<DrakeCollision::ElementId>& ids) const {
-  ids.reserve(ids.size() + collision_element_ids.size());
-  ids.insert(ids.end(), collision_element_ids.begin(),
-             collision_element_ids.end());
+  ids.reserve(ids.size() + collision_element_ids_.size());
+  ids.insert(ids.end(), collision_element_ids_.begin(),
+             collision_element_ids_.end());
   return true;
 }
 
@@ -174,9 +198,10 @@ ostream& operator<<(ostream& out, const RigidBody& b) {
 
   std::stringstream collision_element_str;
   collision_element_str << "[";
-  for (size_t ii = 0; ii < b.collision_element_ids.size(); ii++) {
-    collision_element_str << b.collision_element_ids[ii];
-    if (ii < b.collision_element_ids.size() - 1) collision_element_str << ", ";
+  for (size_t ii = 0; ii < b.get_collision_element_ids().size(); ii++) {
+    collision_element_str << b.get_collision_element_ids()[ii];
+    if (ii < b.get_collision_element_ids().size() - 1)
+      collision_element_str << ", ";
   }
   collision_element_str << "]";
 

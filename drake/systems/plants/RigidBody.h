@@ -150,6 +150,35 @@ class DRAKERBM_EXPORT RigidBody {
 
   const DrakeShapes::VectorOfVisualElements& GetVisualElements() const;
 
+  /**
+   * Adds a collision element ID to this rigid body. This indicates that the
+   * collision element with this ID may collide against this rigid body and thus
+   * must be checked when computing collision reaction forces.
+   */
+  void AddCollisionElement(DrakeCollision::ElementId id);
+
+  /**
+   * Adds a collision element ID to a particular collision group. Collision
+   * elements within a single collision group may collide with each other.
+   * Those in different collision groups cannot collide with each other.
+   */
+  void AddCollisionElementToGroup(const std::string& group_name,
+      DrakeCollision::ElementId id);
+
+  /**
+   * Returns a reference to a vector of collision element IDs belonging to the
+   * collision elements that this rigid body can be in collision with.
+   */
+  const std::vector<DrakeCollision::ElementId>& get_collision_element_ids()
+      const;
+
+  const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
+      get_collision_element_groups() const;
+
+  std::map<std::string, std::vector<DrakeCollision::ElementId>>&
+    get_mutable_collision_element_groups();
+
+
   void setCollisionFilter(const DrakeCollision::bitmask& group,
                           const DrakeCollision::bitmask& ignores);
 
@@ -212,10 +241,6 @@ class DRAKERBM_EXPORT RigidBody {
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
-
-  std::vector<DrakeCollision::ElementId> collision_element_ids;
-  std::map<std::string, std::vector<DrakeCollision::ElementId> >
-      collision_element_groups;
 
   Eigen::Matrix3Xd contact_pts;
 
@@ -284,4 +309,14 @@ class DRAKERBM_EXPORT RigidBody {
 
   // A list of visual elements for this RigidBody.
   DrakeShapes::VectorOfVisualElements visual_elements_;
+
+  // A list of collision element IDs of collision elements that may collide with
+  // this rigid body.
+  std::vector<DrakeCollision::ElementId> collision_element_ids_;
+
+  // A map of groups of collision element IDs. Each group contains collision
+  // elements that may collide with each other. Collision groups in different
+  // groups do not collide with each other.
+  std::map<std::string, std::vector<DrakeCollision::ElementId>>
+      collision_element_groups_;
 };
