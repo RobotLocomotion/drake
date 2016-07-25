@@ -68,31 +68,16 @@ void loadBodyMotionParams(QPControllerParams& params, const YAML::Node& config,
        ++body_it) {
     try {
       params.body_motion[body_it - robot.bodies.begin()] =
-          get(config, (*body_it)->name_).as<BodyMotionParams>();
+          get(config, (*body_it)->get_name()).as<BodyMotionParams>();
     } catch (...) {
       std::cerr << "error converting node: "
-                << get(config, (*body_it)->name_) << " to BodyMotionParams"
+                << get(config, (*body_it)->get_name()) << " to BodyMotionParams"
                 << std::endl;
       std::cerr << "config: " << config << std::endl;
-      std::cerr << "body_name: " << (*body_it)->name_ << std::endl;
+      std::cerr << "body_name: " << (*body_it)->get_name() << std::endl;
       throw;
     }
   }
-
-  // for (auto config_it = config.begin(); config_it != config.end();
-  // ++config_it) {
-  //   std::regex body_regex =
-  //   globToRegex((*config_it)["name"].as<std::string>());
-  //   for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
-  //   ++body_it) {
-  //     if (std::regex_match((*body_it)->name_, body_regex)) {
-  //       params.body_motion[body_it - robot.bodies.begin()] = get(*config_it,
-  //       "params").as<BodyMotionParams>();
-  //       // loadSingleBodyMotionParams(params.body_motion[body_it -
-  //       robot.bodies.begin()], (*config_it)["params"]);
-  //     }
-  //   }
-  // }
 }
 
 void loadSingleJointParams(QPControllerParams& params,
@@ -123,15 +108,12 @@ void loadSingleJointParams(QPControllerParams& params,
   if (get(soft_limits_config, "disable_when_body_in_support")
           .as<std::string>()
           .size() > 0) {
-    // std::regex disable_body_regex = globToRegex(get(soft_limits_config,
-    // "disable_when_body_in_support").as<std::string>());
     std::string disable_body_name =
         get(soft_limits_config, "disable_when_body_in_support")
             .as<std::string>();
     for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
          ++body_it) {
-      if (disable_body_name == (*body_it)->name_) {
-        // if (std::regex_match((*body_it)->name_, disable_body_regex)) {
+      if (disable_body_name == (*body_it)->get_name()) {
         params.joint_soft_limits.disable_when_body_in_support(position_index) =
             body_it - robot.bodies.begin() + 1;
         // break;

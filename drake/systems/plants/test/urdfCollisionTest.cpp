@@ -49,8 +49,8 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 3; ++i) {
       cout << xB(i, j) << " ";
     }
-    cout << model->bodies[bodyA_idx.at(j)]->name_ << " ";
-    cout << model->bodies[bodyB_idx.at(j)]->name_ << endl;
+    cout << model->bodies[bodyA_idx.at(j)]->get_name() << " ";
+    cout << model->bodies[bodyB_idx.at(j)]->get_name() << endl;
   }
 
   delete model;
