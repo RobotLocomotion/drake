@@ -39,11 +39,13 @@ MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
   int col = 0;
   for (auto it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
     // angular part
-    J.template block<SPACE_DIMENSION, 1>(0, *it) = Jg.block<3, 1>(0, col);
+    J.template block<drake::kSpaceDimension, 1>(0, *it) =
+        Jg.block<3, 1>(0, col);
     // linear part
     // Assuming qd = 1, the column is the linear velocity.
-    J.template block<SPACE_DIMENSION, 1>(3, *it) = Jg.block<3, 1>(3, col);
-    J.template block<SPACE_DIMENSION, 1>(3, *it).noalias() +=
+    J.template block<drake::kSpaceDimension, 1>(3, *it) =
+        Jg.block<3, 1>(3, col);
+    J.template block<drake::kSpaceDimension, 1>(3, *it).noalias() +=
         Jg.block<3, 1>(0, col).cross(points);
     col++;
   }

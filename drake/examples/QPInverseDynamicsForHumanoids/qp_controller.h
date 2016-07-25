@@ -32,7 +32,7 @@ struct QPInput {
 
 void InitQPInput(const RigidBodyTree& r, QPInput& input);
 inline bool is_qp_input_sane(const QPInput& input) {
-  return (input.coord_names.size() == input.vd_d.size()) &&
+  return ((int)input.coord_names.size() == input.vd_d.size()) &&
          (input.coord_names.size() != 0);
 }
 
@@ -63,7 +63,7 @@ void PrintQPOutput(const QPOutput& output);
 double ComputeQPCost(const HumanoidStatus& rs, const QPInput& input,
                      const QPOutput& output);
 inline bool is_qp_output_sane(const QPOutput& output) {
-  bool ret = output.coord_names.size() == output.vd.size();
+  bool ret = (int)output.coord_names.size() == output.vd.size();
   ret &= output.vd.size() == output.joint_torque.size() + 6;
   return ret;
 }
