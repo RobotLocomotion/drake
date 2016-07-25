@@ -192,6 +192,15 @@ bool RigidBody::CollisionElement::CollidesWith(
   return collides;
 }
 
+const Eigen::Matrix3Xd& RigidBody::get_contact_points() const {
+  return contact_points_;
+}
+
+void RigidBody::set_contact_points(const Eigen::Matrix3Xd& contact_points) {
+  contact_points_ = contact_points;
+}
+
+
 ostream& operator<<(ostream& out, const RigidBody& b) {
   std::string parent_joint_name =
       b.hasParent() ? b.getJoint().getName() : "no parent joint";
