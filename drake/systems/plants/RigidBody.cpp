@@ -22,7 +22,7 @@ RigidBody::RigidBody()
   position_start_index_ = 0;
   velocity_start_index_ = 0;
   body_index_ = 0;
-  mass = 0.0;
+  mass_ = 0.0;
   com = Vector3d::Zero();
   I << drake::SquareTwistMatrix<double>::Zero();
 }
@@ -205,6 +205,13 @@ void RigidBody::set_contact_points(const Eigen::Matrix3Xd& contact_points) {
   contact_points_ = contact_points;
 }
 
+void RigidBody::set_mass(int mass) {
+  mass_ = mass;
+}
+
+int RigidBody::get_mass() const {
+  return mass_;
+}
 
 ostream& operator<<(ostream& out, const RigidBody& b) {
   std::string parent_joint_name =

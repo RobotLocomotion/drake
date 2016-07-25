@@ -242,6 +242,16 @@ class DRAKERBM_EXPORT RigidBody {
   void set_contact_points(const Eigen::Matrix3Xd& contact_points);
 
   /**
+   * Sets the mass of this rigid body.
+   */
+  void set_mass(int mass);
+
+  /**
+   * Returns the mass of this rigid body.
+   */
+  int get_mass() const;
+
+  /**
    * Transforms all of the visual, collision, and inertial elements associated
    * with this body to the proper joint frame.  This is necessary, for instance,
    * to support SDF loading where the child frame can be specified independently
@@ -258,9 +268,6 @@ class DRAKERBM_EXPORT RigidBody {
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
-
-  /// The mass of this rigid body.
-  double mass;
 
   /// The center of mass of this rigid body.
   Eigen::Vector3d com;
@@ -337,4 +344,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   // The contact points this rigid body has with its environment.
   Eigen::Matrix3Xd contact_points_;
+
+  // The mass of this rigid body.
+  double mass_;
 };

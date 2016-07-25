@@ -87,7 +87,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     b->set_model_id((int)mxGetScalar(pm) - 1);
 
     pm = mxGetPropertySafe(pBodies, i, "mass");
-    b->mass = mxGetScalar(pm);
+    b->set_mass(mxGetScalar(pm));
 
     pm = mxGetPropertySafe(pBodies, i, "com");
     if (!mxIsEmpty(pm))

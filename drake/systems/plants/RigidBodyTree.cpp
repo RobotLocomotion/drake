@@ -296,7 +296,7 @@ void RigidBodyTree::drawKinematicTree(
   for (const auto& body : bodies) {
     dotfile << "  " << body->get_name() << " [label=\"" << body->get_name()
             << endl;
-    dotfile << "mass=" << body->mass << ", com=" << body->com.transpose()
+    dotfile << "mass=" << body->get_mass() << ", com=" << body->com.transpose()
             << endl;
     dotfile << "inertia=" << endl << body->I << endl;
     dotfile << "\"];" << endl;
@@ -931,7 +931,7 @@ double RigidBodyTree::getMass(const std::set<int>& robotnum) const {
   for (size_t i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (isBodyPartOfRobot(body, robotnum)) {
-      total_mass += body.mass;
+      total_mass += body.get_mass();
     }
   }
   return total_mass;
@@ -949,11 +949,12 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
   for (int i = 0; i < static_cast<int>(bodies.size()); i++) {
     RigidBody& body = *bodies[i];
     if (isBodyPartOfRobot(body, robotnum)) {
-      if (body.mass > 0) {
+      if (body.get_mass() > 0) {
         com.noalias() +=
-            body.mass * transformPoints(cache, body.com.cast<Scalar>(), i, 0);
+            body.get_mass() *
+                transformPoints(cache, body.com.cast<Scalar>(), i, 0);
       }
-      m += body.mass;
+      m += body.get_mass();
     }
   }
   if (m > 0.0) com /= m;

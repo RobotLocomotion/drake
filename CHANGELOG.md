@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2911][] Made `RigidBody::mass` private. Added accessors for it.
  - [#2910][] Made `RigidBody::contact_pts` private. Added accessors for them.
  - [#2909][] Made `RigidBody::collision_element_ids` and `RigidBody::collision_element_groups` private. Added accessors for them.
  - [#2908][] Made `RigidBody::visual_elements` private. Re-named it to be `RigidBody::visual_elements_`. Renamed accessors based on style guide to be `RigidBody::AddVisualElement()` and `RigidBody::GetVisualElements()`.
