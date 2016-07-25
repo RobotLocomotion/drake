@@ -8,11 +8,9 @@
 class RigidBody;
 
 /**
- * Defines certain properties of an actuator that operates on a joint.
- *
- * For more information, see:
- *  - http://wiki.ros.org/urdf/XML/Transmission#A.3Ctransmission.3E_Elements
- *  - http://sdformat.org/spec?ver=1.6&elem=joint
+ * Defines a physical actuator (i.e., an electric motor and step-down
+ * transmission) that operates on a joint. This class assumes the actuator
+ * has a single DOF.
  */
 class DRAKERBM_EXPORT RigidBodyActuator {
  public:
@@ -27,10 +25,10 @@ class DRAKERBM_EXPORT RigidBodyActuator {
    * @param[in] reduction_in The gear reduction ratio of the actuator.
    *
    * @param[in] effort_limit_min_in The actuator's minimum effort limit. This
-   * assumes the actuator is effort (i.e., force/torque) controlled.
+   * has units of Nm for revolute joints and N for prismatic joints.
    *
    * @param[in] effort_limit_max_in The actuator's maximum effort limit. This
-   * assumes the actuator is effort (i.e., force/torque) controlled.
+   * has units of Nm for revolute joints and N for prismatic joints.
    */
   RigidBodyActuator(
       const std::string& name_in, const RigidBody* body_in,
