@@ -35,6 +35,8 @@ const std::string& RigidBody::get_model_name() const { return model_name_; }
 
 void RigidBody::set_model_name(const std::string& name) { model_name_ = name; }
 
+void RigidBody::set_model_name(const std::string& name) { model_name_ = name; }
+
 int RigidBody::get_model_id() const { return model_id_; }
 
 void RigidBody::set_model_id(int model_id) { model_id_ = model_id; }
