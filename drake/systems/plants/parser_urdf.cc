@@ -123,7 +123,7 @@ void parseInertial(RigidBody* body, XMLElement* node) {
     parseScalarAttribute(inertia, "izz", I(2, 2));
   }
 
-  body->I = transformSpatialInertia(T, I);
+  body->set_inertia_matrix(transformSpatialInertia(T, I));
 }
 
 // Adds a material to the supplied material map. If the material is already

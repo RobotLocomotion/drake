@@ -97,8 +97,11 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     }
 
     pm = mxGetPropertySafe(pBodies, i, "I");
-    if (!mxIsEmpty(pm))
-      memcpy(b->I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
+    if (!mxIsEmpty(pm)) {
+      drake::SquareTwistMatrix<double> I;
+      memcpy(I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
+      b->set_inertia_matrix(I);
+    }
 
     pm = mxGetPropertySafe(pBodies, i, "position_num");
     b->set_position_start_index((int)mxGetScalar(pm) - 1);  // zero-indexed

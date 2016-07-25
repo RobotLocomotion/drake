@@ -24,7 +24,7 @@ RigidBody::RigidBody()
   body_index_ = 0;
   mass_ = 0.0;
   center_of_mass_ = Vector3d::Zero();
-  I << drake::SquareTwistMatrix<double>::Zero();
+  I_ << drake::SquareTwistMatrix<double>::Zero();
 }
 
 const std::string& RigidBody::get_name() const { return name_; }
@@ -155,7 +155,7 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
 
 void RigidBody::ApplyTransformToJointFrame(
     const Eigen::Isometry3d& transform_body_to_joint) {
-  I = transformSpatialInertia(transform_body_to_joint, I);
+  I_ = transformSpatialInertia(transform_body_to_joint, I_);
   for (auto& v : visual_elements_) {
     v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
   }
@@ -219,6 +219,16 @@ void RigidBody::set_center_of_mass(const Eigen::Vector3d& center_of_mass) {
 
 const Eigen::Vector3d& RigidBody::get_center_of_mass() const {
   return center_of_mass_;
+}
+
+void RigidBody::set_inertia_matrix(const drake::SquareTwistMatrix<double>&
+    inertia_matrix) {
+  I_ = inertia_matrix;
+}
+
+const drake::SquareTwistMatrix<double>& RigidBody::get_inertia_matrix()
+    const {
+  return I_;
 }
 
 ostream& operator<<(ostream& out, const RigidBody& b) {
