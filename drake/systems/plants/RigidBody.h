@@ -172,6 +172,12 @@ class DRAKERBM_EXPORT RigidBody {
   const std::vector<DrakeCollision::ElementId>& get_collision_element_ids()
       const;
 
+  /**
+   * Returns a reference to a vector of collision element IDs belonging to the
+   * collision elements that this rigid body can be in collision with.
+   */
+  std::vector<DrakeCollision::ElementId>& get_mutable_collision_element_ids();
+
   const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
       get_collision_element_groups() const;
 

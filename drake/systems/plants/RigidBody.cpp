@@ -104,6 +104,11 @@ const std::vector<DrakeCollision::ElementId>&
   return collision_element_ids_;
 }
 
+std::vector<DrakeCollision::ElementId>&
+    RigidBody::get_mutable_collision_element_ids() {
+  return collision_element_ids_;
+}
+
 const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
     RigidBody::get_collision_element_groups() const {
   return collision_element_groups_;

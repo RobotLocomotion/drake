@@ -443,7 +443,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       for (const auto& group : body_ptr->get_collision_element_groups()) {
         const std::string& group_name = group.first;
         if (test(group_name)) {
-          auto& ids = body_ptr->collision_element_ids_;
+          auto& ids = body_ptr->get_mutable_collision_element_ids();
           for (const auto& id : group.second) {
             ids.erase(std::find(ids.begin(), ids.end(), id));
             collision_model->removeElement(id);
