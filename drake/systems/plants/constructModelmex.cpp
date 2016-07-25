@@ -361,7 +361,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       // cout << "constructModelmex: Set contact_pts of body" << endl;
       // END_DEBUG
       Map<Matrix3Xd> pts(mxGetPrSafe(pPts), 3, n_pts);
-      model->bodies[body_idx]->contact_pts = pts;
+      model->bodies[body_idx]->set_contact_points(pts);
       // DEBUG
       // mexPrintf("constructModelmex: created %d contact points for body %d\n",
       // n_pts, body_idx);
