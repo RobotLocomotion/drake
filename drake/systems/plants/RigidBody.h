@@ -244,12 +244,12 @@ class DRAKERBM_EXPORT RigidBody {
   /**
    * Sets the mass of this rigid body.
    */
-  void set_mass(int mass);
+  void set_mass(double mass);
 
   /**
    * Returns the mass of this rigid body.
    */
-  int get_mass() const;
+  double get_mass() const;
 
   /**
    * Transforms all of the visual, collision, and inertial elements associated
