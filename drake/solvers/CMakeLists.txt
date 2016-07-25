@@ -99,6 +99,8 @@ if(gurobi_FOUND)
 endif()
 
 if(snopt_c_FOUND AND MATLAB_FOUND)
+  # TODO(#2852) We can't yet handle shadowing as a compiler error.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS_NO_ERROR_SHADOW}")
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
 endif()
