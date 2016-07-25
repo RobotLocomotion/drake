@@ -90,7 +90,7 @@ void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
   Eigen::Vector4d color;
   color << 0.9297, 0.7930, 0.6758,
       1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
-  world.addVisualElement(
+  world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   rigid_body_tree->addCollisionElement(
       RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
@@ -127,13 +127,13 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
       const auto& rigid_body = tree->actuators[actuator_idx].body;
 
       // Sets the steering actuator's Kp gain.
-      Kp(actuator_idx, rigid_body->position_num_start) = kpSteering;
+      Kp(actuator_idx, rigid_body->get_position_start_index()) = kpSteering;
 
       // Sets the steering actuator's Kd gain.
-      Kd(actuator_idx, rigid_body->velocity_num_start) = kdSteering;
+      Kd(actuator_idx, rigid_body->get_velocity_start_index()) = kdSteering;
 
       // Saves the mapping between the driving command and the steering command.
-      map_driving_cmd_to_x_d(rigid_body->position_num_start,
+      map_driving_cmd_to_x_d(rigid_body->get_position_start_index(),
                              DrivingCommandIndices::kSteeringAngle) =
           1;  // steering command
 
@@ -143,16 +143,16 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
       const auto& rigid_body = tree->actuators[actuator_idx].body;
 
       // Sets the throttle Kd gain.
-      Kd(actuator_idx, rigid_body->velocity_num_start) = kThrottle;
+      Kd(actuator_idx, rigid_body->get_velocity_start_index()) = kThrottle;
 
       // Saves the mapping between the driving command and the throttle command.
       map_driving_cmd_to_x_d(
-          tree->number_of_positions() + rigid_body->velocity_num_start,
+          tree->number_of_positions() + rigid_body->get_velocity_start_index(),
           DrivingCommandIndices::kThrottle) = 20;
 
       // Saves the mapping between the driving command and the braking command.
       map_driving_cmd_to_x_d(
-          tree->number_of_positions() + rigid_body->velocity_num_start,
+          tree->number_of_positions() + rigid_body->get_velocity_start_index(),
           DrivingCommandIndices::kBrake) = -20;
     }
   }

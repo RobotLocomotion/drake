@@ -61,8 +61,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
           matlab_model->findJoint(cpp_model->bodies[i]->getJoint().getName());
       if (b == nullptr) continue;
       for (int j = 0; j < b->getJoint().getNumPositions(); j++) {
-        P(cpp_model->bodies[i]->position_num_start + j,
-          b->position_num_start + j) = 1.0;
+        P(cpp_model->bodies[i]->get_position_start_index() + j,
+          b->get_position_start_index() + j) = 1.0;
       }
     }
   }

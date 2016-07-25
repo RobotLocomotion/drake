@@ -440,10 +440,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void removeCollisionGroupsIf(UnaryPredicate test) {
     for (const auto& body_ptr : bodies) {
       std::vector<std::string> names_of_groups_to_delete;
-      for (const auto& group : body_ptr->collision_element_groups) {
+      for (const auto& group : body_ptr->get_collision_element_groups()) {
         const std::string& group_name = group.first;
         if (test(group_name)) {
-          auto& ids = body_ptr->collision_element_ids;
+          auto& ids = body_ptr->get_mutable_collision_element_ids();
           for (const auto& id : group.second) {
             ids.erase(std::find(ids.begin(), ids.end(), id));
             collision_model->removeElement(id);
@@ -452,7 +452,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
         }
       }
       for (const auto& group_name : names_of_groups_to_delete) {
-        body_ptr->collision_element_groups.erase(group_name);
+        body_ptr->get_mutable_collision_element_groups().erase(group_name);
       }
     }
   }
@@ -466,7 +466,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
 
   void getTerrainContactPoints(const RigidBody& body,
-                               Eigen::Matrix3Xd& terrain_points) const;
+                               Eigen::Matrix3Xd* terrain_points) const;
 
   bool collisionRaycast(const KinematicsCache<double>& cache,
                         const Eigen::Matrix3Xd& origins,
@@ -707,7 +707,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
       int ncols_joint = in_terms_of_qdot ? body.getJoint().getNumPositions()
                                          : body.getJoint().getNumVelocities();
       int col_start =
-          in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
+          in_terms_of_qdot ? body.get_position_start_index() :
+              body.get_velocity_start_index();
       full.middleCols(col_start, ncols_joint) =
           compact.middleCols(compact_col_start, ncols_joint);
       compact_col_start += ncols_joint;

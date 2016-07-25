@@ -54,7 +54,7 @@ class BotVisualizer {
     std::vector<float> position = {0, 0, 0}, quaternion = {0, 0, 0, 1};
     for (const auto& body : tree->bodies) {
       draw_msg.link_name.push_back(body->get_name());
-      draw_msg.robot_num.push_back(body->robotnum);
+      draw_msg.robot_num.push_back(body->get_model_id());
       draw_msg.position.push_back(position);
       draw_msg.quaternion.push_back(quaternion);
     }
@@ -66,9 +66,9 @@ class BotVisualizer {
     for (const auto& body : tree->bodies) {
       drake::lcmt_viewer_link_data link;
       link.name = body->get_name();
-      link.robot_num = body->robotnum;
-      link.num_geom = body->visual_elements.size();
-      for (const auto& v : body->visual_elements) {
+      link.robot_num = body->get_model_id();
+      link.num_geom = body->GetVisualElements().size();
+      for (const auto& v : body->GetVisualElements()) {
         drake::lcmt_viewer_geometry_data gdata;
 
         const DrakeShapes::Geometry& geometry = v.getGeometry();

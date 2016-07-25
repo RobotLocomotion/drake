@@ -28,8 +28,8 @@ std::vector<int> getJointPositionVectorIndices(const RigidBodyTree& model,
   std::vector<int> ret(static_cast<size_t>(num_positions));
 
   // fill with sequentially increasing values, starting at
-  // joint_parent_body->position_num_start:
-  iota(ret.begin(), ret.end(), joint_parent_body->position_num_start);
+  // joint_parent_body->get_position_start_index():
+  iota(ret.begin(), ret.end(), joint_parent_body->get_position_start_index());
   return ret;
 }
 

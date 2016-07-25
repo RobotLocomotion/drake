@@ -78,6 +78,24 @@ class DRAKERBM_EXPORT RigidBody {
    */
   const DrakeJoint& getJoint() const;
 
+  /**
+   * Sets the parent rigid body. This is the rigid body that is connected to
+   * this rigid body's joint.
+   *
+   * @param[in] parent A pointer to this rigid body's parent rigid body.
+   */
+  void set_parent(RigidBody* parent);
+
+  /**
+   * Returns a const pointer to this rigid body's parent rigid body.
+   */
+  const RigidBody* get_parent() const;
+
+  /**
+   * Returns a mutable pointer to this rigid body's parent rigid body.
+   */
+  RigidBody* get_mutable_parent();
+
   bool hasParent() const;
 
   /**
@@ -87,11 +105,85 @@ class DRAKERBM_EXPORT RigidBody {
    * @return true if the supplied rigid body parameter other is the parent of
    * this rigid body.
    */
-  bool has_as_parent(const RigidBody& other) const { return parent == &other; }
+  bool has_as_parent(const RigidBody& other) const {
+    return parent_ == &other;
+  }
 
-  void addVisualElement(const DrakeShapes::VisualElement& elements);
+  /**
+   * Sets the "body index" of this `RigidBody`. The "body index" is the index of
+   * this `RigidBody` within the vector of `RigidBody` objects within the
+   * `RigidBodyTree`.
+   */
+  void set_body_index(int body_index);
 
-  const DrakeShapes::VectorOfVisualElements& getVisualElements() const;
+  /**
+   * Returns the "body index" of this `RigidBody`. This is the index within the
+   * vector of `RigidBody` objects within the `RigidBodyTree`.
+   */
+  int get_body_index() const;
+
+  /**
+   * Sets the start index of this rigid body's position state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  void set_position_start_index(int position_start_index);
+
+  /**
+   * Returns the start index of this rigid body's position state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  int get_position_start_index() const;
+
+  /**
+   * Sets the start index of this rigid body's velocity state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  void set_velocity_start_index(int velocity_start_index);
+
+  /**
+   * Returns the start index of this rigid body's velocity state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  int get_velocity_start_index() const;
+
+  void AddVisualElement(const DrakeShapes::VisualElement& elements);
+
+  const DrakeShapes::VectorOfVisualElements& GetVisualElements() const;
+
+  /**
+   * Adds a collision element ID to this rigid body. This indicates that the
+   * collision element with this ID may collide against this rigid body and thus
+   * must be checked when computing collision reaction forces.
+   */
+  void AddCollisionElement(DrakeCollision::ElementId id);
+
+  /**
+   * Adds a collision element ID to a particular collision group. Collision
+   * elements within a single collision group may collide with each other.
+   * Those in different collision groups cannot collide with each other.
+   */
+  void AddCollisionElementToGroup(const std::string& group_name,
+      DrakeCollision::ElementId id);
+
+  /**
+   * Returns a reference to a vector of collision element IDs belonging to the
+   * collision elements that this rigid body can be in collision with.
+   */
+  const std::vector<DrakeCollision::ElementId>& get_collision_element_ids()
+      const;
+
+  /**
+   * Returns a reference to a vector of collision element IDs belonging to the
+   * collision elements that this rigid body can be in collision with.
+   */
+  std::vector<DrakeCollision::ElementId>& get_mutable_collision_element_ids();
+
+  const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
+      get_collision_element_groups() const;
+
+  std::map<std::string, std::vector<DrakeCollision::ElementId>>&
+    get_mutable_collision_element_groups();
+
 
   void setCollisionFilter(const DrakeCollision::bitmask& group,
                           const DrakeCollision::bitmask& ignores);
@@ -139,6 +231,39 @@ class DRAKERBM_EXPORT RigidBody {
       std::vector<DrakeCollision::ElementId>& ids) const;
 
   /**
+   * Returns a matrix of contact points that this rigid body has with its
+   * environment.
+   */
+  const Eigen::Matrix3Xd& get_contact_points() const;
+
+  /**
+   * Saves the contact points that this rigid body has with its environment.
+   */
+  void set_contact_points(const Eigen::Matrix3Xd& contact_points);
+
+  /**
+   * Sets the mass of this rigid body.
+   */
+  void set_mass(double mass);
+
+  /**
+   * Returns the mass of this rigid body.
+   */
+  double get_mass() const;
+
+  /**
+   * Sets the center of mass of this rigid body. The center of mass is expressed
+   * in this body's frame.
+   */
+  void set_center_of_mass(const Eigen::Vector3d& center_of_mass);
+
+  /**
+   * Gets the center of mass of this rigid body. The center of mass is expressed
+   * in this body's frame.
+   */
+  const Eigen::Vector3d& get_center_of_mass() const;
+
+  /**
    * Transforms all of the visual, collision, and inertial elements associated
    * with this body to the proper joint frame.  This is necessary, for instance,
    * to support SDF loading where the child frame can be specified independently
@@ -152,41 +277,9 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:
-  /// A unique ID for each model. It uses 0-index, starts from 0.
-  int robotnum;
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
-
-  // TODO(amcastro-tri): Make it private and change to parent_.
-  /// The rigid body that's connected to this rigid body's joint.
-  RigidBody* parent;
-
-  /// The index of this rigid body in the rigid body tree.
-  int body_index;
-
-  /// The starting index of this rigid body's joint's position value(s) within
-  /// the parent tree's state vector.
-  int position_num_start;
-
-  /// The starting index of this rigid body's joint's velocity value(s) within
-  /// the parent tree's state vector.
-  int velocity_num_start;
-
-  /// A list of visual elements for this RigidBody
-  DrakeShapes::VectorOfVisualElements visual_elements;
-
-  std::vector<DrakeCollision::ElementId> collision_element_ids;
-  std::map<std::string, std::vector<DrakeCollision::ElementId> >
-      collision_element_groups;
-
-  Eigen::Matrix3Xd contact_pts;
-
-  /// The mass of this rigid body.
-  double mass;
-
-  /// The center of mass of this rigid body.
-  Eigen::Vector3d com;
 
   /// The spatial rigid body inertia of this rigid body.
   drake::SquareTwistMatrix<double> I;
@@ -227,4 +320,43 @@ class DRAKERBM_EXPORT RigidBody {
 
   // The name of the model to which this rigid body belongs.
   std::string model_name_;
+
+  // A unique ID for each model. It uses 0-index, starts from 0.
+  int model_id_;
+
+  // The rigid body that's connected to this rigid body's joint.
+  RigidBody* parent_;
+
+  // The index of this rigid body in the rigid body tree.
+  int body_index_;
+
+  // The starting index of this rigid body's joint's position value(s) within
+  // the parent tree's state vector.
+  int position_start_index_;
+
+  // The starting index of this rigid body's joint's velocity value(s) within
+  // the parent tree's state vector.
+  int velocity_start_index_;
+
+  // A list of visual elements for this RigidBody.
+  DrakeShapes::VectorOfVisualElements visual_elements_;
+
+  // A list of collision element IDs of collision elements that may collide with
+  // this rigid body.
+  std::vector<DrakeCollision::ElementId> collision_element_ids_;
+
+  // A map of groups of collision element IDs. Each group contains collision
+  // elements that may collide with each other. Collision groups in different
+  // groups do not collide with each other.
+  std::map<std::string, std::vector<DrakeCollision::ElementId>>
+      collision_element_groups_;
+
+  // The contact points this rigid body has with its environment.
+  Eigen::Matrix3Xd contact_points_;
+
+  // The mass of this rigid body.
+  double mass_;
+
+  // The center of mass of this rigid body.
+  Eigen::Vector3d center_of_mass_;
 };

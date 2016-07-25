@@ -97,12 +97,18 @@ void parseInertial(RigidBody* body, XMLElement* node) {
   if (origin) originAttributesToTransform(origin, T);
 
   XMLElement* mass = node->FirstChildElement("mass");
-  if (mass) parseScalarAttribute(mass, "value", body->mass);
+  if (mass) {
+    double body_mass = 0;
+    parseScalarAttribute(mass, "value", body_mass);
+    body->set_mass(body_mass);
+  }
 
-  body->com << T(0, 3), T(1, 3), T(2, 3);
+  Eigen::Vector3d com;
+  com << T(0, 3), T(1, 3), T(2, 3);
+  body->set_center_of_mass(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
-  I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
+  I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {
@@ -465,7 +471,7 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
     }
   }
 
-  if (element.hasGeometry()) body->addVisualElement(element);
+  if (element.hasGeometry()) body->AddVisualElement(element);
 }
 
 void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
@@ -549,7 +555,7 @@ bool parseLink(RigidBodyTree* tree, string robot_name, XMLElement* node,
   }
 
   tree->add_rigid_body(std::move(owned_body));
-  *index = body->body_index;
+  *index = body->get_body_index();
   return true;
 }
 
@@ -694,7 +700,7 @@ void parseJoint(RigidBodyTree* tree, XMLElement* node) {
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   tree->bodies[child_index]->setJoint(move(joint_unique_ptr));
-  tree->bodies[child_index]->parent = tree->bodies[parent_index].get();
+  tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 }
 
 // Searches through the URDF document looking for the effort limits of a

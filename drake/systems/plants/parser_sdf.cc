@@ -39,12 +39,16 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) poseValueToTransform(pose, pose_map, T, T_link);
 
-  parseScalarValue(node, "mass", body->mass);
+  double mass;
+  parseScalarValue(node, "mass", mass);
+  body->set_mass(mass);
 
-  body->com = T_link.inverse() * T.translation();
+  Eigen::Vector3d com;
+  com = T_link.inverse() * T.translation();
+  body->set_center_of_mass(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
-  I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
+  I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {
@@ -200,7 +204,7 @@ void parseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     // DEBUG
     // cout << "parseVisual: Adding element to body" << endl;
     // END_DEBUG
-    body->addVisualElement(element);
+    body->AddVisualElement(element);
   }
 }
 
@@ -310,7 +314,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   }
 
   model->add_rigid_body(std::move(owned_body));
-  *index = body->body_index;
+  *index = body->get_body_index();
   return true;
 }
 
@@ -541,7 +545,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     child->ApplyTransformToJointFrame(transform_to_model.inverse() *
                                       transform_child_to_model);
 
-    for (const auto& c : child->collision_element_ids) {
+    for (const auto& c : child->get_collision_element_ids()) {
       if (!model->transformCollisionFrame(
               c, transform_to_model.inverse() * transform_child_to_model)) {
         std::stringstream ss;
@@ -615,7 +619,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
     unique_ptr<DrakeJoint> joint_unique_ptr(joint);
     child->setJoint(move(joint_unique_ptr));
-    child->parent = parent;
+    child->set_parent(parent);
   }
 }
 
