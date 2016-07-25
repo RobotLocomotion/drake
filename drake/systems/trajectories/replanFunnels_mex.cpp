@@ -62,11 +62,11 @@ using namespace std;
 // Make funnel library, funnelIdx, x_current, obstacles global variables (with
 // scope only in this file) because we need to be able to access these from
 // the snopt user functions. :(
-static const mxArray *g_funnelLibrary;  // Funnel library (pointer)
+static const mxArray* g_funnelLibrary;  // Funnel library (pointer)
 static int g_funnelIdx;
-static const mxArray *x_current;
-static double *dx_current;
-static const mxArray *g_obstacles;  // Cell array containing obstacles (pointer)
+static const mxArray* x_current;
+static double* dx_current;
+static const mxArray* g_obstacles;  // Cell array containing obstacles (pointer)
 static double min_dist_snopt;
 
 static unique_ptr<snopt::doublereal[]> rw;
@@ -85,7 +85,7 @@ static btGjkEpaPenetrationDepthSolver epaSolver;
  * expects things to be non-degenrate.
  */
 static const double g_radius = 1.0;
-static btSphereShape *g_point = new btSphereShape(g_radius);
+static btSphereShape* g_point = new btSphereShape(g_radius);
 
 // lenrw, leniw, lencw
 const int DEFAULT_LENRW = 500000;
@@ -93,8 +93,8 @@ const int DEFAULT_LENIW = 500000;
 const int DEFAULT_LENCW = 500;
 /******************* Utility functions ***********************************/
 
-double ptToPolyBullet(double *vertsPr, size_t nRows, size_t nCols,
-                      mxArray *normal_vec) {
+double ptToPolyBullet(double* vertsPr, size_t nRows, size_t nCols,
+                      mxArray* normal_vec) {
   // Initialize polytope object with single point
   btConvexHullShape polytope(btVector3(vertsPr[0], vertsPr[1], vertsPr[2]), 1);
 
@@ -119,7 +119,7 @@ double ptToPolyBullet(double *vertsPr, size_t nRows, size_t nCols,
 
   convexConvex.getClosestPoints(input, gjkOutput, 0);
 
-  double *normal_vec_d = mxGetPrSafe(normal_vec);
+  double* normal_vec_d = mxGetPrSafe(normal_vec);
 
   normal_vec_d[0] = gjkOutput.m_normalOnBInWorld[0];
   normal_vec_d[1] = gjkOutput.m_normalOnBInWorld[1];
@@ -130,14 +130,14 @@ double ptToPolyBullet(double *vertsPr, size_t nRows, size_t nCols,
 
 /* Shift and transform vertices
  */
-double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x,
-                          mxArray *x0, int k, mxArray *cSk, size_t nRows,
+double* shiftAndTransform(double* verts, double* vertsT, const mxArray* x,
+                          mxArray* x0, int k, mxArray* cSk, size_t nRows,
                           size_t nCols) {
   /* This can and maybe should be sped up. For example, we know that cSk is
    * upper triangular. ***TIME****/
-  double *dcSk = mxGetPrSafe(cSk);
-  double *dx0 = mxGetPrSafe(x0);
-  double *dx = mxGetPrSafe(x);
+  double* dcSk = mxGetPrSafe(cSk);
+  double* dx0 = mxGetPrSafe(x0);
+  double* dx = mxGetPrSafe(x);
 
   for (size_t i = 0; i < nRows; i++) {
     for (size_t j = 0; j < nCols; j++) {
@@ -161,12 +161,12 @@ double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x,
 /* Constraint to make sure current state is in inlet of shifted funnel
  */
 double containmentConstraint(snopt::doublereal x_shift[],
-                             double *containment_grad) {
+                             double* containment_grad) {
   // Initialize some variables
-  mxArray *x0 =
-      mxGetField(g_funnelLibrary, g_funnelIdx, "x0");  // all points on trajectory
+  mxArray* x0 = mxGetField(g_funnelLibrary, g_funnelIdx,
+                           "x0");  // all points on trajectory
 
-  double *dx0 = mxGetPrSafe(x0);
+  double* dx0 = mxGetPrSafe(x0);
   // NOLINTNEXTLINE(runtime/int)
   long int dim = mxGetM(x_current);  // Dimension of state
   // NOLINTNEXTLINE(runtime/int)
@@ -182,12 +182,12 @@ double containmentConstraint(snopt::doublereal x_shift[],
   }
 
   // Get S matrix at time 0
-  mxArray *pS0 = mxGetField(g_funnelLibrary, g_funnelIdx, "S0");
-  double *S0 = mxGetPrSafe(pS0);
+  mxArray* pS0 = mxGetField(g_funnelLibrary, g_funnelIdx, "S0");
+  double* S0 = mxGetPrSafe(pS0);
 
   // Get x - x0(:, 1) (but zero out x, y, z)
-  mxArray *xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
-  double *dxrel = mxGetPrSafe(xrel);
+  mxArray* xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
+  double* dxrel = mxGetPrSafe(xrel);
 
   // Set the non-cyclic dimensions to be the difference of x0 and x_current
   for (int k = 3; k < dim; k++) {
@@ -202,9 +202,9 @@ double containmentConstraint(snopt::doublereal x_shift[],
   // Now compute xrel'*S0*xrel using lapack
   // First do S0*xrel
   double one = 1.0, zero = 0.0;  // Seriously?
-  long int ione = 1;  // NOLINT(runtime/int)
-  mxArray *S0xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
-  double *dS0xrel = mxGetPrSafe(S0xrel);
+  long int ione = 1;             // NOLINT(runtime/int)
+  mxArray* S0xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
+  double* dS0xrel = mxGetPrSafe(S0xrel);
   char chn[] = "N";
   dgemm(chn, chn, &dim, &ione, &dim, &one, S0, &dim, dxrel, &dim, &zero,
         dS0xrel, &dim);
@@ -215,7 +215,7 @@ double containmentConstraint(snopt::doublereal x_shift[],
   containment_grad[2] = 2 * dS0xrel[2];
 
   // Now do xrel'*S0xrel
-  mxArray *val = mxCreateDoubleScalar(mxREAL);
+  mxArray* val = mxCreateDoubleScalar(mxREAL);
   double dval = *(mxGetPrSafe(val));
   char chnT[] = "T";  // since we want xrel transpose
   dgemm(chnT, chn, &ione, &ione, &dim, &one, dxrel, &dim, dS0xrel, &dim, &zero,
@@ -232,12 +232,12 @@ double containmentConstraint(snopt::doublereal x_shift[],
  * returns a boolean which is true if
  * the funnel is collision free and false otherwise
  */
-bool penetrationCost(snopt::doublereal x[], double *min_dist,
-                     double *normal_vec_transformed) {
+bool penetrationCost(snopt::doublereal x[], double* min_dist,
+                     double* normal_vec_transformed) {
   // Convert snopt doublereal to mex array so we can call shift and transform
   // function.
-  mxArray *x_shifted = mxCreateDoubleMatrix(3, 1, mxREAL);
-  double *dx_shifted = mxGetPrSafe(x_shifted);
+  mxArray* x_shifted = mxCreateDoubleMatrix(3, 1, mxREAL);
+  double* dx_shifted = mxGetPrSafe(x_shifted);
 
   dx_shifted[0] = x[0] + dx_current[0];  // Get shifted position of funnel
   dx_shifted[1] = x[1] + dx_current[1];
@@ -247,22 +247,23 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
   mwSize numObs = mxGetNumberOfElements(g_obstacles);  // Number of obstacles
 
   // Initialize some variables
-  double *verts;  // cell element (i.e. vertices)
-  mxArray *x0 =
-      mxGetField(g_funnelLibrary, g_funnelIdx, "xyz");  // all points on trajectory
-  mxArray *obstacle;
-  mxArray *cS = mxGetField(g_funnelLibrary, g_funnelIdx, "cS");
-  mxArray *cSk;
+  double* verts;  // cell element (i.e. vertices)
+  mxArray* x0 = mxGetField(g_funnelLibrary, g_funnelIdx,
+                           "xyz");  // all points on trajectory
+  mxArray* obstacle;
+  mxArray* cS = mxGetField(g_funnelLibrary, g_funnelIdx, "cS");
+  mxArray* cSk;
   size_t nCols;
   size_t nRows;
   double distance;
-  mxArray *normal_vec = mxCreateDoubleMatrix(1, 3, mxREAL);
+  mxArray* normal_vec = mxCreateDoubleMatrix(1, 3, mxREAL);
 
   // Get number of time samples
-  mwSize N = mxGetNumberOfElements(mxGetField(g_funnelLibrary, g_funnelIdx, "cS"));
+  mwSize N =
+      mxGetNumberOfElements(mxGetField(g_funnelLibrary, g_funnelIdx, "cS"));
 
   // Check size compatibilities
-  const mwSize *N_x0 = mxGetDimensions(x0);
+  const mwSize* N_x0 = mxGetDimensions(x0);
   if (N_x0[1] != N) {
     mexErrMsgTxt("Sizes of x0 and cS do not match!");
   }
@@ -278,12 +279,13 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
     for (mwIndex obstacleIndex = 0; obstacleIndex < numObs; obstacleIndex++) {
       // Get vertices of this obstacle
       obstacle = mxGetCell(g_obstacles, obstacleIndex);
-      verts = mxGetPrSafe(mxGetCell(g_obstacles, obstacleIndex));  // Get vertices
+      verts =
+          mxGetPrSafe(mxGetCell(g_obstacles, obstacleIndex));  // Get vertices
       nCols = mxGetN(obstacle);
       nRows = mxGetM(obstacle);
 
-      mxArray *vertsA = mxCreateDoubleMatrix(nRows, nCols, mxREAL);
-      double *vertsT = mxGetPrSafe(vertsA);
+      mxArray* vertsA = mxCreateDoubleMatrix(nRows, nCols, mxREAL);
+      double* vertsT = mxGetPrSafe(vertsA);
 
       // Shift vertices so that point on trajectory is at origin and transform
       // by cholesky of S
@@ -300,8 +302,8 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
         // Multiply normal_vec by cSk to get it back in the correct coordinate
         // frame (i.e., normal_vec'*cSk)
         double one = 1.0, zero = 0.0;  // Seriously?
-        long int ione = 1;  // NOLINT(runtime/int)
-        long int dim = 3;  // NOLINT(runtime/int)
+        long int ione = 1;             // NOLINT(runtime/int)
+        long int dim = 3;              // NOLINT(runtime/int)
 
         char chn[] = "N";
         dgemm(chn, chn, &ione, &dim, &dim, &one, mxGetPrSafe(normal_vec), &ione,
@@ -321,13 +323,13 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
   return collFree;
 }
 
-int snopt_userfun(snopt::integer *Status, snopt::integer *n,
-                  snopt::doublereal x[], snopt::integer *needF,
-                  snopt::integer *neF, snopt::doublereal F[],
-                  snopt::integer *needG, snopt::integer *neG,
-                  snopt::doublereal G[], char *cu, snopt::integer *lencu,
-                  snopt::integer iu[], snopt::integer *leniu,
-                  snopt::doublereal ru[], snopt::integer *lenru) {
+int snopt_userfun(snopt::integer* Status, snopt::integer* n,
+                  snopt::doublereal x[], snopt::integer* needF,
+                  snopt::integer* neF, snopt::doublereal F[],
+                  snopt::integer* needG, snopt::integer* neG,
+                  snopt::doublereal G[], char* cu, snopt::integer* lencu,
+                  snopt::integer iu[], snopt::integer* leniu,
+                  snopt::doublereal ru[], snopt::integer* lenru) {
   //==================================================================
   // Computes the nonlinear objective and constraint terms for the problem
   // of shifting a funnel to bring it out of collision.
@@ -348,8 +350,8 @@ int snopt_userfun(snopt::integer *Status, snopt::integer *n,
 
   // Penetration cost and gradient
   double min_dist = 1000000.0;
-  mxArray *normal_vec = mxCreateDoubleMatrix(1, 3, mxREAL);
-  double *normal_vec_d = mxGetPrSafe(normal_vec);
+  mxArray* normal_vec = mxCreateDoubleMatrix(1, 3, mxREAL);
+  double* normal_vec_d = mxGetPrSafe(normal_vec);
   penetrationCost(x, &min_dist, normal_vec_d);
 
   min_dist_snopt = min_dist;
@@ -372,8 +374,8 @@ int snopt_userfun(snopt::integer *Status, snopt::integer *n,
   }
 
   // Containment cost and gradient
-  mxArray *containment_grad = mxCreateDoubleMatrix(3, 1, mxREAL);
-  double *containment_grad_d = mxGetPrSafe(containment_grad);
+  mxArray* containment_grad = mxCreateDoubleMatrix(3, 1, mxREAL);
+  double* containment_grad_d = mxGetPrSafe(containment_grad);
   F[1] = containmentConstraint(x, containment_grad_d);
 
   if (*needG > 0) {
@@ -390,9 +392,9 @@ int snopt_userfun(snopt::integer *Status, snopt::integer *n,
 }
 
 // Shift funnel using snopt
-bool shiftFunnel_snopt(int funnelIdx, const mxArray *funnelLibrary,
-                       const mxArray *obstacles, mwSize numObs,
-                       double *min_dist, double *x_opt) {
+bool shiftFunnel_snopt(int funnelIdx, const mxArray* funnelLibrary,
+                       const mxArray* obstacles, mwSize numObs,
+                       double* min_dist, double* x_opt) {
   // Number of decision variables (3 in our case: we're searching for shifted
   // x, y, z)
   snopt::integer nx = 3;
@@ -420,7 +422,7 @@ bool shiftFunnel_snopt(int funnelIdx, const mxArray *funnelLibrary,
   // iGfun, jGvar
   snopt::integer lenG = 6;
 
-  snopt::integer *iGfun = new snopt::integer[lenG];
+  snopt::integer* iGfun = new snopt::integer[lenG];
   iGfun[0] = 1;
   iGfun[1] = 1;
   iGfun[2] = 1;
@@ -428,7 +430,7 @@ bool shiftFunnel_snopt(int funnelIdx, const mxArray *funnelLibrary,
   iGfun[4] = 2;
   iGfun[5] = 2;
 
-  snopt::integer *jGvar = new snopt::integer[lenG];
+  snopt::integer* jGvar = new snopt::integer[lenG];
   jGvar[0] = 1;
   jGvar[1] = 2;
   jGvar[2] = 3;
@@ -438,26 +440,26 @@ bool shiftFunnel_snopt(int funnelIdx, const mxArray *funnelLibrary,
 
   // Linear part of gradient (we don't have a linear part, so it's all zeros)
   snopt::integer lenA = 0;
-  snopt::doublereal *A = new snopt::doublereal[0];
-  snopt::integer *iAfun = new snopt::integer[0];
-  snopt::integer *jAvar = new snopt::integer[0];
+  snopt::doublereal* A = new snopt::doublereal[0];
+  snopt::integer* iAfun = new snopt::integer[0];
+  snopt::integer* jAvar = new snopt::integer[0];
 
   // xlow, xupp, Flow, Fupp
-  snopt::doublereal *xlow = new snopt::doublereal[nx];
+  snopt::doublereal* xlow = new snopt::doublereal[nx];
   xlow[0] = -1.0 / 0.0;
   xlow[1] = -1.0 / 0.0;
   xlow[2] = -1.0 / 0.0;
 
-  snopt::doublereal *xupp = new snopt::doublereal[nx];
+  snopt::doublereal* xupp = new snopt::doublereal[nx];
   xupp[0] = 1.0 / 0.0;
   xupp[1] = 1.0 / 0.0;
   xupp[2] = 1.0 / 0.0;
 
-  snopt::doublereal *Flow = new snopt::doublereal[nF];
+  snopt::doublereal* Flow = new snopt::doublereal[nF];
   Flow[0] = -1.0 / 0.0;
   Flow[1] = -1.0 / 0.0;
 
-  snopt::doublereal *Fupp = new snopt::doublereal[nF];
+  snopt::doublereal* Fupp = new snopt::doublereal[nF];
   Fupp[0] = 1.0 / 0.0;
   Fupp[1] = 1.0;
 
@@ -467,24 +469,24 @@ bool shiftFunnel_snopt(int funnelIdx, const mxArray *funnelLibrary,
   char Fnames[8 * 1];  // should match nFname
 
   // Initial guess for x_shift is 0.
-  snopt::doublereal *x_guess = new snopt::doublereal[nx];
+  snopt::doublereal* x_guess = new snopt::doublereal[nx];
   x_guess[0] = 0.0;  // (*dx_current);
   x_guess[1] = 0.0;  // (*(dx_current+1));
   x_guess[2] = 0.0;  // (*(dx_current+2));
 
   // xstate
-  snopt::integer *xstate = new snopt::integer[nx];
+  snopt::integer* xstate = new snopt::integer[nx];
   for (snopt::integer i = 0; i < nx; i++) {
     xstate[i] = 0;
   }
 
   // xmul
-  snopt::doublereal *xmul = new snopt::doublereal[nx];
+  snopt::doublereal* xmul = new snopt::doublereal[nx];
 
   // F, Fmul, Fstate
-  snopt::doublereal *F = new snopt::doublereal[nF];
-  snopt::doublereal *Fmul = new snopt::doublereal[nF];
-  snopt::integer *Fstate = new snopt::integer[nF];
+  snopt::doublereal* F = new snopt::doublereal[nF];
+  snopt::doublereal* Fmul = new snopt::doublereal[nF];
+  snopt::integer* Fstate = new snopt::integer[nF];
   for (snopt::integer i = 0; i < nF; i++) {
     Fstate[i] = 0;
   }
@@ -576,24 +578,24 @@ bool shiftFunnel_snopt(int funnelIdx, const mxArray *funnelLibrary,
  * beginning at state x. Returns a boolean (true if collision free, false if
  * not).
  */
-bool isCollisionFree(int funnelIdx, const mxArray *x,
-                     const mxArray *funnelLibrary, const mxArray *obstacles,
-                     mwSize numObs, double *min_dist) {
+bool isCollisionFree(int funnelIdx, const mxArray* x,
+                     const mxArray* funnelLibrary, const mxArray* obstacles,
+                     mwSize numObs, double* min_dist) {
   // Initialize some variables
-  double *verts;  // cell element (i.e. vertices)
-  mxArray *x0 =
+  double* verts;  // cell element (i.e. vertices)
+  mxArray* x0 =
       mxGetField(funnelLibrary, funnelIdx, "xyz");  // all points on trajectory
-  mxArray *obstacle;
-  mxArray *cS = mxGetField(funnelLibrary, funnelIdx, "cS");
-  mxArray *cSk;
+  mxArray* obstacle;
+  mxArray* cS = mxGetField(funnelLibrary, funnelIdx, "cS");
+  mxArray* cSk;
   size_t nCols;
   size_t nRows;
   double distance;
 
-  mxArray *normal_vec;
+  mxArray* normal_vec;
   normal_vec = mxCreateDoubleMatrix(1, 3, mxREAL);
 
-  mxArray *normal_vec_transformed_mx = mxCreateDoubleMatrix(1, 3, mxREAL);
+  mxArray* normal_vec_transformed_mx = mxCreateDoubleMatrix(1, 3, mxREAL);
 
   // Get number of time samples
   mwSize N = mxGetNumberOfElements(mxGetField(funnelLibrary, funnelIdx, "cS"));
@@ -614,8 +616,8 @@ bool isCollisionFree(int funnelIdx, const mxArray *x,
       nCols = mxGetN(obstacle);
       nRows = mxGetM(obstacle);
 
-      mxArray *vertsA = mxCreateDoubleMatrix(nRows, nCols, mxREAL);
-      double *vertsT = mxGetPrSafe(vertsA);
+      mxArray* vertsA = mxCreateDoubleMatrix(nRows, nCols, mxREAL);
+      double* vertsT = mxGetPrSafe(vertsA);
 
       // Shift vertices so that point on trajectory is at origin and transform
       // by cholesky of S
@@ -645,14 +647,14 @@ bool isCollisionFree(int funnelIdx, const mxArray *x,
 /* Checks if a given state is inside the inlet of a funnel (after shifting
  * things along cyclic coordinates)
  */
-bool isInsideInlet(int funnelIdx, const mxArray *x,
-                   const mxArray *funnelLibrary) {
+bool isInsideInlet(int funnelIdx, const mxArray* x,
+                   const mxArray* funnelLibrary) {
   // Initialize some variables
-  mxArray *x0 =
+  mxArray* x0 =
       mxGetField(funnelLibrary, funnelIdx, "x0");  // all points on trajectory
 
-  double *dx0 = mxGetPrSafe(x0);
-  double *dx = mxGetPrSafe(x);
+  double* dx0 = mxGetPrSafe(x0);
+  double* dx = mxGetPrSafe(x);
 
   // NOLINTNEXTLINE(runtime/int)
   long int dim = mxGetM(x);  // Dimension of state
@@ -669,12 +671,12 @@ bool isInsideInlet(int funnelIdx, const mxArray *x,
   }
 
   // Get S matrix at time 0
-  mxArray *pS0 = mxGetField(funnelLibrary, funnelIdx, "S0");
-  double *S0 = mxGetPrSafe(pS0);
+  mxArray* pS0 = mxGetField(funnelLibrary, funnelIdx, "S0");
+  double* S0 = mxGetPrSafe(pS0);
 
   // Get x - x0(:, 1) (but zero out x, y, z)
-  mxArray *xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
-  double *dxrel = mxGetPrSafe(xrel);
+  mxArray* xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
+  double* dxrel = mxGetPrSafe(xrel);
   dxrel[0] = 0.0;
   dxrel[1] = 0.0;
   dxrel[2] = 0.0;
@@ -687,15 +689,15 @@ bool isInsideInlet(int funnelIdx, const mxArray *x,
   // First do S0*xrel
   double one = 1.0, zero = 0.0;
   long int ione = 1;  // NOLINT(runtime/int)
-  mxArray *S0xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
-  double *dS0xrel = mxGetPrSafe(S0xrel);
+  mxArray* S0xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
+  double* dS0xrel = mxGetPrSafe(S0xrel);
   char chn[] = "N";
   dgemm(chn, chn, &dim, &ione, &dim, &one, S0, &dim, dxrel, &dim, &zero,
         dS0xrel, &dim);
 
   // Now do xrel'*S0xrel
-  mxArray *val = mxCreateDoubleScalar(mxREAL);
-  double *dval = mxGetPrSafe(val);
+  mxArray* val = mxCreateDoubleScalar(mxREAL);
+  double* dval = mxGetPrSafe(val);
   char chnT[] = "T";  // since we want xrel transpose
   dgemm(chnT, chn, &ione, &ione, &dim, &one, dxrel, &dim, dS0xrel, &dim, &zero,
         dval, &ione);
@@ -719,7 +721,7 @@ bool isInsideInlet(int funnelIdx, const mxArray *x,
 /************************ Main mex function
  * ***************************************************************/
 /* Main mex funtion*/
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (g_lenrw == 0) {  // then initialize (sninit needs some default allocation)
     g_lenrw = DEFAULT_LENRW;
     rw.reset(new snopt::doublereal[g_lenrw]);
@@ -730,7 +732,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
 
   // Default is no shift;
-  const char *shift_method;
+  const char* shift_method;
   bool shift_using_snopt = false;
 
   // Shift later. If this is set to true, we go through all the funnels without
@@ -743,22 +745,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   // Penetration threshold: used to decide if we should try shifting funnel.
   // Should be less than 1.0.
-  double *penetration_thresh_ptr;
+  double* penetration_thresh_ptr;
   double penetration_thresh = 0.75;  // Default
 
   // Failsafe penetration threshold: used to decide if we should revert to
   // failsafe. Setting this to 1.0 means that we never take risks and revert
   // to the failsafe any time we can't find a collision free funnel.
-  double *failsafe_penetration_ptr;
+  double* failsafe_penetration_ptr;
   double failsafe_penetration = 1.0;  // Default
 
   // Get options if we are passed them
   if (nrhs > 3) {
-    const mxArray *options;  // Options structure
+    const mxArray* options;  // Options structure
     options = prhs[3];
 
     // Check if shift_method option exists. If so, use it.
-    mxArray *shift_method_mx = mxGetField(options, 0, "shift_method");
+    mxArray* shift_method_mx = mxGetField(options, 0, "shift_method");
     if (shift_method_mx != NULL) {
       shift_method = mxArrayToString(shift_method_mx);
 
@@ -768,7 +770,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
 
     // Check if penetration_thresh field exists. If not, leave it at default.
-    mxArray *penetration_thresh_mx =
+    mxArray* penetration_thresh_mx =
         mxGetField(options, 0, "penetration_thresh");
     if (penetration_thresh_mx != NULL) {
       penetration_thresh_ptr = mxGetPrSafe(penetration_thresh_mx);
@@ -776,7 +778,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
 
     // Check if failsafe_penetration field exists. If not, leave it at default.
-    mxArray *failsafe_penetration_mx =
+    mxArray* failsafe_penetration_mx =
         mxGetField(options, 0, "failsafe_penetration");
     if (failsafe_penetration_mx != NULL) {
       failsafe_penetration_ptr = mxGetPrSafe(failsafe_penetration_mx);
@@ -784,14 +786,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
 
     // Check if shift_later field exists. If not, leave it at default.
-    mxArray *shift_later_mx = mxGetField(options, 0, "shift_later");
+    mxArray* shift_later_mx = mxGetField(options, 0, "shift_later");
     if (shift_later_mx != NULL) {
       shift_later = mxGetLogicals(shift_later_mx);
     }
   }
 
   // Get current x (state)
-  const mxArray *x;
+  const mxArray* x;
   x = prhs[0];
 
   // Set current state (from which nominal/unshifted funnel would be executed)
@@ -801,9 +803,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Get state from which nextFunnel should be executed
   // We only care about the cyclic dimensions.
   // Set it to x_current to begin with.
-  mxArray *x_execute_next;
+  mxArray* x_execute_next;
   x_execute_next = mxCreateDoubleMatrix(3, 1, mxREAL);
-  double *dx_execute_next = mxGetPrSafe(x_execute_next);
+  double* dx_execute_next = mxGetPrSafe(x_execute_next);
   dx_execute_next[0] = (*dx_current);
   dx_execute_next[1] = (*(dx_current + 1));
   dx_execute_next[2] = (*(dx_current + 2));
@@ -825,13 +827,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   double best_penetration = -1000000.0;
 
   // Initialize array to keep track of penetrations
-  mxArray *penetrations_array_mx = mxCreateDoubleMatrix(numFunnels, 1, mxREAL);
-  double *penetrations_array_d = mxGetPrSafe(penetrations_array_mx);
+  mxArray* penetrations_array_mx = mxCreateDoubleMatrix(numFunnels, 1, mxREAL);
+  double* penetrations_array_d = mxGetPrSafe(penetrations_array_mx);
 
   // Now, try and find collision free funnel
   for (mwSize ii = 0; ii < numFunnels; ii++) {
     g_funnelIdx = ii;  // Funnel idx is global so we have access to it in some
-                     // other functions
+                       // other functions
 
     // First, check that we're inside the inlet of funnel
     inside = isInsideInlet(g_funnelIdx, x, g_funnelLibrary);
@@ -850,8 +852,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // If penetration is less than one, than funnel is not collision free
     // Initialize linear constraints of QCQP
     // Get number of time samples
-    collFree = isCollisionFree(g_funnelIdx, x, g_funnelLibrary, g_obstacles, numObs,
-                               &penetration);
+    collFree = isCollisionFree(g_funnelIdx, x, g_funnelLibrary, g_obstacles,
+                               numObs, &penetration);
 
     // Save penetration in array
     penetrations_array_d[g_funnelIdx] = penetration;
@@ -878,15 +880,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
 
     // Optimal shift using QCQP
-    mxArray *x_opt = mxCreateDoubleMatrix(3, 1, mxREAL);
-    double *x_opt_d = mxGetPrSafe(x_opt);
+    mxArray* x_opt = mxCreateDoubleMatrix(3, 1, mxREAL);
+    double* x_opt_d = mxGetPrSafe(x_opt);
 
     if ((shift_using_snopt) && (penetration > penetration_thresh) &&
         !shift_later) {
       // If the funnel is not collision free, but there is only little
       // penetration, then let's try to shift the funnel
-      collFree = shiftFunnel_snopt(g_funnelIdx, g_funnelLibrary, g_obstacles, numObs,
-                                   &penetration, x_opt_d);
+      collFree = shiftFunnel_snopt(g_funnelIdx, g_funnelLibrary, g_obstacles,
+                                   numObs, &penetration, x_opt_d);
 
       // If we were able to successfully shift the funnel out of collision, then
       // return with this funnel
@@ -924,8 +926,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // we haven't tried shifting funnels yet and we should try to shift them now.
   if (!collFree && shift_later) {
     // Sort penetrations array
-    mxArray *Out[2];
-    mxArray *In[3];  // we need three inputs to call matlab sort
+    mxArray* Out[2];
+    mxArray* In[3];  // we need three inputs to call matlab sort
     In[0] = penetrations_array_mx;
     In[1] = mxCreateDoubleScalar(1.0);
     In[2] = mxCreateString("descend");
@@ -934,9 +936,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     mxDestroyArray(In[1]);
     mxDestroyArray(In[2]);
 
-    mxArray *sorted_inds_mx = mxCreateDoubleMatrix(numFunnels, 1, mxREAL);
+    mxArray* sorted_inds_mx = mxCreateDoubleMatrix(numFunnels, 1, mxREAL);
     sorted_inds_mx = Out[1];
-    double *sorted_inds_d = mxGetPrSafe(sorted_inds_mx);
+    double* sorted_inds_d = mxGetPrSafe(sorted_inds_mx);
 
     for (mwSize ii = 0; ii < numFunnels; ii++) {
       // Next funnel: going through sorted funnels in sequence
@@ -958,11 +960,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       // then the funnel is collision free
       // If penetration is less than one, than funnel is not collision free
       // Get number of time samples
-      collFree = isCollisionFree(g_funnelIdx, x, g_funnelLibrary, g_obstacles, numObs,
-                                 &penetration);
+      collFree = isCollisionFree(g_funnelIdx, x, g_funnelLibrary, g_obstacles,
+                                 numObs, &penetration);
 
-      mxArray *x_opt = mxCreateDoubleMatrix(3, 1, mxREAL);
-      double *x_opt_d = mxGetPrSafe(x_opt);
+      mxArray* x_opt = mxCreateDoubleMatrix(3, 1, mxREAL);
+      double* x_opt_d = mxGetPrSafe(x_opt);
 
       if ((shift_using_snopt) && (penetration > penetration_thresh)) {
         // If the funnel is not collision free, but there is only little

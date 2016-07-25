@@ -168,11 +168,11 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   snopt::integer minrw, miniw, mincw;
-  snopt::sninit_(&iPrint, &iSumm, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw, g_rw.get(),
-                 &g_lenrw, 8 * g_lencw);
+  snopt::sninit_(&iPrint, &iSumm, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
+                 g_rw.get(), &g_lenrw, 8 * g_lencw);
   snopt::snmema_(&INFO_snopt, &nF, &nx, &nxname, &nFname, &lenA, &lenG, &mincw,
-                 &miniw, &minrw, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw, g_rw.get(),
-                 &g_lenrw, 8 * g_lencw);
+                 &miniw, &minrw, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
+                 g_rw.get(), &g_lenrw, 8 * g_lencw);
   if (minrw > g_lenrw) {
     // mexPrintf("reallocation rw with size %d\n", minrw);
     g_lenrw = minrw;
@@ -188,8 +188,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     g_lencw = mincw;
     g_cw.reset(new char[8 * g_lencw]);
   }
-  snopt::sninit_(&iPrint, &iSumm, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw, g_rw.get(),
-                 &g_lenrw, 8 * g_lencw);
+  snopt::sninit_(&iPrint, &iSumm, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
+                 g_rw.get(), &g_lenrw, 8 * g_lencw);
 
   snopt::integer Cold = 0;
   snopt::doublereal* xmul = new snopt::doublereal[nx];
@@ -210,74 +210,75 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   mysnseti("Derivative option", static_cast<snopt::integer>(*mxGetPr(mxGetField(
                                     prhs[13], 0, "DerivativeOption"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnseti("Major iterations limit",
            static_cast<snopt::integer>(
                *mxGetPr(mxGetField(prhs[13], 0, "MajorIterationsLimit"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnseti("Minor iterations limit",
            static_cast<snopt::integer>(
                *mxGetPr(mxGetField(prhs[13], 0, "MinorIterationsLimit"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnsetr("Major optimality tolerance",
            static_cast<snopt::doublereal>(
                *mxGetPr(mxGetField(prhs[13], 0, "MajorOptimalityTolerance"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnsetr("Major feasibility tolerance",
            static_cast<snopt::doublereal>(
                *mxGetPr(mxGetField(prhs[13], 0, "MajorFeasibilityTolerance"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnsetr("Minor feasibility tolerance",
            static_cast<snopt::doublereal>(
                *mxGetPr(mxGetField(prhs[13], 0, "MinorFeasibilityTolerance"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnseti("Superbasics limit", static_cast<snopt::integer>(*mxGetPr(mxGetField(
                                     prhs[13], 0, "SuperbasicsLimit"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnseti("Verify level", static_cast<snopt::integer>(*mxGetPr(mxGetField(
                                prhs[13], 0, "VerifyLevel"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnseti("Iterations Limit", static_cast<snopt::integer>(*mxGetPr(mxGetField(
                                    prhs[13], 0, "IterationsLimit"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnseti("Scale option", static_cast<snopt::integer>(*mxGetPr(mxGetField(
                                prhs[13], 0, "ScaleOption"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnseti("New basis file", static_cast<snopt::integer>(*mxGetPr(mxGetField(
                                  prhs[13], 0, "NewBasisFile"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnseti("Old basis file", static_cast<snopt::integer>(*mxGetPr(mxGetField(
                                  prhs[13], 0, "OldBasisFile"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnseti("Backup basis file", static_cast<snopt::integer>(*mxGetPr(mxGetField(
                                     prhs[13], 0, "BackupBasisFile"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
   mysnsetr("Linesearch tolerance",
            static_cast<snopt::doublereal>(
                *mxGetPr(mxGetField(prhs[13], 0, "LinesearchTolerance"))),
-           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-           g_rw.get(), &g_lenrw);
+           &iPrint, &iSumm, &INFO_snopt, g_cw.get(), &g_lencw, g_iw.get(),
+           &g_leniw, g_rw.get(), &g_lenrw);
 
   snopt::snopta_(&Cold, &nF, &nx, &nxname, &nFname, &ObjAdd, &ObjRow, Prob,
                  snopt_userfun, iAfun, jAvar, &lenA, &lenA, A, iGfun, jGvar,
                  &lenG, &lenG, xlow, xupp, xnames, Flow, Fupp, Fnames, x,
                  xstate, xmul, F, Fstate, Fmul, &INFO_snopt, &mincw, &miniw,
-                 &minrw, &nS, &nInf, &sInf, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw,
-                 g_rw.get(), &g_lenrw, g_cw.get(), &g_lencw, g_iw.get(), &g_leniw, g_rw.get(),
-                 &g_lenrw, npname, 8 * nxname, 8 * nFname, 8 * g_lencw, 8 * g_lencw);
+                 &minrw, &nS, &nInf, &sInf, g_cw.get(), &g_lencw, g_iw.get(),
+                 &g_leniw, g_rw.get(), &g_lenrw, g_cw.get(), &g_lencw,
+                 g_iw.get(), &g_leniw, g_rw.get(), &g_lenrw, npname, 8 * nxname,
+                 8 * nFname, 8 * g_lencw, 8 * g_lencw);
   plhs[0] = mxCreateDoubleMatrix(nx, 1, mxREAL);
   plhs[3] = mxCreateDoubleMatrix(nx, 1, mxREAL);
   for (int i = 0; i < nx; i++) {
