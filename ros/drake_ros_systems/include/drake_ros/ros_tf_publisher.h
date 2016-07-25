@@ -95,7 +95,7 @@ class DrakeRosTfPublisher {
       if (!PublishTfForRigidBody(rigid_body.get())) continue;
 
       // Creates a unique key for holding the transform message.
-      std::string key = rigid_body->model_name() + rigid_body->name();
+      std::string key = rigid_body->model_name() + rigid_body->get_name();
 
       // Checks whether a transform message for the current link was already
       // added to the transform_messages_ map.
@@ -109,8 +109,8 @@ class DrakeRosTfPublisher {
       std::unique_ptr<geometry_msgs::TransformStamped> message(
           new geometry_msgs::TransformStamped());
 
-      message->header.frame_id = rigid_body->parent->name();
-      message->child_frame_id = rigid_body->name();
+      message->header.frame_id = rigid_body->parent->get_name();
+      message->child_frame_id = rigid_body->get_name();
 
       // Obtains the current link's joint.
       const DrakeJoint& joint = rigid_body->getJoint();
@@ -119,7 +119,8 @@ class DrakeRosTfPublisher {
       // We can do this now since it will not change over time.
       if (joint.getNumPositions() == 0 && joint.getNumVelocities() == 0) {
         auto translation = joint.getTransformToParentBody().translation();
-        auto quat = drake::math::rotmat2quat(joint.getTransformToParentBody().linear());
+        auto quat =
+            drake::math::rotmat2quat(joint.getTransformToParentBody().linear());
 
         message->transform.translation.x = translation(0);
         message->transform.translation.y = translation(1);
@@ -151,7 +152,7 @@ class DrakeRosTfPublisher {
       std::unique_ptr<geometry_msgs::TransformStamped> message(
           new geometry_msgs::TransformStamped());
 
-      message->header.frame_id = frame->body->name();
+      message->header.frame_id = frame->body->get_name();
       message->child_frame_id = frame->name;
 
       // Frames are fixed to a particular rigid body. The following code saves
@@ -205,7 +206,7 @@ class DrakeRosTfPublisher {
       if (!PublishTfForRigidBody(rigid_body.get())) continue;
 
       // Obtains a unique key for holding the transform message.
-      std::string key = rigid_body->model_name() + rigid_body->name();
+      std::string key = rigid_body->model_name() + rigid_body->get_name();
 
       // Verifies that a geometry_msgs::TransformStamped message for the current
       // link exists in the transform_messages_ map.
@@ -226,8 +227,9 @@ class DrakeRosTfPublisher {
       // Updates the transform only if the joint is not fixed.
       if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
         auto transform = rigid_body_tree_->relativeTransform(
-            cache, rigid_body_tree_->FindBodyIndex(rigid_body->parent->name()),
-            rigid_body_tree_->FindBodyIndex(rigid_body->name()));
+            cache,
+            rigid_body_tree_->FindBodyIndex(rigid_body->parent->get_name()),
+            rigid_body_tree_->FindBodyIndex(rigid_body->get_name()));
         auto translation = transform.translation();
         auto quat = drake::math::rotmat2quat(transform.linear());
 

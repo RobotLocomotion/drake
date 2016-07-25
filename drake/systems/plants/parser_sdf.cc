@@ -175,7 +175,7 @@ void parseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
-                        ": ERROR: Link " + body->name_ +
+                        ": ERROR: Link " + body->get_name() +
                         " has a visual element without a geometry.");
   }
 
@@ -184,7 +184,7 @@ void parseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   if (!parseSDFGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse visual element in link " +
-                        body->name_ + ".");
+                        body->get_name() + ".");
   }
 
   XMLElement* material_node = node->FirstChildElement("material");
@@ -225,7 +225,7 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
-                        ": ERROR: Link " + body->name_ +
+                        ": ERROR: Link " + body->get_name() +
                         " has a collision element without a geometry.");
   }
 
@@ -247,12 +247,12 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   //  Issue 2661 was created to track this problem.
   // TODO(amcastro-tri): fix the above issue tracked by 2661. Similarly for
   // parseCollision in RigidBodyTreeURDF.cpp.
-  if (body->name().compare(std::string(RigidBodyTree::kWorldLinkName)) == 0)
+  if (body->get_name().compare(std::string(RigidBodyTree::kWorldLinkName)) == 0)
     element.set_static();
   if (!parseSDFGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse collision element in link " +
-                        body->name_ + ".");
+                        body->get_name() + ".");
   }
 
   if (element.hasGeometry())
@@ -276,9 +276,9 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Link tag is missing a name attribute.");
   }
-  body->name_ = attr;
+  body->set_name(std::string(attr));
 
-  if (body->name_ == std::string(RigidBodyTree::kWorldLinkName)) {
+  if (body->get_name() == std::string(RigidBodyTree::kWorldLinkName)) {
     throw runtime_error(
         std::string(__FILE__) + ": " + __func__ +
         ": ERROR: Do not name a link 'world' because it is a reserved name.");
@@ -289,7 +289,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   if (pose) {
     poseValueToTransform(pose, pose_map, transform_to_model);
     pose_map.insert(
-        std::pair<string, Isometry3d>(body->name_, transform_to_model));
+        std::pair<string, Isometry3d>(body->get_name(), transform_to_model));
   }
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
