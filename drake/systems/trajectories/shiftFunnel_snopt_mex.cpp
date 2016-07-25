@@ -62,20 +62,20 @@ static const double g_radius = 1.0;
 static btSphereShape *g_point = new btSphereShape(g_radius);
 
 // Make funnel library, funnelIdx, x_current, obstacles global variables
-static const mxArray *funnelLibrary;  // Funnel library (pointer)
-static int funnelIdx;
+static const mxArray *g_funnelLibrary;  // Funnel library (pointer)
+static int g_funnelIdx;
 static const mxArray *x_current;
 static double *dx_current;
-static const mxArray *obstacles;  // Cell array containing obstacles (pointer)
+static const mxArray *g_obstacles;  // Cell array containing obstacles (pointer)
 static double min_dist_snopt;
 
 // lenrw, leniw, lencw
 static unique_ptr<snopt::doublereal[]> rw;
 static unique_ptr<snopt::integer[]> iw;
 static unique_ptr<char[]> cw;
-static snopt::integer lenrw = 0;
-static snopt::integer leniw = 0;
-static snopt::integer lencw = 0;
+static snopt::integer g_lenrw = 0;
+static snopt::integer g_leniw = 0;
+static snopt::integer g_lencw = 0;
 
 const int DEFAULT_LENRW = 500000;
 const int DEFAULT_LENIW = 500000;
@@ -87,7 +87,7 @@ double containmentConstraint(snopt::doublereal x_shift[],
                              double *containment_grad) {
   // Initialize some variables
   mxArray *x0 =
-      mxGetField(funnelLibrary, funnelIdx, "x0");  // all points on trajectory
+      mxGetField(g_funnelLibrary, g_funnelIdx, "x0");  // all points on trajectory
 
   double *dx0 = mxGetPrSafe(x0);
 
@@ -104,7 +104,7 @@ double containmentConstraint(snopt::doublereal x_shift[],
   }
 
   // Get S matrix at time 0
-  mxArray *pS0 = mxGetField(funnelLibrary, funnelIdx, "S0");
+  mxArray *pS0 = mxGetField(g_funnelLibrary, g_funnelIdx, "S0");
   double *S0 = mxGetPrSafe(pS0);
 
   // Get x - x0(:, 1) (but zero out x, y, z)
@@ -223,14 +223,14 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
   dx_shifted[2] = x[2] + dx_current[2];
 
   // Get number of obstacles
-  mwSize numObs = mxGetNumberOfElements(obstacles);  // Number of obstacles
+  mwSize numObs = mxGetNumberOfElements(g_obstacles);  // Number of obstacles
 
   // Initialize some variables
   double *verts;  // cell element (i.e. vertices)
   mxArray *x0 =
-      mxGetField(funnelLibrary, funnelIdx, "xyz");  // all points on trajectory
+      mxGetField(g_funnelLibrary, g_funnelIdx, "xyz");  // all points on trajectory
   mxArray *obstacle;
-  mxArray *cS = mxGetField(funnelLibrary, funnelIdx, "cS");
+  mxArray *cS = mxGetField(g_funnelLibrary, g_funnelIdx, "cS");
   mxArray *cSk;
   size_t nCols;
   size_t nRows;
@@ -239,7 +239,7 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
   normal_vec = mxCreateDoubleMatrix(1, 3, mxREAL);
 
   // Get number of time samples
-  mwSize N = mxGetNumberOfElements(mxGetField(funnelLibrary, funnelIdx, "cS"));
+  mwSize N = mxGetNumberOfElements(mxGetField(g_funnelLibrary, g_funnelIdx, "cS"));
 
   // Check size compatibilities
   const mwSize *N_x0 = mxGetDimensions(x0);
@@ -259,8 +259,8 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
 
     for (mwIndex obstacleIndex = 0; obstacleIndex < numObs; obstacleIndex++) {
       // Get vertices of this obstacle
-      obstacle = mxGetCell(obstacles, obstacleIndex);
-      verts = mxGetPrSafe(mxGetCell(obstacles, obstacleIndex));  // Get vertices
+      obstacle = mxGetCell(g_obstacles, obstacleIndex);
+      verts = mxGetPrSafe(mxGetCell(g_obstacles, obstacleIndex));  // Get vertices
       nCols = mxGetN(obstacle);
       nRows = mxGetM(obstacle);
 
@@ -544,13 +544,13 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary,
 
 /* Main mex funtion*/
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  if (lenrw == 0) {  // then initialize (sninit needs some default allocation)
-    lenrw = DEFAULT_LENRW;
-    rw.reset(new snopt::doublereal[lenrw]);
-    leniw = DEFAULT_LENIW;
-    iw.reset(new snopt::integer[leniw]);
-    lencw = DEFAULT_LENCW;
-    cw.reset(new char[8 * lencw]);
+  if (g_lenrw == 0) {  // then initialize (sninit needs some default allocation)
+    g_lenrw = DEFAULT_LENRW;
+    rw.reset(new snopt::doublereal[g_lenrw]);
+    g_leniw = DEFAULT_LENIW;
+    iw.reset(new snopt::integer[g_leniw]);
+    g_lencw = DEFAULT_LENCW;
+    cw.reset(new char[8 * g_lencw]);
   }
   // Get current state (from which nominal/unshifted funnel would be executed)
   // const mxArray *x_current;
@@ -558,15 +558,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   dx_current = mxGetPrSafe(x_current);
 
   // Deal with obstacles cell (second input)
-  obstacles = prhs[1];  // Get obstacles cell (second input)
-  mwSize numObs = mxGetNumberOfElements(obstacles);  // Number of obstacles
+  g_obstacles = prhs[1];  // Get obstacles cell (second input)
+  mwSize numObs = mxGetNumberOfElements(g_obstacles);  // Number of obstacles
 
-  funnelLibrary = prhs[2];  // Get funnel library (third input)
+  g_funnelLibrary = prhs[2];  // Get funnel library (third input)
 
   // Get funnelIdx (subtract 1 since index is coming from matlab)
   // int funnelIdx;
-  funnelIdx = (int)mxGetScalar(prhs[3]);
-  funnelIdx = funnelIdx - 1;
+  g_funnelIdx = (int)mxGetScalar(prhs[3]);
+  g_funnelIdx = g_funnelIdx - 1;
 
   // Initialize penetration (after shifting)
   double min_dist = 1000000.0;
@@ -576,7 +576,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   double *x_opt_d = mxGetPrSafe(x_opt);
 
   // Initialize next funnel (output of this function)
-  bool collFree = shiftFunnel(funnelIdx, funnelLibrary, obstacles, numObs,
+  bool collFree = shiftFunnel(g_funnelIdx, g_funnelLibrary, g_obstacles, numObs,
                               &min_dist, x_opt_d);
 
   // Add in x_current to get SHIFTED position of funnel
