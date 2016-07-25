@@ -22,7 +22,7 @@ static VectorXd VariableList2VectorXd(VariableList const& vlist) {
 }
 
 int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
-                          QPOutput& output) {
+                          QPOutput* output) {
   if (!is_qp_input_sane(input)) {
     std::cerr << "input is not right\n";
     return -1;
@@ -30,8 +30,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   ////////////////////////////////////////////////////////////////////
   // The equations of motion look like:
-  // M(q) * vd + h(q,qd) = S * tau + J^T * lambda
-  // M(q) is the inertia matrix, h(q, qd) is the gravitational and centrifugal
+  // M(q) * vd + h(q,v) = S * tau + J^T * lambda
+  // M(q) is the inertia matrix, h(q,v) is the gravitational and centrifugal
   // force, vd is acceleration, S is the selection matrix (top 6 rows are
   // zeros due to the floating base), tau is joint torque, J^T is the transpose
   // of all contact Jacobian, and lambda is the contact wrench in the world
@@ -247,6 +247,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
           rs.pelv().J,
       {vd});
 
+  prog.AddQuadraticCost(
+      input.w_torso * rs.torso().J.transpose() * rs.torso().J,
+      input.w_torso * (rs.torso().Jdot_times_v - input.torsodd_d).transpose() *
+          rs.torso().J,
+      {vd});
+
   // regularize vd to vd_d
   prog.AddQuadraticCost(input.w_vd * MatrixXd::Identity(num_vd, num_vd),
                         input.w_vd * (-input.vd_d), {vd});
@@ -307,21 +313,22 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   ////////////////////////////////////////////////////////////////////
   // parse result
-  output.vd = vd.value();
-  output.comdd = rs.J_com() * output.vd + rs.Jdot_times_v_com();
-  output.pelvdd = rs.pelv().J * output.vd + rs.pelv().Jdot_times_v;
-  output.torsodd = rs.torso().J * output.vd + rs.torso().Jdot_times_v;
+  output->vd = vd.value();
+  output->comdd = rs.J_com() * output->vd + rs.Jdot_times_v_com();
+  output->pelvdd = rs.pelv().J * output->vd + rs.pelv().Jdot_times_v;
+  output->torsodd = rs.torso().J * output->vd + rs.torso().Jdot_times_v;
 
   for (int i = 0; i < num_contacts; i++) {
-    output.footdd[i] = (rs.foot(i).J * output.vd + rs.foot(i).Jdot_times_v);
-    output.foot_wrench_in_world_frame[i] = lambda.value().segment<6>(i * 6);
+    output->footdd[i] = (rs.foot(i).J * output->vd + rs.foot(i).Jdot_times_v);
+    output->foot_wrench_in_world_frame[i] = lambda.value().segment<6>(i * 6);
   }
 
-  output.joint_torque = rs.M().bottomRows(num_torque) * output.vd +
-                        rs.bias_term().tail(num_torque);
+  output->joint_torque = rs.M().bottomRows(num_torque) * output->vd +
+                         rs.bias_term().tail(num_torque);
   for (int i = 0; i < num_contacts; i++) {
-    output.joint_torque -= rs.foot(i).J.block(0, 6, 6, num_torque).transpose() *
-                           output.foot_wrench_in_world_frame[i];
+    output->joint_torque -=
+        rs.foot(i).J.block(0, 6, 6, num_torque).transpose() *
+        output->foot_wrench_in_world_frame[i];
   }
 
   for (int i = 0; i < num_contacts; i++) {
@@ -329,31 +336,32 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     T.translation() =
         rs.foot(i).pose.translation() - rs.foot_sensor(i).pose.translation();
 
-    output.foot_wrench_in_sensor_frame[i] =
-        transformSpatialForce(T, output.foot_wrench_in_world_frame[i]);
+    output->foot_wrench_in_sensor_frame[i] =
+        transformSpatialForce(T, output->foot_wrench_in_world_frame[i]);
 
-    output.foot_wrench_in_sensor_frame[i].head<3>() =
+    output->foot_wrench_in_sensor_frame[i].head<3>() =
         rs.foot_sensor(i).pose.linear().transpose() *
-        output.foot_wrench_in_sensor_frame[i].head<3>();
-    output.foot_wrench_in_sensor_frame[i].tail<3>() =
+        output->foot_wrench_in_sensor_frame[i].head<3>();
+    output->foot_wrench_in_sensor_frame[i].tail<3>() =
         rs.foot_sensor(i).pose.linear().transpose() *
-        output.foot_wrench_in_sensor_frame[i].tail<3>();
+        output->foot_wrench_in_sensor_frame[i].tail<3>();
   }
 
   // Check equality constraints:
-  // Dynamics: M(q) * vd + h(q,qd) = S * tau + J^T * lambda
+  // Dynamics: M(q) * vd + h(q,v) = S * tau + J^T * lambda
   // Foot not moving: J * vd + Jd * v = 0
-  VectorXd residual = rs.M() * output.vd + rs.bias_term();
+  VectorXd residual = rs.M() * output->vd + rs.bias_term();
   for (int i = 0; i < num_contacts; i++)
-    residual -= rs.foot(i).J.transpose() * output.foot_wrench_in_world_frame[i];
-  residual.tail(num_torque) -= output.joint_torque;
+    residual -=
+        rs.foot(i).J.transpose() * output->foot_wrench_in_world_frame[i];
+  residual.tail(num_torque) -= output->joint_torque;
   assert(residual.isZero());
 
   for (int i = 0; i < num_contacts; i++) {
-    assert(output.footdd[i].isZero());
+    assert(output->footdd[i].isZero());
   }
 
-  if (!is_qp_output_sane(output)) {
+  if (!is_qp_output_sane(*output)) {
     std::cerr << "output is not right\n";
     return -1;
   }
@@ -361,22 +369,22 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   return 0;
 }
 
-void InitQPInput(const RigidBodyTree& r, QPInput& input) {
-  input.vd_d.resize(r.number_of_velocities());
-  input.coord_names.resize(r.number_of_velocities());
+void InitQPInput(const RigidBodyTree& r, QPInput* input) {
+  input->vd_d.resize(r.number_of_velocities());
+  input->coord_names.resize(r.number_of_velocities());
   for (int i = 0; i < r.number_of_velocities(); i++) {
     // strip out the "dot" part from name
-    input.coord_names[i] =
+    input->coord_names[i] =
         r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
   }
 }
 
-void InitQPOutput(const RigidBodyTree& r, QPOutput& output) {
-  output.vd.resize(r.number_of_velocities());
-  output.coord_names.resize(r.number_of_velocities());
+void InitQPOutput(const RigidBodyTree& r, QPOutput* output) {
+  output->vd.resize(r.number_of_velocities());
+  output->coord_names.resize(r.number_of_velocities());
   for (int i = 0; i < r.number_of_velocities(); i++) {
     // strip out the "dot" part from name
-    output.coord_names[i] =
+    output->coord_names[i] =
         r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
   }
 }
@@ -397,6 +405,13 @@ double ComputeQPCost(const HumanoidStatus& rs, const QPInput& input,
           rs.pelv().J * output.vd;
   tot += c;
   std::cout << "pelv cost: " << c << std::endl;
+
+  c = 0.5 * output.vd.transpose() * input.w_torso * rs.torso().J.transpose() *
+          rs.torso().J * output.vd +
+      input.w_torso * (rs.torso().Jdot_times_v - input.torsodd_d).transpose() *
+          rs.torso().J * output.vd;
+  tot += c;
+  std::cout << "torso cost: " << c << std::endl;
 
   c = 0.5 * output.vd.transpose() * input.w_vd * output.vd +
       input.w_vd * (-input.vd_d).transpose() * output.vd;

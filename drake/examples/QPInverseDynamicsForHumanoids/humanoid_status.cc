@@ -5,28 +5,25 @@ const Vector3d HumanoidStatus::kFootToContactOffset = Vector3d(0, 0, -0.09);
 const Vector3d HumanoidStatus::kFootToSensorOffset =
     Vector3d(0.0215646, 0.0, -0.051054);
 
-void HumanoidStatus::FillKinematics(const std::string& name, Isometry3d& pose,
-                                    Vector6d& vel, MatrixXd& J,
-                                    Vector6d& Jdot_times_v,
+void HumanoidStatus::FillKinematics(const RigidBody& body, Isometry3d* pose,
+                                    Vector6d* vel, MatrixXd* J,
+                                    Vector6d* Jdot_times_v,
                                     const Vector3d& local_offset) const {
-  // int id = body_name_to_id_.at(name);
-  const RigidBody* body = robot_->FindBody(name);
-  pose = Isometry3d::Identity();
-  pose.translation() = local_offset;
-  pose = robot_->relativeTransform(cache_, 0, body->body_index) * pose;
+  *pose = Isometry3d::Identity();
+  pose->translation() = local_offset;
+  *pose = robot_->relativeTransform(cache_, 0, body.body_index) * (*pose);
 
-  vel = GetTaskSpaceVel(*(robot_), cache_, *body, local_offset);
-  J = GetTaskSpaceJacobian(*(robot_), cache_, *body, local_offset);
-  Jdot_times_v =
-      GetTaskSpaceJacobianDotTimesV(*(robot_), cache_, *body, local_offset);
+  *vel = GetTaskSpaceVel(*(robot_), cache_, body, local_offset);
+  *J = GetTaskSpaceJacobian(*(robot_), cache_, body, local_offset);
+  *Jdot_times_v =
+      GetTaskSpaceJacobianDotTimesV(*(robot_), cache_, body, local_offset);
 }
 
 void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
                             const VectorXd& trq, const Vector6d& l_ft,
                             const Vector6d& r_ft, const Matrix3d& rot) {
-  if (q.size() != this->position_.size() ||
-      v.size() != this->velocity_.size() ||
-      trq.size() != this->joint_torque_.size()) {
+  if (q.size() != position_.size() || v.size() != velocity_.size() ||
+      trq.size() != joint_torque_.size()) {
     throw std::runtime_error("robot_ state update dimension mismatch");
   }
 
@@ -50,16 +47,16 @@ void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
   comd_ = J_com_ * v;
 
   // body parts
-  FillKinematics(pelv_.link_name, pelv_.pose, pelv_.vel, pelv_.J,
-                 pelv_.Jdot_times_v);
-  FillKinematics(torso_.link_name, torso_.pose, torso_.vel, torso_.J,
-                 torso_.Jdot_times_v);
+  FillKinematics(*pelv_.body, &pelv_.pose, &pelv_.vel, &pelv_.J,
+                 &pelv_.Jdot_times_v);
+  FillKinematics(*torso_.body, &torso_.pose, &torso_.vel, &torso_.J,
+                 &torso_.Jdot_times_v);
   for (int s = 0; s < 2; s++) {
-    FillKinematics(foot_[s].link_name, foot_[s].pose, foot_[s].vel, foot_[s].J,
-                   foot_[s].Jdot_times_v, kFootToContactOffset);
-    FillKinematics(foot_sensor_[s].link_name, foot_sensor_[s].pose,
-                   foot_sensor_[s].vel, foot_sensor_[s].J,
-                   foot_sensor_[s].Jdot_times_v, kFootToSensorOffset);
+    FillKinematics(*foot_[s].body, &foot_[s].pose, &foot_[s].vel, &foot_[s].J,
+                   &foot_[s].Jdot_times_v, kFootToContactOffset);
+    FillKinematics(*foot_sensor_[s].body, &foot_sensor_[s].pose,
+                   &foot_sensor_[s].vel, &foot_sensor_[s].J,
+                   &foot_sensor_[s].Jdot_times_v, kFootToSensorOffset);
   }
 
   // ft sensor
@@ -93,6 +90,7 @@ void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
                   foot_sensor_[i].pose.translation()[1];
   }
 
+  // This is assuming that both feet are on the same horizontal surface.
   cop_ = (cop_w[Side::LEFT] * Fz[Side::LEFT] +
           cop_w[Side::RIGHT] * Fz[Side::RIGHT]) /
          (Fz[Side::LEFT] + Fz[Side::RIGHT]);

@@ -8,7 +8,7 @@ using namespace Eigen;
 // TODO(siyuan.feng@tri): These should go in RigidBodyTree eventually.
 
 /**
- * @brief This function computes the task space velocity of a frame attached
+ * This function computes the task space velocity of a frame attached
  * to \p body with \p local_offset in the body frame.
  * @param r reference to the RigidBodyTree
  * @param cache computed kinematic cache
@@ -24,7 +24,7 @@ Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
                          const Vector3d& local_offset = Vector3d::Zero());
 
 /**
- * @brief This function computes the task space Jacobian of a frame attached
+ * This function computes the task space Jacobian of a frame attached
  * to \p body with \p local_offset in the body frame.
  * @param r reference to the RigidBodyTree
  * @param cache computed kinematic cache
@@ -40,7 +40,7 @@ MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
                               const Vector3d& local_offset = Vector3d::Zero());
 
 /**
- * @brief This function computes the task space Jacobian times the generalized
+ * This function computes the task space Jacobian times the generalized
  * velocity of a frame attached to \p body with \p local_offset in the body
  * frame.
  * @param r reference to the RigidBodyTree

@@ -1,13 +1,13 @@
 #include "drake/Path.h"
 #include "qp_controller.h"
 
-QPOutput TestGravityCompensation(const HumanoidStatus& rs) {
+QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {
   // Make controller.
   QPController con;
   QPInput input;
   QPOutput output;
-  InitQPOutput(rs.robot(), output);
-  InitQPInput(rs.robot(), input);
+  InitQPOutput(robot_status.robot(), &output);
+  InitQPInput(robot_status.robot(), &input);
 
   // Setup QP controller's parameter.
   con.param.mu = 1;
@@ -18,6 +18,8 @@ QPOutput TestGravityCompensation(const HumanoidStatus& rs) {
   con.param.y_min = -0.05;
 
   // Make input.
+  // These represent the desired motions for the robot, and are typically
+  // outputs of motion planner or hand-crafted behavior state machines.
   input.comdd_d.setZero();
   input.pelvdd_d.setZero();
   input.torsodd_d.setZero();
@@ -26,11 +28,12 @@ QPOutput TestGravityCompensation(const HumanoidStatus& rs) {
   input.wrench_d[Side::LEFT].setZero();
   input.wrench_d[Side::RIGHT].setZero();
   input.vd_d.setZero();
-
   // [5] is Fz, 660N * 2 is about robot weight.
   input.wrench_d[Side::LEFT][5] = 660;
   input.wrench_d[Side::RIGHT][5] = 660;
 
+  // Weights are set arbitrarily by the control designer, these typically
+  // require tuning.
   input.w_com = 1e2;
   input.w_pelv = 1e1;
   input.w_torso = 1e1;
@@ -38,63 +41,61 @@ QPOutput TestGravityCompensation(const HumanoidStatus& rs) {
   input.w_vd = 1e3;
   input.w_wrench_reg = 1e-5;
 
-  ////////////////////////////////////////////////////////////////////
-  // Call QP.
-  con.Control(rs, input, output);
-
-  // Print results.
-  PrintQPOutput(output);
+  // Call QP controller.
+  con.Control(robot_status, input, &output);
 
   // Print quadratic costs for all the terms.
-  ComputeQPCost(rs, input, output);
+  ComputeQPCost(robot_status, input, output);
 
   return output;
 }
 
 int main() {
-  ////////////////////////////////////////////////////////////////////
-  // Load model.
+  // Loads model.
   std::string urdf =
       Drake::getDrakePath() +
       std::string(
           "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
-  HumanoidStatus rs(std::unique_ptr<RigidBodyTree>(
-      new RigidBodyTree(urdf, DrakeJoint::ROLLPITCHYAW)));
+  HumanoidStatus robot_status(
+      std::make_unique<RigidBodyTree>(urdf, DrakeJoint::ROLLPITCHYAW));
 
-  ////////////////////////////////////////////////////////////////////
-  // Set state and do kinematics.
-  VectorXd q(rs.robot().number_of_positions());
-  VectorXd qd(rs.robot().number_of_velocities());
+  // Sets state and does kinematics.
+  VectorXd q(robot_status.robot().number_of_positions());
+  VectorXd v(robot_status.robot().number_of_velocities());
 
   q.setZero();
-  qd.setZero();
+  v.setZero();
 
   // These corresponds to a nominal pose for the Valkyrie robot: slightly
   // crouched, arm raised a bit.
-  q[rs.joint_name_to_id().at("rightHipRoll")] = 0.01;
-  q[rs.joint_name_to_id().at("rightHipPitch")] = -0.5432;
-  q[rs.joint_name_to_id().at("rightKneePitch")] = 1.2195;
-  q[rs.joint_name_to_id().at("rightAnklePitch")] = -0.7070;
-  q[rs.joint_name_to_id().at("rightAnkleRoll")] = -0.0069;
+  q[robot_status.joint_name_to_id().at("rightHipRoll")] = 0.01;
+  q[robot_status.joint_name_to_id().at("rightHipPitch")] = -0.5432;
+  q[robot_status.joint_name_to_id().at("rightKneePitch")] = 1.2195;
+  q[robot_status.joint_name_to_id().at("rightAnklePitch")] = -0.7070;
+  q[robot_status.joint_name_to_id().at("rightAnkleRoll")] = -0.0069;
 
-  q[rs.joint_name_to_id().at("leftHipRoll")] = -0.01;
-  q[rs.joint_name_to_id().at("leftHipPitch")] = -0.5432;
-  q[rs.joint_name_to_id().at("leftKneePitch")] = 1.2195;
-  q[rs.joint_name_to_id().at("leftAnklePitch")] = -0.7070;
-  q[rs.joint_name_to_id().at("leftAnkleRoll")] = 0.0069;
+  q[robot_status.joint_name_to_id().at("leftHipRoll")] = -0.01;
+  q[robot_status.joint_name_to_id().at("leftHipPitch")] = -0.5432;
+  q[robot_status.joint_name_to_id().at("leftKneePitch")] = 1.2195;
+  q[robot_status.joint_name_to_id().at("leftAnklePitch")] = -0.7070;
+  q[robot_status.joint_name_to_id().at("leftAnkleRoll")] = 0.0069;
 
-  q[rs.joint_name_to_id().at("rightShoulderRoll")] = 1;
-  q[rs.joint_name_to_id().at("rightShoulderYaw")] = 0.5;
-  q[rs.joint_name_to_id().at("rightElbowPitch")] = M_PI / 2.;
+  q[robot_status.joint_name_to_id().at("rightShoulderRoll")] = 1;
+  q[robot_status.joint_name_to_id().at("rightShoulderYaw")] = 0.5;
+  q[robot_status.joint_name_to_id().at("rightElbowPitch")] = M_PI / 2.;
 
-  q[rs.joint_name_to_id().at("leftShoulderRoll")] = -1;
-  q[rs.joint_name_to_id().at("leftShoulderYaw")] = 0.5;
-  q[rs.joint_name_to_id().at("leftElbowPitch")] = -M_PI / 2.;
+  q[robot_status.joint_name_to_id().at("leftShoulderRoll")] = -1;
+  q[robot_status.joint_name_to_id().at("leftShoulderYaw")] = 0.5;
+  q[robot_status.joint_name_to_id().at("leftElbowPitch")] = -M_PI / 2.;
 
-  rs.Update(0, q, qd, VectorXd::Zero(rs.robot().actuators.size()),
-            Vector6d::Zero(), Vector6d::Zero());
+  robot_status.Update(0, q, v,
+                      VectorXd::Zero(robot_status.robot().actuators.size()),
+                      Vector6d::Zero(), Vector6d::Zero());
 
-  QPOutput output = TestGravityCompensation(rs);
+  QPOutput output = TestGravityCompensation(robot_status);
+
+  // Print results.
+  PrintQPOutput(output);
 
   return 0;
 }
