@@ -307,15 +307,15 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
     std::list<RelativePositionConstraint> constraints;
     for (const auto& loop : loops) {
       constraints.push_back(RelativePositionConstraint(
-          sys.tree.get(), zero, zero, zero, loop.frameA->frame_index,
-          loop.frameB->frame_index, bTbp, tspan));
+          sys.tree.get(), zero, zero, zero, loop.frameA_->frame_index,
+          loop.frameB_->frame_index, bTbp, tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
                                                    &kin_helper));
       prog.AddGenericConstraint(con1wrapper, {qvar});
       constraints.push_back(RelativePositionConstraint(
-          sys.tree.get(), loop.axis, loop.axis, loop.axis,
-          loop.frameA->frame_index, loop.frameB->frame_index, bTbp,
+          sys.tree.get(), loop.axis_, loop.axis_, loop.axis_,
+          loop.frameA_->frame_index, loop.frameB_->frame_index, bTbp,
           tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),

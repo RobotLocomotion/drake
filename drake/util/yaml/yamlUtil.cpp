@@ -208,12 +208,12 @@ void loadInputParams(QPControllerParams& params, const YAML::Node& config,
        actuator_it != robot.actuators.end(); ++actuator_it) {
     try {
       loadSingleInputParams(params, actuator_it - robot.actuators.begin(),
-                            get(config, actuator_it->name), robot);
+                            get(config, actuator_it->name_), robot);
     } catch (...) {
       std::cerr << "error loading input params from node: "
-                << get(config, actuator_it->name) << std::endl;
+                << get(config, actuator_it->name_) << std::endl;
       std::cerr << "config: " << config << std::endl;
-      std::cerr << "actuator: " << actuator_it->name << std::endl;
+      std::cerr << "actuator: " << actuator_it->name_ << std::endl;
       throw;
     }
   }
@@ -403,7 +403,7 @@ JointNames parseRobotJointNames(const YAML::Node& joint_names,
   ret.drake.resize(tree.actuators.size());
   transform(tree.actuators.begin(), tree.actuators.end(), ret.drake.begin(),
             [](const RigidBodyActuator& actuator) {
-              return actuator.body->getJoint().getName();
+              return actuator.body_->getJoint().getName();
             });
   // Node hardware_data = LoadFile(hardware_data_file_name);
   ret.robot = joint_names.as<vector<string>>();
