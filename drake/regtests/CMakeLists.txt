@@ -7,15 +7,19 @@
 find_program(xvfb-run xvfb-run)
 set(hasDisplay APPLE or WIN32 or DEFINED(ENV{DISPLAY}))
 
+message(STATUS "in regtests!!")
+
 if(MATLAB_FOUND)
   add_matlab_test(NAME addpath_spotless_test COMMAND "addpath_spotless;")
 endif()
 
 if(WITH_DIRECTOR)
+  message(STATUS "in WITH_DIRECTOR!!")
   # A test that starts up drake-visualizer.
   set(visualizerStartupTestCommand
       ${CMAKE_INSTALL_PREFIX}/bin/directorPython ${CMAKE_CURRENT_SOURCE_DIR}/visualizer_startup_test.py)
   if (hasDisplay)
+    message(STATUS "in hasDisplay!!")
     add_test(NAME visualizer_startup_test_default_display
              COMMAND ${visualizerStartupTestCommand})
   elseif(xvfb-run)
