@@ -14,11 +14,6 @@
 #include "drake/systems/plants/joints/DrakeJoint.h"
 
 class DRAKERBM_EXPORT RigidBody {
- private:
-  std::unique_ptr<DrakeJoint> joint;
-  DrakeCollision::bitmask collision_filter_group;
-  DrakeCollision::bitmask collision_filter_ignores;
-
  public:
   RigidBody();
 
@@ -323,6 +318,18 @@ class DRAKERBM_EXPORT RigidBody {
   // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
   // currently (independently) at the RigidBodyTree level to represent the
   // featherstone structure. This version is for the kinematics.
+
+  // The "parent" joint of this rigid body. This is the joint through which this
+  // rigid body connects to the rest of the rigid body tree.
+  std::unique_ptr<DrakeJoint> joint;
+
+  // A bitmask that determines the collision groups that this rigid body is part
+  // of.
+  DrakeCollision::bitmask collision_filter_group;
+
+  // A bitmask that determines which collision groups should be ignored when
+  // determinine the colliisons associated with this rigid body.
+  DrakeCollision::bitmask collision_filter_ignores;
 
   // The name of this rigid body.
   std::string name_;
