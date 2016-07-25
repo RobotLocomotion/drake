@@ -12,6 +12,7 @@ struct QPInput {
   std::vector<std::string> coord_names;
 
   // Desired task space accelerations for various body parts.
+  // Postfix _d indicates desired values.
   Vector3d comdd_d;
   Vector6d pelvdd_d;
   Vector6d torsodd_d;
@@ -21,16 +22,16 @@ struct QPInput {
   Vector6d wrench_d[2];  ///< Desired contact wrench
 
   // These are weights for each cost term.
+  // Prefix w_ indicates weights.
   double w_com;
   double w_pelv;
   double w_torso;
   double w_foot;
-  double w_hand;
   double w_vd;
   double w_wrench_reg;
 };
 
-void InitQPInput(const RigidBodyTree& r, QPInput& input);
+void InitQPInput(const RigidBodyTree& r, QPInput* input);
 inline bool is_qp_input_sane(const QPInput& input) {
   return ((int)input.coord_names.size() == input.vd_d.size()) &&
          (input.coord_names.size() != 0);
@@ -58,7 +59,7 @@ struct QPOutput {
   Vector6d foot_wrench_in_sensor_frame[2];
 };
 
-void InitQPOutput(const RigidBodyTree& r, QPOutput& output);
+void InitQPOutput(const RigidBodyTree& r, QPOutput* output);
 void PrintQPOutput(const QPOutput& output);
 double ComputeQPCost(const HumanoidStatus& rs, const QPInput& input,
                      const QPOutput& output);
@@ -88,10 +89,12 @@ class QPController {
   QPParam param;
 
   /**
-   * @brief The current version uses SNOPT, and instantiates
-   * an OptimizationProblem every call.
+   * The current version explicitly uses SNOPT, but it is really solving a
+   * quadratic program. It also instantiates
+   * an OptimizationProblem every call. It should call a QP solver and maintain
+   * a persistent "workspace" for the optimization problem in the future.
    *
    * @return 0 if success, < if error.
    */
-  int Control(const HumanoidStatus& rs, const QPInput& input, QPOutput& output);
+  int Control(const HumanoidStatus& rs, const QPInput& input, QPOutput* output);
 };

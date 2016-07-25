@@ -13,8 +13,9 @@ using namespace Eigen;
 struct BodyOfInterest {
   /// Name of the BodyOfInterest
   std::string name;
-  /// The name of the link name which this BOI is attached to
-  std::string link_name;
+  /// The link which this BOI is attached to
+  const RigidBody* body;
+
   Eigen::Isometry3d pose;
   /// This is the task space velocity, or twist of a frame that has the same
   /// orientation as the world frame, but located at the origin of the body
@@ -41,16 +42,23 @@ class HumanoidStatus {
 
   explicit HumanoidStatus(std::unique_ptr<RigidBodyTree> robot_in)
       : robot_(std::move(robot_in)), cache_(robot_->bodies) {
-    pelv_.name = pelv_.link_name = std::string("pelvis");
-    torso_.name = torso_.link_name = std::string("torso");
-    foot_[Side::LEFT].name = foot_[Side::LEFT].link_name =
-        std::string("leftFoot");
-    foot_[Side::RIGHT].name = foot_[Side::RIGHT].link_name =
-        std::string("rightFoot");
+    pelv_.name = std::string("pelvis");
+    pelv_.body = robot_->FindBody("pelvis");
+
+    torso_.name = std::string("torso");
+    torso_.body = robot_->FindBody("torso");
+
+    foot_[Side::LEFT].name = std::string("leftFoot");
+    foot_[Side::LEFT].body = robot_->FindBody("leftFoot");
+
+    foot_[Side::RIGHT].name = std::string("rightFoot");
+    foot_[Side::RIGHT].body = robot_->FindBody("rightFoot");
+
     foot_sensor_[Side::LEFT].name = std::string("leftFootSensor");
-    foot_sensor_[Side::LEFT].link_name = std::string("leftFoot");
+    foot_sensor_[Side::LEFT].body = robot_->FindBody("leftFoot");
+
     foot_sensor_[Side::RIGHT].name = std::string("rightFootSensor");
-    foot_sensor_[Side::RIGHT].link_name = std::string("rightFoot");
+    foot_sensor_[Side::RIGHT].body = robot_->FindBody("rightFoot");
 
     // build map
     body_name_to_id_ = std::unordered_map<std::string, int>();
@@ -74,18 +82,18 @@ class HumanoidStatus {
   }
 
   /**
-   * @brief Do kinematics and compute useful information based on kinematics and
+   * Do kinematics and compute useful information based on kinematics and
    * measured force torque information.
-   *
-   * @param t is in seconds
-   * @param q is position
-   * @param v is velocity
-   * @param trq is joint torque, should be in the same order as @param v, not
+   * @param time is in seconds
+   * @param q is the vector or generalized positions.
+   * @param v is the vector of generalized velocities.
+   * @param trq is joint torque, should be in the same order as \p v, not
    * in robot->actuators order
-   * @param l_ft is force / torque measured at the foot force torque sensor
+   * @param l_ft is wrench measured at the foot force torque sensor
    * location.
-   * @param r_ft is the same as @param l_ft
-   * @param rot rotates @param l_ft and @param r_ft in the same orientation as
+   * @param r_ft is wrench measured at the foot force torque sensor
+   * location.
+   * @param rot rotates \p l_ft and \p r_ft in the same orientation as
    * the foot frame. This is useful if the foot ft sensor has a different
    * orientation than the foot.
    */
@@ -169,7 +177,7 @@ class HumanoidStatus {
   VectorXd joint_torque_;  /// Joint torque
 
   MatrixXd M_;          ///< Inertial matrix
-  VectorXd bias_term_;  ///< Bias term: M * qdd + h = tau + J^T * lambda
+  VectorXd bias_term_;  ///< Bias term: M * vd + h = tau + J^T * lambda
 
   // computed from kinematics
   Vector3d com_;               ///< Center of mass
@@ -193,9 +201,8 @@ class HumanoidStatus {
   Vector6d foot_wrench_in_world_frame_[2];  ///< Wrench rotated to world frame
 
   /**
-   * @brief computes kinematic related values
-   *
-   * @param name of BodyOfInterest
+   * Computes kinematic related values.
+   * @param body where BodyOfInterest is attached to
    * @param pose stores the output transformation
    * @param vel stores the output task space velocity
    * @param J stores the task space Jacobian
@@ -203,7 +210,7 @@ class HumanoidStatus {
    * @param local_offset offset between point of interest to body origin in
    * body frame
    */
-  void FillKinematics(const std::string& name, Isometry3d& pose, Vector6d& vel,
-                      MatrixXd& J, Vector6d& Jdot_times_v,
+  void FillKinematics(const RigidBody& body, Isometry3d* pose, Vector6d* vel,
+                      MatrixXd* J, Vector6d* Jdot_times_v,
                       const Vector3d& local_offset = Vector3d::Zero()) const;
 };
