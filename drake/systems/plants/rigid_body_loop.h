@@ -22,18 +22,18 @@ class DRAKERBM_EXPORT RigidBodyLoop {
    * constraining the orientations of two frames. The two frames are defined
    * relative to two rigid bodies that should be connected via a loop joint.
    *
-   * @param[in] frameA_in A frame defined relative to the loop joint's "parent"
+   * @param[in] frameA A frame defined relative to the loop joint's "parent"
    * rigid body.
    *
-   * @param[in] frameB_in A frame defined relative to the loop joint's "child"
+   * @param[in] frameB A frame defined relative to the loop joint's "child"
    * rigid body.
    *
-   * @param[in] axis_in The loop joint's axis of rotation expressed in the
-   * coordinate frame of @p frameA_in.
+   * @param[in] axis The loop joint's axis of rotation expressed in the
+   * coordinate frame of @p frameA.
    */
-  RigidBodyLoop(std::shared_ptr<RigidBodyFrame> frameA_in,
-                std::shared_ptr<RigidBodyFrame> frameB_in,
-                const Eigen::Vector3d& axis_in);
+  RigidBodyLoop(std::shared_ptr<RigidBodyFrame> frameA,
+                std::shared_ptr<RigidBodyFrame> frameB,
+                const Eigen::Vector3d& axis);
 
   const std::shared_ptr<RigidBodyFrame> frameA, frameB;
   const Eigen::Vector3d axis;
