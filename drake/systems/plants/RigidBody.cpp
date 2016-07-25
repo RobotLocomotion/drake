@@ -23,7 +23,7 @@ RigidBody::RigidBody()
   velocity_start_index_ = 0;
   body_index_ = 0;
   mass_ = 0.0;
-  com = Vector3d::Zero();
+  center_of_mass_ = Vector3d::Zero();
   I << drake::SquareTwistMatrix<double>::Zero();
 }
 
@@ -211,6 +211,14 @@ void RigidBody::set_mass(int mass) {
 
 int RigidBody::get_mass() const {
   return mass_;
+}
+
+void RigidBody::set_center_of_mass(const Eigen::Vector3d& center_of_mass) {
+  center_of_mass_ = center_of_mass;
+}
+
+const Eigen::Vector3d& RigidBody::get_center_of_mass() const {
+  return center_of_mass_;
 }
 
 ostream& operator<<(ostream& out, const RigidBody& b) {

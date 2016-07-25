@@ -296,7 +296,8 @@ void RigidBodyTree::drawKinematicTree(
   for (const auto& body : bodies) {
     dotfile << "  " << body->get_name() << " [label=\"" << body->get_name()
             << endl;
-    dotfile << "mass=" << body->get_mass() << ", com=" << body->com.transpose()
+    dotfile << "mass=" << body->get_mass() << ", com="
+            << body->get_center_of_mass().transpose()
             << endl;
     dotfile << "inertia=" << endl << body->I << endl;
     dotfile << "\"];" << endl;
@@ -952,7 +953,8 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
       if (body.get_mass() > 0) {
         com.noalias() +=
             body.get_mass() *
-                transformPoints(cache, body.com.cast<Scalar>(), i, 0);
+                transformPoints(cache, body.get_center_of_mass().cast<Scalar>(),
+                                i, 0);
       }
       m += body.get_mass();
     }

@@ -252,6 +252,18 @@ class DRAKERBM_EXPORT RigidBody {
   int get_mass() const;
 
   /**
+   * Sets the center of mass of this rigid body. The center of mass is expressed
+   * in this body's frame.
+   */
+  void set_center_of_mass(const Eigen::Vector3d& center_of_mass);
+
+  /**
+   * Gets the center of mass of this rigid body. The center of mass is expressed
+   * in this body's frame.
+   */
+  const Eigen::Vector3d& get_center_of_mass() const;
+
+  /**
    * Transforms all of the visual, collision, and inertial elements associated
    * with this body to the proper joint frame.  This is necessary, for instance,
    * to support SDF loading where the child frame can be specified independently
@@ -268,9 +280,6 @@ class DRAKERBM_EXPORT RigidBody {
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
-
-  /// The center of mass of this rigid body.
-  Eigen::Vector3d com;
 
   /// The spatial rigid body inertia of this rigid body.
   drake::SquareTwistMatrix<double> I;
@@ -347,4 +356,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   // The mass of this rigid body.
   double mass_;
+
+  // The center of mass of this rigid body.
+  Eigen::Vector3d center_of_mass_;
 };

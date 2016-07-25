@@ -103,7 +103,9 @@ void parseInertial(RigidBody* body, XMLElement* node) {
     body->set_mass(body_mass);
   }
 
-  body->com << T(0, 3), T(1, 3), T(2, 3);
+  Eigen::Vector3d com;
+  com << T(0, 3), T(1, 3), T(2, 3);
+  body->set_center_of_mass(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
   I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();

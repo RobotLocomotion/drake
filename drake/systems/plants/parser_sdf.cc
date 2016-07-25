@@ -43,7 +43,9 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   parseScalarValue(node, "mass", mass);
   body->set_mass(mass);
 
-  body->com = T_link.inverse() * T.translation();
+  Eigen::Vector3d com;
+  com = T_link.inverse() * T.translation();
+  body->set_center_of_mass(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
   I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
