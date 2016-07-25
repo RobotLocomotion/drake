@@ -67,8 +67,7 @@ class DRAKERBM_EXPORT RigidBodyElementId {
 
 
 bool operator==(const RigidBodyElementId& left_element,
-    const RigidBodyElementId& right_element)
-{
+    const RigidBodyElementId& right_element) {
     return
         left_element.get_instance_name() == right_element.get_instance_name() &&
         left_element.get_model_name() == right_element.get_model_name() &&
@@ -76,8 +75,7 @@ bool operator==(const RigidBodyElementId& left_element,
 }
 
 bool operator!=(const RigidBodyElementId& left_element,
-    const RigidBodyElementId& right_element)
-{
+    const RigidBodyElementId& right_element) {
     return !(left_element == right_element);
 }
 
