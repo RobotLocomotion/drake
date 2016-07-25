@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2910][] Made `RigidBody::contact_pts` private. Added accessors for them.
  - [#2909][] Made `RigidBody::collision_element_ids` and `RigidBody::collision_element_groups` private. Added accessors for them.
  - [#2908][] Made `RigidBody::visual_elements` private. Re-named it to be `RigidBody::visual_elements_`. Renamed accessors based on style guide to be `RigidBody::AddVisualElement()` and `RigidBody::GetVisualElements()`.
  - [#2907][] Made `RigidBody::position_num_start` and `RigidBody::velocity_num_start to be private. Re-named them to be `RigidBody::position_start_index_` and `RigidBody::velocity_start_index_`. Renamed accessors to conform to style guide.
@@ -98,3 +99,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2907]: https://github.com/RobotLocomotion/drake/issues/2907
 [#2908]: https://github.com/RobotLocomotion/drake/issues/2908
 [#2909]: https://github.com/RobotLocomotion/drake/issues/2909
+[#2910]: https://github.com/RobotLocomotion/drake/issues/2910
