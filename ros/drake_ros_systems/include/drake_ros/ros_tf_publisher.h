@@ -95,7 +95,7 @@ class DrakeRosTfPublisher {
       if (!PublishTfForRigidBody(rigid_body.get())) continue;
 
       // Creates a unique key for holding the transform message.
-      std::string key = rigid_body->model_name() + rigid_body->get_name();
+      std::string key = rigid_body->get_model_name() + rigid_body->get_name();
 
       // Checks whether a transform message for the current link was already
       // added to the transform_messages_ map.
@@ -138,7 +138,7 @@ class DrakeRosTfPublisher {
     // Instantiates a geometry_msgs::TransformStamped message for each frame
     // in the rigid body tree.
     for (auto const& frame : rigid_body_tree->frames) {
-      std::string key = frame->body->model_name() + frame->name;
+      std::string key = frame->body->get_model_name() + frame->name;
 
       // Checks whether a transform message for the current frame was already
       // added to the transform_messages_ map.
@@ -206,7 +206,7 @@ class DrakeRosTfPublisher {
       if (!PublishTfForRigidBody(rigid_body.get())) continue;
 
       // Obtains a unique key for holding the transform message.
-      std::string key = rigid_body->model_name() + rigid_body->get_name();
+      std::string key = rigid_body->get_model_name() + rigid_body->get_name();
 
       // Verifies that a geometry_msgs::TransformStamped message for the current
       // link exists in the transform_messages_ map.
@@ -252,7 +252,7 @@ class DrakeRosTfPublisher {
 
     // Publishes the transform for each frame in the rigid body tree.
     for (auto const& frame : rigid_body_tree_->frames) {
-      std::string key = frame->body->model_name() + frame->name;
+      std::string key = frame->body->get_model_name() + frame->name;
 
       // Verifies that a geometry_msgs::TransformStamped message for the current
       // link exists in the transform_messages_ map.

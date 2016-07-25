@@ -392,7 +392,8 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
           throw runtime_error(
               "ERROR: Failed to parse color of material for "
               "model \"" +
-              body->model_name() + "\", link \"" + body->get_name() + "\".");
+              body->get_model_name() + "\", link \"" + body->get_name() +
+              "\".");
         }
         color_specified = true;
       }
@@ -457,7 +458,7 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
           << "WARNING: Visual element has a material whose color could not"
              "be determined."
           << std::endl
-          << "  - model name: " << body->model_name() << std::endl
+          << "  - model name: " << body->get_model_name() << std::endl
           << "  - body name: " << body->get_name() << std::endl
           << "  - material name: " << material_name << std::endl;
       throw std::runtime_error(error_buff.str());
@@ -524,7 +525,7 @@ bool parseLink(RigidBodyTree* tree, string robot_name, XMLElement* node,
 
   RigidBody* body{nullptr};
   std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
-  body->model_name_ = robot_name;
+  body->set_model_name(robot_name);
 
   attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");

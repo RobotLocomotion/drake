@@ -31,7 +31,9 @@ const std::string& RigidBody::get_name() const { return name_; }
 
 void RigidBody::set_name(const std::string& name) { name_ = name; }
 
-const std::string& RigidBody::model_name() const { return model_name_; }
+const std::string& RigidBody::get_model_name() const { return model_name_; }
+
+void RigidBody::set_model_name(const std::string& name) { model_name_ = name; }
 
 int RigidBody::get_model_id() const { return robotnum; }
 

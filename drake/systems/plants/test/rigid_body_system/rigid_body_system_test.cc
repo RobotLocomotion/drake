@@ -44,7 +44,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
        {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
     RigidBody* body = tree->FindBody(body_name);
     EXPECT_NE(body, nullptr);
-    EXPECT_EQ(body->model_name(), "dual_ramps");
+    EXPECT_EQ(body->get_model_name(), "dual_ramps");
   }
 }
 

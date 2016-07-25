@@ -268,7 +268,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
 
   RigidBody* body{nullptr};
   std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
-  body->model_name_ = model_name;
+  body->set_model_name(model_name);
   body->set_model_id(model_id);
 
   attr = node->Attribute("name");
