@@ -308,9 +308,13 @@ void inverseKinBackend(
     if ((constraint_array[i]->getCategory() !=
          RigidBodyConstraint::SingleTimeKinematicConstraintCategory) &&
         (constraint_array[i]->getCategory() !=
+         RigidBodyConstraint::MultipleTimeKinematicConstraintCategory) &&
+        (constraint_array[i]->getCategory() !=
          RigidBodyConstraint::PostureConstraintCategory) &&
         (constraint_array[i]->getCategory() !=
          RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) &&
+        (constraint_array[i]->getCategory() !=
+         RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory) &&
         (constraint_array[i]->getCategory() !=
          RigidBodyConstraint::QuasiStaticConstraintCategory)) {
       constraints_supported = false;
@@ -319,7 +323,7 @@ void inverseKinBackend(
   }
 
   // Fall through to SNOPT implementation if needed.
-  if (!constraints_supported || (mode != 1)) {
+  if (!constraints_supported) {
     inverseKinSnoptBackend(model, mode, nT, t, q_seed,
                            q_nom, num_constraints, constraint_array,
                            ikoptions, q_sol, qdot_sol, qddot_sol, INFO,
@@ -329,10 +333,17 @@ void inverseKinBackend(
 
   // TODO(sam.creasey) This will need to be conditional when more than
   // one mode is supported...
-  inverseKinMode1(model, mode, nT, t, q_seed,
-                  q_nom, num_constraints, constraint_array,
-                  ikoptions, q_sol, qdot_sol, qddot_sol, INFO,
-                  infeasible_constraint);
+  if (mode == 1) {
+    inverseKinMode1(model, mode, nT, t, q_seed,
+                    q_nom, num_constraints, constraint_array,
+                    ikoptions, q_sol, qdot_sol, qddot_sol, INFO,
+                    infeasible_constraint);
+  } else {
+    inverseKinTrajBackend(model, nT, t, q_seed,
+                          q_nom, num_constraints, constraint_array,
+                          ikoptions, q_sol, qdot_sol, qddot_sol, INFO,
+                          infeasible_constraint);
+  }
   return;
 }
 
