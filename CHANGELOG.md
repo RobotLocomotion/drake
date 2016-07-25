@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
  - [#2920][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
+ - [#2902][] Made `RigidBody::model_name_` private. Re-named `RigidBody::model_name()` to be `RigidBody::get_model_name()`. Added `RigidBody::set_model_name()`.
  - [#2900][] Made `RigidBody::name_` private. Re-named `RigidBody::name()` to be `RigidBody::get_name()`. Added `RigidBody::set_name()`.
  - [#2666][] Changed `TWIST_SIZE` to `drake::kTwistSize`
  - [#2597][] Changed `RigidBodyTree::findLink()` to be `RigidBodyTree::FindBody()`.
@@ -84,4 +85,5 @@ Changes in version v0.9.11 and before are not provided.
 [#2666]: https://github.com/RobotLocomotion/drake/issues/2666
 [#2779]: https://github.com/RobotLocomotion/drake/issues/2779
 [#2900]: https://github.com/RobotLocomotion/drake/issues/2900
+[#2902]: https://github.com/RobotLocomotion/drake/issues/2902
 [#2920]: https://github.com/RobotLocomotion/drake/issues/2920

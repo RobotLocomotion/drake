@@ -43,7 +43,12 @@ class DRAKERBM_EXPORT RigidBody {
    * @return The name of the model that this rigid body belongs to.
    */
   // TODO(amcastro-tri): Move concept of world out of here as per #2318.
-  const std::string& model_name() const;
+  const std::string& get_model_name() const;
+
+  /**
+   * Sets the name of the model to which this rigid body belongs.
+   */
+  void set_model_name(const std::string& name);
 
   /**
    * Returns the ID of the model to which this rigid body belongs.
@@ -147,9 +152,6 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:
-  /// The name of the model to which this rigid body belongs.
-  std::string model_name_;
-
   /// A unique ID for each model. It uses 0-index, starts from 0.
   int robotnum;
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
@@ -222,4 +224,7 @@ class DRAKERBM_EXPORT RigidBody {
  private:
   // The name of this rigid body.
   std::string name_;
+
+  // The name of the model to which this rigid body belongs.
+  std::string model_name_;
 };

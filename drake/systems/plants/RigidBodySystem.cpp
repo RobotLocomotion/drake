@@ -396,7 +396,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
 }
 
 const std::string& RigidBodySensor::get_model_name() const {
-  return frame_->body->model_name();
+  return frame_->body->get_model_name();
 }
 
 const RigidBodyFrame& RigidBodySensor::get_frame() const {
