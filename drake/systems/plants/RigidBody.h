@@ -227,5 +227,5 @@ class DRAKERBM_EXPORT RigidBody {
   std::string model_name_;
 
   // A unique ID for each model. It uses 0-index, starts from 0.
-  int model_id_;
+  int model_id_{};
 };
