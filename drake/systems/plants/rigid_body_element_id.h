@@ -38,10 +38,9 @@ class DRAKERBM_EXPORT RigidBodyElementId {
    * could be, for example, the name of a joint, body, frame, loop joint,
    * actuator, sensor, etc.
    */
-  RigidBodyElementId(
-      const std::string& instance_name,
-      const std::string& model_name,
-      const std::string& element_name);
+  RigidBodyElementId(const std::string& instance_name,
+                     const std::string& model_name,
+                     const std::string& element_name);
 
   /**
    * Returns a reference to the modeling element's instance name.
@@ -65,18 +64,17 @@ class DRAKERBM_EXPORT RigidBodyElementId {
   const std::string element_name_;
 };
 
-
 bool operator==(const RigidBodyElementId& left_element,
-    const RigidBodyElementId& right_element) {
-    return
-        left_element.get_instance_name() == right_element.get_instance_name() &&
-        left_element.get_model_name() == right_element.get_model_name() &&
-        left_element.get_element_name() == right_element.get_element_name();
+                const RigidBodyElementId& right_element) {
+  return left_element.get_instance_name() ==
+             right_element.get_instance_name() &&
+         left_element.get_model_name() == right_element.get_model_name() &&
+         left_element.get_element_name() == right_element.get_element_name();
 }
 
 bool operator!=(const RigidBodyElementId& left_element,
-    const RigidBodyElementId& right_element) {
-    return !(left_element == right_element);
+                const RigidBodyElementId& right_element) {
+  return !(left_element == right_element);
 }
 
 }  // namespace plants

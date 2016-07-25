@@ -4,10 +4,9 @@ namespace drake {
 namespace systems {
 namespace plants {
 
-RigidBodyElementId::RigidBodyElementId(
-    const std::string& instance_name,
-    const std::string& model_name,
-    const std::string& element_name)
+RigidBodyElementId::RigidBodyElementId(const std::string& instance_name,
+                                       const std::string& model_name,
+                                       const std::string& element_name)
     : instance_name_(instance_name),
       model_name_(model_name),
       element_name_(element_name) {}
