@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2912][] Made `RigidBody::com` private. Added accessors for it.
  - [#2911][] Made `RigidBody::mass` private. Added accessors for it.
  - [#2910][] Made `RigidBody::contact_pts` private. Added accessors for it.
  - [#2909][] Made `RigidBody::collision_element_ids` and `RigidBody::collision_element_groups` private. Added accessors for them.
@@ -101,3 +102,5 @@ Changes in version v0.9.11 and before are not provided.
 [#2908]: https://github.com/RobotLocomotion/drake/issues/2908
 [#2909]: https://github.com/RobotLocomotion/drake/issues/2909
 [#2910]: https://github.com/RobotLocomotion/drake/issues/2910
+[#2911]: https://github.com/RobotLocomotion/drake/issues/2911
+[#2912]: https://github.com/RobotLocomotion/drake/issues/2912
