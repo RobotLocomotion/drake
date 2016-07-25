@@ -101,3 +101,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2908]: https://github.com/RobotLocomotion/drake/issues/2908
 [#2909]: https://github.com/RobotLocomotion/drake/issues/2909
 [#2910]: https://github.com/RobotLocomotion/drake/issues/2910
+[#2911]: https://github.com/RobotLocomotion/drake/issues/2911
