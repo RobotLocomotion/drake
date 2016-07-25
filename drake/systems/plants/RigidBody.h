@@ -152,8 +152,6 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:
-  /// A unique ID for each model. It uses 0-index, starts from 0.
-  int robotnum;
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
@@ -227,4 +225,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   // The name of the model to which this rigid body belongs.
   std::string model_name_;
+
+  // A unique ID for each model. It uses 0-index, starts from 0.
+  int model_id_{0};
 };
