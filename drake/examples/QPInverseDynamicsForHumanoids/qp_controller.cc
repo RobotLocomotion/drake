@@ -300,7 +300,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     std::shared_ptr<LinearConstraint> ineq = ineq_b.constraint();
     VectorXd X = VariableList2VectorXd(ineq_b.variable_list());
     X = ineq->A() * X;
-    for (size_t i = 0; i < X.size(); i++) {
+    for (int i = 0; i < X.size(); i++) {
       assert(X[i] >= ineq->lower_bound()[i] && X[i] <= ineq->upper_bound()[i]);
     }
   }
@@ -364,7 +364,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 void InitQPInput(const RigidBodyTree& r, QPInput& input) {
   input.vd_d.resize(r.number_of_velocities());
   input.coord_names.resize(r.number_of_velocities());
-  for (size_t i = 0; i < r.number_of_velocities(); i++) {
+  for (int i = 0; i < r.number_of_velocities(); i++) {
     // strip out the "dot" part from name
     input.coord_names[i] =
         r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
@@ -374,7 +374,7 @@ void InitQPInput(const RigidBodyTree& r, QPInput& input) {
 void InitQPOutput(const RigidBodyTree& r, QPOutput& output) {
   output.vd.resize(r.number_of_velocities());
   output.coord_names.resize(r.number_of_velocities());
-  for (size_t i = 0; i < r.number_of_velocities(); i++) {
+  for (int i = 0; i < r.number_of_velocities(); i++) {
     // strip out the "dot" part from name
     output.coord_names[i] =
         r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
