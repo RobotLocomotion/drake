@@ -289,10 +289,6 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:
-  // note: it's very ugly, but parent, dofnum, and pitch also exist currently
-  // (independently) at the RigidBodyTree level to represent the featherstone
-  // structure.  this version is for the kinematics.
-
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
   // TODO(amcastro-tri): move to a better place (h + cc files).
@@ -324,6 +320,10 @@ class DRAKERBM_EXPORT RigidBody {
 #endif
 
  private:
+  // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
+  // currently (independently) at the RigidBodyTree level to represent the
+  // featherstone structure. This version is for the kinematics.
+
   // The name of this rigid body.
   std::string name_;
 
