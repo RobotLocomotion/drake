@@ -5,7 +5,9 @@
 #include <Eigen/StdVector>
 #include <Eigen/Dense>
 
+#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/solution_result.h"
+#include "drake/systems/plants/ConstraintWrappers.h"
 
 class RigidBodyTree;
 class RigidBodyConstraint;
@@ -59,6 +61,23 @@ int GetIKSolverInfo(const drake::solvers::OptimizationProblem& prog,
 /// Set solver options based on IK options.
 void SetIKSolverOptions(const IKoptions& ikoptions,
                         drake::solvers::OptimizationProblem* prog);
+
+/// Add a single time linear posture constraint to @p prog at time @p
+/// t covering @p vars.  @p nq is the number of positions in
+/// underlying model.
+void AddSingleTimeLinearPostureConstraint(
+    const double *t, const RigidBodyConstraint*, int nq,
+    const drake::solvers::DecisionVariableView& vars,
+    drake::solvers::OptimizationProblem* prog);
+
+/// Add a single time linear posture constraint to @p prog at time @p
+/// t covering @p vars.  @p nq is the KinematicsCacheHelper for the
+/// underlying model.
+void AddQuasiStaticConstraint(
+    const double *t, const RigidBodyConstraint*,
+    KinematicsCacheHelper<double>* kin_helper,
+    const drake::solvers::DecisionVariableView& vars,
+    drake::solvers::OptimizationProblem* prog);
 }
 }
 }
