@@ -37,6 +37,51 @@ using drake::solvers::SolutionResult;
 namespace Drake {
 namespace systems {
 namespace plants {
+
+int GetIKSolverInfo(const OptimizationProblem& prog, SolutionResult result) {
+  std::string solver_name;
+  int solver_result = 0;
+  prog.GetSolverResult(&solver_name, &solver_result);
+
+  if (solver_name == "SNOPT") {
+    // We can return SNOPT results directly.
+    return solver_result;
+  }
+
+  // Make a SNOPT-like return code out of the generic result.
+  switch (result) {
+    case SolutionResult::kSolutionFound: {
+      return 1;
+    }
+    case SolutionResult::kInvalidInput: {
+      return 91;
+    }
+    case SolutionResult::kInfeasibleConstraints: {
+      return 13;
+    }
+    case SolutionResult::kUnknownError: {
+      return 100;  // Not a real SNOPT error.
+    }
+  }
+
+  return -1;
+}
+
+void SetIKSolverOptions(const IKoptions& ikoptions,
+                        drake::solvers::OptimizationProblem* prog) {
+  prog->SetSolverOption("SNOPT", "Derivative option", 1);
+  prog->SetSolverOption("SNOPT", "Major optimality tolerance",
+                        ikoptions.getMajorOptimalityTolerance());
+  prog->SetSolverOption("SNOPT", "Major feasibility tolerance",
+                        ikoptions.getMajorFeasibilityTolerance());
+  prog->SetSolverOption("SNOPT", "Superbasics limit",
+                        ikoptions.getSuperbasicsLimit());
+  prog->SetSolverOption("SNOPT", "Major iterations limit",
+                        ikoptions.getMajorIterationsLimit());
+  prog->SetSolverOption("SNOPT", "Iterations limit",
+                        ikoptions.getIterationsLimit());
+}
+
 namespace {
 
 class InverseKinObjective : public Constraint {
@@ -76,35 +121,6 @@ class InverseKinObjective : public Constraint {
   VectorXd q_nom_i_;
 };
 
-int GetSolverInfo(const OptimizationProblem& prog, SolutionResult result) {
-  std::string solver_name;
-  int solver_result = 0;
-  prog.GetSolverResult(&solver_name, &solver_result);
-
-  if (solver_name == "SNOPT") {
-    // We can return SNOPT results directly.
-    return solver_result;
-  }
-
-  // Make a SNOPT-like return code out of the generic result.
-  switch (result) {
-    case SolutionResult::kSolutionFound: {
-      return 1;
-    }
-    case SolutionResult::kInvalidInput: {
-      return 91;
-    }
-    case SolutionResult::kInfeasibleConstraints: {
-      return 13;
-    }
-    case SolutionResult::kUnknownError: {
-      return 100;  // Not a real SNOPT error.
-    }
-  }
-
-  return -1;
-}
-
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
 void inverseKinMode1(
@@ -125,16 +141,7 @@ void inverseKinMode1(
   // there's not actually another way.
   for (int t_index = 0; t_index < nT; t_index++) {
     OptimizationProblem prog;
-    prog.SetSolverOption("SNOPT", "Major optimality tolerance",
-                         ikoptions.getMajorOptimalityTolerance());
-    prog.SetSolverOption("SNOPT", "Major feasibility tolerance",
-                         ikoptions.getMajorFeasibilityTolerance());
-    prog.SetSolverOption("SNOPT", "Superbasics limit",
-                         ikoptions.getSuperbasicsLimit());
-    prog.SetSolverOption("SNOPT", "Major iterations limit",
-                         ikoptions.getMajorIterationsLimit());
-    prog.SetSolverOption("SNOPT", "Iterations limit",
-                         ikoptions.getIterationsLimit());
+    SetIKSolverOptions(ikoptions, &prog);
 
     DecisionVariableView vars =
         prog.AddContinuousVariables(model->number_of_positions());
@@ -250,7 +257,7 @@ void inverseKinMode1(
     SolutionResult result = prog.Solve();
     prog.PrintSolution();
     q_sol->col(t_index) = vars.value();
-    INFO[t_index] = GetSolverInfo(prog, result);
+    INFO[t_index] = GetIKSolverInfo(prog, result);
   }
 }
 

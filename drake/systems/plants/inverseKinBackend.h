@@ -1,11 +1,21 @@
 #pragma once
 
 #include <string>
+
 #include <Eigen/StdVector>
 #include <Eigen/Dense>
+
+#include "drake/solvers/solution_result.h"
+
 class RigidBodyTree;
 class RigidBodyConstraint;
 class IKoptions;
+
+namespace drake {
+namespace solvers {
+class OptimizationProblem;
+}
+}
 
 namespace Drake {
 namespace systems {
@@ -40,6 +50,15 @@ void inverseKinSnoptBackend(RigidBodyTree *model, const int mode, const int nT,
                             Eigen::MatrixBase<DerivedD>* qdot_sol,
                             Eigen::MatrixBase<DerivedE>* qddot_sol, int *INFO,
                             std::vector<std::string>* infeasible_constraint);
+
+/// Translate a solver result into something expected for the INFO
+/// output parameter.
+int GetIKSolverInfo(const drake::solvers::OptimizationProblem& prog,
+                    drake::solvers::SolutionResult result);
+
+/// Set solver options based on IK options.
+void SetIKSolverOptions(const IKoptions& ikoptions,
+                        drake::solvers::OptimizationProblem* prog);
 }
 }
 }
