@@ -91,11 +91,6 @@ class DRAKERBM_EXPORT RigidBody {
    */
   const RigidBody* get_parent() const;
 
-  /**
-   * Returns a mutable pointer to this rigid body's parent rigid body.
-   */
-  RigidBody* get_mutable_parent();
-
   bool hasParent() const;
 
   /**

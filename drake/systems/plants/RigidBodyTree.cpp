@@ -1286,7 +1286,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
           (element_i.motion_subspace_in_world.transpose() * F).eval();
 
       // Hij
-      RigidBody* body_j(body_i.get_mutable_parent());
+      const RigidBody* body_j(body_i.get_parent());
       while (body_j->hasParent()) {
         const auto& element_j = cache.getElement(*body_j);
         int v_start_j = body_j->velocity_num_start;
@@ -1295,7 +1295,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
         ret.block(v_start_j, v_start_i, nv_j, nv_i) = Hji;
         ret.block(v_start_i, v_start_j, nv_i, nv_j) = Hji.transpose();
 
-        body_j = body_j->get_mutable_parent();
+        body_j = body_j->get_parent();
       }
     }
   }

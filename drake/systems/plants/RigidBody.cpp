@@ -55,8 +55,6 @@ void RigidBody::set_parent(RigidBody* parent) { parent_ = parent; }
 
 const RigidBody* RigidBody::get_parent() const { return parent_; }
 
-RigidBody* RigidBody::get_mutable_parent() { return parent_; }
-
 bool RigidBody::hasParent() const { return parent_ != nullptr; }
 
 void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element) {
