@@ -20,11 +20,10 @@ Unreleased: changes on master, not yet released
  built-in `assert()` macro.
  - [#2621][] Added `DRAKE_DEPRECATED` macro for portable deprecation.
 
-
 [//]: # "Altered functionality or APIs."
 ### Changed
 
- - [#2920][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
+ - [#2923][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
  - [#2903][] Made `RigidBody::robotnum` private. Re-named it to be `RigidBody::model_id_`.
  - [#2902][] Made `RigidBody::model_name_` private. Re-named `RigidBody::model_name()` to be `RigidBody::get_model_name()`. Added `RigidBody::set_model_name()`.
  - [#2900][] Made `RigidBody::name_` private. Re-named `RigidBody::name()` to be `RigidBody::get_name()`. Added `RigidBody::set_name()`.
@@ -90,4 +89,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2900]: https://github.com/RobotLocomotion/drake/issues/2900
 [#2902]: https://github.com/RobotLocomotion/drake/issues/2902
 [#2903]: https://github.com/RobotLocomotion/drake/issues/2903
-[#2920]: https://github.com/RobotLocomotion/drake/issues/2920
+[#2923]: https://github.com/RobotLocomotion/drake/issues/2923
