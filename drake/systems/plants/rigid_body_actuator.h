@@ -7,8 +7,29 @@
 
 class RigidBody;
 
+/**
+ * Defines a physical actuator (i.e., an electric motor and step-down
+ * transmission) that operates on a joint. This class assumes the actuator
+ * has a single DOF.
+ */
 class DRAKERBM_EXPORT RigidBodyActuator {
  public:
+  /**
+   * The constructor.
+   *
+   * @param[in] name The name of the actuator.
+   *
+   * @param[in] body A pointer to the rigid body whose joint's actuator is
+   * being described by this class.
+   *
+   * @param[in] reduction The gear reduction ratio of the actuator.
+   *
+   * @param[in] effort_limit_min The actuator's minimum effort limit. This
+   * has units of Nm for revolute joints and N for prismatic joints.
+   *
+   * @param[in] effort_limit_max The actuator's maximum effort limit. This
+   * has units of Nm for revolute joints and N for prismatic joints.
+   */
   RigidBodyActuator(
       const std::string& name, const RigidBody* body,
       double reduction = 1.0,

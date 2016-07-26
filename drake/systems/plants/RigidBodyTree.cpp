@@ -74,7 +74,7 @@ RigidBodyTree::RigidBodyTree(void)
   // Adds the rigid body representing the world.
   std::unique_ptr<RigidBody> b(new RigidBody());
   b->set_name(RigidBodyTree::kWorldLinkName);
-  b->robotnum = 0;
+  b->set_model_id(0);
   b->body_index = 0;
   bodies.push_back(std::move(b));
 }
@@ -916,7 +916,7 @@ bool RigidBodyTree::isBodyPartOfRobot(const RigidBody& body,
     }
   }
 
-  return robotnum.find(body.robotnum) != robotnum.end();
+  return robotnum.find(body.get_model_id()) != robotnum.end();
 }
 
 double RigidBodyTree::getMass(const std::set<int>& robotnum) const {
@@ -1813,7 +1813,7 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
   if (model_id != -1) {
     for (size_t ii = 0; ii < this->bodies.size(); ii++) {
       if (name_match[ii]) {
-        name_match[ii] = this->bodies[ii]->robotnum == model_id;
+        name_match[ii] = this->bodies[ii]->get_model_id() == model_id;
       }
     }
   }
