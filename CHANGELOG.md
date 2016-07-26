@@ -23,6 +23,10 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#2923][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
+ - [#2903][] Made `RigidBody::robotnum` private. Re-named it to be `RigidBody::model_id_`.
+ - [#2902][] Made `RigidBody::model_name_` private. Re-named `RigidBody::model_name()` to be `RigidBody::get_model_name()`. Added `RigidBody::set_model_name()`.
+ - [#2900][] Made `RigidBody::name_` private. Re-named `RigidBody::name()` to be `RigidBody::get_name()`. Added `RigidBody::set_name()`.
  - [#2666][] Changed `TWIST_SIZE` to `drake::kTwistSize`
  - [#2597][] Changed `RigidBodyTree::findLink()` to be `RigidBodyTree::FindBody()`.
  - [#2426][] Changed `RigidBodyTree::findLinkId()` to be `RigidBodyTree::FindBodyIndex()`. Updated APIs of `RigidBodyTree`, `RigidBody`, `RigidBodyTree`, and `RigidBodyFrame` to support notion of a "model ID" that uniquely identifies a model within a `RigidBodySystem`. This enables the same SDF file to be loaded multiple times into the same `RigidBodySystem`.
@@ -82,3 +86,7 @@ Changes in version v0.9.11 and before are not provided.
 [#2621]: https://github.com/RobotLocomotion/drake/issues/2621
 [#2666]: https://github.com/RobotLocomotion/drake/issues/2666
 [#2779]: https://github.com/RobotLocomotion/drake/issues/2779
+[#2900]: https://github.com/RobotLocomotion/drake/issues/2900
+[#2902]: https://github.com/RobotLocomotion/drake/issues/2902
+[#2903]: https://github.com/RobotLocomotion/drake/issues/2903
+[#2923]: https://github.com/RobotLocomotion/drake/issues/2923

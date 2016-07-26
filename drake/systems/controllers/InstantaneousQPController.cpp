@@ -38,8 +38,8 @@ void InstantaneousQPController::initialize() {
   umin.resize(nu);
   umax.resize(nu);
   for (size_t i = 0; i < robot->actuators.size(); i++) {
-    umin(i) = robot->actuators.at(i).effort_limit_min;
-    umax(i) = robot->actuators.at(i).effort_limit_max;
+    umin(i) = robot->actuators.at(i).effort_limit_min_;
+    umax(i) = robot->actuators.at(i).effort_limit_max_;
   }
 
   qdd_lb = Eigen::VectorXd::Zero(nq).array() -
@@ -573,7 +573,7 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
     const RigidBodyTree& robot) {
   auto id_map = std::unordered_map<std::string, int>();
   for (auto it = robot.bodies.begin(); it != robot.bodies.end(); ++it) {
-    id_map[(*it)->name_] = it - robot.bodies.begin();
+    id_map[(*it)->get_name()] = it - robot.bodies.begin();
   }
 
   for (auto it = robot.frames.begin(); it != robot.frames.end(); ++it) {

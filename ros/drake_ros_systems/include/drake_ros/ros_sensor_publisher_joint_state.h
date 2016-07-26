@@ -112,7 +112,7 @@ class SensorPublisherJointState {
 
       // Obtains the robot name. The robot's name is used to as the key into the
       // maps that hold the joint state messages and publishers.
-      const std::string& robot_name = rigid_body->model_name();
+      const std::string& robot_name = rigid_body->get_model_name();
 
       if (robot_structs_.find(robot_name) == robot_structs_.end()) {
         std::unique_ptr<RobotJointStateStruct> robot_struct(
@@ -164,7 +164,7 @@ class SensorPublisherJointState {
     // those that belong to the specified robot. Updates the
     // RobotJointStateStruct using the robot's rigid bodies.
     for (auto const& rigid_body : tree->bodies) {
-      if (rigid_body->model_name() == robot_name) {
+      if (rigid_body->get_model_name() == robot_name) {
         const DrakeJoint& joint = rigid_body->getJoint();
 
         if (joint.getNumPositions() > 0) {
@@ -269,7 +269,7 @@ class SensorPublisherJointState {
       // Defines the key that can be used to obtain the RobotJointStateStruct
       // object for the current robot. The key is simply the model name since
       // there should only be one RobotJointStateStruct per robot.
-      const std::string& key = rigid_body->model_name();
+      const std::string& key = rigid_body->get_model_name();
 
       // Verifies that a RobotJointStateStruct for the current robot
       // exists in the robot_structs_ map.
@@ -286,8 +286,9 @@ class SensorPublisherJointState {
       if (joint.getNumPositions() > 0) {
         if (joint.isFloating()) {
           auto transform = rigid_body_tree->relativeTransform(
-              cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
-              rigid_body_tree->FindBodyIndex(rigid_body->name()));
+              cache,
+              rigid_body_tree->FindBodyIndex(rigid_body->parent->get_name()),
+              rigid_body_tree->FindBodyIndex(rigid_body->get_name()));
           auto translation = transform.translation();
           auto rpy = drake::math::rotmat2rpy(transform.linear());
 

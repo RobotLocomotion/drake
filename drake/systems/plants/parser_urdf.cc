@@ -41,7 +41,7 @@ namespace {
 int findLinkIndex(RigidBodyTree* tree, string link_name) {
   int index = -1;
   for (unsigned int i = 0; i < tree->bodies.size(); i++) {
-    if (link_name.compare(tree->bodies[i]->name_) == 0) {
+    if (link_name.compare(tree->bodies[i]->get_name()) == 0) {
       index = i;
       break;
     }
@@ -351,7 +351,7 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   // element, throws an exception if a geometry element does not exist.
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node) {
-    throw runtime_error("ERROR: Link " + body->name_ +
+    throw runtime_error("ERROR: Link " + body->get_name() +
                         " has a visual element without geometry.");
   }
 
@@ -368,7 +368,7 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   // Parses the geometry specifications of the visualization.
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse visual element in link " +
-                        body->name_ + ".");
+                        body->get_name() + ".");
 
   // Parses the material specification of the visualization. Note that we cannot
   // reuse the logic within ParseMaterial() here because the context is
@@ -392,7 +392,8 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
           throw runtime_error(
               "ERROR: Failed to parse color of material for "
               "model \"" +
-              body->model_name() + "\", link \"" + body->name() + "\".");
+              body->get_model_name() + "\", link \"" + body->get_name() +
+              "\".");
         }
         color_specified = true;
       }
@@ -457,8 +458,8 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
           << "WARNING: Visual element has a material whose color could not"
              "be determined."
           << std::endl
-          << "  - model name: " << body->model_name() << std::endl
-          << "  - body name: " << body->name() << std::endl
+          << "  - model name: " << body->get_model_name() << std::endl
+          << "  - body name: " << body->get_name() << std::endl
           << "  - material name: " << material_name << std::endl;
       throw std::runtime_error(error_buff.str());
     }
@@ -485,7 +486,7 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
 
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
-    throw runtime_error("ERROR: Link " + body->name_ +
+    throw runtime_error("ERROR: Link " + body->get_name() +
                         " has a collision element without geometry");
 
   RigidBody::CollisionElement element(T_element_to_link, body);
@@ -505,11 +506,11 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   //  Issue 2661 was created to track this problem.
   // TODO(amcastro-tri): fix the above issue tracked by 2661.  Similarly for
   // parseSDFCollision in RigidBodyTreeSDF.cpp.
-  if (body->name().compare(string(RigidBodyTree::kWorldLinkName)) == 0)
+  if (body->get_name().compare(string(RigidBodyTree::kWorldLinkName)) == 0)
     element.set_static();
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
-                        body->name_ + ".");
+                        body->get_name() + ".");
 
   if (element.hasGeometry()) {
     tree->addCollisionElement(element, *body, group_name);
@@ -524,14 +525,14 @@ bool parseLink(RigidBodyTree* tree, string robot_name, XMLElement* node,
 
   RigidBody* body{nullptr};
   std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
-  body->model_name_ = robot_name;
+  body->set_model_name(robot_name);
 
   attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
 
   // World links are handled by parseWorldJoint().
-  body->name_ = attr;
-  if (body->name_ == string(RigidBodyTree::kWorldLinkName)) return false;
+  body->set_name(attr);
+  if (body->get_name() == string(RigidBodyTree::kWorldLinkName)) return false;
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node) parseInertial(body, inertial_node);
