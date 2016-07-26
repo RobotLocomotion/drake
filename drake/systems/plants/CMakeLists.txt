@@ -151,7 +151,8 @@ if(drakeIK_SRC_FILES)
   target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
   pods_install_libraries(drakeIK)
   pods_install_libraries(drakeIKoptions)
-  drake_install_headers(RigidBodyIK.h IKoptions.h inverseKinBackend.h)
+  drake_install_headers(RigidBodyIK.h IKoptions.h ik_trajectory_helper.h
+    inverseKinBackend.h)
   pods_install_pkg_config_file(drake-ik
     LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
     REQUIRES drake-rbm

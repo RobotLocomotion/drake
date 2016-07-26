@@ -1,4 +1,4 @@
-#include "ik_trajectory_helper.h"
+#include "drake/systems/plants/ik_trajectory_helper.h"
 
 #include <cmath>
 
