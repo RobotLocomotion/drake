@@ -3,7 +3,6 @@
 #include <sstream>
 #include <map>
 
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 #include "drake/util/Polynomial.h"
@@ -21,7 +20,7 @@ const double kPi = 3.1415926535897;
 void TestSerializationContains(TrigPolyd dut, std::string expect) {
   std::stringstream test_stream;
   test_stream << dut;
-  EXPECT_THAT(test_stream.str(), testing::HasSubstr(expect));
+  EXPECT_TRUE(test_stream.str().find(expect) != std::string::npos);
 }
 
 GTEST_TEST(TrigPolyTest, SmokeTest) {
