@@ -11,18 +11,18 @@ import unittest
 
 class TestStringMethods(unittest.TestCase):
 
-    def get_relative_filename(self, filename):
+    def get_absolute_filename(self, relative_filename):
         """Return an absolute filename, relative to this test program."""
         mydir = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(mydir, filename)
+        return os.path.join(mydir, relative_filename)
 
     def get_valid_header_filename(self):
         """This header should always exist, and pass cpplint."""
-        return self.get_relative_filename("../eigen_types.h")
+        return self.get_absolute_filename("../eigen_types.h")
 
     def run_and_expect(self, args, expected_exitcode, expected_regexps=None):
         try:
-            cpplint_wrapper = self.get_relative_filename("cpplint_wrapper.py")
+            cpplint_wrapper = self.get_absolute_filename("cpplint_wrapper.py")
             output = subprocess.check_output(
                 [sys.executable, cpplint_wrapper] + args,
                 stderr=subprocess.STDOUT)
@@ -56,7 +56,7 @@ class TestStringMethods(unittest.TestCase):
              r"TOTAL 1 files passed"])
 
     def test_true_positive(self):
-        filename = self.get_relative_filename(
+        filename = self.get_absolute_filename(
             "../../../"
             "externals/google_styleguide/cpplint/cpplint_test_header.h")
         self.run_and_expect(
@@ -80,7 +80,7 @@ class TestStringMethods(unittest.TestCase):
 
     def test_ignored_extension(self):
         self.run_and_expect(
-            [self.get_relative_filename('cpplint_wrapper_test.py')],
+            [self.get_absolute_filename('cpplint_wrapper_test.py')],
             0,
             [r"Ignoring .*/cpplint_wrapper_test.py",
              r"TOTAL 0 files"])
