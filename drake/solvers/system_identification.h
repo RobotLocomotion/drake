@@ -90,8 +90,8 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
       const PolyType& poly,
       const LumpingMapType& lumped_parameters);
 
-  /// Estimate some parameters of a polynomial based on empirical data.
-  /**
+  /** Estimate some parameters of a polynomial based on empirical data.
+   *
    * Given one or more polynomial equations P[i](a, b, ... x, y, ...) = 0, and
    * measured values of some its arguments (x, y, ..., referred to as the
    * "active variables"), estimate values for the remaining arguments (a, b,
@@ -128,8 +128,8 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
     CoefficientType rms_error;
   };
 
-  /// Performs full lumped-parameter identification of a system of TrigPolys.
-  /**
+  /** Performs full lumped-parameter identification of a system of TrigPolys.
+   *
    * This is a convenience method meant to capture what is expected to be the
    * most common usage pattern of system ID.
    *
@@ -201,8 +201,8 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
   static VarType CreateUnusedVar(const std::string& prefix,
                                  const std::set<VarType>& vars_in_use);
 
-  /// Classify the variables in a group of polynomials and measurements.
-  /**
+  /** Classify the variables in a group of polynomials and measurements.
+   *
    * Given a system of polynomials and a set of variable values, return the
    * sets of all the values, the parameter values (ie those with values not
    * given) and the active values (those with values given).
