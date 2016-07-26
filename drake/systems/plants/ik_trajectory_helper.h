@@ -18,7 +18,19 @@ namespace plants {
 class IKTrajectoryHelper  {
  public:
   /// @param nq -- number of positions of the body
-  /// @param nT -- number of time steps being planned
+  /// @param nT -- number of timesteps being planned
+  /// @param t -- array of timestep values (of length @p nT)
+  /// @param num_qfree -- number of timesteps for which position
+  ///                     variables are free to change during
+  ///                     optimization.
+  /// @param num_qdotfree -- number of qdot states which are free to
+  ///                        change during optimization (in practice,
+  ///                        this will be 1 (final only) when the
+  ///                        initial state is fixed, and 2 (initial
+  ///                        and final) otherwise.
+  /// @param ikoptions -- options passed to inverseKinTraj
+  /// @param dt -- array of deltas between timestamps (length nT - 1)
+  /// @param dt_ratio -- ratio of consecutive values in dt (length nT - 2)
   IKTrajectoryHelper(int nq, int nT, const double* t,
                      int num_qfree, int num_qdotfree,
                      const IKoptions& ikoptions,
@@ -27,6 +39,14 @@ class IKTrajectoryHelper  {
   /// Calculate the cost given the current @p q, @p qdot0, and @p qdotf.
   ///
   /// @return cost
+  /// @param q -- Current position estimates
+  /// @param q_nom -- Estimates for nominal postures
+  /// @param qstart_idx -- offset into q to start considering in cost
+  ///                      calculations (usually 0 if the initial
+  ///                      state is free, and 1 otherwise)
+  /// @param qdot0 -- current estimate of qdot at timestep 0
+  /// @param qdotf -- current estimate of qdot at final timestep
+  /// @param fix_initial_state -- true if the initial state is fixed
   /// @param[out] dJ_vec Matrix to be filled in with the current
   ///                    gradients.
   double CalculateCost(const Eigen::MatrixXd& q, const Eigen::MatrixXd& q_nom,
@@ -34,8 +54,8 @@ class IKTrajectoryHelper  {
                        const Eigen::VectorXd& qdotf, bool fix_initial_state,
                        Eigen::MatrixXd* dJ_vec) const;
 
-  int nq() const { return nq_;}
-  int nT() const { return nT_;}
+  int nq() const { return nq_; }
+  int nT() const { return nT_; }
   const double* t() const { return t_; }
   int num_qfree() const { return num_qfree_; }
   int num_qdotfree() const { return num_qdotfree_; }
