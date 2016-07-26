@@ -1,5 +1,6 @@
 
-#include <iostream>
+#include "inverseKinBackend.h"
+
 #include <memory>
 #include <vector>
 
@@ -26,7 +27,6 @@ using drake::solvers::DecisionVariableView;
 using drake::solvers::SolutionResult;
 using drake::solvers::OptimizationProblem;
 
-// TODO(sam.creasey) fix namespaces for all of the inverse kin backend stuff
 namespace Drake {
 namespace systems {
 namespace plants {
@@ -64,7 +64,8 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
     Eigen::VectorXd y_scalar(1);
     y_scalar(0) = J;
     initializeAutoDiffGivenGradientMatrix(
-        y_scalar, (dJ_vec * drake::math::autoDiffToGradientMatrix(x)).eval(), y);
+        y_scalar,
+        (dJ_vec * drake::math::autoDiffToGradientMatrix(x)).eval(), y);
   }
 
  private:
@@ -80,7 +81,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
                         const IKTrajectoryHelper& helper,
                         int num_constraints,
                         RigidBodyConstraint** const constraint_array)
-      : Constraint(0), // Update bounds later in constructor
+      : Constraint(0),  // Update bounds later in constructor.
         model_(model),
         helper_(helper),
         num_constraints_(num_constraints),
@@ -111,8 +112,8 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
               static_cast<SingleTimeKinematicConstraint*>(constraint);
           // Check to see if an inbetween constraint would be active at
           // this timestep.
-          int stc_nc = stc->getNumConstraint(&t_j);
-          if(stc_nc > 0) {
+          const int stc_nc = stc->getNumConstraint(&t_j);
+          if (stc_nc > 0) {
             VectorXd lb;
             VectorXd ub;
             stc->bounds(&t_j, lb, ub);
@@ -140,10 +141,6 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
         AppendBounds(lb, ub);
       }
     }
-    std::cerr << "total inbetween constraints: " << this->num_constraints()
-              << std::endl;
-    std::cerr << "inbetween lb: " << lower_bound().transpose() << std::endl;
-    std::cerr << "inbetween ub: " << upper_bound().transpose() << std::endl;
   }
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -163,20 +160,31 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     const int num_qfree = helper_.num_qfree();
     DRAKE_ASSERT(num_qfree == nT);
     const int num_qdotfree = helper_.num_qdotfree();
+    DRAKE_ASSERT(x.size() == nq * (nT + num_qdotfree));
 
     const VectorXd x_scalar = drake::math::autoDiffToValueMatrix(x);
+
+    // Make a local copy of the q portion of the X input values so
+    // that we can resize it for convenience later.
     MatrixXd q = x_scalar.head(nq * nT);
 
-    const VectorXd qdot0 = x_scalar.segment(nq * nT, nq);
-    const VectorXd qdotf = x_scalar.segment(nq * (nT + 1), nq);
+    const auto qdot0 = x_scalar.segment(nq * nT, nq);
+    const auto qdotf = x_scalar.segment(nq * (nT + 1), nq);
 
-    DRAKE_ASSERT(x.size() == nq * (nT + num_qdotfree));
+    // Create the return values.  After evaluating our constraints,
+    // build the TaylorVec output from the scalar values in y_scalar
+    // and dy_scalar.
     VectorXd y_scalar(num_constraints());
     MatrixXd dy_scalar(num_constraints(), x.size());
+
+    // Index into y_scalar/dy_scalar where the next constraint should
+    // be stored.
     int y_idx = 0;
 
     const int num_inbetween_tsamples = helper_.t_samples().size() - nT;
+    // q data for only the times inbetween the steps
     MatrixXd q_inbetween = MatrixXd::Zero(nq, num_inbetween_tsamples);
+    // q data for all timesteps (original and inbetween)
     MatrixXd q_samples = MatrixXd::Zero(nq, num_inbetween_tsamples + nT);
     int inbetween_idx = 0;
 
@@ -215,39 +223,37 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
             MatrixXd dc_k(nc, nq);
             stc->eval(&t_j, cache, c_k, dc_k);
             y_scalar.segment(y_idx, nc) = c_k;
-            //std::cerr << "constraint " << k << ": " << c_k.transpose()
-            //<< std::endl;
 
-            MatrixXd dc_kdx = MatrixXd::Zero(nc, nq * (num_qfree + num_qdotfree));
+            MatrixXd dc_kdx =
+                MatrixXd::Zero(nc, nq * (num_qfree + num_qdotfree));
             dc_kdx.block(0, 0, nc, nq * num_qfree) =
                 dc_k *
                 helper_.dq_inbetween_dqknot()[i].block(
                     nq * j, 0, nq, nq * num_qfree);
 
-            //if (!fixInitialState) {
             dc_kdx.block(0, nq * num_qfree, nc, nq) =
                 dc_k * helper_.dq_inbetween_dqd0()[i].block(nq * j, 0, nq, nq);
             dc_kdx.block(0, nq * num_qfree + nq, nc, nq) =
                 dc_k * helper_.dq_inbetween_dqdf()[i].block(nq * j, 0, nq, nq);
-            //} else {
-            //  dc_kdx.block(0, nq * num_qfree, nc, nq) =
-            //      dc_k * helper_.dq_inbetween_dqdf[i].block(nq * j, 0, nq, nq);
-            //}
 
             dy_scalar.block(y_idx, 0, nc, x.size()) = dc_kdx;
             y_idx += nc;
           }
         }
       }
+
+      // We've evaluated all single time constraints for this
+      // timestep.  Build up more of q_samples.
       q_samples.col(inbetween_idx + i) = q.col(i);
       q_samples.block(0, inbetween_idx + i + 1, nq, t_inbetween[i].size()) =
           q_inbetween.block(0, inbetween_idx, nq, t_inbetween[i].size());
-      //std::cerr << "inbetween_idx: " << inbetween_idx;
       inbetween_idx += static_cast<int>(t_inbetween[i].size());
-      //std::cerr << " now: " << inbetween_idx << std::endl;
     }
     q_samples.col(nT + num_inbetween_tsamples - 1) = q.col(nT - 1);
 
+    // Using the q_samples aassembled above which includes the
+    // inbetween data, evaluate any multiple time kinematic
+    // constraints.
     for (int i = 0; i < num_constraints_; i++) {
       RigidBodyConstraint* constraint = constraint_array[i];
       const int constraint_category = constraint->getCategory();
@@ -267,64 +273,47 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
           helper_.t_samples().data(), helper_.t_samples().size(),
           q_samples.block(0, 0, nq, num_qfree + num_inbetween_tsamples),
           mtkc_c, mtkc_dc);
-      //std::cerr << "mtkc_c: " << std::endl << mtkc_c << std::endl;
-      //std::cerr << "mtkc_dc: " << std::endl << mtkc_dc << std::endl;
       y_scalar.segment(y_idx, nc) = mtkc_c;
 
+      // Calculate our gradient output which should be the size of the
+      // input data (timesteps not including the inbetween times).
       MatrixXd mtkc_dc_dx =
           MatrixXd::Zero(nc, nq * (num_qfree + num_qdotfree));
       int mtkc_dc_off = 0;
+
+      // Initialize with the gradient outputs at the original timesteps.
       for (int j = 0; j < nT; j++) {
         mtkc_dc_dx.block(0, j * nq, nc, nq) =
             mtkc_dc.block(0, mtkc_dc_off * nq, nc, nq);
         mtkc_dc_off += 1 + t_inbetween[j].size();
       }
 
+      // Iterate over each intermediate timestamp again, integrating
+      // the gradient results from the intermediate timesteps into our
+      // output (and building up the qdot0/qdotf gradients as well).
       mtkc_dc_off = 0;
       for (int j = 0; j < nT - 1; j++) {
         MatrixXd dc_ij = mtkc_dc.block(0, nq * (mtkc_dc_off + 1),
                                        nc, nq * t_inbetween[j].size());
-        //std::cerr << "dc_ij: " << std::endl << dc_ij << std::endl;
         mtkc_dc_off += 1 + t_inbetween[j].size();
 
         mtkc_dc_dx.block(0, 0, nc, nq * num_qfree) +=
             dc_ij *
             helper_.dq_inbetween_dqknot()[j].block(
                 0, 0, nq * t_inbetween[j].size(), nq * num_qfree);
-        // if (fixInitialState) {
-        //   mtkc_dc_dx.block(0, nq * num_qfree, mt_kc_nc[i], nq) +=
-        //       dc_ij * dqInbetweendqdf[j];
-        // } else {
         mtkc_dc_dx.block(0, nq * num_qfree, nc, nq) +=
             dc_ij * helper_.dq_inbetween_dqd0()[j];
         mtkc_dc_dx.block(0, nq * num_qfree + nq, nc, nq) +=
             dc_ij * helper_.dq_inbetween_dqdf()[j];
-        //      }
       }
 
-      //std::cerr << "mtkc_dc_dx: " << std::endl << mtkc_dc_dx << std::endl;
       dy_scalar.block(y_idx, 0, nc, x.size()) = mtkc_dc_dx;
       y_idx += nc;
     }
-    //    std::cerr << "y_idx " << y_idx
-    //        << std::endl;
-    //    std::cerr << "dy_scalar" << std::endl
-    //             << dy_scalar << std::endl;
 
-    //std::cerr << "inbetween val: " << y_scalar.transpose() << std::endl;
     y.resize(y_idx);
     initializeAutoDiffGivenGradientMatrix(
         y_scalar, (dy_scalar * drake::math::autoDiffToGradientMatrix(x)), y);
-    // std::cerr << "y deriv size: " << y(0).derivatives().size()
-    //           << " x size: " << x.size()
-    //           << std::endl;
-    //    std::cerr << "y val:" << std::endl;
-    // std::cerr << "y deriv:" << std::endl;
-    for (int i = 0; i < y.size(); i++) {
-      // std::cerr << y(i).derivatives().transpose() << std::endl;
-      //std::cerr << y(i).value() << " ";
-    }
-    //std::cerr << std::endl;
   }
 
  private:
@@ -376,69 +365,32 @@ void inverseKinTrajBackend(
 
   const int nq = model->number_of_positions();
 
-  VectorXd q0_lb(nq);
-  VectorXd q0_ub(nq);
-  ikoptions.getq0(q0_lb, q0_ub);
-  VectorXd qd0_lb(nq);
-  VectorXd qd0_ub(nq);
-  ikoptions.getqd0(qd0_lb, qd0_ub);
-  VectorXd qd0_seed = (qd0_lb + qd0_ub) / 2;
-  VectorXd qdf_lb(nq);
-  VectorXd qdf_ub(nq);
-  ikoptions.getqdf(qdf_lb, qdf_ub);
-  VectorXd qdf_seed = (qdf_lb + qdf_ub) / 2;
-
-  //int num_qfree = 0;
-  //int num_qdotfree = 0;
-  int qstart_idx = 0;
-  bool fix_initial_state = ikoptions.getFixInitialState();
-  if (fix_initial_state) {
-    //    num_qfree = nT - 1;
-    //num_qdotfree = 1;
-    qstart_idx = 1;
-  } else {
-    //num_qfree = nT;
-    //num_qdotfree = 2;
-    qstart_idx = 0;
-  }
-
-  //  IKTrajectoryHelper helper(nq, nT, num_qfree, num_qdotfree,
   IKTrajectoryHelper helper(nq, nT, t, nT, 2,
                             ikoptions, dt.data(), dt_ratio.data());
 
   OptimizationProblem prog;
-
-  // XXX sammy don't duplicate this
-  prog.SetSolverOption("SNOPT", "Derivative option", 1);
-  prog.SetSolverOption("SNOPT", "Major optimality tolerance",
-                       ikoptions.getMajorOptimalityTolerance());
-  prog.SetSolverOption("SNOPT", "Major feasibility tolerance",
-                       ikoptions.getMajorFeasibilityTolerance());
-  prog.SetSolverOption("SNOPT", "Superbasics limit",
-                       ikoptions.getSuperbasicsLimit());
-  prog.SetSolverOption("SNOPT", "Major iterations limit",
-                       ikoptions.getMajorIterationsLimit());
-  prog.SetSolverOption("SNOPT", "Iterations limit",
-                       ikoptions.getIterationsLimit());
+  SetIKSolverOptions(ikoptions, &prog);
 
   DecisionVariableView q = prog.AddContinuousVariables(nT * nq, "q");
-  // XXX sammy if qdot0 is fixed, set the initial guess to the fixed
-  // value and slap a bounding box on it.
   DecisionVariableView qdot0 = prog.AddContinuousVariables(nq, "qdot0");
   DecisionVariableView qdotf = prog.AddContinuousVariables(nq, "qdotf");
-
 
   std::shared_ptr<drake::solvers::Constraint> cost =
       std::make_shared<IKTrajectoryCost>(helper, q_nom);
   prog.AddCost(cost, {q, qdot0, qdotf});
 
   // Bound all of our positions by the model joint limits.
+  VectorXd q0_lb(nq);
+  VectorXd q0_ub(nq);
+  ikoptions.getq0(q0_lb, q0_ub);
   Eigen::VectorXd joint_limit_min(nq * nT);
   Eigen::VectorXd joint_limit_max(nq * nT);
   for (int i = 0; i < nT; i++) {
-    joint_limit_min.segment(nq * i, nq) = model->joint_limit_min;
-    joint_limit_max.segment(nq * i, nq) = model->joint_limit_max;
+    joint_limit_min.segment(nq * i, nq) = q0_lb;
+    joint_limit_max.segment(nq * i, nq) = q0_ub;
   }
+
+  bool fix_initial_state = ikoptions.getFixInitialState();
   if (fix_initial_state) {
     // If q0 is fixed, set a bounding box around the initial values.
     joint_limit_min.head(nq) = q_seed.col(0);
@@ -449,9 +401,10 @@ void inverseKinTrajBackend(
   q_initial_guess.resize(nq * nT, 1);
   prog.SetInitialGuess(q, q_initial_guess);
 
-  prog.AddBoundingBoxConstraint(qdf_lb, qdf_ub, {qdotf});
-  prog.SetInitialGuess(qdotf, qdf_seed);
-
+  VectorXd qd0_lb(nq);
+  VectorXd qd0_ub(nq);
+  ikoptions.getqd0(qd0_lb, qd0_ub);
+  VectorXd qd0_seed = (qd0_lb + qd0_ub) / 2;
   if (fix_initial_state) {
     prog.AddBoundingBoxConstraint(qd0_seed, qd0_seed, {qdot0});
   } else {
@@ -459,8 +412,13 @@ void inverseKinTrajBackend(
   }
   prog.SetInitialGuess(qdot0, qd0_seed);
 
-  // TODO(sam.creasey) Consider de-duplicating constraint evaluation
-  // code between pointwise and trajectory implementations.
+  VectorXd qdf_lb(nq);
+  VectorXd qdf_ub(nq);
+  ikoptions.getqdf(qdf_lb, qdf_ub);
+  VectorXd qdf_seed = (qdf_lb + qdf_ub) / 2;
+
+  prog.AddBoundingBoxConstraint(qdf_lb, qdf_ub, {qdotf});
+  prog.SetInitialGuess(qdotf, qdf_seed);
 
   // TODO(sam.creasey) Consider making the kinematics cache helper
   // cache more than one entry (like maybe nT +
@@ -472,6 +430,11 @@ void inverseKinTrajBackend(
   KinematicsCacheHelper<double> kin_helper(model->bodies);
 
   // Add all of our single time and quasi static constraints.
+  int qstart_idx = 0;
+  if (fix_initial_state) {
+    qstart_idx = 1;
+  }
+
   for (int i = 0; i < num_constraints; i++) {
     RigidBodyConstraint* constraint = constraint_array[i];
     const int constraint_category = constraint->getCategory();
@@ -498,58 +461,16 @@ void inverseKinTrajBackend(
     } else if (
         constraint_category ==
         RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) {
-      SingleTimeLinearPostureConstraint* st_lpc =
-          static_cast<SingleTimeLinearPostureConstraint*>(constraint);
-
       for (int t_index = qstart_idx; t_index < nT; t_index++) {
-        if (!st_lpc->isTimeValid(&t[t_index])) { continue; }
-        VectorXd lb;
-        VectorXd ub;
-        st_lpc->bounds(&t[t_index], lb, ub);
-
-        VectorXi iAfun;
-        VectorXi jAvar;
-        VectorXd A;
-        st_lpc->geval(&t[t_index], iAfun, jAvar, A);
-
-        DRAKE_ASSERT(iAfun.size() == jAvar.size());
-        DRAKE_ASSERT(iAfun.size() == A.size());
-
-        typedef Eigen::Triplet<double> T;
-        std::vector<T> triplet_list;
-        for (int i = 0; i < iAfun.size(); i++) {
-          triplet_list.push_back(T(iAfun[i], jAvar[i], A[i]));
-        }
-
-        Eigen::SparseMatrix<double> A_sparse(
-            st_lpc->getNumConstraint(&t[t_index]),
-            model->number_of_positions());
-        A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
-        prog.AddLinearConstraint(
-            MatrixXd(A_sparse), lb, ub, {q.segment(nq * t_index , nq)});
+        AddSingleTimeLinearPostureConstraint(
+            &t[t_index], constraint, nq, q.segment(nq * t_index , nq),
+            &prog);
       }
     } else if (constraint_category ==
                RigidBodyConstraint::QuasiStaticConstraintCategory) {
-      QuasiStaticConstraint* qsc =
-          static_cast<QuasiStaticConstraint*>(constraint);
-      auto wrapper = std::make_shared<QuasiStaticConstraintWrapper>(
-          qsc, &kin_helper);
       for (int t_index = qstart_idx; t_index < nT; t_index++) {
-        if (!qsc->isTimeValid(&t[t_index])) { continue; }
-        int num_vars = qsc->getNumWeights();
-        DecisionVariableView qsc_vars =
-            prog.AddContinuousVariables(num_vars, "qsc");
-        prog.AddGenericConstraint(
-            wrapper, {q.segment(nq * t_index , nq), qsc_vars});
-        prog.AddBoundingBoxConstraint(VectorXd::Constant(num_vars, 0.),
-                                      VectorXd::Constant(num_vars, 1.),
-                                      {qsc_vars});
-        VectorXd constraint(num_vars);
-        constraint.fill(1.);
-        prog.AddLinearEqualityConstraint(constraint.transpose(),
-                                         Vector1d::Constant(1.), {qsc_vars});
-        prog.SetInitialGuess(qsc_vars,
-                             VectorXd::Constant(num_vars, 1.0 / num_vars));
+        AddQuasiStaticConstraint(&t[t_index], constraint, &kin_helper,
+                                 q.segment(nq * t_index , nq), &prog);
       }
     } else if (
         constraint_category ==
@@ -578,19 +499,6 @@ void inverseKinTrajBackend(
     }
   }
 
-  // XXX sammy implement inbetween samples.  It's going to need an
-  // inbetween cache helper which uses q, qdot0, and qdotf as the key
-  // to generate the q_inbetween and q_samples data.  Wrappers for
-  // SingleTimeKinematicConstraint will need to know their i (from nT)
-  // and j (inbetween offset).  It looks like in the current snopt
-  // implementation, the gradients for each inbetween st_kc are indeed
-  // fucking huge (nc * nq * num_qfree + num_qdotfree) which is pretty
-  // much appropriate since they're going to need ALL THE THINGS as
-  // inputs to the constraint in order to populate the inbetweeen
-  // cache.  MultipleTimeKinematicConstraints also take in the world
-  // and produce the same size gradient output, but they only get
-  // invoked once for all of time unlike the st_kc's which get invoked
-  // a bunch of times.
   std::shared_ptr<drake::solvers::Constraint> inbetween_constraint =
       std::make_shared<IKInbetweenConstraint>(
           model, helper, num_constraints, constraint_array);
@@ -598,8 +506,9 @@ void inverseKinTrajBackend(
     prog.AddGenericConstraint(inbetween_constraint, {q, qdot0, qdotf});
   }
 
-  //  SolutionResult result =
-  prog.Solve();
+  const SolutionResult result = prog.Solve();
+  *INFO = GetIKSolverInfo(prog, result);
+
   const auto q_value = q.value();
   q_sol->resize(nq, nT);
   for (int i = 0; i < nT; i++) {
@@ -621,11 +530,6 @@ void inverseKinTrajBackend(
       helper.accel_mat_qdf() * qdotf.value();
   qddot_sol_tmp.resize(nq, nT);
   (*qddot_sol) = qddot_sol_tmp;
-
-  // TODO(sam.creasey) use the info mapping stuff from inverseKinBackend.
-  //  *INFO = GetSolverInfo(prog, result);
-  std::string solver_name;
-  prog.GetSolverResult(&solver_name, INFO);
 }
 
 template void inverseKinTrajBackend(
