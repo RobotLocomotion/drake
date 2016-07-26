@@ -16,17 +16,19 @@ Unreleased: changes on master, not yet released
 [//]: # "New functionality or APIs."
 ### Added
 
+ - [#2602][] Added `DRAKE_ASSERT` and `DRAKE_ABORT_UNLESS` macros to replace
+ built-in `assert()` macro.
  - [#2621][] Added `DRAKE_DEPRECATED` macro for portable deprecation.
+
 
 [//]: # "Altered functionality or APIs."
 ### Changed
+
  - [#2920][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
  - [#2903][] Made `RigidBody::robotnum` private. Re-named it to be `RigidBody::model_id_`.
  - [#2902][] Made `RigidBody::model_name_` private. Re-named `RigidBody::model_name()` to be `RigidBody::get_model_name()`. Added `RigidBody::set_model_name()`.
  - [#2900][] Made `RigidBody::name_` private. Re-named `RigidBody::name()` to be `RigidBody::get_name()`. Added `RigidBody::set_name()`.
  - [#2666][] Changed `TWIST_SIZE` to `drake::kTwistSize`
- - [#2602][] Added `DRAKE_ASSERT` and `DRAKE_ABORT_UNLESS` macros to replace
- built-in `assert()` macro.
  - [#2597][] Changed `RigidBodyTree::findLink()` to be `RigidBodyTree::FindBody()`.
  - [#2426][] Changed `RigidBodyTree::findLinkId()` to be `RigidBodyTree::FindBodyIndex()`. Updated APIs of `RigidBodyTree`, `RigidBody`, `RigidBodyTree`, and `RigidBodyFrame` to support notion of a "model ID" that uniquely identifies a model within a `RigidBodySystem`. This enables the same SDF file to be loaded multiple times into the same `RigidBodySystem`.
  - [#2303][] The following member variables should now be accessed via accessor methods: `RigidBody::linkname`, `RigidBody::model_name`, `RigidBodyTree::num_positions`, and `RigidBodyTree::num_velocities`.
