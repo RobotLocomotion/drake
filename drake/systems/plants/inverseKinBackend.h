@@ -63,7 +63,7 @@ void SetIKSolverOptions(const IKoptions& ikoptions,
                         drake::solvers::OptimizationProblem* prog);
 
 /// Add a single time linear posture constraint to @p prog at time @p
-/// t covering @p vars.  @p nq is the number of positions in
+/// t covering @p vars.  @p nq is the number of positions in the
 /// underlying model.
 void AddSingleTimeLinearPostureConstraint(
     const double *t, const RigidBodyConstraint*, int nq,
@@ -71,7 +71,7 @@ void AddSingleTimeLinearPostureConstraint(
     drake::solvers::OptimizationProblem* prog);
 
 /// Add a single time linear posture constraint to @p prog at time @p
-/// t covering @p vars.  @p nq is the KinematicsCacheHelper for the
+/// t covering @p vars.  @p kin_helper is the KinematicsCacheHelper for the
 /// underlying model.
 void AddQuasiStaticConstraint(
     const double *t, const RigidBodyConstraint*,
