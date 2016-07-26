@@ -95,7 +95,6 @@ Other prerequisites may be installed as follows::
       make mpich ninja-build perl pkg-config python-bs4 python-dev \
       python-gtk2 python-html5lib python-numpy python-pip python-sphinx \
       python-vtk subversion swig unzip valgrind
-    sudo pip install -U cpplint
 
 Environment
 -----------
