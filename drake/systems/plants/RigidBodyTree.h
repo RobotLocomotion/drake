@@ -172,7 +172,15 @@ class DRAKERBM_EXPORT RigidBodyTree {
   bool isBodyPartOfRobot(const RigidBody& body,
                          const std::set<int>& robotnum) const;
 
-  double getMass(const std::set<int>& robotnum = default_robot_num_set) const;
+  /**
+   * Returns the total mass of a set of models in this rigid body tree.
+   *
+   * @param[in] model_ids A set of model ID values corresponding to the models
+   * whose masses should be included in the returned value.
+   *
+   * @return The total mass of the models specified by @p model_ids.
+   */
+  double getMass(const std::set<int>& model_ids = default_robot_num_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
