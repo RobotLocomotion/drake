@@ -8,7 +8,6 @@
 
 #include "drake/util/Polynomial.h"
 #include "drake/util/TrigPoly.h"
-#include "drake/solvers/test/acrobot_data.h"
 
 namespace drake {
 namespace solvers {
