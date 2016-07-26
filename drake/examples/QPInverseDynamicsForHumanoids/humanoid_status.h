@@ -66,9 +66,9 @@ class HumanoidStatus {
       body_name_to_id_[(*it)->name()] = it - robot_->bodies.begin();
     }
 
-    joint_name_to_id_ = std::unordered_map<std::string, int>();
+    joint_name_to_position_index_ = std::unordered_map<std::string, int>();
     for (int i = 0; i < robot_->number_of_positions(); i++) {
-      joint_name_to_id_[robot_->getPositionName(i)] = i;
+      joint_name_to_position_index_[robot_->getPositionName(i)] = i;
     }
     for (size_t i = 0; i < robot_->actuators.size(); i++) {
       actuator_name_to_id_[robot_->actuators[i].name] = i;
@@ -87,13 +87,13 @@ class HumanoidStatus {
    * @param time is in seconds
    * @param q is the vector or generalized positions.
    * @param v is the vector of generalized velocities.
-   * @param trq is joint torque, should be in the same order as \p v, not
+   * @param trq is joint torque, should be in the same order as @p v, not
    * in robot->actuators order
    * @param l_ft is wrench measured at the foot force torque sensor
    * location.
    * @param r_ft is wrench measured at the foot force torque sensor
    * location.
-   * @param rot rotates \p l_ft and \p r_ft in the same orientation as
+   * @param rot rotates @p l_ft and @p r_ft in the same orientation as
    * the foot frame. This is useful if the foot ft sensor has a different
    * orientation than the foot.
    */
@@ -106,8 +106,9 @@ class HumanoidStatus {
   inline const std::unordered_map<std::string, int>& body_name_to_id() const {
     return body_name_to_id_;
   }
-  inline const std::unordered_map<std::string, int>& joint_name_to_id() const {
-    return joint_name_to_id_;
+  inline const std::unordered_map<std::string, int>&
+  joint_name_to_position_index() const {
+    return joint_name_to_position_index_;
   }
   inline const std::unordered_map<std::string, int>& actuator_name_to_id()
       const {
@@ -157,13 +158,15 @@ class HumanoidStatus {
     return foot_wrench_in_world_frame(Side::values.at(s));
   }
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  private:
   std::unique_ptr<RigidBodyTree> robot_;
   KinematicsCache<double> cache_;
   /// Maps body name to its index
   std::unordered_map<std::string, int> body_name_to_id_;
   /// Maps joint name to its index
-  std::unordered_map<std::string, int> joint_name_to_id_;
+  std::unordered_map<std::string, int> joint_name_to_position_index_;
   /// Maps actuator name to its index
   std::unordered_map<std::string, int> actuator_name_to_id_;
 

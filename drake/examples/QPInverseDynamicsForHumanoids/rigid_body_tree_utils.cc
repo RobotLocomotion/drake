@@ -4,19 +4,20 @@ Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
                          const KinematicsCache<double>& cache,
                          const RigidBody& body, const Vector3d& local_offset) {
   const auto& element = cache.getElement(body);
-  Vector6d T = element.twist_in_world;
   Vector3d pt = element.transform_to_world.translation();
 
   // Get the body's task space vel.
-  Vector6d v = T;
+  // Converting from Plucker vector (Featherstone's spatial vectors) to spatial
+  // vector algebra as defined by Abhinandan Jain.
+  Vector6d v = element.twist_in_world;
   v.tail<3>() += v.head<3>().cross(pt);
 
   // Get the global offset between pt and body.
-  Isometry3d H_frame_to_pt(Isometry3d::Identity());
-  H_frame_to_pt.translation() = local_offset;
-  auto H_world_to_pt = element.transform_to_world * H_frame_to_pt;
+  Isometry3d H_pt_to_body(Isometry3d::Identity());
+  H_pt_to_body.translation() = local_offset;
+  auto H_pt_to_world = element.transform_to_world * H_pt_to_body;
   Vector3d world_offset =
-      H_world_to_pt.translation() - element.transform_to_world.translation();
+      H_pt_to_world.translation() - element.transform_to_world.translation();
 
   // Add the linear vel from the body rotation.
   v.tail<3>() += v.head<3>().cross(world_offset);

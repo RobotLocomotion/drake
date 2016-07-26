@@ -24,7 +24,7 @@ static VectorXd VariableList2VectorXd(VariableList const& vlist) {
 int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
                           QPOutput* output) {
   if (!is_qp_input_sane(input)) {
-    std::cerr << "input is not right\n";
+    std::cerr << "input is invalid\n";
     return -1;
   }
 
@@ -80,26 +80,27 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   int vd_start = vd.index();
 
   // tau = M_l * vd + h_l - J^T_l * lambda,
-  // tau = TAU * _X + tau0
-  MatrixXd Tau(MatrixXd::Zero(num_torque, num_variable));
-  Tau.block(0, vd_start, num_torque, num_vd) = rs.M().bottomRows(num_torque);
+  // tau = torque_linear_ * _X + torque_constant_
+  torque_linear_ = MatrixXd::Zero(num_torque, num_variable);
+  torque_linear_.block(0, vd_start, num_torque, num_vd) =
+      rs.M().bottomRows(num_torque);
   for (int i = 0; i < num_contacts; i++) {
-    Tau.block(0, lambda_start + i * 6, num_torque, 6) =
+    torque_linear_.block(0, lambda_start + i * 6, num_torque, 6) =
         -rs.foot(i).J.block(0, 6, 6, num_torque).transpose();
   }
-  VectorXd tau0 = rs.bias_term().tail(num_torque);
+  torque_constant_ = rs.bias_term().tail(num_torque);
 
   ////////////////////////////////////////////////////////////////////
   // equality constraints:
   // equations of motion part, 6 rows
-  MatrixXd DynEq = MatrixXd::Zero(6, num_variable);
-  DynEq.block(0, vd_start, 6, num_vd) = rs.M().topRows(6);
-
+  dynamics_linear_ = MatrixXd::Zero(6, num_variable);
+  dynamics_linear_.block(0, vd_start, 6, num_vd) = rs.M().topRows(6);
   for (int i = 0; i < num_contacts; i++) {
-    DynEq.block(0, lambda_start + i * 6, 6, 6) =
+    dynamics_linear_.block(0, lambda_start + i * 6, 6, 6) =
         -rs.foot(i).J.block<6, 6>(0, 0).transpose();
   }
-  prog.AddLinearEqualityConstraint(DynEq, -rs.bias_term().head(6));
+  dynamics_constant_ = -rs.bias_term().head(6);
+  prog.AddLinearEqualityConstraint(dynamics_linear_, dynamics_constant_);
 
   // contact constraints, 6 rows per contact
   for (int i = 0; i < num_contacts; i++) {
@@ -117,44 +118,45 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // 2 for CoP y within foot, 2
   // 1 for Fz >= 0,
   int row_idx = 0;
-  MatrixXd CI = MatrixXd::Zero(11 * num_contacts, num_wrench);
-  VectorXd ci_u = VectorXd::Constant(11 * num_contacts,
-                                     std::numeric_limits<double>::infinity());
-  VectorXd ci_l = VectorXd::Constant(11 * num_contacts,
-                                     -std::numeric_limits<double>::infinity());
+  inequality_linear_ = MatrixXd::Zero(11 * num_contacts, num_wrench);
+  inequality_upper_bound_ = VectorXd::Constant(
+      11 * num_contacts, std::numeric_limits<double>::infinity());
+  inequality_lower_bound_ = VectorXd::Constant(
+      11 * num_contacts, -std::numeric_limits<double>::infinity());
 
+  // This is a very crude model for approximating friction.
   // Fz >= 0;
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 5) = 1;
-    ci_l(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 5) = 1;
+    inequality_lower_bound_(row_idx) = 0;
     row_idx++;
   }
   // Fx <= mu * Fz, Fx - mu * Fz <= 0
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 3) = 1;
-    CI(row_idx, i * 6 + 5) = -param.mu;
-    ci_u(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 3) = 1;
+    inequality_linear_(row_idx, i * 6 + 5) = -param.mu;
+    inequality_upper_bound_(row_idx) = 0;
     row_idx++;
   }
   // Fx >= -mu * Fz, Fx + mu * Fz >= 0
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 3) = 1;
-    CI(row_idx, i * 6 + 5) = param.mu;
-    ci_l(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 3) = 1;
+    inequality_linear_(row_idx, i * 6 + 5) = param.mu;
+    inequality_lower_bound_(row_idx) = 0;
     row_idx++;
   }
   // Fy <= mu * Fz, Fy - mu * Fz <= 0
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 4) = 1;
-    CI(row_idx, i * 6 + 5) = -param.mu;
-    ci_u(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 4) = 1;
+    inequality_linear_(row_idx, i * 6 + 5) = -param.mu;
+    inequality_upper_bound_(row_idx) = 0;
     row_idx++;
   }
   // Fy >= -mu * Fz, Fy + mu * Fz >= 0
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 4) = 1;
-    CI(row_idx, i * 6 + 5) = param.mu;
-    ci_l(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 4) = 1;
+    inequality_linear_(row_idx, i * 6 + 5) = param.mu;
+    inequality_lower_bound_(row_idx) = 0;
     row_idx++;
   }
   // These are poor approximations for the normal torque especially when the
@@ -163,44 +165,44 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // forces at multiple contact positions.
   // Mz <= mu * Fz, Mz - mu * Fz <= 0
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 2) = 1;
-    CI(row_idx, i * 6 + 5) = -param.mu_Mz;
-    ci_u(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 2) = 1;
+    inequality_linear_(row_idx, i * 6 + 5) = -param.mu_Mz;
+    inequality_upper_bound_(row_idx) = 0;
     row_idx++;
   }
   // Mz >= -mu * Fz, Mz + mu * Fz >= 0
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 2) = 1;
-    CI(row_idx, i * 6 + 5) = param.mu_Mz;
-    ci_l(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 2) = 1;
+    inequality_linear_(row_idx, i * 6 + 5) = param.mu_Mz;
+    inequality_lower_bound_(row_idx) = 0;
     row_idx++;
   }
   // cop_x <= x_max, -My / Fz <= x_max, -My - x_max * Fz <= 0
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 1) = -1;
-    CI(row_idx, i * 6 + 5) = -param.x_max;
-    ci_u(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 1) = -1;
+    inequality_linear_(row_idx, i * 6 + 5) = -param.x_max;
+    inequality_upper_bound_(row_idx) = 0;
     row_idx++;
   }
   // cop_x >= x_min, -My / Fz >= x_min, -My - x_min * Fz >= 0
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 1) = -1;
-    CI(row_idx, i * 6 + 5) = -param.x_min;
-    ci_l(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 1) = -1;
+    inequality_linear_(row_idx, i * 6 + 5) = -param.x_min;
+    inequality_lower_bound_(row_idx) = 0;
     row_idx++;
   }
   // cop_y <= y_max, Mx / Fz <= y_max, Mx - y_max * Fz <= 0
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 0) = 1;
-    CI(row_idx, i * 6 + 5) = -param.y_max;
-    ci_u(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 0) = 1;
+    inequality_linear_(row_idx, i * 6 + 5) = -param.y_max;
+    inequality_upper_bound_(row_idx) = 0;
     row_idx++;
   }
   // cop_y >= y_min, Mx / Fz >= y_min, Mx - y_min * Fz >= 0
   for (int i = 0; i < num_contacts; i++) {
-    CI(row_idx, i * 6 + 0) = 1;
-    CI(row_idx, i * 6 + 5) = -param.y_min;
-    ci_l(row_idx) = 0;
+    inequality_linear_(row_idx, i * 6 + 0) = 1;
+    inequality_linear_(row_idx, i * 6 + 5) = -param.y_min;
+    inequality_lower_bound_(row_idx) = 0;
     row_idx++;
   }
   // Since all of the above are constraints on wrench expressed in the body
@@ -212,8 +214,9 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     world_to_foot.block<3, 3>(i * 6 + 3, i * 6 + 3) =
         world_to_foot.block<3, 3>(i * 6, i * 6);
   }
-  CI = CI * world_to_foot;
-  prog.AddLinearConstraint(CI, ci_l, ci_u, {lambda});
+  inequality_linear_ = inequality_linear_ * world_to_foot;
+  prog.AddLinearConstraint(inequality_linear_, inequality_lower_bound_,
+                           inequality_upper_bound_, {lambda});
 
   // torque limits: min <= tau <= max, num_torque rows
   // min <= M_l * vd + h_l - J^T_l * lambda <= max
@@ -223,13 +226,16 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // since B should be orthonormal.
   // tau is joint space indexed, and u is actuator space indexed.
   // constraints are specified with u index.
-  CI = rs.robot().B.bottomRows(num_torque).transpose() * Tau;
-  ci_u = ci_l = -rs.robot().B.bottomRows(num_torque).transpose() * tau0;
+  inequality_linear_ =
+      rs.robot().B.bottomRows(num_torque).transpose() * torque_linear_;
+  inequality_upper_bound_ = inequality_lower_bound_ =
+      -rs.robot().B.bottomRows(num_torque).transpose() * torque_constant_;
   for (size_t i = 0; i < rs.robot().actuators.size(); i++) {
-    ci_l[i] += rs.robot().actuators[i].effort_limit_min;
-    ci_u[i] += rs.robot().actuators[i].effort_limit_max;
+    inequality_lower_bound_[i] += rs.robot().actuators[i].effort_limit_min;
+    inequality_upper_bound_[i] += rs.robot().actuators[i].effort_limit_max;
   }
-  prog.AddLinearConstraint(CI, ci_l, ci_u, {vd, lambda});
+  prog.AddLinearConstraint(inequality_linear_, inequality_lower_bound_,
+                           inequality_upper_bound_, {vd, lambda});
 
   ////////////////////////////////////////////////////////////////////
   // cost function:
@@ -362,7 +368,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
 
   if (!is_qp_output_sane(*output)) {
-    std::cerr << "output is not right\n";
+    std::cerr << "output is invalid\n";
     return -1;
   }
 
