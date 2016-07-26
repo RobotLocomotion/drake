@@ -119,7 +119,7 @@ void RigidBodyTree::SortTree() {
 const RigidBodyActuator& RigidBodyTree::GetActuator(
     const std::string& name) const {
   for (const auto& actuator : actuators) {
-    if (actuator.name == name) {
+    if (actuator.name_ == name) {
       return actuator;
     }
   }
@@ -153,8 +153,8 @@ void RigidBodyTree::compile(void) {
       if (!hasChild) {
         // now check if this body is attached by a loop joint
         for (const auto& loop : loops) {
-          if ((loop.frameA->body == bodies[i].get()) ||
-              (loop.frameB->body == bodies[i].get())) {
+          if ((loop.frameA_->body == bodies[i].get()) ||
+              (loop.frameB_->body == bodies[i].get())) {
             hasChild = true;
             break;
           }
@@ -193,9 +193,9 @@ void RigidBodyTree::compile(void) {
   B.resize(num_velocities_, actuators.size());
   B = MatrixXd::Zero(num_velocities_, actuators.size());
   for (size_t ia = 0; ia < actuators.size(); ia++)
-    for (int i = 0; i < actuators[ia].body->getJoint().getNumVelocities(); i++)
-      B(actuators[ia].body->velocity_num_start + i, ia) =
-          actuators[ia].reduction;
+    for (int i = 0; i < actuators[ia].body_->getJoint().getNumVelocities(); i++)
+      B(actuators[ia].body_->velocity_num_start + i, ia) =
+          actuators[ia].reduction_;
 
   // Initializes the joint limit vectors.
   joint_limit_min = VectorXd::Constant(
@@ -318,12 +318,12 @@ void RigidBodyTree::drawKinematicTree(
   }
 
   for (const auto& loop : loops) {
-    dotfile << "  " << loop.frameA->body->get_name() << " -> "
-            << loop.frameB->body->get_name() << " [label=\"loop " << endl;
+    dotfile << "  " << loop.frameA_->body->get_name() << " -> "
+            << loop.frameB_->body->get_name() << " [label=\"loop " << endl;
     dotfile << "transform_to_parent_body=" << endl
-            << loop.frameA->transform_to_body.matrix() << endl;
+            << loop.frameA_->transform_to_body.matrix() << endl;
     dotfile << "transform_to_child_body=" << endl
-            << loop.frameB->transform_to_body.matrix() << endl;
+            << loop.frameB_->transform_to_body.matrix() << endl;
     dotfile << "\"];" << endl;
   }
   dotfile << "}" << endl;
@@ -585,20 +585,10 @@ RigidBodyTree::ComputeMaximumDepthCollisionPoints(
   for (size_t i = 0; i < num_contact_points; i++) {
     // Get bodies' transforms.
     const RigidBody& bodyA = *contact_points[i].elementA->get_body();
-    Isometry3d TA;
-    if (bodyA.hasParent()) {
-      TA = cache.getElement(bodyA).transform_to_world;
-    } else {  // body is the world.
-      TA = Isometry3d::Identity();
-    }
+    const Isometry3d& TA = cache.getElement(bodyA).transform_to_world;
 
     const RigidBody& bodyB = *contact_points[i].elementB->get_body();
-    Isometry3d TB;
-    if (bodyB.hasParent()) {
-      TB = cache.getElement(bodyB).transform_to_world;
-    } else {  // body is the world.
-      TB = Isometry3d::Identity();
-    }
+    const Isometry3d& TB = cache.getElement(bodyB).transform_to_world;
 
     // Transform to bodies' frames.
     // Note:
@@ -1868,15 +1858,16 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
   for (size_t i = 0; i < loops.size(); i++) {
     {  // position constraint
       auto ptA_in_B =
-          transformPoints(cache, Vector3d::Zero(), loops[i].frameA->frame_index,
-                          loops[i].frameB->frame_index);
+          transformPoints(cache, Vector3d::Zero(),
+                          loops[i].frameA_->frame_index,
+                          loops[i].frameB_->frame_index);
       ret.template middleRows<3>(6 * i) = ptA_in_B;
     }
     {  // second position constraint (to constrain orientation)
       auto axis_A_end_in_B =
-          transformPoints(cache, loops[i].axis, loops[i].frameA->frame_index,
-                          loops[i].frameB->frame_index);
-      ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis;
+          transformPoints(cache, loops[i].axis_, loops[i].frameA_->frame_index,
+                          loops[i].frameB_->frame_index);
+      ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
     }
   }
   return ret;
@@ -1892,12 +1883,12 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
     ret.template middleRows<3>(6 * i) = transformPointsJacobian(
-        cache, Vector3d::Zero(), loops[i].frameA->frame_index,
-        loops[i].frameB->frame_index, in_terms_of_qdot);
+        cache, Vector3d::Zero(), loops[i].frameA_->frame_index,
+        loops[i].frameB_->frame_index, in_terms_of_qdot);
     // second position constraint (to constrain orientation)
     ret.template middleRows<3>(6 * i + 3) = transformPointsJacobian(
-        cache, loops[i].axis, loops[i].frameA->frame_index,
-        loops[i].frameB->frame_index, in_terms_of_qdot);
+        cache, loops[i].axis_, loops[i].frameA_->frame_index,
+        loops[i].frameB_->frame_index, in_terms_of_qdot);
   }
   return ret;
 }
@@ -1911,12 +1902,12 @@ RigidBodyTree::positionConstraintsJacDotTimesV(
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
     ret.template middleRows<3>(6 * i) = transformPointsJacobianDotTimesV(
-        cache, Vector3d::Zero(), loops[i].frameA->frame_index,
-        loops[i].frameB->frame_index);
+        cache, Vector3d::Zero(), loops[i].frameA_->frame_index,
+        loops[i].frameB_->frame_index);
     // second position constraint (to constrain orientation)
     ret.template middleRows<3>(6 * i + 3) = transformPointsJacobianDotTimesV(
-        cache, loops[i].axis, loops[i].frameA->frame_index,
-        loops[i].frameB->frame_index);
+        cache, loops[i].axis_, loops[i].frameA_->frame_index,
+        loops[i].frameB_->frame_index);
   }
   return ret;
 }
