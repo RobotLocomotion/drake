@@ -38,8 +38,8 @@ void InstantaneousQPController::initialize() {
   umin.resize(nu);
   umax.resize(nu);
   for (size_t i = 0; i < robot->actuators.size(); i++) {
-    umin(i) = robot->actuators.at(i).effort_limit_min;
-    umax(i) = robot->actuators.at(i).effort_limit_max;
+    umin(i) = robot->actuators.at(i).effort_limit_min_;
+    umax(i) = robot->actuators.at(i).effort_limit_max_;
   }
 
   qdd_lb = Eigen::VectorXd::Zero(nq).array() -
