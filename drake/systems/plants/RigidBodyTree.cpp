@@ -911,7 +911,7 @@ bool RigidBodyTree::isBodyPartOfRobot(const RigidBody& body,
 
 double RigidBodyTree::getMass(const std::set<int>& model_ids) const {
   double total_mass = 0.0;
-  for (auto& body : bodies) {
+  for (const auto& body : bodies) {
     if (isBodyPartOfRobot(*body.get(), model_ids)) {
       total_mass += body->mass;
     }
