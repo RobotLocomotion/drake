@@ -68,25 +68,28 @@ int main() {
 
   // These corresponds to a nominal pose for the Valkyrie robot: slightly
   // crouched, arm raised a bit.
-  q[robot_status.joint_name_to_id().at("rightHipRoll")] = 0.01;
-  q[robot_status.joint_name_to_id().at("rightHipPitch")] = -0.5432;
-  q[robot_status.joint_name_to_id().at("rightKneePitch")] = 1.2195;
-  q[robot_status.joint_name_to_id().at("rightAnklePitch")] = -0.7070;
-  q[robot_status.joint_name_to_id().at("rightAnkleRoll")] = -0.0069;
+  q[robot_status.joint_name_to_position_index().at("rightHipRoll")] = 0.01;
+  q[robot_status.joint_name_to_position_index().at("rightHipPitch")] = -0.5432;
+  q[robot_status.joint_name_to_position_index().at("rightKneePitch")] = 1.2195;
+  q[robot_status.joint_name_to_position_index().at("rightAnklePitch")] =
+      -0.7070;
+  q[robot_status.joint_name_to_position_index().at("rightAnkleRoll")] = -0.0069;
 
-  q[robot_status.joint_name_to_id().at("leftHipRoll")] = -0.01;
-  q[robot_status.joint_name_to_id().at("leftHipPitch")] = -0.5432;
-  q[robot_status.joint_name_to_id().at("leftKneePitch")] = 1.2195;
-  q[robot_status.joint_name_to_id().at("leftAnklePitch")] = -0.7070;
-  q[robot_status.joint_name_to_id().at("leftAnkleRoll")] = 0.0069;
+  q[robot_status.joint_name_to_position_index().at("leftHipRoll")] = -0.01;
+  q[robot_status.joint_name_to_position_index().at("leftHipPitch")] = -0.5432;
+  q[robot_status.joint_name_to_position_index().at("leftKneePitch")] = 1.2195;
+  q[robot_status.joint_name_to_position_index().at("leftAnklePitch")] = -0.7070;
+  q[robot_status.joint_name_to_position_index().at("leftAnkleRoll")] = 0.0069;
 
-  q[robot_status.joint_name_to_id().at("rightShoulderRoll")] = 1;
-  q[robot_status.joint_name_to_id().at("rightShoulderYaw")] = 0.5;
-  q[robot_status.joint_name_to_id().at("rightElbowPitch")] = M_PI / 2.;
+  q[robot_status.joint_name_to_position_index().at("rightShoulderRoll")] = 1;
+  q[robot_status.joint_name_to_position_index().at("rightShoulderYaw")] = 0.5;
+  q[robot_status.joint_name_to_position_index().at("rightElbowPitch")] =
+      M_PI / 2.;
 
-  q[robot_status.joint_name_to_id().at("leftShoulderRoll")] = -1;
-  q[robot_status.joint_name_to_id().at("leftShoulderYaw")] = 0.5;
-  q[robot_status.joint_name_to_id().at("leftElbowPitch")] = -M_PI / 2.;
+  q[robot_status.joint_name_to_position_index().at("leftShoulderRoll")] = -1;
+  q[robot_status.joint_name_to_position_index().at("leftShoulderYaw")] = 0.5;
+  q[robot_status.joint_name_to_position_index().at("leftElbowPitch")] =
+      -M_PI / 2.;
 
   robot_status.Update(0, q, v,
                       VectorXd::Zero(robot_status.robot().actuators.size()),

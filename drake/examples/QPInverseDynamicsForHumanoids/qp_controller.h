@@ -97,4 +97,15 @@ class QPController {
    * @return 0 if success, < if error.
    */
   int Control(const HumanoidStatus& rs, const QPInput& input, QPOutput* output);
+
+ private:
+  // These are temporary matrices used by the controller.
+  Eigen::MatrixXd torque_linear_;
+  Eigen::VectorXd torque_constant_;
+  Eigen::MatrixXd dynamics_linear_;
+  Eigen::VectorXd dynamics_constant_;
+
+  Eigen::MatrixXd inequality_linear_;
+  Eigen::VectorXd inequality_upper_bound_;
+  Eigen::VectorXd inequality_lower_bound_;
 };

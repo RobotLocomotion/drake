@@ -78,16 +78,23 @@ void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
   double Fz[2];
   for (int i = 0; i < 2; i++) {
     Fz[i] = foot_wrench_in_world_frame_[i][5];
-    // cop relative to the ft sensor
-    cop_in_body_frame_[i][0] =
-        -foot_wrench_in_body_frame_[i][1] / foot_wrench_in_body_frame_[i][5];
-    cop_in_body_frame_[i][1] =
-        foot_wrench_in_body_frame_[i][0] / foot_wrench_in_body_frame_[i][5];
+    if (fabs(Fz[i]) < 1e-3) {
+      cop_in_body_frame_[i][0] = 0;
+      cop_in_body_frame_[i][1] = 0;
+      cop_w[i][0] = foot_sensor_[i].pose.translation()[0];
+      cop_w[i][1] = foot_sensor_[i].pose.translation()[1];
+    } else {
+      // cop relative to the ft sensor
+      cop_in_body_frame_[i][0] =
+          -foot_wrench_in_body_frame_[i][1] / foot_wrench_in_body_frame_[i][5];
+      cop_in_body_frame_[i][1] =
+          foot_wrench_in_body_frame_[i][0] / foot_wrench_in_body_frame_[i][5];
 
-    cop_w[i][0] = -foot_wrench_in_world_frame_[i][1] / Fz[i] +
-                  foot_sensor_[i].pose.translation()[0];
-    cop_w[i][1] = foot_wrench_in_world_frame_[i][0] / Fz[i] +
-                  foot_sensor_[i].pose.translation()[1];
+      cop_w[i][0] = -foot_wrench_in_world_frame_[i][1] / Fz[i] +
+                    foot_sensor_[i].pose.translation()[0];
+      cop_w[i][1] = foot_wrench_in_world_frame_[i][0] / Fz[i] +
+                    foot_sensor_[i].pose.translation()[1];
+    }
   }
 
   // This is assuming that both feet are on the same horizontal surface.
