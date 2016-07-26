@@ -351,7 +351,18 @@ SystemIdentification<T>::LumpedSystemIdentification(
     debug << "polynomial for ID: " << trigpoly << std::endl;
     polys.push_back(trigpoly.getPolynomial());
     for (const auto& k_v_pair : trigpoly.getSinCosMap()) {
-      original_sin_cos_map[k_v_pair.first] = k_v_pair.second;
+      if (original_sin_cos_map.count(k_v_pair.first)) {
+        // Make sure that different TrigPolys don't have inconsistent
+        // sin_cos_maps (eg, `s = sin(x)` vs. `s = cos(y)`).  Note that
+        // nesting violations (`s = sin(y), y = cos(z)`) will be caught by
+        // the TrigPoly constructor.
+        DRAKE_ABORT_UNLESS(k_v_pair.second.s ==
+                           original_sin_cos_map[k_v_pair.first].s);
+        DRAKE_ABORT_UNLESS(k_v_pair.second.c ==
+                           original_sin_cos_map[k_v_pair.first].c);
+      } else {
+        original_sin_cos_map[k_v_pair.first] = k_v_pair.second;
+      }
     }
   }
 
