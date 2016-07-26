@@ -180,7 +180,9 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     EXPECT_LT(error, 1e-5);
     EXPECT_EQ(estimated_params.size(), 3u);
     for (const auto& var : {a_var, b_var, c_var}) {
-      EXPECT_NEAR(estimated_params[var], expected_params.at(var), 4 * error);
+      // `9 * error` here in case all of the RMS error was in a single term.
+      EXPECT_NEAR(estimated_params[var], expected_params.at(var),
+                  9 * error);
     }
   }
 
@@ -263,10 +265,10 @@ std::vector<State> MakeTestData() {
 // checking of the test and resulting template instantiations.
 #if !defined(WIN32) && !defined(WIN64)
 #define SPRING_MASS_TEST_NAME SpringMassIdentification
-#define ACROBOT_TEST_NAME AcrobotIdentification
+#define PENDULA_TEST_NAME PendulaIdentification
 #else
 #define SPRING_MASS_TEST_NAME DISABLED_SpringMassIdentification
-#define ACROBOT_TEST_NAME DISABLED_AcrobotIdentification
+#define PENDULA_TEST_NAME DISABLED_PendulaIdentification
 #endif
 
 // TODO(ggould-tri) It is likely that much of the logic below will be
@@ -337,7 +339,7 @@ GTEST_TEST(SystemIdentificationTest, SPRING_MASS_TEST_NAME) {
   //
   // The value for the error check here is an arbitrary empirical observation,
   // to catch changes that heavily regress accuracy.
-  EXPECT_LT(error, 0.3);
+  EXPECT_LT(error, 2e-2);
 
   EXPECT_EQ(estimated_params.size(), 3u);
   EXPECT_NEAR(estimated_params[mass_var], kMass, kNoise);
@@ -347,94 +349,147 @@ GTEST_TEST(SystemIdentificationTest, SPRING_MASS_TEST_NAME) {
 }
 #undef SPRING_MASS_TEST_NAME
 
-GTEST_TEST(SystemIdentificationTest, ACROBOT_TEST_NAME) {
-  // Apologies for the nonconformant variable names, which follow
-  // http://underactuated.csail.mit.edu/underactuated.html?chapter=3
+GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
+  // Simulate two pendula that swing independently but are actuated with the
+  // same torque.  The pendula have lengths 1 and 2.
+  //
+  // The comments about nomenclature from the previous test apply here as
+  // well: Variable naming is conventional rather than style-conformant.
+
   const TrigPolyd theta1(Polynomiald("th",1),
                          Polynomiald("s",1), Polynomiald("c",1));
   const TrigPolyd theta2(Polynomiald("th",2),
                          Polynomiald("s",2), Polynomiald("c",2));
   VectorXTrigPoly q(2); q << theta1, theta2;
 
-  const TrigPolyd thetadot1(Polynomiald("th.",1),
+  const TrigPolyd theta1dot(Polynomiald("th.",1),
                             Polynomiald("s.",1), Polynomiald("c.",1));
-  const TrigPolyd thetadot2(Polynomiald("th.",2),
+  const TrigPolyd theta2dot(Polynomiald("th.",2),
                             Polynomiald("s.",2), Polynomiald("c.",2));
-  VectorXTrigPoly qdot(2); qdot << thetadot1, thetadot2;
+  VectorXTrigPoly qdot(2); qdot << theta1dot, theta2dot;
 
-  const TrigPolyd thetadotdot1(Polynomiald("th..",1),
+  const TrigPolyd theta1dotdot(Polynomiald("th..",1),
                                Polynomiald("s..",1), Polynomiald("c..",1));
-  const TrigPolyd thetadotdot2(Polynomiald("th..",2),
+  const TrigPolyd theta2dotdot(Polynomiald("th..",2),
                                Polynomiald("s..",2), Polynomiald("c..",2));
-  VectorXTrigPoly qdotdot(2); qdotdot << thetadotdot1, thetadotdot2;
+  VectorXTrigPoly qdotdot(2); qdotdot << theta1dotdot, theta2dotdot;
 
-  const TrigPolyd l1(Polynomiald("len",1));  //< Length of arm 1.
-  const TrigPolyd l2(Polynomiald("len",2));  //< Length of arm 2.
-  const TrigPolyd m1(Polynomiald("mas",1));  //< Mass of arm 1.
-  const TrigPolyd m2(Polynomiald("mas",2));  //< Mass of arm 2.
+  const TrigPolyd l1(Polynomiald("l",1));  //< Length of arm 1.
+  const TrigPolyd l2(Polynomiald("l",2));  //< Length of arm 2.
+  const TrigPolyd m1(Polynomiald("m",1));  //< Mass of arm 1.
+  const TrigPolyd m2(Polynomiald("m",2));  //< Mass of arm 2.
 
-  // Assume for now that the arms have uniform mass distribution; this
-  // assumption can be relaxed (ie, leaving these as independent parameters)
-  // to widen the parameter space of the problem.
-  const TrigPolyd lc1 = l1 / 2;  //< Position of center of mass along arm 1.
-  const TrigPolyd lc2 = l2 / 2;  //< Position of center of mass along arm 2.
-  const TrigPolyd i1 = m1 * l1 * l1 / 3;  //< Moment of inertia for arm 1.
-  const TrigPolyd i2 = m2 * l2 * l2 / 3;  //< Moment of inertia for arm 2.
-
-  const TrigPolyd gravity(Polynomiald("grav"));
-  const TrigPolyd torque(Polynomiald("torq"));
+  const TrigPolyd gravity(Polynomiald("g"));  //< gravity
+  const TrigPolyd tau(Polynomiald("tau"));  //< torque
 
   Eigen::Matrix<TrigPolyd, 2, 2> H;
-  H << i1 + i2 + (m2 * l1 * l1) + (m2 * l1 * lc2 * cos(theta2)),
-      i2 + (m2 * l1 * lc2 * cos(theta2)),
-      i2 + (m2 * l1 * lc2 * cos(theta2)),
-      i2;
+  H << (m1 * l1 * l1), 0,
+       0, (m2 * l2 * l2);
   Eigen::Matrix<TrigPolyd, 2, 2> C;
-  C << m2 * l1 * lc2 * sin(theta2) * thetadot2 * -2,
-      m2 * l1 * lc2 * sin(theta2) * thetadot2 * -1,
-      m2 * l1 * lc2 * sin(theta2) * thetadot2,
-      0;
+  C << 0, 0, 0, 0;
+
   Eigen::Matrix<TrigPolyd, 2, 1> g;
-  g << ((m1 * gravity * lc1 * sin(theta1)) +
-        (m2 * gravity * (l1 * sin(theta1) + lc2 * sin(theta1 + theta2)))),
-      m2 * gravity * lc2 * sin(theta1 + theta2);
+  g << m1 * gravity * l1 * sin(theta1), m2 * gravity * l2 * sin(theta2);
+
   Eigen::Matrix<TrigPolyd, 2, 1> B;
-  B << 0, 1;
+  B << 1, 1;
   Eigen::Matrix<TrigPolyd, 2, 1> f;
   f << 0, 0;
 
-  VectorXTrigPoly u(1); u << torque;
+  VectorXTrigPoly u(1); u << tau;
 
   const VectorXTrigPoly manipulator_left = (H * qdotdot) + (C * qdot) + g;
   const VectorXTrigPoly manipulator_right = (B * u) + f;
   const VectorXTrigPoly to_estimate = manipulator_left - manipulator_right;
 
-  // Create convenience variables for our q/qdot/u values.
-  const TrigPolyd::VarType t1 = theta1.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType t2 = theta2.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType td1 = thetadot1.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType td2 = thetadot2.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType tdd1 =
-      thetadotdot1.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType tdd2 =
-      thetadotdot2.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType tau = torque.getPolynomial().getSimpleVariable();
+  // Create convenience variables for our q/qdot/u values.  Convenience vars
+  // have an underscore prefix for slightly easier understandability.
+  const TrigPolyd::VarType _th1 = theta1.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType _th2 = theta2.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType _th1d =
+      theta1dot.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType _th2d =
+      theta2dot.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType _th1dd =
+      theta1dotdot.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType _th2dd =
+      theta2dotdot.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType _tau = tau.getPolynomial().getSimpleVariable();
 
-  std::vector<SID::PartialEvalType> data;
-  for (size_t i = 0; i < acrobot_inputs.size(); i++) {
-    const std::vector<double>& output = acrobot_outputs.at(i);
-    const double input = acrobot_inputs.at(i);
-    const SID::PartialEvalType sample_map = {
-      {tau, input},
-      {t1, output.at(0)}, {t2, output.at(1)},
-      {td1, output.at(2)}, {td2, output.at(3)},
-      {tdd1, output.at(4)}, {tdd2, output.at(5)}};
-    data.push_back(sample_map);
-  }
+  const double kG = 9.8;
+  const double kPi = 3.14159265;
+  const double kPi2 = kPi / 2;
+
+  const std::vector<typename SID::PartialEvalType> pendula_data = {
+    {{_tau, 0.},
+     {_th1, 0.}, {_th1d, 0.}, {_th1dd, 0.},
+     {_th2, 0.}, {_th2d, 0.}, {_th2dd, 0.}},
+    {{_tau, 0.},
+     {_th1, kPi2}, {_th1d, 0.}, {_th1dd, -kG},
+     {_th2, kPi2}, {_th2d, 0.}, {_th2dd, -0.25 * kG}},
+    {{_tau, 0.},
+     {_th1, -kPi}, {_th1d, 0.}, {_th1dd, 0.},
+     {_th2, -kPi}, {_th2d, 0.}, {_th2dd, 0.}},
+    {{_tau, 0.},
+     {_th1, -kPi2}, {_th1d, 0.}, {_th1dd, kG},
+     {_th2, -kPi2}, {_th2d, 0.}, {_th2dd, 0.25 * kG}},
+    {{_tau, 1.},
+     {_th1, 0.}, {_th1d, 0.}, {_th1dd, 1.},
+     {_th2, 0.}, {_th2d, 0.}, {_th2dd, 0.25}},
+    {{_tau, kG},
+     {_th1, kPi2}, {_th1d, 0.}, {_th1dd, 0.},
+     {_th2, kPi2}, {_th2d, 0.}, {_th2dd, 0.}},
+    {{_tau, 1.},
+     {_th1, -kPi}, {_th1d, 0.}, {_th1dd, 1.},
+     {_th2, -kPi}, {_th2d, 0.}, {_th2dd, 0.25}},
+    {{_tau, -kG},
+     {_th1, -kPi2}, {_th1d, 0.}, {_th1dd, 0.},
+     {_th2, -kPi2}, {_th2d, 0.}, {_th2dd, 0.}},
+    };
 
   SID::SystemIdentificationResult result =
-      SID::LumpedSystemIdentification(to_estimate, data);
+      SID::LumpedSystemIdentification(to_estimate, pendula_data);
+
+  // Check result.rms_error.
+  const double epsilon = 1e-5;  // Moderate, empirical epsilon for weak solvers.
+  EXPECT_LT(result.rms_error, epsilon);
+  const double max_per_term_error =
+      result.rms_error *
+      (result.lumped_parameters.size() * result.lumped_parameters.size());
+
+  // Check result.lumped_parameters.
+  Polynomiald mgl1 = (m1 * gravity * l1).getPolynomial();
+  Polynomiald mgl2 = (m2 * gravity * l2).getPolynomial();
+  Polynomiald mll1 = (m1 * l1 * l1).getPolynomial();
+  Polynomiald mll2 = (m2 * l2 * l2).getPolynomial();
+  Polynomiald::VarType mgl1_var = result.lumped_parameters.at(mgl1);
+  Polynomiald::VarType mgl2_var = result.lumped_parameters.at(mgl2);
+  Polynomiald::VarType mll1_var = result.lumped_parameters.at(mll1);
+  Polynomiald::VarType mll2_var = result.lumped_parameters.at(mll2);
+
+  // Check result.lumped_polys.
+  std::set<Polynomiald::VarType> expected_vars_1 = {
+    mgl1_var, mll1_var, _th1, _th1dd, _tau};
+  EXPECT_EQ(result.lumped_polys[0].getVariables(), expected_vars_1);
+  std::set<Polynomiald::VarType> expected_vars_2 = {
+    mgl2_var, mll2_var, _th2, _th2dd, _tau};
+  EXPECT_EQ(result.lumped_polys[1].getVariables(), expected_vars_2);
+
+  // Check result.lumped_parameter_values
+  EXPECT_NEAR(result.lumped_parameter_values[mgl1_var], kG, max_per_term_error);
+  EXPECT_NEAR(result.lumped_parameter_values[mgl2_var], kG, max_per_term_error);
+  EXPECT_NEAR(result.lumped_parameter_values[mll1_var], 1, max_per_term_error);
+  EXPECT_NEAR(result.lumped_parameter_values[mll2_var], 4, max_per_term_error);
+
+  // Check result.partially_evaluated_polys.
+  for (const auto& point : pendula_data) {
+    EXPECT_NEAR(result.partially_evaluated_polys[0].evaluateMultivariate(point),
+                0, max_per_term_error);
+    EXPECT_NEAR(result.partially_evaluated_polys[1].evaluateMultivariate(point),
+                0, max_per_term_error);
+  }
 }
+#undef PENDULA_TEST_NAME
 ///@}
 
 }  // anonymous namespace

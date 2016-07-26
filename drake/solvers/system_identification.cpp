@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream> // TODO DEFECT
 
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/Optimization.h"
@@ -113,7 +114,10 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
         // MonomialMatches and its callees.  If so it can be sped up via loop
         // reordering and intermediate maps at some cost to readability.
         if (MonomialMatches(monomial, active_var_monomial, active_vars)) {
-          lumped_parameter.push_back(monomial.factor(active_var_monomial));
+          const MonomialType& candidate = monomial.factor(active_var_monomial);
+          if (candidate.getDegree() > 0) {  // Don't create lumped constants!
+            lumped_parameter.push_back(candidate);
+          }
         }
       }
       if (!lumped_parameter.size()) { continue; }
@@ -322,7 +326,7 @@ SystemIdentification<T>::EstimateParameters(
     error_squared += error_variables.value()[i] * error_variables.value()[i];
   }
 
-  return std::make_pair(estimates, std::sqrt(error_squared));
+  return std::make_pair(estimates, std::sqrt(error_squared / num_err_terms));
 }
 
 template<typename T>
@@ -332,11 +336,15 @@ SystemIdentification<T>::LumpedSystemIdentification(
     const std::vector<PartialEvalType>& active_var_values) {
   SystemIdentificationResult result;
 
+  // Tracing this method is a very useful way to debug otherwise-obscure
+  // system identification problems, so use a custom debug output stream.
+
   // Restructure everything as Polynomial plus a unified SinCosMap.
   TrigPolyd::SinCosMap original_sin_cos_map;
   std::vector<Polynomiald> polys;
   for (int i = 0; i < trigpolys.rows(); i++) {
     const TrigPolyd& trigpoly = trigpolys[i];
+    std::cout << "polynomial for ID: " << trigpoly << std::endl;
     polys.push_back(trigpoly.getPolynomial());
     for (const auto& k_v_pair : trigpoly.getSinCosMap()) {
       original_sin_cos_map[k_v_pair.first] = k_v_pair.second;
@@ -345,11 +353,28 @@ SystemIdentification<T>::LumpedSystemIdentification(
 
   // Figure out what vars we are estimating.
   const auto var_sets = ClassifyVars(polys, active_var_values);
-  const std::set<VarType>& parameter_vars = std::get<1>(var_sets);
+  std::set<VarType> parameter_vars = std::get<1>(var_sets);
+  for (const auto& k_v_pair : original_sin_cos_map) {
+    // If x isn't a param, neither are sin(x) and cos(x).
+    if (!parameter_vars.count(k_v_pair.first)) {
+      parameter_vars.erase(k_v_pair.second.s);
+      parameter_vars.erase(k_v_pair.second.c);
+    }
+  }
+  std::cout << "Params to estimate: ";
+  for (const auto& pv : parameter_vars) {
+    std::cout << Polynomiald::idToVariableName(pv) << " ";
+  }
+  std::cout << std::endl;
 
   // Compute lumped parameters.
   result.lumped_parameters = GetLumpedParametersFromPolynomials(
       polys, parameter_vars);
+  for (const auto& k_v_pair : result.lumped_parameters) {
+    std::cout << "Lumped parameter: "
+              << Polynomiald::idToVariableName(k_v_pair.second) << " == "
+              << k_v_pair.first << std::endl;
+  }
 
   // Compute lumped polynomials.
   result.lumped_polys.resize(trigpolys.rows());
@@ -358,6 +383,7 @@ SystemIdentification<T>::LumpedSystemIdentification(
         RewritePolynomialWithLumpedParameters(
             polys[i], result.lumped_parameters),
         original_sin_cos_map);
+    std::cout << "Lumped polynomial: " << result.lumped_polys[i] << std::endl;
   }
 
   // Before we can estimated lumped parameters, we need to augment the
@@ -378,19 +404,28 @@ SystemIdentification<T>::LumpedSystemIdentification(
   // Estimate the lumped parameters.
   VectorXPoly polys_as_eigen(polys.size());
   for (size_t i = 0; i < polys.size(); i++) {
-    polys_as_eigen[i] = polys[i];
+    polys_as_eigen[i] = result.lumped_polys[i].getPolynomial();
   }
   std::tie(result.lumped_parameter_values, result.rms_error) =
       EstimateParameters(polys_as_eigen, augmented_values);
+  for (const auto& k_v_pair : result.lumped_parameter_values) {
+    std::cout << "Parameter estimate: "
+              << Polynomiald::idToVariableName(k_v_pair.first) << " ~= "
+              << k_v_pair.second << std::endl;
+  }
+  std::cout << "Estimation error: " << result.rms_error << std::endl;
 
   // Substitute the estimates back into the lumped polynomials.
   result.partially_evaluated_polys.resize(trigpolys.rows());
   for (int i = 0; i < trigpolys.rows(); i++) {
     result.partially_evaluated_polys[i] =
-        trigpolys[i].evaluatePartial(result.lumped_parameter_values);
+        result.lumped_polys[i].evaluatePartial(result.lumped_parameter_values);
+    std::cout << "Estimated polynomial: "
+              << result.partially_evaluated_polys[i] << std::endl;
   }
 
   return result;
+#undef debugStream
 }
 
 template<typename T>
