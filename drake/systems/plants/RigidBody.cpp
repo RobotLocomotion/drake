@@ -16,9 +16,7 @@ using std::vector;
 
 RigidBody::RigidBody()
     : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores(DrakeCollision::NONE_MASK),
-      parent_(nullptr) {
-  model_id_ = 0;
+      collision_filter_ignores(DrakeCollision::NONE_MASK) {
   position_num_start = 0;
   velocity_num_start = 0;
   body_index = 0;

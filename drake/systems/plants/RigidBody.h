@@ -243,8 +243,8 @@ class DRAKERBM_EXPORT RigidBody {
   std::string model_name_;
 
   // A unique ID for each model. It uses 0-index, starts from 0.
-  int model_id_;
+  int model_id_{0};
 
   // The rigid body that's connected to this rigid body's joint.
-  RigidBody* parent_;
+  RigidBody* parent_{nullptr};
 };
