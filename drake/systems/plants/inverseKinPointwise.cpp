@@ -14,12 +14,9 @@ DRAKEIK_EXPORT void inverseKinPointwise(
     const int num_constraints, RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions, MatrixBase<DerivedC>* q_sol, int* INFO,
     vector<string>* infeasible_constraint) {
-  int nq = model->number_of_positions();
-  MatrixXd qdot_dummy(nq, nT);
-  MatrixXd qddot_dummy(nq, nT);
-  inverseKinBackend(model, 1, nT, t, q_seed, q_nom, num_constraints,
-                    constraint_array, ikoptions, q_sol, &qdot_dummy,
-                    &qddot_dummy, INFO, infeasible_constraint);
+  inverseKinBackend(model, nT, t, q_seed, q_nom, num_constraints,
+                    constraint_array, ikoptions, q_sol,
+                    INFO, infeasible_constraint);
 }
 
 template DRAKEIK_EXPORT void inverseKinPointwise(

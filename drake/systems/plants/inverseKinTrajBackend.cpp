@@ -552,46 +552,6 @@ template void inverseKinTrajBackend(
     Eigen::MatrixBase<MatrixXd>* qdot_sol,
     Eigen::MatrixBase<MatrixXd>* qddot_sol, int* INFO,
     std::vector<std::string>* infeasible_constraint);
-template void inverseKinTrajBackend(
-    RigidBodyTree* model, const int nT, const double* t,
-    const Eigen::MatrixBase<Eigen::Map<MatrixXd>>& q_seed,
-    const Eigen::MatrixBase<Eigen::Map<MatrixXd>>& q_nom,
-    const int num_constraints, RigidBodyConstraint** const constraint_array,
-    const IKoptions& ikoptions,
-    Eigen::MatrixBase<Eigen::Map<MatrixXd>>* q_sol,
-    Eigen::MatrixBase<MatrixXd>* qdot_sol,
-    Eigen::MatrixBase<MatrixXd>* qddot_sol, int* INFO,
-    std::vector<std::string>* infeasible_constraint);
-template void inverseKinTrajBackend(
-    RigidBodyTree* model, const int nT, const double* t,
-    const Eigen::MatrixBase<Eigen::Map<VectorXd>>& q_seed,
-    const Eigen::MatrixBase<Eigen::Map<VectorXd>>& q_nom,
-    const int num_constraints, RigidBodyConstraint** const constraint_array,
-    const IKoptions& ikoptions,
-    Eigen::MatrixBase<Eigen::Map<VectorXd>>* q_sol,
-    Eigen::MatrixBase<Eigen::Map<VectorXd>>* qdot_sol,
-    Eigen::MatrixBase<Eigen::Map<VectorXd>>* qddot_sol, int* INFO,
-    std::vector<std::string>* infeasible_constraint);
-template void inverseKinTrajBackend(
-    RigidBodyTree* model, const int nT, const double* t,
-    const Eigen::MatrixBase<VectorXd>& q_seed,
-    const Eigen::MatrixBase<VectorXd>& q_nom,
-    const int num_constraints, RigidBodyConstraint** const constraint_array,
-    const IKoptions& ikoptions,
-    Eigen::MatrixBase<VectorXd>* q_sol,
-    Eigen::MatrixBase<VectorXd>* qdot_sol,
-    Eigen::MatrixBase<VectorXd>* qddot_sol, int* INFO,
-    std::vector<std::string>* infeasible_constraint);
-template void inverseKinTrajBackend(
-    RigidBodyTree* model, const int nT, const double* t,
-    const Eigen::MatrixBase<Eigen::Map<VectorXd>>& q_seed,
-    const Eigen::MatrixBase<Eigen::Map<VectorXd>>& q_nom,
-    const int num_constraints, RigidBodyConstraint** const constraint_array,
-    const IKoptions& ikoptions,
-    Eigen::MatrixBase<Eigen::Map<VectorXd>>* q_sol,
-    Eigen::MatrixBase<VectorXd>* qdot_sol,
-    Eigen::MatrixBase<VectorXd>* qddot_sol, int* INFO,
-    std::vector<std::string>* infeasible_constraint);
 
 }  // namespace plants
 }  // namespace systems

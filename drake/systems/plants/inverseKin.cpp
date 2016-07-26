@@ -16,12 +16,9 @@ DRAKEIK_EXPORT void inverseKin(RigidBodyTree *model,
                                const IKoptions& ikoptions,
                                MatrixBase<DerivedC>* q_sol, int* INFO,
                                vector<string>* infeasible_constraint) {
-  VectorXd qdot_dummy(model->number_of_velocities());
-  VectorXd qddot_dummy(model->number_of_velocities());
   double *t = nullptr;
-  inverseKinBackend(model, 1, 1, t, q_seed, q_nom, num_constraints,
-                    constraint_array, ikoptions,
-                    q_sol, &qdot_dummy, &qddot_dummy, INFO,
+  inverseKinBackend(model, 1, t, q_seed, q_nom, num_constraints,
+                    constraint_array, ikoptions, q_sol, INFO,
                     infeasible_constraint);
 }
 

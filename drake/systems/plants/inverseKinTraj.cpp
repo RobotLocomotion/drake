@@ -5,7 +5,7 @@
 using namespace std;
 using namespace Eigen;
 
-using drake::systems::plants::inverseKinBackend;
+using drake::systems::plants::inverseKinTrajBackend;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE, typename DerivedF>
@@ -21,9 +21,9 @@ DRAKEIK_EXPORT void inverseKinTraj(
   if (ikoptions.getFixInitialState()) {
     ikoptions.setqd0(qdot0_seed, qdot0_seed);
   }
-  inverseKinBackend(model, 2, nT, t, q_seed, q_nom, num_constraints,
-                    constraint_array, ikoptions, q_sol, qdot_sol, qddot_sol,
-                    INFO, infeasible_constraint);
+  inverseKinTrajBackend(model, nT, t, q_seed, q_nom, num_constraints,
+                        constraint_array, ikoptions, q_sol, qdot_sol, qddot_sol,
+                        INFO, infeasible_constraint);
 }
 
 template DRAKEIK_EXPORT void inverseKinTraj(
