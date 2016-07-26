@@ -337,9 +337,10 @@ SystemIdentification<T>::LumpedSystemIdentification(
   SystemIdentificationResult result;
 
   // Tracing this method is a very useful way to debug otherwise-obscure
-  // system identification problems, so use a custom debug output stream.
+  // system identification problems, so use a custom debug output idiom.
   // This is a hack until #1895 is resolved.
 #define LUMPED_SYSTEM_IDENTIFICATION_VERBOSE 0
+  // NOLINTNEXTLINE(*)  Don't lint the deliberately evil macro below.
 #define debug if (!LUMPED_SYSTEM_IDENTIFICATION_VERBOSE) {} else std::cout
 
   // Restructure everything as Polynomial plus a unified SinCosMap.

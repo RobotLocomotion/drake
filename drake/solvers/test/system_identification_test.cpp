@@ -355,28 +355,28 @@ GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
   // The comments about nomenclature from the previous test apply here as
   // well: Variable naming is conventional rather than style-conformant.
 
-  const TrigPolyd theta1(Polynomiald("th",1),
-                         Polynomiald("s",1), Polynomiald("c",1));
-  const TrigPolyd theta2(Polynomiald("th",2),
-                         Polynomiald("s",2), Polynomiald("c",2));
+  const TrigPolyd theta1(Polynomiald("th", 1),
+                         Polynomiald("s", 1), Polynomiald("c", 1));
+  const TrigPolyd theta2(Polynomiald("th", 2),
+                         Polynomiald("s", 2), Polynomiald("c", 2));
   VectorXTrigPoly q(2); q << theta1, theta2;
 
-  const TrigPolyd theta1dot(Polynomiald("th.",1),
-                            Polynomiald("s.",1), Polynomiald("c.",1));
-  const TrigPolyd theta2dot(Polynomiald("th.",2),
-                            Polynomiald("s.",2), Polynomiald("c.",2));
+  const TrigPolyd theta1dot(Polynomiald("th.", 1),
+                            Polynomiald("s.", 1), Polynomiald("c.", 1));
+  const TrigPolyd theta2dot(Polynomiald("th.", 2),
+                            Polynomiald("s.", 2), Polynomiald("c.", 2));
   VectorXTrigPoly qdot(2); qdot << theta1dot, theta2dot;
 
-  const TrigPolyd theta1dotdot(Polynomiald("th..",1),
-                               Polynomiald("s..",1), Polynomiald("c..",1));
-  const TrigPolyd theta2dotdot(Polynomiald("th..",2),
-                               Polynomiald("s..",2), Polynomiald("c..",2));
+  const TrigPolyd theta1dotdot(Polynomiald("th..", 1),
+                               Polynomiald("s..", 1), Polynomiald("c..", 1));
+  const TrigPolyd theta2dotdot(Polynomiald("th..", 2),
+                               Polynomiald("s..", 2), Polynomiald("c..", 2));
   VectorXTrigPoly qdotdot(2); qdotdot << theta1dotdot, theta2dotdot;
 
-  const TrigPolyd l1(Polynomiald("l",1));  //< Length of arm 1.
-  const TrigPolyd l2(Polynomiald("l",2));  //< Length of arm 2.
-  const TrigPolyd m1(Polynomiald("m",1));  //< Mass of arm 1.
-  const TrigPolyd m2(Polynomiald("m",2));  //< Mass of arm 2.
+  const TrigPolyd l1(Polynomiald("l", 1));  //< Length of arm 1.
+  const TrigPolyd l2(Polynomiald("l", 2));  //< Length of arm 2.
+  const TrigPolyd m1(Polynomiald("m", 1));  //< Mass of arm 1.
+  const TrigPolyd m2(Polynomiald("m", 2));  //< Mass of arm 2.
 
   const TrigPolyd gravity(Polynomiald("g"));  //< gravity
   const TrigPolyd tau(Polynomiald("tau"));  //< torque
