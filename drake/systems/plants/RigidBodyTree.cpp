@@ -584,20 +584,10 @@ RigidBodyTree::ComputeMaximumDepthCollisionPoints(
   for (size_t i = 0; i < num_contact_points; i++) {
     // Get bodies' transforms.
     const RigidBody& bodyA = *contact_points[i].elementA->get_body();
-    Isometry3d TA;
-    if (bodyA.hasParent()) {
-      TA = cache.getElement(bodyA).transform_to_world;
-    } else {  // body is the world.
-      TA = Isometry3d::Identity();
-    }
+    const Isometry3d& TA = cache.getElement(bodyA).transform_to_world;
 
     const RigidBody& bodyB = *contact_points[i].elementB->get_body();
-    Isometry3d TB;
-    if (bodyB.hasParent()) {
-      TB = cache.getElement(bodyB).transform_to_world;
-    } else {  // body is the world.
-      TB = Isometry3d::Identity();
-    }
+    const Isometry3d& TB = cache.getElement(bodyB).transform_to_world;
 
     // Transform to bodies' frames.
     // Note:
