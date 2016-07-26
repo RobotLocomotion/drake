@@ -43,7 +43,7 @@ class ContinuousState {
   /// </pre>
   ///
   ///
-  /// @param state The state.
+  /// @param state The source of continuous state information.
   /// @param num_q The number of position variables.
   /// @param num_v The number of velocity variables.
   /// @param num_z The number of other variables.
