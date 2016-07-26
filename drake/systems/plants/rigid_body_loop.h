@@ -35,8 +35,8 @@ class DRAKERBM_EXPORT RigidBodyLoop {
                 std::shared_ptr<RigidBodyFrame> frameB,
                 const Eigen::Vector3d& axis);
 
-  const std::shared_ptr<RigidBodyFrame> frameA, frameB;
-  const Eigen::Vector3d axis;
+  const std::shared_ptr<RigidBodyFrame> frameA_, frameB_;
+  const Eigen::Vector3d axis_;
 
   friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
 

@@ -36,9 +36,9 @@ class DRAKERBM_EXPORT RigidBodyActuator {
       double effort_limit_min = -std::numeric_limits<double>::infinity(),
       double effort_limit_max = std::numeric_limits<double>::infinity());
 
-  const std::string name;
-  const RigidBody* const body;
-  const double reduction;
-  const double effort_limit_min;
-  const double effort_limit_max;
+  const std::string name_;
+  const RigidBody* const body_;
+  const double reduction_;
+  const double effort_limit_min_;
+  const double effort_limit_max_;
 };
