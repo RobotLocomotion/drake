@@ -537,7 +537,11 @@ Polynomial<CoefficientType>::variableNameToId(const string name,
     name_part += (offset + 1) * multiplier;
     multiplier *= kNumNameChars + 1;
   }
-  if (name_part > kMaxNamePart) throw runtime_error("name exceeds max allowed");
+  if (name_part > kMaxNamePart) {
+    throw runtime_error("name " + name +
+                        " (" + std::to_string(name_part) +
+                        ") exceeds max allowed");
+  }
   const VarType maxId = std::numeric_limits<VarType>::max() / 2 / kMaxNamePart;
   if (m > maxId) throw runtime_error("name exceeds max ID");
   if (m < 1) throw runtime_error("m must be >0");

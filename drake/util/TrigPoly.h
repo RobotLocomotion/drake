@@ -2,6 +2,8 @@
 
 #include <map>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_assert.h"
 #include "drake/util/Polynomial.h"
 
@@ -64,6 +66,12 @@ class TrigPoly {
   TrigPoly(const CoefficientType& scalar) : poly(scalar) {}
 
   /**
+   * Constructs a TrigPoly on the associated Polynomial p with no associated
+   * trigonometric correspondences.
+   */
+  explicit TrigPoly(const PolyType& p) : poly(p) {}
+
+  /**
    * Constructs a TrigPoly on the associated Polynomial p, but with the
    * additional information about sin and cos relations in _sin_cos_map.
    */
@@ -73,7 +81,9 @@ class TrigPoly {
     std::set<VarType> vars_in_use = p.getVariables();
     std::set<VarType> vars_seen_in_map;
     for (const auto& sin_cos_entry : _sin_cos_map) {
-      if (!vars_in_use.count(sin_cos_entry.first)) {
+      if (!(vars_in_use.count(sin_cos_entry.first) ||
+            vars_in_use.count(sin_cos_entry.second.c) ||
+            vars_in_use.count(sin_cos_entry.second.s))) {
         sin_cos_map.erase(sin_cos_entry.first);
       }
       DRAKE_ASSERT(!vars_seen_in_map.count(sin_cos_entry.first));
@@ -202,6 +212,7 @@ class TrigPoly {
   std::set<VarType> getVariables() const {
     std::set<VarType> vars = poly.getVariables();
     for (const auto& sin_cos_item : sin_cos_map) {
+      vars.insert(sin_cos_item.first);
       vars.erase(sin_cos_item.second.s);
       vars.erase(sin_cos_item.second.c);
     }
@@ -378,6 +389,16 @@ class TrigPoly {
   friend std::ostream& operator<<(std::ostream& os,
                                   const TrigPoly<CoefficientType>& tp) {
     os << tp.poly;
+    if (tp.sin_cos_map.size()) {
+      os << " where ";
+      for (const auto& k_v_pair : tp.sin_cos_map) {
+        std::string var = PolyType::idToVariableName(k_v_pair.first);
+        std::string sin = PolyType::idToVariableName(k_v_pair.second.s);
+        std::string cos = PolyType::idToVariableName(k_v_pair.second.c);
+        os << sin << "=sin(" << var << "), "
+           << cos << "=cos(" << var << "), ";
+      }
+    }
     return os;
   }
 
@@ -400,3 +421,6 @@ std::ostream& operator<<(
 }
 
 typedef TrigPoly<double> TrigPolyd;
+
+/// A column vector of TrigPoly; used in several optimization classes.
+typedef Eigen::Matrix<TrigPolyd, Eigen::Dynamic, 1> VectorXTrigPoly;
