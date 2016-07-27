@@ -5,18 +5,8 @@
 #include <Eigen/Geometry>
 
 #include "drake/drakeKukaIIWAArm_export.h"
-#include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
-#include "drake/systems/cascade_system.h"
-#include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-
-
-using Drake::RigidBodySystem;
-using Drake::PDControlSystem;
-using Drake::CascadeSystem;
-using Drake::Gain;
-using Drake::SimulationOptions;
 
 namespace drake {
 namespace examples {
@@ -37,7 +27,7 @@ namespace kuka_iiwa_arm {
  * and, penetration_damping = 0;
  */
 DRAKEKUKAIIWAARM_EXPORT
-std::shared_ptr<RigidBodySystem> CreateIIWAArmSystem(void);
+std::shared_ptr<Drake::RigidBodySystem> CreateIIWAArmSystem(void);
 
 /** Adds a box-shaped terrain to the specified rigid body tree.
  * The X, Y, and Z axes of the box matches the X, Y, and Z-axis of the world.

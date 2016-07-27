@@ -7,6 +7,8 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+using Drake::RigidBodySystem;
+
 std::shared_ptr<RigidBodySystem> CreateIIWAArmSystem(void) {
   // Initializes LCM.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
@@ -56,6 +58,6 @@ Drake::SimulationOptions SetupSimulation(void) {
   return (options);
 }
 
-}  // close namespace kuka_iiwa_arm
-}  // close namespace examples
-}  // close namespace drake
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake
