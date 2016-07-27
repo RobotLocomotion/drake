@@ -23,6 +23,15 @@ void TestSerializationContains(TrigPolyd dut, std::string expect) {
   EXPECT_TRUE(test_stream.str().find(expect) != std::string::npos);
 }
 
+/// Tests that @p dut begins with @p expect followed by ' ' or end-of-string.
+void TestSerializationFirstWord(TrigPolyd dut, std::string expect) {
+  std::stringstream test_stream;
+  test_stream << dut;
+  EXPECT_EQ(test_stream.str().substr(0, expect.size()), expect);
+  EXPECT_TRUE(test_stream.str().size() == expect.size() ||
+              test_stream.str().substr(expect.size())[0] == ' ');
+}
+
 GTEST_TEST(TrigPolyTest, SmokeTest) {
   // Confirm that these conversions compile okay.
   TrigPolyd x(1.0);
@@ -38,17 +47,17 @@ GTEST_TEST(TrigPolyTest, SmokeTest) {
 
   // Require that serialization works, and that it contains definitions for
   // any sin_cos_map terms.
-  TestSerializationContains(p, "q1");
-  TestSerializationContains(sin(p), "s1");
+  TestSerializationFirstWord(p, "q1");
+  TestSerializationFirstWord(sin(p), "s1");
   TestSerializationContains(sin(p), "s1=sin(q1)");
-  TestSerializationContains(cos(p), "c1");
+  TestSerializationFirstWord(cos(p), "c1");
   TestSerializationContains(cos(p), "c1=cos(q1)");
 
   // The following results could reasonably change if Polynomial changes its
   // monomial sorting or fixes #2216.  They are retained here to catch any
   // inadvertent changes to this behaviour.
-  TestSerializationContains(sin(p) * p * p + cos(p), "s1*q1^2+c1");
-  TestSerializationContains(sin(p + p), "s1*c1+c1*s1");
+  TestSerializationFirstWord(sin(p) * p * p + cos(p), "s1*q1^2+c1");
+  TestSerializationFirstWord(sin(p + p), "s1*c1+c1*s1");
 }
 
 GTEST_TEST(TrigPolyTest, GetVariablesTest) {

@@ -350,7 +350,8 @@ GTEST_TEST(SystemIdentificationTest, SPRING_MASS_TEST_NAME) {
 
 GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
   // Simulate two pendula that swing independently but are actuated with the
-  // same torque.  The pendula have lengths 1 and 2.
+  // same torque.  The pendula have lengths l1 = 1, l2 = 2; their masses m1
+  // and m2 are both 1.  Gravity is an earth-conventional -9.8.
   //
   // The comments about nomenclature from the previous test apply here as
   // well: Variable naming is conventional rather than style-conformant.
@@ -381,21 +382,20 @@ GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
   const TrigPolyd gravity(Polynomiald("g"));  //< gravity
   const TrigPolyd tau(Polynomiald("tau"));  //< torque
 
-  Eigen::Matrix<TrigPolyd, 2, 2> H;
+  // The following matrices and vectors are the components of the Manipulator.
+  Eigen::Matrix<TrigPolyd, 2, 2> H;  //< Inertia matrix.
   H << (m1 * l1 * l1), 0,
        0, (m2 * l2 * l2);
-  Eigen::Matrix<TrigPolyd, 2, 2> C;
+  Eigen::Matrix<TrigPolyd, 2, 2> C;  //< Coriolis matrix.
   C << 0, 0, 0, 0;
-
-  Eigen::Matrix<TrigPolyd, 2, 1> g;
+  Eigen::Matrix<TrigPolyd, 2, 1> g;  //< Field function (gravity).
   g << m1 * gravity * l1 * sin(theta1), m2 * gravity * l2 * sin(theta2);
-
-  Eigen::Matrix<TrigPolyd, 2, 1> B;
+  Eigen::Matrix<TrigPolyd, 2, 1> B;  //< Input transmission mapping.
   B << 1, 1;
-  Eigen::Matrix<TrigPolyd, 2, 1> f;
+  Eigen::Matrix<TrigPolyd, 2, 1> f;  //< Dissipative forces.
   f << 0, 0;
 
-  VectorXTrigPoly u(1); u << tau;
+  VectorXTrigPoly u(1); u << tau;  //< Input signals.
 
   const VectorXTrigPoly manipulator_left = (H * qdotdot) + (C * qdot) + g;
   const VectorXTrigPoly manipulator_right = (B * u) + f;
@@ -403,47 +403,47 @@ GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
 
   // Create convenience variables for our q/qdot/u values.  Convenience vars
   // have an underscore prefix for slightly easier understandability.
-  const TrigPolyd::VarType _th1 = theta1.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType _th2 = theta2.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType _th1d =
+  const TrigPolyd::VarType th1_var = theta1.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType th2_var = theta2.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType th1d_var =
       theta1dot.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType _th2d =
+  const TrigPolyd::VarType th2d_var =
       theta2dot.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType _th1dd =
+  const TrigPolyd::VarType th1dd_var =
       theta1dotdot.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType _th2dd =
+  const TrigPolyd::VarType th2dd_var =
       theta2dotdot.getPolynomial().getSimpleVariable();
-  const TrigPolyd::VarType _tau = tau.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType tau_var = tau.getPolynomial().getSimpleVariable();
 
   const double kG = 9.8;
   const double kPi = 3.14159265;
   const double kPi2 = kPi / 2;
 
   const std::vector<typename SID::PartialEvalType> pendula_data = {
-    {{_tau, 0.},
-     {_th1, 0.}, {_th1d, 0.}, {_th1dd, 0.},
-     {_th2, 0.}, {_th2d, 0.}, {_th2dd, 0.}},
-    {{_tau, 0.},
-     {_th1, kPi2}, {_th1d, 0.}, {_th1dd, -kG},
-     {_th2, kPi2}, {_th2d, 0.}, {_th2dd, -0.25 * kG}},
-    {{_tau, 0.},
-     {_th1, -kPi}, {_th1d, 0.}, {_th1dd, 0.},
-     {_th2, -kPi}, {_th2d, 0.}, {_th2dd, 0.}},
-    {{_tau, 0.},
-     {_th1, -kPi2}, {_th1d, 0.}, {_th1dd, kG},
-     {_th2, -kPi2}, {_th2d, 0.}, {_th2dd, 0.25 * kG}},
-    {{_tau, 1.},
-     {_th1, 0.}, {_th1d, 0.}, {_th1dd, 1.},
-     {_th2, 0.}, {_th2d, 0.}, {_th2dd, 0.25}},
-    {{_tau, kG},
-     {_th1, kPi2}, {_th1d, 0.}, {_th1dd, 0.},
-     {_th2, kPi2}, {_th2d, 0.}, {_th2dd, 0.}},
-    {{_tau, 1.},
-     {_th1, -kPi}, {_th1d, 0.}, {_th1dd, 1.},
-     {_th2, -kPi}, {_th2d, 0.}, {_th2dd, 0.25}},
-    {{_tau, -kG},
-     {_th1, -kPi2}, {_th1d, 0.}, {_th1dd, 0.},
-     {_th2, -kPi2}, {_th2d, 0.}, {_th2dd, 0.}},
+    {{tau_var, 0.},
+     {th1_var, 0.}, {th1d_var, 0.}, {th1dd_var, 0.},
+     {th2_var, 0.}, {th2d_var, 0.}, {th2dd_var, 0.}},
+    {{tau_var, 0.},
+     {th1_var, kPi2}, {th1d_var, 0.}, {th1dd_var, -kG},
+     {th2_var, kPi2}, {th2d_var, 0.}, {th2dd_var, -0.25 * kG}},
+    {{tau_var, 0.},
+     {th1_var, -kPi}, {th1d_var, 0.}, {th1dd_var, 0.},
+     {th2_var, -kPi}, {th2d_var, 0.}, {th2dd_var, 0.}},
+    {{tau_var, 0.},
+     {th1_var, -kPi2}, {th1d_var, 0.}, {th1dd_var, kG},
+     {th2_var, -kPi2}, {th2d_var, 0.}, {th2dd_var, 0.25 * kG}},
+    {{tau_var, 1.},
+     {th1_var, 0.}, {th1d_var, 0.}, {th1dd_var, 1.},
+     {th2_var, 0.}, {th2d_var, 0.}, {th2dd_var, 0.25}},
+    {{tau_var, kG},
+     {th1_var, kPi2}, {th1d_var, 0.}, {th1dd_var, 0.},
+     {th2_var, kPi2}, {th2d_var, 0.}, {th2dd_var, 0.}},
+    {{tau_var, 1.},
+     {th1_var, -kPi}, {th1d_var, 0.}, {th1dd_var, 1.},
+     {th2_var, -kPi}, {th2d_var, 0.}, {th2dd_var, 0.25}},
+    {{tau_var, -kG},
+     {th1_var, -kPi2}, {th1d_var, 0.}, {th1dd_var, 0.},
+     {th2_var, -kPi2}, {th2d_var, 0.}, {th2dd_var, 0.}},
     };
 
   SID::SystemIdentificationResult result =
@@ -461,6 +461,7 @@ GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
   Polynomiald mgl2 = (m2 * gravity * l2).getPolynomial();
   Polynomiald mll1 = (m1 * l1 * l1).getPolynomial();
   Polynomiald mll2 = (m2 * l2 * l2).getPolynomial();
+  EXPECT_EQ(result.lumped_parameters.size(), static_cast<size_t>(4));
   Polynomiald::VarType mgl1_var = result.lumped_parameters.at(mgl1);
   Polynomiald::VarType mgl2_var = result.lumped_parameters.at(mgl2);
   Polynomiald::VarType mll1_var = result.lumped_parameters.at(mll1);
@@ -468,10 +469,10 @@ GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
 
   // Check result.lumped_polys.
   std::set<Polynomiald::VarType> expected_vars_1 = {
-    mgl1_var, mll1_var, _th1, _th1dd, _tau};
+    mgl1_var, mll1_var, th1_var, th1dd_var, tau_var};
   EXPECT_EQ(result.lumped_polys[0].getVariables(), expected_vars_1);
   std::set<Polynomiald::VarType> expected_vars_2 = {
-    mgl2_var, mll2_var, _th2, _th2dd, _tau};
+    mgl2_var, mll2_var, th2_var, th2dd_var, tau_var};
   EXPECT_EQ(result.lumped_polys[1].getVariables(), expected_vars_2);
 
   // Check result.lumped_parameter_values
