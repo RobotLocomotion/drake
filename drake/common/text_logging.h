@@ -18,13 +18,13 @@
 namespace drake {
 
 #ifdef HAVE_SPDLOG
-// If we have spdlog, just alias logger and line_logger into our namespace.
+// If we have spdlog, just alias logger into our namespace.
 namespace logging {
 using spdlog::logger;
 }
 
 #else  // HAVE_SPDLOG
-// If we don't have spdlog, we need to stub out logger and line_logger.
+// If we don't have spdlog, we need to stub out logger.
 
 namespace logging {
 
