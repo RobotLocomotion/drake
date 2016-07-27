@@ -227,7 +227,7 @@ template <typename System>
 void runLCM(std::shared_ptr<System> sys, std::shared_ptr<lcm::LCM> lcm,
             double t0, double tf,
             const typename System::template StateVector<double> &x0,
-            const SimulationOptions &options = default_simulation_options) {
+            const SimulationOptions &options = SimulationOptions()) {
   if (!lcm->good()) throw std::runtime_error("bad LCM reference");
 
   //    typename System::template OutputVector<double> x = 1;  // useful for

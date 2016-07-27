@@ -143,7 +143,7 @@ double simulate(const System& sys, double ti, double tf,
 template <typename System>
 void simulate(const System& sys, double t0, double tf,
               const typename System::template StateVector<double>& x0) {
-  simulate(sys, t0, tf, x0, default_simulation_options);
+  simulate(sys, t0, tf, x0, SimulationOptions());
 }
 
 /** simulate

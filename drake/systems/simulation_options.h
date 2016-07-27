@@ -60,9 +60,4 @@ struct SimulationOptions {
         should_stop([](double sim_time) { return false; }) {}
 };
 
-/**
- * Defines the default simulation options.
- */
-static const SimulationOptions default_simulation_options;
-
 }  // end namespace Drake
