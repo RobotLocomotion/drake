@@ -8,10 +8,12 @@
 #include "drake/core/Vector.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/Simulation.h"
+#include "drake/systems/simulation_options.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 using drake::util::MatrixCompareType;
 using Drake::NullVector;
+using Drake::SimulationOptions;
 
 namespace drake {
 namespace examples {
@@ -109,7 +111,7 @@ GTEST_TEST(SimpleCarTest, Accelerating) {
   double end_time = 100.;
   Drake::simulate(*lead_foot, start_time, end_time, initial_state);
 
-  double step_size = Drake::default_simulation_options.initial_step_size;
+  double step_size = SimulationOptions().initial_step_size;
   int steps = (end_time - start_time) / step_size;
 
   EXPECT_EQ(static_cast<int>(history_system->states_.size()), steps);
@@ -158,7 +160,7 @@ GTEST_TEST(SimpleCarTest, Braking) {
   double end_time = 100.;
   Drake::simulate(*panic_stop, start_time, end_time, initial_state);
 
-  double step_size = Drake::default_simulation_options.initial_step_size;
+  double step_size = SimulationOptions().initial_step_size;
   int steps = (end_time - start_time) / step_size;
 
   EXPECT_EQ(static_cast<int>(history_system->states_.size()), steps);
@@ -199,7 +201,7 @@ GTEST_TEST(SimpleCarTest, Steering) {
   double end_time = 100.;
   Drake::simulate(*brickyard, start_time, end_time, initial_state);
 
-  double step_size = Drake::default_simulation_options.initial_step_size;
+  double step_size = SimulationOptions().initial_step_size;
   int steps = (end_time - start_time) / step_size;
 
   EXPECT_EQ(static_cast<int>(history_system->states_.size()), steps);
