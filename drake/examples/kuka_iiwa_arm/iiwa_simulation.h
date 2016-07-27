@@ -4,7 +4,7 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/drakeKukaIIWAArm_export.h"
+#include "drake/drakeKukaIiwaArm_export.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
