@@ -162,8 +162,7 @@ Drake uses `CMake <https://cmake.org/>`_ to generate Ninja files within an
 out-of-source build directory. You can configure CMake options by passing
 them at the ``cmake`` command line with ``-D``, or in a GUI by running
 ``ccmake`` instead of ``cmake``. For instance, the following sequence of
-commands generates Ninja files with build type ``Debug``, and then runs the
-Ninja build.
+commands generates Ninja files, and then runs the Ninja build.
 
 ::
 
