@@ -2472,3 +2472,8 @@ template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
 template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&, bool) const;
+
+// Explicit template instantiations for parseBodyOrFrameID.
+template DRAKERBM_EXPORT int RigidBodyTree::parseBodyOrFrameID(
+    const int body_or_frame_id,
+    Eigen::Transform<double, 3, Eigen::Isometry>* Tframe) const;
