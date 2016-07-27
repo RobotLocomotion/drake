@@ -126,3 +126,15 @@ Run the test::
 
   ctest -VV -C RelWithDebInfo -R cascade_system_test
 
+Enabling Assertions
+===================
+
+To enable Drake's assertions without switching to ``Debug`` mode,
+define ``DRAKE_ENABLE_ASSERTS`` for the C++ pre-processor when you
+configure the build, for example::
+
+    cd drake-distro/build
+    cmake .. -G Ninja -DCMAKE_CXX_FLAGS:STRING=-DDRAKE_ENABLE_ASSERTS
+    ninja
+
+We recommend turning on assertions in all of your builds during development.
