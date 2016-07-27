@@ -1,7 +1,3 @@
-set(CMAKE_MODULE_PATH ${CMAKE_INSTALL_PREFIX}/share/cmake ${CMAKE_MODULE_PATH})
-if(EXISTS "${CMAKE_INSTALL_PREFIX}/bin/swig")
-  set(SWIG_EXECUTABLE ${CMAKE_INSTALL_PREFIX}/bin/swig)
-endif()
 find_package(SWIG REQUIRED)
 set(DRAKE_SWIG_FILES ${CMAKE_INSTALL_PREFIX}/share/swig)
 include(DrakeUseSWIG)
