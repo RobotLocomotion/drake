@@ -59,6 +59,7 @@ option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ lib
 option(WITH_BULLET "used for collision detection" ON)
 option(WITH_LCM "interprocess communications protocol for visualizers, etc" ON)
 option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
+option(WITH_SPDLOG "spdlog text logging facility.  required for debug logging." ON)
 if(WIN32)
   option(WITH_GTK "precompiled gtk binaries/headers for Windows" ON)  # needed for lcm on windows
 else()
@@ -139,7 +140,7 @@ set(signalscope_dependencies director)
 # List compilation and runtime dependencies. Runtime dependencies are needed
 # because the drake project must configure only after any dependencies used by
 # MATLAB have been installed.
-set(drake_dependencies bertini bot_core_lcmtypes bullet cmake eigen gloptipoly3 googletest google_styleguide gurobi iris lcm libbot mosek nlopt ipopt octomap sedumi snopt spotless swig_matlab swigmake yalmip yaml_cpp)
+set(drake_dependencies bertini bot_core_lcmtypes bullet cmake eigen gloptipoly3 googletest google_styleguide gurobi iris lcm libbot mosek nlopt ipopt octomap sedumi snopt spdlog spotless swig_matlab swigmake yalmip yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_IS_PUBLIC TRUE)
@@ -193,6 +194,8 @@ set(libbot_IS_CMAKE_POD TRUE)
 set(libbot_IS_PUBLIC TRUE)
 set(bot_core_lcmtypes_IS_CMAKE_POD TRUE)
 set(bot_core_lcmtypes_IS_PUBLIC TRUE)
+set(spdlog_IS_PUBLIC TRUE)
+set(spdlog_IS_CMAKE_POD TRUE)
 set(meshconverters_IS_PUBLIC TRUE)
 set(mosek_IS_PUBLIC TRUE)
 set(nlopt_BUILD_COMMAND ./autogen.sh --no-configure && ./configure --without-matlab --without-python --without-octave --without-guile --enable-maintainer-mode --enable-shared --prefix=${CMAKE_INSTALL_PREFIX} --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt && make install)
@@ -244,6 +247,7 @@ foreach(proj IN ITEMS
   gtk
   lcm
   bot_core_lcmtypes
+  spdlog
   libbot
   bullet
   spotless
