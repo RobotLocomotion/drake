@@ -126,6 +126,8 @@ Run the test::
 
   ctest -VV -C RelWithDebInfo -R cascade_system_test
 
+.. _enabling-assertions:
+
 Enabling Assertions
 ===================
 
