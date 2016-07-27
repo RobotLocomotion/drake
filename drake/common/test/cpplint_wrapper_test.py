@@ -56,27 +56,23 @@ class TestStringMethods(unittest.TestCase):
              r"TOTAL 1 files passed"])
 
     def test_true_positive(self):
+        # Test that the header is clean by default.
         filename = self.get_absolute_filename(
             "../../../"
             "externals/google_styleguide/cpplint/cpplint_test_header.h")
         self.run_and_expect(
             [filename],
-            1,
-            [r"Checking \.+\n",
-             r"TOTAL 1 files checked",
-             r"found 2 warnings"])
-        # Test that pass-through arguments works, along with warning filtering.
-        self.run_and_expect(
-            [filename, "--", "--filter=-build/header_guard"],
-            1,
-            [r"Checking \.+\n",
-             r"TOTAL 1 files checked",
-             r"found 1 warnings"])
-        self.run_and_expect(
-            [filename, "--", "--filter=-build/header_guard,-legal/copyright"],
             0,
             [r"Checking \.+\n",
              r"TOTAL 1 files passed"])
+        # Test that pass-through arguments works.
+        self.run_and_expect(
+            [filename, "--", "--linelength=40"],
+            1,
+            [r"Checking \.+\n",
+             r"TOTAL 1 files checked",
+             r"found [123] warnings",
+             r"whitespace/line_length"])
 
     def test_ignored_extension(self):
         self.run_and_expect(
