@@ -5,7 +5,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/drakeKukaIiwaArm_export.h"
-#include "drake/systems/Simulation.h"
+#include "drake/systems/simulation_options.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
 namespace drake {
