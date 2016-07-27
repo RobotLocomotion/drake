@@ -25,8 +25,7 @@ if(lcm_FOUND)
 
   add_executable(kuka_lcm_visualizer kuka_lcm_visualizer.cc)
   target_link_libraries(kuka_lcm_visualizer
-    drakeRBM
-    drakeLCMSystem
+    drakeKukaIiwaArm
     drake_lcmtypes
     threads)
   add_executable(kuka_ik_demo kuka_ik_demo.cc)

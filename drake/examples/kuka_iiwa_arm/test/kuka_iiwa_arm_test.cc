@@ -2,14 +2,15 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/Path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
-#include "drake/systems/LCMSystem.h"
-#include "drake/systems/Simulation.h"
+#include "drake/Path.h"
 #include "drake/systems/cascade_system.h"
+#include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/Simulation.h"
+
 
 using Drake::RigidBodySystem;
 using Drake::BotVisualizer;
@@ -54,9 +55,9 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   const double kStartTime = 0;
 
   // Simulation duration in seconds.
-  double duration = 0.5;
+  const double kDuration = 0.5;
 
-  Drake::simulate(*sys.get(), kStartTime, duration, x0, options);
+  Drake::simulate(*sys.get(), kStartTime, kDuration, x0, options);
 }
 
 }  // namespace

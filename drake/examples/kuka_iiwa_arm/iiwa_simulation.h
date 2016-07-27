@@ -26,11 +26,10 @@ DRAKEKUKAIIWAARM_EXPORT
 std::shared_ptr<Drake::RigidBodySystem> CreateKukaIiwaSystem();
 
 /**
- * @param[out] duration The duration over which the simulation should run. The
- * simulation runs from time zero seconds to time \p duration seconds.
+ * Returns the simulation options for use by the Kuka IIWA simulation.
  */
 DRAKEKUKAIIWAARM_EXPORT
-Drake::SimulationOptions SetupSimulation(void);
+Drake::SimulationOptions SetupSimulation();
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
