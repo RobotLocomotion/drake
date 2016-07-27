@@ -47,7 +47,8 @@ class SinkSystem {
 int do_main(int argc, const char* argv[]) {
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
-  const auto& tree = CreateKukaIiwaSystem()->getRigidBodyTree();
+  const std::shared_ptr<RigidBodyTree>& tree =
+      CreateKukaIiwaSystem()->getRigidBodyTree();
 
   auto visualizer =
       std::make_shared<Drake::BotVisualizer<IiwaStatus>>(lcm, tree);
