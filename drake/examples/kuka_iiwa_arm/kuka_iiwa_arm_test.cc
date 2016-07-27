@@ -34,18 +34,19 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   // system.
   auto visualizer =
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,
-          iiwa_tree);
+                                                                    iiwa_tree);
 
   auto robot_state_tap =
       std::make_shared<RobotStateTap<RigidBodySystem::StateVector>>();
 
-//  Build up PD controller in this form.
-//  Eigen::MatrixXd Kp = Eigen::VectorXd::Constant(7,100.0).asDiagonal();
-//  Eigen::MatrixXd Kd = Eigen::VectorXd::Constant(7,50.0).asDiagonal();
-//  auto robot_with_pd = std::allocate_shared<PDControlSystem<RigidBodySystem>>(
-//      Eigen::aligned_allocator<PDControlSystem<RigidBodySystem>>(),
-//          iiwa_system, Kp, Kd);
-//  auto iiwa_feedback_system = PDControlSystem<RigidBodySystem>()
+  //  Build up PD controller in this form.
+  //  Eigen::MatrixXd Kp = Eigen::VectorXd::Constant(7,100.0).asDiagonal();
+  //  Eigen::MatrixXd Kd = Eigen::VectorXd::Constant(7,50.0).asDiagonal();
+  //  auto robot_with_pd =
+  //  std::allocate_shared<PDControlSystem<RigidBodySystem>>(
+  //      Eigen::aligned_allocator<PDControlSystem<RigidBodySystem>>(),
+  //          iiwa_system, Kp, Kd);
+  //  auto iiwa_feedback_system = PDControlSystem<RigidBodySystem>()
 
   auto sys = cascade(cascade(iiwa_system, visualizer), robot_state_tap);
 
@@ -66,11 +67,11 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   double duration = 0.5;
 
   Drake::simulate(*sys.get(), kStartTime, duration, x0, options);
-//
-//  ASSERT_NO_THROW(ValidateSimulation(robot_state_tap, iiwa_system));
+  //
+  //  ASSERT_NO_THROW(ValidateSimulation(robot_state_tap, iiwa_system));
 }
 
-} // close namespace
-} // close namespace kuka_iiwa_arm
-} // close namespace examples
-} // close namespace drake
+}  // close namespace
+}  // close namespace kuka_iiwa_arm
+}  // close namespace examples
+}  // close namespace drake

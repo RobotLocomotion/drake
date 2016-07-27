@@ -50,7 +50,7 @@ std::shared_ptr<RigidBodySystem> CreateIIWAArmSystem(void);
  * terrain will be at Z = 0.
  */
 void SetupWorld(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
-                    double box_size = 3.0, double box_depth = 0.2);
+                double box_size = 3.0, double box_depth = 0.2);
 
 /**
  * @param[out] duration The duration over which the simulation should run. The
@@ -61,8 +61,10 @@ Drake::SimulationOptions SetupSimulation(void);
 /**
  * This method simply throws an error if limits are generated.
  */
-//void ValidateSimulation(const std::shared_ptr<RobotStateTap<RigidBodySystem::StateVector>>& robot_state_tap,
+// void ValidateSimulation(const
+// std::shared_ptr<RobotStateTap<RigidBodySystem::StateVector>>&
+// robot_state_tap,
 //                        const std::shared_ptr<RigidBodySystem>& iiwa_system);
-}
-}
-}
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake
