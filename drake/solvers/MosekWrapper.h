@@ -24,15 +24,15 @@ http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
 namespace drake {
 namespace solvers {
 
-/** MosekInterface solves a linear program when given a correctly formatted program.
+/** MosekWrapper solves a linear program when given a correctly formatted program.
  *  Specifically, the program options:
  *  -- "maxormin" -- must be set to "max" or "min"
- *  -- "problemtype" -- must be set to "linear"
+ *  -- "problemtype" -- must be set to "linear" or "quadratic"
  *
  *  It is created by a MosekSolver object.
  */
-class DRAKEOPTIMIZATION_EXPORT MosekInterface {
-  /** MosekInterface
+class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
+  /** MosekWrapper
    *  @brief this class allows the creation and solution of a linear programming
    *  problem using the mosek solver.
    */
@@ -42,7 +42,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekInterface {
   * optimize, the constraint matrix, and the constraint and variable bounds
   * @p environment is created and must be told to optimize.
   */
-  MosekInterface(int num_variables, int num_constraints,
+  MosekWrapper(int num_variables, int num_constraints,
     std::vector<double> equation_scalars,
     Eigen::MatrixXd linear_cons,
     std::vector<MSKboundkeye> mosek_constraint_bounds,
@@ -51,11 +51,11 @@ class DRAKEOPTIMIZATION_EXPORT MosekInterface {
     std::vector<MSKboundkeye> mosek_variable_bounds,
     std::vector<double> upper_variable_bounds,
     std::vector<double> lower_variable_bounds,
-    double constant_eqn_term = 0,
-    Eigen::MatrixXd quad_objective = Eigen::MatrixXd(0, 0),
-    Eigen::MatrixXd quad_cons = Eigen::MatrixXd(0, 0));
+    double constant_eqn_term,
+    Eigen::MatrixXd quad_objective,
+    Eigen::MatrixXd quad_cons);
 
-  ~MosekInterface() {
+  ~MosekWrapper() {
     if (task_ != NULL)
       MSK_deletetask(&task_);
     if (env_ != NULL)
@@ -104,12 +104,12 @@ class DRAKEOPTIMIZATION_EXPORT MosekInterface {
   /**AddQuadraticConstraintMatrix
   * @brief adds a single quadratic matrix to mosek constraint.
   */
-  void AddQuadraticConstraintMatrix(Eigen::MatrixXd cons);
+  void AddQuadraticConstraintMatrix(const Eigen::MatrixXd& cons);
 
   /**AddQuadraticConstraintMatrix
   * @brief adds a single quadratic matrix to mosek objective.
   */
-  void AddQuadraticObjective(Eigen::MatrixXd obj);
+  void AddQuadraticObjective(const Eigen::MatrixXd& obj);
 
   /**AddVariableBounds()
    * @brief bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html

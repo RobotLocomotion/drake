@@ -1,15 +1,14 @@
 // Copyright 2016, Alex Dunyak
 
-#include "drake/solvers/MosekInterface.h"
+#include "drake/solvers/MosekWrapper.h"
 
 #include <memory>
-#include <vector>
-#include <iostream>
 #include <string>
-#include <map>
+#include <vector>
 
-#include <Eigen/Sparse>
+
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/Constraint.h"
@@ -18,7 +17,7 @@
 namespace drake {
 namespace solvers {
 
-MosekInterface::MosekInterface(int num_variables, int num_constraints,
+MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     std::vector<double> equation_scalars,
     Eigen::MatrixXd linear_cons,
     std::vector<MSKboundkeye> mosek_constraint_bounds,
@@ -66,7 +65,8 @@ MosekInterface::MosekInterface(int num_variables, int num_constraints,
       lower_constraint_bounds);
 }
 
-void MosekInterface::AddQuadraticObjective(Eigen::MatrixXd quad_objective) {
+void MosekWrapper::AddQuadraticObjective(
+    const Eigen::MatrixXd& quad_objective) {
   std::vector<int> qsubi, qsubj;
   std::vector<double> qval;
   int lowtrinonzero = 0, i = 0, j = 0;
@@ -84,7 +84,8 @@ void MosekInterface::AddQuadraticObjective(Eigen::MatrixXd quad_objective) {
     r_ = MSK_putqobj(task_, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
 }
 
-void MosekInterface::AddQuadraticConstraintMatrix(Eigen::MatrixXd quad_cons) {
+void MosekWrapper::AddQuadraticConstraintMatrix(
+    const Eigen::MatrixXd& quad_cons) {
   std::vector<int> qsubi, qsubj;
   std::vector<double> qval;
   int lowtrinonzero = 0, i = 0, j = 0;
@@ -102,14 +103,14 @@ void MosekInterface::AddQuadraticConstraintMatrix(Eigen::MatrixXd quad_cons) {
     r_ = MSK_putqconk(task_, 0, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
 }
 
-void MosekInterface::AddLinearConstraintMatrix(const Eigen::MatrixXd& cons) {
+void MosekWrapper::AddLinearConstraintMatrix(const Eigen::MatrixXd& cons) {
   Eigen::SparseMatrix<double> sparsecons = cons.sparseView();
   // Send the sparse matrix rep into addLinearConstraintSparseColumnMatrix(),
   // which will handle setting the mosek constraints
-  MosekInterface::AddLinearConstraintSparseColumnMatrix(sparsecons);
+  MosekWrapper::AddLinearConstraintSparseColumnMatrix(sparsecons);
 }
 
-void MosekInterface::AddLinearConstraintSparseColumnMatrix(
+void MosekWrapper::AddLinearConstraintSparseColumnMatrix(
     const Eigen::SparseMatrix<double>& sparsecons) {
   int j = 0;  // iterator
   // Define sparse matrix representation to be the same size as the desired
@@ -139,7 +140,7 @@ void MosekInterface::AddLinearConstraintSparseColumnMatrix(
   }
 }
 
-void MosekInterface::AddLinearConstraintBounds(
+void MosekWrapper::AddLinearConstraintBounds(
     const std::vector<MSKboundkeye>& mosek_bounds,
     const std::vector<double>& upper_bounds,
     const std::vector<double>& lower_bounds) {
@@ -150,20 +151,19 @@ void MosekInterface::AddLinearConstraintBounds(
   }
 }
 
-void MosekInterface::AddVariableBounds(
+void MosekWrapper::AddVariableBounds(
     const std::vector<MSKboundkeye>& mosek_bounds,
     const std::vector<double>& upper_bounds,
     const std::vector<double>& lower_bounds) {
-  int j = 0;
   assert(mosek_bounds.size() == lower_bounds.size());
   assert(mosek_bounds.size() == upper_bounds.size());
-  for (; j < numvar_ && r_ == MSK_RES_OK; j++) {
+  for (int j = 0; j < numvar_ && r_ == MSK_RES_OK; j++) {
     r_ = MSK_putvarbound(task_, j, mosek_bounds[j], lower_bounds[j],
         upper_bounds[j]);
   }
 }
 
-std::vector<MSKboundkeye> MosekInterface::FindMosekBounds(
+std::vector<MSKboundkeye> MosekWrapper::FindMosekBounds(
     const std::vector<double>& upper_bounds,
     const std::vector<double>& lower_bounds) {
   assert(upper_bounds.size() == lower_bounds.size());
@@ -190,11 +190,10 @@ std::vector<MSKboundkeye> MosekInterface::FindMosekBounds(
 }
 
 
-SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
+SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
   // construct an object that calls all the previous work so I can salvage
   // something at least.
   // assume that the problem type is linear currently.
-  // TODO(adunyak): Add support for quadratic objective and constraints
   if (!prog.GetSolverOptionsStr("Mosek").empty()) {
     if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
             == std::string::npos &&
@@ -230,7 +229,7 @@ SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
       b = MSK_INFINITY;
   }
   mosek_variable_bounds = FindMosekBounds(upper_variable_bounds,
-                                         lower_variable_bounds);
+                                          lower_variable_bounds);
 
   int totalconnum = 0, connum = 0, i = 0, j = 0;
   // This block of code handles constraints, depending on if the program is
@@ -252,7 +251,6 @@ SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
     quad_cons.resize(0, 0);
     upper_constraint_bounds.resize(totalconnum);
     lower_constraint_bounds.resize(totalconnum);
-    // mosek_constraint_bounds.resize(totalconnum);
     for (const auto& con : prog.GetAllLinearConstraints()) {
       // con can call functions of  Binding<LinearConstraint>, but the actual
       // type is const std::list<Binding<LinearConstraint>>::const_iterator&
@@ -277,14 +275,19 @@ SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
       }
     }
     mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
-                                            lower_constraint_bounds);
-    // find the linear objective here
+                                              lower_constraint_bounds);
+    // Find the linear objective here.
+    /* TODO(alexdunyak): Once there is a OptimizationProblem::AddLinearObjective
+    * function, then this cast should be changed. Also be sure to assert that
+    * only one type of objective is present.
+    */
+    DRAKE_ASSERT(prog.generic_costs().size() == 1);
     LinearConstraint *obj = dynamic_cast<LinearConstraint *>(
         prog.generic_costs().front().constraint().get());
     DRAKE_ASSERT(obj != nullptr);
-    std::vector<double> linobj((*obj).A().data(),
-        (*obj).A().data() + (*obj).A().rows() * (*obj).A().cols());
-    MosekInterface opt(prog.num_vars(),
+    std::vector<double> linobj(obj->A().data(),
+        obj->A().data() + obj->A().rows() * obj->A().cols());
+    MosekWrapper opt(prog.num_vars(),
             totalconnum,
             linobj,
             linear_cons,
@@ -293,7 +296,10 @@ SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
             lower_constraint_bounds,
             mosek_variable_bounds,
             upper_variable_bounds,
-            lower_variable_bounds);
+            lower_variable_bounds,
+            0,
+            Eigen::MatrixXd(0, 0),
+            Eigen::MatrixXd(0, 0));
 
     std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
     std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
@@ -308,20 +314,27 @@ SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
     // use generic constraints and dynamically cast them to quadratic
     // constraints.
     // For now assume a single quadratic constraint
-    // TODO(alexdunyak): Allow multiple quadratic constraints
+    /* TODO(alexdunyak): Once we've added
+    * OptimizationProblem::AddQuadraticConstraint and started to store quadratic
+    * constraints independently of generic constraints, this cast should go away
+    * and we should get the quadratic constraints from the OptimizationProblem
+    * without a cast being necessary. Make sure to assert that other types of
+    * constraints are not also present.
+    */
     DRAKE_ASSERT(prog.generic_constraints().size() == 1);
+    DRAKE_ASSERT(prog.generic_costs().size() == 0);
     QuadraticConstraint *quad_con_ptr = dynamic_cast<QuadraticConstraint *>(
         prog.generic_constraints().front().constraint().get());
     DRAKE_ASSERT(quad_con_ptr != nullptr);
-    linear_cons = (*quad_con_ptr).b().transpose();
-    quad_cons = (*quad_con_ptr).Q();
+    linear_cons = quad_con_ptr->b().transpose();
+    quad_cons = quad_con_ptr->Q();
     upper_constraint_bounds.resize(1);
     lower_constraint_bounds.resize(1);
     mosek_constraint_bounds.resize(1);
-    upper_constraint_bounds[0] = (*quad_con_ptr).upper_bound()(0);
+    upper_constraint_bounds[0] = quad_con_ptr->upper_bound()(0);
     if (upper_constraint_bounds[0] == +std::numeric_limits<double>::infinity())
       upper_constraint_bounds[0] = +MSK_INFINITY;
-    lower_constraint_bounds[0] = (*quad_con_ptr).lower_bound()(0);
+    lower_constraint_bounds[0] = quad_con_ptr->lower_bound()(0);
     if (lower_constraint_bounds[0] == -std::numeric_limits<double>::infinity())
       lower_constraint_bounds[0] = -MSK_INFINITY;
     mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
@@ -345,7 +358,7 @@ SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
         (*quad_obj_ptr).b().data() +
         (*quad_obj_ptr).b().rows() * (*quad_obj_ptr).b().cols());
     totalconnum = 1;  // Defined for object declaration below
-    MosekInterface opt(prog.num_vars(),
+    MosekWrapper opt(prog.num_vars(),
             totalconnum,
             linobj,
             linear_cons,
@@ -368,8 +381,8 @@ SolutionResult MosekInterface::Solve(OptimizationProblem &prog) {
   return kUnknownError;
 }
 
-SolutionResult MosekInterface::OptimizeTask(const std::string& maxormin,
-                                     const std::string& ptype) {
+SolutionResult MosekWrapper::OptimizeTask(const std::string& maxormin,
+                                          const std::string& ptype) {
   solutions_.clear();
   MSKsoltypee problemtype = MSK_SOL_BAS;
   if (ptype.find("quadratic") != std::string::npos)
@@ -434,7 +447,7 @@ SolutionResult MosekInterface::OptimizeTask(const std::string& maxormin,
   return kUnknownError;
 }
 
-Eigen::VectorXd MosekInterface::GetEigenVectorSolutions() const {
+Eigen::VectorXd MosekWrapper::GetEigenVectorSolutions() const {
   Eigen::VectorXd soln(numvar_);
   if (solutions_.empty())
     return soln;
