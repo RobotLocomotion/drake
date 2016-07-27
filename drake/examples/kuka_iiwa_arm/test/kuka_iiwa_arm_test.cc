@@ -1,10 +1,9 @@
-#include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-
 #include <typeinfo>
 
 #include "gtest/gtest.h"
 
 #include "drake/Path.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/Simulation.h"
@@ -23,10 +22,9 @@ namespace kuka_iiwa_arm {
 namespace {
 
 GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
-  auto iiwa_system = CreateIIWAArmSystem();
+  std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
   const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
-  SetupWorld(iiwa_tree);
 
   // Initializes LCM.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
@@ -34,8 +32,8 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   // Instantiates additional systems and cascades them with the rigid body
   // system.
   auto visualizer =
-      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,
-                                                                    iiwa_tree);
+      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(
+          lcm, iiwa_tree);
 
   auto robot_state_tap =
       std::make_shared<RobotStateTap<RigidBodySystem::StateVector>>();

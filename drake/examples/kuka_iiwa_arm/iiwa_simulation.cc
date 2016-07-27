@@ -9,31 +9,30 @@ namespace kuka_iiwa_arm {
 
 using Drake::RigidBodySystem;
 
-std::shared_ptr<RigidBodySystem> CreateIIWAArmSystem(void) {
-  // Initializes LCM.
-  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
-
+std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   // Instantiates a rigid body system and adds the robot arm to it.
-  auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
+  auto rigid_body_system = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  rigid_body_sys->addRobotFromFile(
+  rigid_body_system->addRobotFromFile(
       Drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
 
-  rigid_body_sys->penetration_stiffness = 3000.0;
-  rigid_body_sys->penetration_damping = 0;
+  // Sets some simulation parameters.
+  rigid_body_system->penetration_stiffness = 3000.0;
+  rigid_body_system->penetration_damping = 0;
 
-  return rigid_body_sys;
-}
-
-void SetupWorld(const std::shared_ptr<RigidBodyTree>& tree, double box_width,
-                double box_depth) {
   // Adds the ground.
-  DrakeShapes::Box geom(Eigen::Vector3d(box_width, box_width, box_depth));
+  double kBoxWidth = 3;
+  double kBoxDepth = 0.2;
+  DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
   Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
   T_element_to_link.translation() << 0, 0,
-      -box_depth / 2.0;  // top of the box is at z = 0
+      -kBoxDepth / 2.0;  // top of the box is at z = 0
+
+  const std::shared_ptr<RigidBodyTree>& tree =
+      rigid_body_system->getRigidBodyTree();
+
   RigidBody& world = tree->world();
   Eigen::Vector4d color;
   color << 0.9297, 0.7930, 0.6758,
@@ -44,6 +43,8 @@ void SetupWorld(const std::shared_ptr<RigidBodyTree>& tree, double box_width,
       RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
       "terrain");
   tree->updateStaticCollisionElements();
+
+  return rigid_body_system;
 }
 
 Drake::SimulationOptions SetupSimulation(void) {
