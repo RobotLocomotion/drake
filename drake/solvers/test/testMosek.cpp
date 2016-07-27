@@ -71,24 +71,23 @@ GTEST_TEST(testMosek, MosekQuadraticCost) {
   // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
   OptimizationProblem prog2;
   auto x = prog2.AddContinuousVariables(3);
-  // Build the objective
+  // Build the objective matrix and send it to the program.
   Eigen::Matrix3d Q;
   Q << 2, 0, -1,
        0, 0.2, 0,
        -1, 0, 2;
   Eigen::Vector3d c;
   c << 0, -1, 0;
-  QuadraticConstraint obj(Q, c, 0, 0);
-  prog2.AddQuadraticCost(std::make_shared<QuadraticConstraint>(obj));
-  // build the constraint
+  prog2.AddQuadraticCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
+  // Build the constraint matrix and send it to the program.
   Eigen::Vector3d linearcon;
   linearcon << 1, 1, 1;
-  QuadraticConstraint con(Eigen::Matrix3d::Constant(0), linearcon, 1,
-      std::numeric_limits<double>::infinity());
   std::shared_ptr<QuadraticConstraint> ptrtocon =
-      std::make_shared<QuadraticConstraint>(con);
+      std::make_shared<QuadraticConstraint>(
+          Eigen::Matrix3d::Constant(0), linearcon, 1,
+          std::numeric_limits<double>::infinity());
   prog2.AddGenericConstraint(ptrtocon);
-  // build the bounding box
+  // Create the bounding box.
   Eigen::Vector3d bboxlow, bboxhigh;
   bboxlow << 0, 0, 0;
   bboxhigh << std::numeric_limits<double>::infinity(),
@@ -111,28 +110,26 @@ GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
   // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
   OptimizationProblem prog2;
   auto x = prog2.AddContinuousVariables(3);
-  // Build the objective
+  // Build the objective matrix and send it to the program.
   Eigen::Matrix3d Q;
   Q << 2, 0, -1,
        0, 0.2, 0,
        -1, 0, 2;
   Eigen::Vector3d c;
   c << 0, -1, 0;
-  QuadraticConstraint obj(Q, c, 0, 0);
-  prog2.AddQuadraticCost(std::make_shared<QuadraticConstraint>(obj));
-  // build the constraint
+  prog2.AddQuadraticCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
+  // Create the constraint matrix, and send it to the program.
   Eigen::Vector3d linearcon;
   linearcon << 1, 1, 1;
   Eigen::Matrix3d quadcon;
   quadcon << -2, 0, 0.2,
               0, -2, 0,
               0.2, 0, -0.2;
-  QuadraticConstraint con(quadcon, linearcon, 1,
-      std::numeric_limits<double>::infinity());
   std::shared_ptr<QuadraticConstraint> ptrtocon =
-      std::make_shared<QuadraticConstraint>(con);
+      std::make_shared<QuadraticConstraint>(quadcon, linearcon, 1,
+      std::numeric_limits<double>::infinity());
   prog2.AddGenericConstraint(ptrtocon);
-  // build the bounding box
+  // Create the bounding box.
   Eigen::Vector3d bboxlow, bboxhigh;
   bboxlow << 0, 0, 0;
   bboxhigh << std::numeric_limits<double>::infinity(),
