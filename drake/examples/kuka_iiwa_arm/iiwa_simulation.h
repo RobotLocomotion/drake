@@ -4,11 +4,13 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/drakeKukaIIWAArm_export.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+
 
 using Drake::RigidBodySystem;
 using Drake::PDControlSystem;
@@ -34,6 +36,7 @@ namespace kuka_iiwa_arm {
  * Also sets penetration_stiffness = 3000.0
  * and, penetration_damping = 0;
  */
+DRAKEKUKAIIWAARM_EXPORT
 std::shared_ptr<RigidBodySystem> CreateIIWAArmSystem(void);
 
 /** Adds a box-shaped terrain to the specified rigid body tree.
@@ -49,6 +52,7 @@ std::shared_ptr<RigidBodySystem> CreateIIWAArmSystem(void);
  * axis. Note that regardless of how deep the terrain is, the top surface of the
  * terrain will be at Z = 0.
  */
+DRAKEKUKAIIWAARM_EXPORT
 void SetupWorld(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
                 double box_size = 3.0, double box_depth = 0.2);
 
@@ -56,6 +60,7 @@ void SetupWorld(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
  * @param[out] duration The duration over which the simulation should run. The
  * simulation runs from time zero seconds to time \p duration seconds.
  */
+DRAKEKUKAIIWAARM_EXPORT
 Drake::SimulationOptions SetupSimulation(void);
 
 /**
