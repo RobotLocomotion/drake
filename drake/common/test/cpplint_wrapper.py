@@ -76,6 +76,7 @@ def main():
     drake_common_test_dir = os.path.dirname(os.path.abspath(__file__))
     drake_dir = os.path.abspath(os.path.join(drake_common_test_dir, '../..'))
     drake_distro_dir = os.path.abspath(os.path.join(drake_dir, '..'))
+    drake_ros_dir = os.path.join(drake_distro_dir, 'ros')
     default_cpplint = os.path.join(
         drake_distro_dir, 'externals/google_styleguide/cpplint/cpplint.py')
 
@@ -101,7 +102,7 @@ def main():
         action='store_const', const=None,
         help='run in parallel with many threads')
     parser.add_argument(
-        'pathnames', nargs='*', default=[drake_dir],
+        'pathnames', nargs='*', default=[drake_dir, drake_ros_dir],
         help='list of files and/or directories to check'
         ' (default %(default)s)')
 
