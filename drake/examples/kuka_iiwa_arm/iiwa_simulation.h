@@ -22,7 +22,7 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 /**
- * Ceates the rigid body system of the IIWA arm to be
+ * Creates the rigid body system of the IIWA arm to be
  * simulated. The command line arguments consists of the vehicle's URDF or SDF
  * model file followed by an arbitrary number of model files representing things
  * the vehicle's environment.
@@ -63,13 +63,6 @@ void SetupWorld(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
 DRAKEKUKAIIWAARM_EXPORT
 Drake::SimulationOptions SetupSimulation(void);
 
-/**
- * This method simply throws an error if limits are generated.
- */
-// void ValidateSimulation(const
-// std::shared_ptr<RobotStateTap<RigidBodySystem::StateVector>>&
-// robot_state_tap,
-//                        const std::shared_ptr<RigidBodySystem>& iiwa_system);
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

@@ -1,4 +1,4 @@
-#include "iiwa_simulation.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 
 #include <typeinfo>
 
@@ -16,6 +16,7 @@ using Drake::RigidBodySystem;
 using Drake::BotVisualizer;
 using Eigen::VectorXd;
 using drake::RobotStateTap;
+
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
@@ -39,15 +40,6 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   auto robot_state_tap =
       std::make_shared<RobotStateTap<RigidBodySystem::StateVector>>();
 
-  //  Build up PD controller in this form.
-  //  Eigen::MatrixXd Kp = Eigen::VectorXd::Constant(7,100.0).asDiagonal();
-  //  Eigen::MatrixXd Kd = Eigen::VectorXd::Constant(7,50.0).asDiagonal();
-  //  auto robot_with_pd =
-  //  std::allocate_shared<PDControlSystem<RigidBodySystem>>(
-  //      Eigen::aligned_allocator<PDControlSystem<RigidBodySystem>>(),
-  //          iiwa_system, Kp, Kd);
-  //  auto iiwa_feedback_system = PDControlSystem<RigidBodySystem>()
-
   auto sys = cascade(cascade(iiwa_system, visualizer), robot_state_tap);
 
   // Obtains an initial state of the simulation.
@@ -67,11 +59,9 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   double duration = 0.5;
 
   Drake::simulate(*sys.get(), kStartTime, duration, x0, options);
-  //
-  //  ASSERT_NO_THROW(ValidateSimulation(robot_state_tap, iiwa_system));
 }
 
-}  // close namespace
-}  // close namespace kuka_iiwa_arm
-}  // close namespace examples
-}  // close namespace drake
+}  // namespace
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake
