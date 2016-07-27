@@ -93,8 +93,8 @@ bool RigidBodyTree::transformCollisionFrame(
 // A possibility would be to use std::sort or our own version of a quick sort.
 void RigidBodyTree::SortTree() {
   if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
-  size_t i = 0;
-  while (i < bodies.size() - 1) {
+
+  for (size_t i = 0; i < bodies.size() - 1; ) {
     if (bodies[i]->hasParent()) {
       auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
                                [&](std::unique_ptr<RigidBody> const& p) {
@@ -335,7 +335,7 @@ void RigidBodyTree::drawKinematicTree(
 map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
   map<string, int> name_to_index_map;
 
-  for (int i = 0; i < this->num_positions_; ++i) {
+  for (int i = 0; i < num_positions_; ++i) {
     name_to_index_map[getPositionName(i)] = i;
   }
   return name_to_index_map;
@@ -1784,11 +1784,11 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
                  joint_name_lower.begin(), ::tolower);
 
   vector<bool> name_match;
-  name_match.resize(this->bodies.size());
+  name_match.resize(bodies.size());
 
-  for (size_t ii = 0; ii < this->bodies.size(); ii++) {
+  for (size_t ii = 0; ii < bodies.size(); ii++) {
     if (bodies[ii]->hasParent()) {
-      string current_joint_name = this->bodies[ii]->getJoint().getName();
+      string current_joint_name = bodies[ii]->getJoint().getName();
       std::transform(current_joint_name.begin(), current_joint_name.end(),
                      current_joint_name.begin(),
                      ::tolower);  // convert to lower case
@@ -1801,9 +1801,9 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
   }
 
   if (model_id != -1) {
-    for (size_t ii = 0; ii < this->bodies.size(); ii++) {
+    for (size_t ii = 0; ii < bodies.size(); ii++) {
       if (name_match[ii]) {
-        name_match[ii] = this->bodies[ii]->get_model_id() == model_id;
+        name_match[ii] = bodies[ii]->get_model_id() == model_id;
       }
     }
   }
@@ -1811,7 +1811,7 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
   // Unlike the MATLAB implementation, I am not handling the fixed joints
   size_t ind_match = 0;
   bool match_found = false;
-  for (size_t ii = 0; ii < this->bodies.size(); ++ii) {
+  for (size_t ii = 0; ii < bodies.size(); ++ii) {
     if (name_match[ii]) {
       if (match_found) {
         throw std::logic_error(
@@ -1829,7 +1829,7 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
         std::string("named \"") + joint_name + "\", model_id = " +
         std::to_string(model_id));
   } else {
-    return this->bodies[ind_match].get();
+    return bodies[ind_match].get();
   }
 }
 
@@ -2472,3 +2472,8 @@ template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
 template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&, bool) const;
+
+// Explicit template instantiations for parseBodyOrFrameID.
+template DRAKERBM_EXPORT int RigidBodyTree::parseBodyOrFrameID(
+    const int body_or_frame_id,
+    Eigen::Transform<double, 3, Eigen::Isometry>* Tframe) const;

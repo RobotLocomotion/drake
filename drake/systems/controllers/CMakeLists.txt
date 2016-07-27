@@ -1,6 +1,3 @@
-# TODO(#2852) We can't yet handle shadowing as a compiler error.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS_NO_ERROR_SHADOW}")
-
 drake_install_headers(LQR.h)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
