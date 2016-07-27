@@ -124,13 +124,16 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   inequality_lower_bound_ = VectorXd::Constant(
       11 * num_contacts, -std::numeric_limits<double>::infinity());
 
-  // This is a very crude model for approximating friction.
   // Fz >= 0;
   for (int i = 0; i < num_contacts; i++) {
     inequality_linear_(row_idx, i * 6 + 5) = 1;
     inequality_lower_bound_(row_idx) = 0;
     row_idx++;
   }
+  // This is a very crude model for approximating friction.
+  // |Fx| < muFz and |Fy| < muFz is a "box" rather than a "cone" approximation
+  // of friction.
+  // The magnitude is off by a factor or sqrt(2).
   // Fx <= mu * Fz, Fx - mu * Fz <= 0
   for (int i = 0; i < num_contacts; i++) {
     inequality_linear_(row_idx, i * 6 + 3) = 1;
@@ -231,8 +234,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   inequality_upper_bound_ = inequality_lower_bound_ =
       -rs.robot().B.bottomRows(num_torque).transpose() * torque_constant_;
   for (size_t i = 0; i < rs.robot().actuators.size(); i++) {
-    inequality_lower_bound_[i] += rs.robot().actuators[i].effort_limit_min;
-    inequality_upper_bound_[i] += rs.robot().actuators[i].effort_limit_max;
+    inequality_lower_bound_[i] += rs.robot().actuators[i].effort_limit_min_;
+    inequality_upper_bound_[i] += rs.robot().actuators[i].effort_limit_max_;
   }
   prog.AddLinearConstraint(inequality_linear_, inequality_lower_bound_,
                            inequality_upper_bound_, {vd, lambda});

@@ -26,6 +26,8 @@ struct BodyOfInterest {
   MatrixXd J;
   /// task space Jd * v
   Vector6d Jdot_times_v;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -63,7 +65,7 @@ class HumanoidStatus {
     // build map
     body_name_to_id_ = std::unordered_map<std::string, int>();
     for (auto it = robot_->bodies.begin(); it != robot_->bodies.end(); ++it) {
-      body_name_to_id_[(*it)->name()] = it - robot_->bodies.begin();
+      body_name_to_id_[(*it)->get_name()] = it - robot_->bodies.begin();
     }
 
     joint_name_to_position_index_ = std::unordered_map<std::string, int>();
@@ -71,7 +73,7 @@ class HumanoidStatus {
       joint_name_to_position_index_[robot_->getPositionName(i)] = i;
     }
     for (size_t i = 0; i < robot_->actuators.size(); i++) {
-      actuator_name_to_id_[robot_->actuators[i].name] = i;
+      actuator_name_to_id_[robot_->actuators[i].name_] = i;
     }
 
     time_ = time0_ = 0;
