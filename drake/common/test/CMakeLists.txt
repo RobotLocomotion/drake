@@ -111,3 +111,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     drake_deprecated_test_nocompile
     PROPERTIES WILL_FAIL TRUE)
 endif()
+
+# Rules for cpplint_wrapper.py.
+if(PYTHONINTERP_FOUND AND WITH_GOOGLE_STYLEGUIDE)
+  add_test(NAME cpplint_wrapper_test COMMAND
+    ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cpplint_wrapper_test.py)
+endif()
