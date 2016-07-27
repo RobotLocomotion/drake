@@ -1,6 +1,3 @@
-# TODO(#2852) We can't yet handle shadowing as a compiler error.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS_NO_ERROR_SHADOW}")
-
 pods_find_pkg_config(gurobi)
 
 if(gurobi_FOUND)
@@ -104,6 +101,11 @@ endif()
 if(snopt_c_FOUND AND MATLAB_FOUND)
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
+
+  # These warnings are not worth fixing.
+  set_target_properties(
+    NonlinearProgramSnoptmex
+    PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_ERROR_SHADOW})
 endif()
 
 if(mosek_FOUND)
