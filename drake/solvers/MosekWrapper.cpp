@@ -18,22 +18,20 @@ namespace drake {
 namespace solvers {
 
 MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
-    std::vector<double> equation_scalars,
-    Eigen::MatrixXd linear_cons,
-    std::vector<MSKboundkeye> mosek_constraint_bounds,
-    std::vector<double> upper_constraint_bounds,
-    std::vector<double> lower_constraint_bounds,
-    std::vector<MSKboundkeye> mosek_variable_bounds,
-    std::vector<double> upper_variable_bounds,
-    std::vector<double> lower_variable_bounds,
+    const std::vector<double>& equation_scalars,
+    const Eigen::MatrixXd& linear_cons,
+    const std::vector<MSKboundkeye>& mosek_constraint_bounds,
+    const std::vector<double>& upper_constraint_bounds,
+    const std::vector<double>& lower_constraint_bounds,
+    const std::vector<MSKboundkeye>& mosek_variable_bounds,
+    const std::vector<double>& upper_variable_bounds,
+    const std::vector<double>& lower_variable_bounds,
     double constant_eqn_term,
-    Eigen::MatrixXd quad_objective,
-    Eigen::MatrixXd quad_cons) {
-  numvar_ = num_variables;
-  numcon_ = num_constraints;
-  env_ = NULL;
-  task_ = NULL;
-  solutions_.clear();
+    const Eigen::MatrixXd& quad_objective,
+    const Eigen::MatrixXd& quad_cons)
+      : numvar_(static_cast<MSKint32t>(num_variables)),
+        numcon_(static_cast<MSKint32t>(num_constraints)),
+        env_(NULL), task_(NULL), solutions_(std::vector<double>()) {
   r_ = MSK_makeenv(&env_, NULL);
   if (r_ == MSK_RES_OK) {
     // Creates optimization task
@@ -114,7 +112,7 @@ void MosekWrapper::AddLinearConstraintSparseColumnMatrix(
     const Eigen::SparseMatrix<double>& sparsecons) {
   int j = 0;  // iterator
   // Define sparse matrix representation to be the same size as the desired
-  // constraints
+  // constraints.
   std::vector<MSKint32t> aptrb;
   std::vector<MSKint32t> aptre;
   std::vector<MSKint32t> asub;
@@ -129,8 +127,7 @@ void MosekWrapper::AddLinearConstraintSparseColumnMatrix(
   for (j = 0; j < sparsecons.nonZeros(); j++)
     aval.push_back(sparsecons.valuePtr()[j]);
 
-  // following code adapted from http://docs.mosek.com/7.1/capi/Linear_optimization.html
-  // check if still working in valid environment
+  // The following code is adapted from http://docs.mosek.com/7.1/capi/Linear_optimization.html
   for (j = 0; j < numvar_ && r_ == MSK_RES_OK; j++) {
     r_ = MSK_putacol(task_,
                     j,
@@ -147,7 +144,7 @@ void MosekWrapper::AddLinearConstraintBounds(
   int i = 0;
   for (i = 0; i < numcon_ && r_ == MSK_RES_OK; i++) {
     r_ = MSK_putconbound(task_, i, mosek_bounds[i],
-                        lower_bounds[i], upper_bounds[i]);
+                         lower_bounds[i], upper_bounds[i]);
   }
 }
 
@@ -191,9 +188,7 @@ std::vector<MSKboundkeye> MosekWrapper::FindMosekBounds(
 
 
 SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
-  // construct an object that calls all the previous work so I can salvage
-  // something at least.
-  // assume that the problem type is linear currently.
+  // Check that the problem type is supported.
   if (!prog.GetSolverOptionsStr("Mosek").empty()) {
     if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
             == std::string::npos &&
@@ -237,10 +232,10 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
   // TODO(alexdunyak): Allow constraints to affect specific variables
   if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
       != std::string::npos) {
-    // count all linear constraints
+    // Count all linear constraints.
     for (auto&& con : prog.GetAllLinearConstraints()) {
-      // check to see if the constraint references a single variable,
-      // which is handles as a variable bound by mosek
+      // Check to see if the constraint references a single variable,
+      // which is handled as a variable bound by mosek.
       for (i = 0; i < (con.constraint())->A().rows(); ++i) {
         auto row = (con.constraint())->A().row(i);
         if (row.nonZeros() != 1)
@@ -253,7 +248,7 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     lower_constraint_bounds.resize(totalconnum);
     for (const auto& con : prog.GetAllLinearConstraints()) {
       // con can call functions of  Binding<LinearConstraint>, but the actual
-      // type is const std::list<Binding<LinearConstraint>>::const_iterator&
+      // type is const std::list<Binding<LinearConstraint>>::const_iterator&.
       for (i = 0; static_cast<unsigned int>(i) <
           con.constraint()->num_constraints(); i++) {
         for (j = 0; j < (con.constraint())->A().cols(); j++) {
@@ -313,7 +308,7 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     // Because there's no getter for quadratic constraints yet, we have to
     // use generic constraints and dynamically cast them to quadratic
     // constraints.
-    // For now assume a single quadratic constraint
+    // For now assume a single quadratic constraint.
     /* TODO(alexdunyak): Once we've added
     * OptimizationProblem::AddQuadraticConstraint and started to store quadratic
     * constraints independently of generic constraints, this cast should go away
@@ -357,7 +352,7 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     std::vector<double> linobj((*quad_obj_ptr).b().data(),
         (*quad_obj_ptr).b().data() +
         (*quad_obj_ptr).b().rows() * (*quad_obj_ptr).b().cols());
-    totalconnum = 1;  // Defined for object declaration below
+    totalconnum = 1;  // Defined for object declaration below.
     MosekWrapper opt(prog.num_vars(),
             totalconnum,
             linobj,

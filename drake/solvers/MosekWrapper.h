@@ -43,17 +43,17 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   * @p environment is created and must be told to optimize.
   */
   MosekWrapper(int num_variables, int num_constraints,
-    std::vector<double> equation_scalars,
-    Eigen::MatrixXd linear_cons,
-    std::vector<MSKboundkeye> mosek_constraint_bounds,
-    std::vector<double> upper_constraint_bounds,
-    std::vector<double> lower_constraint_bounds,
-    std::vector<MSKboundkeye> mosek_variable_bounds,
-    std::vector<double> upper_variable_bounds,
-    std::vector<double> lower_variable_bounds,
+    const std::vector<double>& equation_scalars,
+    const Eigen::MatrixXd& linear_cons,
+    const std::vector<MSKboundkeye>& mosek_constraint_bounds,
+    const std::vector<double>& upper_constraint_bounds,
+    const std::vector<double>& lower_constraint_bounds,
+    const std::vector<MSKboundkeye>& mosek_variable_bounds,
+    const std::vector<double>& upper_variable_bounds,
+    const std::vector<double>& lower_variable_bounds,
     double constant_eqn_term,
-    Eigen::MatrixXd quad_objective,
-    Eigen::MatrixXd quad_cons);
+    const Eigen::MatrixXd& quad_objective,
+    const Eigen::MatrixXd& quad_cons);
 
   ~MosekWrapper() {
     if (task_ != NULL)
