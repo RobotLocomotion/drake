@@ -105,14 +105,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
     pm = mxGetPropertySafe(pBodies, i, "parent");
     if (!pm || mxIsEmpty(pm)) {
-      b->parent = nullptr;
+      b->set_parent(nullptr);
     } else {
       int parent_ind = static_cast<int>(mxGetScalar(pm)) - 1;
       if (parent_ind >= static_cast<int>(model->bodies.size()))
         mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs",
                           "bad body.parent %d (only have %d bodies)",
                           parent_ind, model->bodies.size());
-      if (parent_ind >= 0) b->parent = model->bodies[parent_ind].get();
+      if (parent_ind >= 0) b->set_parent(model->bodies[parent_ind].get());
     }
 
     if (b->hasParent()) {

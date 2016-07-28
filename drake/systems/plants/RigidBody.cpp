@@ -16,8 +16,7 @@ using std::vector;
 
 RigidBody::RigidBody()
     : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores(DrakeCollision::NONE_MASK),
-      parent(nullptr) {
+      collision_filter_ignores(DrakeCollision::NONE_MASK) {
   position_num_start = 0;
   velocity_num_start = 0;
   body_index = 0;
@@ -52,7 +51,11 @@ const DrakeJoint& RigidBody::getJoint() const {
   }
 }
 
-bool RigidBody::hasParent() const { return parent != nullptr; }
+void RigidBody::set_parent(RigidBody* parent) { parent_ = parent; }
+
+const RigidBody* RigidBody::get_parent() const { return parent_; }
+
+bool RigidBody::hasParent() const { return parent_ != nullptr; }
 
 void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element) {
   visual_elements.push_back(element);

@@ -78,6 +78,19 @@ class DRAKERBM_EXPORT RigidBody {
    */
   const DrakeJoint& getJoint() const;
 
+  /**
+   * Sets the parent rigid body. This is the rigid body that is connected to
+   * this rigid body's joint.
+   *
+   * @param[in] parent A pointer to this rigid body's parent rigid body.
+   */
+  void set_parent(RigidBody* parent);
+
+  /**
+   * Returns a const pointer to this rigid body's parent rigid body.
+   */
+  const RigidBody* get_parent() const;
+
   bool hasParent() const;
 
   /**
@@ -87,7 +100,9 @@ class DRAKERBM_EXPORT RigidBody {
    * @return true if the supplied rigid body parameter other is the parent of
    * this rigid body.
    */
-  bool has_as_parent(const RigidBody& other) const { return parent == &other; }
+  bool has_as_parent(const RigidBody& other) const {
+    return parent_ == &other;
+  }
 
   void addVisualElement(const DrakeShapes::VisualElement& elements);
 
@@ -155,10 +170,6 @@ class DRAKERBM_EXPORT RigidBody {
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
-
-  // TODO(amcastro-tri): Make it private and change to parent_.
-  /// The rigid body that's connected to this rigid body's joint.
-  RigidBody* parent;
 
   /// The index of this rigid body in the rigid body tree.
   int body_index;
@@ -228,4 +239,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   // A unique ID for each model. It uses 0-index, starts from 0.
   int model_id_{0};
+
+  // The rigid body that's connected to this rigid body's joint.
+  RigidBody* parent_{nullptr};
 };

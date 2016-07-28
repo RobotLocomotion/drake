@@ -615,7 +615,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
     unique_ptr<DrakeJoint> joint_unique_ptr(joint);
     child->setJoint(move(joint_unique_ptr));
-    child->parent = parent;
+    child->set_parent(parent);
   }
 }
 

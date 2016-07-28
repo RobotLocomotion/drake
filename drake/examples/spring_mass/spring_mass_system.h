@@ -88,7 +88,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   SpringMassSystem(const std::string& name, double spring_constant_N_per_m,
                    double mass_kg);
 
-  using MyContext = systems::Context<double>;
+  using MyContext = systems::ContextBase<double>;
   using MyContinuousState = systems::ContinuousState<double>;
   using MyOutput = systems::SystemOutput<double>;
 
@@ -195,7 +195,8 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   std::unique_ptr<MyContext> CreateDefaultContext() const override;
 
   /// Allocates a single output port of type SpringMassStateVector.
-  std::unique_ptr<MyOutput> AllocateOutput() const override;
+  std::unique_ptr<MyOutput> AllocateOutput(
+      const MyContext& context) const override;
 
   /// Allocates state derivatives of type SpringMassStateVector.
   std::unique_ptr<MyContinuousState> AllocateTimeDerivatives() const override;
@@ -220,12 +221,12 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
 
   static const SpringMassOutputVector& get_output(const MyOutput& output) {
     return dynamic_cast<const SpringMassOutputVector&>(
-        *output.ports[0]->get_vector_data());
+        *output.get_port(0).get_vector_data());
   }
 
   static SpringMassOutputVector* get_mutable_output(MyOutput* output) {
     return dynamic_cast<SpringMassOutputVector*>(
-        output->ports[0]->GetMutableVectorData());
+        output->get_mutable_port(0)->GetMutableVectorData());
   }
 
   static const SpringMassStateVector& get_state(const MyContext& context) {

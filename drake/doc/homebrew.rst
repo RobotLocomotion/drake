@@ -20,7 +20,7 @@ Install the prerequisites::
       jpeg libpng libtool mpfr mpich2 ninja numpy python qt qwt swig valgrind \
       wget
     brew install vtk5 --with-qt
-    pip install -U beautifulsoup4 cpplint html5lib Sphinx
+    pip install -U beautifulsoup4 html5lib Sphinx
 
 Add the line::
 

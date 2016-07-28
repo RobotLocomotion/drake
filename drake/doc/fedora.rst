@@ -29,8 +29,6 @@ Install the prerequisites::
       devtoolset-3-valgrind
     scl enable devtoolset-3 bash
 
-    sudo pip install -U cpplint
-
 On CentOS and Red Hat Enterprise Linux, add the line::
 
     source /opt/rh/devtoolset-3/enable
