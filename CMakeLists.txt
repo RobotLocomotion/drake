@@ -59,7 +59,7 @@ option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ lib
 option(WITH_BULLET "used for collision detection" ON)
 option(WITH_LCM "interprocess communications protocol for visualizers, etc" ON)
 option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
-option(WITH_SPDLOG "spdlog text logging facility.  required for debug logging." ON)
+option(WITH_SPDLOG "spdlog text logging facility; disabling will turn off text logging." ON)
 if(WIN32)
   option(WITH_GTK "precompiled gtk binaries/headers for Windows" ON)  # needed for lcm on windows
 else()

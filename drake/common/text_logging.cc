@@ -6,14 +6,27 @@ namespace drake {
 
 #ifdef HAVE_SPDLOG
 
-std::shared_ptr<logging::logger> log() {
-  static std::mutex log_mutex;
-  std::shared_ptr<logging::logger> logger = spdlog::get("console");
-  if (!logger) {
-    std::lock_guard<std::mutex> guard(log_mutex);
-    logger = spdlog::stderr_logger_st("console");
+namespace {
+// Returns a new pointer (caller-owned) to a shared_ptr to a logger.
+//
+// NOTE: This function assumes that it is mutexed, as in the initializer of
+// a static local.
+std::shared_ptr<logging::logger>* onetime_create_log() {
+  std::shared_ptr<logging::logger>* result =
+      new std::shared_ptr<logging::logger>(spdlog::get("console"));
+  if (!*result) {
+    *result = spdlog::stderr_logger_st("console");
   }
-  return logger;
+  return result;
+}
+} // anonymous
+
+logging::logger* log() {
+  // The following line creates a static shared_ptr to the logger; this
+  // guarantees the underling logger object will not be dtor'ed.
+  static const std::shared_ptr<logging::logger>* const g_logger =
+      onetime_create_log();
+  return g_logger->get();
 }
 
 #else  // HAVE_SPDLOG
@@ -23,7 +36,7 @@ namespace {
 const logger g_logger;
 }  // anon namespace
 
-const std::shared_ptr<logging::logger> log() {
+logging::logger* log() {
   return std::shared_ptr<logging::logger>(&g_logger);
 }
 

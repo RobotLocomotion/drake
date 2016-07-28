@@ -20,12 +20,12 @@ class Streamable {
 // modes.
 GTEST_TEST(TextLoggingTest, SmokeTest) {
   Streamable obj;
-  drake::log()->trace("drake::log()->trace test: {} {}", "OK", obj );
-  drake::log()->debug("drake::log()->debug test: {} {}", "OK", obj );
-  drake::log()->info("drake::log()->info test: {} {}", "OK", obj );
-  drake::log()->warn("drake::log()->warn test: {} {}", "OK", obj );
-  drake::log()->error("drake::log()->error test: {} {}", "OK", obj );
-  drake::log()->critical("drake::log()->critical test: {} {}", "OK", obj );
+  drake::log()->trace("drake::log()->trace test: {} {}", "OK", obj);
+  drake::log()->debug("drake::log()->debug test: {} {}", "OK", obj);
+  drake::log()->info("drake::log()->info test: {} {}", "OK", obj);
+  drake::log()->warn("drake::log()->warn test: {} {}", "OK", obj);
+  drake::log()->error("drake::log()->error test: {} {}", "OK", obj);
+  drake::log()->critical("drake::log()->critical test: {} {}", "OK", obj);
   SPDLOG_TRACE(drake::log(), "SPDLOG_TRACE macro test: {}, {}", "OK", obj);
   SPDLOG_DEBUG(drake::log(), "SPDLOG_DEBUG macro test: {}, {}", "OK", obj);
 }
