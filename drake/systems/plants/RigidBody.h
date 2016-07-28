@@ -91,11 +91,6 @@ class DRAKERBM_EXPORT RigidBody {
    */
   const RigidBody* get_parent() const;
 
-  /**
-   * Returns a mutable pointer to this rigid body's parent rigid body.
-   */
-  RigidBody* get_mutable_parent();
-
   bool hasParent() const;
 
   /**
@@ -253,10 +248,10 @@ class DRAKERBM_EXPORT RigidBody {
   std::string model_name_;
 
   // A unique ID for each model. It uses 0-index, starts from 0.
-  int model_id_;
+  int model_id_{0};
 
   // The rigid body that's connected to this rigid body's joint.
-  RigidBody* parent_;
+  RigidBody* parent_{nullptr};
 
   // The index of this rigid body in the rigid body tree.
   int body_index_;

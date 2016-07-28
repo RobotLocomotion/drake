@@ -307,15 +307,15 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
     std::list<RelativePositionConstraint> constraints;
     for (const auto& loop : loops) {
       constraints.push_back(RelativePositionConstraint(
-          sys.tree.get(), zero, zero, zero, loop.frameA->frame_index,
-          loop.frameB->frame_index, bTbp, tspan));
+          sys.tree.get(), zero, zero, zero, loop.frameA_->frame_index,
+          loop.frameB_->frame_index, bTbp, tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
                                                    &kin_helper));
       prog.AddGenericConstraint(con1wrapper, {qvar});
       constraints.push_back(RelativePositionConstraint(
-          sys.tree.get(), loop.axis, loop.axis, loop.axis,
-          loop.frameA->frame_index, loop.frameB->frame_index, bTbp,
+          sys.tree.get(), loop.axis_, loop.axis_, loop.axis_,
+          loop.frameA_->frame_index, loop.frameB_->frame_index, bTbp,
           tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
@@ -745,9 +745,9 @@ void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
 
   // Obtains the transform from the link to the model.
   Isometry3d transform_link_to_model = Isometry3d::Identity();
-  XMLElement* pose = node->FirstChildElement("pose");
-  if (pose) {
-    poseValueToTransform(pose, pose_map, transform_link_to_model);
+  XMLElement* link_pose = node->FirstChildElement("pose");
+  if (link_pose) {
+    poseValueToTransform(link_pose, pose_map, transform_link_to_model);
     pose_map.insert(std::pair<string, Isometry3d>(body->get_name(),
                                                   transform_link_to_model));
   }
@@ -766,9 +766,9 @@ void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
     string type(attr);
 
     Isometry3d transform_sensor_to_model = transform_link_to_model;
-    XMLElement* pose = elnode->FirstChildElement("pose");
-    if (pose) {
-      poseValueToTransform(pose, pose_map, transform_sensor_to_model,
+    XMLElement* sensor_pose = elnode->FirstChildElement("pose");
+    if (sensor_pose) {
+      poseValueToTransform(sensor_pose, pose_map, transform_sensor_to_model,
                            transform_link_to_model);
     }
 

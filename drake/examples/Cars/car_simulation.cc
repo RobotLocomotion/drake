@@ -120,11 +120,11 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   for (int actuator_idx = 0;
        actuator_idx < static_cast<int>(tree->actuators.size());
        actuator_idx++) {
-    const std::string& actuator_name = tree->actuators[actuator_idx].name;
+    const std::string& actuator_name = tree->actuators[actuator_idx].name_;
 
     if (actuator_name == "steering") {
       // Obtains the rigid body to which the actuator is attached.
-      const auto& rigid_body = tree->actuators[actuator_idx].body;
+      const auto& rigid_body = tree->actuators[actuator_idx].body_;
 
       // Sets the steering actuator's Kp gain.
       Kp(actuator_idx, rigid_body->position_num_start) = kpSteering;
@@ -140,7 +140,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
     } else if (actuator_name == "right_wheel_joint" ||
                actuator_name == "left_wheel_joint") {
       // Obtains the rigid body to which the actuator is attached.
-      const auto& rigid_body = tree->actuators[actuator_idx].body;
+      const auto& rigid_body = tree->actuators[actuator_idx].body_;
 
       // Sets the throttle Kd gain.
       Kd(actuator_idx, rigid_body->velocity_num_start) = kThrottle;
@@ -260,7 +260,7 @@ CreateSimpleCarVisualizationAdapter() {
 
 
 SimulationOptions GetCarSimulationDefaultOptions() {
-  SimulationOptions result = Drake::default_simulation_options;
+  SimulationOptions result;
   result.initial_step_size = 5e-3;
   result.timeout_seconds = std::numeric_limits<double>::infinity();
   return result;

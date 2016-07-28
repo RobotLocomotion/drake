@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
       make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
   auto sys = cascade(rigid_body_sys, visualizer);
 
-  SimulationOptions options = default_simulation_options;
+  SimulationOptions options;
   options.realtime_factor = 1.0;
   options.timeout_seconds = std::numeric_limits<double>::infinity();
   options.initial_step_size = 5e-3;
