@@ -102,7 +102,7 @@ void AtlasPlant::SetUpTerrain() {
   world.addVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
-      RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
+      RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
       "terrain");
   tree->updateStaticCollisionElements();
 }

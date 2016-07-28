@@ -108,42 +108,6 @@ void RigidBody::ApplyTransformToJointFrame(
   }
 }
 
-RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
-    : DrakeCollision::Element(other) {}
-
-RigidBody::CollisionElement::CollisionElement(
-    const Isometry3d& T_element_to_link, const RigidBody* const body)
-    : DrakeCollision::Element(T_element_to_link) {
-  set_body(body);
-}
-
-RigidBody::CollisionElement::CollisionElement(
-    const DrakeShapes::Geometry& geometry, const Isometry3d& T_element_to_link,
-    const RigidBody* const body)
-    : DrakeCollision::Element(geometry, T_element_to_link) {
-  set_body(body);
-  // This is a temporary hack to avoid having the user to set collision
-  // elements to static when added to the world.
-  // Collision elements should be set to static in a later Initialize() stage as
-  // described in issue #2661.
-  // TODO(amcastro-tri): remove this hack.
-  if (body->get_name() == "world") set_static();
-}
-
-RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
-  return new CollisionElement(*this);
-}
-
-bool RigidBody::CollisionElement::CollidesWith(
-    const DrakeCollision::Element* other) const {
-  auto other_rb = dynamic_cast<const RigidBody::CollisionElement*>(other);
-  bool collides = true;
-  if (other_rb != nullptr) {
-    collides = get_body()->CollidesWith(*other_rb->get_body());
-  }
-  return collides;
-}
-
 ostream& operator<<(ostream& out, const RigidBody& b) {
   std::string parent_joint_name =
       b.hasParent() ? b.getJoint().getName() : "no parent joint";

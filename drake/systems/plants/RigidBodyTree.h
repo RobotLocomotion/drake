@@ -15,6 +15,7 @@
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
+#include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
@@ -441,7 +442,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
   DrakeCollision::ElementId addCollisionElement(
-      const RigidBody::CollisionElement& element, RigidBody& body,
+      const RigidBodyCollisionElement& element, RigidBody& body,
       const std::string& group_name);
 
   template <class UnaryPredicate>

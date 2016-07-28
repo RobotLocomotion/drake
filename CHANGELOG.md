@@ -39,6 +39,7 @@ Unreleased: changes on master, not yet released
  - [#2018][] Fix capitalization of `Constraint` and `OptimizationProblem` APIs to match style guide.
  - [#2415][] Require CMake 3.5 or higher to configure and build.
  - [#2779][] Move some rotation functions from drakeGeometryUtil to drake/math.
+ - [#2963][] Rename RigidBody::CollisionElement to RigidBodyCollisionElement.
 
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
@@ -92,3 +93,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2903]: https://github.com/RobotLocomotion/drake/issues/2903
 [#2904]: https://github.com/RobotLocomotion/drake/issues/2904
 [#2923]: https://github.com/RobotLocomotion/drake/issues/2923
+[#2963]: https://github.com/RobotLocomotion/drake/issues/2963
