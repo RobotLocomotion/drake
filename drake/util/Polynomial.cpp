@@ -320,9 +320,8 @@ bool Polynomial<CoefficientType>::operator==(
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator+=(
     const Polynomial<CoefficientType>& other) {
-  for (typename vector<Monomial>::const_iterator iter = other.monomials_.begin();
-       iter != other.monomials_.end(); iter++) {
-    monomials_.push_back(*iter);
+  for (const auto& iter : other.monomials_) {
+    monomials_.push_back(iter);
   }
   MakeMonomialsUnique();  // also sets is_univariate false if necessary
   return *this;
@@ -331,9 +330,8 @@ Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator+=(
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator-=(
     const Polynomial<CoefficientType>& other) {
-  for (typename vector<Monomial>::const_iterator iter = other.monomials_.begin();
-       iter != other.monomials_.end(); iter++) {
-    monomials_.push_back(*iter);
+  for (const auto& iter : other.monomials_) {
+    monomials_.push_back(iter);
     monomials_.back().coefficient *= (CoefficientType)(-1);
   }
   MakeMonomialsUnique();  // also sets is_univariate false if necessary
@@ -345,25 +343,22 @@ Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator*=(
     const Polynomial<CoefficientType>& other) {
   vector<Monomial> new_monomials;
 
-  for (typename vector<Monomial>::const_iterator iter = monomials_.begin();
-       iter != monomials_.end(); iter++) {
-    for (typename vector<Monomial>::const_iterator other_iter =
-             other.monomials_.begin();
-         other_iter != other.monomials_.end(); other_iter++) {
+  for (const auto& iter : monomials_) {
+    for (const auto& other_iter : other.monomials_) {
       Monomial m;
-      m.coefficient = iter->coefficient * other_iter->coefficient;
-      m.terms = iter->terms;
-      for (size_t i = 0; i < other_iter->terms.size(); i++) {
+      m.coefficient = iter.coefficient * other_iter.coefficient;
+      m.terms = iter.terms;
+      for (size_t i = 0; i < other_iter.terms.size(); i++) {
         bool new_var = true;
         for (size_t j = 0; j < m.terms.size(); j++) {
-          if (m.terms[j].var == other_iter->terms[i].var) {
-            m.terms[j].power += other_iter->terms[i].power;
+          if (m.terms[j].var == other_iter.terms[i].var) {
+            m.terms[j].power += other_iter.terms[i].power;
             new_var = false;
             break;
           }
         }
         if (new_var) {
-          m.terms.push_back(other_iter->terms[i]);
+          m.terms.push_back(other_iter.terms[i]);
         }
       }
       new_monomials.push_back(m);

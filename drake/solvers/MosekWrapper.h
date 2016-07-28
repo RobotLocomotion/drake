@@ -79,7 +79,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
    * to ensure ease of translation and understanding.
    */
 
-   /** Adds linear constraints to mosek environment. */
+  /** Adds linear constraints to mosek environment. */
   void AddLinearConstraintMatrix(const Eigen::MatrixXd& cons_);
 
   /** Adds linear constraints in sparse column matrix form.
