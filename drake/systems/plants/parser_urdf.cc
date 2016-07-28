@@ -488,7 +488,7 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
     throw runtime_error("ERROR: Link " + body->get_name() +
                         " has a collision element without geometry");
 
-  RigidBody::CollisionElement element(T_element_to_link, body);
+  RigidBodyCollisionElement element(T_element_to_link, body);
   // By default all collision elements added to the world from an URDF file are
   // flagged as static.
   // We would also like to flag as static bodies connected to the world with a
