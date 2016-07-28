@@ -349,8 +349,8 @@ SystemIdentification<T>::LumpedSystemIdentification(
   for (int i = 0; i < trigpolys.rows(); i++) {
     const TrigPolyd& trigpoly = trigpolys[i];
     debug << "polynomial for ID: " << trigpoly << std::endl;
-    polys.push_back(trigpoly.getPolynomial());
-    for (const auto& k_v_pair : trigpoly.getSinCosMap()) {
+    polys.push_back(trigpoly.poly());
+    for (const auto& k_v_pair : trigpoly.sin_cos_map()) {
       if (original_sin_cos_map.count(k_v_pair.first)) {
         // Make sure that different TrigPolys don't have inconsistent
         // sin_cos_maps (eg, `s = sin(x)` vs. `s = cos(y)`).  Note that
@@ -419,7 +419,7 @@ SystemIdentification<T>::LumpedSystemIdentification(
   // Estimate the lumped parameters.
   VectorXPoly polys_as_eigen(polys.size());
   for (size_t i = 0; i < polys.size(); i++) {
-    polys_as_eigen[i] = result.lumped_polys[i].getPolynomial();
+    polys_as_eigen[i] = result.lumped_polys[i].poly();
   }
   std::tie(result.lumped_parameter_values, result.rms_error) =
       EstimateParameters(polys_as_eigen, augmented_values);
@@ -434,7 +434,7 @@ SystemIdentification<T>::LumpedSystemIdentification(
   result.partially_evaluated_polys.resize(trigpolys.rows());
   for (int i = 0; i < trigpolys.rows(); i++) {
     result.partially_evaluated_polys[i] =
-        result.lumped_polys[i].evaluatePartial(result.lumped_parameter_values);
+            result.lumped_polys[i].EvaluatePartial(result.lumped_parameter_values);
     debug << "Estimated polynomial: "
           << result.partially_evaluated_polys[i] << std::endl;
   }

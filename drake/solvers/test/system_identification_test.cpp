@@ -403,17 +403,17 @@ GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
 
   // Create convenience variables for our q/qdot/u values.  Convenience vars
   // have an underscore prefix for slightly easier understandability.
-  const TrigPolyd::VarType th1_var = theta1.getPolynomial().GetSimpleVariable();
-  const TrigPolyd::VarType th2_var = theta2.getPolynomial().GetSimpleVariable();
+  const TrigPolyd::VarType th1_var = theta1.poly().GetSimpleVariable();
+  const TrigPolyd::VarType th2_var = theta2.poly().GetSimpleVariable();
   const TrigPolyd::VarType th1d_var =
-          theta1dot.getPolynomial().GetSimpleVariable();
+          theta1dot.poly().GetSimpleVariable();
   const TrigPolyd::VarType th2d_var =
-          theta2dot.getPolynomial().GetSimpleVariable();
+          theta2dot.poly().GetSimpleVariable();
   const TrigPolyd::VarType th1dd_var =
-          theta1dotdot.getPolynomial().GetSimpleVariable();
+          theta1dotdot.poly().GetSimpleVariable();
   const TrigPolyd::VarType th2dd_var =
-          theta2dotdot.getPolynomial().GetSimpleVariable();
-  const TrigPolyd::VarType tau_var = tau.getPolynomial().GetSimpleVariable();
+          theta2dotdot.poly().GetSimpleVariable();
+  const TrigPolyd::VarType tau_var = tau.poly().GetSimpleVariable();
 
   const double kG = 9.8;
   const double kPi = 3.14159265;
@@ -457,10 +457,10 @@ GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
       (result.lumped_parameters.size() * result.lumped_parameters.size());
 
   // Check result.lumped_parameters.
-  Polynomiald mgl1 = (m1 * gravity * l1).getPolynomial();
-  Polynomiald mgl2 = (m2 * gravity * l2).getPolynomial();
-  Polynomiald mll1 = (m1 * l1 * l1).getPolynomial();
-  Polynomiald mll2 = (m2 * l2 * l2).getPolynomial();
+  Polynomiald mgl1 = (m1 * gravity * l1).poly();
+  Polynomiald mgl2 = (m2 * gravity * l2).poly();
+  Polynomiald mll1 = (m1 * l1 * l1).poly();
+  Polynomiald mll2 = (m2 * l2 * l2).poly();
   EXPECT_EQ(result.lumped_parameters.size(), static_cast<size_t>(4));
   Polynomiald::VarType mgl1_var = result.lumped_parameters.at(mgl1);
   Polynomiald::VarType mgl2_var = result.lumped_parameters.at(mgl2);
@@ -470,10 +470,10 @@ GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
   // Check result.lumped_polys.
   std::set<Polynomiald::VarType> expected_vars_1 = {
     mgl1_var, mll1_var, th1_var, th1dd_var, tau_var};
-  EXPECT_EQ(result.lumped_polys[0].getVariables(), expected_vars_1);
+  EXPECT_EQ(result.lumped_polys[0].GetVariables(), expected_vars_1);
   std::set<Polynomiald::VarType> expected_vars_2 = {
     mgl2_var, mll2_var, th2_var, th2dd_var, tau_var};
-  EXPECT_EQ(result.lumped_polys[1].getVariables(), expected_vars_2);
+  EXPECT_EQ(result.lumped_polys[1].GetVariables(), expected_vars_2);
 
   // Check result.lumped_parameter_values
   EXPECT_NEAR(result.lumped_parameter_values[mgl1_var], kG, max_per_term_error);

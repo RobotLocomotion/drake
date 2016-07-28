@@ -263,9 +263,9 @@ mxArray* eigenToTrigPoly(
       trigpoly_mat.rows(), trigpoly_mat.cols());
   TrigPolyd::SinCosMap sin_cos_map;
   for (int i = 0; i < trigpoly_mat.size(); i++) {
-    const TrigPolyd::SinCosMap& sc = trigpoly_mat(i).getSinCosMap();
+    const TrigPolyd::SinCosMap& sc = trigpoly_mat(i).sin_cos_map();
     sin_cos_map.insert(sc.begin(), sc.end());
-    poly_mat(i) = trigpoly_mat(i).getPolynomial();
+    poly_mat(i) = trigpoly_mat(i).poly();
   }
 
   if (sin_cos_map
