@@ -12,17 +12,7 @@ namespace systems {
 
 template <typename T>
 Adder<T>::Adder(int num_inputs, int length)
-    : num_inputs_(num_inputs), length_(length) {
-
-#if 0
-  // What I'd prefer to look like.
-  // Adder would inherit from System.
-  System::add_port(InputPort("In1", length));
-  System::add_port(InputPort("In2", length));
-
-  System::add_port(OutputPort("Out", length));
-#endif
-}
+    : num_inputs_(num_inputs), length_(length) {}
 
 template <typename T>
 std::unique_ptr<Context<T>> Adder<T>::CreateDefaultContext() const {
