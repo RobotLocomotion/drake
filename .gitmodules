@@ -92,3 +92,6 @@
 [submodule "externals/google_styleguide"]
 	path = externals/google_styleguide
 	url = https://github.com/google/styleguide.git
+[submodule "externals/spdlog"]
+	path = externals/spdlog
+	url = git@github.com:gabime/spdlog.git
