@@ -16,8 +16,8 @@ Similarly, it provides:
   drake::log()->error(...);
   drake::log()->critical(...);
 </pre>
-To log objects that are expensive to serialize, these macros will not be
-compiled if debug is not set:
+If you want to log objects that are expensive to serialize, these macros will
+not be compiled if debugging is turned off (-DNDEBUG is set):
 <pre>
   SPDLOG_TRACE(drake::log(), "message: {}", something_conditionally_compiled);
   SPDLOG_DEBUG(drake::log(), "message: {}", something_conditionally_compiled);
