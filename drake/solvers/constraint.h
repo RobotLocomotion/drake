@@ -254,6 +254,23 @@ class LinearConstraint : public Constraint {
     return A_;
   }
 
+  /**
+  * append the constraint lb_append<= A_append*x<=ub_append
+  */
+  template <typename DerivedA, typename DerivedLB, typename DerivedUB>
+  void appendConstraint(const Eigen::MatrixBase<DerivedA> &A_append, const Eigen::MatrixBase<DerivedLB> &lb_append, const Eigen::MatrixBase<DerivedUB> &ub_append) {
+    DRAKE_ASSERT(A_append.cols() == A_.cols());
+    DRAKE_ASSERT(A_append.rows() == lb_append.rows());
+    DRAKE_ASSERT(A_append.rows() == ub_append.rows());
+    int num_new_constraints = A_.rows() + A_append.rows();
+    A_.conservativeResize(num_new_constraints,Eigen::NoChange);
+    lower_bound_.conservativeResize(num_new_constraints);
+    upper_bound_.conservativeResize(num_new_constraints);
+    A_.bottomRows(A_append.rows()) = A_append;
+    lower_bound_.bottomRows(lb_append.rows()) = lb_append;
+    upper_bound_.bottomRows(ub_append.rows()) = ub_append;
+  }
+
  protected:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
 };
