@@ -144,6 +144,7 @@ TEST_F(SpringMassSystemTest, Output) {
 // Tests that second-order structure is exposed in the state.
 TEST_F(SpringMassSystemTest, SecondOrderStructure) {
   InitializeState(1.2, 3.4);  // Displacement 1.2m, velocity 3.4m/sec.
+  // TODO(amcastro-tri): add method Context::get_mutable_continuous_state();
   ContinuousState<double>* continuous_state =
       context_->get_mutable_state()->continuous_state.get();
   ASSERT_EQ(1, continuous_state->get_generalized_position().size());
