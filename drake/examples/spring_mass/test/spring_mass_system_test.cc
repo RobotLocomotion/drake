@@ -6,11 +6,7 @@
 
 #include "drake/examples/spring_mass/spring_mass_system.h"
 
-#include <algorithm>
-#include <cassert>
 #include <memory>
-#include <iomanip>
-#include <iostream>
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
@@ -27,9 +23,7 @@
 #include "drake/util/eigen_matrix_compare.h"
 
 using std::unique_ptr;
-using std::cout;
-using std::endl;
-
+using std::make_unique;
 
 namespace drake {
 
@@ -223,7 +217,7 @@ TEST_F(SpringMassSystemTest, DyanmnicsWithExternalForce) {
   ASSERT_EQ(1, context_->get_num_input_ports());
 
   // Creates a vector holding the data entry to the supplied input force.
-  auto force_vector = std::make_unique<BasicVector<double>>(1 /* length */);
+  auto force_vector = make_unique<BasicVector<double>>(1 /* length */);
 
   // Sets the input force.
   const double kExternalForce = 1.0;
