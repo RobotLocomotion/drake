@@ -75,7 +75,7 @@ RigidBodyTree::RigidBodyTree(void)
   std::unique_ptr<RigidBody> b(new RigidBody());
   b->set_name(RigidBodyTree::kWorldLinkName);
   b->set_model_id(0);
-  b->body_index = 0;
+  b->set_body_index(0);
   bodies.push_back(std::move(b));
 }
 
@@ -112,7 +112,7 @@ void RigidBodyTree::SortTree() {
 
   // Reasign body_index to be the i-th entry in RBT::bodies
   for (size_t i = 0; i < bodies.size(); i++) {
-    bodies[i]->body_index = static_cast<int>(i);
+    bodies[i]->set_body_index(static_cast<int>(i));
   }
 }
 
@@ -423,7 +423,7 @@ void RigidBodyTree::collisionDetectFromPoints(
     normal.col(i) = closest_points[i].normal;
     phi[i] = closest_points[i].distance;
     const DrakeCollision::Element* elementB = closest_points[i].elementB;
-    body_idx.push_back(elementB->get_body()->body_index);
+    body_idx.push_back(elementB->get_body()->get_body_index());
   }
 }
 
@@ -469,9 +469,9 @@ bool RigidBodyTree::collisionDetect(
     normal.col(i) = points[i].normal;
     phi[i] = points[i].distance;
     const DrakeCollision::Element* elementA = points[i].elementA;
-    bodyA_idx.push_back(elementA->get_body()->body_index);
+    bodyA_idx.push_back(elementA->get_body()->get_body_index());
     const DrakeCollision::Element* elementB = points[i].elementB;
-    bodyB_idx.push_back(elementB->get_body()->body_index);
+    bodyB_idx.push_back(elementB->get_body()->get_body_index());
   }
   return points_found;
 }
@@ -568,8 +568,8 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
     xB.col(i) = potential_collisions[i].ptB;
     normal.col(i) = potential_collisions[i].normal;
     phi[i] = potential_collisions[i].distance;
-    bodyA_idx.push_back(elementA->get_body()->body_index);
-    bodyB_idx.push_back(elementB->get_body()->body_index);
+    bodyA_idx.push_back(elementA->get_body()->get_body_index());
+    bodyB_idx.push_back(elementB->get_body()->get_body_index());
   }
 }
 
@@ -632,9 +632,9 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
     xB_in_world.col(i) = points[i].ptB;
 
     const DrakeCollision::Element* elementA = points[i].elementA;
-    bodyA_idx.push_back(elementA->get_body()->body_index);
+    bodyA_idx.push_back(elementA->get_body()->get_body_index());
     const DrakeCollision::Element* elementB = points[i].elementB;
-    bodyB_idx.push_back(elementB->get_body()->body_index);
+    bodyB_idx.push_back(elementB->get_body()->get_body_index());
   }
   return points_found;
 }
@@ -1016,7 +1016,7 @@ int RigidBodyTree::parseBodyOrFrameID(
       stream << "Got a frame ind greater than available!\n";
       throw std::runtime_error(stream.str());
     }
-    body_ind = frames[frame_ind]->body->body_index;
+    body_ind = frames[frame_ind]->body->get_body_index();
 
     if (Tframe) (*Tframe) = frames[frame_ind]->transform_to_body.cast<Scalar>();
   } else {
@@ -1034,7 +1034,7 @@ void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
                                        int body_idx) const {
   const RigidBody* current_body = bodies[body_idx].get();
   while (current_body->hasParent()) {
-    ancestor_bodies.push_back(current_body->get_parent()->body_index);
+    ancestor_bodies.push_back(current_body->get_parent()->get_body_index());
     current_body = current_body->get_parent();
   }
 }
@@ -1373,7 +1373,8 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
       auto J_transpose = element.motion_subspace_in_world.transpose();
       ret.middleRows(body.velocity_num_start, nv_joint).noalias() =
           J_transpose * joint_wrench;
-      auto parent_net_wrench = net_wrenches.col(body.get_parent()->body_index);
+      auto parent_net_wrench = net_wrenches.col(
+          body.get_parent()->get_body_index());
       parent_net_wrench += joint_wrench;
     }
   }
@@ -1768,7 +1769,7 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
         "body \"" +
         body_name + "\", model_id = " + std::to_string(model_id) + ".");
   }
-  return body->body_index;
+  return body->get_body_index();
 }
 
 int RigidBodyTree::findLinkId(const std::string& link_name,
@@ -1837,7 +1838,7 @@ int RigidBodyTree::findJointId(const std::string& joint_name, int robot) const {
   RigidBody* link = findJoint(joint_name, robot);
   if (link == nullptr)
     throw std::runtime_error("could not find joint id: " + joint_name);
-  return link->body_index;
+  return link->get_body_index();
 }
 
 std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
@@ -1964,7 +1965,7 @@ void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // This initialize call will make sure that all global and local indexes are
   // properly computed taking into account a RigidBodySystem could be part of a
   // larger RigidBodySystem (a system within a tree of systems).
-  body->body_index = static_cast<int>(bodies.size());
+  body->set_body_index(static_cast<int>(bodies.size()));
 
   // bodies will be sorted by SortTree by generation. Therefore bodies[0]
   // (world) will be at the top and subsequent generations of children will

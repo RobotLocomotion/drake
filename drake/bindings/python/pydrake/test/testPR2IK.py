@@ -19,7 +19,7 @@ robot.addFrame(
 assert robot.world().get_name() == "world"
 
 hand_frame_id = robot.findFrame("r_hand_frame").frame_index
-base_body_id = robot.FindBody('base_footprint').body_index
+base_body_id = robot.FindBody('base_footprint').get_body_index()
 
 constraints = [
                # These three constraints ensure that the base of the robot is

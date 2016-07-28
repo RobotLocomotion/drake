@@ -19,7 +19,6 @@ RigidBody::RigidBody()
       collision_filter_ignores(DrakeCollision::NONE_MASK) {
   position_num_start = 0;
   velocity_num_start = 0;
-  body_index = 0;
   mass = 0.0;
   com = Vector3d::Zero();
   I << drake::SquareTwistMatrix<double>::Zero();
@@ -56,6 +55,10 @@ void RigidBody::set_parent(RigidBody* parent) { parent_ = parent; }
 const RigidBody* RigidBody::get_parent() const { return parent_; }
 
 bool RigidBody::hasParent() const { return parent_ != nullptr; }
+
+void RigidBody::set_body_index(int body_index) { body_index_ = body_index; }
+
+int RigidBody::get_body_index() const { return body_index_; }
 
 void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element) {
   visual_elements.push_back(element);

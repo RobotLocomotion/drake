@@ -79,7 +79,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     // mexPrintf("constructModelmex: body %d\n", i);
     // END_DEBUG
     std::unique_ptr<RigidBody> b(new RigidBody());
-    b->body_index = i;
+    b->set_body_index(i);
 
     b->set_name(mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname")));
 
