@@ -19,11 +19,11 @@ std::shared_ptr<logging::logger>* onetime_create_log() {
   }
   return result;
 }
-} // anonymous
+}  // namespace
 
 logging::logger* log() {
   // The following line creates a static shared_ptr to the logger; this
-  // guarantees the underling logger object will not be dtor'ed.
+  // guarantees the underling logger object will not be freed.
   static const std::shared_ptr<logging::logger>* const g_logger =
       onetime_create_log();
   return g_logger->get();
@@ -34,7 +34,7 @@ logging::logger* log() {
 // A do-nothing logger instance.
 namespace {
 const logger g_logger;
-}  // anon namespace
+}  // namespace
 
 logging::logger* log() {
   return &g_logger;
