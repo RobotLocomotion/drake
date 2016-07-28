@@ -119,6 +119,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   /// @returns the external driving force to the system.
   double get_input_force(const MyContext& context) const {
     double external_force = 0;
+    DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
     if (system_is_forced_) {
       const systems::VectorInterface<double>* input =
           context.get_vector_input(0);
