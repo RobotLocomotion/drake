@@ -40,8 +40,9 @@ class DRAKERBM_EXPORT ModelElementId {
    *
    * @param[in] model_id A unique number for each model instance.
    */
-  ModelElementId(const std::string& instance_name, const std::string& model_name,
-            const std::string& element_name, int model_id);
+  ModelElementId(const std::string& instance_name,
+                 const std::string& model_name, const std::string& element_name,
+                 int model_id);
 
   /**
    * Returns a reference to the modeling element's instance name.
@@ -72,7 +73,7 @@ class DRAKERBM_EXPORT ModelElementId {
 };
 
 bool operator==(const ModelElementId& left_element,
-    const ModelElementId& right_element) {
+                const ModelElementId& right_element) {
   return left_element.get_instance_name() ==
              right_element.get_instance_name() &&
          left_element.get_model_name() == right_element.get_model_name() &&
@@ -81,7 +82,7 @@ bool operator==(const ModelElementId& left_element,
 }
 
 bool operator!=(const ModelElementId& left_element,
-    const ModelElementId& right_element) {
+                const ModelElementId& right_element) {
   return !(left_element == right_element);
 }
 

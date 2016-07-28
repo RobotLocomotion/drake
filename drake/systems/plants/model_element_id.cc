@@ -5,8 +5,8 @@ namespace systems {
 namespace plants {
 
 ModelElementId::ModelElementId(const std::string& instance_name,
-                     const std::string& model_name,
-                     const std::string& element_name, int model_id)
+                               const std::string& model_name,
+                               const std::string& element_name, int model_id)
     : instance_name_(instance_name),
       model_name_(model_name),
       element_name_(element_name),
@@ -21,7 +21,7 @@ const std::string& ModelElementId::get_model_name() const {
 }
 
 const std::string& ModelElementId::get_element_name() const {
-	return element_name_;
+  return element_name_;
 }
 
 int ModelElementId::get_model_id() const { return model_id_; }
