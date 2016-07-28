@@ -19,7 +19,6 @@ RigidBody::RigidBody()
       collision_filter_ignores(DrakeCollision::NONE_MASK) {
   position_num_start = 0;
   velocity_num_start = 0;
-  body_index_ = 0;
   mass = 0.0;
   com = Vector3d::Zero();
   I << drake::SquareTwistMatrix<double>::Zero();

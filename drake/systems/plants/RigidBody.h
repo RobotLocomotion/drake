@@ -254,5 +254,5 @@ class DRAKERBM_EXPORT RigidBody {
   RigidBody* parent_{nullptr};
 
   // The index of this rigid body in the rigid body tree.
-  int body_index_;
+  int body_index_{0};
 };

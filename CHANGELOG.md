@@ -24,7 +24,7 @@ Unreleased: changes on master, not yet released
 ### Changed
 
  - [#2923][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
- - [#2905][] Made `RigidBody::body_index` private. Re-named it to be `RigidBody::body_index_`. Added necessary accessors.
+ - [#2905][] Made `RigidBody::body_index` private. Added necessary accessors.
  - [#2904][] Made `RigidBody::parent` private. Re-named it to be `RigidBody::parent_`. Added necessary accessors.
  - [#2903][] Made `RigidBody::robotnum` private. Re-named it to be `RigidBody::model_id_`.
  - [#2902][] Made `RigidBody::model_name_` private. Re-named `RigidBody::model_name()` to be `RigidBody::get_model_name()`. Added `RigidBody::set_model_name()`.
