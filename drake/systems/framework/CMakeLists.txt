@@ -16,7 +16,8 @@ set(sources
   value.cc
   vector_interface.cc
   diagram.cc
-  primitives/adder.cc)
+  primitives/adder.cc
+  primitives/integrator.cc)
 
 # Headers that should be installed with Drake so that they
 # are available elsewhere via #include.
@@ -37,7 +38,8 @@ set(installed_headers
   value.h
   vector_interface.h
   diagram.h
-  primitives/adder.h)
+  primitives/adder.h
+  primitives/integrator.h)
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.
