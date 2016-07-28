@@ -102,7 +102,7 @@ class SpringMassSystemTest : public ::testing::Test {
 TEST_F(SpringMassSystemTest, Construction) {
   Initialize();
   // Asserts zero inputs for this case.
-  ASSERT_EQ(0, context_->get_num_input_ports());
+  EXPECT_EQ(0, context_->get_num_input_ports());
   EXPECT_EQ("test_system", system_->get_name());
   EXPECT_EQ(kSpring, system_->get_spring_constant());
   EXPECT_EQ(kMass, system_->get_mass());
