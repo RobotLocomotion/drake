@@ -910,12 +910,11 @@ bool RigidBodyTree::isBodyPartOfRobot(const RigidBody& body,
   return robotnum.find(body.get_model_id()) != robotnum.end();
 }
 
-double RigidBodyTree::getMass(const std::set<int>& robotnum) const {
+double RigidBodyTree::getMass(const std::set<int>& model_ids) const {
   double total_mass = 0.0;
-  for (size_t i = 0; i < bodies.size(); i++) {
-    RigidBody& body = *bodies[i];
-    if (isBodyPartOfRobot(body, robotnum)) {
-      total_mass += body.mass;
+  for (const auto& body : bodies) {
+    if (isBodyPartOfRobot(*body.get(), model_ids)) {
+      total_mass += body->mass;
     }
   }
   return total_mass;
