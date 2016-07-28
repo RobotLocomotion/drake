@@ -21,8 +21,7 @@ unique_ptr<Model> newModel() {
   return unique_ptr<Model>(new BulletModel());
 #else
   DRAKE_ABORT_UNLESS(!"DrakeCollision must be compiled with Bullet.");
-  // This return statement is actually never reached when
-  // BULLET_COLLISION is defined.
+  // This return statement is actually never reached.
   // It is placed here to avoid a compiler error on not having a return
   // statement.
   return unique_ptr<Model>();
