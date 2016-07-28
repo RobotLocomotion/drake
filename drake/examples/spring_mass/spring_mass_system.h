@@ -116,6 +116,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
     return get_state(context).get_velocity();
   }
 
+  /// @returns the external driving force to the system.
   double get_input_force(const MyContext& context) const {
     double external_force = 0;
     if (system_is_forced_) {
