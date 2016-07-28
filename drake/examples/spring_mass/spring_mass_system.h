@@ -86,7 +86,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
   SpringMassSystem(const std::string& name, double spring_constant_N_per_m,
-                   double mass_kg);
+                   double mass_kg, bool system_is_forced = false);
 
   using MyContext = systems::Context<double>;
   using MyContinuousState = systems::ContinuousState<double>;
@@ -108,6 +108,20 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   /// Gets the current velocity of the mass in the given Context.
   double get_velocity(const MyContext& context) const {
     return get_state(context).get_velocity();
+  }
+
+  double get_input_force(const MyContext& context) const {
+    double external_force = 0;
+    if (context.get_num_input_ports() == 1) {
+      const systems::VectorInterface<double> *input = context.get_vector_input(0);
+      // Add VectorInterface::component(int idx) on VectorInterface.
+      // refactor get_vector_input --> get_input_vector?
+      // So that the line below would simply read:
+      // external_force = context.get_input_vector(0).component(0)
+      // and becomes a one liner.
+      external_force = input->get_value().x();
+    }
+    return external_force;
   }
 
   /// Gets the current value of the conservative power integral in the given
@@ -240,6 +254,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   const std::string name_;
   const double spring_constant_N_per_m_;
   const double mass_kg_;
+  const bool system_is_forced_{false};
 };
 
 }  // namespace examples

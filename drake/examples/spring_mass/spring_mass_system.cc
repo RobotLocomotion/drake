@@ -67,10 +67,11 @@ SpringMassOutputVector* SpringMassOutputVector::DoClone() const {
 
 SpringMassSystem::SpringMassSystem(const std::string& name,
                                    double spring_constant_N_per_m,
-                                   double mass_kg)
+                                   double mass_kg, bool system_is_forced)
     : name_(name),
       spring_constant_N_per_m_(spring_constant_N_per_m),
-      mass_kg_(mass_kg) {}
+      mass_kg_(mass_kg),
+      system_is_forced_(system_is_forced) {}
 
 double SpringMassSystem::EvalSpringForce(const MyContext& context) const {
   const double k = spring_constant_N_per_m_,
@@ -115,6 +116,7 @@ std::unique_ptr<Context<double>> SpringMassSystem::CreateDefaultContext()
   context->get_mutable_state()->continuous_state.reset(
       new ContinuousState<double>(std::move(state), 1 /* size of q */,
                                   1 /* size of v */, 1 /* size of z */));
+  if (system_is_forced_) context->SetNumInputPorts(1);
   return context;
 }
 
@@ -160,10 +162,13 @@ void SpringMassSystem::EvalTimeDerivatives(
   // The derivative of position is velocity.
   derivative_vector->set_position(state.get_velocity());
 
+  double external_force = get_input_force(context);
+
   // By Newton's 2nd law, the derivative of velocity (acceleration) is f/m where
   // f is the force applied to the body by the spring, and m is the mass of the
   // body.
-  const double force_applied_to_body = EvalSpringForce(context);
+  const double force_applied_to_body = EvalSpringForce(context)
+      + external_force;
   derivative_vector->set_velocity(force_applied_to_body / mass_kg_);
 
   // We are integrating conservative power to get the work done by conservative
