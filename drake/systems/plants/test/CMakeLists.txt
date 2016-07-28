@@ -113,9 +113,9 @@ add_executable(urdf_parser_test urdf_parser_test.cc)
 target_link_libraries(urdf_parser_test drakeRBM ${GTEST_BOTH_LIBRARIES})
 add_test(NAME urdf_parser_test COMMAND urdf_parser_test)
 
-add_executable(element_id_test element_id_test.cc)
-target_link_libraries(element_id_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-add_test(NAME element_id_test COMMAND element_id_test)
+add_executable(model_element_id_test model_element_id_test.cc)
+target_link_libraries(model_element_id_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+add_test(NAME model_element_id_test COMMAND model_element_id_test)
 
 add_executable(rigid_body_test rigid_body_test.cc)
 target_link_libraries(rigid_body_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})

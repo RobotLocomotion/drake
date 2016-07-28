@@ -19,7 +19,7 @@ namespace plants {
  * body element within a `RigidBodySystem`. A unique match is only guaranteed
  * using the union of all member variables in this class.
  */
-class DRAKERBM_EXPORT ElementId {
+class DRAKERBM_EXPORT ModelElementId {
  public:
   /**
    * The constructor.
@@ -40,7 +40,7 @@ class DRAKERBM_EXPORT ElementId {
    *
    * @param[in] model_id A unique number for each model instance.
    */
-  ElementId(const std::string& instance_name, const std::string& model_name,
+  ModelElementId(const std::string& instance_name, const std::string& model_name,
             const std::string& element_name, int model_id);
 
   /**
@@ -71,7 +71,8 @@ class DRAKERBM_EXPORT ElementId {
   const int model_id_;
 };
 
-bool operator==(const ElementId& left_element, const ElementId& right_element) {
+bool operator==(const ModelElementId& left_element,
+    const ModelElementId& right_element) {
   return left_element.get_instance_name() ==
              right_element.get_instance_name() &&
          left_element.get_model_name() == right_element.get_model_name() &&
@@ -79,7 +80,8 @@ bool operator==(const ElementId& left_element, const ElementId& right_element) {
          left_element.get_model_id() == right_element.get_model_id();
 }
 
-bool operator!=(const ElementId& left_element, const ElementId& right_element) {
+bool operator!=(const ModelElementId& left_element,
+    const ModelElementId& right_element) {
   return !(left_element == right_element);
 }
 
