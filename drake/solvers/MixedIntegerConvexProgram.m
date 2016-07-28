@@ -38,6 +38,7 @@ classdef MixedIntegerConvexProgram
     % a symbolic objective term constructed in yalmip
     symbolic_objective = 0;
 
+    x_sol % The solution of all variables
   end
 
   properties (SetAccess = protected)
@@ -334,6 +335,7 @@ classdef MixedIntegerConvexProgram
     end
 
     function obj = extractResult(obj, x)
+      obj.x_sol = x;
       var_names = fieldnames(obj.vars);
       % Extract the solution
       for j = 1:length(var_names)
@@ -392,6 +394,72 @@ classdef MixedIntegerConvexProgram
       objval = double(objective);
       solvertime = diagnostics.solvertime;
       obj = obj.extractResult(double(obj.symbolic_vars));
+    end
+    
+    function [obj,solvertime,objval] = solveMosek(obj,params)
+      checkDependency('mosek');
+      prob = obj.getMosekModel();
+      params = applyDefaults(params, struct());
+      start_time = clock();
+      [r,res] = mosekopt('minimize',prob,params);
+      end_time = clock();
+      solvertime = etime(end_time,start_time);
+      if(isfield(prob,'ints') && ~isempty(prob.ints))
+        if(~strcmp(res.sol.int.prosta,'PRIMAL_FEASIBLE'))
+          error('Drake:MixedIntegerConvexProgram:INFEASIBLE','The mixed-integer problem is not feasible');
+        end
+        obj = obj.extractResult(res.sol.int.xx);
+        objval = res.sol.int.pobjval;
+      else
+        if(strcmp(res.sol.itr.prosta,'PRIMAL_INFEASIBLE'))
+          error('Drake:MixedIntegerConvexProgram:PrimalInfeasible','The probelm is primal infeasible');
+        elseif(strcmp(res.sol.itr.prosta,'DUAL_INFEASIBLE'))
+          error('Drake:MixedIntegerConvexProgram:DualInfeasible','The problem is dual infeasible');
+        elseif(strcmp(res.sol.itr.prosta,'PRIMAL_AND_DUAL_INFEASIBLE'))
+          error('Drake:MixedIntegerConvexProgram:PrimalDualInfeasible','The problem is primal and dual infeasible');
+        elseif(strcmp(res.sol.itr.prosta,'UNKNOWN'))
+          warning('Drake:MixedIntegerConvexProgram:Unknown','The problem solution is unknown');
+        end
+        obj = obj.extractResult(res.sol.itr.xx);
+        objval = res.sol.itr.pobjval;
+      end
+    end
+    
+    function prob = getMosekModel(obj)
+      prob.c = obj.c;
+      [prob.qosubi,prob.qosubj,prob.qoval] = find(2*obj.Q);
+      lower_idx = prob.qosubi>=prob.qosubj;
+      prob.qosubi = prob.qosubi(lower_idx);
+      prob.qosubj = prob.qosubj(lower_idx);
+      prob.qoval = prob.qoval(lower_idx);
+      prob.a = sparse([obj.A;obj.Aeq]);
+      prob.blc = [-inf(size(obj.b));obj.beq];
+      prob.buc = [obj.b;obj.beq];
+      var_names = fieldnames(obj.vars);
+      prob.blx = zeros(obj.nv,1);
+      prob.bux = zeros(obj.nv,1);
+      integer_idx = [];
+      prob.blx = -inf(obj.nv,1);
+      prob.bux = inf(obj.nv,1);
+      for j = 1:length(var_names)
+        name = var_names{j};
+        i = reshape(obj.vars.(name).i,[],1);
+        prob.blx(i) = obj.vars.(name).lb(:);
+        prob.bux(i) = obj.vars.(name).ub(:);
+        if(obj.vars.(name).type == 'B' || obj.vars.(name).type == 'I')
+          integer_idx = [integer_idx reshape(obj.vars.(name).i,1,[])];
+        end
+      end
+      if(~isempty(integer_idx))
+        prob.ints.sub = integer_idx;
+      end
+      if(~isempty(obj.cones))
+        [r,res] = mosekopt('symbcon');
+        prob.cones.type = res.symbcon.MSK_CT_QUAD*ones(1,length(obj.cones));
+        prob.cones.sub = vertcat(obj.cones.index)';
+        prob.cones.subptr = cumsum(cellfun(@(x) length(x),{obj.cones.index}));
+        prob.cones.subptr = [1 prob.cones.subptr(1:end-1)+1];
+      end
     end
   end
 end
