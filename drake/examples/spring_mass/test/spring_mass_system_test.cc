@@ -80,9 +80,8 @@ class SpringMassSystemTest : public ::testing::Test {
   // not connected to any other output port in the system.
   // Used to test standalone systems not part of a Diagram.
   static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
-  std::unique_ptr<BasicVector<double>> data) {
-    return std::unique_ptr<FreestandingInputPort<double>>(
-        new FreestandingInputPort<double>(std::move(data)));
+      std::unique_ptr<BasicVector<double>> data) {
+    return make_unique<FreestandingInputPort<double>>(std::move(data));
   }
 
  protected:

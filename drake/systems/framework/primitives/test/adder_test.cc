@@ -9,6 +9,8 @@
 
 #include "gtest/gtest.h"
 
+using std::make_unique;
+
 namespace drake {
 namespace systems {
 namespace {
@@ -25,8 +27,7 @@ class AdderTest : public ::testing::Test {
 
   static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
       std::unique_ptr<BasicVector<double>> data) {
-    return std::unique_ptr<FreestandingInputPort<double>>(
-        new FreestandingInputPort<double>(std::move(data)));
+    return make_unique<FreestandingInputPort<double>>(std::move(data));
   }
 
   std::unique_ptr<Adder<double>> adder_;
