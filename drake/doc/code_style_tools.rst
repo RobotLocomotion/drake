@@ -54,17 +54,13 @@ To run clang-format::
 cpplint
 -------
 
-Installation
-^^^^^^^^^^^^
-
-On Ubuntu::
-
-    sudo pip install cpplint
-
 Usage
 ^^^^^
 
-`cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_ is a tool for finding compliance violations. Here is the command::
+`cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_
+is a tool for finding compliance violations. Here is the command::
 
-    cpplint --filter="-legal/copyright" [file name]
+    drake-distro/drake/common/test/cpplint_wrapper.py
 
+By default, all files in Drake are checked using the default settings.
+Consult the program's `--help` for more detailed options.

@@ -229,7 +229,7 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                         " has a collision element without a geometry.");
   }
 
-  RigidBody::CollisionElement element(
+  RigidBodyCollisionElement element(
       transform_parent_to_model.inverse() * transform_to_model, body);
   // By default all collision elements added to the world from an SDF file are
   // flagged as static.
@@ -615,7 +615,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
     unique_ptr<DrakeJoint> joint_unique_ptr(joint);
     child->setJoint(move(joint_unique_ptr));
-    child->parent = parent;
+    child->set_parent(parent);
   }
 }
 

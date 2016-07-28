@@ -19,10 +19,8 @@ int main(int argc, char* argv[]) {
 
   // run kinematics with second derivatives 100 times
   Eigen::VectorXd q = model->getZeroConfiguration();
-  int i;
-
   if (argc >= 2 + model->number_of_positions()) {
-    for (i = 0; i < model->number_of_positions(); i++)
+    for (int i = 0; i < model->number_of_positions(); i++)
       sscanf(argv[2 + i], "%lf", &q(i));
   }
 

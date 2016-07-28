@@ -78,6 +78,19 @@ class DRAKERBM_EXPORT RigidBody {
    */
   const DrakeJoint& getJoint() const;
 
+  /**
+   * Sets the parent rigid body. This is the rigid body that is connected to
+   * this rigid body's joint.
+   *
+   * @param[in] parent A pointer to this rigid body's parent rigid body.
+   */
+  void set_parent(RigidBody* parent);
+
+  /**
+   * Returns a const pointer to this rigid body's parent rigid body.
+   */
+  const RigidBody* get_parent() const;
+
   bool hasParent() const;
 
   /**
@@ -87,7 +100,9 @@ class DRAKERBM_EXPORT RigidBody {
    * @return true if the supplied rigid body parameter other is the parent of
    * this rigid body.
    */
-  bool has_as_parent(const RigidBody& other) const { return parent == &other; }
+  bool has_as_parent(const RigidBody& other) const {
+    return parent_ == &other;
+  }
 
   void addVisualElement(const DrakeShapes::VisualElement& elements);
 
@@ -156,10 +171,6 @@ class DRAKERBM_EXPORT RigidBody {
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
 
-  // TODO(amcastro-tri): Make it private and change to parent_.
-  /// The rigid body that's connected to this rigid body's joint.
-  RigidBody* parent;
-
   /// The index of this rigid body in the rigid body tree.
   int body_index;
 
@@ -191,29 +202,6 @@ class DRAKERBM_EXPORT RigidBody {
 
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
-  // TODO(amcastro-tri): move to a better place (h + cc files).
-  class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element {
-   public:
-    CollisionElement(const CollisionElement& other);
-    // TODO(amcastro-tri): The RigidBody should be const?
-    // TODO(amcastro-tri): It should not be possible to construct a
-    // CollisionElement without specifying a geometry. Remove this constructor.
-    CollisionElement(const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    CollisionElement(const DrakeShapes::Geometry& geometry,
-                     const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    virtual ~CollisionElement() {}
-
-    CollisionElement* clone() const override;
-
-    bool CollidesWith(const DrakeCollision::Element* other) const override;
-
-#ifndef SWIG
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
-  };
-
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -228,4 +216,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   // A unique ID for each model. It uses 0-index, starts from 0.
   int model_id_{0};
+
+  // The rigid body that's connected to this rigid body's joint.
+  RigidBody* parent_{nullptr};
 };

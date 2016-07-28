@@ -439,7 +439,6 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     return mat;
   }
 
- private:
   //@{
   /** Variable name/ID conversion facility. */
   static bool isValidVariableName(const std::string name);
@@ -450,6 +449,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   static std::string idToVariableName(const VarType id);
   //@}
 
+ private:
   //@{
   /// Local version of pow to deal with autodiff.
   /**

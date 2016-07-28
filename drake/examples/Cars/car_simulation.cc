@@ -93,7 +93,7 @@ void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
   world.addVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   rigid_body_tree->addCollisionElement(
-      RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
+      RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
       "terrain");
   rigid_body_tree->updateStaticCollisionElements();
 }
@@ -260,7 +260,7 @@ CreateSimpleCarVisualizationAdapter() {
 
 
 SimulationOptions GetCarSimulationDefaultOptions() {
-  SimulationOptions result = Drake::default_simulation_options;
+  SimulationOptions result;
   result.initial_step_size = 5e-3;
   result.timeout_seconds = std::numeric_limits<double>::infinity();
   return result;
