@@ -37,7 +37,7 @@ const logger g_logger;
 }  // anon namespace
 
 logging::logger* log() {
-  return std::shared_ptr<logging::logger>(&g_logger);
+  return &g_logger;
 }
 
 #endif  // HAVE_SPDLOG
