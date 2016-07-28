@@ -236,7 +236,7 @@ TEST_F(SpringMassSystemTest, DyanmnicsWithExternalForce) {
   EXPECT_NEAR(0.1, derivatives_->get_position(),
               Eigen::NumTraits<double>::epsilon());
   // The derivative of velocity is force over mass.
-  EXPECT_NEAR((-kSpring * 0.1 + kExternalForce )/ kMass,
+  EXPECT_NEAR((-kSpring * 0.1 + kExternalForce)/ kMass,
               derivatives_->get_velocity(),
               Eigen::NumTraits<double>::epsilon());
 }

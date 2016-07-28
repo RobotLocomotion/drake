@@ -112,9 +112,11 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
 
   double get_input_force(const MyContext& context) const {
     double external_force = 0;
-    if (context.get_num_input_ports() == 1) {
-      const systems::VectorInterface<double> *input = context.get_vector_input(0);
-      // Add VectorInterface::component(int idx) on VectorInterface.
+    if (system_is_forced_) {
+      const systems::VectorInterface<double>* input =
+          context.get_vector_input(0);
+      // TODO(amcastro-tri): Add VectorInterface::component(int idx) on
+      // VectorInterface.
       // refactor get_vector_input --> get_input_vector?
       // So that the line below would simply read:
       // external_force = context.get_input_vector(0).component(0)
