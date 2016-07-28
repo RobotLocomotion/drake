@@ -751,11 +751,13 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * http://www.coin-or.org/Ipopt/documentation/node40.html
    *
    * "Mosek" -- Accepts two parameters:
-   * -- "maxormin" -- maximize or minimize current problem using
-   *  either "max" or "min"
-   * -- "problemtype" -- currently only accepts "linear" or "quadratic". Use the
-   *  appropriate one.
-   * TODO: Calling OptimizationProblem::Solve will not invoke mosek at this time.
+   * - "maxormin"
+   *   + Maximize or minimize current problem using either "max" or "min".
+   * - "problemtype"
+   *   + Currently only accepts "linear" or "quadratic". Use the appropriate
+   *     one.
+   * TODO: Calling OptimizationProblem::Solve will not invoke mosek at this
+   * time.
    */
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option, double option_value) {
