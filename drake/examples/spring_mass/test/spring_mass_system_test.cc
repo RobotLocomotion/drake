@@ -101,6 +101,8 @@ class SpringMassSystemTest : public ::testing::Test {
 
 TEST_F(SpringMassSystemTest, Construction) {
   Initialize();
+  // Asserts zero inputs for this case.
+  ASSERT_EQ(0, context_->get_num_input_ports());
   EXPECT_EQ("test_system", system_->get_name());
   EXPECT_EQ(kSpring, system_->get_spring_constant());
   EXPECT_EQ(kMass, system_->get_mass());
@@ -213,6 +215,7 @@ TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
 TEST_F(SpringMassSystemTest, DyanmnicsWithExternalForce) {
   // Initializes a spring mass system with an input port for an external force.
   Initialize(true);
+  // Asserts exactly one input for this case expecting an external force.
   ASSERT_EQ(1, context_->get_num_input_ports());
 
   // Creates a vector holding the data entry to the supplied input force.
@@ -235,7 +238,7 @@ TEST_F(SpringMassSystemTest, DyanmnicsWithExternalForce) {
   EXPECT_NEAR(0.1, derivatives_->get_position(),
               Eigen::NumTraits<double>::epsilon());
   // The derivative of velocity is force over mass.
-  EXPECT_NEAR((-kSpring * 0.1 + kExternalForce)/ kMass,
+  EXPECT_NEAR((-kSpring * 0.1 + kExternalForce) / kMass,
               derivatives_->get_velocity(),
               Eigen::NumTraits<double>::epsilon());
 }
