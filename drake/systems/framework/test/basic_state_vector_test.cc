@@ -86,6 +86,14 @@ TEST_F(BasicStateVectorTest, SizeBasedConstructor) {
   EXPECT_EQ(42, state_vector_->GetAtIndex(4));
 }
 
+TEST_F(BasicStateVectorTest, DataBasedConstructor) {
+  state_vector_.reset(new BasicStateVector<int>({1, 2, 3}));
+  EXPECT_EQ(3, state_vector_->size());
+  EXPECT_EQ(1, state_vector_->GetAtIndex(0));
+  EXPECT_EQ(2, state_vector_->GetAtIndex(1));
+  EXPECT_EQ(3, state_vector_->GetAtIndex(2));
+}
+
 // Tests that the BasicStateVector can be added to an Eigen vector.
 TEST_F(BasicStateVectorTest, ScaleAndAddToVector) {
   Eigen::Vector2i target;

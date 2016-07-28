@@ -13,16 +13,12 @@ namespace drake {
 namespace systems {
 namespace {
 
-const int kLength = 4;
 const int kSubVectorLength = 2;
 
 class StateSubvectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::unique_ptr<VectorInterface<int>> vec;
-    vec.reset(new BasicVector<int>(kLength));
-    vec->get_mutable_value() << 1, 2, 3, 4;
-    state_vector_.reset(new BasicStateVector<int>(std::move(vec)));
+    state_vector_.reset(new BasicStateVector<int>({1, 2, 3, 4}));
   }
 
   std::unique_ptr<StateVector<int>> state_vector_;

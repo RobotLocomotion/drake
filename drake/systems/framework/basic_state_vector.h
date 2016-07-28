@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_state_vector.h"
@@ -29,6 +30,15 @@ class BasicStateVector : public LeafStateVector<T> {
   explicit BasicStateVector(int size)
       : BasicStateVector(
             std::unique_ptr<VectorInterface<T>>(new BasicVector<T>(size))) {}
+
+  /// Constructs a BasicStateVector that owns a generic BasicVector with the
+  /// specified @p data.
+  explicit BasicStateVector(const std::vector<T>& data)
+      : BasicStateVector(data.size()) {
+    for (size_t i = 0; i < data.size(); ++i) {
+      SetAtIndex(i, data[i]);
+    }
+  }
 
   /// Constructs a BasicStateVector that owns an arbitrary @p vector, which
   /// must not be nullptr.

@@ -9,6 +9,7 @@
 
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/state.h"
+#include "drake/systems/framework/state_supervector.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
 
@@ -49,7 +50,7 @@ class DiagramContext : public ContextBase<T> {
   /// Declares that a particular input port of a particular subsystem is an
   /// input to the entire Diagram that allocates this Context.
   ///
-  /// User code should not call this method. It is for used during Diagram
+  /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
   void ExportInput(const PortIdentifier& id) {
     const SystemIndex system_index = id.first;
@@ -89,6 +90,40 @@ class DiagramContext : public ContextBase<T> {
 
     // Remember the graph structure. We need it in DoClone().
     dependency_graph_[dest] = src;
+  }
+
+  /// Generates the state vector for the entire diagram by wrapping the states
+  /// of all the constituent diagrams.
+  ///
+  /// User code should not call this method. It is for use during Diagram
+  /// context allocation only.
+  void MakeState() {
+    // Generate the continuous state supervectors.
+    std::vector<StateVector<T>*> continuous_states;
+    std::vector<StateVector<T>*> continuous_qs;
+    std::vector<StateVector<T>*> continuous_vs;
+    std::vector<StateVector<T>*> continuous_zs;
+
+    for (auto& it : contexts_) {
+      ContinuousState<T>* xc =
+          it.second->get_mutable_state()->continuous_state.get();
+
+      // Skip subsystems that have no continuous state.
+      if (xc == nullptr) {
+        continue;
+      }
+
+      continuous_states.push_back(xc->get_mutable_state());
+      continuous_qs.push_back(xc->get_mutable_generalized_position());
+      continuous_vs.push_back(xc->get_mutable_generalized_velocity());
+      continuous_zs.push_back(xc->get_mutable_misc_continuous_state());
+    }
+
+    state_.continuous_state = std::make_unique<ContinuousState<T>>(
+        std::make_unique<StateSupervector<T>>(continuous_states),
+        std::make_unique<StateSupervector<T>>(continuous_qs),
+        std::make_unique<StateSupervector<T>>(continuous_vs),
+        std::make_unique<StateSupervector<T>>(continuous_zs));
   }
 
   /// Returns the output structure for a given constituent system @p sys, or
@@ -158,6 +193,9 @@ class DiagramContext : public ContextBase<T> {
       clone->outputs_[suboutput.first] = suboutput.second->Clone();
     }
 
+    // Build a superstate over the subsystem contexts.
+    clone->MakeState();
+
     // Clone the internal graph structure. After this is done, the clone will
     // still have FreestandingInputPorts at the inputs to the Diagram itself,
     // but all of the intermediate nodes will have DependentInputPorts.
@@ -175,7 +213,6 @@ class DiagramContext : public ContextBase<T> {
     // Make deep copies of everything else using the default copy constructors.
     *clone->get_mutable_step_info() = this->get_step_info();
 
-    // TODO(david-german-tri): Clone the superstate.
     return clone;
   }
 

@@ -17,6 +17,11 @@ target_link_libraries(state_subvector_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
 add_test(NAME state_subvector_test COMMAND state_subvector_test)
 
+add_executable(state_supervector_test state_supervector_test.cc)
+target_link_libraries(state_supervector_test drakeSystemFramework
+                      ${GTEST_BOTH_LIBRARIES})
+add_test(NAME state_supervector_test COMMAND state_supervector_test)
+
 add_executable(state_test state_test.cc)
 target_link_libraries(state_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})

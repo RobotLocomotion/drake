@@ -62,20 +62,6 @@ class StateSubvector : public StateVector<T> {
     vector_->SetAtIndex(first_element_ + index, value);
   }
 
-  void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) override {
-    for (int i = 0; i < value.rows(); ++i) {
-      SetAtIndex(i, value[i]);
-    }
-  }
-
-  VectorX<T> CopyToVector() const override {
-    VectorX<T> vec(size());
-    for (int i = 0; i < size(); ++i) {
-      vec[i] = GetAtIndex(i);
-    }
-    return vec;
-  }
-
  private:
   // StateSubvector objects are neither copyable nor moveable.
   StateSubvector(const StateSubvector& other) = delete;
