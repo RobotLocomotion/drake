@@ -49,6 +49,10 @@ const double kMass = 2.0;      // kg
 
 class SpringMassSystemTest : public ::testing::Test {
  public:
+  void SetUp() override {
+    Initialize(false);
+  }
+
   void Initialize(bool with_input_force = false) {
     // Construct the system I/O objects.
     system_.reset(new SpringMassSystem("test_system", kSpring, kMass,
@@ -100,7 +104,6 @@ class SpringMassSystemTest : public ::testing::Test {
 };
 
 TEST_F(SpringMassSystemTest, Construction) {
-  Initialize();
   // Asserts zero inputs for this case.
   EXPECT_EQ(0, context_->get_num_input_ports());
   EXPECT_EQ("test_system", system_->get_name());
@@ -109,7 +112,6 @@ TEST_F(SpringMassSystemTest, Construction) {
 }
 
 TEST_F(SpringMassSystemTest, CloneState) {
-  Initialize();
   InitializeState(1.0, 2.0);
   state_->set_conservative_work(3.0);
   std::unique_ptr<LeafStateVector<double>> clone = state_->Clone();
@@ -122,7 +124,6 @@ TEST_F(SpringMassSystemTest, CloneState) {
 }
 
 TEST_F(SpringMassSystemTest, CloneOutput) {
-  Initialize();
   InitializeState(1.0, 2.0);
   system_->EvalOutput(*context_, system_output_.get());
   std::unique_ptr<VectorInterface<double>> clone = output_->Clone();
@@ -135,7 +136,6 @@ TEST_F(SpringMassSystemTest, CloneOutput) {
 
 // Tests that state is passed through to the output.
 TEST_F(SpringMassSystemTest, Output) {
-  Initialize();
   // Displacement 100cm, vel 250cm/s (.25 is exact in binary).
   InitializeState(0.1, 0.25);
   system_->EvalOutput(*context_, system_output_.get());
@@ -153,7 +153,6 @@ TEST_F(SpringMassSystemTest, Output) {
 
 // Tests that second-order structure is exposed in the state.
 TEST_F(SpringMassSystemTest, SecondOrderStructure) {
-  Initialize();
   InitializeState(1.2, 3.4);  // Displacement 1.2m, velocity 3.4m/sec.
   // TODO(amcastro-tri): add method Context::get_mutable_continuous_state();
   // To minimize user's typing.
@@ -171,7 +170,6 @@ TEST_F(SpringMassSystemTest, SecondOrderStructure) {
 // Tests that second-order structure can be processed in
 // MapVelocityToConfigurationDerivative.
 TEST_F(SpringMassSystemTest, MapVelocityToConfigurationDerivative) {
-  Initialize();
   InitializeState(1.2, 3.4);  // Displacement 1.2m, velocity 3.4m/sec.
   ContinuousState<double>* continuous_state =
       context_->get_mutable_state()->continuous_state.get();
@@ -189,7 +187,6 @@ TEST_F(SpringMassSystemTest, MapVelocityToConfigurationDerivative) {
 }
 
 TEST_F(SpringMassSystemTest, ForcesPositiveDisplacement) {
-  Initialize();
   InitializeState(0.1, 0.1);  // Displacement 0.1m, velocity 0.1m/sec.
   system_->EvalTimeDerivatives(*context_, system_derivatives_.get());
 
@@ -201,7 +198,6 @@ TEST_F(SpringMassSystemTest, ForcesPositiveDisplacement) {
 }
 
 TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
-  Initialize();
   InitializeState(-0.1, 0.2);  // Displacement -0.1m, velocity 0.2m/sec.
   system_->EvalTimeDerivatives(*context_, system_derivatives_.get());
 
@@ -244,7 +240,6 @@ TEST_F(SpringMassSystemTest, DyanmnicsWithExternalForce) {
 }
 
 TEST_F(SpringMassSystemTest, ForceEnergyAndPower) {
-  Initialize();
   InitializeState(1, 2);
   const double m = system_->get_mass();
   const double k = system_->get_spring_constant();
@@ -421,7 +416,6 @@ expected direction for each integration method.
 The primary goal of this test is to exercise the System 2.0 API by using it
 for solvers that have different API demands. */
 TEST_F(SpringMassSystemTest, Integrate) {
-  Initialize();
   const double h = 0.001, kTfinal = 9, kNumIntegrators = 3;
 
   // Resource indices for each of the three integrators.
@@ -492,7 +486,6 @@ losses from the numerical method, because those are not conservative changes.
 The semi-explicit Euler method we used above is the only method we can use for
 this test (unless we run with very small time steps). */
 TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
-  Initialize();
   const double h = 0.00001, kTfinal = 5;
 
   // Resources.
