@@ -15,27 +15,27 @@ extern "C" {
 #include "drake/solvers/Optimization.h"
 #include "drake/solvers/MathematicalProgram.h"
 
-/**Definitions and program flow taken from
-http://docs.mosek.com/7.1/capi/Linear_optimization.html
+/** Definitions and program flow taken from
+`http://docs.mosek.com/7.1/capi/Linear_optimization.html`_
 
 For further definition of terms, see
-http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
+`http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html`_
 */
 namespace drake {
 namespace solvers {
 
-/** MosekWrapper solves a linear program when given a correctly formatted program.
- *  Specifically, the program options:
- *  -- "maxormin" -- must be set to "max" or "min"
- *  -- "problemtype" -- must be set to "linear" or "quadratic"
+/**
+ * This class allows the creation and solution of a linear programming
+ * problem using the mosek solver.
+ *
+ * MosekLP solves a linear program when given a correctly formatted program.
+ * Specifically, the program options:
+ *  * "maxormin" -- must be set to "max" or "min"
+ *  * "problemtype" -- must be set to "linear" or "quadratic"
  *
  *  It is created by a MosekSolver object.
  */
 class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
-  /** MosekWrapper
-   *  @brief this class allows the creation and solution of a linear programming
-   *  problem using the mosek solver.
-   */
  public:
   /** Create a mosek linear programming environment using a constraint matrix
   * Takes the number of variables and constraints, the linear eqn to
@@ -62,65 +62,54 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
       MSK_deleteenv(&env_);
   }
 
-
-    /** Solve()
-   * @brief optimizes variables in given linear constraints, works with either
+  /** Optimizes variables in given linear constraints, works with either
    * of the two previous object declarations.
-   * */
+   */
   static SolutionResult Solve(OptimizationProblem &prog);
 
-  std::vector<double>  GetSolution() const { return solutions_; }
+  std::vector<double> GetSolution() const { return solutions_; }
 
   Eigen::VectorXd GetEigenVectorSolutions() const;
 
  private:
-  /**The following names are consistent with the example programs given by
-   *http://docs.mosek.com/7.1/capi/Linear_optimization.html
-   *and by
-   *http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
-   *to ensure ease of translation and understanding.
+  /** The following names are consistent with the example programs given by
+   * http://docs.mosek.com/7.1/capi/Linear_optimization.html
+   * and by
+   * http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
+   * to ensure ease of translation and understanding.
    */
 
-   /**AddLinearConstraintMatrix()
-   *@brief adds linear constraints to mosek environment
-   */
+   /** Adds linear constraints to mosek environment. */
   void AddLinearConstraintMatrix(const Eigen::MatrixXd& cons_);
 
-  /**addLinearConstraintSparseColumnMatrix()
-  *@brief adds linear constraints in sparse column matrix form
-  *just uses Eigen's sparse matrix library to implement expected format
-  */
+  /** Adds linear constraints in sparse column matrix form.
+   * Just uses Eigen's sparse matrix library to implement expected format.
+   */
   void AddLinearConstraintSparseColumnMatrix(
     const Eigen::SparseMatrix<double>& sparsecons_);
 
-  /**AddLinearConstraintBounds()
-  *@brief bounds constraints, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
-  *for details on how to set mosek_bounds_
-  */
+  /** Bounds constraints, see:
+   * `http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html`_
+   * for details on how to set mosek_bounds_
+   */
   void AddLinearConstraintBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
       const std::vector<double>& upper_bounds,
       const std::vector<double>& lower_bounds);
 
-  /**AddQuadraticConstraintMatrix
-  * @brief adds a single quadratic matrix to mosek constraint.
-  */
+  /** Add a single quadratic matrix to a mosek constraint. */
   void AddQuadraticConstraintMatrix(const Eigen::MatrixXd& cons);
 
-  /**AddQuadraticConstraintMatrix
-  * @brief adds a single quadratic matrix to mosek objective.
-  */
+  /** Adds a single quadratic matrix to a mosek objective. */
   void AddQuadraticObjective(const Eigen::MatrixXd& obj);
 
-  /**AddVariableBounds()
-   * @brief bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
+  /** Bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
    * for details on how to set mosek_bounds_
    */
   void AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds,
                          const std::vector<double>& upper_bounds,
                          const std::vector<double>& lower_bounds);
 
-  /**FindMosekBounds()
-   * Given upper and lower bounds for a variable or constraint, finds the
+  /** Given upper and lower bounds for a variable or constraint, finds the
    * equivalent Mosek bound keys.
    */
   static std::vector<MSKboundkeye> FindMosekBounds(
@@ -131,11 +120,11 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
                               const std::string& ptype);
 
   MSKint32t numvar_, numcon_;
-  MSKenv_t env_;       // Internal environment, used to check if problem formed
-                      // correctly
-  MSKtask_t task_;     // internal definition of task
-  MSKrescodee r_;      // used for validity checking
-  std::vector<double> solutions_;  // Contains the solutions of the system
+  MSKenv_t env_;       //< Internal environment, used to check if the problem
+                       // is well-formed.
+  MSKtask_t task_;     //< internal definition of task
+  MSKrescodee r_;      //< used for validity checking
+  std::vector<double> solutions_;  //< Contains the solutions of the system
 };
 
 }  // namespace solvers
