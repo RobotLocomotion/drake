@@ -85,6 +85,12 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
  public:
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
+  /// @param[in] name The name of the system.
+  /// @param[in] spring_constant_N_per_m The spring constant in N/m.
+  /// @param[in] mass_Kg The actual value in Kg of the mass attached to the
+  /// spring.
+  /// @param[in] system_is_forced If `true`, the system has an input port for an
+  /// external force. If `false`, the system has no inputs.
   SpringMassSystem(const std::string& name, double spring_constant_N_per_m,
                    double mass_kg, bool system_is_forced = false);
 
