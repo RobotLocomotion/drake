@@ -247,7 +247,7 @@ class TrigPoly {
    * error.
    */
   virtual TrigPoly<CoefficientType> EvaluatePartial(
-          const std::map<VarType, CoefficientType> &var_values) const {
+      const std::map<VarType, CoefficientType> &var_values) const {
     std::map<VarType, CoefficientType> var_values_with_sincos = var_values;
     for (const auto& sin_cos_item : sin_cos_map_) {
       DRAKE_ASSERT(!var_values.count(sin_cos_item.second.s));

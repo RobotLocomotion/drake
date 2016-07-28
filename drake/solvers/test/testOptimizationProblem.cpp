@@ -151,7 +151,7 @@ GTEST_TEST(testOptimizationProblem, trivialLinearSystem) {
   CheckSolverType(prog, "Linear System Solver");
 
   // Now modify the original constraint by its handle
-          con->UpdateConstraint(3 * Matrix4d::Identity(), b);
+  con->UpdateConstraint(3 * Matrix4d::Identity(), b);
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
@@ -481,9 +481,9 @@ GTEST_TEST(testOptimizationProblem, sixHumpCamel) {
   RunNonlinearProgram(prog, [&]() {
     // check (numerically) if it is a local minimum
     VectorXd ystar, y;
-      cost->Eval(x.value(), ystar);
+    cost->Eval(x.value(), ystar);
     for (int i = 0; i < 10; i++) {
-        cost->Eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
+      cost->Eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
       if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
     }
   });
@@ -605,11 +605,11 @@ GTEST_TEST(testOptimizationProblem, simpleLCPConstraintEval) {
 
   LinearComplementarityConstraint c(M, q);
   Eigen::VectorXd x;
-          c.Eval(Eigen::Vector2d(1, 1), x);
+  c.Eval(Eigen::Vector2d(1, 1), x);
 
   EXPECT_TRUE(
       CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
-          c.Eval(Eigen::Vector2d(1, 2), x);
+  c.Eval(Eigen::Vector2d(1, 2), x);
 
   EXPECT_TRUE(
       CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
@@ -679,7 +679,7 @@ GTEST_TEST(testOptimizationProblem, linearPolynomialConstraint) {
   static const double kEpsilon = 1e-7;
   const auto x_var = problem.AddContinuousVariables(1);
   const std::vector<Polynomiald::VarType> var_mapping = {
-          x.GetSimpleVariable()};
+    x.GetSimpleVariable()};
   std::shared_ptr<Constraint> resulting_constraint =
       problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                       Vector1d::Constant(2),
@@ -714,7 +714,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
-            x.GetSimpleVariable()};
+      x.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                     Vector1d::Constant(2),
                                     Vector1d::Constant(2));
@@ -732,7 +732,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
-            x.GetSimpleVariable()};
+      x.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
@@ -750,7 +750,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     const auto xy_var = problem.AddContinuousVariables(2);
     const std::vector<Polynomiald::VarType> var_mapping = {
-            x.GetSimpleVariable(), y.GetSimpleVariable()};
+      x.GetSimpleVariable(), y.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
@@ -774,7 +774,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const auto x_var = problem.AddContinuousVariables(1);
     problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
     const std::vector<Polynomiald::VarType> var_mapping = {
-            x.GetSimpleVariable()};
+      x.GetSimpleVariable()};
     VectorXPoly polynomials_vec(2, 1);
     polynomials_vec << poly, x;
     problem.AddPolynomialConstraint(polynomials_vec, var_mapping,

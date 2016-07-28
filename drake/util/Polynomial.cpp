@@ -9,7 +9,7 @@ using namespace Eigen;
 
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::Monomial::HasSameExponents(
-        const Monomial &other) const {
+    const Monomial &other) const {
   if (terms.size() != other.terms.size()) return false;
 
   for (typename vector<Term>::const_iterator iter = terms.begin();
@@ -212,7 +212,7 @@ Polynomial<CoefficientType>::GetVariables() const {
 
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::EvaluatePartial(
-        const std::map<VarType, CoefficientType> &var_values) const {
+    const std::map<VarType, CoefficientType> &var_values) const {
   std::vector<Monomial> new_monomials;
   for (const Monomial& monomial : monomials_) {
     CoefficientType new_coefficient = monomial.coefficient;
@@ -244,7 +244,7 @@ void Polynomial<CoefficientType>::Subs(const VarType &orig,
 
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::Derivative(
-        unsigned int derivative_order) const {
+    unsigned int derivative_order) const {
   if (!is_univariate_)
     throw runtime_error(
         "getCoefficients is only defined for univariate polynomials");
@@ -271,7 +271,7 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::Derivative(
 
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::Integral(
-        const CoefficientType &integration_constant) const {
+    const CoefficientType &integration_constant) const {
   if (!is_univariate_)
     throw runtime_error(
         "getCoefficients is only defined for univariate polynomials");

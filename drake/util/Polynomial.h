@@ -183,7 +183,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    */
   template <typename T>
   typename Product<CoefficientType, T>::type EvaluateUnivariate(
-          const T &x) const {
+      const T &x) const {
     typedef typename Product<CoefficientType, T>::type ProductType;
 
     if (!is_univariate_)
@@ -197,8 +197,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
         value += iter->coefficient;
       else
         value += iter->coefficient *
-                Pow((ProductType) x,
-                    (PowerType) iter->terms[0].power);
+                  Pow((ProductType) x,
+                      (PowerType) iter->terms[0].power);
     }
     return value;
   }
@@ -215,7 +215,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    */
   template <typename T>
   typename Product<CoefficientType, T>::type EvaluateMultivariate(
-          const std::map<VarType, T> &var_values) const {
+      const std::map<VarType, T> &var_values) const {
     typedef typename std::remove_const<
       typename Product<CoefficientType, T>::type>::type ProductType;
     ProductType value = 0;
@@ -243,7 +243,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * TaylorVarXd correspond to.
    */
   Drake::TaylorVarXd EvaluateMultivariate(
-          const std::map<VarType, Drake::TaylorVarXd> &var_values) const {
+      const std::map<VarType, Drake::TaylorVarXd> &var_values) const {
     Drake::TaylorVarXd value(0);
     for (const Monomial& monomial : monomials_) {
       Drake::TaylorVarXd monomial_value(monomial.coefficient);
@@ -266,7 +266,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * replaced with its value and constants appropriately combined.
    */
   Polynomial EvaluatePartial(
-          const std::map<VarType, CoefficientType> &var_values) const;
+      const std::map<VarType, CoefficientType> &var_values) const;
 
   /// Replaces all instances of variable orig with replacement.
   void Subs(const VarType &orig, const VarType &replacement);
@@ -460,8 +460,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   using enable_if_t = typename std::enable_if<B, T>::type;
   template <typename Base>
   static Base Pow(
-          const enable_if_t<std::is_arithmetic<Base>::value, Base> &base,
-          const PowerType &exponent) {
+      const enable_if_t<std::is_arithmetic<Base>::value, Base> &base,
+      const PowerType &exponent) {
     return std::pow(base, exponent);
   }
 

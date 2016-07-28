@@ -28,7 +28,7 @@ void testIntegralAndDerivative() {
   Polynomial<CoefficientType> third_derivative = poly.Derivative(3);
 
   Polynomial<CoefficientType> third_derivative_check =
-          poly.Derivative().Derivative().Derivative();
+      poly.Derivative().Derivative().Derivative();
 
   EXPECT_TRUE(CompareMatrices(third_derivative.GetCoefficients(),
                               third_derivative_check.GetCoefficients(), 1e-14,
@@ -130,7 +130,7 @@ void testEvalType() {
   valuecheck(typeid(decltype(valueIntInput)) == double_type, true);
 
   auto valueComplexInput =
-          poly.EvaluateUnivariate(std::complex<double>(1.0, 2.0));
+      poly.EvaluateUnivariate(std::complex<double>(1.0, 2.0));
   valuecheck(
       typeid(decltype(valueComplexInput)) == typeid(std::complex<double>),
       true);
@@ -353,24 +353,24 @@ GTEST_TEST(PolynomialTest, EvaluatePartial) {
   // same answer.
   const double expected_result = dut.EvaluateMultivariate(eval_point_xy);
   EXPECT_EQ(
-          dut.EvaluatePartial(eval_point_null).EvaluateMultivariate(eval_point_xy),
+      dut.EvaluatePartial(eval_point_null).EvaluateMultivariate(eval_point_xy),
       expected_result);
   EXPECT_EQ(
-          dut.EvaluatePartial(eval_point_xy).EvaluateMultivariate(eval_point_null),
+      dut.EvaluatePartial(eval_point_xy).EvaluateMultivariate(eval_point_null),
       expected_result);
   EXPECT_EQ(
-          dut.EvaluatePartial(eval_point_x).EvaluateMultivariate(eval_point_y),
+      dut.EvaluatePartial(eval_point_x).EvaluateMultivariate(eval_point_y),
       expected_result);
   EXPECT_EQ(
-          dut.EvaluatePartial(eval_point_y).EvaluateMultivariate(eval_point_x),
+      dut.EvaluatePartial(eval_point_y).EvaluateMultivariate(eval_point_x),
       expected_result);
 
   // Test that zeroing out one term gives a sensible result.
   EXPECT_EQ(dut.EvaluatePartial(
-          std::map<Polynomiald::VarType, double>{{x.GetSimpleVariable(), 0}}),
+      std::map<Polynomiald::VarType, double>{{x.GetSimpleVariable(), 0}}),
             (2 * y) + 1);
   EXPECT_EQ(dut.EvaluatePartial(
-          std::map<Polynomiald::VarType, double>{{y.GetSimpleVariable(), 0}}),
+      std::map<Polynomiald::VarType, double>{{y.GetSimpleVariable(), 0}}),
             (5 * x * x * x) + 1);
 }
 

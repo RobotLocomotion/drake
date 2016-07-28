@@ -200,7 +200,7 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
         // by the active vars monomial and add the resulting monomial of
         // parameters to our factor list.
         factor_monomials.push_back(
-                working_monomial.Factor(active_var_monomial));
+            working_monomial.Factor(active_var_monomial));
       } else {
         // This monomial does not match our active vars monomial; copy it
         // unchanged.
@@ -434,7 +434,7 @@ SystemIdentification<T>::LumpedSystemIdentification(
   result.partially_evaluated_polys.resize(trigpolys.rows());
   for (int i = 0; i < trigpolys.rows(); i++) {
     result.partially_evaluated_polys[i] =
-            result.lumped_polys[i].EvaluatePartial(result.lumped_parameter_values);
+        result.lumped_polys[i].EvaluatePartial(result.lumped_parameter_values);
     debug << "Estimated polynomial: "
           << result.partially_evaluated_polys[i] << std::endl;
   }

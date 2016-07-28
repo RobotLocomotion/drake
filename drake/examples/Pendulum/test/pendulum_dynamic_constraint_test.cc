@@ -27,7 +27,7 @@ GTEST_TEST(PendulumDynamicConstraint, PendulumDynamicConstraintTest) {
   drake::systems::SystemDynamicConstraint<Pendulum> dut(p);
 
   Drake::TaylorVecXd result;
-    dut.Eval(Drake::initializeAutoDiff(x), result);
+  dut.Eval(Drake::initializeAutoDiff(x), result);
 
   // Expected values came from running the MATLAB code for
   // PendulumPlant through the constraint function in

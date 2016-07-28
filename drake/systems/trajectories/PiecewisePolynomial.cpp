@@ -331,8 +331,8 @@ PiecewisePolynomial<CoefficientType> PiecewisePolynomial<
   for (Eigen::Index segment_index = 0; segment_index < num_segments;
        ++segment_index) {
     polynomials.push_back(
-            PolynomialType::RandomPolynomialMatrix(
-                    num_coefficients_per_polynomial, rows, cols));
+        PolynomialType::RandomPolynomialMatrix(
+            num_coefficients_per_polynomial, rows, cols));
   }
   return PiecewisePolynomial<CoefficientType>(polynomials, segment_times);
 }

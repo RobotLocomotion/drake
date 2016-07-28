@@ -26,7 +26,7 @@ GTEST_TEST(SystemIdentificationTest, LumpedSingle) {
   Polynomiald input = (a * x) + (b * x) + (a * c * y) + (a * c * y * y);
 
   std::set<Polynomiald::VarType> parameters = {
-          a.GetSimpleVariable(),
+    a.GetSimpleVariable(),
     b.GetSimpleVariable(),
     c.GetSimpleVariable()};
   SID::LumpingMapType lump_map =
@@ -50,7 +50,7 @@ GTEST_TEST(SystemIdentificationTest, LumpedMulti) {
     a};
 
   std::set<Polynomiald::VarType> parameters = {
-          a.GetSimpleVariable(),
+    a.GetSimpleVariable(),
     b.GetSimpleVariable(),
     c.GetSimpleVariable()};
   SID::LumpingMapType lump_map =
@@ -87,7 +87,7 @@ GTEST_TEST(SystemIdentificationTest, LumpedParameterRewrite) {
     a};
 
   std::set<Polynomiald::VarType> parameters = {
-          a.GetSimpleVariable(),
+    a.GetSimpleVariable(),
     b.GetSimpleVariable(),
     c.GetSimpleVariable()};
   SID::LumpingMapType lump_map =
@@ -107,7 +107,7 @@ GTEST_TEST(SystemIdentificationTest, LumpedParameterRewrite) {
   // rewritten polynomial).
   for (const auto& poly_var_pair : lump_map) {
     eval_point[poly_var_pair.second] =
-            poly_var_pair.first.EvaluateMultivariate(eval_point);
+        poly_var_pair.first.EvaluateMultivariate(eval_point);
   }
 
   for (const Polynomiald& poly : input) {
@@ -406,13 +406,13 @@ GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
   const TrigPolyd::VarType th1_var = theta1.poly().GetSimpleVariable();
   const TrigPolyd::VarType th2_var = theta2.poly().GetSimpleVariable();
   const TrigPolyd::VarType th1d_var =
-          theta1dot.poly().GetSimpleVariable();
+      theta1dot.poly().GetSimpleVariable();
   const TrigPolyd::VarType th2d_var =
-          theta2dot.poly().GetSimpleVariable();
+      theta2dot.poly().GetSimpleVariable();
   const TrigPolyd::VarType th1dd_var =
-          theta1dotdot.poly().GetSimpleVariable();
+      theta1dotdot.poly().GetSimpleVariable();
   const TrigPolyd::VarType th2dd_var =
-          theta2dotdot.poly().GetSimpleVariable();
+      theta2dotdot.poly().GetSimpleVariable();
   const TrigPolyd::VarType tau_var = tau.poly().GetSimpleVariable();
 
   const double kG = 9.8;

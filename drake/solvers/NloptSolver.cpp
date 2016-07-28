@@ -71,7 +71,7 @@ double EvaluateCosts(const std::vector<double>& x,
       index += v.size();
     }
 
-      binding.constraint()->Eval(this_x, ty);
+    binding.constraint()->Eval(this_x, ty);
 
     cost += ty(0).value();
     if (!grad.empty()) {
@@ -171,7 +171,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
 
   TaylorVecXd ty(num_constraints);
   TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_list));
-        c->Eval(this_x, ty);
+  c->Eval(this_x, ty);
 
   const Eigen::VectorXd& lower_bound = c->lower_bound();
   const Eigen::VectorXd& upper_bound = c->upper_bound();
