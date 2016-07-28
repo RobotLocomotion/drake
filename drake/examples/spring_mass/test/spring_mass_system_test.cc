@@ -50,7 +50,7 @@ const double kMass = 2.0;      // kg
 class SpringMassSystemTest : public ::testing::Test {
  public:
   void SetUp() override {
-    Initialize(false);
+    Initialize();
   }
 
   void Initialize(bool with_input_force = false) {
