@@ -18,11 +18,17 @@ add_test(NAME drake_assert_test_default COMMAND drake_assert_test_default)
 # Same, but with assertions forced enabled.
 add_executable(drake_assert_test_enabled drake_assert_test.cc)
 target_compile_definitions(drake_assert_test_enabled PRIVATE DRAKE_ENABLE_ASSERTS)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(drake_assert_test_enabled PRIVATE -UDRAKE_DISABLE_ASSERTS)
+endif()
 target_link_libraries(drake_assert_test_enabled drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME drake_assert_test_enabled COMMAND drake_assert_test_enabled)
 # Same, but with assertions forced disabled.
 add_executable(drake_assert_test_disabled drake_assert_test.cc)
 target_compile_definitions(drake_assert_test_disabled PRIVATE DRAKE_DISABLE_ASSERTS)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(drake_assert_test_disabled PRIVATE -UDRAKE_ENABLE_ASSERTS)
+endif()
 target_link_libraries(drake_assert_test_disabled drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME drake_assert_test_disabled COMMAND drake_assert_test_disabled)
 
@@ -110,4 +116,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   set_tests_properties(
     drake_deprecated_test_nocompile
     PROPERTIES WILL_FAIL TRUE)
+endif()
+
+# Rules for cpplint_wrapper.py.
+if(PYTHONINTERP_FOUND AND WITH_GOOGLE_STYLEGUIDE)
+  add_test(NAME cpplint_wrapper_test COMMAND
+    ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cpplint_wrapper_test.py)
 endif()

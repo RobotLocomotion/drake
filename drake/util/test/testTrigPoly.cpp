@@ -17,10 +17,19 @@ namespace {
 typedef std::map<TrigPolyd::VarType, double> MapType;
 const double kPi = 3.1415926535897;
 
-void TestSerialization(TrigPolyd dut, std::string expect) {
+void TestSerializationContains(TrigPolyd dut, std::string expect) {
   std::stringstream test_stream;
   test_stream << dut;
-  EXPECT_EQ(test_stream.str(), expect);
+  EXPECT_TRUE(test_stream.str().find(expect) != std::string::npos);
+}
+
+/// Tests that @p dut begins with @p expect followed by ' ' or end-of-string.
+void TestSerializationFirstWord(TrigPolyd dut, std::string expect) {
+  std::stringstream test_stream;
+  test_stream << dut;
+  EXPECT_EQ(test_stream.str().substr(0, expect.size()), expect);
+  EXPECT_TRUE(test_stream.str().size() == expect.size() ||
+              test_stream.str().substr(expect.size())[0] == ' ');
 }
 
 GTEST_TEST(TrigPolyTest, SmokeTest) {
@@ -36,15 +45,33 @@ GTEST_TEST(TrigPolyTest, SmokeTest) {
 
   TrigPolyd p(q, s, c);
 
-  TestSerialization(p, "q1");
-  TestSerialization(sin(p), "s1");
-  TestSerialization(cos(p), "c1");
+  // Require that serialization works, and that it contains definitions for
+  // any sin_cos_map terms.
+  TestSerializationFirstWord(p, "q1");
+  TestSerializationFirstWord(sin(p), "s1");
+  TestSerializationContains(sin(p), "s1=sin(q1)");
+  TestSerializationFirstWord(cos(p), "c1");
+  TestSerializationContains(cos(p), "c1=cos(q1)");
 
   // The following results could reasonably change if Polynomial changes its
   // monomial sorting or fixes #2216.  They are retained here to catch any
   // inadvertent changes to this behaviour.
-  TestSerialization(sin(p) * p * p + cos(p), "s1*q1^2+c1");
-  TestSerialization(sin(p + p), "s1*c1+c1*s1");
+  TestSerializationFirstWord(sin(p) * p * p + cos(p), "s1*q1^2+c1");
+  TestSerializationFirstWord(sin(p + p), "s1*c1+c1*s1");
+}
+
+GTEST_TEST(TrigPolyTest, GetVariablesTest) {
+  // Check that getVariables() correctly returns all and only the base
+  // variables of the expression and not the trig variables.
+  Polynomiald q("q");
+  Polynomiald s("s");
+  Polynomiald c("c");
+  TrigPolyd p(q, s, c);
+
+  std::set<Polynomiald::VarType> expected_vars = { q.getSimpleVariable(), };
+  EXPECT_EQ(p.getVariables(), expected_vars);
+  EXPECT_EQ(sin(p).getVariables(), expected_vars);
+  EXPECT_EQ(cos(p).getVariables(), expected_vars);
 }
 
 GTEST_TEST(TrigPolyTest, EvaluateMultivariateTest) {

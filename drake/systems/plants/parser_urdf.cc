@@ -387,7 +387,6 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
     {
       XMLElement* color_node = material_node->FirstChildElement("color");
       if (color_node) {
-        Vector4d rgba;
         if (!parseVectorAttribute(color_node, "rgba", rgba)) {
           throw runtime_error(
               "ERROR: Failed to parse color of material for "
@@ -694,7 +693,7 @@ void parseJoint(RigidBodyTree* tree, XMLElement* node) {
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   tree->bodies[child_index]->setJoint(move(joint_unique_ptr));
-  tree->bodies[child_index]->parent = tree->bodies[parent_index].get();
+  tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 }
 
 // Searches through the URDF document looking for the effort limits of a

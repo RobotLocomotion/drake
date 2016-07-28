@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_state_vector.h"
+#include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace systems {
@@ -41,7 +42,7 @@ std::string LcmSubscriberSystem::get_name() const {
   return "LcmSubscriberSystem::" + channel_;
 }
 
-std::unique_ptr<Context<double>> LcmSubscriberSystem::CreateDefaultContext()
+std::unique_ptr<ContextBase<double>> LcmSubscriberSystem::CreateDefaultContext()
     const {
   // Creates a new context for this system and sets the number of input ports
   // to be zero. It leaves the context's state uninitialized since this system
@@ -50,11 +51,11 @@ std::unique_ptr<Context<double>> LcmSubscriberSystem::CreateDefaultContext()
   context->SetNumInputPorts(0);
 
   // Returns this system's context.
-  return context;
+  return std::unique_ptr<ContextBase<double>>(context.release());
 }
 
-std::unique_ptr<SystemOutput<double>> LcmSubscriberSystem::AllocateOutput()
-    const {
+std::unique_ptr<SystemOutput<double>> LcmSubscriberSystem::AllocateOutput(
+    const ContextBase<double>& context) const {
   // Instantiates a BasicVector object and stores it in a managed pointer.
   std::unique_ptr<BasicVector<double>> data(
       new BasicVector<double>(translator_.get_vector_size()));
@@ -64,17 +65,17 @@ std::unique_ptr<SystemOutput<double>> LcmSubscriberSystem::AllocateOutput()
       new OutputPort<double>(std::move(data)));
 
   // Stores the above-defined OutputPort in this system output.
-  std::unique_ptr<SystemOutput<double>> output(new SystemOutput<double>);
-  output->ports.push_back(std::move(port));
+  auto output = std::make_unique<LeafSystemOutput<double>>();
+  output->get_mutable_ports()->push_back(std::move(port));
 
   // Returns this system's output.
-  return output;
+  return std::unique_ptr<SystemOutput<double>>(output.release());
 }
 
-void LcmSubscriberSystem::EvalOutput(const Context<double>& context,
+void LcmSubscriberSystem::EvalOutput(const ContextBase<double>& context,
                                      SystemOutput<double>* output) const {
   BasicVector<double>& output_vector = dynamic_cast<BasicVector<double>&>(
-      *output->ports[0]->GetMutableVectorData());
+      *output->get_mutable_port(0)->GetMutableVectorData());
 
   std::lock_guard<std::mutex> lock(data_mutex_);
   output_vector.set_value(basic_vector_.get_value());

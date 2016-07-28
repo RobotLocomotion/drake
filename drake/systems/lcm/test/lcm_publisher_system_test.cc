@@ -77,8 +77,8 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
   // Instantiates a receiver of lcmt_drake_signal messages.
   MessageSubscriber subscriber(channel_name, lcm);
 
-  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+  std::unique_ptr<ContextBase<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
 
   // Verifies that the context has one input port.
   EXPECT_EQ(context->get_num_input_ports(), 1);
