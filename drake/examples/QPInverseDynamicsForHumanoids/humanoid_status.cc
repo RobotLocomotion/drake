@@ -11,7 +11,7 @@ void HumanoidStatus::FillKinematics(const RigidBody& body, Isometry3d* pose,
                                     const Vector3d& local_offset) const {
   *pose = Isometry3d::Identity();
   pose->translation() = local_offset;
-  *pose = robot_->relativeTransform(cache_, 0, body.body_index) * (*pose);
+  *pose = robot_->relativeTransform(cache_, 0, body.get_body_index()) * (*pose);
 
   *vel = GetTaskSpaceVel(*(robot_), cache_, body, local_offset);
   *J = GetTaskSpaceJacobian(*(robot_), cache_, body, local_offset);
