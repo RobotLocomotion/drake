@@ -693,7 +693,7 @@ void parseJoint(RigidBodyTree* tree, XMLElement* node) {
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   tree->bodies[child_index]->setJoint(move(joint_unique_ptr));
-  tree->bodies[child_index]->parent = tree->bodies[parent_index].get();
+  tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 }
 
 // Searches through the URDF document looking for the effort limits of a

@@ -109,7 +109,7 @@ class DrakeRosTfPublisher {
       std::unique_ptr<geometry_msgs::TransformStamped> message(
           new geometry_msgs::TransformStamped());
 
-      message->header.frame_id = rigid_body->parent->get_name();
+      message->header.frame_id = rigid_body->get_parent()->get_name();
       message->child_frame_id = rigid_body->get_name();
 
       // Obtains the current link's joint.
@@ -228,7 +228,8 @@ class DrakeRosTfPublisher {
       if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
         auto transform = rigid_body_tree_->relativeTransform(
             cache,
-            rigid_body_tree_->FindBodyIndex(rigid_body->parent->get_name()),
+            rigid_body_tree_->FindBodyIndex(
+                rigid_body->get_parent()->get_name()),
             rigid_body_tree_->FindBodyIndex(rigid_body->get_name()));
         auto translation = transform.translation();
         auto quat = drake::math::rotmat2quat(transform.linear());
