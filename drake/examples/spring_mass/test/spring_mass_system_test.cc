@@ -22,21 +22,21 @@
 #include "drake/systems/framework/vector_interface.h"
 #include "drake/util/eigen_matrix_compare.h"
 
-using std::unique_ptr;
 using std::make_unique;
+using std::unique_ptr;
 
 namespace drake {
 
-using systems::ContextBase;
 using systems::BasicVector;
 using systems::BasicStateVector;
 using systems::Context;
+using systems::ContextBase;
 using systems::ContinuousState;
 using systems::ContinuousSystem;
+using systems::FreestandingInputPort;
 using systems::LeafStateVector;
 using systems::StateSubvector;
 using systems::StateVector;
-using systems::FreestandingInputPort;
 using systems::SystemOutput;
 using systems::VectorInterface;
 using util::MatrixCompareType;
