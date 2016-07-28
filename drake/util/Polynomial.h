@@ -93,10 +93,10 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
 
     int GetDegree() const;
     int GetDegreeOf(VarType var) const;
-    bool HasSameExponents(const Monomial &other) const;
+    bool HasSameExponents(const Monomial& other) const;
 
     /// Factors this by other; returns 0 iff other does not divide this.
-    Monomial Factor(const Monomial &divisor) const;
+    Monomial Factor(const Monomial& divisor) const;
   };
 
  private:
@@ -183,7 +183,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    */
   template <typename T>
   typename Product<CoefficientType, T>::type EvaluateUnivariate(
-      const T &x) const {
+      const T& x) const {
     typedef typename Product<CoefficientType, T>::type ProductType;
 
     if (!is_univariate_)
@@ -215,7 +215,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    */
   template <typename T>
   typename Product<CoefficientType, T>::type EvaluateMultivariate(
-      const std::map<VarType, T> &var_values) const {
+      const std::map<VarType, T>& var_values) const {
     typedef typename std::remove_const<
       typename Product<CoefficientType, T>::type>::type ProductType;
     ProductType value = 0;
@@ -243,7 +243,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * TaylorVarXd correspond to.
    */
   Drake::TaylorVarXd EvaluateMultivariate(
-      const std::map<VarType, Drake::TaylorVarXd> &var_values) const {
+      const std::map<VarType, Drake::TaylorVarXd>& var_values) const {
     Drake::TaylorVarXd value(0);
     for (const Monomial& monomial : monomials_) {
       Drake::TaylorVarXd monomial_value(monomial.coefficient);
@@ -266,10 +266,10 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * replaced with its value and constants appropriately combined.
    */
   Polynomial EvaluatePartial(
-      const std::map<VarType, CoefficientType> &var_values) const;
+      const std::map<VarType, CoefficientType>& var_values) const;
 
   /// Replaces all instances of variable orig with replacement.
-  void Subs(const VarType &orig, const VarType &replacement);
+  void Subs(const VarType& orig, const VarType& replacement);
 
   /** Takes the derivative of this (univariate) Polynomial.
    *
@@ -290,7 +290,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * If integration_constant is given, adds that constant as the constant
    * term (zeroth-order coefficient) of the resulting Polynomial.
    */
-  Polynomial Integral(const CoefficientType &integration_constant = 0.0) const;
+  Polynomial Integral(const CoefficientType& integration_constant = 0.0) const;
 
   bool operator==(const Polynomial& other) const;
 
@@ -380,7 +380,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * corresponding coefficient of this Polynomial.  Throws an exception if
    * either Polynomial is not univariate.
    */
-  bool IsApprox(const Polynomial &other, const RealScalar &tol) const;
+  bool IsApprox(const Polynomial& other, const RealScalar& tol) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Monomial& m) {
     //    if (m.coefficient == 0) return os;
@@ -460,13 +460,13 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   using enable_if_t = typename std::enable_if<B, T>::type;
   template <typename Base>
   static Base Pow(
-      const enable_if_t<std::is_arithmetic<Base>::value, Base> &base,
-      const PowerType &exponent) {
+      const enable_if_t<std::is_arithmetic<Base>::value, Base>& base,
+      const PowerType& exponent) {
     return std::pow(base, exponent);
   }
 
   template <typename Base>
-  static Base Pow(const Base &base, const PowerType &exponent) {
+  static Base Pow(const Base& base, const PowerType& exponent) {
     Base result = base;
     for (int i = 1; i < exponent; i++) {
       result = result * base;

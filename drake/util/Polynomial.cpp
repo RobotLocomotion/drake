@@ -9,7 +9,7 @@ using namespace Eigen;
 
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::Monomial::HasSameExponents(
-    const Monomial &other) const {
+    const Monomial& other) const {
   if (terms.size() != other.terms.size()) return false;
 
   for (typename vector<Term>::const_iterator iter = terms.begin();
@@ -120,7 +120,7 @@ int Polynomial<CoefficientType>::Monomial::GetDegreeOf(VarType v) const {
 
 template <typename CoefficientType>
 typename Polynomial<CoefficientType>::Monomial
-Polynomial<CoefficientType>::Monomial::Factor(const Monomial &divisor) const {
+Polynomial<CoefficientType>::Monomial::Factor(const Monomial& divisor) const {
   Monomial error, result;
   error.coefficient = 0;
   result.coefficient = coefficient / divisor.coefficient;
@@ -212,7 +212,7 @@ Polynomial<CoefficientType>::GetVariables() const {
 
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::EvaluatePartial(
-    const std::map<VarType, CoefficientType> &var_values) const {
+    const std::map<VarType, CoefficientType>& var_values) const {
   std::vector<Monomial> new_monomials;
   for (const Monomial& monomial : monomials_) {
     CoefficientType new_coefficient = monomial.coefficient;
@@ -231,8 +231,8 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::EvaluatePartial(
 }
 
 template <typename CoefficientType>
-void Polynomial<CoefficientType>::Subs(const VarType &orig,
-                                       const VarType &replacement) {
+void Polynomial<CoefficientType>::Subs(const VarType& orig,
+                                       const VarType& replacement) {
   for (typename vector<Monomial>::iterator iter = monomials_.begin();
        iter != monomials_.end(); iter++) {
     for (typename vector<Term>::iterator t = iter->terms.begin();
@@ -271,7 +271,7 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::Derivative(
 
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::Integral(
-    const CoefficientType &integration_constant) const {
+    const CoefficientType& integration_constant) const {
   if (!is_univariate_)
     throw runtime_error(
         "getCoefficients is only defined for univariate polynomials");
@@ -506,8 +506,8 @@ Polynomial<CoefficientType>::Roots() const {
 }
 
 template <typename CoefficientType>
-bool Polynomial<CoefficientType>::IsApprox(const Polynomial &other,
-                                           const RealScalar &tol) const {
+bool Polynomial<CoefficientType>::IsApprox(const Polynomial& other,
+                                           const RealScalar& tol) const {
   return GetCoefficients().isApprox(other.GetCoefficients(), tol);
 }
 

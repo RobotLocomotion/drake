@@ -104,8 +104,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
-    void Eval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override {
+    void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
       y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    Drake::FunctionTraits<F>::numInputs(f_));
@@ -113,8 +113,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                    Drake::FunctionTraits<F>::numOutputs(f_));
       Drake::FunctionTraits<F>::eval(f_, x, y);
     }
-    void Eval(const Eigen::Ref<const Drake::TaylorVecXd> &x,
-              Drake::TaylorVecXd &y) const override {
+    void Eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
+              Drake::TaylorVecXd& y) const override {
       y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    Drake::FunctionTraits<F>::numInputs(f_));

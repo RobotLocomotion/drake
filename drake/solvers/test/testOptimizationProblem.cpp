@@ -1,5 +1,4 @@
 #include <typeinfo>
-#include <typeinfo>
 
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/Constraint.h"

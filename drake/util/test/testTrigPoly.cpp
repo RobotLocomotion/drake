@@ -78,7 +78,7 @@ GTEST_TEST(TrigPolyTest, EvaluateMultivariateTest) {
   const TrigPolyd theta(Polynomiald("th"),
                         Polynomiald("sth"), Polynomiald("cth"));
   const TrigPolyd::VarType theta_var =
-          theta.poly().GetSimpleVariable();
+      theta.poly().GetSimpleVariable();
 
   // Check some basic evaluations.
   EXPECT_EQ(theta.EvaluateMultivariate(MapType {{theta_var, 1}}), 1);
