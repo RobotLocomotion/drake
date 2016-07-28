@@ -49,7 +49,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     /** covers()
      * @brief returns true iff the given @p index of the enclosing
      * OptimizationProblem is included in this Binding.*/
-    bool covers(size_t index) const {
+    bool Covers(size_t index) const {
       for (auto view : variable_list_) {
         if (view.covers(index)) {
           return true;
@@ -104,8 +104,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
-    void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+    void Eval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
       y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    Drake::FunctionTraits<F>::numInputs(f_));
@@ -113,8 +113,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                    Drake::FunctionTraits<F>::numOutputs(f_));
       Drake::FunctionTraits<F>::eval(f_, x, y);
     }
-    void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
-              Drake::TaylorVecXd& y) const override {
+    void Eval(const Eigen::Ref<const Drake::TaylorVecXd> &x,
+              Drake::TaylorVecXd &y) const override {
       y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    Drake::FunctionTraits<F>::numInputs(f_));

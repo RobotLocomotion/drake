@@ -300,7 +300,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   for (auto cost_b : costs) {
     VectorXd val;
     std::shared_ptr<Constraint> cost = cost_b.constraint();
-    cost->eval(VariableList2VectorXd(cost_b.variable_list()), val);
+      cost->Eval(VariableList2VectorXd(cost_b.variable_list()), val);
     std::cout << "cost term 0.5 x^T * H * x + h0 * x: " << val.transpose()
               << std::endl;
   }

@@ -56,7 +56,7 @@ GTEST_TEST(DynamicConstraintPendulumDynamicsTest, DynamicConstraintTest) {
   PendulumTestDynamicConstraint dut(kNumStates, kNumInputs);
 
   Drake::TaylorVecXd result;
-  dut.eval(Drake::initializeAutoDiff(x), result);
+        dut.Eval(Drake::initializeAutoDiff(x), result);
 
   EXPECT_NEAR(result(0).value(), 1.1027, 1e-4);
   EXPECT_NEAR(result(1).value(), 2.2657, 1e-4);

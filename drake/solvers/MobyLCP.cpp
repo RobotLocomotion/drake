@@ -136,7 +136,7 @@ SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
   for (size_t i = 0; i < prog.num_vars(); i++) {
     int coverings = 0;
     for (const auto& binding : bindings) {
-      if (binding.covers(i)) {
+      if (binding.Covers(i)) {
         coverings++;
       }
     }

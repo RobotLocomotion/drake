@@ -126,7 +126,7 @@ size_t EvaluateConstraint(
   }
 
   TaylorVecXd ty(c.num_constraints());
-  c.eval(this_x, ty);
+        c.Eval(this_x, ty);
 
   // Store the results.  Since IPOPT directly knows the bounds of the
   // constraint, we don't need to apply any bounding information here.
@@ -412,7 +412,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         index += v.size();
       }
 
-      binding.constraint()->eval(this_x, ty);
+        binding.constraint()->Eval(this_x, ty);
 
       cost_cache_->result[0] += ty(0).value();
       for (const DecisionVariableView& v : binding.variable_list()) {

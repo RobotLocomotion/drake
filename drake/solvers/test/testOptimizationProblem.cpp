@@ -1,4 +1,5 @@
 #include <typeinfo>
+#include <typeinfo>
 
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/Constraint.h"
@@ -150,7 +151,7 @@ GTEST_TEST(testOptimizationProblem, trivialLinearSystem) {
   CheckSolverType(prog, "Linear System Solver");
 
   // Now modify the original constraint by its handle
-  con->updateConstraint(3 * Matrix4d::Identity(), b);
+          con->UpdateConstraint(3 * Matrix4d::Identity(), b);
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
@@ -381,18 +382,18 @@ class LowerBoundTestConstraint : public Constraint {
         i2_(i2) {}
 
   // for just these two types, implementing this locally is almost cleaner...
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
-    evalImpl(x, y);
+    EvalImpl(x, y);
   }
-  void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override {
-    evalImpl(x, y);
+    EvalImpl(x, y);
   }
 
  private:
   template <typename ScalarType>
-  void evalImpl(
+  void EvalImpl(
       const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
       Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& y) const {
     y.resize(1);
@@ -480,9 +481,9 @@ GTEST_TEST(testOptimizationProblem, sixHumpCamel) {
   RunNonlinearProgram(prog, [&]() {
     // check (numerically) if it is a local minimum
     VectorXd ystar, y;
-    cost->eval(x.value(), ystar);
+      cost->Eval(x.value(), ystar);
     for (int i = 0; i < 10; i++) {
-      cost->eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
+        cost->Eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
       if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
     }
   });
@@ -511,18 +512,18 @@ class GloptipolyConstrainedExampleConstraint
             Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
 
   // for just these two types, implementing this locally is almost cleaner...
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
-    evalImpl(x, y);
+    EvalImpl(x, y);
   }
-  void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override {
-    evalImpl(x, y);
+    EvalImpl(x, y);
   }
 
  private:
   template <typename ScalarType>
-  void evalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x,
+  void EvalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x,
                 Matrix<ScalarType, Dynamic, 1>& y) const {
     y.resize(1);
     y(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -
@@ -588,7 +589,7 @@ GTEST_TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
 }
 
 /**
- * Test that the eval() method of LinearComplementarityConstraint correctly
+ * Test that the Eval() method of LinearComplementarityConstraint correctly
  * returns the slack.
  */
 GTEST_TEST(testOptimizationProblem, simpleLCPConstraintEval) {
@@ -604,11 +605,11 @@ GTEST_TEST(testOptimizationProblem, simpleLCPConstraintEval) {
 
   LinearComplementarityConstraint c(M, q);
   Eigen::VectorXd x;
-  c.eval(Eigen::Vector2d(1, 1), x);
+          c.Eval(Eigen::Vector2d(1, 1), x);
 
   EXPECT_TRUE(
       CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
-  c.eval(Eigen::Vector2d(1, 2), x);
+          c.Eval(Eigen::Vector2d(1, 2), x);
 
   EXPECT_TRUE(
       CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
