@@ -81,7 +81,7 @@ TEST_F(AdderTest, WrongSizeOfInputPorts) {
 
 // Tests that Adder allocates no state variables in the context_.
 TEST_F(AdderTest, AdderIsStateless) {
-  /// TODO(david-german-tri): Once state exists in Context, assert it's empty.
+  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
 }
 
 }  // namespace
