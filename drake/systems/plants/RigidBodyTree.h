@@ -173,12 +173,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
                          const std::set<int>& robotnum) const;
 
   /**
-   * Returns the total mass of a set of models in this rigid body tree.
+   * Computes the total mass of a set of models in this rigid body tree.
    *
    * @param[in] model_ids A set of model ID values corresponding to the models
    * whose masses should be included in the returned value.
    *
-   * @return The total mass of the models specified by @p model_ids.
+   * @returns The total mass of the models specified by @p model_ids.
    */
   double getMass(const std::set<int>& model_ids = default_robot_num_set) const;
 
