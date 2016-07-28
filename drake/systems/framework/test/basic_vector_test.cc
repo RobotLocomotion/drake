@@ -37,7 +37,7 @@ GTEST_TEST(BasicVectorTest, IntInitiallyZero) {
 // Tests that the BasicVector<Polynomiald> is initialized to zero.
 GTEST_TEST(BasicVectorTest, PolynomialInitiallyZero) {
   BasicVector<Polynomiald> vec(1);
-  EXPECT_TRUE(vec.get_value()[0].isApprox(Polynomiald(0.0),
+  EXPECT_TRUE(vec.get_value()[0].IsApprox(Polynomiald(0.0),
                                           Eigen::NumTraits<double>::epsilon()));
 }
 

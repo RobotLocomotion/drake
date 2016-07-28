@@ -53,8 +53,8 @@ void testIntegralAndDerivative() {
   // check continuity at knot points
   for (int i = 0; i < piecewise.getNumberOfSegments() - 1; ++i) {
     valuecheck(integral.getPolynomial(i)
-               .evaluateUnivariate(integral.getDuration(i)),
-               integral.getPolynomial(i + 1).evaluateUnivariate(0.0));
+                       .EvaluateUnivariate(integral.getDuration(i)),
+               integral.getPolynomial(i + 1).EvaluateUnivariate(0.0));
   }
 }
 

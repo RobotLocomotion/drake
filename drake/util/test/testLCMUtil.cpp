@@ -15,11 +15,11 @@ void testPolynomial() {
   drake::lcmt_polynomial msg;
   encodePolynomial(poly, msg);
   auto poly_back = decodePolynomial(msg);
-  valuecheck(poly.isApprox(poly_back, 1e-8), true);
+  valuecheck(poly.IsApprox(poly_back, 1e-8), true);
 }
 
 void testPolynomialMatrix() {
-  auto poly_matrix = Polynomial<double>::randomPolynomialMatrix(6, 5, 8);
+  auto poly_matrix = Polynomial<double>::RandomPolynomialMatrix(6, 5, 8);
   drake::lcmt_polynomial_matrix msg;
   encodePolynomialMatrix<Eigen::Dynamic, Eigen::Dynamic>(poly_matrix, msg);
   valuecheck(static_cast<int>(msg.rows), static_cast<int>(poly_matrix.rows()));
@@ -30,7 +30,7 @@ void testPolynomialMatrix() {
   for (int row = 0; row < msg.rows; ++row) {
     for (int col = 0; col < msg.cols; ++col) {
       valuecheck(
-          poly_matrix(row, col).isApprox(poly_matrix_back(row, col), 1e-8),
+          poly_matrix(row, col).IsApprox(poly_matrix_back(row, col), 1e-8),
           true);
     }
   }

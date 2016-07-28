@@ -50,7 +50,7 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
     MatrixXd poly_coeffs = MatrixXd::Zero(nq, k);
 
     for (size_t x = 0; x < nq; x++) {
-      poly_coeffs.row(x) = poly_mat(x).getCoefficients().transpose();
+      poly_coeffs.row(x) = poly_mat(x).GetCoefficients().transpose();
     }
 
     beta[j].col(k - 1) = -A2i * B2 * poly_coeffs.col(k - 1);

@@ -78,7 +78,7 @@ class TrigPoly {
   TrigPoly(const PolyType& p, const SinCosMap& _sin_cos_map)
       : poly(p), sin_cos_map(_sin_cos_map) {
     // The provided _sin_cos_map might have extraneous entries; clip them.
-    std::set<VarType> vars_in_use = p.getVariables();
+    std::set<VarType> vars_in_use = p.GetVariables();
     std::set<VarType> vars_seen_in_map;
     for (const auto& sin_cos_entry : _sin_cos_map) {
       if (!(vars_in_use.count(sin_cos_entry.first) ||
@@ -100,15 +100,15 @@ class TrigPoly {
    * that the variables s and c represent the sine and cosine of q.
    */
   TrigPoly(const PolyType& q, const PolyType& s, const PolyType& c) {
-    if ((q.getDegree() != 1) || (s.getDegree() != 1) || (c.getDegree() != 1))
+    if ((q.GetDegree() != 1) || (s.GetDegree() != 1) || (c.GetDegree() != 1))
       throw std::runtime_error(
           "q, s, and c must all be simple polynomials (in the msspoly sense)");
 
     poly = q;
     SinCosVars sc;
-    sc.s = s.getSimpleVariable();
-    sc.c = c.getSimpleVariable();
-    sin_cos_map[q.getSimpleVariable()] = sc;
+    sc.s = s.GetSimpleVariable();
+    sc.c = c.GetSimpleVariable();
+    sin_cos_map[q.GetSimpleVariable()] = sc;
   }
 
   /// Returns the underlying Polynomial for this TrigPoly.
@@ -125,11 +125,11 @@ class TrigPoly {
    * entries in its SinCosMap.
    */
   friend TrigPoly sin(const TrigPoly& p) {
-    if (p.poly.getDegree() > 1)
+    if (p.poly.GetDegree() > 1)
       throw std::runtime_error(
           "sin of polynomials with degree > 1 is not supported");
 
-    const std::vector<typename PolyType::Monomial>& m = p.poly.getMonomials();
+    const std::vector<typename PolyType::Monomial>& m = p.poly.GetMonomials();
 
     if (m.size() == 1) {
       TrigPoly ret = p;
@@ -148,7 +148,7 @@ class TrigPoly {
               "Drake:TrigPoly:PleaseImplementMe.  need to handle this case "
               "(like I do in the matlab version");
 
-        ret.poly.subs(m[0].terms[0].var, iter->second.s);
+        ret.poly.Subs(m[0].terms[0].var, iter->second.s);
       }
       return ret;
     }
@@ -169,11 +169,11 @@ class TrigPoly {
    * entries in its SinCosMap.
    */
   friend TrigPoly cos(const TrigPoly& p) {
-    if (p.poly.getDegree() > 1)
+    if (p.poly.GetDegree() > 1)
       throw std::runtime_error(
           "cos of polynomials with degree > 1 is not supported");
 
-    const std::vector<typename PolyType::Monomial>& m = p.poly.getMonomials();
+    const std::vector<typename PolyType::Monomial>& m = p.poly.GetMonomials();
 
     if (m.size() == 1) {
       TrigPoly ret = p;
@@ -192,7 +192,7 @@ class TrigPoly {
               "Drake:TrigPoly:PleaseImplementMe.  need to handle this case "
               "(like I do in the matlab version");
 
-        ret.poly.subs(m[0].terms[0].var, iter->second.c);
+        ret.poly.Subs(m[0].terms[0].var, iter->second.c);
         if (m[0].coefficient == (CoefficientType)-1) {
           ret *= -1;
         }  // cos(-q) => cos(q) => c (instead of -c)
@@ -210,7 +210,7 @@ class TrigPoly {
 
   /// Returns all of the base (non-sin/cos) variables in this TrigPoly.
   std::set<VarType> getVariables() const {
-    std::set<VarType> vars = poly.getVariables();
+    std::set<VarType> vars = poly.GetVariables();
     for (const auto& sin_cos_item : sin_cos_map) {
       vars.insert(sin_cos_item.first);
       vars.erase(sin_cos_item.second.s);
@@ -221,12 +221,12 @@ class TrigPoly {
 
   /// Given a value for every variable in this expression, evaluates it.
   /**
-   * By analogy with Polynomial::evaluateMultivariate().  Values must be
+   * By analogy with Polynomial::EvaluateMultivariate().  Values must be
    * supplied for all base variables; supplying values for sin/cos variables
    * is an error.
    */
   template <typename T>
-  typename Product<CoefficientType, T>::type evaluateMultivariate(
+  typename Product<CoefficientType, T>::type EvaluateMultivariate(
       const std::map<VarType, T>& var_values) const {
     std::map<VarType, T> all_var_values = var_values;
     for (const auto& sin_cos_item : sin_cos_map) {
@@ -237,7 +237,7 @@ class TrigPoly {
       all_var_values[sin_cos_item.second.c] =
           std::cos(var_values.at(sin_cos_item.first));
     }
-    return poly.evaluateMultivariate(all_var_values);
+    return poly.EvaluateMultivariate(all_var_values);
   }
 
   /// Partially evaluates this expression, returning the resulting expression.
@@ -260,7 +260,7 @@ class TrigPoly {
       var_values_with_sincos[sin_cos_item.second.c] =
           std::cos(var_values.at(sin_cos_item.first));
     }
-    return TrigPoly(poly.evaluatePartial(var_values_with_sincos), sin_cos_map);
+    return TrigPoly(poly.EvaluatePartial(var_values_with_sincos), sin_cos_map);
   }
 
   /// Compares two TrigPolys for equality.
@@ -392,9 +392,9 @@ class TrigPoly {
     if (tp.sin_cos_map.size()) {
       os << " where ";
       for (const auto& k_v_pair : tp.sin_cos_map) {
-        std::string var = PolyType::idToVariableName(k_v_pair.first);
-        std::string sin = PolyType::idToVariableName(k_v_pair.second.s);
-        std::string cos = PolyType::idToVariableName(k_v_pair.second.c);
+        std::string var = PolyType::IdToVariableName(k_v_pair.first);
+        std::string sin = PolyType::IdToVariableName(k_v_pair.second.s);
+        std::string cos = PolyType::IdToVariableName(k_v_pair.second.c);
         os << sin << "=sin(" << var << "), "
            << cos << "=cos(" << var << "), ";
       }

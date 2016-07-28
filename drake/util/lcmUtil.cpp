@@ -5,8 +5,8 @@ using namespace Eigen;
 
 void encodePolynomial(const Polynomial<double>& polynomial,
                       drake::lcmt_polynomial& msg) {
-  eigenVectorToStdVector(polynomial.getCoefficients(), msg.coefficients);
-  msg.num_coefficients = polynomial.getNumberOfCoefficients();
+  eigenVectorToStdVector(polynomial.GetCoefficients(), msg.coefficients);
+  msg.num_coefficients = polynomial.GetNumberOfCoefficients();
 }
 
 Polynomial<double> decodePolynomial(const drake::lcmt_polynomial& msg) {

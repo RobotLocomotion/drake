@@ -679,7 +679,7 @@ GTEST_TEST(testOptimizationProblem, linearPolynomialConstraint) {
   static const double kEpsilon = 1e-7;
   const auto x_var = problem.AddContinuousVariables(1);
   const std::vector<Polynomiald::VarType> var_mapping = {
-    x.getSimpleVariable()};
+          x.GetSimpleVariable()};
   std::shared_ptr<Constraint> resulting_constraint =
       problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                       Vector1d::Constant(2),
@@ -714,7 +714,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
-        x.getSimpleVariable()};
+            x.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                     Vector1d::Constant(2),
                                     Vector1d::Constant(2));
@@ -732,13 +732,13 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
-        x.getSimpleVariable()};
+            x.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
     RunNonlinearProgram(problem, [&]() {
       EXPECT_NEAR(x_var.value()[0], 1, 0.2);
-      EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
+      EXPECT_LE(poly.EvaluateUnivariate(x_var.value()[0]), kEpsilon);
     });
   }
 
@@ -750,7 +750,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     const auto xy_var = problem.AddContinuousVariables(2);
     const std::vector<Polynomiald::VarType> var_mapping = {
-        x.getSimpleVariable(), y.getSimpleVariable()};
+            x.GetSimpleVariable(), y.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
@@ -758,9 +758,9 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
       EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
       EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
       std::map<Polynomiald::VarType, double> eval_point = {
-          {x.getSimpleVariable(), xy_var.value()[0]},
-          {y.getSimpleVariable(), xy_var.value()[1]}};
-      EXPECT_LE(poly.evaluateMultivariate(eval_point), kEpsilon);
+          {x.GetSimpleVariable(), xy_var.value()[0]},
+          {y.GetSimpleVariable(), xy_var.value()[1]}};
+      EXPECT_LE(poly.EvaluateMultivariate(eval_point), kEpsilon);
     });
   }
 
@@ -774,7 +774,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const auto x_var = problem.AddContinuousVariables(1);
     problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
     const std::vector<Polynomiald::VarType> var_mapping = {
-        x.getSimpleVariable()};
+            x.GetSimpleVariable()};
     VectorXPoly polynomials_vec(2, 1);
     polynomials_vec << poly, x;
     problem.AddPolynomialConstraint(polynomials_vec, var_mapping,
@@ -782,7 +782,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Eigen::VectorXd::Zero(2));
     RunNonlinearProgram(problem, [&]() {
       EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
-      EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
+      EXPECT_LE(poly.EvaluateUnivariate(x_var.value()[0]), kEpsilon);
     });
   }
 }

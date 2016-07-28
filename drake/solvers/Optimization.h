@@ -502,7 +502,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     // TODO(ggould-tri) There may be other such special easy cases.
     bool all_affine = true;
     for (int i = 0; i < polynomials.rows(); i++) {
-      if (!polynomials[i].isAffine()) {
+      if (!polynomials[i].IsAffine()) {
         all_affine = false;
         break;
       }
@@ -513,7 +513,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       Eigen::VectorXd linear_constraint_lb = lb;
       Eigen::VectorXd linear_constraint_ub = ub;
       for (int poly_num = 0; poly_num < polynomials.rows(); poly_num++) {
-        for (const auto& monomial : polynomials[poly_num].getMonomials()) {
+        for (const auto& monomial : polynomials[poly_num].GetMonomials()) {
           if (monomial.terms.size() == 0) {
             linear_constraint_lb[poly_num] -= monomial.coefficient;
             linear_constraint_ub[poly_num] -= monomial.coefficient;

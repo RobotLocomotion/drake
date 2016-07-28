@@ -8,8 +8,8 @@ using namespace std;
 using namespace Eigen;
 
 template <typename CoefficientType>
-bool Polynomial<CoefficientType>::Monomial::hasSameExponents(
-    const Monomial& other) const {
+bool Polynomial<CoefficientType>::Monomial::HasSameExponents(
+        const Monomial &other) const {
   if (terms.size() != other.terms.size()) return false;
 
   for (typename vector<Term>::const_iterator iter = terms.begin();
@@ -25,8 +25,8 @@ template <typename CoefficientType>
 Polynomial<CoefficientType>::Polynomial(const CoefficientType& scalar) {
   Monomial m;
   m.coefficient = scalar;
-  monomials.push_back(m);
-  is_univariate = true;
+  monomials_.push_back(m);
+  is_univariate_ = true;
 }
 
 template <typename CoefficientType>
@@ -36,10 +36,10 @@ Polynomial<CoefficientType>::Polynomial(const CoefficientType coefficient,
   m.coefficient = coefficient;
   m.terms = terms;
 
-  is_univariate = true;
+  is_univariate_ = true;
   for (int i = (int)m.terms.size() - 1; i >= 0; i--) {
     if ((i > 0) && (m.terms[i].var != m.terms[0].var)) {
-      is_univariate = false;
+      is_univariate_ = false;
     }
     for (int j = 0; j < (i - 1); j++) {  // merge any duplicate vars
       if (m.terms[i].var == m.terms[j].var) {
@@ -50,7 +50,7 @@ Polynomial<CoefficientType>::Polynomial(const CoefficientType coefficient,
     }
   }
 
-  monomials.push_back(m);
+  monomials_.push_back(m);
 }
 
 template <typename CoefficientType>
@@ -59,14 +59,14 @@ Polynomial<CoefficientType>::Polynomial(
         typename Polynomial<CoefficientType>::Monomial>::const_iterator start,
     typename vector<typename Polynomial<CoefficientType>::Monomial>::
         const_iterator finish) {
-  is_univariate = true;
+  is_univariate_ = true;
   for (
       typename vector<
           typename Polynomial<CoefficientType>::Monomial>::const_iterator iter =
           start;
       iter != finish; iter++)
-    monomials.push_back(*iter);
-  makeMonomialsUnique();
+    monomials_.push_back(*iter);
+  MakeMonomialsUnique();
 }
 
 template <typename CoefficientType>
@@ -75,11 +75,11 @@ Polynomial<CoefficientType>::Polynomial(const string varname,
   Monomial m;
   m.coefficient = (CoefficientType)1;
   Term t;
-  t.var = variableNameToId(varname, num);
+  t.var = VariableNameToId(varname, num);
   t.power = 1;
   m.terms.push_back(t);
-  monomials.push_back(m);
-  is_univariate = true;
+  monomials_.push_back(m);
+  is_univariate_ = true;
 }
 
 template <typename CoefficientType>
@@ -91,17 +91,17 @@ Polynomial<CoefficientType>::Polynomial(const CoefficientType& coeff,
   t.var = v;
   t.power = 1;
   m.terms.push_back(t);
-  monomials.push_back(m);
-  is_univariate = true;
+  monomials_.push_back(m);
+  is_univariate_ = true;
 }
 
 template <typename CoefficientType>
-int Polynomial<CoefficientType>::getNumberOfCoefficients() const {
-  return static_cast<int>(monomials.size());
+int Polynomial<CoefficientType>::GetNumberOfCoefficients() const {
+  return static_cast<int>(monomials_.size());
 }
 
 template <typename CoefficientType>
-int Polynomial<CoefficientType>::Monomial::getDegree() const {
+int Polynomial<CoefficientType>::Monomial::GetDegree() const {
   if (terms.empty()) return 0;
   int degree = terms[0].power;
   for (size_t i = 1; i < terms.size(); i++) degree *= terms[i].power;
@@ -109,7 +109,7 @@ int Polynomial<CoefficientType>::Monomial::getDegree() const {
 }
 
 template <typename CoefficientType>
-int Polynomial<CoefficientType>::Monomial::getDegreeOf(VarType v) const {
+int Polynomial<CoefficientType>::Monomial::GetDegreeOf(VarType v) const {
   for (const Term& term : terms) {
     if (term.var == v) {
       return term.power;
@@ -120,12 +120,12 @@ int Polynomial<CoefficientType>::Monomial::getDegreeOf(VarType v) const {
 
 template <typename CoefficientType>
 typename Polynomial<CoefficientType>::Monomial
-Polynomial<CoefficientType>::Monomial::factor(const Monomial& divisor) const {
+Polynomial<CoefficientType>::Monomial::Factor(const Monomial &divisor) const {
   Monomial error, result;
   error.coefficient = 0;
   result.coefficient = coefficient / divisor.coefficient;
   for (const Term& term : terms) {
-    const PowerType divisor_power = divisor.getDegreeOf(term.var);
+    const PowerType divisor_power = divisor.GetDegreeOf(term.var);
     if (term.power < divisor_power) { return error; }
     Term new_term;
     new_term.var = term.var;
@@ -135,17 +135,17 @@ Polynomial<CoefficientType>::Monomial::factor(const Monomial& divisor) const {
     }
   }
   for (const Term& divisor_term : divisor.terms) {
-    if (!getDegreeOf(divisor_term.var)) { return error; }
+    if (!GetDegreeOf(divisor_term.var)) { return error; }
   }
   return result;
 }
 
 template <typename CoefficientType>
-int Polynomial<CoefficientType>::getDegree() const {
+int Polynomial<CoefficientType>::GetDegree() const {
   int max_degree = 0;
-  for (typename vector<Monomial>::const_iterator iter = monomials.begin();
-       iter != monomials.end(); iter++) {
-    int monomial_degree = iter->getDegree();
+  for (typename vector<Monomial>::const_iterator iter = monomials_.begin();
+       iter != monomials_.end(); iter++) {
+    int monomial_degree = iter->GetDegree();
     if (monomial_degree > max_degree) max_degree = monomial_degree;
   }
 
@@ -153,9 +153,9 @@ int Polynomial<CoefficientType>::getDegree() const {
 }
 
 template <typename CoefficientType>
-bool Polynomial<CoefficientType>::isAffine() const {
-  for (const auto& monomial : monomials) {
-    if ((monomial.terms.size() > 1) || (monomial.getDegree() > 1)) {
+bool Polynomial<CoefficientType>::IsAffine() const {
+  for (const auto& monomial : monomials_) {
+    if ((monomial.terms.size() > 1) || (monomial.GetDegree() > 1)) {
       return false;
     }
   }
@@ -164,32 +164,32 @@ bool Polynomial<CoefficientType>::isAffine() const {
 
 template <typename CoefficientType>
 typename Polynomial<CoefficientType>::VarType
-Polynomial<CoefficientType>::getSimpleVariable() const {
-  if (monomials.size() != 1) return 0;
-  if (monomials[0].terms.size() != 1) return 0;
-  if (monomials[0].terms[0].power != 1) return 0;
-  return monomials[0].terms[0].var;
+Polynomial<CoefficientType>::GetSimpleVariable() const {
+  if (monomials_.size() != 1) return 0;
+  if (monomials_[0].terms.size() != 1) return 0;
+  if (monomials_[0].terms[0].power != 1) return 0;
+  return monomials_[0].terms[0].var;
 }
 
 template <typename CoefficientType>
 const std::vector<typename Polynomial<CoefficientType>::Monomial>&
-Polynomial<CoefficientType>::getMonomials() const {
-  return monomials;
+Polynomial<CoefficientType>::GetMonomials() const {
+  return monomials_;
 }
 
 template <typename CoefficientType>
 Matrix<CoefficientType, Dynamic, 1>
-Polynomial<CoefficientType>::getCoefficients() const {
-  if (!is_univariate)
+Polynomial<CoefficientType>::GetCoefficients() const {
+  if (!is_univariate_)
     throw runtime_error(
         "getCoefficients is only defined for univariate polynomials");
 
-  int deg = getDegree();
+  int deg = GetDegree();
 
   Matrix<CoefficientType, Dynamic, 1> coefficients =
       Matrix<CoefficientType, Dynamic, 1>::Zero(deg + 1);
-  for (typename vector<Monomial>::const_iterator iter = monomials.begin();
-       iter != monomials.end(); iter++) {
+  for (typename vector<Monomial>::const_iterator iter = monomials_.begin();
+       iter != monomials_.end(); iter++) {
     if (iter->terms.empty())
       coefficients[0] = iter->coefficient;
     else
@@ -200,9 +200,9 @@ Polynomial<CoefficientType>::getCoefficients() const {
 
 template <typename CoefficientType>
 std::set<typename Polynomial<CoefficientType>::VarType>
-Polynomial<CoefficientType>::getVariables() const {
+Polynomial<CoefficientType>::GetVariables() const {
   std::set<Polynomial<CoefficientType>::VarType> vars;
-  for (const Monomial& monomial : monomials) {
+  for (const Monomial& monomial : monomials_) {
     for (const Term& term : monomial.terms) {
       vars.insert(term.var);
     }
@@ -211,10 +211,10 @@ Polynomial<CoefficientType>::getVariables() const {
 }
 
 template <typename CoefficientType>
-Polynomial<CoefficientType> Polynomial<CoefficientType>::evaluatePartial(
-    const std::map<VarType, CoefficientType>& var_values) const {
+Polynomial<CoefficientType> Polynomial<CoefficientType>::EvaluatePartial(
+        const std::map<VarType, CoefficientType> &var_values) const {
   std::vector<Monomial> new_monomials;
-  for (const Monomial& monomial : monomials) {
+  for (const Monomial& monomial : monomials_) {
     CoefficientType new_coefficient = monomial.coefficient;
     std::vector<Term> new_terms;
     for (const Term& term : monomial.terms) {
@@ -231,10 +231,10 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::evaluatePartial(
 }
 
 template <typename CoefficientType>
-void Polynomial<CoefficientType>::subs(const VarType& orig,
-                                       const VarType& replacement) {
-  for (typename vector<Monomial>::iterator iter = monomials.begin();
-       iter != monomials.end(); iter++) {
+void Polynomial<CoefficientType>::Subs(const VarType &orig,
+                                       const VarType &replacement) {
+  for (typename vector<Monomial>::iterator iter = monomials_.begin();
+       iter != monomials_.end(); iter++) {
     for (typename vector<Term>::iterator t = iter->terms.begin();
          t != iter->terms.end(); t++) {
       if (t->var == orig) t->var = replacement;
@@ -243,16 +243,16 @@ void Polynomial<CoefficientType>::subs(const VarType& orig,
 }
 
 template <typename CoefficientType>
-Polynomial<CoefficientType> Polynomial<CoefficientType>::derivative(
-    unsigned int derivative_order) const {
-  if (!is_univariate)
+Polynomial<CoefficientType> Polynomial<CoefficientType>::Derivative(
+        unsigned int derivative_order) const {
+  if (!is_univariate_)
     throw runtime_error(
         "getCoefficients is only defined for univariate polynomials");
 
   Polynomial<CoefficientType> ret;
 
-  for (typename vector<Monomial>::const_iterator iter = monomials.begin();
-       iter != monomials.end(); iter++) {
+  for (typename vector<Monomial>::const_iterator iter = monomials_.begin();
+       iter != monomials_.end(); iter++) {
     if (!iter->terms.empty() && (
             iter->terms[0].power >= static_cast<PowerType>(derivative_order))) {
       Monomial m = *iter;
@@ -262,28 +262,28 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::derivative(
         m.terms[0].power -= 1;
       }
       if (m.terms[0].power < 1) m.terms.erase(m.terms.begin());
-      ret.monomials.push_back(m);
+      ret.monomials_.push_back(m);
     }
   }
-  ret.is_univariate = true;
+  ret.is_univariate_ = true;
   return ret;
 }
 
 template <typename CoefficientType>
-Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(
-    const CoefficientType& integration_constant) const {
-  if (!is_univariate)
+Polynomial<CoefficientType> Polynomial<CoefficientType>::Integral(
+        const CoefficientType &integration_constant) const {
+  if (!is_univariate_)
     throw runtime_error(
         "getCoefficients is only defined for univariate polynomials");
   Polynomial<CoefficientType> ret = *this;
 
-  for (typename vector<Monomial>::iterator iter = ret.monomials.begin();
-       iter != ret.monomials.end(); iter++) {
+  for (typename vector<Monomial>::iterator iter = ret.monomials_.begin();
+       iter != ret.monomials_.end(); iter++) {
     if (iter->terms.empty()) {
       Term t;
       t.var = 0;
-      for (typename vector<Monomial>::iterator iterB = ret.monomials.begin();
-           iterB != ret.monomials.end(); iterB++) {
+      for (typename vector<Monomial>::iterator iterB = ret.monomials_.begin();
+           iterB != ret.monomials_.end(); iterB++) {
         if (!iterB->terms.empty()) {
           t.var = iterB->terms[0].var;
           break;
@@ -299,8 +299,8 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(
   }
   Monomial m;
   m.coefficient = integration_constant;
-  ret.is_univariate = true;
-  ret.monomials.push_back(m);
+  ret.is_univariate_ = true;
+  ret.monomials_.push_back(m);
   return ret;
 }
 
@@ -310,33 +310,33 @@ bool Polynomial<CoefficientType>::operator==(
   // Comparison of unsorted vectors is faster copying them into std::set
   // btrees rather than using std::is_permutation().
   // TODO(#2216) switch from multiset to set for further performance gains.
-  const std::multiset<Monomial> this_monomials(monomials.begin(),
-                                               monomials.end());
-  const std::multiset<Monomial> other_monomials(other.monomials.begin(),
-                                                other.monomials.end());
+  const std::multiset<Monomial> this_monomials(monomials_.begin(),
+                                               monomials_.end());
+  const std::multiset<Monomial> other_monomials(other.monomials_.begin(),
+                                                other.monomials_.end());
   return this_monomials == other_monomials;
 }
 
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator+=(
     const Polynomial<CoefficientType>& other) {
-  for (typename vector<Monomial>::const_iterator iter = other.monomials.begin();
-       iter != other.monomials.end(); iter++) {
-    monomials.push_back(*iter);
+  for (typename vector<Monomial>::const_iterator iter = other.monomials_.begin();
+       iter != other.monomials_.end(); iter++) {
+    monomials_.push_back(*iter);
   }
-  makeMonomialsUnique();  // also sets is_univariate false if necessary
+  MakeMonomialsUnique();  // also sets is_univariate false if necessary
   return *this;
 }
 
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator-=(
     const Polynomial<CoefficientType>& other) {
-  for (typename vector<Monomial>::const_iterator iter = other.monomials.begin();
-       iter != other.monomials.end(); iter++) {
-    monomials.push_back(*iter);
-    monomials.back().coefficient *= (CoefficientType)(-1);
+  for (typename vector<Monomial>::const_iterator iter = other.monomials_.begin();
+       iter != other.monomials_.end(); iter++) {
+    monomials_.push_back(*iter);
+    monomials_.back().coefficient *= (CoefficientType)(-1);
   }
-  makeMonomialsUnique();  // also sets is_univariate false if necessary
+  MakeMonomialsUnique();  // also sets is_univariate false if necessary
   return *this;
 }
 
@@ -345,11 +345,11 @@ Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator*=(
     const Polynomial<CoefficientType>& other) {
   vector<Monomial> new_monomials;
 
-  for (typename vector<Monomial>::const_iterator iter = monomials.begin();
-       iter != monomials.end(); iter++) {
+  for (typename vector<Monomial>::const_iterator iter = monomials_.begin();
+       iter != monomials_.end(); iter++) {
     for (typename vector<Monomial>::const_iterator other_iter =
-             other.monomials.begin();
-         other_iter != other.monomials.end(); other_iter++) {
+             other.monomials_.begin();
+         other_iter != other.monomials_.end(); other_iter++) {
       Monomial m;
       m.coefficient = iter->coefficient * other_iter->coefficient;
       m.terms = iter->terms;
@@ -369,9 +369,9 @@ Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator*=(
       new_monomials.push_back(m);
     }
   }
-  monomials = new_monomials;
+  monomials_ = new_monomials;
 
-  makeMonomialsUnique();  // also sets is_univariate false if necessary
+  MakeMonomialsUnique();  // also sets is_univariate false if necessary
   return *this;
 }
 
@@ -379,8 +379,8 @@ template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator+=(
     const CoefficientType& scalar) {
   // add to the constant monomial if I have one
-  for (typename vector<Monomial>::iterator iter = monomials.begin();
-       iter != monomials.end(); iter++) {
+  for (typename vector<Monomial>::iterator iter = monomials_.begin();
+       iter != monomials_.end(); iter++) {
     if (iter->terms.empty()) {
       iter->coefficient += scalar;
       return *this;
@@ -390,7 +390,7 @@ Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator+=(
   // otherwise create the constant monomial
   Monomial m;
   m.coefficient = scalar;
-  monomials.push_back(m);
+  monomials_.push_back(m);
   return *this;
 }
 
@@ -398,8 +398,8 @@ template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator-=(
     const CoefficientType& scalar) {
   // add to the constant monomial if I have one
-  for (typename vector<Monomial>::iterator iter = monomials.begin();
-       iter != monomials.end(); iter++) {
+  for (typename vector<Monomial>::iterator iter = monomials_.begin();
+       iter != monomials_.end(); iter++) {
     if (iter->terms.empty()) {
       iter->coefficient -= scalar;
       return *this;
@@ -409,15 +409,15 @@ Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator-=(
   // otherwise create the constant monomial
   Monomial m;
   m.coefficient = -scalar;
-  monomials.push_back(m);
+  monomials_.push_back(m);
   return *this;
 }
 
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator*=(
     const CoefficientType& scalar) {
-  for (typename vector<Monomial>::iterator iter = monomials.begin();
-       iter != monomials.end(); iter++) {
+  for (typename vector<Monomial>::iterator iter = monomials_.begin();
+       iter != monomials_.end(); iter++) {
     iter->coefficient *= scalar;
   }
   return *this;
@@ -426,8 +426,8 @@ Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator*=(
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator/=(
     const CoefficientType& scalar) {
-  for (typename vector<Monomial>::iterator iter = monomials.begin();
-       iter != monomials.end(); iter++) {
+  for (typename vector<Monomial>::iterator iter = monomials_.begin();
+       iter != monomials_.end(); iter++) {
     iter->coefficient /= scalar;
   }
   return *this;
@@ -453,8 +453,8 @@ template <typename CoefficientType>
 const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator-()
     const {
   Polynomial<CoefficientType> ret = *this;
-  for (typename vector<Monomial>::iterator iter = ret.monomials.begin();
-       iter != ret.monomials.end(); iter++) {
+  for (typename vector<Monomial>::iterator iter = ret.monomials_.begin();
+       iter != ret.monomials_.end(); iter++) {
     iter->coefficient = -iter->coefficient;
   }
   return ret;
@@ -478,12 +478,12 @@ const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator/(
 
 template <typename CoefficientType>
 typename Polynomial<CoefficientType>::RootsType
-Polynomial<CoefficientType>::roots() const {
-  if (!is_univariate)
+Polynomial<CoefficientType>::Roots() const {
+  if (!is_univariate_)
     throw runtime_error(
         "getCoefficients is only defined for univariate polynomials");
 
-  auto coefficients = getCoefficients();
+  auto coefficients = GetCoefficients();
 
   // need to handle degree 0 and 1 explicitly because Eigen's polynomial solver
   // doesn't work for these
@@ -506,9 +506,9 @@ Polynomial<CoefficientType>::roots() const {
 }
 
 template <typename CoefficientType>
-bool Polynomial<CoefficientType>::isApprox(const Polynomial& other,
-                                           const RealScalar& tol) const {
-  return getCoefficients().isApprox(other.getCoefficients(), tol);
+bool Polynomial<CoefficientType>::IsApprox(const Polynomial &other,
+                                           const RealScalar &tol) const {
+  return GetCoefficients().isApprox(other.GetCoefficients(), tol);
 }
 
 const char kNameChars[] = "@#_.abcdefghijklmnopqrstuvwxyz";
@@ -517,7 +517,7 @@ const unsigned int kNameLength = 4;
 const unsigned int kMaxNamePart = 923521;  // (kNumNameChars+1)^kNameLength;
 
 template <typename CoefficientType>
-bool Polynomial<CoefficientType>::isValidVariableName(const string name) {
+bool Polynomial<CoefficientType>::IsValidVariableName(const string name) {
   size_t len = name.length();
   if (len < 1) return false;
   for (size_t i = 0; i < len; i++)
@@ -527,7 +527,7 @@ bool Polynomial<CoefficientType>::isValidVariableName(const string name) {
 
 template <typename CoefficientType>
 typename Polynomial<CoefficientType>::VarType
-Polynomial<CoefficientType>::variableNameToId(const string name,
+Polynomial<CoefficientType>::VariableNameToId(const string name,
                                               const unsigned int m) {
   unsigned int multiplier = 1;
   VarType name_part = 0;
@@ -549,7 +549,7 @@ Polynomial<CoefficientType>::variableNameToId(const string name,
 }
 
 template <typename CoefficientType>
-string Polynomial<CoefficientType>::idToVariableName(const VarType id) {
+string Polynomial<CoefficientType>::IdToVariableName(const VarType id) {
   VarType name_part = (id / 2) % kMaxNamePart;  // id/2 to be compatible w/
                                                 // msspoly, even though I'm not
                                                 // doing the trig support here
@@ -570,30 +570,30 @@ string Polynomial<CoefficientType>::idToVariableName(const VarType id) {
 }
 
 template <typename CoefficientType>
-void Polynomial<CoefficientType>::makeMonomialsUnique(void) {
+void Polynomial<CoefficientType>::MakeMonomialsUnique(void) {
   VarType unique_var = 0;  // also update the univariate flag
-  for (int i = monomials.size() - 1; i >= 0; i--) {
-    if (monomials[i].coefficient == 0) {
-      monomials.erase(monomials.begin() + i);
+  for (int i = monomials_.size() - 1; i >= 0; i--) {
+    if (monomials_[i].coefficient == 0) {
+      monomials_.erase(monomials_.begin() + i);
       continue;
     }
-    Monomial& mi = monomials[i];
+    Monomial& mi = monomials_[i];
     if (!mi.terms.empty()) {
-      if (mi.terms.size() > 1) is_univariate = false;
+      if (mi.terms.size() > 1) is_univariate_ = false;
       if (mi.terms[0].var != unique_var) {
         if (unique_var > 0) {
-          is_univariate = false;
+          is_univariate_ = false;
         } else {
           unique_var = mi.terms[0].var;
         }
       }
     }
     for (int j = 0; j < (i - 1); j++) {
-      Monomial& mj = monomials[j];
-      if (mi.hasSameExponents(mj)) {
+      Monomial& mj = monomials_[j];
+      if (mi.HasSameExponents(mj)) {
         // it's a match, so delete monomial i
-        monomials[j].coefficient += monomials[i].coefficient;
-        monomials.erase(monomials.begin() + i);
+        monomials_[j].coefficient += monomials_[i].coefficient;
+        monomials_.erase(monomials_.begin() + i);
         break;
       }
     }

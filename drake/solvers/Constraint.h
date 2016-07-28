@@ -137,7 +137,7 @@ class PolynomialConstraint : public Constraint {
     }
     y.resize(num_constraints());
     for (size_t i = 0; i < num_constraints(); i++) {
-      y[i] = polynomials_[i].evaluateMultivariate(double_evaluation_point_);
+      y[i] = polynomials_[i].EvaluateMultivariate(double_evaluation_point_);
     }
   }
 
@@ -149,7 +149,7 @@ class PolynomialConstraint : public Constraint {
     }
     y.resize(num_constraints());
     for (size_t i = 0; i < num_constraints(); i++) {
-      y[i] = polynomials_[i].evaluateMultivariate(taylor_evaluation_point_);
+      y[i] = polynomials_[i].EvaluateMultivariate(taylor_evaluation_point_);
     }
   }
 
