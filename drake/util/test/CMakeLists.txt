@@ -35,9 +35,9 @@ add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
 target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil ${GTEST_BOTH_LIBRARIES})
 add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
 
-add_executable(testPolynomial testPolynomial.cpp)
-target_link_libraries(testPolynomial drakePolynomial ${GTEST_BOTH_LIBRARIES})
-add_test(NAME testPolynomial COMMAND testPolynomial)
+add_executable(polynomial_test polynomial_test.cc)
+target_link_libraries(polynomial_test drakePolynomial ${GTEST_BOTH_LIBRARIES})
+add_test(NAME polynomial_test COMMAND polynomial_test)
 
 add_executable(eigen_matrix_compare_test eigen_matrix_compare_test.cc)
 target_link_libraries(eigen_matrix_compare_test ${GTEST_BOTH_LIBRARIES})
