@@ -61,7 +61,7 @@ endif()
 
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
-target_link_libraries(drakeOptimization drakePolynomial)
+target_link_libraries(drakeOptimization drakeCommon)
 drake_install_headers(
   Constraint.h
   Function.h
