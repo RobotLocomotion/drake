@@ -17,7 +17,7 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
-using Drake::Vector1d;
+using drake::Vector1d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
@@ -119,7 +119,7 @@ int do_main(int argc, const char* argv[]) {
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
   RigidBodyTree tree(
-      Drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.

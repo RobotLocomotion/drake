@@ -12,8 +12,8 @@
 #include "drake/util/eigen_matrix_compare.h"
 
 using drake::util::MatrixCompareType;
-using Drake::NullVector;
-using Drake::SimulationOptions;
+using drake::NullVector;
+using drake::SimulationOptions;
 
 namespace drake {
 namespace examples {
@@ -100,8 +100,8 @@ GTEST_TEST(SimpleCarTest, Accelerating) {
   SimpleCarState<double> initial_state;
   auto history_system =
       std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
-  auto lead_foot = Drake::cascade(
-      Drake::cascade(
+  auto lead_foot = drake::cascade(
+      drake::cascade(
           std::make_shared<ConstantInputSystem<DrivingCommand>>(
               max_throttle),
           car),
@@ -109,7 +109,7 @@ GTEST_TEST(SimpleCarTest, Accelerating) {
 
   double start_time = 0.;
   double end_time = 100.;
-  Drake::simulate(*lead_foot, start_time, end_time, initial_state);
+  drake::simulate(*lead_foot, start_time, end_time, initial_state);
 
   double step_size = SimulationOptions().initial_step_size;
   int steps = (end_time - start_time) / step_size;
@@ -149,8 +149,8 @@ GTEST_TEST(SimpleCarTest, Braking) {
 
   auto history_system =
       std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
-  auto panic_stop = Drake::cascade(
-      Drake::cascade(
+  auto panic_stop = drake::cascade(
+      drake::cascade(
           std::make_shared<ConstantInputSystem<DrivingCommand>>(
               max_brake),
           car),
@@ -158,7 +158,7 @@ GTEST_TEST(SimpleCarTest, Braking) {
 
   double start_time = 0.;
   double end_time = 100.;
-  Drake::simulate(*panic_stop, start_time, end_time, initial_state);
+  drake::simulate(*panic_stop, start_time, end_time, initial_state);
 
   double step_size = SimulationOptions().initial_step_size;
   int steps = (end_time - start_time) / step_size;
@@ -191,15 +191,15 @@ GTEST_TEST(SimpleCarTest, Steering) {
 
   auto history_system =
       std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
-  auto brickyard = Drake::cascade(
-      Drake::cascade(
+  auto brickyard = drake::cascade(
+      drake::cascade(
           std::make_shared<ConstantInputSystem<DrivingCommand>>(left),
           car),
       history_system);
 
   double start_time = 0.;
   double end_time = 100.;
-  Drake::simulate(*brickyard, start_time, end_time, initial_state);
+  drake::simulate(*brickyard, start_time, end_time, initial_state);
 
   double step_size = SimulationOptions().initial_step_size;
   int steps = (end_time - start_time) / step_size;

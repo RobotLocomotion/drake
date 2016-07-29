@@ -8,9 +8,9 @@
 #include "drake/util/drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
-using Drake::BotVisualizer;
-using Drake::Gain;
-using Drake::SimulationOptions;
+using drake::BotVisualizer;
+using drake::Gain;
+using drake::SimulationOptions;
 
 using Eigen::VectorXd;
 
@@ -48,7 +48,7 @@ int do_main(int argc, const char* argv[]) {
   const double kStartTime = 0;
 
   // Starts the simulation.
-  Drake::runLCM(sys, lcm, kStartTime, duration,
+  drake::runLCM(sys, lcm, kStartTime, duration,
                 GetInitialState(*(rigid_body_sys.get())),
                 options);
 

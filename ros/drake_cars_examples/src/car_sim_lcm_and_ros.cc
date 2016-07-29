@@ -14,9 +14,9 @@
 #include "drake_ros/ros_sensor_publisher_lidar.h"
 #include "drake_ros/ros_sensor_publisher_odometry.h"
 
-using Drake::BotVisualizer;
-using Drake::SimulationOptions;
-using Drake::cascade;
+using drake::BotVisualizer;
+using drake::SimulationOptions;
+using drake::cascade;
 
 using Eigen::VectorXd;
 

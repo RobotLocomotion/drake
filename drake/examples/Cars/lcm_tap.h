@@ -27,7 +27,7 @@ class LcmTap {
   //@{
 
   template <typename ScalarType>
-  using StateVector = Drake::NullVector<ScalarType>;
+  using StateVector = drake::NullVector<ScalarType>;
   template <typename ScalarType>
   using InputVector = Vector<ScalarType>;
   template <typename ScalarType>

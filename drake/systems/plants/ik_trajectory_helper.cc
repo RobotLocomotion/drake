@@ -7,7 +7,7 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-namespace Drake {
+namespace drake {
 namespace systems {
 namespace plants {
 
@@ -296,4 +296,4 @@ double IKTrajectoryHelper::CalculateCost(
 
 }  // namespace plants
 }  // namespace systems
-}  // namespace Drake
+}  // namespace drake

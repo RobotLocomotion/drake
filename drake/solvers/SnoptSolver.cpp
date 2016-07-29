@@ -190,8 +190,8 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   memset(G, 0, (*n) * sizeof(snopt::doublereal));
 
   // evaluate cost
-  auto tx = Drake::initializeAutoDiff(xvec);
-  Drake::TaylorVecXd ty(1), this_x;
+  auto tx = drake::initializeAutoDiff(xvec);
+  drake::TaylorVecXd ty(1), this_x;
 
   for (auto const& binding : current_problem->GetAllCosts()) {
     auto const& obj = binding.constraint();

@@ -7,8 +7,8 @@
 #include "drake/examples/Cars/gen/simple_car_state.h"
 #include "drake/examples/Cars/trajectory_car.h"
 
-using Drake::AffineSystem;
-using Drake::NullVector;
+using drake::AffineSystem;
+using drake::NullVector;
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;

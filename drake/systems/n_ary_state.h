@@ -11,12 +11,12 @@
 
 namespace drake {
 
-using Drake::toEigen;  // TODO(maddog) ...until Drake-->drake fully.
+using drake::toEigen;  // TODO(maddog) ...until Drake-->drake fully.
 
-/// NAryState is a Drake::Vector (concept implementation) which is a
-/// container of zero or more component Drake::Vector instances.  All
+/// NAryState is a drake::Vector (concept implementation) which is a
+/// container of zero or more component drake::Vector instances.  All
 /// components must be of the same type, @p UnitVector, which naturally
-/// must model the Drake::Vector concept itself.
+/// must model the drake::Vector concept itself.
 ///
 /// UnitVectors are assembled into NAryState at run-time as an ordered
 /// list with O(1) access.  The Eigen::Matrix representaion of a
@@ -25,15 +25,15 @@ using Drake::toEigen;  // TODO(maddog) ...until Drake-->drake fully.
 template <class UnitVector>
 class NAryState {
  public:
-  // The Drake::Vector concept has no explicit way of recovering the
+  // The drake::Vector concept has no explicit way of recovering the
   // ScalarType upon which the template was specialized, but through
   // the miracle of decltype(), it can be done.  std::decay<> is used
   // to strip any CV or reference qualifiers off the type.
   using UnitScalar =
       typename std::decay<decltype(toEigen(UnitVector())(0))>::type;
-  // Required by Drake::Vector concept.
+  // Required by drake::Vector concept.
   static const int RowsAtCompileTime = Eigen::Dynamic;
-  // Required by Drake::Vector concept.
+  // Required by drake::Vector concept.
   typedef Eigen::Matrix<UnitScalar, RowsAtCompileTime, 1> EigenType;
 
   NAryState() : unit_size_(unit_size()), count_(UnitCountFromRows(0)) {}
@@ -99,7 +99,7 @@ class NAryState {
     combined_vector_.block(row0, 0, unit_size_, 1) = toEigen(unit);
   }
 
-  // Required by Drake::Vector concept.
+  // Required by drake::Vector concept.
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
   NAryState(const Eigen::MatrixBase<Derived>& initial)
@@ -108,7 +108,7 @@ class NAryState {
         combined_vector_(initial) {
   }
 
-  // Required by Drake::Vector concept.
+  // Required by drake::Vector concept.
   template <typename Derived>
   NAryState& operator=(const Eigen::MatrixBase<Derived>& rhs) {
     count_ = UnitCountFromRows(rhs.rows());
@@ -116,10 +116,10 @@ class NAryState {
     return *this;
   }
 
-  // Required by Drake::Vector concept.
+  // Required by drake::Vector concept.
   int size() const { return combined_vector_.rows(); }
 
-  // Required by Drake::Vector concept.
+  // Required by drake::Vector concept.
   friend EigenType toEigen(const NAryState<UnitVector>& vec) {
     return vec.combined_vector_;
   }

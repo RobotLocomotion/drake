@@ -11,8 +11,8 @@
 
 namespace {
 
-using Drake::NullVector;
-using Drake::toEigen;
+using drake::NullVector;
+using drake::toEigen;
 using drake::NAryState;
 using drake::NArySystem;
 
@@ -158,7 +158,7 @@ GTEST_TEST(TestNArySystem, Cascade) {
 
   auto n1 = std::make_shared<NArySystem<SystemQ> >();
   auto n2 = std::make_shared<NArySystem<SystemQ> >();
-  auto dut = Drake::cascade(n1, n2);
+  auto dut = drake::cascade(n1, n2);
 }
 
 }  // namespace

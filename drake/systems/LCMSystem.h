@@ -13,7 +13,7 @@
 #include "drake/systems/System.h"
 #include "drake/systems/cascade_system.h"
 
-namespace Drake {
+namespace drake {
 
 /** @defgroup lcm_vector_concept LCMVector<ScalarType> Concept
  * @ingroup vector_concept
@@ -288,4 +288,4 @@ void runLCM(const System &sys, std::shared_ptr<lcm::LCM> lcm, double t0,
   runLCM(sys, lcm, t0, tf, getInitialState(*sys));
 }
 
-}  // end namespace Drake
+}  // end namespace drake

@@ -82,7 +82,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dqdot_to_v) const {
     qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
-    Drake::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
+    drake::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
     if (dqdot_to_v) {
       dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
     }
@@ -96,7 +96,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {
     v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
-    Drake::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
+    drake::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
     if (dv_to_qdot) {
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
     }

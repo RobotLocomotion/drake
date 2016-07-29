@@ -7,7 +7,7 @@
 #include "drake/math/autodiff.h"
 #include "drake/util/eigen_matrix_compare.h"
 
-using Drake::initializeAutoDiff;
+using drake::initializeAutoDiff;
 using Eigen::AutoDiffScalar;
 using Eigen::Matrix3d;
 using Eigen::Vector4d;

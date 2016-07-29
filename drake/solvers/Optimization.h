@@ -93,34 +93,34 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     // Construct by copying from an lvalue.
     template <typename... Args>
     ConstraintImpl(F const& f, Args&&... args)
-        : Constraint(Drake::FunctionTraits<F>::numOutputs(f),
+        : Constraint(drake::FunctionTraits<F>::numOutputs(f),
                      std::forward<Args>(args)...),
           f_(f) {}
 
     // Construct by moving from an rvalue.
     template <typename... Args>
     ConstraintImpl(F&& f, Args&&... args)
-        : Constraint(Drake::FunctionTraits<F>::numOutputs(f),
+        : Constraint(drake::FunctionTraits<F>::numOutputs(f),
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
     void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override {
-      y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
+      y.resize(drake::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-                   Drake::FunctionTraits<F>::numInputs(f_));
+                   drake::FunctionTraits<F>::numInputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
-                   Drake::FunctionTraits<F>::numOutputs(f_));
-      Drake::FunctionTraits<F>::eval(f_, x, y);
+                   drake::FunctionTraits<F>::numOutputs(f_));
+      drake::FunctionTraits<F>::eval(f_, x, y);
     }
-    void Eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
-              Drake::TaylorVecXd& y) const override {
-      y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
+    void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
+              drake::TaylorVecXd& y) const override {
+      y.resize(drake::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-                   Drake::FunctionTraits<F>::numInputs(f_));
+                   drake::FunctionTraits<F>::numInputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
-                   Drake::FunctionTraits<F>::numOutputs(f_));
-      Drake::FunctionTraits<F>::eval(f_, x, y);
+                   drake::FunctionTraits<F>::numOutputs(f_));
+      drake::FunctionTraits<F>::eval(f_, x, y);
     }
   };
 

@@ -17,7 +17,7 @@ GTEST_TEST(CarSimulationTest, SimpleCarVisualizationAdapter) {
   auto dut = CreateSimpleCarVisualizationAdapter();
 
   const double time = 0.0;
-  const Drake::NullVector<double> state_vector{};
+  const drake::NullVector<double> state_vector{};
   SimpleCarState<double> input_vector{};
   EulerFloatingJointState<double> output_vector{};
   output_vector = dut->output(time, state_vector, input_vector);

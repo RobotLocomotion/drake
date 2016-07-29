@@ -37,15 +37,15 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 using tinyxml2::XML_SUCCESS;
 
-namespace Drake {
+namespace drake {
 
 size_t RigidBodySystem::getNumStates() const {
   return tree->number_of_positions() + tree->number_of_velocities();
 }
 
 // TODO(sam.creasey) This whole file should be in this namespace.
-using Drake::systems::plants::SingleTimeKinematicConstraintWrapper;
-using Drake::systems::plants::KinematicsCacheHelper;
+using drake::systems::plants::SingleTimeKinematicConstraintWrapper;
+using drake::systems::plants::KinematicsCacheHelper;
 
 size_t RigidBodySystem::getNumInputs(void) const {
   size_t num = tree->actuators.size();
@@ -981,4 +981,4 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
   return tau;
 }
 
-}  // namespace Drake
+}  // namespace drake

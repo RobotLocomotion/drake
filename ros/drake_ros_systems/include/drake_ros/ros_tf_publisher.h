@@ -14,10 +14,10 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
-using Drake::NullVector;
-using Drake::RigidBodySensor;
-using Drake::RigidBodySystem;
-using Drake::RigidBodyDepthSensor;
+using drake::NullVector;
+using drake::RigidBodySensor;
+using drake::RigidBodySystem;
+using drake::RigidBodyDepthSensor;
 
 namespace drake {
 namespace ros {
@@ -196,7 +196,7 @@ class DrakeRosTfPublisher {
     // The input vector u contains the entire system's state.
     // The following code extracts the position values from it
     // and computes the kinematic properties of the system.
-    auto uvec = Drake::toEigen(u);
+    auto uvec = drake::toEigen(u);
     auto q = uvec.head(rigid_body_tree_->number_of_positions());
     KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q);
 

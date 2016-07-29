@@ -10,7 +10,7 @@
 using Eigen::VectorXd;
 using std::make_shared;
 
-namespace Drake {
+namespace drake {
 namespace {
 
 int do_main(int argc, char* argv[]) {
@@ -28,7 +28,7 @@ int do_main(int argc, char* argv[]) {
   }
 
   auto lidar_sensor =
-      dynamic_cast<const Drake::RigidBodyDepthSensor*>(sensors[0]);
+      dynamic_cast<const drake::RigidBodyDepthSensor*>(sensors[0]);
   if (lidar_sensor == nullptr) {
     throw std::runtime_error(
         "ERROR: Unable to obtain pointer to the LIDAR sensor.");
@@ -129,11 +129,11 @@ int do_main(int argc, char* argv[]) {
 }
 
 }  // namespace
-}  // namespace Drake
+}  // namespace drake
 
 /**
  * This unit test sets up a LIDAR in a box room and verifies the returns.
  */
 int main(int argc, char* argv[]) {
-  return Drake::do_main(argc, argv);
+  return drake::do_main(argc, argv);
 }

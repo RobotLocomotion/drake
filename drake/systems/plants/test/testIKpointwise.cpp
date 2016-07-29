@@ -14,7 +14,7 @@ using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
-using Drake::getDrakePath;
+using drake::getDrakePath;
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 

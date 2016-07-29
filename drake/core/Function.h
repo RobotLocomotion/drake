@@ -11,7 +11,7 @@
 
 #include "Gradient.h"
 
-namespace Drake {
+namespace drake {
 
 /** InputOutputRelation
  * \brief Tags which can be used to inform algorithms about underlying structure

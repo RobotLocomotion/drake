@@ -49,7 +49,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   rpydot2angularvelMatrix(rpy, rpyd2omega, &drpyd2omega);
 
   auto qd2omega_autodiff =
-      quatdot2angularvelMatrix(Drake::initializeAutoDiff(q));
+      quatdot2angularvelMatrix(drake::initializeAutoDiff(q));
   qd2omega = autoDiffToValueMatrix(qd2omega_autodiff);
   dqd2omega = autoDiffToGradientMatrix(qd2omega_autodiff);
 

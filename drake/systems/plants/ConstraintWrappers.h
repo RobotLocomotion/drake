@@ -11,7 +11,7 @@
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-namespace Drake {
+namespace drake {
 namespace systems {
 namespace plants {
 

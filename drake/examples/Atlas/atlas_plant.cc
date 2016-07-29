@@ -7,9 +7,9 @@ using Eigen::Vector4d;
 using Eigen::Isometry3d;
 
 AtlasPlant::AtlasPlant() {
-  sys_.reset(new Drake::RigidBodySystem());
+  sys_.reset(new drake::RigidBodySystem());
   sys_->addRobotFromFile(
-      Drake::getDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
+      drake::getDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
       DrakeJoint::QUATERNION);
 
   x0_ = VectorXd::Zero(sys_->getNumStates());

@@ -127,7 +127,7 @@ void run_ros_vehicle_sim(
 
   SimulationOptions sim_options = options;
   if (sim_options.realtime_factor < 0.0) sim_options.realtime_factor = 1.0;
-  Drake::simulate(*ros_sys, t0, tf, x0, sim_options);
+  drake::simulate(*ros_sys, t0, tf, x0, sim_options);
 }
 
 /**

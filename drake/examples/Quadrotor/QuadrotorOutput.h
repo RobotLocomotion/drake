@@ -23,7 +23,7 @@ class QuadrotorOutput {
     }
 
     template <typename Derived>
-    QuadrotorOutput(  // NOLINT(runtime/explicit) per Drake::Vector.
+    QuadrotorOutput(  // NOLINT(runtime/explicit) per drake::Vector.
         const Eigen::MatrixBase<Derived>& x) {
       fromEigen<Derived>(x);
     }
