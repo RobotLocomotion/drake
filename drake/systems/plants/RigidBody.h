@@ -117,6 +117,30 @@ class DRAKERBM_EXPORT RigidBody {
    */
   int get_body_index() const;
 
+  /**
+   * Sets the start index of this rigid body's position state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  void set_position_start_index(int position_start_index);
+
+  /**
+   * Returns the start index of this rigid body's position state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  int get_position_start_index() const;
+
+  /**
+   * Sets the start index of this rigid body's velocity state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  void set_velocity_start_index(int velocity_start_index);
+
+  /**
+   * Returns the start index of this rigid body's velocity state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  int get_velocity_start_index() const;
+
   void addVisualElement(const DrakeShapes::VisualElement& elements);
 
   const DrakeShapes::VectorOfVisualElements& getVisualElements() const;
@@ -184,14 +208,6 @@ class DRAKERBM_EXPORT RigidBody {
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
 
-  /// The starting index of this rigid body's joint's position value(s) within
-  /// the parent tree's state vector.
-  int position_num_start;
-
-  /// The starting index of this rigid body's joint's velocity value(s) within
-  /// the parent tree's state vector.
-  int velocity_num_start;
-
   /// A list of visual elements for this RigidBody
   DrakeShapes::VectorOfVisualElements visual_elements;
 
@@ -232,4 +248,12 @@ class DRAKERBM_EXPORT RigidBody {
 
   // The index of this rigid body in the rigid body tree.
   int body_index_{0};
+
+  // The starting index of this rigid body's joint's position value(s) within
+  // the parent tree's state vector.
+  int position_start_index_{0};
+
+  // The starting index of this rigid body's joint's velocity value(s) within
+  // the parent tree's state vector.
+  int velocity_start_index_{0};
 };

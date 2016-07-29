@@ -142,7 +142,7 @@ struct QPLocomotionPlanSettings {
              joint_name_it != joint_name_substrings.end(); ++joint_name_it) {
           if (joint.getName().find(*joint_name_it) != std::string::npos) {
             for (int i = 0; i < joint.getNumPositions(); i++) {
-              ret.push_back(body.position_num_start + i);
+              ret.push_back(body.get_position_start_index() + i);
             }
             break;
           }

@@ -85,7 +85,7 @@ GTEST_TEST(testIK, iiwaIK) {
   Drake::Vector1d joint_lb(0.9);
   Drake::Vector1d joint_ub(1.0);
   Eigen::VectorXi joint_idx(1);
-  joint_idx(0) = model.findJoint("iiwa_joint_4")->position_num_start;
+  joint_idx(0) = model.findJoint("iiwa_joint_4")->get_position_start_index();
   pc.setJointLimits(joint_idx, joint_lb, joint_ub);
 
   std::vector<RigidBodyConstraint*> constraint_array;

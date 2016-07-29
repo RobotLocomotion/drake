@@ -716,7 +716,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
       int ncols_joint = in_terms_of_qdot ? body.getJoint().getNumPositions()
                                          : body.getJoint().getNumVelocities();
       int col_start =
-          in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
+          in_terms_of_qdot ? body.get_position_start_index() :
+              body.get_velocity_start_index();
       full.middleCols(col_start, ncols_joint) =
           compact.middleCols(compact_col_start, ncols_joint);
       compact_col_start += ncols_joint;
