@@ -9,7 +9,7 @@
 /*
  * NOTE: include AutoDiff AFTER TrigPoly.h.
  * TrigPoly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our
- * Polynomial.h
+ * polynomial.h
  * MSVC versions up to and including 2013 have trouble with the rankUpdate
  * method in LLDT.h
  * For some reason there is a bad interaction with AutoDiff, even though LLDT.h

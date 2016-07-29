@@ -2,7 +2,7 @@
 
 #include <Eigen/Core>
 #include "drake/systems/trajectories/PiecewisePolynomialBase.h"
-#include "drake/util/Polynomial.h"
+#include "drake/util/polynomial.h"
 #include <vector>
 #include <random>
 #include <limits>

@@ -5,7 +5,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
-#include "drake/util/Polynomial.h"
+#include "drake/util/polynomial.h"
 
 /** A scalar multi-variate polynomial containing sines and cosines.
  *
