@@ -15,7 +15,7 @@ add_test(NAME moby_lcp_solver_test COMMAND moby_lcp_solver_test)
 
 add_executable(system_identification_test system_identification_test.cc)
 target_link_libraries(system_identification_test
-  drakeOptimization drakePolynomial ${GTEST_BOTH_LIBRARIES})
+  drakeOptimization drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME system_identification_test COMMAND system_identification_test)
 add_executable(gurobi_solver_test gurobi_solver_test.cc)
 target_link_libraries(gurobi_solver_test drakeOptimization
