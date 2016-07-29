@@ -12,7 +12,7 @@ GTEST_TEST(ModelElementIdTest, BasicTest) {
   EXPECT_EQ(element_id_1.get_instance_name(), "Foo_Instance");
   EXPECT_EQ(element_id_1.get_model_name(), "Bar_Model");
   EXPECT_EQ(element_id_1.get_element_name(), "Baz_Element");
-  EXPECT_EQ(element_id_1.get_model_id(), 1);
+  EXPECT_EQ(element_id_1.get_model_instance_id(), 1);
 }
 
 // Tests ability to compare two ModelElementId objects.
