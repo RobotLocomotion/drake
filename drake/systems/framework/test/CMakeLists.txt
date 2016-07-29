@@ -22,10 +22,10 @@ target_link_libraries(state_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
 add_test(NAME state_test COMMAND state_test)
 
-add_executable(continuous_system_test continuous_system_test.cc)
-target_link_libraries(continuous_system_test drakeSystemFramework
+add_executable(system_test system_test.cc)
+target_link_libraries(system_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
-add_test(NAME continuous_system_test COMMAND continuous_system_test)
+add_test(NAME system_test COMMAND system_test)
 
 add_executable(system_input_test system_input_test.cc)
 target_link_libraries(system_input_test drakeSystemFramework

@@ -44,7 +44,7 @@ std::unique_ptr<SystemOutput<double>> LcmPublisherSystem::AllocateOutput(
 }
 
 // TODO(liang.fok) Move the LCM message publishing logic into another method
-// that's more appropriate once it is defined by SystemInterface. See:
+// that's more appropriate once it is defined by System. See:
 // https://github.com/RobotLocomotion/drake/issues/2836.
 void LcmPublisherSystem::EvalOutput(const ContextBase<double>& context,
                                     SystemOutput<double>* output) const {
