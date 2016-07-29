@@ -923,9 +923,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
   * Add linear equality constraint Aeq*q=beq
   */
   template < typename DerivedAeq, typename Derivedbeq>
-  void addLinearEqualityPositionConstraint(const Eigen::MatrixBase<DerivedAeq>& Aeq, const Eigen::MatrixBase<Derivedbeq> &beq) {
+  void addLinearEqualityPositionConstraint(
+                   const Eigen::MatrixBase<DerivedAeq>& Aeq,
+                   const Eigen::MatrixBase<Derivedbeq> &beq) {
       if(!linear_equality_position_constraint_) {
-        linear_equality_position_constraint_ = new drake::solvers::LinearEqualityConstraint(Aeq,beq);
+        linear_equality_position_constraint_ =
+        new drake::solvers::LinearEqualityConstraint(Aeq,beq);
       }
       else {
         linear_equality_position_constraint_->appendConstraint(Aeq,beq,beq);
@@ -990,7 +993,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::unique_ptr<DrakeCollision::Model> collision_model_;
 
   // linear equality constraint on robot position Aeq*q = beq
-  std::unique_ptr<drake::solvers::LinearEqualityConstraint> linear_equality_position_constraint_;
+  std::unique_ptr<drake::solvers::LinearEqualityConstraint>
+                                         linear_equality_position_constraint_;
 
  public:
 #ifndef SWIG
