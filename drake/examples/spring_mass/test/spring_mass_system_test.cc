@@ -208,7 +208,7 @@ TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
   EXPECT_NEAR(-kSpring * -0.1 / kMass, derivatives_->get_velocity(), 1e-8);
 }
 
-TEST_F(SpringMassSystemTest, DyanmnicsWithExternalForce) {
+TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
   // Initializes a spring mass system with an input port for an external force.
   Initialize(true);
   // Asserts exactly one input for this case expecting an external force.
@@ -222,7 +222,7 @@ TEST_F(SpringMassSystemTest, DyanmnicsWithExternalForce) {
   force_vector->get_mutable_value() << kExternalForce;
 
   // Creates a free standing input port not actually connected to the output of
-  // another system (typical case) but that has its own data in force_vector.
+  // another system but that has its own data in force_vector.
   // This is done in order to be able to test this system standalone.
   context_->SetInputPort(0, MakeInput(std::move(force_vector)));
 
