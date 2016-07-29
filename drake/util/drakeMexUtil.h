@@ -5,15 +5,15 @@
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include "drake/util/TrigPoly.h"
+#include "drake/util/trig_poly.h"
 /*
- * NOTE: include AutoDiff AFTER TrigPoly.h.
- * TrigPoly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our
+ * NOTE: include AutoDiff AFTER trig_poly.h.
+ * trig_poly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our
  * polynomial.h
  * MSVC versions up to and including 2013 have trouble with the rankUpdate
  * method in LLDT.h
  * For some reason there is a bad interaction with AutoDiff, even though LLDT.h
- * still gets included if TrigPoly.h is included before AutoDiff.
+ * still gets included if trig_poly.h is included before AutoDiff.
  * See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1057
  */
 #include <unsupported/Eigen/AutoDiff>
