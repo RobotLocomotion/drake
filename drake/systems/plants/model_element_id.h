@@ -10,14 +10,16 @@ namespace plants {
 
 /**
  * Identifies a unique modeling element within a `RigidBodySystem`. Modeling
- * elements include the name of a `DrakeJoint`, `RigidBody`, `RigidBodyFrame`,
+ * elements include objects like `DrakeJoint`, `RigidBody`, `RigidBodyFrame`,
  * `RigidBodyLoop`, `RigidBodyActuator`, and `RigidBodySensor`.
  *
- * Instances of this class are used to access a unique modeling element within
- * the RigidBodySystem. Note that it includes multiple member variables. None of
- * the individual member variables guarantee a unique match to a single rigid
- * body element within a `RigidBodySystem`. A unique match is only guaranteed
- * using the union of all member variables in this class.
+ * Instances of this class are stored in modeling elements. They are used by
+ * queries like "find all modeling elements that belong to a particular instance
+ * of a model." Drake guarantees that the union of an `instance_name` and
+ * `element_name` uniquely identifies a particular modeling element within the
+ * `RigidBodySystem`. Since a particular model may be added to the
+ * `RigidBodySystem` multiple times, the `model_name` by itself is insufficient
+ * to uniquely identify a particular modeling element.
  */
 class DRAKERBM_EXPORT ModelElementId {
  public:
