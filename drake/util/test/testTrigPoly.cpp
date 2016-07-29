@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/util/Polynomial.h"
+#include "drake/util/polynomial.h"
 
 using namespace Eigen;
 using namespace std;

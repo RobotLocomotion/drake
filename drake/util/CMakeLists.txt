@@ -21,7 +21,7 @@ add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
 target_link_libraries(drakePolynomial drakeCommon)
 
 pods_install_libraries(drakePolynomial)
-drake_install_headers(Polynomial.h)
+drake_install_headers(polynomial.h)
 pods_install_pkg_config_file(drake-polynomial
   LIBS -ldrakePolynomial -ldrakeCommon
   REQUIRES
