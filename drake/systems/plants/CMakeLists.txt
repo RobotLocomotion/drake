@@ -12,6 +12,7 @@ pods_install_pkg_config_file(drake-xml-util
   VERSION 0.0.1)
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
+  model_element_id.cc
   parser_sdf.cc
   parser_urdf.cc
   RigidBodyTree.cpp
@@ -29,6 +30,7 @@ drake_install_headers(
   KinematicPath.h
   KinematicsCache.h
   material_map.h
+  model_element_id.h
   pose_map.h
   rigid_body_actuator.h
   rigid_body_collision_element.h
