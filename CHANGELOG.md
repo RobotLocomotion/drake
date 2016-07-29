@@ -42,6 +42,7 @@ Unreleased: changes on master, not yet released
  - [#2415][] Require CMake 3.5 or higher to configure and build.
  - [#2779][] Move some rotation functions from drakeGeometryUtil to drake/math.
  - [#2963][] Rename RigidBody::CollisionElement to RigidBodyCollisionElement.
+ - [#2984][] Renamed and moved `Polynomial.h` and `TrigPoly.h` from `drake/util` to `drake/common` and into the `drakeCommon` library.
 
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
@@ -98,3 +99,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2907]: https://github.com/RobotLocomotion/drake/issues/2907
 [#2923]: https://github.com/RobotLocomotion/drake/issues/2923
 [#2963]: https://github.com/RobotLocomotion/drake/issues/2963
+[#2984]: https://github.com/RobotLocomotion/drake/issues/2984
