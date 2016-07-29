@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "drake/util/polynomial.h"
-#include "drake/util/TrigPoly.h"
+#include "drake/util/trig_poly.h"
 
 #include "drake/drakeOptimization_export.h"
 
