@@ -28,16 +28,17 @@ class DRAKERBM_EXPORT ModelElementId {
    *
    * @param[in] instance_name This must be unique to each call to the method
    * that adds a specification like a URDF or SDF to the `RigidBodySystem`.
-   * If multiple models exist within a single specification (as is the case for
-   * SDF, each model must have a unique instance name. Multiple modeling
-   * elements may \e not share the same instance name.
+   * Each model must have a unique instance name even if multiple models exist
+   * within a single specification (as is the case for SDF and other model
+   * specification standards). Multiple instances of the same model may *not*
+   * share the same instance name.
    *
    * @param[in] model_name The name of the model to which the rigid body element
    * belongs. Since a specification like URDF and SDF can be added multiple
    * times into the `RigidBodySystem`, there can be multiple models that share
    * the same model name.
    *
-   * @param[in] element_name The name of the element within a model instance.
+   * @param[in] element_name The name of the element within a model.
    * These could be, for example, the name of a joint, body, frame, loop joint,
    * actuator, sensor, etc.
    *
