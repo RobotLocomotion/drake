@@ -5,14 +5,17 @@
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system_output.h"
-#include "drake/systems/framework/system_interface.h"
 
 namespace drake {
 namespace systems {
 
-/// A template interface for Systems that have continuous dynamics.
+/// A template interface specifying the methods that Systems with continuous
+/// dynamics must satisfy.
+///
+/// User-authored Systems should not inherit directly from this interface, but
+/// from System<T> instead.
 template <typename T>
-class ContinuousSystemInterface : public SystemInterface<T> {
+class ContinuousSystemInterface {
  public:
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. Solvers will provide this state as the
@@ -56,15 +59,6 @@ class ContinuousSystemInterface : public SystemInterface<T> {
 
   // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity.
 
-  // TODO(sherm): these two power methods should be present only for continuous
-  // systems that represent some kind of physical system that can inject or
-  // dissipate energy into the simulation. Consider whether to introduce
-  // a class like PhysicalSystemInterface that could add these methods only
-  // when appropriate; that is awkward to mix with ContinuousSystemInterface
-  // so for now I'm breaking the no-code-in-interface rule to provide
-  // zero defaults so that these don't have to be implemented in non-physical
-  // systems.
-
   /// Return the rate at which mechanical energy is being converted *from*
   /// potential energy *to* kinetic energy by this system in the given Context.
   /// This quantity will be positive when potential energy is decreasing. Note
@@ -73,9 +67,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// power is increasing or decreasing the kinetic energy. Power is in watts
   /// (J/s). This method is meaningful only for physical systems; others
   /// return 0.
-  virtual T EvalConservativePower(const ContextBase<T>& context) const {
-    return T(0);
-  }
+  virtual T EvalConservativePower(const ContextBase<T>& context) const = 0;
 
   /// Return the rate at which mechanical energy is being generated (positive)
   /// or dissipated (negative) *other than* by conversion between potential and
@@ -84,9 +76,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// physically-correct model, to within integration accuracy of W. Power is in
   /// watts (J/s). (Watts are abbreviated W but not to be confused with work!)
   /// This method is meaningful only for physical systems; others return 0.
-  virtual T EvalNonConservativePower(const ContextBase<T>& context) const {
-    return T(0);
-  }
+  virtual T EvalNonConservativePower(const ContextBase<T>& context) const = 0;
 
  protected:
   ContinuousSystemInterface() {}

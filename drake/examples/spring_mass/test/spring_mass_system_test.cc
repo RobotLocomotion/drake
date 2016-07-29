@@ -32,11 +32,11 @@ using systems::BasicStateVector;
 using systems::Context;
 using systems::ContextBase;
 using systems::ContinuousState;
-using systems::ContinuousSystem;
 using systems::FreestandingInputPort;
 using systems::LeafStateVector;
 using systems::StateSubvector;
 using systems::StateVector;
+using systems::System;
 using systems::SystemOutput;
 using systems::VectorInterface;
 using util::MatrixCompareType;
@@ -55,7 +55,7 @@ class SpringMassSystemTest : public ::testing::Test {
 
   void Initialize(bool with_input_force = false) {
     // Construct the system I/O objects.
-    system_.reset(new SpringMassSystem("test_system", kSpring, kMass,
+    system_.reset(new SpringMassSystem(kSpring, kMass,
                                        with_input_force));
     context_ = system_->CreateDefaultContext();
     system_output_ = system_->AllocateOutput(*context_);
@@ -274,7 +274,7 @@ System by AutoDiffScalar and by std::complex (for complex step derivatives).
 The numerical routine here should then be used in a separate test to make sure
 the autodifferentiated matrices agree with the numerical one. Also, consider
 switching to central differences here to get more decimal places. */
-MatrixX<double> CalcDxdotDx(const ContinuousSystem<double>& system,
+MatrixX<double> CalcDxdotDx(const System<double>& system,
                             const ContextBase<double>& context) {
   const double perturb = 1e-7;  // roughly sqrt(precision)
   auto derivs0 = system.AllocateTimeDerivatives();
@@ -317,7 +317,7 @@ void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
     z1 = z0 + h zdot(t0,x0)
     v1 = v0 + h vdot(t0,x0)
     q1 = q0 + h qdot(q0,v1) */
-void StepSemiExplicitEuler(double h, const ContinuousSystem<double>& system,
+void StepSemiExplicitEuler(double h, const System<double>& system,
                            ContinuousState<double>& derivs,  // in/out
                            ContextBase<double>& context) {
   // Allocate a temp to hold qdot. This would normally be done once per
@@ -362,7 +362,7 @@ void StepSemiExplicitEuler(double h, const ContinuousSystem<double>& system,
     do: Solve J(x1) dx = err(x1)
         x1 = x1 - dx
     while (norm(dx)/norm(x0) > tol) */
-void StepImplicitEuler(double h, const ContinuousSystem<double>& system,
+void StepImplicitEuler(double h, const System<double>& system,
                        ContinuousState<double>& derivs,  // in/out
                        ContextBase<double>& context) {
   const double t = context.get_time();
