@@ -28,8 +28,8 @@ namespace solvers {
  * This class allows the creation and solution of a linear programming
  * problem using the mosek solver.
  *
- * MosekLP solves a linear program when given a correctly formatted program.
- * Specifically, the program options:
+ * MosekWrapper solves a linear program when given a correctly formatted
+ * program.  Specifically, the program options:
  *  * "maxormin" -- must be set to "max" or "min"
  *  * "problemtype" -- must be set to "linear" or "quadratic"
  *
