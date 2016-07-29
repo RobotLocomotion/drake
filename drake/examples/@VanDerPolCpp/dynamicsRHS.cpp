@@ -4,7 +4,7 @@
 #include <cmath>
 #include <iostream>
 #include "drake/util/drakeMexUtil.h"
-#include "drake/util/polynomial.h"
+#include "drake/common/polynomial.h"
 
 using namespace Eigen;
 using namespace std;

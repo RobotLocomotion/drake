@@ -1,4 +1,4 @@
-#include "drake/util/polynomial.h"
+#include "drake/common/polynomial.h"
 
 #include <cstddef>
 #include <sstream>
