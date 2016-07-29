@@ -5,7 +5,7 @@
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include "drake/util/trig_poly.h"
+#include "drake/common/trig_poly.h"
 /*
  * NOTE: include AutoDiff AFTER trig_poly.h.
  * trig_poly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our

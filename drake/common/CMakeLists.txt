@@ -6,6 +6,7 @@
 set(sources
   drake_assert.cc
   nice_type_name.cc
+  polynomial.cc
   text_logging.cc
   )
 
@@ -17,8 +18,10 @@ set(installed_headers
   drake_deprecated.h
   eigen_types.h
   nice_type_name.h
+  polynomial.h
   sorted_vectors_have_intersection.h
   text_logging.h
+  trig_poly.h
   )
 
 # List headers that are needed by code here but should not

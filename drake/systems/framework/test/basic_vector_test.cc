@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/core/functional_form.h"
-#include "drake/util/polynomial.h"
+#include "drake/common/polynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 using drake::util::CompareMatrices;
