@@ -16,7 +16,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/solution_result.h"
-#include "drake/util/Polynomial.h"
+#include "drake/util/polynomial.h"
 
 namespace drake {
 namespace solvers {
