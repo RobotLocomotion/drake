@@ -213,7 +213,7 @@ void RigidBodyTree::compile(void) {
                               joint.getNumPositions()) =
           joint.getJointLimitMax();
     }
-  };
+  }
 
 
   // Updates the static collision elements and terrain contact points.
