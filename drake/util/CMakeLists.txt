@@ -17,7 +17,7 @@ if(lcm_FOUND AND MATLAB_FOUND)
   target_link_libraries(publishLCMLog lcm)
 endif()
 
-add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
+add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES polynomial.cc)
 target_link_libraries(drakePolynomial drakeCommon)
 
 pods_install_libraries(drakePolynomial)
