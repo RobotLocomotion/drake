@@ -24,15 +24,15 @@ http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
 namespace drake {
 namespace solvers {
 
-/** MosekLP solves a linear program when given a correctly formatted program.
+/** MosekWrapper solves a linear program when given a correctly formatted program.
  *  Specifically, the program options:
  *  -- "maxormin" -- must be set to "max" or "min"
- *  -- "problemtype" -- must be set to "linear"
+ *  -- "problemtype" -- must be set to "linear" or "quadratic"
  *
  *  It is created by a MosekSolver object.
  */
-class DRAKEOPTIMIZATION_EXPORT MosekLP {
-  /** MosekLP
+class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
+  /** MosekWrapper
    *  @brief this class allows the creation and solution of a linear programming
    *  problem using the mosek solver.
    */
@@ -42,17 +42,20 @@ class DRAKEOPTIMIZATION_EXPORT MosekLP {
   * optimize, the constraint matrix, and the constraint and variable bounds
   * @p environment is created and must be told to optimize.
   */
-  MosekLP(int num_variables, int num_constraints,
-      std::vector<double> equationScalars,
-      Eigen::MatrixXd cons,
-      std::vector<MSKboundkeye> mosek_constraint_bounds,
-      std::vector<double> upper_constraint_bounds,
-      std::vector<double> lower_constraint_bounds,
-      std::vector<MSKboundkeye> mosek_variable_bounds,
-      std::vector<double> upper_variable_bounds,
-      std::vector<double> lower_variable_bounds);
+  MosekWrapper(int num_variables, int num_constraints,
+    const std::vector<double>& equation_scalars,
+    const Eigen::MatrixXd& linear_cons,
+    const std::vector<MSKboundkeye>& mosek_constraint_bounds,
+    const std::vector<double>& upper_constraint_bounds,
+    const std::vector<double>& lower_constraint_bounds,
+    const std::vector<MSKboundkeye>& mosek_variable_bounds,
+    const std::vector<double>& upper_variable_bounds,
+    const std::vector<double>& lower_variable_bounds,
+    double constant_eqn_term,
+    const Eigen::MatrixXd& quad_objective,
+    const Eigen::MatrixXd& quad_cons);
 
-  ~MosekLP() {
+  ~MosekWrapper() {
     if (task_ != NULL)
       MSK_deletetask(&task_);
     if (env_ != NULL)
@@ -97,6 +100,16 @@ class DRAKEOPTIMIZATION_EXPORT MosekLP {
   void AddLinearConstraintBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
       const std::vector<double>& upper_bounds,
       const std::vector<double>& lower_bounds);
+
+  /**AddQuadraticConstraintMatrix
+  * @brief adds a single quadratic matrix to mosek constraint.
+  */
+  void AddQuadraticConstraintMatrix(const Eigen::MatrixXd& cons);
+
+  /**AddQuadraticConstraintMatrix
+  * @brief adds a single quadratic matrix to mosek objective.
+  */
+  void AddQuadraticObjective(const Eigen::MatrixXd& obj);
 
   /**AddVariableBounds()
    * @brief bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html

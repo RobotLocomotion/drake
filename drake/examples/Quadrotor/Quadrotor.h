@@ -27,19 +27,19 @@ class QuadrotorState {  // models the Drake::Vector concept
 
   template <typename Derived>
   QuadrotorState(  // NOLINT(runtime/explicit) per Drake::Vector.
-      const Eigen::MatrixBase<Derived>& x)
-      : x(x(0)),
-        y(x(1)),
-        z(x(2)),
-        roll(x(3)),
-        pitch(x(4)),
-        yaw(x(5)),
-        xdot(x(6)),
-        ydot(x(7)),
-        zdot(x(8)),
-        rolldot(x(9)),
-        pitchdot(x(10)),
-        yawdot(x(11)) {}
+      const Eigen::MatrixBase<Derived>& state)
+      : x(state(0)),
+        y(state(1)),
+        z(state(2)),
+        roll(state(3)),
+        pitch(state(4)),
+        yaw(state(5)),
+        xdot(state(6)),
+        ydot(state(7)),
+        zdot(state(8)),
+        rolldot(state(9)),
+        pitchdot(state(10)),
+        yawdot(state(11)) {}
 
   template <typename Derived>
   QuadrotorState& operator=(const Eigen::MatrixBase<Derived>& state) {

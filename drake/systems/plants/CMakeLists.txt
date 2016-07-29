@@ -1,6 +1,3 @@
-# TODO(#2852) We can't yet handle shadowing as a compiler error.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS_NO_ERROR_SHADOW}")
-
 # IMPORTANT NOTE!!
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
@@ -21,6 +18,7 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   RigidBody.cpp
   RigidBodyTreeContact.cpp
   rigid_body_actuator.cc
+  rigid_body_collision_element.cc
   rigid_body_frame.cc
   rigid_body_loop.cc)
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
@@ -33,6 +31,7 @@ drake_install_headers(
   material_map.h
   pose_map.h
   rigid_body_actuator.h
+  rigid_body_collision_element.h
   RigidBodyFrame.h
   RigidBody.h
   RigidBodyTree.h
@@ -131,8 +130,8 @@ if(MATLAB_FOUND)
   endmacro()
 endif()
 
-set(drakeIK_SRC_FILES inverseKin.cpp inverseKinBackend.cpp
-  inverseKinPointwise.cpp inverseKinTraj.cpp)
+set(drakeIK_SRC_FILES ik_trajectory_helper.cc inverseKin.cpp
+  inverseKinBackend.cpp inverseKinPointwise.cpp inverseKinTraj.cpp)
 set(drakeIK_PODS_PKG)
 if(gurobi_FOUND)
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
@@ -151,7 +150,8 @@ if(drakeIK_SRC_FILES)
   target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
   pods_install_libraries(drakeIK)
   pods_install_libraries(drakeIKoptions)
-  drake_install_headers(RigidBodyIK.h IKoptions.h inverseKinBackend.h)
+  drake_install_headers(RigidBodyIK.h IKoptions.h ik_trajectory_helper.h
+    inverseKinBackend.h)
   pods_install_pkg_config_file(drake-ik
     LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
     REQUIRES drake-rbm

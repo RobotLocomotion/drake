@@ -69,9 +69,9 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
   const RigidBodyActuator& foo_actuator =
       rigid_body_tree->GetActuator(actuator_name);
 
-  EXPECT_EQ(foo_actuator.effort_limit_min, -123);
-  EXPECT_EQ(foo_actuator.effort_limit_max, 123);
-  EXPECT_EQ(foo_actuator.reduction, 0.5);
+  EXPECT_EQ(foo_actuator.effort_limit_min_, -123);
+  EXPECT_EQ(foo_actuator.effort_limit_max_, 123);
+  EXPECT_EQ(foo_actuator.reduction_, 0.5);
 }
 
 }  // namespace

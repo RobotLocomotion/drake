@@ -228,7 +228,8 @@ class DrakeRosTfPublisher {
       if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
         auto transform = rigid_body_tree_->relativeTransform(
             cache,
-            rigid_body_tree_->FindBodyIndex(rigid_body->get_parent()->get_name()),
+            rigid_body_tree_->FindBodyIndex(
+                rigid_body->get_parent()->get_name()),
             rigid_body_tree_->FindBodyIndex(rigid_body->get_name()));
         auto translation = transform.translation();
         auto quat = drake::math::rotmat2quat(transform.linear());

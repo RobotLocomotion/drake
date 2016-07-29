@@ -23,8 +23,9 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
- - [#2907][] Made `RigidBody::position_num_start` and `RigidBody::velocity_num_start to be private. Re-named them to be `RigidBody::position_start_index_` and `RigidBody::velocity_start_index_`. Renamed accessors to conform to style guide.
- - [#2905][] Made `RigidBody::body_index` private. Re-named it to be `RigidBody::body_index_`. Added necessary accessors.
+ - [#2923][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
+ - [#2907][] Made `RigidBody::position_num_start` and `RigidBody::velocity_num_start to be private. Renamed accessors to conform to style guide.
+ - [#2905][] Made `RigidBody::body_index` private. Added necessary accessors.
  - [#2904][] Made `RigidBody::parent` private. Re-named it to be `RigidBody::parent_`. Added necessary accessors.
  - [#2903][] Made `RigidBody::robotnum` private. Re-named it to be `RigidBody::model_id_`.
  - [#2902][] Made `RigidBody::model_name_` private. Re-named `RigidBody::model_name()` to be `RigidBody::get_model_name()`. Added `RigidBody::set_model_name()`.
@@ -40,6 +41,7 @@ Unreleased: changes on master, not yet released
  - [#2018][] Fix capitalization of `Constraint` and `OptimizationProblem` APIs to match style guide.
  - [#2415][] Require CMake 3.5 or higher to configure and build.
  - [#2779][] Move some rotation functions from drakeGeometryUtil to drake/math.
+ - [#2963][] Rename RigidBody::CollisionElement to RigidBodyCollisionElement.
 
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
@@ -94,3 +96,5 @@ Changes in version v0.9.11 and before are not provided.
 [#2904]: https://github.com/RobotLocomotion/drake/issues/2904
 [#2905]: https://github.com/RobotLocomotion/drake/issues/2905
 [#2907]: https://github.com/RobotLocomotion/drake/issues/2907
+[#2923]: https://github.com/RobotLocomotion/drake/issues/2923
+[#2963]: https://github.com/RobotLocomotion/drake/issues/2963

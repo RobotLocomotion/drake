@@ -91,11 +91,6 @@ class DRAKERBM_EXPORT RigidBody {
    */
   const RigidBody* get_parent() const;
 
-  /**
-   * Returns a mutable pointer to this rigid body's parent rigid body.
-   */
-  RigidBody* get_mutable_parent();
-
   bool hasParent() const;
 
   /**
@@ -233,29 +228,6 @@ class DRAKERBM_EXPORT RigidBody {
 
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
-  // TODO(amcastro-tri): move to a better place (h + cc files).
-  class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element {
-   public:
-    CollisionElement(const CollisionElement& other);
-    // TODO(amcastro-tri): The RigidBody should be const?
-    // TODO(amcastro-tri): It should not be possible to construct a
-    // CollisionElement without specifying a geometry. Remove this constructor.
-    CollisionElement(const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    CollisionElement(const DrakeShapes::Geometry& geometry,
-                     const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    virtual ~CollisionElement() {}
-
-    CollisionElement* clone() const override;
-
-    bool CollidesWith(const DrakeCollision::Element* other) const override;
-
-#ifndef SWIG
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
-  };
-
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -269,19 +241,19 @@ class DRAKERBM_EXPORT RigidBody {
   std::string model_name_;
 
   // A unique ID for each model. It uses 0-index, starts from 0.
-  int model_id_;
+  int model_id_{0};
 
   // The rigid body that's connected to this rigid body's joint.
-  RigidBody* parent_;
+  RigidBody* parent_{nullptr};
 
   // The index of this rigid body in the rigid body tree.
-  int body_index_;
+  int body_index_{0};
 
   // The starting index of this rigid body's joint's position value(s) within
   // the parent tree's state vector.
-  int position_start_index_;
+  int position_start_index_{0};
 
   // The starting index of this rigid body's joint's velocity value(s) within
   // the parent tree's state vector.
-  int velocity_start_index_;
+  int velocity_start_index_{0};
 };
