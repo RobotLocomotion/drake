@@ -1963,9 +1963,13 @@ std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
     const KinematicsCache<Scalar>& cache) const {
+<<<<<<< HEAD
   int num_lin_eq_pos_cnstr = linear_equality_position_constraint_ ?
   linear_equality_position_constraint_->num_constraints() : 0;
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6*loops.size()+num_lin_eq_pos_cnstr, 1);
+=======
+  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size()+linear_equality_position_constraint_->num_constraints(), 1);
+>>>>>>> add addLinearEqualityPositionConstraint to RigidBodyTree
   for (size_t i = 0; i < loops.size(); i++) {
     {  // position constraint
       auto ptA_in_B =
@@ -1982,12 +1986,18 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
       ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
     }
   }
+<<<<<<< HEAD
   if(linear_equality_position_constraint_) {
     Matrix<Scalar, Eigen::Dynamic, 1> lin_eq_cnstr_val;
     linear_equality_position_constraint_->eval(cache.getQ(),lin_eq_cnstr_val);
     ret.middleRows(6 * loops.size(), num_lin_eq_pos_cnstr) =
     lin_eq_cnstr_val - linear_equality_position_constraint_->lower_bound();
   }
+=======
+  Matrix<Scalar, Eigen::Dynamic, 1> lin_eq_cnstr_val;
+  linear_equality_position_constraint_->eval(cache.getQ(),lin_eq_cnstr_val);
+  ret.middleRows(6 * loops.size(), linear_equality_position_constraint_->num_constraints()) = lin_eq_cnstr_val - linear_equality_position_constraint_->lower_bound();
+>>>>>>> add addLinearEqualityPositionConstraint to RigidBodyTree
   return ret;
 }
 
@@ -1998,8 +2008,12 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
   int num_lin_eq_pos_cnstr = linear_equality_position_constraint_ ?
       linear_equality_position_constraint_->num_constraints() : 0;
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
+<<<<<<< HEAD
       6 * loops.size() + num_lin_eq_pos_cnstr,
       in_terms_of_qdot ? num_positions_ : num_velocities_);
+=======
+      6 * loops.size() + linear_equality_position_constraint_->num_constraints(), in_terms_of_qdot ? num_positions_ : num_velocities_);
+>>>>>>> add addLinearEqualityPositionConstraint to RigidBodyTree
 
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
@@ -2024,6 +2038,13 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
           Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(nv,nv));
     }
   }
+  if(in_terms_of_qdot) {
+    ret.middleRows(6 * loops.size(), linear_equality_position_constraint_->num_constraints()) = linear_equality_position_constraint_->A();
+  }
+  else {
+    auto nv = cache.getNumVelocities();
+    ret.middleRows(6 * loops.size(), linear_equality_position_constraint_->num_constraints()) = linear_equality_position_constraint_->A() * cache.transformVelocityMappingToPositionDotMapping(Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(nv,nv));
+  }
   return ret;
 }
 
@@ -2031,9 +2052,13 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1>
 RigidBodyTree::positionConstraintsJacDotTimesV(
     const KinematicsCache<Scalar>& cache) const {
+<<<<<<< HEAD
   int num_lin_eq_pos_cnstr = linear_equality_position_constraint_ ?
   linear_equality_position_constraint_->num_constraints() : 0;
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6*loops.size()+num_lin_eq_pos_cnstr, 1);
+=======
+  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size() + linear_equality_position_constraint_->num_constraints(), 1);
+>>>>>>> add addLinearEqualityPositionConstraint to RigidBodyTree
 
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
@@ -2049,6 +2074,7 @@ RigidBodyTree::positionConstraintsJacDotTimesV(
     ret.middleRows(6 * loops.size(), num_lin_eq_pos_cnstr) =
     Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_lin_eq_pos_cnstr);
   }
+  ret.middleRows(6 * loops.size(), linear_equality_position_constraint_->num_constraints()) = Matrix<Scalar, Eigen::Dynamic, 1>::Zero(linear_equality_position_constraint_->num_constraints());
   return ret;
 }
 
