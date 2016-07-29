@@ -3,6 +3,7 @@
 #include <string>
 
 #include "drake/drakeRBM_export.h"
+#include "drake/systems/plants/model_element_type.h"
 
 namespace drake {
 namespace systems {
@@ -42,12 +43,16 @@ class DRAKERBM_EXPORT ModelElementId {
    * These could be, for example, the name of a joint, body, frame, loop joint,
    * actuator, sensor, etc.
    *
+   * @param[in] element_type The type of the modeling element.
+   *
    * @param[in] model_instance_id A unique number that identifies the model
    * instance. This is included for legacy support and will be removed in the
    * near future.
    */
   ModelElementId(const std::string& instance_name,
-                 const std::string& model_name, const std::string& element_name,
+                 const std::string& model_name,
+                 const std::string& element_name,
+                 ModelElementType element_type,
                  int model_instance_id);
 
   /**
@@ -66,6 +71,11 @@ class DRAKERBM_EXPORT ModelElementId {
    */
   const std::string& get_element_name() const;
 
+  /**
+   * Returns the modeling element's type.
+   */
+  ModelElementType get_element_type() const;
+
   // TODO(liang.fok) Remove this method. See:
   // https://github.com/RobotLocomotion/drake/issues/2973
   /**
@@ -77,14 +87,37 @@ class DRAKERBM_EXPORT ModelElementId {
    */
   int get_model_instance_id() const;
 
+  // TODO(liang.fok) Remove this method. See:
+  // https://github.com/RobotLocomotion/drake/issues/2990
+  void set_instance_name(const std::string& model_name);
+
+  // TODO(liang.fok) Remove this method. See:
+  // https://github.com/RobotLocomotion/drake/issues/2990
+  void set_model_name(const std::string& model_name);
+
+  // TODO(liang.fok) Remove this method. See:
+  // https://github.com/RobotLocomotion/drake/issues/2990
+  void set_element_name(const std::string& model_name);
+
+  // TODO(liang.fok) Remove this method. See:
+  // https://github.com/RobotLocomotion/drake/issues/2990
+  void set_element_type(ModelElementType element_type);
+
+  // TODO(liang.fok) Remove this method. See:
+  // https://github.com/RobotLocomotion/drake/issues/2990
+  void set_model_instance_id(int model_instance_id);
+
  private:
-  const std::string instance_name_;
-  const std::string model_name_;
-  const std::string element_name_;
+  // TODO(liang.fok) Make these variables const once the setters are removed.
+  // See: https://github.com/RobotLocomotion/drake/issues/2990
+  std::string instance_name_;
+  std::string model_name_;
+  std::string element_name_;
+  ModelElementType element_type_;
 
   // TODO(liang.fok) Remove model_instance_id_. See:
   // https://github.com/RobotLocomotion/drake/issues/2973
-  const int model_instance_id_;
+  int model_instance_id_{0};
 };
 
 bool operator==(const ModelElementId& left_element,
@@ -93,6 +126,7 @@ bool operator==(const ModelElementId& left_element,
              right_element.get_instance_name() &&
          left_element.get_model_name() == right_element.get_model_name() &&
          left_element.get_element_name() == right_element.get_element_name() &&
+         left_element.get_element_type() == right_element.get_element_type() &&
          left_element.get_model_instance_id() ==
              right_element.get_model_instance_id();
 }

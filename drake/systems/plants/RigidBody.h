@@ -12,6 +12,9 @@
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/model_element_id.h"
+
+using drake::systems::plants::ModelElementId;
 
 class DRAKERBM_EXPORT RigidBody {
  private:
@@ -218,14 +221,9 @@ class DRAKERBM_EXPORT RigidBody {
 #endif
 
  private:
-  // The name of this rigid body.
-  std::string name_;
-
-  // The name of the model to which this rigid body belongs.
-  std::string model_name_;
-
-  // A unique ID for each model. It uses 0-index, starts from 0.
-  int model_id_{0};
+  // Contains information that uniquely identifies this rigid body among all
+  // modeling elements in the simulation.
+  ModelElementId model_element_id_;
 
   // The rigid body that's connected to this rigid body's joint.
   RigidBody* parent_{nullptr};

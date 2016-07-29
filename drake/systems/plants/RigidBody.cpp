@@ -4,6 +4,9 @@
 
 #include "drake/util/drakeGeometryUtil.h"
 
+using drake::systems::plants::ModelElementId;
+using drake::systems::plants::ModelElementType;
+
 using Eigen::Isometry3d;
 using Eigen::Matrix;
 using Eigen::Vector3d;
@@ -22,19 +25,32 @@ RigidBody::RigidBody()
   mass = 0.0;
   com = Vector3d::Zero();
   I << drake::SquareTwistMatrix<double>::Zero();
+  model_element_id_.set_element_type(ModelElementType::kBodyElement);
 }
 
-const std::string& RigidBody::get_name() const { return name_; }
+const std::string& RigidBody::get_name() const {
+  return model_element_id_.get_element_name();
+}
 
-void RigidBody::set_name(const std::string& name) { name_ = name; }
+void RigidBody::set_name(const std::string& name) {
+  model_element_id_.set_element_name(name);
+}
 
-const std::string& RigidBody::get_model_name() const { return model_name_; }
+const std::string& RigidBody::get_model_name() const {
+  return model_element_id_.get_model_name();
+}
 
-void RigidBody::set_model_name(const std::string& name) { model_name_ = name; }
+void RigidBody::set_model_name(const std::string& name) {
+  model_element_id_.set_model_name(name);
+}
 
-int RigidBody::get_model_id() const { return model_id_; }
+int RigidBody::get_model_id() const {
+  model_element_id_.get_model_id();
+}
 
-void RigidBody::set_model_id(int model_id) { model_id_ = model_id; }
+void RigidBody::set_model_id(int model_id) {
+  model_element_id_.set_model_id(model_id);
+}
 
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
   this->joint = move(new_joint);
@@ -124,7 +140,7 @@ ostream& operator<<(ostream& out, const RigidBody& b) {
   collision_element_str << "]";
 
   out << "RigidBody\n"
-      << "  - link name: " << b.name_ << "\n"
+      << "  - body name: " << model_element_id_.get_element_name() << "\n"
       << "  - parent joint: " << parent_joint_name << "\n"
       << "  - Collision elements IDs: " << collision_element_str.str();
 

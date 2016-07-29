@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/plants/model_element_id.h"
+#include "drake/systems/plants/model_element_type.h"
 
 namespace drake {
 namespace systems {
@@ -8,20 +9,27 @@ namespace plants {
 
 // Tests the basic functionality of ModelElementId.
 GTEST_TEST(ModelElementIdTest, BasicTest) {
-  ModelElementId element_id_1("Foo_Instance", "Bar_Model", "Baz_Element", 1);
+  ModelElementId element_id_1("Foo_Instance", "Bar_Model", "Baz_Element",
+      ModelElementType::kBodyElement, 1);
   EXPECT_EQ(element_id_1.get_instance_name(), "Foo_Instance");
   EXPECT_EQ(element_id_1.get_model_name(), "Bar_Model");
   EXPECT_EQ(element_id_1.get_element_name(), "Baz_Element");
+  EXPECT_EQ(element_id_1.get_element_type(), ModelElementType::kBodyElement);
   EXPECT_EQ(element_id_1.get_model_instance_id(), 1);
 }
 
 // Tests ability to compare two ModelElementId objects.
 GTEST_TEST(ModelElementIdTest, CompareTest) {
-  ModelElementId element_id_1("Foo_Instance", "Bar_Model", "Baz_Element", 1);
-  ModelElementId element_id_2("Foo_Instance", "Bar_Model", "Baz_Element", 1);
-  ModelElementId element_id_3("AS@#$AB", "Bar_Model", "Baz_Element", 2);
-  ModelElementId element_id_4("Foo_Instance", "Q@#$@#!!@#", "Baz_Element", 3);
-  ModelElementId element_id_5("Foo_Instance", "Bar_Model", "345234614", 4);
+  ModelElementId element_id_1("Foo_Instance", "Bar_Model", "Baz_Element",
+      ModelElementType::kJointElement, 1);
+  ModelElementId element_id_2("Foo_Instance", "Bar_Model", "Baz_Element",
+      ModelElementType::kJointElement, 1);
+  ModelElementId element_id_3("AS@#$AB", "Bar_Model", "Baz_Element",
+      ModelElementType::kForceElement, 2);
+  ModelElementId element_id_4("Foo_Instance", "Q@#$@#!!@#", "Baz_Element",
+      ModelElementType::kSensorElement, 3);
+  ModelElementId element_id_5("Foo_Instance", "Bar_Model", "345234614",
+      ModelElementType::kFrameElement, 4);
 
   EXPECT_EQ(element_id_1, element_id_1);
   EXPECT_EQ(element_id_1, element_id_2);
