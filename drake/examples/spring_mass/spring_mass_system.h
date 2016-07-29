@@ -263,8 +263,8 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   }
 
   const std::string name_;
-  const double spring_constant_N_per_m_;
-  const double mass_kg_;
+  const double spring_constant_N_per_m_{};
+  const double mass_kg_{};
   const bool system_is_forced_{false};
 };
 
