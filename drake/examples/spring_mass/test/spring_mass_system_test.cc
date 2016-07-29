@@ -6,11 +6,7 @@
 
 #include "drake/examples/spring_mass/spring_mass_system.h"
 
-#include <algorithm>
-#include <cassert>
 #include <memory>
-#include <iomanip>
-#include <iostream>
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
@@ -21,22 +17,23 @@
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_subvector.h"
 #include "drake/systems/framework/state_vector.h"
+#include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/vector_interface.h"
 #include "drake/util/eigen_matrix_compare.h"
 
+using std::make_unique;
 using std::unique_ptr;
-using std::cout;
-using std::endl;
 
 namespace drake {
 
-using systems::ContextBase;
 using systems::BasicVector;
 using systems::BasicStateVector;
 using systems::Context;
+using systems::ContextBase;
 using systems::ContinuousState;
 using systems::ContinuousSystem;
+using systems::FreestandingInputPort;
 using systems::LeafStateVector;
 using systems::StateSubvector;
 using systems::StateVector;
@@ -53,8 +50,13 @@ const double kMass = 2.0;      // kg
 class SpringMassSystemTest : public ::testing::Test {
  public:
   void SetUp() override {
+    Initialize();
+  }
+
+  void Initialize(bool with_input_force = false) {
     // Construct the system I/O objects.
-    system_.reset(new SpringMassSystem("test_system", kSpring, kMass));
+    system_.reset(new SpringMassSystem("test_system", kSpring, kMass,
+                                       with_input_force));
     context_ = system_->CreateDefaultContext();
     system_output_ = system_->AllocateOutput(*context_);
     system_derivatives_ = system_->AllocateTimeDerivatives();
@@ -78,6 +80,14 @@ class SpringMassSystemTest : public ::testing::Test {
     state_->set_conservative_work(0);
   }
 
+  // Helper method to create input ports (free standing input ports) that are
+  // not connected to any other output port in the system.
+  // Used to test standalone systems not part of a Diagram.
+  static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
+      std::unique_ptr<BasicVector<double>> data) {
+    return make_unique<FreestandingInputPort<double>>(std::move(data));
+  }
+
  protected:
   std::unique_ptr<SpringMassSystem> system_;
   std::unique_ptr<ContextBase<double>> context_;
@@ -94,6 +104,8 @@ class SpringMassSystemTest : public ::testing::Test {
 };
 
 TEST_F(SpringMassSystemTest, Construction) {
+  // Asserts zero inputs for this case.
+  EXPECT_EQ(0, context_->get_num_input_ports());
   EXPECT_EQ("test_system", system_->get_name());
   EXPECT_EQ(kSpring, system_->get_spring_constant());
   EXPECT_EQ(kMass, system_->get_mass());
@@ -142,6 +154,8 @@ TEST_F(SpringMassSystemTest, Output) {
 // Tests that second-order structure is exposed in the state.
 TEST_F(SpringMassSystemTest, SecondOrderStructure) {
   InitializeState(1.2, 3.4);  // Displacement 1.2m, velocity 3.4m/sec.
+  // TODO(amcastro-tri): add method Context::get_mutable_continuous_state();
+  // To minimize user's typing.
   ContinuousState<double>* continuous_state =
       context_->get_mutable_state()->continuous_state.get();
   ASSERT_EQ(1, continuous_state->get_generalized_position().size());
@@ -192,6 +206,37 @@ TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
   EXPECT_NEAR(0.2, derivatives_->get_position(), 1e-8);
   // The derivative of velocity is force over mass.
   EXPECT_NEAR(-kSpring * -0.1 / kMass, derivatives_->get_velocity(), 1e-8);
+}
+
+TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
+  // Initializes a spring mass system with an input port for an external force.
+  Initialize(true);
+  // Asserts exactly one input for this case expecting an external force.
+  ASSERT_EQ(1, context_->get_num_input_ports());
+
+  // Creates a vector holding the data entry to the supplied input force.
+  auto force_vector = make_unique<BasicVector<double>>(1 /* length */);
+
+  // Sets the input force.
+  const double kExternalForce = 1.0;
+  force_vector->get_mutable_value() << kExternalForce;
+
+  // Creates a free standing input port not actually connected to the output of
+  // another system but that has its own data in force_vector.
+  // This is done in order to be able to test this system standalone.
+  context_->SetInputPort(0, MakeInput(std::move(force_vector)));
+
+  InitializeState(0.1, 0.1);  // Displacement 0.1m, velocity 0.1m/sec.
+  system_->EvalTimeDerivatives(*context_, system_derivatives_.get());
+
+  ASSERT_EQ(3, derivatives_->size());
+  // The derivative of position is velocity.
+  EXPECT_NEAR(0.1, derivatives_->get_position(),
+              Eigen::NumTraits<double>::epsilon());
+  // The derivative of velocity is force over mass.
+  EXPECT_NEAR((-kSpring * 0.1 + kExternalForce) / kMass,
+              derivatives_->get_velocity(),
+              Eigen::NumTraits<double>::epsilon());
 }
 
 TEST_F(SpringMassSystemTest, ForceEnergyAndPower) {

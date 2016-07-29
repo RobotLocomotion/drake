@@ -85,8 +85,14 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
  public:
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
+  /// @param[in] name The name of the system.
+  /// @param[in] spring_constant_N_per_m The spring constant in N/m.
+  /// @param[in] mass_Kg The actual value in Kg of the mass attached to the
+  /// spring.
+  /// @param[in] system_is_forced If `true`, the system has an input port for an
+  /// external force. If `false`, the system has no inputs.
   SpringMassSystem(const std::string& name, double spring_constant_N_per_m,
-                   double mass_kg);
+                   double mass_kg, bool system_is_forced = false);
 
   using MyContext = systems::ContextBase<double>;
   using MyContinuousState = systems::ContinuousState<double>;
@@ -108,6 +114,24 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   /// Gets the current velocity of the mass in the given Context.
   double get_velocity(const MyContext& context) const {
     return get_state(context).get_velocity();
+  }
+
+  /// @returns the external driving force to the system.
+  double get_input_force(const MyContext& context) const {
+    double external_force = 0;
+    DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
+    if (system_is_forced_) {
+      const systems::VectorInterface<double>* input =
+          context.get_vector_input(0);
+      // TODO(amcastro-tri): Add VectorInterface::component(int idx) on
+      // VectorInterface.
+      // refactor get_vector_input --> get_input_vector?
+      // So that the line below would simply read:
+      // external_force = context.get_input_vector(0).component(0)
+      // and becomes a one liner.
+      external_force = input->get_value().x();
+    }
+    return external_force;
   }
 
   /// Gets the current value of the conservative power integral in the given
@@ -239,8 +263,9 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   }
 
   const std::string name_;
-  const double spring_constant_N_per_m_;
-  const double mass_kg_;
+  const double spring_constant_N_per_m_{};
+  const double mass_kg_{};
+  const bool system_is_forced_{false};
 };
 
 }  // namespace examples
