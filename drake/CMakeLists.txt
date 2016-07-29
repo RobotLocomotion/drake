@@ -288,6 +288,7 @@ add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(examples)
 add_subdirectory(bindings)
+add_subdirectory(regtests)
 
 # setup MATLAB pods-compliance
 include(cmake/matlab_pods.cmake)
@@ -351,5 +352,3 @@ endif()
 if(IS_DIRECTORY doc/textbook)
   add_subdirectory(doc/textbook)
 endif()
-
-add_subdirectory(regtests)
