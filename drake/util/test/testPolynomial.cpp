@@ -25,26 +25,26 @@ void testIntegralAndDerivative() {
   VectorXd coefficients = VectorXd::Random(5);
   Polynomial<CoefficientType> poly(coefficients);
 
-  Polynomial<CoefficientType> third_derivative = poly.derivative(3);
+  Polynomial<CoefficientType> third_derivative = poly.Derivative(3);
 
   Polynomial<CoefficientType> third_derivative_check =
-      poly.derivative().derivative().derivative();
+      poly.Derivative().Derivative().Derivative();
 
-  EXPECT_TRUE(CompareMatrices(third_derivative.getCoefficients(),
-                              third_derivative_check.getCoefficients(), 1e-14,
+  EXPECT_TRUE(CompareMatrices(third_derivative.GetCoefficients(),
+                              third_derivative_check.GetCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 
-  Polynomial<CoefficientType> tenth_derivative = poly.derivative(10);
+  Polynomial<CoefficientType> tenth_derivative = poly.Derivative(10);
 
-  EXPECT_TRUE(CompareMatrices(tenth_derivative.getCoefficients(),
+  EXPECT_TRUE(CompareMatrices(tenth_derivative.GetCoefficients(),
                               VectorXd::Zero(1), 1e-14,
                               MatrixCompareType::absolute));
 
-  Polynomial<CoefficientType> integral = poly.integral(0.0);
-  Polynomial<CoefficientType> poly_back = integral.derivative();
+  Polynomial<CoefficientType> integral = poly.Integral(0.0);
+  Polynomial<CoefficientType> poly_back = integral.Derivative();
 
-  EXPECT_TRUE(CompareMatrices(poly_back.getCoefficients(),
-                              poly.getCoefficients(), 1e-14,
+  EXPECT_TRUE(CompareMatrices(poly_back.GetCoefficients(),
+                              poly.GetCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 }
 
@@ -76,22 +76,22 @@ void testOperators() {
     poly1_times_poly1 *= poly1_times_poly1;
 
     double t = uniform(generator);
-    valuecheck(sum.evaluateUnivariate(t),
-               poly1.evaluateUnivariate(t) + poly2.evaluateUnivariate(t), 1e-8);
-    valuecheck(difference.evaluateUnivariate(t),
-               poly2.evaluateUnivariate(t) - poly1.evaluateUnivariate(t), 1e-8);
-    valuecheck(product.evaluateUnivariate(t),
-               poly1.evaluateUnivariate(t) * poly2.evaluateUnivariate(t), 1e-8);
-    valuecheck(poly1_plus_scalar.evaluateUnivariate(t),
-               poly1.evaluateUnivariate(t) + scalar, 1e-8);
-    valuecheck(poly1_minus_scalar.evaluateUnivariate(t),
-               poly1.evaluateUnivariate(t) - scalar, 1e-8);
-    valuecheck(poly1_scaled.evaluateUnivariate(t),
-               poly1.evaluateUnivariate(t) * scalar, 1e-8);
-    valuecheck(poly1_div.evaluateUnivariate(t),
-               poly1.evaluateUnivariate(t) / scalar, 1e-8);
-    valuecheck(poly1_times_poly1.evaluateUnivariate(t),
-               poly1.evaluateUnivariate(t) * poly1.evaluateUnivariate(t), 1e-8);
+    valuecheck(sum.EvaluateUnivariate(t),
+               poly1.EvaluateUnivariate(t) + poly2.EvaluateUnivariate(t), 1e-8);
+    valuecheck(difference.EvaluateUnivariate(t),
+               poly2.EvaluateUnivariate(t) - poly1.EvaluateUnivariate(t), 1e-8);
+    valuecheck(product.EvaluateUnivariate(t),
+               poly1.EvaluateUnivariate(t) * poly2.EvaluateUnivariate(t), 1e-8);
+    valuecheck(poly1_plus_scalar.EvaluateUnivariate(t),
+               poly1.EvaluateUnivariate(t) + scalar, 1e-8);
+    valuecheck(poly1_minus_scalar.EvaluateUnivariate(t),
+               poly1.EvaluateUnivariate(t) - scalar, 1e-8);
+    valuecheck(poly1_scaled.EvaluateUnivariate(t),
+               poly1.EvaluateUnivariate(t) * scalar, 1e-8);
+    valuecheck(poly1_div.EvaluateUnivariate(t),
+               poly1.EvaluateUnivariate(t) / scalar, 1e-8);
+    valuecheck(poly1_times_poly1.EvaluateUnivariate(t),
+               poly1.EvaluateUnivariate(t) * poly1.EvaluateUnivariate(t), 1e-8);
 
     // Check the '==' operator.
     EXPECT_TRUE(poly1 + poly2 == sum);
@@ -109,10 +109,10 @@ void testRoots() {
   for (int i = 0; i < num_tests; ++i) {
     VectorXd coeffs = VectorXd::Random(int_distribution(generator));
     Polynomial<CoefficientType> poly(coeffs);
-    auto roots = poly.roots();
-    valuecheck<Eigen::Index>(roots.rows(), poly.getDegree());
+    auto roots = poly.Roots();
+    valuecheck<Eigen::Index>(roots.rows(), poly.GetDegree());
     for (int k = 0; k < roots.size(); k++) {
-      auto value = poly.evaluateUnivariate(roots[k]);
+      auto value = poly.EvaluateUnivariate(roots[k]);
       valuecheck(std::abs(value), 0.0, 1e-8);
     }
   }
@@ -125,12 +125,12 @@ void testEvalType() {
   VectorXd coeffs = VectorXd::Random(int_distribution(generator));
   Polynomial<double> poly(coeffs);
 
-  auto valueIntInput = poly.evaluateUnivariate(1);
+  auto valueIntInput = poly.EvaluateUnivariate(1);
   const auto& double_type = typeid(double);  // NOLINT(readability/function)
   valuecheck(typeid(decltype(valueIntInput)) == double_type, true);
 
   auto valueComplexInput =
-      poly.evaluateUnivariate(std::complex<double>(1.0, 2.0));
+      poly.EvaluateUnivariate(std::complex<double>(1.0, 2.0));
   valuecheck(
       typeid(decltype(valueComplexInput)) == typeid(std::complex<double>),
       true);
@@ -148,11 +148,11 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-  auto A = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients,
+  auto A = Polynomial<CoefficientType>::RandomPolynomialMatrix(num_coefficients,
                                                                rows_A, cols_A);
-  auto B = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients,
+  auto B = Polynomial<CoefficientType>::RandomPolynomialMatrix(num_coefficients,
                                                                rows_B, cols_B);
-  auto C = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients,
+  auto C = Polynomial<CoefficientType>::RandomPolynomialMatrix(num_coefficients,
                                                                rows_A, cols_A);
   auto product = A * B;
   auto sum = A + C;
@@ -192,16 +192,16 @@ GTEST_TEST(PolynomialTest, IsAffine) {
   Polynomiald x("x");
   Polynomiald y("y");
 
-  EXPECT_TRUE(x.isAffine());
-  EXPECT_TRUE(y.isAffine());
-  EXPECT_TRUE((2 + x).isAffine());
-  EXPECT_TRUE((2 * x).isAffine());
-  EXPECT_FALSE((x * x).isAffine());
-  EXPECT_FALSE((x * y).isAffine());
-  EXPECT_TRUE((x + y).isAffine());
-  EXPECT_TRUE((2 + x + y).isAffine());
-  EXPECT_TRUE((2 + (2 * x) + y).isAffine());
-  EXPECT_FALSE((2 + (y * x) + y).isAffine());
+  EXPECT_TRUE(x.IsAffine());
+  EXPECT_TRUE(y.IsAffine());
+  EXPECT_TRUE((2 + x).IsAffine());
+  EXPECT_TRUE((2 * x).IsAffine());
+  EXPECT_FALSE((x * x).IsAffine());
+  EXPECT_FALSE((x * y).IsAffine());
+  EXPECT_TRUE((x + y).IsAffine());
+  EXPECT_TRUE((2 + x + y).IsAffine());
+  EXPECT_TRUE((2 + (2 * x) + y).IsAffine());
+  EXPECT_FALSE((2 + (y * x) + y).IsAffine());
 }
 
 GTEST_TEST(PolynomialTest, VariableIdGeneration) {
@@ -234,27 +234,27 @@ GTEST_TEST(PolynomialTest, VariableIdGeneration) {
 
 GTEST_TEST(PolynomialTest, GetVariables) {
   Polynomiald x = Polynomiald("x");
-  Polynomiald::VarType x_var = x.getSimpleVariable();
+  Polynomiald::VarType x_var = x.GetSimpleVariable();
   Polynomiald y = Polynomiald("y");
-  Polynomiald::VarType y_var = y.getSimpleVariable();
+  Polynomiald::VarType y_var = y.GetSimpleVariable();
   Polynomiald z = Polynomiald("z");
-  Polynomiald::VarType z_var = z.getSimpleVariable();
+  Polynomiald::VarType z_var = z.GetSimpleVariable();
 
-  EXPECT_TRUE(x.getVariables().count(x_var));
-  EXPECT_FALSE(x.getVariables().count(y_var));
+  EXPECT_TRUE(x.GetVariables().count(x_var));
+  EXPECT_FALSE(x.GetVariables().count(y_var));
 
-  EXPECT_FALSE(Polynomiald().getVariables().count(x_var));
+  EXPECT_FALSE(Polynomiald().GetVariables().count(x_var));
 
-  EXPECT_TRUE((x + x).getVariables().count(x_var));
+  EXPECT_TRUE((x + x).GetVariables().count(x_var));
 
-  EXPECT_TRUE((x + y).getVariables().count(x_var));
-  EXPECT_TRUE((x + y).getVariables().count(y_var));
+  EXPECT_TRUE((x + y).GetVariables().count(x_var));
+  EXPECT_TRUE((x + y).GetVariables().count(y_var));
 
-  EXPECT_TRUE((x * y * y + z).getVariables().count(x_var));
-  EXPECT_TRUE((x * y * y + z).getVariables().count(y_var));
-  EXPECT_TRUE((x * y * y + z).getVariables().count(z_var));
+  EXPECT_TRUE((x * y * y + z).GetVariables().count(x_var));
+  EXPECT_TRUE((x * y * y + z).GetVariables().count(y_var));
+  EXPECT_TRUE((x * y * y + z).GetVariables().count(z_var));
 
-  EXPECT_FALSE(x.derivative().getVariables().count(x_var));
+  EXPECT_FALSE(x.Derivative().GetVariables().count(x_var));
 }
 
 // TODO(ggould-tri) -- This test does not pass, which is a misfeature or
@@ -285,36 +285,36 @@ GTEST_TEST(PolynomialTest, MonomialFactor) {
   Polynomiald y = Polynomiald("y");
 
   // "m_" prefix denotes monomial.
-  Polynomiald::Monomial m_one = Polynomiald(1).getMonomials()[0];
-  Polynomiald::Monomial m_two = Polynomiald(2).getMonomials()[0];
-  Polynomiald::Monomial m_x = x.getMonomials()[0];
-  Polynomiald::Monomial m_y = y.getMonomials()[0];
-  Polynomiald::Monomial m_2x = (x * 2).getMonomials()[0];
-  Polynomiald::Monomial m_x2 = (x * x).getMonomials()[0];
-  Polynomiald::Monomial m_x2y = (x * x * y).getMonomials()[0];
+  Polynomiald::Monomial m_one = Polynomiald(1).GetMonomials()[0];
+  Polynomiald::Monomial m_two = Polynomiald(2).GetMonomials()[0];
+  Polynomiald::Monomial m_x = x.GetMonomials()[0];
+  Polynomiald::Monomial m_y = y.GetMonomials()[0];
+  Polynomiald::Monomial m_2x = (x * 2).GetMonomials()[0];
+  Polynomiald::Monomial m_x2 = (x * x).GetMonomials()[0];
+  Polynomiald::Monomial m_x2y = (x * x * y).GetMonomials()[0];
 
   // Expect failures
-  EXPECT_EQ(m_x.factor(m_y).coefficient, 0);
-  EXPECT_EQ(m_x.factor(m_x2).coefficient, 0);
+  EXPECT_EQ(m_x.Factor(m_y).coefficient, 0);
+  EXPECT_EQ(m_x.Factor(m_x2).coefficient, 0);
 
   // Expect successes
-  EXPECT_EQ(m_x.factor(m_x), m_one);
-  EXPECT_EQ(m_2x.factor(m_x), m_two);
-  EXPECT_EQ(m_x2.factor(m_x), m_x);
-  EXPECT_EQ(m_x2y.factor(m_x2), m_y);
-  EXPECT_EQ(m_x2y.factor(m_y), m_x2);
+  EXPECT_EQ(m_x.Factor(m_x), m_one);
+  EXPECT_EQ(m_2x.Factor(m_x), m_two);
+  EXPECT_EQ(m_x2.Factor(m_x), m_x);
+  EXPECT_EQ(m_x2y.Factor(m_x2), m_y);
+  EXPECT_EQ(m_x2y.Factor(m_y), m_x2);
 }
 
 GTEST_TEST(PolynomialTest, MultivariateValue) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
   const std::map<Polynomiald::VarType, double> eval_point = {
-    {x.getSimpleVariable(), 1},
-    {y.getSimpleVariable(), 2}};
-  EXPECT_EQ((x * x + y).evaluateMultivariate(eval_point), 3);
-  EXPECT_EQ((2 * x * x + y).evaluateMultivariate(eval_point), 4);
-  EXPECT_EQ((x * x + 2 * y).evaluateMultivariate(eval_point), 5);
-  EXPECT_EQ((x * x + x * y).evaluateMultivariate(eval_point), 3);
+    {x.GetSimpleVariable(), 1},
+    {y.GetSimpleVariable(), 2}};
+  EXPECT_EQ((x * x + y).EvaluateMultivariate(eval_point), 3);
+  EXPECT_EQ((2 * x * x + y).EvaluateMultivariate(eval_point), 4);
+  EXPECT_EQ((x * x + 2 * y).EvaluateMultivariate(eval_point), 5);
+  EXPECT_EQ((x * x + x * y).EvaluateMultivariate(eval_point), 3);
 }
 
 GTEST_TEST(PolynomialTest, Conversion) {
@@ -331,16 +331,16 @@ GTEST_TEST(PolynomialTest, EvaluatePartial) {
 
   const std::map<Polynomiald::VarType, double> eval_point_null;
   const std::map<Polynomiald::VarType, double> eval_point_x = {
-    {x.getSimpleVariable(), 7}};
+    {x.GetSimpleVariable(), 7}};
   const std::map<Polynomiald::VarType, double> eval_point_y = {
-    {y.getSimpleVariable(), 11}};
+    {y.GetSimpleVariable(), 11}};
   const std::map<Polynomiald::VarType, double> eval_point_xy = {
-    {x.getSimpleVariable(), 7},
-    {y.getSimpleVariable(), 11}};
+    {x.GetSimpleVariable(), 7},
+    {y.GetSimpleVariable(), 11}};
 
   // Test a couple of straightforward explicit cases.
-  EXPECT_EQ(dut.evaluatePartial(eval_point_null).getMonomials(),
-            dut.getMonomials());
+  EXPECT_EQ(dut.EvaluatePartial(eval_point_null).GetMonomials(),
+            dut.GetMonomials());
   // TODO(#2216) These fail due to a known drake bug:
 #if 0
   EXPECT_EQ(dut.evaluatePartial(eval_point_x).getMonomials(),
@@ -351,26 +351,26 @@ GTEST_TEST(PolynomialTest, EvaluatePartial) {
 
   // Test that every order of partial and then complete evaluation gives the
   // same answer.
-  const double expected_result = dut.evaluateMultivariate(eval_point_xy);
+  const double expected_result = dut.EvaluateMultivariate(eval_point_xy);
   EXPECT_EQ(
-      dut.evaluatePartial(eval_point_null).evaluateMultivariate(eval_point_xy),
+      dut.EvaluatePartial(eval_point_null).EvaluateMultivariate(eval_point_xy),
       expected_result);
   EXPECT_EQ(
-      dut.evaluatePartial(eval_point_xy).evaluateMultivariate(eval_point_null),
+      dut.EvaluatePartial(eval_point_xy).EvaluateMultivariate(eval_point_null),
       expected_result);
   EXPECT_EQ(
-      dut.evaluatePartial(eval_point_x).evaluateMultivariate(eval_point_y),
+      dut.EvaluatePartial(eval_point_x).EvaluateMultivariate(eval_point_y),
       expected_result);
   EXPECT_EQ(
-      dut.evaluatePartial(eval_point_y).evaluateMultivariate(eval_point_x),
+      dut.EvaluatePartial(eval_point_y).EvaluateMultivariate(eval_point_x),
       expected_result);
 
   // Test that zeroing out one term gives a sensible result.
-  EXPECT_EQ(dut.evaluatePartial(
-      std::map<Polynomiald::VarType, double>{{x.getSimpleVariable(), 0}}),
+  EXPECT_EQ(dut.EvaluatePartial(
+      std::map<Polynomiald::VarType, double>{{x.GetSimpleVariable(), 0}}),
             (2 * y) + 1);
-  EXPECT_EQ(dut.evaluatePartial(
-      std::map<Polynomiald::VarType, double>{{y.getSimpleVariable(), 0}}),
+  EXPECT_EQ(dut.EvaluatePartial(
+      std::map<Polynomiald::VarType, double>{{y.GetSimpleVariable(), 0}}),
             (5 * x * x * x) + 1);
 }
 

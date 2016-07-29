@@ -201,7 +201,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
-    obj->eval(this_x, ty);
+    obj->Eval(this_x, ty);
 
     F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
@@ -228,7 +228,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     }
 
     ty.resize(num_constraints);
-    c->eval(this_x, ty);
+    c->Eval(this_x, ty);
 
     for (i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
       F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value());

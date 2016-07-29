@@ -28,14 +28,14 @@ DynamicConstraint::DynamicConstraint(int num_states, int num_inputs)
 
 DynamicConstraint::~DynamicConstraint() {}
 
-void DynamicConstraint::eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+void DynamicConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                              Eigen::VectorXd& y) const {
   Drake::TaylorVecXd y_t;
-  eval(Drake::initializeAutoDiff(x), y_t);
+  Eval(Drake::initializeAutoDiff(x), y_t);
   y = math::autoDiffToValueMatrix(y_t);
 }
 
-void DynamicConstraint::eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
+void DynamicConstraint::Eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
                              Drake::TaylorVecXd& y) const {
   DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
 
