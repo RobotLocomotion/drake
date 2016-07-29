@@ -56,7 +56,7 @@ def generate_default_ctor(context, _):
 EIGEN_CTOR = """
   /// Implicit Eigen::Matrix conversion.
   template <typename Derived>
-  // NOLINTNEXTLINE(runtime/explicit) per Drake::Vector.
+  // NOLINTNEXTLINE(runtime/explicit) per drake::Vector.
   %(camel)s(const Eigen::MatrixBase<Derived>& value)
       : value_(value.segment(0, K::kNumCoordiates)) {}
 """
@@ -96,7 +96,7 @@ def generate_to_eigen(context, _):
 
 COORD_NAMER_BEGIN = """
   /// Magic pretty names for our coordinates.  (This is an optional
-  /// part of the Drake::Vector concept, but seems worthwhile.)
+  /// part of the drake::Vector concept, but seems worthwhile.)
   friend std::string getCoordinateName(const %(camel)s<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {
@@ -208,7 +208,7 @@ namespace drake {
 """
 
 CLASS_BEGIN = """
-/// Models the Drake::LCMVector concept.
+/// Models the drake::LCMVector concept.
 template <typename ScalarType = double>
 class %(camel)s {
  public:
@@ -217,7 +217,7 @@ class %(camel)s {
 """
 
 DRAKE_VECTOR_BEGIN = """
-  /// @name Implement the Drake::Vector concept.
+  /// @name Implement the drake::Vector concept.
   //@{
 
   // Even though in practice we have a fixed size, we declare

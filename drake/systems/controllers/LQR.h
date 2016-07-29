@@ -12,7 +12,7 @@
 
 using drake::math::autoDiffToGradientMatrix;
 
-namespace Drake {
+namespace drake {
 
 template <typename System>
 std::shared_ptr<AffineSystem<NullVector, System::template StateVector,

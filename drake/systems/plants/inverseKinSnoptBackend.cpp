@@ -29,7 +29,7 @@ namespace snopt {
 using namespace Eigen;
 using namespace std;
 
-namespace Drake {
+namespace drake {
 namespace systems {
 namespace plants {
 

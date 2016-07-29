@@ -20,7 +20,7 @@ using Ipopt::IpoptData;
 using Ipopt::Number;
 using Ipopt::SolverReturn;
 
-using Drake::TaylorVecXd;
+using drake::TaylorVecXd;
 
 namespace drake {
 namespace solvers {
@@ -117,7 +117,7 @@ size_t EvaluateConstraint(
     var_count += v.size();
   }
 
-  auto tx = Drake::initializeAutoDiff(xvec);
+  auto tx = drake::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
   for (const DecisionVariableView& v : variable_list) {
@@ -396,7 +396,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   void EvaluateCosts(Index n, const Number* x) {
     const Eigen::VectorXd xvec = MakeEigenVector(n, x);
 
-    auto tx = Drake::initializeAutoDiff(xvec);
+    auto tx = drake::initializeAutoDiff(xvec);
     TaylorVecXd ty(1);
     TaylorVecXd this_x;
 

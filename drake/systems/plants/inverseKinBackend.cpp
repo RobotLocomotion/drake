@@ -34,7 +34,7 @@ using drake::solvers::SolutionResult;
 /// to C++; many methods and variables follow Matlab conventions and are
 /// documented in that file.
 
-namespace Drake {
+namespace drake {
 namespace systems {
 namespace plants {
 
@@ -298,7 +298,7 @@ void inverseKinBackend(
   if (q_seed.rows() != model->number_of_positions() || q_seed.cols() != nT ||
       q_nom.rows() != model->number_of_positions() || q_nom.cols() != nT) {
     throw std::runtime_error(
-        "Drake::inverseKinBackend: q_seed and q_nom must be of size "
+        "drake::inverseKinBackend: q_seed and q_nom must be of size "
         "nq x nT");
   }
 

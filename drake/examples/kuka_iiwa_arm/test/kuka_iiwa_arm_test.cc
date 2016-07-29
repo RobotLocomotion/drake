@@ -12,8 +12,8 @@
 #include "drake/systems/Simulation.h"
 
 
-using Drake::RigidBodySystem;
-using Drake::BotVisualizer;
+using drake::RigidBodySystem;
+using drake::BotVisualizer;
 using Eigen::VectorXd;
 using drake::RobotStateTap;
 
@@ -49,7 +49,7 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   random_initial_configuration << 0.01, -0.01, 0.01, -0.01, 0.01, -0.01, 0.01;
   x0.head(7) += random_initial_configuration;
 
-  Drake::SimulationOptions options = SetupSimulation();
+  drake::SimulationOptions options = SetupSimulation();
 
   // Starts the simulation.
   const double kStartTime = 0;
@@ -57,7 +57,7 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   // Simulation duration in seconds.
   const double kDuration = 0.5;
 
-  Drake::simulate(*sys.get(), kStartTime, kDuration, x0, options);
+  drake::simulate(*sys.get(), kStartTime, kDuration, x0, options);
 }
 
 }  // namespace

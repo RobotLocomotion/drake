@@ -7,7 +7,7 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-using Drake::RigidBodySystem;
+using drake::RigidBodySystem;
 
 std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   // Instantiates a rigid body system and adds the robot arm to it.
@@ -15,7 +15,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
       Eigen::aligned_allocator<RigidBodySystem>());
 
   rigid_body_system->addRobotFromFile(
-      Drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
 
   // Sets some simulation parameters.
@@ -47,9 +47,9 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   return rigid_body_system;
 }
 
-Drake::SimulationOptions SetupSimulation(void) {
+drake::SimulationOptions SetupSimulation(void) {
   // Specifies the simulation options.
-  Drake::SimulationOptions options;
+  drake::SimulationOptions options;
   options.realtime_factor = 0;  // As fast as possible.
   options.initial_step_size = 0.002;
 

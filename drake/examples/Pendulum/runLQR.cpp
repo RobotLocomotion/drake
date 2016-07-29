@@ -10,7 +10,7 @@
 #include "drake/util/drakeAppUtil.h"
 
 using namespace std;
-using namespace Drake;
+using namespace drake;
 
 int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();

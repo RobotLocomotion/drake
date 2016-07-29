@@ -11,9 +11,9 @@
 #include "drake/util/Polynomial.h"
 #include "drake/util/drakeAppUtil.h"
 
-using Drake::RigidBodySystem;
-using Drake::BotVisualizer;
-using Drake::cascade;
+using drake::RigidBodySystem;
+using drake::BotVisualizer;
+using drake::cascade;
 using drake::RobotStateTap;
 using Eigen::VectorXd;
 
@@ -45,7 +45,7 @@ int DoMain(int argc, char* argv[]) {
   x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
 
   // Specifies the simulation options.
-  Drake::SimulationOptions options;
+  drake::SimulationOptions options;
   options.realtime_factor = 0;  // As fast as possible.
   options.initial_step_size = 0.002;
 
@@ -72,7 +72,7 @@ int DoMain(int argc, char* argv[]) {
 
   // Starts the simulation.
   const double kStartTime = 0;
-  Drake::simulate(*sys.get(), kStartTime, duration, x0, options);
+  drake::simulate(*sys.get(), kStartTime, duration, x0, options);
 
   auto final_robot_state = robot_state_tap->get_input_vector();
   int num_positions = rigid_body_sys->number_of_positions();

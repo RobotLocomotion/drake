@@ -10,7 +10,7 @@
 #include "drake/core/Gradient.h"
 #include "drake/solvers/Optimization.h"
 
-using Drake::TaylorVecXd;
+using drake::TaylorVecXd;
 
 namespace drake {
 namespace solvers {
@@ -31,7 +31,7 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
     var_count += v.size();
   }
 
-  auto tx = Drake::initializeAutoDiff(xvec);
+  auto tx = drake::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
   for (const DecisionVariableView& v : variable_list) {
@@ -55,7 +55,7 @@ double EvaluateCosts(const std::vector<double>& x,
   double cost = 0;
   Eigen::VectorXd xvec = MakeEigenVector(x);
 
-  auto tx = Drake::initializeAutoDiff(xvec);
+  auto tx = drake::initializeAutoDiff(xvec);
   TaylorVecXd ty(1);
   TaylorVecXd this_x;
 

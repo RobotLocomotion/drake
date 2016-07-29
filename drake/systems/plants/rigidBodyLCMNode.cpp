@@ -6,7 +6,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace Drake;
+using namespace drake;
 
 /** @page rigidBodyLCMNode rigidBodyLCMNode Application
  * @ingroup simulation

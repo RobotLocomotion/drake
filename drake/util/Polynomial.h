@@ -242,11 +242,11 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * no knowledge of what partial derivative terms the indices of a given
    * TaylorVarXd correspond to.
    */
-  Drake::TaylorVarXd EvaluateMultivariate(
-      const std::map<VarType, Drake::TaylorVarXd>& var_values) const {
-    Drake::TaylorVarXd value(0);
+  drake::TaylorVarXd EvaluateMultivariate(
+      const std::map<VarType, drake::TaylorVarXd>& var_values) const {
+    drake::TaylorVarXd value(0);
     for (const Monomial& monomial : monomials_) {
-      Drake::TaylorVarXd monomial_value(monomial.coefficient);
+      drake::TaylorVarXd monomial_value(monomial.coefficient);
       for (const Term& term : monomial.terms) {
         monomial_value *= pow(var_values.at(term.var), term.power);
       }

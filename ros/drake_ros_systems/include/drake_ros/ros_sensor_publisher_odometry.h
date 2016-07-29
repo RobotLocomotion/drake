@@ -11,10 +11,10 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
-using Drake::NullVector;
-using Drake::RigidBodySensor;
-using Drake::RigidBodySystem;
-using Drake::RigidBodyDepthSensor;
+using drake::NullVector;
+using drake::RigidBodySensor;
+using drake::RigidBodySystem;
+using drake::RigidBodyDepthSensor;
 
 namespace drake {
 namespace ros {
@@ -134,7 +134,7 @@ class SensorPublisherOdometry {
     // The input vector u contains the entire system's state. The following
     // The following code extracts the position and velocity values from it
     // and computes the kinematic properties of the system.
-    auto uvec = Drake::toEigen(u);
+    auto uvec = drake::toEigen(u);
     auto q = uvec.head(rigid_body_tree->number_of_positions());    // position
     auto v = uvec.segment(rigid_body_tree->number_of_positions(),  // velocity
                           rigid_body_tree->number_of_velocities());

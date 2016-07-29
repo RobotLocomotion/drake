@@ -4,9 +4,9 @@
 #include "drake/util/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
 
-using Drake::RigidBodySystem;
-using Drake::getRandomVector;
-using Drake::getDrakePath;
+using drake::RigidBodySystem;
+using drake::getRandomVector;
+using drake::getDrakePath;
 using drake::util::MatrixCompareType;
 
 namespace drake {

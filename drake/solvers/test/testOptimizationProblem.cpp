@@ -23,10 +23,10 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 
-using Drake::TaylorVecXd;
-using Drake::VecIn;
-using Drake::Vector1d;
-using Drake::VecOut;
+using drake::TaylorVecXd;
+using drake::VecIn;
+using drake::Vector1d;
+using drake::VecOut;
 using drake::util::MatrixCompareType;
 
 namespace drake {
@@ -245,8 +245,8 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
   constraint << 20, 12, 11, 7, 4;
   prog.AddLinearConstraint(
       constraint.transpose(),
-      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Drake::Vector1d::Constant(40));
+      drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      drake::Vector1d::Constant(40));
   prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
                                 MatrixXd::Constant(5, 1, 1));
   VectorXd expected(5);
@@ -327,13 +327,13 @@ GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
   constraint1 << 6, 3, 3, 2, 1, 0;
   prog.AddLinearConstraint(
       constraint1.transpose(),
-      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Drake::Vector1d::Constant(6.5));
+      drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      drake::Vector1d::Constant(6.5));
   constraint2 << 10, 0, 10, 0, 0, 1;
   prog.AddLinearConstraint(
       constraint2.transpose(),
-      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Drake::Vector1d::Constant(20));
+      drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      drake::Vector1d::Constant(20));
 
   Eigen::VectorXd lower(6);
   lower << 0, 0, 0, 0, 0, 0;
@@ -503,7 +503,7 @@ class GloptipolyConstrainedExampleCost {
 
 class GloptipolyConstrainedExampleConstraint
     : public Constraint {  // want to also support deriving directly from
-                           // constraint without going through Drake::Function
+                           // constraint without going through drake::Function
  public:
   GloptipolyConstrainedExampleConstraint()
       : Constraint(
@@ -872,7 +872,7 @@ OptimizationProblem prog;
   constraint1 << 1, 1;
   prog.AddLinearEqualityConstraint(
       constraint1.transpose(),
-      Drake::Vector1d::Constant(1.0));
+      drake::Vector1d::Constant(1.0));
 
   prog.Solve();
 
@@ -897,7 +897,7 @@ OptimizationProblem prog;
 
   prog.AddLinearEqualityConstraint(
       constraint2.transpose(),
-      Drake::Vector1d::Constant(0.0), vars);
+      drake::Vector1d::Constant(0.0), vars);
   prog.Solve();
   expected_answer.resize(3);
   expected_answer << 0.5, 0.5, 1.0;

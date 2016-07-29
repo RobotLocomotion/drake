@@ -7,7 +7,7 @@
 using namespace std;
 
 template <typename ScalarType = double>
-class PendulumState {  // models the Drake::Vector concept
+class PendulumState {  // models the drake::Vector concept
  public:
   typedef drake::lcmt_drake_signal LCMMessageType;
   static std::string channel() { return "PendulumState"; }
@@ -15,7 +15,7 @@ class PendulumState {  // models the Drake::Vector concept
   PendulumState(void) : theta(0), thetadot(0) {}
 
   template <typename Derived>
-  PendulumState(  // NOLINT(runtime/explicit) per Drake::Vector.
+  PendulumState(  // NOLINT(runtime/explicit) per drake::Vector.
       const Eigen::MatrixBase<Derived>& x)
       : theta(x(0)), thetadot(x(1)) {}
 
@@ -58,7 +58,7 @@ class PendulumInput {
   PendulumInput(void) : tau(0) {}
 
   template <typename Derived>
-  PendulumInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+  PendulumInput(  // NOLINT(runtime/explicit) per drake::Vector.
       const Eigen::MatrixBase<Derived>& x)
       : tau(x(0)) {}
 
@@ -134,7 +134,7 @@ class PendulumEnergyShapingController {
   template <typename ScalarType>
   using InputVector = PendulumState<ScalarType>;
   template <typename ScalarType>
-  using StateVector = Drake::NullVector<ScalarType>;
+  using StateVector = drake::NullVector<ScalarType>;
   template <typename ScalarType>
   using OutputVector = PendulumInput<ScalarType>;
 

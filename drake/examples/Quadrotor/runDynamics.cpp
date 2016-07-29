@@ -13,7 +13,7 @@
 #include "QuadrotorOutput.h"
 
 using namespace std;
-using namespace Drake;
+using namespace drake;
 using namespace Eigen;
 
 int main(int argc, char* argv[]) {

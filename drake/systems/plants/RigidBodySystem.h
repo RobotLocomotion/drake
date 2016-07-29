@@ -90,7 +90,7 @@ namespace tinyxml2 {
 class XMLElement;
 }
 
-namespace Drake {
+namespace drake {
 
 class RigidBodyForceElement;  // forward declaration
 class RigidBodySensor;        // forward declaration
@@ -729,4 +729,4 @@ class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
   std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
 };
 
-}  // end namespace Drake
+}  // end namespace drake

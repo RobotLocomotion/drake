@@ -11,9 +11,9 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::shared_ptr;
 using std::make_shared;
-using Drake::getDrakePath;
-using Drake::RigidBodyMagnetometer;
-using Drake::RigidBodySystem;
+using drake::getDrakePath;
+using drake::RigidBodyMagnetometer;
+using drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
 
 namespace drake {

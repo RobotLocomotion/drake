@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Drake {
+namespace drake {
 
 /**
  * Defines the user-tunable simulation options.
@@ -60,4 +60,4 @@ struct SimulationOptions {
         should_stop([](double sim_time) { return false; }) {}
 };
 
-}  // end namespace Drake
+}  // end namespace drake

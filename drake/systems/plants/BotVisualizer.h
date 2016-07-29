@@ -11,7 +11,7 @@
 #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
 
-namespace Drake {
+namespace drake {
 
 /** BotVisualizer<RobotStateVector>
  * @brief A system which takes the robot state as input and publishes an lcm
@@ -187,4 +187,4 @@ class BotVisualizer {
   mutable drake::lcmt_viewer_draw draw_msg_;
 };
 
-}  // end namespace Drake
+}  // end namespace drake

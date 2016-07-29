@@ -15,7 +15,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using Drake::getDrakePath;
+using drake::getDrakePath;
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
@@ -82,8 +82,8 @@ GTEST_TEST(testIK, iiwaIK) {
 
   // Constrain iiwa_joint_4 between 0.9 and 1.0.
   PostureConstraint pc(&model, tspan);
-  Drake::Vector1d joint_lb(0.9);
-  Drake::Vector1d joint_ub(1.0);
+  drake::Vector1d joint_lb(0.9);
+  drake::Vector1d joint_ub(1.0);
   Eigen::VectorXi joint_idx(1);
   joint_idx(0) = model.findJoint("iiwa_joint_4")->get_position_start_index();
   pc.setJointLimits(joint_idx, joint_lb, joint_ub);
