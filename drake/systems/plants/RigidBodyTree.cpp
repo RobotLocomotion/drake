@@ -87,7 +87,7 @@ RigidBodyTree::RigidBodyTree(
 }
 
 RigidBodyTree::RigidBodyTree(void)
-    : collision_model_(DrakeCollision::newModel()) {
+    : collision_model_(DrakeCollision::newModel()),linear_equality_position_constraint_(nullptr) {
   // Sets the gravity vector;
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
@@ -2018,7 +2018,7 @@ std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
     const KinematicsCache<Scalar>& cache) const {
-  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
+  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size()+linear_equality_position_constraint_->num_constraints(), 1);
   for (size_t i = 0; i < loops.size(); i++) {
     {  // position constraint
       auto ptA_in_B =
@@ -2035,6 +2035,9 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
       ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
     }
   }
+  Matrix<Scalar, Eigen::Dynamic, 1> lin_eq_cnstr_val;
+  linear_equality_position_constraint_->eval(cache.getQ(),lin_eq_cnstr_val);
+  ret.middleRows(6 * loops.size(), linear_equality_position_constraint_->num_constraints()) = lin_eq_cnstr_val - linear_equality_position_constraint_->lower_bound();
   return ret;
 }
 
@@ -2043,7 +2046,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
 RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
                                            bool in_terms_of_qdot) const {
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
-      6 * loops.size(), in_terms_of_qdot ? num_positions_ : num_velocities_);
+      6 * loops.size() + linear_equality_position_constraint_->num_constraints(), in_terms_of_qdot ? num_positions_ : num_velocities_);
 
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
@@ -2055,6 +2058,13 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
         cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
   }
+  if(in_terms_of_qdot) {
+    ret.middleRows(6 * loops.size(), linear_equality_position_constraint_->num_constraints()) = linear_equality_position_constraint_->A();
+  }
+  else {
+    auto nv = cache.getNumVelocities();
+    ret.middleRows(6 * loops.size(), linear_equality_position_constraint_->num_constraints()) = linear_equality_position_constraint_->A() * cache.transformVelocityMappingToPositionDotMapping(Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(nv,nv));
+  }
   return ret;
 }
 
@@ -2062,7 +2072,7 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1>
 RigidBodyTree::positionConstraintsJacDotTimesV(
     const KinematicsCache<Scalar>& cache) const {
-  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
+  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size() + linear_equality_position_constraint_->num_constraints(), 1);
 
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
@@ -2074,6 +2084,7 @@ RigidBodyTree::positionConstraintsJacDotTimesV(
         cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index());
   }
+  ret.middleRows(6 * loops.size(), linear_equality_position_constraint_->num_constraints()) = Matrix<Scalar, Eigen::Dynamic, 1>::Zero(linear_equality_position_constraint_->num_constraints());
   return ret;
 }
 
@@ -2116,7 +2127,7 @@ size_t RigidBodyTree::getNumJointLimitConstraints() const {
 }
 
 size_t RigidBodyTree::getNumPositionConstraints() const {
-  return loops.size() * 6;
+  return loops.size() * 6 + linear_equality_position_constraint_->num_constraints();
 }
 
 void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {

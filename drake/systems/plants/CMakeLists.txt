@@ -22,7 +22,7 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   rigid_body_collision_element.cc
   rigid_body_frame.cc
   rigid_body_loop.cc)
-target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
+target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil drakeOptimization)
 pods_install_libraries(drakeRBM)
 drake_install_headers(
   ConstraintWrappers.h
