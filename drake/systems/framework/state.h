@@ -14,8 +14,8 @@ namespace drake {
 namespace systems {
 
 /// The ContinuousState is a container for all the State variables that are
-/// unique to continuous Systems, i.e. Systems that satisfy
-/// ContinuousSystemInterface and have defined dynamics at all times.
+/// unique to continuous Systems, i.e. Systems that have defined dynamics at
+/// all times.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>

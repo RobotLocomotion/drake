@@ -7,8 +7,8 @@
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/continuous_system.h"
 #include "drake/systems/framework/state_vector.h"
+#include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
@@ -81,7 +81,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassOutputVector
 ///
 /// Units are MKS (meters-kilograms-seconds).
 class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
-    : public systems::ContinuousSystem<double> {
+    : public systems::System<double> {
  public:
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
@@ -91,7 +91,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   /// spring.
   /// @param[in] system_is_forced If `true`, the system has an input port for an
   /// external force. If `false`, the system has no inputs.
-  SpringMassSystem(const std::string& name, double spring_constant_N_per_m,
+  SpringMassSystem(double spring_constant_N_per_m,
                    double mass_kg, bool system_is_forced = false);
 
   using MyContext = systems::ContextBase<double>;
@@ -211,9 +211,6 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
 
   // Implement base class methods.
 
-  /// Returns the name supplied at construction.
-  std::string get_name() const override;
-
   /// Allocates a state of type SpringMassStateVector.
   /// Allocates no input ports.
   std::unique_ptr<MyContext> CreateDefaultContext() const override;
@@ -262,7 +259,6 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
         context->get_mutable_state()->continuous_state.get());
   }
 
-  const std::string name_;
   const double spring_constant_N_per_m_{};
   const double mass_kg_{};
   const bool system_is_forced_{false};

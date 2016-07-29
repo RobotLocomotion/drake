@@ -1,4 +1,4 @@
-#include "drake/systems/framework/continuous_system.h"
+#include "drake/systems/framework/system.h"
 
 #include <memory>
 #include <stdexcept>
@@ -6,10 +6,12 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/state_vector.h"
+#include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
@@ -18,13 +20,13 @@ namespace {
 
 const int kSize = 3;
 
-// A shell ContinuousSystem to test the default implementations.
-class TestContinuousSystem : public ContinuousSystem<double> {
+// A shell System to test the default implementations.
+class TestSystem : public System<double> {
  public:
-  TestContinuousSystem() {}
-  ~TestContinuousSystem() override {}
+  TestSystem() {}
+  ~TestSystem() override {}
 
-  std::string get_name() const override { return "TestContinuousSystem"; }
+  std::string get_name() const override { return "TestSystem"; }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
@@ -49,13 +51,13 @@ class TestContinuousSystem : public ContinuousSystem<double> {
       ContinuousState<double>* derivatives) const override {}
 };
 
-class ContinuousSystemTest : public ::testing::Test {
+class SystemTest : public ::testing::Test {
  protected:
-  TestContinuousSystem system_;
+  TestSystem system_;
   Context<double> context_;
 };
 
-TEST_F(ContinuousSystemTest, MapVelocityToConfigurationDerivatives) {
+TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   std::unique_ptr<BasicVector<double>> vec1(new BasicVector<double>(kSize));
   std::unique_ptr<BasicVector<double>> vec2(new BasicVector<double>(kSize));
   vec1->get_mutable_value() << 1.0, 2.0, 3.0;
@@ -69,7 +71,7 @@ TEST_F(ContinuousSystemTest, MapVelocityToConfigurationDerivatives) {
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
 }
 
-TEST_F(ContinuousSystemTest, VelocityConfigurationDerivativeSizeMismatch) {
+TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
   std::unique_ptr<BasicVector<double>> vec1(new BasicVector<double>(kSize));
   std::unique_ptr<BasicVector<double>> vec2(new BasicVector<double>(kSize + 1));
   vec1->get_mutable_value() << 1.0, 2.0, 3.0;

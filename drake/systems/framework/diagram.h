@@ -8,9 +8,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/continuous_system_interface.h"
 #include "drake/systems/framework/diagram_context.h"
-#include "drake/systems/framework/system_interface.h"
+#include "drake/systems/framework/system.h"
 
 namespace drake {
 namespace systems {
@@ -62,15 +61,13 @@ struct DiagramOutput : public SystemOutput<T> {
 /// Diagram, but computations can be performed on it as with any other
 /// system.
 template <typename T>
-class Diagram : public ContinuousSystemInterface<T> {
+class Diagram : public System<T> {
  public:
-  explicit Diagram(const std::string& name) : name_(name) {}
+  Diagram() {}
   virtual ~Diagram() {}
 
-  std::string get_name() const override { return name_; }
-
-  void Connect(const SystemInterface<T>* src, int src_port_index,
-               const SystemInterface<T>* dest, int dest_port_index) {
+  void Connect(const System<T>* src, int src_port_index,
+               const System<T>* dest, int dest_port_index) {
     ThrowIfFinal();
     Register(src);
     Register(dest);
@@ -80,7 +77,7 @@ class Diagram : public ContinuousSystemInterface<T> {
     dependency_graph_[dest_id] = src_id;
   }
 
-  void ExportInput(const SystemInterface<T>* sys, int port_index) {
+  void ExportInput(const System<T>* sys, int port_index) {
     ThrowIfFinal();
     Register(sys);
     PortIdentifier id{sys, port_index};
@@ -90,7 +87,7 @@ class Diagram : public ContinuousSystemInterface<T> {
     systems_.insert(sys);
   }
 
-  void ExportOutput(const SystemInterface<T>* sys, int port_index) {
+  void ExportOutput(const System<T>* sys, int port_index) {
     ThrowIfFinal();
     Register(sys);
     output_port_ids_.push_back(PortIdentifier{sys, port_index});
@@ -115,7 +112,7 @@ class Diagram : public ContinuousSystemInterface<T> {
 
     // Add each constituent system to the Context.
     for (int i = 0; i < static_cast<int>(sorted_systems_.size()); ++i) {
-      const SystemInterface<T>* sys = sorted_systems_[i];
+      const System<T>* sys = sorted_systems_[i];
       auto subcontext = sys->CreateDefaultContext();
       auto suboutput = sys->AllocateOutput(*subcontext);
       context->AddSystem(i, std::move(subcontext), std::move(suboutput));
@@ -188,7 +185,7 @@ class Diagram : public ContinuousSystemInterface<T> {
 
     // Since the diagram output now contains pointers to the subsystem outputs,
     // all we need to do is compute all the subsystem outputs in sorted order.
-    for (const SystemInterface<T>* system : sorted_systems_) {
+    for (const System<T>* system : sorted_systems_) {
       const int index = GetSystemIndex(system);
       const ContextBase<T>* subsystem_context =
           diagram_context->GetSubsystemContext(index);
@@ -219,9 +216,9 @@ class Diagram : public ContinuousSystemInterface<T> {
   }
 
  private:
-  typedef std::pair<const SystemInterface<T>*, int> PortIdentifier;
+  typedef std::pair<const System<T>*, int> PortIdentifier;
 
-  void Register(const SystemInterface<T>* sys) {
+  void Register(const System<T>* sys) {
     if (systems_.find(sys) != systems_.end()) {
       // This system is already registered.
       return;
@@ -248,7 +245,7 @@ class Diagram : public ContinuousSystemInterface<T> {
     }
   }
 
-  int GetSystemIndex(const SystemInterface<T>* sys) const {
+  int GetSystemIndex(const System<T>* sys) const {
     auto it = sorted_systems_map_.find(sys);
     DRAKE_ASSERT(it != sorted_systems_map_.end());
     return it->second;
@@ -273,27 +270,27 @@ class Diagram : public ContinuousSystemInterface<T> {
   //
   // TODO(david-german-tri, bradking): Consider using functional form to
   // produce a separate execution order for each output of the Diagram.
-  std::vector<const SystemInterface<T>*> SortSystems() const {
-    std::vector<const SystemInterface<T>*> output;
+  std::vector<const System<T>*> SortSystems() const {
+    std::vector<const System<T>*> output;
 
     // Build two maps:
     // A map from each system, to every system that depends on it.
-    std::map<const SystemInterface<T>*, std::set<const SystemInterface<T>*>>
+    std::map<const System<T>*, std::set<const System<T>*>>
         dependents;
     // A map from each system, to every system on which it depends.
-    std::map<const SystemInterface<T>*, std::set<const SystemInterface<T>*>>
+    std::map<const System<T>*, std::set<const System<T>*>>
         dependencies;
 
     for (const auto& connection : dependency_graph_) {
-      const SystemInterface<T>* src = connection.second.first;
-      const SystemInterface<T>* dest = connection.first.first;
+      const System<T>* src = connection.second.first;
+      const System<T>* dest = connection.first.first;
       dependents[src].insert(dest);
       dependencies[dest].insert(src);
     }
 
     // Find the systems that have no inputs within the Diagram.
-    std::set<const SystemInterface<T>*> nodes_with_in_degree_zero;
-    for (const SystemInterface<T>* system : systems_) {
+    std::set<const System<T>*> nodes_with_in_degree_zero;
+    for (const System<T>* system : systems_) {
       if (dependencies.find(system) == dependencies.end()) {
         nodes_with_in_degree_zero.insert(system);
       }
@@ -302,13 +299,13 @@ class Diagram : public ContinuousSystemInterface<T> {
     while (!nodes_with_in_degree_zero.empty()) {
       // Pop a node with in-degree zero.
       auto it = nodes_with_in_degree_zero.begin();
-      const SystemInterface<T>* node = *it;
+      const System<T>* node = *it;
       nodes_with_in_degree_zero.erase(it);
 
       // Push the node onto the sorted output.
       output.push_back(node);
 
-      for (const SystemInterface<T>* dependent : dependents[node]) {
+      for (const System<T>* dependent : dependents[node]) {
         dependencies[dependent].erase(node);
         if (dependencies[dependent].empty()) {
           nodes_with_in_degree_zero.insert(dependent);
@@ -330,8 +327,6 @@ class Diagram : public ContinuousSystemInterface<T> {
   Diagram(Diagram<T>&& other) = delete;
   Diagram& operator=(Diagram<T>&& other) = delete;
 
-  std::string name_;
-
   // The ordered inputs and outputs of this Diagram.
   std::vector<PortIdentifier> input_port_ids_;
   std::vector<PortIdentifier> output_port_ids_;
@@ -344,15 +339,15 @@ class Diagram : public ContinuousSystemInterface<T> {
   std::map<PortIdentifier, PortIdentifier> dependency_graph_;
 
   // The unsorted set of Systems in this Diagram.
-  std::set<const SystemInterface<T>*> systems_;
+  std::set<const System<T>*> systems_;
 
   // The topologically sorted list of Systems in this Diagram. Only computed
   // when Finalize is called.
-  std::vector<const SystemInterface<T>*> sorted_systems_;
+  std::vector<const System<T>*> sorted_systems_;
 
   // For fast conversion queries: what is the index of this System in the
   // sorted order?  Only computed when Finalize is called.
-  std::map<const SystemInterface<T>*, int> sorted_systems_map_;
+  std::map<const System<T>*, int> sorted_systems_map_;
 };
 
 }  // namespace systems
