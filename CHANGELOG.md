@@ -22,6 +22,7 @@ Unreleased: changes on master, not yet released
 
 [//]: # "Altered functionality or APIs."
 ### Changed
+
  - [#2983][] Renamed namespace `Drake` to be `drake`.
  - [#2923][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
  - [#2908][] Made `RigidBody::visual_elements` private. Renamed accessors based on style guide to be `RigidBody::AddVisualElement()` and `RigidBody::GetVisualElements()`.
