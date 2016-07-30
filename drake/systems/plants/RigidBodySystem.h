@@ -4,6 +4,7 @@
 #include "drake/drakeRBSystem_export.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/System.h"
+#include "drake/systems/plants/model_element_id.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 /** Rigid Body Dynamics Engine Class Design  (still needs to be implemented
@@ -482,6 +483,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+  // TODO(liang.fok): Modify this constructor to take as input a ModelElementId
+  // instead of a name.
   /**
    * The constructor.
    *
@@ -492,7 +495,14 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
    */
   RigidBodySensor(const RigidBodySystem& sys, const std::string& name,
                   std::shared_ptr<RigidBodyFrame> frame)
-      : sys_(sys), name_(name), frame_(frame) {}
+      : sys_(sys), frame_(frame) {
+    model_element_id_.set_instance_name("UNDEFINED INSTANCE NAME");
+    model_element_id_.set_model_name(frame_->body->get_model_name());
+    model_element_id_.set_element_type(
+        drake::systems::plants::ModelElementType::kSensorElement);
+    model_element_id_.set_element_name(name);
+    model_element_id_.set_model_instance_id(frame_->body->get_model_id());
+  }
 
   virtual ~RigidBodySensor() {}
 
@@ -505,7 +515,9 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
       const RigidBodySystem::InputVector<double>& u) const = 0;
 
   /// Returns the name of the sensor.
-  const std::string& get_name() const { return name_; }
+  const std::string& get_name() const {
+    return model_element_id_.get_element_name();
+  }
 
   /// Returns the name of the model (i.e., robot) that owns this sensor.
   const std::string& get_model_name() const;
@@ -520,8 +532,9 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
   /// The rigid body tree to which the sensor is attached.
   const RigidBodySystem& sys_;
 
-  /// The sensor's name.
-  const std::string name_;
+  // Contains information that uniquely identifies this sensor among all
+  // modeling elements in the simulation.
+  drake::systems::plants::ModelElementId model_element_id_;
 
   /// The frame within the rigid body tree to which this sensor is attached.
   const std::shared_ptr<RigidBodyFrame> frame_;
