@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 
 #include "drake/examples/Cars/car_simulation.h"
 #include "drake/examples/Cars/gen/euler_floating_joint_state.h"

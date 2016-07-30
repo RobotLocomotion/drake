@@ -1,4 +1,4 @@
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "qp_controller.h"
 
 QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {

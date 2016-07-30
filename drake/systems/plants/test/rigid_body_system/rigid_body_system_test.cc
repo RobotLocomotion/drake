@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
 namespace drake {
