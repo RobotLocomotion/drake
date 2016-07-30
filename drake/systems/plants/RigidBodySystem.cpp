@@ -307,15 +307,15 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
     std::list<RelativePositionConstraint> constraints;
     for (const auto& loop : loops) {
       constraints.push_back(RelativePositionConstraint(
-          sys.tree.get(), zero, zero, zero, loop.frameA_->frame_index,
-          loop.frameB_->frame_index, bTbp, tspan));
+          sys.tree.get(), zero, zero, zero, loop.frameA_->get_frame_index(),
+          loop.frameB_->get_frame_index(), bTbp, tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
                                                    &kin_helper));
       prog.AddGenericConstraint(con1wrapper, {qvar});
       constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), loop.axis_, loop.axis_, loop.axis_,
-          loop.frameA_->frame_index, loop.frameB_->frame_index, bTbp,
+          loop.frameA_->get_frame_index(), loop.frameB_->get_frame_index(), bTbp,
           tspan));
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
@@ -396,7 +396,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
 }
 
 const std::string& RigidBodySensor::get_model_name() const {
-  return frame_->body->get_model_name();
+  return frame_->get_rigid_body().get_model_name();
 }
 
 const RigidBodyFrame& RigidBodySensor::get_frame() const {
@@ -431,12 +431,14 @@ Eigen::VectorXd RigidBodyAccelerometer::output(
   Vector3d sensor_origin =
       Vector3d::Zero();  // assumes sensor coincides with the frame's origin;
   auto J = tree->transformPointsJacobian(rigid_body_state, sensor_origin,
-                                         get_frame().frame_index, 0, false);
+                                         get_frame().get_frame_index(), 0,
+                                         false);
   auto Jdot_times_v = tree->transformPointsJacobianDotTimesV(
-      rigid_body_state, sensor_origin, get_frame().frame_index, 0);
+      rigid_body_state, sensor_origin, get_frame().get_frame_index(), 0);
 
   Vector4d quat_world_to_body =
-      tree->relativeQuaternion(rigid_body_state, 0, get_frame().frame_index);
+      tree->relativeQuaternion(rigid_body_state, 0,
+          get_frame().get_frame_index());
 
   Vector3d accel_base = Jdot_times_v + J * v_dot;
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
@@ -460,7 +462,8 @@ Eigen::VectorXd RigidBodyMagnetometer::output(
   auto const& tree = get_rigid_body_system().getRigidBodyTree();
 
   Vector4d quat_world_to_body =
-      tree->relativeQuaternion(rigid_body_state, 0, get_frame().frame_index);
+      tree->relativeQuaternion(rigid_body_state, 0,
+          get_frame().get_frame_index());
 
   Vector3d mag_body = quatRotateVec(quat_world_to_body, magnetic_north);
 
@@ -473,7 +476,8 @@ Eigen::VectorXd RigidBodyGyroscope::output(
   // relative twist of body with respect to world expressed in body
   auto const& tree = get_rigid_body_system().getRigidBodyTree();
   auto relative_twist = tree->relativeTwist(
-      rigid_body_state, 0, get_frame().frame_index, get_frame().frame_index);
+      rigid_body_state, 0, get_frame().get_frame_index(),
+          get_frame().get_frame_index());
   Eigen::Vector3d angular_rates = relative_twist.head<3>();
 
   return noise_model ? noise_model->generateNoise(angular_rates)
@@ -635,12 +639,13 @@ Eigen::VectorXd RigidBodyDepthSensor::output(
   // Computes the origin of the rays in the world frame. The origin of
   // of the rays in the frame of the sensor is [0,0,0] (the Vector3d::Zero()).
   Vector3d origin = get_rigid_body_system().getRigidBodyTree()->transformPoints(
-      rigid_body_state, Vector3d::Zero(), get_frame().frame_index, 0);
+      rigid_body_state, Vector3d::Zero(), get_frame().get_frame_index(), 0);
 
   // Computes the end of the casted rays in the world frame.
   Matrix3Xd raycast_endpoints_world =
       get_rigid_body_system().getRigidBodyTree()->transformPoints(
-          rigid_body_state, raycast_endpoints, get_frame().frame_index, 0);
+          rigid_body_state, raycast_endpoints, get_frame().get_frame_index(),
+              0);
 
   get_rigid_body_system().getRigidBodyTree()->collisionRaycast(
       rigid_body_state, origin, raycast_endpoints_world, distances);
@@ -969,10 +974,11 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
     const RigidBodyTree* tree, const KinematicsCache<double>& rigid_body_state,
     const RigidBodyFrame* frame, const Eigen::Matrix<double, 6, 1>& wrench) {
   auto T_frame_to_world =
-      tree->relativeTransform(rigid_body_state, 0, frame->frame_index);
+      tree->relativeTransform(rigid_body_state, 0, frame->get_frame_index());
   auto force_in_world = transformSpatialForce(T_frame_to_world, wrench);
   std::vector<int> v_indices;
-  auto J = tree->geometricJacobian(rigid_body_state, 0, frame->frame_index, 0,
+  auto J = tree->geometricJacobian(rigid_body_state, 0,
+                                   frame->get_frame_index(), 0,
                                    false, &v_indices);
   Eigen::VectorXd tau = Eigen::VectorXd::Zero(tree->number_of_velocities());
   for (size_t i = 0; i < v_indices.size(); i++) {
