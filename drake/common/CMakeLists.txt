@@ -5,6 +5,7 @@
 # List all source files used to build libdrakeCommon.
 set(sources
   drake_assert.cc
+  functional_form.cc
   nice_type_name.cc
   text_logging.cc
   )
@@ -16,6 +17,7 @@ set(installed_headers
   drake_assert.h
   drake_deprecated.h
   eigen_types.h
+  functional_form.h
   nice_type_name.h
   sorted_vectors_have_intersection.h
   text_logging.h
