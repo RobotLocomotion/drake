@@ -34,7 +34,7 @@ SimpleCar::OutputVector<ScalarType> drake::SimpleCar::output(   \
 
 // These instantiations must match the API documentation in simple_car.h.
 DRAKE_INSTANTIATE(double)
-DRAKE_INSTANTIATE(Drake::TaylorVarXd)
+DRAKE_INSTANTIATE(drake::TaylorVarXd)
 
 #undef DRAKE_INSTANTIATE
 

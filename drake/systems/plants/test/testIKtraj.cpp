@@ -3,8 +3,8 @@
 
 #include "gtest/gtest.h"
 
-#include "../constraint/RigidBodyConstraint.h"
 #include "drake/Path.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -14,7 +14,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using Drake::getDrakePath;
+using drake::getDrakePath;
 
 GTEST_TEST(testIKtraj, testIKtraj) {
   RigidBodyTree model(

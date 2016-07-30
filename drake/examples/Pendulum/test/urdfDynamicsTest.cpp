@@ -5,9 +5,9 @@
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
-using Drake::getDrakePath;
-using Drake::getRandomVector;
-using Drake::RigidBodySystem;
+using drake::getDrakePath;
+using drake::getRandomVector;
+using drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
 
 namespace drake {

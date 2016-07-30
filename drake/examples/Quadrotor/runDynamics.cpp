@@ -13,7 +13,7 @@
 #include "QuadrotorOutput.h"
 
 using namespace std;
-using namespace Drake;
+using namespace drake;
 using namespace Eigen;
 
 int main(int argc, char* argv[]) {
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
   world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
-      RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
+      RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
       "terrain");
   tree->updateStaticCollisionElements();
 

@@ -6,6 +6,7 @@
 set(sources
   drake_assert.cc
   nice_type_name.cc
+  text_logging.cc
   )
 
 # List headers that should be installed with Drake so that they
@@ -17,6 +18,7 @@ set(installed_headers
   eigen_types.h
   nice_type_name.h
   sorted_vectors_have_intersection.h
+  text_logging.h
   )
 
 # List headers that are needed by code here but should not
@@ -28,6 +30,7 @@ set(private_headers
 # a header defining DRAKECOMMON_EXPORT for dealing with .dlls on Windows.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
+target_link_libraries(drakeCommon threads)
 
 # Install all externally-visible headers.
 drake_install_headers(${installed_headers})

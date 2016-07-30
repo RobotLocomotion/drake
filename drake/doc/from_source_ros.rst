@@ -36,6 +36,11 @@ Install
 `ROS Indigo <http://wiki.ros.org/indigo>`_. Other versions of the OS and ROS
 may or may not work.
 
+Install package ``ros-indigo-ackermann-msgs``, which is used by
+software in `drake_ros_systems <https://github.com/RobotLocomotion/drake/tree/master/ros/drake_ros_systems>`_::
+
+    sudo apt-get install ros-indigo-ackermann-msgs
+
 Once the OS and ROS are installed, install
 `Catkin Tools <http://catkin-tools.readthedocs.io/en/latest/>`_ by following
 the instructions
@@ -168,10 +173,6 @@ To run Drake's ROS-powered cars example, first add the
     git clone git@github.com:liangfok/ackermann-drive-teleop.git ackermann_drive_teleop
     cd ackermann_drive_teleop
     git checkout feature/ackermann_drive_stamped
-
-You will also need to install the package ``ros-indigo-ackermann-msgs``::
-
-    sudo apt-get install ros-indigo-ackermann-msgs
 
 Since a new package was added to the ROS workspace, re-build the workspace
 (note that a build type of ``RelWithDebInfo`` is selected since the simulation

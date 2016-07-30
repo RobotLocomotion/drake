@@ -49,7 +49,7 @@ else()
 endif()
 pods_find_pkg_config(mosek)
 if(mosek_FOUND)
-  list(APPEND optimization_files MosekSolver.cpp MosekLP.cpp)
+  list(APPEND optimization_files MosekSolver.cpp MosekWrapper.cpp)
 else()
   list(APPEND optimization_files NoMosek.cpp)
 endif()
@@ -62,7 +62,7 @@ endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakePolynomial)
-drake_install_headers(MathematicalProgram.h Optimization.h system_identification.h Constraint.h solution_result.h)
+drake_install_headers(decision_variable.h MathematicalProgram.h Optimization.h system_identification.h Constraint.h solution_result.h)
 pods_install_libraries(drakeOptimization)
 pods_install_pkg_config_file(drake-optimization
   LIBS -ldrakeOptimization
@@ -101,6 +101,11 @@ endif()
 if(snopt_c_FOUND AND MATLAB_FOUND)
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
+
+  # These warnings are not worth fixing.
+  set_target_properties(
+    NonlinearProgramSnoptmex
+    PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_ERROR_SHADOW})
 endif()
 
 if(mosek_FOUND)
@@ -112,4 +117,3 @@ add_subdirectory(test)
 add_subdirectory(+drakeFunction)
 add_subdirectory(BMI)
 add_subdirectory(trajectoryOptimization)
-

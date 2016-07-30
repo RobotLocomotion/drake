@@ -269,6 +269,12 @@ else()
   endif()
 endif()
 
+pods_find_pkg_config(spdlog)
+if(spdlog_FOUND)
+  pods_use_pkg_config_includes(spdlog)
+  add_definitions(-DHAVE_SPDLOG)
+endif()
+
 include_directories(thirdParty/bsd/spruce/include)
 
 add_subdirectory(common)
@@ -282,6 +288,7 @@ add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(examples)
 add_subdirectory(bindings)
+add_subdirectory(regtests)
 
 # setup MATLAB pods-compliance
 include(cmake/matlab_pods.cmake)
@@ -345,5 +352,3 @@ endif()
 if(IS_DIRECTORY doc/textbook)
   add_subdirectory(doc/textbook)
 endif()
-
-add_subdirectory(regtests)

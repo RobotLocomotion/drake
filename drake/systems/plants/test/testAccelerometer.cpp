@@ -11,10 +11,10 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::shared_ptr;
 using std::make_shared;
-using Drake::getDrakePath;
-using Drake::RigidBodySystem;
+using drake::getDrakePath;
+using drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
-using Drake::RigidBodyAccelerometer;
+using drake::RigidBodyAccelerometer;
 
 namespace drake {
 namespace systems {

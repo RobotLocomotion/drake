@@ -16,11 +16,11 @@
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
-using Drake::RigidBodySystem;
-using Drake::PDControlSystem;
-using Drake::CascadeSystem;
-using Drake::Gain;
-using Drake::SimulationOptions;
+using drake::RigidBodySystem;
+using drake::PDControlSystem;
+using drake::CascadeSystem;
+using drake::Gain;
+using drake::SimulationOptions;
 
 namespace drake {
 namespace examples {
@@ -120,8 +120,8 @@ std::shared_ptr<TrajectoryCar> CreateTrajectoryCarSystem(int index);
  * floating joint, allowing motion and steering in the x-y plane only.
  */
 DRAKECARS_EXPORT
-std::shared_ptr<Drake::AffineSystem<
-  Drake::NullVector, SimpleCarState, EulerFloatingJointState>>
+std::shared_ptr<drake::AffineSystem<
+  drake::NullVector, SimpleCarState, EulerFloatingJointState>>
 CreateSimpleCarVisualizationAdapter();
 
 /**

@@ -8,7 +8,7 @@
 #include "drake/core/Gradient.h"
 #include "drake/solvers/Optimization.h"
 
-using Drake::TaylorVecXd;
+using drake::TaylorVecXd;
 
 namespace drake {
 namespace solvers {

@@ -5,7 +5,7 @@
 using namespace std;
 using namespace Eigen;
 
-using Drake::systems::plants::inverseKinBackend;
+using drake::systems::plants::inverseKinBackend;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 DRAKEIK_EXPORT void inverseKinPointwise(

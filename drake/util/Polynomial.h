@@ -14,8 +14,8 @@
 #include "drake/core/Gradient.h"
 #include "drake/drakePolynomial_export.h"
 
-/// A scalar multi-variate polynomial, modeled after the msspoly in spotless.
-/**
+/** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
+ *
  * Polynomial represents a list of additive Monomials, each one of which is a
  * product of a constant coefficient (of _CoefficientType, which by default is
  * double) and any number of distinct Terms (variables raised to positive
@@ -73,7 +73,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     }
   };
 
-  /// \brief An additive atom of a Polynomial: The product of any number of
+  /// An additive atom of a Polynomial: The product of any number of
   /// Terms and a coefficient.
   class DRAKEPOLYNOMIAL_EXPORT Monomial {
    public:
@@ -91,24 +91,24 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
               ((coefficient == other.coefficient) && (terms < other.terms)));
     }
 
-    int getDegree() const;
-    int getDegreeOf(VarType var) const;
-    bool hasSameExponents(const Monomial& other) const;
+    int GetDegree() const;
+    int GetDegreeOf(VarType var) const;
+    bool HasSameExponents(const Monomial& other) const;
 
     /// Factors this by other; returns 0 iff other does not divide this.
-    Monomial factor(const Monomial& divisor) const;
+    Monomial Factor(const Monomial& divisor) const;
   };
 
  private:
   /// The Monomial atoms of the Polynomial.
-  std::vector<Monomial> monomials;
+  std::vector<Monomial> monomials_;
 
   /// True iff only 0 or 1 distinct variables appear in the Polynomial.
-  bool is_univariate;
+  bool is_univariate_;
 
  public:
   /// Construct the vacuous polynomial, "0".
-  Polynomial(void) : is_univariate(true) {}
+  Polynomial(void) : is_univariate_(true) {}
 
   /// Construct a Polynomial of a single constant. e.g. "5".
   // This is required for some Eigen operations when used in a
@@ -134,7 +134,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   /// of coefficients for the constant, x, x**2, x**3... Monomials.
   template <typename Derived>
   explicit Polynomial(Eigen::MatrixBase<Derived> const& coefficients) {
-    VarType v = variableNameToId("t");
+    VarType v = VariableNameToId("t");
     for (int i = 0; i < coefficients.size(); i++) {
       Monomial m;
       m.coefficient = coefficients(i);
@@ -144,37 +144,37 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
         t.power = i;
         m.terms.push_back(t);
       }
-      monomials.push_back(m);
+      monomials_.push_back(m);
     }
-    is_univariate = true;
+    is_univariate_ = true;
   }
 
   /// Returns the number of unique Monomials (and thus the number of
   /// coefficients) in this Polynomial.
-  int getNumberOfCoefficients() const;
+  int GetNumberOfCoefficients() const;
 
-  /// Returns the highest degree of any Monomial in this Polynomial.
-  /**
+  /** Returns the highest degree of any Monomial in this Polynomial.
+   *
    * The degree of a multivariate Monomial is the product of the degrees of
    * each of its terms. */
-  int getDegree() const;
+  int GetDegree() const;
 
   /// Returns true iff this is a sum of terms of degree 1, plus a constant.
-  bool isAffine() const;
+  bool IsAffine() const;
 
   /// If the polynomial is "simple" -- e.g. just a single term with
   /// coefficient 1 -- then returns that variable; otherwise returns 0.
-  VarType getSimpleVariable() const;
+  VarType GetSimpleVariable() const;
 
-  const std::vector<Monomial>& getMonomials() const;
+  const std::vector<Monomial>& GetMonomials() const;
 
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> getCoefficients() const;
+  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> GetCoefficients() const;
 
   /// Returns a set of all of the variables present in this Polynomial.
-  std::set<VarType> getVariables() const;
+  std::set<VarType> GetVariables() const;
 
-  /// Evaluate a univariate Polynomial at a specific point.
-  /**
+  /** Evaluate a univariate Polynomial at a specific point.
+   *
    * Evaluates a univariate Polynomial at the given x.  Throws an
    * exception of this Polynomial is not univariate.
    *
@@ -182,29 +182,29 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * be different from both CoefficientsType and RealScalar)
    */
   template <typename T>
-  typename Product<CoefficientType, T>::type evaluateUnivariate(
+  typename Product<CoefficientType, T>::type EvaluateUnivariate(
       const T& x) const {
     typedef typename Product<CoefficientType, T>::type ProductType;
 
-    if (!is_univariate)
+    if (!is_univariate_)
       throw std::runtime_error(
           "this method can only be used for univariate polynomials");
     ProductType value = 0;
     for (typename std::vector<Monomial>::const_iterator iter =
-             monomials.begin();
-         iter != monomials.end(); iter++) {
+             monomials_.begin();
+         iter != monomials_.end(); iter++) {
       if (iter->terms.empty())
         value += iter->coefficient;
       else
         value += iter->coefficient *
-                 pow((ProductType)x,
-                     (PowerType)iter->terms[0].power);
+                  Pow((ProductType) x,
+                      (PowerType) iter->terms[0].power);
     }
     return value;
   }
 
-  /// Evaluate a multivariate Polynomial at a specific point.
-  /**
+  /** Evaluate a multivariate Polynomial at a specific point.
+   *
    * Evaluates a Polynomial with the given values for each variable.  Throws
    * std::out_of_range if the Polynomial contains variables for which values
    * were not provided.
@@ -214,12 +214,12 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * CoefficientsType or RealScalar)
    */
   template <typename T>
-  typename Product<CoefficientType, T>::type evaluateMultivariate(
+  typename Product<CoefficientType, T>::type EvaluateMultivariate(
       const std::map<VarType, T>& var_values) const {
     typedef typename std::remove_const<
       typename Product<CoefficientType, T>::type>::type ProductType;
     ProductType value = 0;
-    for (const Monomial& monomial : monomials) {
+    for (const Monomial& monomial : monomials_) {
       ProductType monomial_value = monomial.coefficient;
       for (const Term& term : monomial.terms) {
         monomial_value *= std::pow(
@@ -231,9 +231,9 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     return value;
   }
 
-  /// Specialization of evaluateMultivariate on TaylorVarXd.
-  /**
-   * Specialize evaluateMultivariate on TaylorVarXd because Eigen autodiffs
+  /** Specialization of EvaluateMultivariate on TaylorVarXd.
+   *
+   * Specialize EvaluateMultivariate on TaylorVarXd because Eigen autodiffs
    * implement a confusing subset of operators and conversions that makes a
    * strictly generic approach too confusing and unreadable.
    *
@@ -242,11 +242,11 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * no knowledge of what partial derivative terms the indices of a given
    * TaylorVarXd correspond to.
    */
-  Drake::TaylorVarXd evaluateMultivariate(
-      const std::map<VarType, Drake::TaylorVarXd>& var_values) const {
-    Drake::TaylorVarXd value(0);
-    for (const Monomial& monomial : monomials) {
-      Drake::TaylorVarXd monomial_value(monomial.coefficient);
+  drake::TaylorVarXd EvaluateMultivariate(
+      const std::map<VarType, drake::TaylorVarXd>& var_values) const {
+    drake::TaylorVarXd value(0);
+    for (const Monomial& monomial : monomials_) {
+      drake::TaylorVarXd monomial_value(monomial.coefficient);
       for (const Term& term : monomial.terms) {
         monomial_value *= pow(var_values.at(term.var), term.power);
       }
@@ -255,34 +255,34 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     return value;
   }
 
-  /// Substitute values for some but not necessarily all variables of a
-  /// polynomial.
-  /**
-   * Analogous to evaluateMultivariate, but:
+  /** Substitute values for some but not necessarily all variables of a
+   * Polynomial.
+   *
+   * Analogous to EvaluateMultivariate, but:
    *  (1) Restricted to CoefficientType, and
    *  (2) Need not map every variable in var_values.
    *
    * Returns a Polynomial in which each variable in var_values has been
    * replaced with its value and constants appropriately combined.
    */
-  Polynomial evaluatePartial(
+  Polynomial EvaluatePartial(
       const std::map<VarType, CoefficientType>& var_values) const;
 
   /// Replaces all instances of variable orig with replacement.
-  void subs(const VarType& orig, const VarType& replacement);
+  void Subs(const VarType& orig, const VarType& replacement);
 
-  /// Takes the derivative of this (univariate) Polynomial.
-  /**
+  /** Takes the derivative of this (univariate) Polynomial.
+   *
    * Returns a new Polynomial that is the derivative of this one in its sole
    * variable.  Throws an exception of this Polynomial is not univariate.
    *
    * If derivative_order is given, takes the nth derivative of this
    * Polynomial.
    */
-  Polynomial derivative(unsigned int derivative_order = 1) const;
+  Polynomial Derivative(unsigned int derivative_order = 1) const;
 
-  /// Takes the integral of this (univariate, non-constant) Polynomial.
-  /**
+  /** Takes the integral of this (univariate, non-constant) Polynomial.
+   *
    * Returns a new Polynomial that is the indefinite integral of this one in
    * its sole variable.  Throws an exception of this Polynomial is not
    * univariate, or if it has no variables.
@@ -290,7 +290,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * If integration_constant is given, adds that constant as the constant
    * term (zeroth-order coefficient) of the resulting Polynomial.
    */
-  Polynomial integral(const CoefficientType& integration_constant = 0.0) const;
+  Polynomial Integral(const CoefficientType& integration_constant = 0.0) const;
 
   bool operator==(const Polynomial& other) const;
 
@@ -363,24 +363,24 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   /// not reflect any sort of mathematical total order.
   bool operator<(const Polynomial& other) const {
     // Just delegate to the default vector std::lexicographical_compare.
-    return monomials < other.monomials;
+    return monomials_ < other.monomials_;
   }
 
-  /// Returns the roots of this (univariate) Polynomial.
-  /**
+  /** Returns the roots of this (univariate) Polynomial.
+   *
    * Returns the roots of a univariate Polynomial as an Eigen column vector of
    * complex numbers whose components are of the RealScalar type.  Throws an
    * exception of this Polynomial is not univariate.
    */
-  RootsType roots() const;
+  RootsType Roots() const;
 
-  /// Checks if a (univariate) Polynomial is approximately equal to this one.
-  /**
+  /** Checks if a (univariate) Polynomial is approximately equal to this one.
+   *
    * Checks that every coefficient of other is within tol of the
    * corresponding coefficient of this Polynomial.  Throws an exception if
    * either Polynomial is not univariate.
    */
-  bool isApprox(const Polynomial& other, const RealScalar& tol) const;
+  bool IsApprox(const Polynomial& other, const RealScalar& tol) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Monomial& m) {
     //    if (m.coefficient == 0) return os;
@@ -399,7 +399,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
         os << '*';
       else
         print_star = true;
-      os << idToVariableName(iter->var);
+      os << IdToVariableName(iter->var);
       if (iter->power != 1) {
         os << "^" << iter->power;
       }
@@ -408,16 +408,16 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   }
 
   friend std::ostream& operator<<(std::ostream& os, const Polynomial& poly) {
-    if (poly.monomials.empty()) {
+    if (poly.monomials_.empty()) {
       os << "0";
       return os;
     }
 
     for (typename std::vector<Monomial>::const_iterator iter =
-             poly.monomials.begin();
-         iter != poly.monomials.end(); iter++) {
+             poly.monomials_.begin();
+         iter != poly.monomials_.end(); iter++) {
       os << *iter;
-      if (iter + 1 != poly.monomials.end() && (iter + 1)->coefficient != -1)
+      if (iter + 1 != poly.monomials_.end() && (iter + 1)->coefficient != -1)
         os << '+';
     }
     return os;
@@ -425,7 +425,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
 
   /// Obtains a matrix of random unvariate Polynomials of the specified size.
   static Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic>
-  randomPolynomialMatrix(Eigen::Index num_coefficients_per_polynomial,
+  RandomPolynomialMatrix(Eigen::Index num_coefficients_per_polynomial,
                          Eigen::Index rows, Eigen::Index cols) {
     Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic> mat(rows, cols);
     for (Eigen::Index row = 0; row < mat.rows(); ++row) {
@@ -439,34 +439,34 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     return mat;
   }
 
- private:
   //@{
   /** Variable name/ID conversion facility. */
-  static bool isValidVariableName(const std::string name);
+  static bool IsValidVariableName(const std::string name);
 
-  static VarType variableNameToId(const std::string name,
+  static VarType VariableNameToId(const std::string name,
                                   const unsigned int m = 1);
 
-  static std::string idToVariableName(const VarType id);
+  static std::string IdToVariableName(const VarType id);
   //@}
 
+ private:
   //@{
-  /// Local version of pow to deal with autodiff.
-  /**
+  /** Local version of pow to deal with autodiff.
+   *
    * A version of std::pow that uses std::pow for arithmetic types and
    * repeated multiplication for non-arithmetic types (e.g., autodiff).
    */
   template <bool B, typename T = void>
   using enable_if_t = typename std::enable_if<B, T>::type;
   template <typename Base>
-  static Base pow(
+  static Base Pow(
       const enable_if_t<std::is_arithmetic<Base>::value, Base>& base,
       const PowerType& exponent) {
     return std::pow(base, exponent);
   }
 
   template <typename Base>
-  static Base pow(const Base& base, const PowerType& exponent) {
+  static Base Pow(const Base& base, const PowerType& exponent) {
     Base result = base;
     for (int i = 1; i < exponent; i++) {
       result = result * base;
@@ -476,7 +476,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   //@}
 
   /// Sorts through Monomial list and merges any that have the same powers.
-  void makeMonomialsUnique(void);
+  void MakeMonomialsUnique(void);
 };
 
 template <typename CoefficientType, int Rows, int Cols>

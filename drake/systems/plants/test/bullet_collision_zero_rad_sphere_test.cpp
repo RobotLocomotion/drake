@@ -6,7 +6,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace Drake;
+using namespace drake;
 
 int main(int argc, char* argv[]) {
   RigidBodyTree tree;
