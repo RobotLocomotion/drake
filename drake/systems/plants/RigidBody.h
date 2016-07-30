@@ -143,7 +143,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   void AddVisualElement(const DrakeShapes::VisualElement& elements);
 
-  const DrakeShapes::VectorOfVisualElements& GetVisualElements() const;
+  const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
 
   void setCollisionFilter(const DrakeCollision::bitmask& group,
                           const DrakeCollision::bitmask& ignores);

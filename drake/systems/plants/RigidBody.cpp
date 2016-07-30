@@ -78,7 +78,7 @@ void RigidBody::AddVisualElement(const DrakeShapes::VisualElement& element) {
   visual_elements_.push_back(element);
 }
 
-const DrakeShapes::VectorOfVisualElements& RigidBody::GetVisualElements()
+const DrakeShapes::VectorOfVisualElements& RigidBody::get_visual_elements()
     const {
   return visual_elements_;
 }
