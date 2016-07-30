@@ -5,7 +5,7 @@
 #include "drake/systems/feedback_system.h"
 #include "drake/systems/test/system_test_util.h"
 
-namespace Drake {
+namespace drake {
 namespace system_test {
 
 template <int StatesAtCompileTime, int InputsAtCompileTime,
@@ -51,4 +51,4 @@ CreateRandomAffineSystem(size_t num_states, size_t num_inputs,
 }
 
 }  // namespace system_test
-}  // namespace Drake
+}  // namespace drake

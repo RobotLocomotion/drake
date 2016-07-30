@@ -6,7 +6,7 @@
 
 #include "IKoptions.h"
 
-namespace Drake {
+namespace drake {
 namespace systems {
 namespace plants {
 
@@ -113,4 +113,4 @@ class IKTrajectoryHelper  {
 
 }  // namespace plants
 }  // namespace systems
-}  // namespace Drake
+}  // namespace drake

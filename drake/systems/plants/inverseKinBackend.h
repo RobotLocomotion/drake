@@ -19,7 +19,7 @@ class OptimizationProblem;
 }
 }
 
-namespace Drake {
+namespace drake {
 namespace systems {
 namespace plants {
 

@@ -9,9 +9,9 @@
 #include "drake/util/drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
-using Drake::BotVisualizer;
-using Drake::Gain;
-using Drake::SimulationOptions;
+using drake::BotVisualizer;
+using drake::Gain;
+using drake::SimulationOptions;
 
 using Eigen::VectorXd;
 
@@ -54,7 +54,7 @@ int do_main(int argc, const char* argv[]) {
         // car's root link in the world's frame.
         Eigen::Vector3d(0, 0, 0));
 
-    rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
+    rigid_body_sys->addRobotFromFile(drake::getDrakePath() +
       "/examples/Cars/models/prius/prius.sdf",
       DrakeJoint::QUATERNION, car_offset);
   }
@@ -78,7 +78,7 @@ int do_main(int argc, const char* argv[]) {
       GetCarSimulationDefaultOptions();
 
   // Starts the simulation.
-  Drake::runLCM(sys, lcm, 0, duration,
+  drake::runLCM(sys, lcm, 0, duration,
                 GetInitialState(*(rigid_body_sys.get())),
                 options);
 

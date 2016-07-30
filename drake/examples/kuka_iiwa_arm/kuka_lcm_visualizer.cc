@@ -19,11 +19,11 @@ template <template <typename> class Vector>
 class SinkSystem {
  public:
   template <typename ScalarType>
-  using StateVector = Drake::NullVector<ScalarType>;
+  using StateVector = drake::NullVector<ScalarType>;
   template <typename ScalarType>
   using InputVector = Vector<ScalarType>;
   template <typename ScalarType>
-  using OutputVector = Drake::NullVector<ScalarType>;
+  using OutputVector = drake::NullVector<ScalarType>;
 
   SinkSystem() {}
 
@@ -51,10 +51,10 @@ int DoMain(int argc, const char* argv[]) {
       CreateKukaIiwaSystem()->getRigidBodyTree();
 
   auto visualizer =
-      std::make_shared<Drake::BotVisualizer<IiwaStatus>>(lcm, tree);
+      std::make_shared<drake::BotVisualizer<IiwaStatus>>(lcm, tree);
   auto sink = std::make_shared<SinkSystem<IiwaStatus>>();
-  auto sys = Drake::cascade(visualizer, sink);
-  Drake::runLCM(sys, lcm, 0, 1e9);
+  auto sys = drake::cascade(visualizer, sink);
+  drake::runLCM(sys, lcm, 0, 1e9);
   return 0;
 }
 

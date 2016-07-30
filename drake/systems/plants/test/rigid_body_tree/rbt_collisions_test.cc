@@ -47,7 +47,7 @@ class RBTCollisionTest: public ::testing::Test {
  protected:
   void SetUp() override {
     drake::parsers::sdf::AddRobotFromSDFInWorldFrame(
-        Drake::getDrakePath() +
+        drake::getDrakePath() +
         "/systems/plants/test/rigid_body_tree/small_sphere_on_large_box.sdf",
         DrakeJoint::QUATERNION, &tree_);
 

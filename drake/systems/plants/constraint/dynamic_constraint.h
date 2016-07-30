@@ -36,15 +36,15 @@ class DRAKEDYNAMICCONSTRAINT_EXPORT DynamicConstraint :
   DynamicConstraint(int num_states, int num_inputs);
   virtual ~DynamicConstraint();
 
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    Eigen::VectorXd& y) const override;
-  void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
-                    Drake::TaylorVecXd& y) const override;
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override;
+  void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
+            drake::TaylorVecXd& y) const override;
 
  protected:
-  virtual void dynamics(const Drake::TaylorVecXd& state,
-                        const Drake::TaylorVecXd& input,
-                        Drake::TaylorVecXd* xdot) const = 0;
+  virtual void dynamics(const drake::TaylorVecXd& state,
+                        const drake::TaylorVecXd& input,
+                        drake::TaylorVecXd* xdot) const = 0;
 
  private:
   int num_states_;
@@ -58,17 +58,17 @@ class SystemDynamicConstraint : public DynamicConstraint {
  public:
   // TODO(sam.creasey) Should this be a const bare ptr?
   explicit SystemDynamicConstraint(std::shared_ptr<System> system)
-      : DynamicConstraint(Drake::getNumStates(*system),
-                          Drake::getNumInputs(*system)),
+      : DynamicConstraint(drake::getNumStates(*system),
+                          drake::getNumInputs(*system)),
         system_(system) {}
 
  private:
-  void dynamics(const Drake::TaylorVecXd& state,
-                const Drake::TaylorVecXd& input,
-                Drake::TaylorVecXd* xdot) const override {
-    typename System::template StateVector<Drake::TaylorVarXd> x = state;
-    typename System::template InputVector<Drake::TaylorVarXd> u = input;
-    Drake::TaylorVarXd t(1);
+  void dynamics(const drake::TaylorVecXd& state,
+                const drake::TaylorVecXd& input,
+                drake::TaylorVecXd* xdot) const override {
+    typename System::template StateVector<drake::TaylorVarXd> x = state;
+    typename System::template InputVector<drake::TaylorVarXd> u = input;
+    drake::TaylorVarXd t(1);
     t = 0;
     *xdot = toEigen(system_->dynamics(t, x, u));
   }

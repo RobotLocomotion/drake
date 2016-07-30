@@ -34,7 +34,7 @@ using drake::solvers::SolutionResult;
 /// to C++; many methods and variables follow Matlab conventions and are
 /// documented in that file.
 
-namespace Drake {
+namespace drake {
 namespace systems {
 namespace plants {
 
@@ -157,13 +157,13 @@ class InverseKinObjective : public Constraint {
       : Constraint(model->number_of_positions()),
         Q_(Q) {}
 
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
     VectorXd q_err = x - q_nom_i_;
     y(0) = q_err.transpose() * Q_ * q_err;
   }
 
-  void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override {
     VectorXd x_val = autoDiffToValueMatrix(x);
     VectorXd q_err = x_val - q_nom_i_;
@@ -176,7 +176,7 @@ class InverseKinObjective : public Constraint {
 
 
   /// Set the nominal posture.  This should be invoked before any
-  /// calls to eval() (the output of eval() is undefined if this has
+  /// calls to Eval() (the output of Eval() is undefined if this has
   /// not been set.)
   void set_q_nom(const VectorXd& q_nom_i) {
     q_nom_i_ = q_nom_i;
@@ -298,7 +298,7 @@ void inverseKinBackend(
   if (q_seed.rows() != model->number_of_positions() || q_seed.cols() != nT ||
       q_nom.rows() != model->number_of_positions() || q_nom.cols() != nT) {
     throw std::runtime_error(
-        "Drake::inverseKinBackend: q_seed and q_nom must be of size "
+        "drake::inverseKinBackend: q_seed and q_nom must be of size "
         "nq x nT");
   }
 

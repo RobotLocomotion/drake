@@ -9,7 +9,7 @@
 #include "drake/util/drakeGeometryUtil.h"
 
 template <typename ScalarType = double>
-class QuadrotorState {  // models the Drake::Vector concept
+class QuadrotorState {  // models the drake::Vector concept
  public:
   QuadrotorState(void)
       : x(0),
@@ -26,7 +26,7 @@ class QuadrotorState {  // models the Drake::Vector concept
         yawdot(0) {}
 
   template <typename Derived>
-  QuadrotorState(  // NOLINT(runtime/explicit) per Drake::Vector.
+  QuadrotorState(  // NOLINT(runtime/explicit) per drake::Vector.
       const Eigen::MatrixBase<Derived>& state)
       : x(state(0)),
         y(state(1)),
@@ -100,7 +100,7 @@ class QuadrotorInput {
   QuadrotorInput(void) : w1(0), w2(0), w3(0), w4(0) {}
 
   template <typename Derived>
-  QuadrotorInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+  QuadrotorInput(  // NOLINT(runtime/explicit) per drake::Vector.
       const Eigen::MatrixBase<Derived>& x)
       : w1(x(0)), w2(x(1)), w3(x(2)), w4(x(3)) {}
 

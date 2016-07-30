@@ -7,10 +7,10 @@
 
 using Eigen::Matrix;
 using std::make_shared;
-using Drake::getDrakePath;
-using Drake::RigidBodySystem;
+using drake::getDrakePath;
+using drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
-using Drake::toEigen;
+using drake::toEigen;
 
 namespace drake {
 namespace test {

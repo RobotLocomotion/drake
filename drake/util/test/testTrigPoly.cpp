@@ -61,34 +61,34 @@ GTEST_TEST(TrigPolyTest, SmokeTest) {
 }
 
 GTEST_TEST(TrigPolyTest, GetVariablesTest) {
-  // Check that getVariables() correctly returns all and only the base
+  // Check that GetVariables() correctly returns all and only the base
   // variables of the expression and not the trig variables.
   Polynomiald q("q");
   Polynomiald s("s");
   Polynomiald c("c");
   TrigPolyd p(q, s, c);
 
-  std::set<Polynomiald::VarType> expected_vars = { q.getSimpleVariable(), };
-  EXPECT_EQ(p.getVariables(), expected_vars);
-  EXPECT_EQ(sin(p).getVariables(), expected_vars);
-  EXPECT_EQ(cos(p).getVariables(), expected_vars);
+  std::set<Polynomiald::VarType> expected_vars = {q.GetSimpleVariable(), };
+  EXPECT_EQ(p.GetVariables(), expected_vars);
+  EXPECT_EQ(sin(p).GetVariables(), expected_vars);
+  EXPECT_EQ(cos(p).GetVariables(), expected_vars);
 }
 
 GTEST_TEST(TrigPolyTest, EvaluateMultivariateTest) {
   const TrigPolyd theta(Polynomiald("th"),
                         Polynomiald("sth"), Polynomiald("cth"));
   const TrigPolyd::VarType theta_var =
-      theta.getPolynomial().getSimpleVariable();
+      theta.poly().GetSimpleVariable();
 
   // Check some basic evaluations.
-  EXPECT_EQ(theta.evaluateMultivariate(MapType {{theta_var, 1}}), 1);
-  EXPECT_EQ(sin(theta).evaluateMultivariate(MapType {{theta_var, 0}}), 0);
-  EXPECT_EQ(cos(theta).evaluateMultivariate(MapType {{theta_var, 0}}), 1);
+  EXPECT_EQ(theta.EvaluateMultivariate(MapType {{theta_var, 1}}), 1);
+  EXPECT_EQ(sin(theta).EvaluateMultivariate(MapType {{theta_var, 0}}), 0);
+  EXPECT_EQ(cos(theta).EvaluateMultivariate(MapType {{theta_var, 0}}), 1);
 
   // Test that the pythagorean theorem is true for various angles.
   for (const double angle : {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4}) {
     EXPECT_NEAR((sin(theta) * sin(theta) + cos(theta) * cos(theta) - 1)
-                .evaluateMultivariate(MapType {{theta_var, angle}}),
+                .EvaluateMultivariate(MapType {{theta_var, angle}}),
                 0,
                 1e-6);
   }
@@ -96,11 +96,11 @@ GTEST_TEST(TrigPolyTest, EvaluateMultivariateTest) {
   // Test an arbitrary multivariate polynomial.
   const TrigPolyd phi(Polynomiald("phi"),
                       Polynomiald("sphi"), Polynomiald("cphi"));
-  const TrigPolyd::VarType phi_var = phi.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType phi_var = phi.poly().GetSimpleVariable();
   const TrigPolyd multivariate = theta + phi * cos(theta) + sin(phi + theta);
   for (const double theta_value : {0., 1., kPi / 4, kPi / 2, -kPi / 4}) {
     for (const double phi_value : {0., 1., kPi / 4, kPi / 2, -kPi / 4}) {
-      EXPECT_NEAR(multivariate.evaluateMultivariate(
+      EXPECT_NEAR(multivariate.EvaluateMultivariate(
           MapType {{theta_var, theta_value}, {phi_var, phi_value}}),
                   (theta_value + (phi_value * std::cos(theta_value)) +
                    std::sin(phi_value + theta_value)),
@@ -113,15 +113,15 @@ GTEST_TEST(TrigPolyTest, EvaluatePartialTest) {
   const TrigPolyd theta(Polynomiald("th"),
                         Polynomiald("sth"), Polynomiald("cth"));
   const TrigPolyd::VarType theta_var =
-      theta.getPolynomial().getSimpleVariable();
+          theta.poly().GetSimpleVariable();
   const TrigPolyd phi(Polynomiald("phi"),
                       Polynomiald("sphi"), Polynomiald("cphi"));
-  const TrigPolyd::VarType phi_var = phi.getPolynomial().getSimpleVariable();
+  const TrigPolyd::VarType phi_var = phi.poly().GetSimpleVariable();
   const TrigPolyd multivariate = theta + phi * cos(theta) + sin(phi + theta);
 
-  EXPECT_EQ(multivariate.evaluatePartial(MapType {{theta_var, 0}}),
+  EXPECT_EQ(multivariate.EvaluatePartial(MapType {{theta_var, 0}}),
             phi + sin(phi));
-  EXPECT_EQ(multivariate.evaluatePartial(MapType {{phi_var, 0}}),
+  EXPECT_EQ(multivariate.EvaluatePartial(MapType {{phi_var, 0}}),
             theta + sin(theta));
   // TODO(#2216) This fails due to a known drake bug:
 #if 0

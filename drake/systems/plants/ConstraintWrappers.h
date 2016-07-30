@@ -11,7 +11,7 @@
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-namespace Drake {
+namespace drake {
 namespace systems {
 namespace plants {
 
@@ -57,15 +57,15 @@ class SingleTimeKinematicConstraintWrapper :
   }
   ~SingleTimeKinematicConstraintWrapper() override {}
 
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-                    Eigen::VectorXd& y) const override {
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& q,
+            Eigen::VectorXd& y) const override {
     auto& kinsol = kin_helper_->UpdateKinematics(
         q, rigid_body_constraint_->getRobotPointer());
     Eigen::MatrixXd dy;
     rigid_body_constraint_->eval(nullptr, kinsol, y, dy);
   }
-  void eval(const Eigen::Ref<const TaylorVecXd>& tq,
-                    TaylorVecXd& ty) const override {
+  void Eval(const Eigen::Ref<const TaylorVecXd>& tq,
+            TaylorVecXd& ty) const override {
     Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
     auto& kinsol = kin_helper_->UpdateKinematics(
         q, rigid_body_constraint_->getRobotPointer());
@@ -99,7 +99,7 @@ class QuasiStaticConstraintWrapper :
   }
   virtual ~QuasiStaticConstraintWrapper() {}
 
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& q,
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& q,
             Eigen::VectorXd& y) const override {
     auto& kinsol = kin_helper_->UpdateKinematics(
         q.head(
@@ -109,7 +109,7 @@ class QuasiStaticConstraintWrapper :
     Eigen::MatrixXd dy;
     rigid_body_constraint_->eval(nullptr, kinsol, weights.data(), y, dy);
   }
-  void eval(const Eigen::Ref<const TaylorVecXd>& tq,
+  void Eval(const Eigen::Ref<const TaylorVecXd>& tq,
             TaylorVecXd& ty) const override {
     Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
     auto& kinsol = kin_helper_->UpdateKinematics(

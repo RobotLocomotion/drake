@@ -9,7 +9,7 @@
 #include "drake/util/drakeAppUtil.h"
 
 using namespace std;
-using namespace Drake;
+using namespace drake;
 
 /**
  * Runs the energy shaping controller as an LCM node or, with "-s",

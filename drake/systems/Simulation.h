@@ -9,7 +9,7 @@
 #include "drake/core/Vector.h"
 #include "drake/systems/simulation_options.h"
 
-namespace Drake {
+namespace drake {
 
 /** @defgroup simulation Simulation
 *@{
@@ -157,4 +157,4 @@ void simulate(const System& sys, double t0, double tf) {
   simulate(sys, t0, tf, x0);
 }
 
-}  // end namespace Drake
+}  // end namespace drake

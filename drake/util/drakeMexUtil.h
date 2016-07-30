@@ -207,7 +207,7 @@ template <int _Rows, int _Cols>
 mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald, _Rows, _Cols>& poly) {
   size_t num_monomials = 0, max_terms = 0;
   for (int i = 0; i < poly.size(); i++) {
-    auto monomials = poly(i).getMonomials();
+    auto monomials = poly(i).GetMonomials();
     num_monomials += monomials.size();
     for (std::vector<Polynomiald::Monomial>::const_iterator iter =
              monomials.begin();
@@ -226,7 +226,7 @@ mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald, _Rows, _Cols>& poly) {
   int index = 0;
   for (int i = 0; i < poly.rows(); i++) {
     for (int j = 0; j < poly.cols(); j++) {
-      auto monomials = poly(i, j).getMonomials();
+      auto monomials = poly(i, j).GetMonomials();
       for (std::vector<Polynomiald::Monomial>::const_iterator iter =
                monomials.begin();
            iter != monomials.end(); iter++) {
@@ -263,9 +263,9 @@ mxArray* eigenToTrigPoly(
       trigpoly_mat.rows(), trigpoly_mat.cols());
   TrigPolyd::SinCosMap sin_cos_map;
   for (int i = 0; i < trigpoly_mat.size(); i++) {
-    const TrigPolyd::SinCosMap& sc = trigpoly_mat(i).getSinCosMap();
+    const TrigPolyd::SinCosMap& sc = trigpoly_mat(i).sin_cos_map();
     sin_cos_map.insert(sc.begin(), sc.end());
-    poly_mat(i) = trigpoly_mat(i).getPolynomial();
+    poly_mat(i) = trigpoly_mat(i).poly();
   }
 
   if (sin_cos_map

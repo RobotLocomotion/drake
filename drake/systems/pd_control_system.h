@@ -8,7 +8,7 @@
 #include "drake/core/Vector.h"
 #include "drake/systems/System.h"
 
-namespace Drake {
+namespace drake {
 
 /** PDControlSystem<System>
  * @brief Wraps an existing system with a PD controller (the new system
@@ -35,12 +35,12 @@ class PDControlSystem {
   PDControlSystem(const SystemPtr& sys, const Eigen::MatrixBase<DerivedA>& Kp,
                   const Eigen::MatrixBase<DerivedB>& Kd)
       : sys_(sys), Kp_(Kp), Kd_(Kd) {
-    DRAKE_ASSERT(static_cast<int>(Drake::getNumInputs(*sys)) == Kp.rows() &&
+    DRAKE_ASSERT(static_cast<int>(drake::getNumInputs(*sys)) == Kp.rows() &&
                  "Kp must have the same number of rows as the system has"
                  " inputs");
     DRAKE_ASSERT(Kp.rows() == Kd.rows() &&
                  "Kd must have the same number of rows as Kp");
-    DRAKE_ASSERT(static_cast<int>(Drake::getNumStates(*sys)) ==
+    DRAKE_ASSERT(static_cast<int>(drake::getNumStates(*sys)) ==
                  (Kp.cols() + Kd.cols()) &&
                  "Kp and Kd must match the number of states");
   }
@@ -67,9 +67,9 @@ class PDControlSystem {
 
   bool isTimeVarying() const { return sys_->isTimeVarying(); }
   bool isDirectFeedthrough() const { return sys_->isDirectFeedthrough(); }
-  size_t getNumStates() const { return Drake::getNumStates(*sys_); }
-  size_t getNumInputs() const { return Drake::getNumStates(*sys_); }
-  size_t getNumOutputs() const { return Drake::getNumOutputs(*sys_); }
+  size_t getNumStates() const { return drake::getNumStates(*sys_); }
+  size_t getNumInputs() const { return drake::getNumStates(*sys_); }
+  size_t getNumOutputs() const { return drake::getNumOutputs(*sys_); }
 
  public:
   const SystemPtr& getSys() const { return sys_; }
@@ -83,4 +83,4 @@ class PDControlSystem {
   Eigen::MatrixXd Kp_, Kd_;
 };
 
-}  // end namespace Drake
+}  // end namespace drake

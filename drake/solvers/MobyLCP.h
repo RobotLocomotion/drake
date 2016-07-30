@@ -55,35 +55,35 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
                            Eigen::VectorXd* z) const;
 
   // TODO(sammy-tri) replace this with a proper logging hookup
-  std::ostream& LOG() const;
+  std::ostream& Log() const;
   bool log_enabled_;
   mutable std::ofstream null_stream_;
 
   // TODO(sammy-tri) why is this a member variable?
-  mutable unsigned pivots;
+  mutable unsigned pivots_;
 
   // NOTE:  The temporaries below are stored in the class to minimize
   // allocations; all are marked 'mutable' as they do not affect the
   // semantic const'ness of the class under its methods.
 
   // temporaries for regularized solver
-  mutable Eigen::MatrixXd _MM;
-  mutable Eigen::VectorXd _wx;
+  mutable Eigen::MatrixXd MM_;
+  mutable Eigen::VectorXd wx_;
 
   // temporaries for fast pivoting solver
-  mutable Eigen::VectorXd _z, _w, _qbas, _qprime;
-  mutable Eigen::MatrixXd _Msub, _Mmix, _M;
+  mutable Eigen::VectorXd z_, w_, qbas_;
+  mutable Eigen::MatrixXd Msub_, Mmix_;
 
   // temporaries for Lemke solver
-  mutable Eigen::VectorXd _d, _Be, _u, _z0, _x, _dl, _xj, _dj, _wl, _result;
-  mutable Eigen::MatrixXd _Bl, _Al, _t1, _t2;
+  mutable Eigen::VectorXd d_, Be_, u_, z0_, x_, dl_, xj_, dj_, wl_, result_;
+  mutable Eigen::MatrixXd Bl_, Al_, t1_, t2_;
 
   // Vectors which correspond to indices into other data.
-  mutable std::vector<unsigned> _all, _tlist, _bas, _nonbas, _j;
+  mutable std::vector<unsigned> all_, tlist_, bas_, nonbas_, j_;
 
   // temporary for sparse Lemke solver
-  mutable Eigen::SparseMatrix<double> _sBl;
-  mutable Eigen::SparseMatrix<double> _MMs, _MMx, _eye, _zero, _diag_lambda;
+  mutable Eigen::SparseMatrix<double> sBl_;
+  mutable Eigen::SparseMatrix<double> MMs_, MMx_, eye_, diag_lambda_;
 };
 
 }  // end namespace solvers

@@ -277,7 +277,7 @@ int toMex(const std::vector<T>& source, mxArray* dest[], int nlhs) {
   return 1;
 }
 
-namespace Drake {
+namespace drake {
 namespace internal {
 template <size_t Index>
 struct TupleToMexHelper {
@@ -304,6 +304,6 @@ struct TupleToMexHelper<0> {
 
 template <typename... Ts>
 int toMex(const std::tuple<Ts...>& source, mxArray* dest[], int nlhs) {
-  return Drake::internal::TupleToMexHelper<sizeof...(Ts)>::run(source, dest,
+  return drake::internal::TupleToMexHelper<sizeof...(Ts)>::run(source, dest,
                                                                nlhs);
 }

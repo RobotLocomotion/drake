@@ -98,10 +98,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       memcpy(b->I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
 
     pm = mxGetPropertySafe(pBodies, i, "position_num");
-    b->position_num_start = (int)mxGetScalar(pm) - 1;  // zero-indexed
+    b->set_position_start_index((int)mxGetScalar(pm) - 1);  // zero-indexed
 
     pm = mxGetPropertySafe(pBodies, i, "velocity_num");
-    b->velocity_num_start = (int)mxGetScalar(pm) - 1;  // zero-indexed
+    b->set_velocity_start_index((int)mxGetScalar(pm) - 1);  // zero-indexed
 
     pm = mxGetPropertySafe(pBodies, i, "parent");
     if (!pm || mxIsEmpty(pm)) {

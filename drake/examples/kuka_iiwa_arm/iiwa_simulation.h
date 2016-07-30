@@ -23,13 +23,13 @@ namespace kuka_iiwa_arm {
  * @return A shared pointer to a rigid body system.
  */
 DRAKEKUKAIIWAARM_EXPORT
-std::shared_ptr<Drake::RigidBodySystem> CreateKukaIiwaSystem();
+std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
 
 /**
  * Returns the simulation options for use by the Kuka IIWA simulation.
  */
 DRAKEKUKAIIWAARM_EXPORT
-Drake::SimulationOptions SetupSimulation();
+drake::SimulationOptions SetupSimulation();
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

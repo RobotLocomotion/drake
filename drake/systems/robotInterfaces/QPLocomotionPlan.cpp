@@ -27,7 +27,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace Drake;
+using namespace drake;
 
 using drake::kQuaternionSize;
 using drake::kSpaceDimension;
@@ -559,7 +559,7 @@ void QPLocomotionPlan::updateSwingTrajectory(
   auto quatdot = (Phi * x0_twist.topRows<3>()).eval();
 
   auto x0_expmap_autodiff = quat2expmap(
-      Drake::initializeAutoDiffGivenGradientMatrix(x0_quat, quatdot));
+      drake::initializeAutoDiffGivenGradientMatrix(x0_quat, quatdot));
   auto x0_expmap = autoDiffToValueMatrix(x0_expmap_autodiff);
   auto xd0_expmap = autoDiffToGradientMatrix(x0_expmap_autodiff);
 
@@ -899,7 +899,7 @@ const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(
   std::map<Side, int> joint_indices;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     int joint_id = robot.findJointId(joint_names.at(*it));
-    joint_indices[*it] = robot.bodies[joint_id]->position_num_start;
+    joint_indices[*it] = robot.bodies[joint_id]->get_position_start_index();
   }
   return joint_indices;
 }

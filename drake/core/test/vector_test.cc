@@ -6,11 +6,11 @@
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
-using Drake::CombinedVector;
-using Drake::size;
-using Drake::CombinedVectorUtil;
-using Drake::NullVector;
-using Drake::InputOutputRelation;
+using drake::CombinedVector;
+using drake::size;
+using drake::CombinedVectorUtil;
+using drake::NullVector;
+using drake::InputOutputRelation;
 using drake::util::MatrixCompareType;
 using std::is_same;
 using std::string;

@@ -173,20 +173,20 @@ void RigidBodyTree::compile(void) {
   // Counts the number of position and velocity states in this rigid body tree.
   // Notice that the rigid bodies are accessed from the sorted vector
   // RigidBodyTree::bodies. The order that they appear in this vector determines
-  // the values of RigidBody::position_num_start and
-  // RigidBody::velocity_num_start, which the following code sets.
+  // the values of RigidBody::get_position_start_index() and
+  // RigidBody::get_velocity_start_index(), which the following code sets.
   num_positions_ = 0;
   num_velocities_ = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
     if (body.hasParent()) {
-      body.position_num_start = num_positions_;
+      body.set_position_start_index(num_positions_);
       num_positions_ += body.getJoint().getNumPositions();
-      body.velocity_num_start = num_velocities_;
+      body.set_velocity_start_index(num_velocities_);
       num_velocities_ += body.getJoint().getNumVelocities();
     } else {
-      body.position_num_start = 0;
-      body.velocity_num_start = 0;
+      body.set_position_start_index(0);
+      body.set_velocity_start_index(0);
     }
   }
 
@@ -194,7 +194,7 @@ void RigidBodyTree::compile(void) {
   B = MatrixXd::Zero(num_velocities_, actuators.size());
   for (size_t ia = 0; ia < actuators.size(); ia++)
     for (int i = 0; i < actuators[ia].body_->getJoint().getNumVelocities(); i++)
-      B(actuators[ia].body_->velocity_num_start + i, ia) =
+      B(actuators[ia].body_->get_velocity_start_index() + i, ia) =
           actuators[ia].reduction_;
 
   // Initializes the joint limit vectors.
@@ -206,14 +206,15 @@ void RigidBodyTree::compile(void) {
     auto& body = bodies[i];
     if (body->hasParent()) {
       const DrakeJoint& joint = body->getJoint();
-      joint_limit_min.segment(body->position_num_start,
+      joint_limit_min.segment(body->get_position_start_index(),
                               joint.getNumPositions()) =
           joint.getJointLimitMin();
-      joint_limit_max.segment(body->position_num_start,
+      joint_limit_max.segment(body->get_position_start_index(),
                               joint.getNumPositions()) =
           joint.getJointLimitMax();
     }
   }
+
 
   // Updates the static collision elements and terrain contact points.
   updateStaticCollisionElements();
@@ -231,8 +232,9 @@ Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
   for (const auto& body_ptr : bodies) {
     if (body_ptr->hasParent()) {
       const DrakeJoint& joint = body_ptr->getJoint();
-      q.middleRows(body_ptr->position_num_start, joint.getNumPositions()) =
-          joint.zeroConfiguration();
+      q.middleRows(
+          body_ptr->get_position_start_index(), joint.getNumPositions()) =
+              joint.zeroConfiguration();
     }
   }
   return q;
@@ -244,8 +246,9 @@ Eigen::VectorXd RigidBodyTree::getRandomConfiguration(
   for (const auto& body_ptr : bodies) {
     if (body_ptr->hasParent()) {
       const DrakeJoint& joint = body_ptr->getJoint();
-      q.middleRows(body_ptr->position_num_start, joint.getNumPositions()) =
-          joint.randomConfiguration(generator);
+      q.middleRows(
+          body_ptr->get_position_start_index(), joint.getNumPositions()) =
+              joint.randomConfiguration(generator);
     }
   }
   return q;
@@ -257,11 +260,11 @@ string RigidBodyTree::getPositionName(int position_num) const {
 
   size_t body_index = 0;
   while (body_index + 1 < bodies.size() &&
-         bodies[body_index + 1]->position_num_start <= position_num)
+         bodies[body_index + 1]->get_position_start_index() <= position_num)
     body_index++;
 
   return bodies[body_index]->getJoint().getPositionName(
-      position_num - bodies[body_index]->position_num_start);
+      position_num - bodies[body_index]->get_position_start_index());
 }
 
 string RigidBodyTree::getVelocityName(int velocity_num) const {
@@ -270,11 +273,11 @@ string RigidBodyTree::getVelocityName(int velocity_num) const {
 
   size_t body_index = 0;
   while (body_index + 1 < bodies.size() &&
-         bodies[body_index + 1]->velocity_num_start <= velocity_num)
+         bodies[body_index + 1]->get_velocity_start_index() <= velocity_num)
     body_index++;
 
   return bodies[body_index]->getJoint().getVelocityName(
-      velocity_num - bodies[body_index]->velocity_num_start);
+      velocity_num - bodies[body_index]->get_velocity_start_index());
 }
 
 string RigidBodyTree::getStateName(int state_num) const {
@@ -679,7 +682,8 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
           cache.getElement(*body.get_parent());
       const DrakeJoint& joint = body.getJoint();
       auto q_body =
-          q.middleRows(body.position_num_start, joint.getNumPositions());
+          q.middleRows(
+              body.get_position_start_index(), joint.getNumPositions());
 
       // transform
       auto T_body_to_parent = joint.getTransformToParentBody().cast<Scalar>() *
@@ -709,7 +713,8 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
         } else {
           // twist
           auto v_body =
-              v.middleRows(body.velocity_num_start, joint.getNumVelocities());
+              v.middleRows(
+                  body.get_velocity_start_index(), joint.getNumVelocities());
 
           TwistVector<Scalar> joint_twist =
               element.motion_subspace_in_world * v_body;
@@ -808,8 +813,8 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
       int ncols_joint =
           in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
       if (isBodyPartOfRobot(body, robotnum)) {
-        int start = in_terms_of_qdot ? body.position_num_start
-                                     : body.velocity_num_start;
+        int start = in_terms_of_qdot ? body.get_position_start_index()
+                                     : body.get_velocity_start_index();
 
         if (in_terms_of_qdot) {
           auto crb =
@@ -1147,7 +1152,8 @@ TwistMatrix<Scalar> RigidBodyTree::geometricJacobian(
 
     if (v_or_qdot_indices != nullptr) {
       int cols_block_start =
-          in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
+          in_terms_of_qdot ? body.get_position_start_index() :
+              body.get_velocity_start_index();
       for (int j = 0; j < ncols_block; j++) {
         v_or_qdot_indices->push_back(cols_block_start + j);
       }
@@ -1275,7 +1281,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
     RigidBody& body_i = *bodies[i];
     if (body_i.hasParent()) {
       const auto& element_i = cache.getElement(body_i);
-      int v_start_i = body_i.velocity_num_start;
+      int v_start_i = body_i.get_velocity_start_index();
       int nv_i = body_i.getJoint().getNumVelocities();
       auto F =
           (element_i.crb_in_world * element_i.motion_subspace_in_world).eval();
@@ -1288,7 +1294,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
       const RigidBody* body_j(body_i.get_parent());
       while (body_j->hasParent()) {
         const auto& element_j = cache.getElement(*body_j);
-        int v_start_j = body_j->velocity_num_start;
+        int v_start_j = body_j->get_velocity_start_index();
         int nv_j = body_j->getJoint().getNumVelocities();
         auto Hji = (element_j.motion_subspace_in_world.transpose() * F).eval();
         ret.block(v_start_j, v_start_i, nv_j, nv_i) = Hji;
@@ -1339,7 +1345,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
         spatial_accel += element.motion_subspace_in_world_dot_times_v;
 
       int nv_joint = body.getJoint().getNumVelocities();
-      auto vdJoint = vd.middleRows(body.velocity_num_start, nv_joint);
+      auto vdJoint = vd.middleRows(body.get_velocity_start_index(), nv_joint);
       spatial_accel.noalias() += element.motion_subspace_in_world * vdJoint;
 
       net_wrenches.col(i).noalias() = element.inertia_in_world * spatial_accel;
@@ -1371,7 +1377,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
       auto joint_wrench = net_wrenches_const.col(i);
       int nv_joint = body.getJoint().getNumVelocities();
       auto J_transpose = element.motion_subspace_in_world.transpose();
-      ret.middleRows(body.velocity_num_start, nv_joint).noalias() =
+      ret.middleRows(body.get_velocity_start_index(), nv_joint).noalias() =
           J_transpose * joint_wrench;
       auto parent_net_wrench = net_wrenches.col(
           body.get_parent()->get_body_index());
@@ -1395,7 +1401,7 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree::frictionTorques(
     if (body.hasParent()) {
       const DrakeJoint& joint = body.getJoint();
       int nv_joint = joint.getNumVelocities();
-      int v_start_joint = body.velocity_num_start;
+      int v_start_joint = body.get_velocity_start_index();
       auto v_body = v.middleRows(v_start_joint, nv_joint);
       ret.middleRows(v_start_joint, nv_joint) = joint.frictionTorque(v_body);
     }

@@ -37,15 +37,15 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 using tinyxml2::XML_SUCCESS;
 
-namespace Drake {
+namespace drake {
 
 size_t RigidBodySystem::getNumStates() const {
   return tree->number_of_positions() + tree->number_of_velocities();
 }
 
 // TODO(sam.creasey) This whole file should be in this namespace.
-using Drake::systems::plants::SingleTimeKinematicConstraintWrapper;
-using Drake::systems::plants::KinematicsCacheHelper;
+using drake::systems::plants::SingleTimeKinematicConstraintWrapper;
+using drake::systems::plants::KinematicsCacheHelper;
 
 size_t RigidBodySystem::getNumInputs(void) const {
   size_t num = tree->actuators.size();
@@ -133,14 +133,14 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         double qmin = joint.getJointLimitMin()(0),
                qmax = joint.getJointLimitMax()(0);
         // tau = k*(qlimit-q) - b(qdot)
-        if (q(b->position_num_start) < qmin)
-          C(b->velocity_num_start) -=
-              penetration_stiffness * (qmin - q(b->position_num_start)) -
-              penetration_damping * v(b->velocity_num_start);
-        else if (q(b->position_num_start) > qmax)
-          C(b->velocity_num_start) -=
-              penetration_stiffness * (qmax - q(b->position_num_start)) -
-              penetration_damping * v(b->velocity_num_start);
+        if (q(b->get_position_start_index()) < qmin)
+          C(b->get_velocity_start_index()) -=
+              penetration_stiffness * (qmin - q(b->get_position_start_index()))
+              - penetration_damping * v(b->get_velocity_start_index());
+        else if (q(b->get_position_start_index()) > qmax)
+          C(b->get_velocity_start_index()) -=
+              penetration_stiffness * (qmax - q(b->get_position_start_index()))
+              - penetration_damping * v(b->get_velocity_start_index());
       }
     }
   }
@@ -981,4 +981,4 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
   return tau;
 }
 
-}  // namespace Drake
+}  // namespace drake
