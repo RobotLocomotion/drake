@@ -1,5 +1,5 @@
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/testUtil.h"

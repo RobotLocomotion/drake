@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 

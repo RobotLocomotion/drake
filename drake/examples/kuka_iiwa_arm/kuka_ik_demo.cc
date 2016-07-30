@@ -2,7 +2,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/core/Vector.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
