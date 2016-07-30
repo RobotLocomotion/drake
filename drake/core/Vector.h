@@ -48,8 +48,6 @@ struct EigenVector {
   using type = Eigen::Matrix<ScalarType, Rows, 1>;
 };
 
-typedef Eigen::Matrix<double, 1, 1> Vector1d;
-
 /** NullVector<ScalarType>
  * @brief provides the empty vector (templated by ScalarType)
  * @concept{vector_concept}
