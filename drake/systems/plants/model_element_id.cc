@@ -27,6 +27,10 @@ const std::string& ModelElementId::get_element_name() const {
   return element_name_;
 }
 
+ModelElementType ModelElementId::get_element_type() const {
+  return element_type_;
+}
+
 int ModelElementId::get_model_instance_id() const { return model_instance_id_; }
 
 // TODO(liang.fok) Remove this method. See:
@@ -57,6 +61,22 @@ void ModelElementId::set_element_type(ModelElementType element_type) {
 // https://github.com/RobotLocomotion/drake/issues/2990
 void ModelElementId::set_model_instance_id(int model_instance_id) {
   model_instance_id_ = model_instance_id;
+}
+
+bool operator==(const ModelElementId& left_element,
+                const ModelElementId& right_element) {
+  return left_element.get_instance_name() ==
+             right_element.get_instance_name() &&
+         left_element.get_model_name() == right_element.get_model_name() &&
+         left_element.get_element_name() == right_element.get_element_name() &&
+         left_element.get_element_type() == right_element.get_element_type() &&
+         left_element.get_model_instance_id() ==
+             right_element.get_model_instance_id();
+}
+
+bool operator!=(const ModelElementId& left_element,
+                const ModelElementId& right_element) {
+  return !(left_element == right_element);
 }
 
 }  // namespace plants

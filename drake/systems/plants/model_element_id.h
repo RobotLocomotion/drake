@@ -22,6 +22,10 @@ namespace plants {
  */
 class DRAKERBM_EXPORT ModelElementId {
  public:
+  // TODO(liang.fok) Remove this default constructor once the setters are
+  // removed. See: https://github.com/RobotLocomotion/drake/issues/2990
+  ModelElementId() {}
+
   // TODO(liang.fok) Remove model_instance_id. See:
   // https://github.com/RobotLocomotion/drake/issues/2973
   /**
@@ -121,20 +125,10 @@ class DRAKERBM_EXPORT ModelElementId {
 };
 
 bool operator==(const ModelElementId& left_element,
-                const ModelElementId& right_element) {
-  return left_element.get_instance_name() ==
-             right_element.get_instance_name() &&
-         left_element.get_model_name() == right_element.get_model_name() &&
-         left_element.get_element_name() == right_element.get_element_name() &&
-         left_element.get_element_type() == right_element.get_element_type() &&
-         left_element.get_model_instance_id() ==
-             right_element.get_model_instance_id();
-}
+                const ModelElementId& right_element);
 
 bool operator!=(const ModelElementId& left_element,
-                const ModelElementId& right_element) {
-  return !(left_element == right_element);
-}
+                const ModelElementId& right_element);
 
 }  // namespace plants
 }  // namespace systems

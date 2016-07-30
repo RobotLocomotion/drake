@@ -45,11 +45,11 @@ void RigidBody::set_model_name(const std::string& name) {
 }
 
 int RigidBody::get_model_id() const {
-  model_element_id_.get_model_id();
+  return model_element_id_.get_model_instance_id();
 }
 
 void RigidBody::set_model_id(int model_id) {
-  model_element_id_.set_model_id(model_id);
+  model_element_id_.set_model_instance_id(model_id);
 }
 
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
@@ -60,8 +60,9 @@ const DrakeJoint& RigidBody::getJoint() const {
   if (joint) {
     return (*joint);
   } else {
-    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_ +
-                        "\" in model " + model_name_ +
+    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" +
+                        get_name() +
+                        "\" in model " + get_model_name() +
                         " does not have a joint!");
   }
 }
@@ -127,20 +128,22 @@ void RigidBody::ApplyTransformToJointFrame(
   }
 }
 
-ostream& operator<<(ostream& out, const RigidBody& b) {
+ostream& operator<<(ostream& out, const RigidBody& rigid_body) {
   std::string parent_joint_name =
-      b.hasParent() ? b.getJoint().getName() : "no parent joint";
+      rigid_body.hasParent() ? rigid_body.getJoint().getName() :
+          "no parent joint";
 
   std::stringstream collision_element_str;
   collision_element_str << "[";
-  for (size_t ii = 0; ii < b.collision_element_ids.size(); ii++) {
-    collision_element_str << b.collision_element_ids[ii];
-    if (ii < b.collision_element_ids.size() - 1) collision_element_str << ", ";
+  for (size_t ii = 0; ii < rigid_body.collision_element_ids.size(); ii++) {
+    collision_element_str << rigid_body.collision_element_ids[ii];
+    if (ii < rigid_body.collision_element_ids.size() - 1)
+      collision_element_str << ", ";
   }
   collision_element_str << "]";
 
   out << "RigidBody\n"
-      << "  - body name: " << model_element_id_.get_element_name() << "\n"
+      << "  - body name: " << rigid_body.get_name() << "\n"
       << "  - parent joint: " << parent_joint_name << "\n"
       << "  - Collision elements IDs: " << collision_element_str.str();
 
