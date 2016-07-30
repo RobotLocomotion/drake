@@ -1,4 +1,4 @@
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "qp_controller.h"
 
 QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {
@@ -53,7 +53,7 @@ QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {
 int main() {
   // Loads model.
   std::string urdf =
-      drake::getDrakePath() +
+      drake::GetDrakePath() +
       std::string(
           "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
   HumanoidStatus robot_status(

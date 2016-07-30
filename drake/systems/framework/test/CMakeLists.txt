@@ -4,7 +4,7 @@ add_test(NAME value_test COMMAND value_test)
 
 add_executable(basic_vector_test basic_vector_test.cc)
 target_link_libraries(basic_vector_test drakeSystemFramework drakePolynomial
-  drakeCore ${GTEST_BOTH_LIBRARIES})
+  ${GTEST_BOTH_LIBRARIES})
 add_test(NAME basic_vector_test COMMAND basic_vector_test)
 
 add_executable(basic_state_vector_test basic_state_vector_test.cc)

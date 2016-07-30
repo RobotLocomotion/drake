@@ -9,7 +9,7 @@ using Eigen::Isometry3d;
 AtlasPlant::AtlasPlant() {
   sys_.reset(new drake::RigidBodySystem());
   sys_->addRobotFromFile(
-      drake::getDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
+      drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
       DrakeJoint::QUATERNION);
 
   x0_ = VectorXd::Zero(sys_->getNumStates());
@@ -99,7 +99,7 @@ void AtlasPlant::SetUpTerrain() {
   RigidBody& world = tree->world();
   Vector4d color;
   color << 0.9297, 0.7930, 0.6758, 1;
-  world.addVisualElement(
+  world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
       RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
