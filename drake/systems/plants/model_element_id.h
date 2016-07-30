@@ -124,9 +124,11 @@ class DRAKERBM_EXPORT ModelElementId {
   int model_instance_id_{0};
 };
 
+DRAKERBM_EXPORT
 bool operator==(const ModelElementId& left_element,
                 const ModelElementId& right_element);
 
+DRAKERBM_EXPORT
 bool operator!=(const ModelElementId& left_element,
                 const ModelElementId& right_element);
 
