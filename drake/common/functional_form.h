@@ -381,7 +381,7 @@ class DRAKECOMMON_EXPORT FunctionalForm {
     bool empty() const;
 
     /** Return the size of the set.  */
-    std::size_t size() const;
+    size_t size() const;
 
     /** Return \c true if \c lhs and \c rhs represent the same set.  */
     friend DRAKECOMMON_EXPORT
@@ -433,7 +433,7 @@ bool operator>=(FunctionalForm const&, FunctionalForm const&) = delete;
  * Each Variable has a distinguishing identifier of one of these types:
  *
  * - \b nil: No identifier.
- * - \b index: Identified by a non-negative numeric index (type \c std::size_t).
+ * - \b index: Identified by a non-negative numeric index (type \c size_t).
  * - \b named: Identified by a non-empty string name (type \c std::string).
  *
  * Instances are considered equivalent if they have the same identification
@@ -451,7 +451,7 @@ class DRAKECOMMON_EXPORT FunctionalForm::Variable {
 
   /** Construct a variable identified by a non-negative numeric \p index.  */
   // NOLINTNEXTLINE(runtime/explicit)
-  Variable(std::size_t index);
+  Variable(size_t index);
 
   /** Construct a variable identified by a non-empty string \p name. */
   // NOLINTNEXTLINE(runtime/explicit)
@@ -488,8 +488,8 @@ class DRAKECOMMON_EXPORT FunctionalForm::Variable {
   bool is_named() const;
 
   /** If this variable is identified by a numeric index, return the index.
-      Otherwise, return the largest index representable by \c std::size_t.  */
-  std::size_t index() const;
+      Otherwise, return the largest index representable by \c size_t.  */
+  size_t index() const;
 
   /** If this variable is identified by a string name, return the name.
       Otherwise, return the empty string.  */
@@ -541,7 +541,7 @@ class DRAKECOMMON_EXPORT FunctionalForm::Variable {
 // members as public.  They are not user-facing anyway.
 #if !defined(DRAKE_DOXYGEN_CXX)
   union {
-    std::size_t index_;
+    size_t index_;
     std::string name_;
   };
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
