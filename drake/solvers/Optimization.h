@@ -10,7 +10,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
-#include "drake/core/Vector.h"
 #include "drake/drakeOptimization_export.h"
 #include "drake/solvers/Constraint.h"
 #include "drake/solvers/MathematicalProgram.h"
