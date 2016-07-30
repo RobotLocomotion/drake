@@ -67,8 +67,8 @@ class BotVisualizer {
       drake::lcmt_viewer_link_data link;
       link.name = body->get_name();
       link.robot_num = body->get_model_id();
-      link.num_geom = body->visual_elements.size();
-      for (const auto& v : body->visual_elements) {
+      link.num_geom = body->get_visual_elements().size();
+      for (const auto& v : body->get_visual_elements()) {
         drake::lcmt_viewer_geometry_data gdata;
 
         const DrakeShapes::Geometry& geometry = v.getGeometry();

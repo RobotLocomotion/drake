@@ -141,9 +141,9 @@ class DRAKERBM_EXPORT RigidBody {
    */
   int get_velocity_start_index() const;
 
-  void addVisualElement(const DrakeShapes::VisualElement& elements);
+  void AddVisualElement(const DrakeShapes::VisualElement& elements);
 
-  const DrakeShapes::VectorOfVisualElements& getVisualElements() const;
+  const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
 
   void setCollisionFilter(const DrakeCollision::bitmask& group,
                           const DrakeCollision::bitmask& ignores);
@@ -208,9 +208,6 @@ class DRAKERBM_EXPORT RigidBody {
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
 
-  /// A list of visual elements for this RigidBody
-  DrakeShapes::VectorOfVisualElements visual_elements;
-
   std::vector<DrakeCollision::ElementId> collision_element_ids;
   std::map<std::string, std::vector<DrakeCollision::ElementId> >
       collision_element_groups;
@@ -256,4 +253,7 @@ class DRAKERBM_EXPORT RigidBody {
   // The starting index of this rigid body's joint's velocity value(s) within
   // the parent tree's state vector.
   int velocity_start_index_{0};
+
+  // A list of visual elements for this RigidBody.
+  DrakeShapes::VectorOfVisualElements visual_elements_;
 };

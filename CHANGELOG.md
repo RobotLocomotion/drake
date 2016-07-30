@@ -26,6 +26,7 @@ Unreleased: changes on master, not yet released
  - [#2997][] Renamed drake/Path.h to drake/common/drake_path.h
  - [#2983][] Renamed namespace `Drake` to be `drake`.
  - [#2923][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
+ - [#2908][] Made `RigidBody::visual_elements` private. Renamed accessors based on style guide to be `RigidBody::AddVisualElement()` and `RigidBody::GetVisualElements()`.
  - [#2907][] Made `RigidBody::position_num_start` and `RigidBody::velocity_num_start` private. Renamed accessors to conform to style guide.
  - [#2905][] Made `RigidBody::body_index` private. Added necessary accessors.
  - [#2904][] Made `RigidBody::parent` private. Re-named it to be `RigidBody::parent_`. Added necessary accessors.
@@ -98,6 +99,7 @@ Changes in version v0.9.11 and before are not provided.
 [#2904]: https://github.com/RobotLocomotion/drake/issues/2904
 [#2905]: https://github.com/RobotLocomotion/drake/issues/2905
 [#2907]: https://github.com/RobotLocomotion/drake/issues/2907
+[#2908]: https://github.com/RobotLocomotion/drake/issues/2908
 [#2923]: https://github.com/RobotLocomotion/drake/issues/2923
 [#2963]: https://github.com/RobotLocomotion/drake/issues/2963
 [#2983]: https://github.com/RobotLocomotion/drake/issues/2983
