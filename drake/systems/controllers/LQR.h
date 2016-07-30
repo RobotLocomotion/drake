@@ -2,7 +2,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
-#include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
 #include "drake/core/Vector.h"
 #include "drake/math/autodiff.h"
