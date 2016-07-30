@@ -24,7 +24,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   // and is attached to the world via a fixed joint. Thus, everything in the
   // URDF becomes part of the world.
   rigid_body_sys->addRobotFromFile(
-      drake::getDrakePath() +
+      drake::GetDrakePath() +
           "/systems/plants/test/rigid_body_system/world.urdf",
       DrakeJoint::FIXED);
 
@@ -59,7 +59,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // the world's coordinate frame. The second model's root frame is offset from
   // the world's coordinate frame by X = 1, Y = 1, and Z = 1.
   rigid_body_sys->addRobotFromFile(
-      drake::getDrakePath() +
+      drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf");
 
   Eigen::Isometry3d T_second_model_to_world;
@@ -76,7 +76,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
       T_second_model_to_world);
 
   rigid_body_sys->addRobotFromFile(
-      drake::getDrakePath() +
+      drake::GetDrakePath() +
           "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf",
       DrakeJoint::QUATERNION, weld_to_frame);
 
@@ -193,13 +193,13 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
   // verifying that an exception is thrown, and then verifying that the thrown
   // exception is the correct one.
   EXPECT_THROW(
-      rigid_body_sys->addRobotFromFile(drake::getDrakePath() +
+      rigid_body_sys->addRobotFromFile(drake::GetDrakePath() +
                                        "/systems/plants/test/rigid_body_system/"
                                        "bad_transmission_no_joint.urdf"),
       std::runtime_error);
 
   try {
-    rigid_body_sys->addRobotFromFile(drake::getDrakePath() +
+    rigid_body_sys->addRobotFromFile(drake::GetDrakePath() +
                                      "/systems/plants/test/rigid_body_system/"
                                      "bad_transmission_no_joint.urdf");
   } catch (std::runtime_error& error) {

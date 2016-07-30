@@ -54,7 +54,7 @@ int do_main(int argc, const char* argv[]) {
         // car's root link in the world's frame.
         Eigen::Vector3d(0, 0, 0));
 
-    rigid_body_sys->addRobotFromFile(drake::getDrakePath() +
+    rigid_body_sys->addRobotFromFile(drake::GetDrakePath() +
       "/examples/Cars/models/prius/prius.sdf",
       DrakeJoint::QUATERNION, car_offset);
   }

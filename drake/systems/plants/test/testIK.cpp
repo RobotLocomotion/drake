@@ -15,13 +15,13 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using drake::getDrakePath;
+using drake::GetDrakePath;
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
 GTEST_TEST(testIK, atlasIK) {
   RigidBodyTree model(
-      getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
   tspan << 0, 1;
@@ -57,7 +57,7 @@ GTEST_TEST(testIK, atlasIK) {
 
 GTEST_TEST(testIK, iiwaIK) {
   RigidBodyTree model(
-      getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
 
   // Create a timespan for the constraints.  It's not particularly
   // meaningful in this test since inverseKin() only tests a single

@@ -119,7 +119,7 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
           "Could not find attachment frame when handling urdf modifications");
     }
     drake::parsers::urdf::AddRobotFromURDF(
-        drake::getDrakePath() + "/" + it->urdf_filename, it->joint_type,
+        drake::GetDrakePath() + "/" + it->urdf_filename, it->joint_type,
         attach_to_frame, robot.get());
   }
 

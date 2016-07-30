@@ -7,7 +7,7 @@
 
 using Eigen::Matrix;
 using std::make_shared;
-using drake::getDrakePath;
+using drake::GetDrakePath;
 using drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
 using drake::toEigen;
@@ -18,7 +18,7 @@ namespace test {
 GTEST_TEST(testMassSpringDamper, AllTests) {
   auto sys = make_shared<RigidBodySystem>();
   sys->addRobotFromFile(
-      getDrakePath() + "/systems/plants/test/MassSpringDamper.urdf",
+      GetDrakePath() + "/systems/plants/test/MassSpringDamper.urdf",
       DrakeJoint::FIXED);
 
   double mass = 1.0, k = 10.0, b = 1.0;

@@ -5,7 +5,7 @@
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
-using drake::getDrakePath;
+using drake::GetDrakePath;
 using drake::getRandomVector;
 using drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
@@ -17,7 +17,7 @@ namespace {
 
 GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(
-      getDrakePath() + "/examples/Pendulum/Pendulum.urdf", DrakeJoint::FIXED));
+      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf", DrakeJoint::FIXED));
   auto rbsys = RigidBodySystem(tree);
   auto p = Pendulum();
 

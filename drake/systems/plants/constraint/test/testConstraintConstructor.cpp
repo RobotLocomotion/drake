@@ -8,7 +8,7 @@
 using namespace std;
 
 int main() {
-  RigidBodyTree* model = new RigidBodyTree(drake::getDrakePath() +
+  RigidBodyTree* model = new RigidBodyTree(drake::GetDrakePath() +
       "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if (!model) {
     cerr << "ERROR: Failed to load model" << endl;

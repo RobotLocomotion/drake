@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   uG.tau = 0;
   auto c = timeInvariantLQR(*p, xG, uG, Q, R);
   auto v = std::make_shared<BotVisualizer<PendulumState> >(
-      lcm, getDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
       DrakeJoint::FIXED);
 
   auto sys = cascade(feedback(p, c), v);

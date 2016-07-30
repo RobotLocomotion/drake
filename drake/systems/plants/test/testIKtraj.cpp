@@ -14,11 +14,11 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using drake::getDrakePath;
+using drake::GetDrakePath;
 
 GTEST_TEST(testIKtraj, testIKtraj) {
   RigidBodyTree model(
-      getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   int r_hand{};
   for (int i = 0; i < static_cast<int>(model.bodies.size()); i++) {

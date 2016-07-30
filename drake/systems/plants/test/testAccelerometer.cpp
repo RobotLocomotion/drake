@@ -11,7 +11,7 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::shared_ptr;
 using std::make_shared;
-using drake::getDrakePath;
+using drake::GetDrakePath;
 using drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
 using drake::RigidBodyAccelerometer;
@@ -35,7 +35,7 @@ GTEST_TEST(testAccelerometer, AllTests) {
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->addRobotFromFile(
-      getDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
+      GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
       floating_base_type);
   auto const& tree = rigid_body_sys->getRigidBodyTree();
   auto sensor_frame = tree->findFrame("body");

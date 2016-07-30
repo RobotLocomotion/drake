@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
     x0 << 0.1, 0.2;
 
     auto v = std::make_shared<BotVisualizer<PendulumState> >(
-        lcm, getDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+        lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
         DrakeJoint::FIXED);
     auto sys = cascade(feedback(p, c), v);
     simulate(*sys, 0, 10, x0, options);

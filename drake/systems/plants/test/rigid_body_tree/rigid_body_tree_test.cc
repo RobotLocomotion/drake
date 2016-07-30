@@ -197,7 +197,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 // https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
   std::string file_name =
-      drake::getDrakePath() +
+      drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
   drake::parsers::urdf::AddRobotFromURDF(file_name, tree.get());
 
