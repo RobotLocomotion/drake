@@ -1,7 +1,7 @@
 #include "iiwa_simulation.h"
 
 #include "drake/systems/LCMSystem.h"
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 
 namespace drake {
 namespace examples {
@@ -15,7 +15,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
       Eigen::aligned_allocator<RigidBodySystem>());
 
   rigid_body_system->addRobotFromFile(
-      drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
 
   // Sets some simulation parameters.

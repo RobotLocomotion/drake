@@ -3,7 +3,7 @@
 #include <memory>
 #include <sstream>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
@@ -39,9 +39,9 @@ int do_main(int argc, const char* argv[]) {
 
   auto car_vis_adapter = CreateSimpleCarVisualizationAdapter();
 
-  const std::string kSedanUrdf = drake::getDrakePath() +
+  const std::string kSedanUrdf = drake::GetDrakePath() +
       "/examples/Cars/models/sedan.urdf";
-  const std::string kBreadtruckUrdf = drake::getDrakePath() +
+  const std::string kBreadtruckUrdf = drake::GetDrakePath() +
       "/examples/Cars/models/breadtruck.urdf";
 
   // RigidBodyTree for visualization.
