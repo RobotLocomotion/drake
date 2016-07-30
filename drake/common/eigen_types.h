@@ -38,7 +38,7 @@ using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 template <typename Scalar>
 using Matrix3 = Eigen::Matrix<Scalar, 3, 3>;
 
-/// A matrix of 3 rows and 3 columns, templated on scalar type.
+/// A matrix of 6 rows and 6 columns, templated on scalar type.
 template <typename Scalar>
 using Matrix6 = Eigen::Matrix<Scalar, 6, 6>;
 
