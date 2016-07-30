@@ -450,21 +450,24 @@ class DRAKECOMMON_EXPORT FunctionalForm::Variable {
   Variable();
 
   /** Construct a variable identified by a non-negative numeric \p index.  */
+  // NOLINTNEXTLINE(runtime/explicit)
   Variable(std::size_t index);
 
   /** Construct a variable identified by a non-empty string \p name. */
+  // NOLINTNEXTLINE(runtime/explicit)
   Variable(std::string name);
 
   /** Construct a variable identified by a non-empty string \p name
       (string literal).  */
   template <int N>
+  // NOLINTNEXTLINE(runtime/explicit)
   Variable(char const (&name)[N]) : Variable(std::string(name)) {}
 
   /** Copy-construct a variable from an lvalue.  */
   Variable(Variable const& v);
 
   /** Move-construct a variable from an rvalue.  */
-  Variable(Variable&& v) noexcept;  // NOLINT(whitespace/operators) // false-pos
+  Variable(Variable&& v) noexcept;
 
   /** Destroy a variable.  */
   ~Variable();
