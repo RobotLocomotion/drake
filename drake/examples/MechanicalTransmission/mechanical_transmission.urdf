@@ -1,0 +1,44 @@
+<?xml version="1.0" ?>
+<robot name="MechanicalTransmission" xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller" xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface" xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <link name="base_link">
+    <inertial>
+      <mass value="50.00"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.15"/>
+    </inertial>
+  </link>
+  <link name="link1">
+    <inertial>
+      <mass value="3.0"/>
+      <origin xyz="-0.05 0.0 -0.3"/>
+      <inertia ixx="0.10" ixy="0.0" ixz="0.00" iyy="0.1" iyz="0.00" izz="0.01"/>
+    </inertial>
+  </link>
+  <link name="link2">
+    <inertial>
+      <mass value="1.0"/>
+      <origin xyz="0.05 0.04 -0.06"/>
+      <inertia ixx="0.005" ixy="0.00" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <joint name="joint1" type="prismatic">
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.752"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <limit effort="100.0" lower="0.0" upper="0.3" velocity="0.1"/>
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <mimic joint="joint2" multiplier="0.5"/>
+    <dynamics damping="500.0"/>
+  </joint>
+
+  <joint name="joint2" type="prismatic">
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.340"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <limit effort="100.0" lower="0.0" upper="0.69" velocity="0.2"/>
+    <parent link="base_link"/>
+    <child link="link2"/>
+    <dynamics damping="1.0"/>
+  </joint>
+</robot>

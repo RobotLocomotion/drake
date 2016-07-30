@@ -1,0 +1,3 @@
+add_executable(testMechanicalTransmission run_mechanical_transmission_dynamics.cc)
+target_link_libraries(testMechanicalTransmission drakeRBSystem)
+add_test(NAME testMechanicalTransmission COMMAND testMechanicalTransmission)
