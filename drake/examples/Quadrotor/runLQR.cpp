@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/examples/Quadrotor/Quadrotor.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/controllers/LQR.h"

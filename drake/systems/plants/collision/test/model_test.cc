@@ -2,7 +2,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/collision/Model.h"
 #include "gtest/gtest.h"

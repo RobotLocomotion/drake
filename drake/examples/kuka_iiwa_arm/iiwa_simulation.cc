@@ -1,7 +1,7 @@
 #include "iiwa_simulation.h"
 
 #include "drake/systems/LCMSystem.h"
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 
 namespace drake {
 namespace examples {

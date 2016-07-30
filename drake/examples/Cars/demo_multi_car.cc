@@ -3,7 +3,7 @@
 #include <memory>
 #include <sstream>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
