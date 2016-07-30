@@ -14,8 +14,6 @@
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/model_element_id.h"
 
-using drake::systems::plants::ModelElementId;
-
 class DRAKERBM_EXPORT RigidBody {
  private:
   std::unique_ptr<DrakeJoint> joint;
@@ -23,6 +21,8 @@ class DRAKERBM_EXPORT RigidBody {
   DrakeCollision::bitmask collision_filter_ignores;
 
  public:
+  // TODO(liang.fok) Define a constructor tha takes a ModelElementId as an input
+  // parameter.
   RigidBody();
 
   /**
@@ -239,7 +239,7 @@ class DRAKERBM_EXPORT RigidBody {
  private:
   // Contains information that uniquely identifies this rigid body among all
   // modeling elements in the simulation.
-  ModelElementId model_element_id_;
+  drake::systems::plants::ModelElementId model_element_id_;
 
   // The rigid body that's connected to this rigid body's joint.
   RigidBody* parent_{nullptr};
