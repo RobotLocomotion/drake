@@ -21,8 +21,8 @@ class DRAKERBM_EXPORT RigidBody {
   DrakeCollision::bitmask collision_filter_ignores;
 
  public:
-  // TODO(liang.fok) Define a constructor tha takes a ModelElementId as an input
-  // parameter.
+  // TODO(liang.fok) Define a constructor that takes a ModelElementId as an
+  // input parameter.
   RigidBody();
 
   /**
