@@ -5,7 +5,7 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
-#include "drake/core/functional_form.h"
+#include "drake/common/functional_form.h"
 #include "drake/util/Polynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 

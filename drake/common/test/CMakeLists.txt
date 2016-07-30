@@ -1,5 +1,9 @@
 # Build tests for Drake common utilities.
 
+add_executable(functional_form_test functional_form_test.cc)
+target_link_libraries(functional_form_test drakeCommon ${GTEST_BOTH_LIBRARIES})
+add_test(NAME functional_form_test COMMAND functional_form_test)
+
 add_executable(nice_type_name_test nice_type_name_test.cc)
 target_link_libraries(nice_type_name_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME nice_type_name_test COMMAND nice_type_name_test)
