@@ -18,8 +18,8 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 
-using Drake::TaylorVecXd;
-using Drake::Vector1d;
+using drake::TaylorVecXd;
+using drake::Vector1d;
 using drake::util::MatrixCompareType;
 
 namespace drake {
