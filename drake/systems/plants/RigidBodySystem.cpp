@@ -398,7 +398,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
 RigidBodySensor::RigidBodySensor(const RigidBodySystem& sys,
     const std::string& name, std::shared_ptr<RigidBodyFrame> frame):
         sys_(sys), frame_(frame) {
-  id_.set_instance_name("UNDEFINED INSTANCE NAME");
+  id_.set_model_instance_name("UNDEFINED INSTANCE NAME");
   id_.set_model_name(frame_->body->get_model_name());
   id_.set_element_name(name);
   id_.set_model_instance_id(frame_->body->get_model_id());
