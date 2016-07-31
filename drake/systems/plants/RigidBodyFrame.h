@@ -123,9 +123,10 @@ class DRAKERBM_EXPORT RigidBodyFrame {
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
+
  private:
-   std::string name_;
-   RigidBody* body_{nullptr};
-   Eigen::Isometry3d transform_to_body_;
-   int frame_index_ = 0;  // this will be negative, but will also be gone soon!
+  std::string name_;
+  RigidBody* body_{nullptr};
+  Eigen::Isometry3d transform_to_body_;
+  int frame_index_ = 0;  // this will be negative, but will also be gone soon!
 };
