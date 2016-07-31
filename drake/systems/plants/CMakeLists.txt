@@ -31,7 +31,6 @@ drake_install_headers(
   KinematicsCache.h
   material_map.h
   model_element_id.h
-  model_element_type.h
   pose_map.h
   rigid_body_actuator.h
   rigid_body_collision_element.h

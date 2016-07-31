@@ -5,7 +5,6 @@
 #include "drake/util/drakeGeometryUtil.h"
 
 using drake::systems::plants::ModelElementId;
-using drake::systems::plants::ModelElementType;
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
@@ -23,31 +22,30 @@ RigidBody::RigidBody()
   mass = 0.0;
   com = Vector3d::Zero();
   I << drake::SquareTwistMatrix<double>::Zero();
-  model_element_id_.set_element_type(ModelElementType::kBodyElement);
 }
 
 const std::string& RigidBody::get_name() const {
-  return model_element_id_.get_element_name();
+  return id_.get_element_name();
 }
 
 void RigidBody::set_name(const std::string& name) {
-  model_element_id_.set_element_name(name);
+  id_.set_element_name(name);
 }
 
 const std::string& RigidBody::get_model_name() const {
-  return model_element_id_.get_model_name();
+  return id_.get_model_name();
 }
 
 void RigidBody::set_model_name(const std::string& name) {
-  model_element_id_.set_model_name(name);
+  id_.set_model_name(name);
 }
 
 int RigidBody::get_model_id() const {
-  return model_element_id_.get_model_instance_id();
+  return id_.get_model_instance_id();
 }
 
 void RigidBody::set_model_id(int model_id) {
-  model_element_id_.set_model_instance_id(model_id);
+  id_.set_model_instance_id(model_id);
 }
 
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {

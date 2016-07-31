@@ -3,7 +3,6 @@
 #include <string>
 
 #include "drake/drakeRBM_export.h"
-#include "drake/systems/plants/model_element_type.h"
 
 namespace drake {
 namespace systems {
@@ -47,8 +46,6 @@ class DRAKERBM_EXPORT ModelElementId {
    * These could be, for example, the name of a joint, body, frame, loop joint,
    * actuator, sensor, etc.
    *
-   * @param[in] element_type The type of the modeling element.
-   *
    * @param[in] model_instance_id A unique number that identifies the model
    * instance. This is included for legacy support and will be removed in the
    * near future.
@@ -56,7 +53,6 @@ class DRAKERBM_EXPORT ModelElementId {
   ModelElementId(const std::string& instance_name,
                  const std::string& model_name,
                  const std::string& element_name,
-                 ModelElementType element_type,
                  int model_instance_id);
 
   /**
@@ -74,11 +70,6 @@ class DRAKERBM_EXPORT ModelElementId {
    * Returns a reference to the modeling element's name.
    */
   const std::string& get_element_name() const;
-
-  /**
-   * Returns the modeling element's type.
-   */
-  ModelElementType get_element_type() const;
 
   // TODO(liang.fok) Remove this method. See:
   // https://github.com/RobotLocomotion/drake/issues/2973
@@ -105,10 +96,6 @@ class DRAKERBM_EXPORT ModelElementId {
 
   // TODO(liang.fok) Remove this method. See:
   // https://github.com/RobotLocomotion/drake/issues/2990
-  void set_element_type(ModelElementType element_type);
-
-  // TODO(liang.fok) Remove this method. See:
-  // https://github.com/RobotLocomotion/drake/issues/2990
   void set_model_instance_id(int model_instance_id);
 
  private:
@@ -117,7 +104,6 @@ class DRAKERBM_EXPORT ModelElementId {
   std::string instance_name_;
   std::string model_name_;
   std::string element_name_;
-  ModelElementType element_type_;
 
   // TODO(liang.fok) Remove model_instance_id_. See:
   // https://github.com/RobotLocomotion/drake/issues/2973

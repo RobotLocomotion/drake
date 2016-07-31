@@ -236,7 +236,7 @@ class DRAKERBM_EXPORT RigidBody {
  private:
   // Contains information that uniquely identifies this rigid body among all
   // modeling elements in the simulation.
-  drake::systems::plants::ModelElementId model_element_id_;
+  drake::systems::plants::ModelElementId id_;
 
   // The rigid body that's connected to this rigid body's joint.
   RigidBody* parent_{nullptr};
