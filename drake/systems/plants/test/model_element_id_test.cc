@@ -9,7 +9,7 @@ namespace plants {
 // Tests the basic functionality of ModelElementId.
 GTEST_TEST(ModelElementIdTest, BasicTest) {
   ModelElementId element_id_1("Foo_Instance", "Bar_Model", "Baz_Element", 1);
-  EXPECT_EQ(element_id_1.get_instance_name(), "Foo_Instance");
+  EXPECT_EQ(element_id_1.get_model_instance_name(), "Foo_Instance");
   EXPECT_EQ(element_id_1.get_model_name(), "Bar_Model");
   EXPECT_EQ(element_id_1.get_element_name(), "Baz_Element");
   EXPECT_EQ(element_id_1.get_model_instance_id(), 1);
