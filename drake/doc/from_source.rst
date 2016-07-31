@@ -162,8 +162,7 @@ Drake uses `CMake <https://cmake.org/>`_ to generate Ninja files within an
 out-of-source build directory. You can configure CMake options by passing
 them at the ``cmake`` command line with ``-D``, or in a GUI by running
 ``ccmake`` instead of ``cmake``. For instance, the following sequence of
-commands generates Ninja files with build type ``Debug``, and then runs the
-Ninja build.
+commands generates Ninja files, and then runs the Ninja build.
 
 ::
 
@@ -224,26 +223,47 @@ these spaces are typically ``drake_catkin_workspace/devel`` and
 
 .. _identifying_build_system_used:
 
-Identifying Which Build System Is Used and Switching Build Systems
-==================================================================
+Identifying the Build System Used
+=================================
 
 If you encounter an existing from-source installation of Drake and aren't sure
 whether it was built using ``Make`` or ``Ninja``, [1]_ look
 in ``drake-distro/build``. If there is a file called ``Makefile``, Drake was
 built using ``Make``. If there is a file called ``rules.ninja``, Drake was built
-using ``Ninja``. To switch the build system, first save and commit all of your
-work. Then delete all build artifacts::
-
-    $ cd drake-distro
-    $ rm -rf build
-    $ rm -rf externals
-    $ git clean -fdx
-    $ git reset --hard HEAD
-
-Once you've deleted all build artifacts, follow the instructions above for your
-desired build system.
+using ``Ninja``.
 
 .. [1] ROS Catkin is not listed since you should immediately know if Drake was :ref:`compiled using ROS Catkin <build_from_source_using_ros_catkin>` based on whether it is located in a ROS workspace. Once compiled using Catkin, do not attempt to switch build systems.
+
+.. _how_to_switch_build_systems:
+
+How to Switch Build Systems
+===========================
+
+To switch between using ``make`` vs. ``ninja``, first
+:ref:`clean your workspace <how_to_clean_your_workspace>`. Then follow
+the :ref:`original build instructions <build_the_collection>` using the desired
+build system.
+
+.. _how_to_clean_your_workspace:
+
+How to Clean Your Workspace
+===========================
+
+First save, commit, and push all of your work. The following commands
+*are destructive*.
+
+If you're using ``make`` or ``ninja``, execute::
+
+    cd drake-distro
+    rm -rf build
+    rm -rf externals
+    git clean -fdx
+    git reset --hard HEAD
+
+If you're using ROS Catkin, simply execute::
+
+    cd drake_catkin_workspace
+    catkin clean
 
 .. _test_from_source_installation:
 

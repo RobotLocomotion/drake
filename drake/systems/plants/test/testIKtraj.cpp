@@ -3,7 +3,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
@@ -14,11 +14,11 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using Drake::getDrakePath;
+using drake::GetDrakePath;
 
 GTEST_TEST(testIKtraj, testIKtraj) {
   RigidBodyTree model(
-      getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   int r_hand{};
   for (int i = 0; i < static_cast<int>(model.bodies.size()); i++) {

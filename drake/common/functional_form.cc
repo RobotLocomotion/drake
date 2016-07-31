@@ -1,4 +1,4 @@
-#include "drake/core/functional_form.h"
+#include "drake/common/functional_form.h"
 
 #include <algorithm>
 #include <cmath>

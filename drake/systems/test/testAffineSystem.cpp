@@ -7,7 +7,7 @@
 #include "drake/systems/test/system_test_util.h"
 
 using namespace std;
-using namespace Drake;
+using namespace drake;
 using namespace Eigen;
 
 template <int StatesAtCompileTime, int InputsAtCompileTime,

@@ -67,6 +67,87 @@ GTEST_TEST(testMosek, MosekLinearProgram) {
                               MatrixCompareType::absolute));
 }
 
+GTEST_TEST(testMosek, MosekQuadraticCost) {
+  // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
+  OptimizationProblem prog2;
+  auto x = prog2.AddContinuousVariables(3);
+  // Build the objective matrix and send it to the program.
+  Eigen::Matrix3d Q;
+  Q << 2, 0, -1,
+       0, 0.2, 0,
+       -1, 0, 2;
+  Eigen::Vector3d c;
+  c << 0, -1, 0;
+  prog2.AddQuadraticCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
+  // Build the constraint matrix and send it to the program.
+  Eigen::Vector3d linearcon;
+  linearcon << 1, 1, 1;
+  std::shared_ptr<QuadraticConstraint> ptrtocon =
+      std::make_shared<QuadraticConstraint>(
+          Eigen::Matrix3d::Constant(0), linearcon, 1,
+          std::numeric_limits<double>::infinity());
+  prog2.AddGenericConstraint(ptrtocon);
+  // Create the bounding box.
+  Eigen::Vector3d bboxlow, bboxhigh;
+  bboxlow << 0, 0, 0;
+  bboxhigh << std::numeric_limits<double>::infinity(),
+              std::numeric_limits<double>::infinity(),
+              std::numeric_limits<double>::infinity();
+  prog2.AddBoundingBoxConstraint(bboxlow, bboxhigh);
+  MosekSolver msk;
+  SolutionResult result = SolutionResult::kUnknownError;
+  prog2.SetSolverOption("Mosek", "maxormin", "min");
+  prog2.SetSolverOption("Mosek", "problemtype", "quadratic");
+  ASSERT_NO_THROW(result = msk.Solve(prog2)) << "Using solver: Mosek";
+  EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Using solver: Mosek";
+  Eigen::Vector3d solutions;
+  solutions << 5.975006e-05, 5, 5.975006e-05;
+  EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-7,
+                              MatrixCompareType::absolute));
+}
+
+GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
+  // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
+  OptimizationProblem prog2;
+  auto x = prog2.AddContinuousVariables(3);
+  // Build the objective matrix and send it to the program.
+  Eigen::Matrix3d Q;
+  Q << 2, 0, -1,
+       0, 0.2, 0,
+       -1, 0, 2;
+  Eigen::Vector3d c;
+  c << 0, -1, 0;
+  prog2.AddQuadraticCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
+  // Create the constraint matrix, and send it to the program.
+  Eigen::Vector3d linearcon;
+  linearcon << 1, 1, 1;
+  Eigen::Matrix3d quadcon;
+  quadcon << -2, 0, 0.2,
+              0, -2, 0,
+              0.2, 0, -0.2;
+  std::shared_ptr<QuadraticConstraint> ptrtocon =
+      std::make_shared<QuadraticConstraint>(quadcon, linearcon, 1,
+      std::numeric_limits<double>::infinity());
+  prog2.AddGenericConstraint(ptrtocon);
+  // Create the bounding box.
+  Eigen::Vector3d bboxlow, bboxhigh;
+  bboxlow << 0, 0, 0;
+  bboxhigh << std::numeric_limits<double>::infinity(),
+              std::numeric_limits<double>::infinity(),
+              std::numeric_limits<double>::infinity();
+  prog2.AddBoundingBoxConstraint(bboxlow, bboxhigh);
+  MosekSolver msk;
+  SolutionResult result = SolutionResult::kUnknownError;
+  prog2.SetSolverOption("Mosek", "maxormin", "min");
+  prog2.SetSolverOption("Mosek", "problemtype", "quadratic");
+  ASSERT_NO_THROW(result = msk.Solve(prog2)) << "Using solver: Mosek";
+  EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Using solver: Mosek";
+  Eigen::Vector3d solutions;
+  solutions << 4.487849e-01, 9.319130e-01, 6.741081e-01;
+  EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-7,
+                              MatrixCompareType::absolute));
+}
+
 }
 }
 }

@@ -2,9 +2,12 @@
 
 #include <random>  // Used only with deterministic seeds!
 
+#include <Eigen/Core>
+
 #include "gtest/gtest.h"
 
 #include "drake/util/Polynomial.h"
+#include "drake/util/TrigPoly.h"
 
 namespace drake {
 namespace solvers {
@@ -23,9 +26,9 @@ GTEST_TEST(SystemIdentificationTest, LumpedSingle) {
   Polynomiald input = (a * x) + (b * x) + (a * c * y) + (a * c * y * y);
 
   std::set<Polynomiald::VarType> parameters = {
-    a.getSimpleVariable(),
-    b.getSimpleVariable(),
-    c.getSimpleVariable()};
+    a.GetSimpleVariable(),
+    b.GetSimpleVariable(),
+    c.GetSimpleVariable()};
   SID::LumpingMapType lump_map =
       SID::GetLumpedParametersFromPolynomial(input, parameters);
   EXPECT_EQ(lump_map.size(), 2u);
@@ -47,9 +50,9 @@ GTEST_TEST(SystemIdentificationTest, LumpedMulti) {
     a};
 
   std::set<Polynomiald::VarType> parameters = {
-    a.getSimpleVariable(),
-    b.getSimpleVariable(),
-    c.getSimpleVariable()};
+    a.GetSimpleVariable(),
+    b.GetSimpleVariable(),
+    c.GetSimpleVariable()};
   SID::LumpingMapType lump_map =
       SID::GetLumpedParametersFromPolynomials(input, parameters);
 
@@ -84,19 +87,19 @@ GTEST_TEST(SystemIdentificationTest, LumpedParameterRewrite) {
     a};
 
   std::set<Polynomiald::VarType> parameters = {
-    a.getSimpleVariable(),
-    b.getSimpleVariable(),
-    c.getSimpleVariable()};
+    a.GetSimpleVariable(),
+    b.GetSimpleVariable(),
+    c.GetSimpleVariable()};
   SID::LumpingMapType lump_map =
       SID::GetLumpedParametersFromPolynomials(input, parameters);
 
   // A point for testing numeric stability.
   std::map<Polynomiald::VarType, double> eval_point = {
-    {x.getSimpleVariable(), 1},
-    {y.getSimpleVariable(), 2},
-    {a.getSimpleVariable(), 3},
-    {b.getSimpleVariable(), 5},
-    {c.getSimpleVariable(), 7},
+    {x.GetSimpleVariable(), 1},
+    {y.GetSimpleVariable(), 2},
+    {a.GetSimpleVariable(), 3},
+    {b.GetSimpleVariable(), 5},
+    {c.GetSimpleVariable(), 7},
   };
   // Compute the value of each lumped parameter at eval_point; store those
   // values into the eval_point (so that now it provides both lumped and
@@ -104,7 +107,7 @@ GTEST_TEST(SystemIdentificationTest, LumpedParameterRewrite) {
   // rewritten polynomial).
   for (const auto& poly_var_pair : lump_map) {
     eval_point[poly_var_pair.second] =
-        poly_var_pair.first.evaluateMultivariate(eval_point);
+        poly_var_pair.first.EvaluateMultivariate(eval_point);
   }
 
   for (const Polynomiald& poly : input) {
@@ -112,22 +115,22 @@ GTEST_TEST(SystemIdentificationTest, LumpedParameterRewrite) {
         SID::RewritePolynomialWithLumpedParameters(poly, lump_map);
 
     // No non-lumped parameters should remain in rewritten.
-    EXPECT_EQ(rewritten.getVariables().count(a.getSimpleVariable()), 0u);
-    EXPECT_EQ(rewritten.getVariables().count(b.getSimpleVariable()), 0u);
-    EXPECT_EQ(rewritten.getVariables().count(c.getSimpleVariable()), 0u);
+    EXPECT_EQ(rewritten.GetVariables().count(a.GetSimpleVariable()), 0u);
+    EXPECT_EQ(rewritten.GetVariables().count(b.GetSimpleVariable()), 0u);
+    EXPECT_EQ(rewritten.GetVariables().count(c.GetSimpleVariable()), 0u);
 
     // Rewritten has the same or smaller number of variables and terms.
-    EXPECT_LE(rewritten.getVariables().size(), poly.getVariables().size());
-    EXPECT_LE(rewritten.getMonomials().size(), poly.getMonomials().size());
+    EXPECT_LE(rewritten.GetVariables().size(), poly.GetVariables().size());
+    EXPECT_LE(rewritten.GetMonomials().size(), poly.GetMonomials().size());
 
     // Rewriting in terms of lumped parameters should never change the
     // actual value of a polynomial at a particular point.
-    EXPECT_EQ(poly.evaluateMultivariate(eval_point),
-              rewritten.evaluateMultivariate(eval_point));
+    EXPECT_EQ(poly.EvaluateMultivariate(eval_point),
+              rewritten.EvaluateMultivariate(eval_point));
 
     // TODO(ggould-tri) The above tests do not ensure that the original and
     // rewritten polys are everywhere and always structurally identical, just
-    // nearly always identical in their evaluateMultivariate behaviour.
+    // nearly always identical in their EvaluateMultivariate behaviour.
   }
 }
 
@@ -142,17 +145,17 @@ GTEST_TEST(SystemIdentificationTest, LumpedParameterRewrite) {
 
 GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
   const Polynomiald x = Polynomiald("x");
-  const auto x_var = x.getSimpleVariable();
+  const auto x_var = x.GetSimpleVariable();
   const Polynomiald y = Polynomiald("y");
-  const auto y_var = y.getSimpleVariable();
+  const auto y_var = y.GetSimpleVariable();
   const Polynomiald z = Polynomiald("z");
-  const auto z_var = z.getSimpleVariable();
+  const auto z_var = z.GetSimpleVariable();
   const Polynomiald a = Polynomiald("a");
-  const auto a_var = a.getSimpleVariable();
+  const auto a_var = a.GetSimpleVariable();
   const Polynomiald b = Polynomiald("b");
-  const auto b_var = b.getSimpleVariable();
+  const auto b_var = b.GetSimpleVariable();
   const Polynomiald c = Polynomiald("c");
-  const auto c_var = c.getSimpleVariable();
+  const auto c_var = c.GetSimpleVariable();
 
   /// Parameter estimation will try to make this Polynomial evaluate to zero:
   const Polynomiald poly = (a * x) + (b * x * x) + (c * y) - z;
@@ -176,7 +179,9 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     EXPECT_LT(error, 1e-5);
     EXPECT_EQ(estimated_params.size(), 3u);
     for (const auto& var : {a_var, b_var, c_var}) {
-      EXPECT_NEAR(estimated_params[var], expected_params.at(var), 4 * error);
+      // `9 * error` here in case all of the RMS error was in a single term.
+      EXPECT_NEAR(estimated_params[var], expected_params.at(var),
+                  9 * error);
     }
   }
 
@@ -258,30 +263,32 @@ std::vector<State> MakeTestData() {
 // DISABLED_ logic below ensures that we still at least get compile-time
 // checking of the test and resulting template instantiations.
 #if !defined(WIN32) && !defined(WIN64)
-#define IDENTIFICATION_TEST_NAME SpringMassIdentification
+#define SPRING_MASS_TEST_NAME SpringMassIdentification
+#define PENDULA_TEST_NAME PendulaIdentification
 #else
-#define IDENTIFICATION_TEST_NAME DISABLED_SpringMassIdentification
+#define SPRING_MASS_TEST_NAME DISABLED_SpringMassIdentification
+#define PENDULA_TEST_NAME DISABLED_PendulaIdentification
 #endif
 
 // TODO(ggould-tri) It is likely that much of the logic below will be
 // boilerplate shared by all manipulator identification; it should eventually
 // be pulled into a function of its own inside of system_identification.
 
-GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
+GTEST_TEST(SystemIdentificationTest, SPRING_MASS_TEST_NAME) {
   Polynomiald pos = Polynomiald("pos");
-  auto pos_var = pos.getSimpleVariable();
+  auto pos_var = pos.GetSimpleVariable();
   Polynomiald velocity = Polynomiald("vel");
-  auto velocity_var = velocity.getSimpleVariable();
+  auto velocity_var = velocity.GetSimpleVariable();
   Polynomiald acceleration = Polynomiald("acc");
-  auto acceleration_var = acceleration.getSimpleVariable();
+  auto acceleration_var = acceleration.GetSimpleVariable();
   Polynomiald input_force = Polynomiald("f_in");
-  auto input_force_var = input_force.getSimpleVariable();
+  auto input_force_var = input_force.GetSimpleVariable();
   Polynomiald mass = Polynomiald("m");
-  auto mass_var = mass.getSimpleVariable();
+  auto mass_var = mass.GetSimpleVariable();
   Polynomiald damping = Polynomiald("b");
-  auto damping_var = damping.getSimpleVariable();
+  auto damping_var = damping.GetSimpleVariable();
   Polynomiald spring = Polynomiald("k");
-  auto spring_var = spring.getSimpleVariable();
+  auto spring_var = spring.GetSimpleVariable();
 
   // Code style violations here:
   // * Vector initializations use two statements on one line for clarity.
@@ -331,7 +338,7 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   //
   // The value for the error check here is an arbitrary empirical observation,
   // to catch changes that heavily regress accuracy.
-  EXPECT_LT(error, 0.3);
+  EXPECT_LT(error, 2e-2);
 
   EXPECT_EQ(estimated_params.size(), 3u);
   EXPECT_NEAR(estimated_params[mass_var], kMass, kNoise);
@@ -339,8 +346,150 @@ GTEST_TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
               measurements.size() * error);
   EXPECT_NEAR(estimated_params[spring_var], kSpring, kNoise);
 }
-#undef IDENTIFICATION_TEST_NAME
+#undef SPRING_MASS_TEST_NAME
 
+GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
+  // Simulate two pendula that swing independently but are actuated with the
+  // same torque.  The pendula have lengths l1 = 1, l2 = 2; their masses m1
+  // and m2 are both 1.  Gravity is an earth-conventional -9.8.
+  //
+  // The comments about nomenclature from the previous test apply here as
+  // well: Variable naming is conventional rather than style-conformant.
+
+  const TrigPolyd theta1(Polynomiald("th", 1),
+                         Polynomiald("s", 1), Polynomiald("c", 1));
+  const TrigPolyd theta2(Polynomiald("th", 2),
+                         Polynomiald("s", 2), Polynomiald("c", 2));
+  VectorXTrigPoly q(2); q << theta1, theta2;
+
+  const TrigPolyd theta1dot(Polynomiald("th.", 1),
+                            Polynomiald("s.", 1), Polynomiald("c.", 1));
+  const TrigPolyd theta2dot(Polynomiald("th.", 2),
+                            Polynomiald("s.", 2), Polynomiald("c.", 2));
+  VectorXTrigPoly qdot(2); qdot << theta1dot, theta2dot;
+
+  const TrigPolyd theta1dotdot(Polynomiald("th..", 1),
+                               Polynomiald("s..", 1), Polynomiald("c..", 1));
+  const TrigPolyd theta2dotdot(Polynomiald("th..", 2),
+                               Polynomiald("s..", 2), Polynomiald("c..", 2));
+  VectorXTrigPoly qdotdot(2); qdotdot << theta1dotdot, theta2dotdot;
+
+  const TrigPolyd l1(Polynomiald("l", 1));  //< Length of arm 1.
+  const TrigPolyd l2(Polynomiald("l", 2));  //< Length of arm 2.
+  const TrigPolyd m1(Polynomiald("m", 1));  //< Mass of arm 1.
+  const TrigPolyd m2(Polynomiald("m", 2));  //< Mass of arm 2.
+
+  const TrigPolyd gravity(Polynomiald("g"));  //< gravity
+  const TrigPolyd tau(Polynomiald("tau"));  //< torque
+
+  // The following matrices and vectors are the components of the Manipulator.
+  Eigen::Matrix<TrigPolyd, 2, 2> H;  //< Inertia matrix.
+  H << (m1 * l1 * l1), 0,
+       0, (m2 * l2 * l2);
+  Eigen::Matrix<TrigPolyd, 2, 2> C;  //< Coriolis matrix.
+  C << 0, 0, 0, 0;
+  Eigen::Matrix<TrigPolyd, 2, 1> g;  //< Field function (gravity).
+  g << m1 * gravity * l1 * sin(theta1), m2 * gravity * l2 * sin(theta2);
+  Eigen::Matrix<TrigPolyd, 2, 1> B;  //< Input transmission mapping.
+  B << 1, 1;
+  Eigen::Matrix<TrigPolyd, 2, 1> f;  //< Dissipative forces.
+  f << 0, 0;
+
+  VectorXTrigPoly u(1); u << tau;  //< Input signals.
+
+  const VectorXTrigPoly manipulator_left = (H * qdotdot) + (C * qdot) + g;
+  const VectorXTrigPoly manipulator_right = (B * u) + f;
+  const VectorXTrigPoly to_estimate = manipulator_left - manipulator_right;
+
+  // Create convenience variables for our q/qdot/u values.  Convenience vars
+  // have an underscore prefix for slightly easier understandability.
+  const TrigPolyd::VarType th1_var = theta1.poly().GetSimpleVariable();
+  const TrigPolyd::VarType th2_var = theta2.poly().GetSimpleVariable();
+  const TrigPolyd::VarType th1d_var =
+      theta1dot.poly().GetSimpleVariable();
+  const TrigPolyd::VarType th2d_var =
+      theta2dot.poly().GetSimpleVariable();
+  const TrigPolyd::VarType th1dd_var =
+      theta1dotdot.poly().GetSimpleVariable();
+  const TrigPolyd::VarType th2dd_var =
+      theta2dotdot.poly().GetSimpleVariable();
+  const TrigPolyd::VarType tau_var = tau.poly().GetSimpleVariable();
+
+  const double kG = 9.8;
+  const double kPi = 3.14159265;
+  const double kPi2 = kPi / 2;
+
+  const std::vector<typename SID::PartialEvalType> pendula_data = {
+    {{tau_var, 0.},
+     {th1_var, 0.}, {th1d_var, 0.}, {th1dd_var, 0.},
+     {th2_var, 0.}, {th2d_var, 0.}, {th2dd_var, 0.}},
+    {{tau_var, 0.},
+     {th1_var, kPi2}, {th1d_var, 0.}, {th1dd_var, -kG},
+     {th2_var, kPi2}, {th2d_var, 0.}, {th2dd_var, -0.25 * kG}},
+    {{tau_var, 0.},
+     {th1_var, -kPi}, {th1d_var, 0.}, {th1dd_var, 0.},
+     {th2_var, -kPi}, {th2d_var, 0.}, {th2dd_var, 0.}},
+    {{tau_var, 0.},
+     {th1_var, -kPi2}, {th1d_var, 0.}, {th1dd_var, kG},
+     {th2_var, -kPi2}, {th2d_var, 0.}, {th2dd_var, 0.25 * kG}},
+    {{tau_var, 1.},
+     {th1_var, 0.}, {th1d_var, 0.}, {th1dd_var, 1.},
+     {th2_var, 0.}, {th2d_var, 0.}, {th2dd_var, 0.25}},
+    {{tau_var, kG},
+     {th1_var, kPi2}, {th1d_var, 0.}, {th1dd_var, 0.},
+     {th2_var, kPi2}, {th2d_var, 0.}, {th2dd_var, 0.}},
+    {{tau_var, 1.},
+     {th1_var, -kPi}, {th1d_var, 0.}, {th1dd_var, 1.},
+     {th2_var, -kPi}, {th2d_var, 0.}, {th2dd_var, 0.25}},
+    {{tau_var, -kG},
+     {th1_var, -kPi2}, {th1d_var, 0.}, {th1dd_var, 0.},
+     {th2_var, -kPi2}, {th2d_var, 0.}, {th2dd_var, 0.}},
+    };
+
+  SID::SystemIdentificationResult result =
+      SID::LumpedSystemIdentification(to_estimate, pendula_data);
+
+  // Check result.rms_error.
+  const double epsilon = 1e-5;  // Moderate, empirical epsilon for weak solvers.
+  EXPECT_LT(result.rms_error, epsilon);
+  const double max_per_term_error =
+      result.rms_error *
+      (result.lumped_parameters.size() * result.lumped_parameters.size());
+
+  // Check result.lumped_parameters.
+  Polynomiald mgl1 = (m1 * gravity * l1).poly();
+  Polynomiald mgl2 = (m2 * gravity * l2).poly();
+  Polynomiald mll1 = (m1 * l1 * l1).poly();
+  Polynomiald mll2 = (m2 * l2 * l2).poly();
+  EXPECT_EQ(result.lumped_parameters.size(), static_cast<size_t>(4));
+  Polynomiald::VarType mgl1_var = result.lumped_parameters.at(mgl1);
+  Polynomiald::VarType mgl2_var = result.lumped_parameters.at(mgl2);
+  Polynomiald::VarType mll1_var = result.lumped_parameters.at(mll1);
+  Polynomiald::VarType mll2_var = result.lumped_parameters.at(mll2);
+
+  // Check result.lumped_polys.
+  std::set<Polynomiald::VarType> expected_vars_1 = {
+    mgl1_var, mll1_var, th1_var, th1dd_var, tau_var};
+  EXPECT_EQ(result.lumped_polys[0].GetVariables(), expected_vars_1);
+  std::set<Polynomiald::VarType> expected_vars_2 = {
+    mgl2_var, mll2_var, th2_var, th2dd_var, tau_var};
+  EXPECT_EQ(result.lumped_polys[1].GetVariables(), expected_vars_2);
+
+  // Check result.lumped_parameter_values
+  EXPECT_NEAR(result.lumped_parameter_values[mgl1_var], kG, max_per_term_error);
+  EXPECT_NEAR(result.lumped_parameter_values[mgl2_var], kG, max_per_term_error);
+  EXPECT_NEAR(result.lumped_parameter_values[mll1_var], 1, max_per_term_error);
+  EXPECT_NEAR(result.lumped_parameter_values[mll2_var], 4, max_per_term_error);
+
+  // Check result.partially_evaluated_polys.
+  for (const auto& point : pendula_data) {
+    EXPECT_NEAR(result.partially_evaluated_polys[0].EvaluateMultivariate(point),
+                0, max_per_term_error);
+    EXPECT_NEAR(result.partially_evaluated_polys[1].EvaluateMultivariate(point),
+                0, max_per_term_error);
+  }
+}
+#undef PENDULA_TEST_NAME
 ///@}
 
 }  // anonymous namespace

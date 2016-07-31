@@ -10,140 +10,15 @@
 #include "drake/common/drake_assert.h"
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
-#include "drake/core/Vector.h"
 #include "drake/drakeOptimization_export.h"
 #include "drake/solvers/Constraint.h"
 #include "drake/solvers/MathematicalProgram.h"
+#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/util/Polynomial.h"
 
 namespace drake {
 namespace solvers {
-
-/**
- * DecisionVariable
- * @brief Provides storage for a decision variable inside an
- * OptimizationProblem.
- */
-class DecisionVariable {
- public:
-  enum class VarType { CONTINUOUS, INTEGER, BINARY };
-
-  DecisionVariable(VarType type, const std::string& name, size_t num_vars,
-                   size_t start_index)
-      : type_(type),
-        name_(name),
-        data_(Eigen::VectorXd::Zero(num_vars)),
-        start_index_(start_index) {}
-
-  /** index()
-   * @brief returns the first index of this variable in the entire variable
-   * vector for the program
-   */
-  size_t index() const { return start_index_; }
-  /** size()
-   * @brief returns the number of elements in the decision variable vector
-   */
-  size_t size() const { return data_.size(); }
-  /** name()
-   * @return the name of the DecisionVariable
-   */
-  const std::string& name() const { return name_; }
-  /** value()
-   * @brief returns the actual stored value; which is only meaningful after
-   * calling solve() in the program.
-   */
-  const Eigen::VectorXd& value() const { return data_; }
-  void set_value(const Eigen::VectorXd& new_data) { data_ = new_data; }
-
- private:
-  VarType type_;
-  std::string name_;
-  Eigen::VectorXd data_;
-  size_t start_index_;
-};
-
-class DecisionVariableView {  // enables users to access pieces of the decision
-                              // variables like they would any other eigen
-                              // vector
- public:
-  /// Create a view which covers an entire DecisionVariable.
-  ///
-  /// @p var is aliased, and must remain valid for the lifetime of the view.
-  explicit DecisionVariableView(const DecisionVariable& var)
-      : var_(var), start_index_(0), size_(var_.value().rows()) {}
-
-  /// Create a view covering part of a DecisionVariable.
-  ///
-  /// @p var is aliased, and must remain valid for the lifetime of the view.
-  DecisionVariableView(const DecisionVariable& var, size_t start, size_t n)
-      : var_(var), start_index_(start), size_(n) {
-    DRAKE_ASSERT((start + n) <= static_cast<size_t>(var.value().rows()));
-  }
-
-  /** index()
-   * @brief returns the first index of this variable in the entire variable
-   * vector for the program
-   */
-  size_t index() const { return var_.index() + start_index_; }
-
-  /** size()
-   * @brief returns the number of elements in the decision variable vector
-   */
-  size_t size() const { return size_; }
-
-  /** value()
-   * @brief returns the actual stored value; which is only meaningful after
-   * calling solve() in the program.
-   */
-  Eigen::VectorBlock<const Eigen::VectorXd, Eigen::Dynamic> value() const {
-    return var_.value().segment(start_index_, size_);
-  }
-
-  std::string name() const {
-    if ((start_index_ == 0) &&
-        (size_ == static_cast<size_t>(var_.value().size()))) {
-      return var_.name();
-    } else {
-      return var_.name() + "(" + std::to_string(start_index_) + ":" +
-             std::to_string(start_index_ + size_) + ")";
-    }
-  }
-
-  /** covers()
-   * @brief returns true iff the given @p index of the enclosing
-   * OptimizationProblem is included in this VariableView.*/
-  bool covers(size_t var_index) const {
-    return (var_index >= index()) && (var_index < (index() + size_));
-  }
-
-  const DecisionVariableView operator()(size_t i) const {
-    DRAKE_ASSERT(i <= size_);
-    return DecisionVariableView(var_, start_index_ + i, 1);
-  }
-  const DecisionVariableView row(size_t i) const {
-    DRAKE_ASSERT(i <= size_);
-    return DecisionVariableView(var_, start_index_ + i, 1);
-  }
-  const DecisionVariableView head(size_t n) const {
-    DRAKE_ASSERT(n <= size_);
-    return DecisionVariableView(var_, start_index_, n);
-  }
-  const DecisionVariableView tail(size_t n) const {
-    DRAKE_ASSERT(n <= size_);
-    return DecisionVariableView(var_, start_index_ + size_ - n, n);
-  }
-  const DecisionVariableView segment(size_t start, size_t n) const {
-    DRAKE_ASSERT(start + n <= size_);
-    return DecisionVariableView(var_, start_index_ + start, n);
-  }
-
- private:
-  const DecisionVariable& var_;
-  size_t start_index_, size_;
-};
-
-typedef std::list<DecisionVariableView> VariableList;
 
 class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   /** Binding
@@ -173,7 +48,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     /** covers()
      * @brief returns true iff the given @p index of the enclosing
      * OptimizationProblem is included in this Binding.*/
-    bool covers(size_t index) const {
+    bool Covers(size_t index) const {
       for (auto view : variable_list_) {
         if (view.covers(index)) {
           return true;
@@ -217,34 +92,34 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     // Construct by copying from an lvalue.
     template <typename... Args>
     ConstraintImpl(F const& f, Args&&... args)
-        : Constraint(Drake::FunctionTraits<F>::numOutputs(f),
+        : Constraint(drake::FunctionTraits<F>::numOutputs(f),
                      std::forward<Args>(args)...),
           f_(f) {}
 
     // Construct by moving from an rvalue.
     template <typename... Args>
     ConstraintImpl(F&& f, Args&&... args)
-        : Constraint(Drake::FunctionTraits<F>::numOutputs(f),
+        : Constraint(drake::FunctionTraits<F>::numOutputs(f),
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
-    void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+    void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override {
-      y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
+      y.resize(drake::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-                   Drake::FunctionTraits<F>::numInputs(f_));
+                   drake::FunctionTraits<F>::numInputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
-                   Drake::FunctionTraits<F>::numOutputs(f_));
-      Drake::FunctionTraits<F>::eval(f_, x, y);
+                   drake::FunctionTraits<F>::numOutputs(f_));
+      drake::FunctionTraits<F>::eval(f_, x, y);
     }
-    void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
-              Drake::TaylorVecXd& y) const override {
-      y.resize(Drake::FunctionTraits<F>::numOutputs(f_));
+    void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
+              drake::TaylorVecXd& y) const override {
+      y.resize(drake::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-                   Drake::FunctionTraits<F>::numInputs(f_));
+                   drake::FunctionTraits<F>::numInputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
-                   Drake::FunctionTraits<F>::numOutputs(f_));
-      Drake::FunctionTraits<F>::eval(f_, x, y);
+                   drake::FunctionTraits<F>::numOutputs(f_));
+      drake::FunctionTraits<F>::eval(f_, x, y);
     }
   };
 
@@ -626,7 +501,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     // TODO(ggould-tri) There may be other such special easy cases.
     bool all_affine = true;
     for (int i = 0; i < polynomials.rows(); i++) {
-      if (!polynomials[i].isAffine()) {
+      if (!polynomials[i].IsAffine()) {
         all_affine = false;
         break;
       }
@@ -637,7 +512,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       Eigen::VectorXd linear_constraint_lb = lb;
       Eigen::VectorXd linear_constraint_ub = ub;
       for (int poly_num = 0; poly_num < polynomials.rows(); poly_num++) {
-        for (const auto& monomial : polynomials[poly_num].getMonomials()) {
+        for (const auto& monomial : polynomials[poly_num].GetMonomials()) {
           if (monomial.terms.size() == 0) {
             linear_constraint_lb[poly_num] -= monomial.coefficient;
             linear_constraint_ub[poly_num] -= monomial.coefficient;
@@ -751,11 +626,13 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * http://www.coin-or.org/Ipopt/documentation/node40.html
    *
    * "Mosek" -- Accepts two parameters:
-   * -- "maxormin" -- maximize or minimize current problem using
-   *  either "max" or "min"
-   * -- "problemtype" -- currently only accepts "linear", plan to add
-   *  "quadratic" soon. SDP will take longer.
-   * TODO: Calling OptimizationProblem::Solve will not invoke mosek at this time.
+   * - "maxormin"
+   *   + Maximize or minimize current problem using either "max" or "min".
+   * - "problemtype"
+   *   + Currently only accepts "linear" or "quadratic". Use the appropriate
+   *     one.
+   * TODO: Calling OptimizationProblem::Solve will not invoke mosek at this
+   * time.
    */
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option, double option_value) {

@@ -11,7 +11,7 @@
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 #include "joints/DrakeJoints.h"
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "xmlUtil.h"
 
 // from
@@ -229,7 +229,7 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                         " has a collision element without a geometry.");
   }
 
-  RigidBody::CollisionElement element(
+  RigidBodyCollisionElement element(
       transform_parent_to_model.inverse() * transform_to_model, body);
   // By default all collision elements added to the world from an SDF file are
   // flagged as static.

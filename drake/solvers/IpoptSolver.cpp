@@ -20,7 +20,7 @@ using Ipopt::IpoptData;
 using Ipopt::Number;
 using Ipopt::SolverReturn;
 
-using Drake::TaylorVecXd;
+using drake::TaylorVecXd;
 
 namespace drake {
 namespace solvers {
@@ -117,7 +117,7 @@ size_t EvaluateConstraint(
     var_count += v.size();
   }
 
-  auto tx = Drake::initializeAutoDiff(xvec);
+  auto tx = drake::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
   for (const DecisionVariableView& v : variable_list) {
@@ -126,7 +126,7 @@ size_t EvaluateConstraint(
   }
 
   TaylorVecXd ty(c.num_constraints());
-  c.eval(this_x, ty);
+  c.Eval(this_x, ty);
 
   // Store the results.  Since IPOPT directly knows the bounds of the
   // constraint, we don't need to apply any bounding information here.
@@ -396,7 +396,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   void EvaluateCosts(Index n, const Number* x) {
     const Eigen::VectorXd xvec = MakeEigenVector(n, x);
 
-    auto tx = Drake::initializeAutoDiff(xvec);
+    auto tx = drake::initializeAutoDiff(xvec);
     TaylorVecXd ty(1);
     TaylorVecXd this_x;
 
@@ -412,7 +412,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         index += v.size();
       }
 
-      binding.constraint()->eval(this_x, ty);
+      binding.constraint()->Eval(this_x, ty);
 
       cost_cache_->result[0] += ty(0).value();
       for (const DecisionVariableView& v : binding.variable_list()) {
