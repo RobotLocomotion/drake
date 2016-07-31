@@ -1,7 +1,7 @@
 
 #include <iostream>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/cascade_system.h"
@@ -13,7 +13,7 @@
 #include "QuadrotorOutput.h"
 
 using namespace std;
-using namespace Drake;
+using namespace drake;
 using namespace Eigen;
 
 int main(int argc, char* argv[]) {
@@ -49,14 +49,14 @@ int main(int argc, char* argv[]) {
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->addRobotFromFile(
-      getDrakePath() + "/examples/Quadrotor/warehouse.sdf", floating_base_type);
+      GetDrakePath() + "/examples/Quadrotor/warehouse.sdf", floating_base_type);
 
   rigid_body_sys->penetration_stiffness = 20.0;
   rigid_body_sys->penetration_damping = 2.0;
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
   rigid_body_sys->addRobotFromFile(
-      getDrakePath() + "/examples/Quadrotor/quadrotor_fla.urdf",
+      GetDrakePath() + "/examples/Quadrotor/quadrotor_fla.urdf",
       floating_base_type);
 
   auto sensor_frame = tree->findFrame("body");
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
   world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
-      RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
+      RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
       "terrain");
   tree->updateStaticCollisionElements();
 

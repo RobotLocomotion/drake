@@ -14,9 +14,6 @@ using drake::math::autoDiffToValueMatrix;
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
 
-default_random_engine generator;
-uniform_real_distribution<> uniform(0, 1);
-
 template <int Rows, int Cols>
 void printMatrix(const MatrixBase<Matrix<double, Rows, Cols>>& mat) {
   cout << mat << endl;
@@ -33,6 +30,9 @@ template <typename Scalar>
 void scenario1(const RigidBodyTree& model, KinematicsCache<Scalar>& cache,
                const vector<Matrix<Scalar, Dynamic, 1>>& qs,
                const map<int, Matrix3Xd>& body_fixed_points) {
+  default_random_engine generator;
+  uniform_real_distribution<> uniform(0, 1);
+
   for (const auto& q : qs) {
     cache.initialize(q);
     model.doKinematics(cache, false);
@@ -54,6 +54,9 @@ void scenario2(
     const RigidBodyTree& model, KinematicsCache<Scalar>& cache,
     const vector<pair<Matrix<Scalar, Dynamic, 1>, Matrix<Scalar, Dynamic, 1>>>&
         states) {
+  default_random_engine generator;
+  uniform_real_distribution<> uniform(0, 1);
+
   const eigen_aligned_unordered_map<RigidBody const*,
                                     drake::TwistVector<Scalar>> f_ext;
   for (const auto& state : states) {

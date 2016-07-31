@@ -54,7 +54,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                             1};  // Matlab's reverse coefficient indexing...
         *(mxGetPr(plhs[0]) + sub2ind(3, dims, sub)) =
             spline.getPolynomial(static_cast<int>(segment_index))
-                .getCoefficients()[coefficient_index];
+                .GetCoefficients()[coefficient_index];
       }
     }
   }

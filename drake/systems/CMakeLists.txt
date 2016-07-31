@@ -35,6 +35,7 @@ drake_install_headers(
   n_ary_system.h
   pd_control_system.h
   Simulation.h
+  simulation_options.h
   System.h)
 
 add_subdirectory(test)

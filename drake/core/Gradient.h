@@ -10,7 +10,7 @@
 
 #include "drake/common/drake_assert.h"
 
-namespace Drake {
+namespace drake {
 // todo: recursive template to get arbitrary gradient order
 
 // note: tried using template default values (e.g. Eigen::Dynamic), but they

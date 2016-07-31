@@ -307,7 +307,7 @@ void gradientMatrixToAutoDiff(
   }
 }
 
-namespace Drake {
+namespace drake {
 namespace internal {
 template <typename Derived, typename Scalar>
 struct ResizeDerivativesToMatchScalarImpl {
@@ -348,4 +348,4 @@ void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat,
   internal::ResizeDerivativesToMatchScalarImpl<
       Derived, typename Derived::Scalar>::run(mat, scalar);
 }
-}  // namespace Drake
+}  // namespace drake

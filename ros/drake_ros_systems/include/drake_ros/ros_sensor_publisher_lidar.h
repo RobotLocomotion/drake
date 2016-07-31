@@ -10,10 +10,10 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
-using Drake::NullVector;
-using Drake::RigidBodySensor;
-using Drake::RigidBodySystem;
-using Drake::RigidBodyDepthSensor;
+using drake::NullVector;
+using drake::RigidBodySensor;
+using drake::RigidBodySystem;
+using drake::RigidBodyDepthSensor;
 
 namespace drake {
 namespace ros {

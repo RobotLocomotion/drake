@@ -6,7 +6,7 @@
 
 using Eigen::Dynamic;
 
-namespace Drake {
+namespace drake {
 namespace {
 
 template <int NumStates1, int NumInputs1, int NumOutputs1, int NumStates2>
@@ -62,4 +62,4 @@ GTEST_TEST(FeedbackSystemTest, AlgebraicLoop) {
 }
 
 }  // namespace
-}  // namespace Drake
+}  // namespace drake

@@ -9,6 +9,8 @@
 
 #include "gtest/gtest.h"
 
+using std::make_unique;
+
 namespace drake {
 namespace systems {
 namespace {
@@ -18,19 +20,18 @@ class AdderTest : public ::testing::Test {
   void SetUp() override {
     adder_.reset(new Adder<double>(2 /* inputs */, 3 /* length */));
     context_ = adder_->CreateDefaultContext();
-    output_ = adder_->AllocateOutput();
+    output_ = adder_->AllocateOutput(*context_);
     input0_.reset(new BasicVector<double>(3 /* length */));
     input1_.reset(new BasicVector<double>(3 /* length */));
   }
 
   static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
       std::unique_ptr<BasicVector<double>> data) {
-    return std::unique_ptr<FreestandingInputPort<double>>(
-        new FreestandingInputPort<double>(std::move(data)));
+    return make_unique<FreestandingInputPort<double>>(std::move(data));
   }
 
   std::unique_ptr<Adder<double>> adder_;
-  std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input0_;
   std::unique_ptr<BasicVector<double>> input1_;
@@ -46,10 +47,10 @@ TEST_F(AdderTest, AddTwoVectors) {
 
   adder_->EvalOutput(*context_, output_.get());
 
-  ASSERT_EQ(1u, output_->ports.size());
+  ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_port =
       dynamic_cast<const BasicVector<double>*>(
-          output_->ports[0]->get_vector_data());
+          output_->get_port(0).get_vector_data());
   ASSERT_NE(nullptr, output_port);
   Eigen::Vector3d expected;
   expected << 5, 7, 9;

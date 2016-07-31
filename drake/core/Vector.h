@@ -6,7 +6,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 
-namespace Drake {
+namespace drake {
 
 /** @defgroup vector_concept Vector<ScalarType> Concept
  * @ingroup concepts
@@ -47,8 +47,6 @@ struct EigenVector {
   template <typename ScalarType>
   using type = Eigen::Matrix<ScalarType, Rows, 1>;
 };
-
-typedef Eigen::Matrix<double, 1, 1> Vector1d;
 
 /** NullVector<ScalarType>
  * @brief provides the empty vector (templated by ScalarType)
@@ -170,8 +168,8 @@ class CombinedVector {
 
   template <typename Derived>
   CombinedVector &operator=(const Eigen::MatrixBase<Derived> &x) {
-    vec1 = x.topRows(Drake::size(vec1));
-    vec2 = x.bottomRows(Drake::size(vec2));
+    vec1 = x.topRows(drake::size(vec1));
+    vec2 = x.bottomRows(drake::size(vec2));
     return *this;
   }
 
@@ -194,7 +192,7 @@ class CombinedVector {
                   Vector2<ScalarType>::RowsAtCompileTime
   };
 
-  std::size_t size() const { return Drake::size(vec1) + Drake::size(vec2); }
+  std::size_t size() const { return drake::size(vec1) + drake::size(vec2); }
 
   friend Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> toEigen(
       const CombinedVector<ScalarType, Vector1, Vector2> &vec) {
@@ -332,4 +330,4 @@ struct CombinedVectorUtil<
   }
 };
 
-};  // namespace Drake
+};  // namespace drake

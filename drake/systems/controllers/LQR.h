@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_assert.h"
-#include "drake/core/Function.h"
+#include "drake/common/text_logging.h"
 #include "drake/core/Gradient.h"
 #include "drake/core/Vector.h"
 #include "drake/math/autodiff.h"
@@ -11,7 +11,7 @@
 
 using drake::math::autoDiffToGradientMatrix;
 
-namespace Drake {
+namespace drake {
 
 template <typename System>
 std::shared_ptr<AffineSystem<NullVector, System::template StateVector,
@@ -44,8 +44,7 @@ timeInvariantLQR(const System& sys,
   Eigen::MatrixXd K(num_inputs, num_states), S(num_states, num_states);
   lqr(A, B, Q, R, K, S);
 
-  //    cout << "K = " << K << endl;
-  //    cout << "S = " << S << endl;
+  SPDLOG_TRACE(drake::log(), "K = {} S = {}", K, S);
 
   // todo: return the linear system with the affine transform.  But for now,
   // just give the affine controller:

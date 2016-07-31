@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 #include "../RigidBodyConstraint.h"
@@ -8,7 +8,7 @@
 using namespace std;
 
 int main() {
-  RigidBodyTree* model = new RigidBodyTree(Drake::getDrakePath() +
+  RigidBodyTree* model = new RigidBodyTree(drake::GetDrakePath() +
       "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if (!model) {
     cerr << "ERROR: Failed to load model" << endl;
