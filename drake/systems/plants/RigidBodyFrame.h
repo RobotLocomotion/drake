@@ -55,8 +55,22 @@ class DRAKERBM_EXPORT RigidBodyFrame {
 
   /**
    * Returns the transform between the coordinate frame that belongs to this
-   * `RigidBodyFrame` and the coordinate frame that belongs to the `RigidBody`
-   * to which this frame is attached.
+   * `RigidBodyFrame` and the coordinate frame that belongs to the
+   * `RigidBody` to which this frame is attached (which is obtainable by calling
+   * RigidBodyFrame::get_rigid_body()).
+   *
+   * Let `B` be the coordinate frame of the `RigidBody` to which this
+   * `RigidBodyFrame` is attached and `F` be the coordinate frame of this
+   * `RigidBodyFrame`. Furthermore, let `p_B` be the location of a point
+   * measured from `B`'s origin and expressed in coordinate frame `B`, and `p_F`
+   * be the location of the same point but measured from `F`'s origin and
+   * expressed in coordinate frame `F`.
+   *
+   * The returned value is `T_BF` where:
+   *
+   * <pre>
+   * p_B = T_BF * p_F;
+   * </pre>
    */
   const Eigen::Isometry3d& get_transform_to_body() const;
 
@@ -71,7 +85,7 @@ class DRAKERBM_EXPORT RigidBodyFrame {
 
   /**
    * Returns the index of this `RigidBodyFrame` within the vector of
-   * RigidBodyFrame` defined in the `RigidBodyTree`.
+   * `RigidBodyFrame` objects in the `RigidBodyTree`.
    */
   int get_frame_index() const;
 
@@ -81,7 +95,9 @@ class DRAKERBM_EXPORT RigidBodyFrame {
   void set_name(const std::string& name);
 
   /**
-   * Sets the rigid body to which this frame is attached.
+   * Sets the rigid body to which this frame is attached. Parameter
+   * @p rigid_body must remain valid for the lifetime of this `RigidBodyFrame`
+   * object.
    */
   void set_rigid_body(RigidBody* rigid_body);
 
@@ -97,7 +113,10 @@ class DRAKERBM_EXPORT RigidBodyFrame {
   void set_frame_index(int frame_index);
 
   /**
-   * Sets the transform to body of this `RigidBodyFrame`.
+   * Sets the transform to body of this `RigidBodyFrame`. This transform must
+   * be `T_BF` as described in method RigidBodyFrame::get_transform_to_body().
+   *
+   * @see RigidBodyFrame#get_transform_to_body
    */
   void set_transform_to_body(const Eigen::Isometry3d& transform_to_body);
 
