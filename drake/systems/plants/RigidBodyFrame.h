@@ -116,7 +116,7 @@ class DRAKERBM_EXPORT RigidBodyFrame {
    * Sets the transform to body of this `RigidBodyFrame`. This transform must
    * be `T_BF` as described in method RigidBodyFrame::get_transform_to_body().
    *
-   * @see RigidBodyFrame#get_transform_to_body
+   * @see RigidBodyFrame::get_transform_to_body
    */
   void set_transform_to_body(const Eigen::Isometry3d& transform_to_body);
 
