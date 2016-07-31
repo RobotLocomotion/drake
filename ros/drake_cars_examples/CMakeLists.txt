@@ -32,7 +32,6 @@ link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 add_executable(car_sim_lcm_and_ros src/car_sim_lcm_and_ros.cc)
 target_link_libraries(car_sim_lcm_and_ros ${catkin_LIBRARIES}
   drakeCars
-  drakeCore
   drakeCommon
   drakeRBM
   drakeRBSystem
