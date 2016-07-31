@@ -2,7 +2,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/core/Vector.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
@@ -119,7 +119,7 @@ int do_main(int argc, const char* argv[]) {
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
   RigidBodyTree tree(
-      drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.

@@ -5,7 +5,6 @@
 #include "drake/util/drakeGeometryUtil.h"
 
 using drake::systems::plants::ModelElementId;
-using drake::systems::plants::ModelElementType;
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
@@ -23,31 +22,30 @@ RigidBody::RigidBody()
   mass = 0.0;
   com = Vector3d::Zero();
   I << drake::SquareTwistMatrix<double>::Zero();
-  model_element_id_.set_element_type(ModelElementType::kBodyElement);
 }
 
 const std::string& RigidBody::get_name() const {
-  return model_element_id_.get_element_name();
+  return id_.get_element_name();
 }
 
 void RigidBody::set_name(const std::string& name) {
-  model_element_id_.set_element_name(name);
+  id_.set_element_name(name);
 }
 
 const std::string& RigidBody::get_model_name() const {
-  return model_element_id_.get_model_name();
+  return id_.get_model_name();
 }
 
 void RigidBody::set_model_name(const std::string& name) {
-  model_element_id_.set_model_name(name);
+  id_.set_model_name(name);
 }
 
 int RigidBody::get_model_id() const {
-  return model_element_id_.get_model_instance_id();
+  return id_.get_model_instance_id();
 }
 
 void RigidBody::set_model_id(int model_id) {
-  model_element_id_.set_model_instance_id(model_id);
+  id_.set_model_instance_id(model_id);
 }
 
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
@@ -91,13 +89,13 @@ int RigidBody::get_velocity_start_index() const {
   return velocity_start_index_;
 }
 
-void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element) {
-  visual_elements.push_back(element);
+void RigidBody::AddVisualElement(const DrakeShapes::VisualElement& element) {
+  visual_elements_.push_back(element);
 }
 
-const DrakeShapes::VectorOfVisualElements& RigidBody::getVisualElements()
+const DrakeShapes::VectorOfVisualElements& RigidBody::get_visual_elements()
     const {
-  return visual_elements;
+  return visual_elements_;
 }
 
 void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
@@ -137,7 +135,7 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
 void RigidBody::ApplyTransformToJointFrame(
     const Eigen::Isometry3d& transform_body_to_joint) {
   I = transformSpatialInertia(transform_body_to_joint, I);
-  for (auto& v : visual_elements) {
+  for (auto& v : visual_elements_) {
     v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
   }
 }

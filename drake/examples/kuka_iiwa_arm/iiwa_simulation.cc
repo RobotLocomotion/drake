@@ -1,7 +1,7 @@
 #include "iiwa_simulation.h"
 
 #include "drake/systems/LCMSystem.h"
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 
 namespace drake {
 namespace examples {
@@ -15,7 +15,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
       Eigen::aligned_allocator<RigidBodySystem>());
 
   rigid_body_system->addRobotFromFile(
-      drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
 
   // Sets some simulation parameters.
@@ -37,7 +37,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   Eigen::Vector4d color;
   color << 0.9297, 0.7930, 0.6758,
       1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
-  world.addVisualElement(
+  world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
       RigidBodyCollisionElement(geom, T_element_to_link, &world), world,

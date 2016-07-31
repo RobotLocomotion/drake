@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/examples/Quadrotor/Quadrotor.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/controllers/LQR.h"
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
   uG.w4 = uG.w1;
   auto c = timeInvariantLQR(*quad, xG, uG, Q, R);
   auto v = std::make_shared<BotVisualizer<QuadrotorState> >(
-      lcm, getDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
+      lcm, GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
       DrakeJoint::ROLLPITCHYAW);
 
   auto sys = cascade(feedback(quad, c), v);

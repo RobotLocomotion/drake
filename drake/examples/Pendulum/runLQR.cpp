@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/controllers/LQR.h"
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   uG.tau = 0;
   auto c = timeInvariantLQR(*p, xG, uG, Q, R);
   auto v = std::make_shared<BotVisualizer<PendulumState> >(
-      lcm, getDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
       DrakeJoint::FIXED);
 
   auto sys = cascade(feedback(p, c), v);

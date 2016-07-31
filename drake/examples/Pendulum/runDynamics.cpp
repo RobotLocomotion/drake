@@ -1,7 +1,7 @@
 
 #include <iostream>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/util/Polynomial.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"
@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
 
   auto p = make_shared<Pendulum>();
   auto v = make_shared<BotVisualizer<PendulumState> >(
-      lcm, getDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
       DrakeJoint::FIXED);
 
   PendulumState<double> x0;

@@ -11,7 +11,7 @@
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 #include "joints/DrakeJoints.h"
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "xmlUtil.h"
 
 // from
@@ -200,7 +200,7 @@ void parseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     // DEBUG
     // cout << "parseVisual: Adding element to body" << endl;
     // END_DEBUG
-    body->addVisualElement(element);
+    body->AddVisualElement(element);
   }
 }
 

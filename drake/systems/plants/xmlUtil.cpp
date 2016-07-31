@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/common/drake_assert.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/thirdParty/bsd/tinydir/tinydir.h"
@@ -305,7 +305,7 @@ void populatePackageMap(map<string, string>& package_map) {
   // Since Drake's package.xml file is located at its super-build level,
   // remove the last "drake" directory from the drake path. Also omit the
   // trailing slash.
-  const std::string drake_path = drake::getDrakePath();
+  const std::string drake_path = drake::GetDrakePath();
   const std::string drake_path_parent = drake_path.substr(
       0, drake_path.find_last_of("drake") - std::string("drake").size());
 
