@@ -138,7 +138,8 @@ class DrakeRosTfPublisher {
     // Instantiates a geometry_msgs::TransformStamped message for each frame
     // in the rigid body tree.
     for (auto const& frame : rigid_body_tree->frames) {
-      std::string key = frame->body->get_model_name() + frame->name;
+      std::string key = frame->get_rigid_body().get_model_name() +
+          frame->get_name();
 
       // Checks whether a transform message for the current frame was already
       // added to the transform_messages_ map.
@@ -152,15 +153,16 @@ class DrakeRosTfPublisher {
       std::unique_ptr<geometry_msgs::TransformStamped> message(
           new geometry_msgs::TransformStamped());
 
-      message->header.frame_id = frame->body->get_name();
-      message->child_frame_id = frame->name;
+      message->header.frame_id = frame->get_rigid_body().get_name();
+      message->child_frame_id = frame->get_name();
 
       // Frames are fixed to a particular rigid body. The following code saves
       // the transformation in the frame's geometry_msgs::TransformStamped
       // message. This can be done once during initialization since it will
       // not change over time.
-      auto translation = frame->transform_to_body.translation();
-      auto quat = drake::math::rotmat2quat(frame->transform_to_body.linear());
+      auto translation = frame->get_transform_to_body().translation();
+      auto quat = drake::math::rotmat2quat(
+          frame->get_transform_to_body().linear());
 
       message->transform.translation.x = translation(0);
       message->transform.translation.y = translation(1);
@@ -253,7 +255,8 @@ class DrakeRosTfPublisher {
 
     // Publishes the transform for each frame in the rigid body tree.
     for (auto const& frame : rigid_body_tree_->frames) {
-      std::string key = frame->body->get_model_name() + frame->name;
+      std::string key = frame->get_rigid_body().get_model_name() +
+          frame->get_name();
 
       // Verifies that a geometry_msgs::TransformStamped message for the current
       // link exists in the transform_messages_ map.
