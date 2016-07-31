@@ -395,8 +395,25 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
   tree->addFrame(frameB);
 }
 
+RigidBodySensor::RigidBodySensor(const RigidBodySystem& sys,
+    const std::string& name, std::shared_ptr<RigidBodyFrame> frame):
+        sys_(sys), frame_(frame) {
+  id_.set_instance_name("UNDEFINED INSTANCE NAME");
+  id_.set_model_name(frame_->body->get_model_name());
+  id_.set_element_name(name);
+  id_.set_model_instance_id(frame_->body->get_model_id());
+}
+
+bool RigidBodySensor::isDirectFeedthrough() const { return false; }
+
+size_t RigidBodySensor::getNumOutputs() const { return 0; }
+
+const std::string& RigidBodySensor::get_name() const {
+  return id_.get_element_name();
+}
+
 const std::string& RigidBodySensor::get_model_name() const {
-  return model_element_id_.get_model_name();
+  return id_.get_model_name();
 }
 
 const RigidBodyFrame& RigidBodySensor::get_frame() const {
