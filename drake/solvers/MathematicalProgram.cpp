@@ -5,7 +5,7 @@
 #include "linear_system_solver.h"
 #include "MobyLCP.h"
 #include "NloptSolver.h"
-#include "Optimization.h"
+#include "optimization.h"
 #include "SnoptSolver.h"
 
 namespace drake {
