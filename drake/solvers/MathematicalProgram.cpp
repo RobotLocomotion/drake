@@ -6,7 +6,7 @@
 #include "MobyLCP.h"
 #include "NloptSolver.h"
 #include "optimization.h"
-#include "SnoptSolver.h"
+#include "snopt_solver.h"
 
 namespace drake {
 namespace solvers {

@@ -1,5 +1,5 @@
 
-#include "drake/solvers/SnoptSolver.h"
+#include "drake/solvers/snopt_solver.h"
 
 #include <stdexcept>
 
