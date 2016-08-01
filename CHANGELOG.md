@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#3003][] Made `RigidBodyFrame` member variables private. Added accessors.
  - [#2997][] Renamed drake/Path.h to drake/common/drake_path.h
  - [#2983][] Renamed namespace `Drake` to be `drake`.
  - [#2923][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
@@ -104,3 +105,4 @@ Changes in version v0.9.11 and before are not provided.
 [#2963]: https://github.com/RobotLocomotion/drake/issues/2963
 [#2983]: https://github.com/RobotLocomotion/drake/issues/2983
 [#2997]: https://github.com/RobotLocomotion/drake/issues/2997
+[#3003]: https://github.com/RobotLocomotion/drake/issues/3003

@@ -577,7 +577,7 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
   }
 
   for (auto it = robot.frames.begin(); it != robot.frames.end(); ++it) {
-    id_map[(*it)->name] = -(it - robot.frames.begin()) - 2;
+    id_map[(*it)->get_name()] = -(it - robot.frames.begin()) - 2;
   }
   return id_map;
 }

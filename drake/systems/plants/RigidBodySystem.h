@@ -398,11 +398,14 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
     using namespace Eigen;
     const Vector3d origin = Vector3d::Zero();
     Vector3d xA_in_B = sys.getRigidBodyTree()->transformPoints(
-        rigid_body_state, origin, frameA->frame_index, frameB->frame_index);
+        rigid_body_state, origin, frameA->get_frame_index(),
+        frameB->get_frame_index());
     Vector3d xB_in_A = sys.getRigidBodyTree()->transformPoints(
-        rigid_body_state, origin, frameB->frame_index, frameA->frame_index);
+        rigid_body_state, origin, frameB->get_frame_index(),
+        frameA->get_frame_index());
     auto JA_in_B = sys.getRigidBodyTree()->transformPointsJacobian(
-        rigid_body_state, origin, frameA->frame_index, frameB->frame_index,
+        rigid_body_state, origin, frameA->get_frame_index(),
+        frameB->get_frame_index(),
         false);
 
     double length = xA_in_B.norm();

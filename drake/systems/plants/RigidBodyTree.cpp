@@ -153,8 +153,8 @@ void RigidBodyTree::compile(void) {
       if (!hasChild) {
         // now check if this body is attached by a loop joint
         for (const auto& loop : loops) {
-          if ((loop.frameA_->body == bodies[i].get()) ||
-              (loop.frameB_->body == bodies[i].get())) {
+          if ((loop.frameA_->has_as_rigid_body(bodies[i].get())) ||
+              (loop.frameB_->has_as_rigid_body(bodies[i].get()))) {
             hasChild = true;
             break;
           }
@@ -311,22 +311,24 @@ void RigidBodyTree::drawKinematicTree(
     }
   }
   for (const auto& frame : frames) {
-    dotfile << "  " << frame->name << " [label=\"" << frame->name
+    dotfile << "  " << frame->get_name() << " [label=\"" << frame->get_name()
             << " (frame)\"];" << endl;
-    dotfile << "  " << frame->name << " -> " << frame->body->get_name()
+    dotfile << "  " << frame->get_name() << " -> "
+            << frame->get_rigid_body().get_name()
             << " [label=\"";
     dotfile << "transform_to_body=" << endl
-            << frame->transform_to_body.matrix() << endl;
+            << frame->get_transform_to_body().matrix() << endl;
     dotfile << "\"];" << endl;
   }
 
   for (const auto& loop : loops) {
-    dotfile << "  " << loop.frameA_->body->get_name() << " -> "
-            << loop.frameB_->body->get_name() << " [label=\"loop " << endl;
+    dotfile << "  " << loop.frameA_->get_rigid_body().get_name() << " -> "
+            << loop.frameB_->get_rigid_body().get_name()
+            << " [label=\"loop " << endl;
     dotfile << "transform_to_parent_body=" << endl
-            << loop.frameA_->transform_to_body.matrix() << endl;
+            << loop.frameA_->get_transform_to_body().matrix() << endl;
     dotfile << "transform_to_child_body=" << endl
-            << loop.frameB_->transform_to_body.matrix() << endl;
+            << loop.frameB_->get_transform_to_body().matrix() << endl;
     dotfile << "\"];" << endl;
   }
   dotfile << "}" << endl;
@@ -1021,9 +1023,11 @@ int RigidBodyTree::parseBodyOrFrameID(
       stream << "Got a frame ind greater than available!\n";
       throw std::runtime_error(stream.str());
     }
-    body_ind = frames[frame_ind]->body->get_body_index();
+    body_ind = frames[frame_ind]->get_rigid_body().get_body_index();
 
-    if (Tframe) (*Tframe) = frames[frame_ind]->transform_to_body.cast<Scalar>();
+    if (Tframe) {
+      (*Tframe) = frames[frame_ind]->get_transform_to_body().cast<Scalar>();
+    }
   } else {
     body_ind = body_or_frame_id;
     if (Tframe) Tframe->setIdentity();
@@ -1737,7 +1741,7 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
     if (model_id != -1 && model_id != frames[ii]->get_model_id()) continue;
 
     // Obtains a lower case version of the current frame.
-    std::string current_frame_name = frames[ii]->name;
+    std::string current_frame_name = frames[ii]->get_name();
     std::transform(current_frame_name.begin(), current_frame_name.end(),
                    current_frame_name.begin(), ::tolower);
 
@@ -1851,7 +1855,7 @@ std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
   if (body_or_frame_id >= 0) {
     return bodies[body_or_frame_id]->get_name();
   } else if (body_or_frame_id < -1) {
-    return frames[-body_or_frame_id - 2]->name;
+    return frames[-body_or_frame_id - 2]->get_name();
   } else {
     return "COM";
   }
@@ -1865,14 +1869,15 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
     {  // position constraint
       auto ptA_in_B =
           transformPoints(cache, Vector3d::Zero(),
-                          loops[i].frameA_->frame_index,
-                          loops[i].frameB_->frame_index);
+                          loops[i].frameA_->get_frame_index(),
+                          loops[i].frameB_->get_frame_index());
       ret.template middleRows<3>(6 * i) = ptA_in_B;
     }
     {  // second position constraint (to constrain orientation)
       auto axis_A_end_in_B =
-          transformPoints(cache, loops[i].axis_, loops[i].frameA_->frame_index,
-                          loops[i].frameB_->frame_index);
+          transformPoints(cache, loops[i].axis_,
+                          loops[i].frameA_->get_frame_index(),
+                          loops[i].frameB_->get_frame_index());
       ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
     }
   }
@@ -1889,12 +1894,12 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
     ret.template middleRows<3>(6 * i) = transformPointsJacobian(
-        cache, Vector3d::Zero(), loops[i].frameA_->frame_index,
-        loops[i].frameB_->frame_index, in_terms_of_qdot);
+        cache, Vector3d::Zero(), loops[i].frameA_->get_frame_index(),
+        loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
     // second position constraint (to constrain orientation)
     ret.template middleRows<3>(6 * i + 3) = transformPointsJacobian(
-        cache, loops[i].axis_, loops[i].frameA_->frame_index,
-        loops[i].frameB_->frame_index, in_terms_of_qdot);
+        cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
+        loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
   }
   return ret;
 }
@@ -1908,12 +1913,12 @@ RigidBodyTree::positionConstraintsJacDotTimesV(
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
     ret.template middleRows<3>(6 * i) = transformPointsJacobianDotTimesV(
-        cache, Vector3d::Zero(), loops[i].frameA_->frame_index,
-        loops[i].frameB_->frame_index);
+        cache, Vector3d::Zero(), loops[i].frameA_->get_frame_index(),
+        loops[i].frameB_->get_frame_index());
     // second position constraint (to constrain orientation)
     ret.template middleRows<3>(6 * i + 3) = transformPointsJacobianDotTimesV(
-        cache, loops[i].axis_, loops[i].frameA_->frame_index,
-        loops[i].frameB_->frame_index);
+        cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
+        loops[i].frameB_->get_frame_index());
   }
   return ret;
 }
@@ -1962,7 +1967,8 @@ size_t RigidBodyTree::getNumPositionConstraints() const {
 
 void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frames.push_back(frame);
-  frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
+  // yuck!!
+  frame->set_frame_index(-(static_cast<int>(frames.size()) - 1) - 2);
 }
 
 void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
@@ -1999,8 +2005,9 @@ int RigidBodyTree::AddFloatingJoint(
     // ensure the "body" variable within weld_to_frame is nullptr. Then, only
     // use the transform_to_body variable within weld_to_frame to initialize
     // the robot at the desired location in the world.
-    if (weld_to_frame->name == std::string(RigidBodyTree::kWorldLinkName)) {
-      if (weld_to_frame->body != nullptr) {
+    if (weld_to_frame->get_name()
+          == std::string(RigidBodyTree::kWorldLinkName)) {
+      if (!weld_to_frame->has_as_rigid_body(nullptr)) {
         throw std::runtime_error(
             "RigidBodyTree::AddFloatingJoint: "
             "Attempted to weld robot to the world while specifying a body "
@@ -2009,10 +2016,10 @@ int RigidBodyTree::AddFloatingJoint(
       weld_to_body = bodies[0].get();  // the world's body
       floating_joint_name = "base";
     } else {
-      weld_to_body = weld_to_frame->body;
+      weld_to_body = weld_to_frame->get_mutable_rigid_body();
       floating_joint_name = "weld";
     }
-    transform_to_world = weld_to_frame->transform_to_body;
+    transform_to_world = weld_to_frame->get_transform_to_body();
   }
 
   int num_floating_joints_added = 0;
