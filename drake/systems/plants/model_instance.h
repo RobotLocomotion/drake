@@ -21,7 +21,6 @@ namespace drake {
 namespace systems {
 namespace plants {
 
-
 /**
  * An instance of a model that is being simulated. It owns pointers to all of
  * the modeling elements that constitute a particular instance of a model.
