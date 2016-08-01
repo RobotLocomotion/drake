@@ -14,6 +14,8 @@
 #include "spruce.hh"
 #include "xmlUtil.h"
 
+using drake::systems::plants::ModelInstance;
+
 using Eigen::Isometry3d;
 using Eigen::Matrix;
 using Eigen::MatrixXd;
@@ -905,7 +907,8 @@ void RigidBodySystem::addRobotFromURDFString(
 void RigidBodySystem::addRobotFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::vector<std::unique_ptr<ModelInstance>>* models) {
   // Adds the URDF to the rigid body tree.
   drake::parsers::urdf::AddRobotFromURDF(urdf_filename, floating_base_type,
                                          weld_to_frame, tree.get());
@@ -926,7 +929,8 @@ void RigidBodySystem::addRobotFromURDF(
 void RigidBodySystem::addRobotFromSDF(
     const string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::vector<std::unique_ptr<ModelInstance>>* models) {
   // Adds the robot to the rigid body tree.
   drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
                                        weld_to_frame, tree.get());
@@ -947,7 +951,8 @@ void RigidBodySystem::addRobotFromSDF(
 void RigidBodySystem::addRobotFromFile(
     const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::vector<std::unique_ptr<ModelInstance>>* models) {
   spruce::path p(filename);
   auto ext = p.extension();
 
@@ -955,9 +960,9 @@ void RigidBodySystem::addRobotFromFile(
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
   if (ext == ".urdf") {
-    addRobotFromURDF(filename, floating_base_type, weld_to_frame);
+    addRobotFromURDF(filename, floating_base_type, weld_to_frame, models);
   } else if (ext == ".sdf") {
-    addRobotFromSDF(filename, floating_base_type, weld_to_frame);
+    addRobotFromSDF(filename, floating_base_type, weld_to_frame, models);
   } else {
     throw runtime_error(
         "RigidBodySystem::addRobotFromFile: ERROR: Unknown file extension: " +

@@ -14,6 +14,7 @@
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/pd_control_system.h"
+#include "drake/systems/plants/model_instance.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
 using drake::RigidBodySystem;
@@ -39,18 +40,24 @@ namespace cars {
  * terrain is added automatically.
  *
  * @param[in] argc The number of command line arguments.
+ *
  * @param[in] argv An array of command line arguments.
+ *
  * @param[out] duration The duration over which the simulation should run. The
  * simulation runs from time zero seconds to time \p duration seconds. If no
  * duration is specified in \p argv, this \p duration is set to be infinity.
  * A duration is specified in \p argv by the string "--duration" followed by a
  * floating point value.
- * @return A shared pointer to a rigid body system.
+ *
+ * @param[out] models A pointer to a vector for storing the models that are
+ * created while creating the `RigidBodySystem`.
+ *
+ * @return A shared pointer to a `RigidBodySystem`.
  */
 DRAKECARS_EXPORT
-std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
-                                                       const char* argv[],
-                                                       double* duration);
+std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
+    int argc, const char* argv[], double* duration,
+    Vector<unique_ptr<ModelInstance>>* models = nullptr);
 
 /**
  * Parses the simulation duration from the command line arguments. The duration
@@ -105,7 +112,6 @@ std::shared_ptr<CascadeSystem<
     PDControlSystem<RigidBodySystem>>>
 CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
 
-
 /**
  * Creates a TrajectoryCar system with a fixed trajectory.
  * The details of the trajectory are not documented / promised by this API.
@@ -120,8 +126,8 @@ std::shared_ptr<TrajectoryCar> CreateTrajectoryCarSystem(int index);
  * floating joint, allowing motion and steering in the x-y plane only.
  */
 DRAKECARS_EXPORT
-std::shared_ptr<drake::AffineSystem<
-  drake::NullVector, SimpleCarState, EulerFloatingJointState>>
+std::shared_ptr<drake::AffineSystem<drake::NullVector, SimpleCarState,
+                                    EulerFloatingJointState>>
 CreateSimpleCarVisualizationAdapter();
 
 /**
