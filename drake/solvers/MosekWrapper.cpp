@@ -73,8 +73,21 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
 }
 
 void MosekWrapper::AppendCone(const std::vector<int>& sdp_cone_subscripts) {
-  if (r_ == MSK_RES_OK)
-
+  if (r_ == MSK_RES_OK) {
+    // If no subscripts set, assume that x_0 >= sqrt(sum(x_i^2)) for i > 0.
+    // Adapted from http://docs.mosek.com/7.1/capi/MSK_appendcone_.html
+    if (sdp_cone_subscripts.empty()) {
+      std::vector<int> empty_cone_subscripts(numvar_);
+      for (int i = 0; i < numvar_; i++) {
+        empty_cone_subscripts[i] = i;
+      }
+      r_ = MSK_appendcone(task_, MSK_CT_QUAD, 0.0, numvar_,
+                          &empty_cone_subscripts[0]);
+    } else {
+      r_ = MSK_appendcone(task_, MSK_CT_QUAD, 0.0, numvar_,
+                          &empty_cone_subscripts[0]);
+    }
+  }
 }
 
 void MosekWrapper::AddSDPObjectives(
