@@ -24,9 +24,9 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 
 using drake::TaylorVecXd;
-using drake::VecIn;
 using drake::Vector1d;
-using drake::VecOut;
+using drake::solvers::detail::VecIn;
+using drake::solvers::detail::VecOut;
 using drake::util::MatrixCompareType;
 
 namespace drake {
