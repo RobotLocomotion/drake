@@ -29,7 +29,7 @@ GTEST_TEST(ModelInstanceTest, BasicTest) {
 
     const std::vector<const DrakeJoint*>& joints =
         model_instance.get_joints();
-    EXPECT_EQ(joints.size(), 1);
+    EXPECT_EQ(joints.size(), 1u);
     EXPECT_EQ(joints[0]->getName(), joint_name);
     EXPECT_EQ(joints[0]->getNumPositions(), 1);
     EXPECT_EQ(joints[0]->getNumVelocities(), 1);
