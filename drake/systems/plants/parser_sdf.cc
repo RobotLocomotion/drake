@@ -724,7 +724,8 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
                                     weld_to_frame, &pose_map);
 
   // Saves the newly created ModelInstance into the models vector.
-  models->push_back(std::move(model_instance));
+  if (models != nullptr)
+    models->push_back(std::move(model_instance));
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,
