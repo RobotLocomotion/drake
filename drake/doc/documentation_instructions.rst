@@ -35,15 +35,15 @@ In-source Builds Using ``make``
 
 Execute the following commands to build the documentation::
 
-    $ cd drake-distro/drake/pod-build
+    $ cd drake-distro/build/drake
     $ make documentation
 
 To view the generated documentation, open the following files using a web
 browser:
 
-- Drake website: ``drake-distro/drake/pod-build/doc/sphinx/index.html``
-- Doxygen C++ website: ``drake-distro/drake/pod-build/doc/doxygen_cxx/html/index.html``
-- Doxygen Matlab website: ``drake-distro/drake/pod-build/doc/doxygen_matlab/html/index.html``
+- Drake website: ``drake-distro/build/drake/doc/sphinx/index.html``
+- Doxygen C++ website: ``drake-distro/build/drake/doc/doxygen_cxx/html/index.html``
+- Doxygen Matlab website: ``drake-distro/build/drake/doc/doxygen_matlab/html/index.html``
 
 .. _documentation-out-of-source-ninja:
 
