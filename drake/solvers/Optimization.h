@@ -2,16 +2,17 @@
 
 #include <algorithm>
 #include <initializer_list>
+#include <iostream>
 #include <list>
 #include <map>
 #include <memory>
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
-#include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
 #include "drake/drakeOptimization_export.h"
 #include "drake/solvers/Constraint.h"
+#include "drake/solvers/Function.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/solution_result.h"
@@ -92,34 +93,34 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     // Construct by copying from an lvalue.
     template <typename... Args>
     ConstraintImpl(F const& f, Args&&... args)
-        : Constraint(drake::FunctionTraits<F>::numOutputs(f),
+        : Constraint(detail::FunctionTraits<F>::numOutputs(f),
                      std::forward<Args>(args)...),
           f_(f) {}
 
     // Construct by moving from an rvalue.
     template <typename... Args>
     ConstraintImpl(F&& f, Args&&... args)
-        : Constraint(drake::FunctionTraits<F>::numOutputs(f),
+        : Constraint(detail::FunctionTraits<F>::numOutputs(f),
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
     void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override {
-      y.resize(drake::FunctionTraits<F>::numOutputs(f_));
+      y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-                   drake::FunctionTraits<F>::numInputs(f_));
+                   detail::FunctionTraits<F>::numInputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
-                   drake::FunctionTraits<F>::numOutputs(f_));
-      drake::FunctionTraits<F>::eval(f_, x, y);
+                   detail::FunctionTraits<F>::numOutputs(f_));
+      detail::FunctionTraits<F>::eval(f_, x, y);
     }
     void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
               drake::TaylorVecXd& y) const override {
-      y.resize(drake::FunctionTraits<F>::numOutputs(f_));
+      y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-                   drake::FunctionTraits<F>::numInputs(f_));
+                   detail::FunctionTraits<F>::numInputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
-                   drake::FunctionTraits<F>::numOutputs(f_));
-      drake::FunctionTraits<F>::eval(f_, x, y);
+                   detail::FunctionTraits<F>::numOutputs(f_));
+      detail::FunctionTraits<F>::eval(f_, x, y);
     }
   };
 
