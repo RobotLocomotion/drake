@@ -2,9 +2,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/Constraint.h"
-#include "drake/solvers/IpoptSolver.h"
+#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/MathematicalProgram.h"
-#include "drake/solvers/NloptSolver.h"
+#include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/optimization.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/util/Polynomial.h"

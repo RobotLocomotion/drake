@@ -9,9 +9,9 @@ if(mosek_FOUND)
   add_test(NAME testMosek COMMAND testMosek)
 endif()
 
-add_executable(testMobyLCP testMobyLCP.cpp)
-target_link_libraries(testMobyLCP drakeOptimization ${GTEST_BOTH_LIBRARIES})
-add_test(NAME testMobyLCP COMMAND testMobyLCP)
+add_executable(moby_lcp_solver_test moby_lcp_solver_test.cc)
+target_link_libraries(moby_lcp_solver_test drakeOptimization ${GTEST_BOTH_LIBRARIES})
+add_test(NAME moby_lcp_solver_test COMMAND moby_lcp_solver_test)
 
 add_executable(system_identification_test system_identification_test.cpp)
 target_link_libraries(system_identification_test

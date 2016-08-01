@@ -1,6 +1,6 @@
 // Copyright 2016, Alex Dunyak
 
-#include "drake/solvers/MosekWrapper.h"
+#include "drake/solvers/mosek_wrapper.h"
 
 #include <memory>
 #include <string>
