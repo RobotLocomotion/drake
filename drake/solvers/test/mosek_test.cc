@@ -10,7 +10,7 @@
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/optimization.h"
 #include "drake/util/eigen_matrix_compare.h"
-#include "drake/solvers/Constraint.h"
+#include "drake/solvers/constraint.h"
 
 
 using drake::util::MatrixCompareType;
