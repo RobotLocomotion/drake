@@ -5,7 +5,7 @@
 #include "drake/util/drakeMexUtil.h"
 #include "drake/util/MexWrapper.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/solvers/fastQP.h"
+#include "drake/solvers/fast_qp.h"
 #include <sstream>
 #include "rigidBodyTreeMexConversions.h"
 

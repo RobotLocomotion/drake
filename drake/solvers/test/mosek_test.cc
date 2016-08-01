@@ -1,4 +1,4 @@
-#include "drake/solvers/MosekSolver.h"
+#include "drake/solvers/mosek_solver.h"
 
 #include <iostream>
 
@@ -7,10 +7,10 @@
 #include "gtest/gtest.h"
 
 #include "drake/util/testUtil.h"
-#include "drake/solvers/MathematicalProgram.h"
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/optimization.h"
 #include "drake/util/eigen_matrix_compare.h"
-#include "drake/solvers/Constraint.h"
+#include "drake/solvers/constraint.h"
 
 
 using drake::util::MatrixCompareType;

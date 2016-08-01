@@ -1,4 +1,4 @@
-#include "drake/solvers/IpoptSolver.h"
+#include "drake/solvers/ipopt_solver.h"
 
 #include <cstring>
 #include <memory>
@@ -12,7 +12,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/core/Gradient.h"
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/optimization.h"
 
 using Ipopt::Index;
 using Ipopt::IpoptCalculatedQuantities;

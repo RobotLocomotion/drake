@@ -1,5 +1,5 @@
 
-#include "drake/solvers/SnoptSolver.h"
+#include "drake/solvers/snopt_solver.h"
 
 #include <cstdlib>
 #include <memory>
@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/optimization.h"
 
 namespace snopt {
 #include "snopt.hh"
