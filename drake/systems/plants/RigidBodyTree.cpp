@@ -1983,7 +1983,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
     }
   if(linear_equality_position_constraint_) {
     Matrix<Scalar, Eigen::Dynamic, 1> lin_eq_cnstr_val;
-    linear_equality_position_constraint_->eval(cache.getQ(),lin_eq_cnstr_val);
+    linear_equality_position_constraint_->Eval(cache.getQ(),lin_eq_cnstr_val);
     ret.middleRows(6 * loops.size(), num_lin_eq_pos_cnstr) =
     lin_eq_cnstr_val - linear_equality_position_constraint_->lower_bound();
   }
