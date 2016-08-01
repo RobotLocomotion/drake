@@ -8,7 +8,7 @@
 
 #include "drake/drakeOptimization_export.h"
 
-#include "MathematicalProgram.h"
+#include "mathematical_program.h"
 
 namespace drake {
 namespace solvers {

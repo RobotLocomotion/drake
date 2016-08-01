@@ -13,7 +13,7 @@
 #include "drake/drakeOptimization_export.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/Function.h"
-#include "drake/solvers/MathematicalProgram.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/util/Polynomial.h"
