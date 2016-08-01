@@ -24,9 +24,9 @@ GTEST_TEST(ModelInstanceTest, BasicTest) {
 
     std::unique_ptr<DrakeJoint> drake_joint(new RevoluteJoint(joint_name,
         transform_to_parent_body, rotation_axis));
-    model_instance.add_joint(std::move(drake_joint));
+    model_instance.add_joint(drake_joint.get());
 
-    const std::vector<std::unique_ptr<DrakeJoint>>& joints =
+    const std::vector<const DrakeJoint*>& joints =
         model_instance.get_joints();
     EXPECT_EQ(joints.size(), 1);
     EXPECT_EQ(joints[0]->getName(), joint_name);

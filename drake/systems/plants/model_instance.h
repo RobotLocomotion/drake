@@ -1,17 +1,26 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "drake/drakeRBM_export.h"
-#include "drake/systems/plants/joints/DrakeJoint.h"
-#include "drake/systems/plants/rigid_body_loop.h"
-#include "drake/systems/plants/RigidBody.h"
-#include "drake/systems/plants/RigidBodyFrame.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+// #include "drake/systems/plants/joints/DrakeJoint.h"
+// #include "drake/systems/plants/rigid_body_loop.h"
+// #include "drake/systems/plants/RigidBody.h"
+// #include "drake/systems/plants/RigidBodyFrame.h"
+// #include "drake/systems/plants/RigidBodySystem.h"
+
+class DrakeJoint;
+class RigidBody;
+class RigidBodyActuator;
+class RigidBodyFrame;
+class RigidBodyLoop;
+class RigidBodySensor;
 
 namespace drake {
 namespace systems {
 namespace plants {
+
 
 /**
  * An instance of a model that is being simulated. It owns pointers to all of
@@ -55,49 +64,43 @@ class DRAKERBM_EXPORT ModelInstance {
   void set_model_name(const std::string& model_name);
 
   /**
-   * Adds a pointer to a `DrakeJoint` to this object. Ownership of the pointer
-   * is transferred to this object. The pointer is guaranteed to remain valid
-   * for this object's lifetime.
+   * Adds a pointer to a `DrakeJoint` to this object. The pointer must
+   * remain valid for the lifetime of this object.
    */
-  void add_joint(std::unique_ptr<DrakeJoint> joint);
+  void add_joint(const DrakeJoint* joint);
 
   /**
-   * Adds a pointer to a `RigidBody` to this object. Ownership of the pointer is
-   * transferred to this object. The pointer is guaranteed to remain valid for
-   * this object's lifetime.
+   * Adds a pointer to a `RigidBody` to this object. The pointer must
+   * remain valid for the lifetime of this object.
    */
-  void add_body(std::unique_ptr<RigidBody> body);
+  void add_body(const RigidBody* body);
 
   /**
-   * Adds a pointer to a `RigidBodyFrame` to this object. Ownership of the
-   * pointer is transferred to this object. The pointer is guaranteed to remain
-   * valid for this object's lifetime.
+   * Adds a pointer to a `RigidBodyFrame` to this object. The pointer must
+   * remain valid for the lifetime of this object.
    */
-  void add_frame(std::unique_ptr<RigidBodyFrame> frame);
+  void add_frame(const RigidBodyFrame* frame);
 
   /**
-   * Adds a pointer to a `RigidBodyLoop` to this object. Ownership of the
-   * pointer is transferred to this object. The pointer is guaranteed to remain
-   * valid for this object's lifetime.
+   * Adds a pointer to a `RigidBodyLoop` to this object. The pointer must
+   * remain valid for the lifetime of this object.
    */
-  void add_loop(std::unique_ptr<RigidBodyLoop> loop);
+  void add_loop(const RigidBodyLoop* loop);
 
   /**
-   * Adds a pointer to a `RigidBodyActuator` to this object. Ownership of the
-   * pointer is transferred to this object. The pointer is guaranteed to remain
-   * valid for this object's lifetime.
+   * Adds a pointer to a `RigidBodyActuator` to this object. The pointer
+   * must remain valid for the lifetime of this object.
    */
-  void add_actuator(std::unique_ptr<RigidBodyActuator> actuator);
+  void add_actuator(const RigidBodyActuator* actuator);
 
   /**
-   * Adds a pointer to a `RigidBodySensor` to this object. Ownership of the
-   * pointer is transferred to this object. The pointer is guaranteed to remain
-   * valid for this object's lifetime.
+   * Adds a pointer to a `RigidBodySensor` to this object. The pointer must
+   * remain valid for the lifetime of this object.
    */
-  void add_sensor(std::unique_ptr<RigidBodySensor> sensor);
+  void add_sensor(const RigidBodySensor* sensor);
 
   /**
-   * Adds a const reference to a `ModelInstance` to this object. This pointer
+   * Adds a pointer to a `ModelInstance` to this object. This pointer
    * must remain valid throughout this object's lifetime.
    */
   void add_model_instance(ModelInstance* model_instance);
@@ -115,33 +118,33 @@ class DRAKERBM_EXPORT ModelInstance {
   /**
    * Returns the `DrakeJoint` objects that are part of this model instance.
    */
-  const std::vector<std::unique_ptr<DrakeJoint>>& get_joints() const;
+  const std::vector<const DrakeJoint*>& get_joints() const;
 
   /**
    * Returns the `RigidBody` objects that are part of this model instance.
    */
-  const std::vector<std::unique_ptr<RigidBody>>& get_bodies() const;
+  const std::vector<const RigidBody*>& get_bodies() const;
 
   /**
    * Returns the `RigidBodyFrame` objects that are part of this model instance.
    */
-  const std::vector<std::unique_ptr<RigidBodyFrame>>& get_frames() const;
+  const std::vector<const RigidBodyFrame*>& get_frames() const;
 
   /**
    * Returns the `RigidBodyLoop` objects that are part of this model instance.
    */
-  const std::vector<std::unique_ptr<RigidBodyLoop>>& get_loops() const;
+  const std::vector<const RigidBodyLoop*>& get_loops() const;
 
   /**
    * Returns the `RigidBodyActuator` objects that are part of this model
    * instance.
    */
-  const std::vector<std::unique_ptr<RigidBodyActuator>>& get_actuators() const;
+  const std::vector<const RigidBodyActuator*>& get_actuators() const;
 
   /**
    * Returns the `RigidBodySensor` objects that are part of this model instance.
    */
-  const std::vector<std::unique_ptr<RigidBodySensor>>& get_sensors() const;
+  const std::vector<const RigidBodySensor*>& get_sensors() const;
 
   /**
    * Returns the `ModelInstance` objects that are part of this model instance.
@@ -153,17 +156,17 @@ class DRAKERBM_EXPORT ModelInstance {
 
   std::string model_name_;
 
-  std::vector<std::unique_ptr<DrakeJoint>> joints_;
+  std::vector<const DrakeJoint*> joints_;
 
-  std::vector<std::unique_ptr<RigidBody>> bodies_;
+  std::vector<const RigidBody*> bodies_;
 
-  std::vector<std::unique_ptr<RigidBodyFrame>> frames_;
+  std::vector<const RigidBodyFrame*> frames_;
 
-  std::vector<std::unique_ptr<RigidBodyLoop>> loops_;
+  std::vector<const RigidBodyLoop*> loops_;
 
-  std::vector<std::unique_ptr<RigidBodyActuator>> actuators_;
+  std::vector<const RigidBodyActuator*> actuators_;
 
-  std::vector<std::unique_ptr<RigidBodySensor>> sensors_;
+  std::vector<const RigidBodySensor*> sensors_;
 
   std::vector<ModelInstance*> model_instances_;
 };
