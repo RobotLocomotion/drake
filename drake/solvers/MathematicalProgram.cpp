@@ -1,10 +1,10 @@
 #include "MathematicalProgram.h"
 
 #include "equality_constrained_qp_solver.h"
-#include "IpoptSolver.h"
+#include "ipopt_solver.h"
 #include "linear_system_solver.h"
-#include "MobyLCP.h"
-#include "NloptSolver.h"
+#include "moby_lcp_solver.h"
+#include "nlopt_solver.h"
 #include "optimization.h"
 #include "snopt_solver.h"
 

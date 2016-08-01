@@ -1,7 +1,7 @@
 // Adapted with permission from code by Evan Drumwright
 // (https://github.com/edrumwri).
 
-#include "MobyLCP.h"
+#include "moby_lcp_solver.h"
 
 #include <Eigen/LU>
 #include <Eigen/SparseCore>

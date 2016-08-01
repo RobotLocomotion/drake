@@ -1,4 +1,4 @@
-#include "drake/solvers/IpoptSolver.h"
+#include "drake/solvers/ipopt_solver.h"
 
 #include <cstring>
 #include <memory>

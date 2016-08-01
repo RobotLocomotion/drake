@@ -1,8 +1,8 @@
 // A wrapper file for MosekWrapper and mosekQP that handles constraint and
 // objective marshalling
 
-#include "drake/solvers/MosekSolver.h"
-#include "drake/solvers/MosekWrapper.h"
+#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/mosek_wrapper.h"
 
 #include <Eigen/Core>
 
