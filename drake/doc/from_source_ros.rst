@@ -175,7 +175,7 @@ manually schedule a test by posting the following comment in your PR::
 
 The command above will schedule a Drake + ROS CI pre-merge test called
 "`linux-gcc-experimental-ros`". As indicated by its name, this uses the `gcc`
-compiler. Links to the results are available on the PR's webpage and from here:
+compiler. Links to the results are available on the PR's web page and from here:
 https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-gcc-experimental-ros/.
 
 To test the Drake + ROS integration using the `clang` compiler, post the
@@ -184,7 +184,7 @@ following comment in your PR::
     @drake-jenkins-bot linux-clang-experimental-ros please
 
 The comment above will schedule a test called "`linux-clang-experimental-ros`".
-Links to the results are availble on the PR's webpage and here:
+Links to the results are available on the PR's web page and here:
 https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-clang-experimental-ros/.
 
 To do a full test of Drake + ROS + MATLAB with `gcc`, use the following
