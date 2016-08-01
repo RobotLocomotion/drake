@@ -161,6 +161,32 @@ To build Drake's documentation, execute::
 The documentation will be located in
 ``~/dev/drake_catkin_workspace/build/drake/drake/doc``.
 
+.. _drake_catkin_ci_documenation:
+
+Scheduling a Drake / ROS Continuous Integration Test
+----------------------------------------------------
+
+Drake's Jenkin's pre-merge test matrix currently does not include a Drake / ROS
+Continuous Integration (CI) column. Thus, if you changes Drake's source
+code and want to know whether it breaks Drake's integration with ROS, you must
+manually schedule a test by posting the following comment in your PR::
+
+    @drake-jenkins-bot linux-gcc-experimental-ros please
+
+The command above will schedule a Drake / ROS CI pre-merge test called
+"`linux-gcc-experimental-ros`". As indicated by its name, this uses the `gcc`
+compiler. Its results can be linked to from the PR's webpage and from here:
+https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-gcc-experimental-ros/.
+
+If you want to test the Drake / ROS integration code using the `clang` compiler,
+post the following comment in your PR::
+
+    @drake-jenkins-bot linux-clang-experimental-ros please
+
+The comment above will schedule a test called "`linux-clang-experimental-ros`".
+The results of this test can be viewed on the PR's webpage and here:
+https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-clang-experimental-ros/.
+
 .. _drake_catkin_run_car_example:
 
 Running An Example: Car Simulation
