@@ -187,8 +187,8 @@ The comment above will schedule a test called "`linux-clang-experimental-ros`".
 Links to the results are available on the PR's web page and here:
 https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-clang-experimental-ros/.
 
-To do a full test of Drake + ROS + MATLAB with `gcc`, use the following
-command::
+To schedule a full test of Drake + ROS + MATLAB with `gcc`, post the following
+comment on your PR::
 
     @drake-jenkins-bot linux-gcc-experimental-matlab-ros please
 
