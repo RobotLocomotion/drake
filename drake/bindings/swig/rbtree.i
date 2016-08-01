@@ -104,5 +104,9 @@
   Eigen::Matrix<double, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<double> &cache, const std::set<int> &robotnum = default_robot_num_set) const {
     return $self->centerOfMass(cache, robotnum);
   }
+
+  Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<double>& cache, const std::set<int>& robotnum = default_robot_num_set, bool in_terms_of_qdot = false) const {
+    return $self->centerOfMassJacobian(cache, robotnum, in_terms_of_qdot);
+  }
 }
 
