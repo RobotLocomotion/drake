@@ -146,38 +146,41 @@ class DRAKERBM_EXPORT RigidBody {
   const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
 
   /**
-   * Adds a collision element ID to this rigid body. This indicates that the
-   * collision element with this ID may collide against this rigid body and thus
-   * must be checked when computing collision reaction forces.
+   * Adds a collision element to this rigid body by collision element @p id.
+   * This effectively defines the collision geometry of this rigid body. If more
+   * than one collision element is added, the resulting collision geometry is
+   * the union of the individual geometries of each collision element.
    */
   void AddCollisionElement(DrakeCollision::ElementId id);
 
   /**
-   * Adds a collision element ID to a particular collision group. Collision
-   * elements within a single collision group may collide with each other.
-   * Those in different collision groups cannot collide with each other.
+   * Adds a collision element represented by its @p id to the collision group
+   * @p group_name. Collision groups are just a convenient way to group a
+   * collection of collision elements so that they can be referenced by the name
+   * of the group they belong to. There is no implication on whether these
+   * elements can collide between them or not.
    */
   void AddCollisionElementToGroup(const std::string& group_name,
       DrakeCollision::ElementId id);
 
   /**
-   * Returns a reference to a `std::vector` of collision element IDs belonging
-   * to the collision elements that this rigid body can be in collision with.
+   * @returns A reference to a vector of collision elements that represent the
+   * collision geometry of this rigid body.
    */
   const std::vector<DrakeCollision::ElementId>& get_collision_element_ids()
       const;
 
   /**
-   * Returns a reference to a vector of collision element IDs belonging to the
-   * collision elements that this rigid body can be in collision with.
+   * @returns A reference to a vector of collision elements that represent the
+   * collision geometry of this rigid body.
    */
   std::vector<DrakeCollision::ElementId>& get_mutable_collision_element_ids();
 
   const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-      get_collision_element_groups() const;
+      get_group_to_collision_ids_map() const;
 
   std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    get_mutable_collision_element_groups();
+    get_mutable_group_to_collision_ids_map();
 
 
   void setCollisionFilter(const DrakeCollision::bitmask& group,
@@ -288,13 +291,13 @@ class DRAKERBM_EXPORT RigidBody {
   // A list of visual elements for this RigidBody.
   DrakeShapes::VectorOfVisualElements visual_elements_;
 
-  // A list of collision element IDs of collision elements that may collide with
-  // this rigid body.
+  // A list of collision element IDs of collision elements that represent the
+  // geometry of this rigid body.
   std::vector<DrakeCollision::ElementId> collision_element_ids_;
 
-  // A map of groups of collision element IDs. Each group contains collision
-  // elements that may collide with each other. Collision groups in different
-  // groups do not collide with each other.
+  // A map of groups of collision element IDs. This is just for conveniently
+  // accessing particular groups of collision elements. The groups do not imply
+  // anything in terms of how the collision elements relate to each other.
   std::map<std::string, std::vector<DrakeCollision::ElementId>>
       collision_element_groups_;
 };
