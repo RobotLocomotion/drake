@@ -11,7 +11,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/core/Gradient.h"
 #include "drake/drakeOptimization_export.h"
-#include "drake/solvers/Constraint.h"
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/Function.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/decision_variable.h"

@@ -1,7 +1,7 @@
 #include <typeinfo>
 
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/Constraint.h"
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/nlopt_solver.h"

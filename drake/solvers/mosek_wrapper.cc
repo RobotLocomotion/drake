@@ -9,7 +9,7 @@
 #include <Eigen/Sparse>
 
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/Constraint.h"
+#include "drake/solvers/constraint.h"
 
 
 namespace drake {
