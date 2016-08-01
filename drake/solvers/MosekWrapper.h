@@ -1,4 +1,3 @@
-// Copyright 2016. Alex Dunyak
 #pragma once
 
 extern "C" {

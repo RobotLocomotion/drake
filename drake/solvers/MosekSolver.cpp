@@ -1,4 +1,3 @@
-// Copyright 2016, Alex Dunyak
 // A wrapper file for MosekWrapper and mosekQP that handles constraint and
 // objective marshalling
 
