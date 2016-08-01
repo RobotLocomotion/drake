@@ -28,7 +28,10 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     const std::vector<double>& lower_variable_bounds,
     double constant_eqn_term,
     const Eigen::MatrixXd& quad_objective,
-    const Eigen::MatrixXd& quad_cons)
+    const Eigen::MatrixXd& quad_cons,
+    const std::vector<Eigen::MatrixXd>& sdp_objectives,
+    const std::vector<Eigen::MatrixXd>& sdp_constraints,
+    const std::vector<int>& sdp_cone_subscripts)
       : numvar_(static_cast<MSKint32t>(num_variables)),
         numcon_(static_cast<MSKint32t>(num_constraints)),
         env_(NULL), task_(NULL), solutions_(std::vector<double>()) {
@@ -56,11 +59,32 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     AddQuadraticObjective(quad_objective);
   if (!quad_cons.isZero())
     AddQuadraticConstraintMatrix(quad_cons);
+  if (!sdp_objective.empty())
+    AddSDPObjectives(sdp_objectives);
+  if (!sdp_constraints.empty())
+    AddSDPConstraints(sdp_constraints);
   AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
       lower_variable_bounds);
   AddLinearConstraintMatrix(linear_cons);
   AddLinearConstraintBounds(mosek_constraint_bounds, upper_constraint_bounds,
       lower_constraint_bounds);
+  if (!sdp_constraints.empty())
+    AppendCone(sdp_cone_subscripts);
+}
+
+void MosekWrapper::AppendCone(const std::vector<int>& sdp_cone_subscripts) {
+  if (r_ == MSK_RES_OK)
+
+}
+
+void MosekWrapper::AddSDPObjectives(
+    const std::vector<Eigen::MatrixXd>& sdp_objectives) {
+
+}
+
+void MosekWrapper::AddSDPConstraints(
+    const std::vector<Eigen::MatrixXd>& sdp_constraints) {
+
 }
 
 void MosekWrapper::AddQuadraticObjective(
