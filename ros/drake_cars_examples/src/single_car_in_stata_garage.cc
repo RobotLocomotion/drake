@@ -33,7 +33,7 @@ using drake::examples::cars::GetCarSimulationDefaultOptions;
  * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
  */
 int do_main(int argc, const char* argv[]) {
-  ::ros::init(argc, const_cast<char**>(argv), "car_sim_lcm_and_ros");
+  ::ros::init(argc, const_cast<char**>(argv), "single_car_sim_in_stata_garage");
 
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
