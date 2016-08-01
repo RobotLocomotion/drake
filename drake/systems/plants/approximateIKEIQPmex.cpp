@@ -14,7 +14,7 @@
 #include <Eigen/SVD>
 
 #include "drake/util/drakeUtil.h"
-#include "drake/solvers/fastQP.h"
+#include "drake/solvers/fast_qp.h"
 
 #define MAX_CONSTRS 1000
 #define MAX_ITER 20

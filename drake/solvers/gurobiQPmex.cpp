@@ -2,7 +2,7 @@
 
 #include <math.h>
 #include <iostream>
-#include "drake/solvers/gurobiQP.h"
+#include "drake/solvers/gurobi_qp.h"
 
 using namespace Eigen;
 using namespace std;
