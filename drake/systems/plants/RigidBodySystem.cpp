@@ -811,7 +811,8 @@ void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node) {
     parseSDFJoint(sys, model_id, elnode, pose_map);
 }
 
-void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
+void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc,
+      std::vector<std::unique_ptr<ModelInstance>>* models) {
   XMLElement* node = xml_doc->FirstChildElement("sdf");
 
   if (!node) {
@@ -855,7 +856,9 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   // simulated sensors as specified by the SDF description.
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
        elnode = elnode->NextSiblingElement("model")) {
-    parseSDFModel(sys, model_id++, elnode);
+    // Finds the ModelInstance with the same model_id.
+    
+    parseSDFModel(sys, model_id++, elnode, models);
   }
 
   // Verifies that the model_id is equal to the final_model_id. They should
@@ -934,7 +937,7 @@ void RigidBodySystem::addRobotFromSDF(
     std::vector<std::unique_ptr<ModelInstance>>* models) {
   // Adds the robot to the rigid body tree.
   drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
-                                       weld_to_frame, tree.get());
+                                       weld_to_frame, tree.get(), models);
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).
@@ -946,7 +949,7 @@ void RigidBodySystem::addRobotFromSDF(
         "file " +
         sdf_filename + "\n" + xml_doc.ErrorName());
   }
-  parseSDF(*this, &xml_doc);
+  parseSDF(*this, &xml_doc, models);
 }
 
 void RigidBodySystem::addRobotFromFile(

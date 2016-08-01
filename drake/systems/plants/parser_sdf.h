@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/drakeRBM_export.h"
+#include "drake/systems/plants/model_instance.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/xmlUtil.h"
@@ -13,8 +14,6 @@ namespace drake {
 namespace parsers {
 namespace sdf {
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a SDF model to a rigid body system. The model's frame is equal to the
 /// world's coordinate frame.
 ///
@@ -27,13 +26,16 @@ namespace sdf {
 /// root to the existing rigid body tree.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+///
+/// @param[out] models A pointer to a vector for storing the models that are
+/// created while parsing the SDF file.
 DRAKERBM_EXPORT
 void AddRobotFromSDFInWorldFrame(
     const std::string& sdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type, RigidBodyTree* tree);
+    const DrakeJoint::FloatingBaseType floating_base_type, RigidBodyTree* tree,
+    std::vector<std::unique_ptr<drake::systems::plants::ModelInstance>>*
+        models = nullptr);
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a SDF model to a rigid body system.
 ///
 /// @param[in] urdf_filename The URDF file containing the model to be added.
@@ -47,11 +49,16 @@ void AddRobotFromSDFInWorldFrame(
 /// @param[in] weld_to_frame The frame to which to connect the new model.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+///
+/// @param[out] models A pointer to a vector for storing the models that are
+/// created while parsing the SDF file.
 DRAKERBM_EXPORT
-void AddRobotFromSDF(const std::string& sdf_filename,
-                     const DrakeJoint::FloatingBaseType floating_base_type,
-                     std::shared_ptr<RigidBodyFrame> weld_to_frame,
-                     RigidBodyTree* tree);
+void AddRobotFromSDF(
+    const std::string& sdf_filename,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree,
+    std::vector<std::unique_ptr<drake::systems::plants::ModelInstance>>*
+        models = nullptr);
 
 }  // namespace sdf
 }  // namespace parsers
