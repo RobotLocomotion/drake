@@ -39,7 +39,8 @@ add_test(NAME drake_assert_test_disabled COMMAND drake_assert_test_disabled)
 # "text_logging.h" unit testing:  If spdlog is available, test that:
 add_executable(text_logging_test_default
                ../text_logging.cc text_logging_test.cc)
-target_link_libraries(text_logging_test_default ${GTEST_BOTH_LIBRARIES})
+target_link_libraries(text_logging_test_default
+                      ${GTEST_BOTH_LIBRARIES} threads)
 add_test(NAME text_logging_test_default COMMAND text_logging_test_default)
 # Force spdlog to unavailable to test that the ifndef(HAVE_SPDLOG) case works.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
@@ -48,7 +49,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
                  ../text_logging.cc text_logging_test.cc)
   target_compile_options(text_logging_test_no_spdlog
     PRIVATE -UHAVE_SPDLOG)
-  target_link_libraries(text_logging_test_no_spdlog ${GTEST_BOTH_LIBRARIES})
+  target_link_libraries(text_logging_test_no_spdlog
+                        ${GTEST_BOTH_LIBRARIES} threads)
   add_test(NAME text_logging_test_no_spdlog COMMAND text_logging_test_no_spdlog)
 endif()
 
