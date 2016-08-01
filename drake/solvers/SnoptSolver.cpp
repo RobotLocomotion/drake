@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/optimization.h"
 
 namespace snopt {
 #include "snopt.hh"

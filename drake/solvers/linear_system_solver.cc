@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/core/Gradient.h"
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/optimization.h"
 
 using drake::TaylorVecXd;
 
