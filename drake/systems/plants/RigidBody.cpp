@@ -4,6 +4,8 @@
 
 #include "drake/util/drakeGeometryUtil.h"
 
+using drake::systems::plants::ModelElementId;
+
 using Eigen::Isometry3d;
 using Eigen::Matrix;
 using Eigen::Vector3d;
@@ -22,17 +24,29 @@ RigidBody::RigidBody()
   I << drake::SquareTwistMatrix<double>::Zero();
 }
 
-const std::string& RigidBody::get_name() const { return name_; }
+const std::string& RigidBody::get_name() const {
+  return id_.get_element_name();
+}
 
-void RigidBody::set_name(const std::string& name) { name_ = name; }
+void RigidBody::set_name(const std::string& name) {
+  id_.set_element_name(name);
+}
 
-const std::string& RigidBody::get_model_name() const { return model_name_; }
+const std::string& RigidBody::get_model_name() const {
+  return id_.get_model_name();
+}
 
-void RigidBody::set_model_name(const std::string& name) { model_name_ = name; }
+void RigidBody::set_model_name(const std::string& name) {
+  id_.set_model_name(name);
+}
 
-int RigidBody::get_model_id() const { return model_id_; }
+int RigidBody::get_model_id() const {
+  return id_.get_model_instance_id();
+}
 
-void RigidBody::set_model_id(int model_id) { model_id_ = model_id; }
+void RigidBody::set_model_id(int model_id) {
+  id_.set_model_instance_id(model_id);
+}
 
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
   this->joint = move(new_joint);
@@ -42,8 +56,9 @@ const DrakeJoint& RigidBody::getJoint() const {
   if (joint) {
     return (*joint);
   } else {
-    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_ +
-                        "\" in model " + model_name_ +
+    throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" +
+                        get_name() +
+                        "\" in model " + get_model_name() +
                         " does not have a joint!");
   }
 }
@@ -125,20 +140,22 @@ void RigidBody::ApplyTransformToJointFrame(
   }
 }
 
-ostream& operator<<(ostream& out, const RigidBody& b) {
+ostream& operator<<(ostream& out, const RigidBody& rigid_body) {
   std::string parent_joint_name =
-      b.hasParent() ? b.getJoint().getName() : "no parent joint";
+      rigid_body.hasParent() ? rigid_body.getJoint().getName() :
+          "no parent joint";
 
   std::stringstream collision_element_str;
   collision_element_str << "[";
-  for (size_t ii = 0; ii < b.collision_element_ids.size(); ii++) {
-    collision_element_str << b.collision_element_ids[ii];
-    if (ii < b.collision_element_ids.size() - 1) collision_element_str << ", ";
+  for (size_t ii = 0; ii < rigid_body.collision_element_ids.size(); ii++) {
+    collision_element_str << rigid_body.collision_element_ids[ii];
+    if (ii < rigid_body.collision_element_ids.size() - 1)
+      collision_element_str << ", ";
   }
   collision_element_str << "]";
 
   out << "RigidBody\n"
-      << "  - link name: " << b.name_ << "\n"
+      << "  - body name: " << rigid_body.get_name() << "\n"
       << "  - parent joint: " << parent_joint_name << "\n"
       << "  - Collision elements IDs: " << collision_element_str.str();
 
