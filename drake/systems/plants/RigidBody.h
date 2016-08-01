@@ -159,20 +159,23 @@ class DRAKERBM_EXPORT RigidBody {
    * collection of collision elements so that they can be referenced by the name
    * of the group they belong to. There is no implication on whether these
    * elements can collide between them or not.
+   *
+   * Note that the collision element @p id must have already been passed to
+   * RigidBody::AddCollisionElement().
    */
   void AddCollisionElementToGroup(const std::string& group_name,
       DrakeCollision::ElementId id);
 
   /**
-   * @returns A reference to a vector of collision elements that represent the
-   * collision geometry of this rigid body.
+   * @returns A reference to a `std::vector` of collision elements that
+   * represent the collision geometry of this rigid body.
    */
   const std::vector<DrakeCollision::ElementId>& get_collision_element_ids()
       const;
 
   /**
-   * @returns A reference to a vector of collision elements that represent the
-   * collision geometry of this rigid body.
+   * @returns A reference to a `std::vector` of collision elements that
+   * represent the collision geometry of this rigid body.
    */
   std::vector<DrakeCollision::ElementId>& get_mutable_collision_element_ids();
 
