@@ -2,7 +2,7 @@ pods_find_pkg_config(gurobi)
 
 if(gurobi_FOUND)
 
-  add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES QP.cpp)
+  add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES qp.cc)
   pods_use_pkg_config_packages(drakeQP gurobi)
 
   if(MATLAB_FOUND)
@@ -13,7 +13,7 @@ if(gurobi_FOUND)
   endif()
 
   pods_install_libraries(drakeQP)
-  drake_install_headers(fastQP.h gurobiQP.h)
+  drake_install_headers(fast_qp.h gurobi_qp.h)
   pods_install_pkg_config_file(drake-qp
     LIBS -ldrakeQP
     REQUIRES gurobi
