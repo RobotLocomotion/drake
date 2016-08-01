@@ -4,7 +4,6 @@
 
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/context_base.h"
-#include "drake/systems/framework/continuous_system_interface.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/system_output.h"
 
@@ -16,7 +15,7 @@ namespace systems {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class System : public ContinuousSystemInterface<T> {
+class System {
  public:
   virtual ~System() {}
 
@@ -50,46 +49,79 @@ class System : public ContinuousSystemInterface<T> {
     return T(0);
   }
 
-  /// By default, returns zero. Physical systems should override.
+  /// Return the rate at which mechanical energy is being converted *from*
+  /// potential energy *to* kinetic energy by this system in the given Context.
+  /// This quantity will be positive when potential energy is decreasing. Note
+  /// that kinetic energy will also be affected by non-conservative forces so we
+  /// can't say which direction it is moving, only whether the conservative
+  /// power is increasing or decreasing the kinetic energy. Power is in watts
+  /// (J/s).
   ///
-  /// Part of ContinuousSystemInterface.
-  T EvalConservativePower(const ContextBase<T>& context) const override {
+  /// By default, returns zero. Continuous, physical systems should override.
+  virtual T EvalConservativePower(const ContextBase<T>& context) const {
     return T(0);
   }
 
-  /// By default, returns zero. Physical systems should override.
+  /// Return the rate at which mechanical energy is being generated (positive)
+  /// or dissipated (negative) *other than* by conversion between potential and
+  /// kinetic energy (in the given Context). Integrating this quantity yields
+  /// work W, and the total energy `E=PE+KE-W` should be conserved by any
+  /// physically-correct model, to within integration accuracy of W. Power is in
+  /// watts (J/s). (Watts are abbreviated W but not to be confused with work!)
+  /// This method is meaningful only for physical systems; others return 0.
   ///
-  /// Part of ContinuousSystemInterface.
-  T EvalNonConservativePower(const ContextBase<T>& context) const override {
+  /// By default, returns zero. Continuous, physical systems should override.
+  virtual T EvalNonConservativePower(const ContextBase<T>& context) const {
     return T(0);
   }
-
+  /// Returns a ContinuousState of the same size as the continuous_state
+  /// allocated in CreateDefaultContext. Solvers will provide this state as the
+  /// output argument to EvalTimeDerivatives.
+  ///
   /// By default, allocates no derivatives. Systems with continuous state
   /// variables should override.
-  ///
-  /// Part of ContinuousSystemInterface.
-  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
+  virtual std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const {
     return nullptr;
   }
 
-  /// By default, does nothing. Systems with continuous state variables should
-  /// override.
+  /// Produces the derivatives of the continuous state xc with respect to time.
+  /// The @p derivatives vector will correspond elementwise with the state
+  /// vector Context.state.continuous_state.get_state(). Thus, if the state in
+  /// the Context has second-order structure, that same structure applies to
+  /// the derivatives.
   ///
-  /// Part of ContinuousSystemInterface.
-  void EvalTimeDerivatives(const ContextBase<T>& context,
-                           ContinuousState<T>* derivatives) const override {
+  /// Implementations may assume that the given @p derivatives argument has the
+  /// same constituent structure as was produced by AllocateTimeDerivatives.
+  ///
+  /// @param context The context in which to evaluate the derivatives.
+  ///
+  /// @param derivatives The output vector. Will be the same length as the
+  ///                    state vector Context.state.continuous_state.
+  virtual void EvalTimeDerivatives(const ContextBase<T>& context,
+                                   ContinuousState<T>* derivatives) const {
     return;
   }
 
-  /// Applies the identity mapping. Throws std::out_of_range if the
-  /// @p generalized_velocity and @p configuration_derivatives are not the
-  /// same size. Child classes should override this function if qdot != v.
+  /// Transforms the velocity (v) in the given Context state to the derivative
+  /// of the configuration (qdot). The transformation must be linear in velocity
+  /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
+  /// in the number of generalized velocity states.
   ///
-  /// Part of ContinuousSystemInterface.
-  void MapVelocityToConfigurationDerivatives(
+  /// The default implementation uses the identity mapping. It throws
+  /// std::out_of_range if the @p generalized_velocity and
+  /// @p configuration_derivatives are not the same size. Child classes should
+  /// override this function if qdot != v.
+  ///
+  /// Implementations may assume that @p configuration_derivatives is of
+  /// the same size as the generalized position allocated in
+  /// CreateDefaultContext()->continuous_state.get_generalized_position(),
+  /// and should populate it with elementwise-corresponding derivatives of
+  /// position. Implementations that are not second-order systems may simply
+  /// do nothing.
+  virtual void MapVelocityToConfigurationDerivatives(
       const ContextBase<T>& context,
       const StateVector<T>& generalized_velocity,
-      StateVector<T>* configuration_derivatives) const override {
+      StateVector<T>* configuration_derivatives) const {
     if (generalized_velocity.size() != configuration_derivatives->size()) {
       throw std::out_of_range(
           "generalized_velocity.size() " +
@@ -105,6 +137,8 @@ class System : public ContinuousSystemInterface<T> {
                                             generalized_velocity.GetAtIndex(i));
     }
   }
+
+  // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity.
 
   virtual void set_name(const std::string& name) { name_ = name; }
   virtual std::string get_name() const { return name_; }
