@@ -117,6 +117,10 @@ add_executable(model_element_id_test model_element_id_test.cc)
 target_link_libraries(model_element_id_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
 add_test(NAME model_element_id_test COMMAND model_element_id_test)
 
+add_executable(model_instance_test model_instance_test.cc)
+target_link_libraries(model_instance_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+add_test(NAME model_instance_test COMMAND model_instance_test)
+
 add_executable(rigid_body_test rigid_body_test.cc)
 target_link_libraries(rigid_body_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
 add_test(NAME rigid_body_test COMMAND rigid_body_test)
