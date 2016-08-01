@@ -2,7 +2,7 @@
 
 #include "KinematicsCache.h"
 #include "drake/drakeRBSystem_export.h"
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/optimization.h"
 #include "drake/systems/System.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 

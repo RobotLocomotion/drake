@@ -4,7 +4,7 @@
 #include "gurobi_c++.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/optimization.h"
 
 namespace drake {
 namespace solvers {

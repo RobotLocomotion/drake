@@ -8,7 +8,7 @@
 
 #include "drake/util/testUtil.h"
 #include "drake/solvers/MathematicalProgram.h"
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/optimization.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/solvers/Constraint.h"
 

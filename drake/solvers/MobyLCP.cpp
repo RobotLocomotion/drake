@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "Optimization.h"
+#include "optimization.h"
 
 namespace drake {
 namespace solvers {
