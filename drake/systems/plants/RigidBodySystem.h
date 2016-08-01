@@ -171,7 +171,9 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
       const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW);
+          DrakeJoint::ROLLPITCHYAW,
+      std::vector<std::unique_ptr<drake::systems::plants::ModelInstance>>*
+          models = nullptr);
 
   void addRobotFromURDF(
       const std::string& urdf_filename,
@@ -449,6 +451,298 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+/** NoiseModel
+ * @brief Represents generalized vector-valued noise
+ */
+template <typename ScalarType, int Dimension, typename Derived>
+class NoiseModel {
+ public:
+  virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoise(
+      Eigen::MatrixBase<Derived> const& input) = 0;
+};
+
+/** GaussianNoiseModel
+ * @brief Implements the NoiseModel interface where the underlying noise
+ * distribution is parameterized by a Gaussian
+ */
+template <typename ScalarType, int Dimension, typename Derived>
+class AdditiveGaussianNoiseModel
+    : public NoiseModel<ScalarType, Dimension, Derived> {
+ public:
+  AdditiveGaussianNoiseModel(double mean, double std_dev)
+      : distribution(mean, std_dev), generator(rd()) {}
+
+  Eigen::Matrix<ScalarType, Dimension, 1> generateNoise(
+      Eigen::MatrixBase<Derived> const& input) override {
+    Eigen::Matrix<ScalarType, Dimension, 1> noise_vector;
+    for (std::size_t index = 0; index < Dimension; index++) {
+      noise_vector[index] = distribution(generator);
+    }
+    return noise_vector + input;
+  }
+
+ private:
+  std::random_device rd;
+  std::normal_distribution<ScalarType> distribution;
+  std::mt19937 generator;
+};
+
+/**
+ * An abstract parent class of all sensors.
+ *
+ * This is an abstract top-level class of all rigid body sensors in Drake.
+ */
+class DRAKERBSYSTEM_EXPORT RigidBodySensor {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  /**
+   * The constructor.
+   *
+   * @param[in] sys The rigid body system to which the sensor is attached.
+   * @param[in] name The name of the sensor.
+   * @param[in] frame The frame within the rigid body system's rigid body tree
+   * to which the sensor is attached.
+   */
+  RigidBodySensor(const RigidBodySystem& sys, const std::string& name,
+                  std::shared_ptr<RigidBodyFrame> frame)
+      : sys_(sys), name_(name), frame_(frame) {}
+
+  virtual ~RigidBodySensor() {}
+
+  virtual bool isDirectFeedthrough() const { return false; }
+
+  virtual size_t getNumOutputs() const { return 0; }
+
+  virtual Eigen::VectorXd output(
+      const double& t, const KinematicsCache<double>& rigid_body_state,
+      const RigidBodySystem::InputVector<double>& u) const = 0;
+
+  /// Returns the name of the sensor.
+  const std::string& get_name() const { return name_; }
+
+  /// Returns the name of the model (i.e., robot) that owns this sensor.
+  const std::string& get_model_name() const;
+
+  /// Returns the frame to which thi sensor is attached.
+  const RigidBodyFrame& get_frame() const;
+
+  /// Returns the rigid body system to which this sensor attaches.
+  const RigidBodySystem& get_rigid_body_system() const;
+
+ private:
+  /// The rigid body tree to which the sensor is attached.
+  const RigidBodySystem& sys_;
+
+  /// The sensor's name.
+  const std::string name_;
+
+  /// The frame within the rigid body tree to which this sensor is attached.
+  const std::shared_ptr<RigidBodyFrame> frame_;
+};
+
+/** RigidBodyDepthSensor
+ * @brief Uses raycast to simulate a depth image at some evenly spaced pixel
+ * rows and columns.
+ */
+class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
+ public:
+  RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
+                       const std::shared_ptr<RigidBodyFrame> frame,
+                       tinyxml2::XMLElement* node);
+
+  RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
+                       const std::shared_ptr<RigidBodyFrame> frame,
+                       std::size_t samples, double min_angle, double max_angle,
+                       double range);
+
+  ~RigidBodyDepthSensor() override {}
+
+  size_t getNumOutputs() const override;
+
+  /**
+   * Returns `true` if this sensor scans horizontally.
+   */
+  virtual bool is_horizontal_scanner() const;
+
+  /**
+   * Returns `true` if this sensor scans vertically.
+   */
+  virtual bool is_vertical_scanner() const;
+
+  /**
+   * Returns the number of points in the image vertically (pitch).
+   */
+  virtual size_t num_pixel_rows() const;
+
+  /**
+   * Returns the number of points in the image horizontally (yaw).
+   */
+  virtual size_t num_pixel_cols() const;
+
+  /**
+   * Returns minimum pitch of this sensor's FOV in radians.
+   */
+  virtual double min_pitch() const;
+
+  /**
+   * Returns maximum pitch of this sensor's FOV in radians.
+   */
+  virtual double max_pitch() const;
+
+  /**
+   * Returns the minimum yaw of this sensor's FOV in radians.
+   */
+  virtual double min_yaw() const;
+
+  /**
+   * Returns the maximum yaw of this sensor's FOV in radians.
+   */
+  virtual double max_yaw() const;
+
+  /**
+   * Returns the minimum range of this sensor in meters.
+   */
+  virtual double min_range() const;
+
+  /**
+   * Returns the maximum range of this sensor in meters.
+   */
+  virtual double max_range() const;
+
+  Eigen::VectorXd output(
+      const double& t, const KinematicsCache<double>& rigid_body_state,
+      const RigidBodySystem::InputVector<double>& u) const override;
+
+ private:
+  // Ensures that the configuration of this sensor is valid.
+  // Throws an exception if it is not valid.
+  void CheckValidConfiguration();
+
+  // The depth sensor will cast a ray with its start point at (0,0,0) in the
+  // sensor's frame (RigidBodyDepthSensor::frame_). Its end, in the sensor's
+  // frame, is computed by this method and stored in raycast_endpoints at the
+  // moment of construction. raycast_endpoints is only computed once at
+  // construction since the end points are constant in the frame of the sensor.
+  // The end points are computed by scanning in the yaw (pitch) direction
+  // discretizing the yaw (pitch) range in num_pixel_cols (num_pixel_rows).
+  // The final 3D end point then corresponds to a ray that starts at zero, with
+  // length max_range, at the specific yaw (pitch) angle.
+  void cacheRaycastEndpoints();
+
+  // The minimum pitch of the camera FOV in radians.
+  double min_pitch_{};
+
+  // The maximum pitch of the camera FOV in radians.
+  double max_pitch_{};
+
+  // The minimum yaw of the sensor FOV in radians.
+  double min_yaw_{};
+
+  // The maximum yaw of the sensor FOV in radians
+  double max_yaw_{};
+
+  // The number of points in the image vertically (pitch).
+  size_t num_pixel_rows_{1};
+
+  // The number of points in the image horizontally (yaw).
+  size_t num_pixel_cols_{1};
+
+  // The minimum range of the sensor in meters.
+  double min_range_{0};
+
+  // The maximum range of the sensor in meters.
+  double max_range_{10};
+
+  // A cache to avoid repeated allocation.
+  Eigen::Matrix3Xd raycast_endpoints;
+
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+/** RigidBodyAccelerometer
+ * @brief Simulates a sensor that measures linear acceleration
+ */
+class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
+ public:
+  RigidBodyAccelerometer(RigidBodySystem const& sys, const std::string& name,
+                         const std::shared_ptr<RigidBodyFrame> frame);
+  ~RigidBodyAccelerometer() override {}
+
+  size_t getNumOutputs() const override { return 3; }
+  Eigen::VectorXd output(
+      const double& t, const KinematicsCache<double>& rigid_body_state,
+      const RigidBodySystem::InputVector<double>& u) const override;
+  bool isDirectFeedthrough() const override { return true; }
+  void setNoiseModel(
+      std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
+    noise_model = model;
+  }
+
+  void setGravityCompensation(bool enable_compensation) {
+    gravity_compensation = enable_compensation;
+  }
+
+ private:
+  bool gravity_compensation;
+  std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
+};
+
+/** RigidBodyGyroscope
+ * @brief Simulates a sensor that measures angular rates
+ */
+class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
+ public:
+  RigidBodyGyroscope(RigidBodySystem const& sys, const std::string& name,
+                     const std::shared_ptr<RigidBodyFrame> frame);
+  ~RigidBodyGyroscope() override {}
+
+  size_t getNumOutputs() const override { return 3; }
+  Eigen::VectorXd output(
+      const double& t, const KinematicsCache<double>& rigid_body_state,
+      const RigidBodySystem::InputVector<double>& u) const override;
+
+  void setNoiseModel(
+      std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
+    noise_model = model;
+  }
+
+ private:
+  std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
+};
+
+/** RigidBodyMagnetometer
+ * @brief Simulates a sensor that measures magnetic fields
+ */
+class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  RigidBodyMagnetometer(RigidBodySystem const& sys, const std::string& name,
+                        const std::shared_ptr<RigidBodyFrame> frame,
+                        double declination);
+  ~RigidBodyMagnetometer() override {}
+
+  size_t getNumOutputs() const override { return 3; }
+  Eigen::VectorXd output(
+      const double& t, const KinematicsCache<double>& rigid_body_state,
+      const RigidBodySystem::InputVector<double>& u) const override;
+
+  void setNoiseModel(
+      std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
+    noise_model = model;
+  }
+
+  void setDeclination(double magnetic_declination) {
+    magnetic_north << cos(magnetic_declination), sin(magnetic_declination), 0;
+  }
+
+ private:
+  Eigen::Vector3d magnetic_north;
+  std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
 };
 
 }  // end namespace drake

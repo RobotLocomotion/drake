@@ -888,7 +888,8 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
 
 void RigidBodySystem::addRobotFromURDFString(
     const string& urdf_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::vector<std::unique_ptr<ModelInstance>>* models) {
   // first add the urdf to the rigid body tree
   drake::parsers::urdf::AddRobotFromURDFString(urdf_string, root_dir,
                                                floating_base_type, tree.get());

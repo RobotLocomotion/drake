@@ -57,7 +57,8 @@ namespace cars {
 DRAKECARS_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
     int argc, const char* argv[], double* duration,
-    Vector<unique_ptr<ModelInstance>>* models = nullptr);
+    std::vector<std::unique_ptr<drake::systems::plants::ModelInstance>>* models
+        = nullptr);
 
 /**
  * Parses the simulation duration from the command line arguments. The duration

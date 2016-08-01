@@ -9,6 +9,8 @@
 
 using drake::AffineSystem;
 using drake::NullVector;
+using drake::systems::plants::ModelInstance;
+
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -19,7 +21,7 @@ namespace cars {
 
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
     int argc, const char* argv[], double* duration,
-    Vector<unique_ptr<ModelInstance>>* models) {
+    std::vector<std::unique_ptr<ModelInstance>>* models) {
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " vehicle_model [world sdf files ...]"
               << " --duration [duration in seconds]" << std::endl;
