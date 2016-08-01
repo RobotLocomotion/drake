@@ -23,18 +23,16 @@ int do_main(int argc, const char* argv[]) {
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
-  // Instantiates a duration variable that will be set by the call to
-  // CreateRigidBodySystem() below.
-  double duration = std::numeric_limits<double>::infinity();
-
   // Initializes the rigid body system.
-  auto rigid_body_sys =
-      CreateRigidBodySystem(argc, argv, &duration);
-  auto const& tree = rigid_body_sys->getRigidBodyTree();
+  auto rigid_body_sys = CreateRigidBodySystem(argc, argv);
+
+  // Initializes and obtains the desired simulation duration.
+  double duration = ParseDuration(argc, argv);
 
   // Initializes and cascades all of the other systems.
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
 
+  auto const& tree = rigid_body_sys->getRigidBodyTree();
   auto visualizer =
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
