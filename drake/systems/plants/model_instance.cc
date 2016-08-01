@@ -7,12 +7,10 @@ namespace plants {
 using std::move;
 using std::unique_ptr;
 
-ModelInstance::ModelInstance() : ModelInstance("[undefined instance name]") {
-}
+ModelInstance::ModelInstance() : ModelInstance("[undefined instance name]") {}
 
-ModelInstance::ModelInstance(const std::string& model_instance_name) :
-    model_instance_name_(model_instance_name) {
-}
+ModelInstance::ModelInstance(const std::string& model_instance_name)
+    : model_instance_name_(model_instance_name) {}
 
 void ModelInstance::set_model_name(const std::string& model_name) {
   model_name_ = model_name;
@@ -22,9 +20,7 @@ void ModelInstance::add_joint(const DrakeJoint* joint) {
   joints_.push_back(joint);
 }
 
-void ModelInstance::add_body(const RigidBody* body) {
-  bodies_.push_back(body);
-}
+void ModelInstance::add_body(const RigidBody* body) { bodies_.push_back(body); }
 
 void ModelInstance::add_frame(const RigidBodyFrame* frame) {
   frames_.push_back(frame);
@@ -50,9 +46,7 @@ const std::string& ModelInstance::get_model_intance_name() const {
   return model_instance_name_;
 }
 
-const std::string& ModelInstance::get_model_name() const {
-  return model_name_;
-}
+const std::string& ModelInstance::get_model_name() const { return model_name_; }
 
 const std::vector<const DrakeJoint*>& ModelInstance::get_joints() const {
   return joints_;
@@ -70,7 +64,8 @@ const std::vector<const RigidBodyLoop*>& ModelInstance::get_loops() const {
   return loops_;
 }
 
-const std::vector<const RigidBodyActuator*>& ModelInstance::get_actuators() const {
+const std::vector<const RigidBodyActuator*>& ModelInstance::get_actuators()
+    const {
   return actuators_;
 }
 
