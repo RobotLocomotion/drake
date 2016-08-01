@@ -872,7 +872,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
                    const Eigen::MatrixBase<Derivedbeq> &beq) {
       if(!linear_equality_position_constraint_) {
         linear_equality_position_constraint_ =
-        new drake::solvers::LinearEqualityConstraint(Aeq,beq);
+        std::unique_ptr<drake::solvers::LinearEqualityConstraint>(
+             new drake::solvers::LinearEqualityConstraint(Aeq,beq));
       }
       else {
         linear_equality_position_constraint_->appendConstraint(Aeq,beq,beq);
