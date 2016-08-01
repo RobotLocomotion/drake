@@ -166,26 +166,34 @@ The documentation will be located in
 Scheduling a Drake / ROS Continuous Integration Test
 ----------------------------------------------------
 
-Drake's Jenkin's pre-merge test matrix currently does not include a Drake / ROS
-Continuous Integration (CI) column. Thus, if you changes Drake's source
-code and want to know whether it breaks Drake's integration with ROS, you must
+Drake's Jenkin's Continuous Integration (CI) pre-merge test matrix currently
+does not include a Drake + ROS column. Thus, if you change Drake's source
+code and want to know whether it breaks the Drake + ROS integration, you must
 manually schedule a test by posting the following comment in your PR::
 
     @drake-jenkins-bot linux-gcc-experimental-ros please
 
-The command above will schedule a Drake / ROS CI pre-merge test called
+The command above will schedule a Drake + ROS CI pre-merge test called
 "`linux-gcc-experimental-ros`". As indicated by its name, this uses the `gcc`
-compiler. Its results can be linked to from the PR's webpage and from here:
+compiler. Links to the results are available on the PR's webpage and from here:
 https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-gcc-experimental-ros/.
 
-If you want to test the Drake / ROS integration code using the `clang` compiler,
-post the following comment in your PR::
+To test the Drake + ROS integration using the `clang` compiler, post the
+following comment in your PR::
 
     @drake-jenkins-bot linux-clang-experimental-ros please
 
 The comment above will schedule a test called "`linux-clang-experimental-ros`".
-The results of this test can be viewed on the PR's webpage and here:
+Links to the results are availble on the PR's webpage and here:
 https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-clang-experimental-ros/.
+
+To do a full test of Drake + ROS + MATLAB with `gcc`, use the following
+command::
+
+    @drake-jenkins-bot linux-gcc-experimental-matlab-ros please
+
+The results will be available here:
+https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-gcc-experimental-matlab-ros/.
 
 .. _drake_catkin_run_car_example:
 
