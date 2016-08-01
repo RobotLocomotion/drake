@@ -736,7 +736,7 @@ void parseSDFJoint(RigidBodySystem& sys, int model_id, XMLElement* node,
 }
 
 void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
-                  PoseMap& pose_map) {
+                  PoseMap& pose_map, ModelInstance* model_instance) {
   // Obtains the name of the body.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
@@ -779,9 +779,19 @@ void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
           Eigen::aligned_allocator<RigidBodyFrame>(), sensor_name, body,
           transform_link_to_model.inverse() * transform_sensor_to_model);
       sys.getRigidBodyTree()->addFrame(frame);
-      sys.addSensor(allocate_shared<RigidBodyDepthSensor>(
-          Eigen::aligned_allocator<RigidBodyDepthSensor>(), sys, sensor_name,
-          frame, elnode));
+
+      std::shared_ptr<RigidBodySensor> depth_sensor =
+          allocate_shared<RigidBodyDepthSensor>(
+              Eigen::aligned_allocator<RigidBodyDepthSensor>(), sys,
+              sensor_name, frame, elnode);
+
+      sys.addSensor(depth_sensor);
+
+      // Adds the depth sensor to the model instance if the model instance is
+      // valid.
+      if (model_instance != nullptr) {
+        model_instance->add_sensor(depth_sensor.get());
+      }
     } else {
       throw std::runtime_error(
           "ERROR: Drake C++ currently does not support sensors of type " +
@@ -790,7 +800,8 @@ void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
   }
 }
 
-void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node) {
+void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node,
+  ModelInstance* model_instance) {
   // A pose map is necessary since SDF specifies almost everything in the
   // global coordinate frame. The pose map contains transforms from a link's
   // coordinate frame to the model's coordinate frame.
@@ -803,7 +814,7 @@ void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node) {
   // Parses each link element within the model.
   for (XMLElement* elnode = node->FirstChildElement("link"); elnode;
        elnode = elnode->NextSiblingElement("link"))
-    parseSDFLink(sys, model_id, elnode, pose_map);
+    parseSDFLink(sys, model_id, elnode, pose_map, model_instance);
 
   // Parses each joint element within the model.
   for (XMLElement* elnode = node->FirstChildElement("joint"); elnode;
@@ -857,8 +868,14 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc,
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
        elnode = elnode->NextSiblingElement("model")) {
     // Finds the ModelInstance with the same model_id.
-    
-    parseSDFModel(sys, model_id++, elnode, models);
+    ModelInstance* model_instance = nullptr;
+    if (models != nullptr) {
+      for (std::unique_ptr<ModelInstance>& current_model_instance : *models) {
+        if (current_model_instance->get_model_id() == model_id)
+          model_instance = current_model_instance.get();
+      }
+    }
+    parseSDFModel(sys, model_id++, elnode, model_instance);
   }
 
   // Verifies that the model_id is equal to the final_model_id. They should

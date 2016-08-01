@@ -662,6 +662,7 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
   // Creates a new model instance.
   std::unique_ptr<ModelInstance> model_instance(new ModelInstance());
   model_instance->set_model_name(model_name);
+  model_instance->set_model_id(model_id);
 
   // Maintains a list of links that were added to the rigid body tree.
   // This is iterated over by method AddFloatingJoint() to determine where
@@ -723,7 +724,7 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
                                     weld_to_frame, &pose_map);
 
   // Saves the newly created ModelInstance into the models vector.
-  models->push_back(std::move(smodel_instance));
+  models->push_back(std::move(model_instance));
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,
