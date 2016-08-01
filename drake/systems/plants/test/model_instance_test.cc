@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <memory>
 
 #include "drake/systems/plants/joints/RevoluteJoint.h"
 #include "drake/systems/plants/model_instance.h"

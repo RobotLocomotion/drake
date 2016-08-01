@@ -10,9 +10,11 @@ class RigidBody;
 class RigidBodyActuator;
 class RigidBodyFrame;
 class RigidBodyLoop;
-class RigidBodySensor;
+
 
 namespace drake {
+class RigidBodySensor;
+
 namespace systems {
 namespace plants {
 
