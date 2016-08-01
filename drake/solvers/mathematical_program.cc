@@ -1,4 +1,4 @@
-#include "MathematicalProgram.h"
+#include "mathematical_program.h"
 
 #include "equality_constrained_qp_solver.h"
 #include "ipopt_solver.h"
