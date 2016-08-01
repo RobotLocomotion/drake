@@ -1,4 +1,4 @@
-#include "drake/solvers/NloptSolver.h"
+#include "drake/solvers/nlopt_solver.h"
 
 #include <stdexcept>
 #include <list>

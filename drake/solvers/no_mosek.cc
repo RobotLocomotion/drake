@@ -1,5 +1,5 @@
 
-#include "drake/solvers/MosekSolver.h"
+#include "drake/solvers/mosek_solver.h"
 
 #include <stdexcept>
 
