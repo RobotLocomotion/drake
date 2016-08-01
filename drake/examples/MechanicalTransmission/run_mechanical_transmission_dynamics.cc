@@ -16,7 +16,7 @@ int DoMain(int argc, char* argv[]) {
 		Eigen::aligned_allocator<RigidBodySystem>());
 
 	rigid_body_system->addRobotFromFile(
-		Drake::getDrakePath() +
+		drake::getDrakePath() +
 		"/examples/MechanicalTransmission/mechanical_transmission.urdf",
 		DrakeJoint::FIXED);
 
