@@ -26,7 +26,8 @@ if(MATLAB_FOUND)
 endif()
 
 set(optimization_files)
-list(APPEND optimization_files MathematicalProgram.cpp moby_lcp_solver.cc
+list(APPEND optimization_files
+  mathematical_program.cc moby_lcp_solver.cc
   system_identification.cpp linear_system_solver.cc
   equality_constrained_qp_solver.cc)
 pods_find_pkg_config(ipopt)
@@ -62,6 +63,7 @@ endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakePolynomial)
+<<<<<<< ef282bddfc7fc0b3fa4e5e587051600408f71210
 drake_install_headers(
   constraint.h
   Function.h
@@ -71,6 +73,9 @@ drake_install_headers(
   solution_result.h
   system_identification.h
   )
+=======
+drake_install_headers(decision_variable.h mathematical_program.h optimization.h system_identification.h constraint.h solution_result.h)
+>>>>>>> Fix names: mathematical_program
 pods_install_libraries(drakeOptimization)
 pods_install_pkg_config_file(drake-optimization
   LIBS -ldrakeOptimization

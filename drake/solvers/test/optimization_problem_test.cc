@@ -3,7 +3,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
-#include "drake/solvers/MathematicalProgram.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/optimization.h"
 #include "drake/solvers/snopt_solver.h"

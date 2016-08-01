@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/solvers/MathematicalProgram.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/optimization.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
