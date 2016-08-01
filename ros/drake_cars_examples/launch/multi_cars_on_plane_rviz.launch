@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<!--
+This launch file just starts RViz with five cars on a plane. It does not start
+Drake.
+
+To run it:
+
+    $ roslaunch drake_cars_examples multi_cars_on_plane_rviz.launch
+
+Once RViz is running, you can start Drake manually:
+
+    $ rosrun drake_cars_examples multi_cars_on_plane
+-->
+<launch>
+  <include file="$(find drake_cars_examples)/launch/multi_cars_on_plane_desc.xml" />
+  <include file="$(find drake_cars_examples)/launch/multi_cars_on_plane_rviz.xml" />
+</launch>
