@@ -4,9 +4,6 @@ namespace drake {
 namespace systems {
 namespace plants {
 
-using std::move;
-using std::unique_ptr;
-
 ModelInstance::ModelInstance() : ModelInstance("[undefined instance name]") {}
 
 ModelInstance::ModelInstance(const std::string& model_instance_name)

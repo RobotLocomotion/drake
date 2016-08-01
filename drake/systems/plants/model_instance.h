@@ -4,11 +4,6 @@
 #include <vector>
 
 #include "drake/drakeRBM_export.h"
-// #include "drake/systems/plants/joints/DrakeJoint.h"
-// #include "drake/systems/plants/rigid_body_loop.h"
-// #include "drake/systems/plants/RigidBody.h"
-// #include "drake/systems/plants/RigidBodyFrame.h"
-// #include "drake/systems/plants/RigidBodySystem.h"
 
 class DrakeJoint;
 class RigidBody;
@@ -22,7 +17,7 @@ namespace systems {
 namespace plants {
 
 /**
- * An instance of a model that is being simulated. It owns pointers to all of
+ * An instance of a model that is being simulated. It holds pointers to all of
  * the modeling elements that constitute a particular instance of a model.
  * Modeling elements include:
  *
@@ -53,7 +48,11 @@ class DRAKERBM_EXPORT ModelInstance {
    * but not enforced, that all `ModelInstance` objects used by a particular
    * simulation have different instance names.
    */
-  ModelInstance(const std::string& model_instance_name);
+  explicit ModelInstance(const std::string& model_instance_name);
+
+  // Disable copy and assign.
+  ModelInstance(const ModelInstance&) = delete;
+  ModelInstance& operator=(const ModelInstance&) = delete;
 
   /**
    * Sets the model name. Since multiple instance of a particular model may
