@@ -35,7 +35,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
     if (std::string(argv[ii]) != "--duration") {
       rigid_body_sys->addRobotFromFile(argv[ii], DrakeJoint::FIXED);
     } else {
-      ++ii; // Skips the value immediately after "--duration".
+      ++ii;  // Skips the value immediately after "--duration".
     }
   }
 
