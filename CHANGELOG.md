@@ -46,6 +46,7 @@ Unreleased: changes on master, not yet released
  - [#2415][] Require CMake 3.5 or higher to configure and build.
  - [#2779][] Move some rotation functions from drakeGeometryUtil to drake/math.
  - [#2963][] Rename RigidBody::CollisionElement to RigidBodyCollisionElement.
+ - [#3010][] All header file names under `solvers` are now spelled with lower case and underscore names.
 
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
