@@ -108,5 +108,10 @@
   Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<double>& cache, const std::set<int>& robotnum = default_robot_num_set, bool in_terms_of_qdot = false) const {
     return $self->centerOfMassJacobian(cache, robotnum, in_terms_of_qdot);
   }
+
+  Eigen::VectorXd getRandomConfiguration() const {
+    std::default_random_engine generator;
+    return $self->getRandomConfiguration(generator);
+  }
 }
 
