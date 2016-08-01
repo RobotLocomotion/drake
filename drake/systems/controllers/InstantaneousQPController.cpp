@@ -8,7 +8,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
-#include "drake/solvers/fastQP.h"
+#include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/eigen_matrix_compare.h"

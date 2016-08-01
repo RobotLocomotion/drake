@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <set>
-#include "drake/solvers/fastQP.h"
+#include "drake/solvers/fast_qp.h"
 
 using namespace Eigen;
 using namespace std;
