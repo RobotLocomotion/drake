@@ -61,6 +61,12 @@ class DRAKERBM_EXPORT ModelInstance {
    */
   void set_model_name(const std::string& model_name);
 
+  // TODO(liang.fok) Remove this method once model_id is no longer needed.
+  /**
+   * Sets the model id. This is a unique integer for each model.
+   */
+  void set_model_id(int model_id);
+
   /**
    * Adds a pointer to a `DrakeJoint` to this object. The pointer must
    * remain valid for the lifetime of this object.
@@ -106,12 +112,18 @@ class DRAKERBM_EXPORT ModelInstance {
   /**
    * Returns the model instance name.
    */
-  const std::string& get_model_intance_name() const;
+  const std::string& get_model_instance_name() const;
 
   /**
    * Returns the model name.
    */
   const std::string& get_model_name() const;
+
+  // TODO(liang.fok) Remove this method once model_id is no longer needed.
+  /**
+   * Returns the model ID.
+   */
+  int get_model_id() const;
 
   /**
    * Returns the `DrakeJoint` objects that are part of this model instance.
@@ -153,6 +165,9 @@ class DRAKERBM_EXPORT ModelInstance {
   const std::string model_instance_name_;
 
   std::string model_name_;
+
+  // TODO(liang.fok) Remove this variable once model_id is no longer needed.
+  int model_id_{0};
 
   std::vector<const DrakeJoint*> joints_;
 

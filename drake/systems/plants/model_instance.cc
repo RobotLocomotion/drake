@@ -13,6 +13,10 @@ void ModelInstance::set_model_name(const std::string& model_name) {
   model_name_ = model_name;
 }
 
+void ModelInstance::set_model_id(int model_id) {
+  model_id_ = model_id;
+}
+
 void ModelInstance::add_joint(const DrakeJoint* joint) {
   joints_.push_back(joint);
 }
@@ -39,11 +43,15 @@ void ModelInstance::add_model_instance(ModelInstance* model_instance) {
   model_instances_.push_back(model_instance);
 }
 
-const std::string& ModelInstance::get_model_intance_name() const {
+const std::string& ModelInstance::get_model_instance_name() const {
   return model_instance_name_;
 }
 
 const std::string& ModelInstance::get_model_name() const { return model_name_; }
+
+int ModelInstance::get_model_id() const {
+  return model_id_;
+}
 
 const std::vector<const DrakeJoint*>& ModelInstance::get_joints() const {
   return joints_;
