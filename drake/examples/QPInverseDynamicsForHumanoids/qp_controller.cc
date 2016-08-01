@@ -1,5 +1,5 @@
 #include "drake/solvers/optimization.h"
-#include "drake/solvers/SnoptSolver.h"
+#include "drake/solvers/snopt_solver.h"
 
 #include "qp_controller.h"
 
