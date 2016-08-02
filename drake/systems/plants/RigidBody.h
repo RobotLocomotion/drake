@@ -174,14 +174,24 @@ class DRAKERBM_EXPORT RigidBody {
       const;
 
   /**
-   * @returns A reference to a `std::vector` of collision elements that
+   * @returns A reference to an `std::vector` of collision elements that
    * represent the collision geometry of this rigid body.
    */
   std::vector<DrakeCollision::ElementId>& get_mutable_collision_element_ids();
 
+  /**
+   * @returns A map of collision element group names to vectors of collision
+   * element IDs. These are the collision element groups created through calls
+   * to RigidBody::AddCollisionElementToGroup().
+   */
   const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
       get_group_to_collision_ids_map() const;
 
+  /**
+   * @returns A map of collision element group names to vectors of collision
+   * element IDs. These are the collision element groups created through calls
+   * to RigidBody::AddCollisionElementToGroup().
+   */
   std::map<std::string, std::vector<DrakeCollision::ElementId>>&
     get_mutable_group_to_collision_ids_map();
 
