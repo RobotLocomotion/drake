@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
-#include "drake/core/Vector.h"
-#include "drake/core/test/pendulum.h"
+#include "drake/systems/test/pendulum.h"
+#include "drake/systems/vector.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
@@ -14,7 +14,7 @@ using std::is_same;
 using std::string;
 
 namespace drake {
-namespace core {
+namespace systems {
 namespace test {
 namespace {
 
@@ -93,5 +93,5 @@ GTEST_TEST(VectorTest, RowsAtCompileTime) {
 
 }  // namespace
 }  // namespace test
-}  // namespace core
+}  // namespace systems
 }  // namespace drake

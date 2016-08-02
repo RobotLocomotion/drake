@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 
 namespace drake {
-namespace core {
+namespace systems {
 namespace test {
 
 /// A simple Drake state for unit testing.
@@ -60,5 +60,5 @@ class PendulumInput {
 };
 
 }  // namespace test
-}  // namespace core
+}  // namespace systems
 }  // namespace drake

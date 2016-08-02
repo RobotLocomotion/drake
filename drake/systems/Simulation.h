@@ -6,8 +6,8 @@
 #include <stdexcept>
 #include <thread>
 
-#include "drake/core/Vector.h"
 #include "drake/systems/simulation_options.h"
+#include "drake/systems/vector.h"
 
 namespace drake {
 

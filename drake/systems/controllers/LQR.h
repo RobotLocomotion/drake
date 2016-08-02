@@ -3,9 +3,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/core/Gradient.h"
-#include "drake/core/Vector.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/LinearSystem.h"
+#include "drake/systems/vector.h"
 #include "drake/util/drakeGradientUtil.h"
 #include "drake/util/drakeUtil.h"
 
