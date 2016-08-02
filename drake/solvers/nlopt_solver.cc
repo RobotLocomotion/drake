@@ -7,10 +7,9 @@
 #include <nlopt.hpp>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/core/Gradient.h"
 #include "drake/solvers/optimization.h"
-
-using drake::TaylorVecXd;
 
 namespace drake {
 namespace solvers {

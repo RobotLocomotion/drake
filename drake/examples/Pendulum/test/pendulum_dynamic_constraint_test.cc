@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/core/Gradient.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/plants/constraint/dynamic_constraint.h"
 #include "drake/util/eigen_matrix_compare.h"
