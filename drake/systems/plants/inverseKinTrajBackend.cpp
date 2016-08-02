@@ -251,7 +251,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     }
     q_samples.col(nT + num_inbetween_tsamples - 1) = q.col(nT - 1);
 
-    // Using the q_samples aassembled above which includes the
+    // Using the q_samples assembled above which includes the
     // inbetween data, evaluate any multiple time kinematic
     // constraints.
     for (int i = 0; i < num_constraints_; i++) {
