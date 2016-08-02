@@ -10,8 +10,8 @@
 #include <drake/core/Gradient.h>
 #include <drake/core/Vector.h>
 #include <drake/math/autodiff.h>
-#include <drake/solvers/Constraint.h>
-#include <drake/solvers/Optimization.h>
+#include <drake/solvers/constraint.h>
+#include <drake/solvers/optimization.h>
 #include <drake/systems/plants/constraint/RigidBodyConstraint.h>
 #include <drake/systems/plants/ConstraintWrappers.h>
 #include <drake/systems/plants/IKoptions.h>
@@ -27,7 +27,7 @@ using drake::solvers::DecisionVariableView;
 using drake::solvers::SolutionResult;
 using drake::solvers::OptimizationProblem;
 
-namespace Drake {
+namespace drake {
 namespace systems {
 namespace plants {
 namespace {
@@ -43,13 +43,13 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
         helper_(helper),
         q_nom_(q_nom) {}
 
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
     throw std::runtime_error("Non-gradient version not implemented!");
   }
 
-  void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
-            Drake::TaylorVecXd& y) const override {
+  void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
+            drake::TaylorVecXd& y) const override {
     const int nq = helper_.nq();
     const int nT = helper_.nT();
 
@@ -143,13 +143,13 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     }
   }
 
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
     throw std::runtime_error("Non-gradient version not implemented!");
   }
 
-  void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
-            Drake::TaylorVecXd& y) const override {
+  void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
+            drake::TaylorVecXd& y) const override {
     const int nq = helper_.nq();
     const int nT = helper_.nT();
     const std::vector<Eigen::VectorXd>& t_inbetween =
