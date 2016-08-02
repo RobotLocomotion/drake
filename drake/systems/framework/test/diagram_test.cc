@@ -17,8 +17,8 @@ namespace {
 class DiagramTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    diagram_.reset(
-        new Diagram<double>("Unicode Snowman's Favorite Diagram!!1!☃!"));
+    diagram_.reset(new Diagram<double>());
+    diagram_->set_name("Unicode Snowman's Favorite Diagram!!1!☃!");
 
     adder0_.reset(new Adder<double>(2 /* inputs */, 3 /* length */));
     adder0_->set_name("adder0");
@@ -114,7 +114,8 @@ TEST_F(DiagramTest, SystemOfAdders) {
 
 // Tests that an exception is thrown if the diagram contains a cycle.
 TEST_F(DiagramTest, Cycle) {
-  diagram_.reset(new Diagram<double>("Diagram with a cycle.  Oh no!"));
+  diagram_.reset(new Diagram<double>());
+  diagram_->set_name("Diagram with a cycle.  Oh no!");
   auto adder = std::make_unique<Adder<double>>(1 /* inputs */, 1 /* length */);
   // Connect the output port to the input port.
   diagram_->Connect(adder.get(), 0, adder.get(), 0);
@@ -129,14 +130,16 @@ TEST_F(DiagramTest, Refinalize) {
 
 // Tests that an exception is thrown when finalizing an empty diagram.
 TEST_F(DiagramTest, FinalizeWhenEmpty) {
-  diagram_.reset(new Diagram<double>("Unfinalized diagram!"));
+  diagram_.reset(new Diagram<double>());
+  diagram_->set_name("Empty diagram!");
   EXPECT_THROW(diagram_->Finalize(), std::logic_error);
 }
 
 // Tests that an exception is thrown when getting the context of a diagram that
 // has not been finalized.
 TEST_F(DiagramTest, Unfinalized) {
-  diagram_.reset(new Diagram<double>("Unfinalized diagram!"));
+  diagram_.reset(new Diagram<double>());
+  diagram_->set_name("Unfinalized diagram!");
   auto adder = std::make_unique<Adder<double>>(1 /* inputs */, 1 /* length */);
   diagram_->ExportInput(adder.get(), 0);
 

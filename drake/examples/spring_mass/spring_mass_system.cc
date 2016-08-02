@@ -68,11 +68,9 @@ SpringMassOutputVector* SpringMassOutputVector::DoClone() const {
   return clone;
 }
 
-SpringMassSystem::SpringMassSystem(const std::string& name,
-                                   double spring_constant_N_per_m,
+SpringMassSystem::SpringMassSystem(double spring_constant_N_per_m,
                                    double mass_kg, bool system_is_forced)
-    : name_(name),
-      spring_constant_N_per_m_(spring_constant_N_per_m),
+    : spring_constant_N_per_m_(spring_constant_N_per_m),
       mass_kg_(mass_kg),
       system_is_forced_(system_is_forced) {}
 
@@ -104,8 +102,6 @@ double SpringMassSystem::EvalNonConservativePower(const MyContext&) const {
   const double power_nc = 0.;
   return power_nc;
 }
-
-std::string SpringMassSystem::get_name() const { return name_; }
 
 // Reserve a context with no input, and a SpringMassStateVector state.
 std::unique_ptr<ContextBase<double>>
