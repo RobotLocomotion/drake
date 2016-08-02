@@ -30,7 +30,7 @@ int main() {
   int info;
   approximateIK(model, q0, q0, num_constraints, constraint_array,
                 ikoptions, &q_sol, &info);
-  printf("INFO = %d\n", info);
+  printf("info = %d\n", info);
   delete com_kc;
   delete[] constraint_array;
   return 0;

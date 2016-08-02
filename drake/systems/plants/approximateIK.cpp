@@ -14,7 +14,7 @@ void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
                    const MatrixBase<DerivedB>& q_nom, const int num_constraints,
                    RigidBodyConstraint* *const constraint_array,
                    const IKoptions& ikoptions,
-                   MatrixBase<DerivedC>* q_sol, int* INFO) {
+                   MatrixBase<DerivedC>* q_sol, int* info) {
   int num_kc = 0;
   int nq = model->number_of_positions();
   SingleTimeKinematicConstraint** kc_array =
@@ -176,11 +176,11 @@ void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
       GRBgetdblattrarray(grb_model, GRB_DBL_ATTR_X, 0, nq, q_sol_data.data());
   (*q_sol) = q_sol_data;
 
-  error = GRBgetintattr(grb_model, GRB_INT_ATTR_STATUS, INFO);
-  if ((*INFO) == 2) {
-    (*INFO) = 0;
+  error = GRBgetintattr(grb_model, GRB_INT_ATTR_STATUS, info);
+  if ((*info) == 2) {
+    (*info) = 0;
   } else {
-    (*INFO) = 1;
+    (*info) = 1;
   }
   // debug only
   /*GRBwrite(grb_model,"gurobi_approximateIK.lp");

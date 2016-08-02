@@ -53,7 +53,7 @@ GTEST_TEST(testIKpointwise, simpleIKpointwise) {
   inverseKinPointwise(&model, nT, t, q0, q0, num_constraints, constraint_array,
                       ikoptions, &q_sol, info, &infeasible_constraint);
   for (int i = 0; i < nT; i++) {
-    printf("INFO[%d] = %d ", i, info[i]);
+    printf("info[%d] = %d ", i, info[i]);
     EXPECT_EQ(info[i], 1);
   }
   printf("\n");

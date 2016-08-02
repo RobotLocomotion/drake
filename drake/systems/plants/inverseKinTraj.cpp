@@ -15,7 +15,7 @@ DRAKEIK_EXPORT void inverseKinTraj(
     const MatrixBase<DerivedC>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array, const IKoptions& ikoptions_in,
     MatrixBase<DerivedD>* q_sol, MatrixBase<DerivedE>* qdot_sol,
-    MatrixBase<DerivedF>* qddot_sol, int* INFO,
+    MatrixBase<DerivedF>* qddot_sol, int* info,
     vector<string>* infeasible_constraint) {
   IKoptions ikoptions = ikoptions_in;
   if (ikoptions.getFixInitialState()) {
@@ -23,7 +23,7 @@ DRAKEIK_EXPORT void inverseKinTraj(
   }
   inverseKinTrajBackend(model, nT, t, q_seed, q_nom, num_constraints,
                         constraint_array, ikoptions, q_sol, qdot_sol, qddot_sol,
-                        INFO, infeasible_constraint);
+                        info, infeasible_constraint);
 }
 
 template DRAKEIK_EXPORT void inverseKinTraj(
@@ -34,7 +34,7 @@ template DRAKEIK_EXPORT void inverseKinTraj(
     RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions,
     MatrixBase<Map<MatrixXd>>* q_sol, MatrixBase<Map<MatrixXd>>* qdot_sol,
-    MatrixBase<Map<MatrixXd>>* qddot_sol, int* INFO,
+    MatrixBase<Map<MatrixXd>>* qddot_sol, int* info,
     vector<string>* infeasible_constraint);
 template DRAKEIK_EXPORT void inverseKinTraj(
     RigidBodyTree* model, const int nT, const double* t,
@@ -43,4 +43,4 @@ template DRAKEIK_EXPORT void inverseKinTraj(
     RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions, MatrixBase<MatrixXd>* q_sol,
     MatrixBase<MatrixXd>* qdot_sol, MatrixBase<MatrixXd>* qddot_sol,
-    int* INFO, vector<string>* infeasible_constraint);
+    int* info, vector<string>* infeasible_constraint);
