@@ -1,12 +1,12 @@
 #include <typeinfo>
 
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/Constraint.h"
-#include "drake/solvers/IpoptSolver.h"
-#include "drake/solvers/MathematicalProgram.h"
-#include "drake/solvers/NloptSolver.h"
-#include "drake/solvers/Optimization.h"
-#include "drake/solvers/SnoptSolver.h"
+#include "drake/solvers/constraint.h"
+#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/optimization.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/util/Polynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"

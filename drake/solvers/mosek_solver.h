@@ -4,8 +4,8 @@
 
 #include <Eigen/Core>
 
-#include "drake/solvers/Optimization.h"
-#include "drake/solvers/MathematicalProgram.h"
+#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 
 namespace drake {
