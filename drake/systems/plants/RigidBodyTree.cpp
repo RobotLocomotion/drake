@@ -54,7 +54,7 @@ void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
 }
 
 std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
-  os << *tree.collision_model.get();
+  os << *tree.collision_model_.get();
   return os;
 }
 
@@ -67,7 +67,7 @@ RigidBodyTree::RigidBodyTree(
 }
 
 RigidBodyTree::RigidBodyTree(void)
-    : collision_model(DrakeCollision::newModel()) {
+    : collision_model_(DrakeCollision::newModel()) {
   // Sets the gravity vector;
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
@@ -84,7 +84,8 @@ RigidBodyTree::~RigidBodyTree(void) {}
 bool RigidBodyTree::transformCollisionFrame(
     const DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
-  return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
+  return collision_model_->transformCollisionFrame(eid,
+      transform_body_to_joint);
 }
 
 // TODO(amcastro-tri): This implementation is very inefficient since member
@@ -352,7 +353,7 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
 DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
     const RigidBodyCollisionElement& element, RigidBody& body,
     const string& group_name) {
-  DrakeCollision::ElementId id = collision_model->addElement(element);
+  DrakeCollision::ElementId id = collision_model_->addElement(element);
   if (id != 0) {
     body.AddCollisionElement(id);
     body.AddCollisionElementToGroup(group_name, id);
@@ -365,7 +366,7 @@ void RigidBodyTree::updateCollisionElements(
     const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world) {
   for (auto id_iter = body.get_collision_element_ids().begin();
        id_iter != body.get_collision_element_ids().end(); ++id_iter) {
-    collision_model->updateElementWorldTransform(*id_iter, transform_to_world);
+    collision_model_->updateElementWorldTransform(*id_iter, transform_to_world);
   }
 }
 
@@ -388,19 +389,22 @@ void RigidBodyTree::updateDynamicCollisionElements(
       updateCollisionElements(body, cache.getElement(body).transform_to_world);
     }
   }
-  collision_model->updateModel();
+  collision_model_->updateModel();
 }
 
 void RigidBodyTree::getTerrainContactPoints(
     const RigidBody& body, Eigen::Matrix3Xd* terrain_points) const {
-  // clear matrix before filling it again
+  // Ensures terrain_points is a valid pointer.
+  DRAKE_ABORT_UNLESS(terrain_points);
+
+  // Clears matrix before filling it again.
   size_t num_points = 0;
   terrain_points->resize(Eigen::NoChange, 0);
 
   for (auto id_iter = body.get_collision_element_ids().begin();
        id_iter != body.get_collision_element_ids().end(); ++id_iter) {
     Matrix3Xd element_points;
-    collision_model->getTerrainContactPoints(*id_iter, element_points);
+    collision_model_->getTerrainContactPoints(*id_iter, element_points);
     terrain_points->conservativeResize(
         Eigen::NoChange, terrain_points->cols() + element_points.cols());
     terrain_points->block(0, num_points, terrain_points->rows(),
@@ -417,7 +421,7 @@ void RigidBodyTree::collisionDetectFromPoints(
 
   vector<DrakeCollision::PointPair> closest_points;
 
-  collision_model->collisionDetectFromPoints(points, use_margins,
+  collision_model_->collisionDetectFromPoints(points, use_margins,
                                              closest_points);
   x.resize(3, closest_points.size());
   body_x.resize(3, closest_points.size());
@@ -440,7 +444,7 @@ bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
                                      VectorXd& distances, bool use_margins) {
   Matrix3Xd normals;
   updateDynamicCollisionElements(cache);
-  return collision_model->collisionRaycast(origins, ray_endpoints, use_margins,
+  return collision_model_->collisionRaycast(origins, ray_endpoints, use_margins,
                                            distances, normals);
 }
 
@@ -450,7 +454,7 @@ bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
                                      VectorXd& distances, Matrix3Xd& normals,
                                      bool use_margins) {
   updateDynamicCollisionElements(cache);
-  return collision_model->collisionRaycast(origins, ray_endpoints, use_margins,
+  return collision_model_->collisionRaycast(origins, ray_endpoints, use_margins,
                                            distances, normals);
 }
 
@@ -463,7 +467,8 @@ bool RigidBodyTree::collisionDetect(
 
   vector<DrakeCollision::PointPair> points;
   bool points_found =
-      collision_model->closestPointsAllToAll(ids_to_check, use_margins, points);
+      collision_model_->closestPointsAllToAll(ids_to_check, use_margins,
+          points);
 
   xA = MatrixXd::Zero(3, points.size());
   xB = MatrixXd::Zero(3, points.size());
@@ -557,7 +562,8 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
                                         bool use_margins) {
   updateDynamicCollisionElements(cache);
   vector<DrakeCollision::PointPair> potential_collisions;
-  potential_collisions = collision_model->potentialCollisionPoints(use_margins);
+  potential_collisions =
+      collision_model_->potentialCollisionPoints(use_margins);
   size_t num_potential_collisions = potential_collisions.size();
 
   phi = VectorXd::Zero(num_potential_collisions);
@@ -585,8 +591,8 @@ RigidBodyTree::ComputeMaximumDepthCollisionPoints(
     const KinematicsCache<double>& cache, bool use_margins) {
   updateDynamicCollisionElements(cache);
   vector<DrakeCollision::PointPair> contact_points;
-  collision_model->ComputeMaximumDepthCollisionPoints(use_margins,
-                                                      contact_points);
+  collision_model_->ComputeMaximumDepthCollisionPoints(use_margins,
+                                                       contact_points);
   size_t num_contact_points = contact_points.size();
 
   for (size_t i = 0; i < num_contact_points; i++) {
@@ -610,14 +616,15 @@ bool RigidBodyTree::collidingPointsCheckOnly(
     const KinematicsCache<double>& cache, const vector<Vector3d>& points,
     double collision_threshold) {
   updateDynamicCollisionElements(cache);
-  return collision_model->collidingPointsCheckOnly(points, collision_threshold);
+  return collision_model_->collidingPointsCheckOnly(points,
+      collision_threshold);
 }
 
 vector<size_t> RigidBodyTree::collidingPoints(
     const KinematicsCache<double>& cache, const vector<Vector3d>& points,
     double collision_threshold) {
   updateDynamicCollisionElements(cache);
-  return collision_model->collidingPoints(points, collision_threshold);
+  return collision_model_->collidingPoints(points, collision_threshold);
 }
 
 bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
@@ -629,7 +636,7 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
 
   vector<DrakeCollision::PointPair> points;
   bool points_found =
-      collision_model->ComputeMaximumDepthCollisionPoints(use_margins, points);
+      collision_model_->ComputeMaximumDepthCollisionPoints(use_margins, points);
 
   xA_in_world = Matrix3Xd::Zero(3, points.size());
   xB_in_world = Matrix3Xd::Zero(3, points.size());
