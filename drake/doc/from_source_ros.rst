@@ -219,7 +219,7 @@ Finally, to run the car simulation demo, execute::
 
     cd ~/dev/drake_catkin_workspace
     source devel/setup.bash
-    roslaunch drake_cars_examples drake_car_sim.launch
+    roslaunch drake_cars_examples single_car_in_stata_garage.launch
 
 To drive the vehicle around in simulation, open another terminal and execute::
 
