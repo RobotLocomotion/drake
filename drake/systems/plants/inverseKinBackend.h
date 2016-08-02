@@ -38,7 +38,7 @@ void inverseKinBackend(RigidBodyTree *model, const int nT,
                        int num_constraints,
                        RigidBodyConstraint **const constraint_array,
                        const IKoptions& ikoptions,
-                       Eigen::MatrixBase<DerivedC>* q_sol, int *INFO,
+                       Eigen::MatrixBase<DerivedC>* q_sol, int *info,
                        std::vector<std::string>* infeasible_constraint);
 
 /// This function is primarily documented through RigidBodyIK.h.  All
@@ -55,10 +55,10 @@ void inverseKinTrajBackend(
     const IKoptions& ikoptions,
     Eigen::MatrixBase<DerivedC>* q_sol,
     Eigen::MatrixBase<DerivedD>* qdot_sol,
-    Eigen::MatrixBase<DerivedE>* qddot_sol, int *INFO,
+    Eigen::MatrixBase<DerivedE>* qddot_sol, int *info,
     std::vector<std::string>* infeasible_constraint);
 
-/// Translate a solver result into something expected for the INFO
+/// Translate a solver result into something expected for the info
 /// output parameter.
 int GetIKSolverInfo(const drake::solvers::OptimizationProblem& prog,
                     drake::solvers::SolutionResult result);

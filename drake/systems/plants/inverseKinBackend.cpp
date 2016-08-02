@@ -196,7 +196,7 @@ void inverseKinBackend(
     const MatrixBase<DerivedB>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions, MatrixBase<DerivedC>* q_sol,
-    int* INFO, std::vector<std::string>* infeasible_constraint) {
+    int* info, std::vector<std::string>* infeasible_constraint) {
 
   // Validate some basic parameters of the input.
   if (q_seed.rows() != model->number_of_positions() || q_seed.cols() != nT ||
@@ -285,7 +285,7 @@ void inverseKinBackend(
     SolutionResult result = prog.Solve();
     prog.PrintSolution();
     q_sol->col(t_index) = vars.value();
-    INFO[t_index] = GetIKSolverInfo(prog, result);
+    info[t_index] = GetIKSolverInfo(prog, result);
   }
 }
 
@@ -295,28 +295,28 @@ template void inverseKinBackend(
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions, MatrixBase<Map<MatrixXd>>* q_sol,
-    int* INFO, std::vector<std::string>* infeasible_constraint);
+    int* info, std::vector<std::string>* infeasible_constraint);
 template void inverseKinBackend(
     RigidBodyTree* model, const int nT,
     const double* t, const MatrixBase<MatrixXd>& q_seed,
     const MatrixBase<MatrixXd>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions, MatrixBase<MatrixXd>* q_sol,
-    int* INFO, std::vector<std::string>* infeasible_constraint);
+    int* info, std::vector<std::string>* infeasible_constraint);
 template void inverseKinBackend(
     RigidBodyTree* model, const int nT,
     const double* t, const MatrixBase<Map<VectorXd>>& q_seed,
     const MatrixBase<Map<VectorXd>>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions, MatrixBase<Map<VectorXd>>* q_sol,
-    int* INFO, std::vector<std::string>* infeasible_constraint);
+    int* info, std::vector<std::string>* infeasible_constraint);
 template void inverseKinBackend(
     RigidBodyTree* model, const int nT,
     const double* t, const MatrixBase<VectorXd>& q_seed,
     const MatrixBase<VectorXd>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions, MatrixBase<VectorXd>* q_sol,
-    int* INFO, std::vector<std::string>* infeasible_constraint);
+    int* info, std::vector<std::string>* infeasible_constraint);
 }
 }
 }

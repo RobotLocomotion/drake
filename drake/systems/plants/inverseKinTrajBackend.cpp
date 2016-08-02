@@ -346,7 +346,7 @@ void inverseKinTrajBackend(
     const IKoptions& ikoptions,
     Eigen::MatrixBase<DerivedC>* q_sol,
     Eigen::MatrixBase<DerivedD>* qdot_sol,
-    Eigen::MatrixBase<DerivedE>* qddot_sol, int *INFO,
+    Eigen::MatrixBase<DerivedE>* qddot_sol, int *info,
     std::vector<std::string>* infeasible_constraint) {
 
   DRAKE_ASSERT(q_sol->cols() == nT);
@@ -519,7 +519,7 @@ void inverseKinTrajBackend(
   }
 
   const SolutionResult result = prog.Solve();
-  *INFO = GetIKSolverInfo(prog, result);
+  *info = GetIKSolverInfo(prog, result);
 
   // Populate the output arguments.
   const auto q_value = q.value();
@@ -553,7 +553,7 @@ template void inverseKinTrajBackend(
     const IKoptions& ikoptions,
     Eigen::MatrixBase<Eigen::Map<MatrixXd>>* q_sol,
     Eigen::MatrixBase<Eigen::Map<MatrixXd>>* qdot_sol,
-    Eigen::MatrixBase<Eigen::Map<MatrixXd>>* qddot_sol, int* INFO,
+    Eigen::MatrixBase<Eigen::Map<MatrixXd>>* qddot_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
 template void inverseKinTrajBackend(
     RigidBodyTree* model, const int nT, const double* t,
@@ -563,7 +563,7 @@ template void inverseKinTrajBackend(
     const IKoptions& ikoptions,
     Eigen::MatrixBase<MatrixXd>* q_sol,
     Eigen::MatrixBase<MatrixXd>* qdot_sol,
-    Eigen::MatrixBase<MatrixXd>* qddot_sol, int* INFO,
+    Eigen::MatrixBase<MatrixXd>* qddot_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
 
 }  // namespace plants

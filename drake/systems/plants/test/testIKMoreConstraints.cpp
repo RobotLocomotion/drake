@@ -183,7 +183,7 @@ GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   inverseKin(&model, qstar, qstar, constraint_array.size(),
              constraint_array.data(), ikoptions,
              &q_sol, &info, &infeasible_constraint);
-  printf("INFO = %d\n", info);
+  printf("info = %d\n", info);
   EXPECT_EQ(info, 1);
 
   /////////////////////////////////////////
