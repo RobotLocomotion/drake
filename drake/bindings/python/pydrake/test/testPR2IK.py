@@ -61,9 +61,9 @@ q_seed = robot.getZeroConfiguration()
 options = ik.IKoptions(robot)
 results = ik.inverseKinSimple(robot, q_seed, q_seed, constraints, options)
 
-# results.INFO gives the output status of SNOPT. INFO = 1 is good, anything
+# results.info gives the output status of SNOPT. info = 1 is good, anything
 # less than 10 is OK, and any info >= 10 indicates an infeasibility or failure
 # of the optimizer.
-assert results.INFO == 1
+assert results.info == 1
 
 print repr(results.q_sol)
