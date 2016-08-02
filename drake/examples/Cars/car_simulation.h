@@ -30,7 +30,7 @@ namespace cars {
  * Prints the usage instructions to std::cout.
  */
 DRAKECARS_EXPORT
-void PrintUsageInstructions(const std::string executable_name);
+void PrintUsageInstructions(const std::string& executable_name);
 
 /**
  * Parses the command line arguments and creates the rigid body system to be
@@ -48,11 +48,18 @@ void PrintUsageInstructions(const std::string executable_name);
  *
  * @param[in] argv An array of command line arguments.
  *
+ * @param[out] duration The duration over which the simulation should run. The
+ * simulation runs from time zero seconds to time \p duration seconds. If no
+ * duration is specified in \p argv, this \p duration is set to be infinity.
+ * A duration is specified in \p argv by the string "--duration" followed by a
+ * floating point value. This parameter is optional. If it is nullptr, the
+ * duration is not saved.
+ *
  * @return A shared pointer to a rigid body system.
  */
 DRAKECARS_EXPORT
-std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
-                                                       const char* argv[]);
+std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
+    int argc, const char* argv[], double* duration = nullptr);
 
 /**
  * Checks the command line arguments looking for a "--duration" flag followed

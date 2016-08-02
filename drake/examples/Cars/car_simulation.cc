@@ -17,9 +17,9 @@ namespace drake {
 namespace examples {
 namespace cars {
 
-const std::string kDurationFlag = "--duration";
+const char kDurationFlag[] = "--duration";
 
-void PrintUsageInstructions(const std::string executable_name) {
+void PrintUsageInstructions(const std::string& executable_name) {
   std::cout
     << "Usage: " << executable_name
     << " [vehicle model file] [world model files] "
@@ -27,32 +27,44 @@ void PrintUsageInstructions(const std::string executable_name) {
     << std::endl
     << std::endl
     << "Where:" << std::endl
-    << "  - [vehicle model file] is the path to the URDF or SDF file defining "
+    << "  - [vehicle model file] is the path to the URDF or SDF file defining"
     << std::endl
-    << "    the vehicle model(s) and are thus attached to the world via "
+    << "    the vehicle model(s) and are thus attached to the world via"
     << std::endl
-    << "    DrakeJoint::QUATERNION joints."
+    << "    DrakeJoint::QUATERNION joints. This command line argument is"
     << std::endl
-    << std::endl
-    << "  - [world model files] is a space-separated list of paths to URDF or "
-    << std::endl
-    << "    SDF files. This list can be of length zero or more. The models "
-    << std::endl
-    << "    within these files connected to the world via DrakeJoint::FIXED "
-    << std::endl
-    << "    joints."
+    << "    required."
     << std::endl
     << std::endl
-    << "  - [duration in seconds] is the number of seconds (floating point) to "
+    << "  - [world model files] is a space-separated list of paths to URDF or"
     << std::endl
-    << "    to run the simulation. This value is in simulation time, which is "
+    << "    SDF files. This list can be of length zero or more. The models"
     << std::endl
-    << "    not necessarily equal to real time."
+    << "    within these files are connected to the world via DrakeJoint::FIXED"
+    << std::endl
+    << "    joints. Since this list can have a length of zero, it is an"
+    << std::endl
+    << "    optional set of command line arguments."
+    << std::endl
+    << std::endl
+    << "  - [duration in seconds] is the number of seconds (floating point) to"
+    << std::endl
+    << "    to run the simulation. This value is in simulation time, which is"
+    << std::endl
+    << "    not necessarily equal to real time. It is an optional argument that"
+    << std::endl
+    << "    follows an optional \"" << std::string(kDurationFlag) << "\" flag "
+       "and be at the very end of"
+    << std::endl
+    << "    the command line argument list. If this flag and its argument are"
+    << std::endl
+    << "    not present, the duration is set to be infinity."
     << std::endl;
 }
 
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
-                                                       const char* argv[]) {
+                                                       const char* argv[],
+                                                       double* duration) {
   if (argc < 2) {
     PrintUsageInstructions(argv[0]);
     exit(EXIT_FAILURE);
@@ -65,14 +77,23 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
   // Adds a robot model.
   rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION);
 
+  if (duration != nullptr) {
+    // Initializes duration to be infinity.
+    *duration = std::numeric_limits<double>::infinity();
+  }
+
   // Adds the environment.
   for (int ii = 2; ii < argc; ++ii) {
-    if (std::string(argv[ii]) != kDurationFlag) {
-      rigid_body_sys->addRobotFromFile(argv[ii], DrakeJoint::FIXED);
+    if (std::string(argv[ii]) == "--duration") {
+      if (++ii == argc) {
+        throw std::runtime_error(
+            "ERROR: Command line option \"--duration\" is not followed by a "
+            "value!");
+      }
+      if (duration != nullptr)
+        *duration = atof(argv[ii]);
     } else {
-      // The duration flag must be the penultimate argument. Thus, we can ignore
-      // the rest of the arguments and break out of the enclosing for loop.
-      break;
+      rigid_body_sys->addRobotFromFile(argv[ii], DrakeJoint::FIXED);
     }
   }
 
@@ -102,7 +123,7 @@ double ParseDuration(int argc, const char* argv[]) {
       if (++ii == argc) {
         PrintUsageInstructions(argv[0]);
         throw std::runtime_error(
-            "ERROR: Command line option \"" + kDurationFlag +
+            "ERROR: Command line option \"" + std::string(kDurationFlag) +
             "\" is not followed by a value!");
       }
       return atof(argv[ii]);
