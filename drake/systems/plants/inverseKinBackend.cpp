@@ -7,6 +7,7 @@
 #include <Eigen/Sparse>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/core/Gradient.h"
 #include "drake/math/autodiff.h"
 #include "drake/solvers/optimization.h"

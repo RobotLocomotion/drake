@@ -1,6 +1,7 @@
   #include "drake/systems/plants/RigidBodyTree.h"
 
 #include "drake/common/constants.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
