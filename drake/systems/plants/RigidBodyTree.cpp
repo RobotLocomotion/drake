@@ -401,6 +401,9 @@ void RigidBodyTree::getTerrainContactPoints(
   size_t num_points = 0;
   terrain_points->resize(Eigen::NoChange, 0);
 
+  // Iterates through each collision element in the rigid body. For each
+  // collision element, obtain its contact points with the terrain and add it to
+  // to the matrix pointed to by parameter terrain_points.
   for (auto id_iter = body.get_collision_element_ids().begin();
        id_iter != body.get_collision_element_ids().end(); ++id_iter) {
     Matrix3Xd element_points;

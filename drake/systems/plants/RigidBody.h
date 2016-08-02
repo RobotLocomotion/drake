@@ -242,13 +242,16 @@ class DRAKERBM_EXPORT RigidBody {
       std::vector<DrakeCollision::ElementId>& ids) const;
 
   /**
-   * Returns a matrix of contact points that this rigid body has with its
-   * environment.
+   * Returns the contact points between this rigid body and the environment.
+   * These are the contact points that were saved by
+   * RigidBody::set_contact_points().
    */
   const Eigen::Matrix3Xd& get_contact_points() const;
 
   /**
-   * Saves the contact points that this rigid body has with its environment.
+   * Saves the contact points between this rigid body and the environment.
+   * These contact points can be obtained through
+   * RigidBody::get_contact_points().
    */
   void set_contact_points(const Eigen::Matrix3Xd& contact_points);
 
