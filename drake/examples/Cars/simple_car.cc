@@ -1,6 +1,6 @@
 #include "drake/examples/Cars/simple_car-inl.h"
 
-#include "drake/core/Gradient.h"
+#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 

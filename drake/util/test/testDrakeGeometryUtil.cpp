@@ -4,7 +4,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/eigen_types.h"
-#include "drake/core/Gradient.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
