@@ -167,7 +167,7 @@ class DRAKERBM_EXPORT RigidBody {
       DrakeCollision::ElementId id);
 
   /**
-   * @returns A reference to a `std::vector` of collision elements that
+   * @returns A reference to an `std::vector` of collision elements that
    * represent the collision geometry of this rigid body.
    */
   const std::vector<DrakeCollision::ElementId>& get_collision_element_ids()
