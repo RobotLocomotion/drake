@@ -17,35 +17,71 @@ namespace drake {
 namespace examples {
 namespace cars {
 
+const std::string kDurationFlag = "--duration";
+
+void PrintUsageInstructions(const std::string executable_name) {
+  std::cout
+    << "Usage: " << executable_name
+    << " [vehicle model file] [world model files] "
+    << kDurationFlag << " [duration in seconds]"
+    << std::endl
+    << std::endl
+    << "Where:" << std::endl
+    << "  - [vehicle model file] is the path to the URDF or SDF file defining "
+    << std::endl
+    << "    the vehicle model(s) and are thus attached to the world via "
+    << std::endl
+    << "    DrakeJoint::QUATERNION joints."
+    << std::endl
+    << std::endl
+    << "  - [world model files] is a space-separated list of paths to URDF or "
+    << std::endl
+    << "    SDF files. This list can be of length zero or more. The models "
+    << std::endl
+    << "    within these files connected to the world via DrakeJoint::FIXED "
+    << std::endl
+    << "    joints."
+    << std::endl
+    << std::endl
+    << "  - [duration in seconds] is the number of seconds (floating point) to "
+    << std::endl
+    << "    to run the simulation. This value is in simulation time, which is "
+    << std::endl
+    << "    not necessarily equal to real time."
+    << std::endl;
+}
+
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
                                                        const char* argv[]) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " vehicle_model [world sdf files ...]"
-              << " --duration [duration in seconds]" << std::endl;
+    PrintUsageInstructions(argv[0]);
     exit(EXIT_FAILURE);
   }
 
-  // Instantiates a rigid body system and adds the robot to it.
+  // Instantiates a rigid body system.
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
+
+  // Adds a robot model.
   rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION);
 
-  // Adds the environment to the rigid body tree.
+  // Adds the environment.
   for (int ii = 2; ii < argc; ++ii) {
-    if (std::string(argv[ii]) != "--duration") {
+    if (std::string(argv[ii]) != kDurationFlag) {
       rigid_body_sys->addRobotFromFile(argv[ii], DrakeJoint::FIXED);
     } else {
       ++ii;  // Skips the value immediately after "--duration".
     }
   }
 
-  // If no environment is specified, the following code adds a flat terrain.
+  // Adds a flat terrain if no environment is specified.
   if (argc < 3) {
     const std::shared_ptr<RigidBodyTree>& tree =
         rigid_body_sys->getRigidBodyTree();
     AddFlatTerrain(tree);
   }
 
+  // Sets various simulation parameters.
   SetRigidBodySystemParameters(rigid_body_sys.get());
 
   return rigid_body_sys;
@@ -60,11 +96,12 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys) {
 
 double ParseDuration(int argc, const char* argv[]) {
   for (int ii = 1; ii < argc; ++ii) {
-    if (std::string(argv[ii]) == "--duration") {
+    if (std::string(argv[ii]) == kDurationFlag) {
       if (++ii == argc) {
+        PrintUsageInstructions(argv[0]);
         throw std::runtime_error(
-            "ERROR: Command line option \"--duration\" is not followed by a "
-            "value!");
+            "ERROR: Command line option \"" + kDurationFlag +
+            "\" is not followed by a value!");
       }
       return atof(argv[ii]);
     }

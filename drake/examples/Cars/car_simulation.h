@@ -27,6 +27,12 @@ namespace examples {
 namespace cars {
 
 /**
+ * Prints the usage instructions to std::cout.
+ */
+DRAKECARS_EXPORT
+void PrintUsageInstructions(const std::string executable_name);
+
+/**
  * Parses the command line arguments and creates the rigid body system to be
  * simulated. The command line arguments consists of the vehicle's URDF or SDF
  * model file followed by an arbitrary number of model files representing things
