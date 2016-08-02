@@ -2,8 +2,10 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "inverseKinBackend.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Map;
+using Eigen::MatrixBase;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 using drake::systems::plants::inverseKinTrajBackend;
 
@@ -16,7 +18,7 @@ DRAKEIK_EXPORT void inverseKinTraj(
     RigidBodyConstraint** const constraint_array, const IKoptions& ikoptions_in,
     MatrixBase<DerivedD>* q_sol, MatrixBase<DerivedE>* qdot_sol,
     MatrixBase<DerivedF>* qddot_sol, int* info,
-    vector<string>* infeasible_constraint) {
+    std::vector<std::string>* infeasible_constraint) {
   IKoptions ikoptions = ikoptions_in;
   if (ikoptions.getFixInitialState()) {
     ikoptions.setqd0(qdot0_seed, qdot0_seed);
@@ -35,7 +37,7 @@ template DRAKEIK_EXPORT void inverseKinTraj(
     const IKoptions& ikoptions,
     MatrixBase<Map<MatrixXd>>* q_sol, MatrixBase<Map<MatrixXd>>* qdot_sol,
     MatrixBase<Map<MatrixXd>>* qddot_sol, int* info,
-    vector<string>* infeasible_constraint);
+    std::vector<std::string>* infeasible_constraint);
 template DRAKEIK_EXPORT void inverseKinTraj(
     RigidBodyTree* model, const int nT, const double* t,
     const MatrixBase<VectorXd>& qdot0_seed, const MatrixBase<MatrixXd>& q_seed,
@@ -43,4 +45,4 @@ template DRAKEIK_EXPORT void inverseKinTraj(
     RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions, MatrixBase<MatrixXd>* q_sol,
     MatrixBase<MatrixXd>* qdot_sol, MatrixBase<MatrixXd>* qddot_sol,
-    int* info, vector<string>* infeasible_constraint);
+    int* info, std::vector<std::string>* infeasible_constraint);
