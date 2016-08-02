@@ -475,7 +475,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
 
   void getTerrainContactPoints(const RigidBody& body,
-                               Eigen::Matrix3Xd& terrain_points) const;
+                               Eigen::Matrix3Xd* terrain_points) const;
 
   bool collisionRaycast(const KinematicsCache<double>& cache,
                         const Eigen::Matrix3Xd& origins,

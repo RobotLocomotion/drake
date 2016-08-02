@@ -221,7 +221,9 @@ void RigidBodyTree::compile(void) {
 
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    getTerrainContactPoints(body, body.contact_pts);
+    Eigen::Matrix3Xd contact_points;
+    getTerrainContactPoints(body, &contact_points);
+    body.set_contact_points(contact_points);
   }
 
   initialized_ = true;
@@ -390,18 +392,18 @@ void RigidBodyTree::updateDynamicCollisionElements(
 }
 
 void RigidBodyTree::getTerrainContactPoints(
-    const RigidBody& body, Eigen::Matrix3Xd& terrain_points) const {
+    const RigidBody& body, Eigen::Matrix3Xd* terrain_points) const {
   // clear matrix before filling it again
   size_t num_points = 0;
-  terrain_points.resize(Eigen::NoChange, 0);
+  terrain_points->resize(Eigen::NoChange, 0);
 
   for (auto id_iter = body.get_collision_element_ids().begin();
        id_iter != body.get_collision_element_ids().end(); ++id_iter) {
     Matrix3Xd element_points;
     collision_model->getTerrainContactPoints(*id_iter, element_points);
-    terrain_points.conservativeResize(
-        Eigen::NoChange, terrain_points.cols() + element_points.cols());
-    terrain_points.block(0, num_points, terrain_points.rows(),
+    terrain_points->conservativeResize(
+        Eigen::NoChange, terrain_points->cols() + element_points.cols());
+    terrain_points->block(0, num_points, terrain_points->rows(),
                          element_points.cols()) = element_points;
     num_points += element_points.cols();
   }
@@ -1000,7 +1002,7 @@ int RigidBodyTree::getNumContacts(const set<int>& body_idx) const {
       bi = i;
     else
       bi = *iter++;
-    n += bodies[bi]->contact_pts.cols();
+    n += bodies[bi]->get_contact_points().cols();
   }
   return static_cast<int>(n);
 }
