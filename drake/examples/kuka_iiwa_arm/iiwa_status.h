@@ -4,12 +4,13 @@
 
 #include <Eigen/Core>
 
-#include "drake/systems/LCMSystem.h"
 #include "lcmtypes/drake/lcmt_iiwa_status.hpp"
+#include "drake/systems/LCMSystem.h"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
+
 
 /// This class holds various information about the joint positions of
 /// the IIWA robot (intended for use as a state vector to pass into
@@ -87,6 +88,7 @@ bool decode(const drake::lcmt_iiwa_status& msg,
   wrap.set_value(new_value);
   return true;
 }
+
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
