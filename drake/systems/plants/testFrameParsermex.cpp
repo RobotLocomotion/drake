@@ -27,8 +27,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
 
   for (size_t x = 0; x < model->frames.size(); x++) {
-    double err = (model->frames[x]->transform_to_body.matrix() -
-                  cpp_model.frames[x]->transform_to_body.matrix()).norm();
+    double err = (model->frames[x]->get_transform_to_body().matrix() -
+                  cpp_model.frames[x]->get_transform_to_body().matrix()).norm();
 
     if (err > FRAME_PARSER_EPSILON) {
       mexErrMsgIdAndTxt(
@@ -36,7 +36,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
           "The homogeneous frame transformation matrix did not match");
     }
 
-    if (model->frames[x]->name.compare(cpp_model.frames[x]->name) != 0) {
+    if (model->frames[x]->get_name().compare(cpp_model.frames[x]->get_name())
+        != 0) {
       mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameNameMismatch",
                         "The frame name did not match");
     }

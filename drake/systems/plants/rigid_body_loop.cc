@@ -7,9 +7,11 @@ RigidBodyLoop::RigidBodyLoop(std::shared_ptr<RigidBodyFrame> frameA,
 
 std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj) {
   os << "loop connects pt "
-     << obj.frameA_->transform_to_body.matrix().topRightCorner(3, 1).transpose()
-     << " on " << obj.frameA_->body->get_name() << " to pt "
-     << obj.frameB_->transform_to_body.matrix().topRightCorner(3, 1).transpose()
-     << " on " << obj.frameB_->body->get_name() << std::endl;
+     << obj.frameA_->get_transform_to_body().matrix().topRightCorner(3, 1)
+         .transpose()
+     << " on " << obj.frameA_->get_rigid_body().get_name() << " to pt "
+     << obj.frameB_->get_transform_to_body().matrix().topRightCorner(3, 1)
+         .transpose()
+     << " on " << obj.frameB_->get_rigid_body().get_name() << std::endl;
   return os;
 }

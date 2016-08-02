@@ -8,7 +8,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
-#include "drake/solvers/fastQP.h"
+#include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -577,7 +577,7 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
   }
 
   for (auto it = robot.frames.begin(); it != robot.frames.end(); ++it) {
-    id_map[(*it)->name] = -(it - robot.frames.begin()) - 2;
+    id_map[(*it)->get_name()] = -(it - robot.frames.begin()) - 2;
   }
   return id_map;
 }

@@ -47,7 +47,7 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
             numSegments = numel(segments);
             xtrajs = cell(1, numSegments);
             utrajs = cell(1, numSegments);
-            numStates = numel(obj.robot.getStateFrame.coordinates);
+            numStates = obj.robot.getNumStates();
             tmp = zeros(numStates, 1);
             for i = 1:numSegments
                 segmentKnots = segments{i};
@@ -128,7 +128,7 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
         end
         
         function prog = addWaypointConstraints(obj, prog)
-            numStates = numel(obj.robot.getStateFrame.coordinates);
+            numStates = obj.robot.getNumStates();
             for i = 1:numel(obj.waypoints)
                 xm_lb = -inf(numStates, 1);
                 xm_ub  = inf(numStates, 1);
@@ -142,7 +142,7 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
         function prog = addSequentialCompositionConstraints(obj, prog)
             
             numConstraints = numel(obj.nonCyclicIdx);
-            numStates = numel(obj.robot.getStateFrame.coordinates);
+            numStates = obj.robot.getNumStates();
             
             A = zeros(numConstraints, 2 * numStates);
             for i = 1:numConstraints

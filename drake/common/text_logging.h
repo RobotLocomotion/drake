@@ -58,8 +58,10 @@ namespace logging {
 
 /// A stubbed-out version of `spdlog::logger`.  Implements only those methods
 /// that we expect to use, as spdlog's API does change from time to time.
-class logger {
+class DRAKECOMMON_EXPORT logger {
  public:
+  logger();
+
   logger(const logger&) = delete;
   logger& operator=(const logger&) = delete;
 

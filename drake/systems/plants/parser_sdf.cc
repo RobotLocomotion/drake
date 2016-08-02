@@ -713,8 +713,9 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
 
     // Implements dual-offset: one from model root to model world, another
     // from model world to Drake's world.
-    weld_to_frame->transform_to_body =
-        weld_to_frame->transform_to_body * transform_model_root_to_model_world;
+    weld_to_frame->set_transform_to_body(
+        weld_to_frame->get_transform_to_body() *
+            transform_model_root_to_model_world);
   }
 
   // TODO(liang.fok) Add pointers to this joint to the model instance.

@@ -2,7 +2,7 @@ pods_find_pkg_config(gurobi)
 
 if(gurobi_FOUND)
 
-  add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES QP.cpp)
+  add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES qp.cc)
   pods_use_pkg_config_packages(drakeQP gurobi)
 
   if(MATLAB_FOUND)
@@ -13,7 +13,7 @@ if(gurobi_FOUND)
   endif()
 
   pods_install_libraries(drakeQP)
-  drake_install_headers(fastQP.h gurobiQP.h)
+  drake_install_headers(fast_qp.h gurobi_qp.h)
   pods_install_pkg_config_file(drake-qp
     LIBS -ldrakeQP
     REQUIRES gurobi
@@ -26,32 +26,33 @@ if(MATLAB_FOUND)
 endif()
 
 set(optimization_files)
-list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp
+list(APPEND optimization_files
+  mathematical_program.cc moby_lcp_solver.cc
   system_identification.cpp linear_system_solver.cc
   equality_constrained_qp_solver.cc)
 pods_find_pkg_config(ipopt)
 if (ipopt_FOUND)
- list(APPEND optimization_files IpoptSolver.cpp)
+ list(APPEND optimization_files ipopt_solver.cc)
 else()
-  list(APPEND optimization_files NoIpopt.cpp)
+  list(APPEND optimization_files no_ipopt.cc)
 endif(ipopt_FOUND)
 pods_find_pkg_config(nlopt)
 if(nlopt_FOUND)
-  list(APPEND optimization_files NloptSolver.cpp)
+  list(APPEND optimization_files nlopt_solver.cc)
 else()
-  list(APPEND optimization_files NoNlopt.cpp)
+  list(APPEND optimization_files no_nlopt.cc)
 endif()
 pods_find_pkg_config(snopt_c)
 if(snopt_c_FOUND)
-  list(APPEND optimization_files SnoptSolver.cpp)
+  list(APPEND optimization_files snopt_solver.cc)
 else()
-  list(APPEND optimization_files NoSnopt.cpp)
+  list(APPEND optimization_files no_snopt.cc)
 endif()
 pods_find_pkg_config(mosek)
 if(mosek_FOUND)
-  list(APPEND optimization_files MosekSolver.cpp MosekWrapper.cpp)
+  list(APPEND optimization_files mosek_solver.cc mosek_wrapper.cc)
 else()
-  list(APPEND optimization_files NoMosek.cpp)
+  list(APPEND optimization_files no_mosek.cc)
 endif()
 if(gurobi_FOUND)
   list(APPEND optimization_files gurobi_solver.cc)
@@ -62,7 +63,15 @@ endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakePolynomial)
-drake_install_headers(decision_variable.h MathematicalProgram.h Optimization.h system_identification.h Constraint.h solution_result.h)
+drake_install_headers(
+  constraint.h
+  Function.h
+  mathematical_program.h
+  optimization.h
+  decision_variable.h
+  solution_result.h
+  system_identification.h
+  )
 pods_install_libraries(drakeOptimization)
 pods_install_pkg_config_file(drake-optimization
   LIBS -ldrakeOptimization
