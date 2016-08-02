@@ -371,6 +371,9 @@ void inverseKinTrajBackend(
   OptimizationProblem prog;
   SetIKSolverOptions(ikoptions, &prog);
 
+  // Create our decision variables.  "q" represents all positions of
+  // the model at each timestep in nT.  "qdot0" and "qdotf" are qdot
+  // at the initial and final timestep.
   DecisionVariableView q = prog.AddContinuousVariables(nT * nq, "q");
   DecisionVariableView qdot0 = prog.AddContinuousVariables(nq, "qdot0");
   DecisionVariableView qdotf = prog.AddContinuousVariables(nq, "qdotf");
@@ -401,6 +404,9 @@ void inverseKinTrajBackend(
   q_initial_guess.resize(nq * nT, 1);
   prog.SetInitialGuess(q, q_initial_guess);
 
+  // Apply the appropriate bounding box to qdot0.  If the initial
+  // state is fixed, set the bounding box to be the same as the
+  // initial guess.
   VectorXd qd0_lb(nq);
   VectorXd qd0_ub(nq);
   ikoptions.getqd0(qd0_lb, qd0_ub);
@@ -412,11 +418,11 @@ void inverseKinTrajBackend(
   }
   prog.SetInitialGuess(qdot0, qd0_seed);
 
+  // Bound qdotf and set our initial guess.
   VectorXd qdf_lb(nq);
   VectorXd qdf_ub(nq);
   ikoptions.getqdf(qdf_lb, qdf_ub);
   VectorXd qdf_seed = (qdf_lb + qdf_ub) / 2;
-
   prog.AddBoundingBoxConstraint(qdf_lb, qdf_ub, {qdotf});
   prog.SetInitialGuess(qdotf, qdf_seed);
 
@@ -435,6 +441,11 @@ void inverseKinTrajBackend(
     qstart_idx = 1;
   }
 
+  // Iterate over all of our constraints, and add them to our
+  // OptimizationProblem.  For single time constraints, we add
+  // multiple constraints for each timestep when the constraint is
+  // valid, using the subset of the "q" decision variable representing
+  // the state at that time.
   for (int i = 0; i < num_constraints; i++) {
     RigidBodyConstraint* constraint = constraint_array[i];
     const int constraint_category = constraint->getCategory();
@@ -499,6 +510,7 @@ void inverseKinTrajBackend(
     }
   }
 
+  // Build an additional constraint to handle the "inbetween" samples (if present).
   std::shared_ptr<drake::solvers::Constraint> inbetween_constraint =
       std::make_shared<IKInbetweenConstraint>(
           model, helper, num_constraints, constraint_array);
@@ -509,6 +521,7 @@ void inverseKinTrajBackend(
   const SolutionResult result = prog.Solve();
   *INFO = GetIKSolverInfo(prog, result);
 
+  // Populate the output arguments.
   const auto q_value = q.value();
   q_sol->resize(nq, nT);
   for (int i = 0; i < nT; i++) {

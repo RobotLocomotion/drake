@@ -41,6 +41,8 @@ void inverseKinBackend(RigidBodyTree *model, const int nT,
                        Eigen::MatrixBase<DerivedC>* q_sol, int *INFO,
                        std::vector<std::string>* infeasible_constraint);
 
+/// This function is primarily documented through RigidBodyIK.h.  All
+/// parameters are passthroughs from inverseKinTraj().
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
 void inverseKinTrajBackend(
