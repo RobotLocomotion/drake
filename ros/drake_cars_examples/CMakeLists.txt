@@ -41,3 +41,16 @@ target_link_libraries(single_car_in_stata_garage
   drakeJoints
   drakeRigidBodyConstraint
   lcm)
+
+add_executable(multi_car_on_plane src/multi_car_on_plane.cc)
+target_link_libraries(multi_car_on_plane
+  ${catkin_LIBRARIES}
+  drakeCars
+  drakeCommon
+  drakeRBM
+  drakeRBSystem
+  drakeLCMSystem
+  drakeShapes
+  drakeJoints
+  drakeRigidBodyConstraint
+  lcm)

@@ -29,11 +29,38 @@ using drake::examples::cars::CreateRigidBodySystem;
 using drake::examples::cars::CreateVehicleSystem;
 using drake::examples::cars::GetCarSimulationDefaultOptions;
 
-/** Driving Simulator
- * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
+
+// Returns a string parameter from the ROS parameter server. It waits up to 5
+// seconds for the parameter to exist, after which it aborts by throwing a
+// std::runtime_error exception.
+std::string GetStringParameter(const std::string& parameter_name) {
+  // Waits for the parameter to exist on the ROS parameter server.
+  const double kMaxWaitTime = 5.0;
+  ::ros::NodeHandle ros_node_handle;
+
+  ::ros::Time begin_time = ::ros::Time::now();
+  while (::ros::ok() && !ros_node_handle.hasParam(parameter_name)
+      && (::ros::Time::now() - begin_time).toSec() < kMaxWaitTime) {
+    ::ros::Duration(0.5).sleep(); // Sleeps for half a second.
+  }
+
+  // Obtains the parameter from the ROS parameter server.
+  std::string parameter;
+  if (!ros_node_handle.getParam(parameter_name, parameter)) {
+    throw std::runtime_error(
+      "ERROR: Failed to obtain parameter \"" + parameter_name + "\" from "
+      "the ROS parameter server. Please ensure such a parameter is loaded.");
+  }
+
+  return parameter;
+}
+
+/**
+ * This is the main method of the multi-car vehicle simulation. The vehicles
+ * reside on a flat terrain.
  */
-int do_main(int argc, const char* argv[]) {
-  ::ros::init(argc, const_cast<char**>(argv), "single_car_in_stata_garage");
+int DoMain(int argc, const char* argv[]) {
+  ::ros::init(argc, const_cast<char**>(argv), "multi_car_on_plane");
 
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
@@ -43,7 +70,14 @@ int do_main(int argc, const char* argv[]) {
   double duration = std::numeric_limits<double>::infinity();
 
   // Initializes the rigid body system.
-  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration);
+  auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
+      Eigen::aligned_allocator<RigidBodySystem>());
+
+  // Obtains the vehicle models and adds them to the rigid body system.
+
+
+  rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION);
+
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
   // Initializes and cascades all of the other systems.
@@ -103,5 +137,5 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::ros::cars::do_main(argc, argv);
+  return drake::ros::cars::DoMain(argc, argv);
 }
