@@ -139,7 +139,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   SolutionResult OptimizeTask(const std::string& maxormin,
                               const std::string& ptype);
 
-  MSKint32t numvar_, numcon_;
+  MSKint32t numvar_, numcon_, numbarvar_;  // NOTE: numbarvar only used for sdp.
   MSKenv_t env_;       // Internal environment, used to check if problem formed
                       // correctly
   MSKtask_t task_;     // internal definition of task

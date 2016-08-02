@@ -32,6 +32,7 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     const std::vector<int>& sdp_cone_subscripts)
       : numvar_(static_cast<MSKint32t>(num_variables)),
         numcon_(static_cast<MSKint32t>(num_constraints)),
+        numbarvar_(static_cast<MSKint32t>(num_variables*(num_variables+1)/2))
         env_(NULL), task_(NULL), solutions_(std::vector<double>()) {
   r_ = MSK_makeenv(&env_, NULL);
   if (r_ == MSK_RES_OK) {
@@ -90,7 +91,8 @@ void MosekWrapper::AppendCone(const std::vector<int>& sdp_cone_subscripts) {
 }
 
 void MosekWrapper::AddSDPObjectives(const QuadraticConstraint& sdp_objective) {
-  MSKint64t idx;  // idx is assigned to a specific sparse symmetric matrix by Mosek.
+  MSKint64t idx;  // idx is assigned to a specific sparse symmetric matrix by
+                  // Mosek.
   double falpha = 1.0;  // Used for weighting variables
   // TODO(alexdunyak): Make the weight actually affect something, the docs are
   // very unhelpful.
@@ -326,17 +328,6 @@ std::vector<MSKboundkeye> MosekWrapper::FindMosekBounds(
 
 
 SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
-  // Check that the problem type is supported.
-  if (!prog.GetSolverOptionsStr("Mosek").empty()) {
-    if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("linear")
-            == std::string::npos &&
-        prog.GetSolverOptionsStr("Mosek").at("problemtype").find("quadratic")
-            == std::string::npos) {
-      return kUnknownError;  // Not a linear or quadratic optimization
-    }
-  } else {
-      return kUnknownError;
-  }
   Eigen::MatrixXd linear_cons;
   Eigen::MatrixXd quad_cons;
   std::vector<double> upper_constraint_bounds;
@@ -492,22 +483,99 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
         (*quad_obj_ptr).b().rows() * (*quad_obj_ptr).b().cols());
     totalconnum = 1;  // Defined for object declaration below.
     MosekWrapper opt(prog.num_vars(),
-            totalconnum,
-            linobj,
-            linear_cons,
-            mosek_constraint_bounds,
-            upper_constraint_bounds,
-            lower_constraint_bounds,
-            mosek_variable_bounds,
-            upper_variable_bounds,
-            lower_variable_bounds,
-            constant_eqn_term,
-            quad_obj,
-            quad_cons);
+                     totalconnum,
+                     linobj,
+                     linear_cons,
+                     mosek_constraint_bounds,
+                     upper_constraint_bounds,
+                     lower_constraint_bounds,
+                     mosek_variable_bounds,
+                     upper_variable_bounds,
+                     lower_variable_bounds,
+                     constant_eqn_term,
+                     quad_obj,
+                     quad_cons
+                     QuadraticConstraint()
+                     std::vector<QuadraticConstraint>(),
+                     std::vector<int>();
 
     std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
     std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
     SolutionResult s = opt.OptimizeTask(mom, ptype);
+    prog.SetDecisionVariableValues(opt.GetEigenVectorSolutions());
+    return s;
+  } else if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("sdp")
+      != std::string::npos) {
+    /* SDP STUFF HERE */
+    // SDP constraints and objectives aren't implemented in Optimization.h or
+    // Constraint.h yet, so we have to use quadratic constraints (which contain
+    // all the needed parts: a (assumed to be symmetric) matrix, and a linear
+    // component.
+    // For now assume a single quadratic constraint.
+    /* TODO(alexdunyak): Add support for SDP constraints to Constraint.h and
+    *  OptimizationProblem, including getters and setters. When those are in
+    *  place, change QuadraticConstraint to SDPConstraint below where relevant.
+    */
+
+    // As before, assume there is one objective.
+    DRAKE_ASSERT(prog.quadratic_costs().size() == 1);
+    QuadraticConstraint sdp_objective =
+        *(prog.quadratic_costs().front().constraint());
+    std::vector<QuadraticConstraint> sdp_constraints;
+    totalconnum = prog.generic_constraints().size();
+    for (const auto& sdp_con : prog.generic_constraints()) {
+      QuadraticConstraint *sdp_con_ptr = dynamic_cast<QuadraticConstraint *>(
+          sdp_con.constraint().get());
+      sdp_constraints.push_back(*sdp_con_ptr);
+      upper_constraint_bounds.push_back(sdp_con_ptr->upper_bound()(0));
+      lower_constraint_bounds.push_back(sdp_con_ptr->lower_bound()(0));
+    }
+    mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
+                                              lower_constraint_bounds);
+    // Create empty variables to push to the constructor,
+    // create the object and optimize.
+    std::vector<double> linobj;
+    Eigen::MatrixXd linear_cons;
+    Eigen::MatrixXd quad_obj;
+    double constant_eqn_term;
+    std::vector<int> sdp_cone_subscripts;
+    if (prog.GetSolverOptionsDouble("Mosek").count("quadraticconstant")
+         == 0) {
+      constant_eqn_term = 0;
+    } else {
+      constant_eqn_term = prog.GetSolverOptionsDouble("Mosek").at(
+          "quadraticconstant");
+    }
+    if (prog.GetSolverOptionsInt("Mosek").count("conesubscript") != 0) {
+      sdp_cone_subscripts.push_back(
+          prog.GetSolverOptionsInt("Mosek").at("conesubscript"));
+      for (int k = 0; k < prog.num_vars(); k++) {
+        if (sdp_cone_subscripts[0] != k)
+          sdp_cone_subscripts.push_back(k);
+      }
+    }
+    MosekWrapper opt(prog.num_vars(),
+                     totalconnum,
+                     linobj,
+                     linear_cons,
+                     mosek_constraint_bounds,
+                     upper_constraint_bounds,
+                     lower_constraint_bounds,
+                     mosek_variable_bounds,
+                     upper_variable_bounds,
+                     lower_variable_bounds,
+                     constant_eqn_term,
+                     quad_obj,
+                     quad_cons,
+                     sdp_objective,
+                     sdp_constraints,
+                     sdp_cone_subscripts);
+
+    std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
+    std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
+    SolutionResult s = opt.OptimizeTask(mom, ptype);
+    // Add decision variables to hold bar variables.
+    prog.AddContinuousVariables(prog.num_vars()*(prog.num_vars()+1)/2);
     prog.SetDecisionVariableValues(opt.GetEigenVectorSolutions());
     return s;
   }
@@ -518,7 +586,8 @@ SolutionResult MosekWrapper::OptimizeTask(const std::string& maxormin,
                                           const std::string& ptype) {
   solutions_.clear();
   MSKsoltypee problemtype = MSK_SOL_BAS;
-  if (ptype.find("quadratic") != std::string::npos)
+  if (ptype.find("quadratic") != std::string::npos ||
+      ptype.find("sdp") != std::string::npos)
     problemtype = MSK_SOL_ITR;
   else if (ptype.find("linear") != std::string::npos)
     problemtype = MSK_SOL_BAS;
@@ -539,11 +608,17 @@ SolutionResult MosekWrapper::OptimizeTask(const std::string& maxormin,
           case MSK_SOL_STA_OPTIMAL:
           case MSK_SOL_STA_NEAR_OPTIMAL: {
             std::unique_ptr<double[]> xx(new double[numvar_]);
+            std::unique_ptr<double[]> barx(new double[numbarvar_]);
             if (xx) {
               /* Request the basic solution. */
               MSK_getxx(task_, problemtype, xx.get());
+              if (ptype.find("sdp") != std::string::npos)
+                MSK_getbarxj(task_, MSK_SOL_ITR, 0, barx);
               for (int j = 0; j < numvar_; ++j) {
                 solutions_.push_back(xx[j]);
+              }
+              for (int j = 0; j < numbarvar_; ++j) {
+                solutions_.push_back(barx[j]);
               }
               return kSolutionFound;
             } else {
