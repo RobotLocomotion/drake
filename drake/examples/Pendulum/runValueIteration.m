@@ -11,6 +11,7 @@ ubins = linspace(-ulimit,ulimit,9);
 mdp = MarkovDecisionProcess.discretizeSystem(plant,cost,xbins,ubins,options);
 
 function drawfun(J,PI)
+  sfigure(2);
   clf;
   n1=length(xbins{1});
   n2=length(xbins{2});
