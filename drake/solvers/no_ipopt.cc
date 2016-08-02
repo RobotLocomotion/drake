@@ -1,5 +1,5 @@
 
-#include "drake/solvers/IpoptSolver.h"
+#include "drake/solvers/ipopt_solver.h"
 
 #include <stdexcept>
 

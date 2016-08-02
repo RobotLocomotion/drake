@@ -16,7 +16,7 @@ Panels:
         - /TF1/Frames1
         - /WorldModel1
       Splitter Ratio: 0.631791
-    Tree Height: 1401
+    Tree Height: 1093
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -148,8 +148,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.527121
-        Min Value: 0.469718
+        Max Value: 0.52741
+        Min Value: 0.469586
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -178,8 +178,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 1.42044
-        Min Value: -0.00809033
+        Max Value: 1.42027
+        Min Value: -0.00832754
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -208,8 +208,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.510609
-        Min Value: 0.431049
+        Max Value: 0.510779
+        Min Value: 0.430399
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -238,8 +238,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.50296
-        Min Value: 0.431042
+        Max Value: 0.502356
+        Min Value: 0.43039
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -288,7 +288,17 @@ Visualization Manager:
           Value: true
         front_laser:
           Value: true
+        front_lidar:
+          Value: true
         front_lidar_link:
+          Value: true
+        front_top_lidar:
+          Value: true
+        golfcartdj/base_link:
+          Value: true
+        golfcartdj/map:
+          Value: true
+        golfcartdj/odom:
           Value: true
         ground:
           Value: true
@@ -306,9 +316,13 @@ Visualization Manager:
           Value: true
         rear_left_laser:
           Value: true
+        rear_left_lidar:
+          Value: true
         rear_left_lidar_link:
           Value: true
         rear_right_laser:
+          Value: true
+        rear_right_lidar:
           Value: true
         rear_right_lidar_link:
           Value: true
@@ -379,6 +393,17 @@ Visualization Manager:
             top_lidar_link:
               top_laser:
                 {}
+          golfcartdj/map:
+            golfcartdj/odom:
+              golfcartdj/base_link:
+                front_lidar:
+                  {}
+                front_top_lidar:
+                  {}
+                rear_left_lidar:
+                  {}
+                rear_right_lidar:
+                  {}
           ground:
             outer_wall:
               stairs_groundFrameB:
@@ -447,30 +472,30 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 183.292
+      Distance: 66.7521
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 9.03132
-        Y: -44.9856
-        Z: -11.4816
+        X: 0.856056
+        Y: -20.837
+        Z: -5.01399
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.784797
+      Pitch: 0.574797
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 6.21875
+      Yaw: 5.57875
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1722
+  Height: 1388
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000023800000619fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000619000000ee00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000ca00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000a1e0000004cfc0100000002fb0000000800540069006d0065010000000000000a1e0000042500fffffffb0000000800540069006d00650100000000000004500000000000000000000007e00000061900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd000000040000000000000238000004d4fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000004d4000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000a1e0000004cfc0100000002fb0000000800540069006d0065010000000000000a1e000002f600fffffffb0000000800540069006d00650100000000000004500000000000000000000007e0000004d400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -480,5 +505,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 2590
-  X: 230
-  Y: 21
+  X: 220
+  Y: 14

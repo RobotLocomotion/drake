@@ -6,7 +6,7 @@
 
 #include <drake/drakeDynamicConstraint_export.h>
 #include <drake/core/Gradient.h>
-#include <drake/solvers/Constraint.h>
+#include <drake/solvers/constraint.h>
 #include <drake/systems/System.h>
 
 namespace drake {
