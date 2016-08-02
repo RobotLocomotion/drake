@@ -22,43 +22,30 @@ const char kDurationFlag[] = "--duration";
 void PrintUsageInstructions(const std::string& executable_name) {
   std::cout
     << "Usage: " << executable_name
-    << " [vehicle model file] [world model files] "
-    << kDurationFlag << " [duration in seconds]"
+    << " vehicle_model_file [world_model_files] ["
+    << kDurationFlag << " duration_in_seconds]"
     << std::endl
     << std::endl
     << "Where:" << std::endl
-    << "  - [vehicle model file] is the path to the URDF or SDF file defining"
+    << "  - vehicle_model_file is the path to the URDF or SDF file defining"
     << std::endl
     << "    the vehicle model(s) and are thus attached to the world via"
     << std::endl
-    << "    DrakeJoint::QUATERNION joints. This command line argument is"
-    << std::endl
-    << "    required."
+    << "    DrakeJoint::QUATERNION joints."
     << std::endl
     << std::endl
-    << "  - [world model files] is a space-separated list of paths to URDF or"
+    << "  - world_model_files is a space-separated list of paths to URDF or"
     << std::endl
     << "    SDF files. This list can be of length zero or more. The models"
     << std::endl
     << "    within these files are connected to the world via DrakeJoint::FIXED"
     << std::endl
-    << "    joints. Since this list can have a length of zero, it is an"
-    << std::endl
-    << "    optional set of command line arguments."
+    << "    joints."
     << std::endl
     << std::endl
-    << "  - [duration in seconds] is the number of seconds (floating point) to"
+    << "  - duration_in_seconds is the number of seconds (floating point) to"
     << std::endl
-    << "    to run the simulation. This value is in simulation time, which is"
-    << std::endl
-    << "    not necessarily equal to real time. It is an optional argument that"
-    << std::endl
-    << "    follows an optional \"" << std::string(kDurationFlag) << "\" flag "
-       "and be at the very end of"
-    << std::endl
-    << "    the command line argument list. If this flag and its argument are"
-    << std::endl
-    << "    not present, the duration is set to be infinity."
+    << "    to run the simulation. This value is in simulation time."
     << std::endl;
 }
 
