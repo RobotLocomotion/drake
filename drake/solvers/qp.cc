@@ -1,11 +1,11 @@
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
-#include "drake/solvers/fastQP.h"
-#include "drake/solvers/gurobiQP.h"
+#include "drake/solvers/fast_qp.h"
+#include "drake/solvers/gurobi_qp.h"
 
 #define MAX_CONSTRS 1000
 #define MAX_STATE 1000

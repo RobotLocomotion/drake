@@ -1,12 +1,12 @@
-#include "drake/solvers/Optimization.h"
-#include "drake/solvers/SnoptSolver.h"
+#include "drake/solvers/optimization.h"
+#include "drake/solvers/snopt_solver.h"
 
 #include "qp_controller.h"
 
 using namespace drake::solvers;
 
 // TODO(siyuan.feng@tri.global): some version of this should go to
-// Optimization.h
+// optimization.h
 static VectorXd VariableList2VectorXd(VariableList const& vlist) {
   size_t dim = 0;
   for (auto var : vlist) {

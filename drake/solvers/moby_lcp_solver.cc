@@ -1,7 +1,7 @@
 // Adapted with permission from code by Evan Drumwright
 // (https://github.com/edrumwri).
 
-#include "MobyLCP.h"
+#include "moby_lcp_solver.h"
 
 #include <Eigen/LU>
 #include <Eigen/SparseCore>
@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "Optimization.h"
+#include "optimization.h"
 
 namespace drake {
 namespace solvers {
