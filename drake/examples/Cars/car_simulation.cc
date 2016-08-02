@@ -70,7 +70,9 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
     if (std::string(argv[ii]) != kDurationFlag) {
       rigid_body_sys->addRobotFromFile(argv[ii], DrakeJoint::FIXED);
     } else {
-      ++ii;  // Skips the value immediately after "--duration".
+      // The duration flag must be the penultimate argument. Thus, we can ignore
+      // the rest of the arguments and break out of the enclosing for loop.
+      break;
     }
   }
 
