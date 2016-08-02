@@ -63,7 +63,8 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     AddSDPConstraints(sdp_constraints);
   AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
       lower_variable_bounds);
-  AddLinearConstraintMatrix(linear_cons);
+  if (!linear_cons.isZero())
+    AddLinearConstraintMatrix(linear_cons);
   AddLinearConstraintBounds(mosek_constraint_bounds, upper_constraint_bounds,
       lower_constraint_bounds);
   if (!sdp_constraints.empty())
@@ -89,7 +90,7 @@ void MosekWrapper::AppendCone(const std::vector<int>& sdp_cone_subscripts) {
 }
 
 void MosekWrapper::AddSDPObjectives(const QuadraticConstraint& sdp_objective) {
-  int idx;  // idx is assigned to a specific sparse symmetric matrix by Mosek.
+  MSKint64t idx;  // idx is assigned to a specific sparse symmetric matrix by Mosek.
   double falpha = 1.0;  // Used for weighting variables
   // TODO(alexdunyak): Make the weight actually affect something, the docs are
   // very unhelpful.
@@ -125,7 +126,79 @@ void MosekWrapper::AddSDPObjectives(const QuadraticConstraint& sdp_objective) {
 
 void MosekWrapper::AddSDPConstraints(
     const std::vector<QuadraticConstraint>& sdp_constraints) {
-
+  Eigen::MatrixXd linear_cons(numcon_, numvar_);
+  // The linear terms are constructed by creating a matrix of all linear terms
+  // and adding that row by row to Mosek.
+  // See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
+  for (const auto& con : sdp_constraints) {
+    linear_cons << con.b();
+  }
+  // Now convert the linear constraints into sparse column matrix.
+  std::vector<MSKint32t> aptrb;
+  std::vector<MSKint32t> aptre;
+  std::vector<MSKint32t> asub;
+  std::vector<double> aval;
+  int j = 0;
+  for (j = 0; j < sparsecons.cols(); j++)
+    aptrb.push_back((MSKint32t) sparsecons.outerIndexPtr()[j]);
+  for (j = 0; j < sparsecons.cols(); j++)
+    aptre.push_back((MSKint32t) sparsecons.outerIndexPtr()[j+1]);
+  for (j = 0; j < sparsecons.nonZeros(); j++)
+    asub.push_back((MSKint32t) sparsecons.innerIndexPtr()[j]);
+  for (j = 0; j < sparsecons.nonZeros(); j++)
+    aval.push_back(sparsecons.valuePtr()[j]);
+  // Now that the sparse format used by Mosek has been found, add it to Mosek
+  // by row.
+  for (j = 0; j < sdp_constraints.size(); j++) {
+    if (r_ == MSK_RES_OK)
+      r_ = MSK_putarow(task_,
+                       j,
+                       aptre[j] - aptrb[j],
+                       &asub[0] + aptrb[j],
+                       &aval[0] + aptrb[j]);
+  }
+  int currentnonzero;
+  std::vector<int> constraintnonzero;
+  for (int k = 0; k < sdp_constraints.size(); k++) {
+    const Eigen::MatrixXd& matrixterm = sdp_constraints[k].Q();
+    std::vector<MSKint32t> bar_i, bar_j;
+    std::vector<double> bar_value;
+    // Expect that each matrix is of the same dimensions and is square.
+    DRAKE_ASSERT(matrixterm.rows() == matrixterm.cols());
+    if (k >= 1)
+      DRAKE_ASSERT(sdp_constraints[k-1].rows() == matrixterm.rows());
+    for (int i = 0; i < matrixterm.rows(); i++) {
+      for (j = 0; j <= i; j++) {
+        // Only iterate over the lower triangle.
+        if (matrixterm(i, j) != 0) {
+          bar_i.push_back(static_cast<MSKint32t>(i));
+          bar_j.push_back(static_cast<MSKint32t>(j));
+          bar_value.push_back(matrixterm(i, j));
+          ++currentnonzero;
+        }
+      }
+    }
+    constraintnonzero.push_back(currentnonzero);
+  }
+  int matrixdim = sdp_constraints[0].Q().rows();
+  MSKint32t previousentries = 0;
+  MSKint64t idx;
+  double falpha = 1.0;
+  // Now that the relevant arrays are in memory, add each constraint to Mosek.
+  for (int k = 0; k < sdp_constraints.size(); k++) {
+    if (r_ == MSK_RES_OK) {
+      r_ = MSK_appendsparsesymmat(task_,
+                                  static_cast<MSKint32t>(matrixdim),
+                                  static_cast<MSKint32t>(constraintnonzero[k]),
+                                  &bar_i[0] + previousentries,
+                                  &bar_j[0] + previousentries,
+                                  &bar_value[0] + previousentries,
+                                  &idx);
+    }
+    if (r_ == MSK_RES_OK) {
+      r_ = MSK_putbaraij(task_, k, 0, 1, &idx, &falpha);
+    }
+  }
 }
 
 void MosekWrapper::AddQuadraticObjective(
