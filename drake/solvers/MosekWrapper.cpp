@@ -27,8 +27,8 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     double constant_eqn_term,
     const Eigen::MatrixXd& quad_objective,
     const Eigen::MatrixXd& quad_cons,
-    const std::vector<Eigen::MatrixXd>& sdp_objectives,
-    const std::vector<Eigen::MatrixXd>& sdp_constraints,
+    const QuadraticConstraint& sdp_objective,
+    const std::vector<QuadraticConstraint>& sdp_constraints,
     const std::vector<int>& sdp_cone_subscripts)
       : numvar_(static_cast<MSKint32t>(num_variables)),
         numcon_(static_cast<MSKint32t>(num_constraints)),
@@ -58,7 +58,7 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
   if (!quad_cons.isZero())
     AddQuadraticConstraintMatrix(quad_cons);
   if (!sdp_objective.empty())
-    AddSDPObjectives(sdp_objectives);
+    AddSDPObjectives(sdp_objective);
   if (!sdp_constraints.empty())
     AddSDPConstraints(sdp_constraints);
   AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
@@ -83,18 +83,48 @@ void MosekWrapper::AppendCone(const std::vector<int>& sdp_cone_subscripts) {
                           &empty_cone_subscripts[0]);
     } else {
       r_ = MSK_appendcone(task_, MSK_CT_QUAD, 0.0, numvar_,
-                          &empty_cone_subscripts[0]);
+                          &sdp_cone_subscripts[0]);
     }
   }
 }
 
-void MosekWrapper::AddSDPObjectives(
-    const std::vector<Eigen::MatrixXd>& sdp_objectives) {
-
+void MosekWrapper::AddSDPObjectives(const QuadraticConstraint& sdp_objective) {
+  int idx;  // idx is assigned to a specific sparse symmetric matrix by Mosek.
+  double falpha = 1.0;  // Used for weighting variables
+  // TODO(alexdunyak): Make the weight actually affect something, the docs are
+  // very unhelpful.
+  // First, handle the linear term in the objective.
+  const Eigen::VectorXd& linearterm = sdp_objective.b();
+  for (int j = 0; j < linearterm.size(); j++) {
+    if (r_== MSK_RES_OK && linearterm(j) != 0)
+      r_ = MSK_putcj(task_, j, linearterm(j));
+  }
+  // Now we handle the sdp matrix. Mosek expects it in lower triangle triplet
+  // form.
+  std::vector<double> sdp_i, sdp_j, sdp_values;
+  // The kth nonzero value of the constraint matrix is:
+  // Matrix(i, j) = sdp_values[k], and sdp_i[k] = i, sdp_j[k] = j
+  const Eigen::MatrixXd& matrixterm = sdp_objective.Q();
+  int numnonzero = 0;
+  for (int i = 0; i < matrixterm.rows(); i++) {
+    for (int j = 0; j < matrixterm.cols(); j++) {
+      if (matrixterm(i, j) != 0) {
+        sdp_i.push_back(i);
+        sdp_j.push_back(j);
+        sdp_values.push_back(matrixterm(i, j));
+        numnonzero++;
+      }
+    }
+  }
+  if (r_ == MSK_RES_OK)
+    r_ = MSK_appendsparsesymmat(task_, matrixterm.rows(), numnonzero, &sdp_i[0],
+                                &sdp_j[0], &sdp_values[0], &idx);
+  if (r_ == MSK_RES_OK)
+    r_ = MSK_putbarcj(task_, 0, 1, &idx, &falpha);
 }
 
 void MosekWrapper::AddSDPConstraints(
-    const std::vector<Eigen::MatrixXd>& sdp_constraints) {
+    const std::vector<QuadraticConstraint>& sdp_constraints) {
 
 }
 

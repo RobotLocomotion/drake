@@ -53,8 +53,8 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
     double constant_eqn_term,
     const Eigen::MatrixXd& quad_objective,
     const Eigen::MatrixXd& quad_cons,
-    const std::vector<Eigen::MatrixXd>& sdp_objective,
-    const std::vector<Eigen::MatrixXd>& sdp_constraints,
+    const QuadraticConstraint& sdp_objective,
+    const std::vector<QuadraticConstraint>& sdp_constraints,
     const std::vector<int>& sdp_cone_subscripts);
 
   ~MosekWrapper() {
@@ -115,9 +115,10 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
 
   void AppendCone(const std::vector<int>& sdp_cone_subscripts);
 
-  void AddSDPObjectives(const std::vector<Eigen::MatrixXd>& sdp_objectives);
+  void AddSDPObjectives(const QuadraticConstraint& sdp_objective);
 
-  void AddSDPConstraints(const std::vector<Eigen::MatrixXd>& sdp_constraints);
+  void AddSDPConstraints(
+      const std::vector<QuadraticConstraint>& sdp_constraints);
 
   /**AddVariableBounds()
    * @brief bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
