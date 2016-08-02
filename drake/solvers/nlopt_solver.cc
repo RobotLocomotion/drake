@@ -1,4 +1,4 @@
-#include "drake/solvers/NloptSolver.h"
+#include "drake/solvers/nlopt_solver.h"
 
 #include <stdexcept>
 #include <list>
@@ -8,7 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/core/Gradient.h"
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/optimization.h"
 
 using drake::TaylorVecXd;
 

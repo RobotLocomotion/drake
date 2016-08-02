@@ -1,14 +1,13 @@
-// Copyright 2016, Alex Dunyak
 // A wrapper file for MosekWrapper and mosekQP that handles constraint and
 // objective marshalling
 
-#include "drake/solvers/MosekSolver.h"
-#include "drake/solvers/MosekWrapper.h"
+#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/mosek_wrapper.h"
 
 #include <Eigen/Core>
 
-#include "drake/solvers/Optimization.h"
-#include "drake/solvers/MathematicalProgram.h"
+#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 
 namespace drake {

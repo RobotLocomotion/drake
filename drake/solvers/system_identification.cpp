@@ -5,7 +5,7 @@
 #include <iostream>  // For LUMPED_SYSTEM_IDENTIFICATION_VERBOSE below.
 
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/optimization.h"
 
 namespace drake {
 namespace solvers {

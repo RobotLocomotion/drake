@@ -1,4 +1,3 @@
-// Copyright 2016. Alex Dunyak
 #pragma once
 
 extern "C" {
@@ -12,8 +11,8 @@ extern "C" {
 #include <Eigen/Core>
 
 #include "drake/solvers/solution_result.h"
-#include "drake/solvers/Optimization.h"
-#include "drake/solvers/MathematicalProgram.h"
+#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 
 /** Definitions and program flow taken from
 `http://docs.mosek.com/7.1/capi/Linear_optimization.html`_
