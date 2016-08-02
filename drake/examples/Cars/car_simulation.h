@@ -59,7 +59,7 @@ void PrintUsageInstructions(const std::string& executable_name);
  */
 DRAKECARS_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
-    int argc, const char* argv[], double* duration = nullptr);
+    int argc, const char* argv[], double* duration);
 
 /**
  * Checks the command line arguments looking for a "--duration" flag followed
