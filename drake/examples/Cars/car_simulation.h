@@ -49,9 +49,9 @@ void PrintUsageInstructions(const std::string& executable_name);
  * @param[in] argv An array of command line arguments.
  *
  * @param[out] duration The duration over which the simulation should run. The
- * simulation runs from time zero seconds to time \p duration seconds. If no
- * duration is specified in \p argv, this \p duration is set to be infinity.
- * A duration is specified in \p argv by the string "--duration" followed by a
+ * simulation runs from time zero seconds to time @p duration seconds. If no
+ * duration is specified in @p argv, this @p duration is set to be infinity.
+ * A duration is specified in @p argv by the string "--duration" followed by a
  * floating point value. This parameter is optional. If it is nullptr, the
  * duration is not saved.
  *
@@ -59,7 +59,7 @@ void PrintUsageInstructions(const std::string& executable_name);
  */
 DRAKECARS_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
-    int argc, const char* argv[], double* duration = nullptr);
+    int argc, const char* argv[], double* duration);
 
 /**
  * Checks the command line arguments looking for a "--duration" flag followed
@@ -88,8 +88,8 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
  * Adds a box-shaped terrain to the specified rigid body tree.
  *
  * The X, Y, and Z axes of the box matches the X, Y, and Z-axis of the world.
- * The length and width of the box is aligned with X and Y and are \p box_size
- * long. The depth of the box is aligned with Z and is \p box_depth long. The
+ * The length and width of the box is aligned with X and Y and are @p box_size
+ * long. The depth of the box is aligned with Z and is @p box_depth long. The
  * top surface of the box is at Z = 0.
  *
  * @param[in] rigid_body_tree The rigid body tree to which to add the terrain.

@@ -11,7 +11,7 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/Polynomials>
 
-#include "drake/core/Gradient.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/drakePolynomial_export.h"
 
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.

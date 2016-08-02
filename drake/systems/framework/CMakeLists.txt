@@ -4,13 +4,12 @@ set(sources
   basic_vector.cc
   cache.cc
   context.cc
-  continuous_system.cc
   diagram.cc
   diagram_context.cc
   state.cc
   state_subvector.cc
   state_vector.cc
-  system_interface.cc
+  system.cc
   system_input.cc
   system_output.cc
   basic_state_vector.cc
@@ -26,14 +25,12 @@ set(installed_headers
   basic_vector.h
   cache.h
   context.h
-  continuous_system.h
-  continuous_system_interface.h
   diagram.h
   diagram_context.h
   state.h
   state_subvector.h
   state_vector.h
-  system_interface.h
+  system.h
   system_input.h
   system_output.h
   basic_state_vector.h

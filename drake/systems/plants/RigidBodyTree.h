@@ -449,10 +449,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void removeCollisionGroupsIf(UnaryPredicate test) {
     for (const auto& body_ptr : bodies) {
       std::vector<std::string> names_of_groups_to_delete;
-      for (const auto& group : body_ptr->collision_element_groups) {
+      for (const auto& group : body_ptr->get_group_to_collision_ids_map()) {
         const std::string& group_name = group.first;
         if (test(group_name)) {
-          auto& ids = body_ptr->collision_element_ids;
+          auto& ids = body_ptr->get_mutable_collision_element_ids();
           for (const auto& id : group.second) {
             ids.erase(std::find(ids.begin(), ids.end(), id));
             collision_model->removeElement(id);
@@ -461,7 +461,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
         }
       }
       for (const auto& group_name : names_of_groups_to_delete) {
-        body_ptr->collision_element_groups.erase(group_name);
+        body_ptr->get_mutable_group_to_collision_ids_map().erase(group_name);
       }
     }
   }

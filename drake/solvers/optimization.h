@@ -9,7 +9,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
-#include "drake/core/Gradient.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/drakeOptimization_export.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/Function.h"
@@ -113,8 +113,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                    detail::FunctionTraits<F>::numOutputs(f_));
       detail::FunctionTraits<F>::eval(f_, x, y);
     }
-    void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
-              drake::TaylorVecXd& y) const override {
+    void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+              TaylorVecXd& y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    detail::FunctionTraits<F>::numInputs(f_));

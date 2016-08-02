@@ -39,8 +39,12 @@ int do_main(int argc, const char* argv[]) {
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
+  // Instantiates a duration variable that will be set by the call to
+  // CreateRigidBodySystem() below.
+  double duration = std::numeric_limits<double>::infinity();
+
   // Initializes the rigid body system.
-  auto rigid_body_sys = CreateRigidBodySystem(argc, argv);
+  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration);
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
@@ -89,9 +93,6 @@ int do_main(int argc, const char* argv[]) {
 
   // Defines the start time of the simulation.
   const double kStartTime = 0;
-
-  // Initializes and obtains the desired simulation duration.
-  double duration = ParseDuration(argc, argv);
 
   // Starts the simulation.
   drake::ros::run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);

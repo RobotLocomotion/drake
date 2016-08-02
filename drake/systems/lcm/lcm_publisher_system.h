@@ -4,7 +4,7 @@
 
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/system_interface.h"
+#include "drake/systems/framework/system.h"
 #include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 
@@ -15,8 +15,7 @@ namespace lcm {
 /**
  * Publishes an LCM message containing information from its input port.
  */
-class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
-    public SystemInterface<double> {
+class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public System<double> {
  public:
   /**
    * A constructor.
