@@ -14,6 +14,8 @@
 #include "spruce.hh"
 #include "xmlUtil.h"
 
+using drake::systems::plants::ModelInstance;
+
 using Eigen::Isometry3d;
 using Eigen::Matrix;
 using Eigen::MatrixXd;
@@ -739,7 +741,7 @@ void parseSDFJoint(RigidBodySystem& sys, int model_id, XMLElement* node,
 }
 
 void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
-                  PoseMap& pose_map) {
+                  PoseMap& pose_map, ModelInstance* model_instance) {
   // Obtains the name of the body.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
@@ -782,9 +784,19 @@ void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
           Eigen::aligned_allocator<RigidBodyFrame>(), sensor_name, body,
           transform_link_to_model.inverse() * transform_sensor_to_model);
       sys.getRigidBodyTree()->addFrame(frame);
-      sys.addSensor(allocate_shared<RigidBodyDepthSensor>(
-          Eigen::aligned_allocator<RigidBodyDepthSensor>(), sys, sensor_name,
-          frame, elnode));
+
+      std::shared_ptr<RigidBodySensor> depth_sensor =
+          allocate_shared<RigidBodyDepthSensor>(
+              Eigen::aligned_allocator<RigidBodyDepthSensor>(), sys,
+              sensor_name, frame, elnode);
+
+      sys.addSensor(depth_sensor);
+
+      // Adds the depth sensor to the model instance if the model instance is
+      // valid.
+      if (model_instance != nullptr) {
+        model_instance->add_sensor(depth_sensor.get());
+      }
     } else {
       throw std::runtime_error(
           "ERROR: Drake C++ currently does not support sensors of type " +
@@ -793,7 +805,8 @@ void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
   }
 }
 
-void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node) {
+void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node,
+  ModelInstance* model_instance) {
   // A pose map is necessary since SDF specifies almost everything in the
   // global coordinate frame. The pose map contains transforms from a link's
   // coordinate frame to the model's coordinate frame.
@@ -806,7 +819,7 @@ void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node) {
   // Parses each link element within the model.
   for (XMLElement* elnode = node->FirstChildElement("link"); elnode;
        elnode = elnode->NextSiblingElement("link"))
-    parseSDFLink(sys, model_id, elnode, pose_map);
+    parseSDFLink(sys, model_id, elnode, pose_map, model_instance);
 
   // Parses each joint element within the model.
   for (XMLElement* elnode = node->FirstChildElement("joint"); elnode;
@@ -814,7 +827,8 @@ void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node) {
     parseSDFJoint(sys, model_id, elnode, pose_map);
 }
 
-void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
+void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc,
+      std::vector<std::unique_ptr<ModelInstance>>* models) {
   XMLElement* node = xml_doc->FirstChildElement("sdf");
 
   if (!node) {
@@ -858,7 +872,15 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   // simulated sensors as specified by the SDF description.
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
        elnode = elnode->NextSiblingElement("model")) {
-    parseSDFModel(sys, model_id++, elnode);
+    // Finds the ModelInstance with the same model_id.
+    ModelInstance* model_instance = nullptr;
+    if (models != nullptr) {
+      for (std::unique_ptr<ModelInstance>& current_model_instance : *models) {
+        if (current_model_instance->get_model_id() == model_id)
+          model_instance = current_model_instance.get();
+      }
+    }
+    parseSDFModel(sys, model_id++, elnode, model_instance);
   }
 
   // Verifies that the model_id is equal to the final_model_id. They should
@@ -891,7 +913,8 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
 
 void RigidBodySystem::addRobotFromURDFString(
     const string& urdf_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::vector<std::unique_ptr<ModelInstance>>* models) {
   // first add the urdf to the rigid body tree
   drake::parsers::urdf::AddRobotFromURDFString(urdf_string, root_dir,
                                                floating_base_type, tree.get());
@@ -910,7 +933,8 @@ void RigidBodySystem::addRobotFromURDFString(
 void RigidBodySystem::addRobotFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::vector<std::unique_ptr<ModelInstance>>* models) {
   // Adds the URDF to the rigid body tree.
   drake::parsers::urdf::AddRobotFromURDF(urdf_filename, floating_base_type,
                                          weld_to_frame, tree.get());
@@ -931,10 +955,11 @@ void RigidBodySystem::addRobotFromURDF(
 void RigidBodySystem::addRobotFromSDF(
     const string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::vector<std::unique_ptr<ModelInstance>>* models) {
   // Adds the robot to the rigid body tree.
   drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
-                                       weld_to_frame, tree.get());
+                                       weld_to_frame, tree.get(), models);
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).
@@ -946,13 +971,14 @@ void RigidBodySystem::addRobotFromSDF(
         "file " +
         sdf_filename + "\n" + xml_doc.ErrorName());
   }
-  parseSDF(*this, &xml_doc);
+  parseSDF(*this, &xml_doc, models);
 }
 
 void RigidBodySystem::addRobotFromFile(
     const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::vector<std::unique_ptr<ModelInstance>>* models) {
   spruce::path p(filename);
   auto ext = p.extension();
 
@@ -960,9 +986,9 @@ void RigidBodySystem::addRobotFromFile(
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
   if (ext == ".urdf") {
-    addRobotFromURDF(filename, floating_base_type, weld_to_frame);
+    addRobotFromURDF(filename, floating_base_type, weld_to_frame, models);
   } else if (ext == ".sdf") {
-    addRobotFromSDF(filename, floating_base_type, weld_to_frame);
+    addRobotFromSDF(filename, floating_base_type, weld_to_frame, models);
   } else {
     throw runtime_error(
         "RigidBodySystem::addRobotFromFile: ERROR: Unknown file extension: " +

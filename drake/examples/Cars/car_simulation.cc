@@ -9,6 +9,8 @@
 
 using drake::AffineSystem;
 using drake::NullVector;
+using drake::systems::plants::ModelInstance;
+
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -17,9 +19,9 @@ namespace drake {
 namespace examples {
 namespace cars {
 
-std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
-                                                       const char* argv[],
-                                                       double* duration) {
+std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
+    int argc, const char* argv[], double* duration,
+    std::vector<std::unique_ptr<ModelInstance>>* models) {
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " vehicle_model [world sdf files ...]"
               << " --duration [duration in seconds]" << std::endl;
@@ -29,7 +31,8 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
   // Instantiates a rigid body system and adds the robot to it.
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
-  rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION);
+  rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION, nullptr,
+    models);
 
   // Initializes duration to be infinity.
   *duration = std::numeric_limits<double>::infinity();

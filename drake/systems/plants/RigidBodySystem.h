@@ -5,6 +5,7 @@
 #include "drake/solvers/optimization.h"
 #include "drake/systems/System.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/model_instance.h"
 
 /** Rigid Body Dynamics Engine Class Design  (still needs to be implemented
  * below)
@@ -170,12 +171,17 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
       const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW);
+          DrakeJoint::ROLLPITCHYAW,
+      std::vector<std::unique_ptr<drake::systems::plants::ModelInstance>>*
+          models = nullptr);
+
   void addRobotFromURDF(
       const std::string& urdf_filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
+      std::vector<std::unique_ptr<drake::systems::plants::ModelInstance>>*
+          models = nullptr);
 
   /**
    * Adds the models contained within an SDF file to this rigid body system.
@@ -185,8 +191,10 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    *
    * @param[in] sdf_filename The name of the SDF file containing the models to
    * add to this rigid body system.
+   *
    * @param[in] floating_base_type The type of floating base to use to connect
    * the models within the SDF file to the world.
+   *
    * @param[in] weld_to_frame The frame used for connecting the models in the
    * SDF to the rigid body tree within this rigid body system. Note that this
    * specifies both the existing frame in the rigid body tree to connect the
@@ -194,17 +202,25 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * bodies. This is an optional parameter. If it is `nullptr`, the models
    * within the SDF are connected to the world with zero offset and rotation
    * relative to the world's frame.
+   *
+   * @param[out] models A pointer to a vector for storing the models that are
+   * created while parsing the SDF file.
    */
-  void addRobotFromSDF(const std::string& sdf_filename,
-                       const DrakeJoint::FloatingBaseType floating_base_type =
-                           DrakeJoint::QUATERNION,
-                       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+  void addRobotFromSDF(
+      const std::string& sdf_filename,
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::QUATERNION,
+      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
+      std::vector<std::unique_ptr<drake::systems::plants::ModelInstance>>*
+          models = nullptr);
 
   void addRobotFromFile(
       const std::string& filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
+      std::vector<std::unique_ptr<drake::systems::plants::ModelInstance>>*
+          models = nullptr);
 
   void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {
     force_elements.push_back(f);

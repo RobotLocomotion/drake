@@ -1,3 +1,6 @@
+#include <vector>
+#include <memory>
+
 #include "ros/ros.h"
 
 #include "drake/examples/Cars/car_simulation.h"
@@ -6,6 +9,7 @@
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/model_instance.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
 #include "drake_ros/ros_tf_publisher.h"
@@ -28,6 +32,7 @@ namespace {
 using drake::examples::cars::CreateRigidBodySystem;
 using drake::examples::cars::CreateVehicleSystem;
 using drake::examples::cars::GetCarSimulationDefaultOptions;
+using drake::systems::plants::ModelInstance;
 
 /** Driving Simulator
  * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
@@ -42,8 +47,12 @@ int do_main(int argc, const char* argv[]) {
   // CreateRigidBodySystem() below.
   double duration = std::numeric_limits<double>::infinity();
 
+  // Instantiates a vector for holding ModelInstance objects that were added
+  // to the simulation.
+  std::vector<std::unique_ptr<ModelInstance>> models;
+
   // Initializes the rigid body system.
-  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration);
+  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration, &models);
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
   // Initializes and cascades all of the other systems.
