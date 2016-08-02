@@ -34,8 +34,8 @@ namespace {
 
 class IKTrajectoryCost : public drake::solvers::Constraint {
  public:
-  // @p helper is aliased, and must remain valid for the life of
-  // this class.
+  /// @p helper is aliased, and must remain valid for the life of
+  /// this class.
   template <typename Derived>
   IKTrajectoryCost(const IKTrajectoryHelper& helper,
                    const Eigen::MatrixBase<Derived>& q_nom)
@@ -77,6 +77,8 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
 // which care about the stuff which uses inbetween samples.
 class IKInbetweenConstraint : public drake::solvers::Constraint {
  public:
+  /// All pointers/references are aliased, and must remain valid for
+  /// the life of this class.
   IKInbetweenConstraint(const RigidBodyTree* model,
                         const IKTrajectoryHelper& helper,
                         int num_constraints,
