@@ -31,12 +31,11 @@ logging::logger* log() {
 
 #else  // HAVE_SPDLOG
 
-// A do-nothing logger instance.
-namespace {
-const logger g_logger;
-}  // namespace
+logging::logger::logger() {}
 
 logging::logger* log() {
+  // A do-nothing logger instance.
+  static logging::logger g_logger;
   return &g_logger;
 }
 

@@ -3,7 +3,7 @@
 #include <Eigen/Core>
 
 #include "drake/drakeTrajectoryOptimization_export.h"
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/optimization.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 namespace drake {

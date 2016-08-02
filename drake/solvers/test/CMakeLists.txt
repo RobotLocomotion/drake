@@ -1,19 +1,19 @@
-add_executable(testOptimizationProblem testOptimizationProblem.cpp)
-target_link_libraries(testOptimizationProblem drakeOptimization
+add_executable(optimization_problem_test optimization_problem_test.cc)
+target_link_libraries(optimization_problem_test drakeOptimization
   ${GTEST_BOTH_LIBRARIES})
-add_test(NAME testOptimizationProblem COMMAND testOptimizationProblem)
+add_test(NAME optimization_problem_test COMMAND optimization_problem_test)
 
 if(mosek_FOUND)
-  add_executable(testMosek testMosek.cpp)
-  target_link_libraries(testMosek drakeOptimization ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME testMosek COMMAND testMosek)
+  add_executable(mosek_test mosek_test.cc)
+  target_link_libraries(mosek_test drakeOptimization ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME mosek_test COMMAND mosek_test)
 endif()
 
-add_executable(testMobyLCP testMobyLCP.cpp)
-target_link_libraries(testMobyLCP drakeOptimization ${GTEST_BOTH_LIBRARIES})
-add_test(NAME testMobyLCP COMMAND testMobyLCP)
+add_executable(moby_lcp_solver_test moby_lcp_solver_test.cc)
+target_link_libraries(moby_lcp_solver_test drakeOptimization ${GTEST_BOTH_LIBRARIES})
+add_test(NAME moby_lcp_solver_test COMMAND moby_lcp_solver_test)
 
-add_executable(system_identification_test system_identification_test.cpp)
+add_executable(system_identification_test system_identification_test.cc)
 target_link_libraries(system_identification_test
   drakeOptimization drakePolynomial ${GTEST_BOTH_LIBRARIES})
 add_test(NAME system_identification_test COMMAND system_identification_test)

@@ -161,6 +161,40 @@ To build Drake's documentation, execute::
 The documentation will be located in
 ``~/dev/drake_catkin_workspace/build/drake/drake/doc``.
 
+.. _drake_catkin_ci_documenation:
+
+Scheduling a Drake / ROS Continuous Integration Test
+----------------------------------------------------
+
+Drake's Jenkin's Continuous Integration (CI) pre-merge test matrix currently
+does not include a Drake + ROS column. Thus, if you change Drake's source
+code and want to know whether it breaks the Drake + ROS integration, you must
+manually schedule a test by posting the following comment in your PR::
+
+    @drake-jenkins-bot linux-gcc-experimental-ros please
+
+The command above will schedule a Drake + ROS CI pre-merge test called
+"`linux-gcc-experimental-ros`". As indicated by its name, this uses the `gcc`
+compiler. Links to the results are available on the PR's web page and from here:
+https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-gcc-experimental-ros/.
+
+To test the Drake + ROS integration using the `clang` compiler, post the
+following comment in your PR::
+
+    @drake-jenkins-bot linux-clang-experimental-ros please
+
+The comment above will schedule a test called "`linux-clang-experimental-ros`".
+Links to the results are available on the PR's web page and here:
+https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-clang-experimental-ros/.
+
+To schedule a full test of Drake + ROS + MATLAB with `gcc`, post the following
+comment on your PR::
+
+    @drake-jenkins-bot linux-gcc-experimental-matlab-ros please
+
+The results will be available here:
+https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-gcc-experimental-matlab-ros/.
+
 .. _drake_catkin_run_car_example:
 
 Running An Example: Car Simulation

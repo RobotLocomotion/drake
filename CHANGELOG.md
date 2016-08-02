@@ -24,9 +24,12 @@ Unreleased: changes on master, not yet released
 ### Changed
 
  - [#3003][] Made `RigidBodyFrame` member variables private. Added accessors.
+ - [#3010][] All header file names under `solvers` are now spelled with lower case and underscore names.
+ - [#2963][] Rename RigidBody::CollisionElement to RigidBodyCollisionElement.
  - [#2997][] Renamed drake/Path.h to drake/common/drake_path.h
  - [#2983][] Renamed namespace `Drake` to be `drake`.
  - [#2923][] Updated member variables of `RigidBodyLoop` and `RigidBodActuator` to conform to style guide.
+ - [#2909][] Made `RigidBody::collision_element_ids` and `RigidBody::collision_element_groups` private. Added accessors for them.
  - [#2908][] Made `RigidBody::visual_elements` private. Renamed accessors based on style guide to be `RigidBody::AddVisualElement()` and `RigidBody::GetVisualElements()`.
  - [#2907][] Made `RigidBody::position_num_start` and `RigidBody::velocity_num_start` private. Renamed accessors to conform to style guide.
  - [#2905][] Made `RigidBody::body_index` private. Added necessary accessors.
@@ -45,7 +48,6 @@ Unreleased: changes on master, not yet released
  - [#2018][] Fix capitalization of `Constraint` and `OptimizationProblem` APIs to match style guide.
  - [#2415][] Require CMake 3.5 or higher to configure and build.
  - [#2779][] Move some rotation functions from drakeGeometryUtil to drake/math.
- - [#2963][] Rename RigidBody::CollisionElement to RigidBodyCollisionElement.
 
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
@@ -75,10 +77,6 @@ Changes in version v0.9.11 and before are not provided.
 
 [//]: # "You can use PimpMyChangelog to auto-update this list."
 [//]: # "https://github.com/pcreux/pimpmychangelog"
-[#2102]: https://github.com/RobotLocomotion/drake/issues/2102
-[#2067]: https://github.com/RobotLocomotion/drake/issues/2067
-[#2039]: https://github.com/RobotLocomotion/drake/issues/2039
-[#2027]: https://github.com/RobotLocomotion/drake/issues/2027
 [#1953]: https://github.com/RobotLocomotion/drake/issues/1953
 [#1970]: https://github.com/RobotLocomotion/drake/issues/1970
 [#1975]: https://github.com/RobotLocomotion/drake/issues/1975
@@ -86,14 +84,21 @@ Changes in version v0.9.11 and before are not provided.
 [#1992]: https://github.com/RobotLocomotion/drake/issues/1992
 [#2008]: https://github.com/RobotLocomotion/drake/issues/2008
 [#2018]: https://github.com/RobotLocomotion/drake/issues/2018
+[#2027]: https://github.com/RobotLocomotion/drake/issues/2027
+[#2039]: https://github.com/RobotLocomotion/drake/issues/2039
+[#2067]: https://github.com/RobotLocomotion/drake/issues/2067
+[#2102]: https://github.com/RobotLocomotion/drake/issues/2102
 [#2303]: https://github.com/RobotLocomotion/drake/issues/2303
 [#2325]: https://github.com/RobotLocomotion/drake/issues/2325
+[#2415]: https://github.com/RobotLocomotion/drake/issues/2415
 [#2426]: https://github.com/RobotLocomotion/drake/issues/2426
 [#2597]: https://github.com/RobotLocomotion/drake/issues/2597
 [#2602]: https://github.com/RobotLocomotion/drake/issues/2602
+[#2610]: https://github.com/RobotLocomotion/drake/issues/2610
 [#2621]: https://github.com/RobotLocomotion/drake/issues/2621
 [#2666]: https://github.com/RobotLocomotion/drake/issues/2666
 [#2779]: https://github.com/RobotLocomotion/drake/issues/2779
+[#2809]: https://github.com/RobotLocomotion/drake/issues/2809
 [#2900]: https://github.com/RobotLocomotion/drake/issues/2900
 [#2902]: https://github.com/RobotLocomotion/drake/issues/2902
 [#2903]: https://github.com/RobotLocomotion/drake/issues/2903
@@ -101,8 +106,10 @@ Changes in version v0.9.11 and before are not provided.
 [#2905]: https://github.com/RobotLocomotion/drake/issues/2905
 [#2907]: https://github.com/RobotLocomotion/drake/issues/2907
 [#2908]: https://github.com/RobotLocomotion/drake/issues/2908
+[#2909]: https://github.com/RobotLocomotion/drake/issues/2909
 [#2923]: https://github.com/RobotLocomotion/drake/issues/2923
 [#2963]: https://github.com/RobotLocomotion/drake/issues/2963
 [#2983]: https://github.com/RobotLocomotion/drake/issues/2983
 [#2997]: https://github.com/RobotLocomotion/drake/issues/2997
 [#3003]: https://github.com/RobotLocomotion/drake/issues/3003
+[#3010]: https://github.com/RobotLocomotion/drake/issues/3010
