@@ -11,8 +11,8 @@ class DRAKEJOINTS_EXPORT HelicalJoint
   // HelicalJoint& operator=(const HelicalJoint&) = delete;
 
  private:
-  const Eigen::Vector3d axis;
-  const double pitch;
+  const Eigen::Vector3d axis_;
+  const double pitch_;
 
  public:
   HelicalJoint(const std::string& name,
@@ -21,8 +21,8 @@ class DRAKEJOINTS_EXPORT HelicalJoint
       : FixedAxisOneDoFJoint<HelicalJoint>(*this, name,
                                            transform_to_parent_body,
                                            spatialJointAxis(axis, pitch)),
-        axis(axis),
-        pitch(pitch) {}
+        axis_(axis),
+        pitch_(pitch) {}
 
   virtual ~HelicalJoint() {}
 
@@ -31,8 +31,8 @@ class DRAKEJOINTS_EXPORT HelicalJoint
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
     typedef typename DerivedQ::Scalar Scalar;
     Eigen::Transform<Scalar, 3, Eigen::Isometry> ret;
-    ret = Eigen::AngleAxis<Scalar>(q[0], axis.cast<Scalar>()) *
-          Eigen::Translation<Scalar, 3>(q[0] * (pitch * axis).cast<Scalar>());
+    ret = Eigen::AngleAxis<Scalar>(q[0], axis_.cast<Scalar>()) *
+          Eigen::Translation<Scalar, 3>(q[0] * (pitch_ * axis_).cast<Scalar>());
     ret.makeAffine();
     return ret;
   }

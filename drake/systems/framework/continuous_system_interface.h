@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_interface.h"
@@ -31,7 +31,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   ///
   /// @param derivatives The output vector. Will be the same length as the
   ///                    state vector Context.state.continuous_state.
-  virtual void EvalTimeDerivatives(const Context<T>& context,
+  virtual void EvalTimeDerivatives(const ContextBase<T>& context,
                                    ContinuousState<T>* derivatives) const = 0;
 
   /// Transforms the velocity (v) in the given Context state to the derivative
@@ -50,7 +50,8 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// @param generalized_velocity The velocity to transform.
   /// @param configuration_derivatives The output vector.  Must not be nullptr.
   virtual void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context, const StateVector<T>& generalized_velocity,
+      const ContextBase<T>& context,
+      const StateVector<T>& generalized_velocity,
       StateVector<T>* configuration_derivatives) const = 0;
 
   // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity.
@@ -72,7 +73,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// power is increasing or decreasing the kinetic energy. Power is in watts
   /// (J/s). This method is meaningful only for physical systems; others
   /// return 0.
-  virtual T EvalConservativePower(const Context<T>& context) const {
+  virtual T EvalConservativePower(const ContextBase<T>& context) const {
     return T(0);
   }
 
@@ -83,7 +84,7 @@ class ContinuousSystemInterface : public SystemInterface<T> {
   /// physically-correct model, to within integration accuracy of W. Power is in
   /// watts (J/s). (Watts are abbreviated W but not to be confused with work!)
   /// This method is meaningful only for physical systems; others return 0.
-  virtual T EvalNonConservativePower(const Context<T>& context) const {
+  virtual T EvalNonConservativePower(const ContextBase<T>& context) const {
     return T(0);
   }
 

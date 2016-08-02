@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -197,7 +197,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 // https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
   std::string file_name =
-      Drake::getDrakePath() +
+      drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
   drake::parsers::urdf::AddRobotFromURDF(file_name, tree.get());
 

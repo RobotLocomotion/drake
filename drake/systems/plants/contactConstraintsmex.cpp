@@ -1,4 +1,5 @@
 #include <Eigen/Sparse>
+#include "drake/common/eigen_types.h"
 #include "drake/util/mexify.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "KinematicsCache.h"
@@ -7,10 +8,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace Drake;
-
-template <typename Scalar>
-using MatrixX = Matrix<Scalar, Dynamic, Dynamic>;
+using namespace drake;
 
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;

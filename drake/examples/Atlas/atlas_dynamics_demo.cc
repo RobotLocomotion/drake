@@ -6,8 +6,8 @@
 #include "drake/systems/LCMSystem.h"
 #include "drake/util/drakeAppUtil.h"
 
-using Drake::SimulationOptions;
-using Drake::BotVisualizer;
+using drake::SimulationOptions;
+using drake::BotVisualizer;
 using drake::AtlasPlant;
 
 int main(int argc, char* argv[]) {

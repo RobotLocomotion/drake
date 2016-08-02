@@ -14,15 +14,15 @@ namespace drake {
 template <class UnitSystem>
 class NArySystem {
  public:
-  // Required by Drake::System concept.
+  // Required by drake::System concept.
   template <typename ScalarType>
   using StateVector = NAryState<
     typename UnitSystem::template StateVector<ScalarType> >;
-  // Required by Drake::System concept.
+  // Required by drake::System concept.
   template <typename ScalarType>
   using InputVector = NAryState<
     typename UnitSystem::template InputVector<ScalarType> >;
-  // Required by Drake::System concept.
+  // Required by drake::System concept.
   template <typename ScalarType>
   using OutputVector = NAryState<
     typename UnitSystem::template OutputVector<ScalarType> >;
@@ -37,7 +37,7 @@ class NArySystem {
     systems_.push_back(system);
   }
 
-  // Required by Drake::System concept.
+  // Required by drake::System concept.
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& time,
                                    const StateVector<ScalarType>& state,
@@ -55,7 +55,7 @@ class NArySystem {
     return xdot;
   }
 
-  // Required by Drake::System concept.
+  // Required by drake::System concept.
   template <typename ScalarType>
   OutputVector<ScalarType> output(const ScalarType& time,
                                   const StateVector<ScalarType>& state,
@@ -73,7 +73,7 @@ class NArySystem {
     return y;
   }
 
-  // Required by Drake::System concept.
+  // Required by drake::System concept.
   bool isTimeVarying() const {
     for (auto s : systems_) {
       if (s->isTimeVarying()) { return true; }
@@ -81,7 +81,7 @@ class NArySystem {
     return false;
   }
 
-  // Required by Drake::System concept.
+  // Required by drake::System concept.
   bool isDirectFeedthrough() const {
     for (auto s : systems_) {
       if (s->isDirectFeedthrough()) { return true; }
@@ -89,17 +89,17 @@ class NArySystem {
     return false;
   }
 
-  // Required by Drake::System concept.
+  // Required by drake::System concept.
   std::size_t getNumStates() const {
     return StateVector<double>::RowsFromUnitCount(systems_size());
   }
 
-  // Required by Drake::System concept.
+  // Required by drake::System concept.
   std::size_t getNumInputs() const {
     return InputVector<double>::RowsFromUnitCount(systems_size());
   }
 
-  // Required by Drake::System concept.
+  // Required by drake::System concept.
   std::size_t getNumOutputs() const {
     return OutputVector<double>::RowsFromUnitCount(systems_size());
   }

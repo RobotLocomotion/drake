@@ -7,7 +7,7 @@ using Eigen::MatrixBase;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-namespace Drake {
+namespace drake {
 namespace systems {
 namespace plants {
 

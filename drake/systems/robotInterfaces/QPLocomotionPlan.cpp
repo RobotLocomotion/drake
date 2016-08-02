@@ -27,7 +27,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace Drake;
+using namespace drake;
 
 using drake::kQuaternionSize;
 using drake::kSpaceDimension;
@@ -559,7 +559,7 @@ void QPLocomotionPlan::updateSwingTrajectory(
   auto quatdot = (Phi * x0_twist.topRows<3>()).eval();
 
   auto x0_expmap_autodiff = quat2expmap(
-      Drake::initializeAutoDiffGivenGradientMatrix(x0_quat, quatdot));
+      drake::initializeAutoDiffGivenGradientMatrix(x0_quat, quatdot));
   auto x0_expmap = autoDiffToValueMatrix(x0_expmap_autodiff);
   auto xd0_expmap = autoDiffToGradientMatrix(x0_expmap_autodiff);
 

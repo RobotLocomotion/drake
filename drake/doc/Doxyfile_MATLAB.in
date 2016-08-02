@@ -117,7 +117,7 @@ INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.m
 RECURSIVE              = YES
 EXCLUDE                = "@CMAKE_SOURCE_DIR@/examples" \
-                         "@CMAKE_SOURCE_DIR@/pod-build" \
+                         "@CMAKE_BINARY_DIR@" \
                          "@CMAKE_SOURCE_DIR@/thirdParty"
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =

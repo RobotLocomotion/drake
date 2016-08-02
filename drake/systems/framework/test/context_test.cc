@@ -95,7 +95,7 @@ TEST_F(ContextTest, GetVectorInput) {
 }
 
 TEST_F(ContextTest, Clone) {
-  std::unique_ptr<Context<double>> clone = context_.Clone();
+  std::unique_ptr<ContextBase<double>> clone = context_.Clone();
 
   // Verify that the time was copied.
   EXPECT_EQ(kTime, clone->get_time());
@@ -104,12 +104,10 @@ TEST_F(ContextTest, Clone) {
   // but are different pointers.
   EXPECT_EQ(kNumInputPorts, clone->get_num_input_ports());
   for (int i = 0; i < kNumInputPorts; ++i) {
-    EXPECT_NE(context_.get_vector_input(i),
-              clone->get_vector_input(i));
-    EXPECT_TRUE(CompareMatrices(
-        context_.get_vector_input(i)->get_value(),
-        clone->get_vector_input(i)->get_value(), 1e-8,
-        MatrixCompareType::absolute));
+    EXPECT_NE(context_.get_vector_input(i), clone->get_vector_input(i));
+    EXPECT_TRUE(CompareMatrices(context_.get_vector_input(i)->get_value(),
+                                clone->get_vector_input(i)->get_value(), 1e-8,
+                                MatrixCompareType::absolute));
   }
 
   // Verify that the state was copied.

@@ -44,9 +44,9 @@ class DRAKECARS_EXPORT TrajectoryCar {
   //@{
 
   template <typename ScalarType>
-  using StateVector = Drake::NullVector<ScalarType>;
+  using StateVector = drake::NullVector<ScalarType>;
   template <typename ScalarType>
-  using InputVector = Drake::NullVector<ScalarType>;
+  using InputVector = drake::NullVector<ScalarType>;
   template <typename ScalarType>
   using OutputVector = SimpleCarState<ScalarType>;
 

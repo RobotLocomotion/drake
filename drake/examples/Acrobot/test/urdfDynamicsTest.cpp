@@ -1,12 +1,12 @@
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/examples/Acrobot/Acrobot.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
 
-using Drake::RigidBodySystem;
-using Drake::getRandomVector;
-using Drake::getDrakePath;
+using drake::RigidBodySystem;
+using drake::getRandomVector;
+using drake::GetDrakePath;
 using drake::util::MatrixCompareType;
 
 namespace drake {
@@ -24,11 +24,11 @@ GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
   auto r = Acrobot();
 
   auto r_urdf = RigidBodySystem();
-  r_urdf.addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.urdf",
+  r_urdf.addRobotFromFile(GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
                           DrakeJoint::FIXED);
 
   auto r_sdf = RigidBodySystem();
-  r_sdf.addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.sdf",
+  r_sdf.addRobotFromFile(GetDrakePath() + "/examples/Acrobot/Acrobot.sdf",
                          DrakeJoint::FIXED);
 
   // for debugging:

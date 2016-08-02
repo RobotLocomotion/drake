@@ -1,5 +1,9 @@
 # Build tests for Drake common utilities.
 
+add_executable(functional_form_test functional_form_test.cc)
+target_link_libraries(functional_form_test drakeCommon ${GTEST_BOTH_LIBRARIES})
+add_test(NAME functional_form_test COMMAND functional_form_test)
+
 add_executable(nice_type_name_test nice_type_name_test.cc)
 target_link_libraries(nice_type_name_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME nice_type_name_test COMMAND nice_type_name_test)
@@ -18,13 +22,37 @@ add_test(NAME drake_assert_test_default COMMAND drake_assert_test_default)
 # Same, but with assertions forced enabled.
 add_executable(drake_assert_test_enabled drake_assert_test.cc)
 target_compile_definitions(drake_assert_test_enabled PRIVATE DRAKE_ENABLE_ASSERTS)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(drake_assert_test_enabled PRIVATE -UDRAKE_DISABLE_ASSERTS)
+endif()
 target_link_libraries(drake_assert_test_enabled drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME drake_assert_test_enabled COMMAND drake_assert_test_enabled)
 # Same, but with assertions forced disabled.
 add_executable(drake_assert_test_disabled drake_assert_test.cc)
 target_compile_definitions(drake_assert_test_disabled PRIVATE DRAKE_DISABLE_ASSERTS)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(drake_assert_test_disabled PRIVATE -UDRAKE_ENABLE_ASSERTS)
+endif()
 target_link_libraries(drake_assert_test_disabled drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME drake_assert_test_disabled COMMAND drake_assert_test_disabled)
+
+# "text_logging.h" unit testing:  If spdlog is available, test that:
+add_executable(text_logging_test_default
+               ../text_logging.cc text_logging_test.cc)
+target_link_libraries(text_logging_test_default
+                      ${GTEST_BOTH_LIBRARIES} threads)
+add_test(NAME text_logging_test_default COMMAND text_logging_test_default)
+# Force spdlog to unavailable to test that the ifndef(HAVE_SPDLOG) case works.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+    OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_executable(text_logging_test_no_spdlog
+                 ../text_logging.cc text_logging_test.cc)
+  target_compile_options(text_logging_test_no_spdlog
+    PRIVATE -UHAVE_SPDLOG)
+  target_link_libraries(text_logging_test_no_spdlog
+                        ${GTEST_BOTH_LIBRARIES} threads)
+  add_test(NAME text_logging_test_no_spdlog COMMAND text_logging_test_no_spdlog)
+endif()
 
 # The entire block of CMake build rules and CTests exists to confirm that the
 # disarmed DRAKE_ASSERT still yields compilation errors.
@@ -110,4 +138,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   set_tests_properties(
     drake_deprecated_test_nocompile
     PROPERTIES WILL_FAIL TRUE)
+endif()
+
+# Rules for cpplint_wrapper.py.
+if(PYTHONINTERP_FOUND AND WITH_GOOGLE_STYLEGUIDE)
+  add_test(NAME cpplint_wrapper_test COMMAND
+    ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cpplint_wrapper_test.py)
 endif()
