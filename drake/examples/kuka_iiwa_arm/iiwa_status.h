@@ -3,11 +3,14 @@
 #include <string>
 #include <Eigen/Core>
 
+#include "drake/systems/plants/RigidBodySystem.h"
 #include "lcmtypes/drake/lcmt_iiwa_status.hpp"
+#include "drake/systems/LCMSystem.h"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
+
 
 /// This class holds various information about the joint positions of
 /// the IIWA robot (intended for use as a state vector to pass into
@@ -85,6 +88,76 @@ bool decode(const drake::lcmt_iiwa_status& msg,
   wrap.set_value(new_value);
   return true;
 }
+
+
+template <typename ScalarType = double>
+class IiwaInput {
+ public:
+  typedef drake::lcmt_drake_signal LCMMessageType;
+  static std::string channel() { return "IiwaInput"; }
+
+  IiwaInput(void) : u_(0) {}
+
+  template <typename Derived>
+  IiwaInput(  // NOLINT(runtime/explicit) per drake::Vector.
+      const Eigen::MatrixBase<Derived>& x)
+      : u_(x(0)) {}
+
+  template <typename Derived>
+  IiwaInput& operator=(const Eigen::MatrixBase<Derived>& x) {
+    u_ = x(0);
+    return *this;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const IiwaInput& x) {
+    os << "  tau = " << x.u_ << std::endl;
+    return os;
+  }
+
+  // TODO(naveenoid) find a less complicated way of doing this
+  static const int kNumJoints = 7;
+  static const int RowsAtCompileTime = Eigen::Dynamic;
+  typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
+  size_t size() const { return kNumJoints; }
+
+  /// Magic conversion specialization back to Eigen.
+  friend EigenType toEigen(const IiwaInput<ScalarType>& vec) {
+    return vec.u_;
+  }
+
+ private:
+  EigenType u_;
+};
+//
+//template <typename ScalarType = double>
+//class IiwaOutput {
+// public:
+//  typedef drake::lcmt_drake_signal LCMMessageType;
+//  static std::string channel() { return "IiwaOutput"; }
+//
+//  IiwaOutput(void) : x_(0) {}
+//
+//  template <typename Derived>
+//  IiwaOutput(  // NOLINT(runtime/explicit) per drake::Vector.
+//      const Eigen::MatrixBase<Derived>& x)
+//      : tau(x(0)) {}
+//
+//  template <typename Derived>
+//  IiwaInput& operator=(const Eigen::MatrixBase<Derived>& x) {
+//    tau = x(0);
+//    return *this;
+//  }
+//
+//  friend std::ostream& operator<<(std::ostream& os, const IiwaInput& x) {
+//    os << "  tau = " << x.u_ << endl;
+//    return os;
+//  }
+//
+//  static const int RowsAtCompileTime = 7;
+//
+// private:
+//  OutputVector<double> x_;
+//};
 
 
 }  // namespace kuka_iiwa_arm
