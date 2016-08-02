@@ -24,6 +24,7 @@ set(installed_headers
   drake_assert.h
   drake_deprecated.h
   drake_path.h
+  eigen_autodiff_types.h
   eigen_types.h
   functional_form.h
   nice_type_name.h
