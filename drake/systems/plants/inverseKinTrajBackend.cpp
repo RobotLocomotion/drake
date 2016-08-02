@@ -512,7 +512,8 @@ void inverseKinTrajBackend(
     }
   }
 
-  // Build an additional constraint to handle the "inbetween" samples (if present).
+  // Build an additional constraint to handle the "inbetween" samples
+  // (if present).
   std::shared_ptr<drake::solvers::Constraint> inbetween_constraint =
       std::make_shared<IKInbetweenConstraint>(
           model, helper, num_constraints, constraint_array);
