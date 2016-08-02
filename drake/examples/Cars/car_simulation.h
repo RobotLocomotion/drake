@@ -27,6 +27,12 @@ namespace examples {
 namespace cars {
 
 /**
+ * Prints the usage instructions to std::cout.
+ */
+DRAKECARS_EXPORT
+void PrintUsageInstructions(const std::string& executable_name);
+
+/**
  * Parses the command line arguments and creates the rigid body system to be
  * simulated. The command line arguments consists of the vehicle's URDF or SDF
  * model file followed by an arbitrary number of model files representing things
@@ -39,27 +45,33 @@ namespace cars {
  * terrain is added automatically.
  *
  * @param[in] argc The number of command line arguments.
+ *
  * @param[in] argv An array of command line arguments.
+ *
  * @param[out] duration The duration over which the simulation should run. The
- * simulation runs from time zero seconds to time \p duration seconds. If no
- * duration is specified in \p argv, this \p duration is set to be infinity.
- * A duration is specified in \p argv by the string "--duration" followed by a
- * floating point value.
+ * simulation runs from time zero seconds to time @p duration seconds. If no
+ * duration is specified in @p argv, this @p duration is set to be infinity.
+ * A duration is specified in @p argv by the string "--duration" followed by a
+ * floating point value. This parameter is optional. If it is nullptr, the
+ * duration is not saved.
+ *
  * @return A shared pointer to a rigid body system.
  */
 DRAKECARS_EXPORT
-std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
-                                                       const char* argv[],
-                                                       double* duration);
+std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
+    int argc, const char* argv[], double* duration);
 
 /**
- * Parses the simulation duration from the command line arguments. The duration
- * is specified by two sucessive tokens. The first token is "--duration" while
- * the second token is a string representation of a double value.
+ * Checks the command line arguments looking for a "--duration" flag followed
+ * by a double value, which indicates the length of time in seconds the
+ * simulation should run. If no such flag is found, return
+ * `std::numeric_limits<double>::infinity()`.
  *
  * @param[in] argc The number of command line arguments.
  * @param[in] argv An array of command line arguments.
- * @return the duration in seconds.
+ * @return The duration in seconds.
+ * @throws std::runtime_error if "--duration" exists in @p argv but is not
+ * followed by a double value.
  */
 DRAKECARS_EXPORT
 double ParseDuration(int argc, const char* argv[]);
@@ -76,8 +88,8 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
  * Adds a box-shaped terrain to the specified rigid body tree.
  *
  * The X, Y, and Z axes of the box matches the X, Y, and Z-axis of the world.
- * The length and width of the box is aligned with X and Y and are \p box_size
- * long. The depth of the box is aligned with Z and is \p box_depth long. The
+ * The length and width of the box is aligned with X and Y and are @p box_size
+ * long. The depth of the box is aligned with Z and is @p box_depth long. The
  * top surface of the box is at Z = 0.
  *
  * @param[in] rigid_body_tree The rigid body tree to which to add the terrain.

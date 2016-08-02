@@ -28,6 +28,7 @@ namespace {
 using drake::examples::cars::CreateRigidBodySystem;
 using drake::examples::cars::CreateVehicleSystem;
 using drake::examples::cars::GetCarSimulationDefaultOptions;
+using drake::examples::cars::ParseDuration;
 
 /** Driving Simulator
  * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
@@ -44,6 +45,7 @@ int do_main(int argc, const char* argv[]) {
 
   // Initializes the rigid body system.
   auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration);
+
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
   // Initializes and cascades all of the other systems.
@@ -92,6 +94,7 @@ int do_main(int argc, const char* argv[]) {
   // Defines the start time of the simulation.
   const double kStartTime = 0;
 
+  // Starts the simulation.
   drake::ros::run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
 
   return 0;
