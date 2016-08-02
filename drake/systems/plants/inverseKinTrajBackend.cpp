@@ -85,7 +85,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
         model_(model),
         helper_(helper),
         num_constraints_(num_constraints),
-        constraint_array(constraint_array) {
+        constraint_array_(constraint_array) {
     const int nT = helper.nT();
     const double* t = helper.t();
 
@@ -102,7 +102,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
       for (int j = 0; j < helper.t_inbetween()[i].size(); j++) {
         double t_j = helper.t_inbetween()[i](j) + t[i];
         for (int k = 0; k < num_constraints; k++) {
-          RigidBodyConstraint* constraint = constraint_array[k];
+          RigidBodyConstraint* constraint = constraint_array_[k];
           const int constraint_category = constraint->getCategory();
           if (constraint_category !=
               RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
@@ -124,7 +124,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     }
 
     for (int k = 0; k < num_constraints; k++) {
-      RigidBodyConstraint* constraint = constraint_array[k];
+      RigidBodyConstraint* constraint = constraint_array_[k];
       const int constraint_category = constraint->getCategory();
       if (constraint_category !=
           RigidBodyConstraint::MultipleTimeKinematicConstraintCategory) {
@@ -208,7 +208,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
         Eigen::Map<VectorXd> qvec(qi, nq);
         KinematicsCache<double> cache = model_->doKinematics(qvec);
         for (int k = 0; k < num_constraints_; k++) {
-          RigidBodyConstraint* constraint = constraint_array[k];
+          RigidBodyConstraint* constraint = constraint_array_[k];
           const int constraint_category = constraint->getCategory();
           if (constraint_category !=
               RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
@@ -255,7 +255,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     // inbetween data, evaluate any multiple time kinematic
     // constraints.
     for (int i = 0; i < num_constraints_; i++) {
-      RigidBodyConstraint* constraint = constraint_array[i];
+      RigidBodyConstraint* constraint = constraint_array_[i];
       const int constraint_category = constraint->getCategory();
       if (constraint_category !=
           RigidBodyConstraint::MultipleTimeKinematicConstraintCategory) {
@@ -329,7 +329,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
   const RigidBodyTree* model_;
   const IKTrajectoryHelper& helper_;
   const int num_constraints_;
-  RigidBodyConstraint** const constraint_array;
+  RigidBodyConstraint** const constraint_array_;
 };
 
 }
@@ -490,8 +490,8 @@ void inverseKinTrajBackend(
       mt_lpc->geval(t, nT, iAfun, jAvar, A);
       typedef Eigen::Triplet<double> T;
       std::vector<T> triplet_list;
-      for (int i = 0; i < iAfun.size(); i++) {
-          triplet_list.push_back(T(iAfun[i], jAvar[i], A[i]));
+      for (int j = 0; j < iAfun.size(); j++) {
+          triplet_list.push_back(T(iAfun[j], jAvar[j], A[j]));
       }
       Eigen::SparseMatrix<double> A_sparse(num_constraint, nq * nT);
       A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
