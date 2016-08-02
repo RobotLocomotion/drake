@@ -49,7 +49,7 @@ void PrintUsageInstructions(const std::string& executable_name) {
     << std::endl
     << "  - [duration in seconds] is the number of seconds (floating point) to"
     << std::endl
-    << "    to run the simulation. This value is in simulation time, which is"
+    << "    run the simulation. This value is in simulation time, which is"
     << std::endl
     << "    not necessarily equal to real time. It is an optional argument that"
     << std::endl
