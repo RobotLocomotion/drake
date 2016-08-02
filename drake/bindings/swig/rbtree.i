@@ -110,7 +110,7 @@
   }
 
   Eigen::VectorXd getRandomConfiguration() const {
-    std::default_random_engine generator;
+    std::default_random_engine generator(std::random_device{}());
     return $self->getRandomConfiguration(generator);
   }
 }
