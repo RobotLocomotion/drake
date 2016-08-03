@@ -148,6 +148,61 @@ GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
                               MatrixCompareType::absolute));
 }
 
+GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
+  // http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
+  OptimizationProblem prog3;
+  auto x = prog3.AddContinuousVariables(3);
+  // Build the objective matrix and send it to the program.
+  Eigen::Matrix3d Q;
+  Q << 2, 1, 0,
+       1, 2, 1,
+       0, 1, 2;
+  Eigen::Vector3d c;
+  c << 1, 0, 0;
+  prog3.AddQuadraticCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
+  // Create the constraint matrix, and send it to the program.
+  Eigen::Vector3d linearcon1;
+  linearcon1 << 1, 0, 0;
+  Eigen::Matrix3d sdpcon1;
+  sdpcon1 << 1, 0, 0,
+             0, 1, 0,
+             0, 0, 1;
+  std::shared_ptr<QuadraticConstraint> ptrtocon1 =
+      std::make_shared<QuadraticConstraint>(sdpcon1, linearcon1, 1, 1);
+  prog3.AddGenericConstraint(ptrtocon1);
+  Eigen::Vector3d linearcon2;
+  linearcon2 << 0, 1, 1;
+  Eigen::Matrix3d sdpcon2;
+  sdpcon2 << 1, 1, 1,
+             1, 1, 1,
+             1, 1, 1;
+  std::shared_ptr<QuadraticConstraint> ptrtocon2 =
+      std::make_shared<QuadraticConstraint>(sdpcon2, linearcon2, 0.5, 0.5);
+  prog3.AddGenericConstraint(ptrtocon2);
+  // Create the bounding box.
+  Eigen::Vector3d bboxlow, bboxhigh;
+  bboxlow << -std::numeric_limits<double>::infinity(),
+             -std::numeric_limits<double>::infinity(),
+             -std::numeric_limits<double>::infinity();
+  bboxhigh << std::numeric_limits<double>::infinity(),
+              std::numeric_limits<double>::infinity(),
+              std::numeric_limits<double>::infinity();
+  prog3.AddBoundingBoxConstraint(bboxlow, bboxhigh);
+  MosekSolver msk;
+  SolutionResult result = SolutionResult::kUnknownError;
+  prog3.SetSolverOption("Mosek", "maxormin", "min");
+  prog3.SetSolverOption("Mosek", "problemtype", "sdp");
+
+  ASSERT_NO_THROW(result = msk.Solve(prog3)) << "Using solver: Mosek";
+  EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Using solver: Mosek";
+  Eigen::VectorXd solutions(9);
+  solutions << 2.543589e-1, 1.798589e-01, 1.798589e-01, 1.798589e-01,
+               -2.599827e-01, 2.172859e-01, 3.110694e-01, -2.599827e-01,
+               2.172859e-01;
+  EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-7,
+                              MatrixCompareType::absolute));
+}
+
 }
 }
 }
