@@ -11,6 +11,7 @@
 #include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/expmap.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"

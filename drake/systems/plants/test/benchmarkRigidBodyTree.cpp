@@ -2,6 +2,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/testUtil.h"
 

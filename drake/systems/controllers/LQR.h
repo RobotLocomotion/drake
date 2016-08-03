@@ -4,6 +4,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/core/Gradient.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/vector.h"
 #include "drake/util/drakeGradientUtil.h"
