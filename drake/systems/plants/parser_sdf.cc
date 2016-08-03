@@ -39,7 +39,7 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) poseValueToTransform(pose, pose_map, T, T_link);
 
-  double mass;
+  double mass = {0};
   parseScalarValue(node, "mass", mass);
   body->set_mass(mass);
 
