@@ -51,6 +51,7 @@ class UnusableModel : public Model {
   std::vector<size_t> collidingPoints(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;
+
  private:
   // UnusableModel objects are not copyable
   UnusableModel(const UnusableModel&) = delete;
