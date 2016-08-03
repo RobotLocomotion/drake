@@ -6,7 +6,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/core/Vector.h"
+#include "drake/systems/vector.h"
 
 namespace drake {
 

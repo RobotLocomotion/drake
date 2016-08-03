@@ -5,7 +5,7 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
-#include "drake/core/Vector.h"
+#include "drake/systems/vector.h"
 
 namespace {
 

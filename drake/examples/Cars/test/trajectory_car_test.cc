@@ -5,8 +5,8 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/core/Vector.h"
 #include "drake/examples/Cars/curve2.h"
+#include "drake/systems/vector.h"
 
 namespace drake {
 namespace examples {
