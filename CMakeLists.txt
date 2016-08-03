@@ -245,6 +245,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     bot_core_lcmtypes
     bullet
     cmake
+    director
     eigen
     gloptipoly3
     google_styleguide
