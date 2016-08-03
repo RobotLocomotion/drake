@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "Element.h"
+#include "drake/systems/plants/collision/Element.h"
 #include "Model.h"
 
 namespace DrakeCollision {
@@ -51,5 +51,10 @@ class UnusableModel : public Model {
   std::vector<size_t> collidingPoints(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;
+ private:
+  // BulletModel objects are not copyable
+  UnusableModel(const UnusableModel&) = delete;
+  UnusableModel& operator=(const UnusableModel&) = delete;
 };
-};
+
+}  // namespace DrakeCollision

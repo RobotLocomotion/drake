@@ -8,7 +8,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h"
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
 
-#include "Element.h"
+#include "drake/systems/plants/collision/Element.h"
 #include "Model.h"
 
 namespace DrakeCollision {

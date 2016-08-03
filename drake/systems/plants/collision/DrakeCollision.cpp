@@ -1,12 +1,9 @@
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
-#include <iostream>
-
 #ifdef BULLET_COLLISION
 #include "drake/systems/plants/collision/bullet_model.h"
-#else
-#include "drake/systems/plants/collision/unusable_model.h"
 #endif
+#include "drake/systems/plants/collision/unusable_model.h"
 
 using namespace std;
 using namespace Eigen;
@@ -20,8 +17,7 @@ const bitmask DEFAULT_GROUP(1);
 unique_ptr<Model> newModel() {
 #ifdef BULLET_COLLISION
   return unique_ptr<Model>(new BulletModel());
-#else
-  return unique_ptr<Model>(new UnusableModel());
 #endif
+  return unique_ptr<Model>(new UnusableModel());
 }
 };
