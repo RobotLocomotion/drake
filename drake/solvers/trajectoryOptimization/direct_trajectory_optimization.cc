@@ -98,8 +98,67 @@ SolutionResult DirectTrajectoryOptimization::SolveTraj(
     const PiecewisePolynomial<double>& traj_init_x) {
   GetInitialVars(t_init, traj_init_u, traj_init_x);
   SolutionResult result = opt_problem_.Solve();
-  // TODO(Lucy-tri) Reconstruct the state and input trajectories.
   return result;
+}
+
+std::vector<double> DirectTrajectoryOptimization::GetTimeVector() const {
+  std::vector<double> times;
+  times.resize(N_, 0);
+
+  const auto h_values = h_vars_.value();
+  for (int i = 1; i < N_; i++) {
+    times[i] = times[i - 1] + h_values(i - 1);
+  }
+  return times;
+}
+
+void DirectTrajectoryOptimization::GetResultSamples(
+    Eigen::MatrixXd* inputs, Eigen::MatrixXd* states,
+    std::vector<double>* times_out) const {
+
+  std::vector<double> times = GetTimeVector();
+  times_out->swap(times);
+
+  inputs->resize(num_inputs_, N_);
+  inputs->fill(0);
+  states->resize(num_states_, N_);
+  states->fill(0);
+
+  const auto u_values = u_vars_.value();
+  const auto x_values = x_vars_.value();
+
+  for (int i = 0; i < N_; i++) {
+    inputs->col(i) = u_values.segment(i * num_inputs_, num_inputs_);
+    states->col(i) = x_values.segment(i * num_states_, num_states_);
+  }
+}
+
+PiecewisePolynomial<double>
+DirectTrajectoryOptimization::ReconstructInputTrajectory() const {
+  std::vector<Eigen::MatrixXd> inputs;
+  inputs.reserve(N_);
+
+  const auto u_values = u_vars_.value();
+
+  for (int i = 0; i < N_; i++) {
+    inputs.push_back(u_values.segment(i * num_inputs_, num_inputs_));
+  }
+
+  return PiecewisePolynomial<double>::FirstOrderHold(GetTimeVector(), inputs);
+}
+
+PiecewisePolynomial<double>
+DirectTrajectoryOptimization::ReconstructStateTrajectory() const {
+  std::vector<Eigen::MatrixXd> states;
+  states.reserve(N_);
+
+  const auto x_values = x_vars_.value();
+
+  for (int i = 0; i < N_; i++) {
+    states.push_back(x_values.segment(i * num_states_, num_states_));
+  }
+
+  return PiecewisePolynomial<double>::FirstOrderHold(GetTimeVector(), states);
 }
 
 }  // solvers
