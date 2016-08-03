@@ -23,6 +23,16 @@ class TestRBTCoM(unittest.TestCase):
         kinsol = r.doKinematics(q, np.zeros((7, 1)))
         J = r.centerOfMassJacobian(kinsol)
 
+        self.assertTrue(np.shape(J) == (3, 7))
+
+        q = r.getZeroConfiguration()
+        kinsol = r.doKinematics(q, np.zeros((7, 1)))
+        J = r.centerOfMassJacobian(kinsol)
+
+        self.assertTrue(np.allclose(J.flat, [1., 0., 0., 0., -0.2425, 0., -0.25,
+        0., 1., 0., 0.2425, 0., 0., 0.,
+        0., 0., 1., 0., 0., 0., 0.], atol=1e-4))
+
 
 if __name__ == '__main__':
     unittest.main()
