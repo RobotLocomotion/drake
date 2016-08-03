@@ -341,6 +341,6 @@ if(ENABLE_DOCUMENTATION)
   add_subdirectory(doc)
 endif()
 
-if(IS_DIRECTORY doc/textbook)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/textbook/CMakeLists.txt)
   add_subdirectory(doc/textbook)
 endif()
