@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace math {
