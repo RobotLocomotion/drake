@@ -26,6 +26,10 @@ add_executable(vector_test vector_test.cc)
 target_link_libraries(vector_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME vector_test COMMAND vector_test)
 
+add_executable(simulation_trajectory_logger_test simulation_trajectory_logger_test.cc)
+target_link_libraries(simulation_termination_test drakeCommon)
+add_test(NAME simulation_trajectory_logger_test COMMAND simulation_trajectory_logger_test)
+
 add_matlab_test(NAME systems/test/HybridSystemSampleTimeTest.run COMMAND HybridSystemSampleTimeTest.run)
 add_matlab_test(NAME systems/test/LinearGaussianDT.run COMMAND LinearGaussianDT.run)
 # add_matlab_test(NAME systems/test/linear_gaussian_dt COMMAND linear_gaussian_dt)  # FIXME: see #366
