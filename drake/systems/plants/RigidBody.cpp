@@ -17,7 +17,6 @@ using std::vector;
 RigidBody::RigidBody()
     : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
       collision_filter_ignores(DrakeCollision::NONE_MASK) {
-  mass = 0.0;
   com = Vector3d::Zero();
   I << drake::SquareTwistMatrix<double>::Zero();
 }
@@ -152,6 +151,22 @@ void RigidBody::ApplyTransformToJointFrame(
   for (auto& v : visual_elements_) {
     v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
   }
+}
+
+const Eigen::Matrix3Xd& RigidBody::get_contact_points() const {
+  return contact_points_;
+}
+
+void RigidBody::set_contact_points(const Eigen::Matrix3Xd& contact_points) {
+  contact_points_ = contact_points;
+}
+
+void RigidBody::set_mass(double mass) {
+  mass_ = mass;
+}
+
+double RigidBody::get_mass() const {
+  return mass_;
 }
 
 ostream& operator<<(ostream& out, const RigidBody& b) {

@@ -39,12 +39,14 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) poseValueToTransform(pose, pose_map, T, T_link);
 
-  parseScalarValue(node, "mass", body->mass);
+  double mass = {0};
+  parseScalarValue(node, "mass", mass);
+  body->set_mass(mass);
 
   body->com = T_link.inverse() * T.translation();
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
-  I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
+  I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {

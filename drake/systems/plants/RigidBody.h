@@ -242,6 +242,30 @@ class DRAKERBM_EXPORT RigidBody {
       std::vector<DrakeCollision::ElementId>& ids) const;
 
   /**
+   * Returns the points on this rigid body that should be checked for collision
+   * with the environment. These are the contact points that were saved by
+   * RigidBody::set_contact_points().
+   */
+  const Eigen::Matrix3Xd& get_contact_points() const;
+
+  /**
+   * Saves the points on this rigid body that should be checked for collision
+   * between this rigid body and the environment. These contact points can be
+   * obtained through RigidBody::get_contact_points().
+   */
+  void set_contact_points(const Eigen::Matrix3Xd& contact_points);
+
+  /**
+   * Sets the mass of this rigid body.
+   */
+  void set_mass(double mass);
+
+  /**
+   * Returns the mass of this rigid body.
+   */
+  double get_mass() const;
+
+  /**
    * Transforms all of the visual, collision, and inertial elements associated
    * with this body to the proper joint frame.  This is necessary, for instance,
    * to support SDF loading where the child frame can be specified independently
@@ -258,11 +282,6 @@ class DRAKERBM_EXPORT RigidBody {
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
-
-  Eigen::Matrix3Xd contact_pts;
-
-  /// The mass of this rigid body.
-  double mass;
 
   /// The center of mass of this rigid body.
   Eigen::Vector3d com;
@@ -313,4 +332,10 @@ class DRAKERBM_EXPORT RigidBody {
   // anything in terms of how the collision elements relate to each other.
   std::map<std::string, std::vector<DrakeCollision::ElementId>>
       collision_element_groups_;
+
+  // The contact points this rigid body has with its environment.
+  Eigen::Matrix3Xd contact_points_;
+
+  // The mass of this rigid body.
+  double mass_{0};
 };

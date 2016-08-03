@@ -87,7 +87,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     b->set_model_id((int)mxGetScalar(pm) - 1);
 
     pm = mxGetPropertySafe(pBodies, i, "mass");
-    b->mass = mxGetScalar(pm);
+    b->set_mass(mxGetScalar(pm));
 
     pm = mxGetPropertySafe(pBodies, i, "com");
     if (!mxIsEmpty(pm))
@@ -361,7 +361,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       // cout << "constructModelmex: Set contact_pts of body" << endl;
       // END_DEBUG
       Map<Matrix3Xd> pts(mxGetPrSafe(pPts), 3, n_pts);
-      model->bodies[body_idx]->contact_pts = pts;
+      model->bodies[body_idx]->set_contact_points(pts);
       // DEBUG
       // mexPrintf("constructModelmex: created %d contact points for body %d\n",
       // n_pts, body_idx);
