@@ -184,46 +184,46 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @p model_instance_ids.
    */
   double getMass(const std::set<int>& model_instance_ids =
-      default_robot_num_set) const;
+      default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& robotnum = default_model_instance_id_set) const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set,
+      const std::set<int>& robotnum = default_model_instance_id_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> worldMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& robotnum = default_model_instance_id_set) const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> centroidalMomentumMatrix(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set,
+      const std::set<int>& robotnum = default_model_instance_id_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> centroidalMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& robotnum = default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, Eigen::Dynamic>
   centerOfMassJacobian(KinematicsCache<Scalar>& cache,
-                       const std::set<int>& robotnum = default_robot_num_set,
+                       const std::set<int>& robotnum = default_model_instance_id_set,
                        bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1>
   centerOfMassJacobianDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& robotnum = default_model_instance_id_set) const;
 
   template <typename DerivedA, typename DerivedB, typename DerivedC>
   void jointLimitConstraints(Eigen::MatrixBase<DerivedA> const& q,
@@ -796,7 +796,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   int number_of_velocities() const { return num_velocities_; }
 
  public:
-  static const std::set<int> default_robot_num_set;
+  static const std::set<int> default_model_instance_id_set;
 
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;

@@ -40,7 +40,7 @@ using drake::kTwistSize;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::Gradient;
 
-const set<int> RigidBodyTree::default_robot_num_set = {0};
+const set<int> RigidBodyTree::default_model_instance_id_set = {0};
 const char* const RigidBodyTree::kWorldLinkName = "world";
 
 template <typename T>
