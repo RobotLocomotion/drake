@@ -17,16 +17,6 @@ if(lcm_FOUND AND MATLAB_FOUND)
   target_link_libraries(publishLCMLog lcm)
 endif()
 
-add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
-target_link_libraries(drakePolynomial drakeCommon)
-
-pods_install_libraries(drakePolynomial)
-drake_install_headers(Polynomial.h)
-pods_install_pkg_config_file(drake-polynomial
-  LIBS -ldrakePolynomial -ldrakeCommon
-  REQUIRES
-  VERSION 0.0.2)
-
 add_library_with_exports(LIB_NAME drakeUtil SOURCE_FILES drakeUtil.cpp)
 target_link_libraries(drakeUtil drakeCommon)
 drake_install_headers(drakeUtil.h)
@@ -40,11 +30,11 @@ drake_install_headers(drakeAppUtil.h)
 
 if(MATLAB_FOUND)
   add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
-  target_link_libraries(drakeMexUtil drakePolynomial)
+  target_link_libraries(drakeMexUtil drakeCommon)
   # TODO: use this again once I can assume everyone has CMAKE version >= 2.8.8
   # add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
-  drake_install_headers(drakeMexUtil.h MexWrapper.h TrigPoly.h)
+  drake_install_headers(drakeMexUtil.h MexWrapper.h)
   pods_install_libraries(drakeMexUtil)
   pods_install_pkg_config_file(drake-mex-util
     LIBS -ldrakeMexUtil

@@ -7,7 +7,7 @@
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/optimization.h"
 #include "drake/solvers/snopt_solver.h"
-#include "drake/util/Polynomial.h"
+#include "drake/common/polynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
