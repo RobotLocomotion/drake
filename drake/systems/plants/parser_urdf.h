@@ -13,9 +13,9 @@ namespace drake {
 namespace parsers {
 namespace urdf {
 
-/// Manufactures a `RigidBodyFrame` from the given URDF \p link
-/// and \p pose XML nodes.  The link name must exist in the given
-/// \p model. Otherwise, a runtime error is thrown.
+/// Manufactures a `RigidBodyFrame` from the given URDF @p link
+/// and @p pose XML nodes.  The link name must exist in the given
+/// @p model. Otherwise, a runtime error is thrown.
 ///
 /// @param[in] tree The rigid body tree that holds the rigid body to which the
 /// new `RigidBodyFrame` is attached.
@@ -38,31 +38,34 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     const RigidBodyTree& tree, const tinyxml2::XMLElement& link,
     const tinyxml2::XMLElement* pose, const std::string& name);
 
-/// Adds a URDF model to a rigid body system. The model is connected to the
-/// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
-/// frame is equal to the world's coordinate frame.
+/// Reads a single model from a URDF specification and adds a single instance of
+/// it to @p tree. The model instance is connected to the world via
+/// a joint of type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame
+/// is equal to the world's coordinate frame.
 ///
-/// @param[in] urdf_string The URDF description of the model to be added to
-/// \p tree.
+/// @param[in] urdf_string The URDF description of a model. An instance of this
+/// model will be added to @p tree.
 ///
-/// @param[out] tree The `RigidBodyTree` to which to add the model.
+/// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDFString(
     const std::string& urdf_string,
     RigidBodyTree* tree);
 
-/// Adds a URDF model to a rigid body system. The model is connected to the
-/// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
-/// frame is equal to the world's coordinate frame.
+/// Reads a single model from a URDF specification and adds a single instance of
+/// it to @p tree. The model instance is connected to the world via
+/// a joint of type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame is
+/// equal to the world's coordinate frame.
 ///
-/// @param[in] urdf_string The URDF description of the model to be added to
-/// \p tree.
+/// @param[in] urdf_string The URDF description of a model. An instance of this
+/// model will be added to @p tree.
 ///
 /// @param[in] package_map A map of ROS package names to their paths. These are
-/// the packages to search through when finding files referenced in the URDF.
+/// the packages to search through when searching for files referenced in the
+/// URDF.
 ///
-/// @param[out] tree The `RigidBodyTree` to which to add the model.
+/// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDFString(
@@ -70,18 +73,21 @@ void AddModelInstanceFromURDFString(
     std::map<std::string, std::string>& package_map,
     RigidBodyTree* tree);
 
-/// Adds a URDF model to a rigid body system.
+/// Reads a single model from a URDF specification and adds a single instance of
+/// it to @p tree. The model instance is connected to the world via
+/// a joint of type @p floating_base_type. The model instance's frame is equal
+/// to the world's coordinate frame.
 ///
-/// @param[in] urdf_string The URDF description of the model to be added to
-/// \p tree.
+/// @param[in] urdf_string The URDF description of the model. An instance of
+/// this model will be added to @p tree.
 ///
 /// @param[in] root_dir The root directory in which to search for files
 /// mentioned in the URDF.
 ///
 /// @param[in] floating_base_type The type of joint that connects the model's
-/// root to the existing rigid body tree.
+/// root to @p tree.
 ///
-/// @param[out] tree The `RigidBodyTree` to which to add the model.
+/// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDFString(
@@ -90,10 +96,11 @@ void AddModelInstanceFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
 
-/// Adds a URDF model to a rigid body system.
+/// Reads a single model from a URDF specification and adds a single instance of
+/// it to @p tree.
 ///
-/// @param[in] urdf_string The URDF description of the model to be added to
-/// \p tree.
+/// @param[in] urdf_string The URDF description of the model. An instance of
+/// this model will be added to @p tree.
 ///
 /// @param[in] package_map A map of ROS package names to their paths. These are
 /// the packages to search through when finding files referenced in the URDF.
@@ -101,12 +108,13 @@ void AddModelInstanceFromURDFString(
 /// @param[in] root_dir The root directory in which to search for files
 /// mentioned in the URDF.
 ///
-/// @param[in] floating_base_type The type of joint that connects the model's
-/// root to the existing rigid body tree.
+/// @param[in] floating_base_type The type of joint that connects the model
+/// instance's root to @p tree.
 ///
-/// @param[in] weld_to_frame The frame to which to connect the new model.
+/// @param[in] weld_to_frame The frame to which to connect the new model
+/// instance.
 ///
-/// @param[out] tree The `RigidBodyTree` to which to add the model.
+/// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDFString(
@@ -117,28 +125,34 @@ void AddModelInstanceFromURDFString(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
-/// Adds a URDF model to a rigid body system. The model is connected to the
-/// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
-/// frame is equal to the world's coordinate frame.
+/// Reads a single model from a URDF specification and adds a single instance of
+/// it to @p tree. The model instance is connected to the world via a joint of
+/// type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame is equal to the
+/// world's coordinate frame.
 ///
-/// @param[in] urdf_filename The URDF file containing the model to be added.
+/// @param[in] urdf_filename The name of the file containing a URDF
+/// description of the model. An instance of this model will be added to
+/// @p tree.
 ///
-/// @param[out] tree The `RigidBodyTree` to which to add the model.
+/// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDF(const std::string& urdf_filename,
     RigidBodyTree* tree);
 
-/// Adds a URDF model to a rigid body system. The model is connected to the
-/// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
-/// frame is equal to the world's coordinate frame.
+/// Reads a single model from a URDF specification and adds a single instance of
+/// it to @p tree. The model instance is connected to the world via a joint of
+/// type `DrakeJoint::ROLLPITCHYAW`. The model's frame is equal to the world's
+/// coordinate frame.
 ///
-/// @param[in] urdf_filename The URDF file containing the model to be added.
+/// @param[in] urdf_filename The name of the file containing a URDF
+/// description of the model. An instance of this model will be added to
+/// @p tree.
 ///
-/// @param[in] floating_base_type The type of joint that connects the model's
-/// root to the existing rigid body tree.
+/// @param[in] floating_base_type The type of joint that connects the model
+/// instance's root to @p tree.
 ///
-/// @param[out] tree The `RigidBodyTree` to which to add the model.
+/// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDF(
@@ -146,18 +160,22 @@ void AddModelInstanceFromURDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
 
-/// Adds a URDF model to a rigid body system. The model is connected to the
-/// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
-/// frame is equal to the world's coordinate frame.
+/// Reads a single model from a URDF specification and adds a single instance of
+/// it to @p tree. The model instance is connected to the world via a joint of
+/// type `DrakeJoint::ROLLPITCHYAW` joint. The model instance's frame is equal
+/// to the world's coordinate frame.
 ///
-/// @param[in] urdf_filename The URDF file containing the model to be added.
+/// @param[in] urdf_filename The name of the file containing a URDF
+/// description of the model. An instance of this model will be added to
+/// @p tree.
 ///
-/// @param[in] floating_base_type The type of joint that connects the model's
-/// root to the existing rigid body tree.
+/// @param[in] floating_base_type The type of joint that connects the model
+/// instance's root to the @p tree.
 ///
-/// @param[in] weld_to_frame The frame to which to connect the new model.
+/// @param[in] weld_to_frame The frame to which to connect the new model
+/// instance.
 ///
-/// @param[out] tree The `RigidBodyTree` to which to add the model.
+/// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDF(
@@ -166,21 +184,25 @@ void AddModelInstanceFromURDF(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
-/// Adds a URDF model to a rigid body system. The model is connected to the
-/// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
-/// frame is equal to the world's coordinate frame.
+/// Reads a single model from a URDF specification and adds a single instance of
+/// it to @p tree.  The model instance is connected to the world via a joint of
+/// type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame is equal to the
+/// world's coordinate frame.
 ///
-/// @param[in] urdf_filename The URDF file containing the model to be added.
+/// @param[in] urdf_filename The name of the file containing a URDF
+/// description of the model. An instance of this model will be added to
+/// @p tree.
 ///
 /// @param[in] package_map A map of ROS package names to their paths. These are
 /// the packages to search through when finding files referenced in the URDF.
 ///
-/// @param[in] floating_base_type The type of joint that connects the model's
-/// root to the existing rigid body tree.
+/// @param[in] floating_base_type The type of joint that connects the model
+/// instance's root to the @p tree.
 ///
-/// @param[in] weld_to_frame The frame to which to connect the new model.
+/// @param[in] weld_to_frame The frame to which to connect the new model
+/// instance.
 ///
-/// @param[out] tree The `RigidBodyTree` to which to add the model.
+/// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDF(
