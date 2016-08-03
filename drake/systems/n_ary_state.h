@@ -7,7 +7,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
-#include "drake/core/Vector.h"
+#include "drake/systems/vector.h"
 
 namespace drake {
 

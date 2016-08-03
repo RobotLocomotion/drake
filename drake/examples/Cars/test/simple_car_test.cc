@@ -5,10 +5,10 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/core/Vector.h"
-#include "drake/systems/cascade_system.h"
 #include "drake/systems/Simulation.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/systems/simulation_options.h"
+#include "drake/systems/vector.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 using drake::util::MatrixCompareType;

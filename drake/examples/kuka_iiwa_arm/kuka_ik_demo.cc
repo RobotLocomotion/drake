@@ -3,11 +3,11 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_path.h"
-#include "drake/core/Vector.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/vector.h"
 
 #include "lcmtypes/drake/lcmt_iiwa_command.hpp"
 #include "lcmtypes/drake/lcmt_iiwa_status.hpp"

@@ -2,10 +2,10 @@
 
 #include <stdexcept>
 
-#include "drake/core/Vector.h"
 #include "drake/drakeCars_export.h"
 #include "drake/examples/Cars/curve2.h"
 #include "drake/examples/Cars/gen/simple_car_state.h"
+#include "drake/systems/vector.h"
 
 namespace drake {
 

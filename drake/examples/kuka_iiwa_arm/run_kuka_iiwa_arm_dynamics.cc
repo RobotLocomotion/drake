@@ -7,7 +7,7 @@
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/Polynomial.h"
+#include "drake/common/polynomial.h"
 #include "drake/util/drakeAppUtil.h"
 
 using drake::RigidBodySystem;

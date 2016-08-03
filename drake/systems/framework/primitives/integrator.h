@@ -12,14 +12,14 @@
 namespace drake {
 namespace systems {
 
-/// An adder for arbitrarily many inputs of equal length.
-/// @tparam T The type of mathematical object being added.
+/// An integrator for a continuous vector input.
+/// @tparam T The type being integrated. Must be a valid Eigen scalar.
 template <typename T>
-class Adder : public System<T> {
+class Integrator : public System<T> {
  public:
-  /// @param num_inputs is the number of input ports to be added.
-  /// @param length is the size of each input port.
-  Adder(int num_inputs, int length);
+  /// @param length is the size of the input port.
+  explicit Integrator(int length);
+  ~Integrator() override {}
 
   /// Allocates the number of input ports specified in the constructor.
   /// Allocates no state.
@@ -29,14 +29,23 @@ class Adder : public System<T> {
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const ContextBase<T>& context) const override;
 
-  /// Sums the input ports into the output port. If the input ports are not
-  /// of number num_inputs_ or size length_, std::runtime_error will be thrown.
+  /// Integrates the input ports into the output port. If the input ports are
+  /// not of the length specified in the constructor, std::runtime_error will
+  /// be thrown.
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override;
 
+  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override;
+
+  void EvalTimeDerivatives(const ContextBase<T>& context,
+                           ContinuousState<T>* derivatives) const override;
+
+  void set_name(const std::string& name) { name_ = name; }
+  std::string get_name() const override { return name_; }
+
  private:
-  const int num_inputs_;
-  const int length_;
+  std::string name_;
+  const int length_{0};
 };
 
 }  // namespace systems

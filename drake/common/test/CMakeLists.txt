@@ -15,6 +15,14 @@ target_link_libraries(sorted_vectors_have_intersection_test
 add_test(NAME sorted_vectors_have_intersection_test
          COMMAND sorted_vectors_have_intersection_test)
 
+add_executable(trig_poly_test trig_poly_test.cc)
+target_link_libraries(trig_poly_test drakeCommon ${GTEST_BOTH_LIBRARIES})
+add_test(NAME trig_poly_test COMMAND trig_poly_test)
+
+add_executable(polynomial_test polynomial_test.cc)
+target_link_libraries(polynomial_test drakeCommon ${GTEST_BOTH_LIBRARIES})
+add_test(NAME polynomial_test COMMAND polynomial_test)
+
 # Adds "drake_assert.h" unit testing.
 add_executable(drake_assert_test_default drake_assert_test.cc)
 target_link_libraries(drake_assert_test_default drakeCommon ${GTEST_BOTH_LIBRARIES})
