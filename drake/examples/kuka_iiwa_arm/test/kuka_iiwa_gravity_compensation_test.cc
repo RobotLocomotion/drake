@@ -42,7 +42,7 @@ auto robot_state_tap =
     std::make_shared<RobotStateTap<RigidBodySystem::StateVector>>();
 
 auto robot_controller =
-    std::make_shared<KukaIIWAGravityCompensationController>(iiwa_system);
+    //std::make_shared<KukaIIWAGravityCompensationController>(iiwa_system);
 auto tempSys = cascade(feedback(iiwa_system, robot_controller),
                        visualizer);
 //auto sys = cascade(cascade(iiwa_system, visualizer), robot_state_tap);
