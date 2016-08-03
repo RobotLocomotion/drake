@@ -722,8 +722,8 @@ void parseURDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   parseRobot(sys, node);
 }
 
-void parseSDFJoint(RigidBodySystem& sys, int model_id, XMLElement* node,
-                   PoseMap& pose_map) {
+void parseSDFJoint(RigidBodySystem& sys, int model_instance_id,
+                   XMLElement* node, PoseMap& pose_map) {
   // Obtains the name of the joint.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: joint tag is missing name attribute");
@@ -738,7 +738,7 @@ void parseSDFJoint(RigidBodySystem& sys, int model_id, XMLElement* node,
   }
 }
 
-void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
+void parseSDFLink(RigidBodySystem& sys, int model_instance_id, XMLElement* node,
                   PoseMap& pose_map) {
   // Obtains the name of the body.
   const char* attr = node->Attribute("name");
@@ -746,7 +746,8 @@ void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
   string body_name(attr);
 
   // Obtains the corresponding body from the rigid body tree.
-  auto body = sys.getRigidBodyTree()->FindBody(body_name, "", model_id);
+  auto body = sys.getRigidBodyTree()->FindBody(body_name, "",
+      model_instance_id);
 
   // Obtains the transform from the link to the model.
   Isometry3d transform_link_to_model = Isometry3d::Identity();
@@ -793,7 +794,8 @@ void parseSDFLink(RigidBodySystem& sys, int model_id, XMLElement* node,
   }
 }
 
-void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node) {
+void parseSDFModel(RigidBodySystem& sys, int model_instance_id,
+    XMLElement* node) {
   // A pose map is necessary since SDF specifies almost everything in the
   // global coordinate frame. The pose map contains transforms from a link's
   // coordinate frame to the model's coordinate frame.
@@ -806,12 +808,12 @@ void parseSDFModel(RigidBodySystem& sys, int model_id, XMLElement* node) {
   // Parses each link element within the model.
   for (XMLElement* elnode = node->FirstChildElement("link"); elnode;
        elnode = elnode->NextSiblingElement("link"))
-    parseSDFLink(sys, model_id, elnode, pose_map);
+    parseSDFLink(sys, model_instance_id, elnode, pose_map);
 
   // Parses each joint element within the model.
   for (XMLElement* elnode = node->FirstChildElement("joint"); elnode;
        elnode = elnode->NextSiblingElement("joint"))
-    parseSDFJoint(sys, model_id, elnode, pose_map);
+    parseSDFJoint(sys, model_instance_id, elnode, pose_map);
 }
 
 void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
@@ -822,24 +824,25 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
         "ERROR: This xml file does not contain an sdf tag");
   }
 
-  // Obtains the final model ID after all models in the SDF are added to the
-  // RigidBodyTree. This is simply the current model ID since the models in this
-  // SDF were already added to the rigid body tree prior to this method being
-  // called. It's possible for final_model_id to be greater than the number of
-  // models in the SDF file since multiple SDF files can be loaded into this
-  // RigidBodySystem. In fact, the same SDF file can be added to this
-  // RigidBodySystem multiple times. This is feasible since the rigid bodies
-  // that belong to a particular model are all assigned a model ID that's unique
-  // to that model.
-  int final_model_id = sys.getRigidBodyTree()->get_current_model_id();
+  // Obtains the final model instance ID after all models in the SDF are added
+  // to the RigidBodyTree. This is simply the current model instance ID since
+  // the models in this SDF were already added to the rigid body tree prior to
+  // this method being called. It's possible for final_model_instance_id to be
+  // greater than the number of models in the SDF file since multiple SDF files
+  // can be loaded into this RigidBodySystem. In fact, the same SDF file can be
+  // added to this RigidBodySystem multiple times. This is feasible since the
+  // rigid bodies that belong to a particular model are all assigned a model
+  // instance ID that's unique to that model.
+  int final_model_instance_id =
+      sys.getRigidBodyTree()->get_current_model_instance_id();
 
   // Computes the number of models in the SDF. This includes only the models
   // that are not part of the world. This is correct because even though
-  // RigidBodyTree assigns a unique model ID to each model regardless of whether
-  // it is part of the world, the models that are part of the world are added
-  // first and thus have smaller model IDs. Since the models that are not part
-  // of the world are the ones that need to be parsed by the RigidBodySystem,
-  // we only count the models that are not part of the world.
+  // RigidBodyTree assigns a unique model instance ID to each model regardless
+  // of whether it is part of the world, the models that are part of the world
+  // are added first and thus have smaller model instance IDs. Since the models
+  // that are not part of the world are the ones that need to be parsed by the
+  // RigidBodySystem, we only count the models that are not part of the world.
   int number_of_models_in_sdf = 0;
   {
     for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
@@ -849,43 +852,46 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   }
 
   // Computes the ID of the first model in the SDF. Since this SDF was just
-  // added to the RigidBodyTree, the model ID of the first model in the SDF
-  // is simply the final_model_id minus the number of models in the SDF that
-  // are not part of the world..
-  int model_id = final_model_id - number_of_models_in_sdf;
+  // added to the RigidBodyTree, the model instance ID of the first model in the
+  // SDF is simply the final_model_instance_id minus the number of models in the
+  // SDF that are not part of the world.
+  int model_instance_id = final_model_instance_id - number_of_models_in_sdf;
 
   // Parses each model in the SDF. This includes parsing and instantiating
   // simulated sensors as specified by the SDF description.
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
        elnode = elnode->NextSiblingElement("model")) {
-    parseSDFModel(sys, model_id++, elnode);
+    parseSDFModel(sys, model_instance_id++, elnode);
   }
 
-  // Verifies that the model_id is equal to the final_model_id. They should
+  // Verifies that the model_instance_id is equal to the
+  // final_model_instance_id. They should
   // match since the number of models we just parsed is equal to:
   //
   //     number_of_models_in_sdf
   //
   // And initially prior to parsing the models in the SDF:
   //
-  //     model_id = final_model_id - number_of_models_in_sdf
+  //     model_instance_id = final_model_instance_id - number_of_models_in_sdf
   //
-  // Since model_id is incremented each time a model in the SDF is parsed, its
-  // final value is equal to its original value plus number_of_models_in_sdf.
+  // Since model_instance_id is incremented each time a model in the SDF is
+  // parsed, its final value is equal to its original value plus
+  // number_of_models_in_sdf.
+  //
   // Thus:
   //
-  //     model_id = final_model_id - number_of_models_in_sdf +
+  //     model_instance_id = final_model_instance_id - number_of_models_in_sdf +
   //                number_of_models_in_sdf
-  //              = final_model_id
+  //              = final_model_instance_id
   //
-  // Hence, at this point in the code, model_id should equal final_model_id.
-  if (model_id != final_model_id) {
+  // Hence, at this point in the code, model_instance_id should equal
+  // final_model_instance_id.
+  if (model_instance_id != final_model_instance_id) {
     throw std::runtime_error(
-        "RigidBodySystem.cpp: parseSDF: ERROR: the final model ID (" +
-        std::to_string(model_id) +
-        ") is not equal to the expected final model "
-        "ID (" +
-        std::to_string(final_model_id) + ")");
+        "RigidBodySystem.cpp: parseSDF: ERROR: the final model instance ID (" +
+        std::to_string(model_instance_id) +
+        ") is not equal to the expected final model instance ID (" +
+        std::to_string(final_model_instance_id) + ")");
   }
 }
 

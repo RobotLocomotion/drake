@@ -180,13 +180,15 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   /**
    * Adds the models contained within an SDF file to this rigid body system.
    * The models within a particular SDF file can be added multiple times. Each
-   * model is uniquely identified by a model ID that is assigned to the rigid
-   * bodies that belong to the model.
+   * model is uniquely identified by a model instance ID that is assigned to the
+   * rigid bodies that belong to the model.
    *
    * @param[in] sdf_filename The name of the SDF file containing the models to
    * add to this rigid body system.
+   *
    * @param[in] floating_base_type The type of floating base to use to connect
    * the models within the SDF file to the world.
+   *
    * @param[in] weld_to_frame The frame used for connecting the models in the
    * SDF to the rigid body tree within this rigid body system. Note that this
    * specifies both the existing frame in the rigid body tree to connect the

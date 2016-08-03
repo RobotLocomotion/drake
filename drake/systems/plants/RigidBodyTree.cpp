@@ -1,4 +1,4 @@
-  #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_autodiff_types.h"
@@ -75,8 +75,6 @@ RigidBodyTree::RigidBodyTree(void)
   // Adds the rigid body representing the world.
   std::unique_ptr<RigidBody> b(new RigidBody());
   b->set_name(RigidBodyTree::kWorldLinkName);
-  b->set_model_id(0);
-  b->set_body_index(0);
   bodies.push_back(std::move(b));
 }
 
@@ -915,13 +913,13 @@ bool RigidBodyTree::isBodyPartOfRobot(const RigidBody& body,
     }
   }
 
-  return robotnum.find(body.get_model_id()) != robotnum.end();
+  return robotnum.find(body.get_model_instance_id()) != robotnum.end();
 }
 
-double RigidBodyTree::getMass(const std::set<int>& model_ids) const {
+double RigidBodyTree::getMass(const std::set<int>& model_instance_ids) const {
   double total_mass = 0.0;
   for (const auto& body : bodies) {
-    if (isBodyPartOfRobot(*body.get(), model_ids)) {
+    if (isBodyPartOfRobot(*body.get(), model_instance_ids)) {
       total_mass += body->mass;
     }
   }
@@ -1656,7 +1654,7 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
 
 RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
                                    const std::string& model_name,
-                                   int model_id) const {
+                                   int model_instance_id) const {
   // Obtains lower case versions of the body name and model name.
   std::string body_name_lower = body_name;
   std::string model_name_lower = model_name;
@@ -1671,9 +1669,12 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   int match_index = -1;
 
   for (int ii = 0; ii < static_cast<int>(bodies.size()); ++ii) {
-    // Skips the current body if model_id is not -1 and the body's robot ID is
-    // not equal to the desired model ID.
-    if (model_id != -1 && model_id != bodies[ii]->get_model_id()) continue;
+    // Skips the current body if model_instance_id is not -1 and the body's
+    // robot ID is not equal to the desired model instance ID.
+    if (model_instance_id != -1
+        && model_instance_id != bodies[ii]->get_model_instance_id()) {
+      continue;
+    }
 
     // Obtains a lower case version of the current body's model name.
     string current_model_name = bodies[ii]->get_model_name();
@@ -1699,8 +1700,9 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
       } else {
         throw std::logic_error(
             "RigidBodyTree::FindBody: ERROR: found multiple bodys named \"" +
-            body_name + "\", model name = \"" + model_name + "\", model id = " +
-            std::to_string(model_id) + ".");
+            body_name + "\", model name = \"" + model_name +
+            "\", model intsance id = " + std::to_string(model_instance_id) +
+            ".");
       }
     }
   }
@@ -1712,19 +1714,19 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   } else {
     throw std::logic_error(
         "RigidBodyTree::FindBody: ERROR: Could not find body named \"" +
-        body_name + "\", model name = \"" + model_name + "\", model id = " +
-        std::to_string(model_id) + ".");
+        body_name + "\", model name = \"" + model_name +
+        "\", model instance id = " + std::to_string(model_instance_id) + ".");
   }
 }
 
 RigidBody* RigidBodyTree::findLink(const std::string& link_name,
                                    const std::string& model_name,
-                                   int model_id) const {
-  return FindBody(link_name, model_name, model_id);
+                                   int model_instance_id) const {
+  return FindBody(link_name, model_name, model_instance_id);
 }
 
 shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
-    const std::string& frame_name, int model_id) const {
+    const std::string& frame_name, int model_instance_id) const {
   std::string frame_name_lower = frame_name;
 
   // Obtains a lower case version of frame_name.
@@ -1737,9 +1739,12 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   int match_index = -1;
 
   for (int ii = 0; ii < static_cast<int>(frames.size()); ++ii) {
-    // Skips the current frame if model_id is not -1 and the frame's robot ID is
-    // not equal to the desired robot ID.
-    if (model_id != -1 && model_id != frames[ii]->get_model_id()) continue;
+    // Skips the current frame if model_instance_id is not -1 and the frame's
+    // model instance ID is not equal to the desired model instance ID.
+    if (model_instance_id != -1 && model_instance_id !=
+        frames[ii]->get_model_instance_id()) {
+      continue;
+    }
 
     // Obtains a lower case version of the current frame.
     std::string current_frame_name = frames[ii]->get_name();
@@ -1755,7 +1760,8 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
       } else {
         throw std::logic_error(
             "RigidBodyTree::findFrame: ERROR: Found multiple frames named \"" +
-            frame_name + "\", model_id = " + std::to_string(model_id));
+            frame_name + "\", model_instance_id = " +
+            std::to_string(model_instance_id));
       }
     }
   }
@@ -1767,29 +1773,31 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   } else {
     throw std::logic_error(
         "RigidBodyTree::findFrame: ERROR: could not find frame named \"" +
-        frame_name + "\", model id = " + std::to_string(model_id) + ".");
+        frame_name + "\", model instance id = " +
+        std::to_string(model_instance_id) + ".");
   }
 }
 
 int RigidBodyTree::FindBodyIndex(const std::string& body_name,
-                                 int model_id) const {
-  RigidBody* body = FindBody(body_name, "", model_id);
+                                 int model_instance_id) const {
+  RigidBody* body = FindBody(body_name, "", model_instance_id);
   if (body == nullptr) {
     throw std::logic_error(
         "RigidBodyTree::FindBodyIndex: ERROR: Could not find index for rigid "
         "body \"" +
-        body_name + "\", model_id = " + std::to_string(model_id) + ".");
+        body_name + "\", model_instance_id = " +
+        std::to_string(model_instance_id) + ".");
   }
   return body->get_body_index();
 }
 
 int RigidBodyTree::findLinkId(const std::string& link_name,
-                              int model_id) const {
-  return FindBodyIndex(link_name, model_id);
+                              int model_instance_id) const {
+  return FindBodyIndex(link_name, model_instance_id);
 }
 
 RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
-                                    int model_id) const {
+                                    int model_instance_id) const {
   // Obtains a lower case version of joint_name.
   std::string joint_name_lower = joint_name;
   std::transform(joint_name_lower.begin(), joint_name_lower.end(),
@@ -1812,10 +1820,11 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
     }
   }
 
-  if (model_id != -1) {
+  if (model_instance_id != -1) {
     for (size_t ii = 0; ii < bodies.size(); ii++) {
       if (name_match[ii]) {
-        name_match[ii] = bodies[ii]->get_model_id() == model_id;
+        name_match[ii] =
+            (bodies[ii]->get_model_instance_id() == model_instance_id);
       }
     }
   }
@@ -1829,7 +1838,8 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
         throw std::logic_error(
             "RigidBodyTree::findJoint: ERROR: Multiple "
             "joints found named \"" +
-            joint_name + "\", model ID = " + std::to_string(model_id) + ".");
+            joint_name + "\", model instance ID = " +
+            std::to_string(model_instance_id) + ".");
       }
       ind_match = ii;
       match_found = true;
@@ -1838,8 +1848,8 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
   if (!match_found) {
     throw std::logic_error(
         "RigidBodyTree::findJoint: ERROR: Could not find unique joint " +
-        std::string("named \"") + joint_name + "\", model_id = " +
-        std::to_string(model_id));
+        std::string("named \"") + joint_name + "\", model_instance_id = " +
+        std::to_string(model_instance_id));
   } else {
     return bodies[ind_match].get();
   }

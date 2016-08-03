@@ -23,11 +23,7 @@ class DRAKERBM_EXPORT RigidBody {
   RigidBody();
 
   /**
-   * @brief Name of the body.
-   *
-   * An accessor for the name of the body that this rigid body represents.
-   *
-   * @return The name of the body that's modeled by this rigid body.
+   * @returns The name of this rigid body.
    */
   const std::string& get_name() const;
 
@@ -37,10 +33,7 @@ class DRAKERBM_EXPORT RigidBody {
   void set_name(const std::string& name);
 
   /**
-   * An accessor for the name of the model or robot that this rigid body is
-   * a part of.
-   *
-   * @return The name of the model that this rigid body belongs to.
+   * @returns The name of the model containing this rigid body.
    */
   // TODO(amcastro-tri): Move concept of world out of here as per #2318.
   const std::string& get_model_name() const;
@@ -51,14 +44,14 @@ class DRAKERBM_EXPORT RigidBody {
   void set_model_name(const std::string& name);
 
   /**
-   * Returns the ID of the model to which this rigid body belongs.
+   * Returns the ID of the model instance to which this rigid body belongs.
    */
-  int get_model_id() const;
+  int get_model_instance_id() const;
 
   /**
-   * Sets the ID of the model to which this rigid body belongs.
+   * Sets the ID of the model instance to which this rigid body belongs.
    */
-  void set_model_id(int model_id);
+  void set_model_instance_id(int model_instance_id);
 
   /**
    * Sets the parent joint through which this rigid body connects to its parent
@@ -285,7 +278,7 @@ class DRAKERBM_EXPORT RigidBody {
   std::string model_name_;
 
   // A unique ID for each model. It uses 0-index, starts from 0.
-  int model_id_{0};
+  int model_instance_id_{0};
 
   // The rigid body that's connected to this rigid body's joint.
   RigidBody* parent_{nullptr};

@@ -262,14 +262,14 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 bool parseSDFLink(RigidBodyTree* model, std::string model_name,
                   XMLElement* node, const PackageMap& package_map,
                   PoseMap& pose_map, const string& root_dir, int* index,
-                  int model_id) {
+                  int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
   RigidBody* body{nullptr};
   std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
   body->set_model_name(model_name);
-  body->set_model_id(model_id);
+  body->set_model_instance_id(model_instance_id);
 
   attr = node->Attribute("name");
   if (!attr) {
@@ -648,7 +648,7 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
 
   string model_name = node->Attribute("name");
 
-  int model_id = rigid_body_tree->get_next_model_id();
+  int model_id = rigid_body_tree->get_next_model_instance_id();
 
   // Maintains a list of links that were added to the rigid body tree.
   // This is iterated over by method AddFloatingJoint() to determine where
