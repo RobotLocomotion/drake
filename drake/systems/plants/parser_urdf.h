@@ -48,7 +48,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddModelFromURDFString(
+void AddModelInstanceFromURDFString(
     const std::string& urdf_string,
     RigidBodyTree* tree);
 
@@ -65,7 +65,7 @@ void AddModelFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddModelFromURDFString(
+void AddModelInstanceFromURDFString(
     const std::string& urdf_string,
     std::map<std::string, std::string>& package_map,
     RigidBodyTree* tree);
@@ -84,7 +84,7 @@ void AddModelFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddModelFromURDFString(
+void AddModelInstanceFromURDFString(
     const std::string& urdf_string,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
@@ -109,7 +109,7 @@ void AddModelFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddModelFromURDFString(
+void AddModelInstanceFromURDFString(
     const std::string& urdf_string,
     PackageMap& package_map,
     const std::string& root_dir,
@@ -126,7 +126,7 @@ void AddModelFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddModelFromURDF(const std::string& urdf_filename,
+void AddModelInstanceFromURDF(const std::string& urdf_filename,
     RigidBodyTree* tree);
 
 /// Adds a URDF model to a rigid body system. The model is connected to the
@@ -141,7 +141,7 @@ void AddModelFromURDF(const std::string& urdf_filename,
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddModelFromURDF(
+void AddModelInstanceFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
@@ -160,7 +160,7 @@ void AddModelFromURDF(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddModelFromURDF(
+void AddModelInstanceFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
@@ -183,7 +183,7 @@ void AddModelFromURDF(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddModelFromURDF(
+void AddModelInstanceFromURDF(
     const std::string& urdf_filename,
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
