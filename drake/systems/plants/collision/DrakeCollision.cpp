@@ -5,7 +5,7 @@
 #ifdef BULLET_COLLISION
 #include "drake/systems/plants/collision/bullet_model.h"
 #else
-#include "drake/systems/plants/collision/UnusableModel.h"
+#include "drake/systems/plants/collision/unusable_model.h"
 #endif
 
 using namespace std;

@@ -1,4 +1,4 @@
-#include "UnusableModel.h"
+#include "unusable_model.h"
 
 #include "drake/common/drake_assert.h"
 
@@ -6,7 +6,7 @@ namespace DrakeCollision {
 
 static void PrintErrorAndDie() {
   DRAKE_ABORT_UNLESS(
-      !"Compile Drake with a collision library backend for Collision support!");
+      !"Compile Drake with a collision library backend for collision support!");
 }
 
 void UnusableModel::updateModel() {
