@@ -38,8 +38,6 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     const RigidBodyTree& tree, const tinyxml2::XMLElement& link,
     const tinyxml2::XMLElement* pose, const std::string& name);
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
 /// frame is equal to the world's coordinate frame.
@@ -50,12 +48,10 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddRobotFromURDFString(
+void AddModelFromURDFString(
     const std::string& urdf_string,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
 /// frame is equal to the world's coordinate frame.
@@ -69,14 +65,11 @@ void AddRobotFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddRobotFromURDFString(
+void AddModelFromURDFString(
     const std::string& urdf_string,
     std::map<std::string, std::string>& package_map,
     RigidBodyTree* tree);
 
-
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a URDF model to a rigid body system.
 ///
 /// @param[in] urdf_string The URDF description of the model to be added to
@@ -91,14 +84,12 @@ void AddRobotFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddRobotFromURDFString(
+void AddModelFromURDFString(
     const std::string& urdf_string,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a URDF model to a rigid body system.
 ///
 /// @param[in] urdf_string The URDF description of the model to be added to
@@ -118,7 +109,7 @@ void AddRobotFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddRobotFromURDFString(
+void AddModelFromURDFString(
     const std::string& urdf_string,
     PackageMap& package_map,
     const std::string& root_dir,
@@ -126,8 +117,6 @@ void AddRobotFromURDFString(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
 /// frame is equal to the world's coordinate frame.
@@ -137,11 +126,9 @@ void AddRobotFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddRobotFromURDF(const std::string& urdf_filename,
+void AddModelFromURDF(const std::string& urdf_filename,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
 /// frame is equal to the world's coordinate frame.
@@ -154,13 +141,11 @@ void AddRobotFromURDF(const std::string& urdf_filename,
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddRobotFromURDF(
+void AddModelFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
 /// frame is equal to the world's coordinate frame.
@@ -175,14 +160,12 @@ void AddRobotFromURDF(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddRobotFromURDF(
+void AddModelFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a URDF model to a rigid body system. The model is connected to the
 /// world via a joint of type `DrakeJoint::ROLLPITCHYAW` joint. The model's
 /// frame is equal to the world's coordinate frame.
@@ -200,7 +183,7 @@ void AddRobotFromURDF(
 /// @param[out] tree The `RigidBodyTree` to which to add the model.
 /// A `std::runtime_error` is thrown if the pointer is null.
 DRAKERBM_EXPORT
-void AddRobotFromURDF(
+void AddModelFromURDF(
     const std::string& urdf_filename,
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,

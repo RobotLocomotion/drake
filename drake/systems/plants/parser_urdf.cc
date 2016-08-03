@@ -1086,33 +1086,33 @@ void parseURDF(XMLDocument* xml_doc,
 
 }  // namespace
 
-void AddRobotFromURDFString(
+void AddModelFromURDFString(
     const string& urdf_string,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  AddRobotFromURDFString(urdf_string, package_map, tree);
+  AddModelFromURDFString(urdf_string, package_map, tree);
 }
 
-void AddRobotFromURDFString(
+void AddModelFromURDFString(
     const string& urdf_string,
     PackageMap& package_map,
     RigidBodyTree* tree) {
   const string root_dir = ".";
-  AddRobotFromURDFString(urdf_string, package_map, root_dir,
+  AddModelFromURDFString(urdf_string, package_map, root_dir,
                          DrakeJoint::ROLLPITCHYAW, nullptr, tree);
 }
 
-void AddRobotFromURDFString(
+void AddModelFromURDFString(
     const string& urdf_string,
     const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  AddRobotFromURDFString(urdf_string, package_map, root_dir,
+  AddModelFromURDFString(urdf_string, package_map, root_dir,
                          floating_base_type, nullptr, tree);
 }
 
-void AddRobotFromURDFString(
+void AddModelFromURDFString(
     const string& urdf_string,
     PackageMap& package_map,
     const string& root_dir,
@@ -1125,34 +1125,34 @@ void AddRobotFromURDFString(
             weld_to_frame, tree);
 }
 
-void AddRobotFromURDF(
+void AddModelFromURDF(
     const string& urdf_filename,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  AddRobotFromURDF(urdf_filename, package_map, DrakeJoint::ROLLPITCHYAW,
+  AddModelFromURDF(urdf_filename, package_map, DrakeJoint::ROLLPITCHYAW,
                    nullptr, tree);
 }
 
-void AddRobotFromURDF(
+void AddModelFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  AddRobotFromURDF(urdf_filename, package_map, floating_base_type,
+  AddModelFromURDF(urdf_filename, package_map, floating_base_type,
                    nullptr, tree);
 }
 
-void AddRobotFromURDF(
+void AddModelFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  AddRobotFromURDF(urdf_filename, package_map, floating_base_type,
+  AddModelFromURDF(urdf_filename, package_map, floating_base_type,
                    weld_to_frame, tree);
 }
 
-void AddRobotFromURDF(
+void AddModelFromURDF(
     const string& urdf_filename, PackageMap& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,

@@ -199,7 +199,7 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
   std::string file_name =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
-  drake::parsers::urdf::AddRobotFromURDF(file_name, tree.get());
+  drake::parsers::urdf::AddModelFromURDF(file_name, tree.get());
 
   VectorX<double> q;
   VectorX<double> v;
