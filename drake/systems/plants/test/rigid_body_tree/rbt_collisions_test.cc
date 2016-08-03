@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -47,7 +47,7 @@ class RBTCollisionTest: public ::testing::Test {
  protected:
   void SetUp() override {
     drake::parsers::sdf::AddRobotFromSDFInWorldFrame(
-        Drake::getDrakePath() +
+        drake::GetDrakePath() +
         "/systems/plants/test/rigid_body_tree/small_sphere_on_large_box.sdf",
         DrakeJoint::QUATERNION, &tree_);
 

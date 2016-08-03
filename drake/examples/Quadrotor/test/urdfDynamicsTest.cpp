@@ -2,14 +2,14 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
-using Drake::getDrakePath;
-using Drake::getRandomVector;
-using Drake::RigidBodySystem;
+using drake::GetDrakePath;
+using drake::getRandomVector;
+using drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
 
 namespace drake {
@@ -19,7 +19,7 @@ namespace {
 
 GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto rbsys = RigidBodySystem();
-  rbsys.addRobotFromFile(getDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
+  rbsys.addRobotFromFile(GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
                          DrakeJoint::ROLLPITCHYAW);
 
   auto p = Quadrotor();

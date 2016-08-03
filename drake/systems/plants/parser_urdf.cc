@@ -391,7 +391,6 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
     {
       XMLElement* color_node = material_node->FirstChildElement("color");
       if (color_node) {
-        Vector4d rgba;
         if (!parseVectorAttribute(color_node, "rgba", rgba)) {
           throw runtime_error(
               "ERROR: Failed to parse color of material for "
@@ -493,7 +492,7 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
     throw runtime_error("ERROR: Link " + body->get_name() +
                         " has a collision element without geometry");
 
-  RigidBody::CollisionElement element(T_element_to_link, body);
+  RigidBodyCollisionElement element(T_element_to_link, body);
   // By default all collision elements added to the world from an URDF file are
   // flagged as static.
   // We would also like to flag as static bodies connected to the world with a
@@ -945,8 +944,8 @@ void parseWorldJoint(XMLElement* node,
       // a nullptr.
       if (weld_to_frame == nullptr) weld_to_frame.reset(new RigidBodyFrame());
 
-      weld_to_frame->name = string(RigidBodyTree::kWorldLinkName);
-      weld_to_frame->transform_to_body = transform_to_parent_body;
+      weld_to_frame->set_name(string(RigidBodyTree::kWorldLinkName));
+      weld_to_frame->set_transform_to_body(transform_to_parent_body);
 
       if (joint_type == "fixed") {
         floating_base_type = DrakeJoint::FloatingBaseType::FIXED;

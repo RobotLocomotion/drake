@@ -8,12 +8,12 @@ namespace test {
 
 /// A simple Drake state for unit testing.
 template <typename ScalarType = double>
-class PendulumState {  // models the Drake::Vector concept
+class PendulumState {  // models the drake::Vector concept
  public:
   PendulumState(void) : theta(0), thetadot(0) {}
 
   template <typename Derived>
-  PendulumState(  // NOLINT(runtime/explicit) per Drake::Vector.
+  PendulumState(  // NOLINT(runtime/explicit) per drake::Vector.
       const Eigen::MatrixBase<Derived>& x)
       : theta(x(0)), thetadot(x(1)) {}
 
@@ -44,7 +44,7 @@ class PendulumInput {
   PendulumInput(void) : tau(0) {}
 
   template <typename Derived>
-  explicit PendulumInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+  explicit PendulumInput(  // NOLINT(runtime/explicit) per drake::Vector.
       const Eigen::MatrixBase<Derived>& x)
       : tau(x(0)) {}
 

@@ -87,7 +87,7 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
           start + (heading_vector * it.distance * fractional_progress);
       const double kMaxErrorRad = 1e-6;
 
-      const Drake::NullVector<double> null_vector{};
+      const drake::NullVector<double> null_vector{};
       auto output = car_dut.output(time, null_vector, null_vector);
       EXPECT_DOUBLE_EQ(output.x(), expected_position(0));
       EXPECT_DOUBLE_EQ(output.y(), expected_position(1));

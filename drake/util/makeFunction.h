@@ -2,7 +2,7 @@
 
 #include <functional>
 
-namespace Drake {
+namespace drake {
 /**
 * make_function
 * Note that a completely general make_function implementation is not possible

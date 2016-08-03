@@ -3,7 +3,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
@@ -14,13 +14,13 @@ using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
-using Drake::getDrakePath;
+using drake::GetDrakePath;
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
 GTEST_TEST(testIKpointwise, simpleIKpointwise) {
   RigidBodyTree model(
-      getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
   Vector2d tspan;
   tspan << 0, 1;
   int nT = 3;

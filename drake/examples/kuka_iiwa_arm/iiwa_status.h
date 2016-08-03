@@ -13,7 +13,7 @@ namespace kuka_iiwa_arm {
 /// the IIWA robot (intended for use as a state vector to pass into
 /// BotVisualizer).  As a generic receiver of the `lcmt_iiwa_status`
 /// message, it could in the future be expanded to hold additional
-/// data from that message as needed.  Models the `Drake::LCMVector`
+/// data from that message as needed.  Models the `drake::LCMVector`
 /// concept.
 template <typename ScalarType = double>
 class IiwaStatus {
@@ -46,7 +46,7 @@ class IiwaStatus {
   EigenType joint_position_values_;
 };
 
-/// Implemented per the `Drake::LCMVector` concept for the encode
+/// Implemented per the `drake::LCMVector` concept for the encode
 /// function.  Currently only handles measured joint positions (since
 /// that's all `IiwaStatus` does).
 template <typename ScalarType>
@@ -67,7 +67,7 @@ bool encode(const double& t, const IiwaStatus<ScalarType>& wrap,
   return true;
 }
 
-/// Implemented per the `Drake::LCMVector` concept for the decode
+/// Implemented per the `drake::LCMVector` concept for the decode
 /// function.  Currently only handles measured joint position (since
 /// that's all `IiwaStatus` does).
 template <typename ScalarType>

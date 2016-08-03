@@ -2,13 +2,13 @@ if(lcm_FOUND)
   add_executable(pendulumURDFDynamicsTest urdfDynamicsTest.cpp)
   target_link_libraries(pendulumURDFDynamicsTest drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME pendulumURDFDynamicsTest COMMAND pendulumURDFDynamicsTest)
-endif()
 
-add_executable(pendulum_dynamic_constraint_test pendulum_dynamic_constraint_test.cc)
-target_link_libraries(pendulum_dynamic_constraint_test
-  drakeDynamicConstraint ${GTEST_BOTH_LIBRARIES})
-add_test(NAME pendulum_dynamic_constraint_test
-  COMMAND pendulum_dynamic_constraint_test)
+  add_executable(pendulum_dynamic_constraint_test pendulum_dynamic_constraint_test.cc)
+  target_link_libraries(pendulum_dynamic_constraint_test
+    drakeDynamicConstraint ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME pendulum_dynamic_constraint_test
+    COMMAND pendulum_dynamic_constraint_test)
+endif()
 
 add_matlab_test(NAME examples/Pendulum/test/coordinateTest COMMAND coordinateTest)
 add_matlab_test(NAME examples/Pendulum/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)

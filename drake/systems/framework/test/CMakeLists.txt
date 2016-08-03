@@ -4,7 +4,7 @@ add_test(NAME value_test COMMAND value_test)
 
 add_executable(basic_vector_test basic_vector_test.cc)
 target_link_libraries(basic_vector_test drakeSystemFramework drakePolynomial
-  drakeCore ${GTEST_BOTH_LIBRARIES})
+  ${GTEST_BOTH_LIBRARIES})
 add_test(NAME basic_vector_test COMMAND basic_vector_test)
 
 add_executable(basic_state_vector_test basic_state_vector_test.cc)
@@ -22,10 +22,10 @@ target_link_libraries(state_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
 add_test(NAME state_test COMMAND state_test)
 
-add_executable(continuous_system_test continuous_system_test.cc)
-target_link_libraries(continuous_system_test drakeSystemFramework
+add_executable(system_test system_test.cc)
+target_link_libraries(system_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
-add_test(NAME continuous_system_test COMMAND continuous_system_test)
+add_test(NAME system_test COMMAND system_test)
 
 add_executable(system_input_test system_input_test.cc)
 target_link_libraries(system_input_test drakeSystemFramework
@@ -41,3 +41,13 @@ add_executable(context_test context_test.cc)
 target_link_libraries(context_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
 add_test(NAME context_test COMMAND context_test)
+
+add_executable(diagram_test diagram_test.cc)
+target_link_libraries(diagram_test
+                      drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
+add_test(NAME diagram_test COMMAND diagram_test)
+
+add_executable(diagram_context_test diagram_context_test.cc)
+target_link_libraries(diagram_context_test
+                      drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
+add_test(NAME diagram_context_test COMMAND diagram_context_test)

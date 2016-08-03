@@ -1,6 +1,6 @@
 #include "drake/examples/Cars/simple_car-inl.h"
 
-#include "drake/core/Gradient.h"
+#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 
@@ -34,7 +34,7 @@ SimpleCar::OutputVector<ScalarType> drake::SimpleCar::output(   \
 
 // These instantiations must match the API documentation in simple_car.h.
 DRAKE_INSTANTIATE(double)
-DRAKE_INSTANTIATE(Drake::TaylorVarXd)
+DRAKE_INSTANTIATE(drake::TaylorVarXd)
 
 #undef DRAKE_INSTANTIATE
 

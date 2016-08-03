@@ -9,22 +9,9 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_autodiff_types.h"
 
-namespace Drake {
-// todo: recursive template to get arbitrary gradient order
-
-// note: tried using template default values (e.g. Eigen::Dynamic), but they
-// didn't seem to work on my mac clang
-template <int num_vars>
-using TaylorVard = Eigen::AutoDiffScalar<Eigen::Matrix<double, num_vars, 1> >;
-template <int num_vars, int rows>
-using TaylorVecd = Eigen::Matrix<TaylorVard<num_vars>, rows, 1>;
-template <int num_vars, int rows, int cols>
-using TaylorMatd = Eigen::Matrix<TaylorVard<num_vars>, rows, cols>;
-
-typedef TaylorVard<Eigen::Dynamic> TaylorVarXd;
-typedef TaylorVecd<Eigen::Dynamic, Eigen::Dynamic> TaylorVecXd;
-typedef TaylorMatd<Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic> TaylorMatXd;
+namespace drake {
 
 /** \brief The appropriate AutoDiffScalar gradient type given the value type and
  * the number of derivatives at compile time

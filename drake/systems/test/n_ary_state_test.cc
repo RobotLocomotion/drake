@@ -9,8 +9,8 @@
 
 namespace {
 
-using Drake::NullVector;
-using Drake::toEigen;
+using drake::NullVector;
+using drake::toEigen;
 using drake::NAryState;
 
 // Vector-concept class for exercising composition.

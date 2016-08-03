@@ -82,7 +82,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dqdot_to_v) const {
     qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
-    Drake::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
+    drake::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
     if (dqdot_to_v) {
       dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
     }
@@ -96,7 +96,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {
     v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
-    Drake::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
+    drake::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
     if (dv_to_qdot) {
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
     }
@@ -123,8 +123,8 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
           "ERROR: joint_limit_min cannot be larger than joint_limit_max");
     }
 
-    this->DrakeJoint::joint_limit_min[0] = joint_limit_min;
-    this->DrakeJoint::joint_limit_max[0] = joint_limit_max;
+    DrakeJoint::joint_limit_min[0] = joint_limit_min;
+    DrakeJoint::joint_limit_max[0] = joint_limit_max;
   }
 
   Eigen::VectorXd zeroConfiguration() const { return Eigen::VectorXd::Zero(1); }
@@ -163,11 +163,11 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return q;
   }
 
-  void setDynamics(double damping, double coulomb_friction,
-                   double coulomb_window) {
-    this->damping = damping;
-    this->coulomb_friction = coulomb_friction;
-    this->coulomb_window = coulomb_window;
+  void setDynamics(double damping_in, double coulomb_friction_in,
+                   double coulomb_window_in) {
+    damping = damping_in;
+    coulomb_friction = coulomb_friction_in;
+    coulomb_window = coulomb_window_in;
   }
 
   virtual std::string getPositionName(int index) const {

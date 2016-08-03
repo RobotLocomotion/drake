@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 
 #include "drake/examples/Cars/car_simulation.h"
 #include "drake/examples/Cars/gen/euler_floating_joint_state.h"
@@ -12,10 +12,10 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
-using Drake::AffineSystem;
-using Drake::BotVisualizer;
-using Drake::NullVector;
-using Drake::cascade;
+using drake::AffineSystem;
+using drake::BotVisualizer;
+using drake::NullVector;
+using drake::cascade;
 
 namespace drake {
 namespace examples {
@@ -32,7 +32,7 @@ int do_main(int argc, const char* argv[]) {
   // Load a simplistic rendering from accompanying URDF file.
   //
   auto tree = std::make_shared<RigidBodyTree>(
-      Drake::getDrakePath() + "/examples/Cars/models/boxcar.urdf");
+      drake::GetDrakePath() + "/examples/Cars/models/boxcar.urdf");
 
   auto viz =
       std::make_shared<BotVisualizer<EulerFloatingJointState> >(

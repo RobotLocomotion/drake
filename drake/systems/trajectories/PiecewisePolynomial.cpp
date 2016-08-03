@@ -50,7 +50,7 @@ PiecewisePolynomial<CoefficientType>::derivative(int derivative_order) const {
     PolynomialMatrix& matrix = *it;
     for (Eigen::Index row = 0; row < rows(); row++) {
       for (Eigen::Index col = 0; col < cols(); col++) {
-        matrix(row, col) = matrix(row, col).derivative(derivative_order);
+        matrix(row, col) = matrix(row, col).Derivative(derivative_order);
       }
     }
   }
@@ -78,10 +78,10 @@ PiecewisePolynomial<CoefficientType>::integral(
       for (Eigen::Index col = 0; col < cols(); col++) {
         if (segment_index == 0) {
           matrix(row, col) =
-              matrix(row, col).integral(value_at_start_time(row, col));
+              matrix(row, col).Integral(value_at_start_time(row, col));
         } else {
           matrix(row, col) =
-              matrix(row, col).integral(
+              matrix(row, col).Integral(
                   ret.segmentValueAtGlobalAbscissa(
                       segment_index - 1,
                       getStartTime(segment_index), row, col));
@@ -135,7 +135,7 @@ template <typename CoefficientType>
 int PiecewisePolynomial<CoefficientType>::getSegmentPolynomialDegree(
     int segment_index, Eigen::Index row, Eigen::Index col) const {
   segmentNumberRangeCheck(segment_index);
-  return polynomials_[segment_index](row, col).getDegree();
+  return polynomials_[segment_index](row, col).GetDegree();
 }
 
 template <typename CoefficientType>
@@ -249,7 +249,7 @@ bool PiecewisePolynomial<CoefficientType>::isApprox(
     const PolynomialMatrix& other_matrix = other.polynomials_[segment_index];
     for (Eigen::Index row = 0; row < rows(); row++) {
       for (Eigen::Index col = 0; col < cols(); col++) {
-        if (!matrix(row, col).isApprox(other_matrix(row, col), tol))
+        if (!matrix(row, col).IsApprox(other_matrix(row, col), tol))
           return false;
       }
     }
@@ -299,7 +299,7 @@ template <typename CoefficientType>
 double PiecewisePolynomial<CoefficientType>::segmentValueAtGlobalAbscissa(
     int segment_index, double t, Eigen::Index row, Eigen::Index col) const {
   return polynomials_[segment_index](row, col)
-      .evaluateUnivariate(t - getStartTime(segment_index));
+      .EvaluateUnivariate(t - getStartTime(segment_index));
 }
 
 template <typename CoefficientType>
@@ -331,7 +331,7 @@ PiecewisePolynomial<CoefficientType> PiecewisePolynomial<
   for (Eigen::Index segment_index = 0; segment_index < num_segments;
        ++segment_index) {
     polynomials.push_back(
-        PolynomialType::randomPolynomialMatrix(
+        PolynomialType::RandomPolynomialMatrix(
             num_coefficients_per_polynomial, rows, cols));
   }
   return PiecewisePolynomial<CoefficientType>(polynomials, segment_times);

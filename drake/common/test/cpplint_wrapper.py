@@ -6,41 +6,62 @@ to run multiple linters in parallel.
 """
 
 import argparse
+import functools
 import multiprocessing
 import os
 import subprocess
 import sys
 
 
-def summarize_cpplint(cmdline_and_files):
+def summarize_cpplint(cmdline_and_files, args):
     """Given a cpplint subprocess command line (the program, arguments, and
     files to check), run cpplint and return a list of errors, or an empty list
     if there were no errors.
     """
 
     try:
-        subprocess.check_output(
+        output = subprocess.check_output(
             cmdline_and_files,
             stderr=subprocess.STDOUT)
-        sys.stdout.write('.')  # Progress bar.
-        sys.stdout.flush()
-        return []  # No errors.
+        passed = True
     except subprocess.CalledProcessError as e:
-        # Filter out known non-errors from everything else.
-        errors = []
-        for line in e.output.splitlines():
-            if line.startswith('Done processing '):
-                continue
-            if line.startswith('Total errors '):
-                continue
+        output = e.output
+        passed = False
+
+    # Filter out known non-errors from everything else.
+    errors = []
+    for line in output.splitlines():
+        if line.startswith('Done processing '):
+            if args.summarize:  # Progress bar.
+                sys.stdout.write('.')
+                sys.stdout.flush()
+            else:
+                sys.stdout.write(line + '\n')
+                sys.stdout.flush()
+            continue
+        if line.startswith('Total errors '):
+            continue
+        if not passed:
             errors.append(line)
-        if not errors:
-            # Our filtering failed, so report everything.
-            errors = [e.output or "NO OUTPUT"]
-        return errors
+    if not passed and not errors:
+        # Our filtering failed, so report everything.
+        errors = [e.output or "NO OUTPUT"]
+    return errors
 
 
-def multiprocess_cpplint(cmdline, files, num_processes):
+def worker_summarize_cpplint(cmdline_and_files, args):
+    """Escalate keyboard interrupts (Ctrl-C) in worker processes up to the
+    master process.  There are still Ctrl-C race conditions where the pool
+    keeps going, but this substantially reduces the window.
+    """
+
+    try:
+        return summarize_cpplint(cmdline_and_files, args)
+    except KeyboardInterrupt:
+        raise Exception
+
+
+def multiprocess_cpplint(cmdline, files, args):
     """Given a cpplint subprocess command line (just the program and arguments),
     separate list of files, and number of processess (None for "all CPUs"), run
     cpplint, display a progress bar, warning summary, and return a shell
@@ -53,19 +74,27 @@ def multiprocess_cpplint(cmdline, files, num_processes):
     cmdlines = [cmdline + some_files for some_files in files_groups]
 
     # Farm out each chunk to a process in a Pool.
-    sys.stdout.write('Checking ...')  # Progress bar.
-    sys.stdout.flush()
-    pool = multiprocessing.Pool(processes=num_processes)
+    if args.summarize:  # Progress bar.
+        sys.stdout.write('Checking ...')
+        sys.stdout.flush()
+    pool = multiprocessing.Pool(processes=args.num_processes)
+    function = functools.partial(worker_summarize_cpplint, args=args)
     errors = [
         error
-        for errors in pool.map(summarize_cpplint, cmdlines)
+        for errors in pool.map(function, cmdlines)
         for error in errors]
+    if args.summarize:  # Progress bar.
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
+    # Act on the results.
     num_errors = len(errors)
     if num_errors == 0:
-        print ' %d files passed' % len(files)  # Progress bar.
+        print ' TOTAL %d files passed' % len(files)
         return 0
     else:
-        print ' failed with %d warnings' % num_errors  # Progress bar.
+        print ' TOTAL %d files checked, found %d warnings' % (
+            len(files), num_errors)
         for line in errors:
             print >>sys.stderr, line
         return 1
@@ -76,6 +105,7 @@ def main():
     drake_common_test_dir = os.path.dirname(os.path.abspath(__file__))
     drake_dir = os.path.abspath(os.path.join(drake_common_test_dir, '../..'))
     drake_distro_dir = os.path.abspath(os.path.join(drake_dir, '..'))
+    drake_ros_dir = os.path.join(drake_distro_dir, 'ros')
     default_cpplint = os.path.join(
         drake_distro_dir, 'externals/google_styleguide/cpplint/cpplint.py')
 
@@ -95,13 +125,12 @@ def main():
     parser.add_argument(
         '--no-summarize', action='store_false',
         dest='summarize', default='True',
-        help='do not elide any cpplint output')
+        help='show progress with filenames, instead of dots')
     parser.add_argument(
-        '--fast', dest='num_processes', default=1,
-        action='store_const', const=None,
-        help='run in parallel with many threads')
+        '--num-processes', metavar='N', type=int, default=None,
+        help='limit to this number of processes (default all CPUs)')
     parser.add_argument(
-        'pathnames', nargs='*', default=[drake_dir],
+        'pathnames', nargs='*', default=[drake_dir, drake_ros_dir],
         help='list of files and/or directories to check'
         ' (default %(default)s)')
 
@@ -138,10 +167,7 @@ def main():
         "--extensions='%s'" % ','.join(args.extensions),
         '--output=eclipse',
     ] + extra_args
-    if args.summarize:
-        return multiprocess_cpplint(cmdline, files, args.num_processes)
-    else:
-        return subprocess.call(cmdline + files)
+    return multiprocess_cpplint(cmdline, files, args)
 
 if __name__ == '__main__':
     sys.exit(main())

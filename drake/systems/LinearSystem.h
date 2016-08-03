@@ -3,7 +3,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/systems/System.h"
 
-namespace Drake {
+namespace drake {
 
 /** AffineSystem<StateVector, InputVector, OutputVector>
  * @brief Builds an affine system from it's state-space matrix coefficients
@@ -121,4 +121,4 @@ class Gain : public LinearSystem<NullVector, InputVec, OutputVec> {
             Eigen::Matrix<double, Eigen::Dynamic, 0>(D.rows(), 0), D) {}
 };
 
-}  // end namespace Drake
+}  // end namespace drake

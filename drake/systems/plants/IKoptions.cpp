@@ -7,66 +7,66 @@ using namespace Eigen;
 IKoptions::IKoptions(RigidBodyTree *robot) {
   // It is important to make sure these default values are consistent with the
   // MATLAB IKoptions
-  this->setDefaultParams(robot);
+  setDefaultParams(robot);
 }
 
 IKoptions::IKoptions(const IKoptions &rhs) {
-  this->robot = rhs.robot;
-  this->nq = rhs.nq;
-  this->Q = rhs.Q;
-  this->Qa = rhs.Qa;
-  this->Qv = rhs.Qv;
-  this->debug_mode = rhs.debug_mode;
-  this->sequentialSeedFlag = rhs.sequentialSeedFlag;
-  this->SNOPT_MajorFeasibilityTolerance = rhs.SNOPT_MajorFeasibilityTolerance;
-  this->SNOPT_MajorIterationsLimit = rhs.SNOPT_MajorIterationsLimit;
-  this->SNOPT_IterationsLimit = rhs.SNOPT_IterationsLimit;
-  this->SNOPT_SuperbasicsLimit = rhs.SNOPT_SuperbasicsLimit;
-  this->SNOPT_MajorOptimalityTolerance = rhs.SNOPT_MajorOptimalityTolerance;
-  this->additional_tSamples = rhs.additional_tSamples;
-  this->fixInitialState = rhs.fixInitialState;
-  this->q0_lb = rhs.q0_lb;
-  this->q0_ub = rhs.q0_ub;
-  this->qd0_lb = rhs.qd0_lb;
-  this->qd0_ub = rhs.qd0_ub;
-  this->qdf_lb = rhs.qdf_lb;
-  this->qdf_ub = rhs.qdf_ub;
+  robot_ = rhs.robot_;
+  nq_ = rhs.nq_;
+  Q_ = rhs.Q_;
+  Qa_ = rhs.Qa_;
+  Qv_ = rhs.Qv_;
+  debug_mode_ = rhs.debug_mode_;
+  sequentialSeedFlag_ = rhs.sequentialSeedFlag_;
+  SNOPT_MajorFeasibilityTolerance_ = rhs.SNOPT_MajorFeasibilityTolerance_;
+  SNOPT_MajorIterationsLimit_ = rhs.SNOPT_MajorIterationsLimit_;
+  SNOPT_IterationsLimit_ = rhs.SNOPT_IterationsLimit_;
+  SNOPT_SuperbasicsLimit_ = rhs.SNOPT_SuperbasicsLimit_;
+  SNOPT_MajorOptimalityTolerance_ = rhs.SNOPT_MajorOptimalityTolerance_;
+  additional_tSamples_ = rhs.additional_tSamples_;
+  fixInitialState_ = rhs.fixInitialState_;
+  q0_lb_ = rhs.q0_lb_;
+  q0_ub_ = rhs.q0_ub_;
+  qd0_lb_ = rhs.qd0_lb_;
+  qd0_ub_ = rhs.qd0_ub_;
+  qdf_lb_ = rhs.qdf_lb_;
+  qdf_ub_ = rhs.qdf_ub_;
 }
 IKoptions::~IKoptions() {}
 
 void IKoptions::setDefaultParams(RigidBodyTree *robot) {
-  this->robot = robot;
-  this->nq = this->robot->number_of_positions();
-  this->Q = MatrixXd::Identity(this->nq, this->nq);
-  this->Qa = 0.1 * MatrixXd::Identity(this->nq, this->nq);
-  this->Qv = MatrixXd::Zero(this->nq, this->nq);
-  this->debug_mode = true;
-  this->sequentialSeedFlag = false;
-  this->SNOPT_MajorFeasibilityTolerance = 1E-6;
-  this->SNOPT_MajorIterationsLimit = 200;
-  this->SNOPT_IterationsLimit = 10000;
-  this->SNOPT_SuperbasicsLimit = 2000;
-  this->SNOPT_MajorOptimalityTolerance = 1E-4;
-  this->additional_tSamples.resize(0);
-  this->fixInitialState = true;
-  this->q0_lb = this->robot->joint_limit_min;
-  this->q0_ub = this->robot->joint_limit_max;
-  this->qd0_ub = VectorXd::Zero(this->nq);
-  this->qd0_lb = VectorXd::Zero(this->nq);
-  this->qdf_ub = VectorXd::Zero(this->nq);
-  this->qdf_lb = VectorXd::Zero(this->nq);
+  robot_ = robot;
+  nq_ = robot->number_of_positions();
+  Q_ = MatrixXd::Identity(nq_, nq_);
+  Qa_ = 0.1 * MatrixXd::Identity(nq_, nq_);
+  Qv_ = MatrixXd::Zero(nq_, nq_);
+  debug_mode_ = true;
+  sequentialSeedFlag_ = false;
+  SNOPT_MajorFeasibilityTolerance_ = 1E-6;
+  SNOPT_MajorIterationsLimit_ = 200;
+  SNOPT_IterationsLimit_ = 10000;
+  SNOPT_SuperbasicsLimit_ = 2000;
+  SNOPT_MajorOptimalityTolerance_ = 1E-4;
+  additional_tSamples_.resize(0);
+  fixInitialState_ = true;
+  q0_lb_ = robot->joint_limit_min;
+  q0_ub_ = robot->joint_limit_max;
+  qd0_ub_ = VectorXd::Zero(nq_);
+  qd0_lb_ = VectorXd::Zero(nq_);
+  qdf_ub_ = VectorXd::Zero(nq_);
+  qdf_lb_ = VectorXd::Zero(nq_);
 }
 
-RigidBodyTree *IKoptions::getRobotPtr() const { return this->robot; }
+RigidBodyTree *IKoptions::getRobotPtr() const { return robot_; }
 
 void IKoptions::setQ(const MatrixXd &Q) {
-  if (Q.rows() != this->nq || Q.cols() != this->nq) {
+  if (Q.rows() != nq_ || Q.cols() != nq_) {
     cerr << "Q should be nq x nq matrix" << endl;
   }
-  this->Q = (Q + Q.transpose()) / 2;
-  SelfAdjointEigenSolver<MatrixXd> eigensolver(this->Q);
+  Q_ = (Q + Q.transpose()) / 2;
+  SelfAdjointEigenSolver<MatrixXd> eigensolver(Q_);
   VectorXd ev = eigensolver.eigenvalues();
-  for (int i = 0; i < this->nq; i++) {
+  for (int i = 0; i < nq_; i++) {
     if (ev(i) < 0) {
       cerr << "Q is not positive semi-definite" << endl;
     }
@@ -74,13 +74,13 @@ void IKoptions::setQ(const MatrixXd &Q) {
 }
 
 void IKoptions::setQa(const MatrixXd &Qa) {
-  if (Qa.rows() != this->nq || Qa.cols() != this->nq) {
+  if (Qa.rows() != nq_ || Qa.cols() != nq_) {
     cerr << "Qa should be nq x nq matrix" << endl;
   }
-  this->Qa = (Qa + Qa.transpose()) / 2;
-  SelfAdjointEigenSolver<MatrixXd> eigensolver(this->Qa);
+  Qa_ = (Qa + Qa.transpose()) / 2;
+  SelfAdjointEigenSolver<MatrixXd> eigensolver(Qa_);
   VectorXd ev = eigensolver.eigenvalues();
-  for (int i = 0; i < this->nq; i++) {
+  for (int i = 0; i < nq_; i++) {
     if (ev(i) < 0) {
       cerr << "Qa is not positive semi-definite" << endl;
     }
@@ -88,179 +88,179 @@ void IKoptions::setQa(const MatrixXd &Qa) {
 }
 
 void IKoptions::setQv(const MatrixXd &Qv) {
-  if (Qv.rows() != this->nq || Qv.cols() != this->nq) {
+  if (Qv.rows() != nq_ || Qv.cols() != nq_) {
     cerr << "Qv should be nq x nq matrix" << endl;
   }
-  this->Qv = (Qv + Qv.transpose()) / 2;
-  SelfAdjointEigenSolver<MatrixXd> eigensolver(this->Qv);
+  Qv_ = (Qv + Qv.transpose()) / 2;
+  SelfAdjointEigenSolver<MatrixXd> eigensolver(Qv_);
   VectorXd ev = eigensolver.eigenvalues();
-  for (int i = 0; i < this->nq; i++) {
+  for (int i = 0; i < nq_; i++) {
     if (ev(i) < 0) {
       cerr << "Qv is not positive semi-definite" << endl;
     }
   }
 }
-void IKoptions::getQ(MatrixXd &Q) const { Q = this->Q; }
+void IKoptions::getQ(MatrixXd &Q) const { Q = Q_; }
 
-void IKoptions::getQa(MatrixXd &Qa) const { Qa = this->Qa; }
+void IKoptions::getQa(MatrixXd &Qa) const { Qa = Qa_; }
 
-void IKoptions::getQv(MatrixXd &Qv) const { Qv = this->Qv; }
+void IKoptions::getQv(MatrixXd &Qv) const { Qv = Qv_; }
 
-void IKoptions::setDebug(bool flag) { this->debug_mode = flag; }
+void IKoptions::setDebug(bool flag) { debug_mode_ = flag; }
 
-bool IKoptions::getDebug() const { return this->debug_mode; }
+bool IKoptions::getDebug() const { return debug_mode_; }
 
 void IKoptions::setSequentialSeedFlag(bool flag) {
-  this->sequentialSeedFlag = flag;
+  sequentialSeedFlag_ = flag;
 }
 
 bool IKoptions::getSequentialSeedFlag() const {
-  return this->sequentialSeedFlag;
+  return sequentialSeedFlag_;
 }
 
 void IKoptions::setMajorOptimalityTolerance(double tol) {
   if (tol <= 0) {
     cerr << "Major Optimality Tolerance must be positive" << endl;
   }
-  this->SNOPT_MajorOptimalityTolerance = tol;
+  SNOPT_MajorOptimalityTolerance_ = tol;
 }
 
 double IKoptions::getMajorOptimalityTolerance() const {
-  return this->SNOPT_MajorOptimalityTolerance;
+  return SNOPT_MajorOptimalityTolerance_;
 }
 
 void IKoptions::setMajorFeasibilityTolerance(double tol) {
   if (tol <= 0) {
     cerr << "Major Feasibility Tolerance must be positive" << endl;
   }
-  this->SNOPT_MajorFeasibilityTolerance = tol;
+  SNOPT_MajorFeasibilityTolerance_ = tol;
 }
 
 double IKoptions::getMajorFeasibilityTolerance() const {
-  return this->SNOPT_MajorFeasibilityTolerance;
+  return SNOPT_MajorFeasibilityTolerance_;
 }
 
 void IKoptions::setSuperbasicsLimit(int limit) {
   if (limit <= 0) {
     cerr << "Superbasics limit must be positive" << endl;
   }
-  this->SNOPT_SuperbasicsLimit = limit;
+  SNOPT_SuperbasicsLimit_ = limit;
 }
 
 int IKoptions::getSuperbasicsLimit() const {
-  return this->SNOPT_SuperbasicsLimit;
+  return SNOPT_SuperbasicsLimit_;
 }
 
 void IKoptions::setMajorIterationsLimit(int limit) {
   if (limit <= 0) {
     cerr << "Major iterations limit must be positive" << endl;
   }
-  this->SNOPT_MajorIterationsLimit = limit;
+  SNOPT_MajorIterationsLimit_ = limit;
 }
 
 int IKoptions::getMajorIterationsLimit() const {
-  return this->SNOPT_MajorIterationsLimit;
+  return SNOPT_MajorIterationsLimit_;
 }
 
 void IKoptions::setIterationsLimit(int limit) {
   if (limit <= 0) {
     cerr << "Iterations limit must be positive" << endl;
   }
-  this->SNOPT_IterationsLimit = limit;
+  SNOPT_IterationsLimit_ = limit;
 }
 
 int IKoptions::getIterationsLimit() const {
-  return this->SNOPT_IterationsLimit;
+  return SNOPT_IterationsLimit_;
 }
 
-void IKoptions::setFixInitialState(bool flag) { this->fixInitialState = flag; }
+void IKoptions::setFixInitialState(bool flag) { fixInitialState_ = flag; }
 
-bool IKoptions::getFixInitialState() const { return this->fixInitialState; }
+bool IKoptions::getFixInitialState() const { return fixInitialState_; }
 
 void IKoptions::setq0(const VectorXd &lb, const VectorXd &ub) {
-  if (lb.rows() != this->nq || ub.rows() != this->nq) {
+  if (lb.rows() != nq_ || ub.rows() != nq_) {
     cerr << "q0_lb and q0_ub must be nq x 1 column vector" << endl;
   }
-  this->q0_lb = lb;
-  this->q0_ub = ub;
-  for (int i = 0; i < this->nq; i++) {
-    if (this->q0_lb(i) > this->q0_ub(i)) {
+  q0_lb_ = lb;
+  q0_ub_ = ub;
+  for (int i = 0; i < nq_; i++) {
+    if (q0_lb_(i) > q0_ub_(i)) {
       cerr << "q0_lb must be no larger than q0_ub" << endl;
     }
-    this->q0_lb(i) = this->q0_lb(i) > this->robot->joint_limit_min[i]
-                         ? this->q0_lb(i)
-                         : this->robot->joint_limit_min[i];
-    this->q0_ub(i) = this->q0_ub(i) < this->robot->joint_limit_max[i]
-                         ? this->q0_ub(i)
-                         : this->robot->joint_limit_max[i];
+    q0_lb_(i) = q0_lb_(i) > robot_->joint_limit_min[i]
+                ? q0_lb_(i)
+                : robot_->joint_limit_min[i];
+    q0_ub_(i) = q0_ub_(i) < robot_->joint_limit_max[i]
+                ? q0_ub_(i)
+                : robot_->joint_limit_max[i];
   }
 }
 
 void IKoptions::getq0(VectorXd &lb, VectorXd &ub) const {
-  lb = this->q0_lb;
-  ub = this->q0_ub;
+  lb = q0_lb_;
+  ub = q0_ub_;
 }
 
 void IKoptions::setqd0(const VectorXd &lb, const VectorXd &ub) {
-  if (lb.rows() != this->nq || ub.rows() != this->nq) {
+  if (lb.rows() != nq_ || ub.rows() != nq_) {
     cerr << "qd0_lb and qd0_ub must be nq x 1 column vector" << endl;
   }
-  for (int i = 0; i < this->nq; i++) {
+  for (int i = 0; i < nq_; i++) {
     if (lb(i) > ub(i)) {
       cerr << "qd0_lb must be no larger than qd0_ub" << endl;
     }
   }
-  this->qd0_lb = lb;
-  this->qd0_ub = ub;
+  qd0_lb_ = lb;
+  qd0_ub_ = ub;
 }
 
 void IKoptions::getqd0(VectorXd &lb, VectorXd &ub) const {
-  lb = this->qd0_lb;
-  ub = this->qd0_ub;
+  lb = qd0_lb_;
+  ub = qd0_ub_;
 }
 
 void IKoptions::setqdf(const VectorXd &lb, const VectorXd &ub) {
-  if (lb.rows() != this->nq || ub.rows() != this->nq) {
+  if (lb.rows() != nq_ || ub.rows() != nq_) {
     cerr << "qdf_lb and qdf_ub must be nq x 1 column vector" << endl;
   }
-  for (int i = 0; i < this->nq; i++) {
+  for (int i = 0; i < nq_; i++) {
     if (lb(i) > ub(i)) {
       cerr << "qdf_lb must be no larger than qdf_ub" << endl;
     }
   }
-  this->qdf_lb = lb;
-  this->qdf_ub = ub;
+  qdf_lb_ = lb;
+  qdf_ub_ = ub;
 }
 
 void IKoptions::getqdf(VectorXd &lb, VectorXd &ub) const {
-  lb = this->qdf_lb;
-  ub = this->qdf_ub;
+  lb = qdf_lb_;
+  ub = qdf_ub_;
 }
 
 void IKoptions::setAdditionaltSamples(const RowVectorXd &t_samples) {
   if (t_samples.size() > 0) {
     set<double> unique_sort_t(t_samples.data(),
                               t_samples.data() + t_samples.size());
-    this->additional_tSamples.resize(unique_sort_t.size());
+    additional_tSamples_.resize(unique_sort_t.size());
     int t_idx = 0;
     for (auto it = unique_sort_t.begin(); it != unique_sort_t.end(); it++) {
-      this->additional_tSamples(t_idx) = *it;
+      additional_tSamples_(t_idx) = *it;
       t_idx++;
     }
   } else {
-    this->additional_tSamples.resize(0);
+    additional_tSamples_.resize(0);
   }
 }
 
 void IKoptions::getAdditionaltSamples(RowVectorXd &t_samples) const {
-  t_samples = this->additional_tSamples;
+  t_samples = additional_tSamples_;
 }
 
 void IKoptions::updateRobot(RigidBodyTree *new_robot) {
-  this->robot = new_robot;
-  int nq_cache = this->nq;
-  this->nq = this->robot->number_of_positions();
-  if (nq_cache != nq) {
-    this->setDefaultParams(new_robot);
+  robot_ = new_robot;
+  int nq_cache = nq_;
+  nq_ = robot_->number_of_positions();
+  if (nq_cache != nq_) {
+    setDefaultParams(new_robot);
   }
 }

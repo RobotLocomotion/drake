@@ -8,7 +8,7 @@
 #include <sys/select.h>
 #endif
 
-using namespace Drake;
+using namespace drake;
 
 bool waitForLCM(lcm::LCM& lcm, double timeout) {
   int lcmFd = lcm.getFileno();
@@ -30,7 +30,7 @@ bool waitForLCM(lcm::LCM& lcm, double timeout) {
   return (status > 0 && FD_ISSET(lcmFd, &fds));
 }
 
-void Drake::internal::LCMLoop::loopWithSelect() {
+void drake::internal::LCMLoop::loopWithSelect() {
   //    cout << "starting lcm handler thread " << this_thread::get_id() << endl;
 
   while (!this->stop) {
