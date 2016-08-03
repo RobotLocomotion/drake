@@ -2,9 +2,10 @@
 
 #include <iostream>
 
-#include "drake/common/drake_assert.h"
 #ifdef BULLET_COLLISION
 #include "drake/systems/plants/collision/bullet_model.h"
+#else
+#include "drake/systems/plants/collision/UnusableModel.h"
 #endif
 
 using namespace std;
@@ -20,11 +21,7 @@ unique_ptr<Model> newModel() {
 #ifdef BULLET_COLLISION
   return unique_ptr<Model>(new BulletModel());
 #else
-  DRAKE_ABORT_UNLESS(!"DrakeCollision must be compiled with Bullet.");
-  // This return statement is actually never reached.
-  // It is placed here to avoid a compiler error on not having a return
-  // statement.
-  return unique_ptr<Model>();
+  return unique_ptr<Model>(new UnusableModel());
 #endif
 }
 };

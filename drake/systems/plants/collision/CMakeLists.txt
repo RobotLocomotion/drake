@@ -5,6 +5,8 @@ if(bullet_FOUND)
   add_definitions(-DBULLET_COLLISION -DBT_USE_DOUBLE_PRECISION)
   set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} bullet_model.cc)
   set(bullet "yes" CACHE STRING "yes")
+else()
+  set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} UnusableModel.cc)
 endif()
 
 add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_SRC_FILES})
