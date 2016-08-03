@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/util/Polynomial.h"
+#include "drake/common/polynomial.h"
 
 namespace drake {
 namespace solvers {
