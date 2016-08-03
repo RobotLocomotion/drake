@@ -9,7 +9,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
 
 #include "drake/systems/plants/collision/Element.h"
-#include "Model.h"
+#include "drake/systems/plants/collision/Model.h"
 
 namespace DrakeCollision {
 
