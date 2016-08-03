@@ -161,11 +161,11 @@ void RigidBody::set_contact_points(const Eigen::Matrix3Xd& contact_points) {
   contact_points_ = contact_points;
 }
 
-void RigidBody::set_mass(int mass) {
+void RigidBody::set_mass(double mass) {
   mass_ = mass;
 }
 
-int RigidBody::get_mass() const {
+double RigidBody::get_mass() const {
   return mass_;
 }
 
