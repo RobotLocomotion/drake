@@ -8,7 +8,6 @@
 
 #include <drake/common/drake_assert.h>
 #include <drake/core/Gradient.h>
-#include <drake/core/Vector.h>
 #include <drake/math/autodiff.h>
 #include <drake/solvers/constraint.h>
 #include <drake/solvers/optimization.h>
@@ -16,6 +15,7 @@
 #include <drake/systems/plants/ConstraintWrappers.h>
 #include <drake/systems/plants/IKoptions.h>
 #include <drake/systems/plants/RigidBodyTree.h>
+#include <drake/systems/vector.h>
 
 #include "ik_trajectory_helper.h"
 
