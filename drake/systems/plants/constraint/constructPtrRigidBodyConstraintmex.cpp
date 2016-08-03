@@ -44,37 +44,39 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "Usage ptr = "
                           "constructPtrPtrRigidBodyConstraintmex("
                           "RigidBodyConstraint::QuasiStaticConstraintType,"
-                          "robot_ptr, tspan, robotnum)");
+                          "robot_ptr, tspan, model_instance_id)");
       }
       RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
-      int* robotnum;
+      int* model_instance_id;
       size_t num_robot;
       if (nrhs <= 3) {
         num_robot = 1;
-        robotnum = new int[num_robot];
-        robotnum[0] = 0;
+        model_instance_id = new int[num_robot];
+        model_instance_id[0] = 0;
       } else {
         num_robot = mxGetNumberOfElements(prhs[3]);
-        double* robotnum_tmp = new double[num_robot];
-        robotnum = new int[num_robot];
-        memcpy(robotnum_tmp, mxGetPrSafe(prhs[3]), sizeof(double) * num_robot);
+        double* model_instance_id_tmp = new double[num_robot];
+        model_instance_id = new int[num_robot];
+        memcpy(model_instance_id_tmp, mxGetPrSafe(prhs[3]), sizeof(double) *
+            num_robot);
         for (int i = 0; i < num_robot; i++) {
-          robotnum[i] = (int)robotnum_tmp[i] - 1;
+          model_instance_id[i] = (int)model_instance_id_tmp[i] - 1;
         }
-        delete[] robotnum_tmp;
+        delete[] model_instance_id_tmp;
       }
       if (nrhs <= 2) {
         tspan << -mxGetInf(), mxGetInf();
       } else {
         rigidBodyConstraintParseTspan(prhs[2], tspan);
       }
-      set<int> robotnumset(robotnum, robotnum + num_robot);
+      set<int> model_instance_id_set(model_instance_id, model_instance_id +
+          num_robot);
       QuasiStaticConstraint* cnst =
-          new QuasiStaticConstraint(model, tspan, robotnumset);
+          new QuasiStaticConstraint(model, tspan, model_instance_id_set);
       plhs[0] =
           createDrakeConstraintMexPointer((void*)cnst, "QuasiStaticConstraint");
-      delete[] robotnum;
+      delete[] model_instance_id;
     } break;
     // PostureConstraint
     case RigidBodyConstraint::PostureConstraintType: {
@@ -528,33 +530,35 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "Usage ptr = "
                           "constructPtrRigidBodyConstraintmex("
                           "RigidBodyConstraint::WorldCoMConstraintType, robot."
-                          "mex_model_ptr, lb, ub, tspan, robotnum)");
+                          "mex_model_ptr, lb, ub, tspan, model_instance_id)");
       }
       RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
       WorldCoMConstraint* cnst = nullptr;
       Vector2d tspan;
-      int* robotnum;
+      int* model_instance_id;
       size_t num_robot;
       if (nrhs <= 5) {
         num_robot = 1;
-        robotnum = new int[num_robot];
-        robotnum[0] = 0;
+        model_instance_id = new int[num_robot];
+        model_instance_id[0] = 0;
       } else {
         num_robot = mxGetNumberOfElements(prhs[5]);
-        double* robotnum_tmp = new double[num_robot];
-        robotnum = new int[num_robot];
-        memcpy(robotnum_tmp, mxGetPrSafe(prhs[5]), sizeof(double) * num_robot);
+        double* model_instance_id_tmp = new double[num_robot];
+        model_instance_id = new int[num_robot];
+        memcpy(model_instance_id_tmp, mxGetPrSafe(prhs[5]), sizeof(double) *
+            num_robot);
         for (int i = 0; i < num_robot; i++) {
-          robotnum[i] = (int)robotnum_tmp[i] - 1;
+          model_instance_id[i] = (int)model_instance_id_tmp[i] - 1;
         }
-        delete[] robotnum_tmp;
+        delete[] model_instance_id_tmp;
       }
       if (nrhs <= 4) {
         tspan << -mxGetInf(), mxGetInf();
       } else {
         rigidBodyConstraintParseTspan(prhs[4], tspan);
       }
-      set<int> robotnumset(robotnum, robotnum + num_robot);
+      set<int> model_instance_id_set(model_instance_id, model_instance_id +
+          num_robot);
       int n_pts = 1;
       if (mxGetM(prhs[2]) != 3 || mxGetM(prhs[3]) != 3 ||
           mxGetN(prhs[2]) != n_pts || mxGetN(prhs[3]) != n_pts ||
@@ -566,10 +570,11 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       Vector3d ub;
       memcpy(lb.data(), mxGetPrSafe(prhs[2]), sizeof(double) * 3);
       memcpy(ub.data(), mxGetPrSafe(prhs[3]), sizeof(double) * 3);
-      cnst = new WorldCoMConstraint(model, lb, ub, tspan, robotnumset);
+      cnst = new WorldCoMConstraint(model, lb, ub, tspan,
+          model_instance_id_set);
       plhs[0] =
           createDrakeConstraintMexPointer((void*)cnst, "WorldCoMConstraint");
-      delete[] robotnum;
+      delete[] model_instance_id;
     } break;
     // WorldPositionConstraint
     case RigidBodyConstraint::WorldPositionConstraintType: {

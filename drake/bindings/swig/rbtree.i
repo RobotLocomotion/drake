@@ -101,8 +101,8 @@
     return $self->transformPoints(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
   }
 
-  Eigen::Matrix<double, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<double> &cache, const std::set<int> &robotnum = default_model_instance_id_set) const {
-    return $self->centerOfMass(cache, robotnum);
+  Eigen::Matrix<double, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<double> &cache, const std::set<int> &model_instance_id = default_model_instance_id_set) const {
+    return $self->centerOfMass(cache, model_instance_id);
   }
 }
 
