@@ -20,6 +20,7 @@
 #include <Eigen/src/SparseCore/SparseMatrix.h>
 
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/util/drakeGradientUtil.h"
 
 using drake::math::autoDiffToValueMatrix;
