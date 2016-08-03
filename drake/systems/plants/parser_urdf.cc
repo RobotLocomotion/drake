@@ -97,12 +97,16 @@ void parseInertial(RigidBody* body, XMLElement* node) {
   if (origin) originAttributesToTransform(origin, T);
 
   XMLElement* mass = node->FirstChildElement("mass");
-  if (mass) parseScalarAttribute(mass, "value", body->mass);
+  if (mass) {
+    double body_mass = 0;
+    parseScalarAttribute(mass, "value", body_mass);
+    body->set_mass(body_mass);
+  }
 
   body->com << T(0, 3), T(1, 3), T(2, 3);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
-  I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
+  I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {
