@@ -8,7 +8,7 @@
 
 namespace DrakeCollision {
 
-/// An unusable model, used when no collision detection backend is available
+/// An unusable model, used when no collision detection backend is available.
 class UnusableModel : public Model {
  public:
   UnusableModel() {}
