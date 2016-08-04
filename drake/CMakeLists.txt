@@ -81,6 +81,9 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
+  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_SHARED_LINKER_FLAGS}")
+  set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_MODULE_LINKER_FLAGS}")
+  set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
