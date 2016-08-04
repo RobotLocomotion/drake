@@ -61,7 +61,7 @@ void AddRobotFromSDFInWorldFrame(
 /// already in this map.
 DRAKERBM_EXPORT
 void AddRobotFromSDF(
-	const std::string& sdf_filename,
+    const std::string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,

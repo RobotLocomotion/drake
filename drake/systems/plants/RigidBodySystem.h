@@ -179,7 +179,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    *
    * @param[out] model_instance_id_map A pointer to a map where the key is the
    * name of the model whose instance was just added to this `RigidBodySystem`
-   * and it's `RigidBodyTree` and the value is the unique model instance ID that
+   * and its `RigidBodyTree` and the value is the unique model instance ID that
    * was assigned to the instance. This parameter may be `nullptr`.
    */
   void AddModelInstanceFromUrdfString(
@@ -209,7 +209,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    *
    * @param[out] model_instance_id_map A pointer to a map where the key is the
    * name of the model whose instance was just added to this `RigidBodySystem`
-   * and it's `RigidBodyTree` and the value is the unique model instance ID that
+   * and its `RigidBodyTree` and the value is the unique model instance ID that
    * was assigned to the instance. This parameter may be `nullptr`.
    */
   void AddModelInstanceFromUrdfFile(
@@ -231,7 +231,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    *
    * @param[in] sdf_filename The name of the SDF file containing the models.
    * One instance of each of these models is added to this `RigidBodySystem` and
-   * it's `RigidBodyTree`.
+   * its `RigidBodyTree`.
    *
    * @param[in] floating_base_type The type of floating base to use to connect
    * the newly created model instances to the world.
@@ -246,7 +246,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    *
    * @param[out] model_instance_id_map A pointer to a map where the key is the
    * name of the model whose instance was just added to this `RigidBodySystem`
-   * and it's `RigidBodyTree` and the value is the unique model instance ID that
+   * and its `RigidBodyTree` and the value is the unique model instance ID that
    * was assigned to the instance. This parameter may be `nullptr`.
    */
   void AddModelInstanceFromSdfFile(const std::string& sdf_filename,
@@ -261,7 +261,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    *
    * @param[in] filename The name of the SDF of URDF file containing the models.
    * One instance of each of these models is added to this `RigidBodySystem` and
-   * it's `RigidBodyTree`.
+   * its `RigidBodyTree`.
    *
    * @param[in] floating_base_type The type of floating base to use to connect
    * the newly created model instances to the world.
@@ -276,7 +276,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    *
    * @param[out] model_instance_id_map A pointer to a map where the key is the
    * name of the model whose instance was just added to this `RigidBodySystem`
-   * and it's `RigidBodyTree` and the value is the unique model instance ID that
+   * and its `RigidBodyTree` and the value is the unique model instance ID that
    * was assigned to the instance. This parameter may be `nullptr`.
    */
   void AddModelInstanceFromFile(
