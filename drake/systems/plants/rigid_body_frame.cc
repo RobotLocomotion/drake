@@ -13,7 +13,9 @@ RigidBodyFrame::RigidBodyFrame(const std::string& name, RigidBody* body,
   transform_to_body_.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 }
 
-int RigidBodyFrame::get_model_id() const { return body_->get_model_id(); }
+int RigidBodyFrame::get_model_instance_id() const {
+  return body_->get_model_instance_id();
+}
 
 const std::string& RigidBodyFrame::get_name() const { return name_; }
 

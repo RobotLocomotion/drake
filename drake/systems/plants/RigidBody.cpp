@@ -29,9 +29,11 @@ const std::string& RigidBody::get_model_name() const { return model_name_; }
 
 void RigidBody::set_model_name(const std::string& name) { model_name_ = name; }
 
-int RigidBody::get_model_id() const { return model_id_; }
+int RigidBody::get_model_instance_id() const { return model_instance_id_; }
 
-void RigidBody::set_model_id(int model_id) { model_id_ = model_id; }
+void RigidBody::set_model_instance_id(int model_instance_id) {
+  model_instance_id_ = model_instance_id;
+}
 
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
   this->joint = move(new_joint);

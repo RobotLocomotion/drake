@@ -96,16 +96,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
-   * Returns an integer that can be used to uniquely identify a model
-   * within this rigid body tree. Note that this method is not thread safe!
+   * Adds a new model instance to this `RigidBodyTree`. The model instance is
+   * identified by a unique model instance ID, which is the return value of
+   * this method.
    */
-  int get_next_model_id() { return next_model_id_++; }
+  // This method is not thread safe!
+  int add_model_instance() { return number_of_model_instances_++; }
 
   /**
-   * Returns an integer that will be used as a unique ID for the next model
-   * to be added within the rigid body tree.
+   * Returns the number of model instances in the tree.
    */
-  int get_current_model_id() { return next_model_id_; }
+  int get_number_of_model_instances() { return number_of_model_instances_; }
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
@@ -176,12 +177,15 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * Computes the total mass of a set of models in this rigid body tree.
    *
-   * @param[in] model_ids A set of model ID values corresponding to the models
-   * whose masses should be included in the returned value.
+   * @param[in] model_instance_ids A set of model instance ID values
+   * corresponding to the model instances whose masses should be included in the
+   * returned value.
    *
-   * @returns The total mass of the models specified by @p model_ids.
+   * @returns The total mass of the model instances specified by
+   * @p model_instance_ids.
    */
-  double getMass(const std::set<int>& model_ids = default_robot_num_set) const;
+  double getMass(const std::set<int>& model_instance_ids =
+      default_robot_num_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
@@ -824,9 +828,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // The number of velocity states in this rigid body tree.
   int num_velocities_{};
 
-  // Remembers the ID that should be assigned to the next model added to this
-  // rigid body tree.
-  int next_model_id_{};
+  // The number of model instances in this rigid body tree.
+  int number_of_model_instances_{};
 
   // helper functions for contactConstraints
   template <typename Scalar>
