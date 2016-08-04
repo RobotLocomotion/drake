@@ -793,7 +793,8 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
       const RigidBody& body = **it;
       auto& element = cache.getElement(body);
       element.inertia_in_world = transformSpatialInertia(
-          element.transform_to_world, body.get_spatial_inertia().cast<Scalar>());
+          element.transform_to_world,
+              body.get_spatial_inertia().cast<Scalar>());
       element.crb_in_world = element.inertia_in_world;
     }
 
