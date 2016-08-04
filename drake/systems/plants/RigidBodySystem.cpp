@@ -928,9 +928,8 @@ void RigidBodySystem::AddModelInstanceFromUrdfFile(
   xml_doc.LoadFile(urdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
     throw std::runtime_error(
-        "RigidBodySystem::AddModelInstanceFromUrdfFile: ERROR: Failed to parse xml in "
-        "file " +
-        urdf_filename + "\n" + xml_doc.ErrorName());
+        "RigidBodySystem::AddModelInstanceFromUrdfFile: ERROR: Failed to parse "
+        "xml in file " + urdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseURDF(*this, &xml_doc);
 }
@@ -949,9 +948,8 @@ void RigidBodySystem::AddModelInstanceFromSdfFile(
   xml_doc.LoadFile(sdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
     throw std::runtime_error(
-        "RigidBodySystem::AddModelInstanceFromSdfFile: ERROR: Failed to parse xml in "
-        "file " +
-        sdf_filename + "\n" + xml_doc.ErrorName());
+        "RigidBodySystem::AddModelInstanceFromSdfFile: ERROR: Failed to parse"
+        "xml in file " + sdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseSDF(*this, &xml_doc);
 }
@@ -972,8 +970,8 @@ void RigidBodySystem::AddModelInstanceFromFile(
     AddModelInstanceFromSdfFile(filename, floating_base_type, weld_to_frame);
   } else {
     throw runtime_error(
-        "RigidBodySystem::AddModelInstanceFromFile: ERROR: Unknown file extension: " +
-        ext);
+        "RigidBodySystem::AddModelInstanceFromFile: ERROR: Unknown file "
+        "extension: " + ext);
   }
 }
 
