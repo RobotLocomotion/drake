@@ -10,7 +10,7 @@ template <template <typename> class Vector>
 struct TimeSampleTrajectory {
   std::vector<double> time;
   std::vector<Vector<double>, Eigen::aligned_allocator<Vector<double>>> val;
-  TimeSampleTrajectory() : time(0), val(0){}
+  TimeSampleTrajectory() : time(0), val(0) {}
 };
 
 template <template <typename> class Vector>
