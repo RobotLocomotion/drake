@@ -201,7 +201,8 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
   std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
       new RigidBodyTree::ModelToInstanceIDMap());
-  drake::parsers::urdf::AddRobotFromURDF(file_name, tree.get(), map.get());
+  drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get(),
+      map.get());
 
   VectorX<double> q;
   VectorX<double> v;

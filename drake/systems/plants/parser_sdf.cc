@@ -43,7 +43,9 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   parseScalarValue(node, "mass", mass);
   body->set_mass(mass);
 
-  body->com = T_link.inverse() * T.translation();
+  Eigen::Vector3d com;
+  com = T_link.inverse() * T.translation();
+  body->set_center_of_mass(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
   I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
@@ -61,7 +63,7 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     parseScalarValue(inertia, "izz", I(2, 2));
   }
 
-  body->I = transformSpatialInertia(T_link.inverse() * T, I);
+  body->set_spatial_inertia(transformSpatialInertia(T_link.inverse() * T, I));
 }
 
 bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
@@ -673,7 +675,7 @@ void parseModel(RigidBodyTree* tree, XMLElement* node,
   }
 
   // Obtains and adds a new model instance ID into the map.
-  int model_instance_id = tree->get_new_model_instance_id();
+  int model_instance_id = tree->add_model_instance();
   (*model_instance_id_map)[model_name] = model_instance_id;
 
   // Maintains a list of links that were added to the rigid body tree.

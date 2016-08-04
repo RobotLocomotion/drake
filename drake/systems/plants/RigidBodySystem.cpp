@@ -881,7 +881,7 @@ void RigidBodySystem::AddModelInstanceFromUrdfString(
   }
 
   // Adds the URDF to the RigidBodyTree.
-  drake::parsers::urdf::AddRobotFromURDFString(
+  drake::parsers::urdf::AddModelInstanceFromURDFString(
       urdf_string, root_dir, floating_base_type, tree.get(),
       model_instance_id_map);
 
@@ -907,7 +907,7 @@ void RigidBodySystem::AddModelInstanceFromUrdfFile(
   }
 
   // Adds the URDF to the rigid body tree.
-  drake::parsers::urdf::AddRobotFromURDF(
+  drake::parsers::urdf::AddModelInstanceFromURDF(
       urdf_filename, floating_base_type, weld_to_frame, tree.get(),
       model_instance_id_map);
 

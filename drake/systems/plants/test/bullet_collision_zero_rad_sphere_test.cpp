@@ -14,13 +14,14 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < 10; i++) {
     std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
       new RigidBodyTree::ModelToInstanceIDMap());
-    drake::parsers::urdf::AddRobotFromURDF(
+    drake::parsers::urdf::AddModelInstanceFromURDF(
         GetDrakePath() + "/systems/plants/test/PointMass.urdf",
         DrakeJoint::ROLLPITCHYAW, &tree, map.get());
   }
+
   std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
       new RigidBodyTree::ModelToInstanceIDMap());
-  drake::parsers::urdf::AddRobotFromURDF(
+  drake::parsers::urdf::AddModelInstanceFromURDF(
       GetDrakePath() + "/systems/plants/test/FallingBrick.urdf",
       DrakeJoint::FIXED, &tree, map.get());
 
