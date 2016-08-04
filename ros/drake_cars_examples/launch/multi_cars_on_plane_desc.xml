@@ -3,6 +3,8 @@
 Loads five Prius models onto the ROS parameter server.
 -->
 <launch>
+  <param name="car_count" type="int" value="5" />
+
   <param name="car_description_1"
          command="$(find xacro)/xacro.py '$(find drake_cars_examples)/models/drake_prius/xacro/drake_prius_rviz.xacro'" />
 

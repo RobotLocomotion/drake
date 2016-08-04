@@ -29,14 +29,13 @@ using drake::examples::cars::CreateRigidBodySystem;
 using drake::examples::cars::CreateVehicleSystem;
 using drake::examples::cars::GetCarSimulationDefaultOptions;
 
-
-// Returns a string parameter from the ROS parameter server. It waits up to 5
-// seconds for the parameter to exist, after which it aborts by throwing a
-// std::runtime_error exception.
-std::string GetStringParameter(const std::string& parameter_name) {
+// Waits up to kMaxWaitTime for a particular parameter to exist on the ROS
+// parameter server. Throws an std::runtime_error exception if the parameter
+// fails to show up prior to this deadline.
+void WaitForParameter(::ros::NodeHandle& ros_node_handle,
+    const std::string& parameter_name) {
   // Waits for the parameter to exist on the ROS parameter server.
   const double kMaxWaitTime = 5.0;
-  ::ros::NodeHandle ros_node_handle;
 
   ::ros::Time begin_time = ::ros::Time::now();
   while (::ros::ok() && !ros_node_handle.hasParam(parameter_name)
@@ -44,8 +43,37 @@ std::string GetStringParameter(const std::string& parameter_name) {
     ::ros::Duration(0.5).sleep(); // Sleeps for half a second.
   }
 
+  if (!ros_node_handle.hasParam(parameter_name)) {
+    throw std::runtime_error("ERROR: Failed to obtain parameter \"" +
+        parameter_name + "\" from the ROS parameter server.");
+  }
+}
+
+// Returns a string parameter from the ROS parameter server. Throws an
+// `std::runtime_error` exception if it fails to obtain the parameter.
+std::string GetStringParameter(::ros::NodeHandle &ros_node_handle,
+    const std::string& parameter_name) {
+  WaitForParameter(parameter_name, ros_node_handle)
+
   // Obtains the parameter from the ROS parameter server.
   std::string parameter;
+  if (!ros_node_handle.getParam(parameter_name, parameter)) {
+    throw std::runtime_error(
+      "ERROR: Failed to obtain parameter \"" + parameter_name + "\" from "
+      "the ROS parameter server. Please ensure such a parameter is loaded.");
+  }
+
+  return parameter;
+}
+
+// Returns an integer parameter from the ROS parameter server. Throws an
+// `std::runtime_error` exception if it fails to obtain the parameter.
+int GetIntParameter(::ros::NodeHandle &ros_node_handle,
+    const std::string& parameter_name) {
+  WaitForParameter(parameter_name, ros_node_handle)
+
+  // Obtains the parameter from the ROS parameter server.
+  int parameter;
   if (!ros_node_handle.getParam(parameter_name, parameter)) {
     throw std::runtime_error(
       "ERROR: Failed to obtain parameter \"" + parameter_name + "\" from "
@@ -73,10 +101,22 @@ int DoMain(int argc, const char* argv[]) {
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  // Obtains the vehicle models and adds them to the rigid body system.
+  // Instantiates a data structure that maps model instance names to their model
+  // instance IDs.
+  std::unique_ptr<std::map<std::string, int>>
+      model_instance_name_to_id_map(new std::map<std::string, int>());
 
+  // Obtains the number of vehicles to simulate.
+  int num_vehicles = GetIntParameter("car_count");
 
-  rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION);
+  // Adds the vehicles to the rigid body system.
+  for (int ii = 0; ii < num_vehicles; ++ii) {
+    const std::string description_param_name = car_description_ +
+        std::to_string(ii+1);
+    const std::string description = GetStringParameter(description_param_name);
+    rigid_body_sys->AddModelInstanceFromString(description,
+        DrakeJoint::QUATERNION);
+  }
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
