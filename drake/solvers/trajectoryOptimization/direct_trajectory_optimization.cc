@@ -1,5 +1,7 @@
 #include "direct_trajectory_optimization.h"
 
+#include <stdexcept>
+
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
@@ -61,6 +63,59 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   // TODO(Lucy-tri) Add control inputs (upper and lower bounds) as bounding box
   // constraints.
 }
+
+namespace {
+/// Since the final cost evaluation needs a total time, we need a
+/// wrapper which will calculate the total time from the individual
+/// time steps and mangle the output appropriately.
+class FinalCostWrapper : public Constraint {
+ public:
+  FinalCostWrapper(int num_time_samples, int num_states,
+                   std::shared_ptr<Constraint> constraint)
+      : Constraint(constraint->num_constraints(),
+                   constraint->lower_bound(),
+                   constraint->upper_bound()),
+        num_time_samples_(num_time_samples),
+        num_states_(num_states),
+        constraint_(constraint) {}
+
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override {
+    throw std::runtime_error("Non-Taylor constraint eval not implemented.");
+  }
+
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
+    DRAKE_ASSERT(x.rows() == (num_time_samples_ - 1) + num_states_);
+
+    TaylorVecXd wrapped_x(num_states_ + 1);
+    wrapped_x(0) = x.head(num_time_samples_ - 1).sum();
+    wrapped_x.tail(num_states_) = x.tail(num_states_);
+    DRAKE_ASSERT(wrapped_x(0).derivatives().rows() ==
+                 x(0).derivatives().rows());
+
+    constraint_->Eval(wrapped_x, y);
+    DRAKE_ASSERT(y(0).derivatives().rows() ==
+                 x(0).derivatives().rows());
+  };
+
+ private:
+  const int num_time_samples_;
+  const int num_states_;
+  std::shared_ptr<Constraint> constraint_;
+};
+
+}
+
+// We just use a generic constraint here since we need to mangle the
+// input and output anyway.
+void DirectTrajectoryOptimization::AddFinalCost(
+    std::shared_ptr<Constraint> constraint) {
+  auto wrapper = std::make_shared<FinalCostWrapper>(
+      N_, num_states_, constraint);
+  opt_problem_.AddCost(wrapper, {h_vars_, x_vars_.tail(num_states_)});
+}
+
 
 void DirectTrajectoryOptimization::GetInitialVars(
     double timespan_init_in, const PiecewisePolynomial<double>& traj_init_u,
