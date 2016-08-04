@@ -83,7 +83,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
     b->set_name(mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname")));
 
-    pm = mxGetPropertySafe(pBodies, i, "model_instance_id");
+    pm = mxGetPropertySafe(pBodies, i, "robotnum");
     b->set_model_instance_id((int)mxGetScalar(pm) - 1);
 
     pm = mxGetPropertySafe(pBodies, i, "mass");
