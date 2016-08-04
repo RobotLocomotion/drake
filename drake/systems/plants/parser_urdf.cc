@@ -103,7 +103,9 @@ void parseInertial(RigidBody* body, XMLElement* node) {
     body->set_mass(body_mass);
   }
 
-  body->com << T(0, 3), T(1, 3), T(2, 3);
+  Eigen::Vector3d com;
+  com << T(0, 3), T(1, 3), T(2, 3);
+  body->set_center_of_mass(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
   I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
@@ -121,7 +123,7 @@ void parseInertial(RigidBody* body, XMLElement* node) {
     parseScalarAttribute(inertia, "izz", I(2, 2));
   }
 
-  body->I = transformSpatialInertia(T, I);
+  body->set_spatial_inertia(transformSpatialInertia(T, I));
 }
 
 // Adds a material to the supplied material map. If the material is already

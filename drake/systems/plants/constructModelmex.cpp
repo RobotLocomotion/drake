@@ -90,12 +90,18 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     b->set_mass(mxGetScalar(pm));
 
     pm = mxGetPropertySafe(pBodies, i, "com");
-    if (!mxIsEmpty(pm))
-      memcpy(b->com.data(), mxGetPrSafe(pm), sizeof(double) * 3);
+    Eigen::Vector3d com;
+    if (!mxIsEmpty(pm)) {
+      memcpy(com.data(), mxGetPrSafe(pm), sizeof(double) * 3);
+      b->set_center_of_mass(com);
+    }
 
     pm = mxGetPropertySafe(pBodies, i, "I");
-    if (!mxIsEmpty(pm))
-      memcpy(b->I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
+    if (!mxIsEmpty(pm)) {
+      drake::SquareTwistMatrix<double> I;
+      memcpy(I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
+      b->set_spatial_inertia(I);
+    }
 
     pm = mxGetPropertySafe(pBodies, i, "position_num");
     b->set_position_start_index((int)mxGetScalar(pm) - 1);  // zero-indexed
