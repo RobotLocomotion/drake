@@ -145,7 +145,7 @@ void RigidBodyTree::compile(void) {
   //   the root towards the last leaf.
   for (size_t i = 0; i < bodies.size(); i++) {
     if (bodies[i]->hasParent() &&
-        bodies[i]->get_inertia_matrix().isConstant(0)) {
+        bodies[i]->get_spatial_inertia().isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); j++) {
         if (bodies[j]->has_as_parent(*bodies[i])) {
@@ -303,7 +303,8 @@ void RigidBodyTree::drawKinematicTree(
     dotfile << "mass=" << body->get_mass() << ", com="
             << body->get_center_of_mass().transpose()
             << endl;
-    dotfile << "inertia=" << endl << body->get_inertia_matrix() << endl;
+    dotfile << "spatial inertia=" << endl << body->get_spatial_inertia()
+            << endl;
     dotfile << "\"];" << endl;
     if (body->hasParent()) {
       const auto& joint = body->getJoint();
@@ -792,7 +793,7 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
       const RigidBody& body = **it;
       auto& element = cache.getElement(body);
       element.inertia_in_world = transformSpatialInertia(
-          element.transform_to_world, body.get_inertia_matrix().cast<Scalar>());
+          element.transform_to_world, body.get_spatial_inertia().cast<Scalar>());
       element.crb_in_world = element.inertia_in_world;
     }
 

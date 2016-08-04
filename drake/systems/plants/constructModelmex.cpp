@@ -100,7 +100,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     if (!mxIsEmpty(pm)) {
       drake::SquareTwistMatrix<double> I;
       memcpy(I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
-      b->set_inertia_matrix(I);
+      b->set_spatial_inertia(I);
     }
 
     pm = mxGetPropertySafe(pBodies, i, "position_num");

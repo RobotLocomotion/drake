@@ -278,15 +278,15 @@ class DRAKERBM_EXPORT RigidBody {
   const Eigen::Vector3d& get_center_of_mass() const;
 
   /**
-   * Sets the spatial rigid body inertia of this rigid body.
+   * Sets the spatial inertia of this rigid body.
    */
-  void set_inertia_matrix(const drake::SquareTwistMatrix<double>&
+  void set_spatial_inertia(const drake::SquareTwistMatrix<double>&
       inertia_matrix);
 
   /**
-   * Returns the spatial rigid body inertia of this rigid body.
+   * Returns the spatial inertia of this rigid body.
    */
-  const drake::SquareTwistMatrix<double>& get_inertia_matrix()
+  const drake::SquareTwistMatrix<double>& get_spatial_inertia()
       const;
 
   /**
@@ -360,6 +360,6 @@ class DRAKERBM_EXPORT RigidBody {
   // The center of mass of this rigid body.
   Eigen::Vector3d center_of_mass_;
 
-  // The spatial rigid body inertia of this rigid body.
-  drake::SquareTwistMatrix<double> I_;
+  // The spatial inertia of this rigid body.
+  drake::SquareTwistMatrix<double> spatial_inertia_;
 };

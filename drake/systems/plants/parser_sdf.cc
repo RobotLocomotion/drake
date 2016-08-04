@@ -63,7 +63,7 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     parseScalarValue(inertia, "izz", I(2, 2));
   }
 
-  body->set_inertia_matrix(transformSpatialInertia(T_link.inverse() * T, I));
+  body->set_spatial_inertia(transformSpatialInertia(T_link.inverse() * T, I));
 }
 
 bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
