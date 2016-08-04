@@ -34,9 +34,10 @@ class DRAKERBM_EXPORT RigidBodyFrame {
       : RigidBodyFrame("", nullptr, Eigen::Isometry3d::Identity()) {}
 
   /**
-   * Returns the ID of the model to which this rigid body frame belongs.
+   * Returns the ID of the model instance to which this rigid body frame
+   * belongs.
    */
-  int get_model_id() const;
+  int get_model_instance_id() const;
 
   /**
    * Returns the name of this frame.

@@ -12,13 +12,18 @@ int main(int argc, char* argv[]) {
   RigidBodyTree tree;
 
   for (int i = 0; i < 10; i++) {
-    drake::parsers::urdf::AddRobotFromURDF(
+    std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
+      new RigidBodyTree::ModelToInstanceIDMap());
+    drake::parsers::urdf::AddModelInstanceFromURDF(
         GetDrakePath() + "/systems/plants/test/PointMass.urdf",
-        DrakeJoint::ROLLPITCHYAW, &tree);
+        DrakeJoint::ROLLPITCHYAW, &tree, map.get());
   }
-  drake::parsers::urdf::AddRobotFromURDF(
+
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
+      new RigidBodyTree::ModelToInstanceIDMap());
+  drake::parsers::urdf::AddModelInstanceFromURDF(
       GetDrakePath() + "/systems/plants/test/FallingBrick.urdf",
-      DrakeJoint::FIXED, &tree);
+      DrakeJoint::FIXED, &tree, map.get());
 
   VectorXd q = VectorXd::Random(tree.number_of_positions());
   VectorXd v = VectorXd::Random(tree.number_of_velocities());

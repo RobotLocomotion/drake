@@ -6,8 +6,8 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/util/Polynomial.h"
-#include "drake/util/TrigPoly.h"
+#include "drake/common/polynomial.h"
+#include "drake/common/trig_poly.h"
 
 namespace drake {
 namespace solvers {

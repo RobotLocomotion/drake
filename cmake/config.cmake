@@ -3,6 +3,14 @@
 #       one or the other in separate functions.
 
 #------------------------------------------------------------------------------
+# Check compiler version.
+#
+# Arguments:
+#   <NAME> - Name of compiler to display in error message.
+#   <VERSION> - Required compiler version.
+#   [<DISPLAY_VERSION>]
+#       Version string to display in error message (defaults to `<VERSION>`).
+#------------------------------------------------------------------------------
 function(drake_check_compiler NAME VERSION)
   if(DEFINED ARGV2)
     set(_version_string "${ARGV2}")
@@ -15,12 +23,22 @@ function(drake_check_compiler NAME VERSION)
 endfunction()
 
 #------------------------------------------------------------------------------
-function(drake_get_matlab_jvm_version)
-  # Find matlab; this does not use find_package(Matlab) because we only want
-  # to enable matlab support if the matlab executable is in the user's PATH
+# Find MATLAB.
+#------------------------------------------------------------------------------
+function(drake_setup_matlab)
+  # Look for the MATLAB executable. This does not use find_package(Matlab)
+  # because that is "really good at finding MATLAB", and we only want to enable
+  # matlab support if the matlab executable is in the user's PATH.
   find_program(MATLAB_EXECUTABLE matlab)
 
-  if(MATLAB_EXECUTABLE AND NOT MATLAB_JVM_VERSION)
+  # TODO find_package(Matlab) and ensure no conflicts with mex_setup
+endfunction()
+
+#------------------------------------------------------------------------------
+# Determine the version of MATLAB's JVM and set Java build flags to match.
+#------------------------------------------------------------------------------
+function(drake_setup_java_for_matlab)
+  if(NOT MATLAB_JVM_VERSION)
     # Set arguments for running matlab
     set(_args -nodesktop -nodisplay -nosplash)
     if(WIN32)
@@ -61,6 +79,8 @@ function(drake_get_matlab_jvm_version)
 endfunction()
 
 #------------------------------------------------------------------------------
+# Verify minimum required compiler version and set compile options.
+#------------------------------------------------------------------------------
 macro(drake_setup_compiler)
   # Check minimum compiler requirements
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -79,6 +99,8 @@ macro(drake_setup_compiler)
 endmacro()
 
 #------------------------------------------------------------------------------
+# Find and set up Java, and import utilities for using it.
+#------------------------------------------------------------------------------
 macro(drake_setup_java)
   # Require Java at the super-build level since libbot cannot configure without
   # finding Java
@@ -88,14 +110,17 @@ macro(drake_setup_java)
   # If matlab is in use, try to determine its JVM version, as we need to build
   # all externals to the same version (on success, this will set the Java
   # compile flags)
-  if(NOT DISABLE_MATLAB)
-    drake_get_matlab_jvm_version()
+  if(MATLAB_EXECUTABLE AND NOT DISABLE_MATLAB)
+    drake_setup_java_for_matlab()
   endif()
 endmacro()
 
 #------------------------------------------------------------------------------
+# Set up basic platform properties for building Drake.
+#------------------------------------------------------------------------------
 macro(drake_setup_platform)
   drake_setup_compiler()
+  drake_setup_matlab()
   drake_setup_java()
 
   # Choose your python (major) version
@@ -109,6 +134,8 @@ macro(drake_setup_platform)
   endif()
 endmacro()
 
+#------------------------------------------------------------------------------
+# Set up properties for the Drake superbuild.
 #------------------------------------------------------------------------------
 macro(drake_setup_superbuild)
   # Set default install prefix

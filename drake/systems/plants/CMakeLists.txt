@@ -12,7 +12,6 @@ pods_install_pkg_config_file(drake-xml-util
   VERSION 0.0.1)
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
-  model_element_id.cc
   parser_sdf.cc
   parser_urdf.cc
   RigidBodyTree.cpp
@@ -30,7 +29,6 @@ drake_install_headers(
   KinematicPath.h
   KinematicsCache.h
   material_map.h
-  model_element_id.h
   pose_map.h
   rigid_body_actuator.h
   rigid_body_collision_element.h
@@ -133,17 +131,12 @@ if(MATLAB_FOUND)
 endif()
 
 set(drakeIK_SRC_FILES ik_trajectory_helper.cc inverseKin.cpp
-  inverseKinBackend.cpp inverseKinPointwise.cpp inverseKinTraj.cpp)
+  inverseKinBackend.cpp inverseKinPointwise.cpp inverseKinTraj.cpp
+  inverseKinTrajBackend.cpp)
 set(drakeIK_PODS_PKG)
 if(gurobi_FOUND)
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
   set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} gurobi)
-endif()
-if(snopt_c_FOUND)
-  set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} inverseKinSnoptBackend.cpp)
-  set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} snopt_c)
-else()
-  set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} inverseKinNoSnoptBackend.cpp)
 endif()
 
 if(drakeIK_SRC_FILES)

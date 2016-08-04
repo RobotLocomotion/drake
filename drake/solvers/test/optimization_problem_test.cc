@@ -7,7 +7,7 @@
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/optimization.h"
 #include "drake/solvers/snopt_solver.h"
-#include "drake/util/Polynomial.h"
+#include "drake/common/polynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
@@ -23,8 +23,6 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 
-using drake::TaylorVecXd;
-using drake::Vector1d;
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
 using drake::util::MatrixCompareType;

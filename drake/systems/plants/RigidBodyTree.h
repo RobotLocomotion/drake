@@ -35,6 +35,15 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
   /**
+   * Defines the data type that maps between model names and their instance IDs.
+   * The model names are those that existing within a single URDF or SDF file
+   * and not within the entire RigidBodyTree and are thus guaranteed to be
+   * unique. This data type is used to convey the model instance IDs to the
+   * `RigidBodySystem` and to the application.
+   */
+  typedef std::map<std::string, int> ModelToInstanceIDMap;
+
+  /**
    * Defines the name of the rigid body within a rigid body tree that represents
    * the world.
    */
@@ -49,18 +58,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
   virtual ~RigidBodyTree(void);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDFString.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
 #endif
-  void addRobotFromURDFString(
+  void AddModelInstanceFromUrdfString(
       const std::string& xml_string, const std::string& root_dir = ".",
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDFString.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
 #endif
-  void addRobotFromURDFString(
+  void AddModelInstanceFromUrdfString(
       const std::string& xml_string,
       std::map<std::string, std::string>& package_map,
       const std::string& root_dir = ".",
@@ -69,18 +78,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDF.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
 #endif
-  void addRobotFromURDF(
+  void AddModelInstanceFromUrdfFile(
       const std::string& urdf_filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDF.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
 #endif
-  void addRobotFromURDF(
+  void AddModelInstanceFromUrdfFile(
       const std::string& urdf_filename,
       std::map<std::string, std::string>& package_map,
       const DrakeJoint::FloatingBaseType floating_base_type =
@@ -88,24 +97,25 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::sdf::AddRobotFromSDF.")
+  DRAKE_DEPRECATED("Please use AddRobotFromSDF.")
 #endif
-  void addRobotFromSDF(const std::string& sdf_filename,
+  void AddModelInstanceFromSdfFile(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
                            DrakeJoint::QUATERNION,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
-   * Returns an integer that can be used to uniquely identify a model
-   * within this rigid body tree. Note that this method is not thread safe!
+   * Adds a new model instance to this `RigidBodyTree`. The model instance is
+   * identified by a unique model instance ID, which is the return value of
+   * this method.
    */
-  int get_next_model_id() { return next_model_id_++; }
+  // This method is not thread safe!
+  int add_model_instance() { return number_of_model_instances_++; }
 
   /**
-   * Returns an integer that will be used as a unique ID for the next model
-   * to be added within the rigid body tree.
+   * Returns the number of model instances in the tree.
    */
-  int get_current_model_id() { return next_model_id_; }
+  int get_number_of_model_instances() { return number_of_model_instances_; }
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
@@ -171,56 +181,64 @@ class DRAKERBM_EXPORT RigidBodyTree {
                     bool compute_JdotV = false) const;
 
   bool isBodyPartOfRobot(const RigidBody& body,
-                         const std::set<int>& robotnum) const;
+                         const std::set<int>& model_instance_id) const;
 
   /**
    * Computes the total mass of a set of models in this rigid body tree.
    *
-   * @param[in] model_ids A set of model ID values corresponding to the models
-   * whose masses should be included in the returned value.
+   * @param[in] model_instance_ids A set of model instance ID values
+   * corresponding to the model instances whose masses should be included in the
+   * returned value.
    *
-   * @returns The total mass of the models specified by @p model_ids.
+   * @returns The total mass of the model instances specified by
+   * @p model_instance_ids.
    */
-  double getMass(const std::set<int>& model_ids = default_robot_num_set) const;
+  double getMass(const std::set<int>& model_instance_ids =
+      default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_instance_id = default_model_instance_id_set)
+          const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set,
+      const std::set<int>& model_instance_id = default_model_instance_id_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> worldMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_instance_id = default_model_instance_id_set)
+          const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> centroidalMomentumMatrix(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set,
+      const std::set<int>& model_instance_id = default_model_instance_id_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> centroidalMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_instance_id = default_model_instance_id_set)
+          const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, Eigen::Dynamic>
   centerOfMassJacobian(KinematicsCache<Scalar>& cache,
-                       const std::set<int>& robotnum = default_robot_num_set,
+                       const std::set<int>& model_instance_id =
+                           default_model_instance_id_set,
                        bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1>
   centerOfMassJacobianDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_instance_id = default_model_instance_id_set)
+          const;
 
   template <typename DerivedA, typename DerivedB, typename DerivedC>
   void jointLimitConstraints(Eigen::MatrixBase<DerivedA> const& q,
@@ -455,7 +473,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
           auto& ids = body_ptr->get_mutable_collision_element_ids();
           for (const auto& id : group.second) {
             ids.erase(std::find(ids.begin(), ids.end(), id));
-            collision_model->removeElement(id);
+            collision_model_->removeElement(id);
           }
           names_of_groups_to_delete.push_back(group_name);
         }
@@ -475,7 +493,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
 
   void getTerrainContactPoints(const RigidBody& body,
-                               Eigen::Matrix3Xd& terrain_points) const;
+                               Eigen::Matrix3Xd* terrain_points) const;
 
   bool collisionRaycast(const KinematicsCache<double>& cache,
                         const Eigen::Matrix3Xd& origins,
@@ -793,7 +811,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   int number_of_velocities() const { return num_velocities_; }
 
  public:
-  static const std::set<int> default_robot_num_set;
+  static const std::set<int> default_model_instance_id_set;
 
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
@@ -824,9 +842,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // The number of velocity states in this rigid body tree.
   int num_velocities_{};
 
-  // Remembers the ID that should be assigned to the next model added to this
-  // rigid body tree.
-  int next_model_id_{};
+  // The number of model instances in this rigid body tree.
+  int number_of_model_instances_{};
 
   // helper functions for contactConstraints
   template <typename Scalar>
@@ -849,7 +866,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // RBM for use in collision detection of different kinds. Small margins are
   // applied to all collision geometry when that geometry is added, to improve
   // the numerical stability of contact gradients taken using the model.
-  std::unique_ptr<DrakeCollision::Model> collision_model;
+  std::unique_ptr<DrakeCollision::Model> collision_model_;
 
  public:
 #ifndef SWIG

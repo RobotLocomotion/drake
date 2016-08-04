@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/util/Polynomial.h"
+#include "drake/common/polynomial.h"
 
 namespace drake {
 namespace solvers {
@@ -57,8 +57,8 @@ class Constraint {
   // Move this to DifferentiableConstraint derived class if/when we
   // need to support non-differentiable functions (at least, if
   // DifferentiableConstraint is ever implemented).
-  virtual void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
-                    drake::TaylorVecXd& y) const = 0;
+  virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+                    TaylorVecXd& y) const = 0;
 
   Eigen::VectorXd const& lower_bound() const { return lower_bound_; }
   Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
@@ -91,11 +91,11 @@ class QuadraticConstraint : public Constraint {
     y.resize(num_constraints());
     y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
   }
-  void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
-            drake::TaylorVecXd& y) const override {
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
     y.resize(num_constraints());
-    y = .5 * x.transpose() * Q_.cast<drake::TaylorVarXd>() * x +
-        b_.cast<drake::TaylorVarXd>().transpose() * x;
+    y = .5 * x.transpose() * Q_.cast<TaylorVarXd>() * x +
+        b_.cast<TaylorVarXd>().transpose() * x;
   };
 
   virtual const Eigen::MatrixXd& Q() const { return Q_; }
@@ -141,8 +141,8 @@ class PolynomialConstraint : public Constraint {
     }
   }
 
-  void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
-            drake::TaylorVecXd& y) const override {
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
     taylor_evaluation_point_.clear();
     for (size_t i = 0; i < poly_vars_.size(); i++) {
       taylor_evaluation_point_[poly_vars_[i]] = x[i];
@@ -159,7 +159,7 @@ class PolynomialConstraint : public Constraint {
 
   /// To avoid repeated allocation, reuse a map for the evaluation point.
   mutable std::map<Polynomiald::VarType, double> double_evaluation_point_;
-  mutable std::map<Polynomiald::VarType, drake::TaylorVarXd>
+  mutable std::map<Polynomiald::VarType, TaylorVarXd>
       taylor_evaluation_point_;
 };
 
@@ -188,10 +188,10 @@ class LinearConstraint : public Constraint {
     y.resize(num_constraints());
     y = A_ * x;
   }
-  void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
-            drake::TaylorVecXd& y) const override {
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
     y.resize(num_constraints());
-    y = A_.cast<drake::TaylorVarXd>() * x;
+    y = A_.cast<TaylorVarXd>() * x;
   };
 
   virtual Eigen::SparseMatrix<double> GetSparseMatrix() const {
@@ -264,8 +264,8 @@ class BoundingBoxConstraint : public LinearConstraint {
     y.resize(num_constraints());
     y = x;
   }
-  void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
-            drake::TaylorVecXd& y) const override {
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
     y.resize(num_constraints());
     y = x;
   }
@@ -298,10 +298,10 @@ class LinearComplementarityConstraint : public Constraint {
     y.resize(num_constraints());
     y = (M_ * x) + q_;
   }
-  void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
-            drake::TaylorVecXd& y) const override {
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
     y.resize(num_constraints());
-    y = (M_.cast<drake::TaylorVarXd>() * x) + q_.cast<drake::TaylorVarXd>();
+    y = (M_.cast<TaylorVarXd>() * x) + q_.cast<TaylorVarXd>();
   };
 
   const Eigen::MatrixXd& M() const { return M_; }

@@ -20,8 +20,6 @@ using Ipopt::IpoptData;
 using Ipopt::Number;
 using Ipopt::SolverReturn;
 
-using drake::TaylorVecXd;
-
 namespace drake {
 namespace solvers {
 namespace {

@@ -8,6 +8,20 @@
 
 {
     <1>
+    Memcheck:Cond
+    ...
+    fun:_ZN4dyld4loadEPKcRKNS_11LoadContextE
+}
+
+{
+    <1>
+    Memcheck:Value8
+    ...
+    fun:_ZN4dyld4loadEPKcRKNS_11LoadContextE
+}
+
+{
+    <1>
     Memcheck:Addr4
     fun:PyObject_Free
     ...
@@ -27,7 +41,6 @@
     ...
 }
 
-
 {
     <1>
     Memcheck:Addr4
@@ -37,8 +50,22 @@
 
 {
     <1>
+    Memcheck:Addr4
+    obj:/usr/local/bin/python
+    ...
+}
+
+{
+    <1>
     Memcheck:Cond
     obj:/usr/bin/python2.7
+    ...
+}
+
+{
+    <1>
+    Memcheck:Cond
+    obj:/usr/local/bin/python
     ...
 }
 
@@ -51,7 +78,21 @@
 
 {
     <1>
+    Memcheck:Leak
+    ...
+    obj:/usr/local/bin/python
+}
+
+{
+    <1>
     Memcheck:Value8
     obj:/usr/bin/python2.7
+    ...
+}
+
+{
+    <1>
+    Memcheck:Value8
+    obj:/usr/local/bin/python
     ...
 }

@@ -2,9 +2,8 @@
 
 #include <memory>
 
-#include "drake/core/Gradient.h"
-#include "drake/core/Vector.h"
 #include "drake/systems/System.h"
+#include "drake/systems/vector.h"
 
 namespace drake {
 

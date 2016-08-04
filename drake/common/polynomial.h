@@ -11,8 +11,8 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/Polynomials>
 
-#include "drake/core/Gradient.h"
-#include "drake/drakePolynomial_export.h"
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/drakeCommon_export.h"
 
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
  *
@@ -39,7 +39,7 @@
  * under division.
  */
 template <typename _CoefficientType = double>
-class DRAKEPOLYNOMIAL_EXPORT Polynomial {
+class DRAKECOMMON_EXPORT Polynomial {
  public:
   typedef _CoefficientType CoefficientType;
   typedef unsigned int VarType;
@@ -56,7 +56,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   };
 
   /// An individual variable raised to an integer power; e.g. x**2.
-  class DRAKEPOLYNOMIAL_EXPORT Term {
+  class DRAKECOMMON_EXPORT Term {
    public:
     VarType var;
     PowerType power;
@@ -75,7 +75,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
 
   /// An additive atom of a Polynomial: The product of any number of
   /// Terms and a coefficient.
-  class DRAKEPOLYNOMIAL_EXPORT Monomial {
+  class DRAKECOMMON_EXPORT Monomial {
    public:
     CoefficientType coefficient;
     std::vector<Term> terms;  // a list of N variable ids

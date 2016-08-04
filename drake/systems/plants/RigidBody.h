@@ -23,11 +23,7 @@ class DRAKERBM_EXPORT RigidBody {
   RigidBody();
 
   /**
-   * @brief Name of the body.
-   *
-   * An accessor for the name of the body that this rigid body represents.
-   *
-   * @return The name of the body that's modeled by this rigid body.
+   * Returns the name of this rigid body.
    */
   const std::string& get_name() const;
 
@@ -37,28 +33,24 @@ class DRAKERBM_EXPORT RigidBody {
   void set_name(const std::string& name);
 
   /**
-   * An accessor for the name of the model or robot that this rigid body is
-   * a part of.
-   *
-   * @return The name of the model that this rigid body belongs to.
+   * Returns the name of the model defining this rigid body.
    */
-  // TODO(amcastro-tri): Move concept of world out of here as per #2318.
   const std::string& get_model_name() const;
 
   /**
-   * Sets the name of the model to which this rigid body belongs.
+   * Sets the name of the model defining this rigid body.
    */
   void set_model_name(const std::string& name);
 
   /**
-   * Returns the ID of the model to which this rigid body belongs.
+   * Returns the ID of the model instance to which this rigid body belongs.
    */
-  int get_model_id() const;
+  int get_model_instance_id() const;
 
   /**
-   * Sets the ID of the model to which this rigid body belongs.
+   * Sets the ID of the model instance to which this rigid body belongs.
    */
-  void set_model_id(int model_id);
+  void set_model_instance_id(int model_instance_id);
 
   /**
    * Sets the parent joint through which this rigid body connects to its parent
@@ -174,13 +166,13 @@ class DRAKERBM_EXPORT RigidBody {
       const;
 
   /**
-   * @returns A reference to an `std::vector` of collision elements that
+   * Returns a reference to an `std::vector` of collision elements that
    * represent the collision geometry of this rigid body.
    */
   std::vector<DrakeCollision::ElementId>& get_mutable_collision_element_ids();
 
   /**
-   * @returns A map of collision element group names to vectors of collision
+   * Returns a map of collision element group names to vectors of collision
    * element IDs. These are the collision element groups created through calls
    * to RigidBody::AddCollisionElementToGroup().
    */
@@ -188,7 +180,7 @@ class DRAKERBM_EXPORT RigidBody {
       get_group_to_collision_ids_map() const;
 
   /**
-   * @returns A map of collision element group names to vectors of collision
+   * Returns a map of collision element group names to vectors of collision
    * element IDs. These are the collision element groups created through calls
    * to RigidBody::AddCollisionElementToGroup().
    */
@@ -242,6 +234,54 @@ class DRAKERBM_EXPORT RigidBody {
       std::vector<DrakeCollision::ElementId>& ids) const;
 
   /**
+   * Returns the points on this rigid body that should be checked for collision
+   * with the environment. These are the contact points that were saved by
+   * RigidBody::set_contact_points().
+   */
+  const Eigen::Matrix3Xd& get_contact_points() const;
+
+  /**
+   * Saves the points on this rigid body that should be checked for collision
+   * between this rigid body and the environment. These contact points can be
+   * obtained through RigidBody::get_contact_points().
+   */
+  void set_contact_points(const Eigen::Matrix3Xd& contact_points);
+
+  /**
+   * Sets the mass of this rigid body.
+   */
+  void set_mass(double mass);
+
+  /**
+   * Returns the mass of this rigid body.
+   */
+  double get_mass() const;
+
+  /**
+   * Sets the center of mass of this rigid body. The center of mass is expressed
+   * in this body's frame.
+   */
+  void set_center_of_mass(const Eigen::Vector3d& center_of_mass);
+
+  /**
+   * Gets the center of mass of this rigid body. The center of mass is expressed
+   * in this body's frame.
+   */
+  const Eigen::Vector3d& get_center_of_mass() const;
+
+  /**
+   * Sets the spatial inertia of this rigid body.
+   */
+  void set_spatial_inertia(const drake::SquareTwistMatrix<double>&
+      inertia_matrix);
+
+  /**
+   * Returns the spatial inertia of this rigid body.
+   */
+  const drake::SquareTwistMatrix<double>& get_spatial_inertia()
+      const;
+
+  /**
    * Transforms all of the visual, collision, and inertial elements associated
    * with this body to the proper joint frame.  This is necessary, for instance,
    * to support SDF loading where the child frame can be specified independently
@@ -259,17 +299,6 @@ class DRAKERBM_EXPORT RigidBody {
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
 
-  Eigen::Matrix3Xd contact_pts;
-
-  /// The mass of this rigid body.
-  double mass;
-
-  /// The center of mass of this rigid body.
-  Eigen::Vector3d com;
-
-  /// The spatial rigid body inertia of this rigid body.
-  drake::SquareTwistMatrix<double> I;
-
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
  public:
@@ -281,11 +310,13 @@ class DRAKERBM_EXPORT RigidBody {
   // The name of this rigid body.
   std::string name_;
 
-  // The name of the model to which this rigid body belongs.
+  // TODO(liang.fok) Remove this member variable, see:
+  // https://github.com/RobotLocomotion/drake/issues/3053
+  // The name of the model that defined this rigid body.
   std::string model_name_;
 
-  // A unique ID for each model. It uses 0-index, starts from 0.
-  int model_id_{0};
+  // A unique ID for the model instance to which this body belongs.
+  int model_instance_id_{0};
 
   // The rigid body that's connected to this rigid body's joint.
   RigidBody* parent_{nullptr};
@@ -313,4 +344,16 @@ class DRAKERBM_EXPORT RigidBody {
   // anything in terms of how the collision elements relate to each other.
   std::map<std::string, std::vector<DrakeCollision::ElementId>>
       collision_element_groups_;
+
+  // The contact points this rigid body has with its environment.
+  Eigen::Matrix3Xd contact_points_;
+
+  // The mass of this rigid body.
+  double mass_{0};
+
+  // The center of mass of this rigid body.
+  Eigen::Vector3d center_of_mass_;
+
+  // The spatial inertia of this rigid body.
+  drake::SquareTwistMatrix<double> spatial_inertia_;
 };

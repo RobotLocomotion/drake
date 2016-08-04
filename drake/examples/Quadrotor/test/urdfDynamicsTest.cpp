@@ -19,8 +19,8 @@ namespace {
 
 GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto rbsys = RigidBodySystem();
-  rbsys.addRobotFromFile(GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-                         DrakeJoint::ROLLPITCHYAW);
+  rbsys.AddModelInstanceFromFile(GetDrakePath() +
+      "/examples/Quadrotor/quadrotor.urdf", DrakeJoint::ROLLPITCHYAW);
 
   auto p = Quadrotor();
 

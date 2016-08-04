@@ -21,11 +21,16 @@ GTEST_TEST(testIKtraj, testIKtraj) {
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   int r_hand{};
+  int pelvis{};
   for (int i = 0; i < static_cast<int>(model.bodies.size()); i++) {
-    if (model.bodies[i]->get_name().compare(std::string("r_hand"))) {
+    if (!model.bodies[i]->get_name().compare(std::string("r_hand"))) {
       r_hand = i;
     }
+    if (!model.bodies[i]->get_name().compare(std::string("pelvis"))) {
+      pelvis = i;
+    }
   }
+
   VectorXd qstar = model.getZeroConfiguration();
   qstar(3) = 0.8;
   KinematicsCache<double> cache = model.doKinematics(qstar);
@@ -34,8 +39,9 @@ GTEST_TEST(testIKtraj, testIKtraj) {
   Vector3d r_hand_pt = Vector3d::Zero();
   Vector3d rhand_pos0 = model.transformPoints(cache, r_hand_pt, r_hand, 0);
 
+  Vector2d tspan(0, 1);
   int nT = 4;
-  double dt = 1.0 / (nT - 1);
+  double dt = tspan(1) / (nT - 1);
   std::vector<double> t(nT, 0);
   for (int i = 0; i < nT; i++) {
     t[i] = dt * i;
@@ -60,9 +66,15 @@ GTEST_TEST(testIKtraj, testIKtraj) {
   tspan_end << t[nT - 1], t[nT - 1];
   WorldPositionConstraint kc_rhand(
       &model, r_hand, r_hand_pt, rhand_pos_lb, rhand_pos_ub, tspan_end);
+
+  // Add a multiple time constraint which is fairly trivial to meet in
+  // this case.
+  WorldFixedBodyPoseConstraint kc_fixed_pose(&model, pelvis, tspan);
+
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&com_kc);
   constraint_array.push_back(&kc_rhand);
+  constraint_array.push_back(&kc_fixed_pose);
 
   IKoptions ikoptions(&model);
   MatrixXd q_sol(model.number_of_positions(), nT);
@@ -70,6 +82,7 @@ GTEST_TEST(testIKtraj, testIKtraj) {
   MatrixXd qddot_sol(model.number_of_positions(), nT);
   int info = 0;
   std::vector<std::string> infeasible_constraint;
+
   inverseKinTraj(&model, nT, t.data(), qdot0, q0, q0, constraint_array.size(),
                  constraint_array.data(), ikoptions, &q_sol, &qdot_sol,
                  &qddot_sol, &info, &infeasible_constraint);
@@ -77,6 +90,7 @@ GTEST_TEST(testIKtraj, testIKtraj) {
 
   ikoptions.setFixInitialState(false);
   ikoptions.setMajorIterationsLimit(500);
+
   inverseKinTraj(&model, nT, t.data(), qdot0, q0, q0, constraint_array.size(),
                  constraint_array.data(), ikoptions, &q_sol, &qdot_sol,
                  &qddot_sol, &info, &infeasible_constraint);

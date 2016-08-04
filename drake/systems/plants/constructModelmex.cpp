@@ -84,18 +84,24 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     b->set_name(mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname")));
 
     pm = mxGetPropertySafe(pBodies, i, "robotnum");
-    b->set_model_id((int)mxGetScalar(pm) - 1);
+    b->set_model_instance_id((int)mxGetScalar(pm) - 1);
 
     pm = mxGetPropertySafe(pBodies, i, "mass");
-    b->mass = mxGetScalar(pm);
+    b->set_mass(mxGetScalar(pm));
 
     pm = mxGetPropertySafe(pBodies, i, "com");
-    if (!mxIsEmpty(pm))
-      memcpy(b->com.data(), mxGetPrSafe(pm), sizeof(double) * 3);
+    Eigen::Vector3d com;
+    if (!mxIsEmpty(pm)) {
+      memcpy(com.data(), mxGetPrSafe(pm), sizeof(double) * 3);
+      b->set_center_of_mass(com);
+    }
 
     pm = mxGetPropertySafe(pBodies, i, "I");
-    if (!mxIsEmpty(pm))
-      memcpy(b->I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
+    if (!mxIsEmpty(pm)) {
+      drake::SquareTwistMatrix<double> I;
+      memcpy(I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
+      b->set_spatial_inertia(I);
+    }
 
     pm = mxGetPropertySafe(pBodies, i, "position_num");
     b->set_position_start_index((int)mxGetScalar(pm) - 1);  // zero-indexed
@@ -361,7 +367,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       // cout << "constructModelmex: Set contact_pts of body" << endl;
       // END_DEBUG
       Map<Matrix3Xd> pts(mxGetPrSafe(pPts), 3, n_pts);
-      model->bodies[body_idx]->contact_pts = pts;
+      model->bodies[body_idx]->set_contact_points(pts);
       // DEBUG
       // mexPrintf("constructModelmex: created %d contact points for body %d\n",
       // n_pts, body_idx);

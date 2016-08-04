@@ -23,11 +23,11 @@ char* model_file_2 = nullptr;
 GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
   // Creates a rigid body system using the first model.
   auto r1 = make_shared<RigidBodySystem>();
-  r1->addRobotFromFile(model_file_1, DrakeJoint::QUATERNION);
+  r1->AddModelInstanceFromFile(model_file_1, DrakeJoint::QUATERNION);
 
   // Creates a rigid body system using the second model.
   auto r2 = make_shared<RigidBodySystem>();
-  r2->addRobotFromFile(model_file_2, DrakeJoint::QUATERNION);
+  r2->AddModelInstanceFromFile(model_file_2, DrakeJoint::QUATERNION);
 
   // for debugging:
   // r1->getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");

@@ -79,6 +79,9 @@ void Abort(const char* condition, const char* func, const char* file, int line);
     }                                                                   \
   } while (0)
 
+#define DRAKE_ABORT_MSG(msg)                                        \
+  ::drake::detail::Abort(msg, __func__, __FILE__, __LINE__)
+
 #ifdef DRAKE_ASSERT_IS_ARMED
 // Assertions are enabled.
 # define DRAKE_ASSERT(condition) DRAKE_ABORT_UNLESS(condition)

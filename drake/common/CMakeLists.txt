@@ -14,6 +14,7 @@ set(sources
   ${drake_path_cc}
   functional_form.cc
   nice_type_name.cc
+  polynomial.cc
   text_logging.cc
   )
 
@@ -24,11 +25,14 @@ set(installed_headers
   drake_assert.h
   drake_deprecated.h
   drake_path.h
+  eigen_autodiff_types.h
   eigen_types.h
   functional_form.h
   nice_type_name.h
+  polynomial.h
   sorted_vectors_have_intersection.h
   text_logging.h
+  trig_poly.h
   )
 
 # List headers that are needed by code here but should not
