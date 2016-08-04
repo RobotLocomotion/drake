@@ -9,7 +9,7 @@
 #include "drake/util/testUtil.h"
 
 using std::make_shared;
-using Drake::RigidBodySystem;
+using drake::RigidBodySystem;
 using Eigen::VectorXd;
 using drake::util::MatrixCompareType;
 

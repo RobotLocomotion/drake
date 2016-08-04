@@ -375,9 +375,9 @@ trigPolyToEigen(const mxArray* trigpoly) {
   TrigPolyd::SinCosMap m;
   for (int i = 0; i < q.size(); i++) {
     TrigPolyd::SinCosVars sc;
-    sc.s = s(i).getSimpleVariable();
-    sc.c = c(i).getSimpleVariable();
-    m[q(i).getSimpleVariable()] = sc;
+    sc.s = s(i).GetSimpleVariable();
+    sc.c = c(i).GetSimpleVariable();
+    m[q(i).GetSimpleVariable()] = sc;
   }
 
   // todo: feels very inefficient (one copy of the sincosmap for every element

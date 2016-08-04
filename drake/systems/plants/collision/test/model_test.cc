@@ -2,7 +2,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/collision/Model.h"
 #include "gtest/gtest.h"
@@ -141,7 +141,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   const std::vector<ElementId> ids_to_check = {id1, id2, id3};
   std::vector<PointPair> points;
   model->closestPointsAllToAll(ids_to_check, true, points);
-  ASSERT_EQ(3, points.size());
+  ASSERT_EQ(3u, points.size());
 
   // Check the closest point between object 1 and object 2.
   // TODO(david-german-tri): Migrate this test to use Eigen matchers once
@@ -245,7 +245,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Collision test performed with Model::closestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box_id_, sphere_id_};
   model_->closestPointsAllToAll(ids_to_check, true, points);
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -258,7 +258,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Not using margins.
   points.clear();
   model_->ComputeMaximumDepthCollisionPoints(false, points);
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
   // That is why ptA is generally different from ptB, unless there is
@@ -278,7 +278,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Using margins.
   points.clear();
   model_->ComputeMaximumDepthCollisionPoints(true, points);
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
   // That is why ptA is generally different from ptB, unless there is
@@ -318,7 +318,7 @@ TEST_F(BoxVsSphereTest, MultiContact) {
   points.clear();
   points = model_->potentialCollisionPoints(false);
 
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -413,7 +413,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // Collision test performed with Model::closestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {large_box_id_, small_box_id_};
   model_->closestPointsAllToAll(ids_to_check, true, points);
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
@@ -432,7 +432,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // Best for physics simulations would be DrakeCollision::Model to return at
   // least the four corners of the smaller box. However it randomly picks one
   // corner.
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   // Collision points are reported in the world's frame.
   // Only test for vertical position.
@@ -446,7 +446,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   points.clear();
   model_->ComputeMaximumDepthCollisionPoints(true, points);
 
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   // Collision points are reported in the world's frame.
   // Only test for vertical position.
@@ -482,7 +482,7 @@ TEST_F(SmallBoxSittingOnLargeBox, MultiContact) {
 
   // Collision test performed with Model::potentialCollisionPoints.
   points = model_->potentialCollisionPoints(false);
-  ASSERT_EQ(4, points.size());
+  ASSERT_EQ(4u, points.size());
   for (const PointPair& point : points) {
     EXPECT_NEAR(-0.1, point.distance, tolerance_);
     EXPECT_TRUE(point.normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -572,7 +572,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   // Collision test performed with Model::closestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box1_id_, box2_id_};
   model_->closestPointsAllToAll(ids_to_check, true, points);
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported on each of the respective bodies' frames.
@@ -589,7 +589,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   // Best for physics simulations would be DrakeCollision::Model to return at
   // least the four corners of the smaller box. However it randomly picks one
   // corner.
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
   // Collision points are reported in the world's frame.
@@ -619,7 +619,7 @@ TEST_F(NonAlignedBoxes, MultiContact) {
   // Collision test performed with Model::potentialCollisionPoints.
   points.clear();
   points = model_->potentialCollisionPoints(false);
-  ASSERT_EQ(4, points.size());
+  ASSERT_EQ(4u, points.size());
 
   for (const PointPair& point : points) {
     EXPECT_NEAR(-0.1, point.distance, tolerance_);
@@ -678,7 +678,7 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
 
   // Check that the model is not caching results even after four queries.
   // If the model does not cache results there should only be one result.
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
 
   for (const PointPair& point : points) {
     EXPECT_NEAR(-0.1, point.distance, tolerance_);
@@ -738,7 +738,7 @@ GTEST_TEST(ModelTest, StaticElements) {
 
   // Only three points are expected (instead of four) since ball1 and ball4 are
   // flagged as static.
-  ASSERT_EQ(3, points.size());
+  ASSERT_EQ(3u, points.size());
 }
 
 GTEST_TEST(ModelTest, StaticMeshes) {
@@ -748,7 +748,7 @@ GTEST_TEST(ModelTest, StaticMeshes) {
   DrakeShapes::Sphere sphere(0.5);
   Isometry3d pose = Isometry3d::Identity();
 
-  std::string file_name = Drake::getDrakePath() +
+  std::string file_name = drake::GetDrakePath() +
       "/systems/plants/collision/test/spherical_cap.obj";
   DrakeShapes::Mesh cap(file_name, file_name);
 
@@ -785,7 +785,7 @@ GTEST_TEST(ModelTest, StaticMeshes) {
   model->ComputeMaximumDepthCollisionPoints(false, points);
 
   // Expects one collision point for this test.
-  ASSERT_EQ(1, points.size());
+  ASSERT_EQ(1u, points.size());
 
   EXPECT_NEAR(-0.1, points[0].distance, tolerance);
 

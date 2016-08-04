@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
@@ -10,10 +10,10 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::shared_ptr;
 using std::make_shared;
-using Drake::getDrakePath;
-using Drake::RigidBodySystem;
+using drake::GetDrakePath;
+using drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
-using Drake::RigidBodyGyroscope;
+using drake::RigidBodyGyroscope;
 
 namespace drake {
 namespace systems {
@@ -34,7 +34,7 @@ GTEST_TEST(testGyroscope, AllTests) {
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->addRobotFromFile(
-      getDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
+      GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
       floating_base_type);
   auto const& tree = rigid_body_sys->getRigidBodyTree();
   auto sensor_frame = tree->findFrame("body");

@@ -6,6 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace systems {
@@ -15,35 +16,37 @@ Adder<T>::Adder(int num_inputs, int length)
     : num_inputs_(num_inputs), length_(length) {}
 
 template <typename T>
-std::unique_ptr<Context<T>> Adder<T>::CreateDefaultContext() const {
+std::unique_ptr<ContextBase<T>> Adder<T>::CreateDefaultContext() const {
   std::unique_ptr<Context<T>> context(new Context<T>);
   context->SetNumInputPorts(num_inputs_);
-  return context;
+  return std::unique_ptr<ContextBase<T>>(context.release());
 }
 
 template <typename T>
-std::unique_ptr<SystemOutput<T>> Adder<T>::AllocateOutput() const {
+std::unique_ptr<SystemOutput<T>> Adder<T>::AllocateOutput(
+    const ContextBase<T>& context) const {
   // An adder has just one output port, a BasicVector of the size specified
   // at construction time.
-  std::unique_ptr<SystemOutput<T>> output(new SystemOutput<T>);
+  std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
   {
     std::unique_ptr<BasicVector<T>> data(new BasicVector<T>(length_));
     std::unique_ptr<OutputPort<T>> port(new OutputPort<T>(std::move(data)));
-    output->ports.push_back(std::move(port));
+    output->get_mutable_ports()->push_back(std::move(port));
   }
-  return output;
+  return std::unique_ptr<SystemOutput<T>>(output.release());
 }
 
 template <typename T>
-void Adder<T>::EvalOutput(const Context<T>& context,
+void Adder<T>::EvalOutput(const ContextBase<T>& context,
                           SystemOutput<T>* output) const {
   // Check that the single output port has the correct length, then zero it.
   // Checks on the output structure are assertions, not exceptions,
   // since failures would reflect a bug in the Adder implementation, not
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
-  DRAKE_ASSERT(output->ports.size() == 1);
-  VectorInterface<T>* output_port = output->ports[0]->GetMutableVectorData();
+  DRAKE_ASSERT(output->get_num_ports() == 1);
+  VectorInterface<T>* output_port =
+      output->get_mutable_port(0)->GetMutableVectorData();
   DRAKE_ASSERT(output_port != nullptr);
   DRAKE_ASSERT(output_port->get_value().rows() == length_);
   output_port->get_mutable_value() = VectorX<T>::Zero(length_);

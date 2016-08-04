@@ -1,8 +1,8 @@
 
 #include <iostream>
 
-#include "drake/Path.h"
-#include "drake/util/Polynomial.h"
+#include "drake/common/drake_path.h"
+#include "drake/common/polynomial.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/plants/BotVisualizer.h"
@@ -11,7 +11,7 @@
 #include "drake/util/drakeAppUtil.h"
 
 using namespace std;
-using namespace Drake;
+using namespace drake;
 
 int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
 
   auto p = make_shared<Pendulum>();
   auto v = make_shared<BotVisualizer<PendulumState> >(
-      lcm, getDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
       DrakeJoint::FIXED);
 
   PendulumState<double> x0;

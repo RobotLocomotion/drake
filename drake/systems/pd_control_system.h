@@ -3,12 +3,10 @@
 #include <memory>
 
 #include "drake/common/drake_assert.h"
-#include "drake/core/Function.h"
-#include "drake/core/Gradient.h"
-#include "drake/core/Vector.h"
 #include "drake/systems/System.h"
+#include "drake/systems/vector.h"
 
-namespace Drake {
+namespace drake {
 
 /** PDControlSystem<System>
  * @brief Wraps an existing system with a PD controller (the new system
@@ -34,13 +32,13 @@ class PDControlSystem {
   template <typename DerivedA, typename DerivedB>
   PDControlSystem(const SystemPtr& sys, const Eigen::MatrixBase<DerivedA>& Kp,
                   const Eigen::MatrixBase<DerivedB>& Kd)
-      : sys(sys), Kp(Kp), Kd(Kd) {
-    DRAKE_ASSERT(static_cast<int>(Drake::getNumInputs(*sys)) == Kp.rows() &&
+      : sys_(sys), Kp_(Kp), Kd_(Kd) {
+    DRAKE_ASSERT(static_cast<int>(drake::getNumInputs(*sys)) == Kp.rows() &&
                  "Kp must have the same number of rows as the system has"
                  " inputs");
     DRAKE_ASSERT(Kp.rows() == Kd.rows() &&
                  "Kd must have the same number of rows as Kp");
-    DRAKE_ASSERT(static_cast<int>(Drake::getNumStates(*sys)) ==
+    DRAKE_ASSERT(static_cast<int>(drake::getNumStates(*sys)) ==
                  (Kp.cols() + Kd.cols()) &&
                  "Kp and Kd must match the number of states");
   }
@@ -50,9 +48,9 @@ class PDControlSystem {
                                    const StateVector<ScalarType>& x,
                                    const InputVector<ScalarType>& u) const {
     typename System::template InputVector<ScalarType> system_u =
-        Kp * (toEigen(u).head(Kp.cols()) - toEigen(x).head(Kp.cols())) +
-        Kd * (toEigen(u).tail(Kd.cols()) - toEigen(x).tail(Kd.cols()));
-    return sys->dynamics(t, x, system_u);
+        Kp_ * (toEigen(u).head(Kp_.cols()) - toEigen(x).head(Kp_.cols())) +
+        Kd_ * (toEigen(u).tail(Kd_.cols()) - toEigen(x).tail(Kd_.cols()));
+    return sys_->dynamics(t, x, system_u);
   }
 
   template <typename ScalarType>
@@ -60,27 +58,27 @@ class PDControlSystem {
                                   const StateVector<ScalarType>& x,
                                   const InputVector<ScalarType>& u) const {
     typename System::template InputVector<ScalarType> system_u =
-        Kp * (toEigen(u).head(Kp.cols()) - toEigen(x).head(Kp.cols())) +
-        Kd * (toEigen(u).tail(Kd.cols()) - toEigen(x).tail(Kd.cols()));
-    return sys->output(t, x, system_u);
+        Kp_ * (toEigen(u).head(Kp_.cols()) - toEigen(x).head(Kp_.cols())) +
+        Kd_ * (toEigen(u).tail(Kd_.cols()) - toEigen(x).tail(Kd_.cols()));
+    return sys_->output(t, x, system_u);
   }
 
-  bool isTimeVarying() const { return sys->isTimeVarying(); }
-  bool isDirectFeedthrough() const { return sys->isDirectFeedthrough(); }
-  size_t getNumStates() const { return Drake::getNumStates(*sys); }
-  size_t getNumInputs() const { return Drake::getNumStates(*sys); }
-  size_t getNumOutputs() const { return Drake::getNumOutputs(*sys); }
+  bool isTimeVarying() const { return sys_->isTimeVarying(); }
+  bool isDirectFeedthrough() const { return sys_->isDirectFeedthrough(); }
+  size_t getNumStates() const { return drake::getNumStates(*sys_); }
+  size_t getNumInputs() const { return drake::getNumStates(*sys_); }
+  size_t getNumOutputs() const { return drake::getNumOutputs(*sys_); }
 
  public:
-  const SystemPtr& getSys() const { return sys; }
+  const SystemPtr& getSys() const { return sys_; }
   friend StateVector<double> getInitialState(
       const PDControlSystem<System>& sys) {
     return getInitialState(*sys.sys);
   }
 
  private:
-  SystemPtr sys;
-  Eigen::MatrixXd Kp, Kd;
+  SystemPtr sys_;
+  Eigen::MatrixXd Kp_, Kd_;
 };
 
-}  // end namespace Drake
+}  // end namespace drake

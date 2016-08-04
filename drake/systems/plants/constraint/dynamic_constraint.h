@@ -4,10 +4,10 @@
 
 #include <Eigen/Core>
 
-#include <drake/drakeDynamicConstraint_export.h>
-#include <drake/core/Gradient.h>
-#include <drake/solvers/Constraint.h>
-#include <drake/systems/System.h>
+#include "drake/drakeDynamicConstraint_export.h"
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/solvers/constraint.h"
+#include "drake/systems/System.h"
 
 namespace drake {
 namespace systems {
@@ -36,15 +36,15 @@ class DRAKEDYNAMICCONSTRAINT_EXPORT DynamicConstraint :
   DynamicConstraint(int num_states, int num_inputs);
   virtual ~DynamicConstraint();
 
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    Eigen::VectorXd& y) const override;
-  void eval(const Eigen::Ref<const Drake::TaylorVecXd>& x,
-                    Drake::TaylorVecXd& y) const override;
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override;
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override;
 
  protected:
-  virtual void dynamics(const Drake::TaylorVecXd& state,
-                        const Drake::TaylorVecXd& input,
-                        Drake::TaylorVecXd* xdot) const = 0;
+  virtual void dynamics(const TaylorVecXd& state,
+                        const TaylorVecXd& input,
+                        TaylorVecXd* xdot) const = 0;
 
  private:
   int num_states_;
@@ -58,17 +58,17 @@ class SystemDynamicConstraint : public DynamicConstraint {
  public:
   // TODO(sam.creasey) Should this be a const bare ptr?
   explicit SystemDynamicConstraint(std::shared_ptr<System> system)
-      : DynamicConstraint(Drake::getNumStates(*system),
-                          Drake::getNumInputs(*system)),
+      : DynamicConstraint(drake::getNumStates(*system),
+                          drake::getNumInputs(*system)),
         system_(system) {}
 
  private:
-  void dynamics(const Drake::TaylorVecXd& state,
-                const Drake::TaylorVecXd& input,
-                Drake::TaylorVecXd* xdot) const override {
-    typename System::template StateVector<Drake::TaylorVarXd> x = state;
-    typename System::template InputVector<Drake::TaylorVarXd> u = input;
-    Drake::TaylorVarXd t(1);
+  void dynamics(const TaylorVecXd& state,
+                const TaylorVecXd& input,
+                TaylorVecXd* xdot) const override {
+    typename System::template StateVector<TaylorVarXd> x = state;
+    typename System::template InputVector<TaylorVarXd> u = input;
+    TaylorVarXd t(1);
     t = 0;
     *xdot = toEigen(system_->dynamics(t, x, u));
   }

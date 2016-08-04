@@ -4,7 +4,7 @@ if(MATLAB_FOUND)
 endif()
 
 add_library_with_exports(LIB_NAME drakeTrajectories SOURCE_FILES PiecewiseFunction.cpp PiecewisePolynomialBase.cpp PiecewisePolynomial.cpp ExponentialPlusPiecewisePolynomial.cpp)
-target_link_libraries(drakeTrajectories drakePolynomial)
+target_link_libraries(drakeTrajectories drakeCommon)
 pods_install_libraries(drakeTrajectories)
 drake_install_headers(PiecewiseFunction.h PiecewisePolynomial.h PiecewisePolynomialBase.h ExponentialPlusPiecewisePolynomial.h)
 pods_install_pkg_config_file(drake-trajectories
@@ -28,6 +28,11 @@ if(BLAS_LIBRARY AND snopt_c_FOUND AND bullet_FOUND AND MATLAB_FOUND)
   target_link_libraries(shiftFunnel_snopt_mex -lblas drakeMexUtil)
   target_link_libraries(isCollisionFree_mex drakeMexUtil)
   target_link_libraries(ptToPolyBullet_mex drakeMexUtil)
+
+  # These warnings are not worth fixing.
+  set_target_properties(
+    replanFunnels_mex shiftFunnel_snopt_mex 
+    PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_ERROR_SHADOW})
 endif()
 
 add_subdirectory(test)

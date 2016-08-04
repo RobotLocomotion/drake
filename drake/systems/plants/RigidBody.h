@@ -86,11 +86,6 @@ class DRAKERBM_EXPORT RigidBody {
    */
   const RigidBody* get_parent() const;
 
-  /**
-   * Returns a mutable pointer to this rigid body's parent rigid body.
-   */
-  RigidBody* get_mutable_parent();
-
   bool hasParent() const;
 
   /**
@@ -143,41 +138,57 @@ class DRAKERBM_EXPORT RigidBody {
 
   void AddVisualElement(const DrakeShapes::VisualElement& elements);
 
-  const DrakeShapes::VectorOfVisualElements& GetVisualElements() const;
+  const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
 
   /**
-   * Adds a collision element ID to this rigid body. This indicates that the
-   * collision element with this ID may collide against this rigid body and thus
-   * must be checked when computing collision reaction forces.
+   * Adds a collision element to this rigid body by collision element @p id.
+   * This effectively defines the collision geometry of this rigid body. If more
+   * than one collision element is added, the resulting collision geometry is
+   * the union of the individual geometries of each collision element.
    */
   void AddCollisionElement(DrakeCollision::ElementId id);
 
   /**
-   * Adds a collision element ID to a particular collision group. Collision
-   * elements within a single collision group may collide with each other.
-   * Those in different collision groups cannot collide with each other.
+   * Adds a collision element represented by its @p id to the collision group
+   * @p group_name. Collision groups are just a convenient way to group a
+   * collection of collision elements so that they can be referenced by the name
+   * of the group they belong to. There is no implication on whether these
+   * elements can collide between them or not.
+   *
+   * Note that the collision element @p id must have already been passed to
+   * RigidBody::AddCollisionElement().
    */
   void AddCollisionElementToGroup(const std::string& group_name,
       DrakeCollision::ElementId id);
 
   /**
-   * Returns a reference to a vector of collision element IDs belonging to the
-   * collision elements that this rigid body can be in collision with.
+   * @returns A reference to an `std::vector` of collision elements that
+   * represent the collision geometry of this rigid body.
    */
   const std::vector<DrakeCollision::ElementId>& get_collision_element_ids()
       const;
 
   /**
-   * Returns a reference to a vector of collision element IDs belonging to the
-   * collision elements that this rigid body can be in collision with.
+   * @returns A reference to an `std::vector` of collision elements that
+   * represent the collision geometry of this rigid body.
    */
   std::vector<DrakeCollision::ElementId>& get_mutable_collision_element_ids();
 
+  /**
+   * @returns A map of collision element group names to vectors of collision
+   * element IDs. These are the collision element groups created through calls
+   * to RigidBody::AddCollisionElementToGroup().
+   */
   const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-      get_collision_element_groups() const;
+      get_group_to_collision_ids_map() const;
 
+  /**
+   * @returns A map of collision element group names to vectors of collision
+   * element IDs. These are the collision element groups created through calls
+   * to RigidBody::AddCollisionElementToGroup().
+   */
   std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    get_mutable_collision_element_groups();
+    get_mutable_group_to_collision_ids_map();
 
 
   void setCollisionFilter(const DrakeCollision::bitmask& group,
@@ -226,13 +237,16 @@ class DRAKERBM_EXPORT RigidBody {
       std::vector<DrakeCollision::ElementId>& ids) const;
 
   /**
-   * Returns a matrix of contact points that this rigid body has with its
-   * environment.
+   * Returns the points on this rigid body that should be checked for collision
+   * with the environment. These are the contact points that were saved by
+   * RigidBody::set_contact_points().
    */
   const Eigen::Matrix3Xd& get_contact_points() const;
 
   /**
-   * Saves the contact points that this rigid body has with its environment.
+   * Saves the points on this rigid body that should be checked for collision
+   * between this rigid body and the environment. These contact points can be
+   * obtained through RigidBody::get_contact_points().
    */
   void set_contact_points(const Eigen::Matrix3Xd& contact_points);
 
@@ -259,15 +273,15 @@ class DRAKERBM_EXPORT RigidBody {
   const Eigen::Vector3d& get_center_of_mass() const;
 
   /**
-   * Sets the spatial rigid body inertia of this rigid body.
+   * Sets the spatial inertia of this rigid body.
    */
-  void set_inertia_matrix(const drake::SquareTwistMatrix<double>&
+  void set_spatial_inertia(const drake::SquareTwistMatrix<double>&
       inertia_matrix);
 
   /**
-   * Returns the spatial rigid body inertia of this rigid body.
+   * Returns the spatial inertia of this rigid body.
    */
-  const drake::SquareTwistMatrix<double>& get_inertia_matrix()
+  const drake::SquareTwistMatrix<double>& get_spatial_inertia()
       const;
 
   /**
@@ -285,29 +299,6 @@ class DRAKERBM_EXPORT RigidBody {
 
  public:
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
-
-  // TODO(amcastro-tri): move to a better place (h + cc files).
-  class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element {
-   public:
-    CollisionElement(const CollisionElement& other);
-    // TODO(amcastro-tri): The RigidBody should be const?
-    // TODO(amcastro-tri): It should not be possible to construct a
-    // CollisionElement without specifying a geometry. Remove this constructor.
-    CollisionElement(const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    CollisionElement(const DrakeShapes::Geometry& geometry,
-                     const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    virtual ~CollisionElement() {}
-
-    CollisionElement* clone() const override;
-
-    bool CollidesWith(const DrakeCollision::Element* other) const override;
-
-#ifndef SWIG
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
-  };
 
  public:
 #ifndef SWIG
@@ -338,32 +329,32 @@ class DRAKERBM_EXPORT RigidBody {
   std::string model_name_;
 
   // A unique ID for each model. It uses 0-index, starts from 0.
-  int model_id_;
+  int model_id_{0};
 
   // The rigid body that's connected to this rigid body's joint.
-  RigidBody* parent_;
+  RigidBody* parent_{nullptr};
 
   // The index of this rigid body in the rigid body tree.
-  int body_index_;
+  int body_index_{0};
 
   // The starting index of this rigid body's joint's position value(s) within
   // the parent tree's state vector.
-  int position_start_index_;
+  int position_start_index_{0};
 
   // The starting index of this rigid body's joint's velocity value(s) within
   // the parent tree's state vector.
-  int velocity_start_index_;
+  int velocity_start_index_{0};
 
   // A list of visual elements for this RigidBody.
   DrakeShapes::VectorOfVisualElements visual_elements_;
 
-  // A list of collision element IDs of collision elements that may collide with
-  // this rigid body.
+  // A list of collision element IDs of collision elements that represent the
+  // geometry of this rigid body.
   std::vector<DrakeCollision::ElementId> collision_element_ids_;
 
-  // A map of groups of collision element IDs. Each group contains collision
-  // elements that may collide with each other. Collision groups in different
-  // groups do not collide with each other.
+  // A map of groups of collision element IDs. This is just for conveniently
+  // accessing particular groups of collision elements. The groups do not imply
+  // anything in terms of how the collision elements relate to each other.
   std::map<std::string, std::vector<DrakeCollision::ElementId>>
       collision_element_groups_;
 
@@ -371,11 +362,11 @@ class DRAKERBM_EXPORT RigidBody {
   Eigen::Matrix3Xd contact_points_;
 
   // The mass of this rigid body.
-  double mass_;
+  double mass_{0};
 
   // The center of mass of this rigid body.
   Eigen::Vector3d center_of_mass_;
 
-  // The spatial rigid body inertia of this rigid body.
-  drake::SquareTwistMatrix<double> I_;
+  // The spatial inertia of this rigid body.
+  drake::SquareTwistMatrix<double> spatial_inertia_;
 };

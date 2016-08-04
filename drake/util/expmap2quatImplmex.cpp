@@ -9,7 +9,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace Drake;
+using namespace drake;
 
 using drake::math::autoDiffToValueMatrix;
 using drake::math::autoDiffToGradientMatrix;

@@ -16,15 +16,9 @@ using std::vector;
 
 RigidBody::RigidBody()
     : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores(DrakeCollision::NONE_MASK),
-      parent_(nullptr) {
-  model_id_ = 0;
-  position_start_index_ = 0;
-  velocity_start_index_ = 0;
-  body_index_ = 0;
-  mass_ = 0.0;
+      collision_filter_ignores(DrakeCollision::NONE_MASK) {
   center_of_mass_ = Vector3d::Zero();
-  I_ << drake::SquareTwistMatrix<double>::Zero();
+  spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
 }
 
 const std::string& RigidBody::get_name() const { return name_; }
@@ -57,8 +51,6 @@ void RigidBody::set_parent(RigidBody* parent) { parent_ = parent; }
 
 const RigidBody* RigidBody::get_parent() const { return parent_; }
 
-RigidBody* RigidBody::get_mutable_parent() { return parent_; }
-
 bool RigidBody::hasParent() const { return parent_ != nullptr; }
 
 void RigidBody::set_body_index(int body_index) { body_index_ = body_index; }
@@ -85,7 +77,7 @@ void RigidBody::AddVisualElement(const DrakeShapes::VisualElement& element) {
   visual_elements_.push_back(element);
 }
 
-const DrakeShapes::VectorOfVisualElements& RigidBody::GetVisualElements()
+const DrakeShapes::VectorOfVisualElements& RigidBody::get_visual_elements()
     const {
   return visual_elements_;
 }
@@ -110,12 +102,12 @@ std::vector<DrakeCollision::ElementId>&
 }
 
 const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    RigidBody::get_collision_element_groups() const {
+    RigidBody::get_group_to_collision_ids_map() const {
   return collision_element_groups_;
 }
 
 std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    RigidBody::get_mutable_collision_element_groups() {
+    RigidBody::get_mutable_group_to_collision_ids_map() {
   return collision_element_groups_;
 }
 
@@ -155,46 +147,11 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
 
 void RigidBody::ApplyTransformToJointFrame(
     const Eigen::Isometry3d& transform_body_to_joint) {
-  I_ = transformSpatialInertia(transform_body_to_joint, I_);
+  spatial_inertia_ = transformSpatialInertia(transform_body_to_joint,
+      spatial_inertia_);
   for (auto& v : visual_elements_) {
     v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
   }
-}
-
-RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
-    : DrakeCollision::Element(other) {}
-
-RigidBody::CollisionElement::CollisionElement(
-    const Isometry3d& T_element_to_link, const RigidBody* const body)
-    : DrakeCollision::Element(T_element_to_link) {
-  set_body(body);
-}
-
-RigidBody::CollisionElement::CollisionElement(
-    const DrakeShapes::Geometry& geometry, const Isometry3d& T_element_to_link,
-    const RigidBody* const body)
-    : DrakeCollision::Element(geometry, T_element_to_link) {
-  set_body(body);
-  // This is a temporary hack to avoid having the user to set collision
-  // elements to static when added to the world.
-  // Collision elements should be set to static in a later Initialize() stage as
-  // described in issue #2661.
-  // TODO(amcastro-tri): remove this hack.
-  if (body->get_name() == "world") set_static();
-}
-
-RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
-  return new CollisionElement(*this);
-}
-
-bool RigidBody::CollisionElement::CollidesWith(
-    const DrakeCollision::Element* other) const {
-  auto other_rb = dynamic_cast<const RigidBody::CollisionElement*>(other);
-  bool collides = true;
-  if (other_rb != nullptr) {
-    collides = get_body()->CollidesWith(*other_rb->get_body());
-  }
-  return collides;
 }
 
 const Eigen::Matrix3Xd& RigidBody::get_contact_points() const {
@@ -221,14 +178,14 @@ const Eigen::Vector3d& RigidBody::get_center_of_mass() const {
   return center_of_mass_;
 }
 
-void RigidBody::set_inertia_matrix(const drake::SquareTwistMatrix<double>&
-    inertia_matrix) {
-  I_ = inertia_matrix;
+void RigidBody::set_spatial_inertia(const drake::SquareTwistMatrix<double>&
+    spatial_inertia) {
+  spatial_inertia_ = spatial_inertia;
 }
 
-const drake::SquareTwistMatrix<double>& RigidBody::get_inertia_matrix()
+const drake::SquareTwistMatrix<double>& RigidBody::get_spatial_inertia()
     const {
-  return I_;
+  return spatial_inertia_;
 }
 
 ostream& operator<<(ostream& out, const RigidBody& b) {

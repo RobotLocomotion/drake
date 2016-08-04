@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/core/Gradient.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/plants/constraint/dynamic_constraint.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -14,8 +15,8 @@ using drake::util::MatrixCompareType;
 GTEST_TEST(PendulumDynamicConstraint, PendulumDynamicConstraintTest) {
   auto p = make_shared<Pendulum>();
 
-  Eigen::VectorXd x(1 + Drake::getNumStates(*p) * 2 +
-                        Drake::getNumInputs(*p) * 2);
+  Eigen::VectorXd x(1 + drake::getNumStates(*p) * 2 +
+                        drake::getNumInputs(*p) * 2);
   x(0) = 0.2;          // h
   x(1) = 0;            // x0(0)
   x(2) = 0;            // x0(1)
@@ -26,8 +27,8 @@ GTEST_TEST(PendulumDynamicConstraint, PendulumDynamicConstraintTest) {
 
   drake::systems::SystemDynamicConstraint<Pendulum> dut(p);
 
-  Drake::TaylorVecXd result;
-  dut.eval(Drake::initializeAutoDiff(x), result);
+  drake::TaylorVecXd result;
+  dut.Eval(drake::initializeAutoDiff(x), result);
 
   // Expected values came from running the MATLAB code for
   // PendulumPlant through the constraint function in

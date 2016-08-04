@@ -100,7 +100,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     if (!mxIsEmpty(pm)) {
       drake::SquareTwistMatrix<double> I;
       memcpy(I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
-      b->set_inertia_matrix(I);
+      b->set_spatial_inertia(I);
     }
 
     pm = mxGetPropertySafe(pBodies, i, "position_num");
@@ -210,7 +210,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         auto shape = (DrakeShapes::Shape) static_cast<int>(
             mxGetScalar(mxGetPropertySafe(pShape, 0, "drake_shape_id")));
         vector<double> params_vec;
-        RigidBody::CollisionElement element(T, b.get());
+        RigidBodyCollisionElement element(T, b.get());
         switch (shape) {
           case DrakeShapes::BOX: {
             double* params = mxGetPrSafe(mxGetPropertySafe(pShape, 0, "size"));
@@ -384,16 +384,16 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   for (int i = 0; i < num_frames; i++) {
     shared_ptr<RigidBodyFrame> fr(new RigidBodyFrame());
 
-    fr->name = mxGetStdString(mxGetPropertySafe(pFrames, i, "name"));
+    fr->set_name(mxGetStdString(mxGetPropertySafe(pFrames, i, "name")));
 
     pm = mxGetPropertySafe(pFrames, i, "body_ind");
-    fr->body = model->bodies[(int)mxGetScalar(pm) - 1].get();
+    fr->set_rigid_body(model->bodies[(int)mxGetScalar(pm) - 1].get());
 
     pm = mxGetPropertySafe(pFrames, i, "T");
-    memcpy(fr->transform_to_body.data(), mxGetPrSafe(pm),
+    memcpy(fr->get_mutable_transform_to_body()->data(), mxGetPrSafe(pm),
            sizeof(double) * 4 * 4);
 
-    fr->frame_index = -i - 2;
+    fr->set_frame_index(-i - 2);
     model->frames.push_back(fr);
   }
 

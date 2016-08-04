@@ -3,25 +3,25 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/Path.h"
-#include "drake/core/Vector.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/vector.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using Drake::getDrakePath;
+using drake::GetDrakePath;
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
 GTEST_TEST(testIK, atlasIK) {
   RigidBodyTree model(
-      getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
   tspan << 0, 1;
@@ -44,7 +44,7 @@ GTEST_TEST(testIK, atlasIK) {
   std::vector<std::string> infeasible_constraint;
   inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),
              ikoptions, &q_sol, &info, &infeasible_constraint);
-  printf("INFO = %d\n", info);
+  printf("info = %d\n", info);
   EXPECT_EQ(info, 1);
 
   KinematicsCache<double> cache = model.doKinematics(q_sol);
@@ -57,7 +57,7 @@ GTEST_TEST(testIK, atlasIK) {
 
 GTEST_TEST(testIK, iiwaIK) {
   RigidBodyTree model(
-      getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
 
   // Create a timespan for the constraints.  It's not particularly
   // meaningful in this test since inverseKin() only tests a single
@@ -82,8 +82,8 @@ GTEST_TEST(testIK, iiwaIK) {
 
   // Constrain iiwa_joint_4 between 0.9 and 1.0.
   PostureConstraint pc(&model, tspan);
-  Drake::Vector1d joint_lb(0.9);
-  Drake::Vector1d joint_ub(1.0);
+  drake::Vector1d joint_lb(0.9);
+  drake::Vector1d joint_ub(1.0);
   Eigen::VectorXi joint_idx(1);
   joint_idx(0) = model.findJoint("iiwa_joint_4")->get_position_start_index();
   pc.setJointLimits(joint_idx, joint_lb, joint_ub);

@@ -5,12 +5,12 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
-#include "drake/core/Vector.h"
+#include "drake/systems/vector.h"
 
 namespace {
 
-using Drake::NullVector;
-using Drake::toEigen;
+using drake::NullVector;
+using drake::toEigen;
 using drake::NAryState;
 
 // Vector-concept class for exercising composition.

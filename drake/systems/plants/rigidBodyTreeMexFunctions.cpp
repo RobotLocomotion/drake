@@ -12,7 +12,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace Drake;
+using namespace drake;
 
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;

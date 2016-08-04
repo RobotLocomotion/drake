@@ -5,15 +5,15 @@
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include "drake/util/TrigPoly.h"
+#include "drake/common/trig_poly.h"
 /*
- * NOTE: include AutoDiff AFTER TrigPoly.h.
- * TrigPoly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our
- * Polynomial.h
+ * NOTE: include AutoDiff AFTER trig_poly.h.
+ * trig_poly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our
+ * polynomial.h
  * MSVC versions up to and including 2013 have trouble with the rankUpdate
  * method in LLDT.h
  * For some reason there is a bad interaction with AutoDiff, even though LLDT.h
- * still gets included if TrigPoly.h is included before AutoDiff.
+ * still gets included if trig_poly.h is included before AutoDiff.
  * See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1057
  */
 #include <unsupported/Eigen/AutoDiff>
@@ -207,7 +207,7 @@ template <int _Rows, int _Cols>
 mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald, _Rows, _Cols>& poly) {
   size_t num_monomials = 0, max_terms = 0;
   for (int i = 0; i < poly.size(); i++) {
-    auto monomials = poly(i).getMonomials();
+    auto monomials = poly(i).GetMonomials();
     num_monomials += monomials.size();
     for (std::vector<Polynomiald::Monomial>::const_iterator iter =
              monomials.begin();
@@ -226,7 +226,7 @@ mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald, _Rows, _Cols>& poly) {
   int index = 0;
   for (int i = 0; i < poly.rows(); i++) {
     for (int j = 0; j < poly.cols(); j++) {
-      auto monomials = poly(i, j).getMonomials();
+      auto monomials = poly(i, j).GetMonomials();
       for (std::vector<Polynomiald::Monomial>::const_iterator iter =
                monomials.begin();
            iter != monomials.end(); iter++) {
@@ -263,9 +263,9 @@ mxArray* eigenToTrigPoly(
       trigpoly_mat.rows(), trigpoly_mat.cols());
   TrigPolyd::SinCosMap sin_cos_map;
   for (int i = 0; i < trigpoly_mat.size(); i++) {
-    const TrigPolyd::SinCosMap& sc = trigpoly_mat(i).getSinCosMap();
+    const TrigPolyd::SinCosMap& sc = trigpoly_mat(i).sin_cos_map();
     sin_cos_map.insert(sc.begin(), sc.end());
-    poly_mat(i) = trigpoly_mat(i).getPolynomial();
+    poly_mat(i) = trigpoly_mat(i).poly();
   }
 
   if (sin_cos_map

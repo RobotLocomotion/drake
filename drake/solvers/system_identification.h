@@ -5,7 +5,9 @@
 #include <stdexcept>
 #include <vector>
 
-#include "drake/util/Polynomial.h"
+#include "drake/common/polynomial.h"
+#include "drake/common/trig_poly.h"
+
 #include "drake/drakeOptimization_export.h"
 
 namespace drake {
@@ -41,6 +43,7 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
   typedef typename PolyType::Term TermType;
   typedef typename PolyType::VarType VarType;
   typedef std::map<PolyType, VarType> LumpingMapType;
+  typedef std::map<VarType, CoefficientType> PartialEvalType;
 
   /// Extract lumped parameters from a given polynomial.
   /**
@@ -87,8 +90,8 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
       const PolyType& poly,
       const LumpingMapType& lumped_parameters);
 
-  /// Estimate some parameters of a polynomial based on empirical data.
-  /**
+  /** Estimate some parameters of a polynomial based on empirical data.
+   *
    * Given one or more polynomial equations P[i](a, b, ... x, y, ...) = 0, and
    * measured values of some its arguments (x, y, ..., referred to as the
    * "active variables"), estimate values for the remaining arguments (a, b,
@@ -101,10 +104,49 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    *     estimated values, suitable as input for Polynomial::evaluatePartial.
    *   * error is the root-mean-square error of the estimates.
    */
-  typedef std::map<VarType, CoefficientType> PartialEvalType;
   static std::pair<PartialEvalType, CoefficientType> EstimateParameters(
       const VectorXPoly& polys,
       const std::vector<PartialEvalType>& active_var_values);
+
+  /** A helper struct to hold System ID results */
+  struct SystemIdentificationResult {
+    /// The lumped parameters that were used in system ID.
+    LumpingMapType lumped_parameters;
+
+    /// The input polynomials, rewritten using the lumped parameters so that
+    /// only active variable and first-order lumped variable terms remain.
+    VectorXTrigPoly lumped_polys;
+
+    /// The estimated value for each lumped parameter.
+    PartialEvalType lumped_parameter_values;
+
+    /// The input polynomials, with all estimates substituted in so that
+    /// only active variables remain.
+    VectorXTrigPoly partially_evaluated_polys;
+
+    /// The root-mean-square error of the estimation step.
+    CoefficientType rms_error;
+  };
+
+  /** Performs full lumped-parameter identification of a system of TrigPolys.
+   *
+   * This is a convenience method meant to capture what is expected to be the
+   * most common usage pattern of system ID.
+   *
+   * Given one or more TrigPoly expressions to be set equal to zero, and a
+   * list of observed values for a subset of the variables, lumps up the
+   * remaining variables into lumped parameters and estimates a value for each
+   * of those.  This is broadly equivalent to calling the following methods
+   * in sequence:
+   *
+   *  * GetLumpedParametersFromPolynomials
+   *  * RewritePolynomialWithLumpedParameters
+   *  * EstimateParameters
+   */
+  static SystemIdentificationResult LumpedSystemIdentification(
+      const VectorXTrigPoly& polys,
+      const std::vector<PartialEvalType>& active_var_values);
+
 
  private:
   /// This class is not constructable.
@@ -158,6 +200,22 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
   /// the variable's name will be prefix.
   static VarType CreateUnusedVar(const std::string& prefix,
                                  const std::set<VarType>& vars_in_use);
+
+  /** Classify the variables in a group of polynomials and measurements.
+   *
+   * Given a system of polynomials and a set of variable values, return the
+   * sets of all the values, the parameter values (ie those with values not
+   * given) and the active values (those with values given).
+   *
+   * Currently only the second return (the parameter values) is used; the
+   * other returns have proven useful in previous versions of this code and
+   * are retained for that reason.
+   */
+  static std::tuple<const std::set<VarType>,
+                    const std::set<VarType>,
+                    const std::set<VarType>> ClassifyVars(
+                        const std::vector<Polynomiald>& polys,
+                        const std::vector<PartialEvalType>& active_var_values);
 };
 }  // namespace solvers
 }  // namespace drake

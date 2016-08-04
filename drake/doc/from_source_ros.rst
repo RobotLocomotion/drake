@@ -36,6 +36,11 @@ Install
 `ROS Indigo <http://wiki.ros.org/indigo>`_. Other versions of the OS and ROS
 may or may not work.
 
+Install package ``ros-indigo-ackermann-msgs``, which is used by
+software in `drake_ros_systems <https://github.com/RobotLocomotion/drake/tree/master/ros/drake_ros_systems>`_::
+
+    sudo apt-get install ros-indigo-ackermann-msgs
+
 Once the OS and ROS are installed, install
 `Catkin Tools <http://catkin-tools.readthedocs.io/en/latest/>`_ by following
 the instructions
@@ -156,6 +161,40 @@ To build Drake's documentation, execute::
 The documentation will be located in
 ``~/dev/drake_catkin_workspace/build/drake/drake/doc``.
 
+.. _drake_catkin_ci_documenation:
+
+Scheduling a Drake / ROS Continuous Integration Test
+----------------------------------------------------
+
+Drake's Jenkin's Continuous Integration (CI) pre-merge test matrix currently
+does not include a Drake + ROS column. Thus, if you change Drake's source
+code and want to know whether it breaks the Drake + ROS integration, you must
+manually schedule a test by posting the following comment in your PR::
+
+    @drake-jenkins-bot linux-gcc-experimental-ros please
+
+The command above will schedule a Drake + ROS CI pre-merge test called
+"`linux-gcc-experimental-ros`". As indicated by its name, this uses the `gcc`
+compiler. Links to the results are available on the PR's web page and from here:
+https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-gcc-experimental-ros/.
+
+To test the Drake + ROS integration using the `clang` compiler, post the
+following comment in your PR::
+
+    @drake-jenkins-bot linux-clang-experimental-ros please
+
+The comment above will schedule a test called "`linux-clang-experimental-ros`".
+Links to the results are available on the PR's web page and here:
+https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-clang-experimental-ros/.
+
+To schedule a full test of Drake + ROS + MATLAB with `gcc`, post the following
+comment on your PR::
+
+    @drake-jenkins-bot linux-gcc-experimental-matlab-ros please
+
+The results will be available here:
+https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-gcc-experimental-matlab-ros/.
+
 .. _drake_catkin_run_car_example:
 
 Running An Example: Car Simulation
@@ -169,10 +208,6 @@ To run Drake's ROS-powered cars example, first add the
     cd ackermann_drive_teleop
     git checkout feature/ackermann_drive_stamped
 
-You will also need to install the package ``ros-indigo-ackermann-msgs``::
-
-    sudo apt-get install ros-indigo-ackermann-msgs
-
 Since a new package was added to the ROS workspace, re-build the workspace
 (note that a build type of ``RelWithDebInfo`` is selected since the simulation
 runs too slowly when compiled in the default ``Debug`` mode)::
@@ -184,7 +219,7 @@ Finally, to run the car simulation demo, execute::
 
     cd ~/dev/drake_catkin_workspace
     source devel/setup.bash
-    roslaunch drake_cars_examples drake_car_sim.launch
+    roslaunch drake_cars_examples single_car_in_stata_garage.launch
 
 To drive the vehicle around in simulation, open another terminal and execute::
 

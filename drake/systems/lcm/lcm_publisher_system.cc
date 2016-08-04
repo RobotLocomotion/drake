@@ -30,23 +30,23 @@ std::string LcmPublisherSystem::get_name() const {
   return "LcmPublisherSystem::" + channel_;
 }
 
-std::unique_ptr<Context<double>> LcmPublisherSystem::CreateDefaultContext()
+std::unique_ptr<ContextBase<double>> LcmPublisherSystem::CreateDefaultContext()
     const {
   std::unique_ptr<Context<double>> context(new Context<double>());
   context->SetNumInputPorts(kNumInputPorts);
-  return context;
+  return std::unique_ptr<ContextBase<double>>(context.release());
 }
 
-std::unique_ptr<SystemOutput<double>> LcmPublisherSystem::AllocateOutput()
-    const {
-  std::unique_ptr<SystemOutput<double>> output(new SystemOutput<double>);
+std::unique_ptr<SystemOutput<double>> LcmPublisherSystem::AllocateOutput(
+    const ContextBase<double>& context) const {
+  std::unique_ptr<SystemOutput<double>> output(new LeafSystemOutput<double>);
   return output;
 }
 
 // TODO(liang.fok) Move the LCM message publishing logic into another method
-// that's more appropriate once it is defined by SystemInterface. See:
+// that's more appropriate once it is defined by System. See:
 // https://github.com/RobotLocomotion/drake/issues/2836.
-void LcmPublisherSystem::EvalOutput(const Context<double>& context,
+void LcmPublisherSystem::EvalOutput(const ContextBase<double>& context,
                                     SystemOutput<double>* output) const {
   // Obtains the input vector.
   const VectorInterface<double>* input_vector =
