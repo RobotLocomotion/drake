@@ -132,7 +132,6 @@ void DirectTrajectoryOptimization::AddFinalCost(
   opt_problem_.AddCost(wrapper, {h_vars_, x_vars_.tail(num_states_)});
 }
 
-
 void DirectTrajectoryOptimization::GetInitialVars(
     double timespan_init_in, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
