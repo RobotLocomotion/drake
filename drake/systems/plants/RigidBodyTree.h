@@ -98,10 +98,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
    * identified by a unique model instance ID, which is the return value of
-   * this method call.
-   *
-   * This method is not thread safe!
+   * this method.
    */
+  // This method is not thread safe!
   int add_model_instance() { return number_of_model_instances_++; }
 
   /**
