@@ -22,6 +22,10 @@ Unreleased: changes on master, not yet released
 
 [//]: # "Altered functionality or APIs."
 ### Changed
+
+ - [#3049][] Changed `AddRobotFromURDF*` to be `AddModelInstanceFromURDF*`.
+ - [#3003][] Made `RigidBodyFrame` member variables private. Added accessors.
+ - [#3010][] All header file names under `solvers` are now spelled with lower case and underscore names.
  - [#2984][] Renamed and moved `Polynomial.h` and `TrigPoly.h` from `drake/util` to `drake/common` and into the `drakeCommon` library.
  - [#2963][] Rename RigidBody::CollisionElement to RigidBodyCollisionElement.
  - [#3010][] All header file names under `solvers` are now spelled with lower case and underscore names.
@@ -114,7 +118,8 @@ Changes in version v0.9.11 and before are not provided.
 [#2923]: https://github.com/RobotLocomotion/drake/issues/2923
 [#2963]: https://github.com/RobotLocomotion/drake/issues/2963
 [#2983]: https://github.com/RobotLocomotion/drake/issues/2983
+[#2984]: https://github.com/RobotLocomotion/drake/issues/2984
 [#2997]: https://github.com/RobotLocomotion/drake/issues/2997
 [#3003]: https://github.com/RobotLocomotion/drake/issues/3003
 [#3010]: https://github.com/RobotLocomotion/drake/issues/3010
-[#2984]: https://github.com/RobotLocomotion/drake/issues/2984
+[#3049]: https://github.com/RobotLocomotion/drake/issues/3049
