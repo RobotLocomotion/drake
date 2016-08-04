@@ -69,7 +69,7 @@ int do_main(int argc, const char* argv[]) {
     std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
         new RigidBodyTree::ModelToInstanceIDMap());
     // Add the visualization entity.
-    drake::parsers::urdf::AddModelInstanceFromURDF(
+    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         (i % 5) ? kSedanUrdf : kBreadtruckUrdf, DrakeJoint::ROLLPITCHYAW,
             weld_to_frame, world_tree.get(), map.get());
 

@@ -67,7 +67,7 @@ RigidBodyTree::RigidBodyTree(
   std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
       new RigidBodyTree::ModelToInstanceIDMap());
   // Adds the model defined in urdf_filename to this tree.
-  drake::parsers::urdf::AddModelInstanceFromURDF(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       urdf_filename, floating_base_type, this, map.get());
 }
 
@@ -2115,65 +2115,65 @@ int RigidBodyTree::AddFloatingJoint(
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::AddModelInstanceFromUrdfString(
-    const std::string& xml_string, const std::string& root_dir,
+    const std::string& description, const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
       new RigidBodyTree::ModelToInstanceIDMap());
-  drake::parsers::urdf::AddModelInstanceFromURDFString(
-      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
+  drake::parsers::urdf::AddModelInstanceFromUrdfDescription(
+      description, package_map, root_dir, floating_base_type, weld_to_frame,
       this, map.get());
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::AddModelInstanceFromUrdfString(
-    const std::string& xml_string,
+    const std::string& description,
     std::map<std::string, std::string>& package_map,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
       new RigidBodyTree::ModelToInstanceIDMap());
-  drake::parsers::urdf::AddModelInstanceFromURDFString(
-      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
+  drake::parsers::urdf::AddModelInstanceFromUrdfDescription(
+      description, package_map, root_dir, floating_base_type, weld_to_frame,
       this, map.get());
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::AddModelInstanceFromUrdfFile(
-    const std::string& urdf_filename,
+    const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
       new RigidBodyTree::ModelToInstanceIDMap());
-  drake::parsers::urdf::AddModelInstanceFromURDF(
-      urdf_filename, package_map, floating_base_type, weld_to_frame, this,
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      filename, package_map, floating_base_type, weld_to_frame, this,
       map.get());
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::AddModelInstanceFromUrdfFile(
-    const std::string& urdf_filename,
+    const std::string& filename,
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
       new RigidBodyTree::ModelToInstanceIDMap());
-  drake::parsers::urdf::AddModelInstanceFromURDF(
-      urdf_filename, package_map, floating_base_type, weld_to_frame, this,
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      filename, package_map, floating_base_type, weld_to_frame, this,
       map.get());
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::AddModelInstanceFromSdfFile(
-    const std::string& sdf_filename,
+    const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
       new RigidBodyTree::ModelToInstanceIDMap());
-  drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
+  drake::parsers::sdf::AddRobotFromSdfFile(filename, floating_base_type,
                                        weld_to_frame, this, map.get());
 }
 

@@ -787,7 +787,7 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
 
 }  // namespace
 
-void AddRobotFromSDFInWorldFrame(
+void AddRobotFromSdfFileInWorldFrame(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree,
@@ -798,11 +798,11 @@ void AddRobotFromSDFInWorldFrame(
 
   std::shared_ptr<RigidBodyFrame> weld_to_frame;
 
-  AddRobotFromSDF(filename, floating_base_type, weld_to_frame, tree,
+  AddRobotFromSdfFile(filename, floating_base_type, weld_to_frame, tree,
       model_instance_id_map);
 }
 
-void AddRobotFromSDF(
+void AddRobotFromSdfFile(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
@@ -827,6 +827,32 @@ void AddRobotFromSDF(
   if (found != string::npos) {
     root_dir = filename.substr(0, found);
   }
+
+  parseSDF(tree, &xml_doc, package_map, root_dir, floating_base_type,
+           weld_to_frame, model_instance_id_map);
+}
+
+void AddRobotFromSdfDescription(
+    const string& sdf_description,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
+  // Ensures the output parameter pointers are valid.
+  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_ABORT_UNLESS(model_instance_id_map);
+
+  PackageMap package_map;
+
+  XMLDocument xml_doc;
+  xml_doc.Parse(sdf_description.c_str());
+  if (xml_doc.ErrorID()) {
+    throw std::runtime_error(std::string(__FILE__) + ": " + __func__ +
+                             ": ERROR: Failed to parse XML in SDF description" +
+                             xml_doc.ErrorName() + ".");
+  }
+
+  string root_dir = ".";
 
   parseSDF(tree, &xml_doc, package_map, root_dir, floating_base_type,
            weld_to_frame, model_instance_id_map);

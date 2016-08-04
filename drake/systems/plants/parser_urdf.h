@@ -34,7 +34,7 @@ namespace urdf {
 /// @throws std::runtime_error if the rigid body to which the new
 /// `RigidBodyFrame` is attached is not found.
 DRAKERBM_EXPORT
-std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
+std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
     const RigidBodyTree& tree, const tinyxml2::XMLElement& link,
     const tinyxml2::XMLElement* pose, const std::string& name);
 
@@ -43,7 +43,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 /// a joint of type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame
 /// is equal to the world's coordinate frame.
 ///
-/// @param[in] urdf_string The URDF description of the model. This is the actual
+/// @param[in] description The URDF description of the model. This is the actual
 /// URDF text (i.e., it is not the name of a file that contains the URDF text).
 /// A new model instance is created based on this URDF text and added to
 /// @p tree.
@@ -56,8 +56,8 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 /// and it's `RigidBodyTree` and the value is the unique model instance ID that
 /// was assigned to the instance. This parameter may not be `nullptr`.
 DRAKERBM_EXPORT
-void AddModelInstanceFromURDFString(
-    const std::string& urdf_string,
+void AddModelInstanceFromUrdfDescription(
+    const std::string& description,
     RigidBodyTree* tree,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map);
 
@@ -66,7 +66,7 @@ void AddModelInstanceFromURDFString(
 /// a joint of type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame is
 /// equal to the world's coordinate frame.
 ///
-/// @param[in] urdf_string The URDF description of the model. This is the actual
+/// @param[in] description The URDF description of the model. This is the actual
 /// URDF text (i.e., it is not the name of a file that contains the URDF text).
 /// A new model instance is created based on this URDF text and added to
 /// @p tree.
@@ -83,8 +83,8 @@ void AddModelInstanceFromURDFString(
 /// and it's `RigidBodyTree` and the value is the unique model instance ID that
 /// was assigned to the instance. This parameter may not be `nullptr`.
 DRAKERBM_EXPORT
-void AddModelInstanceFromURDFString(
-    const std::string& urdf_string,
+void AddModelInstanceFromUrdfDescription(
+    const std::string& description,
     std::map<std::string, std::string>& package_map,
     RigidBodyTree* tree,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map);
@@ -94,7 +94,7 @@ void AddModelInstanceFromURDFString(
 /// a joint of type @p floating_base_type. The model instance's frame is equal
 /// to the world's coordinate frame.
 ///
-/// @param[in] urdf_string The URDF description of the model. This is the actual
+/// @param[in] description The URDF description of the model. This is the actual
 /// URDF text (i.e., it is not the name of a file that contains the URDF text).
 /// A new model instance is created based on this URDF text and added to
 /// @p tree.
@@ -105,6 +105,9 @@ void AddModelInstanceFromURDFString(
 /// @param[in] floating_base_type The type of joint that connects the model's
 /// root to @p tree.
 ///
+/// @param[in] weld_to_frame The frame to which to connect the new model
+/// instance.
+///
 /// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// This parameter must not be `nullptr`.
 ///
@@ -113,17 +116,18 @@ void AddModelInstanceFromURDFString(
 /// and it's `RigidBodyTree` and the value is the unique model instance ID that
 /// was assigned to the instance. This parameter may not be `nullptr`.
 DRAKERBM_EXPORT
-void AddModelInstanceFromURDFString(
-    const std::string& urdf_string,
+void AddModelInstanceFromUrdfDescription(
+    const std::string& description,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map);
 
 /// Reads a single model from a URDF specification and adds a single instance of
 /// it to @p tree.
 ///
-/// @param[in] urdf_string The URDF description of the model. This is the actual
+/// @param[in] description The URDF description of the model. This is the actual
 /// URDF text (i.e., it is not the name of a file that contains the URDF text).
 /// A new model instance is created based on this URDF text and added to
 /// @p tree.
@@ -150,8 +154,8 @@ void AddModelInstanceFromURDFString(
 /// `std::runtime_error` is thrown if a model instance is created whose name is
 /// already in this map.
 DRAKERBM_EXPORT
-void AddModelInstanceFromURDFString(
-    const std::string& urdf_string,
+void AddModelInstanceFromUrdfDescription(
+    const std::string& description,
     PackageMap& package_map,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
@@ -164,7 +168,7 @@ void AddModelInstanceFromURDFString(
 /// type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame is equal to the
 /// world's coordinate frame.
 ///
-/// @param[in] urdf_filename The name of the file containing a URDF
+/// @param[in] filename The name of the file containing a URDF
 /// description of the model. An instance of this model will be added to
 /// @p tree.
 ///
@@ -178,7 +182,8 @@ void AddModelInstanceFromURDFString(
 /// `std::runtime_error` is thrown if a model instance is created whose name is
 /// already in this map.
 DRAKERBM_EXPORT
-void AddModelInstanceFromURDF(const std::string& urdf_filename,
+void AddModelInstanceFromUrdfFile(
+    const std::string& filename,
     RigidBodyTree* tree,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map);
 
@@ -187,7 +192,7 @@ void AddModelInstanceFromURDF(const std::string& urdf_filename,
 /// type `DrakeJoint::ROLLPITCHYAW`. The model's frame is equal to the world's
 /// coordinate frame.
 ///
-/// @param[in] urdf_filename The name of the file containing a URDF
+/// @param[in] filename The name of the file containing a URDF
 /// description of the model. An instance of this model will be added to
 /// @p tree.
 ///
@@ -204,8 +209,8 @@ void AddModelInstanceFromURDF(const std::string& urdf_filename,
 /// `std::runtime_error` is thrown if a model instance is created whose name is
 /// already in this map.
 DRAKERBM_EXPORT
-void AddModelInstanceFromURDF(
-    const std::string& urdf_filename,
+void AddModelInstanceFromUrdfFile(
+    const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map);
@@ -215,7 +220,7 @@ void AddModelInstanceFromURDF(
 /// type `DrakeJoint::ROLLPITCHYAW` joint. The model instance's frame is equal
 /// to the world's coordinate frame.
 ///
-/// @param[in] urdf_filename The name of the file containing a URDF
+/// @param[in] filename The name of the file containing a URDF
 /// description of the model. An instance of this model will be added to
 /// @p tree.
 ///
@@ -235,8 +240,8 @@ void AddModelInstanceFromURDF(
 /// `std::runtime_error` is thrown if a model instance is created whose name is
 /// already in this map.
 DRAKERBM_EXPORT
-void AddModelInstanceFromURDF(
-    const std::string& urdf_filename,
+void AddModelInstanceFromUrdfFile(
+    const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
@@ -247,7 +252,7 @@ void AddModelInstanceFromURDF(
 /// type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame is equal to the
 /// world's coordinate frame.
 ///
-/// @param[in] urdf_filename The name of the file containing a URDF
+/// @param[in] filename The name of the file containing a URDF
 /// description of the model. An instance of this model will be added to
 /// @p tree.
 ///
@@ -270,8 +275,8 @@ void AddModelInstanceFromURDF(
 /// `std::runtime_error` is thrown if a model instance is created whose name is
 /// already in this map.
 DRAKERBM_EXPORT
-void AddModelInstanceFromURDF(
-    const std::string& urdf_filename,
+void AddModelInstanceFromUrdfFile(
+    const std::string& filename,
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,

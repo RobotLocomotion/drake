@@ -53,7 +53,7 @@ void WaitForParameter(::ros::NodeHandle& ros_node_handle,
 // `std::runtime_error` exception if it fails to obtain the parameter.
 std::string GetStringParameter(::ros::NodeHandle &ros_node_handle,
     const std::string& parameter_name) {
-  WaitForParameter(parameter_name, ros_node_handle)
+  WaitForParameter(ros_node_handle, parameter_name);
 
   // Obtains the parameter from the ROS parameter server.
   std::string parameter;
@@ -70,7 +70,7 @@ std::string GetStringParameter(::ros::NodeHandle &ros_node_handle,
 // `std::runtime_error` exception if it fails to obtain the parameter.
 int GetIntParameter(::ros::NodeHandle &ros_node_handle,
     const std::string& parameter_name) {
-  WaitForParameter(parameter_name, ros_node_handle)
+  WaitForParameter(ros_node_handle, parameter_name);
 
   // Obtains the parameter from the ROS parameter server.
   int parameter;
@@ -89,6 +89,7 @@ int GetIntParameter(::ros::NodeHandle &ros_node_handle,
  */
 int DoMain(int argc, const char* argv[]) {
   ::ros::init(argc, const_cast<char**>(argv), "multi_car_on_plane");
+  ::ros::NodeHandle ros_node_handle;
 
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
@@ -107,13 +108,14 @@ int DoMain(int argc, const char* argv[]) {
       model_instance_name_to_id_map(new std::map<std::string, int>());
 
   // Obtains the number of vehicles to simulate.
-  int num_vehicles = GetIntParameter("car_count");
+  int num_vehicles = GetIntParameter(ros_node_handle, "car_count");
 
   // Adds the vehicles to the rigid body system.
   for (int ii = 0; ii < num_vehicles; ++ii) {
-    const std::string description_param_name = car_description_ +
-        std::to_string(ii+1);
-    const std::string description = GetStringParameter(description_param_name);
+    const std::string description_param_name = std::string("car_description_") +
+        std::to_string(ii + 1);
+    const std::string description = GetStringParameter(ros_node_handle,
+        description_param_name);
     rigid_body_sys->AddModelInstanceFromString(description,
         DrakeJoint::QUATERNION);
   }
