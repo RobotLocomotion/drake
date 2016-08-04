@@ -9,7 +9,7 @@ Build Cop
 Overview
 --------
 
-The Drake build cop monitors `post-submit <https://drake-
+The Drake build cop monitors `post-merge <https://drake-
 jenkins.csail.mit.edu/view/Continuous/>`_ and `nightly <https://drake-
 jenkins.csail.mit.edu/view/Nightly/>`_ continuous integration failures in the
 RobotLocomotion/drake GitHub repo.
@@ -56,7 +56,7 @@ author, and include the following template in the PR description.
 
  Dear $AUTHOR,
 
- The oncall build cop, $BUILD_COP, believes that your PR $NUMBER may have broken
+ The on-call build cop, $BUILD_COP, believes that your PR $NUMBER may have broken
  Drake's continuous integration build [1]. It is possible to break the build
  even if your PR passed continuous integration pre-merge, because additional
  platforms and tests are built post-merge.
@@ -111,3 +111,122 @@ Here's one workflow:
 
 5. Issue a new PR containing your fixes. Be sure to link to the build cop revert
    PR in your new PR.
+
+
+.. _build_cop_playbook:
+
+Build Cop Playbook
+------------------
+This section is a quick-reference manual for the on-call build cop.
+
+Monitor the Build
+^^^^^^^^^^^^^^^^^
+Check the `post-merge <https://drake-jenkins.csail.mit.edu/view/Continuous/>`_
+build dashboard in Jenkins at least once an hour during on-call hours. If any
+continuous builds turn yellow or red, you need to act.
+
+Also check the `nightly <https://drake-jenkins.csail.mit.edu/view/Nightly/>`_
+build dashboard every morning. We use nightlies as a staging ground for
+builds that have known issues, but also for production-ready builds that are
+unusually resource intensive. The following nightly builds are in the latter
+category, and therefore require build cop action if they fail:
+
+* mac-clang-nightly-matlab
+* mac-clang-nightly-matlab-open-source
+* mac-clang-ninja-nightly-matlab
+* mac-clang-ninja-nightly-matlab-open-source
+
+Respond to Breakage
+^^^^^^^^^^^^^^^^^^^
+There are various reasons the build might break. Diagnose the failure, and
+then take appropriate action. This section lists some common failures and
+recommended responses. However, build cops often have to address unexpected
+circumstances. Do not expect this list to be complete, and always apply your
+own judgment.
+
+In almost any build breakage, the first information-gathering step is to
+click on the build that is yellow or red in Jenkins, then click on the first
+breaking change in the Build History. You will see a list of the new commits
+in that particular run.
+
+Build Known Not to Work
+***********************
+Certain nightly builds always fail because of known issues that haven't been
+resolved.
+
+Broken Compile or Test
+**********************
+Sometimes people merge code that doesn't compile, or that fails a test.
+This can happen for several reasons:
+
+* The platform or test case only runs post-merge.
+* An administrator performed an override-merge of the culprit PR,
+  circumventing pre-merge checks.
+* The failure is an interaction between the culprit PR and some other
+  recent change to master.
+
+Compile failures will be red in Jenkins. Test failures will be yellow.
+Consult the list of commits in the breaking change to identify possible culprit
+PRs. Try to rule out some of those PRs by comparing their contents to the
+specifics of the failure. For any PRs you cannot rule out, create a rollback
+by clicking "Revert" in the GitHub UI. Use the
+:ref:`template message <revert_template>` to communicate  with the author, and
+ proceed as specified in that message.
+
+:ref:`Manually schedule <run_specific_build>` the failing build as an
+experimental build on the rollback PR. If it passes, the odds are good that you
+have found the culprit. Proceed as specified in the template message.
+
+Flaky Test
+**********
+Sometimes people introduce code that makes a test non-deterministic, failing
+on some runs and passing on others. You cannot reliably attribute a flaky test
+failure to the first failing build, because it may have passed by chance for
+the first few continuous builds after the culprit PR landed.
+
+Test failures will be yellow in Jenkins. If the list of commits in the breaking
+change does not include any plausible culprits, you may be looking at a flaky
+test.  Look through earlier commits one-by-one for plausible culprits.
+After you identify one, create a rollback by clicking "Revert" in the
+GitHub UI. Use the :ref:`template message <revert_template>` to communicate
+with the author, and proceed as specified in that message.
+
+Broken CI Script
+****************
+Sometimes people merge changes to the Drake CI scripts that result in spurious
+CI failures. The list of commits in Jenkins for each continuous build includes
+the `drake-ci <https://github.com/RobotLocomotion/drake-ci>`_ repository as well
+as Drake proper. Consider whether those changes are possible culprits.
+
+If you believe a CI script change is the culprit, contact the author.
+If they are not responsive, revert the commit yourself and see what happens on
+the next continuous build. There are no pre-merge builds you can run that
+exercise changes to the CI scripts themselves.
+
+Infrastructure Flake
+********************
+The machinery of the CI system itself sometimes fails for reasons unrelated to
+any code change. The most common infrastructure flakes include:
+
+* Unable to obtain a MATLAB license.
+* Broken connection to a Mac build agent.
+* Broken connection to a Windows build agent.
+
+Infrastructure flakes will be red in Jenkins. If you believe you are looking at
+an infrastructure flake, run the build manually at HEAD. If it passes, you are
+definitely looking at an infrastructure flake, and no further action is
+required. If you believe the rate of a particular infrastructure flake has
+increased, alert Kitware by assigning a GitHub issue to both @BetsyMcPhail and
+@jamiesnape.
+
+Infrastructure Collapse
+***********************
+Occasionally, some piece of CI infrastructure completely stops working. For
+instance, GitHub, AWS, or MacStadium could have an outage, or our Jenkins server
+could crash or become wedged.  During infrastructure collapses, lots of builds
+will turn red and stay red.
+
+Attempt to figure out what infrastructure collapsed. If it's under our control,
+alert Kitware by assigning a GitHub issue to both @BetsyMcPhail and
+@jamiesnape. If it's under a vendor's control, spread the news and simply wait
+it out.
