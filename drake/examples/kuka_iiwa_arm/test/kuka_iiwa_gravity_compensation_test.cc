@@ -41,11 +41,12 @@ auto visualizer =
 auto robot_state_tap =
     std::make_shared<RobotStateTap<RigidBodySystem::StateVector>>();
 
-auto robot_controller =
+//auto robot_controller = gravityCompensationController(*iiwa_system,
+//                                                      iiwa_system->getInitialState());
     //std::make_shared<KukaIIWAGravityCompensationController>(iiwa_system);
-auto tempSys = cascade(feedback(iiwa_system, robot_controller),
-                       visualizer);
-//auto sys = cascade(cascade(iiwa_system, visualizer), robot_state_tap);
+//auto tempSys = cascade(feedback(iiwa_system, robot_controller),
+//                       visualizer);
+auto sys = cascade(cascade(iiwa_system, visualizer), robot_state_tap);
 
 
 }
