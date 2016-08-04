@@ -5,8 +5,8 @@
 #include <stdexcept>
 #include <vector>
 
-#include "drake/util/Polynomial.h"
-#include "drake/util/TrigPoly.h"
+#include "drake/common/polynomial.h"
+#include "drake/common/trig_poly.h"
 
 #include "drake/drakeOptimization_export.h"
 

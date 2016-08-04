@@ -1,11 +1,11 @@
-#include "drake/util/TrigPoly.h"
+#include "drake/common/trig_poly.h"
 
 #include <sstream>
 #include <map>
 
 #include "gtest/gtest.h"
 
-#include "drake/util/Polynomial.h"
+#include "drake/common/polynomial.h"
 
 using namespace Eigen;
 using namespace std;

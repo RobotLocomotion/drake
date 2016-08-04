@@ -830,11 +830,12 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   // this method being called. It's possible for final_model_instance_id to be
   // greater than the number of models in the SDF file since multiple SDF files
   // can be loaded into this RigidBodySystem. In fact, the same SDF file can be
-  // added to this RigidBodySystem multiple times. This is feasible since the
-  // rigid bodies that belong to a particular model are all assigned a model
-  // instance ID that's unique to that model.
+  // added to this RigidBodySystem multiple times. This is feasible since all
+  // modeling elements that belong to a particular model instance are all
+  // assigned the same model instance ID. This model instance ID is unique among
+  // all model instances in the rigid body tree.
   int final_model_instance_id =
-      sys.getRigidBodyTree()->get_current_model_instance_id();
+      sys.getRigidBodyTree()->get_number_of_model_instances();
 
   // Computes the number of models in the SDF. This includes only the models
   // that are not part of the world. This is correct because even though
