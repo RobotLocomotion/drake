@@ -211,13 +211,13 @@ else()
     CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
 endif()
 
-# bot_core_lcmtypes
-drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
-  DEPENDS lcm)
-
 # libbot
 drake_add_external(libbot PUBLIC CMAKE
   DEPENDS lcm)
+
+# bot_core_lcmtypes
+drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
+  DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
 
 # director
 drake_add_external(director PUBLIC
