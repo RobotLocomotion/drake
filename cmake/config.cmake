@@ -26,12 +26,25 @@ endfunction()
 # Find MATLAB.
 #------------------------------------------------------------------------------
 function(drake_setup_matlab)
-  # Look for the MATLAB executable. This does not use find_package(Matlab)
-  # because that is "really good at finding MATLAB", and we only want to enable
-  # matlab support if the matlab executable is in the user's PATH.
-  find_program(MATLAB_EXECUTABLE matlab)
+  option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
 
-  # TODO find_package(Matlab) and ensure no conflicts with mex_setup
+  if(DISABLE_MATLAB)
+    message(STATUS "MATLAB is disabled.")
+    unset(MATLAB_EXECUTABLE) # TODO unset MATLAB_FOUND instead (see below)
+  else()
+    # Look for the MATLAB executable. This does not use find_package(Matlab)
+    # because that is "really good at finding MATLAB", and we only want to
+    # enable matlab support if the matlab executable is in the user's PATH.
+    find_program(MATLAB_EXECUTABLE matlab)
+    if(MATLAB_EXECUTABLE)
+      message(STATUS "Found MATLAB: ${MATLAB_EXECUTABLE}")
+
+      # TODO find_package(Matlab) and ensure no conflicts with mex_setup
+      # TODO change MATLAB_EXECUTABLE in options.cmake to MATLAB_FOUND
+    else()
+      message(STATUS "MATLAB was not found.")
+    endif()
+  endif()
 endfunction()
 
 #------------------------------------------------------------------------------
