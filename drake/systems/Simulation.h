@@ -62,7 +62,7 @@ inline bool handle_realtime_factor(const TimePoint& wall_clock_start_time,
 }
 
 /** simulate
- * @brief Runs a simulation given a model, it's initial conditions, and a number
+ * @brief Runs a simulation given a model, its initial conditions, and a number
  *of simulation parameters
  * @ingroup simulation
  *

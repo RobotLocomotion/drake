@@ -674,7 +674,7 @@ void parseJoint(RigidBodyTree* tree, XMLElement* node) {
     axis.normalize();
   }
 
-  // now construct the actual joint (based on it's type)
+  // now construct the actual joint (based on its type)
   DrakeJoint* joint = nullptr;
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
