@@ -15,7 +15,8 @@ if(lcm_FOUND)
     drakeLCMSystem)
   pods_install_libraries(drakeKukaIiwaArm)
   drake_install_headers(
-          iiwa_simulation.h)
+          iiwa_simulation.h
+          iiwa_controller.h)
   pods_install_pkg_config_file(drake-kuka-iiwa-arm
           LIBS -ldrakeKukaIiwaArm
           REQUIRES
