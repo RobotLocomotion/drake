@@ -286,6 +286,37 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
       RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map = nullptr);
 
+  /**
+   * Adds one instance of each model defined within a SDF or URDF string to this
+   * `RigidbodySystem` and its `RigidBodyTree`.
+   *
+   * @param[in] description The SDF or URDF description of the model or models.
+   * One instance of each of these models is added to this `RigidBodySystem` and
+   * its `RigidBodyTree`.
+   *
+   * @param[in] floating_base_type The type of floating base to use to connect
+   * the newly created model instances to the world.
+   *
+   * @param[in] weld_to_frame The frame used for connecting the new model
+   * instances to the `RigidBodyTree` within this `RigidBodySystem`. Note that
+   * this parameter specifies both an existing frame in the `RigidBodyTree` and
+   * the offset from this frame to the frame belonging to the new model
+   * instances' root bodies. This is an optional parameter. If it is `nullptr`,
+   * the newly-created model instances are connected to the world with zero
+   * offset and rotation relative to the world's frame.
+   *
+   * @param[out] model_instance_id_map A pointer to a map where the key is the
+   * name of the model whose instance was just added to this `RigidBodySystem`
+   * and it's `RigidBodyTree` and the value is the unique model instance ID that
+   * was assigned to the instance. This parameter may be `nullptr`.
+   */
+  void AddModelInstanceFromString(
+      const std::string& description,
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::QUATERNION,
+      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
+      RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map = nullptr);
+
   void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {
     force_elements.push_back(f);
   }
