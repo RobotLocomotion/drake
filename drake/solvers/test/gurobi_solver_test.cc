@@ -4,8 +4,8 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/solvers/MathematicalProgram.h"
-#include "drake/solvers/Optimization.h"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/optimization.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
@@ -51,14 +51,14 @@ GTEST_TEST(testGurobi, gurobiQPExample1) {
   VectorXd constraint(3);
   constraint << 1, 2, 3;
   prog.AddLinearConstraint(
-      constraint.transpose(), Drake::Vector1d::Constant(4),
-      Drake::Vector1d::Constant(std::numeric_limits<double>::infinity()));
+      constraint.transpose(), drake::Vector1d::Constant(4),
+      drake::Vector1d::Constant(std::numeric_limits<double>::infinity()));
 
   VectorXd constraint2(3);
   constraint2 << 1, 1, 0;
   prog.AddLinearConstraint(
-      constraint2.transpose(), Drake::Vector1d::Constant(1),
-      Drake::Vector1d::Constant(std::numeric_limits<double>::infinity()));
+      constraint2.transpose(), drake::Vector1d::Constant(1),
+      drake::Vector1d::Constant(std::numeric_limits<double>::infinity()));
 
   VectorXd expected(3);
   expected << 0, 1, 2.0 / 3.0;

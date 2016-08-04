@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/core/Vector.h"
+#include "drake/systems/vector.h"
 
 namespace drake {
 
@@ -22,7 +22,7 @@ class RobotStateTap {
   //@{
 
   template <typename ScalarType>
-  using StateVector = Drake::NullVector<ScalarType>;
+  using StateVector = drake::NullVector<ScalarType>;
   template <typename ScalarType>
   using InputVector = Vector<ScalarType>;
   template <typename ScalarType>
@@ -35,7 +35,7 @@ class RobotStateTap {
 
   OutputVector<double> output(const double& t, const StateVector<double>& x,
                               const InputVector<double>& u) {
-    u_ = Drake::toEigen(u);
+    u_ = drake::toEigen(u);
     return u;
   }
 

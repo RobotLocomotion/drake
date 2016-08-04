@@ -7,12 +7,12 @@
 using namespace std;
 
 template <typename ScalarType = double>
-class AcrobotState {  // models the Drake::Vector concept
+class AcrobotState {  // models the drake::Vector concept
  public:
   AcrobotState(void) : shoulder(0), elbow(0), shoulder_dot(0), elbow_dot(0) {}
 
   template <typename Derived>
-  AcrobotState(  // NOLINT(runtime/explicit) per Drake::Vector.
+  AcrobotState(  // NOLINT(runtime/explicit) per drake::Vector.
       const Eigen::MatrixBase<Derived>& x)
       : shoulder(x(0)), elbow(x(1)), shoulder_dot(x(2)), elbow_dot(x(3)) {}
 
@@ -57,7 +57,7 @@ class AcrobotInput {
   AcrobotInput(void) : tau(0) {}
 
   template <typename Derived>
-  AcrobotInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+  AcrobotInput(  // NOLINT(runtime/explicit) per drake::Vector.
       const Eigen::MatrixBase<Derived>& x)
       : tau(x(0)) {}
 

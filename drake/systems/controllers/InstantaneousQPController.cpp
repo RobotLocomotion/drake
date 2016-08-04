@@ -4,11 +4,11 @@
 #include <map>
 #include <memory>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
-#include "drake/solvers/fastQP.h"
+#include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/eigen_matrix_compare.h"
@@ -38,8 +38,8 @@ void InstantaneousQPController::initialize() {
   umin.resize(nu);
   umax.resize(nu);
   for (size_t i = 0; i < robot->actuators.size(); i++) {
-    umin(i) = robot->actuators.at(i).effort_limit_min;
-    umax(i) = robot->actuators.at(i).effort_limit_max;
+    umin(i) = robot->actuators.at(i).effort_limit_min_;
+    umax(i) = robot->actuators.at(i).effort_limit_max_;
   }
 
   qdd_lb = Eigen::VectorXd::Zero(nq).array() -
@@ -119,7 +119,7 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
           "Could not find attachment frame when handling urdf modifications");
     }
     drake::parsers::urdf::AddRobotFromURDF(
-        Drake::getDrakePath() + "/" + it->urdf_filename, it->joint_type,
+        drake::GetDrakePath() + "/" + it->urdf_filename, it->joint_type,
         attach_to_frame, robot.get());
   }
 
@@ -577,9 +577,30 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
   }
 
   for (auto it = robot.frames.begin(); it != robot.frames.end(); ++it) {
-    id_map[(*it)->name] = -(it - robot.frames.begin()) - 2;
+    id_map[(*it)->get_name()] = -(it - robot.frames.begin()) - 2;
   }
   return id_map;
+}
+
+const QPControllerParams& InstantaneousQPController::FindParams(
+    const std::string& param_set_name) {
+  // look up the param set by name
+  std::map<std::string, QPControllerParams>::iterator it;
+  it = param_sets.find(param_set_name);
+  if (it == param_sets.end()) {
+    std::cout
+        << "Got a param set I don't recognize! Using standing params instead";
+    it = param_sets.find("standing");
+    if (it == param_sets.end()) {
+      throw std::runtime_error(
+          "Could not fall back to standing parameters either. I have to give "
+          "up here.");
+    }
+  }
+  // cout << "using params set: " + it->first + ", ";
+  const QPControllerParams& params = it->second;
+  // mexPrintf("Kp_accel: %f, ", params.Kp_accel);
+  return params;
 }
 
 int InstantaneousQPController::setupAndSolveQP(
@@ -603,22 +624,7 @@ int InstantaneousQPController::setupAndSolveQP(
     dt = robot_state.t - controller_state.t_prev;
   }
 
-  // look up the param set by name
-  std::map<std::string, QPControllerParams>::iterator it;
-  it = param_sets.find(qp_input.param_set_name);
-  if (it == param_sets.end()) {
-    std::cout
-        << "Got a param set I don't recognize! Using standing params instead";
-    it = param_sets.find("standing");
-    if (it == param_sets.end()) {
-      throw std::runtime_error(
-          "Could not fall back to standing parameters either. I have to give "
-          "up here.");
-    }
-  }
-  // cout << "using params set: " + it->first + ", ";
-  const QPControllerParams& params = it->second;
-  // mexPrintf("Kp_accel: %f, ", params.Kp_accel);
+  const QPControllerParams& params = FindParams(qp_input.param_set_name);
 
   int nu = robot->B.cols();
   int nq = robot->number_of_positions();

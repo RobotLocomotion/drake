@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/core/Gradient.h"
 #include "drake/systems/plants/constraint/dynamic_constraint.h"
 #include "drake/util/eigen_matrix_compare.h"
 
@@ -18,9 +19,9 @@ class PendulumTestDynamicConstraint : public DynamicConstraint {
       : DynamicConstraint(num_states, num_inputs) {}
 
  protected:
-  void dynamics(const Drake::TaylorVecXd& state,
-                const Drake::TaylorVecXd& input,
-                Drake::TaylorVecXd* xdot) const override {
+  void dynamics(const TaylorVecXd& state,
+                const TaylorVecXd& input,
+                TaylorVecXd* xdot) const override {
     // From the Pendulum example:
     const double m = 1.0;
     const double b = 0.1;
@@ -55,8 +56,8 @@ GTEST_TEST(DynamicConstraintPendulumDynamicsTest, DynamicConstraintTest) {
 
   PendulumTestDynamicConstraint dut(kNumStates, kNumInputs);
 
-  Drake::TaylorVecXd result;
-  dut.eval(Drake::initializeAutoDiff(x), result);
+  TaylorVecXd result;
+  dut.Eval(drake::initializeAutoDiff(x), result);
 
   EXPECT_NEAR(result(0).value(), 1.1027, 1e-4);
   EXPECT_NEAR(result(1).value(), 2.2657, 1e-4);

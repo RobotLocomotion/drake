@@ -15,6 +15,7 @@
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
+#include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
@@ -172,7 +173,15 @@ class DRAKERBM_EXPORT RigidBodyTree {
   bool isBodyPartOfRobot(const RigidBody& body,
                          const std::set<int>& robotnum) const;
 
-  double getMass(const std::set<int>& robotnum = default_robot_num_set) const;
+  /**
+   * Computes the total mass of a set of models in this rigid body tree.
+   *
+   * @param[in] model_ids A set of model ID values corresponding to the models
+   * whose masses should be included in the returned value.
+   *
+   * @returns The total mass of the models specified by @p model_ids.
+   */
+  double getMass(const std::set<int>& model_ids = default_robot_num_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
@@ -433,26 +442,26 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
   DrakeCollision::ElementId addCollisionElement(
-      const RigidBody::CollisionElement& element, RigidBody& body,
+      const RigidBodyCollisionElement& element, RigidBody& body,
       const std::string& group_name);
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
     for (const auto& body_ptr : bodies) {
       std::vector<std::string> names_of_groups_to_delete;
-      for (const auto& group : body_ptr->get_collision_element_groups()) {
+      for (const auto& group : body_ptr->get_group_to_collision_ids_map()) {
         const std::string& group_name = group.first;
         if (test(group_name)) {
           auto& ids = body_ptr->get_mutable_collision_element_ids();
           for (const auto& id : group.second) {
             ids.erase(std::find(ids.begin(), ids.end(), id));
-            collision_model->removeElement(id);
+            collision_model_->removeElement(id);
           }
           names_of_groups_to_delete.push_back(group_name);
         }
       }
       for (const auto& group_name : names_of_groups_to_delete) {
-        body_ptr->get_mutable_collision_element_groups().erase(group_name);
+        body_ptr->get_mutable_group_to_collision_ids_map().erase(group_name);
       }
     }
   }
@@ -840,7 +849,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // RBM for use in collision detection of different kinds. Small margins are
   // applied to all collision geometry when that geometry is added, to improve
   // the numerical stability of contact gradients taken using the model.
-  std::unique_ptr<DrakeCollision::Model> collision_model;
+  std::unique_ptr<DrakeCollision::Model> collision_model_;
 
  public:
 #ifndef SWIG

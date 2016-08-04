@@ -4,7 +4,7 @@
 
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/system_interface.h"
+#include "drake/systems/framework/system.h"
 #include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 
@@ -15,8 +15,7 @@ namespace lcm {
 /**
  * Publishes an LCM message containing information from its input port.
  */
-class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
-    public SystemInterface<double> {
+class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public System<double> {
  public:
   /**
    * A constructor.
@@ -61,19 +60,20 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem :
    * The default context for this system is one that has one input port and
    * no state.
    */
-  std::unique_ptr<Context<double>> CreateDefaultContext() const override;
+  std::unique_ptr<ContextBase<double>> CreateDefaultContext() const override;
 
   /**
    * The output contains zero ports.
    */
-  std::unique_ptr<SystemOutput<double>> AllocateOutput() const override;
+  std::unique_ptr<SystemOutput<double>> AllocateOutput(
+      const ContextBase<double>& context) const override;
 
   /**
    * Takes the VectorInterface from the input port of the context and publishes
    * it onto an LCM channel. Note that the output is ignored since this system
    * does not output anything.
    */
-  void EvalOutput(const Context<double>& context,
+  void EvalOutput(const ContextBase<double>& context,
                   SystemOutput<double>* output) const override;
 
  private:

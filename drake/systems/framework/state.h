@@ -14,8 +14,8 @@ namespace drake {
 namespace systems {
 
 /// The ContinuousState is a container for all the State variables that are
-/// unique to continuous Systems, i.e. Systems that satisfy
-/// ContinuousSystemInterface and have defined dynamics at all times.
+/// unique to continuous Systems, i.e. Systems that have defined dynamics at
+/// all times.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
@@ -34,14 +34,16 @@ class ContinuousState {
   /// Constructs a ContinuousState that exposes second-order structure.
   /// The contents of @p state must be laid out as follows:
   ///
-  /// @verbatim
+  /// <pre>
   /// (index 0)|--q--|--v--|--z--|(index state.size() - 1)
   ///
   /// Where q is generalized position
   ///       v is generalized velocity
   ///       z is other continuous state
-  /// @endverbatim
+  /// </pre>
   ///
+  ///
+  /// @param state The source of continuous state information.
   /// @param num_q The number of position variables.
   /// @param num_v The number of velocity variables.
   /// @param num_z The number of other variables.

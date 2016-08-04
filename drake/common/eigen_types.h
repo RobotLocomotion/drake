@@ -1,15 +1,22 @@
+#pragma once
+
 /// @file
 /// This file contains abbreviated definitions for certain specializations of
 /// Eigen::Matrix that are commonly used in Drake.
-
-#pragma once
+/// @see also eigen_autodiff_types.h
 
 #include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/constants.h"
 
 namespace drake {
+
+/// A column vector of size 1 (that is, a scalar), templated on scalar type.
+template <typename Scalar>
+using Vector1 = Eigen::Matrix<Scalar, 1, 1>;
+
+/// A column vector of size 1 of doubles.
+using Vector1d = Eigen::Matrix<double, 1, 1>;
 
 /// A column vector of size 3, templated on scalar type.
 template <typename Scalar>
@@ -31,7 +38,7 @@ using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 template <typename Scalar>
 using Matrix3 = Eigen::Matrix<Scalar, 3, 3>;
 
-/// A matrix of 3 rows and 3 columns, templated on scalar type.
+/// A matrix of 6 rows and 6 columns, templated on scalar type.
 template <typename Scalar>
 using Matrix6 = Eigen::Matrix<Scalar, 6, 6>;
 
@@ -49,12 +56,6 @@ using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
 /// A column vector of dynamic size, up to a maximum of 73 elements.
 using VectorUpTo73d = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>;
-
-/// An autodiff variable with a dynamic number of partials, up to 73 maximum.
-using AutoDiffUpTo73d = Eigen::AutoDiffScalar<VectorUpTo73d>;
-
-/// An autodiff variable with a dynamic number of partials.
-using AutoDiffXd = Eigen::AutoDiffScalar<Eigen::VectorXd>;
 
 /// A column vector consisting of one twist.
 template <typename Scalar>

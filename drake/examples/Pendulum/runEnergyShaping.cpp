@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/plants/BotVisualizer.h"
@@ -9,7 +9,7 @@
 #include "drake/util/drakeAppUtil.h"
 
 using namespace std;
-using namespace Drake;
+using namespace drake;
 
 /**
  * Runs the energy shaping controller as an LCM node or, with "-s",
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
     x0 << 0.1, 0.2;
 
     auto v = std::make_shared<BotVisualizer<PendulumState> >(
-        lcm, getDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+        lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
         DrakeJoint::FIXED);
     auto sys = cascade(feedback(p, c), v);
     simulate(*sys, 0, 10, x0, options);

@@ -11,7 +11,7 @@
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 #include "joints/DrakeJoints.h"
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "xmlUtil.h"
 
 // from
@@ -39,7 +39,7 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) poseValueToTransform(pose, pose_map, T, T_link);
 
-  double mass;
+  double mass = {0};
   parseScalarValue(node, "mass", mass);
   body->set_mass(mass);
 
@@ -233,7 +233,7 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                         " has a collision element without a geometry.");
   }
 
-  RigidBody::CollisionElement element(
+  RigidBodyCollisionElement element(
       transform_parent_to_model.inverse() * transform_to_model, body);
   // By default all collision elements added to the world from an SDF file are
   // flagged as static.
@@ -700,8 +700,9 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
 
     // Implements dual-offset: one from model root to model world, another
     // from model world to Drake's world.
-    weld_to_frame->transform_to_body =
-        weld_to_frame->transform_to_body * transform_model_root_to_model_world;
+    weld_to_frame->set_transform_to_body(
+        weld_to_frame->get_transform_to_body() *
+            transform_model_root_to_model_world);
   }
 
   // Adds the floating joint that connects the newly added robot model to the

@@ -1,4 +1,4 @@
-#include "Model.h"
+#include "drake/systems/plants/collision/Model.h"
 
 #include <iostream>
 

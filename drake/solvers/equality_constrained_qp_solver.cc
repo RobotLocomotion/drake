@@ -5,10 +5,8 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/core/Gradient.h"
-#include "drake/solvers/Optimization.h"
-
-using Drake::TaylorVecXd;
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/solvers/optimization.h"
 
 namespace drake {
 namespace solvers {

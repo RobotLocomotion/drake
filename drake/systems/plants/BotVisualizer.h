@@ -11,7 +11,7 @@
 #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
 
-namespace Drake {
+namespace drake {
 
 /** BotVisualizer<RobotStateVector>
  * @brief A system which takes the robot state as input and publishes an lcm
@@ -34,41 +34,41 @@ class BotVisualizer {
   template <typename ScalarType>
   using InputVector = RobotStateVector<ScalarType>;
 
-  BotVisualizer(std::shared_ptr<lcm::LCM> _lcm,
+  BotVisualizer(std::shared_ptr<lcm::LCM> lcm,
                 std::shared_ptr<RigidBodyTree> tree)
-      : tree(tree), lcm(_lcm) {
+      : tree_(tree), lcm_(lcm) {
     init();
   }
 
-  BotVisualizer(std::shared_ptr<lcm::LCM> _lcm,
+  BotVisualizer(std::shared_ptr<lcm::LCM> lcm,
                 const std::string& urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type)
-      : tree(new RigidBodyTree(urdf_filename, floating_base_type)), lcm(_lcm) {
+      : tree_(new RigidBodyTree(urdf_filename, floating_base_type)), lcm_(lcm) {
     init();
   }
 
   void init() {
     publishLoadRobot();
 
-    draw_msg.num_links = tree->bodies.size();
+    draw_msg_.num_links = tree_->bodies.size();
     std::vector<float> position = {0, 0, 0}, quaternion = {0, 0, 0, 1};
-    for (const auto& body : tree->bodies) {
-      draw_msg.link_name.push_back(body->get_name());
-      draw_msg.robot_num.push_back(body->get_model_id());
-      draw_msg.position.push_back(position);
-      draw_msg.quaternion.push_back(quaternion);
+    for (const auto& body : tree_->bodies) {
+      draw_msg_.link_name.push_back(body->get_name());
+      draw_msg_.robot_num.push_back(body->get_model_id());
+      draw_msg_.position.push_back(position);
+      draw_msg_.quaternion.push_back(quaternion);
     }
   }
 
   void publishLoadRobot() const {
     drake::lcmt_viewer_load_robot vr;
-    vr.num_links = tree->bodies.size();
-    for (const auto& body : tree->bodies) {
+    vr.num_links = tree_->bodies.size();
+    for (const auto& body : tree_->bodies) {
       drake::lcmt_viewer_link_data link;
       link.name = body->get_name();
       link.robot_num = body->get_model_id();
-      link.num_geom = body->GetVisualElements().size();
-      for (const auto& v : body->GetVisualElements()) {
+      link.num_geom = body->get_visual_elements().size();
+      for (const auto& v : body->get_visual_elements()) {
         drake::lcmt_viewer_geometry_data gdata;
 
         const DrakeShapes::Geometry& geometry = v.getGeometry();
@@ -101,7 +101,7 @@ class BotVisualizer {
           }
           case DrakeShapes::MESH: {
             gdata.type = gdata.MESH;
-            gdata.num_float_data = 1;
+            gdata.num_float_data = 3;
             auto m = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
             gdata.float_data.push_back(static_cast<float>(m.scale_[0]));
             gdata.float_data.push_back(static_cast<float>(m.scale_[1]));
@@ -143,7 +143,7 @@ class BotVisualizer {
       vr.link.push_back(link);
     }
 
-    lcm->publish("DRAKE_VIEWER_LOAD_ROBOT", &vr);
+    lcm_->publish("DRAKE_VIEWER_LOAD_ROBOT", &vr);
   }
 
   StateVector<double> dynamics(const double& t, const StateVector<double>& x,
@@ -153,26 +153,26 @@ class BotVisualizer {
 
   OutputVector<double> output(const double& t, const StateVector<double>& x,
                               const InputVector<double>& u) const {
-    draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
+    draw_msg_.timestamp = static_cast<int64_t>(t * 1000.0);
 
-    const Eigen::VectorXd q = toEigen(u).head(tree->number_of_positions());
-    KinematicsCache<double> cache = tree->doKinematics(q);
+    const Eigen::VectorXd q = toEigen(u).head(tree_->number_of_positions());
+    KinematicsCache<double> cache = tree_->doKinematics(q);
 
-    for (size_t i = 0; i < tree->bodies.size(); i++) {
-      auto transform = tree->relativeTransform(cache, 0, i);
+    for (size_t i = 0; i < tree_->bodies.size(); i++) {
+      auto transform = tree_->relativeTransform(cache, 0, i);
       auto quat = drake::math::rotmat2quat(transform.linear());
-      std::vector<float>& position = draw_msg.position[i];
+      std::vector<float>& position = draw_msg_.position[i];
       auto translation = transform.translation();
       for (int j = 0; j < 3; j++) {
         position[j] = static_cast<float>(translation(j));
       }
-      std::vector<float>& quaternion = draw_msg.quaternion[i];
+      std::vector<float>& quaternion = draw_msg_.quaternion[i];
       for (int j = 0; j < 4; j++) {
         quaternion[j] = static_cast<float>(quat(j));
       }
     }
 
-    lcm->publish("DRAKE_VIEWER_DRAW", &draw_msg);
+    lcm_->publish("DRAKE_VIEWER_DRAW", &draw_msg_);
 
     return u;  // pass the output through
   }
@@ -182,9 +182,9 @@ class BotVisualizer {
 
  private:
   mutable std::shared_ptr<RigidBodyTree>
-      tree;  // todo: remove mutable tag after RBM cleanup
-  std::shared_ptr<lcm::LCM> lcm;
-  mutable drake::lcmt_viewer_draw draw_msg;
+      tree_;  // todo: remove mutable tag after RBM cleanup
+  std::shared_ptr<lcm::LCM> lcm_;
+  mutable drake::lcmt_viewer_draw draw_msg_;
 };
 
-}  // end namespace Drake
+}  // end namespace drake
