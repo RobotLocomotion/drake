@@ -535,7 +535,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
       WorldCoMConstraint* cnst = nullptr;
       Vector2d tspan;
-      int* model_instance_ids;
+      int* model_instance_ids = nullptr;
       size_t num_robot;
       if (nrhs <= 5) {
         num_robot = 1;
