@@ -18,11 +18,7 @@ class DRAKERBM_EXPORT RigidBody {
   RigidBody();
 
   /**
-   * @brief Name of the body.
-   *
-   * An accessor for the name of the body that this rigid body represents.
-   *
-   * @return The name of the body that's modeled by this rigid body.
+   * Returns the name of this rigid body.
    */
   const std::string& get_name() const;
 
@@ -32,28 +28,24 @@ class DRAKERBM_EXPORT RigidBody {
   void set_name(const std::string& name);
 
   /**
-   * An accessor for the name of the model or robot that this rigid body is
-   * a part of.
-   *
-   * @return The name of the model that this rigid body belongs to.
+   * Returns the name of the model defining this rigid body.
    */
-  // TODO(amcastro-tri): Move concept of world out of here as per #2318.
   const std::string& get_model_name() const;
 
   /**
-   * Sets the name of the model to which this rigid body belongs.
+   * Sets the name of the model defining this rigid body.
    */
   void set_model_name(const std::string& name);
 
   /**
-   * Returns the ID of the model to which this rigid body belongs.
+   * Returns the ID of the model instance to which this rigid body belongs.
    */
-  int get_model_id() const;
+  int get_model_instance_id() const;
 
   /**
-   * Sets the ID of the model to which this rigid body belongs.
+   * Sets the ID of the model instance to which this rigid body belongs.
    */
-  void set_model_id(int model_id);
+  void set_model_instance_id(int model_instance_id);
 
   /**
    * Sets the parent joint through which this rigid body connects to its parent
@@ -169,13 +161,13 @@ class DRAKERBM_EXPORT RigidBody {
       const;
 
   /**
-   * @returns A reference to an `std::vector` of collision elements that
+   * Returns a reference to an `std::vector` of collision elements that
    * represent the collision geometry of this rigid body.
    */
   std::vector<DrakeCollision::ElementId>& get_mutable_collision_element_ids();
 
   /**
-   * @returns A map of collision element group names to vectors of collision
+   * Returns a map of collision element group names to vectors of collision
    * element IDs. These are the collision element groups created through calls
    * to RigidBody::AddCollisionElementToGroup().
    */
@@ -183,7 +175,7 @@ class DRAKERBM_EXPORT RigidBody {
       get_group_to_collision_ids_map() const;
 
   /**
-   * @returns A map of collision element group names to vectors of collision
+   * Returns a map of collision element group names to vectors of collision
    * element IDs. These are the collision element groups created through calls
    * to RigidBody::AddCollisionElementToGroup().
    */
@@ -325,11 +317,13 @@ class DRAKERBM_EXPORT RigidBody {
   // The name of this rigid body.
   std::string name_;
 
-  // The name of the model to which this rigid body belongs.
+  // TODO(liang.fok) Remove this member variable, see:
+  // https://github.com/RobotLocomotion/drake/issues/3053
+  // The name of the model that defined this rigid body.
   std::string model_name_;
 
-  // A unique ID for each model. It uses 0-index, starts from 0.
-  int model_id_{0};
+  // A unique ID for the model instance to which this body belongs.
+  int model_instance_id_{0};
 
   // The rigid body that's connected to this rigid body's joint.
   RigidBody* parent_{nullptr};

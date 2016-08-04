@@ -132,7 +132,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_THROW(tree->FindBody("link_3", "model_2"), std::logic_error);
 
   // Checks that a body can be obtained when we specify the body's name and
-  // model ID.
+  // model instance ID.
   EXPECT_NE(tree->FindBody("link_1", "", 0), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "", 1), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "", 2), nullptr);
@@ -147,7 +147,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_NE(tree->FindBody("link_3", "", 3), nullptr);
 
   // Checks that a body can be obtained when we specify the body's name, model
-  // name, and model ID.
+  // name, and model instance ID.
   EXPECT_NE(tree->FindBody("link_1", "model_1", 0), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "model_2", 1), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "model_1", 2), nullptr);
@@ -169,7 +169,8 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_THROW(tree->findJoint("joint_1"), std::logic_error);
   EXPECT_THROW(tree->findJoint("joint_2"), std::logic_error);
 
-  // Checks that we can access a joint using the joint name and model ID.
+  // Checks that we can access a joint using the joint name and model instance
+  // ID.
   EXPECT_NE(tree->findJoint("joint_1", 0), nullptr);
   EXPECT_NE(tree->findJoint("joint_1", 1), nullptr);
   EXPECT_NE(tree->findJoint("joint_1", 2), nullptr);
