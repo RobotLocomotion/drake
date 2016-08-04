@@ -88,46 +88,46 @@ bool decode(const drake::lcmt_iiwa_status& msg,
   wrap.set_value(new_value);
   return true;
 }
-//
-//
-//template <typename ScalarType = double>
-//class IiwaInput {
-// public:
-//  typedef drake::lcmt_drake_signal LCMMessageType;
-//  static std::string channel() { return "IiwaInput"; }
-//
-//  IiwaInput(void) : u_(0) {}
-//
-//  template <typename Derived>
-//  IiwaInput(  // NOLINT(runtime/explicit) per drake::Vector.
-//      const Eigen::MatrixBase<Derived>& x)
-//      : u_(x(0)) {}
-//
-//  template <typename Derived>
-//  IiwaInput& operator=(const Eigen::MatrixBase<Derived>& x) {
-//    u_ = x(0);
-//    return *this;
-//  }
-//
-//  friend std::ostream& operator<<(std::ostream& os, const IiwaInput& x) {
-//    os << "  tau = " << x.u_ << std::endl;
-//    return os;
-//  }
-//
-//  // TODO(naveenoid) find a less complicated way of doing this
-//  static const int kNumJoints = 7;
-//  static const int RowsAtCompileTime = Eigen::Dynamic;
-//  typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
-//  size_t size() const { return kNumJoints; }
-//
-//  /// Magic conversion specialization back to Eigen.
-//  friend EigenType toEigen(const IiwaInput<ScalarType>& vec) {
-//    return vec.u_;
-//  }
-//
-// private:
-//  EigenType u_;
-//};
+
+
+template <typename ScalarType = double>
+class IiwaInput {
+ public:
+  typedef drake::lcmt_drake_signal LCMMessageType;
+  static std::string channel() { return "IiwaInput"; }
+
+  IiwaInput(void) : u_(0) {}
+
+  template <typename Derived>
+  IiwaInput(  // NOLINT(runtime/explicit) per drake::Vector.
+      const Eigen::MatrixBase<Derived>& x)
+      : u_(x(0)) {}
+
+  template <typename Derived>
+  IiwaInput& operator=(const Eigen::MatrixBase<Derived>& x) {
+    u_ = x(0);
+    return *this;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const IiwaInput& x) {
+    os << "  tau = " << x.u_ << std::endl;
+    return os;
+  }
+
+  // TODO(naveenoid) find a less complicated way of doing this
+  static const int kNumJoints = 7;
+  static const int RowsAtCompileTime = Eigen::Dynamic;
+  typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
+  size_t size() const { return kNumJoints; }
+
+  /// Magic conversion specialization back to Eigen.
+  friend EigenType toEigen(const IiwaInput<ScalarType>& vec) {
+    return vec.u_;
+  }
+
+ private:
+  EigenType u_;
+};
 //
 //template <typename ScalarType = double>
 //class IiwaOutput {
