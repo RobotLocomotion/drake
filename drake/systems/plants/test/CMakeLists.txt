@@ -117,7 +117,7 @@ add_executable(rigid_body_test rigid_body_test.cc)
 target_link_libraries(rigid_body_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
 add_test(NAME rigid_body_test COMMAND rigid_body_test)
 
-add_matlab_test(NAME systems/plants/test/AddModelInstanceFromUrdfStringTest COMMAND AddModelInstanceFromUrdfStringTest)
+add_matlab_test(NAME systems/plants/test/addRobotFromURDFStringTest COMMAND addRobotFromURDFStringTest)
 add_matlab_test(NAME systems/plants/test/andresFallingBlockTest COMMAND andresFallingBlockTest)
 add_matlab_test(NAME systems/plants/test/bodyKinTest COMMAND bodyKinTest)
 add_matlab_test(NAME systems/plants/test/bullet_collision_all_bodies_jac_test COMMAND bullet_collision_all_bodies_jac_test)
