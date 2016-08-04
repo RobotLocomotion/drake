@@ -27,7 +27,7 @@ target_link_libraries(vector_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME vector_test COMMAND vector_test)
 
 add_executable(simulation_trajectory_logger_test simulation_trajectory_logger_test.cc)
-target_link_libraries(simulation_termination_test drakeCommon)
+target_link_libraries(simulation_trajectory_logger_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME simulation_trajectory_logger_test COMMAND simulation_trajectory_logger_test)
 
 add_matlab_test(NAME systems/test/HybridSystemSampleTimeTest.run COMMAND HybridSystemSampleTimeTest.run)
