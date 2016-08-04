@@ -78,8 +78,10 @@ void AddModelInstanceFromURDFString(
 /// a joint of type @p floating_base_type. The model instance's frame is equal
 /// to the world's coordinate frame.
 ///
-/// @param[in] urdf_string The URDF description of the model. An instance of
-/// this model will be added to @p tree.
+/// @param[in] urdf_string The URDF description of the model. This is the actual
+/// URDF text (i.e., it is not the name of a file that contains the URDF text).
+/// A new model instance is created based on this URDF text and added to
+/// @p tree.
 ///
 /// @param[in] root_dir The root directory in which to search for files
 /// mentioned in the URDF.
@@ -99,8 +101,10 @@ void AddModelInstanceFromURDFString(
 /// Reads a single model from a URDF specification and adds a single instance of
 /// it to @p tree.
 ///
-/// @param[in] urdf_string The URDF description of the model. An instance of
-/// this model will be added to @p tree.
+/// @param[in] urdf_string The URDF description of the model. This is the actual
+/// URDF text (i.e., it is not the name of a file that contains the URDF text).
+/// A new model instance is created based on this URDF text and added to
+/// @p tree.
 ///
 /// @param[in] package_map A map of ROS package names to their paths. These are
 /// the packages to search through when finding files referenced in the URDF.
