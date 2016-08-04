@@ -116,7 +116,6 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
     return c;
   }
 
-
   /**
    * Add a cost to the final state and total time.
    *
@@ -202,6 +201,14 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * Returns a vector containing the state values at each knot point.
    */
   std::vector<Eigen::MatrixXd> GetStateVector() const;
+
+  int num_inputs() const { return num_inputs_; }
+  int num_states() const { return num_states_; }
+  int N() const { return N_; }
+  OptimizationProblem* opt_problem() { return &opt_problem_; }
+  const DecisionVariableView& h_vars() const { return h_vars_; }
+  const DecisionVariableView& u_vars() const { return u_vars_; }
+  const DecisionVariableView& x_vars() const { return x_vars_; }
 
  private:
   /**
