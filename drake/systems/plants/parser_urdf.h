@@ -43,8 +43,10 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 /// a joint of type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame
 /// is equal to the world's coordinate frame.
 ///
-/// @param[in] urdf_string The URDF description of a model. An instance of this
-/// model will be added to @p tree.
+/// @param[in] urdf_string The URDF description of the model. This is the actual
+/// URDF text (i.e., it is not the name of a file that contains the URDF text).
+/// A new model instance is created based on this URDF text and added to
+/// @p tree.
 ///
 /// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// A `std::runtime_error` is thrown if the pointer is null.
@@ -58,8 +60,10 @@ void AddModelInstanceFromURDFString(
 /// a joint of type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame is
 /// equal to the world's coordinate frame.
 ///
-/// @param[in] urdf_string The URDF description of a model. An instance of this
-/// model will be added to @p tree.
+/// @param[in] urdf_string The URDF description of the model. This is the actual
+/// URDF text (i.e., it is not the name of a file that contains the URDF text).
+/// A new model instance is created based on this URDF text and added to
+/// @p tree.
 ///
 /// @param[in] package_map A map of ROS package names to their paths. These are
 /// the packages to search through when searching for files referenced in the
