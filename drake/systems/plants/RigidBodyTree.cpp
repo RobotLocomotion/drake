@@ -63,8 +63,8 @@ RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type)
     : RigidBodyTree() {
-  drake::parsers::urdf::AddRobotFromURDF(urdf_filename, floating_base_type,
-                                         this);
+  drake::parsers::urdf::AddModelInstanceFromURDF(urdf_filename,
+      floating_base_type, this);
 }
 
 RigidBodyTree::RigidBodyTree(void)
@@ -142,7 +142,8 @@ void RigidBodyTree::compile(void) {
   //   RigidBodyTree::downwards_body_iterator: travels the tree downwards from
   //   the root towards the last leaf.
   for (size_t i = 0; i < bodies.size(); i++) {
-    if (bodies[i]->hasParent() && bodies[i]->I.isConstant(0)) {
+    if (bodies[i]->hasParent() &&
+        bodies[i]->get_spatial_inertia().isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); j++) {
         if (bodies[j]->has_as_parent(*bodies[i])) {
@@ -297,9 +298,11 @@ void RigidBodyTree::drawKinematicTree(
   for (const auto& body : bodies) {
     dotfile << "  " << body->get_name() << " [label=\"" << body->get_name()
             << endl;
-    dotfile << "mass=" << body->get_mass() << ", com=" << body->com.transpose()
+    dotfile << "mass=" << body->get_mass() << ", com="
+            << body->get_center_of_mass().transpose()
             << endl;
-    dotfile << "inertia=" << endl << body->I << endl;
+    dotfile << "spatial inertia=" << endl << body->get_spatial_inertia()
+            << endl;
     dotfile << "\"];" << endl;
     if (body->hasParent()) {
       const auto& joint = body->getJoint();
@@ -788,7 +791,8 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
       const RigidBody& body = **it;
       auto& element = cache.getElement(body);
       element.inertia_in_world = transformSpatialInertia(
-          element.transform_to_world, body.I.cast<Scalar>());
+          element.transform_to_world,
+              body.get_spatial_inertia().cast<Scalar>());
       element.crb_in_world = element.inertia_in_world;
     }
 
@@ -958,7 +962,8 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
       if (body.get_mass() > 0) {
         com.noalias() +=
             body.get_mass() *
-                transformPoints(cache, body.com.cast<Scalar>(), i, 0);
+                transformPoints(cache, body.get_center_of_mass().cast<Scalar>(),
+                                i, 0);
       }
       m += body.get_mass();
     }
@@ -2110,7 +2115,7 @@ void RigidBodyTree::addRobotFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
-  drake::parsers::urdf::AddRobotFromURDFString(xml_string, package_map,
+  drake::parsers::urdf::AddModelInstanceFromURDFString(xml_string, package_map,
                                                root_dir, floating_base_type,
                                                weld_to_frame, this);
 }
@@ -2122,7 +2127,7 @@ void RigidBodyTree::addRobotFromURDFString(
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddRobotFromURDFString(xml_string, package_map,
+  drake::parsers::urdf::AddModelInstanceFromURDFString(xml_string, package_map,
                                                root_dir, floating_base_type,
                                                weld_to_frame, this);
 }
@@ -2133,7 +2138,7 @@ void RigidBodyTree::addRobotFromURDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
-  drake::parsers::urdf::AddRobotFromURDF(
+  drake::parsers::urdf::AddModelInstanceFromURDF(
       urdf_filename, package_map, floating_base_type, weld_to_frame, this);
 }
 
@@ -2143,7 +2148,7 @@ void RigidBodyTree::addRobotFromURDF(
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddRobotFromURDF(
+  drake::parsers::urdf::AddModelInstanceFromURDF(
       urdf_filename, package_map, floating_base_type, weld_to_frame, this);
 }
 

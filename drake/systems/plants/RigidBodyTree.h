@@ -49,7 +49,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   virtual ~RigidBodyTree(void);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDFString.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
 #endif
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
@@ -58,7 +58,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDFString.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
 #endif
   void addRobotFromURDFString(
       const std::string& xml_string,
@@ -69,7 +69,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDF.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
 #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
@@ -78,7 +78,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDF.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
 #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
@@ -88,7 +88,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::sdf::AddRobotFromSDF.")
+  DRAKE_DEPRECATED("Please use AddRobotFromSDF.")
 #endif
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
@@ -96,10 +96,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
-   * Returns a new model instance ID, which can be used to uniquely identify
-   * the model instance. This method is not thread safe!
+   * Adds a new model instance to this `RigidBodyTree`. The model instance is
+   * identified by a unique model instance ID, which is the return value of
+   * this method.
    */
-  int get_new_model_instance_id() { return number_of_model_instances_++; }
+  // This method is not thread safe!
+  int add_model_instance() { return number_of_model_instances_++; }
 
   /**
    * Returns the number of model instances in the tree.
@@ -831,9 +833,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // The number of velocity states in this rigid body tree.
   int num_velocities_{};
 
-  // Remembers the number of model instances in this rigid body tree. It's also
-  // used to assign a model instance ID to a new model instance when it is added
-  // to this tree.
+  // The number of model instances in this rigid body tree.
   int number_of_model_instances_{};
 
   // helper functions for contactConstraints
