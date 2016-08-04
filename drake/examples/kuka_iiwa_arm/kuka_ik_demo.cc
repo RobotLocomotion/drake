@@ -78,10 +78,10 @@ class TrajectoryRunner {
 
     PPType pp_traj(polys, times);
 
-    int64_t start_time = -1;
-    int64_t cur_time = -1;
-    const int64_t end_time_offset = (t_[nT_ - 1] * 1e3);
-    DRAKE_ASSERT(end_time_offset > 0);
+    int64_t start_time_ms = -1;
+    int64_t cur_time_ms = -1;
+    const int64_t end_time_offset_ms = (t_[nT_ - 1] * 1e3);
+    DRAKE_ASSERT(end_time_offset_ms > 0);
 
     lcmt_iiwa_command iiwa_command;
     iiwa_command.num_joints = kNumJoints;
@@ -89,24 +89,23 @@ class TrajectoryRunner {
     iiwa_command.num_torques = 0;
     iiwa_command.joint_torque.resize(kNumJoints, 0.);
 
-    while (cur_time < (start_time + end_time_offset)) {
-      int handled  = lcm_->handleTimeout(10);  // timeout is in msec -
-                                               // should be safely
-                                               // bigger than e.g. a
-                                               // 200Hz input rate
+    while (cur_time_ms < (start_time_ms + end_time_offset_ms)) {
+      // The argument to handleTimeout is in msec, and should be
+      // safely bigger than e.g. a 200Hz input rate.
+      int handled  = lcm_->handleTimeout(10);
       if (handled <= 0) {
         std::cerr << "Failed to receive LCM status." << std::endl;
         return;
       }
 
-      if (start_time == -1) {
-        start_time = iiwa_status_.timestamp;
+      if (start_time_ms == -1) {
+        start_time_ms = iiwa_status_.timestamp;
       }
-      cur_time = iiwa_status_.timestamp;
+      cur_time_ms = iiwa_status_.timestamp;
 
-      const double cur_traj_time =
-          static_cast<double>(cur_time - start_time) / 1e3;
-      const auto desired_next = pp_traj.value(cur_traj_time);
+      const double cur_traj_time_s =
+          static_cast<double>(cur_time_ms - start_time_ms) / 1e3;
+      const auto desired_next = pp_traj.value(cur_traj_time_s);
 
       iiwa_command.timestamp = iiwa_status_.timestamp;
 
