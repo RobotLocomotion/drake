@@ -85,6 +85,56 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   }
 
   /**
+   * Add a cost to the initial state.
+   */
+  template <typename ConstraintT>
+  void AddInitialCost(std::shared_ptr<ConstraintT> constraint) {
+    opt_problem_.AddCost(constraint, {x_vars_.head(num_states_)});
+  }
+
+  /**
+   * Add a cost to the initial state.
+   *
+   * @param f A callable which meets the requirments of
+   * OptimizationProblem::AddCost().
+  */
+  template <typename F>
+  typename std::enable_if<
+      !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
+      std::shared_ptr<Constraint>>::type
+  AddInitialCost(F&& f) {
+    auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
+    AddInitialCost(c);
+    return c;
+  }
+
+
+  /**
+   * Add a cost to the final state and total time.
+   *
+   * @param constraint A constraint which expects total time as the
+   * first element of x when Eval is invoked, followed by the final
+   * state (num_states additional elements).
+   */
+  void AddFinalCost(std::shared_ptr<Constraint> constraint);
+
+  /**
+   * Add a cost to the final state and total time.
+   *
+   * @param f A callable which meets the requirments of
+   * OptimizationProblem::AddCost().
+   */
+  template <typename F>
+  typename std::enable_if<
+      !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
+      std::shared_ptr<Constraint>>::type
+  AddFinalCost(F&& f) {
+    auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
+    AddFinalCost(c);
+    return c;
+  }
+
+  /**
    * Solve the nonlinear program and return the resulting trajectory.
    *
    * @param timespan_init The initial guess for the timespan of
