@@ -96,16 +96,15 @@ class DRAKERBM_EXPORT RigidBodyTree {
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
-   * Returns an integer that can be used to uniquely identify a model instance
-   * within this rigid body tree. Note that this method is not thread safe!
+   * Returns a new model instance ID, which can be used to uniquely identify
+   * the model instance. This method is not thread safe!
    */
-  int get_next_model_instance_id() { return next_model_instance_id_++; }
+  int get_new_model_instance_id() { return number_of_model_instances_++; }
 
   /**
-   * Returns an integer that will be used as a unique ID for the next model
-   * instance to be added within the rigid body tree.
+   * Returns the number of model instances in the tree.
    */
-  int get_current_model_instance_id() { return next_model_instance_id_; }
+  int get_number_of_model_instances() { return number_of_model_instances_; }
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
@@ -827,9 +826,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // The number of velocity states in this rigid body tree.
   int num_velocities_{};
 
-  // Remembers the ID that should be assigned to the next model instance that is
-  // added to this rigid body tree.
-  int next_model_instance_id_{};
+  // Remembers the number of model instances in this rigid body tree. It's also
+  // used to assign a model instance ID to a new model instance when it is added
+  // to this tree.
+  int number_of_model_instances_{};
 
   // helper functions for contactConstraints
   template <typename Scalar>
