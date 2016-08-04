@@ -118,6 +118,10 @@ For complex changes, especially those that will span multiple PRs, please
 open a GitHub issue and solicit design feedback before you invest a lot of
 time in code.
 
+Before your submit a pull request, please consult the
+:ref:`Code Review Checklist <code-review-checklist>`,
+where a list of the most frequent problems are collected.
+
 Be prepared to engage in active code review on your pull requests.  The Drake
 code review process has two phases: feature review and platform review. You
 are responsible for finding reviewers, and for providing them the information
@@ -211,6 +215,7 @@ Programming Style Notes
 .. toctree::
     :maxdepth: 1
 
+    code_review_checklist
     code_style_guide
     code_style_tools
 
