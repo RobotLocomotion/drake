@@ -105,8 +105,8 @@
     return $self->centerOfMass(cache, model_instance_id);
   }
 
-  Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<double>& cache, const std::set<int>& robotnum = default_robot_num_set, bool in_terms_of_qdot = false) const {
-    return $self->centerOfMassJacobian(cache, robotnum, in_terms_of_qdot);
+  Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<double>& cache, const std::set<int>& model_instance_ids = default_model_instance_id_set, bool in_terms_of_qdot = false) const {
+    return $self->centerOfMassJacobian(cache, model_instance_ids, in_terms_of_qdot);
   }
 
   Eigen::VectorXd getRandomConfiguration() const {
