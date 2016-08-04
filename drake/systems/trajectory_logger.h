@@ -2,10 +2,11 @@
 #include "drake/systems/vector.h"
 
 namespace drake {
-/* Implements a Drake System (@see drake/system/System.h) that saves the
-** entire simulated output in memory. This is useful for testing and
-** debugging the simulation results
-*/
+/**
+ * Implements a Drake System (@see drake/system/System.h) that saves the
+ * entire simulated output in memory. This is useful for testing and
+ * debugging the simulation results
+ */
 template <template <typename> class Vector>
 struct TimeSampleTrajectory {
   std::vector<double> time;
