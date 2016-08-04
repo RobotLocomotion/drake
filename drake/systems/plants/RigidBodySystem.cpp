@@ -898,7 +898,8 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
 
 void RigidBodySystem::AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
   // first add the urdf to the rigid body tree
   drake::parsers::urdf::AddRobotFromURDFString(urdf_string, root_dir,
                                                floating_base_type, tree.get());
@@ -911,13 +912,11 @@ void RigidBodySystem::AddModelInstanceFromUrdfString(
   parseURDF(*this, &xml_doc);
 }
 
-// TODO(liang.fok) Remove this method once the URDF parser emits a Model
-// container that contains information needed by both the RigidBodySystem and
-// RigidBodyTree.
 void RigidBodySystem::AddModelInstanceFromUrdfFile(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
   // Adds the URDF to the rigid body tree.
   drake::parsers::urdf::AddRobotFromURDF(urdf_filename, floating_base_type,
                                          weld_to_frame, tree.get());
@@ -937,7 +936,8 @@ void RigidBodySystem::AddModelInstanceFromUrdfFile(
 void RigidBodySystem::AddModelInstanceFromSdfFile(
     const string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
   // Adds the robot to the rigid body tree.
   drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
                                        weld_to_frame, tree.get());
@@ -957,7 +957,8 @@ void RigidBodySystem::AddModelInstanceFromSdfFile(
 void RigidBodySystem::AddModelInstanceFromFile(
     const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
   spruce::path p(filename);
   auto ext = p.extension();
 
