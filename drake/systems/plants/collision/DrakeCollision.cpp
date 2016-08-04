@@ -1,11 +1,9 @@
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
-#include <iostream>
-
-#include "drake/common/drake_assert.h"
 #ifdef BULLET_COLLISION
 #include "drake/systems/plants/collision/bullet_model.h"
 #endif
+#include "drake/systems/plants/collision/unusable_model.h"
 
 using namespace std;
 using namespace Eigen;
@@ -19,12 +17,7 @@ const bitmask DEFAULT_GROUP(1);
 unique_ptr<Model> newModel() {
 #ifdef BULLET_COLLISION
   return unique_ptr<Model>(new BulletModel());
-#else
-  DRAKE_ABORT_UNLESS(!"DrakeCollision must be compiled with Bullet.");
-  // This return statement is actually never reached.
-  // It is placed here to avoid a compiler error on not having a return
-  // statement.
-  return unique_ptr<Model>();
 #endif
+  return unique_ptr<Model>(new UnusableModel());
 }
 };
