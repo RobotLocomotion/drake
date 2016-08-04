@@ -393,8 +393,11 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
  public:
-  RigidBodyForceElement(RigidBodySystem& sys_in, const std::string& name_in)
-      : sys(sys_in), name(name_in) {}
+  RigidBodyForceElement(RigidBodySystem& sys_in, const std::string& name_in,
+      int model_instance_id) :
+          sys(sys_in),
+          name(name_in),
+          model_instance_id_(model_instance_id) {}
   virtual ~RigidBodyForceElement() {}
 
   virtual size_t getNumInputs() const { return 0; }
@@ -406,6 +409,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
  protected:
   RigidBodySystem& sys;
   std::string name;
+  int model_instance_id_{0};
 };
 
 /** spatialForceInFrameToJointTorque
@@ -425,7 +429,7 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
 class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
  public:
   RigidBodyPropellor(RigidBodySystem& sys, tinyxml2::XMLElement* node,
-                     const std::string& name);
+                     const std::string& name, int model_instance_id);
   ~RigidBodyPropellor() override {}
 
   size_t getNumInputs() const override { return 1; }
@@ -468,7 +472,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
     : public RigidBodyForceElement {
  public:
   RigidBodySpringDamper(RigidBodySystem& sys, tinyxml2::XMLElement* node,
-                        const std::string& name);
+                        const std::string& name, int model_instance_id);
   ~RigidBodySpringDamper() override {}
 
   Eigen::VectorXd output(

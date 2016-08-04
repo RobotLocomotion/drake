@@ -13,8 +13,6 @@ namespace drake {
 namespace parsers {
 namespace sdf {
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a SDF model to a rigid body system. The model's frame is equal to the
 /// world's coordinate frame.
 ///
@@ -27,13 +25,20 @@ namespace sdf {
 /// root to the existing rigid body tree.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+///
+/// @param[out] model_instance_id_map A pointer to a map where the key is the
+/// name of the model whose instance was just added to this `RigidBodySystem`
+/// and it's `RigidBodyTree` and the value is the unique model instance ID that
+/// was assigned to the instance. This parameter may not be `nullptr`. A
+/// `std::runtime_error` is thrown if a model instance is created whose name is
+/// already in this map.
 DRAKERBM_EXPORT
 void AddRobotFromSDFInWorldFrame(
     const std::string& sdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type, RigidBodyTree* tree);
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    RigidBodyTree* tree,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map);
 
-// TODO(liang.fok) Replace this method with one that returns a Model object.
-//
 /// Adds a SDF model to a rigid body system.
 ///
 /// @param[in] urdf_filename The URDF file containing the model to be added.
@@ -47,11 +52,20 @@ void AddRobotFromSDFInWorldFrame(
 /// @param[in] weld_to_frame The frame to which to connect the new model.
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
+///
+/// @param[out] model_instance_id_map A pointer to a map where the key is the
+/// name of the model whose instance was just added to this `RigidBodySystem`
+/// and it's `RigidBodyTree` and the value is the unique model instance ID that
+/// was assigned to the instance. This parameter may not be `nullptr`. A
+/// `std::runtime_error` is thrown if a model instance is created whose name is
+/// already in this map.
 DRAKERBM_EXPORT
-void AddRobotFromSDF(const std::string& sdf_filename,
-                     const DrakeJoint::FloatingBaseType floating_base_type,
-                     std::shared_ptr<RigidBodyFrame> weld_to_frame,
-                     RigidBodyTree* tree);
+void AddRobotFromSDF(
+	const std::string& sdf_filename,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map);
 
 }  // namespace sdf
 }  // namespace parsers

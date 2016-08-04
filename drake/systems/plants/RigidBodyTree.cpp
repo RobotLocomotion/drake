@@ -63,8 +63,12 @@ RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type)
     : RigidBodyTree() {
+  // Creates a local RigidBodyTree::ModelToInstanceIDMap.
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
+      new RigidBodyTree::ModelToInstanceIDMap());
+  // Adds the model defined in urdf_filename to this tree.
   drake::parsers::urdf::AddRobotFromURDF(urdf_filename, floating_base_type,
-                                         this);
+                                         this, map.get());
 }
 
 RigidBodyTree::RigidBodyTree(void)
@@ -2110,9 +2114,11 @@ void RigidBodyTree::AddModelInstanceFromUrdfString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
+      new RigidBodyTree::ModelToInstanceIDMap());
   drake::parsers::urdf::AddRobotFromURDFString(xml_string, package_map,
                                                root_dir, floating_base_type,
-                                               weld_to_frame, this);
+                                               weld_to_frame, this, map.get());
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -2122,9 +2128,11 @@ void RigidBodyTree::AddModelInstanceFromUrdfString(
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
+      new RigidBodyTree::ModelToInstanceIDMap());
   drake::parsers::urdf::AddRobotFromURDFString(xml_string, package_map,
                                                root_dir, floating_base_type,
-                                               weld_to_frame, this);
+                                               weld_to_frame, this, map.get());
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -2133,8 +2141,11 @@ void RigidBodyTree::AddModelInstanceFromUrdfFile(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
+      new RigidBodyTree::ModelToInstanceIDMap());
   drake::parsers::urdf::AddRobotFromURDF(
-      urdf_filename, package_map, floating_base_type, weld_to_frame, this);
+      urdf_filename, package_map, floating_base_type, weld_to_frame, this,
+      map.get());
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -2143,8 +2154,11 @@ void RigidBodyTree::AddModelInstanceFromUrdfFile(
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
+      new RigidBodyTree::ModelToInstanceIDMap());
   drake::parsers::urdf::AddRobotFromURDF(
-      urdf_filename, package_map, floating_base_type, weld_to_frame, this);
+      urdf_filename, package_map, floating_base_type, weld_to_frame, this,
+      map.get());
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -2152,8 +2166,10 @@ void RigidBodyTree::AddModelInstanceFromSdfFile(
     const std::string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
+      new RigidBodyTree::ModelToInstanceIDMap());
   drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
-                                       weld_to_frame, this);
+                                       weld_to_frame, this, map.get());
 }
 
 // Explicit template instantiations for massMatrix.

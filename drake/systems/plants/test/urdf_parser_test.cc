@@ -50,8 +50,10 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 
   // Instantiates a rigid body tree using the above-defined URDF string.
   std::unique_ptr<RigidBodyTree> rigid_body_tree(new RigidBodyTree());
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
+      new RigidBodyTree::ModelToInstanceIDMap());
   drake::parsers::urdf::AddRobotFromURDFString(urdf_string,
-    rigid_body_tree.get());
+    rigid_body_tree.get(), map.get());
 
   // Obtains the child link of food_joint.
   RigidBody* foo_joint_link = rigid_body_tree->findJoint("foo_joint");

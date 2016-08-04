@@ -333,8 +333,9 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
 }
 
 RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem& sys, XMLElement* node,
-                                       const std::string& name)
-    : RigidBodyForceElement(sys, name),
+                                       const std::string& name,
+                                       int model_instance_id)
+    : RigidBodyForceElement(sys, name, model_instance_id),
       scale_factor_thrust(1.0),
       scale_factor_moment(1.0),
       lower_limit(-numeric_limits<double>::infinity()),
@@ -367,8 +368,9 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem& sys, XMLElement* node,
 
 RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
                                              XMLElement* node,
-                                             const std::string& name)
-    : RigidBodyForceElement(sys, name),
+                                             const std::string& name,
+                                             int model_instance_id)
+    : RigidBodyForceElement(sys, name, model_instance_id),
       stiffness(0.0),
       damping(0.0),
       rest_length(0.0) {
@@ -418,7 +420,8 @@ RigidBodyMagnetometer::RigidBodyMagnetometer(
 RigidBodyAccelerometer::RigidBodyAccelerometer(
     RigidBodySystem const& sys, const std::string& name,
     const std::shared_ptr<RigidBodyFrame> frame)
-    : RigidBodySensor(sys, name, frame), gravity_compensation(false) {}
+    : RigidBodySensor(sys, name, frame),
+      gravity_compensation(false) {}
 
 Eigen::VectorXd RigidBodyAccelerometer::output(
     const double& t, const KinematicsCache<double>& rigid_body_state,
@@ -689,40 +692,63 @@ double RigidBodyDepthSensor::min_range() const { return min_range_; }
 
 double RigidBodyDepthSensor::max_range() const { return max_range_; }
 
-void parseForceElement(RigidBodySystem& sys, XMLElement* node) {
+void parseUrdfForceElement(RigidBodySystem& sys, XMLElement* node,
+    int model_instance_id) {
   string name = node->Attribute("name");
 
   if (XMLElement* propellor_node = node->FirstChildElement("propellor")) {
     sys.addForceElement(allocate_shared<RigidBodyPropellor>(
         Eigen::aligned_allocator<RigidBodyPropellor>(), sys, propellor_node,
-        name));
+        name, model_instance_id));
   } else if (XMLElement* spring_damper_node =
                  node->FirstChildElement("linear_spring_damper")) {
     sys.addForceElement(allocate_shared<RigidBodySpringDamper>(
         Eigen::aligned_allocator<RigidBodySpringDamper>(), sys,
-        spring_damper_node, name));
+        spring_damper_node, name, model_instance_id));
   }
 }
 
-void parseRobot(RigidBodySystem& sys, XMLElement* node) {
+void parseUrdfModel(RigidBodySystem& sys, XMLElement* node,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
-  string robotname = node->Attribute("name");
+  string model_name = node->Attribute("name");
+
+  // Obtains the model instance ID. Throws an exception if the model instance ID
+  // cannot be determined.
+  if (model_instance_id_map->find(model_name) == model_instance_id_map->end()) {
+    throw std::runtime_error("Model named \"" + model_name + "\" does not "
+        "exist in the model_instance_id_map.");
+  }
+  int model_instance_id = (*model_instance_id_map)[model_name];
 
   // parse force elements
   for (XMLElement* force_node = node->FirstChildElement("force_element");
        force_node; force_node = force_node->NextSiblingElement("force_element"))
-    parseForceElement(sys, force_node);
+    parseUrdfForceElement(sys, force_node, model_instance_id);
 }
 
-void parseURDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
+// Parses a single model from a URDF specification. Adds the modeling elements
+// that are stored in the RigidBodySystem to @p sys.
+//
+// @param[out] sys The `RigidBodySystem` to which the modeling elements should
+// be added.
+//
+// @param[in] xml_doc The XML document containing the URDF specification.
+//
+// @param[out] model_instance_id_map A pointer to a map where the key is the
+// name of the model whose instance was just added to this `RigidBodySystem`
+// and it's `RigidBodyTree` and the value is the unique model instance ID that
+// was assigned to the instance. This parameter may be `nullptr`.
+void parseUrdf(RigidBodySystem& sys, XMLDocument* xml_doc,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
   XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node)
     throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
-  parseRobot(sys, node);
+  parseUrdfModel(sys, node, model_instance_id_map);
 }
 
-void parseSDFJoint(RigidBodySystem& sys, int model_instance_id,
+void parseSdfJoint(RigidBodySystem& sys, int model_instance_id,
                    XMLElement* node, PoseMap& pose_map) {
   // Obtains the name of the joint.
   const char* attr = node->Attribute("name");
@@ -738,7 +764,7 @@ void parseSDFJoint(RigidBodySystem& sys, int model_instance_id,
   }
 }
 
-void parseSDFLink(RigidBodySystem& sys, int model_instance_id, XMLElement* node,
+void parseSdfLink(RigidBodySystem& sys, int model_instance_id, XMLElement* node,
                   PoseMap& pose_map) {
   // Obtains the name of the body.
   const char* attr = node->Attribute("name");
@@ -794,8 +820,8 @@ void parseSDFLink(RigidBodySystem& sys, int model_instance_id, XMLElement* node,
   }
 }
 
-void parseSDFModel(RigidBodySystem& sys, int model_instance_id,
-    XMLElement* node) {
+void parseSdfModel(RigidBodySystem& sys, XMLElement* node,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
   // A pose map is necessary since SDF specifies almost everything in the
   // global coordinate frame. The pose map contains transforms from a link's
   // coordinate frame to the model's coordinate frame.
@@ -804,19 +830,29 @@ void parseSDFModel(RigidBodySystem& sys, int model_instance_id,
   // Obtains the name of the model.
   if (!node->Attribute("name"))
     throw runtime_error("Error: your model must have a name attribute");
+  std::string model_name = node->Attribute("name");
+
+  // Obtains the model instance ID. Throws an exception if the model instance ID
+  // cannot be determined.
+  if (model_instance_id_map->find(model_name) == model_instance_id_map->end()) {
+    throw std::runtime_error("Model named \"" + model_name + "\" does not "
+        "exist in the model_instance_id_map.");
+  }
+  int model_instance_id = (*model_instance_id_map)[model_name];
 
   // Parses each link element within the model.
   for (XMLElement* elnode = node->FirstChildElement("link"); elnode;
        elnode = elnode->NextSiblingElement("link"))
-    parseSDFLink(sys, model_instance_id, elnode, pose_map);
+    parseSdfLink(sys, model_instance_id, elnode, pose_map);
 
   // Parses each joint element within the model.
   for (XMLElement* elnode = node->FirstChildElement("joint"); elnode;
        elnode = elnode->NextSiblingElement("joint"))
-    parseSDFJoint(sys, model_instance_id, elnode, pose_map);
+    parseSdfJoint(sys, model_instance_id, elnode, pose_map);
 }
 
-void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
+void parseSdf(RigidBodySystem& sys, XMLDocument* xml_doc,
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
   XMLElement* node = xml_doc->FirstChildElement("sdf");
 
   if (!node) {
@@ -824,75 +860,11 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
         "ERROR: This xml file does not contain an sdf tag");
   }
 
-  // Obtains the final model instance ID after all models in the SDF are added
-  // to the RigidBodyTree. This is simply the current model instance ID since
-  // the models in this SDF were already added to the rigid body tree prior to
-  // this method being called. It's possible for final_model_instance_id to be
-  // greater than the number of models in the SDF file since multiple SDF files
-  // can be loaded into this RigidBodySystem. In fact, the same SDF file can be
-  // added to this RigidBodySystem multiple times. This is feasible since all
-  // modeling elements that belong to a particular model instance are all
-  // assigned the same model instance ID. This model instance ID is unique among
-  // all model instances in the rigid body tree.
-  int final_model_instance_id =
-      sys.getRigidBodyTree()->get_number_of_model_instances();
-
-  // Computes the number of models in the SDF. This includes only the models
-  // that are not part of the world. This is correct because even though
-  // RigidBodyTree assigns a unique model instance ID to each model regardless
-  // of whether it is part of the world, the models that are part of the world
-  // are added first and thus have smaller model instance IDs. Since the models
-  // that are not part of the world are the ones that need to be parsed by the
-  // RigidBodySystem, we only count the models that are not part of the world.
-  int number_of_models_in_sdf = 0;
-  {
-    for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
-         elnode = elnode->NextSiblingElement("model")) {
-      ++number_of_models_in_sdf;
-    }
-  }
-
-  // Computes the ID of the first model in the SDF. Since this SDF was just
-  // added to the RigidBodyTree, the model instance ID of the first model in the
-  // SDF is simply the final_model_instance_id minus the number of models in the
-  // SDF that are not part of the world.
-  int model_instance_id = final_model_instance_id - number_of_models_in_sdf;
-
   // Parses each model in the SDF. This includes parsing and instantiating
   // simulated sensors as specified by the SDF description.
-  for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
-       elnode = elnode->NextSiblingElement("model")) {
-    parseSDFModel(sys, model_instance_id++, elnode);
-  }
-
-  // Verifies that the model_instance_id is equal to the
-  // final_model_instance_id. They should
-  // match since the number of models we just parsed is equal to:
-  //
-  //     number_of_models_in_sdf
-  //
-  // And initially prior to parsing the models in the SDF:
-  //
-  //     model_instance_id = final_model_instance_id - number_of_models_in_sdf
-  //
-  // Since model_instance_id is incremented each time a model in the SDF is
-  // parsed, its final value is equal to its original value plus
-  // number_of_models_in_sdf.
-  //
-  // Thus:
-  //
-  //     model_instance_id = final_model_instance_id - number_of_models_in_sdf +
-  //                number_of_models_in_sdf
-  //              = final_model_instance_id
-  //
-  // Hence, at this point in the code, model_instance_id should equal
-  // final_model_instance_id.
-  if (model_instance_id != final_model_instance_id) {
-    throw std::runtime_error(
-        "RigidBodySystem.cpp: parseSDF: ERROR: the final model instance ID (" +
-        std::to_string(model_instance_id) +
-        ") is not equal to the expected final model instance ID (" +
-        std::to_string(final_model_instance_id) + ")");
+  for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
+       model_node = model_node->NextSiblingElement("model")) {
+    parseSdfModel(sys, model_node, model_instance_id_map);
   }
 }
 
@@ -900,16 +872,25 @@ void RigidBodySystem::AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
-  // first add the urdf to the rigid body tree
-  drake::parsers::urdf::AddRobotFromURDFString(urdf_string, root_dir,
-                                               floating_base_type, tree.get());
+  // Creates a local RigidBodyTree::ModelToInstanceIDMap if no such map was
+  // provided.
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> local_map;
+  if (model_instance_id_map == nullptr) {
+    local_map.reset(new RigidBodyTree::ModelToInstanceIDMap());
+    model_instance_id_map = local_map.get();
+  }
 
-  // now parse additional tags understood by rigid body system (actuators,
-  // sensors, etc)
+  // Adds the URDF to the RigidBodyTree.
+  drake::parsers::urdf::AddRobotFromURDFString(
+      urdf_string, root_dir, floating_base_type, tree.get(),
+      model_instance_id_map);
+
+  // Parses the additional tags understood by the RigidBodySystem. These include
+  // actuators, sensors, etc.
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
 
-  parseURDF(*this, &xml_doc);
+  parseUrdf(*this, &xml_doc, model_instance_id_map);
 }
 
 void RigidBodySystem::AddModelInstanceFromUrdfFile(
@@ -917,9 +898,18 @@ void RigidBodySystem::AddModelInstanceFromUrdfFile(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
+  // Creates a local RigidBodyTree::ModelToInstanceIDMap if no such map was
+  // provided.
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map;
+  if (model_instance_id_map == nullptr) {
+    map.reset(new RigidBodyTree::ModelToInstanceIDMap());
+    model_instance_id_map = map.get();
+  }
+
   // Adds the URDF to the rigid body tree.
-  drake::parsers::urdf::AddRobotFromURDF(urdf_filename, floating_base_type,
-                                         weld_to_frame, tree.get());
+  drake::parsers::urdf::AddRobotFromURDF(
+      urdf_filename, floating_base_type, weld_to_frame, tree.get(),
+      model_instance_id_map);
 
   // Parses additional tags understood by rigid body system (e.g., actuators,
   // sensors, etc).
@@ -930,7 +920,7 @@ void RigidBodySystem::AddModelInstanceFromUrdfFile(
         "RigidBodySystem::AddModelInstanceFromUrdfFile: ERROR: Failed to parse "
         "xml in file " + urdf_filename + "\n" + xml_doc.ErrorName());
   }
-  parseURDF(*this, &xml_doc);
+  parseUrdf(*this, &xml_doc, model_instance_id_map);
 }
 
 void RigidBodySystem::AddModelInstanceFromSdfFile(
@@ -938,9 +928,18 @@ void RigidBodySystem::AddModelInstanceFromSdfFile(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
+  // Creates a local RigidBodyTree::ModelToInstanceIDMap if no such map was
+  // provided.
+  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map;
+  if (model_instance_id_map == nullptr) {
+    map.reset(new RigidBodyTree::ModelToInstanceIDMap());
+    model_instance_id_map = map.get();
+  }
+
   // Adds the robot to the rigid body tree.
-  drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
-                                       weld_to_frame, tree.get());
+  drake::parsers::sdf::AddRobotFromSDF(
+      sdf_filename, floating_base_type, weld_to_frame, tree.get(),
+      model_instance_id_map);
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).
@@ -951,7 +950,7 @@ void RigidBodySystem::AddModelInstanceFromSdfFile(
         "RigidBodySystem::AddModelInstanceFromSdfFile: ERROR: Failed to parse"
         "xml in file " + sdf_filename + "\n" + xml_doc.ErrorName());
   }
-  parseSDF(*this, &xml_doc);
+  parseSdf(*this, &xml_doc, model_instance_id_map);
 }
 
 void RigidBodySystem::AddModelInstanceFromFile(
@@ -966,9 +965,11 @@ void RigidBodySystem::AddModelInstanceFromFile(
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
   if (ext == ".urdf") {
-    AddModelInstanceFromUrdfFile(filename, floating_base_type, weld_to_frame);
+    AddModelInstanceFromUrdfFile(filename, floating_base_type, weld_to_frame,
+        model_instance_id_map);
   } else if (ext == ".sdf") {
-    AddModelInstanceFromSdfFile(filename, floating_base_type, weld_to_frame);
+    AddModelInstanceFromSdfFile(filename, floating_base_type, weld_to_frame,
+      model_instance_id_map);
   } else {
     throw runtime_error(
         "RigidBodySystem::AddModelInstanceFromFile: ERROR: Unknown file "
