@@ -34,7 +34,7 @@ Vector3d getMagnetometerOutput(shared_ptr<RigidBodySystem> const& sys,
 GTEST_TEST(testMagnetometer, AllTests) {
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(
+  rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
       floating_base_type);
 

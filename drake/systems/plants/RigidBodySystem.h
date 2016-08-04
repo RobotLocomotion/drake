@@ -159,50 +159,85 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
         direct_feedthrough(false) {
-    // tree = std::allocate_shared<RigidBodyTree>(
-    //     Eigen::aligned_allocator<RigidBodyTree>());
-    // // this crashed g++-4.7
     tree = std::shared_ptr<RigidBodyTree>(new RigidBodyTree());
   }
 
   virtual ~RigidBodySystem() {}
 
-  void addRobotFromURDFString(
-      const std::string& xml_string, const std::string& root_dir = ".",
+  /**
+   * Reads a model specification from a URDF string and adds an instance of the
+   * model into the `RigidBodyTree` contained within this `RigidBodySystem`.
+   *
+   * @param[in] urdf_string The URDF specification.
+   *
+   * @param[in] root_dir The root directory in which to search for files
+   * mentioned in the URDF.
+   *
+   * @param[in] floating_base_type The type of joint that connects the model
+   * instance's root to the existing `RigidBodyTree` within this
+   * `RigidBodySystem`.
+   */
+  void AddModelInstanceFromUrdfString(
+      const std::string& urdf_string, const std::string& root_dir = ".",
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW);
-  void addRobotFromURDF(
+
+  /**
+   * Reads a model specification from a URDF file and adds an instance of the
+   * model into the `RigidBodyTree` contained within this `RigidBodySystem`.
+   *
+   * @param[in] urdf_filename The name of the file containing the URDF
+   * specification.
+   *
+   * @param[in] floating_base_type The type of joint that connects the model
+   * instance's root to the existing `RigidBodyTree` within this
+   * `RigidBodySystem`.
+   *
+   * @param[in] weld_to_frame The frame used for connecting the new model
+   * instances to the `RigidBodyTree` within this `RigidBodySystem`. Note that
+   * this parameter specifies both an existing frame in the `RigidBodyTree` and
+   * the offset from this frame to the frame belonging to the new model
+   * instances' root bodies. This is an optional parameter. If it is `nullptr`,
+   * the newly-created model instances are connected to the world with zero
+   * offset and rotation relative to the world's frame.
+   */
+  void AddModelInstanceFromUrdfFile(
       const std::string& urdf_filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
-   * Adds the models contained within an SDF file to this rigid body system.
-   * The models within a particular SDF file can be added multiple times. Each
-   * model is uniquely identified by a model instance ID that is assigned to the
-   * rigid bodies that belong to the model.
+   * Adds one instance of each model defined within an SDF file to this
+   * `RigidbodySystem` and its `RigidBodyTree`.
    *
-   * @param[in] sdf_filename The name of the SDF file containing the models to
-   * add to this rigid body system.
+   * Each model instance is uniquely identified by a model instance ID that is
+   * assigned at the time the model instance is added. Since model instances are
+   * distinguished by a model instance ID, multiple instances of the models
+   * within the SDF file can be added into a single `RigidBodySystem` and its
+   * `RigidBodyTree`.
+   *
+   * @param[in] sdf_filename The name of the SDF file containing the models.
+   * One instance of each of these models is added to this `RigidBodySystem` and
+   * it's `RigidBodyTree`.
    *
    * @param[in] floating_base_type The type of floating base to use to connect
-   * the models within the SDF file to the world.
+   * the newly created model instances to the world.
    *
-   * @param[in] weld_to_frame The frame used for connecting the models in the
-   * SDF to the rigid body tree within this rigid body system. Note that this
-   * specifies both the existing frame in the rigid body tree to connect the
-   * new models to and the offset from this frame to the new models' root
-   * bodies. This is an optional parameter. If it is `nullptr`, the models
-   * within the SDF are connected to the world with zero offset and rotation
-   * relative to the world's frame.
+   * @param[in] weld_to_frame The frame used for connecting the new model
+   * instances to the `RigidBodyTree` within this `RigidBodySystem`. Note that
+   * this parameter specifies both an existing frame in the `RigidBodyTree` and
+   * the offset from this frame to the frame belonging to the new model
+   * instances' root bodies. This is an optional parameter. If it is `nullptr`,
+   * the newly-created model instances are connected to the world with zero
+   * offset and rotation relative to the world's frame.
    */
-  void addRobotFromSDF(const std::string& sdf_filename,
+  void AddModelInstanceFromSdfFile(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
                            DrakeJoint::QUATERNION,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
-  void addRobotFromFile(
+  void AddModelInstanceFromFile(
       const std::string& filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
