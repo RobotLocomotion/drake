@@ -78,7 +78,7 @@ GTEST_TEST(testMosek, MosekQuadraticCost) {
        -1, 0, 2;
   Eigen::Vector3d c;
   c << 0, -1, 0;
-  prog2.AddQuadraticCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
+  prog2.AddCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
   // Build the constraint matrix and send it to the program.
   Eigen::Vector3d linearcon;
   linearcon << 1, 1, 1;
@@ -86,7 +86,7 @@ GTEST_TEST(testMosek, MosekQuadraticCost) {
       std::make_shared<QuadraticConstraint>(
           Eigen::Matrix3d::Constant(0), linearcon, 1,
           std::numeric_limits<double>::infinity());
-  prog2.AddGenericConstraint(ptrtocon);
+  prog2.AddConstraint(ptrtocon);
   // Create the bounding box.
   Eigen::Vector3d bboxlow, bboxhigh;
   bboxlow << 0, 0, 0;
@@ -117,7 +117,7 @@ GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
        -1, 0, 2;
   Eigen::Vector3d c;
   c << 0, -1, 0;
-  prog2.AddQuadraticCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
+  prog2.AddCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
   // Create the constraint matrix, and send it to the program.
   Eigen::Vector3d linearcon;
   linearcon << 1, 1, 1;
@@ -128,7 +128,7 @@ GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
   std::shared_ptr<QuadraticConstraint> ptrtocon =
       std::make_shared<QuadraticConstraint>(quadcon, linearcon, 1,
       std::numeric_limits<double>::infinity());
-  prog2.AddGenericConstraint(ptrtocon);
+  prog2.AddConstraint(ptrtocon);
   // Create the bounding box.
   Eigen::Vector3d bboxlow, bboxhigh;
   bboxlow << 0, 0, 0;
