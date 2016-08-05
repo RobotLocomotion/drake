@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#3056][] Renamed methods that add model instances to `RigidBodyTree` and `RigidBodySystem`.
  - [#3049][] Changed `AddRobotFromURDF*` to be `AddModelInstanceFromURDF*`.
  - [#3003][] Made `RigidBodyFrame` member variables private. Added accessors.
  - [#3010][] All header file names under `solvers` are now spelled with lower case and underscore names.
@@ -123,3 +124,4 @@ Changes in version v0.9.11 and before are not provided.
 [#3003]: https://github.com/RobotLocomotion/drake/issues/3003
 [#3010]: https://github.com/RobotLocomotion/drake/issues/3010
 [#3049]: https://github.com/RobotLocomotion/drake/issues/3049
+[#3056]: https://github.com/RobotLocomotion/drake/issues/3056
