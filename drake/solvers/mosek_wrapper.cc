@@ -572,7 +572,6 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     // Create empty variables to push to the constructor,
     // create the object and optimize.
     std::vector<double> linobj;
-    Eigen::MatrixXd linear_cons;
     Eigen::MatrixXd quad_obj;
     double constant_eqn_term;
     std::vector<int> sdp_cone_subscripts;
