@@ -127,7 +127,7 @@ void RigidBody::setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
 }
 
 const DrakeCollision::bitmask& RigidBody::getCollisionFilterIgnores() const {
-  return collision_filter_ignores;
+  return collision_filter_ignores_;
 }
 void RigidBody::setCollisionFilterIgnores(const DrakeCollision::bitmask&
     ignores) {
