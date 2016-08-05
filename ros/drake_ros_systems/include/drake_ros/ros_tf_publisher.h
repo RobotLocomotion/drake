@@ -22,8 +22,8 @@ using drake::RigidBodyDepthSensor;
 namespace drake {
 namespace ros {
 
-/** DrakeRosTfPublisher<RobotStateVector>
- * @brief A system that takes the current state of Drake and publishes the
+/**
+ * A system that takes the current state of Drake and publishes the
  * transform messages on ROS topic /tf.
  *
  * @concept{system_concept}
@@ -54,11 +54,15 @@ class DrakeRosTfPublisher {
    * The constructor. It takes a rigid body tree as an input parameter to get
    * semantic information about the input values.
    *
-   * @param rigid_body_tree The rigid body tree being modeled. This parameter
-   * is necessary to understand the meaning of the input data to this system.
+   * It checks the ROS parameter server for a boolean parameter called
+   * "enable_tf_publisher". If this parameter exists and is false, this
+   * class disables itself. Otherwise, this class is enabled.
+   *
+   * @param rigid_body_tree The rigid body tree being modeled.
    */
   explicit DrakeRosTfPublisher(
-      const std::shared_ptr<RigidBodyTree> rigid_body_tree)
+      const std::shared_ptr<RigidBodyTree> rigid_body_tree,
+      const std::map<std::string, int>& model_instances)
       : rigid_body_tree_(rigid_body_tree), enable_tf_publisher_(true) {
     // Queries the ROS parameter server for a boolean parameter in
     // "/drake/enable_tf_publisher". This parameter is used to control whether
