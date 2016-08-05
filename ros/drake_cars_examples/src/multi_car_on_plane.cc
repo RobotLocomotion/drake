@@ -8,11 +8,13 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
+#include "drake/ros/parameter_server.h"
 #include "drake_ros/ros_tf_publisher.h"
 #include "drake_ros/ros_vehicle_system.h"
 #include "drake_ros/ros_sensor_publisher_joint_state.h"
 #include "drake_ros/ros_sensor_publisher_lidar.h"
 #include "drake_ros/ros_sensor_publisher_odometry.h"
+
 
 using drake::BotVisualizer;
 using drake::SimulationOptions;
@@ -28,60 +30,6 @@ namespace {
 using drake::examples::cars::CreateRigidBodySystem;
 using drake::examples::cars::CreateVehicleSystem;
 using drake::examples::cars::GetCarSimulationDefaultOptions;
-
-// Waits up to kMaxWaitTime for a particular parameter to exist on the ROS
-// parameter server. Throws an std::runtime_error exception if the parameter
-// fails to show up prior to this deadline.
-void WaitForParameter(::ros::NodeHandle& ros_node_handle,
-    const std::string& parameter_name) {
-  // Waits for the parameter to exist on the ROS parameter server.
-  const double kMaxWaitTime = 5.0;
-
-  ::ros::Time begin_time = ::ros::Time::now();
-  while (::ros::ok() && !ros_node_handle.hasParam(parameter_name)
-      && (::ros::Time::now() - begin_time).toSec() < kMaxWaitTime) {
-    ::ros::Duration(0.5).sleep(); // Sleeps for half a second.
-  }
-
-  if (!ros_node_handle.hasParam(parameter_name)) {
-    throw std::runtime_error("ERROR: Failed to obtain parameter \"" +
-        parameter_name + "\" from the ROS parameter server.");
-  }
-}
-
-// Returns a string parameter from the ROS parameter server. Throws an
-// `std::runtime_error` exception if it fails to obtain the parameter.
-std::string GetStringParameter(::ros::NodeHandle &ros_node_handle,
-    const std::string& parameter_name) {
-  WaitForParameter(ros_node_handle, parameter_name);
-
-  // Obtains the parameter from the ROS parameter server.
-  std::string parameter;
-  if (!ros_node_handle.getParam(parameter_name, parameter)) {
-    throw std::runtime_error(
-      "ERROR: Failed to obtain parameter \"" + parameter_name + "\" from "
-      "the ROS parameter server. Please ensure such a parameter is loaded.");
-  }
-
-  return parameter;
-}
-
-// Returns an integer parameter from the ROS parameter server. Throws an
-// `std::runtime_error` exception if it fails to obtain the parameter.
-int GetIntParameter(::ros::NodeHandle &ros_node_handle,
-    const std::string& parameter_name) {
-  WaitForParameter(ros_node_handle, parameter_name);
-
-  // Obtains the parameter from the ROS parameter server.
-  int parameter;
-  if (!ros_node_handle.getParam(parameter_name, parameter)) {
-    throw std::runtime_error(
-      "ERROR: Failed to obtain parameter \"" + parameter_name + "\" from "
-      "the ROS parameter server. Please ensure such a parameter is loaded.");
-  }
-
-  return parameter;
-}
 
 /**
  * This is the main method of the multi-car vehicle simulation. The vehicles
@@ -104,12 +52,12 @@ int DoMain(int argc, const char* argv[]) {
 
   // Instantiates a data structure that maps model instance names to their model
   // instance IDs.
-  std::map<std::string, int> sim_instance_ids;
+  std::map<std::string, int> model_instances;
 
   // Obtains the number of vehicles to simulate.
   int num_vehicles = GetIntParameter(ros_node_handle, "car_count");
 
-  const std::string model_name = "drake_prius";
+  const std::string model_name = "Prius";
 
   // Adds the vehicles to the rigid body system.
   for (int ii = 0; ii < num_vehicles; ++ii) {
@@ -130,51 +78,54 @@ int DoMain(int argc, const char* argv[]) {
           "Failed to find a model instance whose model name is \"" +
           model_name + "\".");
     }
-    sim_instance_ids[model_name + "_" + std::to_string(ii)] =
+    model_instances[model_name + "_" + std::to_string(ii)] =
         instance_ids[model_name];
   }
 
-  std::cout << "==============================================" << std::endl;
-  for(auto it = sim_instance_ids.cbegin(); it != sim_instance_ids.cend();
-      ++it) {
-    std::cout << it->first << " " << it->second << "\n";
-  }
-  std::cout << std::endl;
+  // std::cout << "==============================================" << std::endl;
+  // for(auto it = sim_instance_ids.cbegin(); it != sim_instance_ids.cend();
+  //     ++it) {
+  //   std::cout << it->first << " " << it->second << "\n";
+  // }
+  // std::cout << std::endl;
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
   // Initializes and cascades all of the other systems.
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
 
-  auto visualizer =
-      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
+  // auto visualizer =
+  //     std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
-  auto lidar_publisher = std::make_shared<
-      ::drake::ros::SensorPublisherLidar<RigidBodySystem::StateVector>>(
-      rigid_body_sys);
+  // auto lidar_publisher = std::make_shared<
+  //     ::drake::ros::SensorPublisherLidar<RigidBodySystem::StateVector>>(
+  //     rigid_body_sys);
 
-  auto odometry_publisher = std::make_shared<
-      ::drake::ros::SensorPublisherOdometry<RigidBodySystem::StateVector>>(
-      rigid_body_sys);
+  // auto odometry_publisher = std::make_shared<
+  //     ::drake::ros::SensorPublisherOdometry<RigidBodySystem::StateVector>>(
+  //     rigid_body_sys);
 
   auto tf_publisher = std::make_shared<
-      ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree);
+      ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
+          model_instances);
 
-  auto joint_state_publisher = std::make_shared<
-      ::drake::ros::SensorPublisherJointState<RigidBodySystem::StateVector>>(
-      rigid_body_sys);
+  // auto joint_state_publisher = std::make_shared<
+  //     ::drake::ros::SensorPublisherJointState<RigidBodySystem::StateVector>>(
+  //     rigid_body_sys);
 
-  auto sys =
-      cascade(
-        cascade(
-          cascade(
-            cascade(
-              cascade(
-                vehicle_sys, visualizer),
-              lidar_publisher),
-            odometry_publisher),
-          tf_publisher),
-        joint_state_publisher);
+  auto sys = cascade(vehicle_sys, tf_publisher);
+
+  // auto sys =
+  //     cascade(
+  //         cascade(
+  //             cascade(
+  //                 cascade(
+  //                     cascade(
+  //                         vehicle_sys, visualizer),
+  //                     lidar_publisher),
+  //                 odometry_publisher),
+  //             tf_publisher),
+  //         joint_state_publisher);
 
   // Initializes the simulation options.
   SimulationOptions options = GetCarSimulationDefaultOptions();

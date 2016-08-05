@@ -55,11 +55,15 @@ void PrintUsageInstructions(const std::string& executable_name);
  * floating point value. This parameter is optional. If it is nullptr, the
  * duration is not saved.
  *
+ * @param[out] instance_ids A pointer to the data structure that maps the
+ * model name to the instance ID of the newly instance of the model.
+ *
  * @return A shared pointer to a rigid body system.
  */
 DRAKECARS_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
-    int argc, const char* argv[], double* duration);
+    int argc, const char* argv[], double* duration,
+    RigidBodyTree::ModelToInstanceIDMap* instance_ids);
 
 /**
  * Checks the command line arguments looking for a "--duration" flag followed

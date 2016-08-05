@@ -43,8 +43,13 @@ int do_main(int argc, const char* argv[]) {
   // CreateRigidBodySystem() below.
   double duration = std::numeric_limits<double>::infinity();
 
+  // Instantiates a data structure that maps model instance names to their model
+  // instance IDs.
+  RigidBodyTree::ModelToInstanceIDMap model_instances;
+
   // Initializes the rigid body system.
-  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration);
+  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration,
+      &model_instances);
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
@@ -63,7 +68,8 @@ int do_main(int argc, const char* argv[]) {
       rigid_body_sys);
 
   auto tf_publisher = std::make_shared<
-      ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree);
+      ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
+          model_instances);
 
   auto joint_state_publisher = std::make_shared<
       ::drake::ros::SensorPublisherJointState<RigidBodySystem::StateVector>>(

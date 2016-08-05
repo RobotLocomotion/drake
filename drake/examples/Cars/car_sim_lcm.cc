@@ -27,8 +27,11 @@ int do_main(int argc, const char* argv[]) {
   // CreateRigidBodySystem() below.
   double duration = std::numeric_limits<double>::infinity();
 
+  RigidBodyTree::ModelToInstanceIDMap model_instances;
+
   // Initializes the rigid body system.
-  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration);
+  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration,
+      &model_instances);
 
   // Initializes and cascades all of the other systems.
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);

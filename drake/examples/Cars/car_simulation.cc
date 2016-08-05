@@ -49,9 +49,9 @@ void PrintUsageInstructions(const std::string& executable_name) {
     << std::endl;
 }
 
-std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
-                                                       const char* argv[],
-                                                       double* duration) {
+std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
+    int argc, const char* argv[], double* duration,
+    RigidBodyTree::ModelToInstanceIDMap* instance_ids) {
   if (argc < 2) {
     PrintUsageInstructions(argv[0]);
     exit(EXIT_FAILURE);
@@ -61,8 +61,12 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
+  // Instantiates a null frame.
+  std::shared_ptr<RigidBodyFrame> weld_to_frame;
+
   // Adds a robot model.
-  rigid_body_sys->AddModelInstanceFromFile(argv[1], DrakeJoint::QUATERNION);
+  rigid_body_sys->AddModelInstanceFromFile(argv[1], DrakeJoint::QUATERNION,
+      weld_to_frame, instance_ids);
 
   if (duration != nullptr) {
     // Initializes duration to be infinity.

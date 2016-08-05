@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<!--
+This launch file starts Drake's multi_car_on_plane and loads the necessary
+parameters onto the ROS parameter server.
+
+To run it, first start RViz:
+    $ cd drake_catkin_workspace
+    $ ./install/bin/drake-visualizer
+
+Then:
+
+    $ roslaunch drake_cars_examples multi_cars_on_plane_drake.launch
+-->
+<launch>
+  <include
+    file="$(find drake_cars_examples)/launch/multi_cars_on_plane_desc.xml" />
+  <node
+    name="multi_car_on_plane"
+    pkg="drake_cars_examples"
+    type="multi_car_on_plane" />
+</launch>
