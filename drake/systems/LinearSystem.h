@@ -6,7 +6,7 @@
 namespace drake {
 
 /** AffineSystem<StateVector, InputVector, OutputVector>
- * @brief Builds an affine system from it's state-space matrix coefficients
+ * @brief Builds an affine system from its state-space matrix coefficients
  * @concept{system_concept}
  *
  * Implements @f[
