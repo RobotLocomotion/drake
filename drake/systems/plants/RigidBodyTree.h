@@ -185,7 +185,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * corresponding to the model instances whose masses should be included in the
    * returned value.
    *
-   * @returns the total combined mass of the model instances in
+   * @returns The total combined mass of the model instances in
    * @p model_instance_id_set.
    */
   double getMass(const std::set<int>& model_instance_id_set =
