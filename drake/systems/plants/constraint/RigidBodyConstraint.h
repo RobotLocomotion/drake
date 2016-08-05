@@ -88,8 +88,8 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RigidBodyConstraint {
  * contact polygon
  * @param robot
  * @param tspan           -- The time span of this constraint being active
- * @param robotnumset     -- The set of the robots in the RigidBodyTree for
- * which the CoM is computed
+ * @param model_instance_id_set   -- The set of the robots in the RigidBodyTree
+ * for which the CoM is computed
  * @param shrinkFactor    -- The factor to shrink the contact polygon. The
  * shrunk area is the support polygon.
  * @param active          -- Whether the constraint is on/off. If active =
@@ -120,7 +120,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT QuasiStaticConstraint
   QuasiStaticConstraint(
       RigidBodyTree* robot,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan,
-      const std::set<int>& robotnumset =
+      const std::set<int>& model_instance_id_set =
           QuasiStaticConstraint::defaultRobotNumSet);
   virtual ~QuasiStaticConstraint(void);
   bool isTimeValid(const double* t) const;
@@ -137,11 +137,11 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT QuasiStaticConstraint
   void setShrinkFactor(double factor);
   void setActive(bool flag) { active_ = flag; }
   void updateRobot(RigidBodyTree* robot);
-  void updateRobotnum(std::set<int>& robotnumset);
+  void updateRobotnum(std::set<int>& model_instance_id_set);
 
  private:
   static const std::set<int> defaultRobotNumSet;
-  std::set<int> m_robotnumset_;
+  std::set<int> m_model_instance_id_set_;
   double shrink_factor_{};
   bool active_{};
   int num_bodies_{};
@@ -410,9 +410,10 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldCoMConstraint
   WorldCoMConstraint(
       RigidBodyTree* model, Eigen::Vector3d lb, Eigen::Vector3d ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan,
-      const std::set<int>& robotnum = WorldCoMConstraint::defaultRobotNumSet);
+      const std::set<int>& model_instance_id =
+          WorldCoMConstraint::defaultRobotNumSet);
   virtual ~WorldCoMConstraint();
-  void updateRobotnum(const std::set<int>& robotnum);
+  void updateRobotnum(const std::set<int>& model_instance_id);
 
  protected:
   virtual void evalPositions(KinematicsCache<double>& cache,
@@ -423,7 +424,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldCoMConstraint
  private:
   static const std::set<int> defaultRobotNumSet;
 
-  std::set<int> m_robotnum_;
+  std::set<int> m_model_instance_id_;
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativePositionConstraint

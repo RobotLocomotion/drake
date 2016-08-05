@@ -53,11 +53,10 @@ const int QuasiStaticDefaultRobotNum[1] = {0};
 const std::set<int> QuasiStaticConstraint::defaultRobotNumSet(
     QuasiStaticDefaultRobotNum, QuasiStaticDefaultRobotNum + 1);
 QuasiStaticConstraint::QuasiStaticConstraint(RigidBodyTree* robot,
-                                             const Vector2d& tspan,
-                                             const std::set<int>& robotnumset)
+    const Vector2d& tspan, const std::set<int>& model_instance_id_set)
     : RigidBodyConstraint(RigidBodyConstraint::QuasiStaticConstraintCategory,
                           robot, tspan),
-      m_robotnumset_(robotnumset),
+      m_model_instance_id_set_(model_instance_id_set),
       shrink_factor_(0.9),
       active_(false),
       num_bodies_(0),
@@ -90,9 +89,10 @@ void QuasiStaticConstraint::eval(const double* t,
   if (isTimeValid(t)) {
     int nq = getRobotPointer()->number_of_positions();
     dc.resize(2, nq + num_pts_);
-    auto com = getRobotPointer()->centerOfMass(cache, m_robotnumset_);
+    auto com = getRobotPointer()->centerOfMass(cache, m_model_instance_id_set_);
     auto dcom =
-        getRobotPointer()->centerOfMassJacobian(cache, m_robotnumset_, true);
+        getRobotPointer()->centerOfMassJacobian(cache, m_model_instance_id_set_,
+            true);
     MatrixXd contact_pos(3, num_pts_);
     MatrixXd dcontact_pos(3 * num_pts_, nq);
     int num_accum_pts = 0;
@@ -212,8 +212,9 @@ void QuasiStaticConstraint::setShrinkFactor(double factor) {
   shrink_factor_ = factor;
 }
 
-void QuasiStaticConstraint::updateRobotnum(std::set<int>& robotnumset) {
-  m_robotnumset_ = robotnumset;
+void QuasiStaticConstraint::updateRobotnum(std::set<int>&
+    model_instance_id_set) {
+  m_model_instance_id_set_ = model_instance_id_set;
 }
 
 PostureConstraint::PostureConstraint(RigidBodyTree* robot,
@@ -711,30 +712,33 @@ const int WorldCoMDefaultRobotNum[1] = {0};
 const std::set<int> WorldCoMConstraint::defaultRobotNumSet(
     WorldCoMDefaultRobotNum, WorldCoMDefaultRobotNum + 1);
 
-WorldCoMConstraint::WorldCoMConstraint(RigidBodyTree* robot, Vector3d lb,
-                                       Vector3d ub, const Vector2d& tspan,
-                                       const std::set<int>& robotnum)
+WorldCoMConstraint::WorldCoMConstraint(
+    RigidBodyTree* robot, Vector3d lb, Vector3d ub, const Vector2d& tspan,
+    const std::set<int>& model_instance_id_set)
     : PositionConstraint(robot, Vector3d::Zero(), lb, ub, tspan),
-      m_robotnum_(robotnum) {
+      m_model_instance_id_(model_instance_id_set) {
   set_type(RigidBodyConstraint::WorldCoMConstraintType);
 }
 
 void WorldCoMConstraint::evalPositions(KinematicsCache<double>& cache,
                                        Matrix3Xd& pos, MatrixXd& J) const {
-  pos = getRobotPointer()->centerOfMass(cache, m_robotnum_);
-  J = getRobotPointer()->centerOfMassJacobian(cache, m_robotnum_, true);
+  pos = getRobotPointer()->centerOfMass(cache, m_model_instance_id_);
+  J = getRobotPointer()->centerOfMassJacobian(cache, m_model_instance_id_,
+      true);
 }
 
 void WorldCoMConstraint::evalNames(const double* t,
-                                   std::vector<std::string>& cnst_names) const {
+                                   std::vector<std::string>& cnst_names)
+                                       const {
   std::string time_str = getTimeString(t);
   cnst_names.push_back("CoM x " + time_str);
   cnst_names.push_back("CoM y " + time_str);
   cnst_names.push_back("CoM z " + time_str);
 }
 
-void WorldCoMConstraint::updateRobotnum(const std::set<int>& robotnum) {
-  m_robotnum_ = robotnum;
+void WorldCoMConstraint::updateRobotnum(
+    const std::set<int>& model_instance_id_set) {
+  m_model_instance_id_ = model_instance_id_set;
 }
 
 WorldCoMConstraint::~WorldCoMConstraint() {}

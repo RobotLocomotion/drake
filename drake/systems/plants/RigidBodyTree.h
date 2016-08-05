@@ -171,60 +171,71 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void doKinematics(KinematicsCache<Scalar>& cache,
                     bool compute_JdotV = false) const;
 
-  bool isBodyPartOfRobot(const RigidBody& body,
-                         const std::set<int>& robotnum) const;
+  /**
+   * Returns true if @p body is part of a model instance whose ID is in
+   * @p model_instance_id_set.
+   */
+  bool is_part_of_model_instances(const RigidBody& body,
+      const std::set<int>& model_instance_id_set) const;
 
   /**
-   * Computes the total mass of a set of models in this rigid body tree.
+   * Computes the total combined mass of a set of model instances.
    *
-   * @param[in] model_instance_ids A set of model instance ID values
+   * @param[in] model_instance_id_set A set of model instance ID values
    * corresponding to the model instances whose masses should be included in the
    * returned value.
    *
-   * @returns The total mass of the model instances specified by
-   * @p model_instance_ids.
+   * @returns The total combined mass of the model instances in
+   * @p model_instance_id_set.
    */
-  double getMass(const std::set<int>& model_instance_ids =
-      default_robot_num_set) const;
+  double getMass(const std::set<int>& model_instance_id_set =
+      default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_instance_id_set =
+          default_model_instance_id_set) const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set,
+      const std::set<int>& model_instance_id_set =
+          default_model_instance_id_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> worldMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_instance_id_set =
+          default_model_instance_id_set) const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> centroidalMomentumMatrix(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set,
+      const std::set<int>& model_instance_id_set =
+          default_model_instance_id_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> centroidalMomentumMatrixDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_instance_id_set =
+          default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, Eigen::Dynamic>
   centerOfMassJacobian(KinematicsCache<Scalar>& cache,
-                       const std::set<int>& robotnum = default_robot_num_set,
+                       const std::set<int>& model_instance_id_set =
+                           default_model_instance_id_set,
                        bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1>
   centerOfMassJacobianDotTimesV(
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& robotnum = default_robot_num_set) const;
+      const std::set<int>& model_instance_id_set =
+          default_model_instance_id_set) const;
 
   template <typename DerivedA, typename DerivedB, typename DerivedC>
   void jointLimitConstraints(Eigen::MatrixBase<DerivedA> const& q,
@@ -797,7 +808,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   int number_of_velocities() const { return num_velocities_; }
 
  public:
-  static const std::set<int> default_robot_num_set;
+  static const std::set<int> default_model_instance_id_set;
 
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;

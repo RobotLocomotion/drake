@@ -55,7 +55,7 @@ void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
 
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree::centerOfMass<double>, cache,
-                 RigidBodyTree::default_robot_num_set);
+                 RigidBodyTree::default_model_instance_id_set);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree::transformPoints<double, PointsType>, cache,
                  points, body_or_frame_ind, base_or_frame_ind);
@@ -67,13 +67,16 @@ void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
                  body_or_frame_ind, base_or_frame_ind);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree::worldMomentumMatrix<double>, cache,
-                 RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
+                 RigidBodyTree::default_model_instance_id_set,
+                 in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree::centroidalMomentumMatrix<double>, cache,
-                 RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
+                 RigidBodyTree::default_model_instance_id_set,
+                 in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree::centerOfMassJacobian<double>, cache,
-                 RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
+                 RigidBodyTree::default_model_instance_id_set,
+                 in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree::geometricJacobian<double>, cache,
                  base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind,
@@ -106,13 +109,13 @@ void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
                  base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind);
   checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
                  &RigidBodyTree::worldMomentumMatrixDotTimesV<double>, cache,
-                 RigidBodyTree::default_robot_num_set);
+                 RigidBodyTree::default_model_instance_id_set);
   checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
                  &RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>,
-                 cache, RigidBodyTree::default_robot_num_set);
+                 cache, RigidBodyTree::default_model_instance_id_set);
   checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
                  &RigidBodyTree::centerOfMassJacobianDotTimesV<double>, cache,
-                 RigidBodyTree::default_robot_num_set);
+                 RigidBodyTree::default_model_instance_id_set);
   checkForErrors(
       settings.expect_error_on_jdot_times_v_methods, model,
       &RigidBodyTree::transformPointsJacobianDotTimesV<double, PointsType>,
