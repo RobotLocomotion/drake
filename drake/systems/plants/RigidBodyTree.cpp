@@ -2112,7 +2112,7 @@ int RigidBodyTree::AddFloatingJoint(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::AddModelInstanceFromUrdfString(
+void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string, const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -2123,7 +2123,7 @@ void RigidBodyTree::AddModelInstanceFromUrdfString(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::AddModelInstanceFromUrdfString(
+void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string,
     std::map<std::string, std::string>& package_map,
     const std::string& root_dir,
@@ -2135,7 +2135,7 @@ void RigidBodyTree::AddModelInstanceFromUrdfString(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::AddModelInstanceFromUrdfFile(
+void RigidBodyTree::addRobotFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -2145,7 +2145,7 @@ void RigidBodyTree::AddModelInstanceFromUrdfFile(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::AddModelInstanceFromUrdfFile(
+void RigidBodyTree::addRobotFromURDF(
     const std::string& urdf_filename,
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
@@ -2155,7 +2155,7 @@ void RigidBodyTree::AddModelInstanceFromUrdfFile(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::AddModelInstanceFromSdfFile(
+void RigidBodyTree::addRobotFromSDF(
     const std::string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
