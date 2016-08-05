@@ -2,18 +2,23 @@
 #include "drake/systems/vector.h"
 
 namespace drake {
-/**
- * Implements a Drake System (@see drake/system/System.h) that saves the
- * entire simulated output in memory. This is useful for testing and
- * debugging the simulation results
- */
 template <template <typename> class Vector>
+/**
+ * Store the time sample and sample values of the trajectory. Consider to
+ * TODO replace this with the "Trajectory" class to be implemented in the
+ * future.
+ */
 struct TimeSampleTrajectory {
   std::vector<double> time;
   std::vector<Vector<double>, Eigen::aligned_allocator<Vector<double>>> val;
   TimeSampleTrajectory() : time(0), val(0) {}
 };
 
+/**
+ * Implements a Drake System (see: drake/system/System.h) that saves the
+ * entire simulated output in memory. This is useful for testing and
+ * debugging the simulation results.
+ */
 template <template <typename> class Vector>
 class TrajectoryLogger {
  public:
@@ -58,4 +63,4 @@ class TrajectoryLogger {
   size_t traj_dim_;
   TimeSampleTrajectory<Vector> trajectory_;
 };
-}
+} // namespace drake
