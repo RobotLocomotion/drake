@@ -151,7 +151,8 @@ GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
 GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   // http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
   OptimizationProblem prog3;
-  auto x = prog3.AddContinuousVariables(3);
+  auto x = prog3.AddContinuousVariables(9);
+  prog3.SetSolverOption("Mosek", "numbarvar", 6);
   // Build the objective matrix and send it to the program.
   Eigen::Matrix3d Q;
   Q << 2, 1, 0,
@@ -192,11 +193,10 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   SolutionResult result = SolutionResult::kUnknownError;
   prog3.SetSolverOption("Mosek", "maxormin", "min");
   prog3.SetSolverOption("Mosek", "problemtype", "sdp");
-
   ASSERT_NO_THROW(result = msk.Solve(prog3)) << "Using solver: Mosek";
   EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Using solver: Mosek";
   Eigen::VectorXd solutions(9);
-  solutions << 2.543589e-1, 1.798589e-01, 1.798589e-01, 1.798589e-01,
+  solutions << 2.543589e-1, 1.798589e-01, 1.798589e-01, 2.172859e-01,
                -2.599827e-01, 2.172859e-01, 3.110694e-01, -2.599827e-01,
                2.172859e-01;
   EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-7,

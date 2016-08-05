@@ -55,7 +55,8 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
     const Eigen::MatrixXd& quad_cons,
     const QuadraticConstraint& sdp_objective,
     const std::vector<QuadraticConstraint>& sdp_constraints,
-    const std::vector<int>& sdp_cone_subscripts);
+    const std::vector<int>& sdp_cone_subscripts,
+    int numbarvar);
 
   ~MosekWrapper() {
     if (task_ != NULL)
@@ -113,10 +114,21 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   */
   void AddQuadraticObjective(const Eigen::MatrixXd& obj);
 
+  /**AppendCone()
+  * @brief adds a cone to mosek for solving. Currently does not handle rotated
+  * cones.
+  */
   void AppendCone(const std::vector<int>& sdp_cone_subscripts);
 
-  void AddSDPObjectives(const QuadraticConstraint& sdp_objective);
+  /**AddSDPObjective()
+  * @brief Adds a single SDP objective to Mosek for solving, will not work if
+  * called multiple times.
+  */
+  void AddSDPObjective(const QuadraticConstraint& sdp_objective);
 
+  /**AddSDPConstraints()
+  * @brief Adds multiple SDP constraints to Mosek. Only call once per program.
+  */
   void AddSDPConstraints(
       const std::vector<QuadraticConstraint>& sdp_constraints);
 
