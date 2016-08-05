@@ -62,8 +62,9 @@ class DrakeRosTfPublisher {
    */
   explicit DrakeRosTfPublisher(
       const std::shared_ptr<RigidBodyTree> rigid_body_tree,
-      const std::map<std::string, int>& model_instances)
-      : rigid_body_tree_(rigid_body_tree), enable_tf_publisher_(true) {
+      const std::map<std::string, int>& model_instances) :
+          rigid_body_tree_(rigid_body_tree),
+          model_instances_(model_instances) {
     // Queries the ROS parameter server for a boolean parameter in
     // "/drake/enable_tf_publisher". This parameter is used to control whether
     // this class publishes /tf messages.
@@ -303,6 +304,9 @@ class DrakeRosTfPublisher {
   // The rigid body tree being used by Drake's rigid body dynamics engine.
   const std::shared_ptr<RigidBodyTree> rigid_body_tree_;
 
+  // Maps model instance names to model instance IDs.
+  const std::map<std::string, int>& model_instances_;
+
   // Publishes the transform messages that specify the positions and
   // orientations of every rigid body and frame in the rigid body tree. This is
   // done on ROS topic /tf.
@@ -319,7 +323,7 @@ class DrakeRosTfPublisher {
   ::ros::Time previous_send_time_;
 
   // Determines whether tf messages should be published.
-  bool enable_tf_publisher_;
+  bool enable_tf_publisher_{true};
 };
 
 }  // end namespace ros
