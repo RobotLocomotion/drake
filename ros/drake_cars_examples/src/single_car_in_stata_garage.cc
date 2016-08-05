@@ -2,17 +2,17 @@
 
 #include "drake/examples/Cars/car_simulation.h"
 #include "drake/examples/Cars/gen/driving_command.h"
+#include "drake/ros/ros_tf_publisher.h"
+#include "drake/ros/ros_vehicle_system.h"
+#include "drake/ros/ros_sensor_publisher_joint_state.h"
+#include "drake/ros/ros_sensor_publisher_lidar.h"
+#include "drake/ros/ros_sensor_publisher_odometry.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
-#include "drake_ros/ros_tf_publisher.h"
-#include "drake_ros/ros_vehicle_system.h"
-#include "drake_ros/ros_sensor_publisher_joint_state.h"
-#include "drake_ros/ros_sensor_publisher_lidar.h"
-#include "drake_ros/ros_sensor_publisher_odometry.h"
 
 using drake::BotVisualizer;
 using drake::SimulationOptions;
