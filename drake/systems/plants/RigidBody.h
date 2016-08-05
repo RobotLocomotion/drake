@@ -304,15 +304,17 @@ class DRAKERBM_EXPORT RigidBody {
 
   // The "parent" joint of this rigid body. This is the joint through which this
   // rigid body connects to the rest of the rigid body tree.
-  std::unique_ptr<DrakeJoint> joint;
+  std::unique_ptr<DrakeJoint> joint_;
 
   // A bitmask that determines the collision groups that this rigid body is part
-  // of.
-  DrakeCollision::bitmask collision_filter_group;
+  // of. If the i-th bit is set this rigid body belongs to the i-th collision
+  // group. A rigid body can belong to several collision groups.
+  DrakeCollision::bitmask collision_filter_group_;
 
-  // A bitmask that determines which collision groups should be ignored when
-  // determinine the colliisons associated with this rigid body.
-  DrakeCollision::bitmask collision_filter_ignores;
+  // A bitmask that determines which collision groups this rigid body does not
+  // collide with. Thus, if the i-th bit is set this rigid body is not checked
+  // for collisions with bodies in the i-th group.
+  DrakeCollision::bitmask collision_filter_ignores_;
 
   // The name of this rigid body.
   std::string name_;
