@@ -1981,6 +1981,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
                           loops[i].frameB_->get_frame_index());
       ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
     }
+  }
   if(linear_equality_position_constraint_) {
     Matrix<Scalar, Eigen::Dynamic, 1> lin_eq_cnstr_val;
     linear_equality_position_constraint_->Eval(cache.getQ(),lin_eq_cnstr_val);
