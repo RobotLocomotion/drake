@@ -11,7 +11,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/drakeRBM_export.h"
-#include "drake/solvers/Constraint.h"
+#include "drake/solvers/constraint.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
@@ -992,10 +992,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // applied to all collision geometry when that geometry is added, to improve
   // the numerical stability of contact gradients taken using the model.
   std::unique_ptr<DrakeCollision::Model> collision_model_;
-
-  // linear equality constraint on robot position Aeq*q = beq
-  std::unique_ptr<drake::solvers::LinearEqualityConstraint>
-                                         linear_equality_position_constraint_;
 
   // linear equality constraint on robot position Aeq*q = beq
   std::unique_ptr<drake::solvers::LinearEqualityConstraint>

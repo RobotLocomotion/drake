@@ -1,7 +1,7 @@
 #include <typeinfo>
 
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/Constraint.h"
+#include "drake/solvers/constraint.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
