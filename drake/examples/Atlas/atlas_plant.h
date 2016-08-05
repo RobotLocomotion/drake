@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -16,11 +16,11 @@ needed to simulate the Atlas robot.
 class AtlasPlant {
  public:
   template<typename T>
-  using InputVector = Drake::RigidBodySystem::InputVector<T>;
+  using InputVector = drake::RigidBodySystem::InputVector<T>;
   template<typename T>
-  using StateVector = Drake::RigidBodySystem::StateVector<T>;
+  using StateVector = drake::RigidBodySystem::StateVector<T>;
   template<typename T>
-  using OutputVector = Drake::RigidBodySystem::OutputVector<T>;
+  using OutputVector = drake::RigidBodySystem::OutputVector<T>;
 
   /** Creates a default instance of the Atlas robot as described by the URDF
   file in `drake/examples/Atlas/urdf/atlas_convex_hull.urdf`. **/
@@ -51,7 +51,7 @@ class AtlasPlant {
 
  private:
   // The underlying rigid body system
-  std::unique_ptr<Drake::RigidBodySystem> sys_;
+  std::unique_ptr<drake::RigidBodySystem> sys_;
 
   // Atlas's initial configuration.
   VectorXd x0_;

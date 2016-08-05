@@ -6,7 +6,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/core/Vector.h"
+#include "drake/systems/vector.h"
 
 namespace drake {
 
@@ -27,7 +27,7 @@ class LcmTap {
   //@{
 
   template <typename ScalarType>
-  using StateVector = Drake::NullVector<ScalarType>;
+  using StateVector = drake::NullVector<ScalarType>;
   template <typename ScalarType>
   using InputVector = Vector<ScalarType>;
   template <typename ScalarType>

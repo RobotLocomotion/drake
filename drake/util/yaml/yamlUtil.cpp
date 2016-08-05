@@ -68,31 +68,16 @@ void loadBodyMotionParams(QPControllerParams& params, const YAML::Node& config,
        ++body_it) {
     try {
       params.body_motion[body_it - robot.bodies.begin()] =
-          get(config, (*body_it)->name_).as<BodyMotionParams>();
+          get(config, (*body_it)->get_name()).as<BodyMotionParams>();
     } catch (...) {
       std::cerr << "error converting node: "
-                << get(config, (*body_it)->name_) << " to BodyMotionParams"
+                << get(config, (*body_it)->get_name()) << " to BodyMotionParams"
                 << std::endl;
       std::cerr << "config: " << config << std::endl;
-      std::cerr << "body_name: " << (*body_it)->name_ << std::endl;
+      std::cerr << "body_name: " << (*body_it)->get_name() << std::endl;
       throw;
     }
   }
-
-  // for (auto config_it = config.begin(); config_it != config.end();
-  // ++config_it) {
-  //   std::regex body_regex =
-  //   globToRegex((*config_it)["name"].as<std::string>());
-  //   for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
-  //   ++body_it) {
-  //     if (std::regex_match((*body_it)->name_, body_regex)) {
-  //       params.body_motion[body_it - robot.bodies.begin()] = get(*config_it,
-  //       "params").as<BodyMotionParams>();
-  //       // loadSingleBodyMotionParams(params.body_motion[body_it -
-  //       robot.bodies.begin()], (*config_it)["params"]);
-  //     }
-  //   }
-  // }
 }
 
 void loadSingleJointParams(QPControllerParams& params,
@@ -123,15 +108,12 @@ void loadSingleJointParams(QPControllerParams& params,
   if (get(soft_limits_config, "disable_when_body_in_support")
           .as<std::string>()
           .size() > 0) {
-    // std::regex disable_body_regex = globToRegex(get(soft_limits_config,
-    // "disable_when_body_in_support").as<std::string>());
     std::string disable_body_name =
         get(soft_limits_config, "disable_when_body_in_support")
             .as<std::string>();
     for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
          ++body_it) {
-      if (disable_body_name == (*body_it)->name_) {
-        // if (std::regex_match((*body_it)->name_, disable_body_regex)) {
+      if (disable_body_name == (*body_it)->get_name()) {
         params.joint_soft_limits.disable_when_body_in_support(position_index) =
             body_it - robot.bodies.begin() + 1;
         // break;
@@ -226,12 +208,12 @@ void loadInputParams(QPControllerParams& params, const YAML::Node& config,
        actuator_it != robot.actuators.end(); ++actuator_it) {
     try {
       loadSingleInputParams(params, actuator_it - robot.actuators.begin(),
-                            get(config, actuator_it->name), robot);
+                            get(config, actuator_it->name_), robot);
     } catch (...) {
       std::cerr << "error loading input params from node: "
-                << get(config, actuator_it->name) << std::endl;
+                << get(config, actuator_it->name_) << std::endl;
       std::cerr << "config: " << config << std::endl;
-      std::cerr << "actuator: " << actuator_it->name << std::endl;
+      std::cerr << "actuator: " << actuator_it->name_ << std::endl;
       throw;
     }
   }
@@ -368,7 +350,7 @@ vector<int> findPositionIndices(const RigidBodyTree& robot,
   for (const auto& joint_name : joint_names) {
     const RigidBody& body = *robot.findJoint(joint_name);
     for (int i = 0; i < body.getJoint().getNumPositions(); i++) {
-      position_indices.push_back(body.position_num_start + i);
+      position_indices.push_back(body.get_position_start_index() + i);
     }
   }
   return position_indices;
@@ -395,7 +377,7 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
         robot, joint_group_names["legs"][side_id].as<vector<string>>());
     ret.position_indices.knees[side] =
         robot.findJoint(joint_group_names["knees"][side_id].as<string>())
-            ->position_num_start;
+            ->get_position_start_index();
     ret.position_indices.ankles[side] = findPositionIndices(
         robot, joint_group_names["ankles"][side_id].as<vector<string>>());
     ret.position_indices.arms[side] = findPositionIndices(
@@ -405,10 +387,10 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
       robot, joint_group_names["neck"].as<vector<string>>());
   ret.position_indices.back_bkz =
       robot.findJoint(joint_group_names["back_bkz"].as<string>())
-          ->position_num_start;
+          ->get_position_start_index();
   ret.position_indices.back_bky =
       robot.findJoint(joint_group_names["back_bky"].as<string>())
-          ->position_num_start;
+          ->get_position_start_index();
 
   return ret;
 }
@@ -421,7 +403,7 @@ JointNames parseRobotJointNames(const YAML::Node& joint_names,
   ret.drake.resize(tree.actuators.size());
   transform(tree.actuators.begin(), tree.actuators.end(), ret.drake.begin(),
             [](const RigidBodyActuator& actuator) {
-              return actuator.body->getJoint().getName();
+              return actuator.body_->getJoint().getName();
             });
   // Node hardware_data = LoadFile(hardware_data_file_name);
   ret.robot = joint_names.as<vector<string>>();

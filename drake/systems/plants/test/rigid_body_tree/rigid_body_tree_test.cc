@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -21,20 +21,20 @@ class RigidBodyTreeTest : public ::testing::Test {
 
     // Defines four rigid bodies.
     r1b1 = new RigidBody();
-    r1b1->model_name_ = "robot1";
-    r1b1->name_ = "body1";
+    r1b1->set_model_name("robot1");
+    r1b1->set_name("body1");
 
     r2b1 = new RigidBody();
-    r2b1->model_name_ = "robot2";
-    r2b1->name_ = "body1";
+    r2b1->set_model_name("robot2");
+    r2b1->set_name("body1");
 
     r3b1 = new RigidBody();
-    r3b1->model_name_ = "robot3";
-    r3b1->name_ = "body1";
+    r3b1->set_model_name("robot3");
+    r3b1->set_name("body1");
 
     r4b1 = new RigidBody();
-    r4b1->model_name_ = "robot4";
-    r4b1->name_ = "body1";
+    r4b1->set_model_name("robot4");
+    r4b1->set_name("body1");
   }
 
  public:
@@ -66,7 +66,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
   // Adds floating joints that connect r1b1 and r2b1 to the rigid body tree's
   // world at zero offset.
   tree->AddFloatingJoint(DrakeJoint::QUATERNION,
-                         {r1b1->body_index, r2b1->body_index});
+                         {r1b1->get_body_index(), r2b1->get_body_index()});
 
   // Verfies that the two rigid bodies are located in the correct place.
   const DrakeJoint& jointR1B1 = tree->FindBody("body1", "robot1")->getJoint();
@@ -102,7 +102,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
       T_r1and2_to_world);
 
   tree->AddFloatingJoint(DrakeJoint::QUATERNION,
-                         {r1b1->body_index, r2b1->body_index}, weld_to_frame);
+                         {r1b1->get_body_index(), r2b1->get_body_index()},
+                         weld_to_frame);
 
   // Verfies that the two rigid bodies are located in the correct place.
   const DrakeJoint& jointR1B1 = tree->FindBody("body1", "robot1")->getJoint();
@@ -123,7 +124,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
   // unique_ptr_reference's
   tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
 
-  tree->AddFloatingJoint(DrakeJoint::QUATERNION, {r1b1->body_index});
+  tree->AddFloatingJoint(DrakeJoint::QUATERNION, {r1b1->get_body_index()});
 
   // Adds rigid body r2b1 to the rigid body tree and welds it to r1b1 with
   // offset x = 1, y = 1, z = 1. Verifies that it is in the correct place.
@@ -143,7 +144,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
       Eigen::aligned_allocator<RigidBodyFrame>(), "body1",
       tree->FindBody("body1", "robot1"), T_r2_to_r1);
 
-  tree->AddFloatingJoint(DrakeJoint::QUATERNION, {r2b1->body_index}, r2b1_weld);
+  tree->AddFloatingJoint(DrakeJoint::QUATERNION, {r2b1->get_body_index()},
+      r2b1_weld);
 
   // Adds rigid body r3b1 and r4b1 to the rigid body tree and welds it to r2b1
   // with offset x = 2, y = 2, z = 2. Verifies that it is in the correct place.
@@ -166,7 +168,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
       tree->FindBody("body1", "robot2"), T_r3_and_r4_to_r2);
 
   tree->AddFloatingJoint(DrakeJoint::QUATERNION,
-                         {r3b1->body_index, r4b1->body_index},
+                         {r3b1->get_body_index(), r4b1->get_body_index()},
                          r3b1_and_r4b1_weld);
 
   EXPECT_TRUE(tree->FindBody("body1", "robot1")
@@ -195,9 +197,9 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 // https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
   std::string file_name =
-      Drake::getDrakePath() +
+      drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
-  drake::parsers::urdf::AddRobotFromURDF(file_name, tree.get());
+  drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get());
 
   VectorX<double> q;
   VectorX<double> v;

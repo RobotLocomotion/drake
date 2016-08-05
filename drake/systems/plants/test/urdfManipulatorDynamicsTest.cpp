@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
   // here
   cout << model->bodies.size() << endl;
   for (const auto& body : model->bodies) {
-    cout << body->name_ << endl;
+    cout << body->get_name() << endl;
   }
 
   VectorXd q = model->getZeroConfiguration();

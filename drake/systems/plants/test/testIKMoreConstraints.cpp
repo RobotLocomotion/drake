@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
@@ -16,7 +16,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using Drake::getDrakePath;
+using drake::GetDrakePath;
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
@@ -28,8 +28,8 @@ std::vector<int> getJointPositionVectorIndices(const RigidBodyTree& model,
   std::vector<int> ret(static_cast<size_t>(num_positions));
 
   // fill with sequentially increasing values, starting at
-  // joint_parent_body->position_num_start:
-  iota(ret.begin(), ret.end(), joint_parent_body->position_num_start);
+  // joint_parent_body->get_position_start_index():
+  iota(ret.begin(), ret.end(), joint_parent_body->get_position_start_index());
   return ret;
 }
 
@@ -43,7 +43,7 @@ void findJointAndInsert(const RigidBodyTree& model, const std::string& name,
 
 GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   RigidBodyTree model(
-      getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
   tspan << 0, 1;
@@ -183,7 +183,7 @@ GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   inverseKin(&model, qstar, qstar, constraint_array.size(),
              constraint_array.data(), ikoptions,
              &q_sol, &info, &infeasible_constraint);
-  printf("INFO = %d\n", info);
+  printf("info = %d\n", info);
   EXPECT_EQ(info, 1);
 
   /////////////////////////////////////////

@@ -19,8 +19,8 @@ class QuadraticLyapunovFunction {
   // TODO(tkoolen): make part of a Lyapunov function class hierarchy
   // TODO(tkoolen): more functionality
  private:
-  Eigen::MatrixXd S;
-  ExponentialPlusPiecewisePolynomial<double> s1;
+  Eigen::MatrixXd S_;
+  ExponentialPlusPiecewisePolynomial<double> s1_;
 
  public:
   QuadraticLyapunovFunction() {}
@@ -29,13 +29,15 @@ class QuadraticLyapunovFunction {
   QuadraticLyapunovFunction(
       const Eigen::MatrixBase<DerivedS>& S,
       const ExponentialPlusPiecewisePolynomial<double>& s1)
-      : S(S), s1(s1) {}
+      : S_(S), s1_(s1) {}
 
-  const Eigen::MatrixXd& getS() const { return S; }
+  const Eigen::MatrixXd& getS() const { return S_; }
 
-  const ExponentialPlusPiecewisePolynomial<double>& getS1() const { return s1; }
+  const ExponentialPlusPiecewisePolynomial<double>& getS1() const {
+    return s1_;
+  }
   void setS1(ExponentialPlusPiecewisePolynomial<double>& new_s1) {
-    s1 = new_s1;
+    s1_ = new_s1;
   }
 };
 
@@ -109,7 +111,7 @@ struct QPLocomotionPlanSettings {
   void addSupport(
       const RigidBodySupportState& support_state,
       const ContactNameToContactPointsMap& contact_group_name_to_contact_points,
-      double duration) {
+      double duration_in) {
     supports.push_back(support_state);
     contact_groups.push_back(contact_group_name_to_contact_points);
     if (support_times.empty()) support_times.push_back(0.0);
@@ -140,7 +142,7 @@ struct QPLocomotionPlanSettings {
              joint_name_it != joint_name_substrings.end(); ++joint_name_it) {
           if (joint.getName().find(*joint_name_it) != std::string::npos) {
             for (int i = 0; i < joint.getNumPositions(); i++) {
-              ret.push_back(body.position_num_start + i);
+              ret.push_back(body.get_position_start_index() + i);
             }
             break;
           }
@@ -153,26 +155,26 @@ struct QPLocomotionPlanSettings {
 
 class QPLocomotionPlan {
  private:
-  RigidBodyTree& robot;  // TODO(tkoolen): const correctness
-  QPLocomotionPlanSettings settings;
-  const std::map<Side, int> foot_body_ids;
-  const std::map<Side, int> knee_indices;
-  const std::map<Side, int> aky_indices;
-  const std::map<Side, int> akx_indices;
-  const int pelvis_id;
+  RigidBodyTree& robot_;  // TODO(tkoolen): const correctness
+  QPLocomotionPlanSettings settings_;
+  const std::map<Side, int> foot_body_ids_;
+  const std::map<Side, int> knee_indices_;
+  const std::map<Side, int> aky_indices_;
+  const std::map<Side, int> akx_indices_;
+  const int pelvis_id_;
 
-  lcm::LCM lcm;
-  std::string lcm_channel;
+  lcm::LCM lcm_;
+  std::string lcm_channel_;
 
-  double start_time;
-  Eigen::Vector3d plan_shift;
-  std::map<Side, Eigen::Vector3d> foot_shifts;
-  double last_foot_shift_time;
-  drake::lcmt_qp_controller_input last_qp_input;
-  std::map<Side, bool> toe_off_active;
-  std::map<Side, bool> knee_pd_active;
-  std::map<Side, KneeSettings> knee_pd_settings;
-  PiecewisePolynomial<double> shifted_zmp_trajectory;
+  double start_time_;
+  Eigen::Vector3d plan_shift_;
+  std::map<Side, Eigen::Vector3d> foot_shifts_;
+  double last_foot_shift_time_;
+  drake::lcmt_qp_controller_input last_qp_input_;
+  std::map<Side, bool> toe_off_active_;
+  std::map<Side, bool> knee_pd_active_;
+  std::map<Side, KneeSettings> knee_pd_settings_;
+  PiecewisePolynomial<double> shifted_zmp_trajectory_;
 
   /*
    * when the plan says a given body is in support, require the controller to
@@ -181,7 +183,7 @@ class QPLocomotionPlan {
    * in contact with the terrain, try KINEMATIC_OR_SENSED
    */
   static const std::map<SupportLogicType, std::vector<bool> >
-      support_logic_maps;
+      support_logic_maps_;
 
  public:
   QPLocomotionPlan(RigidBodyTree& robot,

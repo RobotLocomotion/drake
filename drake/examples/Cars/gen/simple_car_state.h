@@ -24,7 +24,7 @@ struct SimpleCarStateIndices {
   static const int kVelocity = 3;
 };
 
-/// Models the Drake::LCMVector concept.
+/// Models the drake::LCMVector concept.
 template <typename ScalarType = double>
 class SimpleCarState {
  public:
@@ -45,7 +45,7 @@ class SimpleCarState {
   }
   //@}
 
-  /// @name Implement the Drake::Vector concept.
+  /// @name Implement the drake::Vector concept.
   //@{
 
   // Even though in practice we have a fixed size, we declare
@@ -63,7 +63,7 @@ class SimpleCarState {
 
   /// Implicit Eigen::Matrix conversion.
   template <typename Derived>
-  // NOLINTNEXTLINE(runtime/explicit) per Drake::Vector.
+  // NOLINTNEXTLINE(runtime/explicit) per drake::Vector.
   SimpleCarState(const Eigen::MatrixBase<Derived>& value)
       : value_(value.segment(0, K::kNumCoordiates)) {}
 
@@ -80,7 +80,7 @@ class SimpleCarState {
   }
 
   /// Magic pretty names for our coordinates.  (This is an optional
-  /// part of the Drake::Vector concept, but seems worthwhile.)
+  /// part of the drake::Vector concept, but seems worthwhile.)
   friend std::string getCoordinateName(const SimpleCarState<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {

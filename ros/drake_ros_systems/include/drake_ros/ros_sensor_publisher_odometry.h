@@ -5,16 +5,16 @@
 #include "ros/ros.h"
 #include "nav_msgs/Odometry.h"
 
-#include "drake/core/Vector.h"
 #include "drake/systems/System.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/vector.h"
 
-using Drake::NullVector;
-using Drake::RigidBodySensor;
-using Drake::RigidBodySystem;
-using Drake::RigidBodyDepthSensor;
+using drake::NullVector;
+using drake::RigidBodySensor;
+using drake::RigidBodySystem;
+using drake::RigidBodyDepthSensor;
 
 namespace drake {
 namespace ros {
@@ -90,7 +90,7 @@ class SensorPublisherOdometry {
 
       // The key is simply the model name since there should only be one
       // odometry message and publisher per robot.
-      const std::string& key = rigid_body->model_name();
+      const std::string& key = rigid_body->get_model_name();
 
       if (odometry_messages_.find(key) == odometry_messages_.end()) {
         const std::string topic_name = "drake/" + key + "/odometry";
@@ -100,7 +100,7 @@ class SensorPublisherOdometry {
 
         std::unique_ptr<nav_msgs::Odometry> message(new nav_msgs::Odometry());
         message->header.frame_id = RigidBodyTree::kWorldLinkName;
-        message->child_frame_id = rigid_body->name();
+        message->child_frame_id = rigid_body->get_name();
 
         odometry_messages_.insert(
             std::pair<std::string, std::unique_ptr<nav_msgs::Odometry>>(
@@ -134,7 +134,7 @@ class SensorPublisherOdometry {
     // The input vector u contains the entire system's state. The following
     // The following code extracts the position and velocity values from it
     // and computes the kinematic properties of the system.
-    auto uvec = Drake::toEigen(u);
+    auto uvec = drake::toEigen(u);
     auto q = uvec.head(rigid_body_tree->number_of_positions());    // position
     auto v = uvec.segment(rigid_body_tree->number_of_positions(),  // velocity
                           rigid_body_tree->number_of_velocities());
@@ -157,7 +157,7 @@ class SensorPublisherOdometry {
       // Defines the key that can be used to obtain the publisher and message.
       // The key is simply the model name since there should only be one
       // odometry message and publisher per model.
-      const std::string& key = rigid_body->model_name();
+      const std::string& key = rigid_body->get_model_name();
 
       // Verifies that a nav_msgs::Odometry message for the current link exists
       // in the odometry_messages_ map.
@@ -182,8 +182,9 @@ class SensorPublisherOdometry {
 
       // Updates the odometry information in the odometry message.
       auto transform = rigid_body_tree->relativeTransform(
-          cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
-          rigid_body_tree->FindBodyIndex(rigid_body->name()));
+          cache, rigid_body_tree->FindBodyIndex(
+              rigid_body->get_parent()->get_name()),
+          rigid_body_tree->FindBodyIndex(rigid_body->get_name()));
       auto translation = transform.translation();
       auto quat = drake::math::rotmat2quat(transform.linear());
 
@@ -199,8 +200,9 @@ class SensorPublisherOdometry {
 
       // Saves the robot's linear and angular velocities in the world.
       auto twist = rigid_body_tree->relativeTwist(
-          cache, rigid_body_tree->FindBodyIndex(rigid_body->parent->name()),
-          rigid_body_tree->FindBodyIndex(rigid_body->name()),
+          cache, rigid_body_tree->FindBodyIndex(
+              rigid_body->get_parent()->get_name()),
+          rigid_body_tree->FindBodyIndex(rigid_body->get_name()),
           rigid_body_tree->FindBodyIndex(RigidBodyTree::kWorldLinkName));
 
       message->twist.twist.linear.x = twist(0);

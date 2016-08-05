@@ -14,41 +14,38 @@
 #include "drake/systems/plants/joints/DrakeJoint.h"
 
 class DRAKERBM_EXPORT RigidBody {
- private:
-  std::unique_ptr<DrakeJoint> joint;
-  DrakeCollision::bitmask collision_filter_group;
-  DrakeCollision::bitmask collision_filter_ignores;
-
  public:
   RigidBody();
 
   /**
-   * @brief Name of the body.
-   *
-   * An accessor for the name of the body that this rigid body represents.
-   *
-   * @return The name of the body that's modeled by this rigid body.
+   * Returns the name of this rigid body.
    */
-  const std::string& name() const;
+  const std::string& get_name() const;
 
   /**
-   * An accessor for the name of the model or robot that this rigid body is
-   * a part of.
-   *
-   * @return The name of the model that this rigid body belongs to.
+   * Sets the name of this rigid body.
    */
-  // TODO(amcastro-tri): Move concept of world out of here as per #2318.
-  const std::string& model_name() const;
+  void set_name(const std::string& name);
 
   /**
-   * Returns the ID of the model to which this rigid body belongs.
+   * Returns the name of the model defining this rigid body.
    */
-  int get_model_id() const;
+  const std::string& get_model_name() const;
 
   /**
-   * Sets the ID of the model to which this rigid body belongs.
+   * Sets the name of the model defining this rigid body.
    */
-  void set_model_id(int model_id);
+  void set_model_name(const std::string& name);
+
+  /**
+   * Returns the ID of the model instance to which this rigid body belongs.
+   */
+  int get_model_instance_id() const;
+
+  /**
+   * Sets the ID of the model instance to which this rigid body belongs.
+   */
+  void set_model_instance_id(int model_instance_id);
 
   /**
    * Sets the parent joint through which this rigid body connects to its parent
@@ -68,6 +65,19 @@ class DRAKERBM_EXPORT RigidBody {
    */
   const DrakeJoint& getJoint() const;
 
+  /**
+   * Sets the parent rigid body. This is the rigid body that is connected to
+   * this rigid body's joint.
+   *
+   * @param[in] parent A pointer to this rigid body's parent rigid body.
+   */
+  void set_parent(RigidBody* parent);
+
+  /**
+   * Returns a const pointer to this rigid body's parent rigid body.
+   */
+  const RigidBody* get_parent() const;
+
   bool hasParent() const;
 
   /**
@@ -77,49 +87,123 @@ class DRAKERBM_EXPORT RigidBody {
    * @return true if the supplied rigid body parameter other is the parent of
    * this rigid body.
    */
-  bool has_as_parent(const RigidBody& other) const { return parent == &other; }
+  bool has_as_parent(const RigidBody& other) const {
+    return parent_ == &other;
+  }
 
-  void addVisualElement(const DrakeShapes::VisualElement& elements);
+  /**
+   * Sets the "body index" of this `RigidBody`. The "body index" is the index of
+   * this `RigidBody` within the vector of `RigidBody` objects within the
+   * `RigidBodyTree`.
+   */
+  void set_body_index(int body_index);
 
-  const DrakeShapes::VectorOfVisualElements& getVisualElements() const;
+  /**
+   * Returns the "body index" of this `RigidBody`. This is the index within the
+   * vector of `RigidBody` objects within the `RigidBodyTree`.
+   */
+  int get_body_index() const;
+
+  /**
+   * Sets the start index of this rigid body's position state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  void set_position_start_index(int position_start_index);
+
+  /**
+   * Returns the start index of this rigid body's position state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  int get_position_start_index() const;
+
+  /**
+   * Sets the start index of this rigid body's velocity state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  void set_velocity_start_index(int velocity_start_index);
+
+  /**
+   * Returns the start index of this rigid body's velocity state within the
+   * `RigidBodyTree`'s state vector.
+   */
+  int get_velocity_start_index() const;
+
+  void AddVisualElement(const DrakeShapes::VisualElement& elements);
+
+  const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
+
+  /**
+   * Adds a collision element to this rigid body by collision element @p id.
+   * This effectively defines the collision geometry of this rigid body. If more
+   * than one collision element is added, the resulting collision geometry is
+   * the union of the individual geometries of each collision element.
+   */
+  void AddCollisionElement(DrakeCollision::ElementId id);
+
+  /**
+   * Adds a collision element represented by its @p id to the collision group
+   * @p group_name. Collision groups are just a convenient way to group a
+   * collection of collision elements so that they can be referenced by the name
+   * of the group they belong to. There is no implication on whether these
+   * elements can collide between them or not.
+   *
+   * Note that the collision element @p id must have already been passed to
+   * RigidBody::AddCollisionElement().
+   */
+  void AddCollisionElementToGroup(const std::string& group_name,
+      DrakeCollision::ElementId id);
+
+  /**
+   * @returns A reference to an `std::vector` of collision elements that
+   * represent the collision geometry of this rigid body.
+   */
+  const std::vector<DrakeCollision::ElementId>& get_collision_element_ids()
+      const;
+
+  /**
+   * Returns a reference to an `std::vector` of collision elements that
+   * represent the collision geometry of this rigid body.
+   */
+  std::vector<DrakeCollision::ElementId>& get_mutable_collision_element_ids();
+
+  /**
+   * Returns a map of collision element group names to vectors of collision
+   * element IDs. These are the collision element groups created through calls
+   * to RigidBody::AddCollisionElementToGroup().
+   */
+  const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
+      get_group_to_collision_ids_map() const;
+
+  /**
+   * Returns a map of collision element group names to vectors of collision
+   * element IDs. These are the collision element groups created through calls
+   * to RigidBody::AddCollisionElementToGroup().
+   */
+  std::map<std::string, std::vector<DrakeCollision::ElementId>>&
+    get_mutable_group_to_collision_ids_map();
+
 
   void setCollisionFilter(const DrakeCollision::bitmask& group,
                           const DrakeCollision::bitmask& ignores);
 
-  const DrakeCollision::bitmask& getCollisionFilterGroup() const {
-    return collision_filter_group;
-  }
-  void setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_group = group;
-  }
+  const DrakeCollision::bitmask& getCollisionFilterGroup() const;
 
-  const DrakeCollision::bitmask& getCollisionFilterIgnores() const {
-    return collision_filter_ignores;
-  }
-  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores) {
-    this->collision_filter_ignores = ignores;
-  }
+  void setCollisionFilterGroup(const DrakeCollision::bitmask& group);
 
-  void addToCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_group |= group;
-  }
-  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_ignores |= group;
-  }
-  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_ignores &= ~group;
-  }
+  const DrakeCollision::bitmask& getCollisionFilterIgnores() const;
+
+  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores);
+
+  void addToCollisionFilterGroup(const DrakeCollision::bitmask& group);
+
+  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group);
+
+  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group);
 
   // TODO(amcastro-tri): Change to is_adjacent_to().
   bool adjacentTo(const RigidBody& other) const;
 
-  bool CollidesWith(const RigidBody& other) const {
-    bool ignored =
-        this == &other || adjacentTo(other) ||
-        (collision_filter_group & other.getCollisionFilterIgnores()).any() ||
-        (other.getCollisionFilterGroup() & collision_filter_ignores).any();
-    return !ignored;
-  }
+  bool CollidesWith(const RigidBody& other) const;
 
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
@@ -127,6 +211,54 @@ class DRAKERBM_EXPORT RigidBody {
 
   bool appendCollisionElementIdsFromThisBody(
       std::vector<DrakeCollision::ElementId>& ids) const;
+
+  /**
+   * Returns the points on this rigid body that should be checked for collision
+   * with the environment. These are the contact points that were saved by
+   * RigidBody::set_contact_points().
+   */
+  const Eigen::Matrix3Xd& get_contact_points() const;
+
+  /**
+   * Saves the points on this rigid body that should be checked for collision
+   * between this rigid body and the environment. These contact points can be
+   * obtained through RigidBody::get_contact_points().
+   */
+  void set_contact_points(const Eigen::Matrix3Xd& contact_points);
+
+  /**
+   * Sets the mass of this rigid body.
+   */
+  void set_mass(double mass);
+
+  /**
+   * Returns the mass of this rigid body.
+   */
+  double get_mass() const;
+
+  /**
+   * Sets the center of mass of this rigid body. The center of mass is expressed
+   * in this body's frame.
+   */
+  void set_center_of_mass(const Eigen::Vector3d& center_of_mass);
+
+  /**
+   * Gets the center of mass of this rigid body. The center of mass is expressed
+   * in this body's frame.
+   */
+  const Eigen::Vector3d& get_center_of_mass() const;
+
+  /**
+   * Sets the spatial inertia of this rigid body.
+   */
+  void set_spatial_inertia(const drake::SquareTwistMatrix<double>&
+      inertia_matrix);
+
+  /**
+   * Returns the spatial inertia of this rigid body.
+   */
+  const drake::SquareTwistMatrix<double>& get_spatial_inertia()
+      const;
 
   /**
    * Transforms all of the visual, collision, and inertial elements associated
@@ -142,78 +274,79 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:
-  /// The name of this rigid body.
-  std::string name_;
-
-  /// The name of the model to which this rigid body belongs.
-  std::string model_name_;
-
-  /// A unique ID for each model. It uses 0-index, starts from 0.
-  int robotnum;
-  // note: it's very ugly, but parent, dofnum, and pitch also exist currently
-  // (independently) at the RigidBodyTree level to represent the featherstone
-  // structure.  this version is for the kinematics.
-
-  // TODO(amcastro-tri): Make it private and change to parent_.
-  /// The rigid body that's connected to this rigid body's joint.
-  RigidBody* parent;
-
-  /// The index of this rigid body in the rigid body tree.
-  int body_index;
-
-  /// The starting index of this rigid body's joint's position value(s) within
-  /// the parent tree's state vector.
-  int position_num_start;
-
-  /// The starting index of this rigid body's joint's velocity value(s) within
-  /// the parent tree's state vector.
-  int velocity_num_start;
-
-  /// A list of visual elements for this RigidBody
-  DrakeShapes::VectorOfVisualElements visual_elements;
-
-  std::vector<DrakeCollision::ElementId> collision_element_ids;
-  std::map<std::string, std::vector<DrakeCollision::ElementId> >
-      collision_element_groups;
-
-  Eigen::Matrix3Xd contact_pts;
-
-  /// The mass of this rigid body.
-  double mass;
-
-  /// The center of mass of this rigid body.
-  Eigen::Vector3d com;
-
-  /// The spatial rigid body inertia of this rigid body.
-  drake::SquareTwistMatrix<double> I;
-
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
-
-  // TODO(amcastro-tri): move to a better place (h + cc files).
-  class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element {
-   public:
-    CollisionElement(const CollisionElement& other);
-    // TODO(amcastro-tri): The RigidBody should be const?
-    // TODO(amcastro-tri): It should not be possible to construct a
-    // CollisionElement without specifying a geometry. Remove this constructor.
-    CollisionElement(const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    CollisionElement(const DrakeShapes::Geometry& geometry,
-                     const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    virtual ~CollisionElement() {}
-
-    CollisionElement* clone() const override;
-
-    bool CollidesWith(const DrakeCollision::Element* other) const override;
-
-#ifndef SWIG
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
-  };
 
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
+
+ private:
+  // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
+  // currently (independently) at the RigidBodyTree level to represent the
+  // featherstone structure. This version is for the kinematics.
+
+  // The "parent" joint of this rigid body. This is the joint through which this
+  // rigid body connects to the rest of the rigid body tree.
+  std::unique_ptr<DrakeJoint> joint_;
+
+  // A bitmask that determines the collision groups that this rigid body is part
+  // of. If the i-th bit is set this rigid body belongs to the i-th collision
+  // group. A rigid body can belong to several collision groups.
+  DrakeCollision::bitmask collision_filter_group_;
+
+  // A bitmask that determines which collision groups this rigid body does not
+  // collide with. Thus, if the i-th bit is set this rigid body is not checked
+  // for collisions with bodies in the i-th group.
+  DrakeCollision::bitmask collision_filter_ignores_;
+
+  // The name of this rigid body.
+  std::string name_;
+
+  // TODO(liang.fok) Remove this member variable, see:
+  // https://github.com/RobotLocomotion/drake/issues/3053
+  // The name of the model that defined this rigid body.
+  std::string model_name_;
+
+  // A unique ID for the model instance to which this body belongs.
+  int model_instance_id_{0};
+
+  // The rigid body that's connected to this rigid body's joint.
+  RigidBody* parent_{nullptr};
+
+  // The index of this rigid body in the rigid body tree.
+  int body_index_{0};
+
+  // The starting index of this rigid body's joint's position value(s) within
+  // the parent tree's state vector.
+  int position_start_index_{0};
+
+  // The starting index of this rigid body's joint's velocity value(s) within
+  // the parent tree's state vector.
+  int velocity_start_index_{0};
+
+  // A list of visual elements for this RigidBody.
+  DrakeShapes::VectorOfVisualElements visual_elements_;
+
+  // A list of collision element IDs of collision elements that represent the
+  // geometry of this rigid body.
+  std::vector<DrakeCollision::ElementId> collision_element_ids_;
+
+  // A map of groups of collision element IDs. This is just for conveniently
+  // accessing particular groups of collision elements. The groups do not imply
+  // anything in terms of how the collision elements relate to each other.
+  std::map<std::string, std::vector<DrakeCollision::ElementId>>
+      collision_element_groups_;
+
+  // The contact points this rigid body has with its environment.
+  Eigen::Matrix3Xd contact_points_;
+
+  // The mass of this rigid body.
+  double mass_{0};
+
+  // The center of mass of this rigid body.
+  Eigen::Vector3d center_of_mass_;
+
+  // The spatial inertia of this rigid body.
+  drake::SquareTwistMatrix<double> spatial_inertia_;
 };

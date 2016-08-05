@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/Path.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
 namespace drake {
@@ -13,7 +13,7 @@ namespace test {
 namespace rigid_body_system {
 namespace {
 
-using Drake::RigidBodySystem;
+using drake::RigidBodySystem;
 
 // Tests the ability to load a URDF as part of the world of a rigid body system.
 GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
@@ -24,7 +24,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   // and is attached to the world via a fixed joint. Thus, everything in the
   // URDF becomes part of the world.
   rigid_body_sys->addRobotFromFile(
-      Drake::getDrakePath() +
+      drake::GetDrakePath() +
           "/systems/plants/test/rigid_body_system/world.urdf",
       DrakeJoint::FIXED);
 
@@ -44,7 +44,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
        {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
     RigidBody* body = tree->FindBody(body_name);
     EXPECT_NE(body, nullptr);
-    EXPECT_EQ(body->model_name(), "dual_ramps");
+    EXPECT_EQ(body->get_model_name(), "dual_ramps");
   }
 }
 
@@ -59,7 +59,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // the world's coordinate frame. The second model's root frame is offset from
   // the world's coordinate frame by X = 1, Y = 1, and Z = 1.
   rigid_body_sys->addRobotFromFile(
-      Drake::getDrakePath() +
+      drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf");
 
   Eigen::Isometry3d T_second_model_to_world;
@@ -76,7 +76,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
       T_second_model_to_world);
 
   rigid_body_sys->addRobotFromFile(
-      Drake::getDrakePath() +
+      drake::GetDrakePath() +
           "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf",
       DrakeJoint::QUATERNION, weld_to_frame);
 
@@ -132,7 +132,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_THROW(tree->FindBody("link_3", "model_2"), std::logic_error);
 
   // Checks that a body can be obtained when we specify the body's name and
-  // model ID.
+  // model instance ID.
   EXPECT_NE(tree->FindBody("link_1", "", 0), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "", 1), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "", 2), nullptr);
@@ -147,7 +147,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_NE(tree->FindBody("link_3", "", 3), nullptr);
 
   // Checks that a body can be obtained when we specify the body's name, model
-  // name, and model ID.
+  // name, and model instance ID.
   EXPECT_NE(tree->FindBody("link_1", "model_1", 0), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "model_2", 1), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "model_1", 2), nullptr);
@@ -169,7 +169,8 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_THROW(tree->findJoint("joint_1"), std::logic_error);
   EXPECT_THROW(tree->findJoint("joint_2"), std::logic_error);
 
-  // Checks that we can access a joint using the joint name and model ID.
+  // Checks that we can access a joint using the joint name and model instance
+  // ID.
   EXPECT_NE(tree->findJoint("joint_1", 0), nullptr);
   EXPECT_NE(tree->findJoint("joint_1", 1), nullptr);
   EXPECT_NE(tree->findJoint("joint_1", 2), nullptr);
@@ -193,13 +194,13 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
   // verifying that an exception is thrown, and then verifying that the thrown
   // exception is the correct one.
   EXPECT_THROW(
-      rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
+      rigid_body_sys->addRobotFromFile(drake::GetDrakePath() +
                                        "/systems/plants/test/rigid_body_system/"
                                        "bad_transmission_no_joint.urdf"),
       std::runtime_error);
 
   try {
-    rigid_body_sys->addRobotFromFile(Drake::getDrakePath() +
+    rigid_body_sys->addRobotFromFile(drake::GetDrakePath() +
                                      "/systems/plants/test/rigid_body_system/"
                                      "bad_transmission_no_joint.urdf");
   } catch (std::runtime_error& error) {

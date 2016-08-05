@@ -41,7 +41,7 @@ namespace {
 int findLinkIndex(RigidBodyTree* tree, string link_name) {
   int index = -1;
   for (unsigned int i = 0; i < tree->bodies.size(); i++) {
-    if (link_name.compare(tree->bodies[i]->name_) == 0) {
+    if (link_name.compare(tree->bodies[i]->get_name()) == 0) {
       index = i;
       break;
     }
@@ -97,12 +97,18 @@ void parseInertial(RigidBody* body, XMLElement* node) {
   if (origin) originAttributesToTransform(origin, T);
 
   XMLElement* mass = node->FirstChildElement("mass");
-  if (mass) parseScalarAttribute(mass, "value", body->mass);
+  if (mass) {
+    double body_mass = 0;
+    parseScalarAttribute(mass, "value", body_mass);
+    body->set_mass(body_mass);
+  }
 
-  body->com << T(0, 3), T(1, 3), T(2, 3);
+  Eigen::Vector3d com;
+  com << T(0, 3), T(1, 3), T(2, 3);
+  body->set_center_of_mass(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
-  I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
+  I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {
@@ -117,7 +123,7 @@ void parseInertial(RigidBody* body, XMLElement* node) {
     parseScalarAttribute(inertia, "izz", I(2, 2));
   }
 
-  body->I = transformSpatialInertia(T, I);
+  body->set_spatial_inertia(transformSpatialInertia(T, I));
 }
 
 // Adds a material to the supplied material map. If the material is already
@@ -351,7 +357,7 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   // element, throws an exception if a geometry element does not exist.
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node) {
-    throw runtime_error("ERROR: Link " + body->name_ +
+    throw runtime_error("ERROR: Link " + body->get_name() +
                         " has a visual element without geometry.");
   }
 
@@ -368,7 +374,7 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   // Parses the geometry specifications of the visualization.
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse visual element in link " +
-                        body->name_ + ".");
+                        body->get_name() + ".");
 
   // Parses the material specification of the visualization. Note that we cannot
   // reuse the logic within ParseMaterial() here because the context is
@@ -387,12 +393,12 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
     {
       XMLElement* color_node = material_node->FirstChildElement("color");
       if (color_node) {
-        Vector4d rgba;
         if (!parseVectorAttribute(color_node, "rgba", rgba)) {
           throw runtime_error(
               "ERROR: Failed to parse color of material for "
               "model \"" +
-              body->model_name() + "\", link \"" + body->name() + "\".");
+              body->get_model_name() + "\", link \"" + body->get_name() +
+              "\".");
         }
         color_specified = true;
       }
@@ -457,14 +463,14 @@ void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
           << "WARNING: Visual element has a material whose color could not"
              "be determined."
           << std::endl
-          << "  - model name: " << body->model_name() << std::endl
-          << "  - body name: " << body->name() << std::endl
+          << "  - model name: " << body->get_model_name() << std::endl
+          << "  - body name: " << body->get_name() << std::endl
           << "  - material name: " << material_name << std::endl;
       throw std::runtime_error(error_buff.str());
     }
   }
 
-  if (element.hasGeometry()) body->addVisualElement(element);
+  if (element.hasGeometry()) body->AddVisualElement(element);
 }
 
 void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
@@ -485,10 +491,10 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
 
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
-    throw runtime_error("ERROR: Link " + body->name_ +
+    throw runtime_error("ERROR: Link " + body->get_name() +
                         " has a collision element without geometry");
 
-  RigidBody::CollisionElement element(T_element_to_link, body);
+  RigidBodyCollisionElement element(T_element_to_link, body);
   // By default all collision elements added to the world from an URDF file are
   // flagged as static.
   // We would also like to flag as static bodies connected to the world with a
@@ -505,11 +511,11 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   //  Issue 2661 was created to track this problem.
   // TODO(amcastro-tri): fix the above issue tracked by 2661.  Similarly for
   // parseSDFCollision in RigidBodyTreeSDF.cpp.
-  if (body->name().compare(string(RigidBodyTree::kWorldLinkName)) == 0)
+  if (body->get_name().compare(string(RigidBodyTree::kWorldLinkName)) == 0)
     element.set_static();
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
-                        body->name_ + ".");
+                        body->get_name() + ".");
 
   if (element.hasGeometry()) {
     tree->addCollisionElement(element, *body, group_name);
@@ -524,14 +530,14 @@ bool parseLink(RigidBodyTree* tree, string robot_name, XMLElement* node,
 
   RigidBody* body{nullptr};
   std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
-  body->model_name_ = robot_name;
+  body->set_model_name(robot_name);
 
   attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
 
   // World links are handled by parseWorldJoint().
-  body->name_ = attr;
-  if (body->name_ == string(RigidBodyTree::kWorldLinkName)) return false;
+  body->set_name(attr);
+  if (body->get_name() == string(RigidBodyTree::kWorldLinkName)) return false;
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node) parseInertial(body, inertial_node);
@@ -548,7 +554,7 @@ bool parseLink(RigidBodyTree* tree, string robot_name, XMLElement* node,
   }
 
   tree->add_rigid_body(std::move(owned_body));
-  *index = body->body_index;
+  *index = body->get_body_index();
   return true;
 }
 
@@ -668,7 +674,7 @@ void parseJoint(RigidBodyTree* tree, XMLElement* node) {
     axis.normalize();
   }
 
-  // now construct the actual joint (based on it's type)
+  // now construct the actual joint (based on its type)
   DrakeJoint* joint = nullptr;
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
@@ -693,7 +699,7 @@ void parseJoint(RigidBodyTree* tree, XMLElement* node) {
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   tree->bodies[child_index]->setJoint(move(joint_unique_ptr));
-  tree->bodies[child_index]->parent = tree->bodies[parent_index].get();
+  tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 }
 
 // Searches through the URDF document looking for the effort limits of a
@@ -940,8 +946,8 @@ void parseWorldJoint(XMLElement* node,
       // a nullptr.
       if (weld_to_frame == nullptr) weld_to_frame.reset(new RigidBodyFrame());
 
-      weld_to_frame->name = string(RigidBodyTree::kWorldLinkName);
-      weld_to_frame->transform_to_body = transform_to_parent_body;
+      weld_to_frame->set_name(string(RigidBodyTree::kWorldLinkName));
+      weld_to_frame->set_transform_to_body(transform_to_parent_body);
 
       if (joint_type == "fixed") {
         floating_base_type = DrakeJoint::FloatingBaseType::FIXED;
@@ -1082,33 +1088,33 @@ void parseURDF(XMLDocument* xml_doc,
 
 }  // namespace
 
-void AddRobotFromURDFString(
+void AddModelInstanceFromURDFString(
     const string& urdf_string,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  AddRobotFromURDFString(urdf_string, package_map, tree);
+  AddModelInstanceFromURDFString(urdf_string, package_map, tree);
 }
 
-void AddRobotFromURDFString(
+void AddModelInstanceFromURDFString(
     const string& urdf_string,
     PackageMap& package_map,
     RigidBodyTree* tree) {
   const string root_dir = ".";
-  AddRobotFromURDFString(urdf_string, package_map, root_dir,
+  AddModelInstanceFromURDFString(urdf_string, package_map, root_dir,
                          DrakeJoint::ROLLPITCHYAW, nullptr, tree);
 }
 
-void AddRobotFromURDFString(
+void AddModelInstanceFromURDFString(
     const string& urdf_string,
     const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  AddRobotFromURDFString(urdf_string, package_map, root_dir,
+  AddModelInstanceFromURDFString(urdf_string, package_map, root_dir,
                          floating_base_type, nullptr, tree);
 }
 
-void AddRobotFromURDFString(
+void AddModelInstanceFromURDFString(
     const string& urdf_string,
     PackageMap& package_map,
     const string& root_dir,
@@ -1121,34 +1127,34 @@ void AddRobotFromURDFString(
             weld_to_frame, tree);
 }
 
-void AddRobotFromURDF(
+void AddModelInstanceFromURDF(
     const string& urdf_filename,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  AddRobotFromURDF(urdf_filename, package_map, DrakeJoint::ROLLPITCHYAW,
+  AddModelInstanceFromURDF(urdf_filename, package_map, DrakeJoint::ROLLPITCHYAW,
                    nullptr, tree);
 }
 
-void AddRobotFromURDF(
+void AddModelInstanceFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  AddRobotFromURDF(urdf_filename, package_map, floating_base_type,
+  AddModelInstanceFromURDF(urdf_filename, package_map, floating_base_type,
                    nullptr, tree);
 }
 
-void AddRobotFromURDF(
+void AddModelInstanceFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  AddRobotFromURDF(urdf_filename, package_map, floating_base_type,
+  AddModelInstanceFromURDF(urdf_filename, package_map, floating_base_type,
                    weld_to_frame, tree);
 }
 
-void AddRobotFromURDF(
+void AddModelInstanceFromURDF(
     const string& urdf_filename, PackageMap& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,

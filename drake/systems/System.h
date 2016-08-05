@@ -4,11 +4,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "drake/core/Function.h"
-#include "drake/core/Gradient.h"
-#include "drake/core/Vector.h"
+#include "drake/systems/vector.h"
 
-namespace Drake {
+namespace drake {
 
 /** @defgroup modeling Modeling Dynamical Systems
  * @{
@@ -66,13 +64,13 @@ namespace Drake {
  *
  * (always try to label your methods with const if possible)
  *
- * todo: dynamics and output should be implemented as Drake::Function(s) with
+ * todo: dynamics and output should be implemented as drake::Function(s) with
  * input-output relationships defined.  then we would no longer specify
  * isTimeVarying and isDirectFeedthrough (we could extract them from the
  * input-output relationship)
  *
  * todo: move xdot and y to be arguments instead of return values, to be
- * consistent with Drake::Function.
+ * consistent with drake::Function.
  *
  * @nbsp
  *
@@ -218,7 +216,7 @@ struct CreateStateVectorDispatch<
         typename System::template StateVector<Scalar>>::value>::type> {
   static typename System::template StateVector<Scalar> eval(const System& sys) {
     return
-        typename System::template StateVector<Scalar>(Drake::getNumStates(sys));
+        typename System::template StateVector<Scalar>(drake::getNumStates(sys));
   }
 };
 
@@ -242,4 +240,4 @@ typename System::template StateVector<Scalar> createStateVector(
   return internal::CreateStateVectorDispatch<System, Scalar>::eval(sys);
 }
 
-}  // end namespace Drake
+}  // end namespace drake

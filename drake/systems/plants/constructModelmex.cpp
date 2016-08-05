@@ -79,40 +79,46 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     // mexPrintf("constructModelmex: body %d\n", i);
     // END_DEBUG
     std::unique_ptr<RigidBody> b(new RigidBody());
-    b->body_index = i;
+    b->set_body_index(i);
 
-    b->name_ = mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname"));
+    b->set_name(mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname")));
 
     pm = mxGetPropertySafe(pBodies, i, "robotnum");
-    b->robotnum = (int)mxGetScalar(pm) - 1;
+    b->set_model_instance_id((int)mxGetScalar(pm) - 1);
 
     pm = mxGetPropertySafe(pBodies, i, "mass");
-    b->mass = mxGetScalar(pm);
+    b->set_mass(mxGetScalar(pm));
 
     pm = mxGetPropertySafe(pBodies, i, "com");
-    if (!mxIsEmpty(pm))
-      memcpy(b->com.data(), mxGetPrSafe(pm), sizeof(double) * 3);
+    Eigen::Vector3d com;
+    if (!mxIsEmpty(pm)) {
+      memcpy(com.data(), mxGetPrSafe(pm), sizeof(double) * 3);
+      b->set_center_of_mass(com);
+    }
 
     pm = mxGetPropertySafe(pBodies, i, "I");
-    if (!mxIsEmpty(pm))
-      memcpy(b->I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
+    if (!mxIsEmpty(pm)) {
+      drake::SquareTwistMatrix<double> I;
+      memcpy(I.data(), mxGetPrSafe(pm), sizeof(double) * 6 * 6);
+      b->set_spatial_inertia(I);
+    }
 
     pm = mxGetPropertySafe(pBodies, i, "position_num");
-    b->position_num_start = (int)mxGetScalar(pm) - 1;  // zero-indexed
+    b->set_position_start_index((int)mxGetScalar(pm) - 1);  // zero-indexed
 
     pm = mxGetPropertySafe(pBodies, i, "velocity_num");
-    b->velocity_num_start = (int)mxGetScalar(pm) - 1;  // zero-indexed
+    b->set_velocity_start_index((int)mxGetScalar(pm) - 1);  // zero-indexed
 
     pm = mxGetPropertySafe(pBodies, i, "parent");
     if (!pm || mxIsEmpty(pm)) {
-      b->parent = nullptr;
+      b->set_parent(nullptr);
     } else {
       int parent_ind = static_cast<int>(mxGetScalar(pm)) - 1;
       if (parent_ind >= static_cast<int>(model->bodies.size()))
         mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs",
                           "bad body.parent %d (only have %d bodies)",
                           parent_ind, model->bodies.size());
-      if (parent_ind >= 0) b->parent = model->bodies[parent_ind].get();
+      if (parent_ind >= 0) b->set_parent(model->bodies[parent_ind].get());
     }
 
     if (b->hasParent()) {
@@ -204,7 +210,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         auto shape = (DrakeShapes::Shape) static_cast<int>(
             mxGetScalar(mxGetPropertySafe(pShape, 0, "drake_shape_id")));
         vector<double> params_vec;
-        RigidBody::CollisionElement element(T, b.get());
+        RigidBodyCollisionElement element(T, b.get());
         switch (shape) {
           case DrakeShapes::BOX: {
             double* params = mxGetPrSafe(mxGetPropertySafe(pShape, 0, "size"));
@@ -361,7 +367,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       // cout << "constructModelmex: Set contact_pts of body" << endl;
       // END_DEBUG
       Map<Matrix3Xd> pts(mxGetPrSafe(pPts), 3, n_pts);
-      model->bodies[body_idx]->contact_pts = pts;
+      model->bodies[body_idx]->set_contact_points(pts);
       // DEBUG
       // mexPrintf("constructModelmex: created %d contact points for body %d\n",
       // n_pts, body_idx);
@@ -378,16 +384,16 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   for (int i = 0; i < num_frames; i++) {
     shared_ptr<RigidBodyFrame> fr(new RigidBodyFrame());
 
-    fr->name = mxGetStdString(mxGetPropertySafe(pFrames, i, "name"));
+    fr->set_name(mxGetStdString(mxGetPropertySafe(pFrames, i, "name")));
 
     pm = mxGetPropertySafe(pFrames, i, "body_ind");
-    fr->body = model->bodies[(int)mxGetScalar(pm) - 1].get();
+    fr->set_rigid_body(model->bodies[(int)mxGetScalar(pm) - 1].get());
 
     pm = mxGetPropertySafe(pFrames, i, "T");
-    memcpy(fr->transform_to_body.data(), mxGetPrSafe(pm),
+    memcpy(fr->get_mutable_transform_to_body()->data(), mxGetPrSafe(pm),
            sizeof(double) * 4 * 4);
 
-    fr->frame_index = -i - 2;
+    fr->set_frame_index(-i - 2);
     model->frames.push_back(fr);
   }
 

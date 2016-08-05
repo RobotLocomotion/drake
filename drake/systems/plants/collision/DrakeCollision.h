@@ -8,8 +8,8 @@
 #include <stdexcept>
 #include <bitset>
 
-#include "Element.h"
-#include "Model.h"
+#include "drake/systems/plants/collision/Element.h"
+#include "drake/systems/plants/collision/Model.h"
 #include "drake/drakeCollision_export.h"
 
 static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;

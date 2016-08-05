@@ -15,10 +15,13 @@
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
+#include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
+#include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/pose_map.h"
+#include "drake/systems/plants/rigid_body_actuator.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
@@ -28,47 +31,6 @@
 #define EPSILON 10e-8
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
-
-class DRAKERBM_EXPORT RigidBodyActuator {
- public:
-  RigidBodyActuator(
-      const std::string& name_in, const RigidBody* body_in,
-      double reduction_in = 1.0,
-      double effort_limit_min_in = -std::numeric_limits<double>::infinity(),
-      double effort_limit_max_in = std::numeric_limits<double>::infinity())
-      : name(name_in),
-        body(body_in),
-        reduction(reduction_in),
-        effort_limit_min(effort_limit_min_in),
-        effort_limit_max(effort_limit_max_in) {}
-
-  const std::string name;
-  const RigidBody* const body;
-  const double reduction;
-  const double effort_limit_min;
-  const double effort_limit_max;
-};
-
-class DRAKERBM_EXPORT RigidBodyLoop {
- public:
-  //
-  // Constructs a RigidBodyLoop between two frames. Is this the correct API?
-  // TODO(amcastro-tri): review the correctness of this API
-  RigidBodyLoop(std::shared_ptr<RigidBodyFrame> _frameA,
-                std::shared_ptr<RigidBodyFrame> _frameB,
-                const Eigen::Vector3d& _axis)
-      : frameA(_frameA), frameB(_frameB), axis(_axis) {}
-
-  const std::shared_ptr<RigidBodyFrame> frameA, frameB;
-  const Eigen::Vector3d axis;
-
-  friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
-
- public:
-#ifndef SWIG
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
-};
 
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
@@ -87,7 +49,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   virtual ~RigidBodyTree(void);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDFString.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
 #endif
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
@@ -96,7 +58,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDFString.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
 #endif
   void addRobotFromURDFString(
       const std::string& xml_string,
@@ -107,7 +69,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDF.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
 #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
@@ -116,7 +78,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::urdf::AddRobotFromURDF.")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
 #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
@@ -126,7 +88,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use drake::parsers::sdf::AddRobotFromSDF.")
+  DRAKE_DEPRECATED("Please use AddRobotFromSDF.")
 #endif
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
@@ -134,16 +96,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
-   * Returns an integer that can be used to uniquely identify a model
-   * within this rigid body tree. Note that this method is not thread safe!
+   * Adds a new model instance to this `RigidBodyTree`. The model instance is
+   * identified by a unique model instance ID, which is the return value of
+   * this method.
    */
-  int get_next_model_id() { return next_model_id_++; }
+  // This method is not thread safe!
+  int add_model_instance() { return number_of_model_instances_++; }
 
   /**
-   * Returns an integer that will be used as a unique ID for the next model
-   * to be added within the rigid body tree.
+   * Returns the number of model instances in the tree.
    */
-  int get_current_model_id() { return next_model_id_; }
+  int get_number_of_model_instances() { return number_of_model_instances_; }
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
@@ -211,7 +174,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
   bool isBodyPartOfRobot(const RigidBody& body,
                          const std::set<int>& robotnum) const;
 
-  double getMass(const std::set<int>& robotnum = default_robot_num_set) const;
+  /**
+   * Computes the total mass of a set of models in this rigid body tree.
+   *
+   * @param[in] model_instance_ids A set of model instance ID values
+   * corresponding to the model instances whose masses should be included in the
+   * returned value.
+   *
+   * @returns The total mass of the model instances specified by
+   * @p model_instance_ids.
+   */
+  double getMass(const std::set<int>& model_instance_ids =
+      default_robot_num_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
@@ -472,26 +446,26 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
   DrakeCollision::ElementId addCollisionElement(
-      const RigidBody::CollisionElement& element, RigidBody& body,
+      const RigidBodyCollisionElement& element, RigidBody& body,
       const std::string& group_name);
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
     for (const auto& body_ptr : bodies) {
       std::vector<std::string> names_of_groups_to_delete;
-      for (const auto& group : body_ptr->collision_element_groups) {
+      for (const auto& group : body_ptr->get_group_to_collision_ids_map()) {
         const std::string& group_name = group.first;
         if (test(group_name)) {
-          auto& ids = body_ptr->collision_element_ids;
+          auto& ids = body_ptr->get_mutable_collision_element_ids();
           for (const auto& id : group.second) {
             ids.erase(std::find(ids.begin(), ids.end(), id));
-            collision_model->removeElement(id);
+            collision_model_->removeElement(id);
           }
           names_of_groups_to_delete.push_back(group_name);
         }
       }
       for (const auto& group_name : names_of_groups_to_delete) {
-        body_ptr->collision_element_groups.erase(group_name);
+        body_ptr->get_mutable_group_to_collision_ids_map().erase(group_name);
       }
     }
   }
@@ -505,7 +479,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
 
   void getTerrainContactPoints(const RigidBody& body,
-                               Eigen::Matrix3Xd& terrain_points) const;
+                               Eigen::Matrix3Xd* terrain_points) const;
 
   bool collisionRaycast(const KinematicsCache<double>& cache,
                         const Eigen::Matrix3Xd& origins,
@@ -746,7 +720,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
       int ncols_joint = in_terms_of_qdot ? body.getJoint().getNumPositions()
                                          : body.getJoint().getNumVelocities();
       int col_start =
-          in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
+          in_terms_of_qdot ? body.get_position_start_index() :
+              body.get_velocity_start_index();
       full.middleCols(col_start, ncols_joint) =
           compact.middleCols(compact_col_start, ncols_joint);
       compact_col_start += ncols_joint;
@@ -853,9 +828,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // The number of velocity states in this rigid body tree.
   int num_velocities_{};
 
-  // Remembers the ID that should be assigned to the next model added to this
-  // rigid body tree.
-  int next_model_id_{};
+  // The number of model instances in this rigid body tree.
+  int number_of_model_instances_{};
 
   // helper functions for contactConstraints
   template <typename Scalar>
@@ -878,7 +852,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // RBM for use in collision detection of different kinds. Small margins are
   // applied to all collision geometry when that geometry is added, to improve
   // the numerical stability of contact gradients taken using the model.
-  std::unique_ptr<DrakeCollision::Model> collision_model;
+  std::unique_ptr<DrakeCollision::Model> collision_model_;
 
  public:
 #ifndef SWIG

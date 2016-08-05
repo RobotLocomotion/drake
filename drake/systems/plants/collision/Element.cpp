@@ -1,4 +1,4 @@
-#include "Element.h"
+#include "drake/systems/plants/collision/Element.h"
 
 #include <iostream>
 

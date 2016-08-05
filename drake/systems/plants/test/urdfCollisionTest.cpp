@@ -19,10 +19,8 @@ int main(int argc, char* argv[]) {
 
   // run kinematics with second derivatives 100 times
   Eigen::VectorXd q = model->getZeroConfiguration();
-  int i;
-
   if (argc >= 2 + model->number_of_positions()) {
-    for (i = 0; i < model->number_of_positions(); i++)
+    for (int i = 0; i < model->number_of_positions(); i++)
       sscanf(argv[2 + i], "%lf", &q(i));
   }
 
@@ -49,8 +47,8 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 3; ++i) {
       cout << xB(i, j) << " ";
     }
-    cout << model->bodies[bodyA_idx.at(j)]->name_ << " ";
-    cout << model->bodies[bodyB_idx.at(j)]->name_ << endl;
+    cout << model->bodies[bodyA_idx.at(j)]->get_name() << " ";
+    cout << model->bodies[bodyB_idx.at(j)]->get_name() << endl;
   }
 
   delete model;

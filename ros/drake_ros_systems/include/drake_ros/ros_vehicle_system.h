@@ -9,6 +9,7 @@
 #include "ackermann_msgs/AckermannDriveStamped.h"
 
 #include "drake/systems/Simulation.h"
+#include "drake/systems/simulation_options.h"
 #include "drake/systems/System.h"
 #include "drake/systems/cascade_system.h"
 
@@ -117,7 +118,7 @@ template <typename System>
 void run_ros_vehicle_sim(
     std::shared_ptr<System> sys, double t0, double tf,
     const typename System::template StateVector<double>& x0,
-    const SimulationOptions& options = Drake::default_simulation_options) {
+    const SimulationOptions& options = SimulationOptions()) {
   auto ros_ackermann_input =
       std::make_shared<internal::ROSAckermannCommandReceiverSystem<
           System::template InputVector>>();
@@ -126,7 +127,7 @@ void run_ros_vehicle_sim(
 
   SimulationOptions sim_options = options;
   if (sim_options.realtime_factor < 0.0) sim_options.realtime_factor = 1.0;
-  Drake::simulate(*ros_sys, t0, tf, x0, sim_options);
+  drake::simulate(*ros_sys, t0, tf, x0, sim_options);
 }
 
 /**

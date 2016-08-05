@@ -31,7 +31,6 @@ int main(int argc, char* argv[]) {
 
   //  const Vector4d zero(0, 0, 0, 1);
   Eigen::Vector3d zero = Eigen::Vector3d::Zero();
-  Eigen::Matrix<double, 6, 1> pt;
 
   for (i = 0; i < static_cast<int>(model->bodies.size()); i++) {
     //    model->forwardKin(i, zero, 1, pt);
@@ -41,7 +40,7 @@ int main(int argc, char* argv[]) {
     x << pt, rpy;
     //    cout << i << ": forward kin: " << model->bodies[i].name_ << " is at
     //    " << pt.transpose() << endl;
-    cout << model->bodies[i]->name_ << " ";
+    cout << model->bodies[i]->get_name() << " ";
     cout << x.transpose() << endl;
     //    for (int j=0; j<pt.size(); j++)
     //        cout << pt(j) << " ";

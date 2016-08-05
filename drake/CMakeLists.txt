@@ -116,14 +116,6 @@ elseif(MSVC)
   set(CXX_FLAGS_NO_SIGN_COMPARE "/wd4018")
 endif()
 
-# similar to the export headers, any other generated headers will be installed to build/include/drake, but will be created in ${PROJECT_BINARY_DIR}/exports/drake
-# These headers can be included as drake/bla.h
-set(generated_dir ${PROJECT_BINARY_DIR}/generated)
-set(drake_path_header ${generated_dir}/drake/Path.h)
-configure_file(core/Path.h.in ${drake_path_header})
-install(FILES ${drake_path_header} DESTINATION include/drake/)
-include_directories(BEFORE ${generated_dir})
-
 # set up matlab build
 include(cmake/mex.cmake)
 if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
@@ -269,6 +261,12 @@ else()
   endif()
 endif()
 
+pods_find_pkg_config(spdlog)
+if(spdlog_FOUND)
+  pods_use_pkg_config_includes(spdlog)
+  add_definitions(-DHAVE_SPDLOG)
+endif()
+
 include_directories(thirdParty/bsd/spruce/include)
 
 add_subdirectory(common)
@@ -282,6 +280,7 @@ add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(examples)
 add_subdirectory(bindings)
+add_subdirectory(regtests)
 
 # setup MATLAB pods-compliance
 include(cmake/matlab_pods.cmake)
@@ -342,8 +341,6 @@ if(ENABLE_DOCUMENTATION)
   add_subdirectory(doc)
 endif()
 
-if(IS_DIRECTORY doc/textbook)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/textbook/CMakeLists.txt)
   add_subdirectory(doc/textbook)
 endif()
-
-add_subdirectory(regtests)

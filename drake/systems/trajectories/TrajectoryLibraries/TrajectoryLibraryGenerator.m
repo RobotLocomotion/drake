@@ -18,7 +18,7 @@ classdef TrajectoryLibraryGenerator
         
         function obj = setCyclicCoordinateIndexes(obj, cyclicIdx)
             obj.cyclicIdx = cyclicIdx;
-            obj.nonCyclicIdx = setdiff(1:numel(obj.robot.getStateFrame.coordinates), cyclicIdx);
+            obj.nonCyclicIdx = setdiff(1:obj.robot.getNumStates(), cyclicIdx);
         end
         
         function obj = setTrajectoryLength(obj, trajLength)

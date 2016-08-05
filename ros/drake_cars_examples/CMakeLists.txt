@@ -29,10 +29,10 @@ add_executable(golfcart_adapter src/golfcart_adapter.cc)
 target_link_libraries(golfcart_adapter ${catkin_LIBRARIES})
 
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
-add_executable(car_sim_lcm_and_ros src/car_sim_lcm_and_ros.cc)
-target_link_libraries(car_sim_lcm_and_ros ${catkin_LIBRARIES}
+add_executable(single_car_in_stata_garage src/single_car_in_stata_garage.cc)
+target_link_libraries(single_car_in_stata_garage
+  ${catkin_LIBRARIES}
   drakeCars
-  drakeCore
   drakeCommon
   drakeRBM
   drakeRBSystem

@@ -2,12 +2,12 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/Path.h"
-#include "drake/core/Vector.h"
+#include "drake/common/drake_path.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/vector.h"
 
 #include "lcmtypes/drake/lcmt_iiwa_command.hpp"
 #include "lcmtypes/drake/lcmt_iiwa_status.hpp"
@@ -17,7 +17,7 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
-using Drake::Vector1d;
+using drake::Vector1d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
@@ -119,7 +119,7 @@ int do_main(int argc, const char* argv[]) {
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
   RigidBodyTree tree(
-      Drake::getDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
@@ -159,7 +159,7 @@ int do_main(int argc, const char* argv[]) {
   // For part of the remaining time, constrain the second joint while
   // preserving the end effector constraint.
   Eigen::VectorXi joint_idx_3(1);
-  joint_idx_3(0) = tree.findJoint("iiwa_joint_2")->position_num_start;
+  joint_idx_3(0) = tree.findJoint("iiwa_joint_2")->get_position_start_index();
   PostureConstraint pc3(&tree, Vector2d(6, 8));
   pc3.setJointLimits(joint_idx_3, Vector1d(0.63), Vector1d(0.7));
 
