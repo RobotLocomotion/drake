@@ -7,7 +7,7 @@ if(lcm_FOUND)
   add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
 
   add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES
-          iiwa_simulation.cc iiwa_controller.cc)
+          iiwa_simulation.cc)
   target_link_libraries(drakeKukaIiwaArm
     drakeRBSystem
     drakeShapes
@@ -15,8 +15,7 @@ if(lcm_FOUND)
     drakeLCMSystem)
   pods_install_libraries(drakeKukaIiwaArm)
   drake_install_headers(
-          iiwa_simulation.h
-          iiwa_controller.h)
+          iiwa_simulation.h)
   pods_install_pkg_config_file(drake-kuka-iiwa-arm
           LIBS -ldrakeKukaIiwaArm
           REQUIRES
