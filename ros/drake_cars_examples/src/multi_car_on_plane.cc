@@ -104,11 +104,12 @@ int DoMain(int argc, const char* argv[]) {
 
   // Instantiates a data structure that maps model instance names to their model
   // instance IDs.
-  std::unique_ptr<std::map<std::string, int>>
-      model_instance_name_to_id_map(new std::map<std::string, int>());
+  std::map<std::string, int> sim_instance_ids;
 
   // Obtains the number of vehicles to simulate.
   int num_vehicles = GetIntParameter(ros_node_handle, "car_count");
+
+  const std::string model_name = "drake_prius";
 
   // Adds the vehicles to the rigid body system.
   for (int ii = 0; ii < num_vehicles; ++ii) {
@@ -116,9 +117,29 @@ int DoMain(int argc, const char* argv[]) {
         std::to_string(ii + 1);
     const std::string description = GetStringParameter(ros_node_handle,
         description_param_name);
+    RigidBodyTree::ModelToInstanceIDMap instance_ids;
+    std::shared_ptr<RigidBodyFrame> weld_to_frame;
     rigid_body_sys->AddModelInstanceFromString(description,
-        DrakeJoint::QUATERNION);
+        DrakeJoint::QUATERNION, weld_to_frame, &instance_ids);
+
+    // The model file contains a single model. Get its model instance ID,
+    // assign it a model instance name, and save both the instance ID and name
+    // in sim_instance_ids.
+    if (instance_ids.find(model_name) == instance_ids.end()) {
+      throw std::runtime_error(
+          "Failed to find a model instance whose model name is \"" +
+          model_name + "\".");
+    }
+    sim_instance_ids[model_name + "_" + std::to_string(ii)] =
+        instance_ids[model_name];
   }
+
+  std::cout << "==============================================" << std::endl;
+  for(auto it = sim_instance_ids.cbegin(); it != sim_instance_ids.cend();
+      ++it) {
+    std::cout << it->first << " " << it->second << "\n";
+  }
+  std::cout << std::endl;
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 

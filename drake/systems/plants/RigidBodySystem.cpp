@@ -1017,7 +1017,7 @@ void RigidBodySystem::AddModelInstanceFromString(
 
   // Parse the description using an XML parser.
   XMLDocument xml_doc;
-  xml_doc.LoadFile(description.data());
+  xml_doc.Parse(description.c_str());
   if (xml_doc.ErrorID()) {
     throw std::runtime_error("Failed to parse XML description: " +
         std::string(xml_doc.ErrorName()));
