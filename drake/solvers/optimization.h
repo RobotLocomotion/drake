@@ -171,7 +171,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   }
 
   /**
-   * Add a cost to the problem which covers all decision
+   * Adds a cost to the problem which covers all decision
    * variables created at the time the cost was added.
    */
   template <typename ConstraintT>
@@ -285,7 +285,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   }
 
   /**
-   * Add a constraint to the problem which covers all decision
+   * Adds a constraint to the problem which covers all decision
    * variables created at the time the constraint was added.
    */
   template <typename ConstraintT>
