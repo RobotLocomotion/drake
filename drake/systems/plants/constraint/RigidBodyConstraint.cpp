@@ -712,11 +712,11 @@ const int WorldCoMDefaultRobotNum[1] = {0};
 const std::set<int> WorldCoMConstraint::defaultRobotNumSet(
     WorldCoMDefaultRobotNum, WorldCoMDefaultRobotNum + 1);
 
-WorldCoMConstraint::WorldCoMConstraint(RigidBodyTree* robot, Vector3d lb,
-                                       Vector3d ub, const Vector2d& tspan,
-                                       const std::set<int>& model_instance_id)
+WorldCoMConstraint::WorldCoMConstraint(
+    RigidBodyTree* robot, Vector3d lb, Vector3d ub, const Vector2d& tspan,
+    const std::set<int>& model_instance_id_set)
     : PositionConstraint(robot, Vector3d::Zero(), lb, ub, tspan),
-      m_model_instance_id_(model_instance_id) {
+      m_model_instance_id_(model_instance_id_set) {
   set_type(RigidBodyConstraint::WorldCoMConstraintType);
 }
 
@@ -737,8 +737,8 @@ void WorldCoMConstraint::evalNames(const double* t,
 }
 
 void WorldCoMConstraint::updateRobotnum(
-    const std::set<int>& model_instance_id) {
-  m_model_instance_id_ = model_instance_id;
+    const std::set<int>& model_instance_id_set) {
+  m_model_instance_id_ = model_instance_id_set;
 }
 
 WorldCoMConstraint::~WorldCoMConstraint() {}

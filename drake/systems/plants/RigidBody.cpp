@@ -15,10 +15,10 @@ using std::stringstream;
 using std::vector;
 
 RigidBody::RigidBody()
-    : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores(DrakeCollision::NONE_MASK) {
-  com = Vector3d::Zero();
-  I << drake::SquareTwistMatrix<double>::Zero();
+    : collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
+      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
+  center_of_mass_ = Vector3d::Zero();
+  spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
 }
 
 const std::string& RigidBody::get_name() const { return name_; }
@@ -35,13 +35,13 @@ void RigidBody::set_model_instance_id(int model_instance_id) {
   model_instance_id_ = model_instance_id;
 }
 
-void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
-  this->joint = move(new_joint);
+void RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint) {
+  joint_ = move(joint);
 }
 
 const DrakeJoint& RigidBody::getJoint() const {
-  if (joint) {
-    return (*joint);
+  if (joint_) {
+    return (*joint_);
   } else {
     throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_ +
                         "\" in model " + model_name_ +
@@ -119,10 +119,46 @@ void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
   setCollisionFilterIgnores(ignores);
 }
 
+const DrakeCollision::bitmask& RigidBody::getCollisionFilterGroup() const {
+  return collision_filter_group_;
+}
+void RigidBody::setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
+  collision_filter_group_ = group;
+}
+
+const DrakeCollision::bitmask& RigidBody::getCollisionFilterIgnores() const {
+  return collision_filter_ignores_;
+}
+void RigidBody::setCollisionFilterIgnores(const DrakeCollision::bitmask&
+    ignores) {
+  collision_filter_ignores_ = ignores;
+}
+
+void RigidBody::addToCollisionFilterGroup(const DrakeCollision::bitmask&
+    group) {
+  collision_filter_group_ |= group;
+}
+void RigidBody::ignoreCollisionFilterGroup(const DrakeCollision::bitmask&
+    group) {
+  collision_filter_ignores_ |= group;
+}
+void RigidBody::collideWithCollisionFilterGroup(const DrakeCollision::bitmask&
+    group) {
+  collision_filter_ignores_ &= ~group;
+}
+
 bool RigidBody::adjacentTo(const RigidBody& other) const {
-  return ((has_as_parent(other) && !(joint && joint->isFloating())) ||
+  return ((has_as_parent(other) && !(joint_ && joint_->isFloating())) ||
           (other.has_as_parent(*this) &&
-           !(other.joint && other.joint->isFloating())));
+           !(other.joint_ && other.joint_->isFloating())));
+}
+
+bool RigidBody::CollidesWith(const RigidBody& other) const {
+  bool ignored =
+      this == &other || adjacentTo(other) ||
+      (collision_filter_group_ & other.getCollisionFilterIgnores()).any() ||
+      (other.getCollisionFilterGroup() & collision_filter_ignores_).any();
+  return !ignored;
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(
@@ -149,7 +185,8 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
 
 void RigidBody::ApplyTransformToJointFrame(
     const Eigen::Isometry3d& transform_body_to_joint) {
-  I = transformSpatialInertia(transform_body_to_joint, I);
+  spatial_inertia_ = transformSpatialInertia(transform_body_to_joint,
+      spatial_inertia_);
   for (auto& v : visual_elements_) {
     v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
   }
@@ -169,6 +206,24 @@ void RigidBody::set_mass(double mass) {
 
 double RigidBody::get_mass() const {
   return mass_;
+}
+
+void RigidBody::set_center_of_mass(const Eigen::Vector3d& center_of_mass) {
+  center_of_mass_ = center_of_mass;
+}
+
+const Eigen::Vector3d& RigidBody::get_center_of_mass() const {
+  return center_of_mass_;
+}
+
+void RigidBody::set_spatial_inertia(const drake::SquareTwistMatrix<double>&
+    spatial_inertia) {
+  spatial_inertia_ = spatial_inertia;
+}
+
+const drake::SquareTwistMatrix<double>& RigidBody::get_spatial_inertia()
+    const {
+  return spatial_inertia_;
 }
 
 ostream& operator<<(ostream& out, const RigidBody& b) {

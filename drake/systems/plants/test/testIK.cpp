@@ -44,7 +44,7 @@ GTEST_TEST(testIK, atlasIK) {
   std::vector<std::string> infeasible_constraint;
   inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),
              ikoptions, &q_sol, &info, &infeasible_constraint);
-  printf("INFO = %d\n", info);
+  printf("info = %d\n", info);
   EXPECT_EQ(info, 1);
 
   KinematicsCache<double> cache = model.doKinematics(q_sol);

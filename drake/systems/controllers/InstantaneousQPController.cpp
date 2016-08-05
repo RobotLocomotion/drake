@@ -118,7 +118,7 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
       throw std::runtime_error(
           "Could not find attachment frame when handling urdf modifications");
     }
-    drake::parsers::urdf::AddRobotFromURDF(
+    drake::parsers::urdf::AddModelInstanceFromURDF(
         drake::GetDrakePath() + "/" + it->urdf_filename, it->joint_type,
         attach_to_frame, robot.get());
   }
@@ -413,7 +413,7 @@ void InstantaneousQPController::estimateCoMBasedOnMeasuredZMP(
    * We have two sources of information for estimating the COM, one via the
    *robot state (IMU+leg odomentry$\rightarrow$ full dynamic model) and the
    *other via the instantaneous ground reaction forces (ZMP).  The ZMP informs
-   *us about the instantaneous position of the COM, but not it's velocity.  The
+   *us about the instantaneous position of the COM, but not its velocity.  The
    *IMU is better for high-frequency components, so we will only use the
    *observation of COM velocity from the robot state, and end up with the
    *following model:

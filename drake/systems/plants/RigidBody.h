@@ -14,11 +14,6 @@
 #include "drake/systems/plants/joints/DrakeJoint.h"
 
 class DRAKERBM_EXPORT RigidBody {
- private:
-  std::unique_ptr<DrakeJoint> joint;
-  DrakeCollision::bitmask collision_filter_group;
-  DrakeCollision::bitmask collision_filter_ignores;
-
  public:
   RigidBody();
 
@@ -191,40 +186,24 @@ class DRAKERBM_EXPORT RigidBody {
   void setCollisionFilter(const DrakeCollision::bitmask& group,
                           const DrakeCollision::bitmask& ignores);
 
-  const DrakeCollision::bitmask& getCollisionFilterGroup() const {
-    return collision_filter_group;
-  }
-  void setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_group = group;
-  }
+  const DrakeCollision::bitmask& getCollisionFilterGroup() const;
 
-  const DrakeCollision::bitmask& getCollisionFilterIgnores() const {
-    return collision_filter_ignores;
-  }
-  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores) {
-    this->collision_filter_ignores = ignores;
-  }
+  void setCollisionFilterGroup(const DrakeCollision::bitmask& group);
 
-  void addToCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_group |= group;
-  }
-  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_ignores |= group;
-  }
-  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_ignores &= ~group;
-  }
+  const DrakeCollision::bitmask& getCollisionFilterIgnores() const;
+
+  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores);
+
+  void addToCollisionFilterGroup(const DrakeCollision::bitmask& group);
+
+  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group);
+
+  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group);
 
   // TODO(amcastro-tri): Change to is_adjacent_to().
   bool adjacentTo(const RigidBody& other) const;
 
-  bool CollidesWith(const RigidBody& other) const {
-    bool ignored =
-        this == &other || adjacentTo(other) ||
-        (collision_filter_group & other.getCollisionFilterIgnores()).any() ||
-        (other.getCollisionFilterGroup() & collision_filter_ignores).any();
-    return !ignored;
-  }
+  bool CollidesWith(const RigidBody& other) const;
 
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
@@ -258,6 +237,30 @@ class DRAKERBM_EXPORT RigidBody {
   double get_mass() const;
 
   /**
+   * Sets the center of mass of this rigid body. The center of mass is expressed
+   * in this body's frame.
+   */
+  void set_center_of_mass(const Eigen::Vector3d& center_of_mass);
+
+  /**
+   * Gets the center of mass of this rigid body. The center of mass is expressed
+   * in this body's frame.
+   */
+  const Eigen::Vector3d& get_center_of_mass() const;
+
+  /**
+   * Sets the spatial inertia of this rigid body.
+   */
+  void set_spatial_inertia(const drake::SquareTwistMatrix<double>&
+      inertia_matrix);
+
+  /**
+   * Returns the spatial inertia of this rigid body.
+   */
+  const drake::SquareTwistMatrix<double>& get_spatial_inertia()
+      const;
+
+  /**
    * Transforms all of the visual, collision, and inertial elements associated
    * with this body to the proper joint frame.  This is necessary, for instance,
    * to support SDF loading where the child frame can be specified independently
@@ -271,16 +274,6 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:
-  // note: it's very ugly, but parent, dofnum, and pitch also exist currently
-  // (independently) at the RigidBodyTree level to represent the featherstone
-  // structure.  this version is for the kinematics.
-
-  /// The center of mass of this rigid body.
-  Eigen::Vector3d com;
-
-  /// The spatial rigid body inertia of this rigid body.
-  drake::SquareTwistMatrix<double> I;
-
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
  public:
@@ -289,6 +282,24 @@ class DRAKERBM_EXPORT RigidBody {
 #endif
 
  private:
+  // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
+  // currently (independently) at the RigidBodyTree level to represent the
+  // featherstone structure. This version is for the kinematics.
+
+  // The "parent" joint of this rigid body. This is the joint through which this
+  // rigid body connects to the rest of the rigid body tree.
+  std::unique_ptr<DrakeJoint> joint_;
+
+  // A bitmask that determines the collision groups that this rigid body is part
+  // of. If the i-th bit is set this rigid body belongs to the i-th collision
+  // group. A rigid body can belong to several collision groups.
+  DrakeCollision::bitmask collision_filter_group_;
+
+  // A bitmask that determines which collision groups this rigid body does not
+  // collide with. Thus, if the i-th bit is set this rigid body is not checked
+  // for collisions with bodies in the i-th group.
+  DrakeCollision::bitmask collision_filter_ignores_;
+
   // The name of this rigid body.
   std::string name_;
 
@@ -332,4 +343,10 @@ class DRAKERBM_EXPORT RigidBody {
 
   // The mass of this rigid body.
   double mass_{0};
+
+  // The center of mass of this rigid body.
+  Eigen::Vector3d center_of_mass_;
+
+  // The spatial inertia of this rigid body.
+  drake::SquareTwistMatrix<double> spatial_inertia_;
 };

@@ -97,6 +97,10 @@ Open a ``git`` bash shell. Then clone the master branch of Drake's official repo
 
 At this point, we recommend you update your ``git remotes`` to avoid accidentally pushing to Drake's official repository as described :ref:`here <git-remote-config>`.
 
+NOTE:  If you want to use the `WITH_SNOPT` build option, you will need to
+use ssh rather than https access to github.  Follow github's instructions
+for setting up ssh key access.
+
 .. _windows-build-directory:
 
 Create Build Directory
@@ -169,6 +173,7 @@ Update PATH Environment Variable
 The compilation process generates a bunch of installed ``.dll`` libraries. You need to add the path to these libraries to your ``PATH`` environment variable:
 
 * ``[build artifacts directory]\install\lib``
+* ``[build artifacts directory]\install\bin``
 
 Test Compilation Results
 ------------------------

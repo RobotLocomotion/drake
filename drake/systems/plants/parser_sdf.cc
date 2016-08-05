@@ -43,7 +43,9 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   parseScalarValue(node, "mass", mass);
   body->set_mass(mass);
 
-  body->com = T_link.inverse() * T.translation();
+  Eigen::Vector3d com;
+  com = T_link.inverse() * T.translation();
+  body->set_center_of_mass(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
   I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
@@ -61,7 +63,7 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     parseScalarValue(inertia, "izz", I(2, 2));
   }
 
-  body->I = transformSpatialInertia(T_link.inverse() * T, I);
+  body->set_spatial_inertia(transformSpatialInertia(T_link.inverse() * T, I));
 }
 
 bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
@@ -650,7 +652,7 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
 
   string model_name = node->Attribute("name");
 
-  int model_id = rigid_body_tree->get_new_model_instance_id();
+  int model_id = rigid_body_tree->add_model_instance();
 
   // Maintains a list of links that were added to the rigid body tree.
   // This is iterated over by method AddFloatingJoint() to determine where
