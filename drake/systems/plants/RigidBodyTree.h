@@ -171,17 +171,21 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void doKinematics(KinematicsCache<Scalar>& cache,
                     bool compute_JdotV = false) const;
 
-  bool is_body_part_of_model_instance(const RigidBody& body,
-                         const std::set<int>& model_instance_id_set) const;
+  /**
+   * Returns true if @p body is part of a model instance whose ID is in
+   * @p model_instance_id_set.
+   */
+  bool is_part_of_model_instances(const RigidBody& body,
+      const std::set<int>& model_instance_id_set) const;
 
   /**
-   * Computes the total mass of a set of models in this rigid body tree.
+   * Computes the total combined mass of a set of model instances.
    *
    * @param[in] model_instance_id_set A set of model instance ID values
    * corresponding to the model instances whose masses should be included in the
    * returned value.
    *
-   * @returns The total mass of the model instances specified by
+   * @returns the total combined mass of the model instances in
    * @p model_instance_id_set.
    */
   double getMass(const std::set<int>& model_instance_id_set =

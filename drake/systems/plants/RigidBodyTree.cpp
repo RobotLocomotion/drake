@@ -829,7 +829,7 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
       const DrakeJoint& joint = body.getJoint();
       int ncols_joint =
           in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
-      if (is_body_part_of_model_instance(body, model_instance_id_set)) {
+      if (is_part_of_model_instances(body, model_instance_id_set)) {
         int start = in_terms_of_qdot ? body.get_position_start_index()
                                      : body.get_velocity_start_index();
 
@@ -862,7 +862,7 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
     if (body.hasParent()) {
-      if (is_body_part_of_model_instance(body, model_instance_id_set)) {
+      if (is_part_of_model_instances(body, model_instance_id_set)) {
         const auto& element = cache.getElement(body);
         ret.noalias() += element.inertia_in_world *
                          element.motion_subspace_in_world_dot_times_v;
@@ -923,7 +923,7 @@ TwistVector<Scalar> RigidBodyTree::centroidalMomentumMatrixDotTimesV(
   return ret;
 }
 
-bool RigidBodyTree::is_body_part_of_model_instance(
+bool RigidBodyTree::is_part_of_model_instances(
     const RigidBody& body,
     const std::set<int>& model_instance_id_set) const {
   for (std::set<int>::const_iterator it = model_instance_id_set.begin();
@@ -941,7 +941,7 @@ double RigidBodyTree::getMass(const std::set<int>& model_instance_id_set)
     const {
   double total_mass = 0.0;
   for (const auto& body : bodies) {
-    if (is_body_part_of_model_instance(*body.get(), model_instance_id_set)) {
+    if (is_part_of_model_instances(*body.get(), model_instance_id_set)) {
       total_mass += body->get_mass();
     }
   }
@@ -960,7 +960,7 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
 
   for (int i = 0; i < static_cast<int>(bodies.size()); i++) {
     RigidBody& body = *bodies[i];
-    if (is_body_part_of_model_instance(body, model_instance_id_set)) {
+    if (is_part_of_model_instances(body, model_instance_id_set)) {
       if (body.get_mass() > 0) {
         com.noalias() +=
             body.get_mass() *
