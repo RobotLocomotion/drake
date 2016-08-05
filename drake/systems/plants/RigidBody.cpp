@@ -15,8 +15,8 @@ using std::stringstream;
 using std::vector;
 
 RigidBody::RigidBody()
-    : collision_filter_group(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores(DrakeCollision::NONE_MASK) {
+    : collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
+      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
   center_of_mass_ = Vector3d::Zero();
   spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
 }
@@ -35,13 +35,13 @@ void RigidBody::set_model_instance_id(int model_instance_id) {
   model_instance_id_ = model_instance_id;
 }
 
-void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
-  this->joint = move(new_joint);
+void RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint) {
+  joint_ = move(joint);
 }
 
 const DrakeJoint& RigidBody::getJoint() const {
-  if (joint) {
-    return (*joint);
+  if (joint_) {
+    return (*joint_);
   } else {
     throw runtime_error("ERROR: RigidBody::getJoint(): Rigid body \"" + name_ +
                         "\" in model " + model_name_ +
@@ -119,10 +119,46 @@ void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group,
   setCollisionFilterIgnores(ignores);
 }
 
+const DrakeCollision::bitmask& RigidBody::getCollisionFilterGroup() const {
+  return collision_filter_group_;
+}
+void RigidBody::setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
+  collision_filter_group_ = group;
+}
+
+const DrakeCollision::bitmask& RigidBody::getCollisionFilterIgnores() const {
+  return collision_filter_ignores;
+}
+void RigidBody::setCollisionFilterIgnores(const DrakeCollision::bitmask&
+    ignores) {
+  collision_filter_ignores_ = ignores;
+}
+
+void RigidBody::addToCollisionFilterGroup(const DrakeCollision::bitmask&
+    group) {
+  collision_filter_group_ |= group;
+}
+void RigidBody::ignoreCollisionFilterGroup(const DrakeCollision::bitmask&
+    group) {
+  collision_filter_ignores_ |= group;
+}
+void RigidBody::collideWithCollisionFilterGroup(const DrakeCollision::bitmask&
+    group) {
+  collision_filter_ignores_ &= ~group;
+}
+
 bool RigidBody::adjacentTo(const RigidBody& other) const {
-  return ((has_as_parent(other) && !(joint && joint->isFloating())) ||
+  return ((has_as_parent(other) && !(joint_ && joint_->isFloating())) ||
           (other.has_as_parent(*this) &&
-           !(other.joint && other.joint->isFloating())));
+           !(other.joint_ && other.joint_->isFloating())));
+}
+
+bool RigidBody::CollidesWith(const RigidBody& other) const {
+  bool ignored =
+      this == &other || adjacentTo(other) ||
+      (collision_filter_group_ & other.getCollisionFilterIgnores()).any() ||
+      (other.getCollisionFilterGroup() & collision_filter_ignores_).any();
+  return !ignored;
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(

@@ -186,40 +186,24 @@ class DRAKERBM_EXPORT RigidBody {
   void setCollisionFilter(const DrakeCollision::bitmask& group,
                           const DrakeCollision::bitmask& ignores);
 
-  const DrakeCollision::bitmask& getCollisionFilterGroup() const {
-    return collision_filter_group;
-  }
-  void setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_group = group;
-  }
+  const DrakeCollision::bitmask& getCollisionFilterGroup() const;
 
-  const DrakeCollision::bitmask& getCollisionFilterIgnores() const {
-    return collision_filter_ignores;
-  }
-  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores) {
-    this->collision_filter_ignores = ignores;
-  }
+  void setCollisionFilterGroup(const DrakeCollision::bitmask& group);
 
-  void addToCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_group |= group;
-  }
-  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_ignores |= group;
-  }
-  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group) {
-    this->collision_filter_ignores &= ~group;
-  }
+  const DrakeCollision::bitmask& getCollisionFilterIgnores() const;
+
+  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores);
+
+  void addToCollisionFilterGroup(const DrakeCollision::bitmask& group);
+
+  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group);
+
+  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group);
 
   // TODO(amcastro-tri): Change to is_adjacent_to().
   bool adjacentTo(const RigidBody& other) const;
 
-  bool CollidesWith(const RigidBody& other) const {
-    bool ignored =
-        this == &other || adjacentTo(other) ||
-        (collision_filter_group & other.getCollisionFilterIgnores()).any() ||
-        (other.getCollisionFilterGroup() & collision_filter_ignores).any();
-    return !ignored;
-  }
+  bool CollidesWith(const RigidBody& other) const;
 
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
