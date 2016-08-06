@@ -18,5 +18,5 @@
   <url type="website">http://drake.mit.edu</url>
 
   <buildtool_depend>catkin</buildtool_depend>
-
+  <build_depend>roscpp</build_depend>
 </package>

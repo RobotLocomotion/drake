@@ -97,7 +97,7 @@ class SensorPublisherLidar {
         // Creates the ROS topic publisher for the current LIDAR sensor.
         if (lidar_publishers_.find(key) == lidar_publishers_.end()) {
           const std::string topic_name =
-              "drake/" + model_name + "/lidar/" + depth_sensor->get_name();
+              model_name + "/lidar/" + depth_sensor->get_name();
 
           lidar_publishers_.insert(std::pair<std::string, ::ros::Publisher>(
               key, nh.advertise<sensor_msgs::LaserScan>(topic_name, 1)));

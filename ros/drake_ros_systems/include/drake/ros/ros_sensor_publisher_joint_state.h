@@ -120,7 +120,7 @@ class SensorPublisherJointState {
 
         robot_struct->robot_name = robot_name;
 
-        const std::string topic_name = "drake/" + robot_name + "/joint_state";
+        const std::string topic_name = robot_name + "/joint_state";
         robot_struct->publisher =
             nh.advertise<sensor_msgs::JointState>(topic_name, 1);
 

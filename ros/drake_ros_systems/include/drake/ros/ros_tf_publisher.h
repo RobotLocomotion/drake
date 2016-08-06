@@ -8,11 +8,13 @@
 #include "tf/transform_broadcaster.h"
 
 #include "drake/math/rotation_matrix.h"
+#include "drake/ros/parameter_server.h"
 #include "drake/systems/System.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/vector.h"
+
 
 using drake::NullVector;
 using drake::RigidBodySensor;
@@ -65,28 +67,18 @@ class DrakeRosTfPublisher {
       const std::map<std::string, int>& model_instances) :
           rigid_body_tree_(rigid_body_tree),
           model_instances_(model_instances) {
-    // Queries the ROS parameter server for a boolean parameter in
-    // "/drake/enable_tf_publisher". This parameter is used to control whether
+    ::ros::NodeHandle node_handle;
+    // Queries the ROS parameter server for a boolean parameter called
+    // "enable_tf_publisher". This parameter is used to control whether
     // this class publishes /tf messages.
-    {
-      int num_get_attempts = 0;
-      bool continue_query = true;
-      while (continue_query &&
-             !::ros::param::get("/drake/enable_tf_publisher",
-                                enable_tf_publisher_)) {
-        if (++num_get_attempts > 10) {
-          ROS_WARN(
-              "Failed to get parameter /drake/enable_tf_publisher. "
-              "Assuming publisher is enabled.");
-          continue_query = false;
-        }
-      }
+    // std::string parameter_name("enable_tf_publisher");
+    std::string parameter_name("enable_tf_publisher");
+    enable_tf_publisher_ = GetROSParameter<bool>(node_handle, parameter_name);
 
-      if (enable_tf_publisher_) {
-        ROS_INFO("Enabling TF publisher!");
-      } else {
-        ROS_INFO("Disabling TF publisher!");
-      }
+    if (enable_tf_publisher_) {
+      ROS_INFO("Enabling TF publisher!");
+    } else {
+      ROS_INFO("Disabling TF publisher!");
     }
 
     // Initializes the time stamp of the previous transmission to be zero.

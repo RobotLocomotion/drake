@@ -38,7 +38,7 @@ using drake::examples::cars::GetCarSimulationDefaultOptions;
  */
 int DoMain(int argc, const char* argv[]) {
   ::ros::init(argc, const_cast<char**>(argv), "multi_car_on_plane");
-  ::ros::NodeHandle ros_node_handle;
+  ::ros::NodeHandle node_handle;
 
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
@@ -56,7 +56,9 @@ int DoMain(int argc, const char* argv[]) {
   std::map<std::string, int> model_instances;
 
   // Obtains the number of vehicles to simulate.
-  int num_vehicles = GetIntParameter(ros_node_handle, "car_count");
+  std::string car_count_parameter_name("car_count");
+  int num_vehicles = GetROSParameter<int>(node_handle,
+      car_count_parameter_name);
 
   const std::string model_name = "Prius";
 
@@ -64,7 +66,7 @@ int DoMain(int argc, const char* argv[]) {
   for (int ii = 0; ii < num_vehicles; ++ii) {
     const std::string description_param_name = std::string("car_description_") +
         std::to_string(ii + 1);
-    const std::string description = GetStringParameter(ros_node_handle,
+    std::string description = GetROSParameter<std::string>(node_handle,
         description_param_name);
     RigidBodyTree::ModelToInstanceIDMap instance_ids;
     std::shared_ptr<RigidBodyFrame> weld_to_frame;

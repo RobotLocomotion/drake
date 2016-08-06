@@ -93,7 +93,7 @@ class SensorPublisherOdometry {
       const std::string& key = rigid_body->get_model_name();
 
       if (odometry_messages_.find(key) == odometry_messages_.end()) {
-        const std::string topic_name = "drake/" + key + "/odometry";
+        const std::string topic_name = key + "/odometry";
 
         odometry_publishers_.insert(std::pair<std::string, ::ros::Publisher>(
             key, nh.advertise<nav_msgs::Odometry>(topic_name, 1)));
