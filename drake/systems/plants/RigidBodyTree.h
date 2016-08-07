@@ -51,6 +51,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // abstraction. See issue #2318.
   static const char* const kWorldLinkName;
 
+  /**
+   * Defines the world's model instance ID.
+   */
+  static const int kWorldModelInstanceID;
+
   RigidBodyTree(const std::string& urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type =
                     DrakeJoint::ROLLPITCHYAW);

@@ -15,5 +15,5 @@ To run it:
     args="$(find drake)/drake/examples/Cars/models/prius/prius_with_lidar.sdf $(find drake)/drake/examples/Cars/models/stata_garage_p1.sdf"
     ns="drake"/>
 
-  <include file="$(find drake_cars_examples)/launch/golfcart_adapter.launch" />
+  <!-- <include file="$(find drake_cars_examples)/launch/golfcart_adapter.launch" /> -->
 </launch>

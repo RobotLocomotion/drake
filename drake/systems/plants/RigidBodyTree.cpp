@@ -42,6 +42,7 @@ using drake::math::Gradient;
 
 const set<int> RigidBodyTree::default_model_instance_id_set = {0};
 const char* const RigidBodyTree::kWorldLinkName = "world";
+const int RigidBodyTree::kWorldModelInstanceID = 0;
 
 template <typename T>
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
@@ -76,9 +77,11 @@ RigidBodyTree::RigidBodyTree(void)
   // Sets the gravity vector;
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
-  // Adds the rigid body representing the world.
+  // Adds the rigid body representing the world, which has a model_instance_id
+  // equal to zero.
   std::unique_ptr<RigidBody> b(new RigidBody());
   b->set_name(RigidBodyTree::kWorldLinkName);
+  b->set_model_instance_id(add_model_instance());
   bodies.push_back(std::move(b));
 }
 

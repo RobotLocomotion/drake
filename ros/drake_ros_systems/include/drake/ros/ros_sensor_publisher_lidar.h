@@ -60,9 +60,17 @@ class SensorPublisherLidar {
    *
    * @param[in] rigid_body_system The rigid body system whose output contains
    * the odometry information.
+   *
+   * @param[in] model_instance_names A mapping from model instance IDs to model
+   * instance names. These names are used to prefix the names of the frames in
+   * the `sensor_msgs::LaserScan` messages this object publishes, which
+   * is necessary for RViz to simultaneously visualize the sensors belonging to
+   * multiple robots. This reference must remain valid for the lifetime of this
+   * object.
    */
   explicit SensorPublisherLidar(
-      std::shared_ptr<RigidBodySystem> rigid_body_system)
+      std::shared_ptr<RigidBodySystem> rigid_body_system,
+      const std::map<int, std::string>& model_instance_names)
       : rigid_body_system_(rigid_body_system) {
     // Initializes the time stamp of the previous transmission to be zero.
     previous_send_time_.sec = 0;

@@ -91,25 +91,39 @@ class DrakeRosTfPublisher {
     // body in the rigid body tree.
     for (auto const& rigid_body : rigid_body_tree->bodies) {
       // Skips the current rigid body if it should be skipped.
-      if (!PublishTfForRigidBody(rigid_body.get())) continue;
+      if (!ShouldPublishTfForRigidBody(rigid_body.get())) continue;
 
-      // Creates a unique key for holding the transform message.
-      std::string key = rigid_body->get_model_name() + rigid_body->get_name();
+      // Derives the key for storing the geometry_msgs::TransformStamped for
+      // the current rigid body in transform_messages_.
+      std::string key;
+      DeriveKey(rigid_body, &key);
 
       // Checks whether a transform message for the current link was already
       // added to the transform_messages_ map.
-      if (transform_messages_.find(key) != transform_messages_.end())
+      if (transform_messages_.find(key) != transform_messages_.end()) {
         throw std::runtime_error(
-            "ERROR: Multiple model/links named " + key +
-            " found when creating a geometry_msgs::TransformStamped message!");
+            "ERROR: Duplicate key \"" + key + " encountered when creating a "
+            "geometry_msgs::TransformStamped message for rigid body \"" +
+            rigid_body->get_name() + "\".");
+      }
 
       // Instantiates a geometry_msgs::TransformStamped message for the
       // current rigid body.
       std::unique_ptr<geometry_msgs::TransformStamped> message(
           new geometry_msgs::TransformStamped());
 
-      message->header.frame_id = rigid_body->get_parent()->get_name();
-      message->child_frame_id = rigid_body->get_name();
+      // Determines the name of this rigid body tree's parent's frame in the
+      // /tf tree.
+      std::string parent_frame_name;
+      DeriveTfFrameName(*(rigid_body->get_parent()), model_instance_names,
+          &parent_frame_name);
+      message->header.frame_id = parent_frame_name;
+
+      // Determines the name of this rigid body's frame in the /tf tree.
+      std::string frame_name;
+      DeriveTfFrameName(*(rigid_body.get()), model_instance_names,
+          &frame_name);
+      message->child_frame_id = frame_name;
 
       // Obtains the current link's joint.
       const DrakeJoint& joint = rigid_body->getJoint();
@@ -137,23 +151,37 @@ class DrakeRosTfPublisher {
     // Instantiates a geometry_msgs::TransformStamped message for each frame
     // in the rigid body tree.
     for (auto const& frame : rigid_body_tree->frames) {
-      std::string key = frame->get_rigid_body().get_model_name() +
-          frame->get_name();
+
+      // Derives the key for storing the geometry_msgs::TransformStamped for
+      // the current frame in transform_messages_.
+      std::string key;
+      DeriveKey(frame, &key);
 
       // Checks whether a transform message for the current frame was already
       // added to the transform_messages_ map.
-      if (transform_messages_.find(key) != transform_messages_.end())
+      if (transform_messages_.find(key) != transform_messages_.end()) {
         throw std::runtime_error(
-            "ERROR: Multiple models/frames named " + key +
-            " found when creating a geometry_msgs::TransformStamped message!");
+            "ERROR: Duplicate key \"" + key + "\" encountered when creating a "
+            "geometry_msgs::TransformStamped message.");
+      }
 
       // Instantiates a geometry_msgs::TransformStamped message for the
       // current frame.
       std::unique_ptr<geometry_msgs::TransformStamped> message(
           new geometry_msgs::TransformStamped());
 
-      message->header.frame_id = frame->get_rigid_body().get_name();
-      message->child_frame_id = frame->get_name();
+      // Determines the name of this rigid body tree's parent's frame in the
+      // /tf tree.
+      std::string parent_frame_name;
+      DeriveTfFrameName(frame->get_rigid_body(), model_instance_names,
+          &parent_frame_name);
+      message->header.frame_id = parent_frame_name;
+
+      // Determines the name of this rigid body's frame in the /tf tree.
+      std::string frame_name;
+      DeriveTfFrameName(*(frame.get()), model_instance_names,
+          &frame_name);
+      message->child_frame_id = frame_name;
 
       // Frames are fixed to a particular rigid body. The following code saves
       // the transformation in the frame's geometry_msgs::TransformStamped
@@ -183,16 +211,17 @@ class DrakeRosTfPublisher {
 
   OutputVector<double> output(const double& t, const StateVector<double>& x,
                               const InputVector<double>& u) {
+    // Aborts publishing tf messages if enable_tf_publisher_ is false.
+    if (!enable_tf_publisher_) return u;
+
     // Aborts if insufficient time has passed since the last transmission. This
     // is to avoid flooding the ROS topics.
     ::ros::Time current_time = ::ros::Time::now();
     if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
       return u;
 
+    // Updates the previous send time.
     previous_send_time_ = current_time;
-
-    // Aborts publishing tf messages if enable_tf_publisher_ is true.
-    if (!enable_tf_publisher_) return u;
 
     // The input vector u contains the entire system's state.
     // The following code extracts the position values from it
@@ -204,19 +233,20 @@ class DrakeRosTfPublisher {
     // Publishes the transform for each rigid body in the rigid body tree.
     for (auto const& rigid_body : rigid_body_tree_->bodies) {
       // Skips the current rigid body if it should be skipped.
-      if (!PublishTfForRigidBody(rigid_body.get())) continue;
+      if (!ShouldPublishTfForRigidBody(rigid_body.get())) continue;
 
-      // Obtains a unique key for holding the transform message.
-      std::string key = rigid_body->get_model_name() + rigid_body->get_name();
+      std::string key;
+      DeriveKey(rigid_body, &key);
 
       // Verifies that a geometry_msgs::TransformStamped message for the current
       // link exists in the transform_messages_ map.
       auto message_in_map = transform_messages_.find(key);
-      if (message_in_map == transform_messages_.end())
+      if (message_in_map == transform_messages_.end()) {
         throw std::runtime_error(
-            "ERROR: DrakeRosTfPublisher: Unable to find"
-            "transform message with key " +
-            key);
+            "ERROR: DrakeRosTfPublisher: Unable to obtain transform message "
+            "for rigid body \"" + rigid_body->get_name() + "\" using key \"" +
+            key + "\"");
+      }
 
       // Obtains a pointer to the geometry_msgs::TransformStamped message for
       // the current link.
@@ -254,17 +284,18 @@ class DrakeRosTfPublisher {
 
     // Publishes the transform for each frame in the rigid body tree.
     for (auto const& frame : rigid_body_tree_->frames) {
-      std::string key = frame->get_rigid_body().get_model_name() +
-          frame->get_name();
+      std::string key;
+      DeriveKey(frame, &key);
 
       // Verifies that a geometry_msgs::TransformStamped message for the current
       // link exists in the transform_messages_ map.
       auto message_in_map = transform_messages_.find(key);
-      if (message_in_map == transform_messages_.end())
+      if (message_in_map == transform_messages_.end()) {
         throw std::runtime_error(
-            "ERROR: DrakeRosTfPublisher: Unable to find"
-            "transform message with key " +
-            key);
+            "ERROR: DrakeRosTfPublisher: Unable to obtain transform message "
+            "for frame \"" + frame->get_name() + "\" using key \"" +
+            key + "\"");
+      }
 
       // Obtains a pointer to the geometry_msgs::TransformStamped message for
       // the current link.
@@ -286,13 +317,114 @@ class DrakeRosTfPublisher {
   bool isDirectFeedthrough() const { return true; }
 
  private:
-  // Determines whether a transform should be published for the specified
-  // rigid body. A rigid body should be skipped if it is the world link or if
-  // it is connected to the world via a fixed joint.
-  bool PublishTfForRigidBody(const RigidBody* rigid_body) {
+  // Determines whether a transform should be published for @p rigid_body. A
+  // rigid body should be skipped if it is the world link or does not have a
+  // parent link.
+  bool ShouldPublishTfForRigidBody(const RigidBody* rigid_body) {
     // Skips parent-less links. This includes the world.
-    if (!rigid_body->hasParent()) return false;
-    return true;
+    return rigid_body->hasParent();
+  }
+
+  // Derives a key for obtaining the transform message for @p rigid_body
+  // from transform_messages_. The key is a concatenation of the string
+  // "Rigidbody_", the rigid body's name, and the ID of the model instance to
+  // which the rigid body belongs.
+  void DeriveKey(const std::unique_ptr<RigidBody>& rigid_body,
+      std::string* key) {
+    *key = "RigidBody_" + rigid_body->get_name() +
+        std::to_string(rigid_body->get_model_instance_id());
+  }
+
+  // Derives a key for obtaining the transform message for @p frame
+  // from transform_messages_. The key is a concatenation of the string
+  // "Frame_", the frame's name, and the ID of the model instance to which the
+  // frame belongs.
+  void DeriveKey(const std::shared_ptr<RigidBodyFrame>& frame,
+      std::string* key) {
+    *key = "Frame_" + frame->get_name() +
+        std::to_string(frame->get_model_instance_id());
+  }
+
+  // Determines the name of the frame belonging to @p rigid_body in the /tf
+  // tree. If @p rigid_body is the world, use the world's name. Otherwise,
+  // prefix the name of @p rigid_body with its model instance name. This is
+  // necessary for the /tf tree to support multiple models.
+  //
+  // @param[in] rigid_body The rigid body whose /tf tree frame name is being
+  // derived.
+  //
+  // @param[in] model_instance_name A mapping from model instance IDs to model
+  // instance names. The instance names are used to prefix the frame name so
+  // that multiple models can be supported.
+  //
+  // @param[out] frame_name A pointer to where the frame name should be stored.
+  void DeriveTfFrameName(const RigidBody& rigid_body,
+      const std::map<int, std::string>& model_instance_names,
+      std::string* frame_name) {
+
+    // Obtains the rigid body's name.
+    std::string name = rigid_body.get_name();
+
+    if (name == RigidBodyTree::kWorldLinkName) {
+      // If the rigid body is the world, just use the world's name. Since there
+      // is only one world, there is no need for a prefix.
+       *frame_name = name;
+    } else {
+      // Obtains the rigid body's model instance ID.
+      int model_instance_id = rigid_body.get_model_instance_id();
+
+      // Verifies that the model instance ID has a model instance name.
+      // Throws an exception if it does not have an instance name.
+      if (model_instance_names.find(model_instance_id) ==
+          model_instance_names.end()) {
+        throw std::runtime_error(
+            "ERROR: DrakeRosTfPublisher: Model instance with ID " +
+            std::to_string(model_instance_id) + " does not have a name.");
+      }
+
+      // Prefixes the rigid body's name with the model instance name.
+      // This is the name of the rigid body's frame in the /tf tree.
+      *frame_name =
+          model_instance_names.at(model_instance_id) + "/" + name;
+    }
+  }
+
+  // Determines the name of the frame belonging to @p frame in the /tf
+  // tree. This is done by prefixing the name of @p frame with its model
+  // instance name. A prefix is necessary for the /tf tree to support multiple
+  // models.
+  //
+  // @param[in] frame The rigid body frame whose /tf tree frame name is being
+  // derived.
+  //
+  // @param[in] model_instance_name A mapping from model instance IDs to model
+  // instance names. The instance names are used to prefix the frame name so
+  // that multiple models can be supported.
+  //
+  // @param[out] frame_name A pointer to where the frame name should be stored.
+  void DeriveTfFrameName(const RigidBodyFrame& frame,
+      const std::map<int, std::string>& model_instance_names,
+      std::string* frame_name) {
+
+    // Obtains the frame's name.
+    std::string name = frame.get_name();
+
+    // Obtains the frame's model instance ID.
+    int model_instance_id = frame.get_model_instance_id();
+
+    // Verifies that the model instance ID has a model instance name.
+    // Throws an exception if it does not have an instance name.
+    if (model_instance_names.find(model_instance_id) ==
+        model_instance_names.end()) {
+      throw std::runtime_error(
+          "ERROR: DrakeRosTfPublisher: Model instance with ID " +
+          std::to_string(model_instance_id) + " does not have a name.");
+    }
+
+    // Prefixes the rigid body frame's name with the model instance name.
+    // This is the name of the rigid body's frame in the /tf tree.
+    *frame_name =
+        model_instance_names.at(model_instance_id) + "/" + name;
   }
 
   // The rigid body tree being used by Drake's rigid body dynamics engine.

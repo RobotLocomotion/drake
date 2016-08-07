@@ -84,7 +84,8 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
       if (duration != nullptr)
         *duration = atof(argv[ii]);
     } else {
-      rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED);
+      rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED,
+          weld_to_frame, instance_ids);
     }
   }
 

@@ -53,6 +53,14 @@ int do_main(int argc, const char* argv[]) {
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
+  // Instantiates a map that converts model instance IDs to model instance
+  // names.
+  std::map<int, std::string> model_instance_names;
+  model_instance_names[RigidBodyTree::kWorldModelInstanceID] =
+      RigidBodyTree::kWorldLinkName;
+  model_instance_names[model_instances["prius_1"]] = "prius";
+  model_instance_names[model_instances["P1"]] = "stata_garage";
+
   // Initializes and cascades all of the other systems.
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
 
@@ -61,14 +69,11 @@ int do_main(int argc, const char* argv[]) {
 
   auto lidar_publisher = std::make_shared<
       ::drake::ros::SensorPublisherLidar<RigidBodySystem::StateVector>>(
-      rigid_body_sys);
+      rigid_body_sys, model_instance_names);
 
   auto odometry_publisher = std::make_shared<
       ::drake::ros::SensorPublisherOdometry<RigidBodySystem::StateVector>>(
-      rigid_body_sys);
-
-  std::map<int, std::string> model_instance_names;
-  model_instance_names[model_instances["prius_1"]] = "prius_1";
+      rigid_body_sys, model_instance_names);
 
   auto tf_publisher = std::make_shared<
       ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
@@ -76,7 +81,7 @@ int do_main(int argc, const char* argv[]) {
 
   auto joint_state_publisher = std::make_shared<
       ::drake::ros::SensorPublisherJointState<RigidBodySystem::StateVector>>(
-      rigid_body_sys);
+      rigid_body_sys, model_instance_names);
 
   auto sys =
       cascade(
