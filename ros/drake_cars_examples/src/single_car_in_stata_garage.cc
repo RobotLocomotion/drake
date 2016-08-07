@@ -67,9 +67,12 @@ int do_main(int argc, const char* argv[]) {
       ::drake::ros::SensorPublisherOdometry<RigidBodySystem::StateVector>>(
       rigid_body_sys);
 
+  std::map<int, std::string> model_instance_names;
+  model_instance_names[model_instances["prius_1"]] = "prius_1";
+
   auto tf_publisher = std::make_shared<
       ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
-          model_instances);
+          model_instance_names);
 
   auto joint_state_publisher = std::make_shared<
       ::drake::ros::SensorPublisherJointState<RigidBodySystem::StateVector>>(

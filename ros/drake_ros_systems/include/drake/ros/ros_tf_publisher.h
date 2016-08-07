@@ -25,13 +25,8 @@ namespace drake {
 namespace ros {
 
 /**
- * A system that takes the current state of Drake and publishes the
- * transform messages on ROS topic /tf.
- *
- * @concept{system_concept}
- *
- * The resulting system has no internal state; the publish command is executed
- * on every call to the output method.
+ * Publishes transforms for every rigid body in a `RigidBodyTree`. The transform
+ * names are prefixed by the model instance names.
  *
  * For convenience, the input is passed directly through as an output.
  */
@@ -60,13 +55,20 @@ class DrakeRosTfPublisher {
    * "enable_tf_publisher". If this parameter exists and is false, this
    * class disables itself. Otherwise, this class is enabled.
    *
-   * @param rigid_body_tree The rigid body tree being modeled.
+   * @param[in] rigid_body_tree Contains the rigid bodies whose transforms are
+   * to be published. This reference must remain valid for the lifetime of this
+   * object.
+   *
+   * @param[in] model_instance_names A mapping from model instance IDs to model
+   * instance names. These names are used to prefix the transform names, which
+   * is necessary for RViz to simultaneously visualize multiple robots. This
+   * reference must remain valid for the lifetime of this object.
    */
   explicit DrakeRosTfPublisher(
       const std::shared_ptr<RigidBodyTree> rigid_body_tree,
-      const std::map<std::string, int>& model_instances) :
+      const std::map<int, std::string>& model_instance_names) :
           rigid_body_tree_(rigid_body_tree),
-          model_instances_(model_instances) {
+          model_instance_names_(model_instance_names) {
     ::ros::NodeHandle node_handle;
     // Queries the ROS parameter server for a boolean parameter called
     // "enable_tf_publisher". This parameter is used to control whether
@@ -296,8 +298,9 @@ class DrakeRosTfPublisher {
   // The rigid body tree being used by Drake's rigid body dynamics engine.
   const std::shared_ptr<RigidBodyTree> rigid_body_tree_;
 
-  // Maps model instance names to model instance IDs.
-  const std::map<std::string, int>& model_instances_;
+  // Maps model instance IDs to model instance names. This is used to prefix
+  // the transform names.
+  const std::map<int, std::string>& model_instance_names_;
 
   // Publishes the transform messages that specify the positions and
   // orientations of every rigid body and frame in the rigid body tree. This is
