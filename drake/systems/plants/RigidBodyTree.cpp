@@ -78,7 +78,10 @@ RigidBodyTree::RigidBodyTree(void)
   // Adds the rigid body representing the world. It has model instance ID 0.
   std::unique_ptr<RigidBody> b(new RigidBody());
   b->set_name(RigidBodyTree::kWorldName);
-  b->set_model_instance_id(add_model_instance());
+
+  // TODO(liang.fok): Assign the world body a unique model instance ID of zero.
+  // See: https://github.com/RobotLocomotion/drake/issues/3088
+
   bodies.push_back(std::move(b));
 }
 
