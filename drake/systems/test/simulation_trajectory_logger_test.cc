@@ -1,5 +1,5 @@
-#include <memory>
 #include "drake/systems/trajectory_logger.h"
+#include <memory>
 #include "gtest/gtest.h"
 
 namespace drake {
@@ -16,7 +16,7 @@ GTEST_TEST(TestTrajectoryLogger, TestTrajectoryLogger) {
   Eigen::Matrix<double, 1, kNt> t;
   NullVector<double> traj_logger_x;
   std::vector<EigenVector<kTrajDim>::type<double>> traj_val(kNt);
-  for (size_t i = 0; i < kNt; i++) {
+  for (size_t i = 0; i < kNt; ++i) {
     t(i) = i * 0.01;
     traj_val[i] << i, 2 * i;
     traj_logger->output(t(i), traj_logger_x, traj_val[i]);
@@ -32,7 +32,7 @@ GTEST_TEST(TestTrajectoryLogger, TestTrajectoryLogger) {
   }
 }
 
-}  // namespace empty
+}  // namespace
 }  // namespace test
 }  // namespace systems
 }  // namespace drake

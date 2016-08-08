@@ -1,4 +1,5 @@
 #pragma once
+
 #include <limits>
 #include "drake/systems/vector.h"
 
