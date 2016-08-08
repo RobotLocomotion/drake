@@ -5,8 +5,8 @@
 #include <Eigen/Geometry>
 
 #include "drake/drakeKukaIiwaArm_export.h"
-#include "drake/systems/simulation_options.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/simulation_options.h"
 
 namespace drake {
 namespace examples {
@@ -29,7 +29,8 @@ std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
  * Returns the simulation options for use by the Kuka IIWA simulation.
  */
 DRAKEKUKAIIWAARM_EXPORT
-drake::SimulationOptions SetupSimulation();
+drake::SimulationOptions SetupSimulation(
+    const double& initial_step_size = 0.002);
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
