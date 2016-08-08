@@ -47,8 +47,7 @@ std::unique_ptr<ContextBase<double>> LcmSubscriberSystem::CreateDefaultContext()
   // Creates a new context for this system and sets the number of input ports
   // to be zero. It leaves the context's state uninitialized since this system
   // does not use it.
-  std::unique_ptr<Context<double>> context(new Context<double>());
-  context->SetNumInputPorts(0);
+  std::unique_ptr<Context<double>> context(new Context<double>(0));
 
   // Returns this system's context.
   return std::unique_ptr<ContextBase<double>>(context.release());

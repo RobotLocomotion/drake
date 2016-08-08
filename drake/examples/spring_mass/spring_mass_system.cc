@@ -88,12 +88,13 @@ double SpringMassSystem::EvalNonConservativePower(const MyContext&) const {
 // Reserve a context with no input, and a SpringMassStateVector state.
 std::unique_ptr<ContextBase<double>>
 SpringMassSystem::CreateDefaultContext() const {
-  std::unique_ptr<Context<double>> context(new Context<double>);
+  const int num_input_ports = system_is_forced_ ? 1 : 0;
+  std::unique_ptr<Context<double>> context(
+      new Context<double>(num_input_ports));
   std::unique_ptr<SpringMassStateVector> state(new SpringMassStateVector(0, 0));
   context->get_mutable_state()->continuous_state.reset(
       new ContinuousState<double>(std::move(state), 1 /* size of q */,
                                   1 /* size of v */, 1 /* size of z */));
-  if (system_is_forced_) context->SetNumInputPorts(1);
   return std::unique_ptr<ContextBase<double>>(context.release());
 }
 

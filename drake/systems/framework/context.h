@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "drake/systems/framework/context_base.h"
@@ -8,10 +10,18 @@
 #include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/value.h"
 #include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
 namespace systems {
+
+template <typename T>
+struct ContextShape {
+  T time;
+  std::vector<T> input_ports;
+  StateShape<T> state;
+};
 
 /// The Context is a container for all of the data necessary to uniquely
 /// determine the computations performed by a leaf System. Specifically, a
@@ -25,26 +35,24 @@ namespace systems {
 template <typename T>
 class Context : public ContextBase<T> {
  public:
-  Context() {}
+  explicit Context(int num_input_ports) : cache_(new Cache()) {
+    SetNumInputPorts(num_input_ports);
+    root_cache_tickets_.time = cache_->MakeCacheTicket({});
+    root_cache_tickets_.state.continuous_state = cache_->MakeCacheTicket({});
+  }
+
   virtual ~Context() {}
 
   void SetInputPort(int index, std::unique_ptr<InputPort<T>> port) override {
     if (index < 0 || index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
     }
-    // TODO(david-german-tri): Set invalidation callbacks.
+    auto callback = std::bind(&Context<T>::InvalidateInputPort, this, index);
+    port->set_invalidation_callback(callback);
     inputs_[index] = std::move(port);
-  }
-
-  /// Removes all the input ports, and deregisters them from the output ports
-  /// on which they depend.
-  void ClearInputPorts() { inputs_.clear(); }
-
-  /// Clears the input ports and allocates @p n new input ports, not connected
-  /// to anything.
-  void SetNumInputPorts(int n) {
-    ClearInputPorts();
-    inputs_.resize(n);
+    // When we plug a new wire into an input port, all cache lines that depend
+    // on that input port are invalidated.
+    InvalidateInputPort(index);
   }
 
   int get_num_input_ports() const override {
@@ -63,22 +71,70 @@ class Context : public ContextBase<T> {
 
   const State<T>& get_state() const override { return state_; }
 
-  State<T>* get_mutable_state() override { return &state_; }
+  /// Returns a mutable pointer to the State. Invalidates all cache lines that
+  /// depend upon State.
+  ///
+  /// Callers MUST NOT hold the returned pointer: it is vital to call this
+  /// function whenever the state is modified. Otherwise, cache invalidation
+  /// will not occur, and the System to which this Context belongs may read
+  /// cache entries that are out-of-date.
+  State<T>* get_mutable_state() override {
+    InvalidateState();
+    return &state_;
+  }
 
-  /// Returns a const reference to the Cache, which is expected to contain
-  /// precalculated values of interest. Use this only to access known-valid
-  /// cache entries; use `get_mutable_cache()` if computations may be needed.
-  const Cache<T>& get_cache() const { return cache_; }
+  // Returns a ContextShape<bool> with the same dimensions as this Context,
+  // and all fields set to false.
+  ContextShape<bool> MakeContextShape() const {
+    ContextShape<bool> shape;
+    shape.input_ports.resize(get_num_input_ports());
+    return shape;
+  }
 
-  /// Access to the cache is always read-write, and is permitted even on
-  /// const references to the Context. No invalidation of downstream dependents
-  /// occurs until mutable access is requested for a particular cache entry.
-  Cache<T>* get_mutable_cache() const { return &cache_; }
+  CacheTicket CreateCacheEntry(
+      const ContextShape<bool>& context_dependencies,
+      const std::set<CacheTicket>& cache_dependencies) {
+    const int num_inputs = context_dependencies.input_ports.size();
+    DRAKE_ASSERT(get_num_input_ports() == num_inputs);
+    std::set<CacheTicket> upstream = cache_dependencies;
+    if (context_dependencies.time) {
+      upstream.insert(root_cache_tickets_.time);
+    }
+    if (context_dependencies.state.continuous_state) {
+      upstream.insert(root_cache_tickets_.state.continuous_state);
+    }
+    for (int i = 0; i < num_inputs; ++i) {
+      if (context_dependencies.input_ports[i]) {
+        upstream.insert(root_cache_tickets_.input_ports[i]);
+      }
+    }
+    return cache_->MakeCacheTicket(upstream);
+  }
+
+  AbstractValue* SetCachedItem(CacheTicket ticket,
+                               std::unique_ptr<AbstractValue> value) {
+    return cache_->Set(ticket, std::move(value));
+  }
+
+  AbstractValue* GetCachedItem(CacheTicket ticket) {
+    return cache_->Get(ticket);
+  }
+
+  void InvalidateTime() override {
+    cache_->Invalidate(root_cache_tickets_.time);
+  }
+
+  void InvalidateState() override {
+    cache_->Invalidate(root_cache_tickets_.state.continuous_state);
+  }
+  void InvalidateInputPort(int index) override {
+    cache_->Invalidate(root_cache_tickets_.input_ports[index]);
+  }
 
  protected:
   /// The caller owns the returned memory.
   ContextBase<T>* DoClone() const override {
-    Context<T>* context = new Context<T>();
+    Context<T>* context = new Context<T>(get_num_input_ports());
 
     // Make a deep copy of the state using LeafStateVector::Clone().
     if (this->get_state().continuous_state != nullptr) {
@@ -94,23 +150,37 @@ class Context : public ContextBase<T> {
 
     // Make deep copies of the inputs into FreestandingInputPorts.
     // TODO(david-german-tri): Preserve version numbers as well.
-    for (const auto& port : this->inputs_) {
+    for (int i = 0; i < get_num_input_ports(); ++i) {
+      InputPort<T>* port = inputs_[i].get();
       if (port == nullptr) {
-        context->inputs_.emplace_back(nullptr);
+        context->inputs_[i].reset(nullptr);
       } else {
-        context->inputs_.emplace_back(
-            new FreestandingInputPort<T>(
-                port->get_vector_data()->CloneVector()));
+        context->inputs_[i].reset(new FreestandingInputPort<T>(
+            port->get_vector_data()->CloneVector()));
       }
     }
 
-    // Make deep copies of everything else using the default copy constructors.
+    // Make a deep copy of the Cache.
+    context->cache_ = cache_->Clone();
+
+    // Make a deep copy of the time.
     *context->get_mutable_step_info() = this->get_step_info();
-    *context->get_mutable_cache() = this->get_cache();
     return context;
   }
 
  private:
+  // Allocates n new input ports, not connected to anything. This function
+  // may only be called once, because modifying the number of input ports
+  // after context creation would destroy the semantics of cache tickets.
+  void SetNumInputPorts(int n) {
+    DRAKE_ASSERT(inputs_.empty());
+    inputs_.resize(n);
+    root_cache_tickets_.input_ports.resize(n);
+    for (int i = 0; i < n; ++i) {
+      root_cache_tickets_.input_ports[i] = cache_->MakeCacheTicket({});
+    }
+  }
+
   // Context objects are neither copyable nor moveable.
   Context(const Context& other) = delete;
   Context& operator=(const Context& other) = delete;
@@ -125,7 +195,10 @@ class Context : public ContextBase<T> {
 
   // The cache. The System may insert arbitrary key-value pairs, and configure
   // invalidation on a per-line basis.
-  mutable Cache<T> cache_;
+  std::unique_ptr<Cache> cache_;
+
+  // Cache tickets representing dependencies on the fields of this context.
+  ContextShape<CacheTicket> root_cache_tickets_;
 };
 
 }  // namespace systems
