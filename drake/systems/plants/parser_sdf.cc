@@ -251,7 +251,7 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   //  Issue 2661 was created to track this problem.
   // TODO(amcastro-tri): fix the above issue tracked by 2661. Similarly for
   // parseCollision in RigidBodyTreeURDF.cpp.
-  if (body->get_name().compare(std::string(RigidBodyTree::kWorldLinkName)) == 0)
+  if (body->get_name().compare(std::string(RigidBodyTree::kWorldName)) == 0)
     element.set_static();
   if (!parseSDFGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
@@ -282,7 +282,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   }
   body->set_name(std::string(attr));
 
-  if (body->get_name() == std::string(RigidBodyTree::kWorldLinkName)) {
+  if (body->get_name() == std::string(RigidBodyTree::kWorldName)) {
     throw runtime_error(
         std::string(__FILE__) + ": " + __func__ +
         ": ERROR: Do not name a link 'world' because it is a reserved name.");
@@ -688,7 +688,7 @@ void parseModel(RigidBodyTree* rigid_body_tree, XMLElement* node,
     if (weld_to_frame == nullptr) {
       weld_to_frame = std::allocate_shared<RigidBodyFrame>(
           Eigen::aligned_allocator<RigidBodyFrame>(),
-          std::string(RigidBodyTree::kWorldLinkName),
+          std::string(RigidBodyTree::kWorldName),
           nullptr,  // Valid since the robot is attached to the world.
           Eigen::Isometry3d::Identity());
     }
@@ -737,11 +737,11 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
 
   // Loads the world if it is defined.
   XMLElement* world_node =
-      node->FirstChildElement(RigidBodyTree::kWorldLinkName);
+      node->FirstChildElement(RigidBodyTree::kWorldName);
   if (world_node) {
     // If we have more than one world, it is ambiguous which one the user
     // wishes to use.
-    if (world_node->NextSiblingElement(RigidBodyTree::kWorldLinkName)) {
+    if (world_node->NextSiblingElement(RigidBodyTree::kWorldName)) {
       throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                           ": ERROR: Multiple worlds in one file.");
     }

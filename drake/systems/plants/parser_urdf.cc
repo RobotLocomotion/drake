@@ -511,7 +511,7 @@ void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   //  Issue 2661 was created to track this problem.
   // TODO(amcastro-tri): fix the above issue tracked by 2661.  Similarly for
   // parseSDFCollision in RigidBodyTreeSDF.cpp.
-  if (body->get_name().compare(string(RigidBodyTree::kWorldLinkName)) == 0)
+  if (body->get_name().compare(string(RigidBodyTree::kWorldName)) == 0)
     element.set_static();
   if (!parseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
@@ -537,7 +537,7 @@ bool parseLink(RigidBodyTree* tree, string robot_name, XMLElement* node,
 
   // World links are handled by parseWorldJoint().
   body->set_name(attr);
-  if (body->get_name() == string(RigidBodyTree::kWorldLinkName)) return false;
+  if (body->get_name() == string(RigidBodyTree::kWorldName)) return false;
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node) parseInertial(body, inertial_node);
@@ -646,7 +646,7 @@ void parseJoint(RigidBodyTree* tree, XMLElement* node) {
   // Checks if this joint connects to the world and, if so, terminates this
   // method call. This is because joints that connect to the world are processed
   // separately.
-  if (parent_name == string(RigidBodyTree::kWorldLinkName)) return;
+  if (parent_name == string(RigidBodyTree::kWorldName)) return;
 
   int parent_index = findLinkIndex(tree, parent_name);
   if (parent_index < 0)
@@ -891,7 +891,7 @@ void parseFrame(RigidBodyTree* tree, XMLElement* node) {
 
 /**
  * Searches for a joint that connects the URDF model to a link with a name equal
- * to the string defined by RigidBodyTree::kWorldLinkName. If it finds such a
+ * to the string defined by RigidBodyTree::kWorldName. If it finds such a
  * joint, it updates the weld_to_frame parameter with the offset specified by
  * the joint.
  *
@@ -926,7 +926,7 @@ void parseWorldJoint(XMLElement* node,
     parseJointKeyParams(joint_node, joint_name, joint_type, parent_name,
                         child_name);
 
-    if (parent_name == string(RigidBodyTree::kWorldLinkName)) {
+    if (parent_name == string(RigidBodyTree::kWorldName)) {
       // Ensures only one joint connects the model to the world.
       if (found_world_joint)
         throw runtime_error(
@@ -946,7 +946,7 @@ void parseWorldJoint(XMLElement* node,
       // a nullptr.
       if (weld_to_frame == nullptr) weld_to_frame.reset(new RigidBodyFrame());
 
-      weld_to_frame->set_name(string(RigidBodyTree::kWorldLinkName));
+      weld_to_frame->set_name(string(RigidBodyTree::kWorldName));
       weld_to_frame->set_transform_to_body(transform_to_parent_body);
 
       if (joint_type == "fixed") {
@@ -1009,7 +1009,7 @@ void parseRobot(RigidBodyTree* tree, XMLElement* node,
         throw runtime_error("ERROR: link tag is missing name attribute");
 
       if (string(name_attr) ==
-          string(RigidBodyTree::kWorldLinkName)) {
+          string(RigidBodyTree::kWorldName)) {
         // A world link was specified within the URDF. The following code
         // verifies that parameter weld_to_frame is not specified. It throws an
         // exception if it is since the model being added is connected to the
