@@ -723,7 +723,7 @@ void ParseUrdfModel(RigidBodySystem& sys, XMLElement* node,
   }
   int model_instance_id = (*model_instance_id_table)[model_name];
 
-  // parse force elements
+  // Parses the force elements in the model.
   for (XMLElement* force_node = node->FirstChildElement("force_element");
        force_node; force_node = force_node->NextSiblingElement("force_element"))
     ParseUrdfForceElement(sys, force_node, model_instance_id);
@@ -736,10 +736,10 @@ void ParseUrdfModel(RigidBodySystem& sys, XMLElement* node,
 //
 // @param[in] xml_doc The XML document containing the URDF specification.
 //
-// @param[out] model_instance_id_table A pointer to a map where the key is the
-// name of the model whose instance was just added to this `RigidBodySystem`
-// and it's `RigidBodyTree` and the value is the unique model instance ID that
-// was assigned to the instance. This parameter may be `nullptr`.
+// @param[out] model_instance_id_table A pointer to a map storing model
+// names and their instance IDs. This parameter may not be `nullptr`. A
+// `std::runtime_error` is thrown if an instance is created of a model whose
+// name is already in this table.
 void ParseUrdf(RigidBodySystem& sys, XMLDocument* xml_doc,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
   XMLElement* node = xml_doc->FirstChildElement("robot");

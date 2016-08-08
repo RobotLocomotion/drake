@@ -977,7 +977,7 @@ void ParseRobot(RigidBodyTree* tree, XMLElement* node,
 
   // Obtains the model name and ensures no such model exists in
   // model_instance_id_table. Throws an exception if a model of the same name
-  // already exists in the map.
+  // already exists in the table.
   string model_name = node->Attribute("name");
   if (model_instance_id_table->find(model_name) !=
       model_instance_id_table->end()) {
@@ -985,7 +985,7 @@ void ParseRobot(RigidBodyTree* tree, XMLElement* node,
         "exists in the model_instance_id_table.");
   }
 
-  // Obtains and adds a new model instance ID into the map.
+  // Obtains and adds a new model instance ID into the table.
   int model_instance_id = tree->add_model_instance();
   (*model_instance_id_table)[model_name] = model_instance_id;
 
@@ -1117,9 +1117,10 @@ void AddModelInstanceFromURDFString(
     RigidBodyTree* tree,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
   const string root_dir = ".";
+  std::shared_ptr<RigidBodyFrame> weld_to_frame;
   AddModelInstanceFromURDFString(
-      urdf_string, package_map, root_dir, DrakeJoint::ROLLPITCHYAW, nullptr,
-      tree, model_instance_id_table);
+      urdf_string, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
+      weld_to_frame, tree, model_instance_id_table);
 }
 
 void AddModelInstanceFromURDFString(
@@ -1129,9 +1130,10 @@ void AddModelInstanceFromURDFString(
     RigidBodyTree* tree,
     RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
   PackageMap package_map;
+  std::shared_ptr<RigidBodyFrame> weld_to_frame;
   AddModelInstanceFromURDFString(
-      urdf_string, package_map, root_dir, floating_base_type, nullptr, tree,
-      model_instance_id_table);
+      urdf_string, package_map, root_dir, floating_base_type, weld_to_frame,
+      tree, model_instance_id_table);
 }
 
 void AddModelInstanceFromURDFString(
@@ -1157,8 +1159,10 @@ void AddModelInstanceFromURDF(
   DRAKE_ABORT_UNLESS(model_instance_id_table);
 
   PackageMap package_map;
+  std::shared_ptr<RigidBodyFrame> weld_to_frame;
+
   AddModelInstanceFromURDF(
-      urdf_filename, package_map, DrakeJoint::ROLLPITCHYAW, nullptr, tree,
+      urdf_filename, package_map, DrakeJoint::ROLLPITCHYAW, weld_to_frame, tree,
       model_instance_id_table);
 }
 
@@ -1172,8 +1176,10 @@ void AddModelInstanceFromURDF(
   DRAKE_ABORT_UNLESS(model_instance_id_table);
 
   PackageMap package_map;
+  std::shared_ptr<RigidBodyFrame> weld_to_frame;
+
   AddModelInstanceFromURDF(
-      urdf_filename, package_map, floating_base_type, nullptr, tree,
+      urdf_filename, package_map, floating_base_type, weld_to_frame, tree,
       model_instance_id_table);
 }
 

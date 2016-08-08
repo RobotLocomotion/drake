@@ -666,7 +666,7 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
 
   // Obtains the model name and ensures no such model exists in the
   // model_instance_id_table. Throws an exception if a model of the same name
-  // already exists in the map.
+  // already exists in the table.
   string model_name = node->Attribute("name");
   if (model_instance_id_table->find(model_name) !=
       model_instance_id_table->end()) {
