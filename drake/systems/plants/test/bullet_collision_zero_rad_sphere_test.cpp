@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
         DrakeJoint::ROLLPITCHYAW, &tree, &model_instance_id_table);
   }
 
-  RigidBodyTree::ModelToInstanceIDMap> model_instance_id_table;
+  RigidBodyTree::ModelToInstanceIDMap model_instance_id_table;
   drake::parsers::urdf::AddModelInstanceFromURDF(
       GetDrakePath() + "/systems/plants/test/FallingBrick.urdf",
       DrakeJoint::FIXED, &tree, &model_instance_id_table);
