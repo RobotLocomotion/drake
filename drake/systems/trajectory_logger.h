@@ -1,13 +1,13 @@
 #pragma once
 
-#include <limits>
+#include <cmath>
 #include "drake/systems/vector.h"
 
 namespace drake {
 namespace systems {
 template <template <typename> class Vector>
 /**
- * Stores the sample time and values of the trajectory.
+ * Stores the sample times and values of the trajectory.
  * TODO(Hongkai) replace this with the "Trajectory" class to be implemented in
  * the future.
  */
@@ -25,9 +25,7 @@ struct TimeSampleTrajectory {
 template <template <typename> class Vector>
 class TrajectoryLogger {
  public:
-  explicit TrajectoryLogger(int traj_dim)
-      : traj_dim_(traj_dim), cached_time(nullptr) {}
-  ~TrajectoryLogger() { delete cached_time; }
+  explicit TrajectoryLogger(int traj_dim) : traj_dim_(traj_dim) {}
 
   // Noncopyable
   TrajectoryLogger(const TrajectoryLogger&) = delete;
@@ -53,13 +51,8 @@ class TrajectoryLogger {
   OutputVector<ScalarType> output(const double& t,
                                   const StateVector<ScalarType>& x,
                                   const InputVector<ScalarType>& u) {
-    if (!cached_time ||
-        std::abs(*cached_time - t) > std::numeric_limits<double>::epsilon()) {
-      if (!cached_time) {
-        cached_time = new double(t);
-      } else {
-        *cached_time = t;
-      }
+    if (trajectory_.time.empty() ||
+        trajectory_.time[trajectory_.time.size() - 1] != t) {
       trajectory_.time.push_back(t);
       trajectory_.val.push_back(u);
     }
@@ -76,7 +69,6 @@ class TrajectoryLogger {
  private:
   size_t traj_dim_;
   TimeSampleTrajectory<Vector> trajectory_;
-  double* cached_time;
 };
 }  // namespace systems
 }  // namespace drake

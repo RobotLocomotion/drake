@@ -1,6 +1,10 @@
-#include "drake/systems/trajectory_logger.h"
 #include <memory>
+#include "drake/systems/trajectory_logger.h"
+#include "drake/util/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
+
+using drake::util::CompareMatrices;
+using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace systems {
@@ -19,16 +23,19 @@ GTEST_TEST(TestTrajectoryLogger, TestTrajectoryLogger) {
   for (size_t i = 0; i < kNt; ++i) {
     t(i) = i * 0.01;
     traj_val[i] << i, 2 * i;
-    traj_logger->output(t(i), traj_logger_x, traj_val[i]);
+    auto logger_output = traj_logger->output(t(i), traj_logger_x, traj_val[i]);
+    EXPECT_TRUE(CompareMatrices(logger_output, traj_val[i],
+                                Eigen::NumTraits<double>::epsilon(),
+                                MatrixCompareType::absolute));
   }
   auto traj = traj_logger->getTrajectory();
   EXPECT_EQ(traj.time.size(), kNt);
   EXPECT_EQ(traj.time.size(), traj.val.size());
   EXPECT_EQ(traj_logger->getNumOutputs(), static_cast<size_t>(kTrajDim));
   for (size_t i = 0; i < kNt; ++i) {
-    EXPECT_TRUE(std::abs(traj.time[i] - t(i)) < 1E-5);
-    EXPECT_TRUE(std::abs(traj.val[i](0) - traj_val[i](0)) <= 1E-5);
-    EXPECT_TRUE(std::abs(traj.val[i](1) - traj_val[i](1)) <= 1E-5);
+    EXPECT_NEAR(traj.time[i], t(i), 1E-5);
+    EXPECT_NEAR(traj.val[i](0), traj_val[i](0), 1E-5);
+    EXPECT_NEAR(traj.val[i](1), traj_val[i](1), 1E-5);
   }
 }
 
