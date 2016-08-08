@@ -230,7 +230,7 @@ TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
       &model_instance_id_table);
 
   const int kExpectedTableSize = 1;
-  const int kExpectedModelInstanceId = 1;
+  const int kExpectedModelInstanceId = 0;
   EXPECT_EQ(model_instance_id_table.size(), kExpectedTableSize);
   EXPECT_NE(model_instance_id_table.find("two_dof_robot"),
       model_instance_id_table.end());
