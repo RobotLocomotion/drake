@@ -21,6 +21,7 @@ using drake::RigidBodyDepthSensor;
 
 namespace drake {
 namespace ros {
+namespace systems {
 
 /** DrakeRosTfPublisher<RobotStateVector>
  * @brief A system that takes the current state of Drake and publishes the
@@ -318,5 +319,6 @@ class DrakeRosTfPublisher {
   bool enable_tf_publisher_;
 };
 
-}  // end namespace ros
-}  // end namespace drake
+}  // namespace systems
+}  // namespace ros
+}  // namespace drake
