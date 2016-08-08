@@ -177,7 +177,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * instance's root to the existing `RigidBodyTree` within this
    * `RigidBodySystem`.
    *
-   * @param[out] model_instance_id_table A pointer to a map storing the model
+   * @param[out] model_instance_id_table A pointer to a map storing model
    * names and their instance IDs. This parameter may not be `nullptr`. A
    * `std::runtime_error` is thrown if an instance is created of a model whose
    * name is already in this table.
@@ -207,7 +207,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the newly-created model instances are connected to the world with zero
    * offset and rotation relative to the world's frame.
    *
-   * @param[out] model_instance_id_table A pointer to a map storing the model
+   * @param[out] model_instance_id_table A pointer to a map storing model
    * names and their instance IDs. This parameter may not be `nullptr`. A
    * `std::runtime_error` is thrown if an instance is created of a model whose
    * name is already in this table.
@@ -244,7 +244,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the newly-created model instances are connected to the world with zero
    * offset and rotation relative to the world's frame.
    *
-   * @param[out] model_instance_id_table A pointer to a map storing the model
+   * @param[out] model_instance_id_table A pointer to a map storing model
    * names and their instance IDs. This parameter may not be `nullptr`. A
    * `std::runtime_error` is thrown if an instance is created of a model whose
    * name is already in this table.
@@ -274,7 +274,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the newly-created model instances are connected to the world with zero
    * offset and rotation relative to the world's frame.
    *
-   * @param[out] model_instance_id_table A pointer to a map storing the model
+   * @param[out] model_instance_id_table A pointer to a map storing model
    * names and their instance IDs. This parameter may not be `nullptr`. A
    * `std::runtime_error` is thrown if an instance is created of a model whose
    * name is already in this table.

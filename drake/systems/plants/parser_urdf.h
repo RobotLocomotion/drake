@@ -51,7 +51,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 /// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// This parameter must not be `nullptr`.
 ///
-/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// @param[out] model_instance_id_table A pointer to a map storing model
 /// names and their instance IDs. This parameter may not be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
 /// name is already in this table.
@@ -78,7 +78,7 @@ void AddModelInstanceFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// This parameter must not be `nullptr`.
 ///
-/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// @param[out] model_instance_id_table A pointer to a map storing model
 /// names and their instance IDs. This parameter may not be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
 /// name is already in this table.
@@ -108,7 +108,7 @@ void AddModelInstanceFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// This parameter must not be `nullptr`.
 ///
-/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// @param[out] model_instance_id_table A pointer to a map storing model
 /// names and their instance IDs. This parameter may not be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
 /// name is already in this table.
@@ -143,7 +143,7 @@ void AddModelInstanceFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// This parameter must not be `nullptr`.
 ///
-/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// @param[out] model_instance_id_table A pointer to a map storing model
 /// names and their instance IDs. This parameter may not be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
 /// name is already in this table.
@@ -169,7 +169,7 @@ void AddModelInstanceFromURDFString(
 /// @param[out] tree The `RigidBodyTree` to which to add the model. This
 /// parameter must not be `nullptr`.
 ///
-/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// @param[out] model_instance_id_table A pointer to a map storing model
 /// names and their instance IDs. This parameter may not be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
 /// name is already in this table.
@@ -193,7 +193,7 @@ void AddModelInstanceFromURDF(const std::string& urdf_filename,
 /// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// This parameter must not be `nullptr`.
 ///
-/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// @param[out] model_instance_id_table A pointer to a map storing model
 /// names and their instance IDs. This parameter may not be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
 /// name is already in this table.
@@ -222,7 +222,7 @@ void AddModelInstanceFromURDF(
 /// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// This parameter must not be `nullptr`.
 ///
-/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// @param[out] model_instance_id_table A pointer to a map storing model
 /// names and their instance IDs. This parameter may not be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
 /// name is already in this table.
@@ -255,7 +255,7 @@ void AddModelInstanceFromURDF(
 /// @param[out] tree The `RigidBodyTree` to which to add the model instance.
 /// This parameter must not be `nullptr`.
 ///
-/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// @param[out] model_instance_id_table A pointer to a map storing model
 /// names and their instance IDs. This parameter may not be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
 /// name is already in this table.

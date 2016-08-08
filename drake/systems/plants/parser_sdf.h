@@ -26,7 +26,7 @@ namespace sdf {
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
 ///
-/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// @param[out] model_instance_id_table A pointer to a map storing model
 /// names and their instance IDs. This parameter may not be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
 /// name is already in this table.
@@ -51,7 +51,7 @@ void AddRobotFromSDFInWorldFrame(
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
 ///
-/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// @param[out] model_instance_id_table A pointer to a map storing model
 /// names and their instance IDs. This parameter may not be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
 /// name is already in this table.

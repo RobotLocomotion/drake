@@ -641,7 +641,7 @@ void ParseSDFJoint(RigidBodyTree* model, std::string model_name,
 // @param[in] weld_to_frame Specifies the initial pose of the newly added robot
 // relative to the link to which the robot is being welded.
 //
-// @param[out] model_instance_id_table A pointer to a map storing the model
+// @param[out] model_instance_id_table A pointer to a map storing model
 // names and their instance IDs. This parameter may not be `nullptr`. A
 // `std::runtime_error` is thrown if an instance is created of a model whose
 // name is already in this table.
