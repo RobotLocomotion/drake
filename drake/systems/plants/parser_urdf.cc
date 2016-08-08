@@ -890,23 +890,24 @@ void parseFrame(RigidBodyTree* tree, XMLElement* node) {
 }
 
 /**
- * Searches for a joint that connects the URDF model to a link with a name equal
- * to the string defined by RigidBodyTree::kWorldLinkName. If it finds such a
- * joint, it updates the weld_to_frame parameter with the offset specified by
- * the joint.
+ * Searches for a joint that connects the URDF model to a body called
+ * RigidBodyTree::kWorldLinkName. If it finds such a joint, it updates
+ * @p weld_to_frame with the offset specified by the joint.
  *
  * An exception is thrown if no such joint is found, or if multiple
  * world-connecting joints are found.
  *
  * Multiple world-connecting joints cannot exist in a single URDF file because
- * each URDF file describes one robot using a tree of links connected by joints.
- * Thus, the only way for a URDF to contain multiple world-connecting joints is
- * if the URDF describes more than one robot. This is a violation of the
- * one-robot-per-URDF rule.
+ * each URDF file describes one model using a tree of bodies connected by
+ * joints. Thus, the only way for a URDF to contain multiple world-connecting
+ * joints is if the URDF describes more than one model. This is a violation of
+ * the one-model-per-URDF rule.
  *
  * @param[in] node A pointer to the XML node that is parsing the URDF model.
+ *
  * @param[out] floating_base_type A reference to where the floating_base_type
  * should be saved.
+ *
  * @param[out] weld_to_frame The parameter to modify. If this parameter is
  * `nullptr`, a new `RigidBodyFrame` is constructed and stored in the shared
  * pointer.
@@ -1022,12 +1023,15 @@ void ParseRobot(RigidBodyTree* tree, XMLElement* node,
 
       if (string(name_attr) ==
           string(RigidBodyTree::kWorldLinkName)) {
-        // A world link was specified within the URDF. The following code
-        // verifies that parameter weld_to_frame is not specified. It throws an
-        // exception if it is since the model being added is connected to the
-        // world in two different ways. Otherwise, it extract the information
-        // necessary create the virtual joint that connects the robot to the
-        // world.
+        // A world link was specified within the URDF. Since the world link was
+        // specified in the URDF, parameter weld_to_frame should be nullptr.
+        // Otherwise, the model instance would be connected to the existing
+        // rigid body tree in two different ways. Thus, the following code first
+        // verifies that parameter weld_to_frame is nullptr and throws an
+        // exception if it is not. Otherwise, it creates a transform between the
+        // model's root body and its world body and saves this information in
+        // a virtual floating joint that connects the model instance robot to
+        // the world.
         if (weld_to_frame != nullptr) {
           throw runtime_error(
               "Both weld_to_frame and world link specified. "
