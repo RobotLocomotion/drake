@@ -2,15 +2,14 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
-#include "drake/common/drake_path.h"
-#include "drake/systems/cascade_system.h"
 #include "drake/systems/LCMSystem.h"
+#include "drake/systems/Simulation.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/Simulation.h"
-
 
 using drake::RigidBodySystem;
 using drake::BotVisualizer;
@@ -33,8 +32,8 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   // Instantiates additional systems and cascades them with the rigid body
   // system.
   auto visualizer =
-      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(
-          lcm, iiwa_tree);
+      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,
+                                                                    iiwa_tree);
 
   auto robot_state_tap =
       std::make_shared<RobotStateTap<RigidBodySystem::StateVector>>();
@@ -46,7 +45,7 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   x0.head(iiwa_tree->number_of_positions()) = iiwa_tree->getZeroConfiguration();
 
   Eigen::VectorXd random_initial_configuration(7);
-  random_initial_configuration << 0.01, -0.01, 0.01, -0.01, 0.01, -0.01, 0.01;
+  random_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
   x0.head(7) += random_initial_configuration;
 
   drake::SimulationOptions options = SetupSimulation();
@@ -58,6 +57,8 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   const double kDuration = 0.5;
 
   drake::simulate(*sys.get(), kStartTime, kDuration, x0, options);
+
+  // TODO(naveenoid) : Test for final state != initial state.
 }
 
 }  // namespace

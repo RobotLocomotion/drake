@@ -1,7 +1,7 @@
 #include "iiwa_simulation.h"
 
-#include "drake/systems/LCMSystem.h"
 #include "drake/common/drake_path.h"
+#include "drake/systems/LCMSystem.h"
 
 namespace drake {
 namespace examples {
@@ -47,11 +47,11 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   return rigid_body_system;
 }
 
-drake::SimulationOptions SetupSimulation(void) {
+drake::SimulationOptions SetupSimulation(const double& initial_step_size) {
   // Specifies the simulation options.
   drake::SimulationOptions options;
   options.realtime_factor = 0;  // As fast as possible.
-  options.initial_step_size = 0.002;
+  options.initial_step_size = initial_step_size;
 
   // Prevents exception from being thrown when simulation runs slower than real
   // time, which it most likely will given the small step size.
