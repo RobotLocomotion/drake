@@ -155,10 +155,13 @@ class DiagramContext : public ContextBase<T> {
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
-    const auto it = contexts_.find(system_index);
-    DRAKE_ASSERT(it != contexts_.end());
-    it->second->SetInputPort(port_index, std::move(port));
-    // TODO(david-german-tri): Set invalidation callbacks.
+
+    ContextBase<T>* context = GetMutableSubsystemContext(system_index);
+    DRAKE_ASSERT(context != nullptr);
+    auto callback = std::bind(&DiagramContext<T>::InvalidateInputPort, this,
+                              index);
+    port->set_invalidation_callback(callback);
+    context->SetInputPort(port_index, std::move(port));
   }
 
   const VectorInterface<T>* get_vector_input(int index) const override {
@@ -177,7 +180,40 @@ class DiagramContext : public ContextBase<T> {
 
   const State<T>& get_state() const override { return state_; }
 
-  State<T>* get_mutable_state() override { return &state_; }
+  State<T>* get_mutable_state() override {
+    InvalidateState();
+    return &state_;
+  }
+
+  /// Propagates the invalidation of time to all subsystems.
+  void InvalidateTime() override {
+    /// TODO(david-german-tri): Take advantage of FunctionalForm, once
+    /// available, to skip systems that are time-invariant.
+    for (auto& kv : contexts_) {
+      ContextBase<T>* context = kv.second.get();
+      context->InvalidateTime();
+    }
+  }
+
+  /// Propagates the invalidation of state to all subsystems.
+  void InvalidateState() override {
+    /// TODO(david-german-tri): Take advantage of FunctionalForm, once
+    /// available, to skip systems that are stateless.
+    for (auto& kv : contexts_) {
+      ContextBase<T>* context = kv.second.get();
+      context->InvalidateState();
+    }
+  }
+
+  /// Propagates invalidation of an input port to the subsystem that is
+  /// connected to that input port.
+  void InvalidateInputPort(int index) override {
+    const PortIdentifier& id = input_ids_[index];
+    SystemIndex system_index = id.first;
+    PortIndex port_index = id.second;
+    ContextBase<T>* context = GetMutableSubsystemContext(system_index);
+    context->InvalidateInputPort(port_index);
+  }
 
  protected:
   DiagramContext<T>* DoClone() const override {
@@ -217,6 +253,12 @@ class DiagramContext : public ContextBase<T> {
   }
 
  private:
+  // Returns the context structure for a given constituent system @p sys, or
+  // nullptr if @p sys is not a constituent system.
+  ContextBase<T>* GetMutableSubsystemContext(SystemIndex sys) {
+    return const_cast<ContextBase<T>*>(GetSubsystemContext(sys));
+  }
+
   std::vector<PortIdentifier> input_ids_;
 
   // Order is critical: Output ports must outlive the DependentInputPorts that

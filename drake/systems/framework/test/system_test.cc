@@ -33,8 +33,7 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
-  std::unique_ptr<ContextBase<double>> CreateDefaultContext()
-      const override {
+  std::unique_ptr<ContextBase<double>> CreateDefaultContext() const override {
     return nullptr;
   }
 
@@ -54,7 +53,7 @@ class TestSystem : public System<double> {
 class SystemTest : public ::testing::Test {
  protected:
   TestSystem system_;
-  Context<double> context_;
+  Context<double> context_{0};
 };
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {

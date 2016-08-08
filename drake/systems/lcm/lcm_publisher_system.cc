@@ -32,8 +32,7 @@ std::string LcmPublisherSystem::get_name() const {
 
 std::unique_ptr<ContextBase<double>> LcmPublisherSystem::CreateDefaultContext()
     const {
-  std::unique_ptr<Context<double>> context(new Context<double>());
-  context->SetNumInputPorts(kNumInputPorts);
+  std::unique_ptr<Context<double>> context(new Context<double>(kNumInputPorts));
   return std::unique_ptr<ContextBase<double>>(context.release());
 }
 

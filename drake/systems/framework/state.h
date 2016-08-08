@@ -15,6 +15,11 @@
 namespace drake {
 namespace systems {
 
+template <typename T>
+struct StateShape {
+  T continuous_state;
+};
+
 /// The ContinuousState is a container for all the State variables that are
 /// unique to continuous Systems, i.e. Systems that have defined dynamics at
 /// all times.
@@ -49,8 +54,8 @@ class ContinuousState {
   /// @param num_q The number of position variables.
   /// @param num_v The number of velocity variables.
   /// @param num_z The number of other variables.
-  ContinuousState(std::unique_ptr<StateVector<T>> state, int num_q,
-                  int num_v, int num_z) {
+  ContinuousState(std::unique_ptr<StateVector<T>> state, int num_q, int num_v,
+                  int num_z) {
     state_ = std::move(state);
     if (state_->size() != num_q + num_v + num_z) {
       throw std::out_of_range(

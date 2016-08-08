@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/integrator.h"
 #include "drake/systems/framework/system.h"
@@ -44,8 +45,7 @@ class DiagramContextTest : public ::testing::Test {
     context_->ExportInput({1 /* adder1_ */, 0 /* port 0 */});
 
     context_->MakeState();
-    ContinuousState<double>* xc =
-        context_->get_state().continuous_state.get();
+    ContinuousState<double>* xc = context_->get_state().continuous_state.get();
     xc->get_mutable_state()->SetAtIndex(0, 42.0);
     xc->get_mutable_state()->SetAtIndex(1, 43.0);
   }
@@ -57,15 +57,25 @@ class DiagramContextTest : public ::testing::Test {
   }
 
   void AttachInputPorts() {
-    auto vec0 = std::make_unique<BasicVector<double>>(1 /* length */);
-    vec0->get_mutable_value() << 128;
-    auto vec1 = std::make_unique<BasicVector<double>>(1 /* length */);
-    vec1->get_mutable_value() << 256;
+    auto vec0 = std::make_unique<BasicVector<double>>(std::vector<double>{128});
+    auto vec1 = std::make_unique<BasicVector<double>>(std::vector<double>{256});
 
-    context_->SetInputPort(
-        0, std::make_unique<FreestandingInputPort<double>>(std::move(vec0)));
-    context_->SetInputPort(
-        1, std::make_unique<FreestandingInputPort<double>>(std::move(vec1)));
+    auto port0 =
+        std::make_unique<FreestandingInputPort<double>>(std::move(vec0));
+    auto port1 =
+        std::make_unique<FreestandingInputPort<double>>(std::move(vec1));
+    inputs_.push_back(port0.get());
+    inputs_.push_back(port1.get());
+    context_->SetInputPort(0, std::move(port0));
+    context_->SetInputPort(1, std::move(port1));
+  }
+
+  std::unique_ptr<AbstractValue> PackValue(int value) {
+    return std::unique_ptr<AbstractValue>(new Value<int>(value));
+  }
+
+  int UnpackValue(const AbstractValue* value) {
+    return dynamic_cast<const Value<int>*>(value)->get_value();
   }
 
   std::unique_ptr<DiagramContext<double>> context_;
@@ -74,6 +84,8 @@ class DiagramContextTest : public ::testing::Test {
   std::unique_ptr<Adder<double>> adder2_;
   std::unique_ptr<Integrator<double>> integrator0_;
   std::unique_ptr<Integrator<double>> integrator1_;
+
+  std::vector<FreestandingInputPort<double>*> inputs_;
 };
 
 // Tests that systems do not have outputs or contexts in the DiagramContext
@@ -162,8 +174,7 @@ TEST_F(DiagramContextTest, Clone) {
   EXPECT_EQ(kTime, clone->get_time());
 
   // Verify that the state was copied.
-  ContinuousState<double>* xc =
-      context_->get_state().continuous_state.get();
+  ContinuousState<double>* xc = context_->get_state().continuous_state.get();
 
   EXPECT_EQ(42.0, xc->get_state().GetAtIndex(0));
   EXPECT_EQ(43.0, xc->get_state().GetAtIndex(1));
@@ -183,6 +194,34 @@ TEST_F(DiagramContextTest, Clone) {
   // sys1 input port 1.
   EXPECT_EQ(clone->GetSubsystemContext(1)->get_vector_input(1),
             clone->GetSubsystemOutput(0)->get_port(0).get_vector_data());
+}
+
+class DiagramContextCacheInvalidationTest : public DiagramContextTest {
+ protected:
+  void SetUp() override {
+    DiagramContextTest::SetUp();
+    AttachInputPorts();
+    adder0_context_ = dynamic_cast<Context<double>*>(
+        const_cast<ContextBase<double>*>(context_->GetSubsystemContext(0)));
+  }
+
+  Context<double>* adder0_context_;
+};
+
+// Tests that cache invalidation on an input port is propagated down to the
+// affected subsystems.
+TEST_F(DiagramContextCacheInvalidationTest,
+       InputPortCacheInvalidationPropagates) {
+  ContextShape<bool> dependencies = adder0_context_->MakeContextShape();
+  ASSERT_EQ(2u, dependencies.input_ports.size());
+  // Input port 0 of the Diagram is input port 1 of adder0_.
+  dependencies.input_ports[1] = true;
+  CacheTicket ticket = adder0_context_->CreateCacheEntry(dependencies, {});
+
+  adder0_context_->SetCachedItem(ticket, PackValue(42));
+  EXPECT_EQ(42, UnpackValue(adder0_context_->GetCachedItem(ticket)));
+  context_->InvalidateInputPort(0);
+  EXPECT_EQ(nullptr, adder0_context_->GetCachedItem(ticket));
 }
 
 }  // namespace
