@@ -42,7 +42,9 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   // correct model name.
   for (auto& body_name :
        {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
-    RigidBody* body = tree->FindBody(body_name);
+    const std::string kModelName = "dual_ramps";
+    const int kModelInstanceId = 1;
+    RigidBody* body = tree->FindBody(body_name, kModelName, kModelInstanceId);
     EXPECT_NE(body, nullptr);
     EXPECT_EQ(body->get_model_name(), "dual_ramps");
   }
@@ -133,33 +135,33 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
 
   // Checks that a body can be obtained when we specify the body's name and
   // model instance ID.
-  EXPECT_NE(tree->FindBody("link_1", "", 0), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "", 1), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "", 2), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "", 3), nullptr);
-  EXPECT_NE(tree->FindBody("link_2", "", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "", 4), nullptr);
   EXPECT_NE(tree->FindBody("link_2", "", 1), nullptr);
   EXPECT_NE(tree->FindBody("link_2", "", 2), nullptr);
   EXPECT_NE(tree->FindBody("link_2", "", 3), nullptr);
-  EXPECT_NE(tree->FindBody("link_3", "", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "", 4), nullptr);
   EXPECT_NE(tree->FindBody("link_3", "", 1), nullptr);
   EXPECT_NE(tree->FindBody("link_3", "", 2), nullptr);
   EXPECT_NE(tree->FindBody("link_3", "", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "", 4), nullptr);
 
   // Checks that a body can be obtained when we specify the body's name, model
   // name, and model instance ID.
-  EXPECT_NE(tree->FindBody("link_1", "model_1", 0), nullptr);
-  EXPECT_NE(tree->FindBody("link_1", "model_2", 1), nullptr);
-  EXPECT_NE(tree->FindBody("link_1", "model_1", 2), nullptr);
-  EXPECT_NE(tree->FindBody("link_1", "model_2", 3), nullptr);
-  EXPECT_NE(tree->FindBody("link_2", "model_1", 0), nullptr);
-  EXPECT_NE(tree->FindBody("link_2", "model_2", 1), nullptr);
-  EXPECT_NE(tree->FindBody("link_2", "model_1", 2), nullptr);
-  EXPECT_NE(tree->FindBody("link_2", "model_2", 3), nullptr);
-  EXPECT_NE(tree->FindBody("link_3", "model_1", 0), nullptr);
-  EXPECT_NE(tree->FindBody("link_3", "model_2", 1), nullptr);
-  EXPECT_NE(tree->FindBody("link_3", "model_1", 2), nullptr);
-  EXPECT_NE(tree->FindBody("link_3", "model_2", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_1", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_2", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_1", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_2", 4), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_1", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_2", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_1", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_2", 4), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_1", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_2", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_1", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_2", 4), nullptr);
 
   // Checks that we cannot access a non-existent joint.
   EXPECT_THROW(tree->findJoint("non-existent-joint"), std::logic_error);
@@ -171,14 +173,14 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
 
   // Checks that we can access a joint using the joint name and model instance
   // ID.
-  EXPECT_NE(tree->findJoint("joint_1", 0), nullptr);
   EXPECT_NE(tree->findJoint("joint_1", 1), nullptr);
   EXPECT_NE(tree->findJoint("joint_1", 2), nullptr);
   EXPECT_NE(tree->findJoint("joint_1", 3), nullptr);
-  EXPECT_NE(tree->findJoint("joint_2", 0), nullptr);
+  EXPECT_NE(tree->findJoint("joint_1", 4), nullptr);
   EXPECT_NE(tree->findJoint("joint_2", 1), nullptr);
   EXPECT_NE(tree->findJoint("joint_2", 2), nullptr);
   EXPECT_NE(tree->findJoint("joint_2", 3), nullptr);
+  EXPECT_NE(tree->findJoint("joint_2", 4), nullptr);
 }
 
 // Tests whether the URDF parser is robust against an improperly specified
