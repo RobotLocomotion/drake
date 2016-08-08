@@ -15,6 +15,7 @@
 
 namespace drake {
 namespace ros {
+namespace systems {
 
 bool decode(const ackermann_msgs::AckermannDriveStamped& msg,
             drake::DrivingCommand<double>& x) {
@@ -150,5 +151,6 @@ void run_ros_vehicle_sim(const System& sys, double t0, double tf) {
   run_ros_vehicle_sim(sys, t0, tf, getInitialState(*sys));
 }
 
-}  // end namespace ros
-}  // end namespace drake
+}  // namespace systems
+}  // namespace ros
+}  // namespace drake
