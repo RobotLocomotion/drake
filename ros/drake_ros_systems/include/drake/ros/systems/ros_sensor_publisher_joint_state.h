@@ -22,6 +22,7 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace ros {
+namespace systems {
 
 // Holds the objects and data used to extract and publish joint state
 // information for a particular robot.
@@ -357,5 +358,6 @@ class SensorPublisherJointState {
   ::ros::Time previous_send_time_;
 };
 
-}  // end namespace ros
-}  // end namespace drake
+}  // namespace systems
+}  // namespace ros
+}  // namespace drake

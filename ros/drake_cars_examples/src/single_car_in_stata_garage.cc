@@ -2,11 +2,11 @@
 
 #include "drake/examples/Cars/car_simulation.h"
 #include "drake/examples/Cars/gen/driving_command.h"
-#include "drake/ros/ros_tf_publisher.h"
-#include "drake/ros/ros_vehicle_system.h"
-#include "drake/ros/ros_sensor_publisher_joint_state.h"
-#include "drake/ros/ros_sensor_publisher_lidar.h"
-#include "drake/ros/ros_sensor_publisher_odometry.h"
+#include "drake/ros/systems/ros_tf_publisher.h"
+#include "drake/ros/systems/ros_vehicle_system.h"
+#include "drake/ros/systems/ros_sensor_publisher_joint_state.h"
+#include "drake/ros/systems/ros_sensor_publisher_lidar.h"
+#include "drake/ros/systems/ros_sensor_publisher_odometry.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
@@ -29,6 +29,12 @@ using drake::examples::cars::CreateRigidBodySystem;
 using drake::examples::cars::CreateVehicleSystem;
 using drake::examples::cars::GetCarSimulationDefaultOptions;
 using drake::examples::cars::ParseDuration;
+
+using drake::ros::systems::DrakeRosTfPublisher;
+using drake::ros::systems::run_ros_vehicle_sim;
+using drake::ros::systems::SensorPublisherJointState;
+using drake::ros::systems::SensorPublisherLidar;
+using drake::ros::systems::SensorPublisherOdometry;
 
 /** Driving Simulator
  * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
@@ -55,18 +61,18 @@ int do_main(int argc, const char* argv[]) {
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
   auto lidar_publisher = std::make_shared<
-      ::drake::ros::SensorPublisherLidar<RigidBodySystem::StateVector>>(
+      SensorPublisherLidar<RigidBodySystem::StateVector>>(
       rigid_body_sys);
 
   auto odometry_publisher = std::make_shared<
-      ::drake::ros::SensorPublisherOdometry<RigidBodySystem::StateVector>>(
+      SensorPublisherOdometry<RigidBodySystem::StateVector>>(
       rigid_body_sys);
 
   auto tf_publisher = std::make_shared<
-      ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree);
+      DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree);
 
   auto joint_state_publisher = std::make_shared<
-      ::drake::ros::SensorPublisherJointState<RigidBodySystem::StateVector>>(
+      SensorPublisherJointState<RigidBodySystem::StateVector>>(
       rigid_body_sys);
 
   auto sys =
@@ -95,7 +101,7 @@ int do_main(int argc, const char* argv[]) {
   const double kStartTime = 0;
 
   // Starts the simulation.
-  drake::ros::run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
+  run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
 
   return 0;
 }
