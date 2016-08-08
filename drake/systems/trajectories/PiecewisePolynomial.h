@@ -93,7 +93,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
     }
     polys.push_back(poly_matrix);
   }
-  return PiecewisePolynomial<double>(polys, segment_times);
+  return PiecewisePolynomial<CoefficientType>(polys, segment_times);
 }
 
   /// Takes the derivative of this PiecewisePolynomial.

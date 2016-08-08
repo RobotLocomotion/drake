@@ -44,8 +44,9 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * Add a constraint on the input at the specified time indices.
    *
    * @param constraint The constraint to be applied.
-   * @param time_indices The (0 offset) time indices to apply the
-   *        constraint.
+   *
+   * @param time_indices Apply the constraints only at these time
+   * indices (zero offset).
    */
   template <typename ConstraintT>
   void AddInputConstraint(std::shared_ptr<ConstraintT> constraint,
@@ -61,8 +62,9 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * Add a constraint on the state at the specified time indices.
    *
    * @param constraint The constraint to be applied.
-   * @param time_indices The (0 offset) time indices to apply the
-   *        constraint.
+   *
+   * @param time_indices Apply the constraints only at these time
+   * indices (zero offset).
    */
   template <typename ConstraintT>
   void AddStateConstraint(std::shared_ptr<ConstraintT> constraint,
@@ -104,8 +106,6 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * per column, and the number of columns is equal to the number of
    * time samples.  @p times will be populated with the times
    * corresponding to each column.
-   *
-   * @param[out] inputs
    */
   void GetResultSamples(Eigen::MatrixXd* inputs, Eigen::MatrixXd* states,
                         std::vector<double>* times) const;
