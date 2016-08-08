@@ -245,8 +245,8 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
       constraint.transpose(),
       drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       drake::Vector1d::Constant(40));
-  EXPECT_EQ(prog.linear_constraints().size(), 1);
-  EXPECT_EQ(prog.generic_constraints().size(), 0);
+  EXPECT_EQ(prog.linear_constraints().size(), 1u);
+  EXPECT_EQ(prog.generic_constraints().size(), 0u);
 
   prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
                                 MatrixXd::Constant(5, 1, 1));
