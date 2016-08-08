@@ -62,7 +62,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
       Eigen::aligned_allocator<RigidBodySystem>());
 
   // Adds a robot model.
-  rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION);
+  rigid_body_sys->AddModelInstanceFromFile(argv[1], DrakeJoint::QUATERNION);
 
   if (duration != nullptr) {
     // Initializes duration to be infinity.
@@ -80,7 +80,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
       if (duration != nullptr)
         *duration = atof(argv[ii]);
     } else {
-      rigid_body_sys->addRobotFromFile(argv[ii], DrakeJoint::FIXED);
+      rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED);
     }
   }
 

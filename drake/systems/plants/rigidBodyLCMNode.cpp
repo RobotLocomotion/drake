@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
   }
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(argv[argc - 1], floating_base_type);
+  rigid_body_sys->AddModelInstanceFromFile(argv[argc - 1], floating_base_type);
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
   if (commandLineOptionExists(argv, argc + argv, "--add_flat_terrain")) {

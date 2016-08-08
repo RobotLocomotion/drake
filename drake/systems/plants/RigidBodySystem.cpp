@@ -896,7 +896,7 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   }
 }
 
-void RigidBodySystem::addRobotFromURDFString(
+void RigidBodySystem::AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type) {
   // first add the urdf to the rigid body tree
@@ -914,7 +914,7 @@ void RigidBodySystem::addRobotFromURDFString(
 // TODO(liang.fok) Remove this method once the URDF parser emits a Model
 // container that contains information needed by both the RigidBodySystem and
 // RigidBodyTree.
-void RigidBodySystem::addRobotFromURDF(
+void RigidBodySystem::AddModelInstanceFromUrdfFile(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -928,14 +928,13 @@ void RigidBodySystem::addRobotFromURDF(
   xml_doc.LoadFile(urdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
     throw std::runtime_error(
-        "RigidBodySystem::addRobotFromURDF: ERROR: Failed to parse xml in "
-        "file " +
-        urdf_filename + "\n" + xml_doc.ErrorName());
+        "RigidBodySystem::AddModelInstanceFromUrdfFile: ERROR: Failed to parse "
+        "xml in file " + urdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseURDF(*this, &xml_doc);
 }
 
-void RigidBodySystem::addRobotFromSDF(
+void RigidBodySystem::AddModelInstanceFromSdfFile(
     const string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -949,14 +948,13 @@ void RigidBodySystem::addRobotFromSDF(
   xml_doc.LoadFile(sdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
     throw std::runtime_error(
-        "RigidBodySystem::addRobotFromSDF: ERROR: Failed to parse xml in "
-        "file " +
-        sdf_filename + "\n" + xml_doc.ErrorName());
+        "RigidBodySystem::AddModelInstanceFromSdfFile: ERROR: Failed to parse"
+        "xml in file " + sdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseSDF(*this, &xml_doc);
 }
 
-void RigidBodySystem::addRobotFromFile(
+void RigidBodySystem::AddModelInstanceFromFile(
     const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -967,13 +965,13 @@ void RigidBodySystem::addRobotFromFile(
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
   if (ext == ".urdf") {
-    addRobotFromURDF(filename, floating_base_type, weld_to_frame);
+    AddModelInstanceFromUrdfFile(filename, floating_base_type, weld_to_frame);
   } else if (ext == ".sdf") {
-    addRobotFromSDF(filename, floating_base_type, weld_to_frame);
+    AddModelInstanceFromSdfFile(filename, floating_base_type, weld_to_frame);
   } else {
     throw runtime_error(
-        "RigidBodySystem::addRobotFromFile: ERROR: Unknown file extension: " +
-        ext);
+        "RigidBodySystem::AddModelInstanceFromFile: ERROR: Unknown file "
+        "extension: " + ext);
   }
 }
 

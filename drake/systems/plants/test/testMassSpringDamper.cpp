@@ -17,7 +17,7 @@ namespace test {
 
 GTEST_TEST(testMassSpringDamper, AllTests) {
   auto sys = make_shared<RigidBodySystem>();
-  sys->addRobotFromFile(
+  sys->AddModelInstanceFromFile(
       GetDrakePath() + "/systems/plants/test/MassSpringDamper.urdf",
       DrakeJoint::FIXED);
 

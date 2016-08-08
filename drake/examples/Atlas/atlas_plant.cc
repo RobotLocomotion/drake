@@ -8,7 +8,7 @@ using Eigen::Isometry3d;
 
 AtlasPlant::AtlasPlant() {
   sys_.reset(new drake::RigidBodySystem());
-  sys_->addRobotFromFile(
+  sys_->AddModelInstanceFromFile(
       drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
       DrakeJoint::QUATERNION);
 
