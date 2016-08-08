@@ -29,8 +29,10 @@ namespace solvers {
 class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  public:
   /**
-   * @p trajectory_time_lower_bound Bound on total time for trajectory.
-   * @p trajectory_time_upper_bound Bound on total time for trajectory.
+   * @param trajectory_time_lower_bound Bound on total time for
+   *        trajectory.
+   * @param trajectory_time_upper_bound Bound on total time for
+   *        trajectory.
    */
   DirectTrajectoryOptimization(int num_inputs, int num_states,
                                int num_time_samples,
@@ -41,14 +43,14 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   /**
    * Add a constraint on the input at the specified time indices.
    *
-   * @p constraint The constraint to be applied.
-   * @p time_indices The (0 offset) time indices to apply the
-   * constraint.
+   * @param constraint The constraint to be applied.
+   * @param time_indices The (0 offset) time indices to apply the
+   *        constraint.
    */
   template <typename ConstraintT>
   void AddInputConstraint(std::shared_ptr<ConstraintT> constraint,
                           const std::vector<int>& time_indices) {
-    for (const int i: time_indices) {
+    for (const int i : time_indices) {
       DRAKE_ASSERT(i < (N_ - 1));
       opt_problem_.AddConstraint(
           constraint, {u_vars_.segment(i * num_inputs_, num_inputs_)});
@@ -58,14 +60,14 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   /**
    * Add a constraint on the state at the specified time indices.
    *
-   * @p constraint The constraint to be applied.
-   * @p time_indices The (0 offset) time indices to apply the
-   * constraint.
+   * @param constraint The constraint to be applied.
+   * @param time_indices The (0 offset) time indices to apply the
+   *        constraint.
    */
   template <typename ConstraintT>
   void AddStateConstraint(std::shared_ptr<ConstraintT> constraint,
                           const std::vector<int>& time_indices) {
-    for (const int i: time_indices) {
+    for (const int i : time_indices) {
       DRAKE_ASSERT(i < (N_ - 1));
       opt_problem_.AddConstraint(
           constraint, {x_vars_.segment(i * num_states_, num_states_)});
@@ -75,15 +77,15 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   /**
    * Solve the nonlinear program and return the resulting trajectory.
    *
-   * @p t_init The final time of the solution.
+   * @param t_init The final time of the solution.
    *
-   * @p traj_init_u Initial guess for trajectory for control input. The number
-   * of rows for each segment in @p traj_init_u must be equal to num_inputs
-   * (the first param of the constructor).
+   * @param traj_init_u Initial guess for trajectory for control
+   * input. The number of rows for each segment in @p traj_init_u must
+   * be equal to num_inputs (the first param of the constructor).
    *
-   * @p traj_init_x Initial guess for trajectory for state input. The number
-   * of rows for each segment in @p traj_init_x must be equal to num_states
-   * (the second param of the constructor).
+   * @param traj_init_x Initial guess for trajectory for state
+   * input. The number of rows for each segment in @p traj_init_x must
+   * be equal to num_states (the second param of the constructor).
    */
   SolutionResult SolveTraj(double t_init,
                            const PiecewisePolynomial<double>& traj_init_u,
@@ -123,15 +125,15 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * Evaluate the initial trajectories at the sampled times and construct the
    * nominal initial vectors.
    *
-   * @p t_init The final time of the solution.
+   * @param t_init The final time of the solution.
    *
-   * @p traj_init_u Initial guess for trajectory for control input. The number
-   * of rows for each segment in @p traj_init_u must be equal to num_inputs
-   * (the first param of the constructor).
+   * @param traj_init_u Initial guess for trajectory for control
+   * input. The number of rows for each segment in @p traj_init_u must
+   * be equal to num_inputs (the first param of the constructor).
    *
-   * @p traj_init_x Initial guess for trajectory for state input. The number
-   * of rows for each segment in @p traj_init_x must be equal to num_states
-   * (the second param of the constructor).
+   * @param traj_init_x Initial guess for trajectory for state
+   * input. The number of rows for each segment in @p traj_init_x must
+   * be equal to num_states (the second param of the constructor).
    */
   void GetInitialVars(double t_init_in,
                       const PiecewisePolynomial<double>& traj_init_u,
