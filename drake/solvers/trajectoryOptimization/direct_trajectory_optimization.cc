@@ -112,6 +112,32 @@ std::vector<double> DirectTrajectoryOptimization::GetTimeVector() const {
   return times;
 }
 
+std::vector<Eigen::MatrixXd>
+DirectTrajectoryOptimization::GetInputVector() const {
+  std::vector<Eigen::MatrixXd> inputs;
+  inputs.reserve(N_);
+
+  const auto u_values = u_vars_.value();
+
+  for (int i = 0; i < N_; i++) {
+    inputs.push_back(u_values.segment(i * num_inputs_, num_inputs_));
+  }
+  return inputs;
+}
+
+std::vector<Eigen::MatrixXd>
+DirectTrajectoryOptimization::GetStateVector() const {
+  std::vector<Eigen::MatrixXd> states;
+  states.reserve(N_);
+
+  const auto x_values = x_vars_.value();
+
+  for (int i = 0; i < N_; i++) {
+    states.push_back(x_values.segment(i * num_states_, num_states_));
+  }
+  return states;
+}
+
 void DirectTrajectoryOptimization::GetResultSamples(
     Eigen::MatrixXd* inputs, Eigen::MatrixXd* states,
     std::vector<double>* times_out) const {
@@ -135,30 +161,14 @@ void DirectTrajectoryOptimization::GetResultSamples(
 
 PiecewisePolynomial<double>
 DirectTrajectoryOptimization::ReconstructInputTrajectory() const {
-  std::vector<Eigen::MatrixXd> inputs;
-  inputs.reserve(N_);
-
-  const auto u_values = u_vars_.value();
-
-  for (int i = 0; i < N_; i++) {
-    inputs.push_back(u_values.segment(i * num_inputs_, num_inputs_));
-  }
-
-  return PiecewisePolynomial<double>::FirstOrderHold(GetTimeVector(), inputs);
+  return PiecewisePolynomial<double>::FirstOrderHold(
+      GetTimeVector(), GetInputVector());
 }
 
 PiecewisePolynomial<double>
 DirectTrajectoryOptimization::ReconstructStateTrajectory() const {
-  std::vector<Eigen::MatrixXd> states;
-  states.reserve(N_);
-
-  const auto x_values = x_vars_.value();
-
-  for (int i = 0; i < N_; i++) {
-    states.push_back(x_values.segment(i * num_states_, num_states_));
-  }
-
-  return PiecewisePolynomial<double>::FirstOrderHold(GetTimeVector(), states);
+  return PiecewisePolynomial<double>::FirstOrderHold(
+      GetTimeVector(), GetStateVector());
 }
 
 }  // solvers
