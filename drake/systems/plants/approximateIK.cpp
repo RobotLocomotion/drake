@@ -207,13 +207,12 @@ void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
   return;
 }
 
-template void approximateIK(RigidBodyTree*, const MatrixBase<Map<VectorXd>>& ,
-                            const MatrixBase<Map<VectorXd>>& , const int,
-                            RigidBodyConstraint** const,
-                            const IKoptions&,
-                            MatrixBase<Map<VectorXd>>*, int*);
+template DRAKEIK_EXPORT void approximateIK(
+  RigidBodyTree*, const MatrixBase<Map<VectorXd>>& ,
+  const MatrixBase<Map<VectorXd>>& , const int, RigidBodyConstraint** const,
+  const IKoptions&, MatrixBase<Map<VectorXd>>*, int*);
 
-template void approximateIK(RigidBodyTree*, const MatrixBase<VectorXd>& ,
-                            const MatrixBase<VectorXd>& , const int,
-                            RigidBodyConstraint** const,
-                            const IKoptions&, MatrixBase<VectorXd>*, int*);
+template DRAKEIK_EXPORT void approximateIK(
+  RigidBodyTree*, const MatrixBase<VectorXd>& ,
+  const MatrixBase<VectorXd>& , const int, RigidBodyConstraint** const,
+  const IKoptions&, MatrixBase<VectorXd>*, int*);

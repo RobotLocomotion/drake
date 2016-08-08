@@ -1,18 +1,24 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include <vector>
 #include <set>
 
-int fastQPThatTakesQinv(std::vector<Eigen::MatrixXd*> QinvblkDiag,
-                        const Eigen::VectorXd& f, const Eigen::MatrixXd& Aeq,
-                        const Eigen::VectorXd& beq, const Eigen::MatrixXd& Ain,
-                        const Eigen::VectorXd& bin, std::set<int>& active,
-                        Eigen::VectorXd& x);
-int fastQP(std::vector<Eigen::MatrixXd*> QblkDiag, const Eigen::VectorXd& f,
-           const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq,
-           const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin,
-           std::set<int>& active, Eigen::VectorXd& x);
+#include <Eigen/Dense>
+
+#include "drake/drakeQP_export.h"
+
+DRAKEQP_EXPORT int fastQPThatTakesQinv(
+  std::vector<Eigen::MatrixXd*> QinvblkDiag, const Eigen::VectorXd& f,
+  const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq,
+  const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin,
+  std::set<int>& active, Eigen::VectorXd& x);
+
+DRAKEQP_EXPORT int fastQP(
+  std::vector<Eigen::MatrixXd*> QblkDiag, const Eigen::VectorXd& f,
+  const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq,
+  const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin,
+  std::set<int>& active, Eigen::VectorXd& x);
+
 // int fastQP(std::vector< Eigen::MatrixXd* > QblkDiag, const Eigen::VectorXd&
 // f, const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq, const
 // Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin, std::set<int>& active,
