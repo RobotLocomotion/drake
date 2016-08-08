@@ -1867,8 +1867,7 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
     if (name_match[ii]) {
       if (match_found) {
         throw std::logic_error(
-            "RigidBodyTree::findJoint: ERROR: Multiple "
-            "joints found named \"" +
+            "RigidBodyTree::findJoint: ERROR: Multiple joints found named \"" +
             joint_name + "\", model instance ID = " +
             std::to_string(model_instance_id) + ".");
       }
