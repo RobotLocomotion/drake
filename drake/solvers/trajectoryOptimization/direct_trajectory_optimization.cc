@@ -59,10 +59,23 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
 
   // TODO(Lucy-tri) Create constraints for dynamics and add them.
   // Matlab: obj.addDynamicConstraints();
-
-  // TODO(Lucy-tri) Add control inputs (upper and lower bounds) as bounding box
-  // constraints.
 }
+
+void DirectTrajectoryOptimization::AddInputBounds(
+    const Eigen::VectorXd& lower_bound,
+    const Eigen::VectorXd& upper_bound) {
+  DRAKE_ASSERT(lower_bound.size() == num_inputs_);
+  DRAKE_ASSERT(upper_bound.size() == num_inputs_);
+
+  Eigen::VectorXd lb_all(num_inputs_ * N_);
+  Eigen::VectorXd ub_all(num_inputs_ * N_);
+  for (int i = 0; i < N_; i++) {
+    lb_all.segment(num_inputs_ * i, num_inputs_) = lower_bound;
+    ub_all.segment(num_inputs_ * i, num_inputs_) = upper_bound;
+  }
+  opt_problem_.AddBoundingBoxConstraint(lb_all, ub_all, {u_vars_});
+}
+
 
 namespace {
 /// Since the final cost evaluation needs a total time, we need a

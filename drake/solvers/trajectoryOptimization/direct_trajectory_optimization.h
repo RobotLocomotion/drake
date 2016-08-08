@@ -49,6 +49,14 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   // TODO(Lucy-tri) add param: time steps constant or independent.
 
   /**
+   * Add upper and lower bounds on the input values.  Calling this
+   * function multiple times will add additional bounds on the input
+   * rather than resetting any bounds from previous invocations.
+   */
+  void AddInputBounds(const Eigen::VectorXd& lower_bound,
+                      const Eigen::VectorXd& upper_bound);
+
+  /**
    * Add a constraint on the input at the specified time indices.
    *
    * @param constraint The constraint to be applied.

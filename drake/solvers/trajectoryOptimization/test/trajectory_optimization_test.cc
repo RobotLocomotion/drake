@@ -91,12 +91,6 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   std::vector<double> times_out;
 
   direct_traj.GetResultSamples(&inputs, &states, &times_out);
-  for (int i = 0; i < kNumTimeSamples; i++) {
-    std::cerr << i << ": " << times_out[i] << "| "
-              << inputs.col(i).transpose() << "| "
-              << states.col(i).transpose()
-              << std::endl;
-  }
   PiecewisePolynomial<double> input_traj =
       direct_traj.ReconstructInputTrajectory();
 
@@ -130,6 +124,18 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   EXPECT_TRUE(
       CompareMatrices(constrained_state,
                       state_traj.value(times_out[kStateConstraintHi]),
+                      1e-10, MatrixCompareType::absolute));
+
+  // Add bounds on the inputs and make sure they're enforced.
+  Vector1d input_min(1);
+  direct_traj.AddInputBounds(input_min, constrained_input);
+  result =
+      direct_traj.SolveTraj(t_init_in, PiecewisePolynomialType(), states_x);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
+  direct_traj.GetResultSamples(&inputs, &states, &times_out);
+
+  EXPECT_TRUE(
+      CompareMatrices(input_min, inputs.col(0),
                       1e-10, MatrixCompareType::absolute));
 
   result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
