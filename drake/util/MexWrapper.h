@@ -12,7 +12,7 @@
 #define DLLEXPORT __declspec(dllimport)
 #endif
 #else
-#define DLLEXPORT
+#define DLLEXPORT [[gnu::visibility("default")]]
 #endif
 
 class DLLEXPORT MexWrapper {

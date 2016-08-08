@@ -11,7 +11,7 @@
 #define CONSTRUCT_CONSTRAINT_DLLEXPORT __declspec(dllimport)
 #endif
 #else
-#define CONSTRUCT_CONSTRAINT_DLLEXPORT
+#define CONSTRUCT_CONSTRAINT_DLLEXPORT [[gnu::visibility("default")]]
 #endif
 
 CONSTRUCT_CONSTRAINT_DLLEXPORT mxArray* createDrakeConstraintMexPointer(
