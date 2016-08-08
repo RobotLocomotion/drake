@@ -66,12 +66,11 @@ int do_main(int argc, const char* argv[]) {
   // Add all of the desired cars.
   for (int i = 0; i < num_cars; ++i) {
     std::shared_ptr<RigidBodyFrame> weld_to_frame;
-    std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
-        new RigidBodyTree::ModelToInstanceIDMap());
+    RigidBodyTree::ModelToInstanceIDMap model_instance_id_table;
     // Add the visualization entity.
     drake::parsers::urdf::AddModelInstanceFromURDF(
         (i % 5) ? kSedanUrdf : kBreadtruckUrdf, DrakeJoint::ROLLPITCHYAW,
-            weld_to_frame, world_tree.get(), map.get());
+            weld_to_frame, world_tree.get(), &model_instance_id_table);
 
     // Add the trajectory car, and its visualization adapter.
     cars_system->AddSystem(CreateTrajectoryCarSystem(i));
