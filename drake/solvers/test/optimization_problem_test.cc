@@ -158,7 +158,7 @@ GTEST_TEST(testOptimizationProblem, trivialLinearSystem) {
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
-  prog.AddBoundingBoxConstraint(bbcon, {x.head(2)});
+  prog.AddConstraint(bbcon, {x.head(2)});
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
@@ -245,6 +245,9 @@ GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
       constraint.transpose(),
       drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       drake::Vector1d::Constant(40));
+  EXPECT_EQ(prog.linear_constraints().size(), 1);
+  EXPECT_EQ(prog.generic_constraints().size(), 0);
+
   prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
                                 MatrixXd::Constant(5, 1, 1));
   VectorXd expected(5);
@@ -406,9 +409,9 @@ GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
   auto x = prog.AddContinuousVariables(6);
   prog.AddCost(LowerBoundTestCost());
   std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
-  prog.AddGenericConstraint(con1);
+  prog.AddConstraint(con1);
   std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
-  prog.AddGenericConstraint(con2);
+  prog.AddConstraint(con2);
 
   Eigen::VectorXd c1(6);
   c1 << 1, -3, 0, 0, 0, 0;
@@ -547,8 +550,8 @@ GTEST_TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
   prog.AddCost(GloptipolyConstrainedExampleCost(), {y});
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
-  prog.AddGenericConstraint(qp_con, {x});
-  prog.AddGenericConstraint(qp_con, {y});
+  prog.AddConstraint(qp_con, {x});
+  prog.AddConstraint(qp_con, {y});
   prog.AddLinearConstraint(
       Vector3d(1, 1, 1).transpose(),
       Vector1d::Constant(-std::numeric_limits<double>::infinity()),
