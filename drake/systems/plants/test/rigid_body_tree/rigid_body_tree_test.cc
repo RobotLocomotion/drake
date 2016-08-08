@@ -199,10 +199,9 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
   std::string file_name =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
-  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map(
-      new RigidBodyTree::ModelToInstanceIDMap());
+  RigidBodyTree::ModelToInstanceIDMap model_instance_id_table;
   drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get(),
-      map.get());
+      &model_instance_id_table);
 
   VectorX<double> q;
   VectorX<double> v;
@@ -216,6 +215,26 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
 
   KinematicsCache<double> cache = tree->doKinematics(q_block, v_block);
   EXPECT_TRUE(cache.hasV());
+}
+
+// Ensure's the model's instance ID was saved in model_instance_id_table.
+// Since only one model was added   (a 2-DOF robot), there should only be one
+// model in the table. Furthermore, it should be called "two_dof_robot" and
+// the model instance ID should be 1 (zero was assigned to the world model).
+TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
+  std::string file_name =
+      drake::GetDrakePath() +
+      "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+  RigidBodyTree::ModelToInstanceIDMap model_instance_id_table;
+  drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get(),
+      &model_instance_id_table);
+
+  const int kExpectedTableSize = 1;
+  const int kExpectedModelInstanceId = 1;
+  EXPECT_EQ(model_instance_id_table.size(), kExpectedTableSize);
+  EXPECT_NE(model_instance_id_table.find("two_dof_robot"),
+      model_instance_id_table.end());
+  EXPECT_EQ(model_instance_id_table["two_dof_robot"], kExpectedModelInstanceId);
 }
 
 }  // namespace

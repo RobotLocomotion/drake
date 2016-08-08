@@ -26,18 +26,16 @@ namespace sdf {
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
 ///
-/// @param[out] model_instance_id_map A pointer to a map where the key is the
-/// name of the model whose instance was just added to this `RigidBodySystem`
-/// and it's `RigidBodyTree` and the value is the unique model instance ID that
-/// was assigned to the instance. This parameter may not be `nullptr`. A
-/// `std::runtime_error` is thrown if a model instance is created whose name is
-/// already in this map.
+/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// names and their instance IDs. This parameter may not be `nullptr`. A
+/// `std::runtime_error` is thrown if an instance is created of a model whose
+/// name is already in this table.
 DRAKERBM_EXPORT
 void AddRobotFromSDFInWorldFrame(
     const std::string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map);
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table);
 
 /// Adds a SDF model to a rigid body system.
 ///
@@ -53,19 +51,17 @@ void AddRobotFromSDFInWorldFrame(
 ///
 /// @param[out] tree The rigid body tree to which to add the model.
 ///
-/// @param[out] model_instance_id_map A pointer to a map where the key is the
-/// name of the model whose instance was just added to this `RigidBodySystem`
-/// and it's `RigidBodyTree` and the value is the unique model instance ID that
-/// was assigned to the instance. This parameter may not be `nullptr`. A
-/// `std::runtime_error` is thrown if a model instance is created whose name is
-/// already in this map.
+/// @param[out] model_instance_id_table A pointer to a map storing the model
+/// names and their instance IDs. This parameter may not be `nullptr`. A
+/// `std::runtime_error` is thrown if an instance is created of a model whose
+/// name is already in this table.
 DRAKERBM_EXPORT
 void AddRobotFromSDF(
     const std::string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map);
+    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table);
 
 }  // namespace sdf
 }  // namespace parsers
