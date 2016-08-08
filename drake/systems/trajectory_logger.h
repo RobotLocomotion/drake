@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+
 #include "drake/systems/vector.h"
 
 namespace drake {

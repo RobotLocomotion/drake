@@ -1,7 +1,11 @@
-#include <memory>
 #include "drake/systems/trajectory_logger.h"
-#include "drake/util/eigen_matrix_compare.h"
+
+#include <memory>
+
 #include "gtest/gtest.h"
+
+#include "drake/util/eigen_matrix_compare.h"
+
 
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
