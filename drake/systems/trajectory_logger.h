@@ -1,12 +1,14 @@
 #pragma once
+#include <limits>
 #include "drake/systems/vector.h"
 
 namespace drake {
+namespace systems {
 template <template <typename> class Vector>
 /**
- * Store the time sample and sample values of the trajectory. Consider to
- * TODO replace this with the "Trajectory" class to be implemented in the
- * future.
+ * Stores the sample time and values of the trajectory.
+ * TODO(Hongkai) replace this with the "Trajectory" class to be implemented in
+ * the future.
  */
 struct TimeSampleTrajectory {
   std::vector<double> time;
@@ -22,12 +24,15 @@ struct TimeSampleTrajectory {
 template <template <typename> class Vector>
 class TrajectoryLogger {
  public:
-  explicit TrajectoryLogger(int traj_dim) : traj_dim_(traj_dim) {}
+  explicit TrajectoryLogger(int traj_dim)
+      : traj_dim_(traj_dim), cached_time(nullptr) {}
+  ~TrajectoryLogger() { delete cached_time; }
 
   // Noncopyable
   TrajectoryLogger(const TrajectoryLogger&) = delete;
   TrajectoryLogger& operator=(const TrajectoryLogger&) = delete;
   TrajectoryLogger(TrajectoryLogger&&) = delete;
+  TrajectoryLogger& operator=(TrajectoryLogger&&) = delete;
 
   template <typename ScalarType>
   using StateVector = NullVector<ScalarType>;
@@ -47,8 +52,16 @@ class TrajectoryLogger {
   OutputVector<ScalarType> output(const double& t,
                                   const StateVector<ScalarType>& x,
                                   const InputVector<ScalarType>& u) {
-    trajectory_.time.push_back(t);
-    trajectory_.val.push_back(u);
+    if (!cached_time ||
+        std::abs(*cached_time - t) > std::numeric_limits<double>::epsilon()) {
+      if (!cached_time) {
+        cached_time = new double(t);
+      } else {
+        *cached_time = t;
+      }
+      trajectory_.time.push_back(t);
+      trajectory_.val.push_back(u);
+    }
     return u;
   }
   bool isTimeVarying() const { return false; }
@@ -62,5 +75,7 @@ class TrajectoryLogger {
  private:
   size_t traj_dim_;
   TimeSampleTrajectory<Vector> trajectory_;
+  double* cached_time;
 };
-} // namespace drake
+}  // namespace systems
+}  // namespace drake
