@@ -51,7 +51,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   void AddInputConstraint(std::shared_ptr<ConstraintT> constraint,
                           const std::vector<int>& time_indices) {
     for (const int i : time_indices) {
-      DRAKE_ASSERT(i < (N_ - 1));
+      DRAKE_ASSERT(i < N_);
       opt_problem_.AddConstraint(
           constraint, {u_vars_.segment(i * num_inputs_, num_inputs_)});
     }
@@ -68,7 +68,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   void AddStateConstraint(std::shared_ptr<ConstraintT> constraint,
                           const std::vector<int>& time_indices) {
     for (const int i : time_indices) {
-      DRAKE_ASSERT(i < (N_ - 1));
+      DRAKE_ASSERT(i < N_);
       opt_problem_.AddConstraint(
           constraint, {x_vars_.segment(i * num_states_, num_states_)});
     }
