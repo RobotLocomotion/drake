@@ -2,10 +2,12 @@
 
 #include <cstdint>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/systems/framework/state_subvector.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/vector_interface.h"
@@ -69,8 +71,27 @@ class ContinuousState {
         new StateSubvector<T>(state_.get(), num_q + num_v, num_z));
   }
 
-  // TODO(david-german-tri): Add a suitable constructor for the continuous
-  // state of a Diagram, using StateSupervectors.
+  /// Constructs a continuous state that exposes second-order structure, with
+  /// no particular constraints on the layout.
+  ///
+  /// @param state The entire continuous state.
+  /// @param q The subset of state that is generalized position.
+  /// @param v The subset of state that is generalized velocity.
+  /// @param z The subset of state that is neither position nor velocity.
+  ContinuousState(std::unique_ptr<StateVector<T>> state,
+                  std::unique_ptr<StateVector<T>> q,
+                  std::unique_ptr<StateVector<T>> v,
+                  std::unique_ptr<StateVector<T>> z)
+      : state_(std::move(state)),
+        generalized_position_(std::move(q)),
+        generalized_velocity_(std::move(v)),
+        misc_continuous_state_(std::move(z)) {
+    const int num_q = generalized_position_->size();
+    const int num_v = generalized_velocity_->size();
+    const int n = num_q + num_v + misc_continuous_state_->size();
+    DRAKE_ASSERT(state_->size() == n);
+    DRAKE_ASSERT(num_v <= num_q);
+  }
 
   /// Returns the entire state vector.
   const StateVector<T>& get_state() const { return *state_; }
