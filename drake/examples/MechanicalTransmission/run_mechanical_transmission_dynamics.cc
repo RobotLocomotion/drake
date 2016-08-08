@@ -1,22 +1,28 @@
+#include "drake/systems/plants/RigidBodySystem.h"
 #include <iostream>
 
-#include "drake/Path.h"
+#include "gtest/gtest.h"
+
+#include "drake/common/drake_path.h"
 #include "drake/systems/Simulation.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/eigen_matrix_compare.h"
 
 using drake::RigidBodySystem;
 using Eigen::VectorXd;
+using drake::util::CompareMatrices;
+using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace examples {
 namespace mechanical_transmission {
+namespace {
 
-int DoMain(int argc, char* argv[]) {
+std::shared_ptr<RigidBodySystem> parseMechanicalTransmission() {
 	auto rigid_body_system = std::allocate_shared<RigidBodySystem>(
 		Eigen::aligned_allocator<RigidBodySystem>());
 
-	rigid_body_system->addRobotFromFile(
-		drake::getDrakePath() +
+	rigid_body_system->AddModelInstanceFromFile(
+		drake::GetDrakePath() +
 		"/examples/MechanicalTransmission/mechanical_transmission.urdf",
 		DrakeJoint::FIXED);
 
@@ -27,14 +33,41 @@ int DoMain(int argc, char* argv[]) {
 	int nq = tree->number_of_positions();
 	int joint1 = tree->findJoint("joint1")->get_position_start_index();
 	int joint2 = tree->findJoint("joint2")->get_position_start_index();
-	std::cout<<"joint1:"<<joint1<<" joint2:"<<joint2<<std::endl;
 	Eigen::Matrix<double,1,Eigen::Dynamic> Aeq_mechanical_transmission(1,nq);
 	Aeq_mechanical_transmission.setZero();
 	Aeq_mechanical_transmission(0,joint1) = 1.0;
 	Aeq_mechanical_transmission(0,joint2) = -0.5;
 	tree->addLinearEqualityPositionConstraint(Aeq_mechanical_transmission,
 				Eigen::Matrix<double,1,1>::Zero());
+	return rigid_body_system;
+}
 
+Eigen::VectorXd evaluateMechanicalTransmissionConstraint(const std::shared_ptr<RigidBodyTree> &tree, double joint1_val, double joint2_val) {
+	int nq = tree->number_of_positions();
+  int joint1 = tree->findJoint("joint1")->get_position_start_index();
+	int joint2 = tree->findJoint("joint2")->get_position_start_index();
+	VectorXd q0(nq);
+  q0(joint1) = joint1_val;
+  q0(joint2) = joint2_val;
+  auto kinematics_cache = tree->doKinematics(q0);
+  auto result = tree->positionConstraints(kinematics_cache);
+  return result;
+}
+// Test parsing mechanical transmission from urdf
+GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
+  auto rigid_body_system = parseMechanicalTransmission();
+  auto tree = rigid_body_system->getRigidBodyTree();
+  auto result1 = evaluateMechanicalTransmissionConstraint(tree,0.0,0.0);
+  EXPECT_TRUE(CompareMatrices(result1,Eigen::Matrix<double,1,1>(0.0),Eigen::NumTraits<double>::epsilon(),MatrixCompareType::absolute));
+
+  auto result2 = evaluateMechanicalTransmissionConstraint(tree,1.0,2.0);
+  EXPECT_TRUE(CompareMatrices(result2,Eigen::Matrix<double,1,1>(0.0),Eigen::NumTraits<double>::epsilon(),MatrixCompareType::absolute));
+
+  auto result3 = evaluateMechanicalTransmissionConstraint(tree,2.0,2.0);
+  EXPECT_FALSE(CompareMatrices(result3,Eigen::Matrix<double,1,1>(0.0),Eigen::NumTraits<double>::epsilon(),MatrixCompareType::absolute));
+}
+/*
+GTEST_TEST(MechanicalTransmissionTest MechanicalTransmissionSimulation) {
 	drake::SimulationOptions options;
 	options.realtime_factor = 0; // As fast as possible.
 	options.initial_step_size = 0.02;
@@ -68,10 +101,8 @@ int DoMain(int argc, char* argv[]) {
   std::cout<<"stop time:"<<stop_time<<std::endl;
 	return 0;
 }
-}
-}
-}
-
-int main(int argc, char* argv[]) {
-	return drake::examples::mechanical_transmission::DoMain(argc, argv);
-}
+*/
+}  // namespace
+}  // namespace mechanical_transmission
+}  // namespace examples
+}  // namespace drake
