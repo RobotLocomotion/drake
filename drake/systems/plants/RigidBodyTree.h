@@ -35,11 +35,11 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
   /**
-   * Defines the data type that maps between model names and their instance IDs.
-   * The model names are those that existing within a single URDF or SDF file
-   * and not within the entire RigidBodyTree and are thus guaranteed to be
-   * unique. This data type is used to convey the model instance IDs to the
-   * `RigidBodySystem` and to the application.
+   * Defines a data type that maps between model names and their instance IDs.
+   * The model names are guaranteed to be unique within a single URDF or SDF
+   * specification, and thus serve as keys into the map. This data type is used
+   * to convey the assigned model instance IDs to the `RigidBodyTree`,
+   * `RigidBodySystem`, and application.
    */
   typedef std::map<std::string, int> ModelToInstanceIDMap;
 
