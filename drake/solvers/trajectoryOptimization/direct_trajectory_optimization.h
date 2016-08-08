@@ -120,6 +120,22 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    */
   PiecewisePolynomial<double> ReconstructStateTrajectory() const;
 
+ protected:
+  /**
+   * @return a vector containing the elapsed time at each knot point.
+   */
+  std::vector<double> GetTimeVector() const;
+
+  /**
+   * @return a vector containing the input values at each knot point.
+   */
+  std::vector<Eigen::MatrixXd> GetInputVector() const;
+
+  /**
+   * @return a vector containing the state values at each knot point.
+   */
+  std::vector<Eigen::MatrixXd> GetStateVector() const;
+
  private:
   /**
    * Evaluate the initial trajectories at the sampled times and construct the
@@ -138,8 +154,6 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   void GetInitialVars(double t_init_in,
                       const PiecewisePolynomial<double>& traj_init_u,
                       const PiecewisePolynomial<double>& traj_init_x);
-
-  std::vector<double> GetTimeVector() const;
 
   const int num_inputs_;
   const int num_states_;
