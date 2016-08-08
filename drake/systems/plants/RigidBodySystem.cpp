@@ -312,7 +312,7 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
                                                    &kin_helper));
-      prog.AddGenericConstraint(con1wrapper, {qvar});
+      prog.AddConstraint(con1wrapper, {qvar});
       constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), loop.axis_, loop.axis_, loop.axis_,
           loop.frameA_->get_frame_index(), loop.frameB_->get_frame_index(),
@@ -320,7 +320,7 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
                                                    &kin_helper));
-      prog.AddGenericConstraint(con2wrapper, {qvar});
+      prog.AddConstraint(con2wrapper, {qvar});
     }
 
     VectorXd q_guess = x0.topRows(nq);
