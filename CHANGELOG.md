@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#3078][] Changed `RigidBodyTree::kWorldLinkName` to be `RigidBodyTree::kWorldName`.
  - [#3056][] Renamed methods that add model instances to `RigidBodyTree` and `RigidBodySystem`.
  - [#3049][] Changed `AddRobotFromURDF*` to be `AddModelInstanceFromURDF*`.
  - [#3003][] Made `RigidBodyFrame` member variables private. Added accessors.
@@ -125,3 +126,4 @@ Changes in version v0.9.11 and before are not provided.
 [#3010]: https://github.com/RobotLocomotion/drake/issues/3010
 [#3049]: https://github.com/RobotLocomotion/drake/issues/3049
 [#3056]: https://github.com/RobotLocomotion/drake/issues/3056
+[#3078]: https://github.com/RobotLocomotion/drake/issues/3078
