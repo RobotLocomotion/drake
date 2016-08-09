@@ -25,7 +25,7 @@ class Adder : public System<T> {
   /// Allocates no state.
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override;
 
-  /// Allocates one output port of the width specified in the constructor.
+  /// Allocates one output port of the length specified in the constructor.
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const ContextBase<T>& context) const override;
 
