@@ -6,7 +6,6 @@
 
 #include "drake/util/eigen_matrix_compare.h"
 
-
 using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
@@ -18,12 +17,14 @@ namespace {
 GTEST_TEST(TestTrajectoryLogger, TestTrajectoryLogger) {
   const size_t kTrajDim = 2;
   auto traj_logger =
-      std::make_shared<TrajectoryLogger<EigenVector<kTrajDim>::type>>(kTrajDim);
+      std::make_unique<TrajectoryLogger<EigenVector<kTrajDim>::type>>(kTrajDim);
 
   const size_t kNt = 100;
   Eigen::Matrix<double, 1, kNt> t;
   NullVector<double> traj_logger_x;
-  std::vector<EigenVector<kTrajDim>::type<double>> traj_val(kNt);
+  std::vector<EigenVector<kTrajDim>::type<double>,
+              Eigen::aligned_allocator<EigenVector<kTrajDim>::type<double>>>
+      traj_val(kNt);
   for (size_t i = 0; i < kNt; ++i) {
     t(i) = i * 0.01;
     traj_val[i] << i, 2 * i;
