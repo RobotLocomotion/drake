@@ -17,7 +17,7 @@ namespace solvers {
  * to trajectory optimization.
  *
  * This class assumes that there are a fixed number (N) time steps/samples, and
- * that the trajectory is discreteized into timesteps h (N-1 of these), state x
+ * that the trajectory is discretized into timesteps h (N-1 of these), state x
  * (N of these), and control input u (N of these).
  *
  * To maintain nominal sparsity in the optimization programs, this
@@ -29,6 +29,8 @@ namespace solvers {
 class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  public:
   /**
+   * Constructor.
+   *
    * @param trajectory_time_lower_bound Bound on total time for
    *        trajectory.
    * @param trajectory_time_upper_bound Bound on total time for
@@ -79,7 +81,8 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   /**
    * Solve the nonlinear program and return the resulting trajectory.
    *
-   * @param t_init The final time of the solution.
+   * @param timespan_init The initial guess for the timespan of
+   * the resulting trajectory.
    *
    * @param traj_init_u Initial guess for trajectory for control
    * input. The number of rows for each segment in @p traj_init_u must
@@ -89,10 +92,10 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * input. The number of rows for each segment in @p traj_init_x must
    * be equal to num_states (the second param of the constructor).
    */
-  SolutionResult SolveTraj(double t_init,
+  SolutionResult SolveTraj(double timespan_init,
                            const PiecewisePolynomial<double>& traj_init_u,
                            const PiecewisePolynomial<double>& traj_init_x);
-  // TODO(Lucy-tri) If t_init has any relationship to
+  // TODO(Lucy-tri) If timespan_init has any relationship to
   // trajectory_time_{lower,upper}_bound, then add doc and asserts.
 
   // Disable copy and assign.
@@ -122,17 +125,17 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
 
  protected:
   /**
-   * @return a vector containing the elapsed time at each knot point.
+   * Returns a vector containing the elapsed time at each knot point.
    */
   std::vector<double> GetTimeVector() const;
 
   /**
-   * @return a vector containing the input values at each knot point.
+   * Returns a vector containing the input values at each knot point.
    */
   std::vector<Eigen::MatrixXd> GetInputVector() const;
 
   /**
-   * @return a vector containing the state values at each knot point.
+   * Returns a vector containing the state values at each knot point.
    */
   std::vector<Eigen::MatrixXd> GetStateVector() const;
 
@@ -141,7 +144,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * Evaluate the initial trajectories at the sampled times and construct the
    * nominal initial vectors.
    *
-   * @param t_init The final time of the solution.
+   * @param timespan_init The final time of the solution.
    *
    * @param traj_init_u Initial guess for trajectory for control
    * input. The number of rows for each segment in @p traj_init_u must
@@ -151,7 +154,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * input. The number of rows for each segment in @p traj_init_x must
    * be equal to num_states (the second param of the constructor).
    */
-  void GetInitialVars(double t_init_in,
+  void GetInitialVars(double timespan_init_in,
                       const PiecewisePolynomial<double>& traj_init_u,
                       const PiecewisePolynomial<double>& traj_init_x);
 

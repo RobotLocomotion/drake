@@ -63,10 +63,10 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
 }
 
 void DirectTrajectoryOptimization::GetInitialVars(
-    double t_init_in, const PiecewisePolynomial<double>& traj_init_u,
+    double timespan_init_in, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
-  VectorXd t_init{VectorXd::LinSpaced(N_, 0, t_init_in)};
-  opt_problem_.SetInitialGuess(h_vars_, VectorDiff(t_init));
+  VectorXd timespan_init{VectorXd::LinSpaced(N_, 0, timespan_init_in)};
+  opt_problem_.SetInitialGuess(h_vars_, VectorDiff(timespan_init));
 
   VectorXd guess_u(u_vars_.size());
   if (traj_init_u.empty()) {
@@ -74,7 +74,7 @@ void DirectTrajectoryOptimization::GetInitialVars(
   } else {
     for (int t = 0; t < N_; ++t) {
       guess_u.segment(num_inputs_ * t, num_inputs_) =
-          traj_init_u.value(t_init[t]);
+          traj_init_u.value(timespan_init[t]);
     }
   }
   opt_problem_.SetInitialGuess(u_vars_, guess_u);
@@ -87,16 +87,16 @@ void DirectTrajectoryOptimization::GetInitialVars(
   } else {
     for (int t = 0; t < N_; ++t) {
       guess_x.segment(num_states_ * t, num_states_) =
-          traj_init_x.value(t_init[t]);
+          traj_init_x.value(timespan_init[t]);
     }
   }
   opt_problem_.SetInitialGuess(x_vars_, guess_x);
 }
 
 SolutionResult DirectTrajectoryOptimization::SolveTraj(
-    double t_init, const PiecewisePolynomial<double>& traj_init_u,
+    double timespan_init, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
-  GetInitialVars(t_init, traj_init_u, traj_init_x);
+  GetInitialVars(timespan_init, traj_init_u, traj_init_x);
   SolutionResult result = opt_problem_.Solve();
   return result;
 }
