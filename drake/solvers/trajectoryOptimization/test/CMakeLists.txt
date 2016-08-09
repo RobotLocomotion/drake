@@ -9,4 +9,4 @@ if(ipopt_FOUND OR nlopt_FOUND OR snopt_c_FOUND)
 endif()
 
 add_matlab_test(NAME solvers/trajectoryOptimization/test/contactImplicitBrick
-  COMMAND contactImplicitBrick PROPERTIES TIMEOUT 750)
+  COMMAND contactImplicitBrick REQUIRES gurobi snopt PROPERTIES TIMEOUT 750)
