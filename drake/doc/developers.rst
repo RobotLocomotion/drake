@@ -79,8 +79,12 @@ The supported version of MATLAB is R2015b.
 +-----------------------------------------+--------------------+-------------------+---------+
 | Operating System                        | Compilers          | Superbuild Deps   | Build   |
 +=========================================+====================+===================+=========+
-| Ubuntu 14.04 LTS                        | | GCC 4.9          | Default           | Debug   |
+| Ubuntu 14.04 LTS                        | | GCC 4.9          | Minimal           | Debug   |
 |                                         | | Java 1.7         |                   +---------+
+|                                         |                    |                   | Release |
+|                                         |                    +-------------------+---------+
+|                                         |                    | Default           | Debug   |
+|                                         |                    |                   +---------+
 |                                         |                    |                   | Release |
 |                                         |                    +-------------------+---------+
 |                                         |                    | Default + MATLAB  | Release |
@@ -89,20 +93,32 @@ The supported version of MATLAB is R2015b.
 |                                         | | Java 1.7         |                   +---------+
 |                                         |                    |                   | Release |
 +-----------------------------------------+--------------------+-------------------+---------+
-| | Windows Server 2012 R2 or Windows 8.1 | | MSVC 14 32-bit   | Default           | Debug   |
+| | Windows Server 2012 R2 or Windows 8.1 | | MSVC 14 32-bit   | Minimal           | Debug   |
 | | Visual Studio 2015 (any edition)      | | Java 1.7         |                   +---------+
+|                                         |                    |                   | Release |
+|                                         |                    +-------------------+---------+
+|                                         |                    | Default           | Debug   |
+|                                         |                    |                   +---------+
 |                                         |                    |                   | Release |
 |                                         |                    +-------------------+---------+
 |                                         |                    | Default + MATLAB  | Release |
 |                                         +--------------------+-------------------+---------+
-|                                         | | MSVC 14 64-bit   | Default           | Debug   |
+|                                         | | MSVC 14 64-bit   | Minimal           | Debug   |
 |                                         | | Java 1.7         |                   +---------+
+|                                         |                    |                   | Release |
+|                                         |                    +-------------------+---------+
+|                                         |                    | Default           | Debug   |
+|                                         |                    |                   +---------+
 |                                         |                    |                   | Release |
 |                                         |                    +-------------------+---------+
 |                                         |                    | Default + MATLAB  | Release |
 +-----------------------------------------+--------------------+-------------------+---------+
-| OS X 10.10                              | | Apple Clang 7.0  | Default           | Debug   |
+| OS X 10.10                              | | Apple Clang 7.0  | Minimal           | Debug   |
 |                                         | | Java 1.8         |                   +---------+
+|                                         |                    |                   | Release |
+|                                         |                    +-------------------+---------+
+|                                         |                    | Default           | Debug   |
+|                                         |                    |                   +---------+
 |                                         |                    |                   | Release |
 |                                         |                    +-------------------+---------+
 |                                         |                    | Default + MATLAB  | Release |
