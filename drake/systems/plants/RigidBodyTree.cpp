@@ -41,7 +41,7 @@ using drake::math::autoDiffToGradientMatrix;
 using drake::math::Gradient;
 
 const set<int> RigidBodyTree::default_model_instance_id_set = {0};
-const char* const RigidBodyTree::kWorldLinkName = "world";
+const char* const RigidBodyTree::kWorldName = "world";
 const int RigidBodyTree::kWorldModelInstanceID = 0;
 
 template <typename T>
@@ -80,8 +80,9 @@ RigidBodyTree::RigidBodyTree(void)
   // Adds the rigid body representing the world, which has a model_instance_id
   // equal to zero.
   std::unique_ptr<RigidBody> b(new RigidBody());
-  b->set_name(RigidBodyTree::kWorldLinkName);
+  b->set_name(RigidBodyTree::kWorldName);
   b->set_model_instance_id(add_model_instance());
+
   bodies.push_back(std::move(b));
 }
 
@@ -2051,7 +2052,7 @@ int RigidBodyTree::AddFloatingJoint(
     // use the transform_to_body variable within weld_to_frame to initialize
     // the robot at the desired location in the world.
     if (weld_to_frame->get_name()
-          == std::string(RigidBodyTree::kWorldLinkName)) {
+          == std::string(RigidBodyTree::kWorldName)) {
       if (!weld_to_frame->has_as_rigid_body(nullptr)) {
         throw std::runtime_error(
             "RigidBodyTree::AddFloatingJoint: "
@@ -2119,7 +2120,7 @@ int RigidBodyTree::AddFloatingJoint(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::AddModelInstanceFromUrdfString(
+void RigidBodyTree::addRobotFromURDFString(
     const std::string& description, const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -2132,7 +2133,7 @@ void RigidBodyTree::AddModelInstanceFromUrdfString(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::AddModelInstanceFromUrdfString(
+void RigidBodyTree::addRobotFromURDFString(
     const std::string& description,
     std::map<std::string, std::string>& package_map,
     const std::string& root_dir,
@@ -2146,7 +2147,7 @@ void RigidBodyTree::AddModelInstanceFromUrdfString(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::AddModelInstanceFromUrdfFile(
+void RigidBodyTree::addRobotFromURDF(
     const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -2159,7 +2160,7 @@ void RigidBodyTree::AddModelInstanceFromUrdfFile(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::AddModelInstanceFromUrdfFile(
+void RigidBodyTree::addRobotFromURDF(
     const std::string& filename,
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
@@ -2172,7 +2173,7 @@ void RigidBodyTree::AddModelInstanceFromUrdfFile(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::AddModelInstanceFromSdfFile(
+void RigidBodyTree::addRobotFromSDF(
     const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {

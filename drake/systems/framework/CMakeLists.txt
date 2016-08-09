@@ -8,6 +8,7 @@ set(sources
   diagram_context.cc
   state.cc
   state_subvector.cc
+  state_supervector.cc
   state_vector.cc
   system.cc
   system_input.cc
@@ -21,6 +22,13 @@ set(sources
 
 # Headers that should be installed with Drake so that they
 # are available elsewhere via #include.
+#
+# TODO(david-german-tri): Some of these headers are implementation details that
+# should never be directly included outside of systems/framework. They ought to
+# be private, but we can't make them private yet because they are included in
+# API headers. (For example, state_subvector.h is used in state.h.) Once the
+# System2 framework template implementations have been moved into .cc files
+# using explicit instantiation, tighten this list.
 set(installed_headers
   context_base.h
   basic_vector.h
@@ -28,8 +36,10 @@ set(installed_headers
   context.h
   diagram.h
   diagram_context.h
+  leaf_state_vector.h
   state.h
   state_subvector.h
+  state_supervector.h
   state_vector.h
   system.h
   system_input.h

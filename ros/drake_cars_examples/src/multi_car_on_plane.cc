@@ -3,11 +3,11 @@
 #include "drake/examples/Cars/car_simulation.h"
 #include "drake/examples/Cars/gen/driving_command.h"
 #include "drake/ros/parameter_server.h"
-#include "drake/ros/ros_tf_publisher.h"
-#include "drake/ros/ros_vehicle_system.h"
-#include "drake/ros/ros_sensor_publisher_joint_state.h"
-#include "drake/ros/ros_sensor_publisher_lidar.h"
-#include "drake/ros/ros_sensor_publisher_odometry.h"
+#include "drake/ros/systems/ros_tf_publisher.h"
+#include "drake/ros/systems/ros_vehicle_system.h"
+#include "drake/ros/systems/ros_sensor_publisher_joint_state.h"
+#include "drake/ros/systems/ros_sensor_publisher_lidar.h"
+#include "drake/ros/systems/ros_sensor_publisher_odometry.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
@@ -31,6 +31,9 @@ namespace {
 using drake::examples::cars::CreateRigidBodySystem;
 using drake::examples::cars::CreateVehicleSystem;
 using drake::examples::cars::GetCarSimulationDefaultOptions;
+
+using drake::ros::systems::DrakeRosTfPublisher;
+using drake::ros::systems::run_ros_vehicle_sim;
 
 /**
  * This is the main method of the multi-car vehicle simulation. The vehicles
@@ -113,7 +116,7 @@ int DoMain(int argc, const char* argv[]) {
   // model_instance_names[model_instances["prius_1"]] = "prius_1";
 
   auto tf_publisher = std::make_shared<
-      ::drake::ros::DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
+      DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
           model_instance_names);
 
   // auto joint_state_publisher = std::make_shared<
@@ -147,7 +150,7 @@ int DoMain(int argc, const char* argv[]) {
   // Defines the start time of the simulation.
   const double kStartTime = 0;
 
-  drake::ros::run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
+  run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
 
   return 0;
 }

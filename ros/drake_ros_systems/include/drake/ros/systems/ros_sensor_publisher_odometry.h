@@ -18,6 +18,7 @@ using drake::RigidBodyDepthSensor;
 
 namespace drake {
 namespace ros {
+namespace systems {
 
 /**
  * @brief A system that takes the system state as the input and publishes
@@ -107,7 +108,7 @@ class SensorPublisherOdometry {
             key, nh.advertise<nav_msgs::Odometry>(topic_name, 1)));
 
         std::unique_ptr<nav_msgs::Odometry> message(new nav_msgs::Odometry());
-        message->header.frame_id = RigidBodyTree::kWorldLinkName;
+        message->header.frame_id = RigidBodyTree::kWorldName;
         message->child_frame_id = rigid_body->get_name();
 
         odometry_messages_.insert(
@@ -211,7 +212,7 @@ class SensorPublisherOdometry {
           cache, rigid_body_tree->FindBodyIndex(
               rigid_body->get_parent()->get_name()),
           rigid_body_tree->FindBodyIndex(rigid_body->get_name()),
-          rigid_body_tree->FindBodyIndex(RigidBodyTree::kWorldLinkName));
+          rigid_body_tree->FindBodyIndex(RigidBodyTree::kWorldName));
 
       message->twist.twist.linear.x = twist(0);
       message->twist.twist.linear.y = twist(1);
@@ -255,5 +256,6 @@ class SensorPublisherOdometry {
   ::ros::Time previous_send_time_;
 };
 
-}  // end namespace ros
-}  // end namespace drake
+}  // namespace systems
+}  // namespace ros
+}  // namespace drake

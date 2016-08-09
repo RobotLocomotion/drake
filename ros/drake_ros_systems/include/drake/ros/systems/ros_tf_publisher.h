@@ -23,6 +23,7 @@ using drake::RigidBodyDepthSensor;
 
 namespace drake {
 namespace ros {
+namespace systems {
 
 /**
  * Publishes transforms for every rigid body in a `RigidBodyTree`. The transform
@@ -365,7 +366,7 @@ class DrakeRosTfPublisher {
     // Obtains the rigid body's name.
     std::string name = rigid_body.get_name();
 
-    if (name == RigidBodyTree::kWorldLinkName) {
+    if (name == RigidBodyTree::kWorldName) {
       // If the rigid body is the world, just use the world's name. Since there
       // is only one world, there is no need for a prefix.
        *frame_name = name;
@@ -453,5 +454,6 @@ class DrakeRosTfPublisher {
   bool enable_tf_publisher_{true};
 };
 
-}  // end namespace ros
-}  // end namespace drake
+}  // namespace systems
+}  // namespace ros
+}  // namespace drake
