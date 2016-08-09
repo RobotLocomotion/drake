@@ -14,8 +14,9 @@ template <template <typename> class Vector>
  */
 struct TimeSampleTrajectory {
   std::vector<double> time;
-  std::vector<Vector<double>, Eigen::aligned_allocator<Vector<double>>> val;
-  TimeSampleTrajectory() : time(0), val(0) {}
+  std::vector<Vector<double>, Eigen::aligned_allocator<Vector<double>>> value;
+  TimeSampleTrajectory() : time(0), value(0) {}
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -55,7 +56,7 @@ class TrajectoryLogger {
     if (trajectory_.time.empty() ||
         trajectory_.time[trajectory_.time.size() - 1] != t) {
       trajectory_.time.push_back(t);
-      trajectory_.val.push_back(u);
+      trajectory_.value.push_back(u);
     }
     return u;
   }
@@ -66,6 +67,8 @@ class TrajectoryLogger {
   size_t getNumOutputs() const { return traj_dim_; }
 
   TimeSampleTrajectory<Vector> getTrajectory() const { return trajectory_; }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
   size_t traj_dim_;
