@@ -34,7 +34,6 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
-
   /**
    * Defines the name of the rigid body within a rigid body tree that represents
    * the world.
