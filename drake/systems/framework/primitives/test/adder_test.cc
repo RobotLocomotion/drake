@@ -85,6 +85,11 @@ TEST_F(AdderTest, AdderIsStateless) {
   EXPECT_EQ(nullptr, context_->get_state().continuous_state);
 }
 
+// Asserts adders are direct feedthrough systems.
+TEST_F(AdderTest, AdderIsDirectFeedthrough) {
+  EXPECT_TRUE(adder_->is_direct_feedthrough());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

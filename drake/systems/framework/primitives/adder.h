@@ -21,6 +21,10 @@ class Adder : public System<T> {
   /// @param length is the size of each input port.
   Adder(int num_inputs, int length);
 
+  /// Flags adders as direct feedthrough systems since their outputs directly
+  /// depend on their inputs by a simple, state independent, algebraic relation.
+  bool is_direct_feedthrough() const override { return true;}
+
   /// Allocates the number of input ports specified in the constructor.
   /// Allocates no state.
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override;

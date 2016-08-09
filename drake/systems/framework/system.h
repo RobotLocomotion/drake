@@ -19,6 +19,18 @@ class System {
  public:
   virtual ~System() {}
 
+  /// Evaluates to `true` if system is direct feedthrough and `false` otherwise.
+  /// By default systems are assuemed not to be direct feedthrough.
+  /// Specific direct feedthrough systems should override this method and return
+  /// `true`.
+  ///
+  /// A system is direct feedthrough if any of its outputs directly depends on
+  /// one of its inputs. Systems for which outputs only depend on the state of
+  /// the system are not direct feedthrough.
+  /// Direct feedthrough systems define an implicit dependence of their outputs
+  /// on their inputs and therefore specific solving strateges must be applied.
+  virtual bool is_direct_feedthrough() const { return false;}
+
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.
   /// Since input port pointers are not owned by the context, they should

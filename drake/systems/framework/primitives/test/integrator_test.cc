@@ -86,6 +86,11 @@ TEST_F(IntegratorTest, Derivatives) {
   EXPECT_EQ(expected, derivatives_->get_state().CopyToVector());
 }
 
+// Asserts integrators are not direct feedthrough systems.
+TEST_F(IntegratorTest, IntegratorIsDirectFeedthrough) {
+  EXPECT_FALSE(integrator_->is_direct_feedthrough());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
