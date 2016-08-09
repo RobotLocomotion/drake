@@ -34,12 +34,12 @@ GTEST_TEST(TestTrajectoryLogger, TestTrajectoryLogger) {
   }
   auto traj = traj_logger->getTrajectory();
   EXPECT_EQ(traj.time.size(), kNt);
-  EXPECT_EQ(traj.time.size(), traj.val.size());
+  EXPECT_EQ(traj.time.size(), traj.value.size());
   EXPECT_EQ(traj_logger->getNumOutputs(), static_cast<size_t>(kTrajDim));
   for (size_t i = 0; i < kNt; ++i) {
     EXPECT_NEAR(traj.time[i], t(i), 1E-5);
-    EXPECT_NEAR(traj.val[i](0), traj_val[i](0), 1E-5);
-    EXPECT_NEAR(traj.val[i](1), traj_val[i](1), 1E-5);
+    EXPECT_NEAR(traj.value[i](0), traj_val[i](0), 1E-5);
+    EXPECT_NEAR(traj.value[i](1), traj_val[i](1), 1E-5);
   }
 }
 
