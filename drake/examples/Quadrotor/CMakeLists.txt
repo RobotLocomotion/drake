@@ -14,9 +14,9 @@ endif()
 
 # add_matlab_test(NAME examples/Quadrotor/Quadrotor.runOpenLoop COMMAND Quadrotor.runOpenLoop)  # FIXME
 add_matlab_test(NAME examples/Quadrotor/runDircol COMMAND runDircol)
-add_matlab_test(NAME examples/Quadrotor/runDircolWObs COMMAND runDircolWObs)
+add_matlab_test(NAME examples/Quadrotor/runDircolWObs COMMAND runDircolWObs REQUIRES snopt)
 add_matlab_test(NAME examples/Quadrotor/runLQR COMMAND runLQR)
-add_matlab_test(NAME examples/Quadrotor/runMixedIntegerSimpleForest COMMAND runMixedIntegerSimpleForest)
+add_matlab_test(NAME examples/Quadrotor/runMixedIntegerSimpleForest COMMAND runMixedIntegerSimpleForest REQUIRES iris mosek snopt yalmip)
 
 add_subdirectory(test)
 add_subdirectory(crazyflie)

@@ -51,12 +51,12 @@ add_matlab_test(NAME examples/Pendulum/PendulumEnergyShaping.run COMMAND Pendulu
 add_matlab_test(NAME examples/Pendulum/globalStability COMMAND globalStability REQUIRES mosek spotless)
 add_matlab_test(NAME examples/Pendulum/runDLQR COMMAND runDLQR)
 add_matlab_test(NAME examples/Pendulum/runLQR COMMAND runLQR)
-add_matlab_test(NAME examples/Pendulum/runLQRtest COMMAND runLQRtest)
+add_matlab_test(NAME examples/Pendulum/runLQRtest COMMAND runLQRtest REQUIRES mosek spotless)
 add_matlab_test(NAME examples/Pendulum/runPassive COMMAND runPassive)
 add_matlab_test(NAME examples/Pendulum/runPassiveURDF COMMAND runPassiveURDF)
-add_matlab_test(NAME examples/Pendulum/runSwingUp COMMAND runSwingUp)
-add_matlab_test(NAME examples/Pendulum/runTrigLQR COMMAND runTrigLQR)
-add_matlab_test(NAME examples/Pendulum/PendulumEnergyControl.run COMMAND PendulumEnergyControl.run)
+add_matlab_test(NAME examples/Pendulum/runSwingUp COMMAND runSwingUp REQUIRES snopt)
+add_matlab_test(NAME examples/Pendulum/runTrigLQR COMMAND runTrigLQR REQUIRES spotless)
+add_matlab_test(NAME examples/Pendulum/PendulumEnergyControl.run COMMAND PendulumEnergyControl.run REQUIRES mosek spotless)
 
 if(LONG_RUNNING_TESTS)
   # add_matlab_test(NAME examples/Pendulum/runTrajectorySwingUpAndBalance COMMAND runTrajectorySwingUpAndBalance PROPERTIES TIMEOUT 1500)  # FIXME: see #2305
