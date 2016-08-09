@@ -118,10 +118,9 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
       throw std::runtime_error(
           "Could not find attachment frame when handling urdf modifications");
     }
-    RigidBodyTree::ModelToInstanceIDMap model_instance_id_table;
     drake::parsers::urdf::AddModelInstanceFromURDF(
         drake::GetDrakePath() + "/" + it->urdf_filename, it->joint_type,
-        attach_to_frame, robot.get(), &model_instance_id_table);
+        attach_to_frame, robot.get());
   }
 
   auto filter = [&](const std::string& group_name) {

@@ -8,6 +8,7 @@
 #include "drake/solvers/optimization.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/pose_map.h"
@@ -32,6 +33,7 @@ using std::shared_ptr;
 using std::string;
 
 using drake::math::quatRotateVec;
+using drake::parsers::ModelInstanceIdTable;
 
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
@@ -709,19 +711,20 @@ void ParseUrdfForceElement(RigidBodySystem& sys, XMLElement* node,
 }
 
 void ParseUrdfModel(RigidBodySystem& sys, XMLElement* node,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    const ModelInstanceIdTable& model_instance_id_table) {
+
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
   string model_name = node->Attribute("name");
 
   // Obtains the model instance ID. Throws an exception if the model instance ID
   // cannot be determined.
-  if (model_instance_id_table->find(model_name) ==
-      model_instance_id_table->end()) {
+  if (model_instance_id_table.find(model_name) ==
+      model_instance_id_table.end()) {
     throw std::runtime_error("Model named \"" + model_name + "\" does not "
         "exist in the model_instance_id_table.");
   }
-  int model_instance_id = (*model_instance_id_table)[model_name];
+  int model_instance_id = model_instance_id_table.at(model_name);
 
   // Parses the force elements in the model.
   for (XMLElement* force_node = node->FirstChildElement("force_element");
@@ -736,12 +739,10 @@ void ParseUrdfModel(RigidBodySystem& sys, XMLElement* node,
 //
 // @param[in] xml_doc The XML document containing the URDF specification.
 //
-// @param[out] model_instance_id_table A pointer to a map storing model
-// names and their instance IDs. This parameter may not be `nullptr`. A
-// `std::runtime_error` is thrown if an instance is created of a model whose
-// name is already in this table.
+// @param[out] model_instance_id_table A reference to a map storing model
+// names and their instance IDs.
 void ParseUrdf(RigidBodySystem& sys, XMLDocument* xml_doc,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    const ModelInstanceIdTable& model_instance_id_table) {
   XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node)
     throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
@@ -821,7 +822,7 @@ void parseSdfLink(RigidBodySystem& sys, int model_instance_id, XMLElement* node,
 }
 
 void parseSdfModel(RigidBodySystem& sys, XMLElement* node,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    const ModelInstanceIdTable& model_instance_id_table) {
   // A pose map is necessary since SDF specifies almost everything in the
   // global coordinate frame. The pose map contains transforms from a link's
   // coordinate frame to the model's coordinate frame.
@@ -834,12 +835,12 @@ void parseSdfModel(RigidBodySystem& sys, XMLElement* node,
 
   // Obtains the model instance ID. Throws an exception if the model instance ID
   // cannot be determined.
-  if (model_instance_id_table->find(model_name) ==
-      model_instance_id_table->end()) {
+  if (model_instance_id_table.find(model_name) ==
+      model_instance_id_table.end()) {
     throw std::runtime_error("Model named \"" + model_name + "\" does not "
         "exist in the model_instance_id_table.");
   }
-  int model_instance_id = (*model_instance_id_table)[model_name];
+  int model_instance_id = model_instance_id_table.at(model_name);
 
   // Parses each link element within the model.
   for (XMLElement* elnode = node->FirstChildElement("link"); elnode;
@@ -853,7 +854,7 @@ void parseSdfModel(RigidBodySystem& sys, XMLElement* node,
 }
 
 void parseSdf(RigidBodySystem& sys, XMLDocument* xml_doc,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    const ModelInstanceIdTable& model_instance_id_table) {
   XMLElement* node = xml_doc->FirstChildElement("sdf");
 
   if (!node) {
@@ -872,12 +873,13 @@ void parseSdf(RigidBodySystem& sys, XMLDocument* xml_doc,
 void RigidBodySystem::AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
-  // Creates a local RigidBodyTree::ModelToInstanceIDMap if no such map was
-  // provided.
-  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> local_map;
+    ModelInstanceIdTable* model_instance_id_table) {
+  // Creates a local ModelInstanceIdTable if if was not provided. This is
+  // necessary to inform the RigidBodySystem of the model isntance IDs that were
+  // assigned to the newly added models.
+  std::unique_ptr<ModelInstanceIdTable> local_map;
   if (model_instance_id_table == nullptr) {
-    local_map.reset(new RigidBodyTree::ModelToInstanceIDMap());
+    local_map.reset(new ModelInstanceIdTable());
     model_instance_id_table = local_map.get();
   }
 
@@ -891,20 +893,21 @@ void RigidBodySystem::AddModelInstanceFromUrdfString(
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
 
-  ParseUrdf(*this, &xml_doc, model_instance_id_table);
+  ParseUrdf(*this, &xml_doc, *model_instance_id_table);
 }
 
 void RigidBodySystem::AddModelInstanceFromUrdfFile(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
-  // Creates a local RigidBodyTree::ModelToInstanceIDMap if no such map was
-  // provided.
-  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map;
+    ModelInstanceIdTable* model_instance_id_table) {
+  // Creates a local ModelInstanceIdTable if if was not provided. This is
+  // necessary to inform the RigidBodySystem of the model isntance IDs that were
+  // assigned to the newly added models.
+  std::unique_ptr<ModelInstanceIdTable> local_map;
   if (model_instance_id_table == nullptr) {
-    map.reset(new RigidBodyTree::ModelToInstanceIDMap());
-    model_instance_id_table = map.get();
+    local_map.reset(new ModelInstanceIdTable());
+    model_instance_id_table = local_map.get();
   }
 
   // Adds the URDF to the rigid body tree.
@@ -921,20 +924,21 @@ void RigidBodySystem::AddModelInstanceFromUrdfFile(
         "RigidBodySystem::AddModelInstanceFromUrdfFile: ERROR: Failed to parse "
         "xml in file " + urdf_filename + "\n" + xml_doc.ErrorName());
   }
-  ParseUrdf(*this, &xml_doc, model_instance_id_table);
+  ParseUrdf(*this, &xml_doc, *model_instance_id_table);
 }
 
 void RigidBodySystem::AddModelInstanceFromSdfFile(
     const string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
-  // Creates a local RigidBodyTree::ModelToInstanceIDMap if no such map was
-  // provided.
-  std::unique_ptr<RigidBodyTree::ModelToInstanceIDMap> map;
+    ModelInstanceIdTable* model_instance_id_table) {
+  // Creates a local ModelInstanceIdTable if if was not provided. This is
+  // necessary to inform the RigidBodySystem of the model isntance IDs that were
+  // assigned to the newly added models.
+  std::unique_ptr<ModelInstanceIdTable> local_map;
   if (model_instance_id_table == nullptr) {
-    map.reset(new RigidBodyTree::ModelToInstanceIDMap());
-    model_instance_id_table = map.get();
+    local_map.reset(new ModelInstanceIdTable());
+    model_instance_id_table = local_map.get();
   }
 
   // Adds the robot to the rigid body tree.
@@ -951,14 +955,14 @@ void RigidBodySystem::AddModelInstanceFromSdfFile(
         "RigidBodySystem::AddModelInstanceFromSdfFile: ERROR: Failed to parse"
         "xml in file " + sdf_filename + "\n" + xml_doc.ErrorName());
   }
-  parseSdf(*this, &xml_doc, model_instance_id_table);
+  parseSdf(*this, &xml_doc, *model_instance_id_table);
 }
 
 void RigidBodySystem::AddModelInstanceFromFile(
     const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   spruce::path p(filename);
   auto ext = p.extension();
 

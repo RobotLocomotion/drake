@@ -7,8 +7,11 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/material_map.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/xmlUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
+
+using drake::parsers::ModelInstanceIdTable;
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
@@ -972,24 +975,26 @@ void ParseRobot(RigidBodyTree* tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
-                RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+                ModelInstanceIdTable* model_instance_id_table) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
 
-  // Obtains the model name and ensures no such model exists in
-  // model_instance_id_table. Throws an exception if a model of the same name
-  // already exists in the table.
+  // Obtains the model name and, if model_instance_table exists, ensures no such
+  // model exists in the model_instance_id_table. Throws an exception if a model
+  // of the same name already exists in the table.
   string model_name = node->Attribute("name");
-  if (model_instance_id_table->find(model_name) !=
-      model_instance_id_table->end()) {
+  if (model_instance_id_table != nullptr &&
+      model_instance_id_table->find(model_name) !=
+          model_instance_id_table->end()) {
     throw std::runtime_error("Model named \"" + model_name + "\" already "
         "exists in the model_instance_id_table.");
   }
 
   // Obtains and adds a new model instance ID into the table.
   int model_instance_id = tree->add_model_instance();
-  (*model_instance_id_table)[model_name] = model_instance_id;
-
+  if (model_instance_id_table != nullptr) {
+    (*model_instance_id_table)[model_name] = model_instance_id;
+  }
   // Parses the model's material elements.
   MaterialMap materials;
   for (XMLElement* material_node = node->FirstChildElement("material");
@@ -1088,7 +1093,7 @@ void ParseURDF(XMLDocument* xml_doc,
                const DrakeJoint::FloatingBaseType floating_base_type,
                std::shared_ptr<RigidBodyFrame> weld_to_frame,
                RigidBodyTree* tree,
-               RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+               ModelInstanceIdTable* model_instance_id_table) {
   populatePackageMap(package_map);
   XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node) {
@@ -1106,7 +1111,7 @@ void ParseURDF(XMLDocument* xml_doc,
 void AddModelInstanceFromURDFString(
     const string& urdf_string,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   PackageMap package_map;
   AddModelInstanceFromURDFString(urdf_string, package_map, tree,
       model_instance_id_table);
@@ -1116,7 +1121,7 @@ void AddModelInstanceFromURDFString(
     const string& urdf_string,
     PackageMap& package_map,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   const string root_dir = ".";
   std::shared_ptr<RigidBodyFrame> weld_to_frame;
   AddModelInstanceFromURDFString(
@@ -1129,7 +1134,7 @@ void AddModelInstanceFromURDFString(
     const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   PackageMap package_map;
   std::shared_ptr<RigidBodyFrame> weld_to_frame;
   AddModelInstanceFromURDFString(
@@ -1144,7 +1149,7 @@ void AddModelInstanceFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
   ParseURDF(&xml_doc, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
@@ -1154,10 +1159,9 @@ void AddModelInstanceFromURDFString(
 void AddModelInstanceFromURDF(
     const string& urdf_filename,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
-  DRAKE_ABORT_UNLESS(model_instance_id_table);
 
   PackageMap package_map;
   std::shared_ptr<RigidBodyFrame> weld_to_frame;
@@ -1171,10 +1175,9 @@ void AddModelInstanceFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
-  DRAKE_ABORT_UNLESS(model_instance_id_table);
 
   PackageMap package_map;
   std::shared_ptr<RigidBodyFrame> weld_to_frame;
@@ -1189,10 +1192,9 @@ void AddModelInstanceFromURDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
-  DRAKE_ABORT_UNLESS(model_instance_id_table);
 
   PackageMap package_map;
   AddModelInstanceFromURDF(
@@ -1205,10 +1207,9 @@ void AddModelInstanceFromURDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
-  DRAKE_ABORT_UNLESS(model_instance_id_table);
 
   // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;

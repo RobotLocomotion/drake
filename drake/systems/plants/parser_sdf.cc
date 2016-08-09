@@ -6,13 +6,13 @@
 
 #include "spruce.hh"
 
-#include "drake/common/eigen_types.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
-#include "joints/DrakeJoints.h"
-
 #include "drake/common/drake_path.h"
-#include "xmlUtil.h"
+#include "drake/common/eigen_types.h"
+#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/xmlUtil.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 // from
 // http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
@@ -649,11 +649,10 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
-                RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+                ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
   DRAKE_ABORT_UNLESS(node);
-  DRAKE_ABORT_UNLESS(model_instance_id_table);
 
   // The pose_map is needed because SDF specifies almost everything in the
   // model's coordinate frame.
@@ -664,19 +663,22 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
                         ": ERROR: The model must have a name attribute.");
   }
 
-  // Obtains the model name and ensures no such model exists in the
-  // model_instance_id_table. Throws an exception if a model of the same name
-  // already exists in the table.
+  // Obtains the model name and, if model_instance_table exists, ensures no such
+  // model exists in the model_instance_id_table. Throws an exception if a model
+  // of the same name already exists in the table.
   string model_name = node->Attribute("name");
-  if (model_instance_id_table->find(model_name) !=
-      model_instance_id_table->end()) {
+  if (model_instance_id_table != nullptr &&
+      model_instance_id_table->find(model_name) !=
+          model_instance_id_table->end()) {
     throw std::runtime_error("Model named \"" + model_name + "\" already "
         "exists in model_instance_id_table.");
   }
 
   // Obtains and adds a new model instance ID into model_instance_id_table.
   int model_instance_id = tree->add_model_instance();
-  (*model_instance_id_table)[model_name] = model_instance_id;
+  if (model_instance_id_table != nullptr) {
+    (*model_instance_id_table)[model_name] = model_instance_id;
+  }
 
   // Maintains a list of links that were added to the rigid body tree.
   // This is iterated over by method AddFloatingJoint() to determine where
@@ -739,7 +741,7 @@ void ParseWorld(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
-                RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+                ModelInstanceIdTable* model_instance_id_table) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
     ParseModel(model, model_node, package_map, root_dir, floating_base_type,
@@ -751,7 +753,7 @@ void ParseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
               PackageMap& package_map, const string& root_dir,
               const DrakeJoint::FloatingBaseType floating_base_type,
               std::shared_ptr<RigidBodyFrame> weld_to_frame,
-              RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+              ModelInstanceIdTable* model_instance_id_table) {
   populatePackageMap(package_map);
 
   XMLElement* node = xml_doc->FirstChildElement("sdf");
@@ -791,10 +793,9 @@ void AddRobotFromSDFInWorldFrame(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
-  DRAKE_ABORT_UNLESS(model_instance_id_table);
 
   std::shared_ptr<RigidBodyFrame> weld_to_frame;
 
@@ -807,10 +808,9 @@ void AddRobotFromSDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table) {
+    ModelInstanceIdTable* model_instance_id_table) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
-  DRAKE_ABORT_UNLESS(model_instance_id_table);
 
   PackageMap package_map;
 

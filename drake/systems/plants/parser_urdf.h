@@ -6,6 +6,7 @@
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/xmlUtil.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
@@ -52,14 +53,14 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 /// This parameter must not be `nullptr`.
 ///
 /// @param[out] model_instance_id_table A pointer to a map storing model
-/// names and their instance IDs. This parameter may not be `nullptr`. A
+/// names and their instance IDs. This parameter is may be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
-/// name is already in this table.
+/// name is already in this table (assuming the table is not `nullptr`).
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDFString(
     const std::string& urdf_string,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table);
+    ModelInstanceIdTable* model_instance_id_table = nullptr);
 
 /// Reads a single model from a URDF specification and adds a single instance of
 /// it to @p tree. The model instance is connected to the world via
@@ -79,15 +80,15 @@ void AddModelInstanceFromURDFString(
 /// This parameter must not be `nullptr`.
 ///
 /// @param[out] model_instance_id_table A pointer to a map storing model
-/// names and their instance IDs. This parameter may not be `nullptr`. A
+/// names and their instance IDs. This parameter is may be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
-/// name is already in this table.
+/// name is already in this table (assuming the table is not `nullptr`).
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDFString(
     const std::string& urdf_string,
     std::map<std::string, std::string>& package_map,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table);
+    ModelInstanceIdTable* model_instance_id_table = nullptr);
 
 /// Reads a single model from a URDF specification and adds a single instance of
 /// it to @p tree. The model instance is connected to the world via
@@ -109,16 +110,16 @@ void AddModelInstanceFromURDFString(
 /// This parameter must not be `nullptr`.
 ///
 /// @param[out] model_instance_id_table A pointer to a map storing model
-/// names and their instance IDs. This parameter may not be `nullptr`. A
+/// names and their instance IDs. This parameter is may be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
-/// name is already in this table.
+/// name is already in this table (assuming the table is not `nullptr`).
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDFString(
     const std::string& urdf_string,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table);
+    ModelInstanceIdTable* model_instance_id_table = nullptr);
 
 /// Reads a single model from a URDF specification and adds a single instance of
 /// it to @p tree.
@@ -144,9 +145,9 @@ void AddModelInstanceFromURDFString(
 /// This parameter must not be `nullptr`.
 ///
 /// @param[out] model_instance_id_table A pointer to a map storing model
-/// names and their instance IDs. This parameter may not be `nullptr`. A
+/// names and their instance IDs. This parameter is may be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
-/// name is already in this table.
+/// name is already in this table (assuming the table is not `nullptr`).
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDFString(
     const std::string& urdf_string,
@@ -155,7 +156,7 @@ void AddModelInstanceFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table);
+    ModelInstanceIdTable* model_instance_id_table = nullptr);
 
 /// Reads a single model from a URDF specification and adds a single instance of
 /// it to @p tree. The model instance is connected to the world via a joint of
@@ -170,13 +171,13 @@ void AddModelInstanceFromURDFString(
 /// parameter must not be `nullptr`.
 ///
 /// @param[out] model_instance_id_table A pointer to a map storing model
-/// names and their instance IDs. This parameter may not be `nullptr`. A
+/// names and their instance IDs. This parameter is may be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
-/// name is already in this table.
+/// name is already in this table (assuming the table is not `nullptr`).
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDF(const std::string& urdf_filename,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table);
+    ModelInstanceIdTable* model_instance_id_table = nullptr);
 
 /// Reads a single model from a URDF specification and adds a single instance of
 /// it to @p tree. The model instance is connected to the world via a joint of
@@ -194,15 +195,15 @@ void AddModelInstanceFromURDF(const std::string& urdf_filename,
 /// This parameter must not be `nullptr`.
 ///
 /// @param[out] model_instance_id_table A pointer to a map storing model
-/// names and their instance IDs. This parameter may not be `nullptr`. A
+/// names and their instance IDs. This parameter is may be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
-/// name is already in this table.
+/// name is already in this table (assuming the table is not `nullptr`).
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table);
+    ModelInstanceIdTable* model_instance_id_table = nullptr);
 
 /// Reads a single model from a URDF specification and adds a single instance of
 /// it to @p tree. The model instance is connected to the world via a joint of
@@ -223,16 +224,16 @@ void AddModelInstanceFromURDF(
 /// This parameter must not be `nullptr`.
 ///
 /// @param[out] model_instance_id_table A pointer to a map storing model
-/// names and their instance IDs. This parameter may not be `nullptr`. A
+/// names and their instance IDs. This parameter is may be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
-/// name is already in this table.
+/// name is already in this table (assuming the table is not `nullptr`).
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table);
+    ModelInstanceIdTable* model_instance_id_table = nullptr);
 
 /// Reads a single model from a URDF specification and adds a single instance of
 /// it to @p tree.  The model instance is connected to the world via a joint of
@@ -256,9 +257,9 @@ void AddModelInstanceFromURDF(
 /// This parameter must not be `nullptr`.
 ///
 /// @param[out] model_instance_id_table A pointer to a map storing model
-/// names and their instance IDs. This parameter may not be `nullptr`. A
+/// names and their instance IDs. This parameter is may be `nullptr`. A
 /// `std::runtime_error` is thrown if an instance is created of a model whose
-/// name is already in this table.
+/// name is already in this table (assuming the table is not `nullptr`).
 DRAKERBM_EXPORT
 void AddModelInstanceFromURDF(
     const std::string& urdf_filename,
@@ -266,7 +267,7 @@ void AddModelInstanceFromURDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_table = nullptr);
+    ModelInstanceIdTable* model_instance_id_table = nullptr);
 
 }  // namespace urdf
 }  // namespace parsers

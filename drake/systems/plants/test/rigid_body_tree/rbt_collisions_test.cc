@@ -46,11 +46,10 @@ class RBTCollisionTest: public ::testing::Test {
 
  protected:
   void SetUp() override {
-    RigidBodyTree::ModelToInstanceIDMap model_instance_id_table;
     drake::parsers::sdf::AddRobotFromSDFInWorldFrame(
         drake::GetDrakePath() +
         "/systems/plants/test/rigid_body_tree/small_sphere_on_large_box.sdf",
-        DrakeJoint::QUATERNION, &tree_, &model_instance_id_table);
+            DrakeJoint::QUATERNION, &tree_);
 
     small_sphere_ = tree_.FindBody("small_sphere");
     large_box_ = tree_.FindBody("large_box");
