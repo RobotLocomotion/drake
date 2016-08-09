@@ -76,6 +76,11 @@ supported. On Windows, the "Visual Studio 14 2015",
 
 The supported version of MATLAB is R2015b.
 
+Minimal configuration is defined as the minimal required externals from
+the superbuild. This is configured by turning off all externals using
+``ccmake`` or ``cmake-gui`` except for ``WITH_EIGEN`` and ``WITH_GOOGLETEST``
+which should be set to ``ON``.
+
 +-----------------------------------------+--------------------+-------------------+---------+
 | Operating System                        | Compilers          | Superbuild Deps   | Build   |
 +=========================================+====================+===================+=========+
