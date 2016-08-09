@@ -25,6 +25,8 @@ class GainTest : public ::testing::Test {
     input1_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
+  // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
+  // the input of the Gain system.
   static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
       std::unique_ptr<BasicVector<double>> data) {
     return make_unique<FreestandingInputPort<double>>(std::move(data));
@@ -45,8 +47,6 @@ TEST_F(GainTest, VectorThroughGainSystem) {
   Eigen::Vector3d input_vector(1.0, 3.14, 2.18);
   input0_->get_mutable_value() << input_vector;
 
-  // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-  // the input of the Gain system.
   context_->SetInputPort(0, MakeInput(std::move(input0_)));
 
   gain_->EvalOutput(*context_, output_.get());
