@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/system.h"
@@ -12,15 +13,14 @@
 namespace drake {
 namespace systems {
 
-/// A gain block with input `u` and output `y = k*u` with k a constant.
-/// This block is direct feedthrough.
+/// A source block witn a constant output port.
 /// @tparam T The type of mathematical object being added.
 template <typename T>
 class ConstantSource : public System<T> {
  public:
-  /// @param k the gain constant so that `y = k*u`.
-  /// @param length is the size of the signal to be processed.
-  ConstantSource(double k, int length);
+  /// @param source_value the constant value of the output so that
+  /// `y = source_value`.
+  ConstantSource(const VectorX<T>& source_value);
 
   /// Allocates the number of input ports specified in the constructor.
   /// Allocates no state.
@@ -36,10 +36,8 @@ class ConstantSource : public System<T> {
                   SystemOutput<T>* output) const override;
 
  private:
-  // TODO(amcastro-tri): move gain_ to System<T>::Parameter.
-  // gain_ should be double or of type T if in the context.
-  const double gain_;
-  const int length_;
+  // TODO(amcastro-tri): move source_value_ to the systems parameters.
+  const T source_value_;
 };
 
 }  // namespace systems
