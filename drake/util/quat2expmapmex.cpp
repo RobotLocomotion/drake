@@ -1,5 +1,6 @@
 #include <Eigen/Core>
 
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/expmap.h"
 #include "drake/util/mexify.h"
 #include "drake/util/standardMexConversions.h"

@@ -1,3 +1,6 @@
+/// @file
+/// Utilities for arithmetic on gradients.
+
 #pragma once
 
 #include <Eigen/Dense>
