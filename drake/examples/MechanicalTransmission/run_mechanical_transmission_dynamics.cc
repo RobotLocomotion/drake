@@ -1,11 +1,14 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include <iostream>
+#include <fstream>
 
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/systems/Simulation.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "drake/systems/trajectory_logger.h"
 
 using drake::RigidBodySystem;
 using Eigen::VectorXd;
@@ -66,8 +69,11 @@ GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
   auto result3 = evaluateMechanicalTransmissionConstraint(tree,2.0,2.0);
   EXPECT_FALSE(CompareMatrices(result3,Eigen::Matrix<double,1,1>(0.0),Eigen::NumTraits<double>::epsilon(),MatrixCompareType::absolute));
 }
-/*
-GTEST_TEST(MechanicalTransmissionTest MechanicalTransmissionSimulation) {
+
+GTEST_TEST(MechanicalTransmissionTest,MechanicalTransmissionSimulation) {
+	auto rigid_body_system = parseMechanicalTransmission();
+	auto tree = rigid_body_system->getRigidBodyTree();
+	int nq = tree->number_of_positions();
 	drake::SimulationOptions options;
 	options.realtime_factor = 0; // As fast as possible.
 	options.initial_step_size = 0.02;
@@ -80,28 +86,34 @@ GTEST_TEST(MechanicalTransmissionTest MechanicalTransmissionSimulation) {
   // The default value is 5 seconds.
   double duration = 5.0;
 
-  // Searches through the command line looking for a "--duration" flag followed
-  // by a floating point number that specifies a custom duration.
-  for (int ii = 1; ii < argc; ++ii) {
-    if (std::string(argv[ii]) == "--duration") {
-      if (++ii == argc) {
-        throw std::runtime_error(
-            "ERROR: Command line option \"--duration\" is not followed by a "
-            "value!");
-      }
-      duration = atof(argv[ii]);
-    }
-  }
-
   // Starts the simulation.
   const double kStartTime = 0.0;
-  VectorXd x0 = VectorXd::Random(rigid_body_system->getNumStates());
-  double stop_time = drake::simulate(*rigid_body_system, kStartTime,
+  VectorXd x0 = VectorXd::Zero(rigid_body_system->getNumStates());
+  int joint1_pos = tree->findJoint("joint1")->get_position_start_index();
+	int joint2_pos = tree->findJoint("joint2")->get_position_start_index();
+	int joint1_vel = nq + tree->findJoint("joint1")->get_velocity_start_index();
+	int joint2_vel = nq + tree->findJoint("joint2")->get_velocity_start_index();
+	//std::cout<<"joint1 pos:"<<joint1_pos<<" joint1 vel:"<<joint1_vel<<"joint2 pos:"<<joint2_pos<<" joint2_vel"<<joint2_vel<<std::endl;
+  x0(joint1_pos) = 1.0;
+  x0(joint2_pos) = 2.0;
+  x0(joint1_vel) = 0.1;
+  x0(joint2_vel) = 0.2;
+  auto trajectory_logger = std::make_shared<drake::systems::TrajectoryLogger<RigidBodySystem::StateVector>>(rigid_body_system->getNumStates());
+  auto sys = drake::cascade(rigid_body_system,trajectory_logger);
+  drake::simulate(*sys, kStartTime,
   																	 duration,x0,options);
-  std::cout<<"stop time:"<<stop_time<<std::endl;
-	return 0;
+  auto trajectory = trajectory_logger->getTrajectory();
+  std::ofstream output_txt("output.txt");
+  for(size_t i = 0;i<trajectory.time.size();++i) {
+  	if(output_txt.is_open()) {
+  		output_txt<<trajectory.val[i](joint1_pos)<<" "<<trajectory.val[i](joint2_pos)<<" "<<trajectory.val[i](joint1_vel)<<" "<<trajectory.val[i](joint2_vel)<<std::endl;
+  	}
+  	EXPECT_NEAR(trajectory.val[i](joint1_pos),2*trajectory.val[i](joint2_pos),1e-2);
+  	EXPECT_NEAR(trajectory.val[i](joint1_vel),2*trajectory.val[i](joint2_vel),1e-2);
+  }
+  output_txt.close();
 }
-*/
+
 }  // namespace
 }  // namespace mechanical_transmission
 }  // namespace examples
