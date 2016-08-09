@@ -93,10 +93,6 @@ class OutputPort {
   // output port changes.
   std::set<OutputPortListenerInterface*> dependents_;
 
-  // The rate at which this port produces output, in seconds.
-  // If zero, the port is continuous.
-  double sample_time_sec_{};
-
   int64_t version_ = 0;
 };
 

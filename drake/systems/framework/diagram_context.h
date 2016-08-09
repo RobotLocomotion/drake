@@ -84,8 +84,7 @@ class DiagramContext : public ContextBase<T> {
         dest_port_index >= dest_context->get_num_input_ports()) {
       throw std::out_of_range("Destination port out of range.");
     }
-    // TODO(david-german-tri): Set the sample rate.
-    auto input_port = std::make_unique<DependentInputPort<T>>(output_port, 0.0);
+    auto input_port = std::make_unique<DependentInputPort<T>>(output_port);
     dest_context->SetInputPort(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().

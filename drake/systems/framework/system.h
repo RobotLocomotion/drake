@@ -1,11 +1,14 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
@@ -18,6 +21,16 @@ template <typename T>
 class System {
  public:
   virtual ~System() {}
+
+  /// Returns descriptors for all the input ports of this system.
+  const std::vector<SystemPortDescriptor<T>>& get_input_topology() const {
+    return input_topology_;
+  }
+
+  /// Returns descriptors for all the output ports of this system.
+  const std::vector<SystemPortDescriptor<T>>& get_output_topology() const {
+    return output_topology_;
+  }
 
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.
@@ -147,6 +160,46 @@ class System {
  protected:
   System() {}
 
+  /// Adds a port with the specified @p descriptor to the input topology.
+  void declare_input_port(const SystemPortDescriptor<T>& descriptor) {
+    DRAKE_ASSERT(descriptor.get_index() ==
+                 static_cast<int>(input_topology_.size()));
+    input_topology_.emplace_back(descriptor);
+  }
+
+  /// Adds a continuous port with auto-determined size to the input topology.
+  void declare_continuous_input_port() {
+    declare_continuous_input_port(kAutoSize);
+  }
+
+  /// Adds a continuous port with the given @p size to the input topology.
+  void declare_continuous_input_port(int size) {
+    input_topology_.emplace_back(this, SystemPortDescriptor<T>::kInput,
+                              input_topology_.size(),
+                              SystemPortDescriptor<T>::kVectorValued,
+                              size, kContinuousSample);
+  }
+
+  /// Adds a port with the specified @p descriptor to the output topology.
+  void declare_output_port(const SystemPortDescriptor<T>& descriptor) {
+    DRAKE_ASSERT(descriptor.get_index() ==
+                 static_cast<int>(output_topology_.size()));
+    output_topology_.emplace_back(descriptor);
+  }
+
+  /// Adds a continuous port with auto-determined size to the output topology.
+  void declare_continuous_output_port() {
+    declare_continuous_output_port(SystemPortDescriptor<T>::kAutomatic);
+  }
+
+  /// Adds a continuous port with the given @p size to the output topology.
+  void declare_continuous_output_port(int size) {
+    output_topology_.emplace_back(this, SystemPortDescriptor<T>::kOutput,
+                               output_topology_.size(),
+                               SystemPortDescriptor<T>::kVectorValued,
+                               size, kContinuousSample);
+  }
+
  private:
   // SystemInterface objects are neither copyable nor moveable.
   System(const System<T>& other) = delete;
@@ -155,6 +208,8 @@ class System {
   System& operator=(System<T>&& other) = delete;
 
   std::string name_;
+  std::vector<SystemPortDescriptor<T>> input_topology_;
+  std::vector<SystemPortDescriptor<T>> output_topology_;
 };
 
 }  // namespace systems

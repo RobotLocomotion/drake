@@ -66,6 +66,12 @@ class Diagram : public System<T> {
   Diagram() {}
   virtual ~Diagram() {}
 
+  void Connect(const SystemPortDescriptor<T>& src,
+               const SystemPortDescriptor<T>& dest) {
+    Connect(src.get_system(), src.get_index(),
+            dest.get_system(), dest.get_index());
+  }
+
   void Connect(const System<T>* src, int src_port_index,
                const System<T>* dest, int dest_port_index) {
     ThrowIfFinal();
@@ -79,6 +85,21 @@ class Diagram : public System<T> {
 
   void ExportInput(const System<T>* sys, int port_index) {
     ThrowIfFinal();
+
+    // Add this port to our externally visible topology.
+    const auto& subsystem_topology = sys->get_input_topology();
+    if (port_index < 0 ||
+        port_index >= static_cast<int>(subsystem_topology.size())) {
+      throw std::out_of_range("Input port out of range.");
+    }
+    const auto& subsystem_descriptor = subsystem_topology[port_index];
+    SystemPortDescriptor<T> descriptor(
+        this, SystemPortDescriptor<T>::kInput, this->get_input_topology().size(),
+        subsystem_descriptor.get_type(), subsystem_descriptor.get_size(),
+        subsystem_descriptor.get_sample_time_sec());
+    this->declare_input_port(descriptor);
+
+    // Add this system and port to our internal wiring diagram.
     Register(sys);
     PortIdentifier id{sys, port_index};
     ThrowIfInputAlreadyWired(id);
@@ -89,6 +110,22 @@ class Diagram : public System<T> {
 
   void ExportOutput(const System<T>* sys, int port_index) {
     ThrowIfFinal();
+
+    // Add this port to our externally visible topology.
+    const auto& subsystem_topology = sys->get_output_topology();
+    if (port_index < 0 ||
+        port_index >= static_cast<int>(subsystem_topology.size())) {
+      throw std::out_of_range("Output port out of range.");
+    }
+    const auto& subsystem_descriptor = subsystem_topology[port_index];
+    SystemPortDescriptor<T> descriptor(
+        this, SystemPortDescriptor<T>::kOutput,
+        this->get_output_topology().size(),
+        subsystem_descriptor.get_type(), subsystem_descriptor.get_size(),
+        subsystem_descriptor.get_sample_time_sec());
+    this->declare_output_port(descriptor);
+
+    // Add this system and port to our internal wiring diagram.
     Register(sys);
     output_port_ids_.push_back(PortIdentifier{sys, port_index});
   }

@@ -26,10 +26,6 @@ class InputPort : public OutputPortListenerInterface {
   /// that data.
   virtual int64_t get_version() const = 0;
 
-  /// Returns the sampling interval of this port in seconds, or zero if
-  /// this port is continuous.
-  virtual double get_sample_time_sec() const = 0;
-
   /// Returns the vector data on this port, or nullptr if this port is not
   /// vector-valued or not connected. Implementations must ensure that
   /// get_vector_data is O(1) and initiates no substantive computation.
@@ -65,11 +61,10 @@ class InputPort : public OutputPortListenerInterface {
 template <typename T>
 class DependentInputPort : public InputPort<T> {
  public:
-  /// Creates an input port with the given @p sample_time_sec, connected
-  /// to the given @p output_port, which must not be nullptr. The output
-  /// port must outlive this input port.
-  DependentInputPort(OutputPort<T>* output_port, double sample_time_sec)
-      : output_port_(output_port), sample_time_sec_(sample_time_sec) {
+  /// Creates an input port connected to the given @p output_port, which
+  /// must not be nullptr. The output port must outlive this input port.
+  explicit DependentInputPort(OutputPort<T>* output_port)
+      : output_port_(output_port) {
     output_port_->add_dependent(this);
   }
 
@@ -81,10 +76,6 @@ class DependentInputPort : public InputPort<T> {
   /// Returns the value version of the connected output port.
   int64_t get_version() const override {
     return output_port_->get_version();
-  }
-
-  double get_sample_time_sec() const override {
-    return sample_time_sec_;
   }
 
   const VectorInterface<T>* get_vector_data() const override {
@@ -99,7 +90,6 @@ class DependentInputPort : public InputPort<T> {
   DependentInputPort& operator=(DependentInputPort&& other) = delete;
 
   OutputPort<T>* output_port_;
-  double sample_time_sec_;
 };
 
 /// The FreestandingInputPort encapsulates a vector of data for use as an input
@@ -113,15 +103,7 @@ class FreestandingInputPort : public InputPort<T> {
   /// Takes ownership of @p vector_data.
   explicit FreestandingInputPort(
       std::unique_ptr<VectorInterface<T>> vector_data)
-      : FreestandingInputPort(std::move(vector_data), 0.0 /* continuous */) {}
-
-  /// Constructs a FreestandingInputPort with the given sample rate
-  /// @p sample_time_sec, which should be zero for continuous ports.
-  /// Takes ownership of @p vector_data.
-  FreestandingInputPort(std::unique_ptr<VectorInterface<T>> vector_data,
-                        double sample_time_sec)
-      : output_port_(std::move(vector_data)),
-        sample_time_sec_(sample_time_sec) {
+      : output_port_(std::move(vector_data)) {
     output_port_.add_dependent(this);
   }
 
@@ -133,10 +115,6 @@ class FreestandingInputPort : public InputPort<T> {
   /// to change whenever GetMutableVectorData is called.
   int64_t get_version() const override {
     return output_port_.get_version();
-  }
-
-  double get_sample_time_sec() const override {
-    return sample_time_sec_;
   }
 
   const VectorInterface<T>* get_vector_data() const override {
@@ -164,7 +142,6 @@ class FreestandingInputPort : public InputPort<T> {
   FreestandingInputPort& operator=(FreestandingInputPort&& other) = delete;
 
   OutputPort<T> output_port_;
-  double sample_time_sec_ = 0.0;
 };
 
 }  // namespace systems
