@@ -42,9 +42,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   // correct model name.
   for (auto& body_name :
        {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
-    const std::string kModelName = "dual_ramps";
-    const int kModelInstanceId = 0;
-    RigidBody* body = tree->FindBody(body_name, kModelName, kModelInstanceId);
+    RigidBody* body = tree->FindBody(body_name);
     EXPECT_NE(body, nullptr);
     EXPECT_EQ(body->get_model_name(), "dual_ramps");
   }
