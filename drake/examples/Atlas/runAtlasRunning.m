@@ -1,6 +1,7 @@
 function runAtlasRunning(use_angular_momentum)
 %NOTEST
 if ~checkDependency('gurobi')
+  disp('Looking for required dependency gurobi....');
   warning('Must have gurobi installed to run this example');
   return;
 end

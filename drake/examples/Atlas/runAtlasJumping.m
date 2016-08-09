@@ -1,6 +1,7 @@
 function runAtlasJumping(use_angular_momentum)
 
 if ~checkDependency('gurobi')
+  disp('Looking for required dependency gurobi....');
   warning('Must have gurobi installed to run this example');
   return;
 end
@@ -183,7 +184,7 @@ if use_angular_momentum
   options.Kp_ang = 1.0; % angular momentum proportunal feedback gain
   options.W_kdot = 1e-5*eye(3); % angular momentum weight
 else
-  options.W_kdot = zeros(3); 
+  options.W_kdot = zeros(3);
 end
 
 boptions.Kp =250*ones(6,1);
@@ -247,8 +248,8 @@ ins(6).input = 7;
 ins(7).system = 2;
 ins(7).input = 8;
 sys = mimoFeedback(fc,sys,[],[],ins,outs);
-clear ins;  
-  
+clear ins;
+
 % feedback PD block
 % options.Kp =250*ones(34,1);
 % options.Kd = 2*sqrt(options.Kp);

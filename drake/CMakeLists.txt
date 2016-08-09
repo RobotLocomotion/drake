@@ -152,7 +152,7 @@ function(add_matlab_test)
 
   if(parsed_args_REQUIRES)
     foreach(require ${parsed_args_REQUIRES})
-      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m")
+      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m" AND NOT ${require}_FOUND)
         message(STATUS "Not running ${parsed_args_NAME} because ${require} was not installed.")
         return()
       endif()

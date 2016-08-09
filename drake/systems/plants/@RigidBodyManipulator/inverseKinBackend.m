@@ -30,6 +30,7 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 % note: keeping typecheck/sizecheck to a minimum because this might have to
 % run inside a dynamical system (so should be fast)
 if(~checkDependency('snopt') && ~checkDependency('studentsnopt'))
+  disp('Looking for required dependency snopt....');
   error('Drake:MissingDependency:SNOPT','inverseKinBackend requires SNOPT. Either try install SNOPT, or try using InverseKinematics (capital case) or InverseKinematicsTrajectory (capital case) and set solver to fmincon or ipopt');
 end
 

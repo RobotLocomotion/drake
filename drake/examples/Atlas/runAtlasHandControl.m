@@ -4,6 +4,7 @@ function runAtlasHandControl(example_options)
 % to Atlas, and hook up a controller to command its joints
 
 if ~checkDependency('gurobi')
+  disp('Looking for required dependency gurobi....');
   warning('Must have gurobi installed to run this example');
   return;
 end

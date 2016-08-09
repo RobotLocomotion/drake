@@ -10,6 +10,12 @@ function ok = checkDependency(dep,command)
 % @param command can be 'disable', 'enable'
 %  % todo: consider supporting a minimum_version
 
+if (nargout<1)
+  disp(['Looking for required dependency ', dep, '....']);
+else
+  disp(['Looking for optional dependency ', dep, '....']);
+end
+
 persistent conf;
 
 ldep = lower(dep);
@@ -36,7 +42,7 @@ else % then try to evaluate the dependency now...
         warning('Drake:SimulinkVersion','Most features of Drake require SIMULINK version 7.3 or above.');
         % haven't actually tested with lower versions
       end
-      
+
     case 'distcomp'
       v=ver('distcomp');
       conf.distcomp_enabled = ~isempty(v);
@@ -45,7 +51,7 @@ else % then try to evaluate the dependency now...
       elseif verLessThan('distcomp','6.3') && matlabpool('size')==0
         % start a matlab pool (if none exists).  this approximates the
         % now default behavior in newer versions of distcomp.
-        matlabpool; 
+        matlabpool;
       end
 
     case 'spotless'
@@ -154,13 +160,13 @@ else % then try to evaluate the dependency now...
 
     case 'ipopt'
       conf.ipopt_enabled = logical(exist(['ipopt.',mexext],'file'));
-      
+
       if ~conf.ipopt_enabled && nargout<1
         disp(' ');
         disp(' IPOPT not found. IPOPT support will be disabled.');
         disp(' ');
       end
-      
+
     case 'vrml'
       unsupported = false;
       if(exist('vrinstall','file'))
@@ -214,7 +220,7 @@ else % then try to evaluate the dependency now...
       if (~conf.mosek_enabled)
         conf.mosek_enabled = pod_pkg_config('mosek') && logical(exist('mosekopt','file'));
       end
-      
+
       if (conf.mosek_enabled)
         % Check for license issues
         try
@@ -224,7 +230,7 @@ else % then try to evaluate the dependency now...
           disp(getReport(ex,'extended'));
         end
       end
-      
+
       if ~conf.mosek_enabled && nargout<1
         disp(' ');
         disp(' Mosek not found or not working. Mosek support will be disabled.');
@@ -233,7 +239,7 @@ else % then try to evaluate the dependency now...
         disp('    <a href="http://mosek.com/">http://mosek.com/</a> .');
         disp(' ');
       end
-      
+
     case 'gurobi'
       conf.gurobi_enabled = logical(exist('gurobi','file')); %&& ~isempty(getenv('GUROBI_HOME')));
       if (~conf.gurobi_enabled)
@@ -279,12 +285,12 @@ else % then try to evaluate the dependency now...
 
     case 'fastqp'
       conf.fastqp_enabled = logical(exist(['fastqpmex.',mexext],'file'));
-      
+
       if ~conf.fastqp_enabled && nargout<1
         disp(' ');
         disp(' fastqp not found. fastqp support will be disabled.');
       end
-      
+
     case 'bertini'
       conf.bertini_enabled = logical(exist('bertini','file'));
       if (~conf.bertini_enabled)
@@ -395,7 +401,7 @@ else % then try to evaluate the dependency now...
           disp(' ');
       end
       end
-      
+
     case 'lsqlin'
       conf.lsqlin_enabled = logical(exist('lsqlin.m','file'));
       if(~conf.lsqlin_enabled)
@@ -405,7 +411,7 @@ else % then try to evaluate the dependency now...
           disp(' ');
         end
       end
-      
+
     case 'nonlinearprogramsnoptmex'
       conf.nonlinearprogramsnoptmex_enabled = logical(exist('NonlinearProgramSnoptmex','file')==3);
       if(~conf.nonlinearprogramsnoptmex_enabled)
@@ -417,7 +423,7 @@ else % then try to evaluate the dependency now...
       end
 
     case 'iris'
-      conf.iris_enabled = logical(exist('+iris/inflate_region.m','file')); 
+      conf.iris_enabled = logical(exist('+iris/inflate_region.m','file'));
       if (~conf.iris_enabled)
         conf.iris_enabled = pod_pkg_config('iris');
       end

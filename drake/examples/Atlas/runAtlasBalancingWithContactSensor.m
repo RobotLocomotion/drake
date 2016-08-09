@@ -1,5 +1,6 @@
 function runAtlasBalancingWithContactSensor(example_options)
 if ~checkDependency('gurobi')
+  disp('Looking for required dependency gurobi....');
   warning('Must have gurobi installed to run this example');
   return;
 end

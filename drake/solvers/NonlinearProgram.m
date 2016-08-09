@@ -736,6 +736,7 @@ classdef NonlinearProgram
     end
 
     function obj = setSolver(obj,solver)
+      disp('Looking for solver...');
       % @param solver  Can be 'snopt', 'ipopt', 'fmincon' and 'default'.
       typecheck(solver,'char');
       if(strcmp(solver,'snopt'))
@@ -995,6 +996,7 @@ classdef NonlinearProgram
 
     function [x,objval,exitflag,execution_time,solvers] = compareSolvers(obj,x0,solvers)
       if nargin<3
+        disp('Looking for solver...');
         solvers = {};
         if(checkDependency('fmincon'))
           solvers = [solvers,{'fmincon'}];

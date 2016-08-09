@@ -153,6 +153,7 @@ classdef PolynomialProgram < NonlinearProgram
     function obj = setSolver(obj,solver)
       % @param solver   -- 'gloptipoly' or 'bertini' or 'default' or the solvers in
       % NonlinearProgram. The default solver is gloptipoly
+      disp('Looking for solver....');
       typecheck(solver,'char');
       switch(lower(solver))
         case 'gloptipoly'
