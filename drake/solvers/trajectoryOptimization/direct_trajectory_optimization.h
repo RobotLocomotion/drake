@@ -29,8 +29,14 @@ namespace solvers {
 class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  public:
   /**
-   * Constructor.
+   * Construct a DirectTrajectoryOptimization object.  The dimensions
+   * of the trajectory are established at construction, though other
+   * parameters (costs, bounds, constraints, etc) can be set before
+   * calling SolveTraj.
    *
+   * @param num_inputs Number of inputs at each sample point.
+   * @param num_states Number of states at each sample point.
+   * @param num_time_samples Number of time samples.
    * @param trajectory_time_lower_bound Bound on total time for
    *        trajectory.
    * @param trajectory_time_upper_bound Bound on total time for
