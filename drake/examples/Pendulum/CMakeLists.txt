@@ -1,4 +1,17 @@
 if(lcm_FOUND)
+  add_library_with_exports(LIB_NAME drakePendulum SOURCE_FILES
+    pendulum_swing_up.cc
+    )
+  target_link_libraries(drakePendulum drakeDynamicConstraint
+    drakeTrajectoryOptimization)
+  pods_install_libraries(drakePendulum)
+  drake_install_headers(Pendulum.h pendulum_swing_up.h)
+  pods_install_pkg_config_file(drake-pendulum
+    LIBS -ldrakePendulum
+    REQUIRES
+    VERSION 0.0.1)
+  add_dependencies(drakePendulum drake_lcmtypes_hpp)
+
   add_executable(runPendulumDynamics runDynamics.cpp)
   target_link_libraries(runPendulumDynamics drakeRBM drakeLCMSystem threads)
   add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics --non-realtime)
@@ -10,6 +23,10 @@ if(lcm_FOUND)
   add_executable(runPendulumLQR runLQR.cpp)
   target_link_libraries(runPendulumLQR drakeRBM drakeLCMSystem)
   add_test(NAME runPendulumLQR COMMAND runPendulumLQR --non-realtime)
+
+  add_executable(pendulum_run_swing_up pendulum_run_swing_up.cc)
+  target_link_libraries(pendulum_run_swing_up
+    drakePendulum drakeRBM drakeLCMSystem)
 
 #  write_procman(Pendulum.pmd
 #    GROUP "Simulate"
