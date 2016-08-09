@@ -13,12 +13,12 @@ namespace systems {
 
 template <typename T>
 Gain<T>::Gain(double k, int length) : gain_(k), length_(length) {
-  //TODO(amcastro-tri):
+  // TODO(amcastro-tri):
   // parameter length should be used to specify the system's input port and
   // does not need to be stored in member length_.
   // The constructor for a simple system like this should read:
-  //add_input_port(make_unique<InputPort>("in", length));
-  //add_output_port(make_unique<OutputPort>("out", length));
+  // add_input_port(make_unique<InputPort>("in", length));
+  // add_output_port(make_unique<OutputPort>("out", length));
 }
 
 template <typename T>
