@@ -3,16 +3,20 @@
 #include <vector>
 #include <map>
 #include <string>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+
+#include <lcm/lcm-cpp.hpp>
+
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
 #include "drake/systems/robotInterfaces/Side.h"
-#include <lcm/lcm-cpp.hpp>
 #include "drake/systems/controllers/zmpUtil.h"
+#include "drake/drakeQPLocomotionPlan_export.h"
 
 class QuadraticLyapunovFunction {
   // TODO(tkoolen): move into its own file
@@ -153,7 +157,7 @@ struct QPLocomotionPlanSettings {
   }
 };
 
-class QPLocomotionPlan {
+class DRAKEQPLOCOMOTIONPLAN_EXPORT QPLocomotionPlan {
  private:
   RigidBodyTree& robot_;  // TODO(tkoolen): const correctness
   QPLocomotionPlanSettings settings_;
