@@ -13,6 +13,8 @@ set(sources
   system.cc
   system_input.cc
   system_output.cc
+  system_port_descriptor.cc
+  leaf_system.cc
   basic_state_vector.cc
   value.cc
   vector_interface.cc
@@ -44,6 +46,8 @@ set(installed_headers
   system.h
   system_input.h
   system_output.h
+  system_port_descriptor.h
+  leaf_system.h
   basic_state_vector.h
   value.h
   vector_interface.h
