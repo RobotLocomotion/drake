@@ -87,7 +87,7 @@ TEST_F(IntegratorTest, Derivatives) {
 }
 
 // Asserts integrators are not direct feedthrough systems.
-TEST_F(IntegratorTest, IntegratorIsDirectFeedthrough) {
+TEST_F(IntegratorTest, IntegratorIsNotDirectFeedthrough) {
   EXPECT_FALSE(integrator_->is_direct_feedthrough());
 }
 
