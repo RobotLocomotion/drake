@@ -297,5 +297,7 @@ if(WITH_SNOPT_PRECOMPILED)
       ${PROJECT_SOURCE_DIR}/drake/solvers/
     INSTALL_COMMAND "")
   add_dependencies(download-all download-snopt-precompiled)
-  add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
+  if(TARGET drake)
+    add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
+  endif()
 endif()
