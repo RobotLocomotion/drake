@@ -134,9 +134,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
   direct_traj.GetResultSamples(&inputs, &states, &times_out);
 
-  EXPECT_TRUE(
-      CompareMatrices(input_min, inputs.col(0),
-                      1e-10, MatrixCompareType::absolute));
+  EXPECT_GE(inputs(0, 0), input_min(0));
 
   result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
   EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
