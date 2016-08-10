@@ -88,6 +88,11 @@ if(NOT WIN32) # many of these might work on win32 with little or no work... they
   option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 endif()
 
+# Option to skip setting up the external project for Drake itself. Not exposed
+# to the user, as it should only be used in special cases (e.g. the CI cpplint
+# job).
+set(WITH_DRAKE ON CACHE INTERNAL "")
+
 # Option to skip building drake proper via the superbuild. This allows the
 # superbuild to build everything BUT drake, which can still be built separately
 # from its build directory. This is used by the dashboards to make separate
@@ -231,7 +236,7 @@ drake_add_external(signalscope PUBLIC
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
 # any dependencies used by MATLAB have been installed.
-drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
+drake_add_external(drake LOCAL PUBLIC CMAKE
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
   ${DRAKE_BUILD_COMMANDS}
