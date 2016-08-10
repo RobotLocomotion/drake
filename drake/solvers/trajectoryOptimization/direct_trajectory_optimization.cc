@@ -63,10 +63,10 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
 }
 
 void DirectTrajectoryOptimization::GetInitialVars(
-    double t_init_in, const PiecewisePolynomial<double>& traj_init_u,
+    double timespan_init_in, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
-  VectorXd t_init{VectorXd::LinSpaced(N_, 0, t_init_in)};
-  opt_problem_.SetInitialGuess(h_vars_, VectorDiff(t_init));
+  VectorXd timespan_init{VectorXd::LinSpaced(N_, 0, timespan_init_in)};
+  opt_problem_.SetInitialGuess(h_vars_, VectorDiff(timespan_init));
 
   VectorXd guess_u(u_vars_.size());
   if (traj_init_u.empty()) {
@@ -74,7 +74,7 @@ void DirectTrajectoryOptimization::GetInitialVars(
   } else {
     for (int t = 0; t < N_; ++t) {
       guess_u.segment(num_inputs_ * t, num_inputs_) =
-          traj_init_u.value(t_init[t]);
+          traj_init_u.value(timespan_init[t]);
     }
   }
   opt_problem_.SetInitialGuess(u_vars_, guess_u);
@@ -87,19 +87,88 @@ void DirectTrajectoryOptimization::GetInitialVars(
   } else {
     for (int t = 0; t < N_; ++t) {
       guess_x.segment(num_states_ * t, num_states_) =
-          traj_init_x.value(t_init[t]);
+          traj_init_x.value(timespan_init[t]);
     }
   }
   opt_problem_.SetInitialGuess(x_vars_, guess_x);
 }
 
 SolutionResult DirectTrajectoryOptimization::SolveTraj(
-    double t_init, const PiecewisePolynomial<double>& traj_init_u,
+    double timespan_init, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
-  GetInitialVars(t_init, traj_init_u, traj_init_x);
+  GetInitialVars(timespan_init, traj_init_u, traj_init_x);
   SolutionResult result = opt_problem_.Solve();
-  // TODO(Lucy-tri) Reconstruct the state and input trajectories.
   return result;
+}
+
+std::vector<double> DirectTrajectoryOptimization::GetTimeVector() const {
+  std::vector<double> times;
+  times.resize(N_, 0);
+
+  const auto h_values = h_vars_.value();
+  for (int i = 1; i < N_; i++) {
+    times[i] = times[i - 1] + h_values(i - 1);
+  }
+  return times;
+}
+
+std::vector<Eigen::MatrixXd>
+DirectTrajectoryOptimization::GetInputVector() const {
+  std::vector<Eigen::MatrixXd> inputs;
+  inputs.reserve(N_);
+
+  const auto u_values = u_vars_.value();
+
+  for (int i = 0; i < N_; i++) {
+    inputs.push_back(u_values.segment(i * num_inputs_, num_inputs_));
+  }
+  return inputs;
+}
+
+std::vector<Eigen::MatrixXd>
+DirectTrajectoryOptimization::GetStateVector() const {
+  std::vector<Eigen::MatrixXd> states;
+  states.reserve(N_);
+
+  const auto x_values = x_vars_.value();
+
+  for (int i = 0; i < N_; i++) {
+    states.push_back(x_values.segment(i * num_states_, num_states_));
+  }
+  return states;
+}
+
+void DirectTrajectoryOptimization::GetResultSamples(
+    Eigen::MatrixXd* inputs, Eigen::MatrixXd* states,
+    std::vector<double>* times_out) const {
+
+  std::vector<double> times = GetTimeVector();
+  times_out->swap(times);
+
+  inputs->resize(num_inputs_, N_);
+  inputs->fill(0);
+  states->resize(num_states_, N_);
+  states->fill(0);
+
+  const auto u_values = u_vars_.value();
+  const auto x_values = x_vars_.value();
+
+  for (int i = 0; i < N_; i++) {
+    inputs->col(i) = u_values.segment(i * num_inputs_, num_inputs_);
+    states->col(i) = x_values.segment(i * num_states_, num_states_);
+  }
+}
+
+PiecewisePolynomial<double>
+DirectTrajectoryOptimization::ReconstructInputTrajectory() const {
+  return PiecewisePolynomial<double>::FirstOrderHold(
+      GetTimeVector(), GetInputVector());
+}
+
+PiecewisePolynomial<double>
+DirectTrajectoryOptimization::ReconstructStateTrajectory() const {
+  return PiecewisePolynomial<double>::FirstOrderHold(
+      GetTimeVector(), GetStateVector());
 }
 
 }  // solvers

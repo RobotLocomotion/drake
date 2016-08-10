@@ -4,6 +4,7 @@
 #include "drake/drakeRBSystem_export.h"
 #include "drake/solvers/optimization.h"
 #include "drake/systems/System.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 /** Rigid Body Dynamics Engine Class Design  (still needs to be implemented
@@ -185,17 +186,17 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the newly-created model instances are connected to the world with zero
    * offset and rotation relative to the world's frame.
    *
-   * @param[out] model_instance_id_map A pointer to a map where the key is the
-   * name of the model whose instance was just added to this `RigidBodySystem`
-   * and its `RigidBodyTree` and the value is the unique model instance ID that
-   * was assigned to the instance. This parameter may be `nullptr`.
+   * @param[out] model_instance_id_table A pointer to a map storing model
+   * names and their instance IDs. This parameter may not be `nullptr`. A
+   * `std::runtime_error` is thrown if an instance is created of a model whose
+   * name is already in this table.
    */
   void AddModelInstanceFromUrdfString(
       const std::string& urdf_string, const std::string& root_dir = ".",
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
-      RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map = nullptr);
+      drake::parsers::ModelInstanceIdTable* model_instance_id_table = nullptr);
 
   /**
    * Reads a model specification from a URDF file and adds an instance of the
@@ -216,17 +217,17 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the newly-created model instances are connected to the world with zero
    * offset and rotation relative to the world's frame.
    *
-   * @param[out] model_instance_id_map A pointer to a map where the key is the
-   * name of the model whose instance was just added to this `RigidBodySystem`
-   * and its `RigidBodyTree` and the value is the unique model instance ID that
-   * was assigned to the instance. This parameter may be `nullptr`.
+   * @param[out] model_instance_id_table A pointer to a map storing model
+   * names and their instance IDs. This parameter may not be `nullptr`. A
+   * `std::runtime_error` is thrown if an instance is created of a model whose
+   * name is already in this table.
    */
   void AddModelInstanceFromUrdfFile(
       const std::string& urdf_filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
-      RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map = nullptr);
+      drake::parsers::ModelInstanceIdTable* model_instance_id_table = nullptr);
 
   /**
    * Adds one instance of each model defined within an SDF file to this
@@ -253,7 +254,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the newly-created model instances are connected to the world with zero
    * offset and rotation relative to the world's frame.
    *
-   * @param[out] model_instance_id_map A pointer to a map where the key is the
+   * @param[out] model_instance_id_table A pointer to a map where the key is the
    * name of the model whose instance was just added to this `RigidBodySystem`
    * and its `RigidBodyTree` and the value is the unique model instance ID that
    * was assigned to the instance. This parameter may be `nullptr`.
@@ -262,7 +263,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
-      RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map = nullptr);
+      drake::parsers::ModelInstanceIdTable* model_instance_id_table = nullptr);
 
   /**
    * Adds one instance of each model defined within an SDF description to this
@@ -289,16 +290,16 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the newly-created model instances are connected to the world with zero
    * offset and rotation relative to the world's frame.
    *
-   * @param[out] model_instance_id_map A pointer to a map where the key is the
-   * name of the model whose instance was just added to this `RigidBodySystem`
-   * and its `RigidBodyTree` and the value is the unique model instance ID that
-   * was assigned to the instance. This parameter may be `nullptr`.
+   * @param[out] model_instance_id_table A pointer to a map storing model
+   * names and their instance IDs. This parameter may not be `nullptr`. A
+   * `std::runtime_error` is thrown if an instance is created of a model whose
+   * name is already in this table.
    */
   void AddModelInstancesFromSdfDescription(const std::string& sdf_description,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
-      RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map = nullptr);
+      drake::parsers::ModelInstanceIdTable* model_instance_id_table = nullptr);
 
   /**
    * Adds one instance of each model defined within a SDF or URDF file to this
@@ -319,17 +320,17 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the newly-created model instances are connected to the world with zero
    * offset and rotation relative to the world's frame.
    *
-   * @param[out] model_instance_id_map A pointer to a map where the key is the
-   * name of the model whose instance was just added to this `RigidBodySystem`
-   * and its `RigidBodyTree` and the value is the unique model instance ID that
-   * was assigned to the instance. This parameter may be `nullptr`.
+   * @param[out] model_instance_id_table A pointer to a map storing model
+   * names and their instance IDs. This parameter may not be `nullptr`. A
+   * `std::runtime_error` is thrown if an instance is created of a model whose
+   * name is already in this table.
    */
   void AddModelInstanceFromFile(
       const std::string& filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
-      RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map = nullptr);
+      drake::parsers::ModelInstanceIdTable* model_instance_id_table = nullptr);
 
   /**
    * Adds one instance of each model defined within a SDF or URDF string to this
@@ -350,7 +351,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the newly-created model instances are connected to the world with zero
    * offset and rotation relative to the world's frame.
    *
-   * @param[out] model_instance_id_map A pointer to a map where the key is the
+   * @param[out] model_instance_id_table A pointer to a map where the key is the
    * name of the model whose instance was just added to this `RigidBodySystem`
    * and it's `RigidBodyTree` and the value is the unique model instance ID that
    * was assigned to the instance. This parameter may be `nullptr`.
@@ -360,7 +361,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
-      RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map = nullptr);
+      drake::parsers::ModelInstanceIdTable* model_instance_id_table = nullptr);
 
   void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {
     force_elements.push_back(f);

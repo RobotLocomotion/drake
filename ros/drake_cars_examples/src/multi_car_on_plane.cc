@@ -12,10 +12,9 @@
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
-
-
 
 using drake::BotVisualizer;
 using drake::SimulationOptions;
@@ -71,7 +70,7 @@ int DoMain(int argc, const char* argv[]) {
         std::to_string(ii + 1);
     std::string description = GetROSParameter<std::string>(node_handle,
         description_param_name);
-    RigidBodyTree::ModelToInstanceIDMap instance_ids;
+    drake::parsers::ModelInstanceIdTable instance_ids;
     std::shared_ptr<RigidBodyFrame> weld_to_frame;
     rigid_body_sys->AddModelInstanceFromString(description,
         DrakeJoint::QUATERNION, weld_to_frame, &instance_ids);

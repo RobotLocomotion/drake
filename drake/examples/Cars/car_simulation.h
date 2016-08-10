@@ -14,6 +14,7 @@
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/pd_control_system.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
 using drake::RigidBodySystem;
@@ -63,7 +64,7 @@ void PrintUsageInstructions(const std::string& executable_name);
 DRAKECARS_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
     int argc, const char* argv[], double* duration,
-    RigidBodyTree::ModelToInstanceIDMap* instance_ids);
+    drake::parsers::ModelInstanceIdTable* instance_ids);
 
 /**
  * Checks the command line arguments looking for a "--duration" flag followed

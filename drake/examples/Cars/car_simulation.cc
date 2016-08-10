@@ -6,12 +6,14 @@
 #include "drake/examples/Cars/gen/euler_floating_joint_state.h"
 #include "drake/examples/Cars/gen/simple_car_state.h"
 #include "drake/examples/Cars/trajectory_car.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 
 using drake::AffineSystem;
 using drake::NullVector;
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using drake::parsers::ModelInstanceIdTable;
 
 namespace drake {
 namespace examples {
@@ -51,7 +53,7 @@ void PrintUsageInstructions(const std::string& executable_name) {
 
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
     int argc, const char* argv[], double* duration,
-    RigidBodyTree::ModelToInstanceIDMap* instance_ids) {
+    ModelInstanceIdTable* instance_ids) {
   if (argc < 2) {
     PrintUsageInstructions(argv[0]);
     exit(EXIT_FAILURE);

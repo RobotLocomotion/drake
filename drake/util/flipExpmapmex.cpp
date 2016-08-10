@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/util/mexify.h"
 #include "drake/util/standardMexConversions.h"
 #include "drake/util/drakeGeometryUtil.h"

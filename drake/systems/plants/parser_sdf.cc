@@ -6,13 +6,13 @@
 
 #include "spruce.hh"
 
-#include "drake/common/eigen_types.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
-#include "joints/DrakeJoints.h"
-
 #include "drake/common/drake_path.h"
-#include "xmlUtil.h"
+#include "drake/common/eigen_types.h"
+#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/xmlUtil.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 // from
 // http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
@@ -33,7 +33,7 @@ namespace parsers {
 namespace sdf {
 namespace {
 
-void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+void ParseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                       PoseMap& pose_map, const Isometry3d& T_link) {
   Isometry3d T = T_link;
   XMLElement* pose = node->FirstChildElement("pose");
@@ -66,7 +66,7 @@ void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   body->set_spatial_inertia(transformSpatialInertia(T_link.inverse() * T, I));
 }
 
-bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
+bool ParseSDFGeometry(XMLElement* node, const PackageMap& package_map,
                       const string& root_dir, DrakeShapes::Element& element) {
   // DEBUG
   // cout << "parseGeometry: START" << endl;
@@ -159,7 +159,7 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
-void parseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+void ParseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                     const PackageMap& package_map, const string& root_dir,
                     PoseMap& pose_map,
                     const Isometry3d& transform_parent_to_model) {
@@ -185,7 +185,7 @@ void parseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
   DrakeShapes::VisualElement element(transform_parent_to_model.inverse() *
                                      transform_to_model);
-  if (!parseSDFGeometry(geometry_node, package_map, root_dir, element)) {
+  if (!ParseSDFGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse visual element in link " +
                         body->get_name() + ".");
@@ -208,7 +208,7 @@ void parseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   }
 }
 
-void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+void ParseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                        const PackageMap& package_map, const string& root_dir,
                        PoseMap& pose_map,
                        const Isometry3d& transform_parent_to_model) {
@@ -253,7 +253,7 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   // parseCollision in RigidBodyTreeURDF.cpp.
   if (body->get_name().compare(std::string(RigidBodyTree::kWorldName)) == 0)
     element.set_static();
-  if (!parseSDFGeometry(geometry_node, package_map, root_dir, element)) {
+  if (!ParseSDFGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse collision element in link " +
                         body->get_name() + ".");
@@ -263,7 +263,7 @@ void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     model->addCollisionElement(element, *body, group_name);
 }
 
-bool parseSDFLink(RigidBodyTree* model, std::string model_name,
+bool ParseSDFLink(RigidBodyTree* model, std::string model_name,
                   XMLElement* node, const PackageMap& package_map,
                   PoseMap& pose_map, const string& root_dir, int* index,
                   int model_instance_id) {
@@ -298,18 +298,18 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node)
-    parseSDFInertial(body, inertial_node, model, pose_map, transform_to_model);
+    ParseSDFInertial(body, inertial_node, model, pose_map, transform_to_model);
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
-    parseSDFVisual(body, visual_node, model, package_map, root_dir, pose_map,
+    ParseSDFVisual(body, visual_node, model, package_map, root_dir, pose_map,
                    transform_to_model);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision");
        collision_node;
        collision_node = collision_node->NextSiblingElement("collision")) {
-    parseSDFCollision(body, collision_node, model, package_map, root_dir,
+    ParseSDFCollision(body, collision_node, model, package_map, root_dir,
                       pose_map, transform_to_model);
   }
 
@@ -344,7 +344,7 @@ void setSDFDynamics(RigidBodyTree* model, XMLElement* node,
   }
 }
 
-void parseSDFFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
+void ParseSDFFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
                    int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
@@ -391,7 +391,7 @@ void parseSDFFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
   rigid_body_tree->addFrame(frame);
 }
 
-void parseSDFJoint(RigidBodyTree* model, std::string model_name,
+void ParseSDFJoint(RigidBodyTree* model, std::string model_name,
                    XMLElement* node, PoseMap& pose_map, int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
@@ -641,20 +641,18 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 // @param[in] weld_to_frame Specifies the initial pose of the newly added robot
 // relative to the link to which the robot is being welded.
 //
-// @param[out] model_instance_id_map A pointer to a map where the key is the
-// name of the new model instance and value is the unique model instance ID that
-// was assigned to the instance. This parameter may not be `nullptr`. A
-// `std::runtime_error` is thrown if a model instance is created whose name is
-// already in this map.
-void parseModel(RigidBodyTree* tree, XMLElement* node,
+// @param[out] model_instance_id_table A pointer to a map storing model
+// names and their instance IDs. This parameter may not be `nullptr`. A
+// `std::runtime_error` is thrown if an instance is created of a model whose
+// name is already in this table.
+void ParseModel(RigidBodyTree* tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
-                RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
+                ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
   DRAKE_ABORT_UNLESS(node);
-  DRAKE_ABORT_UNLESS(model_instance_id_map);
 
   // The pose_map is needed because SDF specifies almost everything in the
   // model's coordinate frame.
@@ -665,18 +663,22 @@ void parseModel(RigidBodyTree* tree, XMLElement* node,
                         ": ERROR: The model must have a name attribute.");
   }
 
-  // Obtains the model name and ensures no such model exists in the
-  // model_instance_id_map. Throws an exception if a model of the same name
-  // already exists in the map.
+  // Obtains the model name and, if model_instance_table exists, ensures no such
+  // model exists in the model_instance_id_table. Throws an exception if a model
+  // of the same name already exists in the table.
   string model_name = node->Attribute("name");
-  if (model_instance_id_map->find(model_name) != model_instance_id_map->end()) {
+  if (model_instance_id_table != nullptr &&
+      model_instance_id_table->find(model_name) !=
+          model_instance_id_table->end()) {
     throw std::runtime_error("Model named \"" + model_name + "\" already "
-        "exists in the model_instance_id_map.");
+        "exists in model_instance_id_table.");
   }
 
-  // Obtains and adds a new model instance ID into the map.
+  // Obtains and adds a new model instance ID into model_instance_id_table.
   int model_instance_id = tree->add_model_instance();
-  (*model_instance_id_map)[model_name] = model_instance_id;
+  if (model_instance_id_table != nullptr) {
+    (*model_instance_id_table)[model_name] = model_instance_id;
+  }
 
   // Maintains a list of links that were added to the rigid body tree.
   // This is iterated over by method AddFloatingJoint() to determine where
@@ -687,7 +689,7 @@ void parseModel(RigidBodyTree* tree, XMLElement* node,
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
        link_node = link_node->NextSiblingElement("link")) {
     int index;
-    if (parseSDFLink(tree, model_name, link_node, package_map,
+    if (ParseSDFLink(tree, model_name, link_node, package_map,
                      pose_map, root_dir, &index, model_instance_id)) {
       link_indices.push_back(index);
     }
@@ -696,13 +698,13 @@ void parseModel(RigidBodyTree* tree, XMLElement* node,
   // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint")) {
-    parseSDFJoint(tree, model_name, joint_node, pose_map, model_instance_id);
+    ParseSDFJoint(tree, model_name, joint_node, pose_map, model_instance_id);
   }
 
   // Parses the model's Drake frame elements.
   for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
        frame_node = frame_node->NextSiblingElement("frame")) {
-    parseSDFFrame(tree, frame_node, model_instance_id);
+    ParseSDFFrame(tree, frame_node, model_instance_id);
   }
 
   XMLElement* pose = node->FirstChildElement("pose");
@@ -735,23 +737,23 @@ void parseModel(RigidBodyTree* tree, XMLElement* node,
                                     weld_to_frame, &pose_map);
 }
 
-void parseWorld(RigidBodyTree* model, XMLElement* node,
+void ParseWorld(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
-                RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
+                ModelInstanceIdTable* model_instance_id_table) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
-    parseModel(model, model_node, package_map, root_dir, floating_base_type,
-               weld_to_frame, model_instance_id_map);
+    ParseModel(model, model_node, package_map, root_dir, floating_base_type,
+               weld_to_frame, model_instance_id_table);
   }
 }
 
-void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
+void ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
               PackageMap& package_map, const string& root_dir,
               const DrakeJoint::FloatingBaseType floating_base_type,
               std::shared_ptr<RigidBodyFrame> weld_to_frame,
-              RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
+              ModelInstanceIdTable* model_instance_id_table) {
   populatePackageMap(package_map);
 
   XMLElement* node = xml_doc->FirstChildElement("sdf");
@@ -771,15 +773,15 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
       throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                           ": ERROR: Multiple worlds in one file.");
     }
-    parseWorld(model, world_node, package_map, root_dir, floating_base_type,
-               weld_to_frame, model_instance_id_map);
+    ParseWorld(model, world_node, package_map, root_dir, floating_base_type,
+               weld_to_frame, model_instance_id_table);
   }
 
   // Load all models not in a world.
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
-    parseModel(model, model_node, package_map, root_dir, floating_base_type,
-               weld_to_frame, model_instance_id_map);
+    ParseModel(model, model_node, package_map, root_dir, floating_base_type,
+               weld_to_frame, model_instance_id_table);
   }
 
   model->compile();
@@ -791,15 +793,14 @@ void AddRobotFromSdfFileInWorldFrame(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
+    ModelInstanceIdTable* model_instance_id_table) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
-  DRAKE_ABORT_UNLESS(model_instance_id_map);
 
   std::shared_ptr<RigidBodyFrame> weld_to_frame;
 
   AddRobotFromSdfFile(filename, floating_base_type, weld_to_frame, tree,
-      model_instance_id_map);
+      model_instance_id_table);
 }
 
 void AddRobotFromSdfFile(
@@ -807,10 +808,9 @@ void AddRobotFromSdfFile(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
+    ModelInstanceIdTable* model_instance_id_table) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
-  DRAKE_ABORT_UNLESS(model_instance_id_map);
 
   PackageMap package_map;
 
@@ -828,8 +828,8 @@ void AddRobotFromSdfFile(
     root_dir = filename.substr(0, found);
   }
 
-  parseSDF(tree, &xml_doc, package_map, root_dir, floating_base_type,
-           weld_to_frame, model_instance_id_map);
+  ParseSdf(tree, &xml_doc, package_map, root_dir, floating_base_type,
+           weld_to_frame, model_instance_id_table);
 }
 
 void AddRobotFromSdfDescription(
@@ -837,7 +837,7 @@ void AddRobotFromSdfDescription(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree,
-    RigidBodyTree::ModelToInstanceIDMap* model_instance_id_map) {
+    ModelInstanceIdTable* model_instance_id_map) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
   DRAKE_ABORT_UNLESS(model_instance_id_map);
@@ -854,7 +854,7 @@ void AddRobotFromSdfDescription(
 
   string root_dir = ".";
 
-  parseSDF(tree, &xml_doc, package_map, root_dir, floating_base_type,
+  ParseSdf(tree, &xml_doc, package_map, root_dir, floating_base_type,
            weld_to_frame, model_instance_id_map);
 }
 

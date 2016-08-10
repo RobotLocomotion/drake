@@ -51,7 +51,7 @@ int do_main(int argc, const char* argv[]) {
 
   // Instantiates a data structure that maps model instance names to their model
   // instance IDs.
-  RigidBodyTree::ModelToInstanceIDMap model_instances;
+  drake::parsers::ModelInstanceIdTable model_instances;
 
   // Initializes the rigid body system.
   auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration,
