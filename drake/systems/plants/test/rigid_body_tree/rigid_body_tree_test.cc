@@ -226,9 +226,8 @@ TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
   std::string file_name =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
-  ModelInstanceIdTable model_instance_id_table;
-  drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get(),
-      &model_instance_id_table);
+  ModelInstanceIdTable model_instance_id_table =
+      drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get());
 
   const int kExpectedTableSize = 1;
   const int kExpectedModelInstanceId = 0;

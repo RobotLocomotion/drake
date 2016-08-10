@@ -749,11 +749,10 @@ void ParseWorld(RigidBodyTree* model, XMLElement* node,
   }
 }
 
-void ParseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
+ModelInstanceIdTable ParseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
               PackageMap& package_map, const string& root_dir,
               const DrakeJoint::FloatingBaseType floating_base_type,
-              std::shared_ptr<RigidBodyFrame> weld_to_frame,
-              ModelInstanceIdTable* model_instance_id_table) {
+              std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   populatePackageMap(package_map);
 
   XMLElement* node = xml_doc->FirstChildElement("sdf");
@@ -762,6 +761,8 @@ void ParseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
         std::string(__FILE__) + ": " + __func__ +
         ": ERROR: The XML file does not contain an sdf tag.");
   }
+
+  ModelInstanceIdTable model_instance_id_table;
 
   // Loads the world if it is defined.
   XMLElement* world_node =
@@ -774,41 +775,39 @@ void ParseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
                           ": ERROR: Multiple worlds in one file.");
     }
     ParseWorld(model, world_node, package_map, root_dir, floating_base_type,
-               weld_to_frame, model_instance_id_table);
+               weld_to_frame, &model_instance_id_table);
   }
 
   // Load all models not in a world.
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
     ParseModel(model, model_node, package_map, root_dir, floating_base_type,
-               weld_to_frame, model_instance_id_table);
+               weld_to_frame, &model_instance_id_table);
   }
 
   model->compile();
+
+  return model_instance_id_table;
 }
 
 }  // namespace
 
-void AddRobotFromSDFInWorldFrame(
+ModelInstanceIdTable AddRobotFromSDFInWorldFrame(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    RigidBodyTree* tree,
-    ModelInstanceIdTable* model_instance_id_table) {
+    RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
 
-  std::shared_ptr<RigidBodyFrame> weld_to_frame;
-
-  AddRobotFromSDF(filename, floating_base_type, weld_to_frame, tree,
-      model_instance_id_table);
+  return AddRobotFromSDF(filename, floating_base_type,
+      nullptr /* weld_to_frame */, tree);
 }
 
-void AddRobotFromSDF(
+ModelInstanceIdTable AddRobotFromSDF(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree,
-    ModelInstanceIdTable* model_instance_id_table) {
+    RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
 
@@ -828,8 +827,8 @@ void AddRobotFromSDF(
     root_dir = filename.substr(0, found);
   }
 
-  ParseSDF(tree, &xml_doc, package_map, root_dir, floating_base_type,
-           weld_to_frame, model_instance_id_table);
+  return ParseSDF(tree, &xml_doc, package_map, root_dir, floating_base_type,
+      weld_to_frame);
 }
 
 }  // namespace sdf

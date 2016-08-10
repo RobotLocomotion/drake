@@ -870,50 +870,34 @@ void parseSdf(RigidBodySystem& sys, XMLDocument* xml_doc,
   }
 }
 
-void RigidBodySystem::AddModelInstanceFromUrdfString(
+ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    ModelInstanceIdTable* model_instance_id_table) {
-  // Creates a local ModelInstanceIdTable if if was not provided. This is
-  // necessary to inform the RigidBodySystem of the model isntance IDs that were
-  // assigned to the newly added models.
-  std::unique_ptr<ModelInstanceIdTable> local_map;
-  if (model_instance_id_table == nullptr) {
-    local_map.reset(new ModelInstanceIdTable());
-    model_instance_id_table = local_map.get();
-  }
+    const DrakeJoint::FloatingBaseType floating_base_type) {
 
   // Adds the URDF to the RigidBodyTree.
-  drake::parsers::urdf::AddModelInstanceFromURDFString(
-      urdf_string, root_dir, floating_base_type, tree.get(),
-      model_instance_id_table);
+  ModelInstanceIdTable model_instance_id_table =
+      drake::parsers::urdf::AddModelInstanceFromURDFString(
+          urdf_string, root_dir, floating_base_type, tree.get());
 
   // Parses the additional tags understood by the RigidBodySystem. These include
   // actuators, sensors, etc.
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
 
-  ParseUrdf(*this, &xml_doc, *model_instance_id_table);
+  ParseUrdf(*this, &xml_doc, model_instance_id_table);
+
+  return model_instance_id_table;
 }
 
-void RigidBodySystem::AddModelInstanceFromUrdfFile(
+ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfFile(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    ModelInstanceIdTable* model_instance_id_table) {
-  // Creates a local ModelInstanceIdTable if if was not provided. This is
-  // necessary to inform the RigidBodySystem of the model isntance IDs that were
-  // assigned to the newly added models.
-  std::unique_ptr<ModelInstanceIdTable> local_map;
-  if (model_instance_id_table == nullptr) {
-    local_map.reset(new ModelInstanceIdTable());
-    model_instance_id_table = local_map.get();
-  }
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the URDF to the rigid body tree.
-  drake::parsers::urdf::AddModelInstanceFromURDF(
-      urdf_filename, floating_base_type, weld_to_frame, tree.get(),
-      model_instance_id_table);
+  ModelInstanceIdTable model_instance_id_table =
+      drake::parsers::urdf::AddModelInstanceFromURDF(
+          urdf_filename, floating_base_type, weld_to_frame, tree.get());
 
   // Parses additional tags understood by rigid body system (e.g., actuators,
   // sensors, etc).
@@ -924,27 +908,20 @@ void RigidBodySystem::AddModelInstanceFromUrdfFile(
         "RigidBodySystem::AddModelInstanceFromUrdfFile: ERROR: Failed to parse "
         "xml in file " + urdf_filename + "\n" + xml_doc.ErrorName());
   }
-  ParseUrdf(*this, &xml_doc, *model_instance_id_table);
+  ParseUrdf(*this, &xml_doc, model_instance_id_table);
+
+  return model_instance_id_table;
 }
 
-void RigidBodySystem::AddModelInstanceFromSdfFile(
+ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromSdfFile(
     const string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    ModelInstanceIdTable* model_instance_id_table) {
-  // Creates a local ModelInstanceIdTable if if was not provided. This is
-  // necessary to inform the RigidBodySystem of the model isntance IDs that were
-  // assigned to the newly added models.
-  std::unique_ptr<ModelInstanceIdTable> local_map;
-  if (model_instance_id_table == nullptr) {
-    local_map.reset(new ModelInstanceIdTable());
-    model_instance_id_table = local_map.get();
-  }
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the robot to the rigid body tree.
-  drake::parsers::sdf::AddRobotFromSDF(
-      sdf_filename, floating_base_type, weld_to_frame, tree.get(),
-      model_instance_id_table);
+  ModelInstanceIdTable model_instance_id_table =
+      drake::parsers::sdf::AddRobotFromSDF(
+          sdf_filename, floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).
@@ -955,31 +932,36 @@ void RigidBodySystem::AddModelInstanceFromSdfFile(
         "RigidBodySystem::AddModelInstanceFromSdfFile: ERROR: Failed to parse"
         "xml in file " + sdf_filename + "\n" + xml_doc.ErrorName());
   }
-  parseSdf(*this, &xml_doc, *model_instance_id_table);
+  parseSdf(*this, &xml_doc, model_instance_id_table);
+
+  return model_instance_id_table;
 }
 
-void RigidBodySystem::AddModelInstanceFromFile(
+ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
     const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    ModelInstanceIdTable* model_instance_id_table) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   spruce::path p(filename);
   auto ext = p.extension();
 
-  // Converts the file extension to be all lower case.
+  // Converts the file extension to be lower case.
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
+  ModelInstanceIdTable model_instance_id_table;
+
   if (ext == ".urdf") {
-    AddModelInstanceFromUrdfFile(filename, floating_base_type, weld_to_frame,
-        model_instance_id_table);
+    model_instance_id_table = AddModelInstanceFromUrdfFile(filename,
+        floating_base_type, weld_to_frame);
   } else if (ext == ".sdf") {
-    AddModelInstanceFromSdfFile(filename, floating_base_type, weld_to_frame,
-      model_instance_id_table);
+    model_instance_id_table = AddModelInstanceFromSdfFile(filename,
+        floating_base_type, weld_to_frame);
   } else {
     throw runtime_error(
         "RigidBodySystem::AddModelInstanceFromFile: ERROR: Unknown file "
         "extension: " + ext);
   }
+
+  return model_instance_id_table;
 }
 
 Eigen::VectorXd spatialForceInFrameToJointTorque(
