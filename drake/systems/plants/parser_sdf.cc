@@ -33,7 +33,7 @@ namespace parsers {
 namespace sdf {
 namespace {
 
-void ParseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+void ParseSdfInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                       PoseMap& pose_map, const Isometry3d& T_link) {
   Isometry3d T = T_link;
   XMLElement* pose = node->FirstChildElement("pose");
@@ -66,7 +66,7 @@ void ParseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   body->set_spatial_inertia(transformSpatialInertia(T_link.inverse() * T, I));
 }
 
-bool ParseSDFGeometry(XMLElement* node, const PackageMap& package_map,
+bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
                       const string& root_dir, DrakeShapes::Element& element) {
   // DEBUG
   // cout << "parseGeometry: START" << endl;
@@ -159,7 +159,7 @@ bool ParseSDFGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
-void ParseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+void ParseSdfVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                     const PackageMap& package_map, const string& root_dir,
                     PoseMap& pose_map,
                     const Isometry3d& transform_parent_to_model) {
@@ -185,7 +185,7 @@ void ParseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
   DrakeShapes::VisualElement element(transform_parent_to_model.inverse() *
                                      transform_to_model);
-  if (!ParseSDFGeometry(geometry_node, package_map, root_dir, element)) {
+  if (!ParseSdfGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse visual element in link " +
                         body->get_name() + ".");
@@ -208,7 +208,7 @@ void ParseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   }
 }
 
-void ParseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                        const PackageMap& package_map, const string& root_dir,
                        PoseMap& pose_map,
                        const Isometry3d& transform_parent_to_model) {
@@ -253,7 +253,7 @@ void ParseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   // parseCollision in RigidBodyTreeURDF.cpp.
   if (body->get_name().compare(std::string(RigidBodyTree::kWorldName)) == 0)
     element.set_static();
-  if (!ParseSDFGeometry(geometry_node, package_map, root_dir, element)) {
+  if (!ParseSdfGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse collision element in link " +
                         body->get_name() + ".");
@@ -263,7 +263,7 @@ void ParseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     model->addCollisionElement(element, *body, group_name);
 }
 
-bool ParseSDFLink(RigidBodyTree* model, std::string model_name,
+bool ParseSdfLink(RigidBodyTree* model, std::string model_name,
                   XMLElement* node, const PackageMap& package_map,
                   PoseMap& pose_map, const string& root_dir, int* index,
                   int model_instance_id) {
@@ -298,18 +298,18 @@ bool ParseSDFLink(RigidBodyTree* model, std::string model_name,
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node)
-    ParseSDFInertial(body, inertial_node, model, pose_map, transform_to_model);
+    ParseSdfInertial(body, inertial_node, model, pose_map, transform_to_model);
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
-    ParseSDFVisual(body, visual_node, model, package_map, root_dir, pose_map,
+    ParseSdfVisual(body, visual_node, model, package_map, root_dir, pose_map,
                    transform_to_model);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision");
        collision_node;
        collision_node = collision_node->NextSiblingElement("collision")) {
-    ParseSDFCollision(body, collision_node, model, package_map, root_dir,
+    ParseSdfCollision(body, collision_node, model, package_map, root_dir,
                       pose_map, transform_to_model);
   }
 
@@ -344,7 +344,7 @@ void setSDFDynamics(RigidBodyTree* model, XMLElement* node,
   }
 }
 
-void ParseSDFFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
+void ParseSdfFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
                    int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
@@ -391,7 +391,7 @@ void ParseSDFFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
   rigid_body_tree->addFrame(frame);
 }
 
-void ParseSDFJoint(RigidBodyTree* model, std::string model_name,
+void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
                    XMLElement* node, PoseMap& pose_map, int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
@@ -689,7 +689,7 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
        link_node = link_node->NextSiblingElement("link")) {
     int index;
-    if (ParseSDFLink(tree, model_name, link_node, package_map,
+    if (ParseSdfLink(tree, model_name, link_node, package_map,
                      pose_map, root_dir, &index, model_instance_id)) {
       link_indices.push_back(index);
     }
@@ -698,13 +698,13 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
   // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint")) {
-    ParseSDFJoint(tree, model_name, joint_node, pose_map, model_instance_id);
+    ParseSdfJoint(tree, model_name, joint_node, pose_map, model_instance_id);
   }
 
   // Parses the model's Drake frame elements.
   for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
        frame_node = frame_node->NextSiblingElement("frame")) {
-    ParseSDFFrame(tree, frame_node, model_instance_id);
+    ParseSdfFrame(tree, frame_node, model_instance_id);
   }
 
   XMLElement* pose = node->FirstChildElement("pose");
@@ -749,7 +749,7 @@ void ParseWorld(RigidBodyTree* model, XMLElement* node,
   }
 }
 
-ModelInstanceIdTable ParseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
+ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
               PackageMap& package_map, const string& root_dir,
               const DrakeJoint::FloatingBaseType floating_base_type,
               std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -827,7 +827,7 @@ ModelInstanceIdTable AddRobotFromSDF(
     root_dir = filename.substr(0, found);
   }
 
-  return ParseSDF(tree, &xml_doc, package_map, root_dir, floating_base_type,
+  return ParseSdf(tree, &xml_doc, package_map, root_dir, floating_base_type,
       weld_to_frame);
 }
 

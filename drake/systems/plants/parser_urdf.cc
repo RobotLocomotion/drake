@@ -1086,7 +1086,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
   return model_instance_id_table;
 }
 
-ModelInstanceIdTable ParseURDF(XMLDocument* xml_doc,
+ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
                PackageMap& package_map, const string& root_dir,
                const DrakeJoint::FloatingBaseType floating_base_type,
                std::shared_ptr<RigidBodyFrame> weld_to_frame,
@@ -1145,7 +1145,7 @@ ModelInstanceIdTable AddModelInstanceFromURDFString(
     RigidBodyTree* tree) {
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
-  return ParseURDF(&xml_doc, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
+  return ParseUrdf(&xml_doc, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
             weld_to_frame, tree);
 }
 
@@ -1213,7 +1213,7 @@ ModelInstanceIdTable AddModelInstanceFromURDF(
     root_dir = urdf_filename.substr(0, found);
   }
 
-  return ParseURDF(&xml_doc, package_map, root_dir, floating_base_type,
+  return ParseUrdf(&xml_doc, package_map, root_dir, floating_base_type,
             weld_to_frame, tree);
 }
 
