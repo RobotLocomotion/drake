@@ -21,10 +21,15 @@ class System {
 
   /// Evaluates to `true` if any of the inputs to the system is directly
   /// fed through to any of its outputs and `false` otherwise.
-  /// By default systems are assumed to have direct feedthroughs so that closed
-  /// loops can be detected.
-  /// Specific systems with non of its inputs being directly fedthrough to the
-  /// output should override this method returing `false`.
+  ///
+  /// By default we assume that there is direct feedthrough of values from
+  /// every input port to every output port. This is a conservative assumption
+  /// that ensures we detect and can prevent formation of algebraic loops
+  /// (implicit computations) in system diagrams. Any System for which none of
+  /// the input ports ever feeds through to any of the output ports should
+  /// override this method to return false.
+  // TODO(amcastro-tri): Provide a more descriptive mechanism to specify
+  // pairwise (input_port, output_port) feedthrough.
   virtual bool has_any_direct_feedthrough() const { return true;}
 
   /// Returns a default context, initialized with the correct

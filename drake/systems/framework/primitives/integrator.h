@@ -22,6 +22,9 @@ class Integrator : public System<T> {
   ~Integrator() override {}
 
   /// Integrator's output is not a direct feedthrough of its input.
+  // TODO(amcastro-tri): we should be able to express that initial conditions
+  // feed through an integrator but the dynamic signal during simulation
+  // does not.
   bool has_any_direct_feedthrough() const override { return false;}
 
   /// Allocates the number of input ports specified in the constructor.
