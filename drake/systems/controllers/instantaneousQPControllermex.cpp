@@ -68,7 +68,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
           .array();
   int num_bodies_in_contact = mxGetNumberOfElements(pobj);
   for (int i = 0; i < num_bodies_in_contact; i++) {
-    b_contact_force(controller->body_or_frame_name_to_id.at(
+    b_contact_force(controller->GetBodyOrFrameId(
         mxGetStdString(mxGetCell(pobj, i)))) = 1;
   }
   narg++;

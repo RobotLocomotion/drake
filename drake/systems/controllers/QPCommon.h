@@ -272,9 +272,6 @@ struct QPControllerParams {
   }
 };
 
-std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
-    const RigidBodyTree& robot);
-
 struct DesiredBodyAcceleration {
   DesiredBodyAcceleration()
       : accel_bounds(Eigen::VectorXd(6), Eigen::VectorXd(6)) {}

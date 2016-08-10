@@ -31,8 +31,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   std::cout << "urdf_filename: " << urdf_filename << std::endl;
   std::string control_config_filename = mxGetStdString(prhs[narg++]);
   std::cout << "control config: " << control_config_filename << std::endl;
-  std::unique_ptr<RigidBodyTree> robot =
-      std::unique_ptr<RigidBodyTree>(new RigidBodyTree(urdf_filename));
+  auto robot = std::make_unique<RigidBodyTree>(urdf_filename);
 
   if (nrhs >= 3) {
     std::string urdf_modifications_filename = mxGetStdString(prhs[narg++]);

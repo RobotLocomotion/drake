@@ -10,6 +10,7 @@
 #include "drake/math/quaternion.h"
 #include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
+#include "drake/systems/controllers/QPCommon.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/lcmUtil.h"
@@ -30,7 +31,8 @@ using drake::util::MatrixCompareType;
 #define MU_VERY_SMALL 0.001
 
 void InstantaneousQPController::initialize() {
-  body_or_frame_name_to_id = computeBodyOrFrameNameToIdMap(*(this->robot));
+  DRAKE_ASSERT(robot != nullptr);
+  body_or_frame_name_to_id_ = ComputeBodyOrFrameNameToIdMap(*robot);
 
   int nq = robot->number_of_positions();
   int nu = static_cast<int>(robot->actuators.size());
@@ -288,7 +290,7 @@ InstantaneousQPController::loadAvailableSupports(
   available_supports.resize(qp_input.num_support_data);
   for (int i = 0; i < qp_input.num_support_data; i++) {
     available_supports[i].body_idx =
-        body_or_frame_name_to_id.at(qp_input.support_data[i].body_name);
+        GetBodyOrFrameId(qp_input.support_data[i].body_name);
     for (int j = 0; j < 4; j++) {
       available_supports[i].support_logic_map[j] =
           qp_input.support_data[i].support_logic_map[j];
@@ -569,19 +571,6 @@ void checkCentroidalMomentumMatchesTotalWrench(
   }
 }
 
-std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
-    const RigidBodyTree& robot) {
-  auto id_map = std::unordered_map<std::string, int>();
-  for (auto it = robot.bodies.begin(); it != robot.bodies.end(); ++it) {
-    id_map[(*it)->get_name()] = it - robot.bodies.begin();
-  }
-
-  for (auto it = robot.frames.begin(); it != robot.frames.end(); ++it) {
-    id_map[(*it)->get_name()] = -(it - robot.frames.begin()) - 2;
-  }
-  return id_map;
-}
-
 const QPControllerParams& InstantaneousQPController::FindParams(
     const std::string& param_set_name) {
   // look up the param set by name
@@ -705,7 +694,7 @@ int InstantaneousQPController::setupAndSolveQP(
   Isometry3d body_pose_des;
 
   for (int i = 0; i < qp_input.num_tracked_bodies; i++) {
-    int body_or_frame_id0 = body_or_frame_name_to_id.at(
+    int body_or_frame_id0 = GetBodyOrFrameId(
         qp_input.body_motion_data[i].body_or_frame_name);
     if (body_or_frame_id0 == -1) {
       std::cerr << "Body motion data with CoM as desired body is not allowed"
@@ -797,7 +786,7 @@ int InstantaneousQPController::setupAndSolveQP(
   for (auto it = qp_input.body_wrench_data.begin();
        it != qp_input.body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
-    int body_id = body_or_frame_name_to_id.at(body_wrench_data.body_name);
+    const int body_id = GetBodyOrFrameId(body_wrench_data.body_name);
     auto f_ext_i =
         Map<const drake::TwistVector<double>>(body_wrench_data.wrench);
     f_ext.insert({robot->bodies[body_id].get(), f_ext_i});
@@ -1320,3 +1309,33 @@ int InstantaneousQPController::setupAndSolveQP(
 
   return info;
 }  // NOLINT(readability/fn_size)
+
+std::unordered_map<std::string, int>
+InstantaneousQPController::ComputeBodyOrFrameNameToIdMap(
+    const RigidBodyTree& robot) {
+  std::unordered_map<std::string, int> id_map;
+
+  const int num_bodies = static_cast<int>(robot.bodies.size());
+  for (int i = 0; i < num_bodies; ++i) {
+    const int id = i;
+    DRAKE_ASSERT(robot.bodies[i] != nullptr);
+    const std::string& name = robot.bodies[i]->get_name();
+    id_map[name] = id;
+    DRAKE_ASSERT(robot.getBodyOrFrameName(id) == name);
+  }
+
+  const int num_frames = static_cast<int>(robot.bodies.size());
+  for (int i = 0; i < num_frames; ++i) {
+    const int id = -i - 2;
+    DRAKE_ASSERT(robot.frames[i] != nullptr);
+    const std::string& name = robot.frames[i]->get_name();
+    id_map[name] = id;
+    DRAKE_ASSERT(robot.getBodyOrFrameName(id) == name);
+  }
+  return id_map;
+}
+
+int InstantaneousQPController::GetBodyOrFrameId(
+  const std::string& name) const {
+  return body_or_frame_name_to_id_.at(name);
+}
