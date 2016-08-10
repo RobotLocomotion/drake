@@ -97,11 +97,14 @@ Aeq(1, p.vars.region.i) = 1;
 beq = 1;
 p = p.addLinearConstraints([], [], Aeq, beq);
 
-[p, solvertime] = p.solve();
-fprintf(1, 'non-symbolic problem overhead: %fs\n', toc(t1) - solvertime);
-xstar_non_symb = p.vars.x.value
-valuecheck(xstar_non_symb, xstar);
-
+solver = {'gurobi','mosek'};
+for i = 1:length(solver)
+  p = p.setSolver(solver{i});
+  [p, solvertime] = p.solve();
+  fprintf(1, 'non-symbolic problem overhead: %fs\n', toc(t1) - solvertime);
+  xstar_non_symb = p.vars.x.value
+  valuecheck(xstar_non_symb, xstar);
+end
 
 % However, compiling constraints and objectives down to raw matrix manipulation
 % is difficult and error-prone, so the MixedIntegerConvexProgram makes it easy
