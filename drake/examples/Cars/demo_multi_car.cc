@@ -68,7 +68,7 @@ int do_main(int argc, const char* argv[]) {
     // Add the visualization entity.
     drake::parsers::urdf::AddModelInstanceFromURDF(
         (i % 5) ? kSedanUrdf : kBreadtruckUrdf, DrakeJoint::ROLLPITCHYAW,
-            nullptr /* weld_to_frame */, world_tree.get());
+        nullptr /* weld_to_frame */, world_tree.get());
 
     // Add the trajectory car, and its visualization adapter.
     cars_system->AddSystem(CreateTrajectoryCarSystem(i));
