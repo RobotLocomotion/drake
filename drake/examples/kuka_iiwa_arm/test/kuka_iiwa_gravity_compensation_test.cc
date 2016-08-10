@@ -9,13 +9,13 @@
 #include "drake/systems/gravity_compensation_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 
-using drake::RigidBodySystem;
+using drake::AffineSystem;
 using drake::BotVisualizer;
-using Eigen::VectorXd;
+using drake::GravityCompensatedPDPositionControlSystem;
 using Eigen::MatrixXd;
 using drake::RobotStateTap;
-using drake::AffineSystem;
-using drake::GravityCompensatedPDPositionControlSystem;
+using drake::RigidBodySystem;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace examples {
@@ -72,13 +72,14 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
       MatrixXd::Zero(0, 0), MatrixXd::Zero(0, 0), VectorXd::Zero(0),
       MatrixXd::Zero(num_dof, 0), MatrixXd::Zero(num_dof, 0), set_point_vector);
 
-  auto controlled_robot =
-  std::allocate_shared<GravityCompensatedPDPositionControlSystem<RigidBodySystem>>(
-  Eigen::aligned_allocator<GravityCompensatedPDPositionControlSystem<RigidBodySystem>>(),
-  iiwa_system, Kp, Kd);
+  auto controlled_robot = std::allocate_shared<
+      GravityCompensatedPDPositionControlSystem<RigidBodySystem>>(
+      Eigen::aligned_allocator<
+          GravityCompensatedPDPositionControlSystem<RigidBodySystem>>(),
+      iiwa_system, Kp, Kd);
 
   auto sys = cascade(cascade(cascade(set_point, controlled_robot), visualizer),
-                             robot_state_tap);
+                     robot_state_tap);
 
   drake::SimulationOptions options = SetupSimulation();
 
@@ -88,28 +89,26 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   // Specifies the duration of the simulation.
   const double kDuration = 2.0;
 
-  EXPECT_NO_THROW(drake::simulate(*sys.get(), kStartTime, kDuration, x0,
-                                  options));
+  EXPECT_NO_THROW(
+      drake::simulate(*sys.get(), kStartTime, kDuration, x0, options));
 
   auto xf = robot_state_tap->get_input_vector();
 
-  // Ensure joint position and velocity limits are not violated.
+  // Ensures joint position and velocity limits are not violated.
   EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
 
-  // Expect normed joint position difference is below a maximum value.
-  double max_position_norm = 1e-6;
-  EXPECT_TRUE((xf.head(num_dof) - set_point_vector).squaredNorm()
-                  < max_position_norm);
+  // Expects norm of the joint position difference to be below a maximum value.
+  double kMaxPositionErrorNorm = 1e-5;
+  EXPECT_TRUE((xf.head(num_dof) - x0.head(num_dof)).squaredNorm() <
+      kMaxPositionErrorNorm);
 
-  // Expect final normed joint velocity is larger than a minimum value.
-  // (since this controller wont stay at rest at the set-point).
-  double max_velocity_norm = 1e-6;
-  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() < max_velocity_norm);
-
+  // Expects final joint velocity has a norm to be larger than a minimum value.
+  // (since this controller won't stay at rest at the set-point).
+  double kMinVelocityNorm = 1e-5;
+  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() > kMinVelocityNorm);
 }
 
 }  // namespace
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
-
