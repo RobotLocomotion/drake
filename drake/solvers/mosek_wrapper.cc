@@ -15,6 +15,51 @@
 namespace drake {
 namespace solvers {
 
+// Linear programming
+MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
+    const std::vector<double>& equation_scalars,
+    const Eigen::MatrixXd& linear_cons,
+    const std::vector<MSKboundkeye>& mosek_constraint_bounds,
+    const std::vector<double>& upper_constraint_bounds,
+    const std::vector<double>& lower_constraint_bounds,
+    const std::vector<MSKboundkeye>& mosek_variable_bounds,
+    const std::vector<double>& upper_variable_bounds,
+    const std::vector<double>& lower_variable_bounds,
+    double constant_eqn_term)
+      : numvar_(static_cast<MSKint32t>(num_variables)),
+        numcon_(static_cast<MSKint32t>(num_constraints)),
+        numbarvar_(static_cast<MSKint32t>(0)),
+        env_(NULL), task_(NULL), solutions_(std::vector<double>()) {
+  result_ = MSK_makeenv(&env_, NULL);
+  if (result_ == MSK_RES_OK) {
+    // Creates optimization task
+    result_ = MSK_maketask(env_, numcon_, numvar_, &task_);
+    // Append numcon_ empty constraints
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_appendcons(task_, numcon_);
+    // Append numvar_ variables, initially fixed at zero
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_appendvars(task_, numvar_);
+    }
+    // Add fixed term, optional
+    if (result_ == MSK_RES_OK && constant_eqn_term != 0)
+      result_ = MSK_putcfix(task_, constant_eqn_term);
+  }
+  // add the equation to maximize to the environment.
+  int j = 0;
+  for (j = 0; j < numvar_ && result_ == MSK_RES_OK; j++) {
+      result_ = MSK_putcj(task_, j, equation_scalars[j]);
+  }
+  AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
+      lower_variable_bounds);
+  if (!linear_cons.isZero()) {
+    AddLinearConstraintMatrix(linear_cons);
+  }
+  AddLinearConstraintBounds(mosek_constraint_bounds, upper_constraint_bounds,
+      lower_constraint_bounds);
+}
+
+// Quadratic Programming
 MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     const std::vector<double>& equation_scalars,
     const Eigen::MatrixXd& linear_cons,
@@ -26,51 +71,36 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     const std::vector<double>& lower_variable_bounds,
     double constant_eqn_term,
     const Eigen::MatrixXd& quad_objective,
-    const Eigen::MatrixXd& quad_cons,
-    const QuadraticConstraint& sdp_objective,
-    const std::vector<QuadraticConstraint>& sdp_constraints,
-    const std::vector<int>& sdp_cone_subscripts,
-    int numbarvar)
-      : numvar_(num_variables),
-        numcon_(num_constraints),
-        numbarvar_(numbarvar),
+    const Eigen::MatrixXd& quad_cons)
+      : numvar_(static_cast<MSKint32t>(num_variables)),
+        numcon_(static_cast<MSKint32t>(num_constraints)),
+        numbarvar_(static_cast<MSKint32t>(0)),
         env_(NULL), task_(NULL), solutions_(std::vector<double>()) {
-  r_ = MSK_makeenv(&env_, NULL);
-  if (r_ == MSK_RES_OK) {
+  result_ = MSK_makeenv(&env_, NULL);
+  if (result_ == MSK_RES_OK) {
     // Creates optimization task
-    r_ = MSK_maketask(env_, numcon_, numvar_, &task_);
+    result_ = MSK_maketask(env_, numcon_, numvar_, &task_);
     // Append numcon_ empty constraints
-    if (r_ == MSK_RES_OK)
-      r_ = MSK_appendcons(task_, numcon_);
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_appendcons(task_, numcon_);
     // Append numvar_ variables, initially fixed at zero
-    if (r_ == MSK_RES_OK)
-      r_ = MSK_appendvars(task_, numvar_);
-    if (r_ == MSK_RES_OK && !(sdp_constraints.empty() ||
-        sdp_objective.Q().isZero())) {
-      int dimbarvar = sdp_objective.Q().rows();
-      r_ = MSK_appendbarvars(task_, 1, &dimbarvar);
-    }
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_appendvars(task_, numvar_);
     // Add fixed term, optional
-    if (r_ == MSK_RES_OK && constant_eqn_term != 0)
-      r_ = MSK_putcfix(task_, constant_eqn_term);
+    if (result_ == MSK_RES_OK && constant_eqn_term != 0)
+      result_ = MSK_putcfix(task_, constant_eqn_term);
   }
   // add the equation to maximize to the environment.
   int j = 0;
   if (sdp_constraints.empty() && sdp_objective.Q().isZero()) {
-    for (j = 0; j < numvar_ && r_ == MSK_RES_OK; j++) {
-        r_ = MSK_putcj(task_, j, equation_scalars[j]);
+    for (j = 0; j < numvar_ && result_ == MSK_RES_OK; j++) {
+        result_ = MSK_putcj(task_, j, equation_scalars[j]);
     }
   }
   if (!quad_objective.isZero())
     AddQuadraticObjective(quad_objective);
   if (!quad_cons.isZero())
     AddQuadraticConstraintMatrix(quad_cons);
-  if (!sdp_objective.Q().isZero())
-    AddSDPObjective(sdp_objective);
-  if (!sdp_constraints.empty())
-    AddSDPConstraints(sdp_constraints);
-  if (!sdp_constraints.empty())
-    AppendCone(sdp_cone_subscripts);
   AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
       lower_variable_bounds);
   if (!linear_cons.isZero()) {
@@ -80,20 +110,76 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
       lower_constraint_bounds);
 }
 
-void MosekWrapper::AppendCone(const std::vector<int>& sdp_cone_subscripts) {
-  if (r_ == MSK_RES_OK) {
+// Semidefinite programming
+MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
+    const std::vector<MSKboundkeye>& mosek_constraint_bounds,
+    const std::vector<double>& upper_constraint_bounds,
+    const std::vector<double>& lower_constraint_bounds,
+    const std::vector<MSKboundkeye>& mosek_variable_bounds,
+    const std::vector<double>& upper_variable_bounds,
+    const std::vector<double>& lower_variable_bounds,
+    double constant_eqn_term,
+    const QuadraticConstraint& sdp_objective,
+    const std::vector<QuadraticConstraint>& sdp_constraints,
+    const std::vector<int>& lorentz_cone_subscripts,
+    int numbarvar)
+      : numvar_(static_cast<MSKint32t>(num_variables)),
+        numcon_(static_cast<MSKint32t>(num_constraints)),
+        numbarvar_(static_cast<MSKint32t>(numbarvar)),
+        env_(NULL), task_(NULL), solutions_(std::vector<double>()) {
+  result_ = MSK_makeenv(&env_, NULL);
+  if (result_ == MSK_RES_OK) {
+    // Creates optimization task
+    result_ = MSK_maketask(env_, numcon_, numvar_, &task_);
+    // Append numcon_ empty constraints
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_appendcons(task_, numcon_);
+    // Append numvar_ variables, initially fixed at zero
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_appendvars(task_, numvar_);
+    if (result_ == MSK_RES_OK && !(sdp_constraints.empty() ||
+        sdp_objective.Q().isZero())) {
+      int dimbarvar = sdp_objective.Q().rows();
+      result_ = MSK_appendbarvars(task_, 1, &dimbarvar);
+    }
+    // Add fixed term, optional
+    if (result_ == MSK_RES_OK && constant_eqn_term != 0)
+      result_ = MSK_putcfix(task_, constant_eqn_term);
+  }
+  // add the equation to maximize to the environment.
+  int j = 0;
+  if (!sdp_objective.Q().isZero())
+    AddSDPObjective(sdp_objective);
+  if (!sdp_constraints.empty())
+    AddSDPConstraints(sdp_constraints);
+  if (!sdp_constraints.empty())
+    AppendCone(lorentz_cone_subscripts);
+  AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
+      lower_variable_bounds);
+  if (!linear_cons.isZero()) {
+    AddLinearConstraintMatrix(linear_cons);
+  }
+  AddLinearConstraintBounds(mosek_constraint_bounds, upper_constraint_bounds,
+      lower_constraint_bounds);
+}
+
+void MosekWrapper::AppendCone(const std::vector<int>& lorentz_cone_subscripts) {
+  if (result_ == MSK_RES_OK) {
     // If no subscripts set, assume that x_0 >= sqrt(sum(x_i^2)) for i > 0.
     // Adapted from http://docs.mosek.com/7.1/capi/MSK_appendcone_.html
-    if (sdp_cone_subscripts.empty()) {
+    // Currently, it only handles Lorentz the Lorentz cone.
+    // TODO(alexdunyak): Allow other cones as described here:
+    // http://docs.mosek.com/7.1/capi/Conic_quadratic_optimization.html
+    if (lorentz_cone_subscripts.empty()) {
       std::vector<int> empty_cone_subscripts(numvar_);
       for (int i = 0; i < numvar_; i++) {
         empty_cone_subscripts[i] = i;
       }
-      r_ = MSK_appendcone(task_, MSK_CT_QUAD, 0.0, numvar_,
+      result_ = MSK_appendcone(task_, MSK_CT_QUAD, 0.0, numvar_,
                           &empty_cone_subscripts[0]);
     } else {
-      r_ = MSK_appendcone(task_, MSK_CT_QUAD, 0.0, numvar_,
-                          &sdp_cone_subscripts[0]);
+      result_ = MSK_appendcone(task_, MSK_CT_QUAD, 0.0, numvar_,
+                          &lorentz_cone_subscripts[0]);
     }
   }
 }
@@ -107,37 +193,37 @@ void MosekWrapper::AddSDPObjective(const QuadraticConstraint& sdp_objective) {
   // First, handle the linear term in the objective.
   const Eigen::VectorXd& linearterm = sdp_objective.b();
   for (int j = 0; j < linearterm.size(); j++) {
-    if (r_== MSK_RES_OK && linearterm(j) != 0)
-      r_ = MSK_putcj(task_, j, linearterm(j));
+    if (result_== MSK_RES_OK && linearterm(j) != 0)
+      result_ = MSK_putcj(task_, j, linearterm(j));
   }
-  // Now we handle the sdp matrix. Mosek expects it in lower triangle triplet
+  // Now we handle the psd matrix. Mosek expects it in lower triangle triplet
   // form.
-  std::vector<MSKint32t> sdp_i, sdp_j;
-  std::vector<double>  sdp_values;
+  std::vector<MSKint32t> psd_i, psd_j;
+  std::vector<double>  psd_values;
   // The kth nonzero value of the constraint matrix is:
   // Matrix(i, j) = sdp_values[k], and sdp_i[k] = i, sdp_j[k] = j
-  const Eigen::MatrixXd& matrixterm = sdp_objective.Q();
+  const Eigen::MatrixXd& matrixterm = psd_objective.Q();
   int numnonzero = 0;
-  for (unsigned int i = 0; i < matrixterm.rows(); i++) {
-    for (unsigned int j = 0; j <= i; j++) {
+  for (int i = 0; static_cast<unsigned int>(i) < matrixterm.rows(); i++) {
+    for (int j = 0; static_cast<unsigned int>(j) <= i; j++) {
       if (matrixterm(i, j) != 0) {
-        sdp_i.push_back(static_cast<MSKint32t>(i));
-        sdp_j.push_back(static_cast<MSKint32t>(j));
-        sdp_values.push_back(matrixterm(i, j));
+        psd_i.push_back(static_cast<MSKint32t>(i));
+        psd_j.push_back(static_cast<MSKint32t>(j));
+        psd_values.push_back(matrixterm(i, j));
         numnonzero++;
       }
     }
   }
-  if (r_ == MSK_RES_OK)
-    r_ = MSK_appendsparsesymmat(task_,
+  if (result_ == MSK_RES_OK)
+    result_ = MSK_appendsparsesymmat(task_,
                                 matrixterm.rows(),
                                 numnonzero,
-                                &sdp_i[0],
-                                &sdp_j[0],
-                                &sdp_values[0],
+                                &psd_i[0],
+                                &psd_j[0],
+                                &psd_values[0],
                                 &idx);
-  if (r_ == MSK_RES_OK)
-    r_ = MSK_putbarcj(task_, 0, 1, &idx, &falpha);
+  if (result_ == MSK_RES_OK)
+    result_ = MSK_putbarcj(task_, 0, 1, &idx, &falpha);
 }
 
 void MosekWrapper::AddSDPConstraints(
@@ -155,24 +241,24 @@ void MosekWrapper::AddSDPConstraints(
   std::vector<MSKint32t> aptre;
   std::vector<MSKint32t> asub;
   std::vector<MSKrealt> aval;
-  unsigned int j = 0;
-  for (j = 0; j < sparsecons.cols(); j++) {
+  int j = 0;
+  for (j = 0; static_cast<unsigned int>(j) < sparsecons.cols(); j++) {
     aptrb.push_back((MSKint32t) sparsecons.outerIndexPtr()[j]);
   }
-  for (j = 0; j < sparsecons.cols(); j++) {
+  for (j = 0; static_cast<unsigned int>(j) < sparsecons.cols(); j++) {
     aptre.push_back((MSKint32t) sparsecons.outerIndexPtr()[j+1]);
   }
-  for (j = 0; j < sparsecons.nonZeros(); j++) {
+  for (j = 0; static_cast<unsigned int>(j) < sparsecons.nonZeros(); j++) {
     asub.push_back((MSKint32t) sparsecons.innerIndexPtr()[j]);
   }
-  for (j = 0; j < sparsecons.nonZeros(); j++) {
+  for (j = 0; static_cast<unsigned int>(j) < sparsecons.nonZeros(); j++) {
     aval.push_back(static_cast<MSKrealt>(sparsecons.valuePtr()[j]));
   }
   // Now that the sparse format used by Mosek has been found, add it to Mosek
   // by row.
-  for (j = 0; static_cast<int>(j) < numvar_; j++) {
-    if (r_ == MSK_RES_OK)
-      r_ = MSK_putacol(task_,
+  for (j = 0; j < static_cast<int>(numvar_); j++) {
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_putacol(task_,
                        j,
                        aptre[j] - aptrb[j],
                        &asub[0] + aptrb[j],
@@ -188,7 +274,7 @@ void MosekWrapper::AddSDPConstraints(
     DRAKE_ASSERT(matrixterm.rows() == matrixterm.cols());
     if (k >= 1)
       DRAKE_ASSERT(sdp_constraints[k-1].Q().rows() == matrixterm.rows());
-    for (unsigned int i = 0; i < matrixterm.rows(); i++) {
+    for (int i = 0; static_cast<unsigned int>(i) < matrixterm.rows(); i++) {
       for (j = 0; j <= i; j++) {
         // Only iterate over the lower triangle.
         if (matrixterm(i, j) != 0) {
@@ -207,18 +293,19 @@ void MosekWrapper::AddSDPConstraints(
   MSKint64t idx;
   double falpha = 1.0;
   // Now that the relevant arrays are in memory, add each constraint to Mosek.
-  for (unsigned int k = 0; k < sdp_constraints.size(); k++) {
-    if (r_ == MSK_RES_OK) {
-      r_ = MSK_appendsparsesymmat(task_,
-                                  static_cast<MSKint32t>(matrixdim),
-                                  static_cast<MSKint32t>(constraintnonzero[k]),
-                                  &bar_i[previousentries],
-                                  &bar_j[previousentries],
-                                  &bar_value[previousentries],
-                                  &idx);
+  for (int k = 0; static_cast<unsigned int>(k) < sdp_constraints.size(); k++) {
+    if (result_ == MSK_RES_OK) {
+      result_ = MSK_appendsparsesymmat(
+          task_,
+          static_cast<MSKint32t>(matrixdim),
+          static_cast<MSKint32t>(constraintnonzero[k]),
+          &bar_i[previousentries],
+          &bar_j[previousentries],
+          &bar_value[previousentries],
+          &idx);
     }
-    if (r_ == MSK_RES_OK) {
-      r_ = MSK_putbaraij(task_, k, 0, 1, &idx, &falpha);
+    if (result_ == MSK_RES_OK) {
+      result_ = MSK_putbaraij(task_, k, 0, 1, &idx, &falpha);
     }
     previousentries += constraintnonzero[k];
   }
@@ -239,8 +326,8 @@ void MosekWrapper::AddQuadraticObjective(
       }
     }
   }
-  if (r_ == MSK_RES_OK)
-    r_ = MSK_putqobj(task_, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
+  if (result_ == MSK_RES_OK)
+    result_ = MSK_putqobj(task_, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
 }
 
 void MosekWrapper::AddQuadraticConstraintMatrix(
@@ -258,8 +345,9 @@ void MosekWrapper::AddQuadraticConstraintMatrix(
       }
     }
   }
-  if (r_ == MSK_RES_OK)
-    r_ = MSK_putqconk(task_, 0, lowtrinonzero, &qsubi[0], &qsubj[0], &qval[0]);
+  if (result_ == MSK_RES_OK)
+    result_ = MSK_putqconk(task_, 0, lowtrinonzero, &qsubi[0], &qsubj[0],
+                           &qval[0]);
 }
 
 void MosekWrapper::AddLinearConstraintMatrix(const Eigen::MatrixXd& cons) {
@@ -289,8 +377,8 @@ void MosekWrapper::AddLinearConstraintSparseColumnMatrix(
     aval.push_back(sparsecons.valuePtr()[j]);
 
   // The following code is adapted from http://docs.mosek.com/7.1/capi/Linear_optimization.html
-  for (j = 0; j < numvar_ && r_ == MSK_RES_OK; j++) {
-    r_ = MSK_putacol(task_,
+  for (j = 0; j < numvar_ && result_ == MSK_RES_OK; j++) {
+    result_ = MSK_putacol(task_,
                     j,
                     aptre[j] - aptrb[j],  // Number of nonzeros in column i
                     &asub[0] + aptrb[j],  // Pointer to row indexes of column i
@@ -303,8 +391,8 @@ void MosekWrapper::AddLinearConstraintBounds(
     const std::vector<double>& upper_bounds,
     const std::vector<double>& lower_bounds) {
   int i = 0;
-  for (i = 0; i < numcon_ && r_ == MSK_RES_OK; i++) {
-    r_ = MSK_putconbound(task_, i, mosek_bounds[i],
+  for (i = 0; i < numcon_ && result_ == MSK_RES_OK; i++) {
+    result_ = MSK_putconbound(task_, i, mosek_bounds[i],
                          lower_bounds[i], upper_bounds[i]);
   }
 }
@@ -315,8 +403,8 @@ void MosekWrapper::AddVariableBounds(
     const std::vector<double>& lower_bounds) {
   assert(mosek_bounds.size() == lower_bounds.size());
   assert(mosek_bounds.size() == upper_bounds.size());
-  for (int j = 0; j < numvar_ && r_ == MSK_RES_OK; j++) {
-    r_ = MSK_putvarbound(task_, j, mosek_bounds[j], lower_bounds[j],
+  for (int j = 0; j < numvar_ && result_ == MSK_RES_OK; j++) {
+    result_ = MSK_putvarbound(task_, j, mosek_bounds[j], lower_bounds[j],
                          upper_bounds[j]);
   }
 }
@@ -540,10 +628,10 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     // all the needed parts: a (assumed to be symmetric) matrix, and a linear
     // component.
     // For now assume a single quadratic constraint.
-    /* TODO(alexdunyak): Add support for SDP constraints to Constraint.h and
-    *  OptimizationProblem, including getters and setters. When those are in
-    *  place, change QuadraticConstraint to SDPConstraint below where relevant.
-    */
+/* TODO(alexdunyak): Add support for SDP constraints to Constraint.h and
+*  OptimizationProblem, including getters and setters. When those are in
+*  place, change QuadraticConstraint to SDPConstraint below where relevant.
+*/
 
     // As before, assume there is one objective.
     DRAKE_ASSERT(prog.quadratic_costs().size() == 1);
@@ -574,7 +662,7 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     std::vector<double> linobj;
     Eigen::MatrixXd quad_obj;
     double constant_eqn_term;
-    std::vector<int> sdp_cone_subscripts;
+    std::vector<int> lorentz_cone_subscripts;
     if (prog.GetSolverOptionsDouble("Mosek").count("constant")
          == 0) {
       constant_eqn_term = 0;
@@ -583,11 +671,11 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
           "constant");
     }
     if (prog.GetSolverOptionsInt("Mosek").count("conesubscript") != 0) {
-      sdp_cone_subscripts.push_back(
+      lorentz_cone_subscripts.push_back(
           prog.GetSolverOptionsInt("Mosek").at("conesubscript"));
       for (int k = 0; static_cast<unsigned int>(k) < prog.num_vars(); k++) {
-        if (sdp_cone_subscripts[0] != k)
-          sdp_cone_subscripts.push_back(k);
+        if (lorentz_cone_subscripts[0] != k)
+          lorentz_cone_subscripts.push_back(k);
       }
     }
     int numbarvar = 0;
@@ -608,7 +696,7 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
                      quad_cons,
                      sdp_objective,
                      sdp_constraints,
-                     sdp_cone_subscripts,
+                     lorentz_cone_subscripts,
                      numbarvar);
     std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
     std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
@@ -631,17 +719,17 @@ SolutionResult MosekWrapper::OptimizeTask(const std::string& maxormin,
     problemtype = MSK_SOL_BAS;
   else
     return kUnknownError;
-  if (r_ == MSK_RES_OK && maxormin == "max")
-    r_ = MSK_putobjsense(task_, MSK_OBJECTIVE_SENSE_MAXIMIZE);
-  else if (r_ == MSK_RES_OK && maxormin == "min")
-    r_ = MSK_putobjsense(task_, MSK_OBJECTIVE_SENSE_MINIMIZE);
-  if (r_ == MSK_RES_OK) {
+  if (result_ == MSK_RES_OK && maxormin == "max")
+    result_ = MSK_putobjsense(task_, MSK_OBJECTIVE_SENSE_MAXIMIZE);
+  else if (result_ == MSK_RES_OK && maxormin == "min")
+    result_ = MSK_putobjsense(task_, MSK_OBJECTIVE_SENSE_MINIMIZE);
+  if (result_ == MSK_RES_OK) {
     MSKrescodee trmcode;
-    r_ = MSK_optimizetrm(task_, &trmcode);
-    if (r_ == MSK_RES_OK) {
+    result_ = MSK_optimizetrm(task_, &trmcode);
+    if (result_ == MSK_RES_OK) {
       MSKsolstae solsta;
-      if (r_ == MSK_RES_OK) {
-        r_ = MSK_getsolsta(task_, problemtype, &solsta);
+      if (result_ == MSK_RES_OK) {
+        result_ = MSK_getsolsta(task_, problemtype, &solsta);
         switch (solsta) {
           case MSK_SOL_STA_OPTIMAL:
           case MSK_SOL_STA_NEAR_OPTIMAL: {
@@ -661,7 +749,7 @@ SolutionResult MosekWrapper::OptimizeTask(const std::string& maxormin,
               }
               return kSolutionFound;
             } else {
-              r_ = MSK_RES_ERR_SPACE;
+              result_ = MSK_RES_ERR_SPACE;
               return kUnknownError;
             }
             break;
