@@ -164,6 +164,11 @@ SolutionResult DirectTrajectoryOptimization::SolveTraj(
     double timespan_init, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   GetInitialVars(timespan_init, traj_init_u, traj_init_x);
+
+  // If we're using IPOPT, it can't quite solve trajectories to the
+  // default precision level.
+  opt_problem_.SetSolverOption("IPOPT", "tol", 1e-7);
+
   SolutionResult result = opt_problem_.Solve();
   return result;
 }
