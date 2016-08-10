@@ -50,12 +50,36 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
     const std::vector<MSKboundkeye>& mosek_variable_bounds,
     const std::vector<double>& upper_variable_bounds,
     const std::vector<double>& lower_variable_bounds,
+    double constant_eqn_term);
+
+  /** Create a Mosek environment for quadratic programming problems.
+  */
+  MosekWrapper(int num_variables, int num_constraints,
+    const std::vector<double>& equation_scalars,
+    const Eigen::MatrixXd& linear_cons,
+    const std::vector<MSKboundkeye>& mosek_constraint_bounds,
+    const std::vector<double>& upper_constraint_bounds,
+    const std::vector<double>& lower_constraint_bounds,
+    const std::vector<MSKboundkeye>& mosek_variable_bounds,
+    const std::vector<double>& upper_variable_bounds,
+    const std::vector<double>& lower_variable_bounds,
     double constant_eqn_term,
     const Eigen::MatrixXd& quad_objective,
-    const Eigen::MatrixXd& quad_cons,
+    const Eigen::MatrixXd& quad_cons);
+
+  /** Create a Mosek environment for SDP problems.
+  */
+  MosekWrapper(int num_variables, int num_constraints,
+    const std::vector<MSKboundkeye>& mosek_constraint_bounds,
+    const std::vector<double>& upper_constraint_bounds,
+    const std::vector<double>& lower_constraint_bounds,
+    const std::vector<MSKboundkeye>& mosek_variable_bounds,
+    const std::vector<double>& upper_variable_bounds,
+    const std::vector<double>& lower_variable_bounds,
+    double constant_eqn_term,
     const QuadraticConstraint& sdp_objective,
     const std::vector<QuadraticConstraint>& sdp_constraints,
-    const std::vector<int>& sdp_cone_subscripts,
+    const std::vector<int>& lorentz_cone_subscripts,
     int numbarvar);
 
   ~MosekWrapper() {
@@ -114,11 +138,20 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   /**AddSDPObjective()
   * @brief Adds a single SDP objective to Mosek for solving, will not work if
   * called multiple times.
+  * The mathematical formulation is:
+  * minimize the function sum(c_j * x_j) + sum(<C_j, X_j>) + c
+  * where x is contained in a cone, and X is a positive semidefinite matrix,
+  * subject to SDP constraints below.
+  * See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
   */
   void AddSDPObjective(const QuadraticConstraint& sdp_objective);
 
   /**AddSDPConstraints()
   * @brief Adds multiple SDP constraints to Mosek. Only call once per program.
+  * The mathematical formulation is to minimize the objective (above) with the
+  * constraints:
+  * l_i <= sum(a_j * x_j) + sum(<A_j, X_j>) <= u_i
+  * See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
   */
   void AddSDPConstraints(
       const std::vector<QuadraticConstraint>& sdp_constraints);
@@ -145,7 +178,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   MSKenv_t env_;       //< Internal environment, used to check if the problem
                        // is well-formed.
   MSKtask_t task_;     //< internal definition of task
-  MSKrescodee r_;      //< used for validity checking
+  MSKrescodee result_;      //< used for validity checking
   std::vector<double> solutions_;  //< Contains the solutions of the system
 };
 
