@@ -91,10 +91,8 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
   }
   // add the equation to maximize to the environment.
   int j = 0;
-  if (sdp_constraints.empty() && sdp_objective.Q().isZero()) {
-    for (j = 0; j < numvar_ && result_ == MSK_RES_OK; j++) {
-        result_ = MSK_putcj(task_, j, equation_scalars[j]);
-    }
+  for (j = 0; j < numvar_ && result_ == MSK_RES_OK; j++) {
+    result_ = MSK_putcj(task_, j, equation_scalars[j]);
   }
   if (!quad_objective.isZero())
     AddQuadraticObjective(quad_objective);
@@ -146,7 +144,6 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
       result_ = MSK_putcfix(task_, constant_eqn_term);
   }
   // add the equation to maximize to the environment.
-  int j = 0;
   if (!sdp_objective.Q().isZero())
     AddSDPObjective(sdp_objective);
   if (!sdp_constraints.empty())
@@ -155,9 +152,6 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     AppendCone(lorentz_cone_subscripts);
   AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
       lower_variable_bounds);
-  if (!linear_cons.isZero()) {
-    AddLinearConstraintMatrix(linear_cons);
-  }
   AddLinearConstraintBounds(mosek_constraint_bounds, upper_constraint_bounds,
       lower_constraint_bounds);
 }
@@ -201,10 +195,10 @@ void MosekWrapper::AddSDPObjective(const QuadraticConstraint& sdp_objective) {
   std::vector<double>  psd_values;
   // The kth nonzero value of the constraint matrix is:
   // Matrix(i, j) = sdp_values[k], and sdp_i[k] = i, sdp_j[k] = j
-  const Eigen::MatrixXd& matrixterm = psd_objective.Q();
+  const Eigen::MatrixXd& matrixterm = sdp_objective.Q();
   int numnonzero = 0;
   for (int i = 0; static_cast<unsigned int>(i) < matrixterm.rows(); i++) {
-    for (int j = 0; static_cast<unsigned int>(j) <= i; j++) {
+    for (int j = 0; j <= i; j++) {
       if (matrixterm(i, j) != 0) {
         psd_i.push_back(static_cast<MSKint32t>(i));
         psd_j.push_back(static_cast<MSKint32t>(j));
@@ -528,7 +522,8 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
             lower_constraint_bounds,
             mosek_variable_bounds,
             upper_variable_bounds,
-            lower_variable_bounds);
+            lower_variable_bounds,
+            0);
 
     std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
     std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
