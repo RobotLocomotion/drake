@@ -58,7 +58,7 @@ class RunningCostMidWrapper : public Constraint {
             TaylorVecXd& y) const override {
     TaylorVecXd wrapped_x(x.rows() - 1);
     wrapped_x.tail(x.rows() - 2) = x.tail(x.rows() - 2);
-    wrapped_x(0) = (x(0) + x(1) ) * 0.5;
+    wrapped_x(0) = (x(0) + x(1)) * 0.5;
     constraint_->Eval(wrapped_x, y);
   };
 
@@ -66,7 +66,7 @@ class RunningCostMidWrapper : public Constraint {
   std::shared_ptr<Constraint> constraint_;
 };
 
-}
+}  // anon namespace
 
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.

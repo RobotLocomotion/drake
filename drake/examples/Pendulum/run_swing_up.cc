@@ -41,8 +41,7 @@ class PendulumTrajectoryController {
   PendulumInput<ScalarType> output(const ScalarType& t,
                                    const StateVector<ScalarType>& x,
                                    const PendulumState<ScalarType>& u) const {
-    PendulumInput<ScalarType> y;
-    y  = pp_traj_.value(t);
+    PendulumInput<ScalarType> y = pp_traj_.value(t);
     return y;
   }
 
@@ -53,7 +52,7 @@ class PendulumTrajectoryController {
   const PiecewisePolynomialType& pp_traj_;
 };
 
-}
+}  // anon namespace
 
 int main(int argc, char* argv[]) {
   auto p = make_shared<Pendulum>();
