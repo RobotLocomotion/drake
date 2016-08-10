@@ -94,6 +94,9 @@ class FinalCostWrapper : public Constraint {
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
+    // TODO(sam.creasey) If we actually need this, we could cut and
+    // paste most of the implementation below (or maybe delegate to a
+    // templated version).  I don't expect that scenario to occur.
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
