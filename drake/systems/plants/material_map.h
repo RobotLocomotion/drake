@@ -5,7 +5,8 @@
 #include <Eigen/Dense>
 
 /**
- * A map from the name of a material and its color in RGBA format.
+ * A map from the name of a material to its color. The color is specified in
+ * RGBA (Red, Green, Blue, Alpha) format.
  *
  * TODO(liang.fok) Add support for texture-based materials, see #2588.
  */
