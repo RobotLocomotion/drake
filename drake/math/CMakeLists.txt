@@ -1,6 +1,7 @@
 # Source files used to build drakeMath.
 set(sources
   autodiff.cc
+  autodiff_gradient.cc
   axis_angle.cc
   cylindrical.cc
   expmap.cc
@@ -13,6 +14,7 @@ set(sources
 # are available elsewhere via #include.
 set(installed_headers
   autodiff.h
+  autodiff_gradient.h
   axis_angle.h
   cylindrical.h
   expmap.h
