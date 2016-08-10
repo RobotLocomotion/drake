@@ -4,23 +4,27 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
 #include "drake/systems/LCMSystem.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/eigen_matrix_compare.h"
 
 using drake::RigidBodySystem;
 using drake::BotVisualizer;
 using Eigen::VectorXd;
 using drake::RobotStateTap;
+using drake::util::MatrixCompareType;
+
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+// This test simulates the dynamic behaviour of an uncontrolled IIWA arm
+// under the presence of gravity. Without any control, the expected
+// behavior is that the robot collapses to the ground. The test verifies
+// that the initial and final position after a small duration of time are
+// unequal.
 GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
@@ -44,9 +48,9 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   VectorXd x0 = VectorXd::Zero(iiwa_system->getNumStates());
   x0.head(iiwa_tree->number_of_positions()) = iiwa_tree->getZeroConfiguration();
 
-  Eigen::VectorXd random_initial_configuration(7);
-  random_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
-  x0.head(7) += random_initial_configuration;
+  Eigen::VectorXd arbitrary_initial_configuration(7);
+  arbitrary_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
+  x0.head(7) += arbitrary_initial_configuration;
 
   drake::SimulationOptions options = SetupSimulation();
 
@@ -55,10 +59,17 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
 
   // Simulation duration in seconds.
   const double kDuration = 0.5;
+  EXPECT_NO_THROW(drake::simulate(*sys.get(), kStartTime, kDuration, x0, options));
 
-  drake::simulate(*sys.get(), kStartTime, kDuration, x0, options);
+  auto xf = robot_state_tap->get_input_vector();
 
-  // TODO(naveenoid) : Test for final state != initial state.
+  // Ensure joint position and velocity limits are not violated.
+  EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
+
+  // Ensure initial and final state are not the same (since there is no control).
+  EXPECT_FALSE(CompareMatrices(x0, xf, 1e-3,
+                               MatrixCompareType::absolute));
+
 }
 
 }  // namespace

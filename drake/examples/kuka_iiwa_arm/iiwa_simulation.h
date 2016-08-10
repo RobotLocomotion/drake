@@ -1,8 +1,11 @@
 #pragma once
+
 #include <memory>
 #include <string>
 
 #include <Eigen/Geometry>
+
+#include "robot_state_tap.h"
 
 #include "drake/drakeKukaIiwaArm_export.h"
 #include "drake/systems/plants/RigidBodySystem.h"
@@ -30,7 +33,15 @@ std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
  */
 DRAKEKUKAIIWAARM_EXPORT
 drake::SimulationOptions SetupSimulation(
-    const double& initial_step_size = 0.002);
+    const double initial_step_size = 0.002);
+
+/*
+ * Check for Joint Position and Joint velocity limit violations.
+ * Errors are thrown within the method in case any of the limits are violated
+ */
+DRAKEKUKAIIWAARM_EXPORT
+void CheckLimitViolations(const std::shared_ptr<drake::RigidBodySystem> rigid_body_system,
+                          const Eigen::VectorXd& final_robot_state);
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
