@@ -12,7 +12,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Gain<T>::Gain(double k, int length) : gain_(k), length_(length) {
+Gain<T>::Gain(T k, int length) : gain_(k), length_(length) {
   // TODO(amcastro-tri):
   // parameter length should be used to specify the system's input port and
   // does not need to be stored in member length_.
@@ -54,7 +54,7 @@ std::unique_ptr<SystemOutput<T>> Gain<T>::AllocateOutput(
 template <typename T>
 void Gain<T>::EvalOutput(const ContextBase<T>& context,
                           SystemOutput<T>* output) const {
-  // Check that the single output port has the correct length, then zero it.
+  // Checks that the single output port has the correct length.
   // Checks on the output structure are assertions, not exceptions,
   // since failures would reflect a bug in the Gain implementation, not
   // user error setting up the system graph. They do not require unit test
@@ -76,7 +76,11 @@ void Gain<T>::EvalOutput(const ContextBase<T>& context,
 
   // There is only one input.
   // TODO(amcastro-tri): This line should read:
-  // input_vector = System<T>::get_input_port(0).
+  // InputPort& input_port = System<T>::get_input_port(0);
+  // auto& input_vector = input_port.get_vector(context); // where the return is
+  // an Eigen expression.
+  // A plausible alternative would be:
+  // auto& input_vector = System<T>::get_input_vector(context, 0);
   const VectorInterface<T>* input = context.get_vector_input(0);
 
   // Check the expected length.
