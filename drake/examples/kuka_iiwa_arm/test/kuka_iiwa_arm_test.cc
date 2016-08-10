@@ -70,8 +70,8 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   // Ensures joint position and velocity limits are not violated.
   EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
 
-  // Ensures initial and final state are not the same (since there is no
-  // control, and the robot should "collapse" due to the presence of gravity).
+  // Ensures the initial and final states are not the same (since there is no
+  // control, the robot should "collapse" due to the presence of gravity).
   EXPECT_FALSE(CompareMatrices(x0, xf, 1e-3, MatrixCompareType::absolute));
 
 }
