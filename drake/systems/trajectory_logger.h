@@ -16,6 +16,7 @@ struct TimeSampleTrajectory {
   std::vector<double> time;
   std::vector<Vector<double>, Eigen::aligned_allocator<Vector<double>>> value;
   TimeSampleTrajectory() : time(0), value(0) {}
+  void clear() {time.clear(); value.clear();}
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
@@ -68,6 +69,7 @@ class TrajectoryLogger {
 
   TimeSampleTrajectory<Vector> getTrajectory() const { return trajectory_; }
 
+  void clearTrajectory() {trajectory_.clear();}
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
