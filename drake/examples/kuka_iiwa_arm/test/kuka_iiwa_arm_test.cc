@@ -19,7 +19,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-// This test simulates the dynamic behaviour of an uncontrolled IIWA arm
+// This test simulates the dynamic behavior of an uncontrolled IIWA arm
 // under the presence of gravity. Without any control, the expected
 // behavior is that the robot collapses to the ground. The test verifies
 // that the initial and final position after a small duration of time are
@@ -65,11 +65,11 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
 
   auto xf = robot_state_tap->get_input_vector();
 
-  // Ensure joint position and velocity limits are not violated.
+  // Ensures joint position and velocity limits are not violated.
   EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
 
-  // Ensure initial and final state are not the same (since there is no
-  // control).
+  // Ensures initial and final state are not the same (since there is no
+  // control, and the robot should "collapse" due to the presence of gravity).
   EXPECT_FALSE(CompareMatrices(x0, xf, 1e-3, MatrixCompareType::absolute));
 }
 

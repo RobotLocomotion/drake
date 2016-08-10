@@ -47,7 +47,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   return rigid_body_system;
 }
 
-drake::SimulationOptions SetupSimulation(const double initial_step_size) {
+drake::SimulationOptions SetupSimulation(double initial_step_size) {
   // Specifies the simulation options.
   drake::SimulationOptions options;
   options.realtime_factor = 0;  // As fast as possible.
@@ -106,8 +106,8 @@ void CheckLimitViolations(
     const Eigen::VectorXd& max_limit = joint.getJointLimitMax();
 
     // Defines a joint limit tolerance. This is the amount in radians over which
-    // joint position limits can be violated and still be considered to be
-    // within the limits. Once we are able to model joint limits via
+    // joint position limits can be violated and still be considered within the
+    // limits. Once we are able to model joint limits via
     // constraints, we may be able to remove the need for this tolerance value.
     const double kJointLimitTolerance = 0.0261799;  // 1.5 degrees.
 

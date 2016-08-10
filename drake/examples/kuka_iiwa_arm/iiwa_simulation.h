@@ -32,12 +32,12 @@ std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
  * Returns the simulation options for use by the Kuka IIWA simulation.
  */
 DRAKEKUKAIIWAARM_EXPORT
-drake::SimulationOptions SetupSimulation(
-    const double initial_step_size = 0.002);
+drake::SimulationOptions SetupSimulation(double initial_step_size = 0.002);
 
 /*
- * Check for Joint Position and Joint velocity limit violations.
- * Errors are thrown within the method in case any of the limits are violated
+ * Check for joint position and joint velocity limit violations.
+ * std::runtime_error throws are generated within this method in case
+ * of any limit violations.
  */
 DRAKEKUKAIIWAARM_EXPORT
 void CheckLimitViolations(
