@@ -39,6 +39,8 @@ classdef MixedIntegerConvexProgram
     symbolic_objective = 0;
 
     x_sol % The solution of all variables
+    
+    solver % either 'gurobi' or 'mosek'. @default is 'gurobi'
   end
 
   properties (SetAccess = protected)
@@ -66,6 +68,8 @@ classdef MixedIntegerConvexProgram
       checkDependency('gurobi');
       
       obj.has_symbolic = has_symbolic;
+      
+      obj.solver = 'gurobi';
     end
 
     function obj = addVariable(obj, name, type_, size_, lb, ub, start_)
@@ -279,7 +283,11 @@ classdef MixedIntegerConvexProgram
       if obj.has_symbolic
         [obj, solvertime, objval] = obj.solveYalmip();
       else
-        [obj, solvertime, objval] = obj.solveGurobi();
+        if(strcmp(obj.solver,'gurobi'))
+          [obj, solvertime, objval] = obj.solveGurobi();
+        elseif(strcmp(obj.solver,'mosek'))
+          [obj, solvertime, objval] = obj.solveMosek();
+        end
       end
     end
 
@@ -396,10 +404,10 @@ classdef MixedIntegerConvexProgram
       obj = obj.extractResult(double(obj.symbolic_vars));
     end
     
-    function [obj,solvertime,objval] = solveMosek(obj,params)
+    function [obj,solvertime,objval] = solveMosek(obj)
       checkDependency('mosek');
       prob = obj.getMosekModel();
-      params = applyDefaults(params, struct());
+      params = struct();
       start_time = clock();
       [r,res] = mosekopt('minimize',prob,params);
       end_time = clock();
@@ -460,6 +468,17 @@ classdef MixedIntegerConvexProgram
         prob.cones.subptr = cumsum(cellfun(@(x) length(x),{obj.cones.index}));
         prob.cones.subptr = [1 prob.cones.subptr(1:end-1)+1];
       end
+    end
+    
+    function obj = setSolver(obj,solver)
+      if(strcmpi(solver,'gurobi'))
+        checkDependency('gurobi');
+      elseif(strcmpi(solver,'mosek'))
+        checkDependency('mosek');
+      else
+        error('Drake:MixedIntegerConvexProgram:UnsupportedSolver','Solver not supported yet');
+      end
+      obj.solver = solver;
     end
   end
 end
