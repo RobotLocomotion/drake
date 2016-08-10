@@ -12,6 +12,7 @@ if(lcm_FOUND)
           ${GTEST_BOTH_LIBRARIES})
   add_test(NAME kuka_iiwa_pd_control_test
           COMMAND kuka_iiwa_pd_control_test)
+<<<<<<< 335406dd55a61d3d2dcf3755720ab7938b46b024
 
   add_executable(kuka_iiwa_gravity_compensation_test
           kuka_iiwa_gravity_compensation_test.cc)
@@ -21,5 +22,6 @@ if(lcm_FOUND)
   add_test(NAME kuka_iiwa_gravity_compensation_test
           COMMAND kuka_iiwa_gravity_compensation_tests)
 
+=======
+>>>>>>> Review comments addressed..tests added
 endif()
-

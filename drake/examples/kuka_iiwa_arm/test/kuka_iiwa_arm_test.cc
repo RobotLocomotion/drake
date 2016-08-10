@@ -73,16 +73,6 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   // Ensures the initial and final states are not the same (since there is no
   // control, the robot should "collapse" due to the presence of gravity).
   EXPECT_FALSE(CompareMatrices(x0, xf, 1e-3, MatrixCompareType::absolute));
-  EXPECT_NO_THROW(drake::simulate(*sys.get(), kStartTime, kDuration, x0, options));
-
-  auto xf = robot_state_tap->get_input_vector();
-
-  // Ensure joint position and velocity limits are not violated.
-  EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
-
-  // Ensure initial and final state are not the same (since there is no control).
-  EXPECT_FALSE(CompareMatrices(x0, xf, 1e-3,
-                               MatrixCompareType::absolute));
 
 }
 
