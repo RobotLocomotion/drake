@@ -4,8 +4,8 @@
 
 #include <Eigen/Core>
 
-#include "lcmtypes/drake/lcmt_iiwa_status.hpp"
 #include "drake/systems/LCMSystem.h"
+#include "lcmtypes/drake/lcmt_iiwa_status.hpp"
 
 namespace drake {
 namespace examples {

@@ -4,19 +4,11 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-<<<<<<< 7ce93bc0a3894986f0a816185dfe089f1f6def32
-=======
 #include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
->>>>>>> Working and tuned PID controller with setpoint
 #include "drake/systems/LCMSystem.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
-<<<<<<< 7ce93bc0a3894986f0a816185dfe089f1f6def32
-#include "drake/util/eigen_matrix_compare.h"
-=======
 #include "drake/systems/plants/RigidBodySystem.h"
->>>>>>> Working and tuned PID controller with setpoint
+#include "drake/util/eigen_matrix_compare.h"
 
 using drake::RigidBodySystem;
 using drake::BotVisualizer;
@@ -59,15 +51,9 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   VectorXd x0 = VectorXd::Zero(iiwa_system->getNumStates());
   x0.head(num_dof) = iiwa_tree->getZeroConfiguration();
 
-<<<<<<< 7ce93bc0a3894986f0a816185dfe089f1f6def32
   Eigen::VectorXd arbitrary_initial_configuration(num_dof);
   arbitrary_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
   x0.head(num_dof) += arbitrary_initial_configuration;
-=======
-  Eigen::VectorXd random_initial_configuration(7);
-  random_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
-  x0.head(7) += random_initial_configuration;
->>>>>>> Working and tuned PID controller with setpoint
 
   drake::SimulationOptions options = SetupSimulation();
 
@@ -84,15 +70,20 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   // Ensures joint position and velocity limits are not violated.
   EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
 
-<<<<<<< 7ce93bc0a3894986f0a816185dfe089f1f6def32
   // Ensures the initial and final states are not the same (since there is no
   // control, the robot should "collapse" due to the presence of gravity).
   EXPECT_FALSE(CompareMatrices(x0, xf, 1e-3, MatrixCompareType::absolute));
-=======
-  drake::simulate(*sys.get(), kStartTime, kDuration, x0, options);
+  EXPECT_NO_THROW(drake::simulate(*sys.get(), kStartTime, kDuration, x0, options));
 
-  // TODO(naveenoid) : Test for final state != initial state.
->>>>>>> Working and tuned PID controller with setpoint
+  auto xf = robot_state_tap->get_input_vector();
+
+  // Ensure joint position and velocity limits are not violated.
+  EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
+
+  // Ensure initial and final state are not the same (since there is no control).
+  EXPECT_FALSE(CompareMatrices(x0, xf, 1e-3,
+                               MatrixCompareType::absolute));
+
 }
 
 }  // namespace

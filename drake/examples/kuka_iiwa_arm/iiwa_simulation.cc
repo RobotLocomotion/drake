@@ -62,6 +62,7 @@ drake::SimulationOptions SetupSimulation(double initial_step_size) {
 void CheckLimitViolations(
     const std::shared_ptr<drake::RigidBodySystem> rigid_body_sys,
     const Eigen::VectorXd& final_robot_state) {
+
   const auto& tree = rigid_body_sys->getRigidBodyTree();
   int num_positions = rigid_body_sys->number_of_positions();
   int num_velocities = rigid_body_sys->number_of_velocities();
@@ -71,9 +72,9 @@ void CheckLimitViolations(
       static_cast<int>(rigid_body_sys->getNumOutputs())) {
     throw std::runtime_error(
         "ERROR: Size of final robot state (" +
-        std::to_string(final_robot_state.size()) +
-        ") does not match size of rigid body system's output (" +
-        std::to_string(rigid_body_sys->getNumOutputs()) + ").");
+            std::to_string(final_robot_state.size()) +
+            ") does not match size of rigid body system's output (" +
+            std::to_string(rigid_body_sys->getNumOutputs()) + ").");
   }
 
   // Ensures the number of position states equals the number of velocity states.
@@ -89,15 +90,16 @@ void CheckLimitViolations(
   if ((num_positions + num_velocities) != final_robot_state.size()) {
     throw std::runtime_error(
         "ERROR: Total number of positions and velocities (" +
-        std::to_string(num_positions + num_velocities) +
-        ") does not match size of robot state (" +
-        std::to_string(final_robot_state.size()) + ").");
+            std::to_string(num_positions + num_velocities) +
+            ") does not match size of robot state (" +
+            std::to_string(final_robot_state.size()) + ").");
   }
 
   // Ensures the robot's joints are within their position limits.
   std::vector<std::unique_ptr<RigidBody>>& bodies = tree->bodies;
   for (int robot_state_index = 0, body_index = 0;
-       body_index < static_cast<int>(bodies.size()); ++body_index) {
+       body_index < static_cast<int>(bodies.size());
+       ++body_index) {
     // Skips rigid bodies without a parent (this includes the world link).
     if (!bodies[body_index]->hasParent()) continue;
 
@@ -106,8 +108,8 @@ void CheckLimitViolations(
     const Eigen::VectorXd& max_limit = joint.getJointLimitMax();
 
     // Defines a joint limit tolerance. This is the amount in radians over which
-    // joint position limits can be violated and still be considered within the
-    // limits. Once we are able to model joint limits via
+    // joint position limits can be violated and still be considered to be
+    // within the limits. Once we are able to model joint limits via
     // constraints, we may be able to remove the need for this tolerance value.
     const double kJointLimitTolerance = 0.0261799;  // 1.5 degrees.
 
@@ -115,17 +117,17 @@ void CheckLimitViolations(
       double position = final_robot_state[robot_state_index++];
       if (position < min_limit[ii] - kJointLimitTolerance) {
         throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF " +
-                                 joint.getPositionName(ii) +
-                                 ") violated minimum position limit (" +
-                                 std::to_string(position) + " < " +
-                                 std::to_string(min_limit[ii]) + ").");
+            joint.getPositionName(ii) +
+            ") violated minimum position limit (" +
+            std::to_string(position) + " < " +
+            std::to_string(min_limit[ii]) + ").");
       }
       if (position > max_limit[ii] + kJointLimitTolerance) {
         throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF " +
-                                 joint.getPositionName(ii) +
-                                 ") violated maximum position limit (" +
-                                 std::to_string(position) + " > " +
-                                 std::to_string(max_limit[ii]) + ").");
+            joint.getPositionName(ii) +
+            ") violated maximum position limit (" +
+            std::to_string(position) + " > " +
+            std::to_string(max_limit[ii]) + ").");
       }
     }
   }
