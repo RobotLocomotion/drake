@@ -136,20 +136,17 @@ void parseInertial(RigidBody* body, XMLElement* node) {
 // https://github.com/RobotLocomotion/drake/issues/2588
 //
 // @param[in] material_name A human-understandable name of the material.
+//
 // @param[in] color_rgba The red-green-blue-alpha color values of the material.
 // The range of values is [0, 1].
+//
 // @param[out] materials A pointer to the map in which to store the material.
-// If this pointer is a null, a `std::logic_error` is thrown.
+// This cannot be nullptr.
 void AddMaterialToMaterialMap(const string& material_name,
                               const Vector4d& color_rgba,
                               MaterialMap* materials) {
-  // Throws an exception if parameter materials is null.
-  if (materials == nullptr) {
-    throw std::logic_error(
-        "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap: ERROR: materials is "
-        "null, material_name = " +
-        material_name + ".");
-  }
+  // Verifies that parameter materials is not nullptr.
+  DRAKE_ABORT_UNLESS(materials);
 
   // Determines if the material is already in the map.
   auto material_iter = materials->find(material_name);
