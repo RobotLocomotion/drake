@@ -88,14 +88,19 @@ GTEST_TEST(testIIWAArm, iiwaArmPDControl) {
 
   drake::SimulationOptions options = SetupSimulation();
 
-  // Starts the simulation.
+  // Specifies the start time of the simulation.
   const double kStartTime = 0;
 
-  // Simulation duration in seconds.
+  // Specifies the duration of the simulation.
   const double kDuration = 1.0;
 
-  EXPECT_NO_THROW(drake::simulate(*sys.get(), kStartTime, kDuration, x0, options));
+  EXPECT_NO_THROW(drake::simulate(*sys.get(), kStartTime, kDuration, x0,
+                                  options));
+
   auto xf = robot_state_tap->get_input_vector();
+
+  // Ensure joint position and velocity limits are not violated.
+  EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
 
   // Expect normed joint position difference is below a maximum value.
   double max_position_norm = 1e-5;
