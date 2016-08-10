@@ -13,8 +13,12 @@ if(lcm_FOUND)
     pendulum_trajectory_optimization_test.cc)
   target_link_libraries(pendulum_trajectory_optimization_test
     drakePendulum  drakeTrajectoryOptimization ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME pendulum_trajectory_optimization_test
-    COMMAND pendulum_trajectory_optimization_test)
+  # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
+  # issues #2352, #2569.
+  if(ipopt_FOUND OR nlopt_FOUND OR snopt_c_FOUND)
+    add_test(NAME pendulum_trajectory_optimization_test
+      COMMAND pendulum_trajectory_optimization_test)
+  endif()
 endif()
 
 add_matlab_test(NAME examples/Pendulum/test/coordinateTest COMMAND coordinateTest)
