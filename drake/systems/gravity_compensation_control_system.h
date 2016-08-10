@@ -17,7 +17,7 @@ namespace drake {
  * @concept{system_concept}
  * x_d --->[ Kp, Kd ]-->(+)----->(+)---->[ sys ]----> yout
  *                       | -      | +            |
-                         |    [ G(x) ]<----------|
+ *                       |    [ G(x) ]<----------|
  *                       |                       |
  *                       ----[ Kp, Kd ]<----------
  *
