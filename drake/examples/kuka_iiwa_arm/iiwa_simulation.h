@@ -36,8 +36,7 @@ drake::SimulationOptions SetupSimulation(double initial_step_size = 0.002);
 
 /*
  * Check for joint position and joint velocity limit violations.
- * std::runtime_error throws are generated within this method in case
- * of any limit violations.
+ * 'std::runtime_error' is thrown if any limits are violated.
  */
 DRAKEKUKAIIWAARM_EXPORT
 void CheckLimitViolations(
