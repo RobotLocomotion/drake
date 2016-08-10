@@ -40,7 +40,6 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     // Append numvar_ variables, initially fixed at zero
     if (result_ == MSK_RES_OK)
       result_ = MSK_appendvars(task_, numvar_);
-    }
     // Add fixed term, optional
     if (result_ == MSK_RES_OK && constant_eqn_term != 0)
       result_ = MSK_putcfix(task_, constant_eqn_term);
@@ -520,7 +519,6 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     DRAKE_ASSERT(obj != nullptr);
     std::vector<double> linobj(obj->A().data(),
         obj->A().data() + obj->A().rows() * obj->A().cols());
-    QuadraticConstraint empty(Eigen::MatrixXd(0, 0), Eigen::VectorXd(0), 0, 0);
     MosekWrapper opt(prog.num_vars(),
             totalconnum,
             linobj,
@@ -530,14 +528,7 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
             lower_constraint_bounds,
             mosek_variable_bounds,
             upper_variable_bounds,
-            lower_variable_bounds,
-            0,
-            Eigen::MatrixXd(0, 0),
-            Eigen::MatrixXd(0, 0),
-            empty,
-            std::vector<QuadraticConstraint>(),
-            std::vector<int>(),
-            0);
+            lower_variable_bounds);
 
     std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
     std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
@@ -596,7 +587,6 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
         (*quad_obj_ptr).b().data() +
         (*quad_obj_ptr).b().rows() * (*quad_obj_ptr).b().cols());
     totalconnum = 1;  // Defined for object declaration below.
-    QuadraticConstraint empty(Eigen::MatrixXd(0, 0), Eigen::VectorXd(0), 0, 0);
     MosekWrapper opt(prog.num_vars(),
                      totalconnum,
                      linobj,
@@ -609,11 +599,7 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
                      lower_variable_bounds,
                      constant_eqn_term,
                      quad_obj,
-                     quad_cons,
-                     empty,
-                     std::vector<QuadraticConstraint>(),
-                     std::vector<int>(),
-                     0);
+                     quad_cons);
 
     std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
     std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
@@ -657,10 +643,6 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     }
     mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
                                               lower_constraint_bounds);
-    // Create empty variables to push to the constructor,
-    // create the object and optimize.
-    std::vector<double> linobj;
-    Eigen::MatrixXd quad_obj;
     double constant_eqn_term;
     std::vector<int> lorentz_cone_subscripts;
     if (prog.GetSolverOptionsDouble("Mosek").count("constant")
@@ -683,8 +665,6 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
       numbarvar = prog.GetSolverOptionsInt("Mosek").at("numbarvar");
     MosekWrapper opt(prog.num_vars() - numbarvar,
                      totalconnum,
-                     linobj,
-                     linear_cons,
                      mosek_constraint_bounds,
                      upper_constraint_bounds,
                      lower_constraint_bounds,
@@ -692,8 +672,6 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
                      upper_variable_bounds,
                      lower_variable_bounds,
                      constant_eqn_term,
-                     quad_obj,
-                     quad_cons,
                      sdp_objective,
                      sdp_constraints,
                      lorentz_cone_subscripts,

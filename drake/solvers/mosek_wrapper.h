@@ -23,23 +23,20 @@ For further definition of terms, see
 namespace drake {
 namespace solvers {
 
-/**
- * This class allows the creation and solution of a linear programming
- * problem using the mosek solver.
- *
- * MosekWrapper solves a linear program when given a correctly formatted
- * program.  Specifically, the program options:
- *  * "maxormin" -- must be set to "max" or "min"
- *  * "problemtype" -- must be set to "linear" or "quadratic"
- *
- *  It is created by a MosekSolver object.
+/**his class allows the creation and solution of a linear programming
+problem using the mosek solver.
+MosekWrapper solves a linear program when given a correctly formatted
+program.  Specifically, the program options:
+"maxormin" -- must be set to "max" or "min"
+"problemtype" -- must be set to "linear" or "quadratic"
+ It is created by a MosekSolver object.
  */
 class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
  public:
   /** Create a mosek linear programming environment using a constraint matrix
-  * Takes the number of variables and constraints, the linear eqn to
-  * optimize, the constraint matrix, and the constraint and variable bounds
-  * @p environment is created and must be told to optimize.
+  Takes the number of variables and constraints, the linear eqn to
+  optimize, the constraint matrix, and the constraint and variable bounds
+  @p environment is created and must be told to optimize.
   */
   MosekWrapper(int num_variables, int num_constraints,
     const std::vector<double>& equation_scalars,
@@ -90,7 +87,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   }
 
   /** Optimizes variables in given linear constraints, works with either
-   * of the two previous object declarations.
+  of the two previous object declarations.
    */
   static SolutionResult Solve(OptimizationProblem &prog);
 
@@ -100,24 +97,24 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
 
  private:
   /** The following names are consistent with the example programs given by
-   * http://docs.mosek.com/7.1/capi/Linear_optimization.html
-   * and by
-   * http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
-   * to ensure ease of translation and understanding.
+  http://docs.mosek.com/7.1/capi/Linear_optimization.html
+  and by
+  http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
+  to ensure ease of translation and understanding.
    */
 
   /** Adds linear constraints to mosek environment. */
   void AddLinearConstraintMatrix(const Eigen::MatrixXd& cons_);
 
   /** Adds linear constraints in sparse column matrix form.
-   * Just uses Eigen's sparse matrix library to implement expected format.
+  Just uses Eigen's sparse matrix library to implement expected format.
    */
   void AddLinearConstraintSparseColumnMatrix(
     const Eigen::SparseMatrix<double>& sparsecons_);
 
   /** Bounds constraints, see:
-   * `http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html`_
-   * for details on how to set mosek_bounds_
+  `http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html`_
+  for details on how to set mosek_bounds_
    */
   void AddLinearConstraintBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
       const std::vector<double>& upper_bounds,
@@ -129,43 +126,41 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   /** Adds a single quadratic matrix to a mosek objective. */
   void AddQuadraticObjective(const Eigen::MatrixXd& obj);
 
-  /**AppendCone()
-  * @brief adds a cone to mosek for solving. Currently does not handle rotated
-  * cones.
+  /** Adds a cone to mosek for solving. Currently does not handle rotated
+  cones.
   */
   void AppendCone(const std::vector<int>& sdp_cone_subscripts);
 
-  /**AddSDPObjective()
-  * @brief Adds a single SDP objective to Mosek for solving, will not work if
-  * called multiple times.
-  * The mathematical formulation is:
-  * minimize the function sum(c_j * x_j) + sum(<C_j, X_j>) + c
-  * where x is contained in a cone, and X is a positive semidefinite matrix,
-  * subject to SDP constraints below.
-  * See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
+  /** Adds a single SDP objective to Mosek for solving, will not work if
+  called multiple times.
+  The mathematical formulation is:
+  minimize the function sum(c_j
+  x_j) + sum(<C_j, X_j>) + c
+  where x is contained in a cone, and X is a positive semidefinite matrix,
+  subject to SDP constraints below.
+  See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
   */
   void AddSDPObjective(const QuadraticConstraint& sdp_objective);
 
-  /**AddSDPConstraints()
-  * @brief Adds multiple SDP constraints to Mosek. Only call once per program.
-  * The mathematical formulation is to minimize the objective (above) with the
-  * constraints:
-  * l_i <= sum(a_j * x_j) + sum(<A_j, X_j>) <= u_i
-  * See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
+  /** Adds multiple SDP constraints to Mosek. Only call once per program.
+  The mathematical formulation is to minimize the objective (above) with the
+  constraints:
+  l_i <= sum(a_j
+  x_j) + sum(<A_j, X_j>) <= u_i
+  See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
   */
   void AddSDPConstraints(
       const std::vector<QuadraticConstraint>& sdp_constraints);
 
-  /**AddVariableBounds()
-   * @brief bounds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
-   * for details on how to set mosek_bounds_
+  /** Binds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
+  for details on how to set mosek_bounds_
    */
   void AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds,
                          const std::vector<double>& upper_bounds,
                          const std::vector<double>& lower_bounds);
 
   /** Given upper and lower bounds for a variable or constraint, finds the
-   * equivalent Mosek bound keys.
+  equivalent Mosek bound keys.
    */
   static std::vector<MSKboundkeye> FindMosekBounds(
       const std::vector<double>& upper_bounds,
@@ -174,7 +169,8 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   SolutionResult OptimizeTask(const std::string& maxormin,
                               const std::string& ptype);
 
-  MSKint32t numvar_, numcon_, numbarvar_;  // NOTE: numbarvar only used for sdp.
+  // NOTE: numbarvar only used for sdp.
+  MSKint32t numvar_, numcon_, numbarvar_;
   MSKenv_t env_;       //< Internal environment, used to check if the problem
                        // is well-formed.
   MSKtask_t task_;     //< internal definition of task
