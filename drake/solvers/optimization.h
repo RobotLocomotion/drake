@@ -636,7 +636,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * - "conesubscript"
    *   + Denotes which variable x_i satisfies the cone relation:
    *   + x_i >= (sqrt(sum(x_j^2))), i!=j
-   * TODO: Calling OptimizationProblem::Solve will not invoke mosek at this
+   * TODO(alexdunyak): Calling OptimizationProblem::Solve will not invoke mosek at this
    * time.
    */
   void SetSolverOption(const std::string& solver_name,
