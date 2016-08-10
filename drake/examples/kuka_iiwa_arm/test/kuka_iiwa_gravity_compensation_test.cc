@@ -26,6 +26,14 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+// Test to verify behaviour of the KUKA IIWA Arm under a gravity
+// compensated PD joint position controller. Even under lower gains
+// (in contrast with a pure PD controller), accurate position control
+// is possible. The test looks for 2 things : if the set-point is
+// the same as the initial pose, the robot maintains its pose with
+// negligeable errors. 
+// The test verifies that the position reached is within some
+// bound with respect to the initial condition.
 GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
@@ -43,13 +51,16 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   auto robot_state_tap =
       std::make_shared<RobotStateTap<RigidBodySystem::StateVector>>();
 
-  // Large gains intentionally used for demo.
+  int num_dof = iiwa_tree->number_of_positions();
+
+  // Smaller gains intentionally used for demo.
   const double Kp_common = 50.0;
   const double Kd_common = 0.0;
   VectorXd Kpdiag = VectorXd::Constant(7, Kp_common);
   VectorXd Kddiag = VectorXd::Constant(7, Kd_common);
   MatrixXd Kp = Kpdiag.asDiagonal();
   MatrixXd Kd = Kddiag.asDiagonal();
+
 
   // Obtains an initial state of the simulation.
   VectorXd x0 = VectorXd::Zero(iiwa_system->getNumStates());
@@ -59,7 +70,7 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   random_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
   x0.head(7) += random_initial_configuration;
 
-  // set point is the intial state
+  // set point is the initial state
   auto set_point = std::make_shared<
       AffineSystem<NullVector, NullVector, RigidBodySystem::StateVector>>(
       MatrixXd::Zero(0, 0), MatrixXd::Zero(0, 0), VectorXd::Zero(0),
@@ -70,7 +81,8 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   Eigen::aligned_allocator<GravityCompensatedPDPositionControlSystem<RigidBodySystem>>(),
   iiwa_system, Kp, Kd);
 
-  auto sys = cascade(cascade(set_point, controlled_robot), visualizer);
+  auto sys = cascade(cascade(cascade(set_point, controlled_robot), visualizer,
+                             robot_state_tap);
 
   drake::SimulationOptions options = SetupSimulation();
 
@@ -82,7 +94,6 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
 
   drake::simulate(*sys.get(), kStartTime, kDuration, x0, options);
 
-  // TODO(naveenoid) : Test for ||final state - initial state|| < bound.
 }
 
 }  // namespace
