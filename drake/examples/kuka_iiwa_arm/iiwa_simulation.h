@@ -40,8 +40,9 @@ drake::SimulationOptions SetupSimulation(
  * Errors are thrown within the method in case any of the limits are violated
  */
 DRAKEKUKAIIWAARM_EXPORT
-void CheckLimitViolations(const std::shared_ptr<drake::RigidBodySystem> rigid_body_system,
-                          const Eigen::VectorXd& final_robot_state);
+void CheckLimitViolations(
+    const std::shared_ptr<drake::RigidBodySystem> rigid_body_system,
+    const Eigen::VectorXd& final_robot_state);
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

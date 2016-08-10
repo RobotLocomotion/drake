@@ -14,7 +14,6 @@ using Eigen::VectorXd;
 using drake::RobotStateTap;
 using drake::util::MatrixCompareType;
 
-
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
@@ -44,32 +43,34 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
 
   auto sys = cascade(cascade(iiwa_system, visualizer), robot_state_tap);
 
+  int num_dof = iiwa_tree->number_of_positions();
+
   // Obtains an initial state of the simulation.
   VectorXd x0 = VectorXd::Zero(iiwa_system->getNumStates());
-  x0.head(iiwa_tree->number_of_positions()) = iiwa_tree->getZeroConfiguration();
+  x0.head(num_dof) = iiwa_tree->getZeroConfiguration();
 
-  Eigen::VectorXd arbitrary_initial_configuration(7);
+  Eigen::VectorXd arbitrary_initial_configuration(num_dof);
   arbitrary_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
-  x0.head(7) += arbitrary_initial_configuration;
+  x0.head(num_dof) += arbitrary_initial_configuration;
 
   drake::SimulationOptions options = SetupSimulation();
 
-  // Starts the simulation.
+  // Specifies the start time of the simulation.
   const double kStartTime = 0;
 
-  // Simulation duration in seconds.
+  // Specifies the duration of the simulation.
   const double kDuration = 0.5;
-  EXPECT_NO_THROW(drake::simulate(*sys.get(), kStartTime, kDuration, x0, options));
+  EXPECT_NO_THROW(
+      drake::simulate(*sys.get(), kStartTime, kDuration, x0, options));
 
   auto xf = robot_state_tap->get_input_vector();
 
   // Ensure joint position and velocity limits are not violated.
   EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
 
-  // Ensure initial and final state are not the same (since there is no control).
-  EXPECT_FALSE(CompareMatrices(x0, xf, 1e-3,
-                               MatrixCompareType::absolute));
-
+  // Ensure initial and final state are not the same (since there is no
+  // control).
+  EXPECT_FALSE(CompareMatrices(x0, xf, 1e-3, MatrixCompareType::absolute));
 }
 
 }  // namespace
