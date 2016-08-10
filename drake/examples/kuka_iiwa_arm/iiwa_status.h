@@ -1,9 +1,7 @@
 #pragma once
 
 #include <string>
-
 #include <Eigen/Core>
-#include <string>
 
 #include "drake/systems/LCMSystem.h"
 #include "lcmtypes/drake/lcmt_iiwa_status.hpp"
