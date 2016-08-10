@@ -21,6 +21,9 @@ class Integrator : public System<T> {
   explicit Integrator(int length);
   ~Integrator() override {}
 
+  /// Integrator's output is not a direct feedthrough of its input.
+  bool has_any_direct_feedthrough() const override { return false;}
+
   /// Allocates the number of input ports specified in the constructor.
   /// Allocates no state.
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override;

@@ -19,17 +19,13 @@ class System {
  public:
   virtual ~System() {}
 
-  /// Evaluates to `true` if system is direct feedthrough and `false` otherwise.
-  /// By default systems are assuemed not to be direct feedthrough.
-  /// Specific direct feedthrough systems should override this method and return
-  /// `true`.
-  ///
-  /// A system is direct feedthrough if any of its outputs directly depends on
-  /// one of its inputs. Systems for which outputs only depend on the state of
-  /// the system are not direct feedthrough.
-  /// Direct feedthrough systems define an implicit dependence of their outputs
-  /// on their inputs and therefore specific solving strateges must be applied.
-  virtual bool is_direct_feedthrough() const { return false;}
+  /// Evaluates to `true` if any of the inputs to the system is directly
+  /// fed through to any of its outputs and `false` otherwise.
+  /// By default systems are assumed to have direct feedthroughs so that closed
+  /// loops can be detected.
+  /// Specific systems with non of its inputs being directly fedthrough to the
+  /// output should override this method returing `false`.
+  virtual bool has_any_direct_feedthrough() const { return true;}
 
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.
