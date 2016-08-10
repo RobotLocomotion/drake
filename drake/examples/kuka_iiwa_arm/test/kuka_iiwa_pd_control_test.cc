@@ -5,13 +5,11 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/cascade_system.h"
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 using drake::RigidBodySystem;
@@ -71,7 +69,7 @@ GTEST_TEST(testIIWAArm, iiwaArmPDControl) {
   random_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
   x0.head(num_dof) += random_initial_configuration;
 
-  // Set point is the intial state.
+  // Set point is the initial state.
   auto set_point = std::make_shared<
       AffineSystem<NullVector, NullVector, RigidBodySystem::StateVector>>(
       MatrixXd::Zero(0, 0), MatrixXd::Zero(0, 0), VectorXd::Zero(0),
