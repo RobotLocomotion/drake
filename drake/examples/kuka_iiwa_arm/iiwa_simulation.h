@@ -30,7 +30,6 @@ std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
  * Returns the simulation options for use by the Kuka IIWA simulation.
  */
 DRAKEKUKAIIWAARM_EXPORT
-<<<<<<< 7ce93bc0a3894986f0a816185dfe089f1f6def32
 drake::SimulationOptions SetupSimulation(double initial_step_size = 0.002);
 
 /*
