@@ -93,25 +93,29 @@ GTEST_TEST(MechanicalTransmissionTest,MechanicalTransmissionSimulation) {
 	int joint2_pos = tree->findJoint("joint2")->get_position_start_index();
 	int joint1_vel = nq + tree->findJoint("joint1")->get_velocity_start_index();
 	int joint2_vel = nq + tree->findJoint("joint2")->get_velocity_start_index();
-	//std::cout<<"joint1 pos:"<<joint1_pos<<" joint1 vel:"<<joint1_vel<<"joint2 pos:"<<joint2_pos<<" joint2_vel"<<joint2_vel<<std::endl;
+
   x0(joint1_pos) = 1.0;
   x0(joint2_pos) = 2.0;
   x0(joint1_vel) = 0.1;
   x0(joint2_vel) = 0.2;
   auto trajectory_logger = std::make_shared<drake::systems::TrajectoryLogger<RigidBodySystem::StateVector>>(rigid_body_system->getNumStates());
   auto sys = drake::cascade(rigid_body_system,trajectory_logger);
-  drake::simulate(*sys, kStartTime,
-  																	 duration,x0,options);
+  drake::simulate(*sys, kStartTime, duration,x0,options);
   auto trajectory = trajectory_logger->getTrajectory();
-  std::ofstream output_txt("output.txt");
+
   for(size_t i = 0;i<trajectory.time.size();++i) {
-  	if(output_txt.is_open()) {
-  		output_txt<<trajectory.val[i](joint1_pos)<<" "<<trajectory.val[i](joint2_pos)<<" "<<trajectory.val[i](joint1_vel)<<" "<<trajectory.val[i](joint2_vel)<<std::endl;
-  	}
-  	EXPECT_NEAR(trajectory.val[i](joint1_pos),2*trajectory.val[i](joint2_pos),1e-2);
-  	EXPECT_NEAR(trajectory.val[i](joint1_vel),2*trajectory.val[i](joint2_vel),1e-2);
+  	EXPECT_NEAR(trajectory.value[i](joint1_pos)/trajectory.value[i](joint2_pos),0.5,5e-2);
   }
-  output_txt.close();
+
+  x0(joint1_pos) = 1.0;
+  x0(joint2_pos) = 2.2;
+  x0(joint1_vel) = 0.1;
+  x0(joint2_vel) = 0.18;
+  trajectory_logger->clearTrajectory();
+  drake::simulate(*sys,kStartTime, duration, x0, options);
+  trajectory = trajectory_logger->getTrajectory();
+  auto final_state = trajectory.value[trajectory.value.size()-1];
+  EXPECT_NEAR(final_state(joint1_pos)/final_state(joint2_pos),0.5,5e-2);
 }
 
 }  // namespace
