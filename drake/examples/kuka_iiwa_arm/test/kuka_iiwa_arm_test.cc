@@ -7,6 +7,10 @@
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/util/eigen_matrix_compare.h"
+<<<<<<< affa2d5783e2608eeb885554a4eb8a29288ef39a
+=======
+#include "drake/util/testUtil.h"
+>>>>>>> WIP test addition
 
 using drake::RigidBodySystem;
 using drake::BotVisualizer;
