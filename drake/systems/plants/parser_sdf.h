@@ -15,7 +15,7 @@ namespace parsers {
 namespace sdf {
 
 /**
- * Adds the model or models defined within an SDF file to a rigid body system.
+ * Adds the model or models defined within an SDF file to a rigid body tree.
  * One instance of each model is added. The models' frames are made coincident
  * with the world's coordinate frame.
  *
@@ -40,7 +40,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     RigidBodyTree* tree);
 
 /**
- * Adds the model or models defined within an SDF file to a rigid body system.
+ * Adds the model or models defined within an SDF file to a rigid body tree.
  * One instance of each model is added.
  *
  * @param[in] filename The SDF file containing the model to be added.
