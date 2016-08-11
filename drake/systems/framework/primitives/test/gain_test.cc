@@ -147,7 +147,15 @@ GTEST_TEST(MiscGainTests, AutoDiff) {
   expected(1).derivatives() << 0.0, 0.0;
   expected(2).derivatives() << 0.0, kGain;
 
-  EXPECT_EQ(expected, output_vector);
+  const double tolerance = Eigen::NumTraits<double>::epsilon();
+  for (int i=0; i < 3; i++) {
+    // Checks output value.
+    EXPECT_NEAR(expected(i).value(), output_vector(i).value(), tolerance);
+
+    // Checks derivatives.
+    EXPECT_TRUE(expected(i).derivatives().isApprox(
+        output_vector(i).derivatives(), tolerance));
+  }
 }
 
 }  // namespace
