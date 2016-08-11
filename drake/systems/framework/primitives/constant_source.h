@@ -19,25 +19,24 @@ template <typename T>
 class ConstantSource : public System<T> {
  public:
   /// @param source_value the constant value of the output so that
-  /// `y = source_value`.
-  ConstantSource(const VectorX<T>& source_value);
+  /// `y = source_value` at all times.
+  ConstantSource(const Eigen::Ref<const VectorX<T>>& source_value);
 
-  /// Allocates the number of input ports specified in the constructor.
-  /// Allocates no state.
+  // Allocates the default context with no state.
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override;
 
-  /// Allocates one output port of the width specified in the constructor.
+  // Allocates one output port with a length equal to the size of the
+  // @p source_value specified in the constructor.
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const ContextBase<T>& context) const override;
 
-  /// Sums the input ports into the output port. If the input ports are not
-  /// of number num_inputs_ or size length_, std::runtime_error will be thrown.
+  /// Outputs a signal with a fixed value as specified by the user.
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override;
 
  private:
-  // TODO(amcastro-tri): move source_value_ to the systems parameters.
-  const T source_value_;
+  // TODO(amcastro-tri): move source_value_ to the system's parameters.
+  const VectorX<T> source_value_;
 };
 
 }  // namespace systems
