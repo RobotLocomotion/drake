@@ -108,6 +108,43 @@ class QuadraticConstraint : public Constraint {
 };
 
 /**
+ * lb <= b'*x + tr(G'*X) <= ub
+ */
+class SemidefiniteConstraint : public Constraint {
+ public:
+  static const int kNumConstraints = 1;
+  // TODO(naveenoid) : ASSERT check on dimensions of G and b.
+  // TODO(alexdunyak) : Implement Eval().
+  template <typename DerivedQ, typename Derivedb>
+  QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& G,
+                      const Eigen::MatrixBase<Derivedb>& b, double lb,
+                      double ub)
+      : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
+                   drake::Vector1d::Constant(ub)),
+        G_(G),
+        b_(b) {}
+
+  ~QuadraticConstraint() override {}
+
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override {
+    y.resize(num_constraints());
+    y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
+  }
+  void Eval() const override {
+    std::throw "Eval() is not implemented for semidefinite constraints yet.";
+  };
+
+  virtual const Eigen::MatrixXd& G() const { return G_; }
+
+  virtual const Eigen::VectorXd& b() const { return b_; }
+
+ private:
+  Eigen::MatrixXd G_;
+  Eigen::VectorXd b_;
+};
+
+/**
  *  lb[i] <= P[i](x, y...) <= ub[i], where each P[i] is a multivariate
  *  polynomial in x, y...
  *
