@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/core/Gradient.h"
+#include "drake/math/autodiff.h"
 #include "drake/systems/plants/constraint/dynamic_constraint.h"
 #include "drake/util/eigen_matrix_compare.h"
 
@@ -57,7 +57,7 @@ GTEST_TEST(DynamicConstraintPendulumDynamicsTest, DynamicConstraintTest) {
   PendulumTestDynamicConstraint dut(kNumStates, kNumInputs);
 
   TaylorVecXd result;
-  dut.Eval(drake::initializeAutoDiff(x), result);
+  dut.Eval(math::initializeAutoDiff(x), result);
 
   EXPECT_NEAR(result(0).value(), 1.1027, 1e-4);
   EXPECT_NEAR(result(1).value(), 2.2657, 1e-4);
