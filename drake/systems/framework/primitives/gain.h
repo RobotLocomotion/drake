@@ -1,13 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <memory>
 
-#include "drake/systems/framework/cache.h"
-#include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_output.h"
-#include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
 namespace systems {
