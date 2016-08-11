@@ -27,7 +27,7 @@ problem using the Mosek solver.
 MosekWrapper solves a linear program when given a correctly formatted
 program.  Specifically, the program options:
  - "maxormin" -- must be set to "max" or "min"
- - "problemtype" -- must be set to "linear" or "quadratic"
+ - "problemtype" -- must be set to "linear", "quadratic", or "sdp"
 
  It is created by a MosekSolver object.  **/
 class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
@@ -70,8 +70,8 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
     const std::vector<double>& upper_variable_bounds,
     const std::vector<double>& lower_variable_bounds,
     double constant_eqn_term,
-    const QuadraticConstraint& sdp_objective,
-    const std::vector<QuadraticConstraint>& sdp_constraints,
+    const SemidefiniteConstraint& sdp_objective,
+    const std::vector<SemidefiniteConstraint>& sdp_constraints,
     const std::vector<int>& lorentz_cone_subscripts,
     int numbarvar);
 
@@ -130,7 +130,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   where x is contained in a cone, and X is a positive semidefinite matrix,
   subject to SDP constraints below.
   See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html  **/
-  void AddSDPObjective(const QuadraticConstraint& sdp_objective);
+  void AddSDPObjective(const SemidefiniteConstraint& sdp_objective);
 
   /** Adds multiple SDP constraints to Mosek. Only call once per program.
   The mathematical formulation is to minimize the objective (above) with the
@@ -139,7 +139,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   </pre>
   See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html  **/
   void AddSDPConstraints(
-      const std::vector<QuadraticConstraint>& sdp_constraints);
+      const std::vector<SemidefiniteConstraint>& sdp_constraints);
 
   /** Binds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
   for details on how to set mosek_bounds_  **/

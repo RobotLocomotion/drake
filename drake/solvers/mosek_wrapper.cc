@@ -116,8 +116,8 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     const std::vector<double>& upper_variable_bounds,
     const std::vector<double>& lower_variable_bounds,
     double constant_eqn_term,
-    const QuadraticConstraint& sdp_objective,
-    const std::vector<QuadraticConstraint>& sdp_constraints,
+    const SemidefiniteConstraint& sdp_objective,
+    const std::vector<SemidefiniteConstraint>& sdp_constraints,
     const std::vector<int>& lorentz_cone_subscripts,
     int numbarvar)
       : numvar_(static_cast<MSKint32t>(num_variables)),
@@ -135,8 +135,8 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     if (result_ == MSK_RES_OK)
       result_ = MSK_appendvars(task_, numvar_);
     if (result_ == MSK_RES_OK && !(sdp_constraints.empty() ||
-        sdp_objective.Q().isZero())) {
-      int dimbarvar = sdp_objective.Q().rows();
+        sdp_objective.G().isZero())) {
+      int dimbarvar = sdp_objective.G().rows();
       result_ = MSK_appendbarvars(task_, 1, &dimbarvar);
     }
     // Add fixed term, optional
@@ -144,7 +144,7 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
       result_ = MSK_putcfix(task_, constant_eqn_term);
   }
   // add the equation to maximize to the environment.
-  if (!sdp_objective.Q().isZero())
+  if (!sdp_objective.G().isZero())
     AddSDPObjective(sdp_objective);
   if (!sdp_constraints.empty())
     AddSDPConstraints(sdp_constraints);
@@ -177,7 +177,7 @@ void MosekWrapper::AppendCone(const std::vector<int>& lorentz_cone_subscripts) {
   }
 }
 
-void MosekWrapper::AddSDPObjective(const QuadraticConstraint& sdp_objective) {
+void MosekWrapper::AddSDPObjective(const SemidefiniteConstraint& sdp_objective) {
   MSKint64t idx;  // idx is assigned to a specific sparse symmetric matrix by
                   // Mosek.
   double falpha = 1.0;  // Used for weighting variables
@@ -195,7 +195,7 @@ void MosekWrapper::AddSDPObjective(const QuadraticConstraint& sdp_objective) {
   std::vector<double>  sdp_values;
   // The kth nonzero value of the constraint matrix is:
   // Matrix(i, j) = sdp_values[k], and sdp_i[k] = i, sdp_j[k] = j
-  const Eigen::MatrixXd& matrixterm = sdp_objective.Q();
+  const Eigen::MatrixXd& matrixterm = sdp_objective.G();
   int numnonzero = 0;
   for (int i = 0; static_cast<unsigned int>(i) < matrixterm.rows(); i++) {
     for (int j = 0; j <= i; j++) {
@@ -220,7 +220,7 @@ void MosekWrapper::AddSDPObjective(const QuadraticConstraint& sdp_objective) {
 }
 
 void MosekWrapper::AddSDPConstraints(
-    const std::vector<QuadraticConstraint>& sdp_constraints) {
+    const std::vector<SemidefiniteConstraint>& sdp_constraints) {
   Eigen::MatrixXd linear_cons(numcon_, numvar_);
   // The linear terms are constructed by creating a matrix of all linear terms
   // and adding that row by row to Mosek.
@@ -264,11 +264,11 @@ void MosekWrapper::AddSDPConstraints(
   std::vector<MSKint32t> bar_i, bar_j;
   std::vector<double> bar_value;
   for (int k = 0; k < static_cast<int>(sdp_constraints.size()); k++) {
-    const Eigen::MatrixXd& matrixterm = sdp_constraints[k].Q();
+    const Eigen::MatrixXd& matrixterm = sdp_constraints[k].G();
     // Expect that each matrix is of the same dimensions and is square.
     DRAKE_ASSERT(matrixterm.rows() == matrixterm.cols());
     if (k >= 1)
-      DRAKE_ASSERT(sdp_constraints[k-1].Q().rows() == matrixterm.rows());
+      DRAKE_ASSERT(sdp_constraints[k-1].G().rows() == matrixterm.rows());
     for (int i = 0; i < static_cast<int>(matrixterm.rows()); i++) {
       for (j = 0; j <= i; j++) {
         // Only iterate over the lower triangle.
@@ -283,7 +283,7 @@ void MosekWrapper::AddSDPConstraints(
     constraintnonzero.push_back(currentnonzero);
     currentnonzero = 0;
   }
-  int matrixdim = sdp_constraints[0].Q().rows();
+  int matrixdim = sdp_constraints[0].G().rows();
   MSKint32t previousentries = 0;
   MSKint64t idx;
   double falpha = 1.0;
@@ -619,15 +619,15 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
   */
 
     // As before, assume there is one objective.
-    DRAKE_ASSERT(prog.quadratic_costs().size() == 1);
-    QuadraticConstraint sdp_objective =
-        *(prog.quadratic_costs().front().constraint());
-    std::vector<QuadraticConstraint> sdp_constraints;
+    DRAKE_ASSERT(prog.generic_costs().size() == 1);
+    SemidefiniteConstraint *sdp_objective = dynamic_cast<SemidefiniteConstraint *>(
+        prog.generic_costs().front().constraint().get());
+    std::vector<SemidefiniteConstraint> sdp_constraints;
     totalconnum = prog.generic_constraints().size();
     for (const auto& sdp_con : prog.generic_constraints()) {
-      QuadraticConstraint *sdp_con_ptr = dynamic_cast<QuadraticConstraint *>(
+      SemidefiniteConstraint *sdp_con_ptr = dynamic_cast<SemidefiniteConstraint *>(
           sdp_con.constraint().get());
-      QuadraticConstraint obj = *sdp_con_ptr;
+      SemidefiniteConstraint obj = *sdp_con_ptr;
       sdp_constraints.push_back(obj);
       if (sdp_con_ptr->upper_bound()(0) !=
           std::numeric_limits<double>::infinity())
@@ -671,7 +671,7 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
                      upper_variable_bounds,
                      lower_variable_bounds,
                      constant_eqn_term,
-                     sdp_objective,
+                     *sdp_objective,
                      sdp_constraints,
                      lorentz_cone_subscripts,
                      numbarvar);
