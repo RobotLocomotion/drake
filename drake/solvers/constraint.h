@@ -116,15 +116,15 @@ class SemidefiniteConstraint : public Constraint {
   // TODO(naveenoid) : ASSERT check on dimensions of G and b.
   // TODO(alexdunyak) : Implement Eval().
   template <typename DerivedQ, typename Derivedb>
-  QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& G,
-                      const Eigen::MatrixBase<Derivedb>& b, double lb,
-                      double ub)
+  SemidefiniteConstraint(const Eigen::MatrixBase<DerivedQ>& G,
+                         const Eigen::MatrixBase<Derivedb>& b, double lb,
+                         double ub)
       : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
                    drake::Vector1d::Constant(ub)),
         G_(G),
         b_(b) {}
 
-  ~QuadraticConstraint() override {}
+  ~SemidefiniteConstraint() override {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
