@@ -160,7 +160,7 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
        0, 1, 2;
   Eigen::Vector3d c;
   c << 1, 0, 0;
-  prog3.AddQuadraticCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
+  prog3.AddCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
   // Create the constraint matrix, and send it to the program.
   Eigen::Vector3d linearcon1;
   linearcon1 << 1, 0, 0;
@@ -170,7 +170,7 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
              0, 0, 1;
   auto ptrtocon1 = std::make_shared<QuadraticConstraint>(sdpcon1, linearcon1,
                                                          1, 1);
-  prog3.AddGenericConstraint(ptrtocon1);
+  prog3.AddConstraint(ptrtocon1);
   Eigen::Vector3d linearcon2;
   linearcon2 << 0, 1, 1;
   Eigen::Matrix3d sdpcon2;
@@ -179,7 +179,7 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
              1, 1, 1;
   auto ptrtocon2 = std::make_shared<QuadraticConstraint>(sdpcon2, linearcon2,
                                                          0.5, 0.5);
-  prog3.AddGenericConstraint(ptrtocon2);
+  prog3.AddConstraint(ptrtocon2);
   // Create the bounding box.
   Eigen::Vector3d bboxlow, bboxhigh;
   bboxlow << -std::numeric_limits<double>::infinity(),
