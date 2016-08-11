@@ -38,7 +38,8 @@ drake_install_headers(
   parser_model_instance_id_table.h
   parser_sdf.h
   parser_urdf.h
-  rigid_body_loop.h)
+  rigid_body_loop.h
+  rigid_body_joint_transmission.h)
 
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
