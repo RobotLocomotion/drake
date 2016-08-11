@@ -76,6 +76,8 @@ TEST_F(GainTest, NoInputPorts) {
 
 // Tests that std::out_of_range is thrown when input ports of the wrong size
 // are connected.
+// TODO(amcastro-tri): when #3109 is resolved verify that input and output ports
+// are the same size even if their sizes were determined automatically.
 TEST_F(GainTest, WrongSizeOfInputPorts) {
   // Hook up input port, but of the wrong size.
   // TODO(amcastro-tri): we must be able to ask gain_->num_of_input_ports().

@@ -22,7 +22,7 @@ class Gain : public System<T> {
   /// limited to have size @p length.
   /// @param k the gain constant so that `y = k*u`.
   /// @param length is the size of the signal to be processed.
-  Gain(T k, int length);
+  Gain(const T& k, int length);
 
   // Allocates default context for a Gain system.
   // Allocates no state.
