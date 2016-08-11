@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/math/autodiff.h"
-#include "drake/systems/plants/constraint/dynamic_constraint.h"
+#include "drake/systems/plants/constraint/direct_collocation_constraint.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 using drake::util::MatrixCompareType;
@@ -13,10 +13,11 @@ namespace drake {
 namespace systems {
 namespace {
 
-class PendulumTestDynamicConstraint : public DynamicConstraint {
+class PendulumTestDirectCollocationConstraint :
+      public DirectCollocationConstraint {
  public:
-  PendulumTestDynamicConstraint(int num_states, int num_inputs)
-      : DynamicConstraint(num_states, num_inputs) {}
+  PendulumTestDirectCollocationConstraint(int num_states, int num_inputs)
+      : DirectCollocationConstraint(num_states, num_inputs) {}
 
  protected:
   void dynamics(const TaylorVecXd& state,
@@ -37,7 +38,8 @@ class PendulumTestDynamicConstraint : public DynamicConstraint {
   }
 };
 
-GTEST_TEST(DynamicConstraintPendulumDynamicsTest, DynamicConstraintTest) {
+GTEST_TEST(DirectCollocationConstraintPendulumDynamicsTest,
+           DirectCollocationConstraintTest) {
   const int kNumStates = 2;
   const int kNumInputs = 1;
 
@@ -54,7 +56,7 @@ GTEST_TEST(DynamicConstraintPendulumDynamicsTest, DynamicConstraintTest) {
   x(5) = 0.00537668;   // u0
   x(6) = 0.018339;     // u1
 
-  PendulumTestDynamicConstraint dut(kNumStates, kNumInputs);
+  PendulumTestDirectCollocationConstraint dut(kNumStates, kNumInputs);
 
   TaylorVecXd result;
   dut.Eval(math::initializeAutoDiff(x), result);
