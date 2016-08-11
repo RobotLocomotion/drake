@@ -1735,7 +1735,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
         throw std::logic_error(
             "RigidBodyTree::FindBody: ERROR: found multiple bodys named \"" +
             body_name + "\", model name = \"" + model_name +
-            "\", model intsance id = " + std::to_string(model_instance_id) +
+            "\", model instance id = " + std::to_string(model_instance_id) +
             ".");
       }
     }

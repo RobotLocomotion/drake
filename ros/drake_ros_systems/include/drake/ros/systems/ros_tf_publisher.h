@@ -60,16 +60,16 @@ class DrakeRosTfPublisher {
    * to be published. This reference must remain valid for the lifetime of this
    * object.
    *
-   * @param[in] model_instance_names A mapping from model instance IDs to model
-   * instance names. These names are used to prefix the transform names, which
-   * is necessary for RViz to simultaneously visualize multiple robots. This
-   * reference must remain valid for the lifetime of this object.
+   * @param[in] model_instance_name_table A table mapping model instance IDs to
+   * model instance names. These names are used to prefix the transform names,
+   * which is necessary for RViz to simultaneously visualize multiple robots.
+   * This reference must remain valid for the lifetime of this object.
    */
   explicit DrakeRosTfPublisher(
       const std::shared_ptr<RigidBodyTree> rigid_body_tree,
-      const std::map<int, std::string>& model_instance_names) :
+      const std::map<int, std::string>& model_instance_name_table) :
           rigid_body_tree_(rigid_body_tree),
-          model_instance_names_(model_instance_names) {
+          model_instance_name_table_(model_instance_name_table) {
     ::ros::NodeHandle node_handle;
     // Queries the ROS parameter server for a boolean parameter called
     // "enable_tf_publisher". This parameter is used to control whether
@@ -88,121 +88,121 @@ class DrakeRosTfPublisher {
     previous_send_time_.sec = 0;
     previous_send_time_.nsec = 0;
 
-    // Instantiates a geometry_msgs::TransformStamped message for each rigid
-    // body in the rigid body tree.
-    for (auto const& rigid_body : rigid_body_tree->bodies) {
-      // Skips the current rigid body if it should be skipped.
-      if (!ShouldPublishTfForRigidBody(rigid_body.get())) continue;
+    // // Instantiates a geometry_msgs::TransformStamped message for each rigid
+    // // body in the rigid body tree.
+    // for (auto const& rigid_body : rigid_body_tree->bodies) {
+    //   // Skips the current rigid body if it should be skipped.
+    //   if (!ShouldPublishTfForRigidBody(rigid_body.get())) continue;
 
-      // Derives the key for storing the geometry_msgs::TransformStamped for
-      // the current rigid body in transform_messages_.
-      std::string key;
-      DeriveKey(rigid_body, &key);
+    //   // Derives the key for storing the geometry_msgs::TransformStamped for
+    //   // the current rigid body in transform_messages_.
+    //   std::string key;
+    //   DeriveKey(rigid_body, &key);
 
-      // Checks whether a transform message for the current link was already
-      // added to the transform_messages_ map.
-      if (transform_messages_.find(key) != transform_messages_.end()) {
-        throw std::runtime_error(
-            "ERROR: Duplicate key \"" + key + " encountered when creating a "
-            "geometry_msgs::TransformStamped message for rigid body \"" +
-            rigid_body->get_name() + "\".");
-      }
+    //   // Checks whether a transform message for the current link was already
+    //   // added to the transform_messages_ map.
+    //   if (transform_messages_.find(key) != transform_messages_.end()) {
+    //     throw std::runtime_error(
+    //         "ERROR: Duplicate key \"" + key + " encountered when creating a "
+    //         "geometry_msgs::TransformStamped message for rigid body \"" +
+    //         rigid_body->get_name() + "\".");
+    //   }
 
-      // Instantiates a geometry_msgs::TransformStamped message for the
-      // current rigid body.
-      std::unique_ptr<geometry_msgs::TransformStamped> message(
-          new geometry_msgs::TransformStamped());
+    //   // Instantiates a geometry_msgs::TransformStamped message for the
+    //   // current rigid body.
+    //   std::unique_ptr<geometry_msgs::TransformStamped> message(
+    //       new geometry_msgs::TransformStamped());
 
-      // Determines the name of this rigid body tree's parent's frame in the
-      // /tf tree.
-      std::string parent_frame_name;
-      DeriveTfFrameName(*(rigid_body->get_parent()), model_instance_names,
-          &parent_frame_name);
-      message->header.frame_id = parent_frame_name;
+    //   // Determines the name of this rigid body tree's parent's frame in the
+    //   // /tf tree.
+    //   std::string parent_frame_name;
+    //   DeriveTfFrameName(*(rigid_body->get_parent()), model_instance_name_table,
+    //       &parent_frame_name);
+    //   message->header.frame_id = parent_frame_name;
 
-      // Determines the name of this rigid body's frame in the /tf tree.
-      std::string frame_name;
-      DeriveTfFrameName(*(rigid_body.get()), model_instance_names,
-          &frame_name);
-      message->child_frame_id = frame_name;
+    //   // Determines the name of this rigid body's frame in the /tf tree.
+    //   std::string frame_name;
+    //   DeriveTfFrameName(*(rigid_body.get()), model_instance_name_table,
+    //       &frame_name);
+    //   message->child_frame_id = frame_name;
 
-      // Obtains the current link's joint.
-      const DrakeJoint& joint = rigid_body->getJoint();
+    //   // Obtains the current link's joint.
+    //   const DrakeJoint& joint = rigid_body->getJoint();
 
-      // Initializes the transformation if the joint is fixed.
-      // We can do this now since it will not change over time.
-      if (joint.getNumPositions() == 0 && joint.getNumVelocities() == 0) {
-        auto translation = joint.getTransformToParentBody().translation();
-        auto quat =
-            drake::math::rotmat2quat(joint.getTransformToParentBody().linear());
+    //   // Initializes the transformation if the joint is fixed.
+    //   // We can do this now since it will not change over time.
+    //   if (joint.getNumPositions() == 0 && joint.getNumVelocities() == 0) {
+    //     auto translation = joint.getTransformToParentBody().translation();
+    //     auto quat =
+    //         drake::math::rotmat2quat(joint.getTransformToParentBody().linear());
 
-        message->transform.translation.x = translation(0);
-        message->transform.translation.y = translation(1);
-        message->transform.translation.z = translation(2);
+    //     message->transform.translation.x = translation(0);
+    //     message->transform.translation.y = translation(1);
+    //     message->transform.translation.z = translation(2);
 
-        message->transform.rotation.w = quat(0);
-        message->transform.rotation.x = quat(1);
-        message->transform.rotation.y = quat(2);
-        message->transform.rotation.z = quat(3);
-      }
+    //     message->transform.rotation.w = quat(0);
+    //     message->transform.rotation.x = quat(1);
+    //     message->transform.rotation.y = quat(2);
+    //     message->transform.rotation.z = quat(3);
+    //   }
 
-      transform_messages_[key] = std::move(message);
-    }
+    //   transform_messages_[key] = std::move(message);
+    // }
 
-    // Instantiates a geometry_msgs::TransformStamped message for each frame
-    // in the rigid body tree.
-    for (auto const& frame : rigid_body_tree->frames) {
+    // // Instantiates a geometry_msgs::TransformStamped message for each frame
+    // // in the rigid body tree.
+    // for (auto const& frame : rigid_body_tree->frames) {
 
-      // Derives the key for storing the geometry_msgs::TransformStamped for
-      // the current frame in transform_messages_.
-      std::string key;
-      DeriveKey(frame, &key);
+    //   // Derives the key for storing the geometry_msgs::TransformStamped for
+    //   // the current frame in transform_messages_.
+    //   std::string key;
+    //   DeriveKey(frame, &key);
 
-      // Checks whether a transform message for the current frame was already
-      // added to the transform_messages_ map.
-      if (transform_messages_.find(key) != transform_messages_.end()) {
-        throw std::runtime_error(
-            "ERROR: Duplicate key \"" + key + "\" encountered when creating a "
-            "geometry_msgs::TransformStamped message.");
-      }
+    //   // Checks whether a transform message for the current frame was already
+    //   // added to the transform_messages_ map.
+    //   if (transform_messages_.find(key) != transform_messages_.end()) {
+    //     throw std::runtime_error(
+    //         "ERROR: Duplicate key \"" + key + "\" encountered when creating a "
+    //         "geometry_msgs::TransformStamped message.");
+    //   }
 
-      // Instantiates a geometry_msgs::TransformStamped message for the
-      // current frame.
-      std::unique_ptr<geometry_msgs::TransformStamped> message(
-          new geometry_msgs::TransformStamped());
+    //   // Instantiates a geometry_msgs::TransformStamped message for the
+    //   // current frame.
+    //   std::unique_ptr<geometry_msgs::TransformStamped> message(
+    //       new geometry_msgs::TransformStamped());
 
-      // Determines the name of this rigid body tree's parent's frame in the
-      // /tf tree.
-      std::string parent_frame_name;
-      DeriveTfFrameName(frame->get_rigid_body(), model_instance_names,
-          &parent_frame_name);
-      message->header.frame_id = parent_frame_name;
+    //   // Determines the name of this rigid body tree's parent's frame in the
+    //   // /tf tree.
+    //   std::string parent_frame_name;
+    //   DeriveTfFrameName(frame->get_rigid_body(), model_instance_name_table,
+    //       &parent_frame_name);
+    //   message->header.frame_id = parent_frame_name;
 
-      // Determines the name of this rigid body's frame in the /tf tree.
-      std::string frame_name;
-      DeriveTfFrameName(*(frame.get()), model_instance_names,
-          &frame_name);
-      message->child_frame_id = frame_name;
+    //   // Determines the name of this rigid body's frame in the /tf tree.
+    //   std::string frame_name;
+    //   DeriveTfFrameName(*(frame.get()), model_instance_name_table,
+    //       &frame_name);
+    //   message->child_frame_id = frame_name;
 
-      // Frames are fixed to a particular rigid body. The following code saves
-      // the transformation in the frame's geometry_msgs::TransformStamped
-      // message. This can be done once during initialization since it will
-      // not change over time.
-      auto translation = frame->get_transform_to_body().translation();
-      auto quat = drake::math::rotmat2quat(
-          frame->get_transform_to_body().linear());
+    //   // Frames are fixed to a particular rigid body. The following code saves
+    //   // the transformation in the frame's geometry_msgs::TransformStamped
+    //   // message. This can be done once during initialization since it will
+    //   // not change over time.
+    //   auto translation = frame->get_transform_to_body().translation();
+    //   auto quat = drake::math::rotmat2quat(
+    //       frame->get_transform_to_body().linear());
 
-      message->transform.translation.x = translation(0);
-      message->transform.translation.y = translation(1);
-      message->transform.translation.z = translation(2);
+    //   message->transform.translation.x = translation(0);
+    //   message->transform.translation.y = translation(1);
+    //   message->transform.translation.z = translation(2);
 
-      message->transform.rotation.w = quat(0);
-      message->transform.rotation.x = quat(1);
-      message->transform.rotation.y = quat(2);
-      message->transform.rotation.z = quat(3);
+    //   message->transform.rotation.w = quat(0);
+    //   message->transform.rotation.x = quat(1);
+    //   message->transform.rotation.y = quat(2);
+    //   message->transform.rotation.z = quat(3);
 
-      transform_messages_[key] = std::move(message);
-    }
+    //   transform_messages_[key] = std::move(message);
+    // }
   }
 
   StateVector<double> dynamics(const double& t, const StateVector<double>& x,
@@ -224,92 +224,92 @@ class DrakeRosTfPublisher {
     // Updates the previous send time.
     previous_send_time_ = current_time;
 
-    // The input vector u contains the entire system's state.
-    // The following code extracts the position values from it
-    // and computes the kinematic properties of the system.
-    auto uvec = drake::toEigen(u);
-    auto q = uvec.head(rigid_body_tree_->number_of_positions());
-    KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q);
+    // // The input vector u contains the entire system's state.
+    // // The following code extracts the position values from it
+    // // and computes the kinematic properties of the system.
+    // auto uvec = drake::toEigen(u);
+    // auto q = uvec.head(rigid_body_tree_->number_of_positions());
+    // KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q);
 
-    // Publishes the transform for each rigid body in the rigid body tree.
-    for (auto const& rigid_body : rigid_body_tree_->bodies) {
-      // Skips the current rigid body if it should be skipped.
-      if (!ShouldPublishTfForRigidBody(rigid_body.get())) continue;
+    // // Publishes the transform for each rigid body in the rigid body tree.
+    // for (auto const& rigid_body : rigid_body_tree_->bodies) {
+    //   // Skips the current rigid body if it should be skipped.
+    //   if (!ShouldPublishTfForRigidBody(rigid_body.get())) continue;
 
-      std::string key;
-      DeriveKey(rigid_body, &key);
+    //   std::string key;
+    //   DeriveKey(rigid_body, &key);
 
-      // Verifies that a geometry_msgs::TransformStamped message for the current
-      // link exists in the transform_messages_ map.
-      auto message_in_map = transform_messages_.find(key);
-      if (message_in_map == transform_messages_.end()) {
-        throw std::runtime_error(
-            "ERROR: DrakeRosTfPublisher: Unable to obtain transform message "
-            "for rigid body \"" + rigid_body->get_name() + "\" using key \"" +
-            key + "\"");
-      }
+    //   // Verifies that a geometry_msgs::TransformStamped message for the current
+    //   // link exists in the transform_messages_ map.
+    //   auto message_in_map = transform_messages_.find(key);
+    //   if (message_in_map == transform_messages_.end()) {
+    //     throw std::runtime_error(
+    //         "ERROR: DrakeRosTfPublisher: Unable to obtain transform message "
+    //         "for rigid body \"" + rigid_body->get_name() + "\" using key \"" +
+    //         key + "\"");
+    //   }
 
-      // Obtains a pointer to the geometry_msgs::TransformStamped message for
-      // the current link.
-      geometry_msgs::TransformStamped* message = message_in_map->second.get();
+    //   // Obtains a pointer to the geometry_msgs::TransformStamped message for
+    //   // the current link.
+    //   geometry_msgs::TransformStamped* message = message_in_map->second.get();
 
-      // Obtains the current link's joint.
-      const DrakeJoint& joint = rigid_body->getJoint();
+    //   // Obtains the current link's joint.
+    //   const DrakeJoint& joint = rigid_body->getJoint();
 
-      // Updates the transform only if the joint is not fixed.
-      if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
-        auto transform = rigid_body_tree_->relativeTransform(
-            cache,
-            rigid_body_tree_->FindBodyIndex(
-                rigid_body->get_parent()->get_name()),
-            rigid_body_tree_->FindBodyIndex(rigid_body->get_name()));
-        auto translation = transform.translation();
-        auto quat = drake::math::rotmat2quat(transform.linear());
+    //   // Updates the transform only if the joint is not fixed.
+    //   if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
+    //     auto transform = rigid_body_tree_->relativeTransform(
+    //         cache,
+    //         rigid_body_tree_->FindBodyIndex(
+    //             rigid_body->get_parent()->get_name()),
+    //         rigid_body_tree_->FindBodyIndex(rigid_body->get_name()));
+    //     auto translation = transform.translation();
+    //     auto quat = drake::math::rotmat2quat(transform.linear());
 
-        message->transform.translation.x = translation(0);
-        message->transform.translation.y = translation(1);
-        message->transform.translation.z = translation(2);
+    //     message->transform.translation.x = translation(0);
+    //     message->transform.translation.y = translation(1);
+    //     message->transform.translation.z = translation(2);
 
-        message->transform.rotation.w = quat(0);
-        message->transform.rotation.x = quat(1);
-        message->transform.rotation.y = quat(2);
-        message->transform.rotation.z = quat(3);
-      }
+    //     message->transform.rotation.w = quat(0);
+    //     message->transform.rotation.x = quat(1);
+    //     message->transform.rotation.y = quat(2);
+    //     message->transform.rotation.z = quat(3);
+    //   }
 
-      // Updates the time stamp in the transform message.
-      message->header.stamp = current_time;
+    //   // Updates the time stamp in the transform message.
+    //   message->header.stamp = current_time;
 
-      // Publishes the transform message onto ROS topic /tf.
-      tf_broadcaster_.sendTransform(*message);
-    }
+    //   // Publishes the transform message onto ROS topic /tf.
+    //   tf_broadcaster_.sendTransform(*message);
+    // }
 
-    // Publishes the transform for each frame in the rigid body tree.
-    for (auto const& frame : rigid_body_tree_->frames) {
-      std::string key;
-      DeriveKey(frame, &key);
+    // // Publishes the transform for each frame in the rigid body tree.
+    // for (auto const& frame : rigid_body_tree_->frames) {
+    //   std::string key;
+    //   DeriveKey(frame, &key);
 
-      // Verifies that a geometry_msgs::TransformStamped message for the current
-      // link exists in the transform_messages_ map.
-      auto message_in_map = transform_messages_.find(key);
-      if (message_in_map == transform_messages_.end()) {
-        throw std::runtime_error(
-            "ERROR: DrakeRosTfPublisher: Unable to obtain transform message "
-            "for frame \"" + frame->get_name() + "\" using key \"" +
-            key + "\"");
-      }
+    //   // Verifies that a geometry_msgs::TransformStamped message for the current
+    //   // link exists in the transform_messages_ map.
+    //   auto message_in_map = transform_messages_.find(key);
+    //   if (message_in_map == transform_messages_.end()) {
+    //     throw std::runtime_error(
+    //         "ERROR: DrakeRosTfPublisher: Unable to obtain transform message "
+    //         "for frame \"" + frame->get_name() + "\" using key \"" +
+    //         key + "\"");
+    //   }
 
-      // Obtains a pointer to the geometry_msgs::TransformStamped message for
-      // the current link.
-      geometry_msgs::TransformStamped* message = message_in_map->second.get();
+    //   // Obtains a pointer to the geometry_msgs::TransformStamped message for
+    //   // the current link.
+    //   geometry_msgs::TransformStamped* message = message_in_map->second.get();
 
-      // Updates the message with the latest time stamp. There's no need to
-      // update anything else since frames do not move relative to their
-      // rigid body.
-      message->header.stamp = current_time;
+    //   // Updates the message with the latest time stamp. There's no need to
+    //   // update anything else since frames do not move relative to their
+    //   // rigid body.
+    //   message->header.stamp = current_time;
 
-      // Publishes the transform message.
-      tf_broadcaster_.sendTransform(*message);
-    }
+    //   // Publishes the transform message.
+    //   tf_broadcaster_.sendTransform(*message);
+    // }
 
     return u;  // Passes the output through to the next system in the cascade.
   }
@@ -360,7 +360,7 @@ class DrakeRosTfPublisher {
   //
   // @param[out] frame_name A pointer to where the frame name should be stored.
   void DeriveTfFrameName(const RigidBody& rigid_body,
-      const std::map<int, std::string>& model_instance_names,
+      const std::map<int, std::string>& model_instance_name_table,
       std::string* frame_name) {
 
     // Obtains the rigid body's name.
@@ -376,8 +376,8 @@ class DrakeRosTfPublisher {
 
       // Verifies that the model instance ID has a model instance name.
       // Throws an exception if it does not have an instance name.
-      if (model_instance_names.find(model_instance_id) ==
-          model_instance_names.end()) {
+      if (model_instance_name_table.find(model_instance_id) ==
+          model_instance_name_table.end()) {
         throw std::runtime_error(
             "ERROR: DrakeRosTfPublisher: Model instance with ID " +
             std::to_string(model_instance_id) + " does not have a name.");
@@ -386,7 +386,7 @@ class DrakeRosTfPublisher {
       // Prefixes the rigid body's name with the model instance name.
       // This is the name of the rigid body's frame in the /tf tree.
       *frame_name =
-          model_instance_names.at(model_instance_id) + "/" + name;
+          model_instance_name_table.at(model_instance_id) + "/" + name;
     }
   }
 
@@ -404,7 +404,7 @@ class DrakeRosTfPublisher {
   //
   // @param[out] frame_name A pointer to where the frame name should be stored.
   void DeriveTfFrameName(const RigidBodyFrame& frame,
-      const std::map<int, std::string>& model_instance_names,
+      const std::map<int, std::string>& model_instance_name_table,
       std::string* frame_name) {
 
     // Obtains the frame's name.
@@ -415,8 +415,8 @@ class DrakeRosTfPublisher {
 
     // Verifies that the model instance ID has a model instance name.
     // Throws an exception if it does not have an instance name.
-    if (model_instance_names.find(model_instance_id) ==
-        model_instance_names.end()) {
+    if (model_instance_name_table.find(model_instance_id) ==
+        model_instance_name_table.end()) {
       throw std::runtime_error(
           "ERROR: DrakeRosTfPublisher: Model instance with ID " +
           std::to_string(model_instance_id) + " does not have a name.");
@@ -425,7 +425,7 @@ class DrakeRosTfPublisher {
     // Prefixes the rigid body frame's name with the model instance name.
     // This is the name of the rigid body's frame in the /tf tree.
     *frame_name =
-        model_instance_names.at(model_instance_id) + "/" + name;
+        model_instance_name_table.at(model_instance_id) + "/" + name;
   }
 
   // The rigid body tree being used by Drake's rigid body dynamics engine.
@@ -433,7 +433,7 @@ class DrakeRosTfPublisher {
 
   // Maps model instance IDs to model instance names. This is used to prefix
   // the transform names.
-  const std::map<int, std::string>& model_instance_names_;
+  const std::map<int, std::string>& model_instance_name_table_;
 
   // Publishes the transform messages that specify the positions and
   // orientations of every rigid body and frame in the rigid body tree. This is

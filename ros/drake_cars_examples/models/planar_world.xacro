@@ -15,6 +15,9 @@
       <geometry>
         <box size="500.0 500.0 2.0" />
       </geometry>
+        <material name="gray">
+          <color rgba="0.2 0.2 0.2 1" />
+        </material>
     </visual>
   </link>
 

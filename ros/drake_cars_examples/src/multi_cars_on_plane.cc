@@ -14,6 +14,7 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeAppUtil.h"
 
 using drake::BotVisualizer;
@@ -35,11 +36,36 @@ using drake::ros::systems::DrakeRosTfPublisher;
 using drake::ros::systems::run_ros_vehicle_sim;
 
 /**
+ * Sits in a loop periodically publishing an identity transform from
+ * "world_link" to "world". This method exits when ros::ok() returns false.
+ */
+void WorldTfPublisher() {
+  tf::TransformBroadcaster tf_broadcaster;
+
+  geometry_msgs::TransformStamped transform_message;
+  transform_message.header.frame_id = RigidBodyTree::kWorldName;
+  transform_message.child_frame_id = "world_link";
+  transform_message.transform.translation.x = 0;
+  transform_message.transform.translation.y = 0;
+  transform_message.transform.translation.z = 0;
+  transform_message.transform.rotation.w = 1;
+  transform_message.transform.rotation.x = 0;
+  transform_message.transform.rotation.y = 0;
+  transform_message.transform.rotation.z = 0;
+
+  ::ros::Rate cycle_rate(10); // 10 Hz
+  while (::ros::ok()) {
+    tf_broadcaster.sendTransform(transform_message);
+    cycle_rate.sleep();
+  }
+}
+
+/**
  * This is the main method of the multi-car vehicle simulation. The vehicles
  * reside on a flat terrain.
  */
 int DoMain(int argc, const char* argv[]) {
-  ::ros::init(argc, const_cast<char**>(argv), "multi_car_on_plane");
+  ::ros::init(argc, const_cast<char**>(argv), "multi_cars_on_plane");
   ::ros::NodeHandle node_handle;
 
   // Initializes the communication layer.
@@ -76,7 +102,7 @@ int DoMain(int argc, const char* argv[]) {
         rigid_body_sys->AddModelInstanceFromDescription(description,
             DrakeJoint::QUATERNION, weld_to_frame);
 
-    // The model file contains a single model. Get its model instance ID,
+    // The model description contains a single model. Get its model instance ID,
     // assign it a model instance name, and save both in
     // model_instance_name_table.
     if (model_instance_id_table.find(kModelName) ==
@@ -95,6 +121,10 @@ int DoMain(int argc, const char* argv[]) {
     // Saves the model instance name in model_instance_name_table.
     model_instance_name_table[model_instance_id] = model_instance_name;
   }
+
+  // Spawns a thread publishing an identity transform from "world_link" to
+  // "world".
+  std::thread worldTfPublisherThread(WorldTfPublisher);
 
   // std::cout << "==============================================" << std::endl;
   // for(auto it = sim_instance_ids.cbegin(); it != sim_instance_ids.cend();
@@ -119,13 +149,9 @@ int DoMain(int argc, const char* argv[]) {
   //     ::drake::ros::SensorPublisherOdometry<RigidBodySystem::StateVector>>(
   //     rigid_body_sys);
 
-  std::map<int, std::string> model_instance_names;
-  // TODO(liang.fok): Fill in model_instance_names.
-  // model_instance_names[model_instances["prius_1"]] = "prius_1";
-
   auto tf_publisher = std::make_shared<
       DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
-          model_instance_names);
+          model_instance_name_table);
 
   // auto joint_state_publisher = std::make_shared<
   //     ::drake::ros::SensorPublisherJointState<RigidBodySystem::StateVector>>(
@@ -160,6 +186,7 @@ int DoMain(int argc, const char* argv[]) {
 
   run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
 
+  worldTfPublisherThread.join();
   return 0;
 }
 
