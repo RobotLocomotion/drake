@@ -134,8 +134,8 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   /** Adds a single SDP objective to Mosek for solving, will not work if
   called multiple times.
   The mathematical formulation is:
-  minimize the function sum(c_j
-  x_j) + sum(<C_j, X_j>) + c
+  minimize the function
+  sum(c_j * x_j) + trace(C'*X) + c
   where x is contained in a cone, and X is a positive semidefinite matrix,
   subject to SDP constraints below.
   See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
@@ -145,8 +145,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   /** Adds multiple SDP constraints to Mosek. Only call once per program.
   The mathematical formulation is to minimize the objective (above) with the
   constraints:
-  l_i <= sum(a_j
-  x_j) + sum(<A_j, X_j>) <= u_i
+  l_i <= sum(a_j * x_j) + trace(A_i' * X_i) <= u_i
   See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
   */
   void AddSDPConstraints(
