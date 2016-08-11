@@ -2271,6 +2271,27 @@ void RigidBodyTree::addRobotFromSDF(
       floating_base_type, weld_to_frame, this);
 }
 
+void RigidBodyTree::addJointTransmissionToLinearConstraint() {
+  Eigen::MatrixXd Aeq(joint_transmissions.size(),num_positions_);
+  Aeq.setZero();
+  Eigen::VectorXd beq(joint_transmissions.size());
+  int row_idx = 0;
+  for(const auto &jt:joint_transmissions) {
+    auto link1 = findJoint(jt.getJoint1Name());
+    auto link2 = findJoint(jt.getJoint2Name());
+    auto joint1 = link1->getJoint();
+    auto joint2 = link2->getJoint();
+    if(joint1->getNumPositions() != 1 || joint2->getNumPositions() != 1) {
+      throw std::runtime_error("RigidBodyTree.cpp: addJointTransmissionToLinearConstraint: ERROR:" + jt.getJoint1Name() + " or " + jt.getJoint2Name() + "has more than one degree of freedom");
+    }
+    int joint1_idx = link1->get_position_start_index();
+    int joint2_idx = link2->get_position_start_index();
+    Aeq(row_idx,joint1_idx) = 1.0;
+    Aeq(row_idx,joint2_idx) = -jt.getMultiplier();
+    beq(row_idx) = jt.getOffset();
+  }
+  addLinearEqualityPositionConstraint(Aeq,beq);
+}
 // Explicit template instantiations for massMatrix.
 template DRAKERBM_EXPORT MatrixX<AutoDiffUpTo73d> RigidBodyTree::massMatrix<
     AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d>&) const;

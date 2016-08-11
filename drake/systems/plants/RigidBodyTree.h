@@ -19,6 +19,7 @@
 #include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/rigid_body_loop.h"
+#include "drake/systems/plants/rigid_body_joint_transmission.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/pose_map.h"
@@ -901,6 +902,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // Rigid body loops
   std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> loops;
 
+  // rigid body joint transmissions
+  std::vector<RigidBodyJointTransmission> joint_transmissions;
+
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
@@ -940,7 +944,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // linear equality constraint on robot position Aeq*q = beq
   std::unique_ptr<drake::solvers::LinearEqualityConstraint>
                                          linear_equality_position_constraint_;
-
+  
+  void addJointTransmissionToLinearConstraint();
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

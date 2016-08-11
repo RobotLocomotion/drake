@@ -652,6 +652,27 @@ void ParseJoint(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   tree->bodies[child_index]->setJoint(move(joint_unique_ptr));
   tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
+
+  // parse the `mimic` tag if it exists
+  XMLElement* mimic_node = node->FirstChildElement("mimic");
+  if(mimic_node) {
+    // obtains the mimic joint
+    const char* attr = node->Attribute("joint");
+    if (!attr) throw runtime_error("ERROR: joint tag is missing");
+    string mimic_joint(attr);
+
+    // obtains the multiplier
+    double multiplier = 1.0;
+    parseScalarAttribute(mimic_node,"multiplier",multiplier);
+
+    // obtains the offset
+    double offset = 0.0;
+    parseScalarAttribute(mimic_node,"offset",offset);
+
+    rigid_body_joint_transmission joint_trans(name,mimic_joint,multiplier,offset);
+    tree->joint_transmissions.push_back(joint_trans);
+  }
+
 }
 
 /* Searches through the URDF document looking for the effort limits of a joint

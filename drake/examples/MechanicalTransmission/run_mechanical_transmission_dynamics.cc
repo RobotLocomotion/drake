@@ -108,7 +108,7 @@ GTEST_TEST(MechanicalTransmissionTest,MechanicalTransmissionSimulation) {
   }
 
   x0(joint1_pos) = 1.0;
-  x0(joint2_pos) = 2.2;
+  x0(joint2_pos) = 2.5;
   x0(joint1_vel) = 0.1;
   x0(joint2_vel) = 0.18;
   trajectory_logger->clearTrajectory();
