@@ -98,7 +98,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   using MyContinuousState = systems::ContinuousState<double>;
   using MyOutput = systems::SystemOutput<double>;
 
-  /// The input force to this system is not directly fed through to the output.
+  /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false;}
 
   // Provide methods specific to this System.
