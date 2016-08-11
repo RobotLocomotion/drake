@@ -12,33 +12,31 @@ if(lcm_FOUND)
     VERSION 0.0.1)
   add_dependencies(drakePendulum drake_lcmtypes_hpp)
 
-  add_executable(runPendulumDynamics runDynamics.cpp)
-  target_link_libraries(runPendulumDynamics drakeRBM drakeLCMSystem threads)
-  add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics --non-realtime)
+  add_executable(pendulum_run_dynamics pendulum_run_dynamics.cc)
+  target_link_libraries(pendulum_run_dynamics
+    drakeRBM
+    drakeLCMSystem
+    threads)
+  add_test(NAME pendulum_run_dynamics
+    COMMAND pendulum_run_dynamics --non-realtime)
 
-  add_executable(runPendulumEnergyShaping runEnergyShaping.cpp)
-  target_link_libraries(runPendulumEnergyShaping drakeRBM drakeLCMSystem threads)
-  # add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping --non-realtime)  # FIXME: disabled for now since it's not a good test, since it will always timeout
+  add_executable(pendulum_run_energy_shaping pendulum_run_energy_shaping.cc)
+  target_link_libraries(pendulum_run_energy_shaping
+    drakeRBM
+    drakeLCMSystem
+    threads)
+  # add_test(NAME pendulum_run_energy_shaping COMMAND pendulum_run_energy_shaping --non-realtime)  # FIXME: disabled for now since it's not a good test, since it will always timeout
 
-  add_executable(runPendulumLQR runLQR.cpp)
-  target_link_libraries(runPendulumLQR drakeRBM drakeLCMSystem)
-  add_test(NAME runPendulumLQR COMMAND runPendulumLQR --non-realtime)
+  add_executable(pendulum_run_lqr pendulum_run_lqr.cc)
+  target_link_libraries(pendulum_run_lqr drakeRBM drakeLCMSystem)
+  add_test(NAME pendulum_run_lqr
+    COMMAND pendulum_run_lqr --non-realtime)
 
   add_executable(pendulum_run_swing_up pendulum_run_swing_up.cc)
   target_link_libraries(pendulum_run_swing_up
-    drakePendulum drakeRBM drakeLCMSystem)
-
-#  write_procman(Pendulum.pmd
-#    GROUP "Simulate"
-#      NAME "dynamics (cpp)" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumDynamics'"
-#    ENDGROUP
-#    GROUP "LCM Controllers"
-#      NAME "energy shaping (cpp)" COMMAND "${CMAKE_BINARY_DIR}/bin/runPendulumEnergyShaping"
-#    ENDGROUP
-#    GROUP "Controllers+Simulation In One"
-#      NAME "LQR (cpp)" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumLQR'"
-#    ENDGROUP
-#    NAME "viewer" COMMAND "${CMAKE_INSTALL_PREFIX}/bin/drake-visualizer")
+    drakePendulum
+    drakeRBM
+    drakeLCMSystem)
 endif()
 
 add_subdirectory(test)
