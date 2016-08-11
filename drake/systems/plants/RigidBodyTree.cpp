@@ -2164,8 +2164,8 @@ void RigidBodyTree::addRobotFromSDF(
     const std::string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::sdf::AddModelInstancesFromSdfFile(sdf_filename, floating_base_type,
-      weld_to_frame, this);
+  drake::parsers::sdf::AddModelInstancesFromSdfFile(sdf_filename,
+      floating_base_type, weld_to_frame, this);
 }
 
 // Explicit template instantiations for massMatrix.
