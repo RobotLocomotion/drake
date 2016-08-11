@@ -13,7 +13,7 @@ VectorXd VectorDiff(const VectorXd& vec) {
   const int len_minus1 = vec.size() - 1;
   return vec.tail(len_minus1) - vec.head(len_minus1);
 }
-}
+}  // anon namespace
 
 // DirectTrajectoryOptimization
 // For readability of long lines, these single-letter variables names are
@@ -56,9 +56,6 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   all_inf.fill(std::numeric_limits<double>::infinity());
   opt_problem_.AddBoundingBoxConstraint(MatrixXd::Zero(N_ - 1, 1), all_inf,
                                         {h_vars_});
-
-  // TODO(Lucy-tri) Create constraints for dynamics and add them.
-  // Matlab: obj.addDynamicConstraints();
 }
 
 void DirectTrajectoryOptimization::AddInputBounds(
@@ -121,7 +118,7 @@ class FinalCostWrapper : public Constraint {
   std::shared_ptr<Constraint> constraint_;
 };
 
-}
+}  // anon namespace
 
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
@@ -131,7 +128,6 @@ void DirectTrajectoryOptimization::AddFinalCost(
       N_, num_states_, constraint);
   opt_problem_.AddCost(wrapper, {h_vars_, x_vars_.tail(num_states_)});
 }
-
 
 void DirectTrajectoryOptimization::GetInitialVars(
     double timespan_init_in, const PiecewisePolynomial<double>& traj_init_u,
@@ -168,6 +164,11 @@ SolutionResult DirectTrajectoryOptimization::SolveTraj(
     double timespan_init, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   GetInitialVars(timespan_init, traj_init_u, traj_init_x);
+
+  // If we're using IPOPT, it can't quite solve trajectories to the
+  // default precision level.
+  opt_problem_.SetSolverOption("IPOPT", "tol", 1e-7);
+
   SolutionResult result = opt_problem_.Solve();
   return result;
 }

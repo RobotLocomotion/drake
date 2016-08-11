@@ -1,4 +1,6 @@
-drake_install_headers(LQR.h)
+drake_install_headers(
+  LQR.h
+  open_loop_trajectory_controller.h)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
