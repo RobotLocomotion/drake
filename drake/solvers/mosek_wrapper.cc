@@ -177,7 +177,8 @@ void MosekWrapper::AppendCone(const std::vector<int>& lorentz_cone_subscripts) {
   }
 }
 
-void MosekWrapper::AddSDPObjective(const SemidefiniteConstraint& sdp_objective) {
+void MosekWrapper::AddSDPObjective(
+      const SemidefiniteConstraint& sdp_objective) {
   MSKint64t idx;  // idx is assigned to a specific sparse symmetric matrix by
                   // Mosek.
   double falpha = 1.0;  // Used for weighting variables
@@ -620,13 +621,14 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
 
     // As before, assume there is one objective.
     DRAKE_ASSERT(prog.generic_costs().size() == 1);
-    SemidefiniteConstraint *sdp_objective = dynamic_cast<SemidefiniteConstraint *>(
+    SemidefiniteConstraint *sdp_objective =
+        dynamic_cast<SemidefiniteConstraint *>(
         prog.generic_costs().front().constraint().get());
     std::vector<SemidefiniteConstraint> sdp_constraints;
     totalconnum = prog.generic_constraints().size();
     for (const auto& sdp_con : prog.generic_constraints()) {
-      SemidefiniteConstraint *sdp_con_ptr = dynamic_cast<SemidefiniteConstraint *>(
-          sdp_con.constraint().get());
+      SemidefiniteConstraint *sdp_con_ptr =
+          dynamic_cast<SemidefiniteConstraint *>(sdp_con.constraint().get());
       SemidefiniteConstraint obj = *sdp_con_ptr;
       sdp_constraints.push_back(obj);
       if (sdp_con_ptr->upper_bound()(0) !=
