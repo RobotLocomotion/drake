@@ -624,7 +624,16 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
 }
 
 
-// Parses a model and adds it to the rigid body tree.
+// Parses a model and adds it to the rigid body tree. Note that the
+// `ModelInstanceIdTable` is an output parameter rather than a return value
+// since this method may be called multiple times, once for each model in an
+// SDF. Each time this method is called, a new entry is added to the table.
+// It's guaranteed that there will be no model name collisions since the SDF
+// standard enforces a rule that each model within a single SDF description
+// be uniquely named. Regardless, in an abundance of caution, this method
+// includes code that checks for collisions and throws a `std::runtime_error` if
+// such a collision occurs. This is useful for failing gracefully when provided
+// a malformed SDF.
 //
 // @param[out] tree A pointer to the rigid body tree to which to add the model.
 //

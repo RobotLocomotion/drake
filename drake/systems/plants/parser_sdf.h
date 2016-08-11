@@ -15,8 +15,8 @@ namespace parsers {
 namespace sdf {
 
 /**
- * Adds a SDF model to a rigid body system. The model's frame is equal to the
- * world's coordinate frame.
+ * Adds a SDF model to a rigid body system. The model's frame is made coincident
+ * with the world's coordinate frame.
  *
  * @param[in] urdf_filename The URDF file containing the model to be added.
  *
@@ -29,7 +29,8 @@ namespace sdf {
  * @param[out] tree The rigid body tree to which to add the model.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs.
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddRobotFromSDFInWorldFrame(
@@ -53,7 +54,8 @@ ModelInstanceIdTable AddRobotFromSDFInWorldFrame(
  * @param[out] tree The rigid body tree to which to add the model.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs.
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddRobotFromSDF(

@@ -905,7 +905,8 @@ void ParseFrame(RigidBodyTree* tree, XMLElement* node) {
  * each URDF file describes one model using a tree of bodies connected by
  * joints. Thus, the only way for a URDF to contain multiple world-connecting
  * joints is if the URDF describes more than one model. This is a violation of
- * the one-model-per-URDF rule.
+ * the one-model-per-URDF rule. For more details about the URDF standard, see:
+ * http://wiki.ros.org/urdf/XML.
  *
  * @param[in] node A pointer to the XML node that is parsing the URDF model.
  *

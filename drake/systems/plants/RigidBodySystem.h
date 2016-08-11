@@ -179,7 +179,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * `RigidBodySystem`.
    *
    * @return A table mapping the names of the models whose instances were just
-   * added to the `RigidBodyTree` to their instance IDs.
+   * added to the `RigidBodyTree` to their instance IDs, which are unique within
+   * the `RigidBodyTree`.
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfString(
       const std::string& urdf_string, const std::string& root_dir = ".",
@@ -206,7 +207,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * offset and rotation relative to the world's frame.
    *
    * @return A table mapping the names of the models whose instances were just
-   * added to the `RigidBodyTree` to their instance IDs.
+   * added to the `RigidBodyTree` to their instance IDs, which are unique within
+   * the `RigidBodyTree`.
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfFile(
       const std::string& urdf_filename,
@@ -240,7 +242,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * offset and rotation relative to the world's frame.
    *
    * @return A table mapping the names of the models whose instances were just
-   * added to the `RigidBodyTree` to their instance IDs.
+   * added to the `RigidBodyTree` to their instance IDs, which are unique within
+   * the `RigidBodyTree`.
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromSdfFile(
       const std::string& sdf_filename,
@@ -268,7 +271,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * offset and rotation relative to the world's frame.
    *
    * @return A table mapping the names of the models whose instances were just
-   * added to the `RigidBodyTree` to their instance IDs.
+   * added to the `RigidBodyTree` to their instance IDs, which are unique within
+   * the `RigidBodyTree`.
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromFile(
       const std::string& filename,

@@ -56,7 +56,8 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
  * This parameter must not be `nullptr`.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs.
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDFString(
@@ -82,7 +83,8 @@ ModelInstanceIdTable AddModelInstanceFromURDFString(
  * This parameter must not be `nullptr`.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs.
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDFString(
@@ -111,7 +113,8 @@ ModelInstanceIdTable AddModelInstanceFromURDFString(
  * This parameter must not be `nullptr`.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs.
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDFString(
@@ -145,7 +148,8 @@ ModelInstanceIdTable AddModelInstanceFromURDFString(
  * This parameter must not be `nullptr`.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs.
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDFString(
@@ -170,7 +174,8 @@ ModelInstanceIdTable AddModelInstanceFromURDFString(
  * parameter must not be `nullptr`.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs.
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDF(const std::string& urdf_filename,
@@ -193,7 +198,8 @@ ModelInstanceIdTable AddModelInstanceFromURDF(const std::string& urdf_filename,
  * This parameter must not be `nullptr`.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs.
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDF(
@@ -221,7 +227,8 @@ ModelInstanceIdTable AddModelInstanceFromURDF(
  * This parameter must not be `nullptr`.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs.
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDF(
@@ -253,7 +260,8 @@ ModelInstanceIdTable AddModelInstanceFromURDF(
  * This parameter must not be `nullptr`.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs.
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDF(
