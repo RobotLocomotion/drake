@@ -22,8 +22,7 @@ class ConstantSourceTest : public ::testing::Test {
     source_ = make_unique<ConstantSource<double>>(kConstantSource_);
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
-    input0_ = make_unique<BasicVector<double>>(3 /* length */);
-    input1_ = make_unique<BasicVector<double>>(3 /* length */);
+    input_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
   // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
@@ -37,15 +36,15 @@ class ConstantSourceTest : public ::testing::Test {
   std::unique_ptr<ConstantSource<double>> source_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
-  std::unique_ptr<BasicVector<double>> input0_;
-  std::unique_ptr<BasicVector<double>> input1_;
+  std::unique_ptr<BasicVector<double>> input_;
 };
 
 TEST_F(ConstantSourceTest, OutputTest) {
-  // Hook input of the expected size.
-  // TODO(amcastro-tri): we must be able to ask source_->num_of_input_ports().
+  // TODO(amcastro-tri): we should be able to ask:
+  // source_->num_of_input_ports().
   ASSERT_EQ(0, context_->get_num_input_ports());
-  // TODO(amcastro-tri): we must be able to ask source_->num_of_output_ports().
+  // TODO(amcastro-tri): we should be able to ask:
+  // source_->num_of_output_ports().
   ASSERT_EQ(1, output_->get_num_ports());
 
   source_->EvalOutput(*context_, output_.get());
@@ -60,38 +59,16 @@ TEST_F(ConstantSourceTest, OutputTest) {
   EXPECT_EQ(kConstantSource_, output_vector->get_value());
 }
 
-#if 0
-// Tests that std::out_of_range is thrown when the wrong number of input ports
-// are connected.
-TEST_F(ConstantSourceTest, NoInputPorts) {
-  // No input ports are hooked up. ConstantSource must have one input port.
-  // TODO(amcastro-tri): This will not be needed here when input/outputs are
-  // defined in the constructor.
-  // Connections sanity check will be performed by Diagram::Finalize().
-
-  // TODO(amcastro-tri): we must be able to ask source_->num_of_input_ports()
-  // and make the GTest with that.
-  EXPECT_THROW(source_->EvalOutput(*context_, output_.get()), std::out_of_range);
-}
-
-// Tests that std::out_of_range is thrown when input ports of the wrong size
-// are connected.
-TEST_F(ConstantSourceTest, WrongSizeOfInputPorts) {
-  // Hook up input port, but of the wrong size.
-  // TODO(amcastro-tri): we must be able to ask source_->num_of_input_ports().
-  ASSERT_EQ(1, context_->get_num_input_ports());
-  auto short_input = make_unique<BasicVector<double>>(2 /* length */);
-  short_input->get_mutable_value() << 4, 5;
-  context_->SetInputPort(0, MakeInput(std::move(short_input)));
-
-  EXPECT_THROW(source_->EvalOutput(*context_, output_.get()), std::out_of_range);
+// Tests that inputs cannot be set for a ConstantSource.
+TEST_F(ConstantSourceTest, ShouldNotBePossibleToConnectInputs) {
+  EXPECT_THROW(context_->SetInputPort(0, MakeInput(std::move(input_))),
+               std::out_of_range);
 }
 
 // Tests that ConstantSource allocates no state variables in the context_.
 TEST_F(ConstantSourceTest, ConstantSourceIsStateless) {
   EXPECT_EQ(nullptr, context_->get_state().continuous_state);
 }
-#endif
 
 }  // namespace
 }  // namespace systems
