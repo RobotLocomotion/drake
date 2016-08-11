@@ -100,13 +100,13 @@ GTEST_TEST(testIIWAArm, iiwaArmPDControl) {
   EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
 
   // Expects norm of the joint position difference to be below a maximum value.
-  double kMaxPositionErrorNorm = 1e-5;
+  double kMaxPositionErrorNorm = 1e-3;
   EXPECT_TRUE((xf.head(num_dof) - x0.head(num_dof)).squaredNorm() <
               kMaxPositionErrorNorm);
 
   // Expects final joint velocity has a norm larger than a minimum value.
   // (since this controller won't stay at rest at the set-point).
-  double kMinVelocityNorm = 1e-5;
+  double kMinVelocityNorm = 1e-3;
   EXPECT_TRUE(xf.tail(num_dof).squaredNorm() > kMinVelocityNorm);
 }
 
