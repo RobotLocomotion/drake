@@ -56,6 +56,8 @@ class InstantaneousQPController {
 
   const RigidBodyTree& getRobot() const { return *robot; }
 
+  int GetBodyOrFrameId(const std::string& name) const;
+
  private:
   /// Returns a map where the keys are the names of every body or frame in
   /// the RigidBodyTree, and the values are unique IDs for that body or frame.
@@ -63,8 +65,6 @@ class InstantaneousQPController {
   /// RigidBodyTree::getBodyOrFrameName.
   static std::unordered_map<std::string, int> ComputeBodyOrFrameNameToIdMap(
       const RigidBodyTree& robot);
-
-  int GetBodyOrFrameId(const std::string& name) const;
 
   std::unordered_map<std::string, int> body_or_frame_name_to_id_;
 
