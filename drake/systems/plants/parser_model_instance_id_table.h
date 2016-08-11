@@ -11,8 +11,8 @@ namespace parsers {
    * and are thus guaranteed to be unique within an instance of this data type.
    * The instance IDs are determined by by the `RigidBodyTree` and are unique
    * among all model instances within the tree. This data type is used to inform
-   * applications of the IDs that were assigned to model instances in a
-   * `RigidBodyTree`.
+   * applications of the IDs that were assigned to model instances as they were
+   * added to a `RigidBodyTree` while parsing a URDF or SDF description.
    *
    * The model names within this data type are specified by the URDF and SDF.
    * They are @a not the same as "model instance names" since multiple instances
