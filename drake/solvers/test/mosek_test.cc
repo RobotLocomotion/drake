@@ -168,8 +168,8 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   sdpcon1 << 1, 0, 0,
              0, 1, 0,
              0, 0, 1;
-  auto ptrtocon1 =
-      std::make_shared<QuadraticConstraint>(sdpcon1, linearcon1, 1, 1);
+  auto ptrtocon1 = std::make_shared<QuadraticConstraint>(sdpcon1, linearcon1,
+                                                         1, 1);
   prog3.AddGenericConstraint(ptrtocon1);
   Eigen::Vector3d linearcon2;
   linearcon2 << 0, 1, 1;
@@ -177,8 +177,8 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   sdpcon2 << 1, 1, 1,
              1, 1, 1,
              1, 1, 1;
-  auto ptrtocon2 =
-      std::make_shared<QuadraticConstraint>(sdpcon2, linearcon2, 0.5, 0.5);
+  auto ptrtocon2 = std::make_shared<QuadraticConstraint>(sdpcon2, linearcon2,
+                                    0.5, 0.5);
   prog3.AddGenericConstraint(ptrtocon2);
   // Create the bounding box.
   Eigen::Vector3d bboxlow, bboxhigh;
