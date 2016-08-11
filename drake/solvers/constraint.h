@@ -128,12 +128,13 @@ class SemidefiniteConstraint : public Constraint {
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
-    y.resize(num_constraints());
-    y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
-  }
-  void Eval() const override {
-    std::throw "Eval() is not implemented for semidefinite constraints yet.";
+    throw "Eval is not implemented in SemidefiniteConstraint.";
   };
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
+    throw "Eval is not implemented in SemidefiniteConstraint.";
+  };
+
 
   virtual const Eigen::MatrixXd& G() const { return G_; }
 
