@@ -894,25 +894,23 @@ void ParseFrame(RigidBodyTree* tree, XMLElement* node) {
 }
 
 /**
- * Searches for a joint that connects the URDF model to a body called
- * `RigidBodyTree::kWorldName`. If it finds such a joint, it updates
- * @p weld_to_frame with the offset specified by the joint.
+ * Searches for a joint that connects the URDF model to a link with a name equal
+ * to the string defined by RigidBodyTree::kWorldName. If it finds such a
+ * joint, it updates the weld_to_frame parameter with the offset specified by
+ * the joint.
  *
  * An exception is thrown if no such joint is found, or if multiple
  * world-connecting joints are found.
  *
  * Multiple world-connecting joints cannot exist in a single URDF file because
- * each URDF file describes one model using a tree of bodies connected by
- * joints. Thus, the only way for a URDF to contain multiple world-connecting
- * joints is if the URDF describes more than one model. This is a violation of
- * the one-model-per-URDF rule. For more details about the URDF standard, see:
- * http://wiki.ros.org/urdf/XML.
+ * each URDF file describes one robot using a tree of links connected by joints.
+ * Thus, the only way for a URDF to contain multiple world-connecting joints is
+ * if the URDF describes more than one robot. This is a violation of the
+ * one-robot-per-URDF rule.
  *
  * @param[in] node A pointer to the XML node that is parsing the URDF model.
- *
  * @param[out] floating_base_type A reference to where the floating_base_type
  * should be saved.
- *
  * @param[out] weld_to_frame The parameter to modify. If this parameter is
  * `nullptr`, a new `RigidBodyFrame` is constructed and stored in the shared
  * pointer.
