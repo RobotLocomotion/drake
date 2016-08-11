@@ -235,7 +235,7 @@ void MosekWrapper::AddSDPConstraints(
   std::vector<MSKint32t> aptre;  // aptre[j] is the position of the last index
                                  // plus one in asub for column j.
   std::vector<MSKint32t> asub;  // List of row indices.
-  std::vector<MSKrealt> aval;  //List of non-zero entries ordered by columns.
+  std::vector<MSKrealt> aval;  // List of non-zero entries ordered by columns.
   int j = 0;
   for (j = 0; j < static_cast<int>(sparsecons.cols()); j++) {
     aptrb.push_back((MSKint32t) sparsecons.outerIndexPtr()[j]);
