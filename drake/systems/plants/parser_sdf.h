@@ -15,13 +15,14 @@ namespace parsers {
 namespace sdf {
 
 /**
- * Adds a SDF model to a rigid body system. The model's frame is made coincident
+ * Adds the model or models defined within an SDF file to a rigid body system.
+ * One instance of each model is added. The models' frames are made coincident
  * with the world's coordinate frame.
  *
- * @param[in] urdf_filename The URDF file containing the model to be added.
+ * @param[in] filename The SDF file containing the model to be added.
  *
  * @param[in] package_map A map of ROS package names to their paths. These are
- * the packages to search through when finding files referenced in the URDF.
+ * the packages to search through when finding files referenced in the SDF.
  *
  * @param[in] floating_base_type The type of joint that connects the model's
  * root to the existing rigid body tree.
@@ -33,18 +34,19 @@ namespace sdf {
  * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddRobotFromSDFInWorldFrame(
-    const std::string& sdf_filename,
+ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
+    const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
 
 /**
- * Adds a SDF model to a rigid body system.
+ * Adds the model or models defined within an SDF file to a rigid body system.
+ * One instance of each model is added.
  *
- * @param[in] urdf_filename The URDF file containing the model to be added.
+ * @param[in] filename The SDF file containing the model to be added.
  *
  * @param[in] package_map A map of ROS package names to their paths. These are
- * the packages to search through when finding files referenced in the URDF.
+ * the packages to search through when finding files referenced in the SDF.
  *
  * @param[in] floating_base_type The type of joint that connects the model's
  * root to the existing rigid body tree.
@@ -58,8 +60,8 @@ ModelInstanceIdTable AddRobotFromSDFInWorldFrame(
  * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddRobotFromSDF(
-    const std::string& sdf_filename,
+ModelInstanceIdTable AddModelInstancesFromSdfFile(
+    const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);

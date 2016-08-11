@@ -801,18 +801,18 @@ ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
 
 }  // namespace
 
-ModelInstanceIdTable AddRobotFromSDFInWorldFrame(
+ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
 
-  return AddRobotFromSDF(filename, floating_base_type,
+  return AddModelInstancesFromSdfFile(filename, floating_base_type,
       nullptr /* weld_to_frame */, tree);
 }
 
-ModelInstanceIdTable AddRobotFromSDF(
+ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
