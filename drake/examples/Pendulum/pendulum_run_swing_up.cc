@@ -7,6 +7,7 @@
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
 #include "drake/systems/cascade_system.h"
+#include "drake/systems/controllers/open_loop_trajectory_controller.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/Simulation.h"
@@ -15,52 +16,6 @@
 using drake::solvers::SolutionResult;
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
-
-namespace {
-/**
- * An open-loop controller to play back an input trajectory.
- *
- * @concept{system_concept}
- */
-class PendulumTrajectoryController {
- public:
-  template <typename ScalarType>
-  using InputVector = drake::NullVector<ScalarType>;
-  template <typename ScalarType>
-  using StateVector = drake::NullVector<ScalarType>;
-  template <typename ScalarType>
-  using OutputVector = PendulumInput<ScalarType>;
-
-  /**
-   * The trajectory argument is aliased, and must be valid for the
-   * life of this object.
-   */
-  explicit PendulumTrajectoryController(const PiecewisePolynomialType& pp_traj)
-      : pp_traj_(pp_traj) {}
-
-  template <typename ScalarType>
-  StateVector<ScalarType> dynamics(const ScalarType& t,
-                                   const StateVector<ScalarType>& x,
-                                   const InputVector<ScalarType>& u) const {
-    return StateVector<ScalarType>();
-  }
-
-  template <typename ScalarType>
-  PendulumInput<ScalarType> output(const ScalarType& t,
-                                   const StateVector<ScalarType>& x,
-                                   const InputVector<ScalarType>& u) const {
-    PendulumInput<ScalarType> y = pp_traj_.value(t);
-    return y;
-  }
-
-  bool isTimeVarying() const { return true; }
-  bool isDirectFeedthrough() const { return false; }
-
- private:
-  const PiecewisePolynomialType& pp_traj_;
-};
-
-}  // anon namespace
 
 int main(int argc, char* argv[]) {
   auto p = make_shared<Pendulum>();
@@ -100,7 +55,8 @@ int main(int argc, char* argv[]) {
       lcm, drake::GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
       DrakeJoint::FIXED);
 
-  auto control = std::make_shared<PendulumTrajectoryController>(pp_traj);
+  auto control = std::make_shared<
+    drake::OpenLoopTrajectoryController<Pendulum>>(pp_traj);
   auto traj_sys = drake::cascade(control, p);
   auto sys = drake::cascade(traj_sys, visualizer);
 
