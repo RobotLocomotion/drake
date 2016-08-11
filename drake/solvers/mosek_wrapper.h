@@ -35,7 +35,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   /** Create a Mosek linear programming environment using a constraint matrix
   Takes the number of variables and constraints, the linear eqn to
   optimize, the constraint matrix, and the constraint and variable bounds.
-  environment is created and must be told to optimize.  **/
+  environment is created and must be told to optimize  **/
   MosekWrapper(int num_variables, int num_constraints,
     const std::vector<double>& equation_scalars,
     const Eigen::MatrixXd& linear_cons,
@@ -124,9 +124,10 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
 
   /** Adds a single SDP objective to Mosek for solving, will not work if
   called multiple times.
-  The mathematical formulation is:
+  The mathematical formulation is: <pre>
   minimize the function
   sum(c_j * x_j) + trace(C'*X) + c
+  </pre>
   where x is contained in a cone, and X is a positive semidefinite matrix,
   subject to SDP constraints below.
   See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html  **/
