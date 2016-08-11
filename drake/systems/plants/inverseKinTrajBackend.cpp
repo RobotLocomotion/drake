@@ -321,11 +321,14 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
  private:
   void AppendBounds(const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
     DRAKE_ASSERT(lb.size() == ub.size());
-    int prev_size = lower_bound_.size();
-    lower_bound_.conservativeResize(prev_size + lb.size());
-    upper_bound_.conservativeResize(prev_size + ub.size());
-    lower_bound_.tail(lb.size()) = lb;
-    upper_bound_.tail(ub.size()) = ub;
+    int prev_size = lower_bound().size();
+    Eigen::VectorXd new_lb(prev_size + lb.size());
+    Eigen::VectorXd new_ub(prev_size + ub.size());
+    new_lb.head(prev_size) = lower_bound();
+    new_lb.tail(lb.size()) = lb;
+    new_ub.head(prev_size) = upper_bound();
+    new_ub.tail(ub.size()) = ub;
+    set_bounds(new_lb, new_ub);
   }
 
   const RigidBodyTree* model_;
