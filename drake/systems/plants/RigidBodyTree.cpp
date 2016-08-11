@@ -4,6 +4,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
@@ -40,8 +41,8 @@ using drake::kTwistSize;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::Gradient;
 
-const set<int> RigidBodyTree::default_robot_num_set = {0};
-const char* const RigidBodyTree::kWorldLinkName = "world";
+const set<int> RigidBodyTree::default_model_instance_id_set = {0};
+const char* const RigidBodyTree::kWorldName = "world";
 
 template <typename T>
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
@@ -63,8 +64,9 @@ RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type)
     : RigidBodyTree() {
-  drake::parsers::urdf::AddModelInstanceFromURDF(urdf_filename,
-      floating_base_type, this);
+  // Adds the model defined in urdf_filename to this tree.
+  drake::parsers::urdf::AddModelInstanceFromURDF(
+      urdf_filename, floating_base_type, this);
 }
 
 RigidBodyTree::RigidBodyTree(void)
@@ -72,9 +74,13 @@ RigidBodyTree::RigidBodyTree(void)
   // Sets the gravity vector;
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
-  // Adds the rigid body representing the world.
+  // Adds the rigid body representing the world. It has model instance ID 0.
   std::unique_ptr<RigidBody> b(new RigidBody());
-  b->set_name(RigidBodyTree::kWorldLinkName);
+  b->set_name(RigidBodyTree::kWorldName);
+
+  // TODO(liang.fok): Assign the world body a unique model instance ID of zero.
+  // See: https://github.com/RobotLocomotion/drake/issues/3088
+
   bodies.push_back(std::move(b));
 }
 
@@ -811,7 +817,7 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
 
 template <typename Scalar>
 TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
-    KinematicsCache<Scalar>& cache, const std::set<int>& robotnum,
+    KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set,
     bool in_terms_of_qdot) const {
   cache.checkCachedKinematicsSettings(false, false, "worldMomentumMatrix");
   updateCompositeRigidBodyInertias(cache);
@@ -829,7 +835,7 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
       const DrakeJoint& joint = body.getJoint();
       int ncols_joint =
           in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
-      if (isBodyPartOfRobot(body, robotnum)) {
+      if (is_part_of_model_instances(body, model_instance_id_set)) {
         int start = in_terms_of_qdot ? body.get_position_start_index()
                                      : body.get_velocity_start_index();
 
@@ -851,7 +857,8 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
 
 template <typename Scalar>
 TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
-    KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const {
+    KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
+        const {
   cache.checkCachedKinematicsSettings(true, true,
                                       "worldMomentumMatrixDotTimesV");
   updateCompositeRigidBodyInertias(cache);
@@ -861,7 +868,7 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
     if (body.hasParent()) {
-      if (isBodyPartOfRobot(body, robotnum)) {
+      if (is_part_of_model_instances(body, model_instance_id_set)) {
         const auto& element = cache.getElement(body);
         ret.noalias() += element.inertia_in_world *
                          element.motion_subspace_in_world_dot_times_v;
@@ -878,13 +885,14 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
 
 template <typename Scalar>
 TwistMatrix<Scalar> RigidBodyTree::centroidalMomentumMatrix(
-    KinematicsCache<Scalar>& cache, const std::set<int>& robotnum,
+    KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set,
     bool in_terms_of_qdot) const {
   // kinematics cache checks already being done in worldMomentumMatrix.
-  auto ret = worldMomentumMatrix(cache, robotnum, in_terms_of_qdot);
+  auto ret = worldMomentumMatrix(cache, model_instance_id_set,
+      in_terms_of_qdot);
 
   // transform from world frame to COM frame
-  auto com = centerOfMass(cache, robotnum);
+  auto com = centerOfMass(cache, model_instance_id_set);
   auto angular_momentum_matrix = ret.template topRows<kSpaceDimension>();
   auto linear_momentum_matrix = ret.template bottomRows<kSpaceDimension>();
   angular_momentum_matrix += linear_momentum_matrix.colwise().cross(com);
@@ -899,12 +907,13 @@ TwistMatrix<Scalar> RigidBodyTree::centroidalMomentumMatrix(
 
 template <typename Scalar>
 TwistVector<Scalar> RigidBodyTree::centroidalMomentumMatrixDotTimesV(
-    KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const {
+    KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
+        const {
   // kinematics cache checks already being done in worldMomentumMatrixDotTimesV
-  auto ret = worldMomentumMatrixDotTimesV(cache, robotnum);
+  auto ret = worldMomentumMatrixDotTimesV(cache, model_instance_id_set);
 
   // transform from world frame to COM frame:
-  auto com = centerOfMass(cache, robotnum);
+  auto com = centerOfMass(cache, model_instance_id_set);
   auto angular_momentum_matrix_dot_times_v =
       ret.template topRows<kSpaceDimension>();
   auto linear_momentum_matrix_dot_times_v =
@@ -920,22 +929,25 @@ TwistVector<Scalar> RigidBodyTree::centroidalMomentumMatrixDotTimesV(
   return ret;
 }
 
-bool RigidBodyTree::isBodyPartOfRobot(const RigidBody& body,
-                                      const std::set<int>& robotnum) const {
-  for (std::set<int>::const_iterator it = robotnum.begin();
-       it != robotnum.end(); ++it) {
+bool RigidBodyTree::is_part_of_model_instances(
+    const RigidBody& body,
+    const std::set<int>& model_instance_id_set) const {
+  for (std::set<int>::const_iterator it = model_instance_id_set.begin();
+       it != model_instance_id_set.end(); ++it) {
     if (*it < -1) {
       return true;
     }
   }
 
-  return robotnum.find(body.get_model_instance_id()) != robotnum.end();
+  return model_instance_id_set.find(body.get_model_instance_id()) !=
+      model_instance_id_set.end();
 }
 
-double RigidBodyTree::getMass(const std::set<int>& model_instance_ids) const {
+double RigidBodyTree::getMass(const std::set<int>& model_instance_id_set)
+    const {
   double total_mass = 0.0;
   for (const auto& body : bodies) {
-    if (isBodyPartOfRobot(*body.get(), model_instance_ids)) {
+    if (is_part_of_model_instances(*body.get(), model_instance_id_set)) {
       total_mass += body->get_mass();
     }
   }
@@ -944,7 +956,8 @@ double RigidBodyTree::getMass(const std::set<int>& model_instance_ids) const {
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
-    KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const {
+    KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
+        const {
   cache.checkCachedKinematicsSettings(false, false, "centerOfMass");
 
   Eigen::Matrix<Scalar, kSpaceDimension, 1> com;
@@ -953,7 +966,7 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
 
   for (int i = 0; i < static_cast<int>(bodies.size()); i++) {
     RigidBody& body = *bodies[i];
-    if (isBodyPartOfRobot(body, robotnum)) {
+    if (is_part_of_model_instances(body, model_instance_id_set)) {
       if (body.get_mass() > 0) {
         com.noalias() +=
             body.get_mass() *
@@ -971,21 +984,23 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
 template <typename Scalar>
 Matrix<Scalar, kSpaceDimension, Eigen::Dynamic>
 RigidBodyTree::centerOfMassJacobian(KinematicsCache<Scalar>& cache,
-                                    const std::set<int>& robotnum,
+                                    const std::set<int>& model_instance_id_set,
                                     bool in_terms_of_qdot) const {
   cache.checkCachedKinematicsSettings(false, false, "centerOfMassJacobian");
-  auto A = worldMomentumMatrix(cache, robotnum, in_terms_of_qdot);
-  double total_mass = getMass(robotnum);
+  auto A = worldMomentumMatrix(cache, model_instance_id_set, in_terms_of_qdot);
+  double total_mass = getMass(model_instance_id_set);
   return A.template bottomRows<kSpaceDimension>() / total_mass;
 }
 
 template <typename Scalar>
 Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMassJacobianDotTimesV(
-    KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const {
+    KinematicsCache<Scalar>& cache,
+    const std::set<int>& model_instance_id_set) const {
   // kinematics cache checks are already being done in
   // centroidalMomentumMatrixDotTimesV
-  auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV(cache, robotnum);
-  double total_mass = getMass(robotnum);
+  auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV(cache,
+      model_instance_id_set);
+  double total_mass = getMass(model_instance_id_set);
   return cmm_dot_times_v.template bottomRows<kSpaceDimension>() / total_mass;
 }
 
@@ -1854,8 +1869,7 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
     if (name_match[ii]) {
       if (match_found) {
         throw std::logic_error(
-            "RigidBodyTree::findJoint: ERROR: Multiple "
-            "joints found named \"" +
+            "RigidBodyTree::findJoint: ERROR: Multiple joints found named \"" +
             joint_name + "\", model instance ID = " +
             std::to_string(model_instance_id) + ".");
       }
@@ -2035,7 +2049,7 @@ int RigidBodyTree::AddFloatingJoint(
     // use the transform_to_body variable within weld_to_frame to initialize
     // the robot at the desired location in the world.
     if (weld_to_frame->get_name()
-          == std::string(RigidBodyTree::kWorldLinkName)) {
+          == std::string(RigidBodyTree::kWorldName)) {
       if (!weld_to_frame->has_as_rigid_body(nullptr)) {
         throw std::runtime_error(
             "RigidBodyTree::AddFloatingJoint: "
@@ -2108,9 +2122,9 @@ void RigidBodyTree::addRobotFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
-  drake::parsers::urdf::AddModelInstanceFromURDFString(xml_string, package_map,
-                                               root_dir, floating_base_type,
-                                               weld_to_frame, this);
+  drake::parsers::urdf::AddModelInstanceFromURDFString(
+      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
+      this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -2120,9 +2134,9 @@ void RigidBodyTree::addRobotFromURDFString(
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromURDFString(xml_string, package_map,
-                                               root_dir, floating_base_type,
-                                               weld_to_frame, this);
+  drake::parsers::urdf::AddModelInstanceFromURDFString(
+      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
+      this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -2151,7 +2165,7 @@ void RigidBodyTree::addRobotFromSDF(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::sdf::AddRobotFromSDF(sdf_filename, floating_base_type,
-                                       weld_to_frame, this);
+      weld_to_frame, this);
 }
 
 // Explicit template instantiations for massMatrix.

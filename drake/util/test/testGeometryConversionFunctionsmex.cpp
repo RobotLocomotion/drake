@@ -1,5 +1,6 @@
 #include "drake/common/constants.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeMexUtil.h"

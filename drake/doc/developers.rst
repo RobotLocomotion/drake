@@ -76,11 +76,20 @@ supported. On Windows, the "Visual Studio 14 2015",
 
 The supported version of MATLAB is R2015b.
 
+Minimal configuration is defined as the minimal required externals from
+the superbuild. This is configured by turning off all externals using
+``ccmake`` or ``cmake-gui`` except for ``WITH_EIGEN`` and ``WITH_GOOGLETEST``
+which should be set to ``ON``.
+
 +-----------------------------------------+--------------------+-------------------+---------+
 | Operating System                        | Compilers          | Superbuild Deps   | Build   |
 +=========================================+====================+===================+=========+
-| Ubuntu 14.04 LTS                        | | GCC 4.9          | Default           | Debug   |
+| Ubuntu 14.04 LTS                        | | GCC 4.9          | Minimal           | Debug   |
 |                                         | | Java 1.7         |                   +---------+
+|                                         |                    |                   | Release |
+|                                         |                    +-------------------+---------+
+|                                         |                    | Default           | Debug   |
+|                                         |                    |                   +---------+
 |                                         |                    |                   | Release |
 |                                         |                    +-------------------+---------+
 |                                         |                    | Default + MATLAB  | Release |
@@ -89,20 +98,32 @@ The supported version of MATLAB is R2015b.
 |                                         | | Java 1.7         |                   +---------+
 |                                         |                    |                   | Release |
 +-----------------------------------------+--------------------+-------------------+---------+
-| | Windows Server 2012 R2 or Windows 8.1 | | MSVC 14 32-bit   | Default           | Debug   |
+| | Windows Server 2012 R2 or Windows 8.1 | | MSVC 14 32-bit   | Minimal           | Debug   |
 | | Visual Studio 2015 (any edition)      | | Java 1.7         |                   +---------+
+|                                         |                    |                   | Release |
+|                                         |                    +-------------------+---------+
+|                                         |                    | Default           | Debug   |
+|                                         |                    |                   +---------+
 |                                         |                    |                   | Release |
 |                                         |                    +-------------------+---------+
 |                                         |                    | Default + MATLAB  | Release |
 |                                         +--------------------+-------------------+---------+
-|                                         | | MSVC 14 64-bit   | Default           | Debug   |
+|                                         | | MSVC 14 64-bit   | Minimal           | Debug   |
 |                                         | | Java 1.7         |                   +---------+
+|                                         |                    |                   | Release |
+|                                         |                    +-------------------+---------+
+|                                         |                    | Default           | Debug   |
+|                                         |                    |                   +---------+
 |                                         |                    |                   | Release |
 |                                         |                    +-------------------+---------+
 |                                         |                    | Default + MATLAB  | Release |
 +-----------------------------------------+--------------------+-------------------+---------+
-| OS X 10.10                              | | Apple Clang 7.0  | Default           | Debug   |
+| OS X 10.10                              | | Apple Clang 7.0  | Minimal           | Debug   |
 |                                         | | Java 1.8         |                   +---------+
+|                                         |                    |                   | Release |
+|                                         |                    +-------------------+---------+
+|                                         |                    | Default           | Debug   |
+|                                         |                    |                   +---------+
 |                                         |                    |                   | Release |
 |                                         |                    +-------------------+---------+
 |                                         |                    | Default + MATLAB  | Release |
@@ -117,6 +138,10 @@ Review Process
 For complex changes, especially those that will span multiple PRs, please
 open a GitHub issue and solicit design feedback before you invest a lot of
 time in code.
+
+Before your submit a pull request, please consult the
+:ref:`Code Review Checklist <code-review-checklist>`,
+where a list of the most frequent problems are collected.
 
 Be prepared to engage in active code review on your pull requests.  The Drake
 code review process has two phases: feature review and platform review. You
@@ -211,6 +236,7 @@ Programming Style Notes
 .. toctree::
     :maxdepth: 1
 
+    code_review_checklist
     code_style_guide
     code_style_tools
 

@@ -14,7 +14,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   auto rigid_body_system = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  rigid_body_system->addRobotFromFile(
+  rigid_body_system->AddModelInstanceFromFile(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
 

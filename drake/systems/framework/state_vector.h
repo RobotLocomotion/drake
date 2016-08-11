@@ -46,13 +46,23 @@ class StateVector {
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.
-  virtual void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) = 0;
+  virtual void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) {
+    for (int i = 0; i < value.rows(); ++i) {
+      SetAtIndex(i, value[i]);
+    }
+  }
 
   /// Copies the entire state to a vector with no semantics.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates only the O(N) memory that it returns.
-  virtual VectorX<T> CopyToVector() const = 0;
+  virtual VectorX<T> CopyToVector() const {
+    VectorX<T> vec(size());
+    for (int i = 0; i < size(); ++i) {
+      vec[i] = GetAtIndex(i);
+    }
+    return vec;
+  }
 
   /// Adds a scaled version of this state vector to Eigen vector @p vec, which
   /// must be the same size.

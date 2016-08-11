@@ -22,6 +22,7 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace ros {
+namespace systems {
 
 // Holds the objects and data used to extract and publish joint state
 // information for a particular robot.
@@ -126,7 +127,7 @@ class SensorPublisherJointState {
 
         robot_struct->message.reset(new sensor_msgs::JointState());
 
-        robot_struct->message->header.frame_id = RigidBodyTree::kWorldLinkName;
+        robot_struct->message->header.frame_id = RigidBodyTree::kWorldName;
 
         InitJointStateStruct(robot_name, rigid_body_system->getRigidBodyTree(),
                              robot_struct.get());
@@ -357,5 +358,6 @@ class SensorPublisherJointState {
   ::ros::Time previous_send_time_;
 };
 
-}  // end namespace ros
-}  // end namespace drake
+}  // namespace systems
+}  // namespace ros
+}  // namespace drake

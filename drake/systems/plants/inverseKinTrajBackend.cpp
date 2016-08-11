@@ -459,7 +459,7 @@ void inverseKinTrajBackend(
           stc, &kin_helper);
       for (int t_index = qstart_idx; t_index < nT; t_index++) {
         if (!stc->isTimeValid(&t[t_index])) { continue; }
-        prog.AddGenericConstraint(wrapper, {q.segment(nq * t_index, nq)});
+        prog.AddConstraint(wrapper, {q.segment(nq * t_index, nq)});
       }
     } else if (constraint_category ==
                RigidBodyConstraint::PostureConstraintCategory) {
@@ -518,7 +518,7 @@ void inverseKinTrajBackend(
       std::make_shared<IKInbetweenConstraint>(
           model, helper, num_constraints, constraint_array);
   if (inbetween_constraint->num_constraints() > 0) {
-    prog.AddGenericConstraint(inbetween_constraint, {q, qdot0, qdotf});
+    prog.AddConstraint(inbetween_constraint, {q, qdot0, qdotf});
   }
 
   const SolutionResult result = prog.Solve();

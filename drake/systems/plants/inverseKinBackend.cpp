@@ -10,6 +10,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/core/Gradient.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
@@ -136,7 +137,7 @@ void AddQuasiStaticConstraint(
       prog->AddContinuousVariables(num_vars, "qsc");
   auto wrapper = std::make_shared<QuasiStaticConstraintWrapper>(
       qsc, kin_helper);
-  prog->AddGenericConstraint(wrapper, {vars, qsc_vars});
+  prog->AddConstraint(wrapper, {vars, qsc_vars});
   prog->AddBoundingBoxConstraint(VectorXd::Constant(num_vars, 0.),
                                  VectorXd::Constant(num_vars, 1.),
                                  {qsc_vars});
@@ -235,7 +236,7 @@ void inverseKinBackend(
         if (!stc->isTimeValid(&t[t_index])) { continue; }
         auto wrapper = std::make_shared<SingleTimeKinematicConstraintWrapper>(
             stc, &kin_helper);
-        prog.AddGenericConstraint(wrapper, {vars});
+        prog.AddConstraint(wrapper, {vars});
       } else if (constraint_category ==
                  RigidBodyConstraint::PostureConstraintCategory) {
         PostureConstraint* pc = static_cast<PostureConstraint*>(constraint);

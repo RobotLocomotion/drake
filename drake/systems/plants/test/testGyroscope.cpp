@@ -33,7 +33,7 @@ Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys,
 GTEST_TEST(testGyroscope, AllTests) {
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(
+  rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
       floating_base_type);
   auto const& tree = rigid_body_sys->getRigidBodyTree();

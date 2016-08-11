@@ -9,6 +9,10 @@ written in Drake. Being consistent with this style will make the code easier to
 read, debug, and maintain. To ensure your code is style compliant, consider
 using :ref:`tools for complying with coding style <code-style-tools>`.
 
+See also the brief
+:ref:`Code Review Checklist <code-review-checklist>`,
+where a list of the most frequent problems are collected.
+
 Note: Many of the files in the repository were written before this style guide,
 or did not follow it precisely.  If you find style errors, go ahead and change
 it and submit a pull request.

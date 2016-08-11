@@ -5,6 +5,7 @@
 
 #include "drake/core/Gradient.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 using drake::initializeAutoDiff;
