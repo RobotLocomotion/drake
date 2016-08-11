@@ -34,16 +34,30 @@ DRAKECARS_EXPORT
 void PrintUsageInstructions(const std::string& executable_name);
 
 /**
+ * Adds the model instances in @p source_table to @p dest_table. Throws a
+ * `std::runtime_error` if there is a collision in the model names.
+ */
+DRAKECARS_EXPORT
+void AddModelInstancesToTable(
+    const drake::parsers::ModelInstanceIdTable& source_table,
+    drake::parsers::ModelInstanceIdTable* dest_table);
+
+/**
  * Parses the command line arguments and creates the rigid body system to be
  * simulated. The command line arguments consists of the vehicle's URDF or SDF
  * model file followed by an arbitrary number of model files representing things
  * the vehicle's environment.
  *
- * Note: This method will call `::exit(EXIT_FAILURE)` if it encounters a problem
- * parsing the input parameters.
+ * <B>Note 1:</B> This method will call `::exit(EXIT_FAILURE)` if it encounters
+ * a problem parsing the input parameters.
  *
- * Note: If no flat terrain is specified by the input parameters, a flat
- * terrain is added automatically.
+ * <B>Note 2:</B> If no flat terrain is specified by the input parameters, a
+ * flat terrain is added automatically.
+ *
+ * <B>Note 3:</B> The name of each model in the set of URDF and SDF files listed
+ * in @p argv must be unique within this set. In other words, a particular model
+ * name can appear at most once among all of the models defined in the URDF and
+ * SDF files listed in @p argv.
  *
  * @param[in] argc The number of command line arguments.
  *
@@ -56,15 +70,15 @@ void PrintUsageInstructions(const std::string& executable_name);
  * floating point value. This parameter is optional. If it is nullptr, the
  * duration is not saved.
  *
- * @param[out] instance_ids A pointer to the data structure that maps the
- * model name to the instance ID of the newly instance of the model.
+ * @param[out] model_instance_id_table A pointer to where the model instance
+ * IDs are to be stored.
  *
  * @return A shared pointer to a rigid body system.
  */
 DRAKECARS_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
     int argc, const char* argv[], double* duration,
-    drake::parsers::ModelInstanceIdTable* instance_ids);
+    drake::parsers::ModelInstanceIdTable* model_instance_id_table);
 
 /**
  * Checks the command line arguments looking for a "--duration" flag followed
@@ -90,7 +104,9 @@ DRAKECARS_EXPORT
 void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
 
 /**
- * Adds a box-shaped terrain to the specified rigid body tree.
+ * Adds a box-shaped terrain to the specified rigid body tree. This directly
+ * modifies the existing world rigid body within @p rigid_body_tree and thus
+ * does not need to return a model name or model_instance_id value.
  *
  * The X, Y, and Z axes of the box matches the X, Y, and Z-axis of the world.
  * The length and width of the box is aligned with X and Y and are @p box_size
@@ -98,15 +114,18 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
  * top surface of the box is at Z = 0.
  *
  * @param[in] rigid_body_tree The rigid body tree to which to add the terrain.
+ *
  * @param[in] box_size The length and width of the terrain aligned with the
  * world's X and Y axes.
+ *
  * @param[in] box_depth The depth of the terrain aligned with the world's Z
  * axis. Note that regardless of how deep the terrain is, the top surface of the
  * terrain will be at Z = 0.
  */
 DRAKECARS_EXPORT
-void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
-                    double box_size = 1000, double box_depth = 10);
+void AddFlatTerrainToWorld(
+    const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
+    double box_size = 1000, double box_depth = 10);
 
 /**
  * Creates a vehicle system by instantiating PD controllers for the actuators

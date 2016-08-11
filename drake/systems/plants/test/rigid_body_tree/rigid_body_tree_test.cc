@@ -199,10 +199,10 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 // with vector block input parameters. For more information, see:
 // https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
-  std::string file_name =
+  std::string filename =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(file_name, tree.get());
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(filename, tree.get());
 
   VectorX<double> q;
   VectorX<double> v;
@@ -223,12 +223,12 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
 // model in the table. Furthermore, it should be called "two_dof_robot" and
 // the model instance ID should be 1 (zero was assigned to the world model).
 TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
-  std::string file_name =
+  std::string filename =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
-  ModelInstanceIdTable model_instance_id_table;
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(file_name, tree.get(),
-      &model_instance_id_table);
+
+  ModelInstanceIdTable model_instance_id_table =
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(filename, tree.get());
 
   const int kExpectedTableSize = 1;
   const int kExpectedModelInstanceId = 0;

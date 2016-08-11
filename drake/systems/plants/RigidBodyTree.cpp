@@ -62,12 +62,12 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
 }
 
 RigidBodyTree::RigidBodyTree(
-    const std::string& urdf_filename,
+    const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type)
     : RigidBodyTree() {
-  // Adds the model defined in urdf_filename to this tree.
+  // Adds the model defined in filename to this tree.
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      urdf_filename, floating_base_type, this);
+      filename, floating_base_type, this);
 }
 
 RigidBodyTree::RigidBodyTree(void)

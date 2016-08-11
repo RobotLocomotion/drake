@@ -53,16 +53,16 @@ int DoMain(int argc, const char* argv[]) {
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  // Instantiates a data structure that maps model instance names to their model
-  // instance IDs.
-  std::map<std::string, int> model_instances;
+  // Instantiates a data structure that maps model instance IDs to
+  // application-defined model instance names.
+  std::map<int, std::string> model_instance_name_table;
 
   // Obtains the number of vehicles to simulate.
   std::string car_count_parameter_name("car_count");
   int num_vehicles = GetROSParameter<int>(node_handle,
       car_count_parameter_name);
 
-  const std::string model_name = "Prius";
+  const std::string kModelName = "Prius";
 
   // Adds the vehicles to the rigid body system.
   for (int ii = 0; ii < num_vehicles; ++ii) {
@@ -70,21 +70,30 @@ int DoMain(int argc, const char* argv[]) {
         std::to_string(ii + 1);
     std::string description = GetROSParameter<std::string>(node_handle,
         description_param_name);
-    drake::parsers::ModelInstanceIdTable instance_ids;
+
     std::shared_ptr<RigidBodyFrame> weld_to_frame;
-    rigid_body_sys->AddModelInstanceFromString(description,
-        DrakeJoint::QUATERNION, weld_to_frame, &instance_ids);
+    drake::parsers::ModelInstanceIdTable model_instance_id_table =
+        rigid_body_sys->AddModelInstanceFromDescription(description,
+            DrakeJoint::QUATERNION, weld_to_frame);
 
     // The model file contains a single model. Get its model instance ID,
-    // assign it a model instance name, and save both the instance ID and name
-    // in sim_instance_ids.
-    if (instance_ids.find(model_name) == instance_ids.end()) {
+    // assign it a model instance name, and save both in
+    // model_instance_name_table.
+    if (model_instance_id_table.find(kModelName) ==
+        model_instance_id_table.end()) {
       throw std::runtime_error(
           "Failed to find a model instance whose model name is \"" +
-          model_name + "\".");
+          kModelName + "\".");
     }
-    model_instances[model_name + "_" + std::to_string(ii)] =
-        instance_ids[model_name];
+
+    // Gets the model instance ID.
+    int model_instance_id = model_instance_id_table[kModelName];
+
+    // Derives a unique mdoel instance name.
+    std::string model_instance_name = kModelName + "_" + std::to_string(ii+1);
+
+    // Saves the model instance name in model_instance_name_table.
+    model_instance_name_table[model_instance_id] = model_instance_name;
   }
 
   // std::cout << "==============================================" << std::endl;

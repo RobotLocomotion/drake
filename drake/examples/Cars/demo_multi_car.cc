@@ -27,7 +27,7 @@ namespace examples {
 namespace cars {
 namespace {
 
-int do_main(int argc, const char* argv[]) {
+int DoMain(int argc, const char* argv[]) {
   int num_cars = 100;
   if (argc == 2) {
     num_cars = atoi(argv[1]);
@@ -68,7 +68,7 @@ int do_main(int argc, const char* argv[]) {
     // Add the visualization entity.
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         (i % 5) ? kSedanUrdf : kBreadtruckUrdf, DrakeJoint::ROLLPITCHYAW,
-            nullptr /* weld_to_frame */, world_tree.get());
+        nullptr /* weld_to_frame */, world_tree.get());
 
     // Add the trajectory car, and its visualization adapter.
     cars_system->AddSystem(CreateTrajectoryCarSystem(i));
@@ -102,5 +102,5 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::cars::do_main(argc, argv);
+  return drake::examples::cars::DoMain(argc, argv);
 }
