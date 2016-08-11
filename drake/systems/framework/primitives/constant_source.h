@@ -13,14 +13,14 @@
 namespace drake {
 namespace systems {
 
-/// A source block witn a constant output port.
-/// @tparam T The type of mathematical object being added.
+/// A source block with a constant output port at all times.
+/// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
 class ConstantSource : public System<T> {
  public:
   /// @param source_value the constant value of the output so that
   /// `y = source_value` at all times.
-  ConstantSource(const Eigen::Ref<const VectorX<T>>& source_value);
+  explicit ConstantSource(const Eigen::Ref<const VectorX<T>>& source_value);
 
   // Allocates the default context with no state.
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override;

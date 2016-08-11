@@ -22,7 +22,8 @@ ConstantSource<T>::ConstantSource(
 }
 
 template <typename T>
-std::unique_ptr<ContextBase<T>> ConstantSource<T>::CreateDefaultContext() const {
+std::unique_ptr<ContextBase<T>>
+ConstantSource<T>::CreateDefaultContext() const {
   std::unique_ptr<Context<T>> context(new Context<T>);
   // TODO(amcastro-tri): Remove this override after #3102 is merged.
 
@@ -51,12 +52,12 @@ std::unique_ptr<SystemOutput<T>> ConstantSource<T>::AllocateOutput(
 template <typename T>
 void ConstantSource<T>::EvalOutput(const ContextBase<T>& context,
                           SystemOutput<T>* output) const {
-  // Check that the single output port has the correct length.
   // Checks on the output structure are assertions, not exceptions,
-  // since failures would reflect a bug in the ConstantSource implementation, not
-  // user error setting up the system graph. They do not require unit test
+  // since failures would reflect a bug in the ConstantSource implementation,
+  // not user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
 
+  // Asserts that there is only one output port.
   DRAKE_ASSERT(output->get_num_ports() == 1);
   // TODO(amcastro-tri): change to:
   // auto& output_vector = this->get_output_vector(context, 0);
