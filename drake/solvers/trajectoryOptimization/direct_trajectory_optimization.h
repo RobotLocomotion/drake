@@ -24,7 +24,13 @@ namespace solvers {
  * implementation assumes that all constraints and costs are
  * time-invariant.
  *
- * TODO(Lucy-tri) This class is a WIP.
+ * TODO(Lucy-tri) While this class can be instanced as a standalone
+ * object, it's not very useful in that state and should generally be
+ * used as a base class for other optimization approaches which can
+ * define more interesting costs and constraints.  Consider making use
+ * as a base class mandatory (possibly through a protected constructor
+ * or pure virtual implementation of something which every derived
+ * class ends up using, like AddRunningCost or AddDynamicConstraint).
  */
 class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  public:
