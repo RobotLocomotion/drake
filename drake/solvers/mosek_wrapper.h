@@ -18,26 +18,24 @@ extern "C" {
 `http://docs.mosek.com/7.1/capi/Linear_optimization.html`_
 
 For further definition of terms, see
-`http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html`_
-*/
+`http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html`_  **/
 namespace drake {
 namespace solvers {
 
-/**his class allows the creation and solution of a linear programming
-problem using the mosek solver.
+/** This class allows the creation and solution of a linear programming
+problem using the Mosek solver.
 MosekWrapper solves a linear program when given a correctly formatted
 program.  Specifically, the program options:
-"maxormin" -- must be set to "max" or "min"
-"problemtype" -- must be set to "linear" or "quadratic"
- It is created by a MosekSolver object.
- */
+ - "maxormin" -- must be set to "max" or "min"
+ - "problemtype" -- must be set to "linear" or "quadratic"
+
+ It is created by a MosekSolver object.  **/
 class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
  public:
-  /** Create a mosek linear programming environment using a constraint matrix
+  /** Create a Mosek linear programming environment using a constraint matrix
   Takes the number of variables and constraints, the linear eqn to
-  optimize, the constraint matrix, and the constraint and variable bounds
-  @p environment is created and must be told to optimize.
-  */
+  optimize, the constraint matrix, and the constraint and variable bounds.
+  environment is created and must be told to optimize.  **/
   MosekWrapper(int num_variables, int num_constraints,
     const std::vector<double>& equation_scalars,
     const Eigen::MatrixXd& linear_cons,
@@ -49,8 +47,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
     const std::vector<double>& lower_variable_bounds,
     double constant_eqn_term);
 
-  /** Create a Mosek environment for quadratic programming problems.
-  */
+  /** Create a Mosek environment for quadratic programming problems.  **/
   MosekWrapper(int num_variables, int num_constraints,
     const std::vector<double>& equation_scalars,
     const Eigen::MatrixXd& linear_cons,
@@ -64,8 +61,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
     const Eigen::MatrixXd& quad_objective,
     const Eigen::MatrixXd& quad_cons);
 
-  /** Create a Mosek environment for SDP problems.
-  */
+  /** Create a Mosek environment for SDP problems.  **/
   MosekWrapper(int num_variables, int num_constraints,
     const std::vector<MSKboundkeye>& mosek_constraint_bounds,
     const std::vector<double>& upper_constraint_bounds,
@@ -87,8 +83,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   }
 
   /** Optimizes variables in given linear constraints, works with either
-  of the two previous object declarations.
-   */
+  of the two previous object declarations.  **/
   static SolutionResult Solve(OptimizationProblem &prog);
 
   std::vector<double> GetSolution() const { return solutions_; }
@@ -100,35 +95,31 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   http://docs.mosek.com/7.1/capi/Linear_optimization.html
   and by
   http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
-  to ensure ease of translation and understanding.
-   */
+  to ensure ease of translation and understanding.  **/
 
-  /** Adds linear constraints to mosek environment. */
+  /** Adds linear constraints to mosek environment.  **/
   void AddLinearConstraintMatrix(const Eigen::MatrixXd& cons_);
 
   /** Adds linear constraints in sparse column matrix form.
-  Just uses Eigen's sparse matrix library to implement expected format.
-   */
+  Just uses Eigen's sparse matrix library to implement expected format.  **/
   void AddLinearConstraintSparseColumnMatrix(
     const Eigen::SparseMatrix<double>& sparsecons_);
 
   /** Bounds constraints, see:
   `http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html`_
-  for details on how to set mosek_bounds_
-   */
+  for details on how to set mosek_bounds_  **/
   void AddLinearConstraintBounds(const std::vector<MSKboundkeye>& mosek_bounds_,
       const std::vector<double>& upper_bounds,
       const std::vector<double>& lower_bounds);
 
-  /** Add a single quadratic matrix to a mosek constraint. */
+  /** Add a single quadratic matrix to a Mosek constraint.  **/
   void AddQuadraticConstraintMatrix(const Eigen::MatrixXd& cons);
 
-  /** Adds a single quadratic matrix to a mosek objective. */
+  /** Adds a single quadratic matrix to a Mosek objective.  **/
   void AddQuadraticObjective(const Eigen::MatrixXd& obj);
 
-  /** Adds a cone to mosek for solving. Currently does not handle rotated
-  cones.
-  */
+  /** Adds a cone to Mosek for solving. Currently does not handle rotated
+  cones.  **/
   void AppendCone(const std::vector<int>& sdp_cone_subscripts);
 
   /** Adds a single SDP objective to Mosek for solving, will not work if
@@ -138,29 +129,26 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   sum(c_j * x_j) + trace(C'*X) + c
   where x is contained in a cone, and X is a positive semidefinite matrix,
   subject to SDP constraints below.
-  See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
-  */
+  See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html  **/
   void AddSDPObjective(const QuadraticConstraint& sdp_objective);
 
   /** Adds multiple SDP constraints to Mosek. Only call once per program.
   The mathematical formulation is to minimize the objective (above) with the
-  constraints:
+  constraints:  <pre>
   l_i <= sum(a_j * x_j) + trace(A_i' * X_i) <= u_i
-  See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
-  */
+  </pre>
+  See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html  **/
   void AddSDPConstraints(
       const std::vector<QuadraticConstraint>& sdp_constraints);
 
   /** Binds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
-  for details on how to set mosek_bounds_
-   */
+  for details on how to set mosek_bounds_  **/
   void AddVariableBounds(const std::vector<MSKboundkeye>& mosek_bounds,
                          const std::vector<double>& upper_bounds,
                          const std::vector<double>& lower_bounds);
 
   /** Given upper and lower bounds for a variable or constraint, finds the
-  equivalent Mosek bound keys.
-   */
+  equivalent Mosek bound keys.  **/
   static std::vector<MSKboundkeye> FindMosekBounds(
       const std::vector<double>& upper_bounds,
       const std::vector<double>& lower_bounds);

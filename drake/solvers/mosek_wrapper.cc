@@ -230,10 +230,12 @@ void MosekWrapper::AddSDPConstraints(
   }
   Eigen::SparseMatrix<double> sparsecons = linear_cons.sparseView();
   // Now convert the linear constraints into sparse column matrix.
-  std::vector<MSKint32t> aptrb;
-  std::vector<MSKint32t> aptre;
-  std::vector<MSKint32t> asub;
-  std::vector<MSKrealt> aval;
+  std::vector<MSKint32t> aptrb;  // aptrb[j] is the position of the first index
+                                 // in asub for column j.
+  std::vector<MSKint32t> aptre;  // aptre[j] is the position of the last index
+                                 // plus one in asub for column j.
+  std::vector<MSKint32t> asub;  // List of row indices.
+  std::vector<MSKrealt> aval;  //List of non-zero entries ordered by columns.
   int j = 0;
   for (j = 0; j < static_cast<int>(sparsecons.cols()); j++) {
     aptrb.push_back((MSKint32t) sparsecons.outerIndexPtr()[j]);
@@ -355,10 +357,12 @@ void MosekWrapper::AddLinearConstraintSparseColumnMatrix(
   int j = 0;  // iterator
   // Define sparse matrix representation to be the same size as the desired
   // constraints.
-  std::vector<MSKint32t> aptrb;
-  std::vector<MSKint32t> aptre;
-  std::vector<MSKint32t> asub;
-  std::vector<double> aval;
+  std::vector<MSKint32t> aptrb;  // aptrb[j] is the position of the first index
+                                 // in asub for column j.
+  std::vector<MSKint32t> aptre;  // aptre[j] is the position of the last index
+                                 // plus one in asub for column j.
+  std::vector<MSKint32t> asub;  // List of row indices.
+  std::vector<MSKrealt> aval;  // List of non-zero entries ordered by columns.
 
   for (j = 0; j < sparsecons.cols(); j++)
     aptrb.push_back((MSKint32t) sparsecons.outerIndexPtr()[j]);
