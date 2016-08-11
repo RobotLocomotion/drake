@@ -24,7 +24,8 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization :
                                double trajectory_time_upper_bound);
 
   /**
-   * Add a dynamic constraint to be applied to each pair of states/inputs.
+   * Adds a dynamic constraint to be applied to each pair of
+   * states/inputs.
    */
   template <typename ConstraintT>
   void AddDynamicConstraint(
@@ -44,7 +45,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization :
   }
 
   /**
-   * Add an integrated cost to all time steps.
+   * Adds an integrated cost to all time steps.
    *
    * @param constraint A constraint which expects a timestep, state,
    * and input as the elements of x when Eval is invoked.
@@ -52,7 +53,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization :
   void AddRunningCost(std::shared_ptr<Constraint> constraint);
 
   /**
-   * Add an integrated cost to all time steps.
+   * Adds an integrated cost to all time steps.
    *
    * @param f A callable which meets the requirments of
    * OptimizationProblem::AddCost().

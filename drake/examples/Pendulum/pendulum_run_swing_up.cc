@@ -1,16 +1,15 @@
 
 #include <cmath>
-
 #include <memory>
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/LCMSystem.h"
 #include "drake/systems/cascade_system.h"
+#include "drake/systems/LCMSystem.h"
+#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/Simulation.h"
 #include "drake/util/drakeAppUtil.h"
 
 using drake::solvers::SolutionResult;
@@ -18,6 +17,11 @@ using drake::solvers::SolutionResult;
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
 namespace {
+/**
+ * An open-loop controller to play back an input trajectory.
+ *
+ * @concept{system_concept}
+ */
 class PendulumTrajectoryController {
  public:
   template <typename ScalarType>
@@ -27,6 +31,10 @@ class PendulumTrajectoryController {
   template <typename ScalarType>
   using OutputVector = PendulumInput<ScalarType>;
 
+  /**
+   * The trajectory argument is aliased, and must be valid for the
+   * life of this object.
+   */
   explicit PendulumTrajectoryController(const PiecewisePolynomialType& pp_traj)
       : pp_traj_(pp_traj) {}
 
@@ -45,8 +53,8 @@ class PendulumTrajectoryController {
     return y;
   }
 
-  bool isTimeVarying() const { return false; }
-  bool isDirectFeedthrough() const { return true; }
+  bool isTimeVarying() const { return true; }
+  bool isDirectFeedthrough() const { return false; }
 
  private:
   const PiecewisePolynomialType& pp_traj_;
@@ -74,8 +82,7 @@ int main(int argc, char* argv[]) {
   const double timespan_init = 4;
   auto traj_init_x = PiecewisePolynomialType::FirstOrderHold(
       {0, timespan_init}, {x0, xG});
-  SolutionResult result = SolutionResult::kUnknownError;
-  result =
+  SolutionResult result =
       dircol_traj.SolveTraj(timespan_init, PiecewisePolynomialType(),
                             traj_init_x);
   if (result != SolutionResult::kSolutionFound) {
@@ -89,13 +96,13 @@ int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if (!lcm->good()) return 1;
 
-  auto v = std::make_shared<drake::BotVisualizer<PendulumState> >(
+  auto visualizer = std::make_shared<drake::BotVisualizer<PendulumState>>(
       lcm, drake::GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
       DrakeJoint::FIXED);
 
   auto control = std::make_shared<PendulumTrajectoryController>(pp_traj);
   auto traj_sys = drake::cascade(control, p);
-  auto sys = drake::cascade(traj_sys, v);
+  auto sys = drake::cascade(traj_sys, visualizer);
 
   drake::SimulationOptions options;
   options.realtime_factor = 1.0;
