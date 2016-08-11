@@ -12,8 +12,6 @@ using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
 using drake::solvers::LinearEqualityConstraint;
 
-typedef PiecewisePolynomial<double> PiecewisePolynomialType;
-
 namespace drake {
 namespace examples {
 namespace pendulum {
@@ -21,33 +19,45 @@ namespace {
 
 /**
  * Define a function to be evaluated as the running cost for a
- * pendulum trajectory.
+ * pendulum trajectory (using the solvers::FunctionTraits style
+ * interface).
  */
 class PendulumRunningCost {
  public:
-  static size_t numInputs() { return
-        PendulumState<double>::RowsAtCompileTime + 2; }
+  static size_t numInputs() {
+    DRAKE_ASSERT(PendulumState<double>::RowsAtCompileTime !=
+                 Eigen::Dynamic);
+    return PendulumState<double>::RowsAtCompileTime + 2; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+  void eval(const VecIn<ScalarType>& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
 
+    // u represents the input vector.  Convention preserved here from
+    // PendulumPlant.m.
     const auto u = x.tail(1);
-    const double R = 10;
+    const double R = 10;  // From PendulumPlant.m, arbitrary AFAICT
     y = (R * u) * u;
   }
 };
 
+/**
+ * Define a function to be evaluated as the final cost for a
+ * pendulum trajectory (using the solvers::FunctionTraits style
+ * interface).
+ */
 class PendulumFinalCost {
  public:
-  static size_t numInputs() { return
-        PendulumState<double>::RowsAtCompileTime + 1; }
+  static size_t numInputs() {
+    DRAKE_ASSERT(PendulumState<double>::RowsAtCompileTime !=
+                 Eigen::Dynamic);
+    return PendulumState<double>::RowsAtCompileTime + 1; }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+  void eval(const VecIn<ScalarType>& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
 

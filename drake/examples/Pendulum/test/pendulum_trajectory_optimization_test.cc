@@ -1,5 +1,4 @@
 #include <cmath>
-
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -39,8 +38,7 @@ GTEST_TEST(PendulumTrajectoryOptimization,
   const double timespan_init = 4;
   auto traj_init_x = PiecewisePolynomialType::FirstOrderHold(
       {0, timespan_init}, {x0, xG});
-  SolutionResult result = SolutionResult::kUnknownError;
-  result =
+  SolutionResult result =
       dircol_traj.SolveTraj(timespan_init, PiecewisePolynomialType(),
                             traj_init_x);
   ASSERT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
