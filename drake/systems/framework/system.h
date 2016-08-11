@@ -24,7 +24,7 @@ class System {
   ///
   /// By default we assume that there is direct feedthrough of values from
   /// every input port to every output port. This is a conservative assumption
-  /// that ensures we detect and can prevent formation of algebraic loops
+  /// that ensures we detect and can prevent the formation of algebraic loops
   /// (implicit computations) in system diagrams. Any System for which none of
   /// the input ports ever feeds through to any of the output ports should
   /// override this method to return false.
