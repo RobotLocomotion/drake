@@ -120,7 +120,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
 
   /** Adds a cone to Mosek for solving. Currently does not handle rotated
   cones.  **/
-  void AppendCone(const std::vector<int>& sdp_cone_subscripts);
+  void AppendLorentzCone(const std::vector<int>& sdp_cone_subscripts);
 
   /** Adds a single SDP objective to Mosek for solving, will not work if
   called multiple times.

@@ -149,14 +149,15 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
   if (!sdp_constraints.empty())
     AddSDPConstraints(sdp_constraints);
   if (!sdp_constraints.empty())
-    AppendCone(lorentz_cone_subscripts);
+    AppendLorentzCone(lorentz_cone_subscripts);
   AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
       lower_variable_bounds);
   AddLinearConstraintBounds(mosek_constraint_bounds, upper_constraint_bounds,
       lower_constraint_bounds);
 }
 
-void MosekWrapper::AppendCone(const std::vector<int>& lorentz_cone_subscripts) {
+void MosekWrapper::AppendLorentzCone(
+      const std::vector<int>& lorentz_cone_subscripts) {
   if (result_ == MSK_RES_OK) {
     // If no subscripts set, assume that x_0 >= sqrt(sum(x_i^2)) for i > 0.
     // Adapted from http://docs.mosek.com/7.1/capi/MSK_appendcone_.html
