@@ -21,6 +21,9 @@ class Adder : public System<T> {
   /// @param length is the size of each input port.
   Adder(int num_inputs, int length);
 
+  /// All inputs to this system are directly fed through to its output.
+  bool has_any_direct_feedthrough() const override { return true;}
+
   /// Allocates the number of input ports specified in the constructor.
   /// Allocates no state.
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override;
