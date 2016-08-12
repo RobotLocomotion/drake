@@ -73,7 +73,8 @@ TEST_F(BufferTest, NoInputPorts) {
 
   // TODO(amcastro-tri): we must be able to ask buffer_->num_of_input_ports()
   // and make the GTest with that.
-  EXPECT_THROW(buffer_->EvalOutput(*context_, output_.get()), std::out_of_range);
+  EXPECT_THROW(buffer_->EvalOutput(*context_, output_.get()),
+               std::out_of_range);
 }
 
 // Tests that std::out_of_range is thrown when input ports of the wrong size
@@ -88,7 +89,8 @@ TEST_F(BufferTest, WrongSizeOfInputPorts) {
   short_input->get_mutable_value() << 4, 5;
   context_->SetInputPort(0, MakeInput(std::move(short_input)));
 
-  EXPECT_THROW(buffer_->EvalOutput(*context_, output_.get()), std::out_of_range);
+  EXPECT_THROW(buffer_->EvalOutput(*context_, output_.get()),
+               std::out_of_range);
 }
 
 // Tests that Buffer allocates no state variables in the context_.

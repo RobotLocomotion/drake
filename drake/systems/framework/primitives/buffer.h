@@ -21,7 +21,7 @@ class Buffer : public System<T> {
   /// Constructs a Buffer system (`y = u`) with input/output ports limited to
   /// have size @p length.
   /// @param length is the size of the signal to be processed.
-  Buffer(int length);
+  explicit Buffer(int length);
 
   // Allocates default context for a Buffer system.
   // Allocates no state.
