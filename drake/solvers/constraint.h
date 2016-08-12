@@ -131,11 +131,13 @@ class SemidefiniteConstraint : public Constraint {
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
-    throw std::runtime_error("Eval is not implemented in SemidefiniteConstraint.");
+    throw std::runtime_error(
+        "Eval is not implemented in SemidefiniteConstraint.");
   };
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override {
-    throw std::runtime_error("Eval is not implemented in SemidefiniteConstraint.");
+    throw std::runtime_error(
+        "Eval is not implemented in SemidefiniteConstraint.");
   };
 
 
