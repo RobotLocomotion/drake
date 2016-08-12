@@ -1,10 +1,12 @@
+#include "drake/solvers/constraint.h"
+
 #include <typeinfo>
 
+#include "gtest/gtest.h"
+
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/constraint.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
-#include "gtest/gtest.h"
 
 using Eigen::Dynamic;
 using Eigen::Ref;
@@ -24,6 +26,10 @@ using drake::util::MatrixCompareType;
 namespace drake {
 namespace solvers {
 namespace {
+/**
+ * Test appending a linear constraint to an existing linear constraint, check if
+ * the bounds and the linear matrix is correct after appending.
+ */
 GTEST_TEST(TestConstraint, AppendLinearConstraint) {
   Matrix<double, 1, 4> A;
   A.setZero();
@@ -38,9 +44,9 @@ GTEST_TEST(TestConstraint, AppendLinearConstraint) {
   auto ub_ret = lin_con.upper_bound();
   EXPECT_TRUE(CompareMatrices(lb, lb_ret, 1e-10, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(ub, ub_ret, 1e-10, MatrixCompareType::absolute));
-  Matrix<double, 3, 4> A_append = Matrix<double, 3, 4>::Random();
-  Vector3d lb_append = Vector3d::Random();
-  Vector3d ub_append = lb_append + Vector3d::Random().cwiseAbs();
+  Matrix<double, 3, 4> A_append = Matrix<double, 3, 4>::Ones();
+  Vector3d lb_append = Vector3d::Ones();
+  Vector3d ub_append = lb_append + 0.1 * Vector3d::Ones().cwiseAbs();
   lin_con.AppendConstraint(A_append, lb_append, ub_append);
   Matrix<double, 4, 4> A_new;
   A_new << A, A_append;
@@ -55,6 +61,6 @@ GTEST_TEST(TestConstraint, AppendLinearConstraint) {
   EXPECT_TRUE(CompareMatrices(ub_new, lin_con.upper_bound(), 1e-10,
                               MatrixCompareType::absolute));
 }
-}
-}
-}
+}  // namespace
+}  // namespace solvers
+}  // namespace drake
