@@ -9,21 +9,21 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/math/rotation_matrix.h"
 #include "drake/drakeRBM_export.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/solvers/constraint.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
-#include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
-#include "drake/systems/plants/rigid_body_loop.h"
-#include "drake/systems/plants/rigid_body_joint_transmission.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_actuator.h"
+#include "drake/systems/plants/rigid_body_collision_element.h"
+#include "drake/systems/plants/rigid_body_joint_transmission.h"
+#include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
@@ -175,8 +175,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * Returns true if @p body is part of a model instance whose ID is in
    * @p model_instance_id_set.
    */
-  bool is_part_of_model_instances(const RigidBody& body,
-      const std::set<int>& model_instance_id_set) const;
+  bool is_part_of_model_instances(
+      const RigidBody& body, const std::set<int>& model_instance_id_set) const;
 
   /**
    * Computes the total combined mass of a set of model instances.
@@ -189,7 +189,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @p model_instance_id_set.
    */
   double getMass(const std::set<int>& model_instance_id_set =
-      default_model_instance_id_set) const;
+                     default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
@@ -232,10 +232,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1>
-  centerOfMassJacobianDotTimesV(
-      KinematicsCache<Scalar>& cache,
-      const std::set<int>& model_instance_id_set =
-          default_model_instance_id_set) const;
+  centerOfMassJacobianDotTimesV(KinematicsCache<Scalar>& cache,
+                                const std::set<int>& model_instance_id_set =
+                                    default_model_instance_id_set) const;
 
   template <typename DerivedA, typename DerivedB, typename DerivedC>
   void jointLimitConstraints(Eigen::MatrixBase<DerivedA> const& q,
@@ -777,7 +776,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -785,17 +785,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
       RigidBody& body = *bodies[*it];
       int ncols_joint = in_terms_of_qdot ? body.getJoint().getNumPositions()
                                          : body.getJoint().getNumVelocities();
-      int col_start =
-          in_terms_of_qdot ? body.get_position_start_index() :
-              body.get_velocity_start_index();
+      int col_start = in_terms_of_qdot ? body.get_position_start_index()
+                                       : body.get_velocity_start_index();
       full.middleCols(col_start, ncols_joint) =
           compact.middleCols(compact_col_start, ncols_joint);
       compact_col_start += ncols_joint;
     }
     return full;
   }
-
-
 
   /**
    * A toString method for this class.
@@ -867,19 +864,19 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
   * Add linear equality constraint Aeq*q=beq
   */
-  template < typename DerivedAeq, typename Derivedbeq>
+  template <typename DerivedAeq, typename Derivedbeq>
   void addLinearEqualityPositionConstraint(
-                   const Eigen::MatrixBase<DerivedAeq>& Aeq,
-                   const Eigen::MatrixBase<Derivedbeq> &beq) {
-      if(!linear_equality_position_constraint_) {
-        linear_equality_position_constraint_ =
-        std::unique_ptr<drake::solvers::LinearEqualityConstraint>(
-             new drake::solvers::LinearEqualityConstraint(Aeq,beq));
-      }
-      else {
-        linear_equality_position_constraint_->appendConstraint(Aeq,beq,beq);
-      }
+      const Eigen::MatrixBase<DerivedAeq>& Aeq,
+      const Eigen::MatrixBase<Derivedbeq>& beq) {
+    if (!linear_equality_position_constraint_) {
+      linear_equality_position_constraint_ =
+          std::unique_ptr<drake::solvers::LinearEqualityConstraint>(
+              new drake::solvers::LinearEqualityConstraint(Aeq, beq));
+    } else {
+      linear_equality_position_constraint_->appendConstraint(Aeq, beq, beq);
+    }
   }
+
  public:
   static const std::set<int> default_model_instance_id_set;
 
@@ -943,9 +940,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   // linear equality constraint on robot position Aeq*q = beq
   std::unique_ptr<drake::solvers::LinearEqualityConstraint>
-                                         linear_equality_position_constraint_;
-  
+      linear_equality_position_constraint_;
+
   void addJointTransmissionToLinearConstraint();
+
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

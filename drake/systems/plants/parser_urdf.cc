@@ -264,9 +264,11 @@ bool ParseGeometry(XMLElement* node, const PackageMap& package_map,
     string resolved_filename = resolveFilename(filename, package_map, root_dir);
 
     if (resolved_filename.empty()) {
-      throw runtime_error(std::string(__FILE__) + ": " + __func__ +
+      throw runtime_error(
+          std::string(__FILE__) + ": " + __func__ +
           ": ERROR: Mesh file name could not be resolved from the "
-          "provided uri \"" + filename + "\".");
+          "provided uri \"" +
+          filename + "\".");
     }
     DrakeShapes::Mesh mesh(filename, resolved_filename);
 
@@ -545,8 +547,7 @@ void SetDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
  * child link should be saved.
  */
 void ParseJointKeyParams(XMLElement* node, string& name, string& type,
-                         string& parent_link_name,
-                         string& child_link_name) {
+                         string& parent_link_name, string& child_link_name) {
   // Obtains the joint's name.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: joint tag is missing name attribute");
@@ -655,24 +656,24 @@ void ParseJoint(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
 
   // parse the `mimic` tag if it exists
   XMLElement* mimic_node = node->FirstChildElement("mimic");
-  if(mimic_node) {
+  if (mimic_node) {
     // obtains the mimic joint
-    const char* attr = node->Attribute("joint");
+    const char* attr = mimic_node->Attribute("joint");
     if (!attr) throw runtime_error("ERROR: joint tag is missing");
     string mimic_joint(attr);
 
     // obtains the multiplier
     double multiplier = 1.0;
-    parseScalarAttribute(mimic_node,"multiplier",multiplier);
+    parseScalarAttribute(mimic_node, "multiplier", multiplier);
 
     // obtains the offset
     double offset = 0.0;
-    parseScalarAttribute(mimic_node,"offset",offset);
+    parseScalarAttribute(mimic_node, "offset", offset);
 
-    rigid_body_joint_transmission joint_trans(name,mimic_joint,multiplier,offset);
+    RigidBodyJointTransmission joint_trans(name, mimic_joint, multiplier,
+                                           offset);
     tree->joint_transmissions.push_back(joint_trans);
   }
-
 }
 
 /* Searches through the URDF document looking for the effort limits of a joint
@@ -829,8 +830,8 @@ void ParseTransmission(RigidBodyTree* tree, XMLElement* transmission_node,
 
   // Creates the actuator and adds it to the rigid body tree.
   tree->actuators.push_back(RigidBodyActuator(actuator_name,
-                                               tree->bodies[body_index].get(),
-                                               gain, effort_min, effort_max));
+                                              tree->bodies[body_index].get(),
+                                              gain, effort_min, effort_max));
 }
 
 void ParseLoop(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
@@ -949,8 +950,9 @@ void ParseWorldJoint(XMLElement* node,
   }
 }
 
-ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
-    const PackageMap& package_map, const string& root_dir,
+ModelInstanceIdTable ParseModel(
+    RigidBodyTree* tree, XMLElement* node, const PackageMap& package_map,
+    const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   if (!node->Attribute("name"))
@@ -1061,25 +1063,23 @@ ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
   // Adds the floating joint(s) that connect the newly added robot model to the
   // rest of the rigid body tree.
   tree->AddFloatingJoint(actual_floating_base_type, link_indices,
-                          weld_to_frame);
+                         weld_to_frame);
 
   return model_instance_id_table;
 }
 
-ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
-               PackageMap& package_map, const string& root_dir,
-               const DrakeJoint::FloatingBaseType floating_base_type,
-               std::shared_ptr<RigidBodyFrame> weld_to_frame,
-               RigidBodyTree* tree) {
+ModelInstanceIdTable ParseUrdf(
+    XMLDocument* xml_doc, PackageMap& package_map, const string& root_dir,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
   populatePackageMap(package_map);
   XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node) {
     throw std::runtime_error("ERROR: URDF does not contain a robot tag.");
   }
 
-  ModelInstanceIdTable model_instance_id_table =
-      ParseModel(tree, node, package_map, root_dir, floating_base_type,
-                 weld_to_frame);
+  ModelInstanceIdTable model_instance_id_table = ParseModel(
+      tree, node, package_map, root_dir, floating_base_type, weld_to_frame);
 
   tree->compile();
 
@@ -1124,12 +1124,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     PackageMap& package_map,
     const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
   return ParseUrdf(&xml_doc, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
-            weld_to_frame, tree);
+                   weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
@@ -1161,8 +1160,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
 
@@ -1175,8 +1173,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename, PackageMap& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
 
@@ -1197,7 +1194,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
   }
 
   return ParseUrdf(&xml_doc, package_map, root_dir, floating_base_type,
-            weld_to_frame, tree);
+                   weld_to_frame, tree);
 }
 
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
