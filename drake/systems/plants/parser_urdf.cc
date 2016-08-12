@@ -583,6 +583,28 @@ void ParseJointKeyParams(XMLElement* node, string& name, string& type,
   child_link_name = string(attr);
 }
 
+void parseJointTransmission(RigidBodyTree* tree, XMLElement* node,
+                            const string& name) {
+  XMLElement* mimic_node = node->FirstChildElement("mimic");
+  if (mimic_node) {
+    // obtains the mimic joint
+    const char* attr = mimic_node->Attribute("joint");
+    if (!attr) throw runtime_error("ERROR: joint tag is missing");
+    string mimic_joint(attr);
+
+    // obtains the multiplier
+    double multiplier = 1.0;
+    parseScalarAttribute(mimic_node, "multiplier", multiplier);
+
+    // obtains the offset
+    double offset = 0.0;
+    parseScalarAttribute(mimic_node, "offset", offset);
+
+    RigidBodyJointTransmission joint_trans(name, mimic_joint, multiplier,
+                                           offset);
+    tree->joint_transmissions.push_back(joint_trans);
+  }
+}
 void ParseJoint(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && (std::strcmp(attr, "true") == 0)) return;
@@ -655,25 +677,7 @@ void ParseJoint(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
   tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 
   // parse the `mimic` tag if it exists
-  XMLElement* mimic_node = node->FirstChildElement("mimic");
-  if (mimic_node) {
-    // obtains the mimic joint
-    const char* attr = mimic_node->Attribute("joint");
-    if (!attr) throw runtime_error("ERROR: joint tag is missing");
-    string mimic_joint(attr);
-
-    // obtains the multiplier
-    double multiplier = 1.0;
-    parseScalarAttribute(mimic_node, "multiplier", multiplier);
-
-    // obtains the offset
-    double offset = 0.0;
-    parseScalarAttribute(mimic_node, "offset", offset);
-
-    RigidBodyJointTransmission joint_trans(name, mimic_joint, multiplier,
-                                           offset);
-    tree->joint_transmissions.push_back(joint_trans);
-  }
+  parseJointTransmission(tree, node, name);
 }
 
 /* Searches through the URDF document looking for the effort limits of a joint
@@ -1217,7 +1221,6 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
   return allocate_shared<RigidBodyFrame>(
       Eigen::aligned_allocator<RigidBodyFrame>(), name, body, xyz, rpy);
 }
-
 }  // namespace urdf
 }  // namespace parsers
 }  // namespace drake
