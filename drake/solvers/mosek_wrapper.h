@@ -29,13 +29,15 @@ program.  Specifically, the program options:
  - "maxormin" -- must be set to "max" or "min"
  - "problemtype" -- must be set to "linear", "quadratic", or "sdp"
 
- It is created by a MosekSolver object.  **/
+ It is created by a MosekSolver object.
+ Use the strictest constraint and variable bounds available, unbounded precision
+ precision varies from bounded precision by about 10^-3.  **/
 class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
  public:
   /** Create a Mosek linear programming environment using a constraint matrix
   Takes the number of variables and constraints, the linear eqn to
   optimize, the constraint matrix, and the constraint and variable bounds.
-  environment is created and must be told to optimize  **/
+  The Mosek environment is created and must be told to optimize.  **/
   MosekWrapper(int num_variables, int num_constraints,
     const std::vector<double>& equation_scalars,
     const Eigen::MatrixXd& linear_cons,
@@ -126,7 +128,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   called multiple times.
   The mathematical formulation is: <pre>
   minimize the function
-  sum(c_j * x_j) + trace(C'*X) + c
+  sum(c_j * x_j) + Trace(C'*X) + c
   </pre>
   where x is contained in a cone, and X is a positive semidefinite matrix,
   subject to SDP constraints below.
@@ -136,7 +138,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   /** Adds multiple SDP constraints to Mosek. Only call once per program.
   The mathematical formulation is to minimize the objective (above) with the
   constraints:  <pre>
-  l_i <= sum(a_j * x_j) + trace(A_i' * X_i) <= u_i
+  l_i <= sum(a_j * x_j) + Trace(A_i' * X_i) <= u_i
   </pre>
   See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html  **/
   void AddSDPConstraints(

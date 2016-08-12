@@ -610,15 +610,10 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
   } else if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("sdp")
       != std::string::npos) {
     /* SDP STUFF HERE */
-    // SDP constraints and objectives aren't implemented in Optimization.h or
-    // Constraint.h yet, so we have to use quadratic constraints (which contain
-    // all the needed parts: a (assumed to be symmetric) matrix, and a linear
-    // component.
-    // For now assume a single quadratic constraint.
-  /* TODO(alexdunyak): Add support for SDP constraints to Constraint.h and
-  OptimizationProblem, including getters and setters. When those are in
-  place, change QuadraticConstraint to SDPConstraint below where relevant.
-  */
+    /* TODO(alexdunyak): Add support for SDP constraints to Constraint.h and
+    OptimizationProblem, including getters and setters. When those are in
+    place, change QuadraticConstraint to SDPConstraint below where relevant.
+    */
 
     // As before, assume there is one objective.
     DRAKE_ASSERT(prog.generic_costs().size() == 1);
