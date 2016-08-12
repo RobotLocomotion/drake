@@ -107,7 +107,7 @@ class QuadraticConstraint : public Constraint {
   Eigen::VectorXd b_;
 };
 
-/** A semidefinite constraint  that takes a positive, semidefinite matrix as
+/** A semidefinite constraint  that takes a symmetric matrix as
  well as a linear component.
  <pre>
  lb <= b'*x + Trace(G'*X) <= ub

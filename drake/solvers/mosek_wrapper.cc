@@ -191,7 +191,7 @@ void MosekWrapper::AddSDPObjective(
     if (result_== MSK_RES_OK && linearterm(j) != 0)
       result_ = MSK_putcj(task_, j, linearterm(j));
   }
-  // Now we handle the cost Trace(c'*x). Mosek expects it in lower triangle
+  // Now we handle the cost Trace(C'*x). Mosek expects it in lower triangle
   // triplet form.
   std::vector<MSKint32t> sdp_i, sdp_j;
   std::vector<double>  sdp_values;
@@ -223,15 +223,6 @@ void MosekWrapper::AddSDPObjective(
 
 void MosekWrapper::AddSDPConstraints(
     const std::vector<SemidefiniteConstraint>& sdp_constraints) {
-  /* Adds a single SDP objective to Mosek for solving, will not work if
-  called multiple times.
-  The mathematical formulation is: <pre>
-  minimize the function
-  sum(c_j * x_j) + Trace(C'*X) + c
-  </pre>
-  where x is contained in a cone, and X is a positive semidefinite matrix,
-  subject to SDP constraints below.
-  See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html  */
   // The linear terms are constructed by creating a matrix of all linear terms
   // and adding that row by row to Mosek.
   // See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
@@ -620,8 +611,8 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
       != std::string::npos) {
     /* SDP STUFF HERE */
     /* TODO(alexdunyak): Add support for SDP constraints to Constraint.h and
-    OptimizationProblem, including getters and setters. When those are in
-    place, change QuadraticConstraint to SDPConstraint below where relevant.
+    OptimizationProblem, including getters and setters, When those are in
+    place.
     */
 
     // As before, assume there is one objective.
