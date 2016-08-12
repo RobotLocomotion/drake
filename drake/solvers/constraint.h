@@ -265,11 +265,15 @@ class LinearConstraint : public Constraint {
     DRAKE_ASSERT(A_append.rows() == ub_append.rows());
     int num_new_constraints = A_.rows() + A_append.rows();
     A_.conservativeResize(num_new_constraints, Eigen::NoChange);
-    lower_bound_.conservativeResize(num_new_constraints);
-    upper_bound_.conservativeResize(num_new_constraints);
     A_.bottomRows(A_append.rows()) = A_append;
-    lower_bound_.bottomRows(lb_append.rows()) = lb_append;
-    upper_bound_.bottomRows(ub_append.rows()) = ub_append;
+    int prev_size = lower_bound().size();
+    Eigen::VectorXd new_lb(prev_size + lb_append.size());
+    Eigen::VectorXd new_ub(prev_size + ub_append.size());
+    new_lb.head(prev_size) = lower_bound();
+    new_lb.tail(lb_append.size()) = lb_append;
+    new_ub.head(prev_size) = upper_bound();
+    new_ub.tail(ub_append.size()) = ub_append;
+    set_bounds(new_lb, new_ub);
   }
 
  protected:
