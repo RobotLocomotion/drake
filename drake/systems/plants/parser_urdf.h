@@ -93,8 +93,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
-    std::map<std::string, std::string>& package_map,
-    RigidBodyTree* tree);
+    std::map<std::string, std::string>& package_map, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -162,8 +161,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     PackageMap& package_map,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -209,8 +207,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    RigidBodyTree* tree);
+    const DrakeJoint::FloatingBaseType floating_base_type, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -239,8 +236,7 @@ DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -273,8 +269,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
 
 }  // namespace urdf
 }  // namespace parsers
