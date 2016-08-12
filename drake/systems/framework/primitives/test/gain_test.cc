@@ -142,7 +142,7 @@ GTEST_TEST(MiscGainTests, AutoDiff) {
   // The expected output value is the gain times the input vector.
   Vector3<T> expected;
 
-  expected = (T) kGain * input_vector;
+  expected =  Vector3<T>(kGain * input_vector);
 
   // The expected derivatives are:
   expected(0).derivatives() << kGain, 0.0;
