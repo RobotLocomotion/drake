@@ -24,17 +24,20 @@ namespace drake {
 namespace ros {
 namespace systems {
 
-// Holds the objects and data used to extract and publish joint state
-// information for a particular robot.
+/**
+ * Holds the objects and data used to extract and publish joint state
+ * information for a particular model instance.
+ */
 struct ModelStateStruct {
-  // The model instance ID of the model whose state is being published.
-  int model_instance_id;
-
-  // The ROS topic publisher for publishing the model's joint state
+  // The ROS topic publisher for publishing the model instance's joint state
   ::ros::Publisher publisher;
 
-  // The joint state message to publish.
+  // This message holds the model instance's joint sate and is periodically
+  // published.
   std::unique_ptr<sensor_msgs::JointState> message;
+
+  // The rigid bodies belonging to this struct's model instance.
+  std::vector<const RigidBody*> rigid_body_list;
 };
 
 /**
@@ -93,54 +96,50 @@ class SensorPublisherJointState {
     // http://wiki.ros.org/roscpp/Overview/NodeHandles
     ::ros::NodeHandle node_handle;
 
-    // // Obtains a reference to the world link in the rigid body tree.
-    // const RigidBody& world = rigid_body_system->getRigidBodyTree()->world();
+    // Obtains a reference to the world link in the rigid body tree.
+    const RigidBody& world = rigid_body_system->getRigidBodyTree()->world();
 
-    // // Creates a ROS topic publisher for each robot in the rigid body system.
-    // // A robot is defined by any link that's connected to the world via a
-    // // non-fixed joint.
-    // for (auto const& rigid_body :
-    //      rigid_body_system->getRigidBodyTree()->bodies) {
-    //   // Skips the current rigid body if it does not have the world as the
-    //   // parent.
-    //   if (!rigid_body->has_as_parent(world)) continue;
+    // Creates a ROS topic publisher for each robot in the rigid body system.
+    // A robot is defined by any link that's connected to the world via a
+    // non-fixed joint.
+    for (const auto& entry : model_instance_name_table) {
+      // Obtains the current model instance's ID, instance name, and list of
+      // rigid bodies.
+      int model_instance_id = entry.first;
+      std::string model_instance_name = entry.second;
+      std::vector<const RigidBody*> rigid_body_list =
+          rigid_body_system->getRigidBodyTree()->FindModelInstanceBodies(
+              model_instance_id);
 
-    //   // Skips the current rigid body if it's not connected to the world via a
-    //   // floating joint.
-    //   if (!rigid_body->getJoint().isFloating()) continue;
+      if (ShouldPublishState(rigid_body_list)) {
+        // Instantiates a ModelStateStruct for the current model instance.
+        std::unique_ptr<ModelStateStruct> model_struct(
+            new ModelStateStruct());
 
-    //   // Creates a joint state message and publisher for the current robot if
-    //   // they have not already been created. Stores them in
-    //   // joint_state_publishers_ and joint_state_messages_.
+        if (model_structs_.find(model_instance_name) != model_structs_.end()) {
+          throw std::runtime_error("SensorPublisherJointState: ERROR: "
+              "Duplicate model instance named \"" + model_instance_name +
+              " detected.");
+        }
 
-    //   // Obtains the robot name. The robot's name is used to as the key into the
-    //   // maps that hold the joint state messages and publishers.
-    //   const std::string& robot_name = rigid_body->get_model_name();
+        model_struct->rigid_body_list = rigid_body_list;
 
-    //   if (model_structs_.find(robot_name) == model_structs_.end()) {
-    //     std::unique_ptr<ModelStateStruct> robot_struct(
-    //         new ModelStateStruct());
+        const std::string topic_name = model_instance_name + "/joint_state";
+        model_struct->publisher =
+            node_handle.advertise<sensor_msgs::JointState>(topic_name, 1);
 
-    //     robot_struct->robot_name = robot_name;
+        model_struct->message.reset(new sensor_msgs::JointState());
 
-    //     const std::string topic_name = robot_name + "/joint_state";
-    //     robot_struct->publisher =
-    //         node_handle.advertise<sensor_msgs::JointState>(topic_name, 1);
+        // TODO(liang.fok) Verify this is correct.
+        model_struct->message->header.frame_id = RigidBodyTree::kWorldName;
 
-    //     robot_struct->message.reset(new sensor_msgs::JointState());
+        InitJointStateStruct(robot_name, rigid_body_system->getRigidBodyTree(),
+                             model_struct.get());
 
-    //     robot_struct->message->header.frame_id = RigidBodyTree::kWorldName;
+        model_structs_[model_instance_name] = std::move(model_struct);
+      }
 
-    //     InitJointStateStruct(robot_name, rigid_body_system->getRigidBodyTree(),
-    //                          robot_struct.get());
-
-    //     model_structs_[robot_name] = std::move(robot_struct);
-    //   } else {
-    //     throw std::runtime_error(
-    //         "ERROR: Rigid Body System contains multiple models named \"" +
-    //         robot_name + "\".");
-    //   }
-    // }
+    }
   }
 
   // /**
@@ -349,6 +348,20 @@ class SensorPublisherJointState {
   bool isDirectFeedthrough() const { return true; }
 
  private:
+  /* Determines whether joint state messages should be published for the
+   * model instance that owns the rigid bodies in @p rigid_body_list. It should
+   * if the model instance contains one or more joints that isn't fixed.
+   */
+  bool ShouldPublishState(
+      const std::vector<const RigidBody*>& rigid_body_list) {
+    bool result = false;
+    for (const auto& rigid_body : rigid_body_list) {
+      if (!rigid_body->getJoint().isFixed()) {
+        result = true;
+      }
+    }
+    return result;
+  }
   // A local reference to the rigid body system.
   std::shared_ptr<RigidBodySystem> rigid_body_system_;
 
