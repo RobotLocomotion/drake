@@ -182,10 +182,10 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   prog3.AddConstraint(ptrtocon2);
   // Create the bounding box.
   Eigen::Vector3d bboxlow, bboxhigh;
-  bboxlow << -std::numeric_limits<double>::infinity(),
-             -std::numeric_limits<double>::infinity(),
+  bboxlow << -100,
+             -100,
              -std::numeric_limits<double>::infinity();
-  bboxhigh << std::numeric_limits<double>::infinity(),
+  bboxhigh << 100,
               std::numeric_limits<double>::infinity(),
               std::numeric_limits<double>::infinity();
   prog3.AddBoundingBoxConstraint(bboxlow, bboxhigh);
@@ -196,9 +196,9 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   ASSERT_NO_THROW(result = msk.Solve(prog3));
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   Eigen::VectorXd solutions(9);
-  solutions << 2.543589e-01, 1.798589e-01, 1.798589e-01, 2.172859e-01,
-               -2.599827e-01, 2.172859e-01, 3.110694e-01, -2.599827e-01,
-               2.172859e-01;
+  solutions << 2.544931e-01, 1.799843e-01, 1.799233e-01, 2.171910e-01,
+               -2.599491e-01, 2.171910e-01, 3.111250e-01, -2.599491e-01,
+               2.171910e-01;
   EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-7,
                               MatrixCompareType::absolute));
 }
