@@ -37,7 +37,7 @@
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.340"/>
     <axis xyz="0.0 0.0 1.0"/>
     <limit effort="100.0" lower="0.0" upper="0.69" velocity="0.2"/>
-    <parent link="base_link"/>
+    <parent link="link1"/>
     <child link="link2"/>
     <dynamics damping="1.0"/>
   </joint>

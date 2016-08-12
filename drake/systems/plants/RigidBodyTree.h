@@ -929,7 +929,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
           std::unique_ptr<drake::solvers::LinearEqualityConstraint>(
               new drake::solvers::LinearEqualityConstraint(Aeq, beq));
     } else {
-      linear_equality_position_constraint_->appendConstraint(Aeq, beq, beq);
+      linear_equality_position_constraint_->AppendConstraint(Aeq, beq, beq);
     }
   }
 

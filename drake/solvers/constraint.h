@@ -254,10 +254,10 @@ class LinearConstraint : public Constraint {
   }
 
   /**
-  * append the constraint lb_append<= A_append*x<=ub_append
+  * appends the constraint lb_append<= A_append*x<=ub_append
   */
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
-  void appendConstraint(const Eigen::MatrixBase<DerivedA>& A_append,
+  void AppendConstraint(const Eigen::MatrixBase<DerivedA>& A_append,
                         const Eigen::MatrixBase<DerivedLB>& lb_append,
                         const Eigen::MatrixBase<DerivedUB>& ub_append) {
     DRAKE_ASSERT(A_append.cols() == A_.cols());
