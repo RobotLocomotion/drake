@@ -76,13 +76,14 @@ RigidBodyTree::RigidBodyTree(void)
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   // Adds the rigid body representing the world. It has model instance ID 0.
-  std::unique_ptr<RigidBody> b(new RigidBody());
-  b->set_name(RigidBodyTree::kWorldName);
+  std::unique_ptr<RigidBody> world_body(new RigidBody());
+  world_body->set_name(RigidBodyTree::kWorldName);
+  world_body->set_model_name(RigidBodyTree::kWorldName);
 
   // TODO(liang.fok): Assign the world body a unique model instance ID of zero.
   // See: https://github.com/RobotLocomotion/drake/issues/3088
 
-  bodies.push_back(std::move(b));
+  bodies.push_back(std::move(world_body));
 }
 
 RigidBodyTree::~RigidBodyTree(void) {}
@@ -1751,6 +1752,23 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
         body_name + "\", model name = \"" + model_name +
         "\", model instance id = " + std::to_string(model_instance_id) + ".");
   }
+}
+
+std::vector<const RigidBody*>
+RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
+  std::vector<const RigidBody*> result;
+
+  for (const auto& rigid_body : bodies) {
+    // TODO(liang.fok): Remove the world name check once the world is assigned
+    // its own model instance ID. See:
+    // https://github.com/RobotLocomotion/drake/issues/3088
+    if (rigid_body->get_name() != kWorldName &&
+        rigid_body->get_model_name() != kWorldName &&
+        rigid_body->get_model_instance_id() == model_instance_id) {
+      result.push_back(rigid_body.get());
+    }
+  }
+  return result;
 }
 
 RigidBody* RigidBodyTree::findLink(const std::string& link_name,

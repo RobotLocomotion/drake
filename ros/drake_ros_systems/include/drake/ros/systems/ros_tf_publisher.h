@@ -63,7 +63,6 @@ class DrakeRosTfPublisher {
    * @param[in] model_instance_name_table A table mapping model instance IDs to
    * model instance names. These names are used to prefix the transform names,
    * which is necessary for RViz to simultaneously visualize multiple robots.
-   * This reference must remain valid for the lifetime of this object.
    */
   explicit DrakeRosTfPublisher(
       const std::shared_ptr<RigidBodyTree> rigid_body_tree,

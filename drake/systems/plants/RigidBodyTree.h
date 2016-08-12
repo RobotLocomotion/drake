@@ -606,6 +606,19 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       const std::string& model_name = "",
                       int model_id = -1) const;
 
+  /**
+   * Returns a vector of pointers to all rigid bodies in this tree that belong
+   * to a particular model instance.
+   *
+   * @param[in] model_instance_id The ID of the model instance whose rigid
+   * bodies are being searched for.
+   *
+   * @return A vector of pointers to every rigid body belonging to the sepcified
+   * model instance.
+   */
+  std::vector<const RigidBody*> FindModelInstanceBodies(
+      int model_instance_id);
+
 /**
  * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
  * instead.
