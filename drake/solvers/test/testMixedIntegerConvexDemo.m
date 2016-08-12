@@ -103,7 +103,7 @@ for i = 1:length(solver)
   [p, solvertime] = p.solve();
   fprintf(1, 'non-symbolic problem overhead: %fs\n', toc(t1) - solvertime);
   xstar_non_symb = p.vars.x.value
-  valuecheck(xstar_non_symb, xstar);
+  valuecheck(xstar_non_symb, xstar,1e-6);
 end
 
 % However, compiling constraints and objectives down to raw matrix manipulation
@@ -131,7 +131,7 @@ p = p.addSymbolicConstraints([implies(region(1), A1  * x <= b1), ...
                               sum(region) == 1]);
 [p, solvertime] = p.solve();
 xstar_mixed = p.vars.x.value
-valuecheck(xstar_mixed, xstar);
+valuecheck(xstar_mixed, xstar,1e-6);
 
 
 
