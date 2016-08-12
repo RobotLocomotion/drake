@@ -41,7 +41,7 @@ GTEST_TEST(TestConstraint, AppendLinearConstraint) {
   Matrix<double, 3, 4> A_append = Matrix<double, 3, 4>::Random();
   Vector3d lb_append = Vector3d::Random();
   Vector3d ub_append = lb_append + Vector3d::Random().cwiseAbs();
-  lin_con.appendConstraint(A_append, lb_append, ub_append);
+  lin_con.AppendConstraint(A_append, lb_append, ub_append);
   Matrix<double, 4, 4> A_new;
   A_new << A, A_append;
   Vector4d lb_new;

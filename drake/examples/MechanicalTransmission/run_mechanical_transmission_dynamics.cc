@@ -19,8 +19,12 @@ namespace drake {
 namespace examples {
 namespace mechanical_transmission {
 namespace {
-
-std::shared_ptr<RigidBodySystem> parseMechanicalTransmission() {
+/**
+ * loads the URDF of the mechanical_transmission.urdf, which says that
+ * joint1_value = 0.5*joint2_value+1.0,
+ * and returns the RigidBodySystem.
+ */
+std::shared_ptr<RigidBodySystem> ParseMechanicalTransmission() {
   auto rigid_body_system = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
@@ -34,72 +38,106 @@ std::shared_ptr<RigidBodySystem> parseMechanicalTransmission() {
   return rigid_body_system;
 }
 
-Eigen::VectorXd evaluateMechanicalTransmissionConstraint(
+/**
+ * Evaluates the constraint joint1_value - 0.5*joint2_value-1.0, to check if the
+ * mechanical transmission imposes
+ * the right constraint through URDF parsing.
+ */
+Eigen::VectorXd EvaluateMechanicalTransmissionConstraint(
     const std::shared_ptr<RigidBodyTree>& tree, double joint1_val,
     double joint2_val) {
   int nq = tree->number_of_positions();
-  int joint1 = tree->findJoint("joint1")->get_position_start_index();
-  int joint2 = tree->findJoint("joint2")->get_position_start_index();
+  int joint1_idx = tree->findJoint("joint1")->get_position_start_index();
+  int joint2_idx = tree->findJoint("joint2")->get_position_start_index();
   VectorXd q0(nq);
-  q0(joint1) = joint1_val;
-  q0(joint2) = joint2_val;
+  q0.setZero();
+  q0(joint1_idx) = joint1_val;
+  q0(joint2_idx) = joint2_val;
   auto kinematics_cache = tree->doKinematics(q0);
-  auto result = tree->positionConstraints(kinematics_cache);
-  return result;
+  return tree->positionConstraints(kinematics_cache);
 }
-// Test parsing mechanical transmission from urdf
+
+// Tests the ability to parse a URDF mechanical transmission specification.
 GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
-  auto rigid_body_system = parseMechanicalTransmission();
+  auto rigid_body_system = ParseMechanicalTransmission();
   auto tree = rigid_body_system->getRigidBodyTree();
-  auto result1 = evaluateMechanicalTransmissionConstraint(tree, 1.0, 0.0);
-  std::cout << "result1 is " << result1.rows() << " x " << result1.cols()
-            << std::endl;
-  std::cout << result1(0) << std::endl;
+
+  // Should satisfy the constraint, check if the offset is set correctly
+  Eigen::VectorXd result1 =
+      EvaluateMechanicalTransmissionConstraint(tree, 1.0, 0.0);
   EXPECT_TRUE(CompareMatrices(result1, Eigen::Matrix<double, 1, 1>(0.0),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
 
-  auto result2 = evaluateMechanicalTransmissionConstraint(tree, 2.0, 2.0);
+  // Should satisfy the constraint
+  Eigen::VectorXd result2 =
+      EvaluateMechanicalTransmissionConstraint(tree, 2.0, 2.0);
   std::cout << result2(0) << std::endl;
   EXPECT_TRUE(CompareMatrices(result2, Eigen::Matrix<double, 1, 1>(0.0),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
 
-  auto result3 = evaluateMechanicalTransmissionConstraint(tree, 2.0, 3.0);
+  // Should not satisfy the constraint with joint values (2.0,3.0).
+  Eigen::VectorXd result3 =
+      EvaluateMechanicalTransmissionConstraint(tree, 2.0, 3.0);
   std::cout << result3(0) << std::endl;
   EXPECT_FALSE(CompareMatrices(result3, Eigen::Matrix<double, 1, 1>(0.0),
                                Eigen::NumTraits<double>::epsilon(),
                                MatrixCompareType::absolute));
 }
 
+// Test the simulation with the mechanical transmission.
+// From the  <mimic> element in the URDF, joint 1 mimics joint 2 with ratio of
+// 0.5 and an offset of 1. For more details, see:
+// http://wiki.ros.org/urdf/XML/joint.
+//
+// The transmission constraint derived from the URDF <mimic> element
+// enforces the following:
+//
+//    joint1_position = ratio * joint2_position + offset
+//
+// Solving the above equation for ratio, we get:
+//
+//    ratio = (joint1_position - offset) / joint2_position
+//
+// Plugging in the values for this particular example, we get:
+//
+//    0.5 = (joint1_position - 1) / joint2_position
+//
+// The following check verifies that the above equation is true.
 GTEST_TEST(MechanicalTransmissionTest, MechanicalTransmissionSimulation) {
-  auto rigid_body_system = parseMechanicalTransmission();
+  auto rigid_body_system = ParseMechanicalTransmission();
   auto tree = rigid_body_system->getRigidBodyTree();
   int nq = tree->number_of_positions();
   drake::SimulationOptions options;
   options.realtime_factor = 0;  // As fast as possible.
   options.initial_step_size = 0.02;
 
-  // Prevents exception from being thrown when simulation runs slower than real
+  // Prevents an exception from being thrown when simulation runs slower than
+  // the real
   // time, which it most likely will given the small step size.
   options.warn_real_time_violation = true;
 
-  // Instantates a variable that specifies the duration of the simulation.
+  // Instantiates a variable that specifies the duration of the simulation.
   // The default value is 5 seconds.
   double duration = 5.0;
 
   // Starts the simulation.
   const double kStartTime = 0.0;
   VectorXd x0 = VectorXd::Zero(rigid_body_system->getNumStates());
-  int joint1_pos = tree->findJoint("joint1")->get_position_start_index();
-  int joint2_pos = tree->findJoint("joint2")->get_position_start_index();
-  int joint1_vel = nq + tree->findJoint("joint1")->get_velocity_start_index();
-  int joint2_vel = nq + tree->findJoint("joint2")->get_velocity_start_index();
+  // Determines the indices within the `RigidBodySystem's` output vector
+  // containing the positions and velocities of the two joints in the URDF.
+  int joint1_pos_index = tree->findJoint("joint1")->get_position_start_index();
+  int joint2_pos_index = tree->findJoint("joint2")->get_position_start_index();
+  int joint1_vel_index =
+      nq + tree->findJoint("joint1")->get_velocity_start_index();
+  int joint2_vel_index =
+      nq + tree->findJoint("joint2")->get_velocity_start_index();
 
-  x0(joint1_pos) = 2.0;
-  x0(joint2_pos) = 2.0;
-  x0(joint1_vel) = 0.1;
-  x0(joint2_vel) = 0.2;
+  x0(joint1_pos_index) = 2.0;
+  x0(joint2_pos_index) = 2.0;
+  x0(joint1_vel_index) = 0.1;
+  x0(joint2_vel_index) = 0.2;
   auto trajectory_logger = std::make_shared<
       drake::systems::TrajectoryLogger<RigidBodySystem::StateVector>>(
       rigid_body_system->getNumStates());
@@ -108,20 +146,21 @@ GTEST_TEST(MechanicalTransmissionTest, MechanicalTransmissionSimulation) {
   auto trajectory = trajectory_logger->getTrajectory();
 
   for (size_t i = 0; i < trajectory.time.size(); ++i) {
-    EXPECT_NEAR((trajectory.value[i](joint1_pos) - 1.0) /
-                    trajectory.value[i](joint2_pos),
+    EXPECT_NEAR((trajectory.value[i](joint1_pos_index) - 1.0) /
+                    trajectory.value[i](joint2_pos_index),
                 0.5, 5e-2);
   }
-  x0(joint1_pos) = 2.0;
-  x0(joint2_pos) = 2.5;
-  x0(joint1_vel) = 0.1;
-  x0(joint2_vel) = 0.18;
+  x0(joint1_pos_index) = 2.0;
+  x0(joint2_pos_index) = 2.5;
+  x0(joint1_vel_index) = 0.1;
+  x0(joint2_vel_index) = 0.18;
   trajectory_logger->clearTrajectory();
   drake::simulate(*sys, kStartTime, duration, x0, options);
   trajectory = trajectory_logger->getTrajectory();
   auto final_state = trajectory.value[trajectory.value.size() - 1];
-  EXPECT_NEAR((final_state(joint1_pos) - 1.0) / final_state(joint2_pos), 0.5,
-              5e-2);
+  EXPECT_NEAR(
+      (final_state(joint1_pos_index) - 1.0) / final_state(joint2_pos_index),
+      0.5, 5e-2);
 }
 
 }  // namespace

@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "drake/common/polynomial.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
 #include "drake/systems/LCMSystem.h"
@@ -7,7 +8,6 @@
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/common/polynomial.h"
 #include "drake/util/drakeAppUtil.h"
 
 using drake::RigidBodySystem;
@@ -48,11 +48,12 @@ int DoMain(int argc, char* argv[]) {
   options.realtime_factor = 0;  // As fast as possible.
   options.initial_step_size = 0.002;
 
-  // Prevents exception from being thrown when simulation runs slower than real
+  // Prevents an exception from being thrown when simulation runs slower than
+  // the real
   // time, which it most likely will given the small step size.
   options.warn_real_time_violation = true;
 
-  // Instantates a variable that specifies the duration of the simulation.
+  // Instantiates a variable that specifies the duration of the simulation.
   // The default value is 5 seconds.
   double duration = 5.0;
 
@@ -108,8 +109,7 @@ int DoMain(int argc, char* argv[]) {
   // Ensures the robot's joints are within their position limits.
   std::vector<std::unique_ptr<RigidBody>>& bodies = tree->bodies;
   for (int robot_state_index = 0, body_index = 0;
-       body_index < static_cast<int>(bodies.size());
-       ++body_index) {
+       body_index < static_cast<int>(bodies.size()); ++body_index) {
     // Skips rigid bodies without a parent (this includes the world link).
     if (!bodies[body_index]->hasParent()) continue;
 
