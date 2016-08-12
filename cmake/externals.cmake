@@ -279,11 +279,18 @@ function(drake_add_external PROJECT)
   cmake_parse_arguments(_ext
     "${_ext_flags}" "${_ext_sv_args}" "${_ext_mv_args}" ${ARGN})
 
-  # Determine if this project is enabled
   string(TOUPPER WITH_${PROJECT} _ext_project_option)
   if(_ext_ALWAYS)
-    # Project is always enabled
-  elseif(DEFINED ${_ext_project_option})
+    # Project is "always" enabled, but add a hidden option to turn it off; this
+    # is useful for the CI to "build" just google_styleguide in order to run
+    # cpplint on the code.
+    cmake_dependent_option(
+      ${_ext_project_option} "Enable ${PROJECT} (internal)" ON
+      "NOT ${_ext_project_option}" ON)
+  endif()
+
+  # Determine if this project is enabled
+  if(DEFINED ${_ext_project_option})
     if(${_ext_project_option})
       # Project is explicitly enabled
     elseif(WITH_ALL_PUBLIC_EXTERNALS AND DEFINED _ext_PUBLIC)
