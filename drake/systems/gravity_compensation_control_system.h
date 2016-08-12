@@ -11,15 +11,13 @@
 namespace drake {
 
 /** GravityCompensatedPDPositionControlSystem<System>
- * @brief Wraps an existing RigidBodySystem with a controller with PD position
+ * Wraps an existing RigidBodySystem with a controller with PD position
  * feedback and gravity compensation control (the new system represents the
  * closed-loop controller + system)
  * @concept{system_concept}
- * x_d --->[ Kp, Kd ]-->(+)----->(+)---->[ sys ]----> yout
- *                       | -      | +            |
- *                       |    [ G(x) ]<----------|
- *                       |                       |
- *                       ----[ Kp, Kd ]<----------
+ *
+ * ![GravityCompensatedPDPositionControl
+ * System](file:///Users/naveenoid/Workspace/drake-distro/drake/doc/images/GravityCompensatedPositionControl.svg)
  *
  */
 template <class System>

@@ -11,7 +11,6 @@
 
 using drake::AffineSystem;
 using drake::BotVisualizer;
-using drake::GravityCompensatedPDPositionControlSystem;
 using Eigen::MatrixXd;
 using drake::RobotStateTap;
 using drake::RigidBodySystem;
