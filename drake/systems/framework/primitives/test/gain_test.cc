@@ -100,20 +100,20 @@ TEST_F(GainTest, GainIsStateless) {
   EXPECT_EQ(nullptr, context_->get_state().continuous_state);
 }
 
-// Tests the capability to take derivatives of the output with respect to some
+// Tests the ability to take derivatives of the output with respect to some
 // (not all) of the inputs.
 // In this unit test derivatives are taken with respect to the first and third
 // input variables. The second input is set to be a constant and therefore
 // derivatives with respect to this input are zero.
 GTEST_TEST(MiscGainTests, AutoDiff) {
-  // There are only two independent variables in this problem with respect which
-  // we want to take derivatives. Therefore the Vector2d in the template
+  // There are only two independent variables in this problem with respect to
+  // which we want to take derivatives. Therefore the Vector2d in the template
   // argument of AutoDiffScalar.
   typedef AutoDiffScalar<Vector2d> T;
 
   // Set a Gain system with input and output of size 3. Notice that this size
   // does not necessarily need to be the same as the size of the derivatives
-  // vectors and, for this unit test they are not equal.
+  // vectors and, for this unit test, they are not equal.
   const double kGain = 2.0;
   auto gain = make_unique<Gain<T>>(kGain /* gain */, 3 /* length */);
   auto context = gain->CreateDefaultContext();

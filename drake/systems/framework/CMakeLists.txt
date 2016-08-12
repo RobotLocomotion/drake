@@ -51,6 +51,7 @@ set(installed_headers
   diagram.h
   primitives/adder.h
   primitives/gain.h
+  primitives/gain-inl.h
   primitives/integrator.h)
 
 # Headers that are needed by code here but should not
