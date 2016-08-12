@@ -39,26 +39,11 @@ namespace parsers {
 namespace urdf {
 namespace {
 
-// todo: rectify this with FindBodyIndex in the class (which makes more
-// assumptions)
-int FindLinkIndex(RigidBodyTree* tree, string link_name) {
-  int index = -1;
-  for (unsigned int i = 0; i < tree->bodies.size(); i++) {
-    if (link_name.compare(tree->bodies[i]->get_name()) == 0) {
-      index = i;
-      break;
-    }
-  }
-  return index;
-}
-
 // Finds the index of the link whose parent joint has a specified name.
 // Throws a std::runtime_error if no such link can be found or if more than
 // one link is found.
-//
-// TODO(liang.fok): Generalize this method to support a model_id.
-//                  See: https://github.com/RobotLocomotion/drake/issues/2583
-int FindBodyIndexByJointName(RigidBodyTree* tree, string joint_name) {
+int FindBodyIndexByJointName(RigidBodyTree* tree, const string& joint_name,
+    int model_instance_id) {
   // Instantiates a local variable that stores the index of the rigid body whose
   // joint is the one we're searching for. It is initialized to an invalid index
   // so the failure mode of not finding any matching joint can be identified.
@@ -68,16 +53,17 @@ int FindBodyIndexByJointName(RigidBodyTree* tree, string joint_name) {
 
   // Searches through all of the bodies in the rigid body tree looking for the
   // joint with the specified name.
-  for (unsigned int i = 0; i < tree->bodies.size(); i++) {
-    if (tree->bodies[i]->hasParent() &&
-        joint_name.compare(tree->bodies[i]->getJoint().getName()) == 0) {
+  for (unsigned int ii = 0; ii < tree->bodies.size(); ++ii) {
+    if (tree->bodies[ii]->hasParent() &&
+        tree->bodies[ii]->get_model_instance_id() == model_instance_id &&
+        joint_name.compare(tree->bodies[ii]->getJoint().getName()) == 0) {
       if (index == -1) {
-        index = i;
+        index = ii;
       } else {
         throw std::runtime_error(
             "RigidBodyTreeURDF.cpp: FindBodyIndexByJointName: ERROR: Multiple "
-            "joints named \"" +
-            joint_name + "\" found.");
+            "joints named \"" + joint_name + "\" with model instance ID " +
+            std::to_string(model_instance_id) + " found.");
       }
     }
   }
@@ -86,8 +72,8 @@ int FindBodyIndexByJointName(RigidBodyTree* tree, string joint_name) {
   if (index == -1) {
     throw std::runtime_error(
         "RigidBodyTreeURDF.cpp: FindBodyIndexByJointName: "
-        "ERROR: Unable to find joint named \"" +
-        joint_name + "\".");
+        "ERROR: Unable to find joint named \"" + joint_name + "\" with model "
+        "instance ID " + std::to_string(model_instance_id) + ".");
   }
 
   return index;
@@ -636,7 +622,7 @@ void ParseJointKeyParams(XMLElement* node, string& name, string& type,
   child_link_name = string(attr);
 }
 
-void ParseJoint(RigidBodyTree* tree, XMLElement* node) {
+void ParseJoint(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && (std::strcmp(attr, "true") == 0)) return;
 
@@ -649,14 +635,19 @@ void ParseJoint(RigidBodyTree* tree, XMLElement* node) {
   // separately.
   if (parent_name == string(RigidBodyTree::kWorldName)) return;
 
-  int parent_index = FindLinkIndex(tree, parent_name);
-  if (parent_index < 0)
-    throw runtime_error("ERROR: could not find parent link named " +
-                        parent_name);
+  int parent_index = tree->FindBodyIndex(parent_name, model_instance_id);
+  if (parent_index < 0) {
+    throw runtime_error("parser_urdf.cc: ParseJoint: ERROR: Could not find "
+        "parent link named \"" + parent_name + "\" with model instance ID " +
+        std::to_string(model_instance_id) + ".");
+  }
 
-  int child_index = FindLinkIndex(tree, child_name);
-  if (child_index < 0)
-    throw runtime_error("ERROR: could not find child link named " + child_name);
+  int child_index = tree->FindBodyIndex(child_name, model_instance_id);
+  if (child_index < 0) {
+    throw runtime_error("parser_urdf.cc: ParseJoint: ERROR: Could not find "
+        "child link named \"" + parent_name + "\" with model instance ID " +
+        std::to_string(model_instance_id) + ".");
+  }
 
   Isometry3d transform_to_parent_body = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
@@ -703,21 +694,27 @@ void ParseJoint(RigidBodyTree* tree, XMLElement* node) {
   tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 }
 
-// Searches through the URDF document looking for the effort limits of a
-// particular joint. If the joint is not found, throws an exception. If the
-// limits of the joint are not specified, does nothing. If the effort limits are
-// specified, saves the effort limits in \p min_effort and \p max_effort.
-//
-// @param[in] robot_node The XML node for the robot description. This must
-// contain child joint elements through which to search.
-// @param[in] joint_name The name of the joint to find. If no joint with such a
-// name exists, throw an exception.
-// @param[out] min_effort A pointer to where the minimum effort should be saved.
-// If the effort limits are not specified, this value is not modified.
-// @param[out] max_effort A pointer to where the minimum effort should be saved.
-// If the effort limits are not specified, this value is not modified.
-// @throws std::runtime_error if the name of the actuator's joint cannot be
-// determined or if the named joint could not be found.
+/* Searches through the URDF document looking for the effort limits of a joint
+ * named @p joint_name. If the joint is not found, throws an
+ * `std::runtime_error` exception. If the limits of the joint are not specified,
+ * this method does nothing. If the effort limits are specified, this method
+ * saves them in \p min_effort and \p max_effort.
+ *
+ * @param[in] robot_node The XML node for the robot description. This must
+ * contain child joint elements through which to search.
+ *
+ * @param[in] joint_name The name of the joint to find. If no joint with such a
+ * name exists, throw an exception.
+ *
+ * @param[out] min_effort A pointer to where the minimum effort should be saved.
+ * If the effort limits are not specified, this value is not modified.
+ *
+ * @param[out] max_effort A pointer to where the minimum effort should be saved.
+ * If the effort limits are not specified, this value is not modified.
+ *
+ * @throws std::runtime_error if the name of the actuator's joint cannot be
+ * determined or if the named joint could not be found.
+ */
 void GetActuatorEffortLimit(XMLElement* robot_node,
                             const string& joint_name, double* min_effort,
                             double* max_effort) {
@@ -768,7 +765,8 @@ void GetActuatorEffortLimit(XMLElement* robot_node,
       "\".");
 }
 
-void ParseTransmission(RigidBodyTree* tree, XMLElement* transmission_node) {
+void ParseTransmission(RigidBodyTree* tree, XMLElement* transmission_node,
+    int model_instance_id) {
   // Determines the transmission type.
   const char* attr = nullptr;
   XMLElement* type_node = transmission_node->FirstChildElement("type");
@@ -818,7 +816,8 @@ void ParseTransmission(RigidBodyTree* tree, XMLElement* transmission_node) {
 
   // Checks if the actuator is attached to a fixed joint. If so, abort this
   // method call.
-  int body_index = FindBodyIndexByJointName(tree, joint_name);
+  int body_index = FindBodyIndexByJointName(tree, joint_name,
+      model_instance_id);
 
   if (tree->bodies[body_index]->getJoint().getNumPositions() == 0) {
     cerr << "RigidBodyTreeURDF.cpp: ParseTransmission: WARNING: Skipping "
@@ -853,7 +852,7 @@ void ParseTransmission(RigidBodyTree* tree, XMLElement* transmission_node) {
                                                gain, effort_min, effort_max));
 }
 
-void ParseLoop(RigidBodyTree* tree, XMLElement* node) {
+void ParseLoop(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
   Vector3d axis;
   axis << 1.0, 0.0, 0.0;
 
@@ -864,12 +863,12 @@ void ParseLoop(RigidBodyTree* tree, XMLElement* node) {
   XMLElement* link_node = node->FirstChildElement("link1");
   std::shared_ptr<RigidBodyFrame> frameA =
       MakeRigidBodyFrameFromUrdfNode(
-          *tree, *link_node, link_node, name + "FrameA");
+          *tree, *link_node, link_node, name + "FrameA", model_instance_id);
 
   link_node = node->FirstChildElement("link2");
   std::shared_ptr<RigidBodyFrame> frameB =
       MakeRigidBodyFrameFromUrdfNode(
-          *tree, *link_node, link_node, name + "FrameB");
+          *tree, *link_node, link_node, name + "FrameB", model_instance_id);
 
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis))
@@ -881,12 +880,13 @@ void ParseLoop(RigidBodyTree* tree, XMLElement* node) {
   tree->loops.push_back(l);
 }
 
-void ParseFrame(RigidBodyTree* tree, XMLElement* node) {
+void ParseFrame(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
   const char* frame_name = node->Attribute("name");
   if (!frame_name) throw runtime_error("ERROR parsing Drake frame name");
 
   std::shared_ptr<RigidBodyFrame> frame =
-      MakeRigidBodyFrameFromUrdfNode(*tree, *node, node, frame_name);
+      MakeRigidBodyFrameFromUrdfNode(*tree, *node, node, frame_name,
+          model_instance_id);
   tree->addFrame(frame);
 }
 
@@ -1059,24 +1059,24 @@ ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
   // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint"))
-    ParseJoint(tree, joint_node);
+    ParseJoint(tree, joint_node, model_instance_id);
 
   // Parses the model's transmission elements.
   for (XMLElement* transmission_node = node->FirstChildElement("transmission");
        transmission_node;
        transmission_node =
            transmission_node->NextSiblingElement("transmission"))
-    ParseTransmission(tree, transmission_node);
+    ParseTransmission(tree, transmission_node, model_instance_id);
 
   // Parses the model's loop joint elements.
   for (XMLElement* loop_node = node->FirstChildElement("loop_joint"); loop_node;
        loop_node = loop_node->NextSiblingElement("loop_joint"))
-    ParseLoop(tree, loop_node);
+    ParseLoop(tree, loop_node, model_instance_id);
 
   // Parses the model's Drake frame elements.
   for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
        frame_node = frame_node->NextSiblingElement("frame"))
-    ParseFrame(tree, frame_node);
+    ParseFrame(tree, frame_node, model_instance_id);
 
   // Adds the floating joint(s) that connect the newly added robot model to the
   // rest of the rigid body tree.
@@ -1223,9 +1223,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
     const RigidBodyTree& tree, const tinyxml2::XMLElement& link,
-    const tinyxml2::XMLElement* pose, const string& name) {
+    const tinyxml2::XMLElement* pose, const string& name,
+    int model_instance_id) {
   string body_name = link.Attribute("link");
-  RigidBody* body = tree.FindBody(body_name);
+  RigidBody* body = tree.FindBody(body_name, "" /* model_name */,
+      model_instance_id);
   if (body == nullptr) {
     throw runtime_error("ERROR: Couldn't find body \"" + body_name +
                         "\" referenced in frame \"" + name + "\".");

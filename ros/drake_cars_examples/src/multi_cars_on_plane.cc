@@ -32,30 +32,61 @@ using drake::examples::cars::CreateRigidBodySystem;
 using drake::examples::cars::CreateVehicleSystem;
 using drake::examples::cars::GetCarSimulationDefaultOptions;
 
+using drake::parsers::ModelInstanceIdTable;
+
 using drake::ros::systems::DrakeRosTfPublisher;
 using drake::ros::systems::run_ros_vehicle_sim;
 
+
 /**
- * Sits in a loop periodically publishing an identity transform from
- * "world_link" to "world". This method exits when ros::ok() returns false.
+ * Sits in a loop periodically publishing an identity transform for the
+ * following frames to "world":
+ *
+ * 1. world_link
+ * 2. Prius_1/world
+ * 3. Prius_2/world
+ * 4. Prius_3/world
+ * 5. Prius_4/world
+ * 6. Prius_5/world
+ *
+ * TODO(liang.fok): Remove these once #3081 is resolved. See:
+ * https://github.com/RobotLocomotion/drake/issues/3081
  */
-void WorldTfPublisher() {
+void WorldTfPublisher(int num_vehicles) {
   tf::TransformBroadcaster tf_broadcaster;
 
-  geometry_msgs::TransformStamped transform_message;
-  transform_message.header.frame_id = RigidBodyTree::kWorldName;
-  transform_message.child_frame_id = "world_link";
-  transform_message.transform.translation.x = 0;
-  transform_message.transform.translation.y = 0;
-  transform_message.transform.translation.z = 0;
-  transform_message.transform.rotation.w = 1;
-  transform_message.transform.rotation.x = 0;
-  transform_message.transform.rotation.y = 0;
-  transform_message.transform.rotation.z = 0;
+  std::vector<geometry_msgs::TransformStamped> transform_messages;
+
+  geometry_msgs::TransformStamped world_link_message;
+  world_link_message.header.frame_id = RigidBodyTree::kWorldName;
+  world_link_message.child_frame_id = "ground_plane";
+  world_link_message.transform.translation.x = 0;
+  world_link_message.transform.translation.y = 0;
+  world_link_message.transform.translation.z = 0;
+  world_link_message.transform.rotation.w = 1;
+  world_link_message.transform.rotation.x = 0;
+  world_link_message.transform.rotation.y = 0;
+  world_link_message.transform.rotation.z = 0;
+  transform_messages.push_back(world_link_message);
+
+  for (int ii = 0; ii < num_vehicles; ii++) {
+    geometry_msgs::TransformStamped vehicle_message;
+    vehicle_message.header.frame_id = RigidBodyTree::kWorldName;;
+    vehicle_message.child_frame_id = std::string("Prius_") +
+        std::to_string(ii + 1) + "/world";
+    vehicle_message.transform.translation.x = 0;
+    vehicle_message.transform.translation.y = 0;
+    vehicle_message.transform.translation.z = 0;
+    vehicle_message.transform.rotation.w = 1;
+    vehicle_message.transform.rotation.x = 0;
+    vehicle_message.transform.rotation.y = 0;
+    vehicle_message.transform.rotation.z = 0;
+    transform_messages.push_back(vehicle_message);
+  }
 
   ::ros::Rate cycle_rate(10); // 10 Hz
   while (::ros::ok()) {
-    tf_broadcaster.sendTransform(transform_message);
+    tf_broadcaster.sendTransform(transform_messages);
     cycle_rate.sleep();
   }
 }
@@ -65,15 +96,16 @@ void WorldTfPublisher() {
  * reside on a flat terrain.
  */
 int DoMain(int argc, const char* argv[]) {
+  // Defines some constants.
+  const std::string kModelName = "Prius";
+  const std::string kWorldModelName = "planar_world";
+
+  // Initializes ROS and a ROS node handle.
   ::ros::init(argc, const_cast<char**>(argv), "multi_cars_on_plane");
   ::ros::NodeHandle node_handle;
 
-  // Initializes the communication layer.
-  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
-
-  // Instantiates a duration variable that will be set by the call to
-  // CreateRigidBodySystem() below.
-  double duration = std::numeric_limits<double>::infinity();
+  // Initializes the LCM communication layer.
+  // std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
   // Initializes the rigid body system.
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
@@ -84,22 +116,18 @@ int DoMain(int argc, const char* argv[]) {
   std::map<int, std::string> model_instance_name_table;
 
   // Obtains the number of vehicles to simulate.
-  std::string car_count_parameter_name("car_count");
-  int num_vehicles = GetROSParameter<int>(node_handle,
-      car_count_parameter_name);
-
-  const std::string kModelName = "Prius";
+  int num_vehicles = GetROSParameter<int>(node_handle, "car_count");
 
   // Adds the vehicles to the rigid body system.
   for (int ii = 0; ii < num_vehicles; ++ii) {
-    const std::string description_param_name = std::string("car_description_") +
-        std::to_string(ii + 1);
-    std::string description = GetROSParameter<std::string>(node_handle,
-        description_param_name);
+    const std::string description_parameter_name =
+        std::string("car_description_") + std::to_string(ii + 1);
+    std::string model_description = GetROSParameter<std::string>(node_handle,
+        description_parameter_name);
 
     std::shared_ptr<RigidBodyFrame> weld_to_frame;
-    drake::parsers::ModelInstanceIdTable model_instance_id_table =
-        rigid_body_sys->AddModelInstanceFromDescription(description,
+    ModelInstanceIdTable model_instance_id_table =
+        rigid_body_sys->AddModelInstanceFromDescription(model_description,
             DrakeJoint::QUATERNION, weld_to_frame);
 
     // The model description contains a single model. Get its model instance ID,
@@ -122,9 +150,22 @@ int DoMain(int argc, const char* argv[]) {
     model_instance_name_table[model_instance_id] = model_instance_name;
   }
 
-  // Spawns a thread publishing an identity transform from "world_link" to
-  // "world".
-  std::thread worldTfPublisherThread(WorldTfPublisher);
+  // Obtains and adds the world model to the RigidBodyTree. Then stores its
+  // model instance ID and name in model_instance_name_table.
+  std::string world_description = GetROSParameter<std::string>(node_handle,
+      "world_description");
+  ModelInstanceIdTable world_instance_id_table =
+      rigid_body_sys->AddModelInstanceFromDescription(world_description,
+          DrakeJoint::FIXED);
+  int world_instance_id = world_instance_id_table[kWorldModelName];
+  model_instance_name_table[world_instance_id] = kWorldModelName;
+
+  // Spawns a thread publishing an identity transforms from the root of each
+  // model to the world.
+  //
+  // TODO(liang.fok) Remove this once #3081 is resolved. See:
+  // https://github.com/RobotLocomotion/drake/issues/3081
+  std::thread worldTfPublisherThread(WorldTfPublisher, num_vehicles);
 
   // std::cout << "==============================================" << std::endl;
   // for(auto it = sim_instance_ids.cbegin(); it != sim_instance_ids.cend();
@@ -181,9 +222,13 @@ int DoMain(int argc, const char* argv[]) {
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
 
-  // Defines the start time of the simulation.
+  // Defines some simulation parameters.
   const double kStartTime = 0;
+  double duration = std::numeric_limits<double>::infinity();
 
+  drake::examples::cars::SetRigidBodySystemParameters(rigid_body_sys.get());
+
+  // Starts the main simulation loop.
   run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
 
   worldTfPublisherThread.join();

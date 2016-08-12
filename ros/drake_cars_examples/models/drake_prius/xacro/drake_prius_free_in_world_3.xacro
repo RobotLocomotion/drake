@@ -3,8 +3,8 @@
   <property name="world_roll" value="0" />
   <property name="world_pitch" value="0" />
   <property name="world_yaw" value="0" />
-  <property name="world_x" value="-1" />
-  <property name="world_y" value="1" />
+  <property name="world_x" value="-5" />
+  <property name="world_y" value="5" />
   <property name="world_z" value="1.2" />
 
   <xacro:include

@@ -31,6 +31,9 @@ namespace urdf {
  *
  * @param[in] name The name of the new `RigidBodyFrame`.
  *
+ * @param[in] model_instance_id The instance ID of the model to which the frame
+ * belongs.
+ *
  * @return The new `RigidBodyFrame`.
  *
  * @throws std::runtime_error if the rigid body to which the new
@@ -39,7 +42,8 @@ namespace urdf {
 DRAKERBM_EXPORT
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
     const RigidBodyTree& tree, const tinyxml2::XMLElement& link,
-    const tinyxml2::XMLElement* pose, const std::string& name);
+    const tinyxml2::XMLElement* pose, const std::string& name,
+    int model_instance_id);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of

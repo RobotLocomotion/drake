@@ -74,9 +74,8 @@ class DrakeRosTfPublisher {
     // Queries the ROS parameter server for a boolean parameter called
     // "enable_tf_publisher". This parameter is used to control whether
     // this class publishes /tf messages.
-    // std::string parameter_name("enable_tf_publisher");
-    std::string parameter_name("enable_tf_publisher");
-    enable_tf_publisher_ = GetROSParameter<bool>(node_handle, parameter_name);
+    enable_tf_publisher_ = GetROSParameter<bool>(node_handle,
+        "enable_tf_publisher");
 
     // Initializes the time stamp of the previous transmission to be zero.
     previous_send_time_.sec = 0;
@@ -85,7 +84,7 @@ class DrakeRosTfPublisher {
     // Instantiates a geometry_msgs::TransformStamped message for each rigid
     // body in the rigid body tree.
     for (auto const& rigid_body : rigid_body_tree->bodies) {
-      if (!ShouldPublishTfForRigidBody(rigid_body.get())) continue;
+      if (!ShouldPublishTfForRigidBody(*rigid_body.get())) continue;
 
       // Derives the key for storing the geometry_msgs::TransformStamped for
       // the current rigid body in transform_messages_.
@@ -111,29 +110,24 @@ class DrakeRosTfPublisher {
       // Determines the model instance ID and model instance name of the current
       // rigid body.
       int model_instance_id = rigid_body->get_model_instance_id();
+      if (model_instance_name_table.find(model_instance_id) ==
+          model_instance_name_table.end()) {
+        throw std::runtime_error("DrakeRosTfPublisher: Could not find model "
+          "instance ID " + std::to_string(model_instance_id) + " in "
+          "model_instance_name_table. Expected it to be of model type \"" +
+          rigid_body->get_model_name() + "\".");
+      }
       std::string model_instance_name =
           model_instance_name_table.at(model_instance_id);
 
-      // Determines the name of this rigid body tree's parent's frame in the
-      // TF tree. If the parent is the world, use the name directly. Otherwise
-      // prefix the model instance name in front of the parent's frame name.
-      // This allows a single TF tree to support multiple models.
-      std::string parent_frame_name;
-      DeriveTfFrameName(*(rigid_body->get_parent()), model_instance_name_table,
-          &parent_frame_name);
-      if (parent_frame_name == RigidBodyTree::kWorldName) {
-        message->header.frame_id = parent_frame_name;
-      } else {
-        // Prefixes the model instance name in front of the frame name.
-        message->header.frame_id = model_instance_name + "/" +
-            parent_frame_name;
-      }
+      // Saves the names of the frames in the transform message.
+      message->header.frame_id =
+          DeriveBodyTfFrameName(*(rigid_body->get_parent()),
+              model_instance_name_table);
 
       // Determines the name of this rigid body's frame in the /tf tree.
-      std::string frame_name;
-      DeriveTfFrameName(*(rigid_body.get()), model_instance_name_table,
-          &frame_name);
-      message->child_frame_id = model_instance_name + "/" + frame_name;
+      message->child_frame_id =
+          DeriveBodyTfFrameName(*(rigid_body.get()), model_instance_name_table);
 
       // Obtains the current link's joint.
       const DrakeJoint& joint = rigid_body->getJoint();
@@ -243,7 +237,7 @@ class DrakeRosTfPublisher {
     // Publishes the transform for each rigid body in the rigid body tree.
     for (auto const& rigid_body : rigid_body_tree_->bodies) {
       // Skips the current rigid body if it should be skipped.
-      if (!ShouldPublishTfForRigidBody(rigid_body.get())) continue;
+      if (!ShouldPublishTfForRigidBody(*rigid_body.get())) continue;
 
       std::string key = DeriveKey(rigid_body);
 
@@ -332,9 +326,9 @@ class DrakeRosTfPublisher {
   // Determines whether a transform should be published for @p rigid_body. A
   // rigid body should be skipped if it is the world link or does not have a
   // parent link.
-  bool ShouldPublishTfForRigidBody(const RigidBody* rigid_body) {
+  bool ShouldPublishTfForRigidBody(const RigidBody& rigid_body) {
     // Skips parent-less links. This includes the world.
-    return rigid_body->hasParent();
+    return rigid_body.hasParent();
   }
 
   // Derives a key for obtaining the transform message for @p rigid_body
@@ -369,18 +363,18 @@ class DrakeRosTfPublisher {
   // instance names. The instance names are used to prefix the frame name so
   // that multiple models can be supported.
   //
-  // @param[out] frame_name A pointer to where the frame name should be stored.
-  void DeriveTfFrameName(const RigidBody& rigid_body,
-      const std::map<int, std::string>& model_instance_name_table,
-      std::string* frame_name) {
+  // @return The frame name of @p rigid_body.
+  std::string DeriveBodyTfFrameName(const RigidBody& rigid_body,
+      const std::map<int, std::string>& model_instance_name_table) {
 
     // Obtains the rigid body's name.
     std::string name = rigid_body.get_name();
+    std::string frame_name;
 
     if (name == RigidBodyTree::kWorldName) {
       // If the rigid body is the world, just use the world's name. Since there
       // is only one world, there is no need for a prefix.
-       *frame_name = name;
+       frame_name = name;
     } else {
       // Obtains the rigid body's model instance ID.
       int model_instance_id = rigid_body.get_model_instance_id();
@@ -396,9 +390,11 @@ class DrakeRosTfPublisher {
 
       // Prefixes the rigid body's name with the model instance name.
       // This is the name of the rigid body's frame in the /tf tree.
-      *frame_name =
+      frame_name =
           model_instance_name_table.at(model_instance_id) + "/" + name;
     }
+
+    return frame_name;
   }
 
   // Determines the name of the frame belonging to @p frame in the /tf
@@ -413,13 +409,13 @@ class DrakeRosTfPublisher {
   // instance names. The instance names are used to prefix the frame name so
   // that multiple models can be supported.
   //
-  // @param[out] frame_name A pointer to where the frame name should be stored.
-  void DeriveTfFrameName(const RigidBodyFrame& frame,
-      const std::map<int, std::string>& model_instance_name_table,
-      std::string* frame_name) {
+  // @return The frame name of @p rigid_body.
+  std::string DeriveFrameTfFrameName(const RigidBodyFrame& frame,
+      const std::map<int, std::string>& model_instance_name_table) {
 
     // Obtains the frame's name.
     std::string name = frame.get_name();
+    std::string frame_name;
 
     // Obtains the frame's model instance ID.
     int model_instance_id = frame.get_model_instance_id();
@@ -435,8 +431,10 @@ class DrakeRosTfPublisher {
 
     // Prefixes the rigid body frame's name with the model instance name.
     // This is the name of the rigid body's frame in the /tf tree.
-    *frame_name =
+    frame_name =
         model_instance_name_table.at(model_instance_id) + "/" + name;
+
+    return frame_name;
   }
 
   // The rigid body tree being used by Drake's rigid body dynamics engine.

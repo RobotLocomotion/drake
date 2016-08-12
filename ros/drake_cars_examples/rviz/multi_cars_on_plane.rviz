@@ -5,15 +5,10 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /Status1
-        - /Grid1
-        - /RobotModel1
-        - /RobotModel1/Status1
-        - /RobotModel2
+        - /Axes1
         - /TF1/Frames1
-        - /WorldModel1
-      Splitter Ratio: 0.334612
-    Tree Height: 1093
+      Splitter Ratio: 0.668605
+    Tree Height: 581
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -40,7 +35,7 @@ Visualization Manager:
       Cell Size: 5
       Class: rviz/Grid
       Color: 160; 160; 164
-      Enabled: true
+      Enabled: false
       Line Style:
         Line Width: 0.03
         Value: Lines
@@ -53,7 +48,7 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
-      Value: true
+      Value: false
     - Alpha: 1
       Class: rviz/RobotModel
       Collision Enabled: false
@@ -148,10 +143,79 @@ Visualization Manager:
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
-        Link Tree Style: ""
+        Link Tree Style: Links in Alphabetic Order
+        body:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        chassis_floor:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        front_axle:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_hub:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_tie_rod_arm:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel_rear:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        rear_axle:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_hub:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_tie_rod_arm:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel_rear:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tie_rod:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        world:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
       Name: RobotModel
-      Robot Description: car_description_2
-      TF Prefix: car_2
+      Robot Description: drake/car_description_2
+      TF Prefix: Prius_2
       Update Interval: 0
       Value: true
       Visual Enabled: true
@@ -164,10 +228,79 @@ Visualization Manager:
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
-        Link Tree Style: ""
+        Link Tree Style: Links in Alphabetic Order
+        body:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        chassis_floor:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        front_axle:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_hub:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_tie_rod_arm:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel_rear:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        rear_axle:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_hub:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_tie_rod_arm:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel_rear:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tie_rod:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        world:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
       Name: RobotModel
-      Robot Description: car_description_3
-      TF Prefix: car_3
+      Robot Description: drake/car_description_3
+      TF Prefix: Prius_3
       Update Interval: 0
       Value: true
       Visual Enabled: true
@@ -180,10 +313,79 @@ Visualization Manager:
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
-        Link Tree Style: ""
+        Link Tree Style: Links in Alphabetic Order
+        body:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        chassis_floor:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        front_axle:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_hub:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_tie_rod_arm:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel_rear:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        rear_axle:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_hub:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_tie_rod_arm:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel_rear:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tie_rod:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        world:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
       Name: RobotModel
-      Robot Description: car_description_4
-      TF Prefix: car_4
+      Robot Description: drake/car_description_4
+      TF Prefix: Prius_4
       Update Interval: 0
       Value: true
       Visual Enabled: true
@@ -196,18 +398,87 @@ Visualization Manager:
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
-        Link Tree Style: ""
+        Link Tree Style: Links in Alphabetic Order
+        body:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        chassis_floor:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        front_axle:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_hub:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_tie_rod_arm:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel_rear:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        rear_axle:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_hub:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_tie_rod_arm:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel_rear:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tie_rod:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        world:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
       Name: RobotModel
-      Robot Description: car_description_5
-      TF Prefix: car_5
+      Robot Description: drake/car_description_5
+      TF Prefix: Prius_5
       Update Interval: 0
       Value: true
       Visual Enabled: true
     - Class: rviz/Axes
       Enabled: true
-      Length: 0.3
+      Length: 10
       Name: Axes
-      Radius: 0.01
+      Radius: 0.05
       Reference Frame: world
       Value: true
     - Alpha: 1
@@ -345,139 +616,151 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        Prius_1/Prius_1/body:
+        Prius_1/body:
           Value: true
-        Prius_1/Prius_1/chassis_floor:
+        Prius_1/chassis_floor:
           Value: true
-        Prius_1/Prius_1/front_axle:
+        Prius_1/front_axle:
           Value: true
-        Prius_1/Prius_1/left_hub:
+        Prius_1/left_hub:
           Value: true
-        Prius_1/Prius_1/left_tie_rod_arm:
+        Prius_1/left_tie_rod_arm:
           Value: true
-        Prius_1/Prius_1/left_wheel:
+        Prius_1/left_wheel:
           Value: true
-        Prius_1/Prius_1/left_wheel_rear:
+        Prius_1/left_wheel_rear:
           Value: true
-        Prius_1/Prius_1/rear_axle:
+        Prius_1/rear_axle:
           Value: true
-        Prius_1/Prius_1/right_hub:
+        Prius_1/right_hub:
           Value: true
-        Prius_1/Prius_1/right_tie_rod_arm:
+        Prius_1/right_tie_rod_arm:
           Value: true
-        Prius_1/Prius_1/right_wheel:
+        Prius_1/right_wheel:
           Value: true
-        Prius_1/Prius_1/right_wheel_rear:
+        Prius_1/right_wheel_rear:
           Value: true
-        Prius_1/Prius_1/tie_rod:
+        Prius_1/tie_rod:
           Value: true
-        Prius_2/Prius_2/body:
+        Prius_1/world:
           Value: true
-        Prius_2/Prius_2/chassis_floor:
+        Prius_2/body:
           Value: true
-        Prius_2/Prius_2/front_axle:
+        Prius_2/chassis_floor:
           Value: true
-        Prius_2/Prius_2/left_hub:
+        Prius_2/front_axle:
           Value: true
-        Prius_2/Prius_2/left_tie_rod_arm:
+        Prius_2/left_hub:
           Value: true
-        Prius_2/Prius_2/left_wheel:
+        Prius_2/left_tie_rod_arm:
           Value: true
-        Prius_2/Prius_2/left_wheel_rear:
+        Prius_2/left_wheel:
           Value: true
-        Prius_2/Prius_2/rear_axle:
+        Prius_2/left_wheel_rear:
           Value: true
-        Prius_2/Prius_2/right_hub:
+        Prius_2/rear_axle:
           Value: true
-        Prius_2/Prius_2/right_tie_rod_arm:
+        Prius_2/right_hub:
           Value: true
-        Prius_2/Prius_2/right_wheel:
+        Prius_2/right_tie_rod_arm:
           Value: true
-        Prius_2/Prius_2/right_wheel_rear:
+        Prius_2/right_wheel:
           Value: true
-        Prius_2/Prius_2/tie_rod:
+        Prius_2/right_wheel_rear:
           Value: true
-        Prius_3/Prius_3/body:
+        Prius_2/tie_rod:
           Value: true
-        Prius_3/Prius_3/chassis_floor:
+        Prius_2/world:
           Value: true
-        Prius_3/Prius_3/front_axle:
+        Prius_3/body:
           Value: true
-        Prius_3/Prius_3/left_hub:
+        Prius_3/chassis_floor:
           Value: true
-        Prius_3/Prius_3/left_tie_rod_arm:
+        Prius_3/front_axle:
           Value: true
-        Prius_3/Prius_3/left_wheel:
+        Prius_3/left_hub:
           Value: true
-        Prius_3/Prius_3/left_wheel_rear:
+        Prius_3/left_tie_rod_arm:
           Value: true
-        Prius_3/Prius_3/rear_axle:
+        Prius_3/left_wheel:
           Value: true
-        Prius_3/Prius_3/right_hub:
+        Prius_3/left_wheel_rear:
           Value: true
-        Prius_3/Prius_3/right_tie_rod_arm:
+        Prius_3/rear_axle:
           Value: true
-        Prius_3/Prius_3/right_wheel:
+        Prius_3/right_hub:
           Value: true
-        Prius_3/Prius_3/right_wheel_rear:
+        Prius_3/right_tie_rod_arm:
           Value: true
-        Prius_3/Prius_3/tie_rod:
+        Prius_3/right_wheel:
           Value: true
-        Prius_4/Prius_4/body:
+        Prius_3/right_wheel_rear:
           Value: true
-        Prius_4/Prius_4/chassis_floor:
+        Prius_3/tie_rod:
           Value: true
-        Prius_4/Prius_4/front_axle:
+        Prius_3/world:
           Value: true
-        Prius_4/Prius_4/left_hub:
+        Prius_4/body:
           Value: true
-        Prius_4/Prius_4/left_tie_rod_arm:
+        Prius_4/chassis_floor:
           Value: true
-        Prius_4/Prius_4/left_wheel:
+        Prius_4/front_axle:
           Value: true
-        Prius_4/Prius_4/left_wheel_rear:
+        Prius_4/left_hub:
           Value: true
-        Prius_4/Prius_4/rear_axle:
+        Prius_4/left_tie_rod_arm:
           Value: true
-        Prius_4/Prius_4/right_hub:
+        Prius_4/left_wheel:
           Value: true
-        Prius_4/Prius_4/right_tie_rod_arm:
+        Prius_4/left_wheel_rear:
           Value: true
-        Prius_4/Prius_4/right_wheel:
+        Prius_4/rear_axle:
           Value: true
-        Prius_4/Prius_4/right_wheel_rear:
+        Prius_4/right_hub:
           Value: true
-        Prius_4/Prius_4/tie_rod:
+        Prius_4/right_tie_rod_arm:
           Value: true
-        Prius_5/Prius_5/body:
+        Prius_4/right_wheel:
           Value: true
-        Prius_5/Prius_5/chassis_floor:
+        Prius_4/right_wheel_rear:
           Value: true
-        Prius_5/Prius_5/front_axle:
+        Prius_4/tie_rod:
           Value: true
-        Prius_5/Prius_5/left_hub:
+        Prius_4/world:
           Value: true
-        Prius_5/Prius_5/left_tie_rod_arm:
+        Prius_5/body:
           Value: true
-        Prius_5/Prius_5/left_wheel:
+        Prius_5/chassis_floor:
           Value: true
-        Prius_5/Prius_5/left_wheel_rear:
+        Prius_5/front_axle:
           Value: true
-        Prius_5/Prius_5/rear_axle:
+        Prius_5/left_hub:
           Value: true
-        Prius_5/Prius_5/right_hub:
+        Prius_5/left_tie_rod_arm:
           Value: true
-        Prius_5/Prius_5/right_tie_rod_arm:
+        Prius_5/left_wheel:
           Value: true
-        Prius_5/Prius_5/right_wheel:
+        Prius_5/left_wheel_rear:
           Value: true
-        Prius_5/Prius_5/right_wheel_rear:
+        Prius_5/rear_axle:
           Value: true
-        Prius_5/Prius_5/tie_rod:
+        Prius_5/right_hub:
+          Value: true
+        Prius_5/right_tie_rod_arm:
+          Value: true
+        Prius_5/right_wheel:
+          Value: true
+        Prius_5/right_wheel_rear:
+          Value: true
+        Prius_5/tie_rod:
+          Value: true
+        Prius_5/world:
+          Value: true
+        ground_plane:
+          Value: true
+        planar_world/ground_plane:
           Value: true
         world:
-          Value: true
-        world_link:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -486,134 +769,118 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          Prius_1/Prius_1/chassis_floor:
-            Prius_1/Prius_1/body:
+          Prius_1/chassis_floor:
+            Prius_1/body:
               {}
-            Prius_1/Prius_1/front_axle:
-              Prius_1/Prius_1/left_tie_rod_arm:
-                Prius_1/Prius_1/left_hub:
-                  Prius_1/Prius_1/left_wheel:
+            Prius_1/front_axle:
+              Prius_1/left_tie_rod_arm:
+                Prius_1/left_hub:
+                  Prius_1/left_wheel:
                     {}
-                Prius_1/Prius_1/tie_rod:
+                Prius_1/tie_rod:
                   {}
-              Prius_1/Prius_1/right_tie_rod_arm:
-                Prius_1/Prius_1/right_hub:
-                  Prius_1/Prius_1/right_wheel:
+              Prius_1/right_tie_rod_arm:
+                Prius_1/right_hub:
+                  Prius_1/right_wheel:
                     {}
-            Prius_1/Prius_1/rear_axle:
-              Prius_1/Prius_1/left_wheel_rear:
+            Prius_1/rear_axle:
+              Prius_1/left_wheel_rear:
                 {}
-              Prius_1/Prius_1/right_wheel_rear:
+              Prius_1/right_wheel_rear:
                 {}
-          Prius_2/Prius_2/body:
+          Prius_1/world:
             {}
-          Prius_2/Prius_2/chassis_floor:
+          Prius_2/chassis_floor:
+            Prius_2/body:
+              {}
+            Prius_2/front_axle:
+              Prius_2/left_tie_rod_arm:
+                Prius_2/left_hub:
+                  Prius_2/left_wheel:
+                    {}
+                Prius_2/tie_rod:
+                  {}
+              Prius_2/right_tie_rod_arm:
+                Prius_2/right_hub:
+                  Prius_2/right_wheel:
+                    {}
+            Prius_2/rear_axle:
+              Prius_2/left_wheel_rear:
+                {}
+              Prius_2/right_wheel_rear:
+                {}
+          Prius_2/world:
             {}
-          Prius_2/Prius_2/front_axle:
+          Prius_3/chassis_floor:
+            Prius_3/body:
+              {}
+            Prius_3/front_axle:
+              Prius_3/left_tie_rod_arm:
+                Prius_3/left_hub:
+                  Prius_3/left_wheel:
+                    {}
+                Prius_3/tie_rod:
+                  {}
+              Prius_3/right_tie_rod_arm:
+                Prius_3/right_hub:
+                  Prius_3/right_wheel:
+                    {}
+            Prius_3/rear_axle:
+              Prius_3/left_wheel_rear:
+                {}
+              Prius_3/right_wheel_rear:
+                {}
+          Prius_3/world:
             {}
-          Prius_2/Prius_2/left_hub:
+          Prius_4/chassis_floor:
+            Prius_4/body:
+              {}
+            Prius_4/front_axle:
+              Prius_4/left_tie_rod_arm:
+                Prius_4/left_hub:
+                  Prius_4/left_wheel:
+                    {}
+                Prius_4/tie_rod:
+                  {}
+              Prius_4/right_tie_rod_arm:
+                Prius_4/right_hub:
+                  Prius_4/right_wheel:
+                    {}
+            Prius_4/rear_axle:
+              Prius_4/left_wheel_rear:
+                {}
+              Prius_4/right_wheel_rear:
+                {}
+          Prius_4/world:
             {}
-          Prius_2/Prius_2/left_tie_rod_arm:
+          Prius_5/chassis_floor:
+            Prius_5/body:
+              {}
+            Prius_5/front_axle:
+              Prius_5/left_tie_rod_arm:
+                Prius_5/left_hub:
+                  Prius_5/left_wheel:
+                    {}
+                Prius_5/tie_rod:
+                  {}
+              Prius_5/right_tie_rod_arm:
+                Prius_5/right_hub:
+                  Prius_5/right_wheel:
+                    {}
+            Prius_5/rear_axle:
+              Prius_5/left_wheel_rear:
+                {}
+              Prius_5/right_wheel_rear:
+                {}
+          Prius_5/world:
             {}
-          Prius_2/Prius_2/left_wheel:
+          ground_plane:
             {}
-          Prius_2/Prius_2/left_wheel_rear:
-            {}
-          Prius_2/Prius_2/rear_axle:
-            {}
-          Prius_2/Prius_2/right_hub:
-            {}
-          Prius_2/Prius_2/right_tie_rod_arm:
-            {}
-          Prius_2/Prius_2/right_wheel:
-            {}
-          Prius_2/Prius_2/right_wheel_rear:
-            {}
-          Prius_2/Prius_2/tie_rod:
-            {}
-          Prius_3/Prius_3/body:
-            {}
-          Prius_3/Prius_3/chassis_floor:
-            {}
-          Prius_3/Prius_3/front_axle:
-            {}
-          Prius_3/Prius_3/left_hub:
-            {}
-          Prius_3/Prius_3/left_tie_rod_arm:
-            {}
-          Prius_3/Prius_3/left_wheel:
-            {}
-          Prius_3/Prius_3/left_wheel_rear:
-            {}
-          Prius_3/Prius_3/rear_axle:
-            {}
-          Prius_3/Prius_3/right_hub:
-            {}
-          Prius_3/Prius_3/right_tie_rod_arm:
-            {}
-          Prius_3/Prius_3/right_wheel:
-            {}
-          Prius_3/Prius_3/right_wheel_rear:
-            {}
-          Prius_3/Prius_3/tie_rod:
-            {}
-          Prius_4/Prius_4/body:
-            {}
-          Prius_4/Prius_4/chassis_floor:
-            {}
-          Prius_4/Prius_4/front_axle:
-            {}
-          Prius_4/Prius_4/left_hub:
-            {}
-          Prius_4/Prius_4/left_tie_rod_arm:
-            {}
-          Prius_4/Prius_4/left_wheel:
-            {}
-          Prius_4/Prius_4/left_wheel_rear:
-            {}
-          Prius_4/Prius_4/rear_axle:
-            {}
-          Prius_4/Prius_4/right_hub:
-            {}
-          Prius_4/Prius_4/right_tie_rod_arm:
-            {}
-          Prius_4/Prius_4/right_wheel:
-            {}
-          Prius_4/Prius_4/right_wheel_rear:
-            {}
-          Prius_4/Prius_4/tie_rod:
-            {}
-          Prius_5/Prius_5/body:
-            {}
-          Prius_5/Prius_5/chassis_floor:
-            {}
-          Prius_5/Prius_5/front_axle:
-            {}
-          Prius_5/Prius_5/left_hub:
-            {}
-          Prius_5/Prius_5/left_tie_rod_arm:
-            {}
-          Prius_5/Prius_5/left_wheel:
-            {}
-          Prius_5/Prius_5/left_wheel_rear:
-            {}
-          Prius_5/Prius_5/rear_axle:
-            {}
-          Prius_5/Prius_5/right_hub:
-            {}
-          Prius_5/Prius_5/right_tie_rod_arm:
-            {}
-          Prius_5/Prius_5/right_wheel:
-            {}
-          Prius_5/Prius_5/right_wheel_rear:
-            {}
-          Prius_5/Prius_5/tie_rod:
-            {}
-          world_link:
+          planar_world/ground_plane:
             {}
       Update Interval: 0
       Value: true
-    - Alpha: 1
+    - Alpha: 0.5
       Class: rviz/RobotModel
       Collision Enabled: false
       Enabled: true
@@ -623,7 +890,7 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        world_link:
+        ground_plane:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -658,30 +925,30 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 98.1124
+      Distance: 668.993
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 3.25301
-        Y: -15.0451
-        Z: 12.4833
+        X: -491.171
+        Y: -289.947
+        Z: -307.658
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.289797
+      Pitch: 0.494797
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 5.45375
+      Yaw: 0.532043
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1388
+  Height: 876
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd000000040000000000000425000004d4fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000004d4000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007fc0000004cfc0100000002fb0000000800540069006d00650100000000000007fc000002f600fffffffb0000000800540069006d00650100000000000004500000000000000000000003d1000004d400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000019c000002d4fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000002d4000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000005ff0000004cfc0100000002fb0000000800540069006d00650100000000000005ff000002f600fffffffb0000000800540069006d006501000000000000045000000000000000000000045d000002d400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -690,6 +957,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 2044
-  X: 491
-  Y: 261
+  Width: 1535
+  X: 65
+  Y: 24

@@ -9,14 +9,15 @@
   <link name="world">
     <inertial>
       <mass value="0" />
-      <origin rpy="${world_roll} ${world_pitch} ${world_yaw}"
+      <origin rpy="0 0 0"
               xyz="${world_x} ${world_y} ${world_z}" />
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
     </inertial>
   </link>
 
   <joint name="virtual_floating_dofs" type="floating">
-    <origin rpy="0 0 0" xyz="0 0 0" />
+    <origin rpy="${world_roll} ${world_pitch} ${world_yaw}"
+            xyz="${world_x} ${world_y} ${world_z}" />
     <axis xyz="0 0 1" />
     <parent link="world" />
     <child link="chassis_floor" />
