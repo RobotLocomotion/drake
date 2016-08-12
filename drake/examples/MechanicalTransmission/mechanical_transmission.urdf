@@ -29,7 +29,7 @@
     <limit effort="100.0" lower="0.0" upper="0.3" velocity="0.1"/>
     <parent link="base_link"/>
     <child link="link1"/>
-    <mimic joint="joint2" multiplier="0.5"/>
+    <mimic joint="joint2" multiplier="0.5" offset="1.0"/>
     <dynamics damping="500.0"/>
   </joint>
 

@@ -61,8 +61,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDFString(
-    const std::string& urdf_string,
-    RigidBodyTree* tree);
+    const std::string& urdf_string, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -89,8 +88,7 @@ ModelInstanceIdTable AddModelInstanceFromURDFString(
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDFString(
     const std::string& urdf_string,
-    std::map<std::string, std::string>& package_map,
-    RigidBodyTree* tree);
+    std::map<std::string, std::string>& package_map, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -118,10 +116,8 @@ ModelInstanceIdTable AddModelInstanceFromURDFString(
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDFString(
-    const std::string& urdf_string,
-    const std::string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    RigidBodyTree* tree);
+    const std::string& urdf_string, const std::string& root_dir,
+    const DrakeJoint::FloatingBaseType floating_base_type, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -153,12 +149,10 @@ ModelInstanceIdTable AddModelInstanceFromURDFString(
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDFString(
-    const std::string& urdf_string,
-    PackageMap& package_map,
+    const std::string& urdf_string, PackageMap& package_map,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -179,7 +173,7 @@ ModelInstanceIdTable AddModelInstanceFromURDFString(
  */
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDF(const std::string& urdf_filename,
-    RigidBodyTree* tree);
+                                              RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -204,8 +198,7 @@ ModelInstanceIdTable AddModelInstanceFromURDF(const std::string& urdf_filename,
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDF(
     const std::string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    RigidBodyTree* tree);
+    const DrakeJoint::FloatingBaseType floating_base_type, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -234,8 +227,7 @@ DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromURDF(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -268,8 +260,7 @@ ModelInstanceIdTable AddModelInstanceFromURDF(
     const std::string& urdf_filename,
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
 
 }  // namespace urdf
 }  // namespace parsers
