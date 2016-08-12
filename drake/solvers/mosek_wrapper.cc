@@ -223,10 +223,19 @@ void MosekWrapper::AddSDPObjective(
 
 void MosekWrapper::AddSDPConstraints(
     const std::vector<SemidefiniteConstraint>& sdp_constraints) {
-  Eigen::MatrixXd linear_cons(numcon_, numvar_);
+  /* Adds a single SDP objective to Mosek for solving, will not work if
+  called multiple times.
+  The mathematical formulation is: <pre>
+  minimize the function
+  sum(c_j * x_j) + Trace(C'*X) + c
+  </pre>
+  where x is contained in a cone, and X is a positive semidefinite matrix,
+  subject to SDP constraints below.
+  See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html  */
   // The linear terms are constructed by creating a matrix of all linear terms
   // and adding that row by row to Mosek.
   // See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
+  Eigen::MatrixXd linear_cons(numcon_, numvar_);
   for (unsigned int i = 0; i < sdp_constraints.size(); i++) {
     linear_cons.row(i) = sdp_constraints[i].b().transpose();
   }
