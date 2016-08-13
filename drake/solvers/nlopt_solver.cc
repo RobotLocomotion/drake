@@ -8,7 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/core/Gradient.h"
+#include "drake/math/autodiff.h"
 #include "drake/solvers/optimization.h"
 
 namespace drake {
@@ -30,7 +30,7 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
     var_count += v.size();
   }
 
-  auto tx = drake::initializeAutoDiff(xvec);
+  auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
   for (const DecisionVariableView& v : variable_list) {
@@ -54,7 +54,7 @@ double EvaluateCosts(const std::vector<double>& x,
   double cost = 0;
   Eigen::VectorXd xvec = MakeEigenVector(x);
 
-  auto tx = drake::initializeAutoDiff(xvec);
+  auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd ty(1);
   TaylorVecXd this_x;
 
