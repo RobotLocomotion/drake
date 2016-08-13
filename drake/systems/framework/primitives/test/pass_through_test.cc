@@ -1,8 +1,6 @@
-#include "drake/systems/framework/primitives/pass_through-inl.h"
+#include "drake/systems/framework/primitives/pass_through.h"
 
 #include <memory>
-#include <stdexcept>
-#include <string>
 
 #include <unsupported/Eigen/AutoDiff>
 
@@ -28,7 +26,7 @@ std::unique_ptr<FreestandingInputPort<T>> MakeInput(
   return make_unique<FreestandingInputPort<T>>(std::move(data));
 }
 
-class BufferTest : public ::testing::Test {
+class PassThroughTest : public ::testing::Test {
  protected:
   void SetUp() override {
     buffer_ = make_unique<PassThrough<double>>(3 /* length */);
@@ -44,7 +42,7 @@ class BufferTest : public ::testing::Test {
 };
 
 // Tests that the output of this system equals its input.
-TEST_F(BufferTest, VectorThroughBufferSystem) {
+TEST_F(PassThroughTest, VectorThroughPassThroughSystem) {
   // Hook input of the expected size.
   // TODO(amcastro-tri): we must be able to ask buffer_->num_of_input_ports().
   ASSERT_EQ(1, context_->get_num_input_ports());
@@ -66,7 +64,7 @@ TEST_F(BufferTest, VectorThroughBufferSystem) {
 
 // Tests that std::out_of_range is thrown when the wrong number of input ports
 // are connected.
-TEST_F(BufferTest, NoInputPorts) {
+TEST_F(PassThroughTest, NoInputPorts) {
   // No input ports are hooked up. PassThrough must have one input port.
   // TODO(amcastro-tri): This will not be needed here when input/outputs are
   // defined in the constructor.
@@ -82,7 +80,7 @@ TEST_F(BufferTest, NoInputPorts) {
 // are connected.
 // TODO(amcastro-tri): when #3109 is resolved verify that input and output ports
 // are the same size even if their sizes were determined automatically.
-TEST_F(BufferTest, WrongSizeOfInputPorts) {
+TEST_F(PassThroughTest, WrongSizeOfInputPorts) {
   // Hook up input port, but of the wrong size.
   // TODO(amcastro-tri): we must be able to ask buffer_->num_of_input_ports().
   ASSERT_EQ(1, context_->get_num_input_ports());
@@ -95,61 +93,8 @@ TEST_F(BufferTest, WrongSizeOfInputPorts) {
 }
 
 // Tests that PassThrough allocates no state variables in the context_.
-TEST_F(BufferTest, BufferIsStateless) {
+TEST_F(PassThroughTest, PassThroughIsStateless) {
   EXPECT_EQ(nullptr, context_->get_state().continuous_state);
-}
-
-// Tests the capability to take derivatives of the output with respect to
-// the input. Since `y = u` the derivative in this case is the identity matrix.
-GTEST_TEST(MiscBufferTests, AutoDiff) {
-  // In this unit test with vectors of length three, derivatives will be taken
-  // with rexpect to the entire input vector. Therefore the Vector3d template
-  // argument.
-  typedef AutoDiffScalar<Vector3d> T;
-
-  // Set a PassThrough system with input and output of size 3.
-  auto buffer = make_unique<PassThrough<T>>(3 /* length */);
-  auto context = buffer->CreateDefaultContext();
-  auto output = buffer->AllocateOutput(*context);
-  auto input = make_unique<BasicVector<T>>(3 /* length */);
-
-  // Sets the input values.
-  Vector3<T> input_vector(1.0, 3.14, 2.18);
-
-  // Sets the independent variables to be the first and third input entries.
-  input_vector(0).derivatives() << 1, 0, 0;  // First independent variable.
-  input_vector(1).derivatives() << 0, 1, 0;  // Second independent variable.
-  input_vector(2).derivatives() << 0, 0, 1;  // Third independent variable.
-
-  input->get_mutable_value() << input_vector;
-
-  context->SetInputPort(0, MakeInput(std::move(input)));
-
-  buffer->EvalOutput(*context, output.get());
-
-  ASSERT_EQ(1, output->get_num_ports());
-  const auto& output_vector =
-      dynamic_cast<const BasicVector<T> *>(
-          output->get_port(0).get_vector_data())->get_value();
-
-  // The expected output value equals the input.
-  Vector3<T> expected;
-  expected = input_vector;
-
-  // The expected derivative is the identity matrix:
-  expected(0).derivatives() << 1.0, 0.0, 0.0;
-  expected(1).derivatives() << 0.0, 1.0, 0.0;
-  expected(2).derivatives() << 0.0, 0.0, 1.0;
-
-  const double tolerance = Eigen::NumTraits<double>::epsilon();
-  for (int i=0; i < 3; i++) {
-    // Checks output value.
-    EXPECT_NEAR(expected(i).value(), output_vector(i).value(), tolerance);
-
-    // Checks derivatives.
-    EXPECT_TRUE(expected(i).derivatives().isApprox(
-        output_vector(i).derivatives(), tolerance));
-  }
 }
 
 }  // namespace
