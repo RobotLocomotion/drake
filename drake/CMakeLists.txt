@@ -1,5 +1,5 @@
-project(drake)
 cmake_minimum_required(VERSION 3.5)
+project(drake)
 
 cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)

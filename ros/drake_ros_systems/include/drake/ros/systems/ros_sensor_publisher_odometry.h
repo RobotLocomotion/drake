@@ -18,6 +18,7 @@ using drake::RigidBodyDepthSensor;
 
 namespace drake {
 namespace ros {
+namespace systems {
 
 /**
  * @brief A system that takes the system state as the input and publishes
@@ -247,5 +248,6 @@ class SensorPublisherOdometry {
   ::ros::Time previous_send_time_;
 };
 
-}  // end namespace ros
-}  // end namespace drake
+}  // namespace systems
+}  // namespace ros
+}  // namespace drake

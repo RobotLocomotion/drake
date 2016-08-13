@@ -48,14 +48,14 @@ int main(int argc, char* argv[]) {
 
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(
+  rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/warehouse.sdf", floating_base_type);
 
   rigid_body_sys->penetration_stiffness = 20.0;
   rigid_body_sys->penetration_damping = 2.0;
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
-  rigid_body_sys->addRobotFromFile(
+  rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor_fla.urdf",
       floating_base_type);
 

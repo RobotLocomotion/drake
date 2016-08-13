@@ -15,7 +15,7 @@ namespace {
 
 int do_main(int argc, char* argv[]) {
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(
+  rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/systems/plants/test/lidarTest.sdf", DrakeJoint::FIXED);
 
   // Verifies that the RigidBodyDepthSensor accessors return the correct values.

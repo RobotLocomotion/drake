@@ -65,7 +65,16 @@ class Constraint {
   size_t num_constraints() const { return lower_bound_.size(); }
 
  protected:
-  Eigen::VectorXd lower_bound_, upper_bound_;
+  void set_bounds(const Eigen::VectorXd& lower_bound,
+                  const Eigen::VectorXd& upper_bound) {
+    DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
+    lower_bound_ = lower_bound;
+    upper_bound_ = upper_bound;
+  }
+
+ private:
+  Eigen::VectorXd lower_bound_;
+  Eigen::VectorXd upper_bound_;
 };
 
 /**
@@ -233,10 +242,7 @@ class LinearEqualityConstraint : public LinearConstraint {
       throw std::runtime_error("Can't change the number of decision variables");
     A_.resize(Aeq.rows(), Eigen::NoChange);
     A_ = Aeq;
-    lower_bound_.conservativeResize(beq.rows());
-    lower_bound_ = beq;
-    upper_bound_.conservativeResize(beq.rows());
-    upper_bound_ = beq;
+    set_bounds(beq, beq);
   }
 };
 

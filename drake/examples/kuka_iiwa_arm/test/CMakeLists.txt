@@ -4,4 +4,12 @@ if(lcm_FOUND)
       drakeKukaIiwaArm
       ${GTEST_BOTH_LIBRARIES})
   add_test(NAME kuka_iiwa_arm_test COMMAND kuka_iiwa_arm_test)
+
+  add_executable(kuka_iiwa_pd_control_test
+          kuka_iiwa_pd_control_test.cc)
+  target_link_libraries(kuka_iiwa_pd_control_test
+          drakeKukaIiwaArm
+          ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME kuka_iiwa_pd_control_test
+          COMMAND kuka_iiwa_pd_control_test)
 endif()

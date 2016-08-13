@@ -35,6 +35,7 @@ drake_install_headers(
   RigidBodyFrame.h
   RigidBody.h
   RigidBodyTree.h
+  parser_model_instance_id_table.h
   parser_sdf.h
   parser_urdf.h
   rigid_body_loop.h)

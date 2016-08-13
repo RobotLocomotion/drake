@@ -7,6 +7,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/core/Gradient.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/KinematicsCache.h"
@@ -54,7 +55,10 @@ class SingleTimeKinematicConstraintWrapper :
       : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
         rigid_body_constraint_(rigid_body_constraint),
         kin_helper_(kin_helper) {
-    rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
+    Eigen::VectorXd lower_bound;
+    Eigen::VectorXd upper_bound;
+    rigid_body_constraint->bounds(nullptr, lower_bound, upper_bound);
+    set_bounds(lower_bound, upper_bound);
   }
   ~SingleTimeKinematicConstraintWrapper() override {}
 
@@ -96,7 +100,10 @@ class QuasiStaticConstraintWrapper :
       : Constraint(rigid_body_constraint->getNumConstraint(nullptr) - 1),
         rigid_body_constraint_(rigid_body_constraint),
         kin_helper_(kin_helper) {
-    rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
+    Eigen::VectorXd lower_bound;
+    Eigen::VectorXd upper_bound;
+    rigid_body_constraint->bounds(nullptr, lower_bound, upper_bound);
+    set_bounds(lower_bound, upper_bound);
   }
   virtual ~QuasiStaticConstraintWrapper() {}
 

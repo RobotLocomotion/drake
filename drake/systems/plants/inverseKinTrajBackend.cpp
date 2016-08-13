@@ -321,11 +321,14 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
  private:
   void AppendBounds(const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
     DRAKE_ASSERT(lb.size() == ub.size());
-    int prev_size = lower_bound_.size();
-    lower_bound_.conservativeResize(prev_size + lb.size());
-    upper_bound_.conservativeResize(prev_size + ub.size());
-    lower_bound_.tail(lb.size()) = lb;
-    upper_bound_.tail(ub.size()) = ub;
+    int prev_size = lower_bound().size();
+    Eigen::VectorXd new_lb(prev_size + lb.size());
+    Eigen::VectorXd new_ub(prev_size + ub.size());
+    new_lb.head(prev_size) = lower_bound();
+    new_lb.tail(lb.size()) = lb;
+    new_ub.head(prev_size) = upper_bound();
+    new_ub.tail(ub.size()) = ub;
+    set_bounds(new_lb, new_ub);
   }
 
   const RigidBodyTree* model_;
@@ -459,7 +462,7 @@ void inverseKinTrajBackend(
           stc, &kin_helper);
       for (int t_index = qstart_idx; t_index < nT; t_index++) {
         if (!stc->isTimeValid(&t[t_index])) { continue; }
-        prog.AddGenericConstraint(wrapper, {q.segment(nq * t_index, nq)});
+        prog.AddConstraint(wrapper, {q.segment(nq * t_index, nq)});
       }
     } else if (constraint_category ==
                RigidBodyConstraint::PostureConstraintCategory) {
@@ -518,7 +521,7 @@ void inverseKinTrajBackend(
       std::make_shared<IKInbetweenConstraint>(
           model, helper, num_constraints, constraint_array);
   if (inbetween_constraint->num_constraints() > 0) {
-    prog.AddGenericConstraint(inbetween_constraint, {q, qdot0, qdotf});
+    prog.AddConstraint(inbetween_constraint, {q, qdot0, qdotf});
   }
 
   const SolutionResult result = prog.Solve();
