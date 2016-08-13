@@ -82,7 +82,7 @@ class SensorPublisherOdometry {
 
       // Skips the current rigid body if it's not connected to the world via a
       // floating joint.
-      if (!rigid_body->getJoint().isFloating()) continue;
+      if (!rigid_body->getJoint().is_floating()) continue;
 
       // Creates an odometry message and publisher for the current robot if they
       // have not already been created. Stores them in odometry_publishers_ and
@@ -152,7 +152,7 @@ class SensorPublisherOdometry {
 
       // Skips the current rigid body if it's not connected to the world via a
       // floating joint.
-      if (!rigid_body->getJoint().isFloating()) continue;
+      if (!rigid_body->getJoint().is_floating()) continue;
 
       // Defines the key that can be used to obtain the publisher and message.
       // The key is simply the model name since there should only be one

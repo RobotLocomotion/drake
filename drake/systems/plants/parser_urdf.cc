@@ -67,7 +67,7 @@ int FindBodyIndexByJointName(RigidBodyTree* tree, string joint_name) {
   // joint with the specified name.
   for (unsigned int i = 0; i < tree->bodies.size(); i++) {
     if (tree->bodies[i]->hasParent() &&
-        joint_name.compare(tree->bodies[i]->getJoint().getName()) == 0) {
+        joint_name.compare(tree->bodies[i]->getJoint().get_name()) == 0) {
       if (index == -1) {
         index = i;
       } else {
@@ -819,7 +819,7 @@ void parseTransmission(RigidBodyTree* tree, XMLElement* transmission_node) {
   // method call.
   int body_index = FindBodyIndexByJointName(tree, joint_name);
 
-  if (tree->bodies[body_index]->getJoint().getNumPositions() == 0) {
+  if (tree->bodies[body_index]->getJoint().get_num_positions() == 0) {
     cerr << "RigidBodyTreeURDF.cpp: parseTransmission: WARNING: Skipping "
             "transmission since it's attached to a fixed joint \""
          << joint_name << "\"." << endl;

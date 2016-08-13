@@ -55,7 +55,7 @@ TEST_P(LoadModelTest, TestNoOffset) {
   // Verifies that the transformation from link1's frame to the world's frame
   // is correct. Since the model was not offset from the world, we expect
   // the transformation to be Eigen::Isometry3d::Identity().
-  EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix() ==
+  EXPECT_TRUE(link1_body->getJoint().get_transform_to_parent_body().matrix() ==
               Eigen::Isometry3d::Identity().matrix());
 
   // Gets the link whose parent joint is called "joint1".
@@ -74,7 +74,7 @@ TEST_P(LoadModelTest, TestNoOffset) {
     T_link2_to_link1.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  EXPECT_TRUE(link2_body->getJoint().getTransformToParentBody().matrix() ==
+  EXPECT_TRUE(link2_body->getJoint().get_transform_to_parent_body().matrix() ==
               T_link2_to_link1.matrix());
 }
 
@@ -107,7 +107,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
   // is correct. Since the model was offset from the world frame, we expect the
   // transformation of link1_body's frame to the world frame to be equal to
   // T_model_to_world.
-  EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix() ==
+  EXPECT_TRUE(link1_body->getJoint().get_transform_to_parent_body().matrix() ==
               T_model_to_world.matrix());
 
   // Gets the link whose parent joint is called "joint1".
@@ -126,7 +126,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
     T_link2_to_link1.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  EXPECT_TRUE(link2_body->getJoint().getTransformToParentBody().matrix() ==
+  EXPECT_TRUE(link2_body->getJoint().get_transform_to_parent_body().matrix() ==
               T_link2_to_link1.matrix());
 }
 
@@ -162,7 +162,7 @@ TEST_P(LoadModelTest, TestWeld) {
   // Verifies that the newly added link exists and is in the correct location.
   auto link_body = rbs.getRigidBodyTree()->FindBody("link");
   EXPECT_TRUE(link_body != nullptr);
-  EXPECT_TRUE(link_body->getJoint().getTransformToParentBody().matrix() ==
+  EXPECT_TRUE(link_body->getJoint().get_transform_to_parent_body().matrix() ==
               T_model2_to_link2.matrix());
 }
 
@@ -191,7 +191,7 @@ GTEST_TEST(LoadSDFTest, TestInternalOffset) {
 
   auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
   EXPECT_TRUE(link1_body != nullptr);
-  EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix() ==
+  EXPECT_TRUE(link1_body->getJoint().get_transform_to_parent_body().matrix() ==
               T_model_to_world.matrix());
 }
 
@@ -232,7 +232,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffset1) {
 
   auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
   EXPECT_TRUE(link1_body != nullptr);
-  EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix() ==
+  EXPECT_TRUE(link1_body->getJoint().get_transform_to_parent_body().matrix() ==
               T_model_to_world.matrix());
 }
 
@@ -269,10 +269,11 @@ GTEST_TEST(LoadSDFTest, TestDualOffset2) {
   auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
   EXPECT_TRUE(link1_body != nullptr);
   EXPECT_TRUE(
-      link1_body->getJoint().getTransformToParentBody().matrix().isApprox(
+      link1_body->getJoint().get_transform_to_parent_body().matrix().isApprox(
           Eigen::Isometry3d::Identity().matrix(), 1e-10))
       << "Incorrect transform from the link1's frame to Drake's world frame."
-      << "Got:\n" << link1_body->getJoint().getTransformToParentBody().matrix()
+      << "Got:\n" << link1_body->getJoint().get_transform_to_parent_body()
+                                           .matrix()
       << "\n"
       << "Expected:\n" << Eigen::Isometry3d::Identity().matrix();
 }
@@ -332,7 +333,7 @@ TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
   //
   // https://github.com/robotlocomotion/drake/pull/2171#issuecomment-219770037
   auto actual_matrix =
-      link1_body->getJoint().getTransformToParentBody().matrix();
+      link1_body->getJoint().get_transform_to_parent_body().matrix();
 
   auto expected_matrix = T_model_to_world.matrix();
 

@@ -24,7 +24,7 @@ using drake::util::MatrixCompareType;
 std::vector<int> getJointPositionVectorIndices(const RigidBodyTree& model,
                                                const std::string& name) {
   RigidBody* joint_parent_body = model.findJoint(name);
-  int num_positions = joint_parent_body->getJoint().getNumPositions();
+  int num_positions = joint_parent_body->getJoint().get_num_positions();
   std::vector<int> ret(static_cast<size_t>(num_positions));
 
   // fill with sequentially increasing values, starting at

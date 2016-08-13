@@ -59,10 +59,10 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 
   // Obtains a reference to foo_joint and verifies its parameters are correct.
   const DrakeJoint& foo_joint = foo_joint_link->getJoint();
-  EXPECT_EQ(foo_joint.getName(), "foo_joint");
-  EXPECT_FALSE(foo_joint.isFloating());
-  EXPECT_EQ(foo_joint.getNumPositions(), 1);
-  EXPECT_EQ(foo_joint.getNumVelocities(), 1);
+  EXPECT_EQ(foo_joint.get_name(), "foo_joint");
+  EXPECT_FALSE(foo_joint.is_floating());
+  EXPECT_EQ(foo_joint.get_num_positions(), 1);
+  EXPECT_EQ(foo_joint.get_num_velocities(), 1);
 
   // Obtains a reference to foo_transmission and verifies its parameters.
   const std::string actuator_name = "foo_motor";

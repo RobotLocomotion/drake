@@ -384,7 +384,7 @@ void InitQPInput(const RigidBodyTree& r, QPInput* input) {
   for (int i = 0; i < r.number_of_velocities(); i++) {
     // strip out the "dot" part from name
     input->coord_names[i] =
-        r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
+        r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
   }
 }
 
@@ -394,7 +394,7 @@ void InitQPOutput(const RigidBodyTree& r, QPOutput* output) {
   for (int i = 0; i < r.number_of_velocities(); i++) {
     // strip out the "dot" part from name
     output->coord_names[i] =
-        r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
+        r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
   }
 }
 
