@@ -5,7 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, @see http://drake.mit.edu/cxx_inl.html.
 
-#include "drake/systems/framework/primitives/buffer.h"
+#include "drake/systems/framework/primitives/pass_through.h"
 
 #include <stdexcept>
 #include <string>

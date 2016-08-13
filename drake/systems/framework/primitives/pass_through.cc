@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/buffer-inl.h"
+#include "drake/systems/framework/primitives/pass_through-inl.h"
 
 namespace drake {
 namespace systems {
