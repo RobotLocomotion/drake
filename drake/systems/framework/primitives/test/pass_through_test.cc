@@ -43,6 +43,7 @@ class BufferTest : public ::testing::Test {
   std::unique_ptr<BasicVector<double>> input_;
 };
 
+// Tests that the output of this system equals its input.
 TEST_F(BufferTest, VectorThroughBufferSystem) {
   // Hook input of the expected size.
   // TODO(amcastro-tri): we must be able to ask buffer_->num_of_input_ports().
