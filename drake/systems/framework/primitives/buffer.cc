@@ -3,7 +3,7 @@
 namespace drake {
 namespace systems {
 
-template class DRAKESYSTEMFRAMEWORK_EXPORT Buffer<double>;
+template class DRAKESYSTEMFRAMEWORK_EXPORT PassThrough<double>;
 
 }  // namespace systems
 }  // namespace drake

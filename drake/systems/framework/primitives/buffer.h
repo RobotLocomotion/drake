@@ -16,14 +16,14 @@ namespace systems {
 /// The input to this system directly feeds through to its output.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class Buffer : public System<T> {
+class PassThrough : public System<T> {
  public:
   /// Constructs a Buffer system (`y = u`) with input/output ports limited to
   /// have size @p length.
   /// @param length is the size of the signal to be processed.
-  explicit Buffer(int length);
+  explicit PassThrough(int length);
 
-  // Allocates default context for a Buffer system.
+  // Allocates default context for a PassThrough system.
   // Allocates no state.
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override;
 

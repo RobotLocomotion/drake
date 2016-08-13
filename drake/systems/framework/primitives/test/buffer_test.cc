@@ -21,7 +21,7 @@ namespace systems {
 namespace {
 
 // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-// the input of the Buffer system.
+// the input of the PassThrough system.
 template<class T>
 std::unique_ptr<FreestandingInputPort<T>> MakeInput(
     std::unique_ptr<BasicVector<T>> data) {
@@ -31,13 +31,13 @@ std::unique_ptr<FreestandingInputPort<T>> MakeInput(
 class BufferTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    buffer_ = make_unique<Buffer<double>>(3 /* length */);
+    buffer_ = make_unique<PassThrough<double>>(3 /* length */);
     context_ = buffer_->CreateDefaultContext();
     output_ = buffer_->AllocateOutput(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
-  std::unique_ptr<Buffer<double>> buffer_;
+  std::unique_ptr<PassThrough<double>> buffer_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
@@ -66,7 +66,7 @@ TEST_F(BufferTest, VectorThroughBufferSystem) {
 // Tests that std::out_of_range is thrown when the wrong number of input ports
 // are connected.
 TEST_F(BufferTest, NoInputPorts) {
-  // No input ports are hooked up. Buffer must have one input port.
+  // No input ports are hooked up. PassThrough must have one input port.
   // TODO(amcastro-tri): This will not be needed here when input/outputs are
   // defined in the constructor.
   // Connections sanity check will be performed by Diagram::Finalize().
@@ -93,7 +93,7 @@ TEST_F(BufferTest, WrongSizeOfInputPorts) {
                std::out_of_range);
 }
 
-// Tests that Buffer allocates no state variables in the context_.
+// Tests that PassThrough allocates no state variables in the context_.
 TEST_F(BufferTest, BufferIsStateless) {
   EXPECT_EQ(nullptr, context_->get_state().continuous_state);
 }
@@ -106,8 +106,8 @@ GTEST_TEST(MiscBufferTests, AutoDiff) {
   // argument.
   typedef AutoDiffScalar<Vector3d> T;
 
-  // Set a Buffer system with input and output of size 3.
-  auto buffer = make_unique<Buffer<T>>(3 /* length */);
+  // Set a PassThrough system with input and output of size 3.
+  auto buffer = make_unique<PassThrough<T>>(3 /* length */);
   auto context = buffer->CreateDefaultContext();
   auto output = buffer->AllocateOutput(*context);
   auto input = make_unique<BasicVector<T>>(3 /* length */);

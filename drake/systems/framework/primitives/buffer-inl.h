@@ -19,7 +19,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Buffer<T>::Buffer(int length) : length_(length) {
+PassThrough<T>::PassThrough(int length) : length_(length) {
   // TODO(amcastro-tri):
   // parameter length should be used to specify the system's input port and
   // does not need to be stored in member length_.
@@ -31,23 +31,23 @@ Buffer<T>::Buffer(int length) : length_(length) {
 }
 
 template <typename T>
-std::unique_ptr<ContextBase<T>> Buffer<T>::CreateDefaultContext() const {
+std::unique_ptr<ContextBase<T>> PassThrough<T>::CreateDefaultContext() const {
   std::unique_ptr<Context<T>> context(new Context<T>);
   // TODO(amcastro-tri): remove this implementation after #3102 is merged since
   // System<T> will provide a default implementation.
 
-  // A Buffer block only has one input port.
+  // A PassThrough block only has one input port.
   context->SetNumInputPorts(1);
   return std::unique_ptr<ContextBase<T>>(context.release());
 }
 
 template <typename T>
-std::unique_ptr<SystemOutput<T>> Buffer<T>::AllocateOutput(
+std::unique_ptr<SystemOutput<T>> PassThrough<T>::AllocateOutput(
     const ContextBase<T>& context) const {
   // TODO(amcastro-tri): remove this implementation after #3102 is merged since
   // System<T> will provide a default implementation.
 
-  // A Buffer has just one output port, a BasicVector of the size specified
+  // A PassThrough has just one output port, a BasicVector of the size specified
   // at construction time.
   std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
   {
@@ -59,11 +59,11 @@ std::unique_ptr<SystemOutput<T>> Buffer<T>::AllocateOutput(
 }
 
 template <typename T>
-void Buffer<T>::EvalOutput(const ContextBase<T>& context,
+void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
                           SystemOutput<T>* output) const {
   // Checks that the single output port has the correct length.
   // Checks on the output structure are assertions, not exceptions,
-  // since failures would reflect a bug in the Buffer implementation, not
+  // since failures would reflect a bug in the PassThrough implementation, not
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
 
