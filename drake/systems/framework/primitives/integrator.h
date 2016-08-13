@@ -46,7 +46,7 @@ class Integrator : public System<T> {
   void EvalTimeDerivatives(const ContextBase<T>& context,
                            ContinuousState<T>* derivatives) const override;
 
-  void set_name(const std::string& name) { name_ = name; }
+  void set_name(const std::string& name) override { name_ = name; }
   std::string get_name() const override { return name_; }
 
  private:
