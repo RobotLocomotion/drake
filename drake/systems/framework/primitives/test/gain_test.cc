@@ -6,6 +6,7 @@
 
 #include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
 
@@ -121,7 +122,8 @@ GTEST_TEST(MiscGainTests, AutoDiff) {
   auto input = make_unique<BasicVector<T>>(3 /* length */);
 
   // Sets the input values.
-  Vector3<T> input_vector(1.0, 3.14, 2.18);
+  VectorX<T> input_vector(3);
+  input_vector << 1.0, 3.14, 2.18;
 
   // Sets the independent variables to be the first and third input entries.
   input_vector(0).derivatives() << 1, 0;  // First independent variable.
@@ -140,9 +142,7 @@ GTEST_TEST(MiscGainTests, AutoDiff) {
           output->get_port(0).get_vector_data())->get_value();
 
   // The expected output value is the gain times the input vector.
-  Vector3<T> expected;
-
-  expected =  Vector3<T>(kGain * input_vector);
+  VectorX<T> expected = kGain * input_vector;
 
   // The expected derivatives are:
   expected(0).derivatives() << kGain, 0.0;
