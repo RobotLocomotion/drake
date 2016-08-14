@@ -19,7 +19,7 @@ namespace {
 class ConstantVectorSourceTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    source_ = make_unique<ConstantVectorSource<double>>(kConstantVectorSource_);
+    source_ = make_unique<ConstantVectorSource<double>>(kConstantVectorSource);
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* length */);
@@ -32,7 +32,7 @@ class ConstantVectorSourceTest : public ::testing::Test {
     return make_unique<FreestandingInputPort<double>>(std::move(data));
   }
 
-  const Vector2d kConstantVectorSource_{2.0, 1.5};
+  const Vector2d kConstantVectorSource{2.0, 1.5};
   std::unique_ptr<ConstantVectorSource<double>> source_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -41,10 +41,10 @@ class ConstantVectorSourceTest : public ::testing::Test {
 
 TEST_F(ConstantVectorSourceTest, OutputTest) {
   // TODO(amcastro-tri): we should be able to ask:
-  // source_->num_of_input_ports().
+  // source_->num_of_input_ports() after #3102.
   ASSERT_EQ(0, context_->get_num_input_ports());
   // TODO(amcastro-tri): we should be able to ask:
-  // source_->num_of_output_ports().
+  // source_->num_of_output_ports() after #3102.
   ASSERT_EQ(1, output_->get_num_ports());
 
   source_->EvalOutput(*context_, output_.get());
@@ -56,7 +56,7 @@ TEST_F(ConstantVectorSourceTest, OutputTest) {
       dynamic_cast<const BasicVector<double>*>(
           output_->get_port(0).get_vector_data());
   ASSERT_NE(nullptr, output_vector);
-  EXPECT_TRUE(kConstantVectorSource_.isApprox(output_vector->get_value(),
+  EXPECT_TRUE(kConstantVectorSource.isApprox(output_vector->get_value(),
                                         Eigen::NumTraits<double>::epsilon()));
 }
 

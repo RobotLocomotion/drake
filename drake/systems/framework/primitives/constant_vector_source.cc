@@ -65,7 +65,7 @@ void ConstantVectorSource<T>::EvalOutput(const ContextBase<T>& context,
   DRAKE_ASSERT(output_vector->get_value().rows() == source_value_.rows());
 
   // TODO(amcastro-tri): System<T> should provide interfaces to directly get the
-  // actually useful Eigen vectors like so:
+  // actually useful Eigen vectors (issue #3140) like so:
   // auto input_vector = System<T>::get_input_port(0).get_vector(context);
   // auto output_vector =
   //   System<T>::get_output_port(0).get_mutable_vector(context);
