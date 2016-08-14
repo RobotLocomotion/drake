@@ -19,21 +19,21 @@ namespace {
 class ConstantSourceTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    source_ = make_unique<ConstantSource<double>>(kConstantSource_);
+    source_ = make_unique<ConstantVectorSource<double>>(kConstantSource_);
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
   // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-  // the input of the ConstantSource system.
+  // the input of the ConstantVectorSource system.
   static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
       std::unique_ptr<BasicVector<double>> data) {
     return make_unique<FreestandingInputPort<double>>(std::move(data));
   }
 
   const Vector2d kConstantSource_{2.0, 1.5};
-  std::unique_ptr<ConstantSource<double>> source_;
+  std::unique_ptr<ConstantVectorSource<double>> source_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
@@ -60,13 +60,13 @@ TEST_F(ConstantSourceTest, OutputTest) {
                                         Eigen::NumTraits<double>::epsilon()));
 }
 
-// Tests that inputs cannot be set for a ConstantSource.
+// Tests that inputs cannot be set for a ConstantVectorSource.
 TEST_F(ConstantSourceTest, ShouldNotBePossibleToConnectInputs) {
   EXPECT_THROW(context_->SetInputPort(0, MakeInput(std::move(input_))),
                std::out_of_range);
 }
 
-// Tests that ConstantSource allocates no state variables in the context_.
+// Tests that ConstantVectorSource allocates no state variables in the context_.
 TEST_F(ConstantSourceTest, ConstantSourceIsStateless) {
   EXPECT_EQ(nullptr, context_->get_state().continuous_state);
 }

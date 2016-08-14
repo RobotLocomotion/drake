@@ -1,8 +1,5 @@
 #include "drake/systems/framework/primitives/constant_source.h"
 
-#include <stdexcept>
-#include <string>
-
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -12,32 +9,32 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-ConstantSource<T>::ConstantSource(
+ConstantVectorSource<T>::ConstantVectorSource(
     const Eigen::Ref<const VectorX<T>>& source_value) :
     source_value_(source_value) {
-  // Input source must have at least one entry.
-  DRAKE_ABORT_UNLESS(source_value.rows() > 0);
   // TODO(amcastro-tri): Add output ports using System<T>::declare_output_port
   // after #3102 is merged.
 }
 
 template <typename T>
 std::unique_ptr<ContextBase<T>>
-ConstantSource<T>::CreateDefaultContext() const {
+ConstantVectorSource<T>::CreateDefaultContext() const {
   std::unique_ptr<Context<T>> context(new Context<T>);
-  // TODO(amcastro-tri): Remove this override after #3102 is merged.
+  // TODO(amcastro-tri): Remove this method after #3102 since it will provide a
+  // default implementation.
 
-  // A ConstantSource has no input ports.
+  // A ConstantVectorSource has no input ports.
   context->SetNumInputPorts(0);
   return std::unique_ptr<ContextBase<T>>(context.release());
 }
 
 template <typename T>
-std::unique_ptr<SystemOutput<T>> ConstantSource<T>::AllocateOutput(
+std::unique_ptr<SystemOutput<T>> ConstantVectorSource<T>::AllocateOutput(
     const ContextBase<T>& context) const {
-  // TODO(amcastro-tri): Remove this override after #3102 is merged.
+  // TODO(amcastro-tri): Remove this method after #3102 since it will provide a
+  // default implementation.
 
-  // A ConstantSource has just one output port, a BasicVector of the size
+  // A ConstantVectorSource has just one output port, a BasicVector of the size
   // specified at construction time.
   std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
   {
@@ -50,10 +47,10 @@ std::unique_ptr<SystemOutput<T>> ConstantSource<T>::AllocateOutput(
 }
 
 template <typename T>
-void ConstantSource<T>::EvalOutput(const ContextBase<T>& context,
-                          SystemOutput<T>* output) const {
-  // Checks on the output structure are assertions, not exceptions,
-  // since failures would reflect a bug in the ConstantSource implementation,
+void ConstantVectorSource<T>::EvalOutput(const ContextBase<T>& context,
+                                   SystemOutput<T>* output) const {
+  // Checks on the output structure are assertions, not exceptions, since
+  // failures would reflect a bug in the ConstantVectorSource implementation,
   // not user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
 
@@ -77,7 +74,8 @@ void ConstantSource<T>::EvalOutput(const ContextBase<T>& context,
   output_vector->get_mutable_value() = source_value_;
 }
 
-template class DRAKESYSTEMFRAMEWORK_EXPORT ConstantSource<double>;
+// Explicitly instantiates on the most common scalar types.
+template class DRAKESYSTEMFRAMEWORK_EXPORT ConstantVectorSource<double>;
 
 }  // namespace systems
 }  // namespace drake
