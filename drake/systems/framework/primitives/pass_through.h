@@ -9,14 +9,14 @@ namespace systems {
 
 /// A buffer system with input `u` and output `y = u`. This is mathematically
 /// equivalent to a Gain system with its gain equal to one. However this system
-/// incurs in no computational cost.
+/// incurs in computational cost.
 /// The input to this system directly feeds through to its output.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
 class PassThrough : public System<T> {
  public:
-  /// Constructs a Buffer system (`y = u`) with input/output ports limited to
-  /// have size @p length.
+  /// Constructs a Buffer system (`y = u`) with input/output ports of size
+  /// @p. length.
   /// @param length is the size of the signal to be processed.
   explicit PassThrough(int length);
 
@@ -29,7 +29,7 @@ class PassThrough : public System<T> {
       const ContextBase<T>& context) const override;
 
   /// Sets the output port to equal the input port.
-  /// If number of connected input or output ports differs from one or the
+  /// If the number of connected input or output ports differs from one or the
   /// input ports are not of size length_, std::runtime_error will be thrown.
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override;

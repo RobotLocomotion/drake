@@ -45,7 +45,7 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   // Sets the input values.
   Vector3<T> input_vector(1.0, 3.14, 2.18);
 
-  // Sets the independent variables to be the first and third input entries.
+  // Sets the input vector to be the vector of independent variables.
   input_vector(0).derivatives() << 1, 0, 0;  // First independent variable.
   input_vector(1).derivatives() << 0, 1, 0;  // Second independent variable.
   input_vector(2).derivatives() << 0, 0, 1;  // Third independent variable.

@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file
-/// Template method implementations for @see buffer.h.
+/// Template method implementations for @see pass_through.h.
 /// Most users should only include that file, not this one.
 /// For background, @see http://drake.mit.edu/cxx_inl.html.
 
