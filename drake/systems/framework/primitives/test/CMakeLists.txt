@@ -7,7 +7,7 @@ target_link_libraries(integrator_test
         drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
 add_test(NAME integrator_test COMMAND integrator_test)
 
-add_executable(constant_source_test constant_source_test.cc)
-target_link_libraries(constant_source_test
+add_executable(constant_vector_source_test constant_vector_source_test.cc)
+target_link_libraries(constant_vector_source_test
         drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
-add_test(NAME constant_source_test COMMAND constant_source_test)
+add_test(NAME constant_vector_source_test COMMAND constant_vector_source_test)

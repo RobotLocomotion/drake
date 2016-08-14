@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/constant_source.h"
+#include "drake/systems/framework/primitives/constant_vector_source.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"

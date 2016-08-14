@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/constant_source.h"
+#include "drake/systems/framework/primitives/constant_vector_source.h"
 
 #include <memory>
 #include <stdexcept>
@@ -16,10 +16,10 @@ namespace drake {
 namespace systems {
 namespace {
 
-class ConstantSourceTest : public ::testing::Test {
+class ConstantVectorSourceTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    source_ = make_unique<ConstantVectorSource<double>>(kConstantSource_);
+    source_ = make_unique<ConstantVectorSource<double>>(kConstantVectorSource_);
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* length */);
@@ -32,14 +32,14 @@ class ConstantSourceTest : public ::testing::Test {
     return make_unique<FreestandingInputPort<double>>(std::move(data));
   }
 
-  const Vector2d kConstantSource_{2.0, 1.5};
+  const Vector2d kConstantVectorSource_{2.0, 1.5};
   std::unique_ptr<ConstantVectorSource<double>> source_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
 
-TEST_F(ConstantSourceTest, OutputTest) {
+TEST_F(ConstantVectorSourceTest, OutputTest) {
   // TODO(amcastro-tri): we should be able to ask:
   // source_->num_of_input_ports().
   ASSERT_EQ(0, context_->get_num_input_ports());
@@ -56,18 +56,18 @@ TEST_F(ConstantSourceTest, OutputTest) {
       dynamic_cast<const BasicVector<double>*>(
           output_->get_port(0).get_vector_data());
   ASSERT_NE(nullptr, output_vector);
-  EXPECT_TRUE(kConstantSource_.isApprox(output_vector->get_value(),
+  EXPECT_TRUE(kConstantVectorSource_.isApprox(output_vector->get_value(),
                                         Eigen::NumTraits<double>::epsilon()));
 }
 
 // Tests that inputs cannot be set for a ConstantVectorSource.
-TEST_F(ConstantSourceTest, ShouldNotBePossibleToConnectInputs) {
+TEST_F(ConstantVectorSourceTest, ShouldNotBePossibleToConnectInputs) {
   EXPECT_THROW(context_->SetInputPort(0, MakeInput(std::move(input_))),
                std::out_of_range);
 }
 
 // Tests that ConstantVectorSource allocates no state variables in the context_.
-TEST_F(ConstantSourceTest, ConstantSourceIsStateless) {
+TEST_F(ConstantVectorSourceTest, ConstantVectorSourceIsStateless) {
   EXPECT_EQ(nullptr, context_->get_state().continuous_state);
 }
 
