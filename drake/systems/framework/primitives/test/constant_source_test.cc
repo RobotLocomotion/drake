@@ -56,7 +56,8 @@ TEST_F(ConstantSourceTest, OutputTest) {
       dynamic_cast<const BasicVector<double>*>(
           output_->get_port(0).get_vector_data());
   ASSERT_NE(nullptr, output_vector);
-  EXPECT_EQ(kConstantSource_, output_vector->get_value());
+  EXPECT_TRUE(kConstantSource_.isApprox(output_vector->get_value(),
+                                        Eigen::NumTraits<double>::epsilon()));
 }
 
 // Tests that inputs cannot be set for a ConstantSource.
