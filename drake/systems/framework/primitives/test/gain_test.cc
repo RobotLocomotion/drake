@@ -1,3 +1,5 @@
+#define EIGEN_DONT_ALIGN
+
 #include "drake/systems/framework/primitives/gain-inl.h"
 
 #include <memory>

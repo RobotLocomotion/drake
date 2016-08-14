@@ -2,6 +2,8 @@
 #include <iostream>
 using namespace std;
 
+#define EIGEN_DONT_ALIGN
+
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
