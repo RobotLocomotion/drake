@@ -76,7 +76,7 @@ GTEST_TEST(BasicVectorTest, SetWholeVector) {
 GTEST_TEST(BasicVectorTest, Clone) {
   BasicVector<int> vec(2);
   vec.get_mutable_value() << 1, 2;
-  std::unique_ptr<VectorInterface<int>> clone = vec.Clone();
+  std::unique_ptr<VectorInterface<int>> clone = vec.CloneVector();
 
   BasicVector<int>* typed_clone = dynamic_cast<BasicVector<int>*>(clone.get());
   Eigen::Vector2i expected;

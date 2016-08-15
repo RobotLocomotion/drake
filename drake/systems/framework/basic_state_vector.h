@@ -8,7 +8,6 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/vector_interface.h"
-#include "leaf_state_vector.h"
 
 namespace drake {
 namespace systems {
@@ -88,16 +87,20 @@ class BasicStateVector : public LeafStateVector<T> {
   }
 
  protected:
+  // Clone other's wrapped vector, in case is it not a BasicVector.
   BasicStateVector(const BasicStateVector& other)
-      : BasicStateVector(other.size()) {
-    SetFromVector(other.vector_->get_value());
-  }
+      : BasicStateVector(other.vector_->CloneVector()) {}
 
- private:
   BasicStateVector<T>* DoClone() const override {
     return new BasicStateVector<T>(*this);
   }
 
+  /// Returns a mutable reference to the underlying VectorInterface.
+  VectorInterface<T>& get_wrapped_vector() { return *vector_; }
+  /// Returns a const reference to the underlying VectorInterface.
+  const VectorInterface<T>& get_wrapped_vector() const { return *vector_; }
+
+ private:
   // Assignment of BasicStateVectors could change size, so we forbid it.
   BasicStateVector& operator=(const BasicStateVector& other) = delete;
 
