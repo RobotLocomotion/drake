@@ -28,6 +28,8 @@ MosekWrapper solves a linear program when given a correctly formatted
 program.  Specifically, the program options:
  - "maxormin" -- must be set to "max" or "min"
  - "problemtype" -- must be set to "linear", "quadratic", or "sdp"
+ - "conesubscript" -- Denotes which variable x_i satisfies the cone relation:
+    x_i >= (sqrt(sum(x_j^2))), i!=j
 
  It is created by a MosekSolver object.
  Use the strictest constraint and variable bounds available, unbounded precision

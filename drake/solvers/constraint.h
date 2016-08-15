@@ -150,6 +150,46 @@ class SemidefiniteConstraint : public Constraint {
   Eigen::VectorXd b_;
 };
 
+/** A second order conic constraint that is a specific case of semidefinite
+ programming.
+ <pre>
+ lb <= b'*x <= ub
+ </pre>
+ */
+class SecondOrderConicConstraint : public SemidefiniteConstraint {
+ public:
+  static const int kNumConstraints = 1;
+  // TODO(naveenoid) : ASSERT check on dimensions of G and b.
+  // TODO(alexdunyak) : Implement Eval().
+  template <typename Derivedb>
+  SecondOrderConicConstraint(const Eigen::MatrixBase<Derivedb>& b, double lb,
+                         double ub)
+      : SemidefiniteConstraint(Eigen::MatrixXd::Constant(1, 1, 0), b, lb, ub)
+         {}
+
+  ~SecondOrderConicConstraint() override {}
+
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override {
+    throw std::runtime_error(
+        "Eval is not implemented in SemidefiniteConstraint.");
+  };
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
+    throw std::runtime_error(
+        "Eval is not implemented in SemidefiniteConstraint.");
+  };
+
+
+  //virtual const Eigen::MatrixXd& G() const { return G_; }
+
+  //virtual const Eigen::VectorXd& b() const { return b_; }
+
+ //private:
+  Eigen::MatrixXd G_;
+  Eigen::VectorXd b_;
+};
+
 /**
  *  lb[i] <= P[i](x, y...) <= ub[i], where each P[i] is a multivariate
  *  polynomial in x, y...

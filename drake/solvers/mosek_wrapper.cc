@@ -1,5 +1,6 @@
 #include "drake/solvers/mosek_wrapper.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
@@ -134,8 +135,7 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     // Append numvar_ variables, initially fixed at zero
     if (result_ == MSK_RES_OK)
       result_ = MSK_appendvars(task_, numvar_);
-    if (result_ == MSK_RES_OK && !(sdp_constraints.empty() ||
-        sdp_objective.G().isZero())) {
+    if (result_ == MSK_RES_OK && numbarvar_ != 0) {
       int dimbarvar = sdp_objective.G().rows();
       result_ = MSK_appendbarvars(task_, 1, &dimbarvar);
     }
@@ -144,12 +144,9 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
       result_ = MSK_putcfix(task_, constant_eqn_term);
   }
   // add the equation to maximize to the environment.
-  if (!sdp_objective.G().isZero())
-    AddSDPObjective(sdp_objective);
-  if (!sdp_constraints.empty())
-    AddSDPConstraints(sdp_constraints);
-  if (!sdp_constraints.empty())
-    AppendLorentzCone(lorentz_cone_subscripts);
+  AddSDPObjective(sdp_objective);
+  AddSDPConstraints(sdp_constraints);
+  AppendLorentzCone(lorentz_cone_subscripts);
   AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
       lower_variable_bounds);
   AddLinearConstraintBounds(mosek_constraint_bounds, upper_constraint_bounds,
@@ -199,17 +196,19 @@ void MosekWrapper::AddSDPObjective(
   // Matrix(i, j) = sdp_values[k], and sdp_i[k] = i, sdp_j[k] = j
   const Eigen::MatrixXd& matrixterm = sdp_objective.G();
   int numnonzero = 0;
-  for (int i = 0; static_cast<unsigned int>(i) < matrixterm.rows(); i++) {
-    for (int j = 0; j <= i; j++) {
-      if (matrixterm(i, j) != 0) {
-        sdp_i.push_back(static_cast<MSKint32t>(i));
-        sdp_j.push_back(static_cast<MSKint32t>(j));
-        sdp_values.push_back(matrixterm(i, j));
-        numnonzero++;
+  if (matrixterm.rows() != 0 && matrixterm.cols() != 0) {
+    for (int i = 0; static_cast<unsigned int>(i) < matrixterm.rows(); i++) {
+      for (int j = 0; j <= i; j++) {
+        if (matrixterm(i, j) != 0) {
+          sdp_i.push_back(static_cast<MSKint32t>(i));
+          sdp_j.push_back(static_cast<MSKint32t>(j));
+          sdp_values.push_back(matrixterm(i, j));
+          numnonzero++;
+        }
       }
     }
   }
-  if (result_ == MSK_RES_OK)
+  if (result_ == MSK_RES_OK && numnonzero > 0) {
     result_ = MSK_appendsparsesymmat(task_,
                                 matrixterm.rows(),
                                 numnonzero,
@@ -217,8 +216,9 @@ void MosekWrapper::AddSDPObjective(
                                 &sdp_j[0],
                                 &sdp_values[0],
                                 &idx);
-  if (result_ == MSK_RES_OK)
-    result_ = MSK_putbarcj(task_, 0, 1, &idx, &falpha);
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_putbarcj(task_, 0, 1, &idx, &falpha);
+  }
 }
 
 void MosekWrapper::AddSDPConstraints(
@@ -265,46 +265,51 @@ void MosekWrapper::AddSDPConstraints(
   std::vector<int> constraintnonzero;
   std::vector<MSKint32t> bar_i, bar_j;
   std::vector<double> bar_value;
-  for (int k = 0; k < static_cast<int>(sdp_constraints.size()); k++) {
-    const Eigen::MatrixXd& matrixterm = sdp_constraints[k].G();
-    // Expect that each matrix is of the same dimensions and is square.
-    DRAKE_ASSERT(matrixterm.rows() == matrixterm.cols());
-    if (k >= 1)
-      DRAKE_ASSERT(sdp_constraints[k-1].G().rows() == matrixterm.rows());
-    for (int i = 0; i < static_cast<int>(matrixterm.rows()); i++) {
-      for (j = 0; j <= i; j++) {
-        // Only iterate over the lower triangle.
-        if (matrixterm(i, j) != 0) {
-          bar_i.push_back(static_cast<MSKint32t>(i));
-          bar_j.push_back(static_cast<MSKint32t>(j));
-          bar_value.push_back(matrixterm(i, j));
-          ++currentnonzero;
+  if (sdp_constraints.size() > 0) {
+    for (int k = 0; k < static_cast<int>(sdp_constraints.size()); k++) {
+      const Eigen::MatrixXd& matrixterm = sdp_constraints[k].G();
+      // Expect that each matrix is of the same dimensions and is square.
+      DRAKE_ASSERT(matrixterm.rows() == matrixterm.cols());
+      if (k >= 1)
+        DRAKE_ASSERT(sdp_constraints[k-1].G().rows() == matrixterm.rows());
+      for (int i = 0; i < static_cast<int>(matrixterm.rows()); i++) {
+        for (j = 0; j <= i; j++) {
+          // Only iterate over the lower triangle.
+          if (matrixterm(i, j) != 0) {
+            bar_i.push_back(static_cast<MSKint32t>(i));
+            bar_j.push_back(static_cast<MSKint32t>(j));
+            bar_value.push_back(matrixterm(i, j));
+            ++currentnonzero;
+          }
         }
       }
+      constraintnonzero.push_back(currentnonzero);
+      currentnonzero = 0;
     }
-    constraintnonzero.push_back(currentnonzero);
-    currentnonzero = 0;
   }
-  int matrixdim = sdp_constraints[0].G().rows();
   MSKint32t previousentries = 0;
   MSKint64t idx;
   double falpha = 1.0;
   // Now that the relevant arrays are in memory, add each constraint to Mosek.
-  for (int k = 0; k < static_cast<int>(sdp_constraints.size()); k++) {
-    if (result_ == MSK_RES_OK) {
-      result_ = MSK_appendsparsesymmat(
-          task_,
-          static_cast<MSKint32t>(matrixdim),
-          static_cast<MSKint32t>(constraintnonzero[k]),
-          &bar_i[previousentries],
-          &bar_j[previousentries],
-          &bar_value[previousentries],
-          &idx);
+  if (static_cast<int>(sdp_constraints.size()) !=
+        std::count(constraintnonzero.begin(), constraintnonzero.end(), 0)) {
+    int matrixdim = sdp_constraints[0].G().rows();
+    for (int k = 0; k < static_cast<int>(sdp_constraints.size()); k++) {
+      if (result_ == MSK_RES_OK) {
+        result_ = MSK_appendsparsesymmat(
+            task_,
+            static_cast<MSKint32t>(matrixdim),
+            static_cast<MSKint32t>(constraintnonzero[k]),
+            &bar_i[previousentries],
+            &bar_j[previousentries],
+            &bar_value[previousentries],
+            &idx);
+      }
+      if (result_ == MSK_RES_OK) {
+        result_ = MSK_putbaraij(task_, k, 0, 1, &idx, &falpha);
+      }
+      previousentries += constraintnonzero[k];
     }
-    if (result_ == MSK_RES_OK) {
-      result_ = MSK_putbaraij(task_, k, 0, 1, &idx, &falpha);
-    }
-    previousentries += constraintnonzero[k];
   }
 }
 
@@ -608,6 +613,8 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     prog.SetDecisionVariableValues(opt.GetEigenVectorSolutions());
     return s;
   } else if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("sdp")
+      != std::string::npos ||
+      prog.GetSolverOptionsStr("Mosek").at("problemtype").find("soc")
       != std::string::npos) {
     /* SDP STUFF HERE */
     /* TODO(alexdunyak): Add support for SDP constraints to Constraint.h and
@@ -688,7 +695,8 @@ SolutionResult MosekWrapper::OptimizeTask(const std::string& maxormin,
   solutions_.clear();
   MSKsoltypee problemtype = MSK_SOL_BAS;
   if (ptype.find("quadratic") != std::string::npos ||
-      ptype.find("sdp") != std::string::npos)
+      ptype.find("sdp") != std::string::npos ||
+      ptype.find("soc") != std::string::npos)
     problemtype = MSK_SOL_ITR;
   else if (ptype.find("linear") != std::string::npos)
     problemtype = MSK_SOL_BAS;

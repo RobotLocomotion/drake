@@ -148,11 +148,41 @@ GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
                               MatrixCompareType::absolute));
 }
 
+GTEST_TEST(testMosek, MosekSecondOrderConicProgram) {
+  OptimizationProblem prog3;
+  auto x = prog3.AddContinuousVariables(3);
+  Eigen::Vector3d C;
+  C << 3, 2, 1;
+  SecondOrderConicConstraint obj(C, 0, 0);
+  prog3.AddCost(std::make_shared<SecondOrderConicConstraint>(obj));
+  Eigen::Vector3d A;
+  A << 1, 1, 1;
+  prog3.AddConstraint(std::make_shared<SecondOrderConicConstraint>(
+      SecondOrderConicConstraint(A, 1, 1)));
+  Eigen::Vector3d bboxlow, bboxhigh;
+  bboxlow << 0, 0, 0;
+  bboxhigh << std::numeric_limits<double>::infinity(),
+              std::numeric_limits<double>::infinity(),
+              std::numeric_limits<double>::infinity();
+  prog3.AddBoundingBoxConstraint(bboxlow, bboxhigh);
+  prog3.SetSolverOption("Mosek", "maxormin", "min");
+  prog3.SetSolverOption("Mosek", "problemtype", "soc");
+  prog3.SetSolverOption("Mosek", "conesubscript", 0);
+  SolutionResult result = SolutionResult::kUnknownError;
+  MosekSolver msk;
+  ASSERT_NO_THROW(result = msk.Solve(prog3));
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  Eigen::Vector3d solutions;
+  solutions << 4.999360e-01, 1.280062e-04, 4.999360e-01;
+  EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-7,
+                              MatrixCompareType::absolute));
+}
+
 GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   // http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
-  OptimizationProblem prog3;
-  auto x = prog3.AddContinuousVariables(9);
-  prog3.SetSolverOption("Mosek", "numbarvar", 6);
+  OptimizationProblem prog4;
+  auto x = prog4.AddContinuousVariables(9);
+  prog4.SetSolverOption("Mosek", "numbarvar", 6);
   // Build the objective matrix and send it to the program.
   Eigen::Matrix3d Q;
   Q << 2, 1, 0,
@@ -160,7 +190,7 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
        0, 1, 2;
   Eigen::Vector3d c;
   c << 1, 0, 0;
-  prog3.AddCost(std::make_shared<SemidefiniteConstraint>(Q, c, 0, 0));
+  prog4.AddCost(std::make_shared<SemidefiniteConstraint>(Q, c, 0, 0));
   // Create the constraint matrix, and send it to the program.
   Eigen::Vector3d linearcon1;
   linearcon1 << 1, 0, 0;
@@ -170,7 +200,7 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
              0, 0, 1;
   auto ptrtocon1 = std::make_shared<SemidefiniteConstraint>(sdpcon1, linearcon1,
                                                          1, 1);
-  prog3.AddConstraint(ptrtocon1);
+  prog4.AddConstraint(ptrtocon1);
   Eigen::Vector3d linearcon2;
   linearcon2 << 0, 1, 1;
   Eigen::Matrix3d sdpcon2;
@@ -179,7 +209,7 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
              1, 1, 1;
   auto ptrtocon2 = std::make_shared<SemidefiniteConstraint>(sdpcon2, linearcon2,
                                                          0.5, 0.5);
-  prog3.AddConstraint(ptrtocon2);
+  prog4.AddConstraint(ptrtocon2);
   // Create the bounding box.
   Eigen::Vector3d bboxlow, bboxhigh;
   bboxlow << -100,
@@ -188,12 +218,12 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   bboxhigh << 100,
               std::numeric_limits<double>::infinity(),
               std::numeric_limits<double>::infinity();
-  prog3.AddBoundingBoxConstraint(bboxlow, bboxhigh);
+  prog4.AddBoundingBoxConstraint(bboxlow, bboxhigh);
   MosekSolver msk;
   SolutionResult result = SolutionResult::kUnknownError;
-  prog3.SetSolverOption("Mosek", "maxormin", "min");
-  prog3.SetSolverOption("Mosek", "problemtype", "sdp");
-  ASSERT_NO_THROW(result = msk.Solve(prog3));
+  prog4.SetSolverOption("Mosek", "maxormin", "min");
+  prog4.SetSolverOption("Mosek", "problemtype", "sdp");
+  ASSERT_NO_THROW(result = msk.Solve(prog4));
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   Eigen::VectorXd solutions(9);
   solutions << 2.544931e-01, 1.799843e-01, 1.799233e-01, 2.171910e-01,
