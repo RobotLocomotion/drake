@@ -1,9 +1,9 @@
 #pragma once
 
 /// @file
-/// Template method implementations for see gain.h.
+/// Template method implementations for gain.h.
 /// Most users should only include that file, not this one.
-/// For background, @see http://drake.mit.edu/cxx_inl.html.
+/// For background, see http://drake.mit.edu/cxx_inl.html.
 
 #include "drake/systems/framework/primitives/gain.h"
 
