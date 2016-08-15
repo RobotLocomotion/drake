@@ -37,6 +37,7 @@ using drake::parsers::ModelInstanceIdTable;
 using drake::ros::systems::DrakeRosTfPublisher;
 using drake::ros::systems::run_ros_vehicle_sim;
 using drake::ros::systems::SensorPublisherJointState;
+using drake::ros::systems::SensorPublisherLidar;
 
 /**
  * Sits in a loop periodically publishing an identity transform for the
@@ -182,9 +183,9 @@ int DoMain(int argc, const char* argv[]) {
   // auto visualizer =
   //   std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
-  // auto lidar_publisher = std::make_shared<
-  //     ::drake::ros::SensorPublisherLidar<RigidBodySystem::StateVector>>(
-  //     rigid_body_sys);
+  auto lidar_publisher = std::make_shared<
+      SensorPublisherLidar<RigidBodySystem::StateVector>>(
+          rigid_body_sys, model_instance_name_table);
 
   // auto odometry_publisher = std::make_shared<
   //     ::drake::ros::SensorPublisherOdometry<RigidBodySystem::StateVector>>(
@@ -201,8 +202,11 @@ int DoMain(int argc, const char* argv[]) {
   auto sys =
       cascade(
         cascade(
-            vehicle_sys, tf_publisher),
-        joint_state_publisher);
+          cascade(
+            vehicle_sys,
+            tf_publisher),
+          joint_state_publisher),
+        lidar_publisher);
 
   // auto sys =
   //     cascade(

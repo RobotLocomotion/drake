@@ -25,7 +25,7 @@ namespace ros {
 namespace systems {
 
 /**
- * Holds the objects and data used to extract and publish joint state
+ * Holds the objects and data needed to extract and publish joint state
  * information for a particular model instance.
  */
 struct ModelStateStruct {
@@ -74,7 +74,9 @@ class SensorPublisherJointState {
   using InputVector = RobotStateVector<ScalarType>;
 
   /**
-   * The constructor.
+   * The constructor, which initializes all internal data structures necessary
+   * to publish joint state information for each model instance in @p
+   * rigid_body_system.
    *
    * @param[in] rigid_body_system The rigid body system whose output contains
    * the joint state information.
