@@ -2,9 +2,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
-#include "drake/core/Gradient.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/gradient.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/vector.h"
 #include "drake/util/drakeGradientUtil.h"
@@ -30,7 +30,7 @@ timeInvariantLQR(const System& sys,
   using namespace std;
   using namespace Eigen;
 
-  auto autodiff_args = initializeAutoDiffTuple(toEigen(x0), toEigen(u0));
+  auto autodiff_args = math::initializeAutoDiffTuple(toEigen(x0), toEigen(u0));
   typedef typename std::tuple_element<0, decltype(autodiff_args)>::type::Scalar
       AutoDiffType;
   typename System::template StateVector<AutoDiffType> x_taylor(

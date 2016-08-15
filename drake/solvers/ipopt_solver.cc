@@ -11,7 +11,7 @@
 #undef HAVE_CSTDDEF
 
 #include "drake/common/drake_assert.h"
-#include "drake/core/Gradient.h"
+#include "drake/math/autodiff.h"
 #include "drake/solvers/optimization.h"
 
 using Ipopt::Index;
@@ -115,7 +115,7 @@ size_t EvaluateConstraint(
     var_count += v.size();
   }
 
-  auto tx = drake::initializeAutoDiff(xvec);
+  auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
   for (const DecisionVariableView& v : variable_list) {
@@ -394,7 +394,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   void EvaluateCosts(Index n, const Number* x) {
     const Eigen::VectorXd xvec = MakeEigenVector(n, x);
 
-    auto tx = drake::initializeAutoDiff(xvec);
+    auto tx = math::initializeAutoDiff(xvec);
     TaylorVecXd ty(1);
     TaylorVecXd this_x;
 

@@ -7,7 +7,6 @@
 #include <string>
 
 #include "drake/common/constants.h"
-#include "drake/core/Gradient.h"
 #include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
@@ -36,8 +35,9 @@ using drake::kSpaceDimension;
 using drake::math::Gradient;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
-using drake::math::expmap2quat;
 using drake::math::closestExpmap;
+using drake::math::expmap2quat;
+using drake::math::initializeAutoDiffGivenGradientMatrix;
 using drake::math::quat2expmap;
 using drake::math::quatRotateVec;
 
@@ -560,7 +560,7 @@ void QPLocomotionPlan::updateSwingTrajectory(
   auto quatdot = (Phi * x0_twist.topRows<3>()).eval();
 
   auto x0_expmap_autodiff = quat2expmap(
-      drake::initializeAutoDiffGivenGradientMatrix(x0_quat, quatdot));
+      initializeAutoDiffGivenGradientMatrix(x0_quat, quatdot));
   auto x0_expmap = autoDiffToValueMatrix(x0_expmap_autodiff);
   auto xd0_expmap = autoDiffToGradientMatrix(x0_expmap_autodiff);
 
