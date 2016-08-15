@@ -8,6 +8,7 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/system_port_descriptor.h"
 
 #include "gtest/gtest.h"
 
@@ -50,6 +51,23 @@ class IntegratorTest : public ::testing::Test {
   std::unique_ptr<BasicVector<double>> input_;
 };
 
+// Tests that the system exports the correct topology.
+TEST_F(IntegratorTest, Topology) {
+  ASSERT_EQ(1u, integrator_->get_input_ports().size());
+  const auto& input_descriptor = integrator_->get_input_ports()[0];
+  EXPECT_EQ(kVectorValued, input_descriptor.get_data_type());
+  EXPECT_EQ(kInputPort, input_descriptor.get_face());
+  EXPECT_EQ(kLength, input_descriptor.get_size());
+  EXPECT_EQ(kContinuousSampling, input_descriptor.get_sampling());
+
+  ASSERT_EQ(1u, integrator_->get_output_ports().size());
+  const auto& output_descriptor = integrator_->get_output_ports()[0];
+  EXPECT_EQ(kVectorValued, output_descriptor.get_data_type());
+  EXPECT_EQ(kOutputPort, output_descriptor.get_face());
+  EXPECT_EQ(kLength, output_descriptor.get_size());
+  EXPECT_EQ(kContinuousSampling, output_descriptor.get_sampling());
+}
+
 // Tests that the output of an integrator is its state.
 TEST_F(IntegratorTest, Output) {
   ASSERT_EQ(1, context_->get_num_input_ports());
@@ -84,6 +102,11 @@ TEST_F(IntegratorTest, Derivatives) {
   Eigen::Vector3d expected;
   expected << 1.0, 2.0, 3.0;
   EXPECT_EQ(expected, derivatives_->get_state().CopyToVector());
+}
+
+// Asserts that integrators do not have any direct feedthrough inputs.
+TEST_F(IntegratorTest, IntegratorIsNotDirectFeedthrough) {
+  EXPECT_FALSE(integrator_->has_any_direct_feedthrough());
 }
 
 }  // namespace

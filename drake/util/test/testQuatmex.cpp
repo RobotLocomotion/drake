@@ -3,9 +3,10 @@
 #include <tuple>
 
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
+#include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/core/Gradient.h"
 
 using namespace Eigen;
 using namespace std;
@@ -13,6 +14,7 @@ using namespace drake;
 
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
+using drake::math::initializeAutoDiffTuple;
 using drake::math::quatDiff;
 using drake::math::quatDiffAxisInvar;
 using drake::math::quatProduct;

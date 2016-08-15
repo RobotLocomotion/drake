@@ -40,6 +40,8 @@
 /// Like @p DRAKE_ABORT_UNLESS(false), except that the meaningless "false"
 /// condition test is not included in the message.
 #define DRAKE_ABORT()
+/// Like @p DRAKE_ABORT(), with the addition of literal message text.
+#define DRAKE_ABORT_MSG(message)
 #else  //  DRAKE_DOXYGEN_CXX
 
 // Users should NOT set these; only this header should set them.

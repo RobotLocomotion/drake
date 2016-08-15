@@ -86,7 +86,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddRobotFromSDF.")
+  DRAKE_DEPRECATED("Please use AddModelInstancesFromSdfFile.")
 #endif
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =

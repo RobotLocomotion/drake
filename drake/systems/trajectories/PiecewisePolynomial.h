@@ -71,6 +71,31 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
   PiecewisePolynomial(std::vector<PolynomialType> const& polynomials,
                       std::vector<double> const& segment_times);
 
+  /**
+   * Construct a PiecewisePolynomial using a first order hold from a
+   * series of knot points.
+   */
+  static PiecewisePolynomial<CoefficientType> FirstOrderHold(
+      const std::vector<double>& segment_times,
+      const std::vector<CoefficientMatrix>& knots) {
+  std::vector<PolynomialMatrix> polys;
+  polys.reserve(segment_times.size() - 1);
+  for (int i = 0; i < static_cast<int>(segment_times.size()) - 1; ++i) {
+    PolynomialMatrix poly_matrix(knots[0].rows(), knots[0].cols());
+
+    for (int j = 0; j < knots[i].rows(); ++j) {
+      for (int k = 0; k < knots[i].cols(); ++k) {
+        poly_matrix(j, k) = PolynomialType(
+            Eigen::Matrix<CoefficientType, 2, 1>(
+                knots[i](j, k), (knots[i + 1](j, k) - knots[i](j, k)) /
+                (segment_times[i + 1] - segment_times[i])));
+      }
+    }
+    polys.push_back(poly_matrix);
+  }
+  return PiecewisePolynomial<CoefficientType>(polys, segment_times);
+}
+
   /// Takes the derivative of this PiecewisePolynomial.
   /**
    * Returns a PiecewisePolynomial where each segment is the derivative of the

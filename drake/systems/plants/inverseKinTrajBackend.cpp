@@ -7,8 +7,9 @@
 #include <Eigen/Core>
 
 #include <drake/common/drake_assert.h>
-#include <drake/core/Gradient.h>
 #include <drake/math/autodiff.h>
+#include <drake/math/autodiff_gradient.h>
+#include <drake/math/gradient.h>
 #include <drake/solvers/constraint.h>
 #include <drake/solvers/optimization.h>
 #include <drake/systems/plants/constraint/RigidBodyConstraint.h>
@@ -63,7 +64,7 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
                                            false, &dJ_vec);
     Eigen::VectorXd y_scalar(1);
     y_scalar(0) = J;
-    initializeAutoDiffGivenGradientMatrix(
+    drake::math::initializeAutoDiffGivenGradientMatrix(
         y_scalar,
         (dJ_vec * drake::math::autoDiffToGradientMatrix(x)).eval(), y);
   }
@@ -314,18 +315,21 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     }
 
     y.resize(y_idx);
-    initializeAutoDiffGivenGradientMatrix(
+    drake::math::initializeAutoDiffGivenGradientMatrix(
         y_scalar, (dy_scalar * drake::math::autoDiffToGradientMatrix(x)), y);
   }
 
  private:
   void AppendBounds(const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
     DRAKE_ASSERT(lb.size() == ub.size());
-    int prev_size = lower_bound_.size();
-    lower_bound_.conservativeResize(prev_size + lb.size());
-    upper_bound_.conservativeResize(prev_size + ub.size());
-    lower_bound_.tail(lb.size()) = lb;
-    upper_bound_.tail(ub.size()) = ub;
+    int prev_size = lower_bound().size();
+    Eigen::VectorXd new_lb(prev_size + lb.size());
+    Eigen::VectorXd new_ub(prev_size + ub.size());
+    new_lb.head(prev_size) = lower_bound();
+    new_lb.tail(lb.size()) = lb;
+    new_ub.head(prev_size) = upper_bound();
+    new_ub.tail(ub.size()) = ub;
+    set_bounds(new_lb, new_ub);
   }
 
   const RigidBodyTree* model_;

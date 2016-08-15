@@ -37,6 +37,7 @@ drake_install_headers(
   Simulation.h
   simulation_options.h
   System.h
-  vector.h)
+  vector.h
+  trajectory_logger.h)
 
 add_subdirectory(test)

@@ -1,12 +1,15 @@
 #pragma once
+
 #include <memory>
 #include <string>
 
 #include <Eigen/Geometry>
 
+#include "robot_state_tap.h"
+
 #include "drake/drakeKukaIiwaArm_export.h"
-#include "drake/systems/simulation_options.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/simulation_options.h"
 
 namespace drake {
 namespace examples {
@@ -29,7 +32,16 @@ std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
  * Returns the simulation options for use by the Kuka IIWA simulation.
  */
 DRAKEKUKAIIWAARM_EXPORT
-drake::SimulationOptions SetupSimulation();
+drake::SimulationOptions SetupSimulation(double initial_step_size = 0.002);
+
+/*
+ * Check for joint position and joint velocity limit violations.
+ * `std::runtime_error` is thrown if any limits are violated.
+ */
+DRAKEKUKAIIWAARM_EXPORT
+void CheckLimitViolations(
+    const std::shared_ptr<drake::RigidBodySystem> rigid_body_system,
+    const Eigen::VectorXd& final_robot_state);
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

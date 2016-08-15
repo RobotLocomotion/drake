@@ -1,6 +1,5 @@
 #include "dynamic_constraint.h"
 
-#include "drake/core/Gradient.h"
 #include "drake/math/autodiff.h"
 
 namespace drake {
@@ -31,7 +30,7 @@ DynamicConstraint::~DynamicConstraint() {}
 void DynamicConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                              Eigen::VectorXd& y) const {
   TaylorVecXd y_t;
-  Eval(drake::initializeAutoDiff(x), y_t);
+  Eval(math::initializeAutoDiff(x), y_t);
   y = math::autoDiffToValueMatrix(y_t);
 }
 

@@ -606,9 +606,13 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * - "maxormin"
    *   + Maximize or minimize current problem using either "max" or "min".
    * - "problemtype"
-   *   + Currently only accepts "linear" or "quadratic". Use the appropriate
-   *     one.
-   * TODO: Calling OptimizationProblem::Solve will not invoke mosek at this
+   *   + Currently only accepts "linear", "quadratic", and "sdp".
+   * - "constant"
+   *   + Adds a constant value to the objective of quadratic and SDP problems.
+   * - "conesubscript"
+   *   + Denotes which variable x_i satisfies the cone relation:
+   *   + x_i >= (sqrt(sum(x_j^2))), i!=j
+   * TODO(alexdunyak): Calling OptimizationProblem::Solve will not invoke mosek at this
    * time.
    */
   void SetSolverOption(const std::string& solver_name,

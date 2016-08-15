@@ -93,10 +93,6 @@ class OutputPort {
   // output port changes.
   std::set<OutputPortListenerInterface*> dependents_;
 
-  // The rate at which this port produces output, in seconds.
-  // If zero, the port is continuous.
-  double sample_time_sec_{};
-
   int64_t version_ = 0;
 };
 
@@ -130,9 +126,7 @@ struct LeafSystemOutput : public SystemOutput<T> {
   LeafSystemOutput() {}
   ~LeafSystemOutput() override {}
 
-  int get_num_ports() const override {
-    return static_cast<int>(ports_.size());
-  }
+  int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 
   OutputPort<T>* get_mutable_port(int index) override {
     return ports_[index].get();

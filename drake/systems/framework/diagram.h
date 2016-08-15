@@ -10,6 +10,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
@@ -66,8 +67,14 @@ class Diagram : public System<T> {
   Diagram() {}
   virtual ~Diagram() {}
 
-  void Connect(const System<T>* src, int src_port_index,
-               const System<T>* dest, int dest_port_index) {
+  void Connect(const SystemPortDescriptor<T>& src,
+               const SystemPortDescriptor<T>& dest) {
+    Connect(src.get_system(), src.get_index(), dest.get_system(),
+            dest.get_index());
+  }
+
+  void Connect(const System<T>* src, int src_port_index, const System<T>* dest,
+               int dest_port_index) {
     ThrowIfFinal();
     Register(src);
     Register(dest);
@@ -79,6 +86,21 @@ class Diagram : public System<T> {
 
   void ExportInput(const System<T>* sys, int port_index) {
     ThrowIfFinal();
+
+    // Add this port to our externally visible topology.
+    const auto& subsystem_ports = sys->get_input_ports();
+    if (port_index < 0 ||
+        port_index >= static_cast<int>(subsystem_ports.size())) {
+      throw std::out_of_range("Input port out of range.");
+    }
+    const auto& subsystem_descriptor = subsystem_ports[port_index];
+    SystemPortDescriptor<T> descriptor(
+        this, kInputPort, this->get_input_ports().size(),
+        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
+        subsystem_descriptor.get_sampling());
+    this->DeclareInputPort(descriptor);
+
+    // Add this system and port to our internal wiring diagram.
     Register(sys);
     PortIdentifier id{sys, port_index};
     ThrowIfInputAlreadyWired(id);
@@ -89,6 +111,21 @@ class Diagram : public System<T> {
 
   void ExportOutput(const System<T>* sys, int port_index) {
     ThrowIfFinal();
+
+    // Add this port to our externally visible topology.
+    const auto& subsystem_ports = sys->get_output_ports();
+    if (port_index < 0 ||
+        port_index >= static_cast<int>(subsystem_ports.size())) {
+      throw std::out_of_range("Output port out of range.");
+    }
+    const auto& subsystem_descriptor = subsystem_ports[port_index];
+    SystemPortDescriptor<T> descriptor(
+        this, kOutputPort, this->get_output_ports().size(),
+        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
+        subsystem_descriptor.get_sampling());
+    this->DeclareOutputPort(descriptor);
+
+    // Add this system and port to our internal wiring diagram.
     Register(sys);
     output_port_ids_.push_back(PortIdentifier{sys, port_index});
   }
@@ -167,7 +204,7 @@ class Diagram : public System<T> {
     // in the DiagramContext. We do this on every call to EvalOutput, so
     // that the DiagramContext and Diagram are not tightly coupled.
     DRAKE_ASSERT(diagram_output->get_num_ports() ==
-        static_cast<int>(output_port_ids_.size()));
+                 static_cast<int>(output_port_ids_.size()));
     for (size_t i = 0; i < output_port_ids_.size(); ++i) {
       const PortIdentifier& id = output_port_ids_[i];
       // For each configured output port ID, obtain from the DiagramContext the
@@ -207,8 +244,7 @@ class Diagram : public System<T> {
   }
 
   void MapVelocityToConfigurationDerivatives(
-      const ContextBase<T>& context,
-      const StateVector<T>& generalized_velocity,
+      const ContextBase<T>& context, const StateVector<T>& generalized_velocity,
       StateVector<T>* configuration_derivatives) const override {
     ThrowIfNotFinal();
     // TODO(david-german-tri): Actually map velocity to derivatives.
@@ -253,8 +289,8 @@ class Diagram : public System<T> {
   // Converts a PortIdentifier to a DiagramContext::PortIdentifier.
   // The DiagramContext::PortIdentifier contains the index of the System in the
   // sorted order of the diagram, instead of an actual pointer to the System.
-  typename DiagramContext<T>::PortIdentifier
-  ConvertToContextPortIdentifier(const PortIdentifier& id) const {
+  typename DiagramContext<T>::PortIdentifier ConvertToContextPortIdentifier(
+      const PortIdentifier& id) const {
     ThrowIfNotFinal();
     typename DiagramContext<T>::PortIdentifier output;
     output.first = GetSystemIndex(id.first);
@@ -274,11 +310,9 @@ class Diagram : public System<T> {
 
     // Build two maps:
     // A map from each system, to every system that depends on it.
-    std::map<const System<T>*, std::set<const System<T>*>>
-        dependents;
+    std::map<const System<T>*, std::set<const System<T>*>> dependents;
     // A map from each system, to every system on which it depends.
-    std::map<const System<T>*, std::set<const System<T>*>>
-        dependencies;
+    std::map<const System<T>*, std::set<const System<T>*>> dependencies;
 
     for (const auto& connection : dependency_graph_) {
       const System<T>* src = connection.second.first;

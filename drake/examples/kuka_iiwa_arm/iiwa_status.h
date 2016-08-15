@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+
 #include <Eigen/Core>
 
+#include "drake/systems/LCMSystem.h"
 #include "lcmtypes/drake/lcmt_iiwa_status.hpp"
 
 namespace drake {
@@ -56,7 +58,7 @@ bool encode(const double& t, const IiwaStatus<ScalarType>& wrap,
   msg.timestamp = static_cast<int64_t>(t * 1000);
   msg.num_joints = wrap.kNumJoints;
   msg.joint_position_measured.resize(msg.num_joints);
-  for (int i = 0; i <  msg.num_joints; i++) {
+  for (int i = 0; i < msg.num_joints; i++) {
     msg.joint_position_measured[i] = wrap.value()[i];
   }
   msg.joint_position_commanded.resize(msg.num_joints, 0);
@@ -85,8 +87,6 @@ bool decode(const drake::lcmt_iiwa_status& msg,
   wrap.set_value(new_value);
   return true;
 }
-
-
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
