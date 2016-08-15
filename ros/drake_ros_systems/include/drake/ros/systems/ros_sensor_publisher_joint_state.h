@@ -34,7 +34,7 @@ struct ModelStateStruct {
   // The ROS topic publisher for publishing the model instance's joint state
   ::ros::Publisher publisher;
 
-  // This message holds the model instance's joint sate and is periodically
+  // This message holds the model instance's joint state and is periodically
   // published.
   std::unique_ptr<sensor_msgs::JointState> message;
 

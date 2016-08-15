@@ -21,14 +21,28 @@ namespace ros {
 namespace systems {
 
 /**
- * @brief A system that takes the system state as the input and publishes
- * odometry information onto a ROS topic.
+ * Holds the objects and data needed to extract and publish odometry information
+ * of a particular model instance.
+ */
+struct OdometrySensorStruct {
+  // std::string model_instance_name;
+  // std::string sensor_name;
+
+  // The ROS topic publisher for publishing the LIDAR data.
+  ::ros::Publisher publisher;
+
+  // This holds the model instance's odometry information and is periodically
+  // published.
+  std::unique_ptr<nav_msgs::Odometry> message;
+};
+
+/**
+ * Takes the system state and publishes odometry information onto ROS topics.
  *
- * It publishes a odometry information for each robot within the rigid body
- * system. The odometry messages for each robot are published onto different
- * ROS topics that are distinguished by robot name.
- *
- * @concept{system_concept}
+ * It publishes a odometry information for each model within the rigid body
+ * system that connected to the world via a floating joint. The odometry
+ * messages for each model instance are published onto different
+ * ROS topics that are distinguished by model instance name.
  *
  * The resulting system has no internal state; the publish command is throttled
  * by kMinTransmitPeriod_.
@@ -52,7 +66,8 @@ class SensorPublisherOdometry {
   using InputVector = RobotStateVector<ScalarType>;
 
   /**
-   * The constructor.
+   * The constructor that creates one ROS topic, publisher, and message for each
+   * model instance in @p rigid_body_system.
    *
    * @param[in] rigid_body_system The rigid body system whose output contains
    * the odometry information.

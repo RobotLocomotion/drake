@@ -24,22 +24,12 @@ namespace systems {
  * information for a particular model instance.
  */
 struct LidarSensorStruct {
-  std::string model_instance_name;
-  std::string sensor_name;
-
   // The ROS topic publisher for publishing the LIDAR data.
   ::ros::Publisher publisher;
 
-  // This holds the model instance's joint sate and is periodically published.
+  // This holds LIDAR sensor's measurements and is periodically published.
   std::unique_ptr<sensor_msgs::LaserScan> message;
-
 };
-
-
-// TODO(liangfok): Modify sensor model to include scan frequency and time
-// between scan measurements. See:
-//
-// https://github.com/RobotLocomotion/drake/issues/2210
 
 /**
  * Takes the system's state vector and publishes `sensor_msgs::LaserScan`
@@ -136,9 +126,6 @@ class SensorPublisherLidar {
 
         const std::string sensor_name = depth_sensor->get_name();
 
-        sensor_struct->model_instance_name = model_instance_name;
-        sensor_struct->sensor_name = sensor_name;
-
         const std::string topic_name = model_instance_name + "/lidar/" +
             sensor_name;
 
@@ -204,74 +191,63 @@ class SensorPublisherLidar {
 
   OutputVector<double> output(const double& t, const StateVector<double>& x,
                               const InputVector<double>& u) {
-    // // Aborts if insufficient time has passed since the last transmission. This
-    // // is to avoid flooding the ROS topics.
-    // ::ros::Time current_time = ::ros::Time::now();
-    // if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
-    //   return u;
+    // Aborts if insufficient time has passed since the last transmission. This
+    // is to avoid flooding the ROS topics.
+    ::ros::Time current_time = ::ros::Time::now();
+    if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
+      return u;
 
-    // previous_send_time_ = current_time;
+    previous_send_time_ = current_time;
 
-    // std::vector<const RigidBodySensor*> sensor_vector =
-    //     rigid_body_system_->GetSensors();
+    std::vector<const RigidBodySensor*> sensor_vector =
+        rigid_body_system_->GetSensors();
 
-    // // This variable is for tracking where in the output of rigid body system
-    // // we are currently processing. We initialize it to be the number of states
-    // // of the rigid body system to start past the joint state information.
-    // size_t output_index = rigid_body_system_->getNumStates();
+    // This variable is for tracking where in the output of rigid body system
+    // we are currently processing. We initialize it to be the number of states
+    // of the rigid body system to start immediately after the joint states in
+    // in the state vector.
+    size_t output_index = rigid_body_system_->getNumStates();
 
-    // // Iterates through each sensor in the rigid body system. If the sensor is
-    // // a LIDAR sensor, store the range measurements in a ROS message and publish
-    // // it on the appropriate ROS topic.
-    // for (const RigidBodySensor* sensor : sensor_vector) {
-    //   if (output_index + sensor->getNumOutputs() >
-    //       rigid_body_system_->getNumOutputs()) {
-    //     std::stringstream buff;
-    //     buff << "ERROR: Sum of output index " << output_index
-    //          << " and number of outputs of sensor " << sensor->get_name()
-    //          << " (" << sensor->getNumOutputs()
-    //          << ") exceeds the total number of outputs of the rigid body "
-    //             "system (" << rigid_body_system_->getNumOutputs();
-    //     throw std::runtime_error(buff.str());
-    //   }
+    // For keeping track of which LidarSesnorStruct we are processing in the
+    // for loop below.
+    int lidar_table_index = 0;
 
-    //   // TODO(liang.fok): Update API to not require type dispatch!
-    //   // See: https://github.com/RobotLocomotion/drake/issues/2802.
-    //   const RigidBodyDepthSensor* depth_sensor =
-    //       dynamic_cast<const RigidBodyDepthSensor*>(sensor);
+    // Iterates through each sensor in the rigid body system. If the sensor is
+    // a LIDAR sensor, store the range measurements in a ROS message and publish
+    // it on the appropriate ROS topic.
+    for (const RigidBodySensor* sensor : sensor_vector) {
+      if (output_index + sensor->getNumOutputs() >
+          rigid_body_system_->getNumOutputs()) {
+        std::stringstream buff;
+        buff << "ERROR: Sum of output index " << output_index
+             << " and number of outputs of sensor " << sensor->get_name()
+             << " (" << sensor->getNumOutputs()
+             << ") exceeds the total number of outputs of the rigid body "
+                "system (" << rigid_body_system_->getNumOutputs();
+        throw std::runtime_error(buff.str());
+      }
 
-    //   if (depth_sensor != nullptr) {
-    //     size_t sensor_data_index_ = output_index;
+      // TODO(liang.fok): Update API to not require type dispatch!
+      // See: https://github.com/RobotLocomotion/drake/issues/2802.
+      const RigidBodyDepthSensor* depth_sensor =
+          dynamic_cast<const RigidBodyDepthSensor*>(sensor);
 
-    //     const std::string& model_name = depth_sensor->get_model_name();
-    //     const std::string key = model_name + "_" + depth_sensor->get_name();
+      if (depth_sensor != nullptr) {
+        size_t sensor_data_index_ = output_index;
+        std::unique_ptr<LidarSensorStruct>& sensor_struct =
+            lidar_table_[lidar_table_index++];
 
-    //     auto message_in_map = lidar_messages_.find(key);
-    //     if (message_in_map == lidar_messages_.end())
-    //       throw std::runtime_error(
-    //           "Could not find ROS message for LIDAR sensor " +
-    //           depth_sensor->get_name() + " in robot " + model_name + ".");
+        // Saves the new range measurements in the ROS message.
+        for (size_t ii = 0; ii < depth_sensor->getNumOutputs(); ii++) {
+          sensor_struct->message->ranges[ii] = u[sensor_data_index_++];
+        }
 
-    //     sensor_msgs::LaserScan* message = message_in_map->second.get();
+        sensor_struct->publisher.publish(*(sensor_struct->message.get()));
+      }
 
-    //     // Saves the new range measurements in the ROS message.
-    //     for (size_t ii = 0; ii < depth_sensor->getNumOutputs(); ii++) {
-    //       message->ranges[ii] = u[sensor_data_index_++];
-    //     }
-
-    //     // Publishes the ROS message containing the new range measurements.
-    //     auto publisher_in_map = lidar_publishers_.find(key);
-    //     if (publisher_in_map == lidar_publishers_.end())
-    //       throw std::runtime_error(
-    //           "ERROR: Failed to find ROS topic publisher for LIDAR sensor " +
-    //           depth_sensor->get_name() + " in robot " + model_name + ".");
-
-    //     publisher_in_map->second.publish(*message);
-    //   }
-
-    //   // Shifts the output index variable forward by one sensor.
-    //   output_index += sensor->getNumOutputs();
-    // }
+      // Shifts the output index variable forward by one sensor.
+      output_index += sensor->getNumOutputs();
+    }
 
     return u;  // Passes the output through to the next system in the cascade.
   }
