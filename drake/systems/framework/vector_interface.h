@@ -1,11 +1,10 @@
 #pragma once
 
-#include <cstdint>
 #include <memory>
 
-#include "drake/common/eigen_types.h"
-
 #include <Eigen/Dense>
+
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace systems {
@@ -41,7 +40,7 @@ class VectorInterface {
 
   /// Copies the entire vector to a new VectorInterface, with the same concrete
   /// implementation type.
-  virtual std::unique_ptr<VectorInterface<T>> Clone() const = 0;
+  virtual std::unique_ptr<VectorInterface<T>> CloneVector() const = 0;
 
  protected:
   VectorInterface() {}

@@ -75,7 +75,7 @@ class OutputPort {
   /// Returns a clone of this OutputPort containing a clone of the data, but
   /// without any dependents.
   std::unique_ptr<OutputPort<T>> Clone() const {
-    return std::make_unique<OutputPort<T>>(vector_data_->Clone());
+    return std::make_unique<OutputPort<T>>(vector_data_->CloneVector());
   }
 
  private:
