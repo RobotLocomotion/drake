@@ -84,7 +84,7 @@ void WorldTfPublisher(int num_vehicles) {
     transform_messages.push_back(vehicle_message);
   }
 
-  ::ros::Rate cycle_rate(10); // 10 Hz
+  ::ros::Rate cycle_rate(10);  // 10 Hz
   while (::ros::ok()) {
     tf_broadcaster.sendTransform(transform_messages);
     cycle_rate.sleep();
@@ -180,7 +180,7 @@ int DoMain(int argc, const char* argv[]) {
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
 
   // auto visualizer =
-  //     std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
+  //   std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
   // auto lidar_publisher = std::make_shared<
   //     ::drake::ros::SensorPublisherLidar<RigidBodySystem::StateVector>>(

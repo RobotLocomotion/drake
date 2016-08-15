@@ -11,7 +11,7 @@ void WaitForParameter(const ::ros::NodeHandle& ros_node_handle,
 
   while (::ros::ok() && !ros_node_handle.hasParam(parameter_name)
       && (::ros::Time::now() - begin_time).toSec() < max_wait_time) {
-    ::ros::Duration(0.5).sleep(); // Sleeps for half a second.
+    ::ros::Duration(0.5).sleep();  // Sleeps for half a second.
   }
 
   if (!ros_node_handle.hasParam(parameter_name)) {

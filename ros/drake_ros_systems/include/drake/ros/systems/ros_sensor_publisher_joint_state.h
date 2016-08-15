@@ -133,7 +133,6 @@ class SensorPublisherJointState {
   std::unique_ptr<ModelStateStruct> CreateJointStateStruct(
       const std::string& model_instance_name,
       std::vector<const RigidBody*>& rigid_body_list) {
-
     // Instantiates a ModelStateStruct for the current model instance.
     std::unique_ptr<ModelStateStruct> model_state_info(new ModelStateStruct());
 
@@ -256,51 +255,6 @@ class SensorPublisherJointState {
           current_model_info.get());
     }
 
-    // int q_index = 0;
-    // int v_index = 0;
-
-    // // Resets the message_index variable in each of the ModelStateStruct
-    // // objects in the model_structs_ map. This is so we can keep track of where
-    // // in the joint state message we are saving.
-    // for (auto const& map_entry : model_structs_) {
-    //   ModelStateStruct* robot_struct = map_entry.second.get();
-    //   robot_struct->message_index = 0;
-    // }
-
-    // Obtains a reference to the world link in the rigid body tree.
-    // const RigidBody& world = rigid_body_tree->world();
-
-    // // Saves the joint state information
-    // for (auto const& rigid_body : rigid_body_tree->bodies) {
-    //   // Skips the current rigid body if it does not have a parent. Note that
-    //   // this includes the world.
-    //   if (!rigid_body->hasParent()) continue;
-
-    //   const DrakeJoint& joint = rigid_body->getJoint();
-
-    //   // Skips the current rigid body if is connected to another rigid body
-    //   // via a fixed joint.
-    //   if (joint.getNumPositions() == 0) continue;
-
-    //   // Defines the key that can be used to obtain the ModelStateStruct
-    //   // object for the current robot. The key is simply the model name since
-    //   // there should only be one ModelStateStruct per robot.
-    //   const std::string& key = rigid_body->get_model_name();
-
-    //   // Verifies that a ModelStateStruct for the current robot
-    //   // exists in the model_structs_ map.
-    //   auto robot_struct_in_map = model_structs_.find(key);
-    //   if (robot_struct_in_map == model_structs_.end()) {
-    //     throw std::runtime_error(
-    //         "ERROR: SensorPublisherJointState: Unable to find"
-    //         "robot struct using key " +
-    //         key);
-    //   }
-
-    //   ModelStateStruct* robot_struct = robot_struct_in_map->second.get();
-    // }
-
-
     return u;  // Passes the output through to the next system in the cascade.
   }
 
@@ -351,7 +305,6 @@ class SensorPublisherJointState {
       const DrakeJoint& joint = rigid_body->getJoint();
       if (joint.getNumPositions() > 0) {
         if (joint.isFloating()) {
-
           // The generalized position state of floating joints need to be
           // converted from quaternion values into roll/pitch/yaw values. The
           // following code does this.

@@ -244,7 +244,6 @@ class DrakeRosTfPublisher {
    */
   std::string DeriveBodyTfFrameName(const RigidBody& rigid_body,
       const std::map<int, std::string>& model_instance_name_table) {
-
     // Obtains the rigid body's name.
     std::string name = rigid_body.get_name();
     std::string frame_name;
@@ -292,7 +291,6 @@ class DrakeRosTfPublisher {
    */
   std::string DeriveFrameTfFrameName(const RigidBodyFrame& frame,
       const std::map<int, std::string>& model_instance_name_table) {
-
     // Obtains the frame's model instance ID.
     int model_instance_id = frame.get_model_instance_id();
 
@@ -384,7 +382,6 @@ class DrakeRosTfPublisher {
       const std::shared_ptr<RigidBodyTree> rigid_body_tree,
       const std::map<int, std::string>& model_instance_name_table) {
     for (auto const& frame : rigid_body_tree->frames) {
-
       // Derives the key for storing the geometry_msgs::TransformStamped for
       // the current frame in transform_messages_.
       std::string key = DeriveKey(frame);
