@@ -606,7 +606,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * - "maxormin"
    *   + Maximize or minimize current problem using either "max" or "min".
    * - "problemtype"
-   *   + Currently only accepts "linear", "quadratic", and "sdp".
+   *   + Currently only accepts "linear", "quadratic", "sdp", and "soc".
    * - "constant"
    *   + Adds a constant value to the objective of quadratic and SDP problems.
    * - "conesubscript"

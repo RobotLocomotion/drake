@@ -27,7 +27,9 @@ problem using the Mosek solver.
 MosekWrapper solves a linear program when given a correctly formatted
 program.  Specifically, the program options:
  - "maxormin" -- must be set to "max" or "min"
- - "problemtype" -- must be set to "linear", "quadratic", or "sdp"
+ - "problemtype" -- must be set to "linear", "quadratic", "sdp" or "soc"
+    + For "sdp", you also have to set "numbarvar", or the number of indices in
+      the lower triangular part of your matrix term.
  - "conesubscript" -- Denotes which variable x_i satisfies the cone relation:
     x_i >= (sqrt(sum(x_j^2))), i!=j
 

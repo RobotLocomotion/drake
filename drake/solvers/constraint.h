@@ -180,12 +180,7 @@ class SecondOrderConicConstraint : public SemidefiniteConstraint {
         "Eval is not implemented in SemidefiniteConstraint.");
   };
 
-
-  //virtual const Eigen::MatrixXd& G() const { return G_; }
-
-  //virtual const Eigen::VectorXd& b() const { return b_; }
-
- //private:
+ private:
   Eigen::MatrixXd G_;
   Eigen::VectorXd b_;
 };
