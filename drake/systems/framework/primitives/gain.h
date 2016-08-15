@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/systems/framework/system.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
@@ -22,21 +22,13 @@ namespace systems {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class Gain : public System<T> {
+class Gain : public LeafSystem<T> {
  public:
   /// Constructs a Gain system with gain value @p k and input/output ports
   /// limited to have size @p length.
   /// @param k the gain constant so that `y = k*u`.
   /// @param length is the size of the signal to be processed.
   Gain(const T& k, int length);
-
-  // Allocates default context for a Gain system.
-  // Allocates no state.
-  std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override;
-
-  // Allocates one output port of the length specified in the constructor.
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const ContextBase<T>& context) const override;
 
   /// Sets the output port value to the product of the gain and the input port
   /// value. The gain is specified in the constructor.
@@ -48,7 +40,6 @@ class Gain : public System<T> {
  private:
   // TODO(amcastro-tri): move gain_ to System<T>::Parameter.
   const T gain_;
-  const int length_;
 };
 
 }  // namespace systems

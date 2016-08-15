@@ -68,34 +68,6 @@ TEST_F(GainTest, VectorThroughGainSystem) {
   EXPECT_EQ(expected, output_vector->get_value());
 }
 
-// Tests that std::out_of_range is thrown when the wrong number of input ports
-// are connected.
-TEST_F(GainTest, NoInputPorts) {
-  // No input ports are hooked up. Gain must have one input port.
-  // TODO(amcastro-tri): This will not be needed here when input/outputs are
-  // defined in the constructor.
-  // Connections sanity check will be performed by Diagram::Finalize().
-
-  // TODO(amcastro-tri): we must be able to ask gain_->num_of_input_ports()
-  // and make the GTest with that.
-  EXPECT_THROW(gain_->EvalOutput(*context_, output_.get()), std::out_of_range);
-}
-
-// Tests that std::out_of_range is thrown when input ports of the wrong size
-// are connected.
-// TODO(amcastro-tri): when #3109 is resolved verify that input and output ports
-// are the same size even if their sizes were determined automatically.
-TEST_F(GainTest, WrongSizeOfInputPorts) {
-  // Hook up input port, but of the wrong size.
-  // TODO(amcastro-tri): we must be able to ask gain_->num_of_input_ports().
-  ASSERT_EQ(1, context_->get_num_input_ports());
-  auto short_input = make_unique<BasicVector<double>>(2 /* length */);
-  short_input->get_mutable_value() << 4, 5;
-  context_->SetInputPort(0, MakeInput(std::move(short_input)));
-
-  EXPECT_THROW(gain_->EvalOutput(*context_, output_.get()), std::out_of_range);
-}
-
 // Tests that Gain allocates no state variables in the context_.
 TEST_F(GainTest, GainIsStateless) {
   EXPECT_EQ(nullptr, context_->get_state().continuous_state);
