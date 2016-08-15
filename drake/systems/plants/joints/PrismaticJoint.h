@@ -15,7 +15,8 @@ class DRAKEJOINTS_EXPORT PrismaticJoint
 
  public:
   /**
-   * The constructor.
+   * The constructor that intializes the name, position, and axis of motion
+   * of this prismatic joint.
    *
    * @param[in] name The name of this joint.
    *

@@ -142,7 +142,7 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use is_floating.")
+  DRAKE_DEPRECATED("Please use is_floating().")
 #endif
   bool isFloating() const override { return is_floating(); }
 
@@ -154,13 +154,13 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_position_name.")
+  DRAKE_DEPRECATED("Please use get_position_name().")
 #endif
   std::string getPositionName(int index) const override;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_velocity_name.")
+  DRAKE_DEPRECATED("Please use get_velocity_name().")
 #endif
   std::string getVelocityName(int index) const override;
 

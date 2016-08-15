@@ -46,7 +46,7 @@ VectorXd RollPitchYawFloatingJoint::randomConfiguration(
   return q;
 }
 
-
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 std::string RollPitchYawFloatingJoint::getPositionName(int index)
     const {
   return get_position_name(index);

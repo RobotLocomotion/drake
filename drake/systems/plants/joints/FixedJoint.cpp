@@ -13,6 +13,7 @@ Eigen::VectorXd FixedJoint::randomConfiguration(
   return Eigen::VectorXd::Zero(0);
 }
 
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 std::string FixedJoint::getPositionName(int index) const {
   return get_position_name(index);
 }

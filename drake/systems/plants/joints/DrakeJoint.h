@@ -161,37 +161,37 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_transform_to_parent_body.")
+  DRAKE_DEPRECATED("Please use get_transform_to_parent_body().")
 #endif
   const Eigen::Isometry3d& getTransformToParentBody() const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_num_positions.")
+  DRAKE_DEPRECATED("Please use get_num_positions().")
 #endif
   int getNumPositions() const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_num_velocities.")
+  DRAKE_DEPRECATED("Please use get_num_velocities().")
 #endif
   int getNumVelocities() const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_name.")
+  DRAKE_DEPRECATED("Please use get_name().")
 #endif
   const std::string& getName() const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_position_name.")
+  DRAKE_DEPRECATED("Please use get_position_name().")
 #endif
   virtual std::string getPositionName(int index) const = 0;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_velocity_name.")
+  DRAKE_DEPRECATED("Please use get_velocity_name().")
 #endif
   virtual std::string getVelocityName(int index) const;
 
@@ -199,7 +199,7 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use is_floating.")
+  DRAKE_DEPRECATED("Please use is_floating().")
 #endif
   virtual bool isFloating() const { return is_floating(); }
 

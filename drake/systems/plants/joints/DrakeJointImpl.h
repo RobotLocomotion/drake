@@ -63,10 +63,12 @@
 template <typename Derived>
 class DrakeJointImpl : public DrakeJoint {
  public:
-  /**
-   * The constructor.
+  /* The constructor that save a reference to the concrete subclass instance.
    *
-   * @param[in] derived A reference to this class' child class.
+   * @param[in] derived A reference to a class derived from this one, using the
+   * Curiously Recurring Template Pattern. For more information about this
+   * pattern, see:
+   * https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern.
    *
    * @param[in] name The name of this joint. This should be unique to a
    * model instance.
@@ -76,7 +78,7 @@ class DrakeJointImpl : public DrakeJoint {
    *
    * @param[in] num_positions The number of position states in the joint.
    *
-   * @parampin] num_velocities The numbr of velocity states in this joint.
+   * @param[in] num_velocities The number of velocity states in this joint.
    */
   DrakeJointImpl(Derived& derived, const std::string& name,
                  const Eigen::Isometry3d& transform_to_parent_body,
@@ -85,9 +87,6 @@ class DrakeJointImpl : public DrakeJoint {
                    num_velocities),
         derived_(derived) {}
 
-  /**
-   * The destructor.
-   */
   virtual ~DrakeJointImpl() {}
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS_IMPL(double)
