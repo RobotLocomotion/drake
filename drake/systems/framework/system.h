@@ -35,9 +35,31 @@ class System {
   // pairwise (input_port, output_port) feedthrough.
   virtual bool has_any_direct_feedthrough() const { return true;}
 
+  /// Returns the number of input ports of the system.
+  int get_num_input_ports() const { return input_ports_.size(); }
+
+  /// Returns the number of output ports of the system.
+  int get_num_output_ports() const { return output_ports_.size(); }
+
   /// Returns descriptors for all the input ports of this system.
   const std::vector<SystemPortDescriptor<T>>& get_input_ports() const {
     return input_ports_;
+  }
+
+  /// Returns the input port @p input_port.
+  const SystemPortDescriptor<T>& get_input_port(int port_number) const {
+    if (port_number >= get_num_input_ports()) {
+      throw std::out_of_range("port number out of range.");
+    }
+    return input_ports_[port_number];
+  }
+
+  /// Returns the output port @p output_port.
+  const SystemPortDescriptor<T>& get_output_port(int port_number) const {
+    if (port_number >= get_num_output_ports()) {
+      throw std::out_of_range("port number out of range.");
+    }
+    return output_ports_[port_number];
   }
 
   /// Returns descriptors for all the output ports of this system.

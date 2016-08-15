@@ -62,10 +62,8 @@ void Gain<T>::EvalOutput(const ContextBase<T>& context,
 
   // Check the expected length.
   DRAKE_ASSERT(input_vector != nullptr);
-  // TODO(amcastro-tri): replace with this->get_input_port(0).get_size() after
-  // #????? is merged.
   DRAKE_ASSERT(input_vector->get_value().rows() ==
-      this->get_input_ports()[0].get_size());
+      this->get_input_port(0).get_size());
 
   // TODO(amcastro-tri): System<T> should provide interfaces to directly get the
   // actually useful Eigen vectors like so:
