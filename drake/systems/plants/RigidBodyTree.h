@@ -135,8 +135,26 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::VectorXd getRandomConfiguration(
       std::default_random_engine& generator) const;
 
-  // akin to the coordinateframe names in matlab
+  /**
+   * Returns the name of the position state at index @p position_num
+   * within this `RigidBodyTree`'s state vector.
+   *
+   * @param[in] position_num An index value between zero and
+   * number_of_positions().
+   *
+   * @return The name of the position value at index @p position_num.
+   */
   std::string get_position_name(int position_num) const;
+
+  /**
+   * Returns the name of the velocity state at index @p velocity_num
+   * within this `RigidBodyTree`'s state vector.
+   *
+   * @param[in] velocity_num An index value between number_of_positions() and
+   * number_of_veocities().
+   *
+   * @return The name of the velocity value at index @p velocity_num.
+   */
   std::string get_velocity_name(int velocity_num) const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.

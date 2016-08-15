@@ -214,5 +214,6 @@ if(LONG_RUNNING_TESTS)
   add_matlab_test(NAME systems/plants/test/testMassSpringDamperThrust COMMAND testMassSpringDamperThrust PROPERTIES TIMEOUT 1500)
 endif()
 
+add_subdirectory(drake_joint)
 add_subdirectory(rigid_body_system)
 add_subdirectory(rigid_body_tree)

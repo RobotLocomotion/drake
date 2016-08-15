@@ -87,13 +87,15 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
                              // Atlas
 
   /**
-   * The constructor.
+   * This is the base class constructor for use by concrete joints to place and
+   * size the joint.
    *
    * @param[in] name The joint's name. This can be any string value. It does not
    * have to be unique.
    *
-   * @param[in] transform_to_parent_body This is the transform between the
-   * joint's frame and the frame of its parent body.
+   * @param[in] transform_to_parent_body This is the transform from the frame of
+   * the joint's parent body to the frame of the joint's child body. The joint
+   * is located at the origin of child body's frame.
    *
    * @param[in] num_positions The number of position states of the joint.
    *
@@ -109,19 +111,19 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   virtual ~DrakeJoint();
 
   /**
-   * Returns the transform from this joint's frame to this joint's parent body's
-   * frame.
+   * Returns the transform from the frame of this joint's child body to the
+   * frame of this joint's parent body.
    *
-   * Let `J` be this joint's coordinate frame and `B` be this joint's parent
-   * body's coordinate frame. Furthermore, let `p_J` be the location of a point
-   * measured from `J`'s origin and expressed in coordinate frame `J`, and `p_B`
-   * be the location of the same point but measured from `B`'s origin and
-   * expressed in coordinate frame `B`.
+   * Let `C` be the frame of this joint's child body and `P` be the frame of
+   * this joint's parent body. Furthermore, let `point_C` be the location of a
+   * point measured from `C`'s origin and expressed in coordinate frame `C`,
+   * and `point_P` be the location of the same point but measured from `P`'s
+   * origin and expressed in coordinate frame `P`.
    *
-   * The returned value is `T_JB` where:
+   * The returned value is `T_PC` where:
    *
    * <pre>
-   * p_J = T_JB * p_B;
+   * point_P = T_PC * point_C;
    * </pre>
    */
   const Eigen::Isometry3d& get_transform_to_parent_body() const;

@@ -821,7 +821,7 @@ void ParseTransmission(RigidBodyTree* tree, XMLElement* transmission_node) {
   int body_index = FindBodyIndexByJointName(tree, joint_name);
 
   if (tree->bodies[body_index]->getJoint().get_num_positions() == 0) {
-    cerr << "RigidBodyTreeURDF.cpp: parseTransmission: WARNING: Skipping "
+    cerr << "RigidBodyTreeURDF.cpp: ParseTransmission: WARNING: Skipping "
             "transmission since it's attached to a fixed joint \""
          << joint_name << "\"." << endl;
     return;
