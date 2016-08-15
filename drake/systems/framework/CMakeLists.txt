@@ -1,11 +1,15 @@
 # Source files used to build drakeSystemFramework.
 set(sources
-  context_base.cc
+  basic_state_vector.cc
   basic_vector.cc
   cache.cc
+  context_base.cc
   context.cc
   diagram.cc
   diagram_context.cc
+  leaf_system.cc
+  primitives/adder.cc
+  primitives/integrator.cc
   state.cc
   state_subvector.cc
   state_supervector.cc
@@ -13,12 +17,9 @@ set(sources
   system.cc
   system_input.cc
   system_output.cc
-  basic_state_vector.cc
+  system_port_descriptor.cc
   value.cc
-  vector_interface.cc
-  diagram.cc
-  primitives/adder.cc
-  primitives/integrator.cc)
+  vector_interface.cc)
 
 # Headers that should be installed with Drake so that they
 # are available elsewhere via #include.
@@ -30,13 +31,17 @@ set(sources
 # System2 framework template implementations have been moved into .cc files
 # using explicit instantiation, tighten this list.
 set(installed_headers
-  context_base.h
+  basic_state_vector.h
   basic_vector.h
   cache.h
   context.h
+  context_base.h
   diagram.h
   diagram_context.h
   leaf_state_vector.h
+  leaf_system.h
+  primitives/adder.h
+  primitives/integrator.h
   state.h
   state_subvector.h
   state_supervector.h
@@ -44,12 +49,9 @@ set(installed_headers
   system.h
   system_input.h
   system_output.h
-  basic_state_vector.h
+  system_port_descriptor.h
   value.h
-  vector_interface.h
-  diagram.h
-  primitives/adder.h
-  primitives/integrator.h)
+  vector_interface.h)
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.

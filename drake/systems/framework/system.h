@@ -1,11 +1,14 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
@@ -31,6 +34,16 @@ class System {
   // TODO(amcastro-tri): Provide a more descriptive mechanism to specify
   // pairwise (input_port, output_port) feedthrough.
   virtual bool has_any_direct_feedthrough() const { return true;}
+
+  /// Returns descriptors for all the input ports of this system.
+  const std::vector<SystemPortDescriptor<T>>& get_input_ports() const {
+    return input_ports_;
+  }
+
+  /// Returns descriptors for all the output ports of this system.
+  const std::vector<SystemPortDescriptor<T>>& get_output_ports() const {
+    return output_ports_;
+  }
 
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.
@@ -132,8 +145,7 @@ class System {
   /// position. Implementations that are not second-order systems may simply
   /// do nothing.
   virtual void MapVelocityToConfigurationDerivatives(
-      const ContextBase<T>& context,
-      const StateVector<T>& generalized_velocity,
+      const ContextBase<T>& context, const StateVector<T>& generalized_velocity,
       StateVector<T>* configuration_derivatives) const {
     if (generalized_velocity.size() != configuration_derivatives->size()) {
       throw std::out_of_range(
@@ -160,6 +172,36 @@ class System {
  protected:
   System() {}
 
+  /// Adds a port with the specified @p descriptor to the input topology.
+  void DeclareInputPort(const SystemPortDescriptor<T>& descriptor) {
+    DRAKE_ASSERT(descriptor.get_index() ==
+                 static_cast<int>(input_ports_.size()));
+    DRAKE_ASSERT(descriptor.get_face() == kInputPort);
+    input_ports_.emplace_back(descriptor);
+  }
+
+  /// Adds a port with the specified @p type, @p size, and @p sampling
+  /// to the input topology.
+  void DeclareInputPort(PortDataType type, int size, SamplingSpec sampling) {
+    input_ports_.emplace_back(this, kInputPort, input_ports_.size(),
+                                 kVectorValued, size, sampling);
+  }
+
+  /// Adds a port with the specified @p descriptor to the output topology.
+  void DeclareOutputPort(const SystemPortDescriptor<T>& descriptor) {
+    DRAKE_ASSERT(descriptor.get_index() ==
+                 static_cast<int>(output_ports_.size()));
+    DRAKE_ASSERT(descriptor.get_face() == kOutputPort);
+    output_ports_.emplace_back(descriptor);
+  }
+
+  /// Adds a port with the specified @p type, @p size, and @p sampling
+  /// to the output topology.
+  void DeclareOutputPort(PortDataType type, int size, SamplingSpec sampling) {
+    output_ports_.emplace_back(this, kOutputPort, output_ports_.size(),
+                                  kVectorValued, size, sampling);
+  }
+
  private:
   // SystemInterface objects are neither copyable nor moveable.
   System(const System<T>& other) = delete;
@@ -168,6 +210,8 @@ class System {
   System& operator=(System<T>&& other) = delete;
 
   std::string name_;
+  std::vector<SystemPortDescriptor<T>> input_ports_;
+  std::vector<SystemPortDescriptor<T>> output_ports_;
 };
 
 }  // namespace systems

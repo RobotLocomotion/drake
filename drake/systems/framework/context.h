@@ -98,8 +98,8 @@ class Context : public ContextBase<T> {
       if (port == nullptr) {
         context->inputs_.emplace_back(nullptr);
       } else {
-        context->inputs_.emplace_back(new FreestandingInputPort<T>(
-            port->get_vector_data()->Clone(), port->get_sample_time_sec()));
+        context->inputs_.emplace_back(
+            new FreestandingInputPort<T>(port->get_vector_data()->Clone()));
       }
     }
 

@@ -55,8 +55,9 @@ class DiagramContext : public ContextBase<T> {
   void ExportInput(const PortIdentifier& id) {
     const SystemIndex system_index = id.first;
     if (contexts_.find(system_index) == contexts_.end()) {
-      throw std::runtime_error("Cannot add a System as an input until the "
-                               "System itself has been added.");
+      throw std::runtime_error(
+          "Cannot add a System as an input until the "
+          "System itself has been added.");
     }
     input_ids_.emplace_back(id);
   }
@@ -84,8 +85,7 @@ class DiagramContext : public ContextBase<T> {
         dest_port_index >= dest_context->get_num_input_ports()) {
       throw std::out_of_range("Destination port out of range.");
     }
-    // TODO(david-german-tri): Set the sample rate.
-    auto input_port = std::make_unique<DependentInputPort<T>>(output_port, 0.0);
+    auto input_port = std::make_unique<DependentInputPort<T>>(output_port);
     dest_context->SetInputPort(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().

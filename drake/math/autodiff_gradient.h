@@ -6,6 +6,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
 
 namespace drake {
@@ -55,6 +56,65 @@ typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
     }
   }
   return gradient;
+}
+
+/** \brief Initializes an autodiff matrix given a matrix of values and gradient
+ * matrix
+ * \param[in] val value matrix
+ * \param[in] gradient gradient matrix; the derivatives of val(j) are stored in
+ * row j of the gradient matrix.
+ * \param[out] autodiff_matrix matrix of AutoDiffScalars with the same size as
+ * \p val
+ */
+template <typename Derived, typename DerivedGradient, typename DerivedAutoDiff>
+void initializeAutoDiffGivenGradientMatrix(
+    const Eigen::MatrixBase<Derived>& val,
+    const Eigen::MatrixBase<DerivedGradient>& gradient,
+    Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
+  static_assert(static_cast<int>(Derived::SizeAtCompileTime) ==
+                    static_cast<int>(DerivedGradient::RowsAtCompileTime),
+                "gradient has wrong number of rows at compile time");
+  DRAKE_ASSERT(val.size() == gradient.rows() &&
+               "gradient has wrong number of rows at runtime");
+  typedef AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime>
+      ExpectedAutoDiffType;
+  static_assert(static_cast<int>(ExpectedAutoDiffType::RowsAtCompileTime) ==
+                    static_cast<int>(DerivedAutoDiff::RowsAtCompileTime),
+                "auto diff matrix has wrong number of rows at compile time");
+  static_assert(static_cast<int>(ExpectedAutoDiffType::ColsAtCompileTime) ==
+                    static_cast<int>(DerivedAutoDiff::ColsAtCompileTime),
+                "auto diff matrix has wrong number of columns at compile time");
+  static_assert(std::is_same<typename DerivedAutoDiff::Scalar,
+                             typename ExpectedAutoDiffType::Scalar>::value,
+                "wrong auto diff scalar type");
+
+  typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
+  auto_diff_matrix.resize(val.rows(), val.cols());
+  auto num_derivs = gradient.cols();
+  for (Index row = 0; row < auto_diff_matrix.size(); row++) {
+    auto_diff_matrix(row).value() = val(row);
+    auto_diff_matrix(row).derivatives().resize(num_derivs, 1);
+    auto_diff_matrix(row).derivatives() = gradient.row(row).transpose();
+  }
+}
+
+/** \brief Creates and initializes an autodiff matrix given a matrix of values
+ * and gradient matrix
+ * \param[in] val value matrix
+ * \param[in] gradient gradient matrix; the derivatives of val(j) are stored in
+ * row j of the gradient matrix.
+ * \return autodiff_matrix matrix of AutoDiffScalars with the same size as \p
+ * val
+ */
+template <typename Derived, typename DerivedGradient>
+AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime>
+initializeAutoDiffGivenGradientMatrix(
+    const Eigen::MatrixBase<Derived>& val,
+    const Eigen::MatrixBase<DerivedGradient>& gradient) {
+  AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime> ret(
+      val.rows(), val.cols());
+  initializeAutoDiffGivenGradientMatrix(val, gradient, ret);
+  return ret;
 }
 
 }  // namespace math
