@@ -91,7 +91,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddRobotFromSDF.")
+  DRAKE_DEPRECATED("Please use AddModelInstancesFromSdfFile.")
 #endif
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
@@ -639,14 +639,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @param[in] body_name The body whose index we want to find. It should
    * be unique within the searched models, otherwise an exception will be
    * thrown.
-   * @param[in] model_id The ID of the model. This parameter is optional. If
-   * supplied, only the model with the specified ID is searched; otherwise, all
-   * models are searched.
+   *
+   * @param[in] model_instance_id The ID of the model instance. This parameter
+   * is optional. If supplied, only the model instance with the specified
+   * instance ID is searched; otherwise, all model instances are searched.
+   *
    * @return The index of the specified rigid body.
+   *
    * @throws std::logic_error if no rigid body with the specified \p body_name
    * and \p model_id was found or if multiple matching rigid bodies were found.
    */
-  int FindBodyIndex(const std::string& body_name, int model_id = -1) const;
+  int FindBodyIndex(const std::string& body_name, int model_instance_id = -1)
+      const;
 
 /**
  * This is a deprecated version of `FindBodyIndex(...)`. Please use

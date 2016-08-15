@@ -918,14 +918,14 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfFile(
   return model_instance_id_table;
 }
 
-ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromSdfFile(
+ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
     const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the robot to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::sdf::AddRobotFromSdfFile(
+      drake::parsers::sdf::AddModelInstancesFromSdfFile(
           filename, floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
@@ -950,7 +950,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfDescription(
 
   // Adds the robot to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::sdf::AddRobotFromSdfDescription(
+      drake::parsers::sdf::AddModelInstancesFromSdfFile(
           description, floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
@@ -984,7 +984,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
     model_instance_id_table = AddModelInstanceFromUrdfFile(filename,
         floating_base_type, weld_to_frame);
   } else if (ext == ".sdf") {
-    model_instance_id_table = AddModelInstanceFromSdfFile(filename,
+    model_instance_id_table = AddModelInstancesFromSdfFile(filename,
         floating_base_type, weld_to_frame);
   } else {
     throw runtime_error(

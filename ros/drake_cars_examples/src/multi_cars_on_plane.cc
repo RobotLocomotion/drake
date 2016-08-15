@@ -36,7 +36,7 @@ using drake::parsers::ModelInstanceIdTable;
 
 using drake::ros::systems::DrakeRosTfPublisher;
 using drake::ros::systems::run_ros_vehicle_sim;
-
+using drake::ros::systems::SensorPublisherJointState;
 
 /**
  * Sits in a loop periodically publishing an identity transform for the
@@ -191,14 +191,18 @@ int DoMain(int argc, const char* argv[]) {
   //     rigid_body_sys);
 
   auto tf_publisher = std::make_shared<
-      DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
-          model_instance_name_table);
+      DrakeRosTfPublisher<RigidBodySystem::StateVector>>(
+          tree, model_instance_name_table);
 
-  // auto joint_state_publisher = std::make_shared<
-  //     ::drake::ros::SensorPublisherJointState<RigidBodySystem::StateVector>>(
-  //     rigid_body_sys);
+  auto joint_state_publisher = std::make_shared<
+      SensorPublisherJointState<RigidBodySystem::StateVector>>(
+              rigid_body_sys, model_instance_name_table);
 
-  auto sys = cascade(vehicle_sys, tf_publisher);
+  auto sys =
+      cascade(
+        cascade(
+            vehicle_sys, tf_publisher),
+        joint_state_publisher);
 
   // auto sys =
   //     cascade(

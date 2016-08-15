@@ -253,7 +253,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * added to the `RigidBodyTree` to their instance IDs, which are unique within
    * the `RigidBodyTree`.
    */
-  drake::parsers::ModelInstanceIdTable AddModelInstanceFromSdfFile(
+  drake::parsers::ModelInstanceIdTable AddModelInstancesFromSdfFile(
       const std::string& filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,

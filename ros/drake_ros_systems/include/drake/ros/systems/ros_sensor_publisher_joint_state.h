@@ -29,6 +29,8 @@ namespace systems {
  * information for a particular model instance.
  */
 struct ModelStateStruct {
+  std::string model_instance_name;
+
   // The ROS topic publisher for publishing the model instance's joint state
   ::ros::Publisher publisher;
 
@@ -91,11 +93,6 @@ class SensorPublisherJointState {
     previous_send_time_.sec = 0;
     previous_send_time_.nsec = 0;
 
-    // Instantiates a ROS node handle through which we can interact with ROS.
-    // For more information, see:
-    // http://wiki.ros.org/roscpp/Overview/NodeHandles
-    ::ros::NodeHandle node_handle;
-
     // Obtains a reference to the world link in the rigid body tree.
     const RigidBody& world = rigid_body_system->getRigidBodyTree()->world();
 
@@ -112,108 +109,111 @@ class SensorPublisherJointState {
               model_instance_id);
 
       if (ShouldPublishState(rigid_body_list)) {
-        // Instantiates a ModelStateStruct for the current model instance.
-        std::unique_ptr<ModelStateStruct> model_struct(
-            new ModelStateStruct());
-
-        if (model_structs_.find(model_instance_name) != model_structs_.end()) {
-          throw std::runtime_error("SensorPublisherJointState: ERROR: "
-              "Duplicate model instance named \"" + model_instance_name +
-              " detected.");
-        }
-
-        model_struct->rigid_body_list = rigid_body_list;
-
-        const std::string topic_name = model_instance_name + "/joint_state";
-        model_struct->publisher =
-            node_handle.advertise<sensor_msgs::JointState>(topic_name, 1);
-
-        model_struct->message.reset(new sensor_msgs::JointState());
-
-        // TODO(liang.fok) Verify this is correct.
-        model_struct->message->header.frame_id = RigidBodyTree::kWorldName;
-
-        InitJointStateStruct(robot_name, rigid_body_system->getRigidBodyTree(),
-                             model_struct.get());
-
-        model_structs_[model_instance_name] = std::move(model_struct);
+        model_structs_.push_back(
+            CreateJointStateStruct(model_instance_name, rigid_body_list));
       }
-
     }
   }
 
-  // /**
-  //  * Initializes a ModelStateStruct for a particular robot.
-  //  *
-  //  * @param[in] robot_name The name of the robot.
-  //  * @param[in] tree The rigid body tree containing the information needed to
-  //  * initialize the joint state message.
-  //  * @param[out] robot_struct The struct to initialize.
-  //  */
-  // void InitJointStateStruct(const std::string& robot_name,
-  //                           const std::shared_ptr<RigidBodyTree>& tree,
-  //                           ModelStateStruct* robot_struct) {
-  //   if (robot_struct == nullptr) {
-  //     throw std::runtime_error(
-  //         "ERROR: InitJointStateMessage: robot_struct "
-  //         "parameter is nullptr!");
-  //   }
+  /**
+   * Creates and returns a `ModelStateStruct` for a model instance named
+   * @p model_instance_name. The `ModelStateStruct` contains a ROS topic
+   * publisher for publishing the model instance's joint state, a message for
+   * holding the jont state, and a list of rigid bodies that belong to the
+   * model instance.
+   *
+   * @param[in] model_instance_name The model instance's name.
+   *
+   * @param[in] rigid_body_list A list of pointers to `RigidBody` objects that
+   * are part of the model instance specified by @p model_instance_id.
+   *
+   * @returns The newly created `ModelStateStruct` for the model instance
+   * specified by @p model_instance_id.
+   */
+  std::unique_ptr<ModelStateStruct> CreateJointStateStruct(
+      const std::string& model_instance_name,
+      std::vector<const RigidBody*>& rigid_body_list) {
 
-  //   // robot_struct->num_positions_ = 0;
-  //   // robot_struct->num_velocities_ = 0;
+    // Instantiates a ModelStateStruct for the current model instance.
+    std::unique_ptr<ModelStateStruct> model_state_info(new ModelStateStruct());
 
-  //   // Iterates through the rigid bodies in the rigid body tree searching for
-  //   // those that belong to the specified robot. Updates the
-  //   // ModelStateStruct using the robot's rigid bodies.
-  //   for (auto const& rigid_body : tree->bodies) {
-  //     if (rigid_body->get_model_name() == robot_name) {
-  //       const DrakeJoint& joint = rigid_body->getJoint();
+    model_state_info->model_instance_name = model_instance_name;
+    model_state_info->rigid_body_list = rigid_body_list;
 
-  //       if (joint.getNumPositions() > 0) {
-  //         // robot_struct->num_positions_ += joint.getNumPositions();
-  //         // robot_struct->num_velocities_ += joint.getNumVelocities();
+    // Instantiates a ROS node handle through which we can interact with ROS.
+    // For more information, see:
+    // http://wiki.ros.org/roscpp/Overview/NodeHandles
+    ::ros::NodeHandle node_handle;
 
-  //         if (joint.isFloating()) {
-  //           robot_struct->message->name.push_back("floating_x");
-  //           robot_struct->message->name.push_back("floating_y");
-  //           robot_struct->message->name.push_back("floating_z");
-  //           robot_struct->message->name.push_back("floating_roll");
-  //           robot_struct->message->name.push_back("floating_pitch");
-  //           robot_struct->message->name.push_back("floating_yaw");
-  //         } else {
-  //           // Verifies that the joint has the same number of position versus
-  //           // velocity DOFs. Throws an exception if this is not true.
-  //           if (joint.getNumPositions() != joint.getNumVelocities()) {
-  //             throw std::runtime_error(
-  //                 "ERROR: Joint \"" + joint.getName() + "\" in robot \"" +
-  //                 robot_name +
-  //                 "\" has a different number of positions and velocities.");
-  //           }
+    // Instantiates a ROS topic publisher for publishing the joint state of the
+    // model instance.
+    model_state_info->publisher =
+        node_handle.advertise<sensor_msgs::JointState>(
+            model_instance_name + "/joint_state", 1);
 
-  //           // Adds the names of the DOFs that belong to the joint to the
-  //           // message.
-  //           for (int ii = 0; ii < joint.getNumPositions(); ii++) {
-  //             robot_struct->message->name.push_back(joint.getPositionName(ii));
-  //           }
-  //         }
-  //       }
+    // Instantiates a message for holding the joint state of the model instance.
+    model_state_info->message.reset(new sensor_msgs::JointState());
 
-  //       // Resizes the vectors in the message and initialize them to have zero
-  //       // state.
-  //       int num_states = robot_struct->message->name.size();
+    // The message contains information in joint space. Thus it is unclear
+    // what "frame" should be specified here. Perhaps the "frame" should be
+    // "joint"? For now, let's just use the name given to the world.
+    // TODO(liang.fok) Figure out what's the appropriate frame name to use.
+    model_state_info->message->header.frame_id = RigidBodyTree::kWorldName;
 
-  //       robot_struct->message->position.resize(num_states);
-  //       robot_struct->message->velocity.resize(num_states);
-  //       robot_struct->message->effort.resize(num_states);
+    // Iterates through the rigid bodies that belong to the model instance.
+    // For each rigid body, allocate space within the message.
+    for (auto const& rigid_body : rigid_body_list) {
+      const DrakeJoint& joint = rigid_body->getJoint();
 
-  //       for (int ii = 0; ii < num_states; ii++) {
-  //         robot_struct->message->position[ii] = 0;
-  //         robot_struct->message->velocity[ii] = 0;
-  //         robot_struct->message->effort[ii] = 0;
-  //       }
-  //     }
-  //   }
-  // }
+      if (joint.getNumPositions() > 0) {
+        if (joint.isFloating()) {
+          // Floating joints have unequal numbers of position (4) vs.
+          // velocity (3) state. Thus, handle them in a special manner.
+          model_state_info->message->name.push_back("floating_x");
+          model_state_info->message->name.push_back("floating_y");
+          model_state_info->message->name.push_back("floating_z");
+          model_state_info->message->name.push_back("floating_roll");
+          model_state_info->message->name.push_back("floating_pitch");
+          model_state_info->message->name.push_back("floating_yaw");
+        } else {
+          // Verifies that the joint has the same number of position and
+          // velocity DOFs. Throws an exception if this is not true.
+          if (joint.getNumPositions() != joint.getNumVelocities()) {
+            throw std::runtime_error(
+                "SensorPublisherJointState: ERROR: Joint \"" + joint.getName() +
+                "\" in model instance \"" + model_instance_name +
+                "\" has a different number of positions (" +
+                std::to_string(joint.getNumPositions()) +
+                ") and velocities (" +
+                std::to_string(joint.getNumVelocities())
+                + ").");
+          }
+
+          // Adds the names of the joint's DOFs to the message.
+          for (int ii = 0; ii < joint.getNumPositions(); ++ii) {
+            model_state_info->message->name.push_back(
+                joint.getPositionName(ii));
+          }
+        }
+
+        // Resizes the position, velocity, and effort vectors in the message.
+        // Then initialize them to have zero state.
+        int num_states = model_state_info->message->name.size();
+
+        model_state_info->message->position.resize(num_states);
+        model_state_info->message->velocity.resize(num_states);
+        model_state_info->message->effort.resize(num_states);
+
+        for (int ii = 0; ii < num_states; ++ii) {
+          model_state_info->message->position[ii] = 0;
+          model_state_info->message->velocity[ii] = 0;
+          model_state_info->message->effort[ii] = 0;
+        }
+      }
+    }
+
+    return std::move(model_state_info);
+  }
 
   StateVector<double> dynamics(const double& t, const StateVector<double>& x,
                                const InputVector<double>& u) const {
@@ -222,25 +222,39 @@ class SensorPublisherJointState {
 
   OutputVector<double> output(const double& t, const StateVector<double>& x,
                               const InputVector<double>& u) {
-    // // Aborts if insufficient time has passed since the last transmission. This
-    // // is to avoid flooding the ROS topics.
-    // ::ros::Time current_time = ::ros::Time::now();
-    // if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
-    //   return u;
+    // Aborts if insufficient time has passed since the last transmission. This
+    // is to avoid flooding the ROS topics.
+    ::ros::Time current_time = ::ros::Time::now();
+    if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
+      return u;
 
-    // previous_send_time_ = current_time;
+    previous_send_time_ = current_time;
 
-    // const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
-    //     rigid_body_system_->getRigidBodyTree();
+    const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
+        rigid_body_system_->getRigidBodyTree();
 
-    // // The input vector u contains the entire system's state. The following
-    // // The following code extracts the position and velocity values from it
-    // // and computes the kinematic properties of the system.
-    // auto uvec = drake::toEigen(u);
-    // auto q = uvec.head(rigid_body_tree->number_of_positions());    // position
-    // auto v = uvec.segment(rigid_body_tree->number_of_positions(),  // velocity
-    //                       rigid_body_tree->number_of_velocities());
-    // KinematicsCache<double> cache = rigid_body_tree->doKinematics(q, v);
+    // The input vector `u` contains the entire system's state. The following
+    // line of code converts it into an Eigen vector.
+    auto system_state_vector = drake::toEigen(u);
+
+    // The following code extracts the position and velocity vectors from
+    // system_state_vector and computes the kinematic properties of the system.
+    // These kinematic properties are stored in `cache`, which is then used to
+    // compute the 6-DoF position and velocity states of floating joints.
+    auto position_state_vector =
+        system_state_vector.head(rigid_body_tree->number_of_positions());
+
+    auto velocity_state_vector =
+        system_state_vector.segment(rigid_body_tree->number_of_positions(),
+                                    rigid_body_tree->number_of_velocities());
+
+    KinematicsCache<double> kinematics_cache = rigid_body_tree->doKinematics(
+        position_state_vector, velocity_state_vector);
+
+    for (auto& current_model_info : model_structs_) {
+      UpdateAndPublishJointStateMessage(system_state_vector, kinematics_cache,
+          current_model_info.get());
+    }
 
     // int q_index = 0;
     // int v_index = 0;
@@ -253,8 +267,8 @@ class SensorPublisherJointState {
     //   robot_struct->message_index = 0;
     // }
 
-    // // Obtains a reference to the world link in the rigid body tree.
-    // // const RigidBody& world = rigid_body_tree->world();
+    // Obtains a reference to the world link in the rigid body tree.
+    // const RigidBody& world = rigid_body_tree->world();
 
     // // Saves the joint state information
     // for (auto const& rigid_body : rigid_body_tree->bodies) {
@@ -284,62 +298,8 @@ class SensorPublisherJointState {
     //   }
 
     //   ModelStateStruct* robot_struct = robot_struct_in_map->second.get();
-
-    //   if (joint.getNumPositions() > 0) {
-    //     if (joint.isFloating()) {
-    //       auto transform = rigid_body_tree->relativeTransform(
-    //           cache,
-    //           rigid_body_tree->FindBodyIndex(
-    //               rigid_body->get_parent()->get_name()),
-    //           rigid_body_tree->FindBodyIndex(rigid_body->get_name()));
-    //       auto translation = transform.translation();
-    //       auto rpy = drake::math::rotmat2rpy(transform.linear());
-
-    //       size_t index = robot_struct->message_index;
-
-    //       robot_struct->message->position[index++] = translation(0);
-    //       robot_struct->message->position[index++] = translation(1);
-    //       robot_struct->message->position[index++] = translation(2);
-
-    //       robot_struct->message->position[index++] = rpy(0);
-    //       robot_struct->message->position[index++] = rpy(1);
-    //       robot_struct->message->position[index++] = rpy(2);
-
-    //       q_index += joint.getNumPositions();
-    //       index = robot_struct->message_index;
-
-    //       for (size_t ii = 0; ii < joint.getNumVelocities(); ii++) {
-    //         robot_struct->message->velocity[index++] = v[v_index++];
-    //       }
-
-    //       robot_struct->message_index = index;
-    //     } else {
-    //       // Verifies that the joint has the same number of position versus
-    //       // velocity DOFs. Throws an exception if this is not true.
-    //       if (joint.getNumPositions() != joint.getNumVelocities()) {
-    //         throw std::runtime_error(
-    //             "ERROR: Joint \"" + joint.getName() + "\" in robot \"" +
-    //             robot_struct->robot_name +
-    //             "\" has a different number of positions and velocities.");
-    //       }
-
-    //       // Adds the names of the DOFs that belong to the joint to the
-    //       // message.
-    //       for (int ii = 0; ii < joint.getNumPositions(); ii++) {
-    //         size_t index = robot_struct->message_index++;
-    //         robot_struct->message->position[index] = q[q_index++];
-    //         robot_struct->message->velocity[index] = v[v_index++];
-    //       }
-    //     }
-    //   }
     // }
 
-    // // Publishes the joint state messages.
-    // for (auto const& map_entry : model_structs_) {
-    //   ModelStateStruct* robot_struct = map_entry.second.get();
-    //   robot_struct->message->header.stamp = current_time;
-    //   robot_struct->publisher.publish(*(robot_struct->message.get()));
-    // }
 
     return u;  // Passes the output through to the next system in the cascade.
   }
@@ -362,12 +322,123 @@ class SensorPublisherJointState {
     }
     return result;
   }
+
+  /*
+   * Updates the joint state message of a particular model instance, then
+   * publishes it.
+   *
+   * @param[in] system_state_vector The current generalized state of the system.
+   *
+   * @param[in] kinematics_cache The cache of the system's kinematic properties.
+   *
+   * @param[out] current_model_info The structure that contains the publisher
+   * and message for the current model instance.
+   */
+  template <typename ScalarType, int Rows>
+  void UpdateAndPublishJointStateMessage(
+      const Eigen::Matrix<ScalarType, Rows, 1>& system_state_vector,
+      const KinematicsCache<double>& kinematics_cache,
+      ModelStateStruct* current_model_info) {
+    // Defines an index into the joint state message.
+    int joint_state_index = 0;
+
+    // Obtains a pointer to the rigid body tree.
+    const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
+        rigid_body_system_->getRigidBodyTree();
+
+    // Iterates through each of the current model instance's rigid bodies.
+    for (auto& rigid_body : current_model_info->rigid_body_list) {
+      const DrakeJoint& joint = rigid_body->getJoint();
+      if (joint.getNumPositions() > 0) {
+        if (joint.isFloating()) {
+
+          // The generalized position state of floating joints need to be
+          // converted from quaternion values into roll/pitch/yaw values. The
+          // following code does this.
+          auto transform = rigid_body_tree->relativeTransform(
+              kinematics_cache,
+              rigid_body_tree->FindBodyIndex(
+                  rigid_body->get_parent()->get_name(),
+                  rigid_body->get_parent()->get_model_instance_id()),
+              rigid_body_tree->FindBodyIndex(
+                  rigid_body->get_name(),
+                  rigid_body->get_model_instance_id()));
+          auto translation = transform.translation();
+          auto rpy = drake::math::rotmat2rpy(transform.linear());
+
+          // Saves the floating joint's position state.
+          {
+            int index = joint_state_index;
+
+            current_model_info->message->position[index++] =
+                translation(0);
+            current_model_info->message->position[index++] =
+                translation(1);
+            current_model_info->message->position[index++] =
+                translation(2);
+
+            current_model_info->message->position[index++] = rpy(0);
+            current_model_info->message->position[index++] = rpy(1);
+            current_model_info->message->position[index++] = rpy(2);
+          }
+
+          // Saves the floating joint's velocity state. The velocity state can
+          // be determined directly from the system state vector.
+          {
+            int index = joint_state_index;
+
+            int system_state_velocity_index =
+                rigid_body->get_velocity_start_index();
+
+            for (size_t ii = 0; ii < joint.getNumVelocities(); ++ii) {
+              current_model_info->message->velocity[index++] =
+                  system_state_vector[system_state_velocity_index++];
+            }
+          }
+
+          // Updates joint_state_index to point to the position in the joint
+          // state message after the portion that stores this floating joint's
+          // state.
+          joint_state_index += joint.getNumVelocities();
+        } else {
+          // Verifies that the joint has the same number of position versus
+          // velocity DOFs. Throws an exception if this is not true.
+          if (joint.getNumPositions() != joint.getNumVelocities()) {
+            throw std::runtime_error(
+                "ERROR: Joint \"" + joint.getName() +
+                "\" in model instance \"" +
+                current_model_info->model_instance_name +
+                "\" has a different number of positions and velocities.");
+          }
+
+          int system_state_position_index =
+            rigid_body->get_position_start_index();
+          int system_state_velocity_index =
+            rigid_body->get_velocity_start_index();
+
+          // Adds the names of the DOFs that belong to the joint to the
+          // message.
+          for (int ii = 0; ii < joint.getNumPositions(); ++ii) {
+            current_model_info->message->position[joint_state_index] =
+                system_state_vector[system_state_position_index++];
+            current_model_info->message->velocity[joint_state_index] =
+                system_state_vector[system_state_velocity_index++];
+            ++joint_state_index;
+          }
+        }
+      }
+    }
+
+    // Publishes the joint state message for the current model instance.
+    current_model_info->message->header.stamp = ::ros::Time::now();
+    current_model_info->publisher.publish(*(current_model_info->message.get()));
+  }
+
   // A local reference to the rigid body system.
   std::shared_ptr<RigidBodySystem> rigid_body_system_;
 
-  // Maintains a set of ModelStateStruct structs, one for each robot.
-  // The key is the robot's name.
-  std::map<std::string, std::unique_ptr<ModelStateStruct>> model_structs_;
+  // Maintains a set of ModelStateStruct structs, one for each model instance.
+  std::vector<std::unique_ptr<ModelStateStruct>> model_structs_;
 
   // The previous time the LIDAR messages were sent.
   ::ros::Time previous_send_time_;
