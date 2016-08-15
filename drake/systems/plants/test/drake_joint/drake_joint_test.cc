@@ -8,6 +8,7 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/util/eigen_matrix_compare.h"
 
 namespace drake {
 namespace systems {
@@ -59,8 +60,11 @@ GTEST_TEST(DrakeJointTests, TestZeroOffset) {
 
   // Since this joint's child body's frame and parent body's frame are
   // coincident, transform_to_parent_body should be identity.
-  EXPECT_EQ(transform_to_parent_body.matrix(),
-     Eigen::Isometry3d::Identity().matrix());
+  EXPECT_TRUE(drake::util::CompareMatrices(
+     transform_to_parent_body.matrix(),
+     Eigen::Isometry3d::Identity().matrix(),
+     Eigen::NumTraits<double>::epsilon(),
+     MatrixCompareType::absolute));
 
   // Evaluates the functional correctness of transform_to_parent_body.
   // Since the joint has zero pose, we expect a point expressed in the child
@@ -125,8 +129,12 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
   expected_transform_to_parent_body.matrix()
       << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
-  EXPECT_EQ(transform_to_parent_body.matrix(),
-     expected_transform_to_parent_body.matrix());
+
+  EXPECT_TRUE(drake::util::CompareMatrices(
+     transform_to_parent_body.matrix(),
+     expected_transform_to_parent_body.matrix(),
+     Eigen::NumTraits<double>::epsilon(),
+     MatrixCompareType::absolute));
 
   // Evaluates the functional correctness of transform_to_parent_body.
   // Since the joint has a pose of Z=1, we expect a point expressed in the child
