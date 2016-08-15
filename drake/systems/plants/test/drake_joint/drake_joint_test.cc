@@ -129,8 +129,8 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
      expected_transform_to_parent_body.matrix());
 
   // Evaluates the functional correctness of transform_to_parent_body.
-  // Since the joint has zero pose, we expect a point expressed in the child
-  // body's frame to have the same coordinates when expressed in the parent
+  // Since the joint has a pose of Z=1, we expect a point expressed in the child
+  // body's frame to have a Z coordinate that is +1 when expressed in the parent
   // body's frame.
   Vector3<double> point_in_child_body;
   point_in_child_body << 1, 2, 3;
