@@ -20,7 +20,7 @@ namespace examples {
 namespace mechanical_transmission {
 namespace {
 /**
- * loads the URDF of the mechanical_transmission.urdf, which says that
+ * Loads mechanical_transmission.urdf, which says that
  * joint1_value = 0.5*joint2_value+1.0,
  * and returns the RigidBodySystem.
  */
@@ -40,8 +40,7 @@ std::shared_ptr<RigidBodySystem> ParseMechanicalTransmission() {
 
 /**
  * Evaluates the constraint joint1_value - 0.5*joint2_value-1.0, to check if the
- * mechanical transmission imposes
- * the right constraint through URDF parsing.
+ * mechanical transmission imposes the right constraint through URDF parsing.
  */
 Eigen::VectorXd EvaluateMechanicalTransmissionConstraint(
     const std::shared_ptr<RigidBodyTree>& tree, double joint1_val,
@@ -62,28 +61,27 @@ GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
   auto rigid_body_system = ParseMechanicalTransmission();
   auto tree = rigid_body_system->getRigidBodyTree();
 
-  // Should satisfy the constraint, check if the offset is set correctly
+  // Joints values (1.0, 0.0) should satisfy the constraint, check if the offset
+  // is set correctly.
   Eigen::VectorXd result1 =
       EvaluateMechanicalTransmissionConstraint(tree, 1.0, 0.0);
   EXPECT_TRUE(CompareMatrices(result1, Eigen::Matrix<double, 1, 1>(0.0),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
 
-  // Should satisfy the constraint
+  // Joints values (2.0, 2.0) should satisfy the constraint.
   Eigen::VectorXd result2 =
       EvaluateMechanicalTransmissionConstraint(tree, 2.0, 2.0);
-  std::cout << result2(0) << std::endl;
   EXPECT_TRUE(CompareMatrices(result2, Eigen::Matrix<double, 1, 1>(0.0),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
 
-  // Should not satisfy the constraint with joint values (2.0,3.0).
+  // Joints values (2.0, 3.0) should not satisfy the constraint.
   Eigen::VectorXd result3 =
       EvaluateMechanicalTransmissionConstraint(tree, 2.0, 3.0);
-  std::cout << result3(0) << std::endl;
-  EXPECT_FALSE(CompareMatrices(result3, Eigen::Matrix<double, 1, 1>(0.0),
-                               Eigen::NumTraits<double>::epsilon(),
-                               MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(result3, Eigen::Matrix<double, 1, 1>(-0.5),
+                              Eigen::NumTraits<double>::epsilon(),
+                              MatrixCompareType::absolute));
 }
 
 // Test the simulation with the mechanical transmission.
@@ -113,9 +111,8 @@ GTEST_TEST(MechanicalTransmissionTest, MechanicalTransmissionSimulation) {
   options.realtime_factor = 0;  // As fast as possible.
   options.initial_step_size = 0.02;
 
-  // Prevents an exception from being thrown when simulation runs slower than
-  // the real
-  // time, which it most likely will given the small step size.
+  // Prevents an exception from being thrown when the simulation runs slower
+  // than real time, which it most likely will given the small step size.
   options.warn_real_time_violation = true;
 
   // Instantiates a variable that specifies the duration of the simulation.
