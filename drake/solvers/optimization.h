@@ -612,6 +612,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * - "conesubscript"
    *   + Denotes which variable x_i satisfies the cone relation:
    *   + x_i >= (sqrt(sum(x_j^2))), i!=j
+   * - "numbarvar"
+       + Only for applicable for "sdp", it is the number of elements in the
+         lower triangle of your matrix component. Consider each index a separate
+         variable for setting number of variables in your OptimizationProblem.
    * TODO(alexdunyak): Calling OptimizationProblem::Solve will not invoke mosek at this
    * time.
    */
