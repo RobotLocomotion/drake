@@ -11,14 +11,14 @@ namespace systems {
 /// The input to this system directly feeds through to its output.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to @see http://drake.mit.edu/cxx_inl.html.
+/// this class, please refer to see http://drake.mit.edu/cxx_inl.html.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 /// - AutoDiffXd
 /// They are already available to link against in drakeSystemFramework.
 ///
-/// To use other specific scalar types @see http://drake.mit.edu/cxx_inl.html.
+/// To use other specific scalar types see gain-inl.h.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>

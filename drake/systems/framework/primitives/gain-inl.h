@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file
-/// Template method implementations for @see gain.h.
+/// Template method implementations for see gain.h.
 /// Most users should only include that file, not this one.
 /// For background, @see http://drake.mit.edu/cxx_inl.html.
 
