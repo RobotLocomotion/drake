@@ -265,32 +265,31 @@ void MosekWrapper::AddSDPConstraints(
   std::vector<int> constraintnonzero;
   std::vector<MSKint32t> bar_i, bar_j;
   std::vector<double> bar_value;
-  if (sdp_constraints.size() > 0) {
-    for (int k = 0; k < static_cast<int>(sdp_constraints.size()); k++) {
-      const Eigen::MatrixXd& matrixterm = sdp_constraints[k].G();
-      // Expect that each matrix is of the same dimensions and is square.
-      DRAKE_ASSERT(matrixterm.rows() == matrixterm.cols());
-      if (k >= 1)
-        DRAKE_ASSERT(sdp_constraints[k-1].G().rows() == matrixterm.rows());
-      for (int i = 0; i < static_cast<int>(matrixterm.rows()); i++) {
-        for (j = 0; j <= i; j++) {
-          // Only iterate over the lower triangle.
-          if (matrixterm(i, j) != 0) {
-            bar_i.push_back(static_cast<MSKint32t>(i));
-            bar_j.push_back(static_cast<MSKint32t>(j));
-            bar_value.push_back(matrixterm(i, j));
-            ++currentnonzero;
-          }
+  for (int k = 0; k < static_cast<int>(sdp_constraints.size()); k++) {
+    const Eigen::MatrixXd& matrixterm = sdp_constraints[k].G();
+    // Expect that each matrix is of the same dimensions and is square.
+    DRAKE_ASSERT(matrixterm.rows() == matrixterm.cols());
+    if (k >= 1)
+      DRAKE_ASSERT(sdp_constraints[k-1].G().rows() == matrixterm.rows());
+    for (int i = 0; i < static_cast<int>(matrixterm.rows()); i++) {
+      for (j = 0; j <= i; j++) {
+        // Only iterate over the lower triangle.
+        if (matrixterm(i, j) != 0) {
+          bar_i.push_back(static_cast<MSKint32t>(i));
+          bar_j.push_back(static_cast<MSKint32t>(j));
+          bar_value.push_back(matrixterm(i, j));
+          ++currentnonzero;
         }
       }
-      constraintnonzero.push_back(currentnonzero);
-      currentnonzero = 0;
     }
+    constraintnonzero.push_back(currentnonzero);
+    currentnonzero = 0;
   }
   MSKint32t previousentries = 0;
   MSKint64t idx;
   double falpha = 1.0;
   // Now that the relevant arrays are in memory, add each constraint to Mosek.
+  // First check that there were semidefinite constraints.
   if (static_cast<int>(sdp_constraints.size()) !=
         std::count(constraintnonzero.begin(), constraintnonzero.end(), 0)) {
     int matrixdim = sdp_constraints[0].G().rows();
