@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name="model_with_nonzero_offset_joint">
+<robot name="model_with_non_zero_offset_joint">
 <!--
 Implements a 1-DOF robot with a joint that's located at (x = 0, y = 0, z = 1)
 relative to its parent body's coordinate frame.
