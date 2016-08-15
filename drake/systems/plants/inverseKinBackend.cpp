@@ -8,8 +8,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/core/Gradient.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
+#include "drake/math/gradient.h"
 #include "drake/solvers/optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
@@ -170,7 +171,7 @@ class InverseKinObjective : public Constraint {
     VectorXd y_val = q_err.transpose() * Q_ * q_err;
     MatrixXd dy_vec = 2 * q_err.transpose() * Q_;
     auto gradient_mat = autoDiffToGradientMatrix(x);
-    initializeAutoDiffGivenGradientMatrix(
+    math::initializeAutoDiffGivenGradientMatrix(
         y_val, (dy_vec * gradient_mat).eval(), y);
   }
 

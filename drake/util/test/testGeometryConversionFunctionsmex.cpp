@@ -1,9 +1,10 @@
 #include "drake/common/constants.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
+#include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeMexUtil.h"
-#include "drake/core/Gradient.h"
 
 using namespace Eigen;
 
@@ -12,6 +13,7 @@ using drake::kRpySize;
 using drake::kSpaceDimension;
 using drake::math::autoDiffToValueMatrix;
 using drake::math::autoDiffToGradientMatrix;
+using drake::math::initializeAutoDiff;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 2 || nlhs != 12) {
@@ -49,7 +51,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   rpydot2angularvelMatrix(rpy, rpyd2omega, &drpyd2omega);
 
   auto qd2omega_autodiff =
-      quatdot2angularvelMatrix(drake::initializeAutoDiff(q));
+      quatdot2angularvelMatrix(initializeAutoDiff(q));
   qd2omega = autoDiffToValueMatrix(qd2omega_autodiff);
   dqd2omega = autoDiffToGradientMatrix(qd2omega_autodiff);
 

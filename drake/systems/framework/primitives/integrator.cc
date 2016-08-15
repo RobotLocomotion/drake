@@ -14,31 +14,18 @@ namespace systems {
 
 template <typename T>
 Integrator<T>::Integrator(int length)
-    : length_(length) {}
+    : length_(length) {
+  this->DeclareInputPort(kVectorValued, length, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, length, kContinuousSampling);
+}
 
 template <typename T>
-std::unique_ptr<ContextBase<T>> Integrator<T>::CreateDefaultContext() const {
-  std::unique_ptr<Context<T>> context(new Context<T>);
-  context->SetNumInputPorts(1);
+void Integrator<T>::ReserveState(Context<T>* context) const {
   // The integrator has a state vector of the same dimension as its input
   // and output.
   context->get_mutable_state()->continuous_state.reset(new ContinuousState<T>(
       std::make_unique<BasicStateVector<T>>(length_), 0 /* size of q */,
       0 /* size of v */, length_ /* size of z */));
-  return std::unique_ptr<ContextBase<T>>(context.release());
-}
-
-template <typename T>
-std::unique_ptr<SystemOutput<T>> Integrator<T>::AllocateOutput(
-    const ContextBase<T>& context) const {
-  // An Integrator has just one output port, a BasicVector of the size specified
-  // at construction time.
-  std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
-  {
-    output->get_mutable_ports()->push_back(std::make_unique<OutputPort<T>>(
-        std::make_unique<BasicVector<T>>(length_)));
-  }
-  return std::unique_ptr<SystemOutput<T>>(output.release());
 }
 
 template <typename T>
