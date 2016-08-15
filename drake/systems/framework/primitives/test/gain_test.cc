@@ -1,5 +1,3 @@
-#define EIGEN_DONT_ALIGN
-
 #include "drake/systems/framework/primitives/gain-inl.h"
 
 #include <memory>
@@ -144,7 +142,7 @@ GTEST_TEST(MiscGainTests, AutoDiff) {
           output->get_port(0).get_vector_data())->get_value();
 
   // The expected output value is the gain times the input vector.
-  VectorX<T> expected = (kGain * input_vector).eval();
+  VectorX<T> expected = kGain * input_vector;
 
   // The expected derivatives are:
   expected(0).derivatives() << kGain, 0.0;
