@@ -5,7 +5,7 @@
 
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context_base.h"
-#include "drake/systems/framework/system.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/vector_interface.h"
 
@@ -15,7 +15,7 @@ namespace systems {
 /// An integrator for a continuous vector input.
 /// @tparam T The type being integrated. Must be a valid Eigen scalar.
 template <typename T>
-class Integrator : public System<T> {
+class Integrator : public LeafSystem<T> {
  public:
   /// @param length is the size of the input port.
   explicit Integrator(int length);
@@ -26,14 +26,6 @@ class Integrator : public System<T> {
   // feed through an integrator but the dynamic signal during simulation
   // does not.
   bool has_any_direct_feedthrough() const override { return false;}
-
-  /// Allocates the number of input ports specified in the constructor.
-  /// Allocates no state.
-  std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override;
-
-  /// Allocates one output port of the width specified in the constructor.
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const ContextBase<T>& context) const override;
 
   /// Integrates the input ports into the output port. If the input ports are
   /// not of the length specified in the constructor, std::runtime_error will
@@ -46,12 +38,10 @@ class Integrator : public System<T> {
   void EvalTimeDerivatives(const ContextBase<T>& context,
                            ContinuousState<T>* derivatives) const override;
 
-  void set_name(const std::string& name) override { name_ = name; }
-  std::string get_name() const override { return name_; }
-
  private:
-  std::string name_;
-  const int length_{0};
+  void ReserveState(Context<T>* context) const override;
+
+  int length_{0};
 };
 
 }  // namespace systems

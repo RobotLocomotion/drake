@@ -5,6 +5,7 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/primitives/adder.h"
+#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
@@ -100,8 +101,28 @@ class DiagramTest : public ::testing::Test {
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
+// Tests that the diagram exports the correct topology.
+TEST_F(DiagramTest, Topology) {
+  ASSERT_EQ(3u, diagram_->get_input_ports().size());
+  for (const auto& descriptor : diagram_->get_input_ports()) {
+    EXPECT_EQ(kVectorValued, descriptor.get_data_type());
+    EXPECT_EQ(kInputPort, descriptor.get_face());
+    EXPECT_EQ(3, descriptor.get_size());
+    EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
+  }
+
+  ASSERT_EQ(2u, diagram_->get_output_ports().size());
+  for (const auto& descriptor : diagram_->get_output_ports()) {
+    EXPECT_EQ(kVectorValued, descriptor.get_data_type());
+    EXPECT_EQ(kOutputPort, descriptor.get_face());
+    EXPECT_EQ(3, descriptor.get_size());
+    EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
+  }
+}
+
 // Tests that the diagram computes the correct sum.
-TEST_F(DiagramTest, SystemOfAdders) {
+TEST_F(DiagramTest, EvalOutput) {
+  // Attach inputs and eval the output.
   context_->SetInputPort(0, MakeInput(std::move(input0_)));
   context_->SetInputPort(1, MakeInput(std::move(input1_)));
   context_->SetInputPort(2, MakeInput(std::move(input2_)));
