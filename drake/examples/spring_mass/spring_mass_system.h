@@ -4,8 +4,7 @@
 #include <string>
 
 #include "drake/drakeSpringMassSystem_export.h"
-#include "drake/systems/framework/basic_state_vector.h"
-#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/basic_state_and_output_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system.h"
@@ -17,11 +16,13 @@ namespace examples {
 /// The state of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters and meters/s.
 class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
-    : public systems::BasicStateVector<double> {
+    : public systems::BasicStateAndOutputVector<double> {
  public:
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
   SpringMassStateVector(double initial_position, double initial_velocity);
+  /// Creates a state with position and velocity set to zero.
+  SpringMassStateVector();
   ~SpringMassStateVector() override;
 
   /// Returns the position of the mass in meters, where zero is the point
@@ -45,32 +46,6 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
 
  private:
   SpringMassStateVector* DoClone() const override;
-};
-
-/// The output of a one-dimensional spring-mass system, consisting of the
-/// position and velocity of the mass, in meters. Note that although this
-/// system tracks work done as a state variable, we are not reporting that
-/// as an Output.
-class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassOutputVector
-    : public systems::BasicVector<double> {
- public:
-  SpringMassOutputVector();
-
-  /// Returns the position of the mass in meters, where zero is the point
-  /// where the spring exerts no force.
-  double get_position() const;
-
-  /// Sets the position of the mass in meters.
-  void set_position(double q);
-
-  /// Returns the velocity of the mass in meters per second.
-  double get_velocity() const;
-
-  /// Sets the velocity of the mass in meters per second.
-  void set_velocity(double v);
-
- private:
-  SpringMassOutputVector* DoClone() const override;
 };
 
 /// A model of a one-dimensional spring-mass system.
@@ -243,13 +218,13 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
     return dynamic_cast<SpringMassStateVector*>(cstate->get_mutable_state());
   }
 
-  static const SpringMassOutputVector& get_output(const MyOutput& output) {
-    return dynamic_cast<const SpringMassOutputVector&>(
+  static const SpringMassStateVector& get_output(const MyOutput& output) {
+    return dynamic_cast<const SpringMassStateVector&>(
         *output.get_port(0).get_vector_data());
   }
 
-  static SpringMassOutputVector* get_mutable_output(MyOutput* output) {
-    return dynamic_cast<SpringMassOutputVector*>(
+  static SpringMassStateVector* get_mutable_output(MyOutput* output) {
+    return dynamic_cast<SpringMassStateVector*>(
         output->get_mutable_port(0)->GetMutableVectorData());
   }
 

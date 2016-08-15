@@ -20,11 +20,14 @@ constexpr int kStateSize = 3;  // position, velocity, power integral
 
 SpringMassStateVector::SpringMassStateVector(double initial_position,
                                              double initial_velocity)
-    : BasicStateVector<double>(kStateSize) {
+    : BasicStateAndOutputVector<double>(kStateSize) {
   set_position(initial_position);
   set_velocity(initial_velocity);
   set_conservative_work(0);
 }
+
+SpringMassStateVector::SpringMassStateVector()
+    : SpringMassStateVector(0.0, 0.0) {}
 
 SpringMassStateVector::~SpringMassStateVector() {}
 
@@ -45,27 +48,6 @@ SpringMassStateVector* SpringMassStateVector::DoClone() const {
   auto state = new SpringMassStateVector(get_position(), get_velocity());
   state->set_conservative_work(get_conservative_work());
   return state;
-}
-
-SpringMassOutputVector::SpringMassOutputVector()
-    : BasicVector<double>(kStateSize - 1) {
-}  // don't output conservative energy
-
-double SpringMassOutputVector::get_position() const { return get_value()[0]; }
-double SpringMassOutputVector::get_velocity() const { return get_value()[1]; }
-
-void SpringMassOutputVector::set_position(double q) {
-  get_mutable_value()[0] = q;
-}
-
-void SpringMassOutputVector::set_velocity(double v) {
-  get_mutable_value()[1] = v;
-}
-
-SpringMassOutputVector* SpringMassOutputVector::DoClone() const {
-  SpringMassOutputVector* clone(new SpringMassOutputVector());
-  clone->get_mutable_value() = get_value();
-  return clone;
 }
 
 SpringMassSystem::SpringMassSystem(double spring_constant_N_per_m,
@@ -120,7 +102,7 @@ std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput(
   std::unique_ptr<LeafSystemOutput<double>> output(
       new LeafSystemOutput<double>);
   {
-    std::unique_ptr<VectorInterface<double>> data(new SpringMassOutputVector());
+    std::unique_ptr<VectorInterface<double>> data(new SpringMassStateVector());
     std::unique_ptr<OutputPort<double>> port(
         new OutputPort<double>(std::move(data)));
     output->get_mutable_ports()->push_back(std::move(port));
@@ -142,7 +124,7 @@ void SpringMassSystem::EvalOutput(const ContextBase<double>& context,
                                   SystemOutput<double>* output) const {
   // TODO(david-german-tri): Cache the output of this function.
   const SpringMassStateVector& state = get_state(context);
-  SpringMassOutputVector* output_vector = get_mutable_output(output);
+  SpringMassStateVector* output_vector = get_mutable_output(output);
   output_vector->set_position(state.get_position());
   output_vector->set_velocity(state.get_velocity());
 }

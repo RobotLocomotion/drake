@@ -1,5 +1,6 @@
 # Source files used to build drakeSystemFramework.
 set(sources
+  basic_state_and_output_vector.cc
   basic_state_vector.cc
   basic_vector.cc
   cache.cc
@@ -32,6 +33,7 @@ set(sources
 # System2 framework template implementations have been moved into .cc files
 # using explicit instantiation, tighten this list.
 set(installed_headers
+  basic_state_and_output_vector.h
   basic_state_vector.h
   basic_vector.h
   cache.h
