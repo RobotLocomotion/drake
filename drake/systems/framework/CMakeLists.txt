@@ -18,7 +18,6 @@ set(sources
   vector_interface.cc
   diagram.cc
   primitives/adder.cc
-  primitives/gain.cc
   primitives/integrator.cc)
 
 # Headers that should be installed with Drake so that they
@@ -50,8 +49,6 @@ set(installed_headers
   vector_interface.h
   diagram.h
   primitives/adder.h
-  primitives/gain.h
-  primitives/gain-inl.h
   primitives/integrator.h)
 
 # Headers that are needed by code here but should not
