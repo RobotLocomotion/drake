@@ -28,9 +28,16 @@ namespace solvers {
 namespace {
 /**
  * Test appending a linear constraint to an existing linear constraint, check if
- * the bounds and the linear matrix is correct after appending.
+ * the bounds and the linear matrix are correct after appending.
  */
 GTEST_TEST(TestConstraint, AppendLinearConstraint) {
+  /**
+   * For a given linear constraint 0.0<=x(0)<=1.0, we append a linear constraint
+   * 1.0<=x(0)+x(1)+x(2)+x(3)<=1.1 to the existing constraints. We then check if
+   * the new constraint after appending is in the correct form, i.e., its linear
+   * matrix should be [1 0 0 0;1 1 1 1], and the lower and upper bounds should
+   * be [0.0;1.0] and [1.0;1.1] respectively.
+   */
   Matrix<double, 1, 4> A;
   A.setZero();
   A(0) = 1.0;
@@ -44,15 +51,15 @@ GTEST_TEST(TestConstraint, AppendLinearConstraint) {
   auto ub_ret = lin_con.upper_bound();
   EXPECT_TRUE(CompareMatrices(lb, lb_ret, 1e-10, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(ub, ub_ret, 1e-10, MatrixCompareType::absolute));
-  Matrix<double, 3, 4> A_append = Matrix<double, 3, 4>::Ones();
-  Vector3d lb_append = Vector3d::Ones();
-  Vector3d ub_append = lb_append + 0.1 * Vector3d::Ones().cwiseAbs();
+  Matrix<double, 1, 4> A_append = Matrix<double, 1, 4>::Ones();
+  Vector1d lb_append = Vector1d::Ones();
+  Vector1d ub_append = lb_append + 0.1 * Vector1d::Ones().cwiseAbs();
   lin_con.AppendConstraint(A_append, lb_append, ub_append);
-  Matrix<double, 4, 4> A_new;
+  Matrix<double, 2, 4> A_new;
   A_new << A, A_append;
-  Vector4d lb_new;
+  Vector2d lb_new;
   lb_new << lb, lb_append;
-  Vector4d ub_new;
+  Vector2d ub_new;
   ub_new << ub, ub_append;
   EXPECT_TRUE(
       CompareMatrices(A_new, lin_con.A(), 1e-10, MatrixCompareType::absolute));

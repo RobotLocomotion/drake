@@ -87,8 +87,7 @@ RigidBodyTree::RigidBodyTree(
 }
 
 RigidBodyTree::RigidBodyTree(void)
-    : collision_model_(DrakeCollision::newModel()),
-      linear_equality_position_constraint_(nullptr) {
+    : collision_model_(DrakeCollision::newModel()) {
   // Sets the gravity vector;
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
@@ -250,9 +249,6 @@ void RigidBodyTree::compile(void) {
     getTerrainContactPoints(body, &contact_points);
     body.set_contact_points(contact_points);
   }
-
-  // add the mimic joint mechanical transmission to the linear constraints
-  addJointTransmissionToLinearConstraint();
 
   initialized_ = true;
 }
@@ -2013,31 +2009,37 @@ std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
     const KinematicsCache<Scalar>& cache) const {
-  int num_lin_eq_pos_cnstr =
-      linear_equality_position_constraint_
-          ? linear_equality_position_constraint_->num_constraints()
-          : 0;
-  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size() + num_lin_eq_pos_cnstr,
-                                        1);
+  Matrix<Scalar, Eigen::Dynamic, 1> ret(
+      6 * loops.size() + joint_transmissions.size(), 1);
+  int constraint_count = 0;
   for (size_t i = 0; i < loops.size(); i++) {
     {  // position constraint
       auto ptA_in_B = transformPoints(cache, Vector3d::Zero(),
                                       loops[i].frameA_->get_frame_index(),
                                       loops[i].frameB_->get_frame_index());
-      ret.template middleRows<3>(6 * i) = ptA_in_B;
+      ret.template middleRows<3>(constraint_count) = ptA_in_B;
     }
     {  // second position constraint (to constrain orientation)
       auto axis_A_end_in_B = transformPoints(
           cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
           loops[i].frameB_->get_frame_index());
-      ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
+      ret.template middleRows<3>(constraint_count + 3) =
+          axis_A_end_in_B - loops[i].axis_;
     }
+    constraint_count += 6;
   }
-  if (linear_equality_position_constraint_) {
-    Matrix<Scalar, Eigen::Dynamic, 1> lin_eq_cnstr_val;
-    linear_equality_position_constraint_->Eval(cache.getQ(), lin_eq_cnstr_val);
-    ret.middleRows(6 * loops.size(), num_lin_eq_pos_cnstr) =
-        lin_eq_cnstr_val - linear_equality_position_constraint_->lower_bound();
+
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q = cache.getQ();
+  for (int i = 0; i < static_cast<int>(joint_transmissions.size()); i++) {
+    int joint1_pos_idx = findJoint(joint_transmissions[i].getJoint1Name())
+                             ->get_position_start_index();
+    int joint2_pos_idx = findJoint(joint_transmissions[i].getJoint2Name())
+                             ->get_position_start_index();
+    ret(constraint_count) =
+        q(joint1_pos_idx) -
+        joint_transmissions[i].getMultiplier() * q(joint2_pos_idx) -
+        joint_transmissions[i].getOffset();
+    constraint_count++;
   }
   return ret;
 }
@@ -2046,47 +2048,32 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
 RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
                                            bool in_terms_of_qdot) const {
-  int num_lin_eq_pos_cnstr =
-      linear_equality_position_constraint_
-          ? linear_equality_position_constraint_->num_constraints()
-          : 0;
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
-      6 * loops.size() + num_lin_eq_pos_cnstr,
+      6 * loops.size() + joint_transmissions.size(),
       in_terms_of_qdot ? num_positions_ : num_velocities_);
-
+  ret.setZero();
+  int constraint_count = 0;
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
-    ret.template middleRows<3>(6 * i) = transformPointsJacobian(
+    ret.template middleRows<3>(constraint_count) = transformPointsJacobian(
         cache, Vector3d::Zero(), loops[i].frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
     // second position constraint (to constrain orientation)
-    ret.template middleRows<3>(6 * i + 3) = transformPointsJacobian(
+    ret.template middleRows<3>(constraint_count + 3) = transformPointsJacobian(
         cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
+    constraint_count += 6;
   }
-  if (linear_equality_position_constraint_) {
-    if (in_terms_of_qdot) {
-      ret.middleRows(6 * loops.size(), num_lin_eq_pos_cnstr) =
-          linear_equality_position_constraint_->A();
-    } else {
-      auto nv = cache.getNumVelocities();
-      ret.middleRows(6 * loops.size(), num_lin_eq_pos_cnstr) =
-          linear_equality_position_constraint_->A() *
-          cache.transformVelocityMappingToPositionDotMapping(
-              Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(nv, nv));
-    }
-  }
-  if (linear_equality_position_constraint_) {
-    if (in_terms_of_qdot) {
-      ret.middleRows(6 * loops.size(), num_lin_eq_pos_cnstr) =
-          linear_equality_position_constraint_->A();
-    } else {
-      auto nv = cache.getNumVelocities();
-      ret.middleRows(6 * loops.size(), num_lin_eq_pos_cnstr) =
-          linear_equality_position_constraint_->A() *
-          cache.transformVelocityMappingToPositionDotMapping(
-              Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(nv, nv));
-    }
+  for (int i = 0; i < static_cast<int>(joint_transmissions.size()); i++) {
+    auto link1 = findJoint(joint_transmissions[i].getJoint1Name());
+    auto link2 = findJoint(joint_transmissions[i].getJoint2Name());
+    KinematicsCacheElement<Scalar> element1 = cache.getElement(*link1);
+    KinematicsCacheElement<Scalar> element2 = cache.getElement(*link2);
+    ret(constraint_count, link1->get_velocity_start_index()) =
+        element1.v_to_qdot(0, 0);
+    ret(constraint_count, link2->get_velocity_start_index()) =
+        -joint_transmissions[i].getMultiplier() * element2.v_to_qdot(0, 0);
+    constraint_count++;
   }
   return ret;
 }
@@ -2095,31 +2082,24 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1>
 RigidBodyTree::positionConstraintsJacDotTimesV(
     const KinematicsCache<Scalar>& cache) const {
-  int num_lin_eq_pos_cnstr =
-      linear_equality_position_constraint_
-          ? linear_equality_position_constraint_->num_constraints()
-          : 0;
-  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size() + num_lin_eq_pos_cnstr,
-                                        1);
-
+  Matrix<Scalar, Eigen::Dynamic, 1> ret(
+      6 * loops.size() + joint_transmissions.size(), 1);
+  int constraint_count = 0;
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
-    ret.template middleRows<3>(6 * i) = transformPointsJacobianDotTimesV(
-        cache, Vector3d::Zero(), loops[i].frameA_->get_frame_index(),
-        loops[i].frameB_->get_frame_index());
+    ret.template middleRows<3>(constraint_count) =
+        transformPointsJacobianDotTimesV(cache, Vector3d::Zero(),
+                                         loops[i].frameA_->get_frame_index(),
+                                         loops[i].frameB_->get_frame_index());
     // second position constraint (to constrain orientation)
-    ret.template middleRows<3>(6 * i + 3) = transformPointsJacobianDotTimesV(
-        cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
-        loops[i].frameB_->get_frame_index());
+    ret.template middleRows<3>(constraint_count + 3) =
+        transformPointsJacobianDotTimesV(cache, loops[i].axis_,
+                                         loops[i].frameA_->get_frame_index(),
+                                         loops[i].frameB_->get_frame_index());
+    constraint_count += 6;
   }
-  if (linear_equality_position_constraint_) {
-    ret.middleRows(6 * loops.size(), num_lin_eq_pos_cnstr) =
-        Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_lin_eq_pos_cnstr);
-  }
-  if (linear_equality_position_constraint_) {
-    ret.middleRows(6 * loops.size(), num_lin_eq_pos_cnstr) =
-        Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_lin_eq_pos_cnstr);
-  }
+  ret.middleRows(constraint_count, joint_transmissions.size()).setZero();
+  constraint_count += joint_transmissions.size();
   return ret;
 }
 
@@ -2162,8 +2142,7 @@ size_t RigidBodyTree::getNumJointLimitConstraints() const {
 }
 
 size_t RigidBodyTree::getNumPositionConstraints() const {
-  return loops.size() * 6 +
-         linear_equality_position_constraint_->num_constraints();
+  return loops.size() * 6 + joint_transmissions.size();
 }
 
 void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
@@ -2348,6 +2327,7 @@ void RigidBodyTree::addJointTransmissionToLinearConstraint() {
   }
   addLinearEqualityPositionConstraint(Aeq, beq);
 }
+
 // Explicit template instantiations for massMatrix.
 template DRAKERBM_EXPORT MatrixX<AutoDiffUpTo73d> RigidBodyTree::massMatrix<
     AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d>&) const;
