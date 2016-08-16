@@ -2,6 +2,7 @@
 
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -41,7 +42,7 @@ class ContextBase {
   /// Connects the input port @p port to this Context at the given @p index.
   /// Disconnects whatever input port was previously there, and deregisters
   /// it from the output port on which it depends.
-  virtual void SetInputPort(int index, std::unique_ptr<InputPort<T>> port) = 0;
+  virtual void SetInputPort(int index, std::unique_ptr<InputPort> port) = 0;
 
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
@@ -50,6 +51,11 @@ class ContextBase {
   /// if that port is not a vector-valued port, or if it is not connected.
   /// Throws std::out_of_range if that port does not exist.
   virtual const VectorInterface<T>* get_vector_input(int index) const = 0;
+
+  /// Returns the abstract data of the input port at @p index. Returns nullptr
+  /// if that port is not a abstract-valued port, or if it is not connected.
+  /// Throws std::out_of_range if that port does not exist.
+  virtual const AbstractValue* get_abstract_input(int index) const = 0;
 
   virtual const State<T>& get_state() const = 0;
 
