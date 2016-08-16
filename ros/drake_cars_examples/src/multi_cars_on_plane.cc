@@ -41,7 +41,8 @@ using drake::ros::systems::SensorPublisherLidar;
 
 /**
  * Sits in a loop periodically publishing an identity transform for the
- * following frames to "world":
+ * following frames to "world". This is necessary because RViz treats a link
+ * called "world" as part of the model and not the actual world.
  *
  * 1. world_link
  * 2. Prius_1/world
@@ -70,7 +71,7 @@ void WorldTfPublisher(int num_vehicles) {
   world_link_message.transform.rotation.z = 0;
   transform_messages.push_back(world_link_message);
 
-  for (int ii = 0; ii < num_vehicles; ii++) {
+  for (int ii = 0; ii < num_vehicles; ++ii) {
     geometry_msgs::TransformStamped vehicle_message;
     vehicle_message.header.frame_id = RigidBodyTree::kWorldName;;
     vehicle_message.child_frame_id = std::string("Prius_") +
@@ -122,11 +123,35 @@ int DoMain(int argc, const char* argv[]) {
   // Adds the vehicles to the rigid body system.
   for (int ii = 0; ii < num_vehicles; ++ii) {
     const std::string description_parameter_name =
-        std::string("car_description_") + std::to_string(ii + 1);
+        std::string("car_description_") + std::to_string(ii + 1) + "_drake";
     std::string model_description = GetROSParameter<std::string>(node_handle,
         description_parameter_name);
 
-    std::shared_ptr<RigidBodyFrame> weld_to_frame;
+    double world_x = GetROSParameter<double>(node_handle,
+        std::string("car_description_") + std::to_string(ii + 1) + "_drake_x");
+    double world_y = GetROSParameter<double>(node_handle,
+        std::string("car_description_") + std::to_string(ii + 1) + "_drake_y");
+    double world_z = GetROSParameter<double>(node_handle,
+        std::string("car_description_") + std::to_string(ii + 1) + "_drake_z");
+    double world_roll = GetROSParameter<double>(node_handle,
+        std::string("car_description_") + std::to_string(ii + 1) +
+        "_drake_roll");
+    double world_pitch = GetROSParameter<double>(node_handle,
+        std::string("car_description_") + std::to_string(ii + 1) +
+        "_drake_pitch");
+    double world_yaw = GetROSParameter<double>(node_handle,
+        std::string("car_description_") + std::to_string(ii + 1) +
+        "_drake_yaw");
+
+    Eigen::Vector3d xyz, rpy;
+    xyz << world_x, world_y, world_z;
+    rpy << world_roll, world_pitch, world_yaw;
+
+    std::shared_ptr<RigidBodyFrame> weld_to_frame(
+        new RigidBodyFrame("FloatingJoint",
+            &rigid_body_sys->getRigidBodyTree()->world(),
+            xyz,
+            rpy));
     ModelInstanceIdTable model_instance_id_table =
         rigid_body_sys->AddModelInstanceFromDescription(model_description,
             DrakeJoint::QUATERNION, weld_to_frame);

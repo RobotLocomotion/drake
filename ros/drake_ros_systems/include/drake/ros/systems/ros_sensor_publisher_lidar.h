@@ -129,6 +129,8 @@ class SensorPublisherLidar {
         const std::string topic_name = model_instance_name + "/lidar/" +
             sensor_name;
 
+        ROS_INFO_STREAM("Creating LIDAR sensor publisher on topic "
+            << topic_name);
         sensor_struct->publisher =
             nh.advertise<sensor_msgs::LaserScan>(topic_name, 1);
 

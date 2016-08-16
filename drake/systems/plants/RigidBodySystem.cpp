@@ -950,7 +950,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfDescription(
 
   // Adds the robot to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::sdf::AddModelInstancesFromSdfFile(
+      drake::parsers::sdf::AddModelInstancesFromSdfDescription(
           description, floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,

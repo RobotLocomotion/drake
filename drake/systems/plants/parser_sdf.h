@@ -69,7 +69,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
 /**
  * Adds a SDF model to a rigid body system.
  *
- * @param[in] sdf_description The SDF description of one or more models.
+ * @param[in] description The SDF description of one or more models.
  *
  * @param[in] package_map A map of ROS package names to their paths. These are
  * the packages to search through when finding files referenced in the URDF.
@@ -86,8 +86,8 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
  * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddRobotFromSdfDescription(
-    const std::string& sdf_description,
+ModelInstanceIdTable AddModelInstancesFromSdfDescription(
+    const std::string& description,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
