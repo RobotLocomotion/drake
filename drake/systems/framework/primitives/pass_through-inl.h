@@ -32,8 +32,7 @@ void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
   // TODO(amcastro-tri): replace hard-coded "1" with
   // this->get_num_output_ports() after #3097 is merged.
   DRAKE_ASSERT(output->get_num_ports() == 1);
-  VectorInterface<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
+  VectorInterface<T>* output_vector = output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
   DRAKE_ASSERT(output_vector->get_value().rows() == length_);
 

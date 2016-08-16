@@ -3,8 +3,10 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "drake/drakeSystemFramework_export.h"
+#include "drake/systems/framework/basic_vector.h"
 
 #include "gtest/gtest.h"
 
@@ -141,6 +143,14 @@ GTEST_TEST(ValueTest, SubclassOfValueSurvivesClone) {
       dynamic_cast<PrintInterface*>(cloned.get());
   ASSERT_NE(nullptr, printable_erased);
   EXPECT_EQ("5,6", printable_erased->print());
+}
+
+GTEST_TEST(VectorValueTest, Access) {
+  VectorValue<int> value(
+      std::make_unique<BasicVector<int>>(std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(1, value.get_value()->get_value().x());
+  EXPECT_EQ(2, value.get_value()->get_value().y());
+  EXPECT_EQ(3, value.get_value()->get_value().z());
 }
 
 }  // namespace

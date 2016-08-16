@@ -23,10 +23,10 @@ namespace {
 
 // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
 // the input of the Gain system.
-template<class T>
-std::unique_ptr<FreestandingInputPort<T>> MakeInput(
+template <class T>
+std::unique_ptr<FreestandingInputPort> MakeInput(
     std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort<T>>(std::move(data));
+  return make_unique<FreestandingInputPort>(std::move(data));
 }
 
 class GainTest : public ::testing::Test {
@@ -65,8 +65,7 @@ TEST_F(GainTest, VectorThroughGainSystem) {
   ASSERT_EQ(1, output_->get_num_ports());
   ASSERT_EQ(1, gain_->get_num_output_ports());
   const BasicVector<double>* output_vector =
-      dynamic_cast<const BasicVector<double>*>(
-          output_->get_port(0).get_vector_data());
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, output_vector);
   Eigen::Vector3d expected = kGain_ * input_vector;
   EXPECT_EQ(expected, output_vector->get_value());

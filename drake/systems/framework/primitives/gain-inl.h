@@ -19,7 +19,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Gain<T>::Gain(const T& k, int length) : gain_(k) {
+Gain<T>::Gain(const T& k, int length)
+    : gain_(k) {
   // TODO(amcastro-tri): remove the length parameter from the constructor once
   // #3109 supporting automatic lengths is resolved.
   this->DeclareInputPort(kVectorValued, length, kContinuousSampling);
@@ -28,7 +29,7 @@ Gain<T>::Gain(const T& k, int length) : gain_(k) {
 
 template <typename T>
 void Gain<T>::EvalOutput(const ContextBase<T>& context,
-                          SystemOutput<T>* output) const {
+                         SystemOutput<T>* output) const {
   // Checks that the single output port has the correct length.
   // Checks on the output structure are assertions, not exceptions,
   // since failures would reflect a bug in the Gain implementation, not
@@ -36,16 +37,15 @@ void Gain<T>::EvalOutput(const ContextBase<T>& context,
   // coverage, and should not run in release builds.
 
   DRAKE_ASSERT(output->get_num_ports() == 1);
-  VectorInterface<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
+  VectorInterface<T>* output_vector = output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
   DRAKE_ASSERT(output_vector->get_value().rows() ==
-      this->get_output_port(0).get_size());
+               this->get_output_port(0).get_size());
 
   // Check that there are the expected number of input ports.
   if (context.get_num_input_ports() != 1) {
     throw std::out_of_range("Expected only one input port, but had " +
-        std::to_string(context.get_num_input_ports()));
+                            std::to_string(context.get_num_input_ports()));
   }
 
   // There is only one input.
@@ -57,7 +57,7 @@ void Gain<T>::EvalOutput(const ContextBase<T>& context,
   // Check the expected length.
   DRAKE_ASSERT(input_vector != nullptr);
   DRAKE_ASSERT(input_vector->get_value().rows() ==
-      this->get_input_port(0).get_size());
+               this->get_input_port(0).get_size());
 
   // TODO(amcastro-tri): Solve #3140 so that we can readily access the Eigen
   // vector like so:

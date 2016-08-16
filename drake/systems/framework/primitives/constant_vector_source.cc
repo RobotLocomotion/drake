@@ -10,10 +10,10 @@ namespace systems {
 
 template <typename T>
 ConstantVectorSource<T>::ConstantVectorSource(
-    const Eigen::Ref<const VectorX<T>>& source_value) :
-    source_value_(source_value) {
-  this->DeclareOutputPort(
-      kVectorValued, source_value.rows(), kContinuousSampling);
+    const Eigen::Ref<const VectorX<T>>& source_value)
+    : source_value_(source_value) {
+  this->DeclareOutputPort(kVectorValued, source_value.rows(),
+                          kContinuousSampling);
 }
 
 template <typename T>
@@ -29,8 +29,7 @@ void ConstantVectorSource<T>::EvalOutput(const ContextBase<T>& context,
   // TODO(amcastro-tri): Solve #3140 so that the next line reads:
   // auto& output_vector = this->get_output_vector(context, 0);
   // where output_vector will be an Eigen expression.
-  VectorInterface<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
+  VectorInterface<T>* output_vector = output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
   DRAKE_ASSERT(output_vector->get_value().rows() == source_value_.rows());
 

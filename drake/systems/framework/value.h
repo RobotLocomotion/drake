@@ -6,6 +6,7 @@
 #include <typeinfo>
 
 #include "drake/drakeSystemFramework_export.h"
+#include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
 namespace systems {
@@ -110,6 +111,38 @@ class Value : public AbstractValue {
 
  private:
   T value_;
+};
+
+/// A container class for VectorInterface<T>.
+///
+/// @tparam T The type of the vector data. Must be a valid Eigen scalar.
+template <typename T>
+class VectorValue : public Value<VectorInterface<T>*> {
+ public:
+  explicit VectorValue(std::unique_ptr<VectorInterface<T>> v)
+      : Value<VectorInterface<T>*>(v.get()), owned_value_(std::move(v)) {}
+
+  // VectorValues are copyable but not moveable.
+  explicit VectorValue(const VectorValue<T>& other)
+      : Value<VectorInterface<T>*>(nullptr),
+        owned_value_(other.get_value()->CloneVector()) {
+    this->set_value(owned_value_.get());
+  }
+
+  VectorValue& operator=(const Value<T>& other) {
+    owned_value_ = other.value_->CloneVector();
+    this->set_value(owned_value_.get());
+  }
+
+  explicit VectorValue(Value<T>&& other) = delete;
+  VectorValue& operator=(Value<T>&& other) = delete;
+
+  std::unique_ptr<AbstractValue> Clone() const override {
+    return std::make_unique<VectorValue<T>>(*this);
+  }
+
+ private:
+  std::unique_ptr<VectorInterface<T>> owned_value_;
 };
 
 }  // namespace systems

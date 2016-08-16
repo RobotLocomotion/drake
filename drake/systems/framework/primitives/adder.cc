@@ -28,8 +28,7 @@ void Adder<T>::EvalOutput(const ContextBase<T>& context,
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
   DRAKE_ASSERT(output->get_num_ports() == 1);
-  VectorInterface<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
+  VectorInterface<T>* output_vector = output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
   const int n = output_vector->get_value().rows();
   output_vector->get_mutable_value() = VectorX<T>::Zero(n);

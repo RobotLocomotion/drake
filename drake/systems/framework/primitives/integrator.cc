@@ -40,8 +40,7 @@ template <typename T>
 void Integrator<T>::EvalOutput(const ContextBase<T>& context,
                                SystemOutput<T>* output) const {
   DRAKE_ASSERT(output->get_num_ports() == 1);
-  VectorInterface<T>* output_port =
-      output->get_mutable_port(0)->GetMutableVectorData();
+  VectorInterface<T>* output_port = output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_port != nullptr);
   DRAKE_ASSERT(output_port->get_value().rows() == length_);
 
