@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "drake/common/eigen_types.h"
-
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
