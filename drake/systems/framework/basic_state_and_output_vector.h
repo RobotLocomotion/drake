@@ -33,7 +33,7 @@ class BasicStateAndOutputVector : public BasicStateVector<T>,
   explicit BasicStateAndOutputVector(std::unique_ptr<VectorInterface<T>> vector)
       : BasicStateVector<T>(std::move(vector)) {}
 
-  // N.B. The size() method overrides both BasicStateVector and VectorInterface.
+  // The size() method overrides both BasicStateVector and VectorInterface.
   int size() const override { return this->get_wrapped_vector().size(); }
 
   // These VectorInterface overrides merely delegate to the wrapped object.
