@@ -13,7 +13,7 @@ namespace drake {
 namespace systems {
 
 /// BasicStateAndOutputVector is a concrete class template that implements
-/// StateVector in a convenient manner for leaf Systems, and implements
+/// StateVector in a convenient manner for LeafSystem blocks, and implements
 /// VectorInterface so that it may also be used as an output.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
@@ -33,7 +33,7 @@ class BasicStateAndOutputVector : public BasicStateVector<T>,
   explicit BasicStateAndOutputVector(std::unique_ptr<VectorInterface<T>> vector)
       : BasicStateVector<T>(std::move(vector)) {}
 
-  // N.B. The size() method overrides both BasicStateVector and VectorInterface.
+  // The size() method overrides both BasicStateVector and VectorInterface.
   int size() const override { return this->get_wrapped_vector().size(); }
 
   // These VectorInterface overrides merely delegate to the wrapped object.
