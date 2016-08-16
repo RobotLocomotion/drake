@@ -2031,14 +2031,14 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
 
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q = cache.getQ();
   for (int i = 0; i < static_cast<int>(joint_transmissions.size()); i++) {
-    int joint1_pos_idx = findJoint(joint_transmissions[i].getJoint1Name())
+    int joint1_pos_idx = findJoint(joint_transmissions[i].GetJoint1Name(),joint_transmissions[i].GetModelInstanceID())
                              ->get_position_start_index();
-    int joint2_pos_idx = findJoint(joint_transmissions[i].getJoint2Name())
+    int joint2_pos_idx = findJoint(joint_transmissions[i].GetJoint2Name(),joint_transmissions[i].GetModelInstanceID())
                              ->get_position_start_index();
     ret(constraint_count) =
         q(joint1_pos_idx) -
-        joint_transmissions[i].getMultiplier() * q(joint2_pos_idx) -
-        joint_transmissions[i].getOffset();
+        joint_transmissions[i].GetMultiplier() * q(joint2_pos_idx) -
+        joint_transmissions[i].GetOffset();
     constraint_count++;
   }
   return ret;
@@ -2065,14 +2065,14 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
     constraint_count += 6;
   }
   for (int i = 0; i < static_cast<int>(joint_transmissions.size()); i++) {
-    auto link1 = findJoint(joint_transmissions[i].getJoint1Name());
-    auto link2 = findJoint(joint_transmissions[i].getJoint2Name());
+    auto link1 = findJoint(joint_transmissions[i].GetJoint1Name(),joint_transmissions[i].GetModelInstanceID());
+    auto link2 = findJoint(joint_transmissions[i].GetJoint2Name(),joint_transmissions[i].GetModelInstanceID());
     KinematicsCacheElement<Scalar> element1 = cache.getElement(*link1);
     KinematicsCacheElement<Scalar> element2 = cache.getElement(*link2);
     ret(constraint_count, link1->get_velocity_start_index()) =
         element1.v_to_qdot(0, 0);
     ret(constraint_count, link2->get_velocity_start_index()) =
-        -joint_transmissions[i].getMultiplier() * element2.v_to_qdot(0, 0);
+        -joint_transmissions[i].GetMultiplier() * element2.v_to_qdot(0, 0);
     constraint_count++;
   }
   return ret;

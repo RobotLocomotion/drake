@@ -17,20 +17,22 @@ class DRAKERBM_EXPORT RigidBodyJointTransmission {
    */
   RigidBodyJointTransmission(const std::string& joint1_name,
                              const std::string& joint2_name, double multiplier,
-                             double offset)
+                             double offset, int model_instance_id)
       : joint1_name_(joint1_name),
         joint2_name_(joint2_name),
         multiplier_(multiplier),
-        offset_(offset) {
+        offset_(offset),
+        model_instance_id_(model_instance_id) {
     DRAKE_ASSERT(multiplier > 0);
   }
-  std::string getJoint1Name() const { return joint1_name_; }
-  std::string getJoint2Name() const { return joint2_name_; }
-  double getMultiplier() const { return multiplier_; }
-  double getOffset() const { return offset_; }
-
+  std::string GetJoint1Name() const { return joint1_name_; }
+  std::string GetJoint2Name() const { return joint2_name_; }
+  double GetMultiplier() const { return multiplier_; }
+  double GetOffset() const { return offset_; }
+  int GetModelInstanceID() const { return model_instance_id_;}
  private:
   std::string joint1_name_, joint2_name_;
   double multiplier_;
   double offset_;
+  int model_instance_id_;
 };
