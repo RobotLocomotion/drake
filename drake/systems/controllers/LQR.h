@@ -43,8 +43,6 @@ void CalculateLqrMatrices(
   auto B = xdot.rightCols(u0.size());
 
   lqr(A, B, Q, R, *K, *S);
-
-  SPDLOG_TRACE(drake::log(), "K = {} S = {}", K, S);
 }
 
 template <typename System>
@@ -64,6 +62,8 @@ MakeTimeInvariantLqrSystem(
 
   Eigen::MatrixXd K(num_inputs, num_states), S(num_states, num_states);
   CalculateLqrMatrices(sys, toEigen(x0), toEigen(u0), Q, R, &K, &S);
+
+  SPDLOG_TRACE(drake::log(), "K = {} S = {}", K, S);
 
   // todo: return the linear system with the affine transform.  But for now,
   // just give the affine controller:
