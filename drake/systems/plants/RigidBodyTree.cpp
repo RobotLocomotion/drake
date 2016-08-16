@@ -2142,19 +2142,19 @@ int RigidBodyTree::AddFloatingJoint(
         case DrakeJoint::FIXED: {
           std::unique_ptr<DrakeJoint> joint(new FixedJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          bodies[ii]->setJoint(move(joint));
+          bodies[index]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         case DrakeJoint::ROLLPITCHYAW: {
           std::unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          bodies[ii]->setJoint(move(joint));
+          bodies[index]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         case DrakeJoint::QUATERNION: {
           std::unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          bodies[ii]->setJoint(move(joint));
+          bodies[index]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         default:
