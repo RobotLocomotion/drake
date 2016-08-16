@@ -41,9 +41,6 @@ set(installed_headers
   diagram_context.h
   leaf_state_vector.h
   leaf_system.h
-  primitives/adder.h
-  primitives/constant_vector_source.h
-  primitives/integrator.h
   state.h
   state_subvector.h
   state_supervector.h
@@ -71,5 +68,5 @@ pods_install_pkg_config_file(drake-system-framework
   REQUIRES
   VERSION 0.0.1)
 
+add_subdirectory(primitives)
 add_subdirectory(test)
-add_subdirectory(primitives/test)
