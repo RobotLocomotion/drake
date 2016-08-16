@@ -1850,7 +1850,7 @@ int RigidBodyTree::findLinkId(const std::string& link_name,
 }
 
 RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
-                                          int model_instance_id) const {
+                                               int model_instance_id) const {
   // Obtains a lower case version of joint_name.
   std::string joint_name_lower = joint_name;
   std::transform(joint_name_lower.begin(), joint_name_lower.end(),
@@ -1859,12 +1859,16 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   vector<bool> name_match;
   name_match.resize(bodies.size());
 
-  for (size_t ii = 0; ii < bodies.size(); ii++) {
+  // For each rigid body in this RigidBodyTree, the following code saves a
+  // `true` or `false` in vector `name_match` based on whether the body's parent
+  // joint's name matches @p joint_name.
+  for (size_t ii = 0; ii < bodies.size(); ++ii) {
     if (bodies[ii]->hasParent()) {
-      string current_joint_name = bodies[ii]->getJoint().getName();
+      // Obtains the name of the rigid body's parent joint and then converts it
+      // to be lower case.
+      std::string current_joint_name = bodies[ii]->getJoint().getName();
       std::transform(current_joint_name.begin(), current_joint_name.end(),
-                     current_joint_name.begin(),
-                     ::tolower);  // convert to lower case
+                     current_joint_name.begin(), ::tolower);
       if (current_joint_name == joint_name_lower) {
         name_match[ii] = true;
       } else {
@@ -1873,8 +1877,10 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
     }
   }
 
+  // If model_instance_id is specified, go through the matching joints and
+  // remove those that do not belong to the specified model instance.
   if (model_instance_id != -1) {
-    for (size_t ii = 0; ii < bodies.size(); ii++) {
+    for (size_t ii = 0; ii < bodies.size(); ++ii) {
       if (name_match[ii]) {
         name_match[ii] =
             (bodies[ii]->get_model_instance_id() == model_instance_id);
@@ -1882,7 +1888,8 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
     }
   }
 
-  // Unlike the MATLAB implementation, I am not handling the fixed joints
+  // Checks to ensure only one match was found. Throws an `std::runtime_error`
+  // if more than one match was found.
   size_t ind_match = 0;
   bool match_found = false;
   for (size_t ii = 0; ii < bodies.size(); ++ii) {
@@ -1897,6 +1904,9 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
       match_found = true;
     }
   }
+
+  // Throws a `std::runtime_error` if no match was found. Otherwise, return
+  // a pointer to the matching rigid body.
   if (!match_found) {
     throw std::runtime_error(
         "RigidBodyTree::FindBodyOfJoint: ERROR: Could not find unique joint " +
