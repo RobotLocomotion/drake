@@ -3,7 +3,6 @@
 #include <string>
 #include <Eigen/Core>
 
-#include "drake/systems/LCMSystem.h"
 #include "lcmtypes/drake/lcmt_iiwa_status.hpp"
 
 namespace drake {

@@ -4,13 +4,16 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
+#include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/gravity_compensation_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 
 using drake::AffineSystem;
 using drake::BotVisualizer;
+using lcm::LCM;
 using Eigen::MatrixXd;
 using drake::RobotStateTap;
 using drake::RigidBodySystem;
@@ -24,18 +27,17 @@ namespace {
 // Test to verify behaviour of the KUKA IIWA Arm under a gravity
 // compensated PD joint position controller. Even under lower gains
 // (in contrast with a pure PD controller), accurate position control
-// is possible. The test looks for 2 things : if the set-point is
-// the same as the initial pose, the robot maintains its pose with
-// negligible errors.
-// The test verifies that the position reached is within some
-// bound with respect to the initial condition.
+// is possible. The test looks for 2 things : (i) with the set-point
+// identical with the initial pose, the controller maintains the robot
+// pose with negligible errors over a given duration; (ii) the controller
+// maintains this pose with a negligible velocity error.
 GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
   const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
 
   // Initializes LCM.
-  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
+  std::shared_ptr<LCM> lcm = std::make_shared<LCM>();
 
   // Instantiates additional systems and cascades them with the rigid body
   // system.
@@ -49,10 +51,11 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   int num_dof = iiwa_tree->number_of_positions();
 
   // Smaller gains intentionally used for demo.
-  const double Kp_common = 50.0;
-  const double Kd_common = 0.0;
+  const double Kp_common = 10.0;
+  const double Kd_common = 0.30;
   VectorXd Kpdiag = VectorXd::Constant(num_dof, Kp_common);
   VectorXd Kddiag = VectorXd::Constant(num_dof, Kd_common);
+
   MatrixXd Kp = Kpdiag.asDiagonal();
   MatrixXd Kd = Kddiag.asDiagonal();
 
@@ -64,8 +67,8 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   random_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
   x0.head(num_dof) += random_initial_configuration;
 
-  // set point is the configuration corresponding to all 0 radians.
-  VectorXd set_point_vector = VectorXd::Zero(num_dof);
+  // Set point is the initial configuration.
+  VectorXd set_point_vector = x0.head(num_dof);
   auto set_point = std::make_shared<
       AffineSystem<NullVector, NullVector, RigidBodySystem::StateVector>>(
       MatrixXd::Zero(0, 0), MatrixXd::Zero(0, 0), VectorXd::Zero(0),
@@ -86,7 +89,7 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   const double kStartTime = 0;
 
   // Specifies the duration of the simulation.
-  const double kDuration = 2.0;
+  const double kDuration = 1.0;
 
   EXPECT_NO_THROW(
       drake::simulate(*sys.get(), kStartTime, kDuration, x0, options));
@@ -96,15 +99,14 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   // Ensures joint position and velocity limits are not violated.
   EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
 
-  // Expects norm of the joint position difference to be below a maximum value.
-  double kMaxPositionErrorNorm = 1e-5;
-  EXPECT_TRUE((xf.head(num_dof) - x0.head(num_dof)).squaredNorm() <
-      kMaxPositionErrorNorm);
+  // Expects norm of the joint position error to be below a maximum value.
+  double kMaxPositionErrorNorm = 1e-3;
+  EXPECT_TRUE((xf.head(num_dof) - set_point_vector).squaredNorm() <
+              kMaxPositionErrorNorm);
 
-  // Expects final joint velocity has a norm to be larger than a minimum value.
-  // (since this controller won't stay at rest at the set-point).
-  double kMinVelocityNorm = 1e-5;
-  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() > kMinVelocityNorm);
+  // Expects final joint velocity has a norm to be smaller than a minimum value.
+  double kMinVelocityNorm = 1e-3;
+  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() < kMinVelocityNorm);
 }
 
 }  // namespace
