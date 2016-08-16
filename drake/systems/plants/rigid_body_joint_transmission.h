@@ -7,12 +7,14 @@
  */
 class DRAKERBM_EXPORT RigidBodyJointTransmission {
  public:
-  /** Constructs a joint transmission by specifying the position numbers of the two
+  /** Constructs a joint transmission by specifying the position numbers of the
+   two
    joints, together with the multiplier
 
    @param[in] joint1_name  A string, the name of joint 1.
    @param[in] joint2_name  A string, the name of joint 2.
-   @param[in] multiplier  A double, the ratio between the values of (joint1-offset)/joint2
+   @param[in] multiplier  A double, the ratio between the values of
+   (joint1-offset)/joint2
    @param[in] offset  A double, offset = joint1_value-joint2_value*multiplier.
    */
   RigidBodyJointTransmission(const std::string& joint1_name,
@@ -29,7 +31,8 @@ class DRAKERBM_EXPORT RigidBodyJointTransmission {
   std::string GetJoint2Name() const { return joint2_name_; }
   double GetMultiplier() const { return multiplier_; }
   double GetOffset() const { return offset_; }
-  int GetModelInstanceID() const { return model_instance_id_;}
+  int GetModelInstanceID() const { return model_instance_id_; }
+
  private:
   std::string joint1_name_, joint2_name_;
   double multiplier_;

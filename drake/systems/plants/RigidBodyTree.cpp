@@ -81,8 +81,8 @@ RigidBodyTree::RigidBodyTree(
     const DrakeJoint::FloatingBaseType floating_base_type)
     : RigidBodyTree() {
   // Adds the model defined in filename to this tree.
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      filename, floating_base_type, this);
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(filename,
+                                                     floating_base_type, this);
 }
 
 RigidBodyTree::RigidBodyTree(void)
@@ -1760,8 +1760,8 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   }
 }
 
-std::vector<const RigidBody*>
-RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
+std::vector<const RigidBody*> RigidBodyTree::FindModelInstanceBodies(
+    int model_instance_id) {
   std::vector<const RigidBody*> result;
 
   for (const auto& rigid_body : bodies) {
@@ -1976,9 +1976,11 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
 
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q = cache.getQ();
   for (int i = 0; i < static_cast<int>(joint_transmissions.size()); i++) {
-    int joint1_pos_idx = findJoint(joint_transmissions[i].GetJoint1Name(),joint_transmissions[i].GetModelInstanceID())
+    int joint1_pos_idx = findJoint(joint_transmissions[i].GetJoint1Name(),
+                                   joint_transmissions[i].GetModelInstanceID())
                              ->get_position_start_index();
-    int joint2_pos_idx = findJoint(joint_transmissions[i].GetJoint2Name(),joint_transmissions[i].GetModelInstanceID())
+    int joint2_pos_idx = findJoint(joint_transmissions[i].GetJoint2Name(),
+                                   joint_transmissions[i].GetModelInstanceID())
                              ->get_position_start_index();
     ret(constraint_count) =
         q(joint1_pos_idx) -
@@ -2010,8 +2012,10 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
     constraint_count += 6;
   }
   for (int i = 0; i < static_cast<int>(joint_transmissions.size()); i++) {
-    auto link1 = findJoint(joint_transmissions[i].GetJoint1Name(),joint_transmissions[i].GetModelInstanceID());
-    auto link2 = findJoint(joint_transmissions[i].GetJoint2Name(),joint_transmissions[i].GetModelInstanceID());
+    auto link1 = findJoint(joint_transmissions[i].GetJoint1Name(),
+                           joint_transmissions[i].GetModelInstanceID());
+    auto link2 = findJoint(joint_transmissions[i].GetJoint2Name(),
+                           joint_transmissions[i].GetModelInstanceID());
     KinematicsCacheElement<Scalar> element1 = cache.getElement(*link1);
     KinematicsCacheElement<Scalar> element2 = cache.getElement(*link2);
     ret(constraint_count, link1->get_velocity_start_index()) =
@@ -2245,32 +2249,8 @@ void RigidBodyTree::addRobotFromSDF(
     const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::sdf::AddModelInstancesFromSdfFile(filename,
-      floating_base_type, weld_to_frame, this);
-}
-
-void RigidBodyTree::addJointTransmissionToLinearConstraint() {
-  Eigen::MatrixXd Aeq(joint_transmissions.size(), num_positions_);
-  Aeq.setZero();
-  Eigen::VectorXd beq(joint_transmissions.size());
-  int row_idx = 0;
-  for (const auto& jt : joint_transmissions) {
-    auto link1 = findJoint(jt.getJoint1Name());
-    auto link2 = findJoint(jt.getJoint2Name());
-    if (link1->getJoint().getNumPositions() != 1 ||
-        link2->getJoint().getNumPositions() != 1) {
-      throw std::runtime_error(
-          "RigidBodyTree.cpp: addJointTransmissionToLinearConstraint: ERROR:" +
-          jt.getJoint1Name() + " or " + jt.getJoint2Name() +
-          "has more than one degree of freedom");
-    }
-    int joint1_idx = link1->get_position_start_index();
-    int joint2_idx = link2->get_position_start_index();
-    Aeq(row_idx, joint1_idx) = 1.0;
-    Aeq(row_idx, joint2_idx) = -jt.getMultiplier();
-    beq(row_idx) = jt.getOffset();
-  }
-  addLinearEqualityPositionConstraint(Aeq, beq);
+  drake::parsers::sdf::AddModelInstancesFromSdfFile(
+      filename, floating_base_type, weld_to_frame, this);
 }
 
 // Explicit template instantiations for massMatrix.
