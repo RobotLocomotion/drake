@@ -16,6 +16,7 @@ namespace plants {
 namespace test {
 namespace {
 
+using drake::util::MatrixCompareType;
 using drake::parsers::ModelInstanceIdTable;
 
 GTEST_TEST(DrakeJointTests, TestZeroOffset) {
