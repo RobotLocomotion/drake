@@ -6,9 +6,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/drakeCars_export.h"
-#include "drake/examples/Cars/gen/driving_command.h"
-#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
-#include "drake/examples/Cars/gen/simple_car_state.h"
+#include "drake/examples/Cars/system1_cars_vectors.h"
 #include "drake/examples/Cars/trajectory_car.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
@@ -113,10 +111,9 @@ void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
  */
 DRAKECARS_EXPORT
 std::shared_ptr<CascadeSystem<
-    Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>,
+    Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
 CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
-
 
 /**
  * Creates a TrajectoryCar system with a fixed trajectory.
@@ -133,7 +130,7 @@ std::shared_ptr<TrajectoryCar> CreateTrajectoryCarSystem(int index);
  */
 DRAKECARS_EXPORT
 std::shared_ptr<drake::AffineSystem<
-  drake::NullVector, SimpleCarState, EulerFloatingJointState>>
+  drake::NullVector, SimpleCarState1, EulerFloatingJointState1>>
 CreateSimpleCarVisualizationAdapter();
 
 /**

@@ -13,8 +13,6 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/Cars/gen/driving_command.h"
-#include "drake/examples/Cars/gen/simple_car_state.h"
 
 namespace drake {
 
