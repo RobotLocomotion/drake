@@ -23,11 +23,12 @@ me=$(readlink -f $0)
 mydir=$(dirname $0)
 DRAKE=$(readlink -f $mydir/../..)
 DRAKE_DIST=$(readlink -f $DRAKE/..)
+DRAKE_BUILD=${DRAKE_BUILD:-$DRAKE_DIST/build}
 
-$DRAKE_DIST/build/install/bin/bot-spy &
-$DRAKE_DIST/build/install/bin/drake-visualizer &
+$DRAKE_BUILD/install/bin/bot-spy &
+$DRAKE_BUILD/install/bin/drake-visualizer &
 sleep 1  # Wait, to be sure drake-visualizer sees the load_robot message.
-$DRAKE_DIST/build/drake/bin/demo_multi_car $1 &
+$DRAKE_BUILD/drake/bin/demo_multi_car $1 &
 
 wait
 

@@ -13,6 +13,7 @@ set(sources
   primitives/constant_vector_source.cc
   primitives/gain.cc
   primitives/integrator.cc
+  primitives/pass_through.cc
   state.cc
   state_subvector.cc
   state_supervector.cc
