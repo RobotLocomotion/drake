@@ -205,9 +205,9 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
                                      "/systems/plants/test/rigid_body_system/"
                                      "bad_transmission_no_joint.urdf");
   } catch (std::runtime_error& error) {
-    // Asserts that the exception is thrown when FindBodyIndexByJointName()
-    // fails to find a non-existing joint.
-    EXPECT_TRUE(std::string(error.what()).find("FindBodyIndexByJointName") !=
+    // Asserts that the exception is thrown when FindBodyOfJoint() fails to find
+    // find a non-existing joint.
+    EXPECT_TRUE(std::string(error.what()).find("FindBodyOfJoint") !=
                 std::string::npos);
   }
 }

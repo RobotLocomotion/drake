@@ -1920,13 +1920,6 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
 int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
       int model_instance_id) const {
   RigidBody* link = FindChildBodyOfJoint(joint_name, model_instance_id);
-  if (link == nullptr) {
-    throw std::runtime_error("RigidBodyTree::FindBodyIndexOfJoint: ERROR: "
-        "Could not find the index of a rigid body that is (1) part of a model "
-        "instance with ID " + std::to_string(model_instance_id) + " and (2) is "
-        "connected up the rigid body tree via a joint named \"" +
-        joint_name + "\".");
-  }
   return link->get_body_index();
 }
 
