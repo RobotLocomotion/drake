@@ -879,7 +879,7 @@ const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(
     RigidBodyTree& robot, const std::map<Side, std::string>& joint_names) {
   std::map<Side, int> joint_indices;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
-    int joint_id = robot.findJointId(joint_names.at(*it));
+    int joint_id = robot.FindIndexOfChildBodyOfJoint(joint_names.at(*it));
     joint_indices[*it] = robot.bodies[joint_id]->get_position_start_index();
   }
   return joint_indices;

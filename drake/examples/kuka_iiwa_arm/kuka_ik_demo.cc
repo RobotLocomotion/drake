@@ -194,7 +194,8 @@ int do_main(int argc, const char* argv[]) {
   // For part of the remaining time, constrain the second joint while
   // preserving the end effector constraint.
   Eigen::VectorXi joint_idx_3(1);
-  joint_idx_3(0) = tree.findJoint("iiwa_joint_2")->get_position_start_index();
+  joint_idx_3(0) = tree.FindChildBodyOfJoint("iiwa_joint_2")->
+      get_position_start_index();
   PostureConstraint pc3(&tree, Vector2d(6, 8));
   pc3.setJointLimits(joint_idx_3, Vector1d(0.7), Vector1d(0.8));
 

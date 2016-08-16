@@ -348,7 +348,7 @@ vector<int> findPositionIndices(const RigidBodyTree& robot,
   vector<int> position_indices;
   position_indices.reserve(joint_names.size());
   for (const auto& joint_name : joint_names) {
-    const RigidBody& body = *robot.findJoint(joint_name);
+    const RigidBody& body = *robot.FindChildBodyOfJoint(joint_name);
     for (int i = 0; i < body.getJoint().getNumPositions(); i++) {
       position_indices.push_back(body.get_position_start_index() + i);
     }
@@ -376,8 +376,9 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
     ret.position_indices.legs[side] = findPositionIndices(
         robot, joint_group_names["legs"][side_id].as<vector<string>>());
     ret.position_indices.knees[side] =
-        robot.findJoint(joint_group_names["knees"][side_id].as<string>())
-            ->get_position_start_index();
+        robot.FindChildBodyOfJoint(
+            joint_group_names["knees"][side_id].as<string>())->
+                get_position_start_index();
     ret.position_indices.ankles[side] = findPositionIndices(
         robot, joint_group_names["ankles"][side_id].as<vector<string>>());
     ret.position_indices.arms[side] = findPositionIndices(
@@ -386,11 +387,11 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
   ret.position_indices.neck = findPositionIndices(
       robot, joint_group_names["neck"].as<vector<string>>());
   ret.position_indices.back_bkz =
-      robot.findJoint(joint_group_names["back_bkz"].as<string>())
-          ->get_position_start_index();
+      robot.FindChildBodyOfJoint(joint_group_names["back_bkz"].as<string>())->
+          get_position_start_index();
   ret.position_indices.back_bky =
-      robot.findJoint(joint_group_names["back_bky"].as<string>())
-          ->get_position_start_index();
+      robot.FindChildBodyOfJoint(joint_group_names["back_bky"].as<string>())->
+          get_position_start_index();
 
   return ret;
 }

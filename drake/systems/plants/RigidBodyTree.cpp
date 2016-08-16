@@ -1843,13 +1843,14 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
   return body->get_body_index();
 }
 
+// TODO(liang.fok) Remove this method prior to Release 1.0.
 int RigidBodyTree::findLinkId(const std::string& link_name,
                               int model_instance_id) const {
   return FindBodyIndex(link_name, model_instance_id);
 }
 
-RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
-                                    int model_instance_id) const {
+RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
+                                          int model_instance_id) const {
   // Obtains a lower case version of joint_name.
   std::string joint_name_lower = joint_name;
   std::transform(joint_name_lower.begin(), joint_name_lower.end(),
@@ -1887,9 +1888,9 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
   for (size_t ii = 0; ii < bodies.size(); ++ii) {
     if (name_match[ii]) {
       if (match_found) {
-        throw std::logic_error(
-            "RigidBodyTree::findJoint: ERROR: Multiple joints found named \"" +
-            joint_name + "\", model instance ID = " +
+        throw std::runtime_error(
+            "RigidBodyTree::FindBodyOfJoint: ERROR: Multiple joints found "
+            " named \"" + joint_name + "\", model instance ID = " +
             std::to_string(model_instance_id) + ".");
       }
       ind_match = ii;
@@ -1897,8 +1898,8 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
     }
   }
   if (!match_found) {
-    throw std::logic_error(
-        "RigidBodyTree::findJoint: ERROR: Could not find unique joint " +
+    throw std::runtime_error(
+        "RigidBodyTree::FindBodyOfJoint: ERROR: Could not find unique joint " +
         std::string("named \"") + joint_name + "\", model_instance_id = " +
         std::to_string(model_instance_id));
   } else {
@@ -1906,11 +1907,29 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
   }
 }
 
-int RigidBodyTree::findJointId(const std::string& joint_name, int robot) const {
-  RigidBody* link = findJoint(joint_name, robot);
-  if (link == nullptr)
-    throw std::runtime_error("could not find joint id: " + joint_name);
+int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
+      int model_instance_id) const {
+  RigidBody* link = FindChildBodyOfJoint(joint_name, model_instance_id);
+  if (link == nullptr) {
+    throw std::runtime_error("RigidBodyTree::FindBodyIndexOfJoint: ERROR: "
+        "Could not find the index of a rigid body that is (1) part of a model "
+        "instance with ID " + std::to_string(model_instance_id) + " and (2) is "
+        "connected up the rigid body tree via a joint named \"" +
+        joint_name + "\".");
+  }
   return link->get_body_index();
+}
+
+// TODO(liang.fok) Remove this method prior to Release 1.0.
+RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
+    int model_id) const {
+  return FindChildBodyOfJoint(joint_name, model_id);
+}
+
+// TODO(liang.fok) Remove this method prior to Release 1.0.
+int RigidBodyTree::findJointId(const std::string& joint_name, int model_id)
+    const {
+  return  FindIndexOfChildBodyOfJoint(joint_name, model_id);
 }
 
 std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {

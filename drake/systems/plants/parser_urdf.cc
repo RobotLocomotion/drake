@@ -39,46 +39,6 @@ namespace parsers {
 namespace urdf {
 namespace {
 
-// Finds the index of the link whose parent joint has a specified name.
-// Throws a std::runtime_error if no such link can be found or if more than
-// one link is found.
-int FindBodyIndexByJointName(RigidBodyTree* tree, const string& joint_name,
-    int model_instance_id) {
-  // Instantiates a local variable that stores the index of the rigid body whose
-  // joint is the one we're searching for. It is initialized to an invalid index
-  // so the failure mode of not finding any matching joint can be identified.
-  // Valid index values are between zero and the number of rigid bodies in
-  // the rigid body tree.
-  int index = -1;
-
-  // Searches through all of the bodies in the rigid body tree looking for the
-  // joint with the specified name.
-  for (unsigned int ii = 0; ii < tree->bodies.size(); ++ii) {
-    if (tree->bodies[ii]->hasParent() &&
-        tree->bodies[ii]->get_model_instance_id() == model_instance_id &&
-        joint_name.compare(tree->bodies[ii]->getJoint().getName()) == 0) {
-      if (index == -1) {
-        index = ii;
-      } else {
-        throw std::runtime_error(
-            "RigidBodyTreeURDF.cpp: FindBodyIndexByJointName: ERROR: Multiple "
-            "joints named \"" + joint_name + "\" with model instance ID " +
-            std::to_string(model_instance_id) + " found.");
-      }
-    }
-  }
-
-  // Verifies that the link was found. If not, throws an exception.
-  if (index == -1) {
-    throw std::runtime_error(
-        "RigidBodyTreeURDF.cpp: FindBodyIndexByJointName: "
-        "ERROR: Unable to find joint named \"" + joint_name + "\" with model "
-        "instance ID " + std::to_string(model_instance_id) + ".");
-  }
-
-  return index;
-}
-
 void ParseInertial(RigidBody* body, XMLElement* node) {
   Isometry3d T = Isometry3d::Identity();
 
@@ -816,8 +776,8 @@ void ParseTransmission(RigidBodyTree* tree, XMLElement* transmission_node,
 
   // Checks if the actuator is attached to a fixed joint. If so, abort this
   // method call.
-  int body_index = FindBodyIndexByJointName(tree, joint_name,
-      model_instance_id);
+  int body_index = tree->FindIndexOfChildBodyOfJoint(joint_name,
+                                                     model_instance_id);
 
   if (tree->bodies[body_index]->getJoint().getNumPositions() == 0) {
     cerr << "RigidBodyTreeURDF.cpp: ParseTransmission: WARNING: Skipping "

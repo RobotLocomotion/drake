@@ -162,23 +162,24 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   EXPECT_NE(tree->FindBody("link_3", "model_2", 3), nullptr);
 
   // Checks that we cannot access a non-existent joint.
-  EXPECT_THROW(tree->findJoint("non-existent-joint"), std::logic_error);
+  EXPECT_THROW(tree->FindChildBodyOfJoint("non-existent-joint"),
+      std::runtime_error);
 
   // Checks that we cannot access a joint using just the joint name.
   // This is impossible because there are multiple joints with the same name.
-  EXPECT_THROW(tree->findJoint("joint_1"), std::logic_error);
-  EXPECT_THROW(tree->findJoint("joint_2"), std::logic_error);
+  EXPECT_THROW(tree->FindChildBodyOfJoint("joint_1"), std::runtime_error);
+  EXPECT_THROW(tree->FindChildBodyOfJoint("joint_2"), std::runtime_error);
 
   // Checks that we can access a joint using the joint name and model instance
   // ID.
-  EXPECT_NE(tree->findJoint("joint_1", 0), nullptr);
-  EXPECT_NE(tree->findJoint("joint_1", 1), nullptr);
-  EXPECT_NE(tree->findJoint("joint_1", 2), nullptr);
-  EXPECT_NE(tree->findJoint("joint_1", 3), nullptr);
-  EXPECT_NE(tree->findJoint("joint_2", 0), nullptr);
-  EXPECT_NE(tree->findJoint("joint_2", 1), nullptr);
-  EXPECT_NE(tree->findJoint("joint_2", 2), nullptr);
-  EXPECT_NE(tree->findJoint("joint_2", 3), nullptr);
+  EXPECT_NE(tree->FindChildBodyOfJoint("joint_1", 0), nullptr);
+  EXPECT_NE(tree->FindChildBodyOfJoint("joint_1", 1), nullptr);
+  EXPECT_NE(tree->FindChildBodyOfJoint("joint_1", 2), nullptr);
+  EXPECT_NE(tree->FindChildBodyOfJoint("joint_1", 3), nullptr);
+  EXPECT_NE(tree->FindChildBodyOfJoint("joint_2", 0), nullptr);
+  EXPECT_NE(tree->FindChildBodyOfJoint("joint_2", 1), nullptr);
+  EXPECT_NE(tree->FindChildBodyOfJoint("joint_2", 2), nullptr);
+  EXPECT_NE(tree->FindChildBodyOfJoint("joint_2", 3), nullptr);
 }
 
 // Tests whether the URDF parser is robust against an improperly specified
