@@ -7,12 +7,14 @@
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
 #include "drake/systems/cascade_system.h"
-#include "drake/systems/controllers/open_loop_trajectory_controller.h"
+#include "drake/systems/controllers/simple_lqr_trajectory_controller.h"
+#include "drake/systems/feedback_system.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/Simulation.h"
 #include "drake/util/drakeAppUtil.h"
 
+using drake::SimpleLqrTrajectoryController;
 using drake::solvers::SolutionResult;
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
@@ -47,6 +49,8 @@ int main(int argc, char* argv[]) {
 
   const PiecewisePolynomialType pp_traj =
       dircol_traj.ReconstructInputTrajectory();
+  const PiecewisePolynomialType pp_xtraj =
+      dircol_traj.ReconstructStateTrajectory();
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if (!lcm->good()) return 1;
@@ -55,9 +59,14 @@ int main(int argc, char* argv[]) {
       lcm, drake::GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
       DrakeJoint::FIXED);
 
-  auto control = std::make_shared<
-    drake::OpenLoopTrajectoryController<Pendulum>>(pp_traj);
-  auto traj_sys = drake::cascade(control, p);
+  Eigen::MatrixXd Q(2, 2);
+  Q << 10, 0, 0, 1;  // arbitrary, taken from PendulumPlant.m
+  Eigen::MatrixXd R(1, 1);
+  R << 1;  // arbitrary, taken from PendulumPlant.m
+
+  auto control = std::make_shared<SimpleLqrTrajectoryController<Pendulum>>(
+      p, pp_traj, pp_xtraj, Q, R);
+  auto traj_sys = drake::feedback(p, control);
   auto sys = drake::cascade(traj_sys, visualizer);
 
   drake::SimulationOptions options;
