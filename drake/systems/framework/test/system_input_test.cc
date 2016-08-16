@@ -14,7 +14,7 @@ class FreestandingInputPortTest : public ::testing::Test {
   void SetUp() override {
     std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
     vec->get_mutable_value() << 5, 6;
-    port_.reset(new FreestandingInputPort<int>(std::move(vec), 42.0));
+    port_.reset(new FreestandingInputPort<int>(std::move(vec)));
     port_->set_invalidation_callback(
         std::bind(&FreestandingInputPortTest::Invalidate, this));
   }
@@ -23,16 +23,13 @@ class FreestandingInputPortTest : public ::testing::Test {
   int64_t latest_version_ = -1;
 
  private:
-  void Invalidate() {
-    latest_version_ = port_->get_version();
-  }
+  void Invalidate() { latest_version_ = port_->get_version(); }
 };
 
 TEST_F(FreestandingInputPortTest, Access) {
   VectorX<int> expected(2);
   expected << 5, 6;
   EXPECT_EQ(expected, port_->get_vector_data()->get_value());
-  EXPECT_EQ(42.0, port_->get_sample_time_sec());
 }
 
 // Tests that changes to the vector data are propagated to the input port
@@ -55,7 +52,6 @@ TEST_F(FreestandingInputPortTest, Mutation) {
 TEST_F(FreestandingInputPortTest, ContinouousPort) {
   std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
   port_.reset(new FreestandingInputPort<int>(std::move(vec)));
-  EXPECT_EQ(0.0, port_->get_sample_time_sec());
 }
 
 class DependentInputPortTest : public ::testing::Test {
@@ -64,7 +60,7 @@ class DependentInputPortTest : public ::testing::Test {
     std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
     vec->get_mutable_value() << 5, 6;
     output_port_.reset(new OutputPort<int>(std::move(vec)));
-    port_.reset(new DependentInputPort<int>(output_port_.get(), 42.0));
+    port_.reset(new DependentInputPort<int>(output_port_.get()));
     port_->set_invalidation_callback(
         std::bind(&DependentInputPortTest::Invalidate, this));
   }
@@ -74,16 +70,13 @@ class DependentInputPortTest : public ::testing::Test {
   int64_t latest_version_ = -1;
 
  private:
-  void Invalidate() {
-    latest_version_ = port_->get_version();
-  }
+  void Invalidate() { latest_version_ = port_->get_version(); }
 };
 
 TEST_F(DependentInputPortTest, Access) {
   VectorX<int> expected(2);
   expected << 5, 6;
   EXPECT_EQ(expected, port_->get_vector_data()->get_value());
-  EXPECT_EQ(42.0, port_->get_sample_time_sec());
 }
 
 // Tests that changes on the output port are propagated to the input port that

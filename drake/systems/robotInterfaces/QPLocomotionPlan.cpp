@@ -7,10 +7,10 @@
 #include <string>
 
 #include "drake/common/constants.h"
-#include "drake/core/Gradient.h"
 #include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/expmap.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
@@ -35,8 +35,9 @@ using drake::kSpaceDimension;
 using drake::math::Gradient;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
-using drake::math::expmap2quat;
 using drake::math::closestExpmap;
+using drake::math::expmap2quat;
+using drake::math::initializeAutoDiffGivenGradientMatrix;
 using drake::math::quat2expmap;
 using drake::math::quatRotateVec;
 
@@ -559,7 +560,7 @@ void QPLocomotionPlan::updateSwingTrajectory(
   auto quatdot = (Phi * x0_twist.topRows<3>()).eval();
 
   auto x0_expmap_autodiff = quat2expmap(
-      drake::initializeAutoDiffGivenGradientMatrix(x0_quat, quatdot));
+      initializeAutoDiffGivenGradientMatrix(x0_quat, quatdot));
   auto x0_expmap = autoDiffToValueMatrix(x0_expmap_autodiff);
   auto xd0_expmap = autoDiffToGradientMatrix(x0_expmap_autodiff);
 
@@ -731,27 +732,6 @@ void QPLocomotionPlan::findPlannedSupportFraction(
   // std::endl;
 }
 
-PiecewisePolynomial<double> firstOrderHold(
-    const std::vector<double>& segment_times,
-    const std::vector<Matrix<double, Dynamic, Dynamic>>& knots) {
-  std::vector<PiecewisePolynomial<double>::PolynomialMatrix> polys;
-  polys.reserve(segment_times.size() - 1);
-  for (int i = 0; i < static_cast<int>(segment_times.size()) - 1; ++i) {
-    Matrix<Polynomial<double>, Dynamic, Dynamic> poly_matrix(knots[0].rows(),
-                                                             knots[0].cols());
-    for (int j = 0; j < knots[i].rows(); ++j) {
-      for (int k = 0; k < knots[i].cols(); ++k) {
-        poly_matrix(j, k) = Polynomial<double>(
-            Vector2d(
-                knots[i](j, k), (knots[i + 1](j, k) - knots[i](j, k)) /
-                (segment_times[i + 1] - segment_times[i])));
-      }
-    }
-    polys.push_back(poly_matrix);
-  }
-  return PiecewisePolynomial<double>(polys, segment_times);
-}
-
 void QPLocomotionPlan::updateS1Trajectory() {
   ExponentialPlusPiecewisePolynomial<double> s1 = s1Trajectory(
       settings_.zmp_data, shifted_zmp_trajectory_, settings_.V.getS());
@@ -799,7 +779,8 @@ void QPLocomotionPlan::updateZMPTrajectory(const double t_plan,
     }
   }
 
-  shifted_zmp_trajectory_ = firstOrderHold(segment_times, zmp_knots);
+  shifted_zmp_trajectory_ =
+      PiecewisePolynomial<double>::FirstOrderHold(segment_times, zmp_knots);
 }
 
 void QPLocomotionPlan::updateZMPController(const double t_plan,

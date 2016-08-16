@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "drake/core/Gradient.h"
+#include "drake/math/autodiff.h"
 #include "drake/solvers/optimization.h"
 
 namespace snopt {
@@ -190,7 +190,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   memset(G, 0, (*n) * sizeof(snopt::doublereal));
 
   // evaluate cost
-  auto tx = drake::initializeAutoDiff(xvec);
+  auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd ty(1), this_x;
 
   for (auto const& binding : current_problem->GetAllCosts()) {

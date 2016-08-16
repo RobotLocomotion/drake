@@ -79,7 +79,7 @@ TEST_F(ContextTest, GetVectorInput) {
   std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
   vec->get_mutable_value() << 5, 6;
   std::unique_ptr<FreestandingInputPort<int>> port(
-      new FreestandingInputPort<int>(std::move(vec), 0.0 /* continuous */));
+      new FreestandingInputPort<int>(std::move(vec)));
   context.SetInputPort(0, std::move(port));
 
   // Test that port 0 is retrievable.
