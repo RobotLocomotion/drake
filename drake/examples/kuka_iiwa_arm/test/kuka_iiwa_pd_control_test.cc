@@ -11,6 +11,7 @@
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/Simulation.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 using drake::AffineSystem;

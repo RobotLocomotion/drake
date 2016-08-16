@@ -7,9 +7,10 @@
 #include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
-#include "drake/systems/gravity_compensation_control_system.h"
+#include "drake/systems/gravity_compensated_pd_position_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/Simulation.h"
 
 using drake::AffineSystem;
 using drake::BotVisualizer;
@@ -24,7 +25,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-// Test to verify behaviour of the KUKA IIWA Arm under a gravity
+// Test to verify behavior of the KUKA IIWA Arm under a gravity
 // compensated PD joint position controller. Even under lower gains
 // (in contrast with a pure PD controller), accurate position control
 // is possible. The test looks for 2 things : (i) with the set-point
@@ -51,8 +52,8 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   int num_dof = iiwa_tree->number_of_positions();
 
   // Smaller gains intentionally used for demo.
-  const double Kp_common = 10.0;
-  const double Kd_common = 0.30;
+  const double Kp_common = 10.0; // Units : Nm/rad
+  const double Kd_common = 0.30; // Units : Nm/rad/sec
   VectorXd Kpdiag = VectorXd::Constant(num_dof, Kp_common);
   VectorXd Kddiag = VectorXd::Constant(num_dof, Kd_common);
 
