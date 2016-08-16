@@ -32,8 +32,11 @@ add_matlab_test(NAME examples/Atlas/runCOMFixedPointSearch COMMAND runCOMFixedPo
 add_matlab_test(NAME examples/Atlas/runRobotiqPDControl COMMAND runRobotiqPDControl)
 
 if(LONG_RUNNING_TESTS)
-  add_matlab_test(NAME examples/Atlas/runAtlasBalancingPerturb COMMAND runAtlasBalancingPerturb PROPERTIES TIMEOUT 1500 REQUIRES gurobi)
-  add_matlab_test(NAME examples/Atlas/runAtlasManip COMMAND runAtlasManip PROPERTIES TIMEOUT 1500 REQUIRES gurobi)
+
+  if (${CMAKE_BUILD_TYPE} EQUAL "Release" AND NOT APPLE) # FIXME: see #3147.
+    add_matlab_test(NAME examples/Atlas/runAtlasBalancingPerturb COMMAND runAtlasBalancingPerturb PROPERTIES TIMEOUT 1500 REQUIRES gurobi)
+    add_matlab_test(NAME examples/Atlas/runAtlasManip COMMAND runAtlasManip PROPERTIES TIMEOUT 1500 REQUIRES gurobi)
+  endif()
 
   # Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
   # add_matlab_test(NAME examples/Atlas/runAtlasWalking COMMAND runAtlasWalking PROPERTIES TIMEOUT 1500 REQUIRES gurobi)
