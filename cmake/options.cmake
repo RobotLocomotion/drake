@@ -1,35 +1,10 @@
 include(CMakeDependentOption)
 
 #------------------------------------------------------------------------------
-# Add an option whether to use the system or internal version of a (required)
-# dependency.
-#------------------------------------------------------------------------------
-function(drake_system_dependency NAME DESCRIPTION)
-  # Backwards compatibility
-  set(_default OFF)
-  if(DEFINED WITH_${NAME} AND NOT WITH_${NAME})
-    set(_default ON)
-  endif()
-
-  set(_else "(If OFF, the internal version will be used.)")
-  option(USE_SYSTEM_${NAME}
-    "Use the system-provided copy of ${DESCRIPTION}. ${_else}"
-    ${_default})
-
-  # Internally, externals use WITH_<NAME> to decide if an external is enabled,
-  # so map the option value to that name.
-  if(USE_SYSTEM_${NAME})
-    set(WITH_${NAME} OFF CACHE INTERNAL "" FORCE)
-  else()
-    set(WITH_${NAME} ON CACHE INTERNAL "" FORCE)
-  endif()
-endfunction()
-
-#------------------------------------------------------------------------------
-# Add an option whether or not to build an optional component.
+# Add an option with optional dependencies.
 #
 # Arguments:
-#   <DEFAULT_STATE> - Is the component enabled by default? (`ON` or `OFF`)
+#   <DEFAULT_STATE> - Is the option enabled by default? (`ON` or `OFF`)
 #   DEPENDS <expression>
 #     A list of expressions which must evaluate to true for the component to
 #     be made available. (Otherwise, the component will not be enabled, and the
@@ -38,8 +13,8 @@ endfunction()
 # Extra arguments are combined (with a single space) to form the description of
 # the option.
 #------------------------------------------------------------------------------
-function(drake_optional_external NAME DEFAULT_STATE)
-  string(REPLACE "\\" "\\\\" _args "${ARGN}")
+function(drake_option NAME DEFAULT_STATE)
+  string(REPLACE "\\;" "\\\\\\;" _args "${ARGN}")
   cmake_parse_arguments(_opt "" "DEPENDS" "" ${_args})
 
   foreach(_snippet IN LISTS _opt_UNPARSED_ARGUMENTS)
@@ -48,42 +23,124 @@ function(drake_optional_external NAME DEFAULT_STATE)
   string(STRIP "${_description}" _description)
 
   if(DEFINED _opt_DEPENDS)
-    cmake_dependent_option(WITH_${NAME}
-      ${_description}
+    string(REPLACE "\\;" ";" _opt_DEPENDS "${_opt_DEPENDS}")
+    cmake_dependent_option(${NAME}
+      "${_description}"
       ${DEFAULT_STATE}
       "${_opt_DEPENDS}" OFF)
   else()
-    option(WITH_${NAME} ${_description} ${DEFAULT_STATE})
+    option(${NAME} "${_description}" ${DEFAULT_STATE})
+  endif()
+
+  set(${NAME} "${${NAME}}" PARENT_SCOPE)
+endfunction()
+
+#------------------------------------------------------------------------------
+# Add an option whether to use the system or internal version of a (required)
+# dependency.
+#------------------------------------------------------------------------------
+function(drake_system_dependency NAME)
+  string(REPLACE "\\;" "\\\\\\;" _args "${ARGN}")
+  cmake_parse_arguments("_sd"
+    "OPTIONAL"
+    "REQUIRES;VERSION;DEPENDS"
+    ""
+    ${_args})
+
+  if(NOT DEFINED _sd_REQUIRES)
+    message(FATAL_ERROR "drake_system_dependency: REQUIRES must be specified")
+  endif()
+
+  if(NOT _sd_OPTIONAL)
+    set(_else "(if OFF, the internal version will be used)")
+  endif()
+  if(DEFINED _sd_DEPENDS)
+    set(_sd_DEPENDS DEPENDS "${_sd_DEPENDS}")
+  endif()
+
+  drake_option(USE_SYSTEM_${NAME} OFF
+    "${_sd_DEPENDS}"
+    "Use the system-provided"
+    "${_sd_UNPARSED_ARGUMENTS}"
+    "${_else}"
+    )
+
+  set(HAVE_${NAME} FALSE PARENT_SCOPE)
+
+  if(_sd_OPTIONAL)
+    if(NOT DEFINED _sd_DEPENDS)
+      set(_sd_DEPENDS DEPENDS "NOT USE_SYSTEM_${NAME}")
+    else()
+      set(_sd_DEPENDS "${_sd_DEPENDS}\;NOT USE_SYSTEM_${NAME}")
+    endif()
+
+    drake_option(WITH_${NAME} ON
+      "${_sd_DEPENDS}"
+      "${_sd_UNPARSED_ARGUMENTS}")
+    set(WITH_${NAME} "${WITH_${NAME}}" PARENT_SCOPE)
+    set(HAVE_${NAME} "${WITH_${NAME}}" PARENT_SCOPE)
+  else()
+    # Internally, externals use WITH_<NAME> to decide if an external is enabled,
+    # so map the option value to that name.
+    if(USE_SYSTEM_${NAME})
+      set(WITH_${NAME} OFF PARENT_SCOPE)
+    else()
+      set(WITH_${NAME} ON PARENT_SCOPE)
+    endif()
+  endif()
+
+  if(USE_SYSTEM_${NAME})
+    find_package(${_sd_REQUIRES} ${_sd_VERSION} REQUIRED)
+    set(HAVE_${NAME} TRUE PARENT_SCOPE)
   endif()
 endfunction()
 
+#------------------------------------------------------------------------------
+# Add an option whether or not to build an optional component.
+#
+# The arguments are the same as drake_option. The option will be named
+# WITH_<NAME>
+#------------------------------------------------------------------------------
+function(drake_optional_external NAME DEFAULT_STATE)
+  string(REPLACE "\\;" "\\\\;" _args "${ARGN}")
+
+  drake_option(WITH_${NAME} ${DEFAULT_STATE} ${_args})
+  set(WITH_${NAME} "${WITH_${NAME}}" PARENT_SCOPE)
+  set(HAVE_${NAME} "${WITH_${NAME}}" PARENT_SCOPE)
+endfunction()
+
 ###############################################################################
-# BEGIN "optional" dependencies
+# BEGIN "system" dependencies
 
-# These are packages that we require and can build, but which we allow the user
-# to use their own copy (usually provided by the system) if preferred.
-
-drake_system_dependency(
-  EIGEN
-  "the Eigen C++ matrix library")
+# These are packages that we can build, but which we allow the user to use
+# their own copy (usually provided by the system) if preferred. Some of these
+# may be required.
 
 drake_system_dependency(
-  GOOGLETEST
-  "the Google testing framework")
+  EIGEN REQUIRES Eigen3 VERSION 3.2.92
+  "Eigen C++ matrix library")
 
 drake_system_dependency(
-  GFLAGS
-  "the Google command-line flags processing library")
+  GOOGLETEST REQUIRES GTest
+  "Google testing framework")
 
 drake_system_dependency(
-  LCM
-  "the Lightweight Communications and Marshaling IPC suite")
+  GFLAGS REQUIRES gflags
+  "Google command-line flags processing library")
 
 drake_system_dependency(
-  BOT_CORE_LCMTYPES
-  "the libbot core LCM types")
+  LCM OPTIONAL REQUIRES lcm
+  "Lightweight Communications and Marshaling IPC suite")
 
-# END "optional" dependencies
+drake_system_dependency(
+  BOT_CORE_LCMTYPES OPTIONAL REQUIRES bot2-core
+  DEPENDS "HAVE_LCM"
+  "libbot2 robotics suite LCM types")
+
+drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
+  "C++ library for reading and writing YAML configuration files")
+
+# END "system" dependencies
 ###############################################################################
 # BEGIN external projects that are ON by default
 
@@ -103,12 +160,12 @@ drake_optional_external(CCD ON "Convex shape Collision Detection library")
 
 if(NOT WIN32)
   # Not win32 yet; builds, but requires manual installation of VTKk, etc.
-  drake_optional_external(DIRECTOR ON
+  drake_optional_external(DIRECTOR ON DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES"
     "VTK-based visualization tool and robot user interface")
 
   # Probably not on Windows until lcmgl is split out
   drake_optional_external(LIBBOT ON
-    "libbot2 robotics library\;"
+    "libbot2 robotics suite\;"
     "used for its simple open-gl visualizer + lcmgl for director")
 
   drake_optional_external(NLOPT ON "Non-linear optimization solver")
@@ -125,9 +182,6 @@ if(NOT WIN32)
   drake_optional_external(SWIG_MATLAB ON
     "A version of SWIG with MATLAB support")
 endif()
-
-drake_optional_external(YAML_CPP ON
-  "C++ library for reading and writing YAML configuration files")
 
 # END external projects that are ON by default
 ###############################################################################
