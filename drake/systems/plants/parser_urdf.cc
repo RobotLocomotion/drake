@@ -677,7 +677,7 @@ void ParseJoint(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
   tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 
   // Parse the `mimic` tag if it exists.
-  ParseJointTransmission(tree, node, name, tree->bodies[child_index]->get_model_instance_id());
+  ParseJointTransmission(tree, node, name, model_instance_id);
 }
 
 /* Searches through the URDF document looking for the effort limits of a joint
