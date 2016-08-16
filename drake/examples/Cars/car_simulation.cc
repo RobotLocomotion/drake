@@ -10,10 +10,11 @@
 
 using drake::AffineSystem;
 using drake::NullVector;
+using drake::parsers::ModelInstanceIdTable;
+
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-using drake::parsers::ModelInstanceIdTable;
 
 namespace drake {
 namespace examples {
@@ -75,13 +76,10 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  // Instantiates a null frame.
-  std::shared_ptr<RigidBodyFrame> weld_to_frame;
-
   // Adds a robot model.
   ModelInstanceIdTable vehicle_instance_id_table =
       rigid_body_sys->AddModelInstanceFromFile(argv[1],
-          DrakeJoint::QUATERNION, weld_to_frame);
+          DrakeJoint::QUATERNION);
 
   // Verifies that only one vehicle was added to the world.
   if (vehicle_instance_id_table.size() != 1) {
@@ -109,8 +107,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
         *duration = atof(argv[ii]);
     } else {
       ModelInstanceIdTable world_instance_id_table =
-          rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED,
-              weld_to_frame);
+          rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED);
       AddModelInstancesToTable(world_instance_id_table,
           model_instance_id_table);
     }
@@ -154,7 +151,6 @@ double ParseDuration(int argc, const char* argv[]) {
 void AddFlatTerrainToWorld(
     const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
     double box_size, double box_depth) {
-
   DrakeShapes::Box geom(Eigen::Vector3d(box_size, box_size, box_depth));
   Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
   T_element_to_link.translation() << 0, 0,
