@@ -9,6 +9,7 @@ set(sources
   diagram_context.cc
   leaf_system.cc
   primitives/adder.cc
+  primitives/constant_vector_source.cc
   primitives/integrator.cc
   state.cc
   state_subvector.cc
@@ -41,6 +42,7 @@ set(installed_headers
   leaf_state_vector.h
   leaf_system.h
   primitives/adder.h
+  primitives/constant_vector_source.h
   primitives/integrator.h
   state.h
   state_subvector.h

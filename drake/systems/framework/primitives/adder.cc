@@ -44,6 +44,7 @@ void Adder<T>::EvalOutput(const ContextBase<T>& context,
   }
 }
 
+// Explicitly instantiates on the most common scalar types.
 template class DRAKESYSTEMFRAMEWORK_EXPORT Adder<double>;
 
 }  // namespace systems
