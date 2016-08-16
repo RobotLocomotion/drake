@@ -28,7 +28,7 @@ std::unique_ptr<FreestandingInputPort<T>> MakeInput(
   return make_unique<FreestandingInputPort<T>>(std::move(data));
 }
 
-// Tests the capability to take derivatives of the output with respect to
+// Tests the apability to take derivatives of the output with respect to
 // the input. Since `y = u` the derivative in this case is the identity matrix.
 GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   // In this unit test with vectors of length three, derivatives will be taken
@@ -71,7 +71,7 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   expected(2).derivatives() << 0.0, 0.0, 1.0;
 
   const double tolerance = Eigen::NumTraits<double>::epsilon();
-  for (int i=0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     // Checks output value.
     EXPECT_NEAR(expected(i).value(), output_vector(i).value(), tolerance);
 

@@ -35,6 +35,8 @@ void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
 
+  // TODO(amcastro-tri): replace hard-coded "1" with
+  // this->get_num_output_ports() after #3097 is merged.
   DRAKE_ASSERT(output->get_num_ports() == 1);
   VectorInterface<T>* output_vector =
       output->get_mutable_port(0)->GetMutableVectorData();
@@ -42,34 +44,31 @@ void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
   DRAKE_ASSERT(output_vector->get_value().rows() == length_);
 
   // Check that there are the expected number of input ports.
-  // TODO(amcastro-tri): This check should be performed by System<T>::Finalize.
+  // TODO(amcastro-tri): replace hard-coded "1" with
+  // this->get_num_input_ports() after #3097 is merged.
   if (context.get_num_input_ports() != 1) {
     throw std::out_of_range("Expected only one input port, but had " +
         std::to_string(context.get_num_input_ports()));
   }
 
   // There is only one input.
-  // TODO(amcastro-tri): This line should read:
-  // InputPort& input_port = System<T>::get_input_port(0);
-  // auto& input_vector = input_port.get_vector(context); // where the return is
-  // an Eigen expression.
-  // A plausible alternative would be:
+  // TODO(amcastro-tri): Solve #3140 so that the next line reads:
   // auto& input_vector = System<T>::get_input_vector(context, 0);
-  const VectorInterface<T>* input = context.get_vector_input(0);
+  // where the return is an Eigen expression.
+  const VectorInterface<T>* input_vector = context.get_vector_input(0);
 
   // Check the expected length.
-  // TODO(amcastro-tri): This check should be performed by System<T>::Finalize.
-  if (input == nullptr || input->get_value().rows() != length_) {
+  if (input_vector == nullptr || input_vector->get_value().rows() != length_) {
     throw std::out_of_range("Input port is nullptr or has incorrect size.");
   }
 
-  // TODO(amcastro-tri): System<T> should provide interfaces to directly get the
-  // actually useful Eigen vectors like so:
-  // auto input_vector = System<T>::get_input_port(0).get_vector(context);
-  // auto output_vector =
-  //   System<T>::get_output_port(0).get_mutable_vector(context);
-  // TODO(amcastro-tri): caching must be used here to avoid unnecessary copies.
-  output_vector->get_mutable_value() = input->get_value();
+  // TODO(amcastro-tri): Solve #3140 so that we can readily access the Eigen
+  // vector like so:
+  // auto& output_vector = System<T>::get_output_vector(context, 0);
+  // where the return is an Eigen expression.
+  // TODO(amcastro-tri): the output should simply reference the input port's
+  // value to avoid copy.
+  output_vector->get_mutable_value() = input_vector->get_value();
 }
 
 }  // namespace systems
