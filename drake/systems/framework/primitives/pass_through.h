@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/systems/framework/system.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
@@ -13,20 +13,12 @@ namespace systems {
 /// The input to this system directly feeds through to its output.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class PassThrough : public System<T> {
+class PassThrough : public LeafSystem<T> {
  public:
   /// Constructs a Buffer system (`y = u`) with input/output ports of size
   /// @p. length.
   /// @param length is the size of the signal to be processed.
   explicit PassThrough(int length);
-
-  // Allocates default context for a PassThrough system.
-  // Allocates no state.
-  std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override;
-
-  // Allocates one output port of the length specified in the constructor.
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const ContextBase<T>& context) const override;
 
   /// Sets the output port to equal the input port.
   /// If the number of connected input or output ports differs from one or the

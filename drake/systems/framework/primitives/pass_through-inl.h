@@ -1,9 +1,9 @@
 #pragma once
 
 /// @file
-/// Template method implementations for @see pass_through.h.
+/// Template method implementations for pass_through.h.
 /// Most users should only include that file, not this one.
-/// For background, @see http://drake.mit.edu/cxx_inl.html.
+/// For background, see http://drake.mit.edu/cxx_inl.html.
 
 #include "drake/systems/framework/primitives/pass_through.h"
 
@@ -20,42 +20,10 @@ namespace systems {
 
 template <typename T>
 PassThrough<T>::PassThrough(int length) : length_(length) {
-  // TODO(amcastro-tri):
-  // parameter length should be used to specify the system's input port and
-  // does not need to be stored in member length_.
   // TODO(amcastro-tri): remove the length parameter from the constructor once
   // #3109 supporting automatic lengths is resolved.
-
-  // TODO(amcastro-tri): Add output ports using System<T>::declare_output_port
-  // after #3102 is merged.
-}
-
-template <typename T>
-std::unique_ptr<ContextBase<T>> PassThrough<T>::CreateDefaultContext() const {
-  std::unique_ptr<Context<T>> context(new Context<T>);
-  // TODO(amcastro-tri): remove this implementation after #3102 is merged since
-  // System<T> will provide a default implementation.
-
-  // A PassThrough block only has one input port.
-  context->SetNumInputPorts(1);
-  return std::unique_ptr<ContextBase<T>>(context.release());
-}
-
-template <typename T>
-std::unique_ptr<SystemOutput<T>> PassThrough<T>::AllocateOutput(
-    const ContextBase<T>& context) const {
-  // TODO(amcastro-tri): remove this implementation after #3102 is merged since
-  // System<T> will provide a default implementation.
-
-  // A PassThrough has just one output port, a BasicVector of the size specified
-  // at construction time.
-  std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
-  {
-    std::unique_ptr<BasicVector<T>> data(new BasicVector<T>(length_));
-    std::unique_ptr<OutputPort<T>> port(new OutputPort<T>(std::move(data)));
-    output->get_mutable_ports()->push_back(std::move(port));
-  }
-  return std::unique_ptr<SystemOutput<T>>(output.release());
+  this->DeclareInputPort(kVectorValued, length, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, length, kContinuousSampling);
 }
 
 template <typename T>
