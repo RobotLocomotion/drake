@@ -584,7 +584,7 @@ void ParseJointKeyParams(XMLElement* node, string& name, string& type,
 }
 
 void ParseJointTransmission(RigidBodyTree* tree, XMLElement* node,
-                            const string& name) {
+                            const string& name, int model_instance_id) {
   XMLElement* mimic_node = node->FirstChildElement("mimic");
   if (mimic_node) {
     // Obtains the mimic joint.
@@ -601,7 +601,7 @@ void ParseJointTransmission(RigidBodyTree* tree, XMLElement* node,
     parseScalarAttribute(mimic_node, "offset", offset);
 
     RigidBodyJointTransmission joint_trans(name, mimic_joint, multiplier,
-                                           offset);
+                                           offset, model_instance_id);
     tree->joint_transmissions.push_back(joint_trans);
   }
 }
@@ -677,7 +677,7 @@ void ParseJoint(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
   tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 
   // Parse the `mimic` tag if it exists.
-  ParseJointTransmission(tree, node, name);
+  ParseJointTransmission(tree, node, name, tree->bodies[child_index]->get_model_instance_id());
 }
 
 /* Searches through the URDF document looking for the effort limits of a joint

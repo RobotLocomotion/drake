@@ -44,10 +44,11 @@ std::shared_ptr<RigidBodySystem> ParseMechanicalTransmission() {
  */
 Eigen::VectorXd EvaluateMechanicalTransmissionConstraint(
     const std::shared_ptr<RigidBodyTree>& tree, double joint1_val,
-    double joint2_val) {
+    double joint2_val, int model_id = -1) {
   int nq = tree->number_of_positions();
-  int joint1_idx = tree->findJoint("joint1")->get_position_start_index();
-  int joint2_idx = tree->findJoint("joint2")->get_position_start_index();
+  int joint1_idx = tree->findJoint("joint1",model_id)->get_position_start_index();
+  int joint2_idx = tree->findJoint("joint2",model_id)->get_position_start_index();
+  std::cout<<"joint1_idx:"<<joint1_idx<<" joint2_idx:"<<joint2_idx<<std::endl;
   VectorXd q0(nq);
   q0.setZero();
   q0(joint1_idx) = joint1_val;
@@ -160,6 +161,31 @@ GTEST_TEST(MechanicalTransmissionTest, MechanicalTransmissionSimulation) {
       0.5, 5e-2);
 }
 
+// Test if the joint transmission constraint is parsed correctly when we have
+// two identical model instances in the same rigid body tree.
+GTEST_TEST(MechanicalTransmissionTest,ParseMechanicalTransmissionMultipleModelInstance) {
+  auto rigid_body_system = ParseMechanicalTransmission();
+  rigid_body_system->AddModelInstanceFromFile(
+      drake::GetDrakePath() +
+          "/examples/MechanicalTransmission/mechanical_transmission.urdf",
+      DrakeJoint::FIXED);
+  auto tree = rigid_body_system->getRigidBodyTree();
+  std::cout<<"number of model instances"<<tree->get_number_of_model_instances()<<std::endl;
+
+  // Joint values (2.0,2.0,0.0,0.0) should satisfy the first joint transmission constraint
+  Eigen::VectorXd result1 = EvaluateMechanicalTransmissionConstraint(tree, 2.0, 2.0, 0);
+  Eigen::Vector2d result1_check(0.0,-1.0);
+  EXPECT_TRUE(CompareMatrices(result1, result1_check,
+                              Eigen::NumTraits<double>::epsilon(),
+                              MatrixCompareType::absolute));
+
+  // Joint values (0.0,0.0,2.0,0.0) should satisfy the second joint transmission constraint
+  Eigen::VectorXd result2 = EvaluateMechanicalTransmissionConstraint(tree, 2.0, 2.0, 1);
+  Eigen::Vector2d result2_check(-1.0,0.0);
+  EXPECT_TRUE(CompareMatrices(result2, result2_check,
+                            Eigen::NumTraits<double>::epsilon(),
+                            MatrixCompareType::absolute));
+}
 }  // namespace
 }  // namespace mechanical_transmission
 }  // namespace examples
