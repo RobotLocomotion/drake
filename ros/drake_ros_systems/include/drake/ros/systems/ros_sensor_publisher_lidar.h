@@ -136,7 +136,7 @@ class SensorPublisherLidar {
 
         sensor_struct->message.reset(new sensor_msgs::LaserScan());
         sensor_struct->message->header.frame_id = model_instance_name +
-            "/lidar/" + sensor_name;
+            "/" + sensor_name;
 
         // The rigid body depth sensor scans either horizontally or
         // vertically.
