@@ -20,7 +20,7 @@ namespace systems {
 ///
 /// Each evaluation of the constraint considers a pair of state
 /// vectors + input vectors along with an accompanying timestep.
-class DRAKEDYNAMICCONSTRAINT_EXPORT DynamicConstraint :
+class DRAKEDYNAMICCONSTRAINT_EXPORT DirectCollocationConstraint :
       public solvers::Constraint {
  public:
   /// The format of the input to the eval() function is defined by @p
@@ -33,8 +33,8 @@ class DRAKEDYNAMICCONSTRAINT_EXPORT DynamicConstraint :
   /// num_states: state 1
   /// num_inputs: input 0
   /// num_inputs: input 1
-  DynamicConstraint(int num_states, int num_inputs);
-  virtual ~DynamicConstraint();
+  DirectCollocationConstraint(int num_states, int num_inputs);
+  virtual ~DirectCollocationConstraint();
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
@@ -54,11 +54,11 @@ class DRAKEDYNAMICCONSTRAINT_EXPORT DynamicConstraint :
 /// Implements a dynamic constraint which uses the dynamics function
 /// of a system.
 template <typename System>
-class SystemDynamicConstraint : public DynamicConstraint {
+class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
  public:
   // TODO(sam.creasey) Should this be a const bare ptr?
-  explicit SystemDynamicConstraint(std::shared_ptr<System> system)
-      : DynamicConstraint(drake::getNumStates(*system),
+  explicit SystemDirectCollocationConstraint(std::shared_ptr<System> system)
+      : DirectCollocationConstraint(drake::getNumStates(*system),
                           drake::getNumInputs(*system)),
         system_(system) {}
 
