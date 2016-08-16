@@ -9,7 +9,7 @@
 
 #include "gtest/gtest.h"
 
-using Eigen::Vector2d;
+using Eigen::Matrix;
 using std::make_unique;
 
 namespace drake {
@@ -32,7 +32,7 @@ class ConstantVectorSourceTest : public ::testing::Test {
     return make_unique<FreestandingInputPort<double>>(std::move(data));
   }
 
-  const Vector2d kConstantVectorSource{2.0, 1.5};
+  const Matrix<double, 2, 1, Eigen::DontAlign> kConstantVectorSource{2.0, 1.5};
   std::unique_ptr<ConstantVectorSource<double>> source_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -41,15 +41,15 @@ class ConstantVectorSourceTest : public ::testing::Test {
 
 TEST_F(ConstantVectorSourceTest, OutputTest) {
   // TODO(amcastro-tri): we should be able to ask:
-  // source_->num_of_input_ports() after #3102.
+  // source_->num_of_input_ports() after #3097.
   ASSERT_EQ(0, context_->get_num_input_ports());
   // TODO(amcastro-tri): we should be able to ask:
-  // source_->num_of_output_ports() after #3102.
+  // source_->num_of_output_ports() after #3097.
   ASSERT_EQ(1, output_->get_num_ports());
 
   source_->EvalOutput(*context_, output_.get());
 
-  // TODO(amcastro-tri): we should be able to ask something like:
+  // TODO(amcastro-tri): Solve #3140 so that the next line reads:
   // auto& source_->get_output_vector(context, 0);
   // to directly get an Eigen expression.
   const BasicVector<double>* output_vector =
