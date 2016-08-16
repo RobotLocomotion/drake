@@ -4,6 +4,8 @@
 drake_install_headers(
   adder.h
   constant_vector_source.h
+  gain.h
+  gain-inl.h
   integrator.h)
 
 add_subdirectory(test)

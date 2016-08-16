@@ -11,6 +11,7 @@ set(sources
   leaf_system.cc
   primitives/adder.cc
   primitives/constant_vector_source.cc
+  primitives/gain.cc
   primitives/integrator.cc
   state.cc
   state_subvector.cc
