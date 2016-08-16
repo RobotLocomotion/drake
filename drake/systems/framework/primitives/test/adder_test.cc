@@ -26,9 +26,9 @@ class AdderTest : public ::testing::Test {
     input1_.reset(new BasicVector<double>(3 /* length */));
   }
 
-  static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
+  static std::unique_ptr<FreestandingInputPort> MakeInput(
       std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort<double>>(std::move(data));
+    return make_unique<FreestandingInputPort>(std::move(data));
   }
 
   std::unique_ptr<System<double>> adder_;
@@ -70,8 +70,7 @@ TEST_F(AdderTest, AddTwoVectors) {
 
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_port =
-      dynamic_cast<const BasicVector<double>*>(
-          output_->get_port(0).get_vector_data());
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, output_port);
   Eigen::Vector3d expected;
   expected << 5, 7, 9;
