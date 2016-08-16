@@ -6,12 +6,14 @@
 #include "drake/examples/Cars/gen/euler_floating_joint_state.h"
 #include "drake/examples/Cars/gen/simple_car_state.h"
 #include "drake/examples/Cars/trajectory_car.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 
 using drake::AffineSystem;
 using drake::NullVector;
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using drake::parsers::ModelInstanceIdTable;
 
 namespace drake {
 namespace examples {
@@ -49,9 +51,21 @@ void PrintUsageInstructions(const std::string& executable_name) {
     << std::endl;
 }
 
-std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
-                                                       const char* argv[],
-                                                       double* duration) {
+void AddModelInstancesToTable(const ModelInstanceIdTable& source_table,
+    ModelInstanceIdTable* dest_table) {
+  for (auto const &model_entry : source_table) {
+    const std::string& model_name = model_entry.first;
+    if (dest_table->find(model_name) != dest_table->end()) {
+      throw std::runtime_error("AddModelInstancesToTable: Collision occured "
+          "with model name\"" + model_name + "\".");
+    }
+    (*dest_table)[model_name] = model_entry.second;
+  }
+}
+
+std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
+    int argc, const char* argv[], double* duration,
+    ModelInstanceIdTable* model_instance_id_table) {
   if (argc < 2) {
     PrintUsageInstructions(argv[0]);
     exit(EXIT_FAILURE);
@@ -61,8 +75,22 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
+  // Instantiates a null frame.
+  std::shared_ptr<RigidBodyFrame> weld_to_frame;
+
   // Adds a robot model.
-  rigid_body_sys->AddModelInstanceFromFile(argv[1], DrakeJoint::QUATERNION);
+  ModelInstanceIdTable vehicle_instance_id_table =
+      rigid_body_sys->AddModelInstanceFromFile(argv[1],
+          DrakeJoint::QUATERNION, weld_to_frame);
+
+  // Verifies that only one vehicle was added to the world.
+  if (vehicle_instance_id_table.size() != 1) {
+    throw std::runtime_error(
+        "More than one vehicle model was added to the world.");
+  }
+
+  // Saves the vehicle model into the model_instance_id_table output parameter.
+  *model_instance_id_table = vehicle_instance_id_table;
 
   if (duration != nullptr) {
     // Initializes duration to be infinity.
@@ -80,7 +108,11 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
       if (duration != nullptr)
         *duration = atof(argv[ii]);
     } else {
-      rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED);
+      ModelInstanceIdTable world_instance_id_table =
+          rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED,
+              weld_to_frame);
+      AddModelInstancesToTable(world_instance_id_table,
+          model_instance_id_table);
     }
   }
 
@@ -88,7 +120,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
   if (argc < 3) {
     const std::shared_ptr<RigidBodyTree>& tree =
         rigid_body_sys->getRigidBodyTree();
-    AddFlatTerrain(tree);
+    AddFlatTerrainToWorld(tree);
   }
 
   // Sets various simulation parameters.
@@ -119,8 +151,10 @@ double ParseDuration(int argc, const char* argv[]) {
   return std::numeric_limits<double>::infinity();
 }
 
-void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
+void AddFlatTerrainToWorld(
+    const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
     double box_size, double box_depth) {
+
   DrakeShapes::Box geom(Eigen::Vector3d(box_size, box_size, box_depth));
   Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
   T_element_to_link.translation() << 0, 0,

@@ -65,7 +65,7 @@ int do_main(int argc, const char* argv[]) {
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
-  AddFlatTerrain(tree);
+  AddFlatTerrainToWorld(tree);
 
   // Initializes and cascades all of the systems.
   auto visualizer =

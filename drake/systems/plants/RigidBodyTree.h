@@ -40,6 +40,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   static const char* const kWorldName;
 
+  /**
+   * Defines the world's model instance ID.
+   */
+  static const int kWorldModelInstanceID;
+
   RigidBodyTree(const std::string& urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type =
                     DrakeJoint::ROLLPITCHYAW);
@@ -601,6 +606,19 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       const std::string& model_name = "",
                       int model_id = -1) const;
 
+  /**
+   * Returns a vector of pointers to all rigid bodies in this tree that belong
+   * to a particular model instance.
+   *
+   * @param[in] model_instance_id The ID of the model instance whose rigid
+   * bodies are being searched for.
+   *
+   * @return A vector of pointers to every rigid body belonging to the sepcified
+   * model instance.
+   */
+  std::vector<const RigidBody*>
+  FindModelInstanceBodies(int model_instance_id);
+
 /**
  * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
  * instead.
@@ -621,14 +639,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @param[in] body_name The body whose index we want to find. It should
    * be unique within the searched models, otherwise an exception will be
    * thrown.
-   * @param[in] model_id The ID of the model. This parameter is optional. If
-   * supplied, only the model with the specified ID is searched; otherwise, all
-   * models are searched.
+   *
+   * @param[in] model_instance_id The ID of the model instance. This parameter
+   * is optional. If supplied, only the model instance with the specified
+   * instance ID is searched; otherwise, all model instances are searched.
+   *
    * @return The index of the specified rigid body.
+   *
    * @throws std::logic_error if no rigid body with the specified \p body_name
    * and \p model_id was found or if multiple matching rigid bodies were found.
    */
-  int FindBodyIndex(const std::string& body_name, int model_id = -1) const;
+  int FindBodyIndex(const std::string& body_name, int model_instance_id = -1)
+      const;
 
 /**
  * This is a deprecated version of `FindBodyIndex(...)`. Please use

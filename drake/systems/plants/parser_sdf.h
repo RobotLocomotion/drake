@@ -66,6 +66,32 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
+/**
+ * Adds a SDF model to a rigid body system.
+ *
+ * @param[in] description The SDF description of one or more models.
+ *
+ * @param[in] package_map A map of ROS package names to their paths. These are
+ * the packages to search through when finding files referenced in the URDF.
+ *
+ * @param[in] floating_base_type The type of joint that connects the model's
+ * root to the existing rigid body tree.
+ *
+ * @param[in] weld_to_frame The frame to which to connect the new model.
+ *
+ * @param[out] tree The rigid body tree to which to add the model.
+ *
+ * @return A table mapping the names of the models whose instances were just
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
+ */
+DRAKERBM_EXPORT
+ModelInstanceIdTable AddModelInstancesFromSdfDescription(
+    const std::string& description,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree);
+
 }  // namespace sdf
 }  // namespace parsers
 }  // namespace drake

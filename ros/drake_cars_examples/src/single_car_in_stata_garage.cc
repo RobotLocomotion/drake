@@ -49,10 +49,23 @@ int do_main(int argc, const char* argv[]) {
   // CreateRigidBodySystem() below.
   double duration = std::numeric_limits<double>::infinity();
 
+  // Instantiates a data structure that maps model instance names to their model
+  // instance IDs.
+  drake::parsers::ModelInstanceIdTable model_instances;
+
   // Initializes the rigid body system.
-  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration);
+  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration,
+      &model_instances);
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
+
+  // Instantiates a map that converts model instance IDs to model instance
+  // names.
+  std::map<int, std::string> model_instance_names;
+  model_instance_names[RigidBodyTree::kWorldModelInstanceID] =
+      RigidBodyTree::kWorldName;
+  model_instance_names[model_instances["prius_1"]] = "prius";
+  model_instance_names[model_instances["P1"]] = "stata_garage";
 
   // Initializes and cascades all of the other systems.
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);

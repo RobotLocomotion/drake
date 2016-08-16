@@ -185,6 +185,7 @@ void ParseSdfVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
   DrakeShapes::VisualElement element(transform_parent_to_model.inverse() *
                                      transform_to_model);
+
   if (!ParseSdfGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse visual element in link " +
@@ -253,6 +254,7 @@ void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   // parseCollision in RigidBodyTreeURDF.cpp.
   if (body->get_name().compare(std::string(RigidBodyTree::kWorldName)) == 0)
     element.set_static();
+
   if (!ParseSdfGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                         ": ERROR: Failed to parse collision element in link " +
@@ -623,7 +625,6 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
   }
 }
 
-
 // Parses a model and adds it to the rigid body tree. Note that the
 // `ModelInstanceIdTable` is an output parameter rather than a return value
 // since this method may be called multiple times, once for each model in an
@@ -759,9 +760,9 @@ void ParseWorld(RigidBodyTree* model, XMLElement* node,
 }
 
 ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
-              PackageMap& package_map, const string& root_dir,
-              const DrakeJoint::FloatingBaseType floating_base_type,
-              std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    PackageMap& package_map, const string& root_dir,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   populatePackageMap(package_map);
 
   XMLElement* node = xml_doc->FirstChildElement("sdf");
@@ -807,7 +808,6 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
-
   return AddModelInstancesFromSdfFile(filename, floating_base_type,
       nullptr /* weld_to_frame */, tree);
 }
@@ -835,6 +835,30 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
   if (found != string::npos) {
     root_dir = filename.substr(0, found);
   }
+
+  return ParseSdf(tree, &xml_doc, package_map, root_dir, floating_base_type,
+           weld_to_frame);
+}
+
+ModelInstanceIdTable AddModelInstancesFromSdfDescription(
+    const string& description,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree) {
+  // Ensures the output parameter pointers are valid.
+  DRAKE_ABORT_UNLESS(tree);
+
+  PackageMap package_map;
+
+  XMLDocument xml_doc;
+  xml_doc.Parse(description.c_str());
+  if (xml_doc.ErrorID()) {
+    throw std::runtime_error(std::string(__FILE__) + ": " + __func__ +
+                             ": ERROR: Failed to parse XML in SDF description" +
+                             xml_doc.ErrorName() + ".");
+  }
+
+  string root_dir = ".";
 
   return ParseSdf(tree, &xml_doc, package_map, root_dir, floating_base_type,
       weld_to_frame);

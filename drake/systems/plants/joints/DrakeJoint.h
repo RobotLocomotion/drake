@@ -77,6 +77,11 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
 
   virtual bool isFloating() const { return false; }
 
+  /**
+   * Returns whether this joint is fixed.
+   */
+  virtual bool isFixed() const { return false; }
+
   virtual Eigen::VectorXd zeroConfiguration() const = 0;
 
   virtual Eigen::VectorXd randomConfiguration(
