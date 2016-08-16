@@ -197,7 +197,7 @@ function(mex_setup)
   endif()
 
   # figure out LDFLAGS for exes and shared libraries
-  set (MEXLIB_LDFLAGS ${MEX_LDFLAGS} ${MEX_LD_ARGUMENTS} ${MEX_CLIBS} ${MEX_LINKLIBS} ${MEX_LINKEXPORT})
+  set (MEXLIB_LDFLAGS ${MEX_LDFLAGS} ${MEX_LD_ARGUMENTS} ${MEX_CXXLIBS} ${MEX_LINKLIBS} ${MEX_LINKEXPORT})
 
   if (NOT WIN32) # AND (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX))
     set(MEXLIB_LDFLAGS ${MEXLIB_LDFLAGS} "-ldl")
@@ -225,7 +225,7 @@ function(mex_setup)
 
 
   # todo: handle C separately from CXX?
-  set (MEX_COMPILE_FLAGS "${MEX_INCLUDE} ${MEX_CXXFLAGS} ${MEX_DEFINES} ${MEX_MATLABMEX} ${MEX_CXX_ARGUMENTS}")
+  set (MEX_COMPILE_FLAGS "${MEX_CXXFLAGS} ${MEX_CXX_ARGUMENTS}")
   string(TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
   if (_build_type MATCHES DEBUG)
 #     set(MEX_COMPILE_FLAGS "${MEX_CXXDEBUGFLAGS} ${MEX_COMPILE_FLAGS}")
@@ -236,10 +236,10 @@ function(mex_setup)
 #     set(MEX_COMPILE_FLAGS "${MEX_CXXOPTIMFLAGS} ${MEX_COMPILE_FLAGS}")
   endif()
 
-  if (${MEX_COMPILE_FLAGS} MATCHES "-ansi")
+#   if (${MEX_COMPILE_FLAGS} MATCHES "-ansi")
     string(REPLACE "-ansi" "" MEX_COMPILE_FLAGS "${MEX_COMPILE_FLAGS}")
 #     message(WARNING "Your MEX compiler flags contained '-ansi', but we've removed that flag for compatibility with C++11")
-  endif()
+#   endif()
 
   set(MEX_COMPILE_FLAGS "${MEX_COMPILE_FLAGS}" PARENT_SCOPE)
 
@@ -290,7 +290,7 @@ function(add_mex)
     return() # return quietly if matlab is not found.  (note: if matlab/mex is REQUIRED, then it will have been found before getting here)
   endif()
 
-  include_directories( ${MATLAB_ROOT}/extern/include ${MATLAB_ROOT}/simulink/include )
+  include_directories( SYSTEM ${MATLAB_ROOT}/extern/include ${MATLAB_ROOT}/simulink/include )
 
   list(FIND ARGV OUTPUT_NAME output_arg)
   if (output_arg GREATER -1)
