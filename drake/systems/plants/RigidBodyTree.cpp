@@ -21,7 +21,6 @@
 #include <fstream>
 #include <iostream>
 
-using namespace std;
 using namespace Eigen;
 
 using drake::AutoDiffUpTo73d;
@@ -40,6 +39,23 @@ using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::Gradient;
+
+using std::allocator;
+using std::cerr;
+using std::cout;
+using std::equal_to;
+using std::hash;
+using std::less;
+using std::map;
+using std::ofstream;
+using std::pair;
+using std::runtime_error;
+using std::set;
+using std::shared_ptr;
+using std::string;
+using std::unordered_map;
+using std::vector;
+using std::endl;
 
 const set<int> RigidBodyTree::default_model_instance_id_set = {0};
 const char* const RigidBodyTree::kWorldName = "world";
