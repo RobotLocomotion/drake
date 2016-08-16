@@ -29,12 +29,6 @@ PassThrough<T>::PassThrough(int length) : length_(length) {
 template <typename T>
 void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
                           SystemOutput<T>* output) const {
-  // Checks that the single output port has the correct length.
-  // Checks on the output structure are assertions, not exceptions,
-  // since failures would reflect a bug in the PassThrough implementation, not
-  // user error setting up the system graph. They do not require unit test
-  // coverage, and should not run in release builds.
-
   // TODO(amcastro-tri): replace hard-coded "1" with
   // this->get_num_output_ports() after #3097 is merged.
   DRAKE_ASSERT(output->get_num_ports() == 1);

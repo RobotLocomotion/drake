@@ -28,7 +28,7 @@ std::unique_ptr<FreestandingInputPort<T>> MakeInput(
   return make_unique<FreestandingInputPort<T>>(std::move(data));
 }
 
-// Tests the apability to take derivatives of the output with respect to
+// Tests the ability to take derivatives of the output with respect to
 // the input. Since `y = u` the derivative in this case is the identity matrix.
 GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   // In this unit test with vectors of length three, derivatives will be taken
@@ -58,7 +58,7 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
 
   ASSERT_EQ(1, output->get_num_ports());
   const auto& output_vector =
-      dynamic_cast<const BasicVector<T> *>(
+      dynamic_cast<const BasicVector<T>*>(
           output->get_port(0).get_vector_data())->get_value();
 
   // The expected output value equals the input.
@@ -70,14 +70,12 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   expected(1).derivatives() << 0.0, 1.0, 0.0;
   expected(2).derivatives() << 0.0, 0.0, 1.0;
 
-  const double tolerance = Eigen::NumTraits<double>::epsilon();
   for (int i = 0; i < 3; ++i) {
     // Checks output value.
-    EXPECT_NEAR(expected(i).value(), output_vector(i).value(), tolerance);
+    EXPECT_EQ(expected(i).value(), output_vector(i).value());
 
     // Checks derivatives.
-    EXPECT_TRUE(expected(i).derivatives().isApprox(
-        output_vector(i).derivatives(), tolerance));
+    EXPECT_EQ(expected(i).derivatives(), output_vector(i).derivatives());
   }
 }
 

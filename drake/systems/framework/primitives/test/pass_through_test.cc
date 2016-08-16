@@ -44,7 +44,7 @@ class PassThroughTest : public ::testing::Test {
 // Tests that the output of this system equals its input.
 TEST_F(PassThroughTest, VectorThroughPassThroughSystem) {
   // Hook input of the expected size.
-  // TODO(amcastro-tri): we must be able to ask buffer_->num_of_input_ports().
+  // TODO(amcastro-tri): Check with buffer_->get_num_input_ports() after #3097.
   ASSERT_EQ(1, context_->get_num_input_ports());
   Eigen::Vector3d input_vector(1.0, 3.14, 2.18);
   input_->get_mutable_value() << input_vector;
@@ -53,7 +53,7 @@ TEST_F(PassThroughTest, VectorThroughPassThroughSystem) {
 
   buffer_->EvalOutput(*context_, output_.get());
 
-  // TODO(amcastro-tri): we must be able to ask buffer_->num_of_output_ports().
+  // TODO(amcastro-tri): Check with buffer_->get_num_output_ports() after #3097.
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_vector =
       dynamic_cast<const BasicVector<double>*>(
@@ -82,7 +82,7 @@ TEST_F(PassThroughTest, NoInputPorts) {
 // are the same size even if their sizes were determined automatically.
 TEST_F(PassThroughTest, WrongSizeOfInputPorts) {
   // Hook up input port, but of the wrong size.
-  // TODO(amcastro-tri): we must be able to ask buffer_->num_of_input_ports().
+  // TODO(amcastro-tri): Check with buffer_->get_num_input_ports() after #3097.
   ASSERT_EQ(1, context_->get_num_input_ports());
   auto short_input = make_unique<BasicVector<double>>(2 /* length */);
   short_input->get_mutable_value() << 4, 5;
