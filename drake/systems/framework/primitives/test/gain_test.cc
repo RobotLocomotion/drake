@@ -48,18 +48,22 @@ class GainTest : public ::testing::Test {
 };
 
 TEST_F(GainTest, VectorThroughGainSystem) {
-  // Hook input of the expected size.
-  // TODO(amcastro-tri): we must be able to ask gain_->num_of_input_ports().
+  // Checks that the number of input ports in the Gain system and the Context
+  // are consistent.
+  ASSERT_EQ(1, gain_->get_num_input_ports());
   ASSERT_EQ(1, context_->get_num_input_ports());
   Eigen::Vector3d input_vector(1.0, 3.14, 2.18);
   input0_->get_mutable_value() << input_vector;
 
+  // Hook input of the expected size.
   context_->SetInputPort(0, MakeInput(std::move(input0_)));
 
   gain_->EvalOutput(*context_, output_.get());
 
-  // TODO(amcastro-tri): we must be able to ask gain_->num_of_output_ports().
+  // Checks that the number of output ports in the Gain system and the
+  // SystemOutput are consistent.
   ASSERT_EQ(1, output_->get_num_ports());
+  ASSERT_EQ(1, gain_->get_num_output_ports());
   const BasicVector<double>* output_vector =
       dynamic_cast<const BasicVector<double>*>(
           output_->get_port(0).get_vector_data());

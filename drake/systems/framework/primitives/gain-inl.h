@@ -40,7 +40,7 @@ void Gain<T>::EvalOutput(const ContextBase<T>& context,
       output->get_mutable_port(0)->GetMutableVectorData();
   DRAKE_ASSERT(output_vector != nullptr);
   DRAKE_ASSERT(output_vector->get_value().rows() ==
-      static_cast<int>(this->get_output_ports().size()));
+      this->get_output_port(0).get_size());
 
   // Check that there are the expected number of input ports.
   if (context.get_num_input_ports() != 1) {
@@ -49,12 +49,9 @@ void Gain<T>::EvalOutput(const ContextBase<T>& context,
   }
 
   // There is only one input.
-  // TODO(amcastro-tri): This line should read:
-  // InputPort& input_port = System<T>::get_input_port(0);
-  // auto& input_vector = input_port.get_vector(context); // where the return is
-  // an Eigen expression.
-  // A plausible alternative would be:
+  // TODO(amcastro-tri): Solve #3140 so that the next line reads:
   // auto& input_vector = System<T>::get_input_vector(context, 0);
+  // where the return is an Eigen expression.
   const VectorInterface<T>* input_vector = context.get_vector_input(0);
 
   // Check the expected length.
@@ -62,11 +59,10 @@ void Gain<T>::EvalOutput(const ContextBase<T>& context,
   DRAKE_ASSERT(input_vector->get_value().rows() ==
       this->get_input_port(0).get_size());
 
-  // TODO(amcastro-tri): System<T> should provide interfaces to directly get the
-  // actually useful Eigen vectors like so:
-  // auto input_vector = System<T>::get_input_port(0).get_vector(context);
-  // auto output_vector =
-  //   System<T>::get_output_port(0).get_mutable_vector(context);
+  // TODO(amcastro-tri): Solve #3140 so that we can readily access the Eigen
+  // vector like so:
+  // auto& output_vector = System<T>::get_output_vector(context, 0);
+  // where the return is an Eigen expression.
   output_vector->get_mutable_value() = gain_ * input_vector->get_value();
 }
 

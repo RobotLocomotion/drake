@@ -36,8 +36,8 @@ std::unique_ptr<FreestandingInputPort<T>> MakeInput(
 // derivatives with respect to this input are zero.
 GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   // There are only two independent variables in this problem with respect to
-  // which we want to take derivatives. Therefore the Vector2d_unaligned
-  // in the template argument of AutoDiffScalar.
+  // which we want to take derivatives. Therefore Vector2d_unaligned is the
+  // template argument of AutoDiffScalar.
   // TODO(amcastro-tri): change to Vector2d once #3145 is fixed.
   typedef Eigen::Matrix<double, 2, 1, Eigen::DontAlign> Vector2d_unaligned;
   typedef AutoDiffScalar<Vector2d_unaligned> T;
@@ -80,7 +80,7 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   expected(2).derivatives() << 0.0, kGain;
 
   const double tolerance = Eigen::NumTraits<double>::epsilon();
-  for (int i=0; i < 3; ++i) {
+  for (int i = 0; i < 3; ++i) {
     // Checks output value.
     EXPECT_NEAR(expected(i).value(), output_vector(i).value(), tolerance);
 
