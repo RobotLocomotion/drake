@@ -7,12 +7,13 @@
 
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/math/autodiff.h"
-#include "drake/systems/plants/constraint/dynamic_constraint.h"
+#include "drake/systems/plants/constraint/direct_collocation_constraint.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 using drake::util::MatrixCompareType;
 
-GTEST_TEST(PendulumDynamicConstraint, PendulumDynamicConstraintTest) {
+GTEST_TEST(PendulumDirectCollocationConstraint,
+           PendulumDirectCollocationConstraintTest) {
   auto p = make_shared<Pendulum>();
 
   Eigen::VectorXd x(1 + drake::getNumStates(*p) * 2 +
@@ -25,7 +26,7 @@ GTEST_TEST(PendulumDynamicConstraint, PendulumDynamicConstraintTest) {
   x(5) = 0.00537668;   // u0
   x(6) = 0.018339;     // u1
 
-  drake::systems::SystemDynamicConstraint<Pendulum> dut(p);
+  drake::systems::SystemDirectCollocationConstraint<Pendulum> dut(p);
 
   drake::TaylorVecXd result;
   dut.Eval(drake::math::initializeAutoDiff(x), result);
