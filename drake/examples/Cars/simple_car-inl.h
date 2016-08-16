@@ -1,9 +1,9 @@
 #pragma once
 
 /// @file
-/// Template method implementations for @see simple_car.h.
+/// Template method implementations for simple_car.h.
 /// Most users should only include that file, not this one.
-/// For background, @see http://drake.mit.edu/cxx_inl.html.
+/// For background, see http://drake.mit.edu/cxx_inl.html.
 
 #include "simple_car.h"
 
