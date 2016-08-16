@@ -10,6 +10,7 @@ set(sources
   diagram_context.cc
   leaf_system.cc
   primitives/adder.cc
+  primitives/constant_value_source.cc
   primitives/constant_vector_source.cc
   primitives/gain.cc
   primitives/integrator.cc

@@ -31,9 +31,7 @@ void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
                           SystemOutput<T>* output) const {
   DRAKE_ASSERT(System<T>::IsValidOutput(*output));
   DRAKE_ASSERT(System<T>::IsValidContext(context));
-
-  VectorInterface<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
+  VectorInterface<T>* output_vector = output->GetMutableVectorData(0);
 
   // TODO(amcastro-tri): Solve #3140 so that the next line reads:
   // auto& input_vector = System<T>::get_input_vector(context, 0);
