@@ -5,9 +5,9 @@
 #include <Eigen/Core>
 
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/core/Gradient.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/gradient.h"
 #include "drake/solvers/optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/KinematicsCache.h"
@@ -77,7 +77,7 @@ class SingleTimeKinematicConstraintWrapper :
     Eigen::VectorXd y;
     Eigen::MatrixXd dy;
     rigid_body_constraint_->eval(nullptr, kinsol, y, dy);
-    initializeAutoDiffGivenGradientMatrix(
+    math::initializeAutoDiffGivenGradientMatrix(
         y, (dy * drake::math::autoDiffToGradientMatrix(tq)).eval(), ty);
   }
 
@@ -130,7 +130,7 @@ class QuasiStaticConstraintWrapper :
     auto weights = q.tail(rigid_body_constraint_->getNumWeights());
     rigid_body_constraint_->eval(nullptr, kinsol, weights.data(), y, dy);
     y.conservativeResize(num_constraints());
-    initializeAutoDiffGivenGradientMatrix(
+    drake::math::initializeAutoDiffGivenGradientMatrix(
         y, (dy * drake::math::autoDiffToGradientMatrix(tq)).eval(), ty);
   }
 

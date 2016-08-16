@@ -7,8 +7,9 @@
 #include <Eigen/Core>
 
 #include <drake/common/drake_assert.h>
-#include <drake/core/Gradient.h>
 #include <drake/math/autodiff.h>
+#include <drake/math/autodiff_gradient.h>
+#include <drake/math/gradient.h>
 #include <drake/solvers/constraint.h>
 #include <drake/solvers/optimization.h>
 #include <drake/systems/plants/constraint/RigidBodyConstraint.h>
@@ -63,7 +64,7 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
                                            false, &dJ_vec);
     Eigen::VectorXd y_scalar(1);
     y_scalar(0) = J;
-    initializeAutoDiffGivenGradientMatrix(
+    drake::math::initializeAutoDiffGivenGradientMatrix(
         y_scalar,
         (dJ_vec * drake::math::autoDiffToGradientMatrix(x)).eval(), y);
   }
@@ -314,7 +315,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     }
 
     y.resize(y_idx);
-    initializeAutoDiffGivenGradientMatrix(
+    drake::math::initializeAutoDiffGivenGradientMatrix(
         y_scalar, (dy_scalar * drake::math::autoDiffToGradientMatrix(x)), y);
   }
 

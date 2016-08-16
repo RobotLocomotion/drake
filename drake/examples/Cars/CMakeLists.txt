@@ -13,6 +13,7 @@ if(lcm_FOUND)
     curve2.h
     car_simulation.h
     simple_car.h
+    simple_car-inl.h
     trajectory_car.h)
   add_subdirectory(gen)
   pods_install_pkg_config_file(drake-cars
