@@ -13,8 +13,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Integrator<T>::Integrator(int length)
-    : length_(length) {
+Integrator<T>::Integrator(int length) {
   this->DeclareInputPort(kVectorValued, length, kContinuousSampling);
   this->DeclareOutputPort(kVectorValued, length, kContinuousSampling);
 }
@@ -23,17 +22,21 @@ template <typename T>
 void Integrator<T>::ReserveState(Context<T>* context) const {
   // The integrator has a state vector of the same dimension as its input
   // and output.
+  DRAKE_ASSERT(System<T>::get_input_port(0).get_size() ==
+      System<T>::get_output_port(0).get_size());
+  int length = System<T>::get_input_port(0).get_size();
   context->get_mutable_state()->continuous_state.reset(new ContinuousState<T>(
-      std::make_unique<BasicStateVector<T>>(length_), 0 /* size of q */,
-      0 /* size of v */, length_ /* size of z */));
+      std::make_unique<BasicStateVector<T>>(length), 0 /* size of q */,
+      0 /* size of v */, length /* size of z */));
 }
 
 template <typename T>
 std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateTimeDerivatives()
     const {
+  int length = System<T>::get_output_port(0).get_size();
   return std::make_unique<ContinuousState<T>>(
-      std::make_unique<BasicStateVector<T>>(length_), 0 /* size of q */,
-      0 /* size of v */, length_ /* size of z */);
+      std::make_unique<BasicStateVector<T>>(length), 0 /* size of q */,
+      0 /* size of v */, length /* size of z */);
 }
 
 template <typename T>
