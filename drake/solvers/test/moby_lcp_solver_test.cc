@@ -2,10 +2,9 @@
 #include <memory>
 #include <vector>
 #include "drake/solvers/moby_lcp_solver.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace solvers {

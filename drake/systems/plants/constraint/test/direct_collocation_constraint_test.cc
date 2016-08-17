@@ -5,9 +5,7 @@
 
 #include "drake/math/autodiff.h"
 #include "drake/systems/plants/constraint/direct_collocation_constraint.h"
-#include "drake/util/eigen_matrix_compare.h"
-
-using drake::util::MatrixCompareType;
+#include "drake/common/eigen_matrix_compare.h"
 
 namespace drake {
 namespace systems {

@@ -7,13 +7,12 @@
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/robot_state_tap.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 
 using drake::RigidBodySystem;
 using drake::BotVisualizer;
 using Eigen::VectorXd;
 using drake::RobotStateTap;
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace examples {

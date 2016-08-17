@@ -11,7 +11,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/math/quaternion.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 
 using Eigen::Matrix;
 using Eigen::Matrix3d;
@@ -21,8 +21,6 @@ using Eigen::Vector4d;
 
 namespace drake {
 
-using util::CompareMatrices;
-using util::MatrixCompareType;
 
 namespace math {
 namespace {

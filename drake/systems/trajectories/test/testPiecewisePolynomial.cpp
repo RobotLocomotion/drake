@@ -3,7 +3,7 @@
 #include <random>
 #include <vector>
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
@@ -15,7 +15,6 @@ using std::runtime_error;
 using std::normal_distribution;
 using std::uniform_int_distribution;
 
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace {
