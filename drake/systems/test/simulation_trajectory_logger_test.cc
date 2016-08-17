@@ -6,7 +6,6 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 
-
 namespace drake {
 namespace systems {
 namespace test {

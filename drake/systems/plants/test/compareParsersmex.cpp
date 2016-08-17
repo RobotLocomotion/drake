@@ -3,10 +3,10 @@
 #include <cmath>
 #include <iostream>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeMexUtil.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
 using namespace Eigen;

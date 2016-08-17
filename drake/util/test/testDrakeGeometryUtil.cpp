@@ -2,13 +2,13 @@
 #include <iostream>
 
 #include <Eigen/Core>
+#include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
-#include "gtest/gtest.h"
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
