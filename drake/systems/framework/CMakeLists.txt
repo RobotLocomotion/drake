@@ -1,5 +1,6 @@
 # Source files used to build drakeSystemFramework.
 set(sources
+  basic_state_and_output_vector.cc
   basic_state_vector.cc
   basic_vector.cc
   cache.cc
@@ -9,7 +10,10 @@ set(sources
   diagram_context.cc
   leaf_system.cc
   primitives/adder.cc
+  primitives/constant_vector_source.cc
+  primitives/gain.cc
   primitives/integrator.cc
+  primitives/pass_through.cc
   state.cc
   state_subvector.cc
   state_supervector.cc
@@ -31,6 +35,7 @@ set(sources
 # System2 framework template implementations have been moved into .cc files
 # using explicit instantiation, tighten this list.
 set(installed_headers
+  basic_state_and_output_vector.h
   basic_state_vector.h
   basic_vector.h
   cache.h
@@ -40,8 +45,6 @@ set(installed_headers
   diagram_context.h
   leaf_state_vector.h
   leaf_system.h
-  primitives/adder.h
-  primitives/integrator.h
   state.h
   state_subvector.h
   state_supervector.h
@@ -69,5 +72,5 @@ pods_install_pkg_config_file(drake-system-framework
   REQUIRES
   VERSION 0.0.1)
 
+add_subdirectory(primitives)
 add_subdirectory(test)
-add_subdirectory(primitives/test)
