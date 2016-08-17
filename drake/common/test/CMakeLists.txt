@@ -23,6 +23,10 @@ add_executable(polynomial_test polynomial_test.cc)
 target_link_libraries(polynomial_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 add_test(NAME polynomial_test COMMAND polynomial_test)
 
+add_executable(eigen_matrix_compare_test eigen_matrix_compare_test.cc)
+target_link_libraries(eigen_matrix_compare_test ${GTEST_BOTH_LIBRARIES})
+add_test(NAME eigen_matrix_compare_test COMMAND eigen_matrix_compare_test)
+
 # Adds "drake_assert.h" unit testing.
 add_executable(drake_assert_test_default drake_assert_test.cc)
 target_link_libraries(drake_assert_test_default drakeCommon ${GTEST_BOTH_LIBRARIES})

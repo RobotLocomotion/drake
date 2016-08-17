@@ -20,7 +20,7 @@
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/vector_interface.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -39,7 +39,6 @@ using systems::StateVector;
 using systems::System;
 using systems::SystemOutput;
 using systems::VectorInterface;
-using util::MatrixCompareType;
 
 namespace examples {
 namespace {

@@ -11,12 +11,10 @@
 #include "drake/systems/framework/primitives/integrator.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 
 namespace drake {
 
-using util::CompareMatrices;
-using util::MatrixCompareType;
 
 namespace systems {
 namespace {

@@ -4,10 +4,8 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 
-using drake::util::CompareMatrices;
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace systems {

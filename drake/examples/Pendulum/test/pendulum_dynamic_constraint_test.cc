@@ -8,9 +8,7 @@
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/plants/constraint/direct_collocation_constraint.h"
-#include "drake/util/eigen_matrix_compare.h"
-
-using drake::util::MatrixCompareType;
+#include "drake/common/eigen_matrix_compare.h"
 
 GTEST_TEST(PendulumDirectCollocationConstraint,
            PendulumDirectCollocationConstraintTest) {
@@ -43,7 +41,7 @@ GTEST_TEST(PendulumDirectCollocationConstraint,
   d_1_expected << 0.1508698, 14.488559, -6.715012, 14.818155,
       7.315012, -2.96, -3.04;
   EXPECT_TRUE(CompareMatrices(result(0).derivatives(), d_0_expected, 1e-4,
-                              MatrixCompareType::absolute));
+                              drake::MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(result(1).derivatives(), d_1_expected, 1e-4,
-                              MatrixCompareType::absolute));
+                              drake::MatrixCompareType::absolute));
 }

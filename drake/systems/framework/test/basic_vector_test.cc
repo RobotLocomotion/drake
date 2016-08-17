@@ -7,10 +7,7 @@
 
 #include "drake/common/functional_form.h"
 #include "drake/common/polynomial.h"
-#include "drake/util/eigen_matrix_compare.h"
-
-using drake::util::CompareMatrices;
-using drake::util::MatrixCompareType;
+#include "drake/common/eigen_matrix_compare.h"
 
 namespace drake {
 namespace systems {

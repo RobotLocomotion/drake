@@ -4,9 +4,8 @@
 #include <cmath>
 
 namespace drake {
-namespace util {
 
-enum MatrixCompareType { absolute, relative };
+enum class MatrixCompareType { absolute, relative };
 
 /**
  * Compares two matrices to determine whether they are equal to within a certain
@@ -120,5 +119,4 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
   return result;
 }
 
-}  // namespace util
 }  // namespace drake
