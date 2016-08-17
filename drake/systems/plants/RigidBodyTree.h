@@ -261,7 +261,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * which represents the world.
    *
    * @param[in] body_index An index within this RigidBodyTree's vector of
-   * bodies. The ancestors of the body at this index is found and their
+   * bodies. The ancestors of the body at this index are found and their
    * indexes are stored in @p ancesor_bodies.
    *
    * @return A vector of indexes of the ancestor bodies of the body at index
