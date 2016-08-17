@@ -264,10 +264,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * bodies. The ancestors of the body at this index is found and their
    * indices are stored in @p ancesor_bodies.
    *
-   * @param[out] ancestor_bodies A pointer to where the indices of the ancestor
-   * bodies should be stored.
+   * @return A vector of indices of the ancestor bodies of the body at index
+   * @p body_index.
    */
-  void FindAncestorBodies(int body_index, std::vector<int>* ancestor_bodies)
+  std::vector<int> FindAncestorBodies(int body_index)
     const;
 
 #ifndef SWIG
