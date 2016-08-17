@@ -27,16 +27,7 @@ void ConstantVectorSource<T>::EvalOutput(const ContextBase<T>& context,
   DRAKE_ASSERT(System<T>::IsValidOutput(*output));
   DRAKE_ASSERT(System<T>::IsValidContext(context));
 
-  // TODO(amcastro-tri): Solve #3140 so that the next line reads:
-  // auto& output_vector = this->get_output_vector(context, 0);
-  // where output_vector will be an Eigen expression.
-  VectorInterface<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
-
-  // TODO(amcastro-tri): Solve #3140 so that the Eigen output_vector can be
-  // accessed like so:
-  // auto& output_vector = this->get_mutable_output_vector(context, 0);
-  output_vector->get_mutable_value() = source_value_;
+  System<T>::GetMutableOutputVector(output, 0) = source_value_;
 }
 
 // Explicitly instantiates on the most common scalar types.
