@@ -16,7 +16,7 @@ namespace drake {
  * closed-loop controller + system)
  * @concept{system_concept}
  *
- * ![GravityCompensatedPDPositionControlSystem](https://github.com/naveenoid/drake/blob/dev/kukaArmGravityCompensation/drake/doc/images/GravityCompensatedPositionControl.svg)
+ * ![GravityCompensatedPDPositionControlSystem](https://github.com/RobotLocomotion/drake/tree/master/drake/doc/images/GravityCompensatedPositionControl.svg)
  *
  */
 template <class System>
