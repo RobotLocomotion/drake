@@ -188,14 +188,6 @@ macro(drake_add_foreign_external PROJECT)
       ${_ext_VERBOSE}
       BUILD_PREFIX=${CMAKE_INSTALL_PREFIX}
       BUILD_TYPE=$<CONFIGURATION>)
-    if(_ext_BUILD_COMMAND_DIR)
-      # FIXME: This is only needed for Director due to the unusual build setup
-      #        used by the same. We should fix director to be a 'normal' CMake
-      #        project, and remove this option
-      set(_ext_BUILD_COMMAND ${CMAKE_COMMAND}
-        -E chdir ${_ext_BUILD_COMMAND_DIR}
-        ${_ext_BUILD_COMMAND})
-    endif()
   endif()
 
   if(NOT _ext_BUILD_COMMAND STREQUAL "")
@@ -271,7 +263,6 @@ function(drake_add_external PROJECT)
     SOURCE_SUBDIR
     SOURCE_DIR
     BINARY_DIR
-    BUILD_COMMAND_DIR # FIXME: fix director then remove this
   )
   set(_ext_mv_args
     CMAKE_ARGS
