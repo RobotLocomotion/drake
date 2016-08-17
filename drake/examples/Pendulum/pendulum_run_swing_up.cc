@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
   PendulumState<double> x0_state = x0;
   drake::runLCM(sys, lcm, 0, kTrajectoryTimeUpperBound, x0_state, options);
   if (!CompareMatrices(toEigen(robot_state_tap->get_input_vector()), xG,
-                       1e-5, MatrixCompareType::absolute)) {
+                       1e-4, MatrixCompareType::absolute)) {
     throw std::runtime_error("Did not reach trajectory target.");
   }
 
