@@ -93,9 +93,9 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
    * @param[in] name The joint's name. This can be any string value. It does not
    * have to be unique.
    *
-   * @param[in] transform_to_parent_body This is the transform from the frame of
-   * the joint's parent body to the frame of the joint's child body. The joint
-   * is located at the origin of child body's frame.
+   * @param[in] transform_to_parent_body Defines the transform for converting
+   * a point defined in the joint's coordinate frame to the same point defined
+   * in the joint's parent body's coordinate frame.
    *
    * @param[in] num_positions The number of position states of the joint.
    *
