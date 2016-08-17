@@ -39,10 +39,7 @@ std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateTimeDerivatives()
 template <typename T>
 void Integrator<T>::EvalOutput(const ContextBase<T>& context,
                                SystemOutput<T>* output) const {
-  // Checks that the output is consistent with the definition of this system.
   DRAKE_ASSERT(System<T>::IsValidOutput(*output));
-
-  // Checks that context is consistent with the definition of this system.
   DRAKE_ASSERT(System<T>::IsValidContext(context));
 
   VectorInterface<T>* output_port =

@@ -35,10 +35,7 @@ void Gain<T>::EvalOutput(const ContextBase<T>& context,
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
 
-  // Checks that the output is consistent with the definition of this system.
   DRAKE_ASSERT(System<T>::IsValidOutput(*output));
-
-  // Checks that context is consistent with the definition of this system.
   DRAKE_ASSERT(System<T>::IsValidContext(context));
 
   // There is only one input.
