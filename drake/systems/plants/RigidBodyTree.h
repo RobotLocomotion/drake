@@ -256,7 +256,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane) const;
 
   /**
-   * Finds the ancestors of a body.
+   * Finds the ancestors of a body. The ancestors include the body's parent,
+   * the parent's parent, etc., all the way to the root of this RigidBodyTree,
+   * which represents the world.
    *
    * @param[in] body_index An index within this RigidBodyTree's vector of
    * bodies. The ancestors of the body at this index is found and their
