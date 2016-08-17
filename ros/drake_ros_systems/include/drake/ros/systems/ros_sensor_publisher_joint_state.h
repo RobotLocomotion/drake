@@ -98,9 +98,8 @@ class SensorPublisherJointState {
     // Obtains a reference to the world link in the rigid body tree.
     const RigidBody& world = rigid_body_system->getRigidBodyTree()->world();
 
-    // Creates a ROS topic publisher for each robot in the rigid body system.
-    // A robot is defined by any link that's connected to the world via a
-    // non-fixed joint.
+    // Creates a ROS topic publisher and a message for each model instance in
+    // `model_instance_table`.
     for (const auto& entry : model_instance_name_table) {
       // Obtains the current model instance's ID, instance name, and list of
       // rigid bodies.
@@ -111,10 +110,73 @@ class SensorPublisherJointState {
               model_instance_id);
 
       if (ShouldPublishState(rigid_body_list)) {
-        model_structs_.push_back(
+        model_instance_structs_.push_back(
             CreateJointStateStruct(model_instance_name, rigid_body_list));
       }
     }
+  }
+
+  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
+                               const InputVector<double>& u) const {
+    return StateVector<double>();
+  }
+
+  OutputVector<double> output(const double& t, const StateVector<double>& x,
+                              const InputVector<double>& u) {
+    // Aborts if insufficient time has passed since the last transmission. This
+    // is to avoid flooding the ROS topics.
+    ::ros::Time current_time = ::ros::Time::now();
+    if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
+      return u;
+
+    previous_send_time_ = current_time;
+
+    const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
+        rigid_body_system_->getRigidBodyTree();
+
+    // The input vector `u` contains the entire system's state. The following
+    // line of code converts it into an Eigen vector.
+    auto system_state_vector = drake::toEigen(u);
+
+    // The following code extracts the position and velocity vectors from
+    // system_state_vector and computes the kinematic properties of the system.
+    // These kinematic properties are stored in `cache`, which is then used to
+    // compute the 6-DoF position and velocity states of floating joints.
+    auto position_state_vector =
+        system_state_vector.head(rigid_body_tree->number_of_positions());
+
+    auto velocity_state_vector =
+        system_state_vector.segment(rigid_body_tree->number_of_positions(),
+                                    rigid_body_tree->number_of_velocities());
+
+    KinematicsCache<double> kinematics_cache = rigid_body_tree->doKinematics(
+        position_state_vector, velocity_state_vector);
+
+    for (auto& current_model_info : model_instance_structs_) {
+      UpdateAndPublishJointStateMessage(system_state_vector, kinematics_cache,
+          current_model_info.get());
+    }
+
+    return u;  // Passes the output through to the next system in the cascade.
+  }
+
+  bool isTimeVarying() const { return true; }
+  bool isDirectFeedthrough() const { return true; }
+
+ private:
+  /* Determines whether joint state messages should be published for the
+   * model instance that owns the rigid bodies in @p rigid_body_list. It should
+   * if the model instance contains one or more joints that isn't fixed.
+   */
+  bool ShouldPublishState(
+      const std::vector<const RigidBody*>& rigid_body_list) {
+    bool result = false;
+    for (const auto& rigid_body : rigid_body_list) {
+      if (!rigid_body->getJoint().isFixed()) {
+        result = true;
+      }
+    }
+    return result;
   }
 
   /**
@@ -214,69 +276,6 @@ class SensorPublisherJointState {
     }
 
     return std::move(model_state_info);
-  }
-
-  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
-                               const InputVector<double>& u) const {
-    return StateVector<double>();
-  }
-
-  OutputVector<double> output(const double& t, const StateVector<double>& x,
-                              const InputVector<double>& u) {
-    // Aborts if insufficient time has passed since the last transmission. This
-    // is to avoid flooding the ROS topics.
-    ::ros::Time current_time = ::ros::Time::now();
-    if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
-      return u;
-
-    previous_send_time_ = current_time;
-
-    const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
-        rigid_body_system_->getRigidBodyTree();
-
-    // The input vector `u` contains the entire system's state. The following
-    // line of code converts it into an Eigen vector.
-    auto system_state_vector = drake::toEigen(u);
-
-    // The following code extracts the position and velocity vectors from
-    // system_state_vector and computes the kinematic properties of the system.
-    // These kinematic properties are stored in `cache`, which is then used to
-    // compute the 6-DoF position and velocity states of floating joints.
-    auto position_state_vector =
-        system_state_vector.head(rigid_body_tree->number_of_positions());
-
-    auto velocity_state_vector =
-        system_state_vector.segment(rigid_body_tree->number_of_positions(),
-                                    rigid_body_tree->number_of_velocities());
-
-    KinematicsCache<double> kinematics_cache = rigid_body_tree->doKinematics(
-        position_state_vector, velocity_state_vector);
-
-    for (auto& current_model_info : model_structs_) {
-      UpdateAndPublishJointStateMessage(system_state_vector, kinematics_cache,
-          current_model_info.get());
-    }
-
-    return u;  // Passes the output through to the next system in the cascade.
-  }
-
-  bool isTimeVarying() const { return true; }
-  bool isDirectFeedthrough() const { return true; }
-
- private:
-  /* Determines whether joint state messages should be published for the
-   * model instance that owns the rigid bodies in @p rigid_body_list. It should
-   * if the model instance contains one or more joints that isn't fixed.
-   */
-  bool ShouldPublishState(
-      const std::vector<const RigidBody*>& rigid_body_list) {
-    bool result = false;
-    for (const auto& rigid_body : rigid_body_list) {
-      if (!rigid_body->getJoint().isFixed()) {
-        result = true;
-      }
-    }
-    return result;
   }
 
   /*
@@ -392,10 +391,10 @@ class SensorPublisherJointState {
   // A local reference to the rigid body system.
   std::shared_ptr<RigidBodySystem> rigid_body_system_;
 
-  // Maintains a set of ModelStateStruct structs, one for each model instance.
-  std::vector<std::unique_ptr<ModelStateStruct>> model_structs_;
+  // A set of ModelStateStruct structs, one for each model instance.
+  std::vector<std::unique_ptr<ModelStateStruct>> model_instance_structs_;
 
-  // The previous time the LIDAR messages were sent.
+  // The previous time the joint state messages were sent.
   ::ros::Time previous_send_time_;
 };
 

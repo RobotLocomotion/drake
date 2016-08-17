@@ -62,13 +62,8 @@ int do_main(int argc, const char* argv[]) {
   // Instantiates a map that converts model instance IDs to model instance
   // names.
   std::map<int, std::string> model_instance_names;
-  // TODO(liang.fok): Until #3088 is resolved, the following two lines may be
-  // overwritten since the first model added to the rigid body tree also takes
-  // a model instance ID of zero. For this application, this is OK since the
-  // consumers of model_instance_names does not need to know the model instance
-  // name of the world.
-  model_instance_names[RigidBodyTree::kWorldModelInstanceID] =
-      RigidBodyTree::kWorldName;
+  // TODO(liang.fok): Once #3088 is resolved, include the model instance ID and
+  // name of the world in model_instance_names.
   model_instance_names[model_instances["prius_1"]] = "prius";
   model_instance_names[model_instances["P1"]] = "stata_garage";
 
