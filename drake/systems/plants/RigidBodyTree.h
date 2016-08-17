@@ -256,13 +256,13 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane) const;
 
   /**
-   * Finds all of the ancestors of a rigid body.
+   * Finds the ancestors of a body.
    *
-   * @param[in] body_index the index of the body within this RigidBodyTree's
-   * vector of rigid bodies. This value must be greater than zero and less
-   * than the number of rigid bodies in this tree.
+   * @param[in] body_index An index within this RigidBodyTree's vector of
+   * bodies. The ancestors of the body at this index is found and their
+   * indices are stored in @p ancesor_bodies.
    *
-   * @param[out] ancestor_bodies A pointer to where the indices of the ancesor
+   * @param[out] ancestor_bodies A pointer to where the indices of the ancestor
    * bodies should be stored.
    */
   void FindAncestorBodies(int body_index, std::vector<int>* ancestor_bodies)
