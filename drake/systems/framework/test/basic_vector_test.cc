@@ -5,9 +5,9 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/functional_form.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/eigen_matrix_compare.h"
 
 namespace drake {
 namespace systems {

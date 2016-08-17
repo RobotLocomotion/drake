@@ -3,8 +3,8 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/testUtil.h"
 
 using drake::GetDrakePath;

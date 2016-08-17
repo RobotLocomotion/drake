@@ -5,10 +5,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/plants/constraint/direct_collocation_constraint.h"
-#include "drake/common/eigen_matrix_compare.h"
 
 GTEST_TEST(PendulumDirectCollocationConstraint,
            PendulumDirectCollocationConstraintTest) {

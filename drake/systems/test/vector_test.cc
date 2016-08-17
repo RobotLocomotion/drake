@@ -2,8 +2,8 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/systems/test/pendulum.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/test/pendulum.h"
 #include "drake/util/testUtil.h"
 
 using drake::CombinedVector;

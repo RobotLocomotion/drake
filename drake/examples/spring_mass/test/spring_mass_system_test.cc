@@ -11,6 +11,7 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/state.h"
@@ -20,7 +21,6 @@
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/vector_interface.h"
-#include "drake/common/eigen_matrix_compare.h"
 
 using std::make_unique;
 using std::unique_ptr;

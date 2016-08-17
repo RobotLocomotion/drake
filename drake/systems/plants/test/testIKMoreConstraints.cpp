@@ -6,11 +6,11 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;

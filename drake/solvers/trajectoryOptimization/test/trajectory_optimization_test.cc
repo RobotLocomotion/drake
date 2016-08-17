@@ -1,11 +1,11 @@
-
 #include <vector>
 
 #include "gtest/gtest.h"
+
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/trajectoryOptimization/direct_trajectory_optimization.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/vector.h"
-#include "drake/common/eigen_matrix_compare.h"
 
 using std::vector;
 using Eigen::MatrixXd;
