@@ -127,7 +127,7 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
    * </pre>
    *
    * Note that when this joint is in its zero position, this joint's child
-   * body's frame is coincident with this joint's parent body's frame. Thus,
+   * body's frame is coincident with this joint's frame. Thus,
    * when this joint is at its zero position, this transform can also be used to
    * transform a point defined in this joint's child body's frame to this
    * joint's parent body's frame.
