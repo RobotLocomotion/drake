@@ -52,8 +52,8 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   int num_dof = iiwa_tree->number_of_positions();
 
   // Smaller gains intentionally used for demo.
-  const double Kp_common = 10.0; // Units : Nm/rad
-  const double Kd_common = 0.30; // Units : Nm/rad/sec
+  const double Kp_common = 10.0;  // Units : Nm/rad
+  const double Kd_common = 0.30;  // Units : Nm/rad/sec
   VectorXd Kpdiag = VectorXd::Constant(num_dof, Kp_common);
   VectorXd Kddiag = VectorXd::Constant(num_dof, Kd_common);
 
