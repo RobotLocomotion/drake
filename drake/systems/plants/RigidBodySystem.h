@@ -200,7 +200,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * Reads a model specification from a URDF file and adds an instance of the
    * model into this `RigidBodySystem`'s `RigidBodyTree`.
    *
-   * @param[in] urdf_filename The name of the file containing the URDF
+   * @param[in] filename The name of the file containing the URDF
    * specification.
    *
    * @param[in] floating_base_type The type of joint that connects the model
@@ -219,7 +219,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the `RigidBodyTree`.
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfFile(
-      const std::string& urdf_filename,
+      const std::string& filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);

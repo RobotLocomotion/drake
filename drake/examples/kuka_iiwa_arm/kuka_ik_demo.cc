@@ -193,11 +193,15 @@ int do_main(int argc, const char* argv[]) {
 
   // For part of the remaining time, constrain the second joint while
   // preserving the end effector constraint.
-  Eigen::VectorXi joint_idx_3(1);
-  joint_idx_3(0) = tree.FindChildBodyOfJoint("iiwa_joint_2")->
+  //
+  // Variable `joint_position_start_idx` below is a collection of offsets into
+  // the state vector referring to the positions of the joints to be
+  // constrained.
+  Eigen::VectorXi joint_position_start_idx(1);
+  joint_position_start_idx(0) = tree.FindChildBodyOfJoint("iiwa_joint_2")->
       get_position_start_index();
   PostureConstraint pc3(&tree, Vector2d(6, 8));
-  pc3.setJointLimits(joint_idx_3, Vector1d(0.7), Vector1d(0.8));
+  pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
 
   const int kNumTimesteps = 5;
