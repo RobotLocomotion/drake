@@ -1912,7 +1912,7 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
     if (name_match[ii]) {
       if (match_found) {
         throw std::runtime_error(
-            "RigidBodyTree::FindBodyOfJoint: ERROR: Multiple joints found "
+            "RigidBodyTree::FindChildBodyOfJoint: ERROR: Multiple joints found "
             " named \"" + joint_name + "\", model instance ID = " +
             std::to_string(model_instance_id) + ".");
       }
@@ -1925,9 +1925,9 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   // a pointer to the matching rigid body.
   if (!match_found) {
     throw std::runtime_error(
-        "RigidBodyTree::FindBodyOfJoint: ERROR: Could not find unique joint " +
-        std::string("named \"") + joint_name + "\", model_instance_id = " +
-        std::to_string(model_instance_id));
+        "RigidBodyTree::FindChildBodyOfJoint: ERROR: Could not find unique "
+        "joint named \"" + joint_name + "\", model_instance_id = " +
+        std::to_string(model_instance_id) + ".");
   } else {
     return bodies[ind_match].get();
   }
