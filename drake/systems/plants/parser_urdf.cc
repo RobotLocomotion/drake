@@ -850,9 +850,8 @@ void ParseFrame(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
   tree->addFrame(frame);
 }
 
-/**
- * Searches for a joint that connects the URDF model to a body called
- * RigidBodyTree::kWorldLinkName. If it finds such a joint, it updates
+/* Searches for a joint that connects the URDF model to a body called
+ * RigidBodyTree::kWorldName. If it finds such a joint, it updates
  * @p weld_to_frame with the offset specified by the joint.
  *
  * An exception is thrown if no such joint is found, or if multiple
@@ -1080,7 +1079,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
     PackageMap& package_map,
     RigidBodyTree* tree) {
   const string root_dir = ".";
-  std::shared_ptr<RigidBodyFrame> weld_to_frame;
 
   return AddModelInstanceFromUrdfDescription(
       urdf_string, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,

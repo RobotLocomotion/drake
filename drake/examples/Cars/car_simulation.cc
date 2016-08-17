@@ -50,18 +50,6 @@ void PrintUsageInstructions(const std::string& executable_name) {
     << std::endl;
 }
 
-void AddModelInstancesToTable(const ModelInstanceIdTable& source_table,
-    ModelInstanceIdTable* dest_table) {
-  for (auto const &model_entry : source_table) {
-    const std::string& model_name = model_entry.first;
-    if (dest_table->find(model_name) != dest_table->end()) {
-      throw std::runtime_error("AddModelInstancesToTable: Collision occured "
-          "with model name\"" + model_name + "\".");
-    }
-    (*dest_table)[model_name] = model_entry.second;
-  }
-}
-
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
     int argc, const char* argv[], double* duration,
     ModelInstanceIdTable* model_instance_id_table) {
@@ -74,7 +62,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  // Adds a robot model.
+  // Adds a model instance.
   ModelInstanceIdTable vehicle_instance_id_table =
       rigid_body_sys->AddModelInstanceFromFile(argv[1],
           DrakeJoint::QUATERNION);
@@ -106,7 +94,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
     } else {
       ModelInstanceIdTable world_instance_id_table =
           rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED);
-      AddModelInstancesToTable(world_instance_id_table,
+      drake::parsers::AddModelInstancesToTable(world_instance_id_table,
           model_instance_id_table);
     }
   }

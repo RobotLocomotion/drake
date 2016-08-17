@@ -3,7 +3,7 @@
 namespace drake {
 namespace ros {
 
-// namespace {
+namespace {
 
 void WaitForParameter(const ::ros::NodeHandle& ros_node_handle,
     const std::string& parameter_name, double max_wait_time) {
@@ -20,7 +20,7 @@ void WaitForParameter(const ::ros::NodeHandle& ros_node_handle,
   }
 }
 
-// }  // namespace
+}  // namespace
 
 }  // namespace ros
 }  // namespace drake

@@ -32,15 +32,6 @@ DRAKECARS_EXPORT
 void PrintUsageInstructions(const std::string& executable_name);
 
 /**
- * Adds the model instances in @p source_table to @p dest_table. Throws a
- * `std::runtime_error` if there is a collision in the model names.
- */
-DRAKECARS_EXPORT
-void AddModelInstancesToTable(
-    const drake::parsers::ModelInstanceIdTable& source_table,
-    drake::parsers::ModelInstanceIdTable* dest_table);
-
-/**
  * Parses the command line arguments and creates the rigid body system to be
  * simulated. The command line arguments consists of the vehicle's URDF or SDF
  * model file followed by an arbitrary number of model files representing things

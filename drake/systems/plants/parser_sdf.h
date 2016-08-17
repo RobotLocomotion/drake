@@ -71,9 +71,6 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
  *
  * @param[in] description The SDF description of one or more models.
  *
- * @param[in] package_map A map of ROS package names to their paths. These are
- * the packages to search through when finding files referenced in the URDF.
- *
  * @param[in] floating_base_type The type of joint that connects the model's
  * root to the existing rigid body tree.
  *
