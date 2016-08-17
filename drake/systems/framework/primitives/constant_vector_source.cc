@@ -24,20 +24,10 @@ void ConstantVectorSource<T>::EvalOutput(const ContextBase<T>& context,
   // not user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
 
-  // Asserts that there is only one output port.
+  // TODO(amcastro-tri): replace with validation checks from #3173.
   DRAKE_ASSERT(output->get_num_ports() == 1);
-  // TODO(amcastro-tri): Solve #3140 so that the next line reads:
-  // auto& output_vector = this->get_output_vector(context, 0);
-  // where output_vector will be an Eigen expression.
-  VectorInterface<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
-  DRAKE_ASSERT(output_vector != nullptr);
-  DRAKE_ASSERT(output_vector->get_value().rows() == source_value_.rows());
 
-  // TODO(amcastro-tri): Solve #3140 so that the Eigen output_vector can be
-  // accessed like so:
-  // auto& output_vector = this->get_mutable_output_vector(context, 0);
-  output_vector->get_mutable_value() = source_value_;
+  System<T>::get_mutable_output_vector(*output, 0) = source_value_;
 }
 
 // Explicitly instantiates on the most common scalar types.
