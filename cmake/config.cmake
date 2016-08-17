@@ -116,6 +116,22 @@ macro(drake_setup_java)
 endmacro()
 
 #------------------------------------------------------------------------------
+# Add local CMake modules to CMake search path.
+#------------------------------------------------------------------------------
+function(drake_setup_cmake BASE_PATH)
+  file(GLOB _versions RELATIVE ${BASE_PATH} "${BASE_PATH}/*/")
+  foreach(_version ${_versions})
+    if(IS_DIRECTORY "${BASE_PATH}/${_version}")
+      if(CMAKE_VERSION VERSION_LESS ${_version})
+        list(INSERT CMAKE_MODULE_PATH 0 "${BASE_PATH}/${_version}")
+      endif()
+    endif()
+  endforeach()
+  list(INSERT CMAKE_MODULE_PATH 0 ${BASE_PATH})
+  set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" PARENT_SCOPE)
+endfunction()
+
+#------------------------------------------------------------------------------
 # Set up basic platform properties for building Drake.
 #------------------------------------------------------------------------------
 macro(drake_setup_platform)
@@ -146,3 +162,9 @@ macro(drake_setup_superbuild)
   endif()
   message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 endmacro()
+
+###############################################################################
+
+# Set up local module paths; this needs to be done immediately as other helper
+# modules may need to include things from our local module set
+drake_setup_cmake(${CMAKE_CURRENT_LIST_DIR}/modules)
