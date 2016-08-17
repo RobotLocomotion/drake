@@ -605,7 +605,7 @@ void ParseJoint(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
   int child_index = tree->FindBodyIndex(child_name, model_instance_id);
   if (child_index < 0) {
     throw runtime_error("parser_urdf.cc: ParseJoint: ERROR: Could not find "
-        "child link named \"" + parent_name + "\" with model instance ID " +
+        "child link named \"" + child_name + "\" with model instance ID " +
         std::to_string(model_instance_id) + ".");
   }
 
