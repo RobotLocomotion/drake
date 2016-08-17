@@ -220,8 +220,14 @@ drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
   DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
 
 # director
-drake_add_external(director PUBLIC
-  BUILD_COMMAND_DIR distro/pods/drake-distro # FIXME: fix need for this
+drake_add_external(director PUBLIC CMAKE
+  SOURCE_SUBDIR distro/superbuild
+  CMAKE_ARGS
+    -DUSE_LCM=ON # TODO: predicate on whether we have LCM enabled?
+    -DUSE_LCMGL=ON
+    -DUSE_SYSTEM_LCM=ON
+    -DUSE_EXTERNAL_INSTALL=ON
+  INSTALL_COMMAND :
   DEPENDS bot_core_lcmtypes lcm libbot)
 
 # signalscope
