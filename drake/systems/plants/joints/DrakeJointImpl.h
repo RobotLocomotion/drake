@@ -4,6 +4,8 @@
 
 #include "drake/math/gradient.h"
 
+/// @cond
+
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS_IMPL(Scalar)                 \
   virtual Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(       \
       const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q)   \
@@ -60,10 +62,13 @@
     return derived_.frictionTorque(v);                                       \
   };
 
+
+
 template <typename Derived>
 class DrakeJointImpl : public DrakeJoint {
  public:
-  /* The constructor that save a reference to the concrete subclass instance.
+  /* The constructor saves a reference to the concrete subclass instance and
+   * passes the rest of the parameters up to the parent class's constructor.
    *
    * @param[in] derived A reference to a class derived from this one, using the
    * Curiously Recurring Template Pattern. For more information about this
@@ -110,3 +115,5 @@ template <typename T>
 int sign(T val) {
   return (T(0) < val) - (val < T(0));
 }
+
+/// @endcond
