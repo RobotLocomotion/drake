@@ -31,10 +31,6 @@ add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
 target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil ${GTEST_BOTH_LIBRARIES})
 add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
 
-add_executable(eigen_matrix_compare_test eigen_matrix_compare_test.cc)
-target_link_libraries(eigen_matrix_compare_test ${GTEST_BOTH_LIBRARIES})
-add_test(NAME eigen_matrix_compare_test COMMAND eigen_matrix_compare_test)
-
 add_matlab_test(NAME util/test/PassByValueMapTest COMMAND PassByValueMapTest)
 add_matlab_test(NAME util/test/angleDiffTest COMMAND angleDiffTest)
 add_matlab_test(NAME util/test/asintest COMMAND asintest)

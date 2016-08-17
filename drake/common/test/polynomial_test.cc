@@ -7,16 +7,14 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 
-using drake::util::MatrixCompareType;
 using Eigen::VectorXd;
 using std::default_random_engine;
 using std::uniform_int_distribution;
 using std::uniform_real_distribution;
 
 namespace drake {
-namespace util {
 namespace {
 
 template <typename CoefficientType>
@@ -375,5 +373,4 @@ GTEST_TEST(PolynomialTest, EvaluatePartial) {
 }
 
 }  // anonymous namespace
-}  // namespace test
 }  // namespace drake
