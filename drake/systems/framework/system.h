@@ -113,6 +113,41 @@ class System {
     }
   }
 
+  /// Returns an Eigen expression for a vector valued input port with index
+  /// @p port_index in this system.
+  Eigen::VectorBlock<const VectorX<T>> get_input_vector(
+      const ContextBase<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    const VectorBase<T>* input_vector =
+        context.get_vector_input(port_index);
+
+    DRAKE_ASSERT(input_vector != nullptr);
+    DRAKE_ASSERT(input_vector->get_value().rows() ==
+                 get_input_port(port_index).get_size());
+
+    return input_vector->get_value();
+  }
+
+  /// Returns a mutable Eigen expression for a vector valued output port with
+  /// index @p port_index in this system. This call invalidates the cache.
+  Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(SystemOutput<T>* output,
+                                                        int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
+
+    VectorBase<T>* output_vector = output->
+        get_mutable_port(port_index)->template GetMutableVectorData<T>();
+    DRAKE_ASSERT(output_vector != nullptr);
+    DRAKE_ASSERT(output_vector->get_value().rows() ==
+                 get_output_port(port_index).get_size());
+
+    return output_vector->get_mutable_value();
+  }
+
+  // Returns a copy of the continuous state vector into an Eigen vector.
+  VectorX<T> GetContinuousStateVectorCopy(const ContextBase<T>& context) const {
+    return context.get_state().continuous_state->get_state().CopyToVector();
+  }
+
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.
   /// Since input port pointers are not owned by the context, they should
@@ -282,7 +317,6 @@ class System {
   void DeclareAbstractOutputPort(SamplingSpec sampling) {
     DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
   }
-
 
  private:
   // SystemInterface objects are neither copyable nor moveable.
