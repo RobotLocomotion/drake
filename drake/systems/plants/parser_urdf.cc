@@ -9,7 +9,7 @@
 #include "drake/systems/plants/material_map.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/xmlUtil.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 
 using drake::parsers::ModelInstanceIdTable;
 
@@ -159,9 +159,9 @@ void AddMaterialToMaterialMap(const string& material_name,
     // RGBA vectors is [0, 1], absolute and relative tolerance comparisons are
     // identical.
     auto& existing_color = material_iter->second;
-    if (!drake::util::CompareMatrices(
+    if (!drake::CompareMatrices(
             color_rgba, existing_color, 1e-10,
-            drake::util::MatrixCompareType::absolute)) {
+            drake::MatrixCompareType::absolute)) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
       stringstream error_buff;
