@@ -62,10 +62,10 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControl) {
 
   auto controlled_robot =
       std::allocate_shared<GravityCompensatedSystem<RigidBodySystem>>(
-          Eigen::aligned_allocator<PDControlSystem<RigidBodySystem>>(),
-          iiwa_system, Kp, Kd);
+          Eigen::aligned_allocator<GravityCompensatedSystem<RigidBodySystem>>(),
+          iiwa_system);
 
-  auto sys = cascade(cascade(cascade(set_point, controlled_robot), visualizer),
+  auto sys = cascade(cascade(controlled_robot, visualizer),
                      robot_state_tap);
 
   drake::SimulationOptions options = SetupSimulation();
@@ -89,10 +89,15 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControl) {
   EXPECT_TRUE((xf.head(num_dof) - x0.head(num_dof)).squaredNorm() <
               kMaxPositionErrorNorm);
 
+  std::cout << " Final position : "<<xf.head(num_dof)<<", Errpr norm :"<<
+    (xf.head(num_dof) - x0.head(num_dof)).squaredNorm()<<"\n";
+
   // Expects final joint velocity has a norm larger than a minimum value.
   // (since this controller won't stay at rest at the set-point).
   double kMinVelocityNorm = 1e-3;
-  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() > kMinVelocityNorm);
+  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() < kMinVelocityNorm);
+  std::cout << " Final velocity : "<<xf.tail(num_dof)<<", Errpr norm :"<<
+    xf.tail(num_dof).squaredNorm()<<"\n";
 }
 
 }  // namespace
