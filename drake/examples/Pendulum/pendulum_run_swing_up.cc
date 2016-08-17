@@ -1,6 +1,7 @@
 
 #include <cmath>
 #include <memory>
+#include <stdexcept>
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/Pendulum/Pendulum.h"
@@ -11,11 +12,14 @@
 #include "drake/systems/feedback_system.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/robot_state_tap.h"
 #include "drake/systems/Simulation.h"
 #include "drake/util/drakeAppUtil.h"
+#include "drake/util/eigen_matrix_compare.h"
 
 using drake::SimpleLqrTrajectoryController;
 using drake::solvers::SolutionResult;
+using drake::util::MatrixCompareType;
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
@@ -58,6 +62,8 @@ int main(int argc, char* argv[]) {
   auto visualizer = std::make_shared<drake::BotVisualizer<PendulumState>>(
       lcm, drake::GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
       DrakeJoint::FIXED);
+  auto robot_state_tap =
+      std::make_shared<drake::RobotStateTap<PendulumState>>();
 
   Eigen::MatrixXd Q(2, 2);
   Q << 10, 0, 0, 1;  // arbitrary, taken from PendulumPlant.m
@@ -67,7 +73,8 @@ int main(int argc, char* argv[]) {
   auto control = std::make_shared<SimpleLqrTrajectoryController<Pendulum>>(
       p, pp_traj, pp_xtraj, Q, R);
   auto traj_sys = drake::feedback(p, control);
-  auto sys = drake::cascade(traj_sys, visualizer);
+  auto sys = drake::cascade(drake::cascade(traj_sys, visualizer),
+                            robot_state_tap);
 
   drake::SimulationOptions options;
   options.realtime_factor = 1.0;
@@ -77,5 +84,10 @@ int main(int argc, char* argv[]) {
 
   PendulumState<double> x0_state = x0;
   drake::runLCM(sys, lcm, 0, kTrajectoryTimeUpperBound, x0_state, options);
+  if (!CompareMatrices(toEigen(robot_state_tap->get_input_vector()), xG,
+                       1e-5, MatrixCompareType::absolute)) {
+    throw std::runtime_error("Did not reach trajectory target.");
+  }
+
   return 0;
 }
