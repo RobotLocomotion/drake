@@ -37,6 +37,8 @@ if(lcm_FOUND)
     drakePendulum
     drakeRBM
     drakeLCMSystem)
+  add_test(NAME pendulum_run_swing_up
+    COMMAND pendulum_run_swing_up --non-realtime)
 endif()
 
 add_subdirectory(test)

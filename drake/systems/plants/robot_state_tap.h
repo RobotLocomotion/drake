@@ -35,7 +35,7 @@ class RobotStateTap {
 
   OutputVector<double> output(const double& t, const StateVector<double>& x,
                               const InputVector<double>& u) {
-    u_ = drake::toEigen(u);
+    u_ = toEigen(u);
     return u;
   }
 
