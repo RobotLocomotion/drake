@@ -86,7 +86,8 @@ GTEST_TEST(testIK, iiwaIK) {
   drake::Vector1d joint_ub(1.0);
 
   // Variable `joint_position_start_idx` below is a collection of offsets into
-  // the state vector referring to the position of the joints to be constrained.
+  // the state vector referring to the positions of the joints to be
+  // constrained.
   Eigen::VectorXi joint_position_start_idx(1);
   joint_position_start_idx(0) = model.FindChildBodyOfJoint("iiwa_joint_4")->
       get_position_start_index();
