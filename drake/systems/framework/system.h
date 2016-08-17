@@ -108,15 +108,50 @@ class System {
       // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
       // once abstract ports are implemented in 3164.
       if (this->get_input_port(i).get_data_type() == kVectorValued) {
-        const VectorInterface<T>* input_vector = context.get_vector_input(i);
+        const VectorInterface<T> *input_vector = context.get_vector_input(i);
         if (input_vector == nullptr) return false;
         if (input_vector->get_value().rows() !=
-            get_input_port(i).get_size()) return false;
+            get_input_port(i).get_size())
+          return false;
       }
     }
 
     // All checks passed.
     return true;
+  }
+
+  /// Returns an Eigen expression for a vector valued input port with index
+  /// @p port_index in this system.
+  Eigen::VectorBlock<const VectorX<T>> get_input_vector(
+      const ContextBase<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    const VectorInterface<T>* input_vector =
+        context.get_vector_input(port_index);
+
+    DRAKE_ASSERT(input_vector != nullptr);
+    DRAKE_ASSERT(input_vector->get_value().rows() ==
+        get_input_port(port_index).get_size());
+
+    return input_vector->get_value();
+  }
+
+  /// Returns a mutable Eigen expression for a vector valued output port with
+  /// index @p port_index in this system.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_output_vector(
+      SystemOutput<T>& output, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
+
+    VectorInterface<T>* output_vector =
+        output.get_mutable_port(port_index)->GetMutableVectorData();
+    DRAKE_ASSERT(output_vector != nullptr);
+    DRAKE_ASSERT(output_vector->get_value().rows() ==
+        get_output_port(port_index).get_size());
+
+    return output_vector->get_mutable_value();
+  }
+
+  VectorX<T> get_continuous_state_vector(const ContextBase<T>& context) const {
+    return context.get_state().continuous_state->get_state().CopyToVector();
   }
 
   /// Returns a default context, initialized with the correct
