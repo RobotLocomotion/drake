@@ -84,10 +84,13 @@ GTEST_TEST(testIK, iiwaIK) {
   PostureConstraint pc(&model, tspan);
   drake::Vector1d joint_lb(0.9);
   drake::Vector1d joint_ub(1.0);
-  Eigen::VectorXi joint_idx(1);
-  joint_idx(0) = model.FindChildBodyOfJoint("iiwa_joint_4")->
+
+  // Variable `joint_position_start_idx` below is a collection of offsets into
+  // the state vector referring to the position of the joints to be constrained.
+  Eigen::VectorXi joint_position_start_idx(1);
+  joint_position_start_idx(0) = model.FindChildBodyOfJoint("iiwa_joint_4")->
       get_position_start_index();
-  pc.setJointLimits(joint_idx, joint_lb, joint_ub);
+  pc.setJointLimits(joint_position_start_idx, joint_lb, joint_ub);
 
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&wpc);
@@ -103,8 +106,8 @@ GTEST_TEST(testIK, iiwaIK) {
   EXPECT_EQ(info, 1);
 
   // Check that our constrained joint is within where we tried to constrain it.
-  EXPECT_GE(q_sol(joint_idx(0)), joint_lb(0));
-  EXPECT_LE(q_sol(joint_idx(0)), joint_ub(0));
+  EXPECT_GE(q_sol(joint_position_start_idx(0)), joint_lb(0));
+  EXPECT_LE(q_sol(joint_position_start_idx(0)), joint_ub(0));
 
   // Check that the link we were trying to position wound up where we expected.
   KinematicsCache<double> cache = model.doKinematics(q_sol);
