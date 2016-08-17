@@ -1073,7 +1073,7 @@ int RigidBodyTree::parseBodyOrFrameID(const int body_or_frame_id) const {
 
 void RigidBodyTree::FindAncestorBodies(
     int body_index, std::vector<int>* ancestor_bodies) const {
-  // Verifies that body_index is valid. Throws an exception otherwise.
+  // Verifies that body_index is valid. Aborts if it is invalid.
   DRAKE_ABORT_UNLESS(body_index > 0 &&
       body_index < static_cast<int>(bodies.size()));
 
