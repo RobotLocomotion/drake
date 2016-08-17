@@ -464,7 +464,7 @@ void RigidBodyTree::collisionDetectFromPoints(
     x.col(ii) = closest_points[ii].ptB;
     body_x.col(ii) = closest_points[ii].ptA;
     normal.col(ii) = closest_points[ii].normal;
-    phi[i] = closest_points[ii].distance;
+    phi[ii] = closest_points[ii].distance;
     const DrakeCollision::Element* elementB = closest_points[ii].elementB;
     body_idx.push_back(elementB->get_body()->get_body_index());
   }
@@ -627,19 +627,19 @@ RigidBodyTree::ComputeMaximumDepthCollisionPoints(
                                                        contact_points);
   size_t num_contact_points = contact_points.size();
 
-  for (size_t i = 0; i < num_contact_points; i++) {
+  for (size_t ii = 0; ii < num_contact_points; ++ii) {
     // Get bodies' transforms.
-    const RigidBody& bodyA = *contact_points[i].elementA->get_body();
+    const RigidBody& bodyA = *contact_points[ii].elementA->get_body();
     const Isometry3d& TA = cache.getElement(bodyA).transform_to_world;
 
-    const RigidBody& bodyB = *contact_points[i].elementB->get_body();
+    const RigidBody& bodyB = *contact_points[ii].elementB->get_body();
     const Isometry3d& TB = cache.getElement(bodyB).transform_to_world;
 
     // Transform to bodies' frames.
     // Note:
     // Eigen assumes aliasing by default and therefore this operation is safe.
-    contact_points[i].ptA = TA.inverse() * contact_points[i].ptA;
-    contact_points[i].ptB = TB.inverse() * contact_points[i].ptB;
+    contact_points[ii].ptA = TA.inverse() * contact_points[ii].ptA;
+    contact_points[ii].ptB = TB.inverse() * contact_points[ii].ptB;
   }
   return contact_points;
 }
@@ -673,13 +673,13 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
   xA_in_world = Matrix3Xd::Zero(3, points.size());
   xB_in_world = Matrix3Xd::Zero(3, points.size());
 
-  for (size_t i = 0; i < points.size(); ++i) {
-    xA_in_world.col(i) = points[i].ptA;
-    xB_in_world.col(i) = points[i].ptB;
+  for (size_t ii = 0; ii < points.size(); ++ii) {
+    xA_in_world.col(ii) = points[ii].ptA;
+    xB_in_world.col(ii) = points[ii].ptB;
 
-    const DrakeCollision::Element* elementA = points[i].elementA;
+    const DrakeCollision::Element* elementA = points[ii].elementA;
     bodyA_idx.push_back(elementA->get_body()->get_body_index());
-    const DrakeCollision::Element* elementB = points[i].elementB;
+    const DrakeCollision::Element* elementB = points[ii].elementB;
     bodyB_idx.push_back(elementB->get_body()->get_body_index());
   }
   return points_found;
@@ -716,8 +716,8 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
   // Required in call to geometricJacobian below.
   cache.setPositionKinematicsCached();
 
-  for (size_t i = 0; i < bodies.size(); i++) {
-    RigidBody& body = *bodies[i];
+  for (size_t ii = 0; ii < bodies.size(); ++ii) {
+    RigidBody& body = *bodies[ii];
     KinematicsCacheElement<Scalar>& element = cache.getElement(body);
 
     if (body.hasParent()) {
@@ -985,14 +985,14 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
   com.setZero();
   double m = 0.0;
 
-  for (int i = 0; i < static_cast<int>(bodies.size()); i++) {
-    RigidBody& body = *bodies[i];
+  for (int ii = 0; ii < static_cast<int>(bodies.size()); ++ii) {
+    RigidBody& body = *bodies[ii];
     if (is_part_of_model_instances(body, model_instance_id_set)) {
       if (body.get_mass() > 0) {
         com.noalias() +=
             body.get_mass() *
                 transformPoints(cache, body.get_center_of_mass().cast<Scalar>(),
-                                i, 0);
+                                ii, 0);
       }
       m += body.get_mass();
     }
@@ -1190,14 +1190,14 @@ TwistMatrix<Scalar> RigidBodyTree::geometricJacobian(
   }
 
   int col_start = 0;
-  for (size_t i = 0; i < kinematic_path.joint_path.size(); ++i) {
-    body_index = kinematic_path.joint_path[i];
+  for (size_t ii = 0; ii < kinematic_path.joint_path.size(); ++ii) {
+    body_index = kinematic_path.joint_path[ii];
     RigidBody& body = *bodies[body_index];
     const auto& element = cache.getElement(body);
     const DrakeJoint& joint = body.getJoint();
     int ncols_block =
         in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
-    int sign = kinematic_path.joint_direction_signs[i];
+    int sign = kinematic_path.joint_direction_signs[ii];
     auto J_block = J.template block<kTwistSize, Dynamic>(
         0, col_start, kTwistSize, ncols_block);
     if (in_terms_of_qdot) {
@@ -1211,8 +1211,8 @@ TwistMatrix<Scalar> RigidBodyTree::geometricJacobian(
       int cols_block_start =
           in_terms_of_qdot ? body.get_position_start_index() :
               body.get_velocity_start_index();
-      for (int j = 0; j < ncols_block; j++) {
-        v_or_qdot_indices->push_back(cols_block_start + j);
+      for (int jj = 0; jj < ncols_block; ++jj) {
+        v_or_qdot_indices->push_back(cols_block_start + jj);
       }
     }
     col_start += ncols_block;
@@ -1334,8 +1334,8 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 
   updateCompositeRigidBodyInertias(cache);
 
-  for (size_t i = 0; i < bodies.size(); i++) {
-    RigidBody& body_i = *bodies[i];
+  for (size_t ii = 0; ii < bodies.size(); ++ii) {
+    RigidBody& body_i = *bodies[ii];
     if (body_i.hasParent()) {
       const auto& element_i = cache.getElement(body_i);
       int v_start_i = body_i.get_velocity_start_index();
@@ -1392,8 +1392,8 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
   TwistMatrix<Scalar> net_wrenches(kTwistSize, bodies.size());
   net_wrenches.col(0).setZero();
 
-  for (size_t i = 0; i < bodies.size(); i++) {
-    RigidBody& body = *bodies[i];
+  for (size_t ii = 0; ii < bodies.size(); ++ii) {
+    RigidBody& body = *bodies[ii];
     if (body.hasParent()) {
       const auto& element = cache.getElement(body);
 
@@ -1405,18 +1405,18 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
       auto vdJoint = vd.middleRows(body.get_velocity_start_index(), nv_joint);
       spatial_accel.noalias() += element.motion_subspace_in_world * vdJoint;
 
-      net_wrenches.col(i).noalias() = element.inertia_in_world * spatial_accel;
+      net_wrenches.col(ii).noalias() = element.inertia_in_world * spatial_accel;
       if (include_velocity_terms) {
         auto I_times_twist =
             (element.inertia_in_world * element.twist_in_world).eval();
-        net_wrenches.col(i).noalias() +=
+        net_wrenches.col(ii).noalias() +=
             crossSpatialForce(element.twist_in_world, I_times_twist);
       }
 
-      auto f_ext_iterator = f_ext.find(bodies[i].get());
+      auto f_ext_iterator = f_ext.find(bodies[ii].get());
       if (f_ext_iterator != f_ext.end()) {
         const auto& f_ext_i = f_ext_iterator->second;
-        net_wrenches.col(i) -=
+        net_wrenches.col(ii) -=
             transformSpatialForce(element.transform_to_world, f_ext_i);
       }
     }
@@ -1424,14 +1424,14 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
   Matrix<Scalar, Eigen::Dynamic, 1> ret(num_velocities_, 1);
 
-  for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; i--) {
-    RigidBody& body = *bodies[i];
+  for (int ii = static_cast<int>(bodies.size()) - 1; ii >= 0; --ii) {
+    RigidBody& body = *bodies[ii];
     if (body.hasParent()) {
       const auto& element = cache.getElement(body);
       const auto& net_wrenches_const = net_wrenches;  // eliminates the need for
                                                       // another explicit
                                                       // instantiation
-      auto joint_wrench = net_wrenches_const.col(i);
+      auto joint_wrench = net_wrenches_const.col(ii);
       int nv_joint = body.getJoint().getNumVelocities();
       auto J_transpose = element.motion_subspace_in_world.transpose();
       ret.middleRows(body.get_velocity_start_index(), nv_joint).noalias() =
@@ -1494,14 +1494,14 @@ RigidBodyTree::transformPointsJacobian(
   J.setZero();
 
   int row_start = 0;
-  for (int i = 0; i < npoints; i++) {
+  for (int ii = 0; ii < npoints; ++ii) {
     // translation part
     int col = 0;
     for (std::vector<int>::iterator it = v_or_q_indices.begin();
          it != v_or_q_indices.end(); ++it) {
       J.template block<kSpaceDimension, 1>(row_start, *it) = Jv.col(col);
       J.template block<kSpaceDimension, 1>(row_start, *it).noalias() +=
-          Jomega.col(col).cross(points_base.col(i));
+          Jomega.col(col).cross(points_base.col(ii));
       col++;
     }
     row_start += kSpaceDimension;
@@ -1569,9 +1569,9 @@ RigidBodyTree::forwardKinPositionGradient(const KinematicsCache<Scalar>& cache,
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(kSpaceDimension * npoints,
                                                      kSpaceDimension * npoints);
   ret.setZero();
-  for (int i = 0; i < npoints; i++) {
+  for (int ii = 0; ii < npoints; ++ii) {
     ret.template block<kSpaceDimension, kSpaceDimension>(
-        kSpaceDimension * i, kSpaceDimension * i) = Tinv.linear();
+        kSpaceDimension * ii, kSpaceDimension * ii) = Tinv.linear();
   }
   return ret;
 }
@@ -1968,20 +1968,21 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
     const KinematicsCache<Scalar>& cache) const {
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
-  for (size_t i = 0; i < loops.size(); i++) {
+  for (size_t ii = 0; ii < loops.size(); ++ii) {
     {  // position constraint
       auto ptA_in_B =
           transformPoints(cache, Vector3d::Zero(),
-                          loops[i].frameA_->get_frame_index(),
-                          loops[i].frameB_->get_frame_index());
-      ret.template middleRows<3>(6 * i) = ptA_in_B;
+                          loops[ii].frameA_->get_frame_index(),
+                          loops[ii].frameB_->get_frame_index());
+      ret.template middleRows<3>(6 * ii) = ptA_in_B;
     }
     {  // second position constraint (to constrain orientation)
       auto axis_A_end_in_B =
-          transformPoints(cache, loops[i].axis_,
-                          loops[i].frameA_->get_frame_index(),
-                          loops[i].frameB_->get_frame_index());
-      ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
+          transformPoints(cache, loops[ii].axis_,
+                          loops[ii].frameA_->get_frame_index(),
+                          loops[ii].frameB_->get_frame_index());
+      ret.template middleRows<3>(6 * ii + 3) =
+          axis_A_end_in_B - loops[ii].axis_;
     }
   }
   return ret;
@@ -1994,15 +1995,15 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
       6 * loops.size(), in_terms_of_qdot ? num_positions_ : num_velocities_);
 
-  for (size_t i = 0; i < loops.size(); i++) {
+  for (size_t ii = 0; ii < loops.size(); ++ii) {
     // position constraint
-    ret.template middleRows<3>(6 * i) = transformPointsJacobian(
-        cache, Vector3d::Zero(), loops[i].frameA_->get_frame_index(),
-        loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
+    ret.template middleRows<3>(6 * ii) = transformPointsJacobian(
+        cache, Vector3d::Zero(), loops[ii].frameA_->get_frame_index(),
+        loops[ii].frameB_->get_frame_index(), in_terms_of_qdot);
     // second position constraint (to constrain orientation)
-    ret.template middleRows<3>(6 * i + 3) = transformPointsJacobian(
-        cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
-        loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
+    ret.template middleRows<3>(6 * ii + 3) = transformPointsJacobian(
+        cache, loops[ii].axis_, loops[ii].frameA_->get_frame_index(),
+        loops[ii].frameB_->get_frame_index(), in_terms_of_qdot);
   }
   return ret;
 }
@@ -2013,15 +2014,15 @@ RigidBodyTree::positionConstraintsJacDotTimesV(
     const KinematicsCache<Scalar>& cache) const {
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
 
-  for (size_t i = 0; i < loops.size(); i++) {
+  for (size_t ii = 0; ii < loops.size(); ++ii) {
     // position constraint
-    ret.template middleRows<3>(6 * i) = transformPointsJacobianDotTimesV(
-        cache, Vector3d::Zero(), loops[i].frameA_->get_frame_index(),
-        loops[i].frameB_->get_frame_index());
+    ret.template middleRows<3>(6 * ii) = transformPointsJacobianDotTimesV(
+        cache, Vector3d::Zero(), loops[ii].frameA_->get_frame_index(),
+        loops[ii].frameB_->get_frame_index());
     // second position constraint (to constrain orientation)
-    ret.template middleRows<3>(6 * i + 3) = transformPointsJacobianDotTimesV(
-        cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
-        loops[i].frameB_->get_frame_index());
+    ret.template middleRows<3>(6 * ii + 3) = transformPointsJacobianDotTimesV(
+        cache, loops[ii].axis_, loops[ii].frameA_->get_frame_index(),
+        loops[ii].frameB_->get_frame_index());
   }
   return ret;
 }
@@ -2041,16 +2042,16 @@ void RigidBodyTree::jointLimitConstraints(MatrixBase<DerivedA> const& q,
 
   phi = VectorXd::Zero(numFiniteMin + numFiniteMax);
   J = MatrixXd::Zero(phi.size(), num_positions_);
-  for (size_t i = 0; i < numFiniteMin; i++) {
-    const int fi = finite_min_index[i];
-    phi[i] = q[fi] - joint_limit_min[fi];
-    J(i, fi) = 1.0;
+  for (size_t ii = 0; ii < numFiniteMin; ++ii) {
+    const int fi = finite_min_index[ii];
+    phi[ii] = q[fi] - joint_limit_min[fi];
+    J(ii, fi) = 1.0;
   }
 
-  for (size_t i = 0; i < numFiniteMax; i++) {
-    const int fi = finite_max_index[i];
-    phi[i + numFiniteMin] = joint_limit_max[fi] - q[fi];
-    J(i + numFiniteMin, fi) = -1.0;
+  for (size_t ii = 0; ii < numFiniteMax; ++ii) {
+    const int fi = finite_max_index[ii];
+    phi[ii + numFiniteMin] = joint_limit_max[fi] - q[fi];
+    J(ii + numFiniteMin, fi) = -1.0;
   }
 }
 
