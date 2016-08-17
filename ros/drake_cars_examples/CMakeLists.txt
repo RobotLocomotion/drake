@@ -4,12 +4,7 @@ project(drake_cars_examples)
 set(CMAKE_CXX_STANDARD 14)
 
 ## Finds the required macros and libraries.
-find_package(catkin REQUIRED COMPONENTS
-  drake_ros_common
-  drake_ros_systems
-  roscpp
-  tf
-  sensor_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp tf sensor_msgs drake_ros_systems)
 
 
 # Assuming drake is being built in the same workspace, which builds eigen into

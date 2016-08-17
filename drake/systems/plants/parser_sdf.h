@@ -67,9 +67,10 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     RigidBodyTree* tree);
 
 /**
- * Adds a SDF model to a rigid body system.
+ * Adds a SDF model to a rigid body system based on a string containing an SDF
+ * description.
  *
- * @param[in] description The SDF description of one or more models.
+ * @param[in] sdf_string The SDF description of one or more models.
  *
  * @param[in] floating_base_type The type of joint that connects the model's
  * root to the existing rigid body tree.
@@ -83,8 +84,8 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
  * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddModelInstancesFromSdfDescription(
-    const std::string& description,
+ModelInstanceIdTable AddModelInstancesFromSdfString(
+    const std::string& sdf_string,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);

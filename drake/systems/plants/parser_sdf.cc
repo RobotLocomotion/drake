@@ -840,8 +840,8 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
            weld_to_frame);
 }
 
-ModelInstanceIdTable AddModelInstancesFromSdfDescription(
-    const string& description,
+ModelInstanceIdTable AddModelInstancesFromSdfString(
+    const string& sdf_string,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
@@ -851,7 +851,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfDescription(
   PackageMap package_map;
 
   XMLDocument xml_doc;
-  xml_doc.Parse(description.c_str());
+  xml_doc.Parse(sdf_string.c_str());
   if (xml_doc.ErrorID()) {
     throw std::runtime_error(std::string(__FILE__) + ": " + __func__ +
                              ": ERROR: Failed to parse XML in SDF description" +

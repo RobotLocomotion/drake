@@ -2178,7 +2178,7 @@ void RigidBodyTree::addRobotFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
-  drake::parsers::urdf::AddModelInstanceFromUrdfDescription(
+  drake::parsers::urdf::AddModelInstanceFromUrdfString(
       description, package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
@@ -2190,7 +2190,7 @@ void RigidBodyTree::addRobotFromURDFString(
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromUrdfDescription(
+  drake::parsers::urdf::AddModelInstanceFromUrdfString(
       description, package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }

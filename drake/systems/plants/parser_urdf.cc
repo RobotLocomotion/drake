@@ -1067,46 +1067,46 @@ ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
 
 }  // namespace
 
-ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  return AddModelInstanceFromUrdfDescription(urdf_string, package_map, tree);
+  return AddModelInstanceFromUrdfString(urdf_string, package_map, tree);
 }
 
-ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string,
     PackageMap& package_map,
     RigidBodyTree* tree) {
   const string root_dir = ".";
 
-  return AddModelInstanceFromUrdfDescription(
+  return AddModelInstanceFromUrdfString(
       urdf_string, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
       nullptr /*weld_to_frame*/, tree);
 }
 
-ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
-    const string& description,
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
+    const string& urdf_string,
     const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   PackageMap package_map;
 
-  return AddModelInstanceFromUrdfDescription(
-      description, package_map, root_dir, floating_base_type,
+  return AddModelInstanceFromUrdfString(
+      urdf_string, package_map, root_dir, floating_base_type,
       nullptr /* weld_to_frame */, tree);
 }
 
-ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
-    const string& description,
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
+    const string& urdf_string,
     PackageMap& package_map,
     const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   XMLDocument xml_doc;
-  xml_doc.Parse(description.c_str());
+  xml_doc.Parse(urdf_string.c_str());
   return ParseUrdf(&xml_doc, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
             weld_to_frame, tree);
 }

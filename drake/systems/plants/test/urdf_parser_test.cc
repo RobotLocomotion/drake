@@ -13,7 +13,7 @@ namespace {
 
 GTEST_TEST(URDFParserTest, ParseJointProperties) {
   // Defines a URDF string describing a robot with two links and one joint.
-  std::string description =
+  std::string urdf_string =
       "<?xml version=\"1.0\" ?>"
       "<robot name=\"my_robot\" xmlns:xacro=\"http://www.ros.org/wiki/xacro\">"
       "  <link name=\"bar\">"
@@ -50,7 +50,7 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 
   // Instantiates a rigid body tree using the above-defined URDF string.
   std::unique_ptr<RigidBodyTree> rigid_body_tree(new RigidBodyTree());
-  drake::parsers::urdf::AddModelInstanceFromUrdfDescription(description,
+  drake::parsers::urdf::AddModelInstanceFromUrdfString(urdf_string,
     rigid_body_tree.get());
 
   // Obtains the child link of food_joint.
