@@ -29,10 +29,14 @@ program.  Specifically, the program options:
  - "maxormin" -- must be set to "max" or "min"
  - "problemtype" -- must be set to "linear", "quadratic", "sdp" or "soc"
     + For "sdp", you also have to set "numbarvar", or the number of indices in
-      the lower triangular part of your matrix term.
- - "conesubscript" -- Denotes which variable x_i satisfies the cone relation:
-    x_i >= (sqrt(sum(x_j^2))), i!=j
-
+      the lower triangular part of your positive semidefinite matrix. For an
+      n x n positive semidefinite matrix, numbarvar = n*(n+1)/2
+ - "conesubscripts" -- Denotes which variable subscripts satisfy the cone
+    relation:
+    <pre>
+    x_i >= (sqrt(sum(x_j^2))), i!=j    -or-
+    2*x_0*x_1 >= sum_i(x_i^2), i >=2
+    </pre>
  It is created by a MosekSolver object.
  Use the strictest constraint and variable bounds available, unbounded precision
  precision varies from bounded precision by about 10^-3.  **/
@@ -79,7 +83,22 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
     const SemidefiniteConstraint& sdp_objective,
     const std::vector<SemidefiniteConstraint>& sdp_constraints,
     const std::vector<int>& lorentz_cone_subscripts,
+    const std::vector<int>& rotated_cone_subscripts,
     int numbarvar);
+
+  /** Create a Mosek enivronment for Second order cone problems **/
+  MosekWrapper(int num_variables, int num_constraints,
+    const std::vector<MSKboundkeye>& mosek_constraint_bounds,
+    const std::vector<double>& upper_constraint_bounds,
+    const std::vector<double>& lower_constraint_bounds,
+    const std::vector<MSKboundkeye>& mosek_variable_bounds,
+    const std::vector<double>& upper_variable_bounds,
+    const std::vector<double>& lower_variable_bounds,
+    double constant_eqn_term,
+    const SecondOrderConicConstraint& soc_objective,
+    const std::vector<SecondOrderConicConstraint>& soc_constraints,
+    const std::vector<int>& lorentz_cone_subscripts,
+    const std::vector<int>& rotated_cone_subscripts);
 
   ~MosekWrapper() {
     if (task_ != NULL)
@@ -124,9 +143,15 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   /** Adds a single quadratic matrix to a Mosek objective.  **/
   void AddQuadraticObjective(const Eigen::MatrixXd& obj);
 
-  /** Adds a cone to Mosek for solving. Currently does not handle rotated
-  cones.  **/
+  /** Adds a cone to Mosek for solving. **/
   void AppendLorentzCone(const std::vector<int>& sdp_cone_subscripts);
+
+  /** Adds a rotated cone to Mosek for solving of the form:
+  <pre>
+  2*x_0*x_1 >= sum_i(x_i^2), i >=2
+  </pre> **/
+  void AppendRotatedCone(const std::vector<int>& sdp_cone_subscripts);
+
 
   /** Adds a single SDP objective to Mosek for solving, will not work if
   called multiple times.
@@ -145,8 +170,9 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
   l_i <= sum(a_j * x_j) + Trace(A_i' * X_i) <= u_i
   </pre>
   See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html  **/
+  template <typename T>
   void AddSDPConstraints(
-      const std::vector<SemidefiniteConstraint>& sdp_constraints);
+      const std::vector<T>& sdp_constraints);
 
   /** Binds variables, see http://docs.mosek.com/7.1/capi/Conventions_employed_in_the_API.html
   for details on how to set mosek_bounds_  **/

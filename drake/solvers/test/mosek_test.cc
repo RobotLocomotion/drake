@@ -148,7 +148,7 @@ GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
                               MatrixCompareType::absolute));
 }
 
-GTEST_TEST(testMosek, MosekSecondOrderConicProgram) {
+GTEST_TEST(testMosek, MosekSecondOrderConicProgramLorentzCone) {
   OptimizationProblem prog3;
   auto x = prog3.AddContinuousVariables(3);
   Eigen::Vector3d C;
@@ -167,13 +167,43 @@ GTEST_TEST(testMosek, MosekSecondOrderConicProgram) {
   prog3.AddBoundingBoxConstraint(bboxlow, bboxhigh);
   prog3.SetSolverOption("Mosek", "maxormin", "min");
   prog3.SetSolverOption("Mosek", "problemtype", "soc");
-  prog3.SetSolverOption("Mosek", "conesubscript", 0);
+  prog3.SetSolverOption("Mosek", "conesubscript", "L 0 1 2");
   SolutionResult result = SolutionResult::kUnknownError;
   MosekSolver msk;
   ASSERT_NO_THROW(result = msk.Solve(prog3));
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   Eigen::Vector3d solutions;
   solutions << 4.999360e-01, 1.280062e-04, 4.999360e-01;
+  EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-7,
+                              MatrixCompareType::absolute));
+}
+
+GTEST_TEST(testMosek, MosekSecondOrderConicProgramRotatedCone) {
+  OptimizationProblem prog3;
+  auto x = prog3.AddContinuousVariables(3);
+  Eigen::Vector3d C;
+  C << 3, 2, 1;
+  SecondOrderConicConstraint obj(C, 0, 0);
+  prog3.AddCost(std::make_shared<SecondOrderConicConstraint>(obj));
+  Eigen::Vector3d A;
+  A << 1, 1, 1;
+  prog3.AddConstraint(std::make_shared<SecondOrderConicConstraint>(
+      SecondOrderConicConstraint(A, 1, 1)));
+  Eigen::Vector3d bboxlow, bboxhigh;
+  bboxlow << 0, 0, 0;
+  bboxhigh << std::numeric_limits<double>::infinity(),
+              std::numeric_limits<double>::infinity(),
+              std::numeric_limits<double>::infinity();
+  prog3.AddBoundingBoxConstraint(bboxlow, bboxhigh);
+  prog3.SetSolverOption("Mosek", "maxormin", "min");
+  prog3.SetSolverOption("Mosek", "problemtype", "soc");
+  prog3.SetSolverOption("Mosek", "conesubscript", "R 1 0 2");
+  SolutionResult result = SolutionResult::kUnknownError;
+  MosekSolver msk;
+  ASSERT_NO_THROW(result = msk.Solve(prog3));
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  Eigen::Vector3d solutions;
+  solutions << 1.055101e-01, 5.529118e-01, 3.415781e-01;
   EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-7,
                               MatrixCompareType::absolute));
 }
@@ -223,6 +253,7 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   SolutionResult result = SolutionResult::kUnknownError;
   prog4.SetSolverOption("Mosek", "maxormin", "min");
   prog4.SetSolverOption("Mosek", "problemtype", "sdp");
+  prog4.SetSolverOption("Mosek", "conesubscript", "L 0 1 2");
   ASSERT_NO_THROW(result = msk.Solve(prog4));
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   Eigen::VectorXd solutions(9);

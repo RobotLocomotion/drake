@@ -153,7 +153,8 @@ class SemidefiniteConstraint : public Constraint {
 /** A second order conic constraint that is a specific case of semidefinite
  programming.
  <pre>
- lb <= b'*x <= ub
+ lb <= b'*x <= ub,
+ x_0 >= sqrt(sum_i x_i^2) (must be checked application side)
  </pre>
  */
 class SecondOrderConicConstraint : public SemidefiniteConstraint {
