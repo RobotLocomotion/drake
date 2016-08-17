@@ -111,20 +111,26 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   virtual ~DrakeJoint();
 
   /**
-   * Returns the transform from the frame of this joint's child body to the
-   * frame of this joint's parent body.
+   * Returns the transform from this joint's parent body's frame to this joint's
+   * frame.
    *
-   * Let `C` be the frame of this joint's child body and `P` be the frame of
-   * this joint's parent body. Furthermore, let `point_C` be the location of a
-   * point measured from `C`'s origin and expressed in coordinate frame `C`,
-   * and `point_P` be the location of the same point but measured from `P`'s
-   * origin and expressed in coordinate frame `P`.
+   * Let `J` be this joint's frame and `B` be this joint's parent body's frame.
+   * Furthermore, let `point_J` be the location of a point measured from `J`'s
+   * origin and expressed in coordinate frame `J`, and `point_B` be the location
+   * of the same point but measured from `B`'s origin and expressed in
+   * coordinate frame `B`.
    *
-   * The returned value is `T_PC` where:
+   * The returned value is `T_BJ` where:
    *
    * <pre>
-   * point_P = T_PC * point_C;
+   * point_B = T_BJ * point_J;
    * </pre>
+   *
+   * Note that when this joint is in its zero position, this joint's child
+   * body's frame is coincident with this joint's parent body's frame. Thus,
+   * when this joint is at its zero position, this transform can also be used to
+   * transform a point defined in this joint's child body's frame to this
+   * joint's parent body's frame.
    */
   const Eigen::Isometry3d& get_transform_to_parent_body() const;
 
