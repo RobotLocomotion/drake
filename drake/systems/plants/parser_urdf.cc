@@ -4,12 +4,12 @@
 #include <sstream>
 #include <string>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/material_map.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/xmlUtil.h"
-#include "drake/common/eigen_matrix_compare.h"
 
 using drake::parsers::ModelInstanceIdTable;
 

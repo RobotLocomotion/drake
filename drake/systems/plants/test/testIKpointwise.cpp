@@ -1,14 +1,14 @@
 #include <cstdlib>
-#include <Eigen/Dense>
 
+#include <Eigen/Dense>
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector2d;

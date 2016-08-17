@@ -1,10 +1,12 @@
-#include <gtest/gtest.h>
+#include "drake/solvers/moby_lcp_solver.h"
+
 #include <memory>
 #include <vector>
-#include "drake/solvers/moby_lcp_solver.h"
+
+#include <gtest/gtest.h>
+
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
-
 
 namespace drake {
 namespace solvers {

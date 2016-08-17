@@ -4,14 +4,14 @@
 #include <map>
 #include <memory>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
 #include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/parser_urdf.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
 #include "drake/util/yaml/yamlUtil.h"

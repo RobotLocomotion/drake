@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/util/testUtil.h"
 
 using std::make_shared;

@@ -5,12 +5,12 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/examples/Cars/system1_cars_vectors.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/simulation_options.h"
 #include "drake/systems/vector.h"
-#include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/Cars/system1_cars_vectors.h"
 
 using drake::NullVector;
 using drake::SimulationOptions;
