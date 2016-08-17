@@ -39,11 +39,14 @@ std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateTimeDerivatives()
 template <typename T>
 void Integrator<T>::EvalOutput(const ContextBase<T>& context,
                                SystemOutput<T>* output) const {
-  DRAKE_ASSERT(output->get_num_ports() == 1);
+  // Checks that the output is consistent with the definition of this system.
+  DRAKE_ASSERT(System<T>::IsValidOutput(*output));
+
+  // Checks that context is consistent with the definition of this system.
+  DRAKE_ASSERT(System<T>::IsValidContext(context));
+
   VectorInterface<T>* output_port =
       output->get_mutable_port(0)->GetMutableVectorData();
-  DRAKE_ASSERT(output_port != nullptr);
-  DRAKE_ASSERT(output_port->get_value().rows() == length_);
 
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
@@ -54,7 +57,8 @@ void Integrator<T>::EvalOutput(const ContextBase<T>& context,
 template <typename T>
 void Integrator<T>::EvalTimeDerivatives(const ContextBase<T>& context,
                                         ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT(context.get_num_input_ports() == 1);
+  // Checks that context is consistent with the definition of this system.
+  DRAKE_ASSERT(System<T>::IsValidContext(context));
   const VectorInterface<T>* input = context.get_vector_input(0);
   derivatives->get_mutable_state()->SetFromVector(input->get_value());
 }
