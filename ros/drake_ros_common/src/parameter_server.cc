@@ -3,8 +3,6 @@
 namespace drake {
 namespace ros {
 
-// namespace {
-
 void WaitForParameter(const ::ros::NodeHandle& ros_node_handle,
     const std::string& parameter_name, double max_wait_time) {
   ::ros::Time begin_time = ::ros::Time::now();
@@ -19,8 +17,6 @@ void WaitForParameter(const ::ros::NodeHandle& ros_node_handle,
         parameter_name + "\" from the ROS parameter server.");
   }
 }
-
-// }  // namespace
 
 }  // namespace ros
 }  // namespace drake

@@ -50,7 +50,7 @@ class BasicVector : public VectorInterface<T> {
   ///
   /// Uses the Non-Virtual Interface idiom because smart pointers do not have
   /// type covariance.
-  std::unique_ptr<VectorInterface<T>> Clone() const final {
+  std::unique_ptr<VectorInterface<T>> CloneVector() const final {
     return std::unique_ptr<VectorInterface<T>>(DoClone());
   }
 

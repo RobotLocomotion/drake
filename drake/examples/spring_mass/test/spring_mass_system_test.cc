@@ -69,7 +69,7 @@ class SpringMassSystemTest : public ::testing::Test {
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector*>(
         context_->get_mutable_state()->continuous_state->get_mutable_state());
-    output_ = dynamic_cast<const SpringMassOutputVector*>(
+    output_ = dynamic_cast<const SpringMassStateVector*>(
         system_output_->get_port(0).get_vector_data());
     derivatives_ = dynamic_cast<SpringMassStateVector*>(
         system_derivatives_->get_mutable_state());
@@ -97,7 +97,7 @@ class SpringMassSystemTest : public ::testing::Test {
   std::unique_ptr<BasicStateVector<double>> configuration_derivatives_;
 
   SpringMassStateVector* state_;
-  const SpringMassOutputVector* output_;
+  const SpringMassStateVector* output_;
   SpringMassStateVector* derivatives_;
 
  private:
@@ -127,10 +127,10 @@ TEST_F(SpringMassSystemTest, CloneState) {
 TEST_F(SpringMassSystemTest, CloneOutput) {
   InitializeState(1.0, 2.0);
   system_->EvalOutput(*context_, system_output_.get());
-  std::unique_ptr<VectorInterface<double>> clone = output_->Clone();
+  std::unique_ptr<VectorInterface<double>> clone = output_->CloneVector();
 
-  SpringMassOutputVector* typed_clone =
-      dynamic_cast<SpringMassOutputVector*>(clone.get());
+  SpringMassStateVector* typed_clone =
+      dynamic_cast<SpringMassStateVector*>(clone.get());
   EXPECT_EQ(1.0, typed_clone->get_position());
   EXPECT_EQ(2.0, typed_clone->get_velocity());
 }
@@ -147,7 +147,7 @@ TEST_F(SpringMassSystemTest, Output) {
   EXPECT_EQ(0.25, output_->get_velocity());
 
   // Check the output through the VectorInterface API.
-  ASSERT_EQ(2, output_->size());
+  ASSERT_EQ(3, output_->size());
   EXPECT_NEAR(0.1, output_->get_value()[0], 1e-14);
   EXPECT_EQ(0.25, output_->get_value()[1]);
 }

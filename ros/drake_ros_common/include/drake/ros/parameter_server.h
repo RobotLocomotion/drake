@@ -5,7 +5,6 @@
 namespace drake {
 namespace ros {
 
-// namespace {
 /**
  * Waits up to @p max_wait_time for parameter @p parameter_name to exist on the
  * ROS parameter server. Throws an `std::runtime_error` exception if the
@@ -13,8 +12,6 @@ namespace ros {
  */
 void WaitForParameter(const ::ros::NodeHandle& ros_node_handle,
     const std::string& parameter_name, double max_wait_time = 5.0);
-
-// }  // namespace
 
 /**
  * Returns a parameter from the ROS parameter server. Throws an

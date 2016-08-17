@@ -3,13 +3,13 @@
 #include <cstdlib>
 
 #include "drake/examples/Cars/curve2.h"
-#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
-#include "drake/examples/Cars/gen/simple_car_state.h"
 #include "drake/examples/Cars/trajectory_car.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 
 using drake::AffineSystem;
 using drake::NullVector;
+using drake::parsers::ModelInstanceIdTable;
+
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -51,18 +51,6 @@ void PrintUsageInstructions(const std::string& executable_name) {
     << std::endl;
 }
 
-void AddModelInstancesToTable(const ModelInstanceIdTable& source_table,
-    ModelInstanceIdTable* dest_table) {
-  for (auto const &model_entry : source_table) {
-    const std::string& model_name = model_entry.first;
-    if (dest_table->find(model_name) != dest_table->end()) {
-      throw std::runtime_error("AddModelInstancesToTable: Collision occured "
-          "with model name\"" + model_name + "\".");
-    }
-    (*dest_table)[model_name] = model_entry.second;
-  }
-}
-
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
     int argc, const char* argv[], double* duration,
     ModelInstanceIdTable* model_instance_id_table) {
@@ -75,13 +63,10 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  // Instantiates a null frame.
-  std::shared_ptr<RigidBodyFrame> weld_to_frame;
-
-  // Adds a robot model.
+  // Adds a model instance.
   ModelInstanceIdTable vehicle_instance_id_table =
       rigid_body_sys->AddModelInstanceFromFile(argv[1],
-          DrakeJoint::QUATERNION, weld_to_frame);
+          DrakeJoint::QUATERNION);
 
   // Verifies that only one vehicle was added to the world.
   if (vehicle_instance_id_table.size() != 1) {
@@ -109,9 +94,8 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
         *duration = atof(argv[ii]);
     } else {
       ModelInstanceIdTable world_instance_id_table =
-          rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED,
-              weld_to_frame);
-      AddModelInstancesToTable(world_instance_id_table,
+          rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED);
+      drake::parsers::AddModelInstancesToTable(world_instance_id_table,
           model_instance_id_table);
     }
   }
@@ -172,7 +156,7 @@ void AddFlatTerrainToWorld(
 }
 
 std::shared_ptr<CascadeSystem<
-    Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>,
+    Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
 CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   const auto& tree = rigid_body_sys->getRigidBodyTree();
@@ -236,9 +220,10 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
 
   auto vehicle_sys = cascade(
       std::allocate_shared<
-          Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>>(
-          Eigen::aligned_allocator<Gain<
-              DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>>(),
+          Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>>(
+          Eigen::aligned_allocator<
+              Gain<DrivingCommand1,
+                   PDControlSystem<RigidBodySystem>::InputVector>>(),
           map_driving_cmd_to_x_d),
       vehicle_with_pd);
 
@@ -308,29 +293,28 @@ std::shared_ptr<TrajectoryCar> CreateTrajectoryCarSystem(int index) {
   return std::make_shared<TrajectoryCar>(curve, kSpeed, start_time);
 }
 
-std::shared_ptr<AffineSystem<
-  NullVector, SimpleCarState, EulerFloatingJointState>>
+std::shared_ptr<
+    AffineSystem<NullVector, SimpleCarState1, EulerFloatingJointState1>>
 CreateSimpleCarVisualizationAdapter() {
-  const int insize = SimpleCarState<double>().size();
-  const int outsize = EulerFloatingJointState<double>().size();
+  const int insize = SimpleCarState1<double>().size();
+  const int outsize = EulerFloatingJointState1<double>().size();
   MatrixXd D;
   D.setZero(outsize, insize);
   D(EulerFloatingJointStateIndices::kX, SimpleCarStateIndices::kX) = 1;
   D(EulerFloatingJointStateIndices::kY, SimpleCarStateIndices::kY) = 1;
   D(EulerFloatingJointStateIndices::kYaw, SimpleCarStateIndices::kHeading) = 1;
-  EulerFloatingJointState<double> y0;
+  EulerFloatingJointState1<double> y0;
   return std::make_shared<
     AffineSystem<
         NullVector,
-        SimpleCarState,
-        EulerFloatingJointState>>(
+        SimpleCarState1,
+        EulerFloatingJointState1>>(
             MatrixXd::Zero(0, 0),
             MatrixXd::Zero(0, insize),
             VectorXd::Zero(0),
             MatrixXd::Zero(outsize, 0),
             D, toEigen(y0));
 }
-
 
 SimulationOptions GetCarSimulationDefaultOptions() {
   SimulationOptions result;
