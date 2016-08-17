@@ -267,8 +267,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @return A vector of indices of the ancestor bodies of the body at index
    * @p body_index.
    */
-  std::vector<int> FindAncestorBodies(int body_index)
-    const;
+  std::vector<int> FindAncestorBodies(int body_index) const;
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use RigidBodyTree::FindAncestorBodies() instead.")
