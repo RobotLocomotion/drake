@@ -255,6 +255,22 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const Eigen::MatrixBase<DerivedNormal>& normal,
       const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane) const;
 
+  /**
+   * Finds all of the ancestors of a rigid body.
+   *
+   * @param[in] body_index the index of the body within this RigidBodyTree's
+   * vector of rigid bodies. This value must be greater than zero and less
+   * than the number of rigid bodies in this tree.
+   *
+   * @param[out] ancestor_bodies A pointer to where the indices of the ancesor
+   * bodies should be stored.
+   */
+  void FindAncestorBodies(int body_index, std::vector<int>* ancestor_bodies)
+    const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindAncestorBodies() instead.")
+#endif
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body) const;
 
   KinematicPath findKinematicPath(int start_body_or_frame_idx,

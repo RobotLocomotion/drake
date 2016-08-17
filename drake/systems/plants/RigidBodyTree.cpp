@@ -1071,13 +1071,23 @@ int RigidBodyTree::parseBodyOrFrameID(const int body_or_frame_id) const {
   return parseBodyOrFrameID<double>(body_or_frame_id, nullptr);
 }
 
-void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
-                                       int body_idx) const {
-  const RigidBody* current_body = bodies[body_idx].get();
+void RigidBodyTree::FindAncestorBodies(
+    int body_index, std::vector<int>* ancestor_bodies) const {
+  // Verifies that body_index is valid. Throws an exception otherwise.
+  DRAKE_ABORT_UNLESS(body_index > 0 &&
+      body_index < static_cast<int>(bodies.size()));
+
+  const RigidBody* current_body = bodies[body_index].get();
   while (current_body->hasParent()) {
-    ancestor_bodies.push_back(current_body->get_parent()->get_body_index());
+    ancestor_bodies->push_back(current_body->get_parent()->get_body_index());
     current_body = current_body->get_parent();
   }
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
+void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
+                                       int body_idx) const {
+  return FindAncestorBodies(body_idx, &ancestor_bodies);
 }
 
 KinematicPath RigidBodyTree::findKinematicPath(
@@ -1087,12 +1097,12 @@ KinematicPath RigidBodyTree::findKinematicPath(
 
   std::vector<int> start_body_ancestors;
   start_body_ancestors.push_back(start_body);
-  findAncestorBodies(start_body_ancestors, start_body);
+  FindAncestorBodies(start_body, &start_body_ancestors);
 
   int end_body = parseBodyOrFrameID(end_body_or_frame_idx);
   std::vector<int> end_body_ancestors;
   end_body_ancestors.push_back(end_body);
-  findAncestorBodies(end_body_ancestors, end_body);
+  FindAncestorBodies(end_body, &end_body_ancestors);
 
   // find least common ancestor
   size_t common_size =
