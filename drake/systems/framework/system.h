@@ -93,8 +93,7 @@ class System {
     return true;
   }
 
-  /// Checks that @p context is consistent with the number and size of input and
-  /// output ports declared by the system.
+  /// Checks that @p context is consistent for this system.
   /// @returns `true` if @p context is valid for this system and `false`
   /// otherwise.
   bool IsValidContext(const ContextBase<T>& context) const {
