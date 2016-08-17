@@ -1924,21 +1924,21 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
 }
 
 int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
-      int model_instance_id) const {
+                                               int model_instance_id) const {
   RigidBody* link = FindChildBodyOfJoint(joint_name, model_instance_id);
   return link->get_body_index();
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
 RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
-    int model_id) const {
+                                    int model_id) const {
   return FindChildBodyOfJoint(joint_name, model_id);
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
-int RigidBodyTree::findJointId(const std::string& joint_name, int model_id)
-    const {
-  return  FindIndexOfChildBodyOfJoint(joint_name, model_id);
+int RigidBodyTree::findJointId(const std::string& joint_name,
+                               int model_id) const {
+  return FindIndexOfChildBodyOfJoint(joint_name, model_id);
 }
 
 std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
@@ -1976,12 +1976,14 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
 
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q = cache.getQ();
   for (int i = 0; i < static_cast<int>(joint_transmissions.size()); i++) {
-    int joint1_pos_idx = findJoint(joint_transmissions[i].GetJoint1Name(),
-                                   joint_transmissions[i].GetModelInstanceID())
-                             ->get_position_start_index();
-    int joint2_pos_idx = findJoint(joint_transmissions[i].GetJoint2Name(),
-                                   joint_transmissions[i].GetModelInstanceID())
-                             ->get_position_start_index();
+    int joint1_pos_idx =
+        FindChildBodyOfJoint(joint_transmissions[i].GetJoint1Name(),
+                             joint_transmissions[i].GetModelInstanceID())
+            ->get_position_start_index();
+    int joint2_pos_idx =
+        FindChildBodyOfJoint(joint_transmissions[i].GetJoint2Name(),
+                             joint_transmissions[i].GetModelInstanceID())
+            ->get_position_start_index();
     ret(constraint_count) =
         q(joint1_pos_idx) -
         joint_transmissions[i].GetMultiplier() * q(joint2_pos_idx) -
@@ -2012,10 +2014,12 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
     constraint_count += 6;
   }
   for (int i = 0; i < static_cast<int>(joint_transmissions.size()); i++) {
-    auto link1 = findJoint(joint_transmissions[i].GetJoint1Name(),
-                           joint_transmissions[i].GetModelInstanceID());
-    auto link2 = findJoint(joint_transmissions[i].GetJoint2Name(),
-                           joint_transmissions[i].GetModelInstanceID());
+    auto link1 =
+        FindChildBodyOfJoint(joint_transmissions[i].GetJoint1Name(),
+                             joint_transmissions[i].GetModelInstanceID());
+    auto link2 =
+        FindChildBodyOfJoint(joint_transmissions[i].GetJoint2Name(),
+                             joint_transmissions[i].GetModelInstanceID());
     KinematicsCacheElement<Scalar> element1 = cache.getElement(*link1);
     KinematicsCacheElement<Scalar> element2 = cache.getElement(*link2);
     ret(constraint_count, link1->get_velocity_start_index()) =

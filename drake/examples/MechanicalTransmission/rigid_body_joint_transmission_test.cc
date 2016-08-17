@@ -51,8 +51,8 @@ void EvaluateMechanicalTransmissionConstraint(
     int model_id = -1) {
   int nq = tree->number_of_positions();
   int nv = tree->number_of_velocities();
-  auto link1 = tree->findJoint("joint1", model_id);
-  auto link2 = tree->findJoint("joint2", model_id);
+  auto link1 = tree->FindChildBodyOfJoint("joint1", model_id);
+  auto link2 = tree->FindChildBodyOfJoint("joint2", model_id);
   int joint1_pos_idx = link1->get_position_start_index();
   int joint2_pos_idx = link2->get_position_start_index();
   int joint1_vel_idx = link1->get_velocity_start_index();
@@ -170,12 +170,14 @@ GTEST_TEST(MechanicalTransmissionTest, MechanicalTransmissionSimulation) {
   VectorXd x0 = VectorXd::Zero(rigid_body_system->getNumStates());
   // Determines the indices within the `RigidBodySystem's` output vector
   // containing the positions and velocities of the two joints in the URDF.
-  int joint1_pos_index = tree->findJoint("joint1")->get_position_start_index();
-  int joint2_pos_index = tree->findJoint("joint2")->get_position_start_index();
+  int joint1_pos_index =
+      tree->FindChildBodyOfJoint("joint1")->get_position_start_index();
+  int joint2_pos_index =
+      tree->FindChildBodyOfJoint("joint2")->get_position_start_index();
   int joint1_vel_index =
-      nq + tree->findJoint("joint1")->get_velocity_start_index();
+      nq + tree->FindChildBodyOfJoint("joint1")->get_velocity_start_index();
   int joint2_vel_index =
-      nq + tree->findJoint("joint2")->get_velocity_start_index();
+      nq + tree->FindChildBodyOfJoint("joint2")->get_velocity_start_index();
 
   x0(joint1_pos_index) = 2.0;
   x0(joint2_pos_index) = 2.0;
@@ -292,21 +294,21 @@ GTEST_TEST(MechanicalTransmissionTest,
   // Determines the indices within the `RigidBodySystem's` output vector
   // containing the positions and velocities of the two joints in the URDF.
   int joint1_model0_pos_index =
-      tree->findJoint("joint1", 0)->get_position_start_index();
+      tree->FindChildBodyOfJoint("joint1", 0)->get_position_start_index();
   int joint2_model0_pos_index =
-      tree->findJoint("joint2", 0)->get_position_start_index();
+      tree->FindChildBodyOfJoint("joint2", 0)->get_position_start_index();
   int joint1_model0_vel_index =
-      nq + tree->findJoint("joint1", 0)->get_velocity_start_index();
+      nq + tree->FindChildBodyOfJoint("joint1", 0)->get_velocity_start_index();
   int joint2_model0_vel_index =
-      nq + tree->findJoint("joint2", 0)->get_velocity_start_index();
+      nq + tree->FindChildBodyOfJoint("joint2", 0)->get_velocity_start_index();
   int joint1_model1_pos_index =
-      tree->findJoint("joint1", 1)->get_position_start_index();
+      tree->FindChildBodyOfJoint("joint1", 1)->get_position_start_index();
   int joint2_model1_pos_index =
-      tree->findJoint("joint2", 1)->get_position_start_index();
+      tree->FindChildBodyOfJoint("joint2", 1)->get_position_start_index();
   int joint1_model1_vel_index =
-      nq + tree->findJoint("joint1", 1)->get_velocity_start_index();
+      nq + tree->FindChildBodyOfJoint("joint1", 1)->get_velocity_start_index();
   int joint2_model1_vel_index =
-      nq + tree->findJoint("joint2", 1)->get_velocity_start_index();
+      nq + tree->FindChildBodyOfJoint("joint2", 1)->get_velocity_start_index();
 
   // Simulates the system with initial joint values (2.0,2.0,3.0,4.0) and
   // initial joint velocities (0.1,0.2,0.0,0.0). The trajectory should always
