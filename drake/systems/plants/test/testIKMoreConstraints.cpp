@@ -6,19 +6,18 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using drake::GetDrakePath;
-using drake::util::CompareMatrices;
-using drake::util::MatrixCompareType;
+namespace drake {
+namespace {
 
 // Find the joint position indices corresponding to 'name'
 std::vector<int> getJointPositionVectorIndices(const RigidBodyTree& model,
@@ -195,3 +194,6 @@ GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   EXPECT_TRUE(CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913),
                               1e-4, MatrixCompareType::absolute));
 }
+
+}  // namespace
+}  // namespace drake

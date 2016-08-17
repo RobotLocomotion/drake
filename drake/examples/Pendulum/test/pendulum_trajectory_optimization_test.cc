@@ -3,13 +3,12 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 using drake::solvers::SolutionResult;
-using drake::util::MatrixCompareType;
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 

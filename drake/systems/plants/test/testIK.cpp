@@ -1,23 +1,22 @@
 #include <cstdlib>
-#include <Eigen/Dense>
 
+#include <Eigen/Dense>
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/vector.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using drake::GetDrakePath;
-using drake::util::CompareMatrices;
-using drake::util::MatrixCompareType;
+namespace drake {
+namespace {
 
 GTEST_TEST(testIK, atlasIK) {
   RigidBodyTree model(
@@ -111,3 +110,6 @@ GTEST_TEST(testIK, iiwaIK) {
       pos_end, model.relativeTransform(cache, 0, link_7_idx).translation(),
       pos_tol + 1e-6, MatrixCompareType::absolute));
 }
+
+}  // namespace
+}  // namespace drake
