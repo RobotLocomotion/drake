@@ -207,7 +207,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
   } catch (std::runtime_error& error) {
     // Asserts that the exception is thrown when FindBodyOfJoint() fails to find
     // find a non-existing joint.
-    EXPECT_TRUE(std::string(error.what()).find("FindBodyOfJoint") !=
+    EXPECT_TRUE(std::string(error.what()).find("FindChildBodyOfJoint") !=
                 std::string::npos);
   }
 }
