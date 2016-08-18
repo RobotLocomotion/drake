@@ -117,7 +117,7 @@ elseif(MSVC)
 endif()
 
 # set up matlab build
-include(cmake/mex.cmake)
+include(../cmake/mex.cmake)
 if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
   if(DISABLE_MATLAB)
     message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
