@@ -5,24 +5,12 @@ if(gurobi_FOUND)
   add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES qp.cc)
   pods_use_pkg_config_packages(drakeQP gurobi)
 
-  if(MATLAB_FOUND)
-    add_mex(fastQPmex fastQPmex.cpp)
-    target_link_libraries(fastQPmex drakeQP)
-    add_mex(gurobiQPmex gurobiQPmex.cpp)
-    target_link_libraries(gurobiQPmex drakeQP)
-  endif()
-
   pods_install_libraries(drakeQP)
   drake_install_headers(fast_qp.h gurobi_qp.h)
   pods_install_pkg_config_file(drake-qp
     LIBS -ldrakeQP
     REQUIRES gurobi
     VERSION 0.0.1)
-endif()
-
-if(MATLAB_FOUND)
-  add_mex(lqrmex lqrmex.cpp)
-  target_link_libraries(lqrmex drakeUtil)
 endif()
 
 set(optimization_files)
@@ -107,22 +95,10 @@ if(gurobi_FOUND)
   pods_use_pkg_config_packages(drakeOptimization gurobi)
 endif()
 
-if(snopt_c_FOUND AND MATLAB_FOUND)
-  add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
-  pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
-
-  # These warnings are not worth fixing.
-  set_target_properties(
-    NonlinearProgramSnoptmex
-    PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_ERROR_SHADOW})
-endif()
-
 if(mosek_FOUND)
   pods_use_pkg_config_packages(drakeOptimization mosek)
 endif()
 
 add_subdirectory(qpSpline)
 add_subdirectory(test)
-add_subdirectory(+drakeFunction)
-add_subdirectory(BMI)
 add_subdirectory(trajectoryOptimization)
