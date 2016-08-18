@@ -4,22 +4,22 @@
 #include <stdexcept>
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
+#include "drake/systems/LCMSystem.h"
+#include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/controllers/simple_lqr_trajectory_controller.h"
 #include "drake/systems/feedback_system.h"
-#include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/robot_state_tap.h"
-#include "drake/systems/Simulation.h"
 #include "drake/util/drakeAppUtil.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 using drake::SimpleLqrTrajectoryController;
 using drake::solvers::SolutionResult;
-using drake::util::MatrixCompareType;
+using drake::MatrixCompareType;
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
   PendulumState<double> x0_state = x0;
   drake::runLCM(sys, lcm, 0, kTrajectoryTimeUpperBound, x0_state, options);
   if (!CompareMatrices(toEigen(robot_state_tap->get_input_vector()), xG,
-                       1e-5, MatrixCompareType::absolute)) {
+                       1e-4, MatrixCompareType::absolute)) {
     throw std::runtime_error("Did not reach trajectory target.");
   }
 

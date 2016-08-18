@@ -1,14 +1,14 @@
 #include <typeinfo>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/polynomial.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/optimization.h"
 #include "drake/solvers/snopt_solver.h"
-#include "drake/common/polynomial.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
@@ -25,7 +25,6 @@ using Eigen::VectorXd;
 
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace solvers {
@@ -310,7 +309,6 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
                                 MatrixCompareType::absolute));
   });
 }
-
 
 // This test is identical to testProblem2 above but the cost is
 // framed as a QP instead.
