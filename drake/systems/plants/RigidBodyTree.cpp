@@ -61,12 +61,11 @@ const set<int> RigidBodyTree::default_model_instance_id_set = {0};
 const char* const RigidBodyTree::kWorldName = "world";
 
 template <typename T>
-void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
+void getFiniteIndexes(T const& vv, std::vector<int>& finite_indexes) {
   finite_indexes.clear();
-  const int n = v.size();
-  for (int x = 0; x < n; ++x) {
-    if (std::isfinite(static_cast<double>(v[x]))) {
-      finite_indexes.push_back(x);
+  for (int ii = 0; ii < vv.size(); ++ii) {
+    if (std::isfinite(static_cast<double>(vv[ii]))) {
+      finite_indexes.push_back(ii);
     }
   }
 }
@@ -1044,7 +1043,7 @@ std::pair<Eigen::Vector3d, double> RigidBodyTree::resolveCenterOfPressure(
 }
 
 int RigidBodyTree::getNumContacts(const set<int>& body_idx) const {
-  size_t n = 0, nb = body_idx.size(), bi;
+  size_t num_contacts = 0, nb = body_idx.size(), bi;
   if (nb == 0) nb = bodies.size();
   set<int>::iterator iter = body_idx.begin();
   for (size_t ii = 0; ii < nb; ++ii) {
@@ -1052,9 +1051,9 @@ int RigidBodyTree::getNumContacts(const set<int>& body_idx) const {
       bi = ii;
     else
       bi = *iter++;
-    n += bodies[bi]->get_contact_points().cols();
+    num_contacts += bodies[bi]->get_contact_points().cols();
   }
-  return static_cast<int>(n);
+  return static_cast<int>(num_contacts);
 }
 
 /* [body_ind, Tframe] = parseBodyOrFrameID(body_or_frame_id) */
@@ -1261,13 +1260,13 @@ TwistVector<Scalar> RigidBodyTree::relativeTwist(
   int base_ind = parseBodyOrFrameID(base_or_frame_ind);
   int body_ind = parseBodyOrFrameID(body_or_frame_ind);
   int world = 0;
-  auto T = relativeTransform(cache, expressed_in_body_or_frame_ind, world);
+  auto TT = relativeTransform(cache, expressed_in_body_or_frame_ind, world);
 
   const auto& base_element = cache.getElement(*bodies[base_ind]);
   const auto& body_element = cache.getElement(*bodies[body_ind]);
   TwistVector<Scalar> relative_twist_in_world =
       body_element.twist_in_world - base_element.twist_in_world;
-  return transformSpatialMotion(T, relative_twist_in_world);
+  return transformSpatialMotion(TT, relative_twist_in_world);
 }
 
 template <typename Scalar>
@@ -1488,9 +1487,9 @@ RigidBodyTree::transformPointsJacobian(
   auto Jomega = J_geometric.template topRows<kSpaceDimension>();
   auto Jv = J_geometric.template bottomRows<kSpaceDimension>();
 
-  Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> J(
+  Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> JJ(
       points_base.size(), cols);  // TODO(tkoolen): size at compile time
-  J.setZero();
+  JJ.setZero();
 
   int row_start = 0;
   for (int ii = 0; ii < npoints; ++ii) {
@@ -1498,15 +1497,15 @@ RigidBodyTree::transformPointsJacobian(
     int col = 0;
     for (std::vector<int>::iterator it = v_or_q_indices.begin();
          it != v_or_q_indices.end(); ++it) {
-      J.template block<kSpaceDimension, 1>(row_start, *it) = Jv.col(col);
-      J.template block<kSpaceDimension, 1>(row_start, *it).noalias() +=
+      JJ.template block<kSpaceDimension, 1>(row_start, *it) = Jv.col(col);
+      JJ.template block<kSpaceDimension, 1>(row_start, *it).noalias() +=
           Jomega.col(col).cross(points_base.col(ii));
       col++;
     }
     row_start += kSpaceDimension;
   }
 
-  return J;
+  return JJ;
 }
 
 template <typename Scalar>
@@ -1584,7 +1583,7 @@ RigidBodyTree::transformPointsJacobianDotTimesV(
   cache.checkCachedKinematicsSettings(true, true,
                                       "transformPointsJacobianDotTimesV");
 
-  auto r = transformPoints(cache, points, from_body_or_frame_ind,
+  auto rr = transformPoints(cache, points, from_body_or_frame_ind,
                            to_body_or_frame_ind);
   int expressed_in = to_body_or_frame_ind;
   const auto twist =
@@ -1596,17 +1595,17 @@ RigidBodyTree::transformPointsJacobianDotTimesV(
   auto omega_twist = twist.template topRows<kSpaceDimension>();
   auto v_twist = twist.template bottomRows<kSpaceDimension>();
 
-  auto rdots = (-r.colwise().cross(omega_twist)).eval();
+  auto rdots = (-rr.colwise().cross(omega_twist)).eval();
   rdots.colwise() += v_twist;
   auto Jposdot_times_v_mat = (-rdots.colwise().cross(omega_twist)).eval();
   Jposdot_times_v_mat -=
-      (r.colwise().cross(
+      (rr.colwise().cross(
            J_geometric_dot_times_v.template topRows<kSpaceDimension>()))
           .eval();
   Jposdot_times_v_mat.colwise() +=
       J_geometric_dot_times_v.template bottomRows<kSpaceDimension>();
 
-  return Map<Matrix<Scalar, Dynamic, 1>>(Jposdot_times_v_mat.data(), r.size(),
+  return Map<Matrix<Scalar, Dynamic, 1>>(Jposdot_times_v_mat.data(), rr.size(),
                                          1);
 }
 
