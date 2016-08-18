@@ -1010,12 +1010,12 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromString(
 
   if (xml_doc.FirstChildElement("sdf") != nullptr) {
     return AddModelInstancesFromSdfString(
-        string, floating_base_type, weld_to_frame);
+        string_description, floating_base_type, weld_to_frame);
   } else {
     // Assume that it is a URDF file.
     const std::string root_dir = ".";
     return AddModelInstanceFromUrdfString(
-        string, root_dir, floating_base_type, weld_to_frame);
+        string_description, root_dir, floating_base_type, weld_to_frame);
   }
 }
 
