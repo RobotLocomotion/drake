@@ -354,7 +354,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   // list are called "link1".
   std::vector<int> base_body_list = tree->FindBaseBodies();
   for (int index : base_body_list) {
-    EXPECT_EQ(tree->GetBody(index)->get_name(), "link1");
+    EXPECT_EQ(tree->get_body(index).get_name(), "link1");
   }
 
   // Obtains a list of the world's children. Verifies that this list is
