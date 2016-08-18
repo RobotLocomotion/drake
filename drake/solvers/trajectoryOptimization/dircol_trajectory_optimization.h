@@ -15,21 +15,16 @@ namespace solvers {
  * DirectTrajectoryOptimization are the addition of running costs and
  * dynamic constraints.
  */
-class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization :
-      public DirectTrajectoryOptimization {
+class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization
+    : public DirectTrajectoryOptimization {
  public:
   DircolTrajectoryOptimization(int num_inputs, int num_states,
                                int num_time_samples,
                                double trajectory_time_lower_bound,
                                double trajectory_time_upper_bound);
 
-  /**
-   * Adds a dynamic constraint to be applied to each pair of
-   * states/inputs.
-   */
-  template <typename ConstraintT>
   void AddDynamicConstraint(
-      const std::shared_ptr<ConstraintT>& constraint) {
+      const std::shared_ptr<Constraint>& constraint) override {
     DRAKE_ASSERT(static_cast<int>(constraint->num_constraints()) ==
                  num_states());
 
@@ -40,17 +35,11 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization :
       opt_problem()->AddConstraint(
           constraint,
           {h_vars()(i), x_vars().segment(i * num_states(), num_states() * 2),
-                u_vars().segment(i * num_inputs(), num_inputs() * 2)});
+           u_vars().segment(i * num_inputs(), num_inputs() * 2)});
     }
   }
 
-  /**
-   * Adds an integrated cost to all time steps.
-   *
-   * @param constraint A constraint which expects a timestep, state,
-   * and input as the elements of x when Eval is invoked.
-   */
-  void AddRunningCost(std::shared_ptr<Constraint> constraint);
+  void AddRunningCost(std::shared_ptr<Constraint> constraint) override;
 
   /**
    * Adds an integrated cost to all time steps.

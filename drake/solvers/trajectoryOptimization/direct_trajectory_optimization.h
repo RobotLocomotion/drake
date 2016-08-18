@@ -13,8 +13,13 @@ namespace drake {
 namespace solvers {
 
 /**
- * DirectTrajectoryOptimization is a class for direct method approaches
- * to trajectory optimization.
+ * DirectTrajectoryOptimization is an abstract class for direct method
+ * approaches to trajectory optimization.
+ *
+ * Subclasses must implement the two abstract methods:
+ *  addRunningCost()
+ * and
+ *  addDynamicConstraints()
  *
  * This class assumes that there are a fixed number (N) time steps/samples, and
  * that the trajectory is discretized into timesteps h (N-1 of these), state x
@@ -23,36 +28,23 @@ namespace solvers {
  * To maintain nominal sparsity in the optimization programs, this
  * implementation assumes that all constraints and costs are
  * time-invariant.
- *
- * TODO(Lucy-tri) While this class can be instanced as a standalone
- * object, it's not very useful in that state and should generally be
- * used as a base class for other optimization approaches which can
- * define more interesting costs and constraints.  Consider making use
- * as a base class mandatory (possibly through a protected constructor
- * or pure virtual implementation of something which every derived
- * class ends up using, like AddRunningCost or AddDynamicConstraint).
  */
 class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  public:
   /**
-   * Construct a DirectTrajectoryOptimization object.  The dimensions
-   * of the trajectory are established at construction, though other
-   * parameters (costs, bounds, constraints, etc) can be set before
-   * calling SolveTraj.
-   *
-   * @param num_inputs Number of inputs at each sample point.
-   * @param num_states Number of states at each sample point.
-   * @param num_time_samples Number of time samples.
-   * @param trajectory_time_lower_bound Bound on total time for
-   *        trajectory.
-   * @param trajectory_time_upper_bound Bound on total time for
-   *        trajectory.
+   * Adds a dynamic constraint to be applied to each pair of
+   * states/inputs.
    */
-  DirectTrajectoryOptimization(int num_inputs, int num_states,
-                               int num_time_samples,
-                               double trajectory_time_lower_bound,
-                               double trajectory_time_upper_bound);
-  // TODO(Lucy-tri) add param: time steps constant or independent.
+  virtual void AddDynamicConstraint(
+      const std::shared_ptr<Constraint>& constraint) = 0;
+
+  /**
+   * Adds an integrated cost to all time steps.
+   *
+   * @param constraint A constraint which expects a timestep, state,
+   * and input as the elements of x when Eval is invoked.
+   */
+  virtual void AddRunningCost(std::shared_ptr<Constraint> constraint) = 0;
 
   /**
    * Add upper and lower bounds on the input values.  Calling this
@@ -193,6 +185,27 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   PiecewisePolynomial<double> ReconstructStateTrajectory() const;
 
  protected:
+  /**
+   * Construct a DirectTrajectoryOptimization object. The dimensions
+   * of the trajectory are established at construction, though other
+   * parameters (costs, bounds, constraints, etc) can be set before
+   * calling SolveTraj.
+   *
+   * @param num_inputs Number of inputs at each sample point.
+   * @param num_states Number of states at each sample point.
+   * @param num_time_samples Number of time samples.
+   * @param trajectory_time_lower_bound Bound on total time for
+   *        trajectory.
+   * @param trajectory_time_upper_bound Bound on total time for
+   *        trajectory.
+   */
+  DirectTrajectoryOptimization(int num_inputs, int num_states,
+                               int num_time_samples,
+                               double trajectory_time_lower_bound,
+                               double trajectory_time_upper_bound);
+  // TODO(Lucy-tri) add param to indicate whether time steps are constant or
+  // independent, and modify implementation to handle.
+
   /**
    * Returns a vector containing the elapsed time at each knot point.
    */
