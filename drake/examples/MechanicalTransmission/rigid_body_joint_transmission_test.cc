@@ -8,12 +8,12 @@
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/trajectory_logger.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 
 using drake::RigidBodySystem;
 using Eigen::VectorXd;
-using drake::util::CompareMatrices;
-using drake::util::MatrixCompareType;
+using drake::CompareMatrices;
+using drake::MatrixCompareType;
 
 namespace drake {
 namespace examples {
