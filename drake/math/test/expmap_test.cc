@@ -3,9 +3,9 @@
 #include <unsupported/Eigen/AutoDiff>
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 using drake::math::initializeAutoDiff;
 using Eigen::AutoDiffScalar;
@@ -13,10 +13,6 @@ using Eigen::Matrix3d;
 using Eigen::Vector4d;
 
 namespace drake {
-
-using util::CompareMatrices;
-using util::MatrixCompareType;
-
 namespace math {
 namespace {
 

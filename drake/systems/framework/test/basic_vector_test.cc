@@ -5,12 +5,9 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/functional_form.h"
 #include "drake/common/polynomial.h"
-#include "drake/util/eigen_matrix_compare.h"
-
-using drake::util::CompareMatrices;
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace systems {
@@ -76,7 +73,7 @@ GTEST_TEST(BasicVectorTest, SetWholeVector) {
 GTEST_TEST(BasicVectorTest, Clone) {
   BasicVector<int> vec(2);
   vec.get_mutable_value() << 1, 2;
-  std::unique_ptr<VectorInterface<int>> clone = vec.Clone();
+  std::unique_ptr<VectorInterface<int>> clone = vec.CloneVector();
 
   BasicVector<int>* typed_clone = dynamic_cast<BasicVector<int>*>(clone.get());
   Eigen::Vector2i expected;

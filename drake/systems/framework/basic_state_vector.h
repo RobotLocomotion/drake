@@ -8,17 +8,16 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/vector_interface.h"
-#include "leaf_state_vector.h"
 
 namespace drake {
 namespace systems {
 
 /// BasicStateVector is a concrete class template that implements
-/// StateVector in a convenient manner for leaf Systems,
+/// StateVector in a convenient manner for LeafSystem blocks,
 /// by owning and wrapping a VectorInterface<T>.
 ///
 /// It will often be convenient to inherit from BasicStateVector, and add
-/// additional semantics specific to the leaf System. Such child classes must
+/// additional semantics specific to the LeafSystem. Such child classes must
 /// override DoClone with an implementation that returns their concrete type.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
@@ -88,16 +87,20 @@ class BasicStateVector : public LeafStateVector<T> {
   }
 
  protected:
+  // Clone other's wrapped vector, in case is it not a BasicVector.
   BasicStateVector(const BasicStateVector& other)
-      : BasicStateVector(other.size()) {
-    SetFromVector(other.vector_->get_value());
-  }
+      : BasicStateVector(other.vector_->CloneVector()) {}
 
- private:
   BasicStateVector<T>* DoClone() const override {
     return new BasicStateVector<T>(*this);
   }
 
+  /// Returns a mutable reference to the underlying VectorInterface.
+  VectorInterface<T>& get_wrapped_vector() { return *vector_; }
+  /// Returns a const reference to the underlying VectorInterface.
+  const VectorInterface<T>& get_wrapped_vector() const { return *vector_; }
+
+ private:
   // Assignment of BasicStateVectors could change size, so we forbid it.
   BasicStateVector& operator=(const BasicStateVector& other) = delete;
 

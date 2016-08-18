@@ -59,6 +59,7 @@ void Integrator<T>::EvalTimeDerivatives(const ContextBase<T>& context,
   derivatives->get_mutable_state()->SetFromVector(input->get_value());
 }
 
+// Explicitly instantiates on the most common scalar types.
 template class DRAKESYSTEMFRAMEWORK_EXPORT Integrator<double>;
 
 }  // namespace systems

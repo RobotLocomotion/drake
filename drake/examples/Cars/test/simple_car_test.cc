@@ -5,13 +5,13 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/examples/Cars/system1_cars_vectors.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/simulation_options.h"
 #include "drake/systems/vector.h"
-#include "drake/util/eigen_matrix_compare.h"
 
-using drake::util::MatrixCompareType;
 using drake::NullVector;
 using drake::SimulationOptions;
 
@@ -81,10 +81,10 @@ class HistorySystem {
 
 GTEST_TEST(SimpleCarTest, ZerosIn) {
   SimpleCar dut;
-  SimpleCarState<double> state_zeros;
-  DrivingCommand<double> input_zeros;
+  SimpleCarState1<double> state_zeros;
+  DrivingCommand1<double> input_zeros;
 
-  SimpleCarState<double> rates =
+  SimpleCarState1<double> rates =
       dut.dynamics(0., state_zeros, input_zeros);
 
   const double tolerance = 1e-8;
@@ -93,16 +93,16 @@ GTEST_TEST(SimpleCarTest, ZerosIn) {
 }
 
 GTEST_TEST(SimpleCarTest, Accelerating) {
-  DrivingCommand<double> max_throttle;
+  DrivingCommand1<double> max_throttle;
   max_throttle.set_throttle(1.);
 
   auto car = std::make_shared<SimpleCar>();
-  SimpleCarState<double> initial_state;
+  SimpleCarState1<double> initial_state;
   auto history_system =
-      std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
+      std::make_shared<HistorySystem<SimpleCarState1>>(initial_state);
   auto lead_foot = drake::cascade(
       drake::cascade(
-          std::make_shared<ConstantInputSystem<DrivingCommand>>(
+          std::make_shared<ConstantInputSystem<DrivingCommand1>>(
               max_throttle),
           car),
       history_system);
@@ -139,19 +139,19 @@ GTEST_TEST(SimpleCarTest, Accelerating) {
 }
 
 GTEST_TEST(SimpleCarTest, Braking) {
-  DrivingCommand<double> max_brake;
+  DrivingCommand1<double> max_brake;
   max_brake.set_brake(1.);
 
   auto car = std::make_shared<SimpleCar>();
-  SimpleCarState<double> initial_state;
+  SimpleCarState1<double> initial_state;
   double speed = 10.;
   initial_state.set_velocity(speed);
 
   auto history_system =
-      std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
+      std::make_shared<HistorySystem<SimpleCarState1>>(initial_state);
   auto panic_stop = drake::cascade(
       drake::cascade(
-          std::make_shared<ConstantInputSystem<DrivingCommand>>(
+          std::make_shared<ConstantInputSystem<DrivingCommand1>>(
               max_brake),
           car),
       history_system);
@@ -182,18 +182,18 @@ GTEST_TEST(SimpleCarTest, Braking) {
 }
 
 GTEST_TEST(SimpleCarTest, Steering) {
-  DrivingCommand<double> left(Eigen::Vector3d(M_PI / 2, 0., 0.));
+  DrivingCommand1<double> left(Eigen::Vector3d(M_PI / 2, 0., 0.));
 
   auto car = std::make_shared<SimpleCar>();
-  SimpleCarState<double> initial_state;
+  SimpleCarState1<double> initial_state;
   double speed = 40.;
   initial_state.set_velocity(speed);
 
   auto history_system =
-      std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
+      std::make_shared<HistorySystem<SimpleCarState1>>(initial_state);
   auto brickyard = drake::cascade(
       drake::cascade(
-          std::make_shared<ConstantInputSystem<DrivingCommand>>(left),
+          std::make_shared<ConstantInputSystem<DrivingCommand1>>(left),
           car),
       history_system);
 

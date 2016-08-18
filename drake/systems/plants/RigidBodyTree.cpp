@@ -59,7 +59,6 @@ using std::endl;
 
 const set<int> RigidBodyTree::default_model_instance_id_set = {0};
 const char* const RigidBodyTree::kWorldName = "world";
-const int RigidBodyTree::kWorldModelInstanceID = 0;
 
 template <typename T>
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
@@ -1915,7 +1914,7 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
     if (name_match[ii]) {
       if (match_found) {
         throw std::runtime_error(
-            "RigidBodyTree::FindBodyOfJoint: ERROR: Multiple joints found "
+            "RigidBodyTree::FindChildBodyOfJoint: ERROR: Multiple joints found "
             " named \"" + joint_name + "\", model instance ID = " +
             std::to_string(model_instance_id) + ".");
       }
@@ -1928,9 +1927,9 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   // a pointer to the matching rigid body.
   if (!match_found) {
     throw std::runtime_error(
-        "RigidBodyTree::FindBodyOfJoint: ERROR: Could not find unique joint " +
-        std::string("named \"") + joint_name + "\", model_instance_id = " +
-        std::to_string(model_instance_id));
+        "RigidBodyTree::FindChildBodyOfJoint: ERROR: Could not find unique "
+        "joint named \"" + joint_name + "\", model_instance_id = " +
+        std::to_string(model_instance_id) + ".");
   } else {
     return bodies[ind_match].get();
   }
@@ -2183,7 +2182,7 @@ void RigidBodyTree::addRobotFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
-  drake::parsers::urdf::AddModelInstanceFromUrdfDescription(
+  drake::parsers::urdf::AddModelInstanceFromUrdfString(
       description, package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
@@ -2195,7 +2194,7 @@ void RigidBodyTree::addRobotFromURDFString(
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromUrdfDescription(
+  drake::parsers::urdf::AddModelInstanceFromUrdfString(
       description, package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }

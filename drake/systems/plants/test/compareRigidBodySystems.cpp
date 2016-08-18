@@ -4,14 +4,13 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
 using std::make_shared;
 using drake::RigidBodySystem;
 using Eigen::VectorXd;
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace systems {
@@ -53,7 +52,7 @@ GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
     auto xdot2 = r2->dynamics(t, x, u);
 
     std::string explanation;
-    EXPECT_TRUE(drake::util::CompareMatrices(
+    EXPECT_TRUE(CompareMatrices(
         xdot1, xdot2, 1e-8, MatrixCompareType::relative, &explanation))
         << "Model mismatch!" << std::endl
         << "  - initial state:" << std::endl
