@@ -181,6 +181,7 @@ else()
 endif()
 
 # iris
+set(WITH_IRIS ON)
 drake_add_external(iris PUBLIC
   CONFIGURE_COMMAND ${MAKE_COMMAND} configure-cdd-only
   DEPENDS eigen mosek)
