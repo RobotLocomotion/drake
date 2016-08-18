@@ -40,6 +40,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   static const char* const kWorldName;
 
+  /**
+   * Defines the body index of the body within this rigid body tree that
+   * represents the world.
+   */
+  static const int kWorldBodyIndex;
+
   RigidBodyTree(const std::string& urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type =
                     DrakeJoint::ROLLPITCHYAW);
@@ -613,6 +619,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       int model_id = -1) const;
 
   /**
+   * Obtains a list of body indexes of the bodies that are the children of the
+   * world body.
+   */
+  std::vector<int> FindBaseBodies(int model_instance_id = -1) const;
+
+  /**
    * Obtains the index of a rigid body within this rigid body tree. The rigid
    * body tree maintains a vector of pointers to all rigid bodies that are part
    * of the rigid body tree. The index of a rigid body is the index within this
@@ -635,9 +647,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
  * `FindBodyIndex(...)` instead.
  */
 #ifndef SWIG
-  DRAKE_DEPRECATED("Pleasse use RigidBodyTree::FindBodyIndex instead.")
+  DRAKE_DEPRECATED("Pleasse use RigidBodyTree::FindBodyIndex() instead.")
 #endif
   int findLinkId(const std::string& link_name, int model_id = -1) const;
+
+  /**
+   * Returns a vector of indexes of bodies that are the children of a body at
+   * index @p body_index. The resulting list can be further filtered to be those
+   * bodies that belong to the model instance with ID @p model_instance_id.
+   */
+  std::vector<int> FindChildrenOfBody(int body_index,
+      int model_instance_id = -1) const;
 
   // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
@@ -669,6 +689,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
+
+  /**
+   * Returns the body at index @p body_index.
+   */
+  const RigidBody* GetBody(int body_index) const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
   // @param body_or_frame_id the index of the body or the id of the frame.

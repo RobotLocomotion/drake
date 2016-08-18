@@ -238,6 +238,35 @@ TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
   EXPECT_EQ(model_instance_id_table["two_dof_robot"], kExpectedModelInstanceId);
 }
 
+// Verifies the correct functionality of RigidBodyTree::FindChildrenOfBody()
+// and RigidBodyTree::FindBaseBodies().
+TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
+  // Defines the number of times we add a model instance as specified by a URDF
+  // to the tree.
+  const int kNumModelInstances = 10;
+
+  std::string file_name =
+      drake::GetDrakePath() +
+      "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+  std::vector<int> model_instance_id_list;
+
+  for (int ii = 0; ii < kNumModelInstances; ++ii) {
+    ModelInstanceIdTable model_instance_id_table =
+      drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get());
+    model_instance_id_list.push_back(model_instance_id_table["two_dof_robot"]);
+  }
+
+  EXPECT_EQ(static_cast<int>(model_instance_id_list.size()),
+      kNumModelInstances);
+
+  {
+    std::vector<int> base_body_list = tree->FindBaseBodies();
+    for (int index : base_body_list) {
+      EXPECT_EQ(tree->GetBody(index)->get_name(), "link1");
+    }
+  }
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace plants

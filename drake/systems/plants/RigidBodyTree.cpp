@@ -43,6 +43,7 @@ using drake::math::Gradient;
 
 const set<int> RigidBodyTree::default_model_instance_id_set = {0};
 const char* const RigidBodyTree::kWorldName = "world";
+const int RigidBodyTree::kWorldBodyIndex = 0;
 
 template <typename T>
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
@@ -1811,6 +1812,11 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   }
 }
 
+std::vector<int> RigidBodyTree::FindBaseBodies(int model_instance_id)
+    const {
+  return FindChildrenOfBody(kWorldBodyIndex, model_instance_id);
+}
+
 int RigidBodyTree::FindBodyIndex(const std::string& body_name,
                                  int model_instance_id) const {
   RigidBody* body = FindBody(body_name, "", model_instance_id);
@@ -1824,6 +1830,34 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
   return body->get_body_index();
 }
 
+std::vector<int> RigidBodyTree::FindChildrenOfBody(int body_index,
+    int model_instance_id) const {
+  // Verifies that parameter body_index is valid.
+  DRAKE_ABORT_UNLESS(body_index >= 0 &&
+                     body_index < static_cast<int>(bodies.size()));
+
+  // Obtains a reference to the parent body.
+  const RigidBody& parent_body = *(bodies.at(body_index).get());
+
+  // Checks every rigid body in this tree. If the rigid body is a child of
+  // parent_body and its model instance id matches model_instance_id, save its
+  // index in the result vector.
+  std::vector<int> children_indexes;
+  for (int ii = 0; ii < static_cast<int>(bodies.size()); ++ii) {
+    if (bodies.at(ii)->has_as_parent(parent_body)) {
+      if (model_instance_id != -1) {
+        if (bodies.at(ii)->get_model_instance_id() == model_instance_id) {
+          children_indexes.push_back(ii);
+        }
+      } else {
+        children_indexes.push_back(ii);
+      }
+    }
+  }
+  return children_indexes;
+}
+
+// TODO(liang.fok): Remove this method prior to Release 1.0.
 int RigidBodyTree::findLinkId(const std::string& link_name,
                               int model_instance_id) const {
   return FindBodyIndex(link_name, model_instance_id);
@@ -1892,6 +1926,12 @@ int RigidBodyTree::findJointId(const std::string& joint_name, int robot) const {
   if (link == nullptr)
     throw std::runtime_error("could not find joint id: " + joint_name);
   return link->get_body_index();
+}
+
+const RigidBody* RigidBodyTree::GetBody(int body_index) const {
+  DRAKE_ABORT_UNLESS(body_index >= 0 &&
+                     body_index < static_cast<int>(bodies.size()));
+  return bodies[body_index].get();
 }
 
 std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
