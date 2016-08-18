@@ -1864,14 +1864,14 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
   return body->get_body_index();
 }
 
-std::vector<int> RigidBodyTree::FindChildrenOfBody(int body_index,
+std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
     int model_instance_id) const {
-  // Verifies that parameter body_index is valid.
-  DRAKE_ABORT_UNLESS(body_index >= 0 &&
-                     body_index < static_cast<int>(bodies.size()));
+  // Verifies that parameter parent_body_index is valid.
+  DRAKE_ABORT_UNLESS(parent_body_index >= 0 &&
+                     parent_body_index < static_cast<int>(bodies.size()));
 
   // Obtains a reference to the parent body.
-  const RigidBody& parent_body = *(bodies.at(body_index).get());
+  const RigidBody& parent_body = *(bodies.at(parent_body_index).get());
 
   // Checks every rigid body in this tree. If the rigid body is a child of
   // parent_body and its model instance id matches model_instance_id, save its

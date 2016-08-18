@@ -333,14 +333,14 @@ TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
 // Verifies the correct functionality of RigidBodyTree::FindChildrenOfBody()
 // and RigidBodyTree::FindBaseBodies().
 TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
-  // Defines the number of instances of a particular URDF model is added to the
-  // tree.
+  // Adds kNumModelInstances instances of a particular URDF model to the tree.
+  // Stores the model instance IDs in model_instance_id_list.
   const int kNumModelInstances = 10;
 
-  // Adds kNumModelInstances instances of a particular model to the tree.
   std::string file_name =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+
   std::vector<int> model_instance_id_list;
 
   for (int ii = 0; ii < kNumModelInstances; ++ii) {
@@ -356,8 +356,8 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
     EXPECT_EQ(tree->GetBody(index)->get_name(), "link1");
   }
 
-  // Obtains a list of children of the world and verifies that this list is the
-  // same as base_body_list.
+  // Obtains a list of the world's children. Verifies that this list is
+  // identical to base_body_list.
   std::vector<int> children_of_world_list =
       tree->FindChildrenOfBody(RigidBodyTree::kWorldBodyIndex);
 
@@ -366,8 +366,9 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   for (int world_child_index : children_of_world_list) {
     bool found_child_in_base_body_list = false;
     for (int body_index : base_body_list) {
-      if (body_index == world_child_index)
+      if (body_index == world_child_index) {
         found_child_in_base_body_list = true;
+      }
     }
     EXPECT_TRUE(found_child_in_base_body_list);
   }
@@ -383,8 +384,8 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   EXPECT_EQ(tree->GetBody(base_body_specific_id_list.at(0))->get_name(),
       "link1");
 
-  // Obtains the child of the above body. Verify that this child is called
-  // "link2".
+  // Obtains the children of the above "link1" body. Verify that there is only
+  // one child and it is called "link2".
   std::vector<int> children_of_one_base_body = tree->FindChildrenOfBody(
       base_body_specific_id_list.at(0));
 
@@ -395,12 +396,12 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
 
   // Verifies that an empty list is returned if a non-matching model instance
   // ID is provided.
+  int body_index = base_body_specific_id_list.at(0);
   int non_matching_model_instance_id =
-      tree->GetBody(base_body_specific_id_list.at(0))->get_model_instance_id()
-      + 1;
+      tree->GetBody(body_index)->get_model_instance_id() + 1;
 
-  std::vector<int> list_of_children_bad_instance_id = tree->FindChildrenOfBody(
-      base_body_specific_id_list.at(0), non_matching_model_instance_id);
+  std::vector<int> list_of_children_bad_instance_id =
+      tree->FindChildrenOfBody(body_index, non_matching_model_instance_id);
 
   EXPECT_EQ(list_of_children_bad_instance_id.size(), 0);
 }
