@@ -294,7 +294,7 @@ if(WITH_SNOPT_PRECOMPILED)
     CONFIGURE_COMMAND ""
     BUILD_COMMAND cmake -E copy_directory
       ${CMAKE_BINARY_DIR}/snopt-precompiled/
-      ${PROJECT_SOURCE_DIR}/drake/solvers/
+      ${PROJECT_SOURCE_DIR}/drake/solvers_matlab/
     INSTALL_COMMAND "")
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
