@@ -32,6 +32,5 @@
   <build_depend>tf</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>drake_ros_systems</build_depend>
-
   <exec_depend>drake_ros_systems</exec_depend>
 </package>

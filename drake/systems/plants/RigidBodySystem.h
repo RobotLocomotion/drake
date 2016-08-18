@@ -166,10 +166,10 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   virtual ~RigidBodySystem() {}
 
   /**
-   * Reads a model specification from a URDF description and adds an instance of
+   * Reads a model specification from a URDF string and adds an instance of
    * the model into this `RigidBodySystem`'s `RigidBodyTree`.
    *
-   * @param[in] description The URDF specification.
+   * @param[in] urdf_string The URDF specification.
    *
    * @param[in] root_dir The root directory in which to search for files
    * mentioned in the URDF.
@@ -190,8 +190,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * added to the `RigidBodyTree` to their instance IDs, which are unique within
    * the `RigidBodyTree`.
    */
-  drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
-      const std::string& description, const std::string& root_dir = ".",
+  drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfString(
+      const std::string& urdf_string, const std::string& root_dir = ".",
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
@@ -200,7 +200,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * Reads a model specification from a URDF file and adds an instance of the
    * model into this `RigidBodySystem`'s `RigidBodyTree`.
    *
-   * @param[in] urdf_filename The name of the file containing the URDF
+   * @param[in] filename The name of the file containing the URDF
    * specification.
    *
    * @param[in] floating_base_type The type of joint that connects the model
@@ -219,7 +219,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the `RigidBodyTree`.
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfFile(
-      const std::string& urdf_filename,
+      const std::string& filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
@@ -260,7 +260,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
-   * Adds one instance of each model defined within an SDF description to this
+   * Adds one instance of each model defined within an SDF string to this
    * `RigidBodySystem`'s `RigidBodyTree`.
    *
    * Each model instance is uniquely identified by a model instance ID that is
@@ -269,7 +269,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * within the SDF file can be added into a single `RigidBodySystem` and its
    * `RigidBodyTree`.
    *
-   * @param[in] description The SDF description of one or more models. One
+   * @param[in] sdf_string The SDF string that describes one or more models. One
    * instance of each model is added to this `RigidBodySystem` and its
    * `RigidBodyTree`.
    *
@@ -289,8 +289,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * `std::runtime_error` is thrown if an instance is created of a model whose
    * name is already in this table.
    */
-  drake::parsers::ModelInstanceIdTable AddModelInstancesFromSdfDescription(
-      const std::string& description,
+  drake::parsers::ModelInstanceIdTable AddModelInstancesFromSdfString(
+      const std::string& sdf_string,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
@@ -328,7 +328,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * Adds one instance of each model defined within a SDF or URDF string to this
    * `RigidBodySystem`'s `RigidBodyTree`.
    *
-   * @param[in] description The SDF or URDF description of the model or models.
+   * @param[in] string The SDF or URDF string of the model or models.
    * One instance of each of these models is added to this `RigidBodySystem` and
    * its `RigidBodyTree`.
    *
@@ -347,8 +347,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * added to the `RigidBodyTree` to their instance IDs, which are unique within
    * the `RigidBodyTree`.
    */
-  drake::parsers::ModelInstanceIdTable AddModelInstanceFromDescription(
-      const std::string& description,
+  drake::parsers::ModelInstanceIdTable AddModelInstancesFromString(
+      const std::string& string,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
