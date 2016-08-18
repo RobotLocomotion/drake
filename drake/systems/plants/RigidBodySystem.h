@@ -328,9 +328,9 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * Adds one instance of each model defined within a SDF or URDF string to this
    * `RigidBodySystem`'s `RigidBodyTree`.
    *
-   * @param[in] string The SDF or URDF string of the model or models.
-   * One instance of each of these models is added to this `RigidBodySystem` and
-   * its `RigidBodyTree`.
+   * @param[in] string_description The SDF or URDF string of the model or
+   * models. One instance of each of these models is added to this
+   * `RigidBodySystem` and its `RigidBodyTree`.
    *
    * @param[in] floating_base_type The type of floating base to use to connect
    * the newly created model instances to the world.
@@ -348,7 +348,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * the `RigidBodyTree`.
    */
   drake::parsers::ModelInstanceIdTable AddModelInstancesFromString(
-      const std::string& string,
+      const std::string& string_description,
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);

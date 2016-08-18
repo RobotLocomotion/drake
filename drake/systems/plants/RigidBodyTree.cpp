@@ -2174,24 +2174,24 @@ int RigidBodyTree::AddFloatingJoint(
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDFString(
-    const std::string& description, const std::string& root_dir,
+    const std::string& xml_string, const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   drake::parsers::urdf::AddModelInstanceFromUrdfString(
-      description, package_map, root_dir, floating_base_type, weld_to_frame,
+      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDFString(
-    const std::string& description,
+    const std::string& xml_string,
     std::map<std::string, std::string>& package_map,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::urdf::AddModelInstanceFromUrdfString(
-      description, package_map, root_dir, floating_base_type, weld_to_frame,
+      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
 

@@ -996,13 +996,13 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
 }
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromString(
-    const std::string& string,
+    const std::string& string_description,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Parse the string using an XML parser.
   XMLDocument xml_doc;
-  xml_doc.Parse(string.c_str());
+  xml_doc.Parse(string_description.c_str());
   if (xml_doc.ErrorID()) {
     throw std::runtime_error("Failed to parse XML string: " +
         std::string(xml_doc.ErrorName()));
