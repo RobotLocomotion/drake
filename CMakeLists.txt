@@ -20,6 +20,7 @@ drake_setup_git_hooks()
 ##########################################
 option(WITH_EIGEN "required c++ matrix library.  only disable if you have it already." ON)
 option(WITH_GOOGLETEST "required c++ unit test library.  only disable if you have it already." ON)
+option(WITH_GFLAGS "required c++ command-line library.  only disable if you have it already." ON)
 option(WITH_GOOGLE_STYLEGUIDE "provides cpplint.py style checking" ON)
 option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 option(WITH_BULLET "used for collision detection" ON)
@@ -108,6 +109,7 @@ drake_add_external(avl PUBLIC)
 drake_add_external(bertini)
 drake_add_external(bullet PUBLIC CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
+drake_add_external(gflags PUBLIC CMAKE)
 drake_add_external(gloptipoly)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC)
@@ -220,8 +222,14 @@ drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
   DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
 
 # director
-drake_add_external(director PUBLIC
-  BUILD_COMMAND_DIR distro/pods/drake-distro # FIXME: fix need for this
+drake_add_external(director PUBLIC CMAKE
+  SOURCE_SUBDIR distro/superbuild
+  CMAKE_ARGS
+    -DUSE_LCM=ON # TODO: predicate on whether we have LCM enabled?
+    -DUSE_LCMGL=ON
+    -DUSE_SYSTEM_LCM=ON
+    -DUSE_EXTERNAL_INSTALL=ON
+  INSTALL_COMMAND :
   DEPENDS bot_core_lcmtypes lcm libbot)
 
 # signalscope
@@ -247,6 +255,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     cmake
     director
     eigen
+    gflags
     gloptipoly3
     google_styleguide
     googletest

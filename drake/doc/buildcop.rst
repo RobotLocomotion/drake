@@ -171,7 +171,7 @@ PRs. Try to rule out some of those PRs by comparing their contents to the
 specifics of the failure. For any PRs you cannot rule out, create a rollback
 by clicking "Revert" in the GitHub UI. Use the
 :ref:`template message <revert_template>` to communicate  with the author, and
- proceed as specified in that message.
+proceed as specified in that message.
 
 :ref:`Manually schedule <run_specific_build>` the failing build as an
 experimental build on the rollback PR. If it passes, the odds are good that you

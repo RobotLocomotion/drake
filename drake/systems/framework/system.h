@@ -67,6 +67,58 @@ class System {
     return output_ports_;
   }
 
+  /// Checks that @p output is consistent with the number and size of output
+  /// ports declared by the system.
+  /// @returns `true` if @p output is valid for this system and `false`
+  /// otherwise.
+  bool IsValidOutput(const SystemOutput<T>& output) const {
+    // Checks that the number of output ports in the system output is consistent
+    // with the number of output ports declared by the System.
+    if (output.get_num_ports() != get_num_output_ports()) return false;
+
+    // Checks the validity of each output port.
+    for (int i = 0; i < get_num_output_ports(); ++i) {
+      // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
+      // once abstract ports are implemented in 3164.
+      if (get_output_port(i).get_data_type() == kVectorValued) {
+        const VectorInterface<T>* output_vector =
+            output.get_port(i).get_vector_data();
+        if (output_vector == nullptr) return false;
+        if (output_vector->get_value().rows() !=
+            get_output_port(i).get_size()) return false;
+      }
+    }
+
+    // All checks passed.
+    return true;
+  }
+
+  /// Checks that @p context is consistent for this system.
+  /// @returns `true` if @p context is valid for this system and `false`
+  /// otherwise.
+  bool IsValidContext(const ContextBase<T>& context) const {
+    // Checks that the number of input ports in the context is consistent with
+    // the number of ports declared by the System.
+    if (context.get_num_input_ports() != this->get_num_input_ports())
+      return false;
+
+    // Checks that the size of the input ports in the context matches the
+    // declarations made by the system.
+    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+      // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
+      // once abstract ports are implemented in 3164.
+      if (this->get_input_port(i).get_data_type() == kVectorValued) {
+        const VectorInterface<T>* input_vector = context.get_vector_input(i);
+        if (input_vector == nullptr) return false;
+        if (input_vector->get_value().rows() !=
+            get_input_port(i).get_size()) return false;
+      }
+    }
+
+    // All checks passed.
+    return true;
+  }
+
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.
   /// Since input port pointers are not owned by the context, they should

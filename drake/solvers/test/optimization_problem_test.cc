@@ -1,5 +1,7 @@
 #include <typeinfo>
 
+#include "gtest/gtest.h"
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
@@ -9,8 +11,6 @@
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/optimization.h"
 #include "drake/solvers/snopt_solver.h"
-#include "drake/util/testUtil.h"
-#include "gtest/gtest.h"
 
 using Eigen::Dynamic;
 using Eigen::Ref;
@@ -127,11 +127,11 @@ GTEST_TEST(testOptimizationProblem, trivialLinearSystem) {
   EXPECT_TRUE(
       CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
 
-  valuecheck(b(2), x2.value()(0), 1e-10);
+  EXPECT_NEAR(b(2), x2.value()(0), 1e-10);
   EXPECT_TRUE(CompareMatrices(b.head(3), xhead.value(), 1e-10,
                               MatrixCompareType::absolute));
 
-  valuecheck(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment.
+  EXPECT_NEAR(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment.
 
   CheckSolverType(prog, "Linear System Solver");
 
