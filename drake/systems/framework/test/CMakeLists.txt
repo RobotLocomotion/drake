@@ -59,6 +59,11 @@ target_link_libraries(diagram_test
                       drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
 add_test(NAME diagram_test COMMAND diagram_test)
 
+add_executable(diagram_builder_test diagram_builder_test.cc)
+target_link_libraries(diagram_builder_test
+                      drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
+add_test(NAME diagram_builder_test COMMAND diagram_builder_test)
+
 add_executable(diagram_context_test diagram_context_test.cc)
 target_link_libraries(diagram_context_test
                       drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
