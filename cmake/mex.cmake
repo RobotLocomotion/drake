@@ -324,7 +324,9 @@ function(add_mex)
     add_library(${target} ${ARGV})
     set_target_properties(${target} PROPERTIES
       COMPILE_FLAGS "${MEX_COMPILE_FLAGS}"
-      OUTPUT_NAME ${mexfilename})
+      OUTPUT_NAME ${mexfilename}
+      CXX_VISIBILITY_PRESET "default"
+      VISIBILITY_INLINES_HIDDEN 0)
     if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
       target_link_libraries(${target} liblast)
     else()
@@ -352,6 +354,8 @@ function(add_mex)
       ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       OUTPUT_NAME ${mexfilename}
+      CXX_VISIBILITY_PRESET "default"
+      VISIBILITY_INLINES_HIDDEN 0
       )
     foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
       string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
