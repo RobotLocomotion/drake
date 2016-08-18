@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#3191][] All matlab solvers code moved from solvers/ to matlab/solvers/.
  - [#3183][] The gflags library is now a required dependency from the superbuild.
  - [#3168][] Renamed `RigidBodyTree::findAncestorBodies()` to be `RigidBodyTree::FindAncestorBodies()`. Modified method to return the results rather than store them in a parameter.
  - [#3157][] Renamed `RigidBodyTree::findJoint()` to be `RigidBodyTree::FindChildBodyOfJoint()` and `RigidBodyTree::findJointId()` to be `RigidBodyTree::FindIndexOfChildBodyOfJoint()`.
@@ -135,3 +136,4 @@ Changes in version v0.9.11 and before are not provided.
 [#3157]: https://github.com/RobotLocomotion/drake/issues/3157
 [#3168]: https://github.com/RobotLocomotion/drake/issues/3168
 [#3183]: https://github.com/RobotLocomotion/drake/issues/3183
+[#3191]: https://github.com/RobotLocomotion/drake/issues/3191
