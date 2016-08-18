@@ -46,13 +46,14 @@ IKResults inverseKinSimple(
     const std::vector<RigidBodyConstraint *>& constraint_array,
     const IKoptions& ikoptions) {
   auto results = IKResults();
-  results.q_sol.resize(q_nom.size());
+  results.q_sol.push_back(Eigen::VectorXd(q_nom.size()));
+  results.info.resize(1, 0);
   int num_constraints = static_cast<int>(constraint_array.size());
   RigidBodyConstraint **const constraint_array_ptr =
       (RigidBodyConstraint * *const)constraint_array.data();
   inverseKin<Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd>(
       model, q_seed, q_nom, num_constraints, constraint_array_ptr, ikoptions,
-      &results.q_sol, &results.info, &results.infeasible_constraints);
+      &results.q_sol[0], &results.info[0], &results.infeasible_constraints);
 
   return results;
 }
