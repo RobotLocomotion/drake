@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#3181][] All matlab solvers code moved from solvers to solvers_matlab.
  - [#3115][] Modified SDF parser method names to be style guide compliant and more meaningful.
  - [#3078][] Changed `RigidBodyTree::kWorldLinkName` to be `RigidBodyTree::kWorldName`.
  - [#3056][] Renamed methods that add model instances to `RigidBodyTree` and `RigidBodySystem`.
@@ -129,3 +130,4 @@ Changes in version v0.9.11 and before are not provided.
 [#3056]: https://github.com/RobotLocomotion/drake/issues/3056
 [#3078]: https://github.com/RobotLocomotion/drake/issues/3078
 [#3115]: https://github.com/RobotLocomotion/drake/issues/3115
+[#3181]: https://github.com/RobotLocomotion/drake/issues/3181
