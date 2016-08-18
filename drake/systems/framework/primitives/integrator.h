@@ -40,8 +40,6 @@ class Integrator : public LeafSystem<T> {
 
  private:
   void ReserveState(Context<T>* context) const override;
-
-  int length_{0};
 };
 
 }  // namespace systems

@@ -14,23 +14,23 @@ using drake::math::autoDiffToGradientMatrix;
 
 namespace drake {
 
-template <typename System>
-std::shared_ptr<AffineSystem<NullVector, System::template StateVector,
-                             System::template InputVector>>
-timeInvariantLQR(const System& sys,
-                 const typename System::template StateVector<double>& x0,
-                 const typename System::template InputVector<double>& u0,
-                 const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
-  const int num_states =
-      System::template StateVector<double>::RowsAtCompileTime;
-  const int num_inputs =
-      System::template InputVector<double>::RowsAtCompileTime;
-  DRAKE_ASSERT(!sys.isTimeVarying());
-  static_assert(num_states != 0, "This system has no continuous states");
-  using namespace std;
-  using namespace Eigen;
+/**
+ * Calculate the matrices for an LQR controller.  @p x0 is the target
+ * system state vector, and @p u0 is the target system input vector.
+ */
+template <typename System, typename DerivedA, typename DerivedB,
+          typename DerivedQ, typename DerivedR, typename DerivedK,
+          typename DerivedS>
+void CalculateLqrMatrices(
+    const System& sys,
+    const Eigen::MatrixBase<DerivedA>& x0,
+    const Eigen::MatrixBase<DerivedB>& u0,
+    const Eigen::MatrixBase<DerivedQ>& Q,
+    const Eigen::MatrixBase<DerivedR>& R,
+    Eigen::MatrixBase<DerivedK>* K,
+    Eigen::MatrixBase<DerivedS>* S) {
 
-  auto autodiff_args = math::initializeAutoDiffTuple(toEigen(x0), toEigen(u0));
+  auto autodiff_args = math::initializeAutoDiffTuple(x0, u0);
   typedef typename std::tuple_element<0, decltype(autodiff_args)>::type::Scalar
       AutoDiffType;
   typename System::template StateVector<AutoDiffType> x_taylor(
@@ -39,11 +39,29 @@ timeInvariantLQR(const System& sys,
       std::get<1>(autodiff_args));
   auto xdot = autoDiffToGradientMatrix(
       toEigen(sys.dynamics(AutoDiffType(0), x_taylor, u_taylor)));
-  auto A = xdot.leftCols(num_states);
-  auto B = xdot.rightCols(num_inputs);
+  auto A = xdot.leftCols(x0.size());
+  auto B = xdot.rightCols(u0.size());
+
+  lqr(A, B, Q, R, *K, *S);
+}
+
+template <typename System>
+std::shared_ptr<AffineSystem<NullVector, System::template StateVector,
+                             System::template InputVector>>
+MakeTimeInvariantLqrSystem(
+    const System& sys,
+    const typename System::template StateVector<double>& x0,
+    const typename System::template InputVector<double>& u0,
+    const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
+  const int num_states =
+      System::template StateVector<double>::RowsAtCompileTime;
+  const int num_inputs =
+      System::template InputVector<double>::RowsAtCompileTime;
+  DRAKE_ASSERT(!sys.isTimeVarying());
+  static_assert(num_states != 0, "This system has no continuous states");
 
   Eigen::MatrixXd K(num_inputs, num_states), S(num_states, num_states);
-  lqr(A, B, Q, R, K, S);
+  CalculateLqrMatrices(sys, toEigen(x0), toEigen(u0), Q, R, &K, &S);
 
   SPDLOG_TRACE(drake::log(), "K = {} S = {}", K, S);
 
@@ -51,12 +69,14 @@ timeInvariantLQR(const System& sys,
   // just give the affine controller:
 
   // u = u0 - K(x-x0)
-  Matrix<double, 0, 0> nullmat;
-  Matrix<double, 0, 1> nullvec;
+  Eigen::Matrix<double, 0, 0> nullmat;
+  Eigen::Matrix<double, 0, 1> nullvec;
 
   return std::make_shared<AffineSystem<NullVector, System::template StateVector,
                                        System::template InputVector>>(
-      nullmat, Matrix<double, 0, num_states>::Zero(), nullvec,
-      Matrix<double, num_inputs, 0>::Zero(), -K, toEigen(u0) + K * toEigen(x0));
+      nullmat, Eigen::Matrix<double, 0, num_states>::Zero(), nullvec,
+      Eigen::Matrix<double, num_inputs, 0>::Zero(),
+      -K, toEigen(u0) + K * toEigen(x0));
 }
-}
+
+}  // namespace drake

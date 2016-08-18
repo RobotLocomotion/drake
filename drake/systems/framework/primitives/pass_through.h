@@ -28,10 +28,6 @@ class PassThrough : public LeafSystem<T> {
   /// input ports are not of size length_, `std::runtime_error` will be thrown.
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override;
-
- private:
-  // TODO(amcastro-tri): remove this internal parameter once #3097 is merged.
-  const int length_;
 };
 
 }  // namespace systems

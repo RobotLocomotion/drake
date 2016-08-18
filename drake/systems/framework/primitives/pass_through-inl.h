@@ -19,7 +19,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-PassThrough<T>::PassThrough(int length) : length_(length) {
+PassThrough<T>::PassThrough(int length) {
   // TODO(amcastro-tri): remove the length parameter from the constructor once
   // #3109 supporting automatic lengths is resolved.
   this->DeclareInputPort(kVectorValued, length, kInheritedSampling);
@@ -29,32 +29,16 @@ PassThrough<T>::PassThrough(int length) : length_(length) {
 template <typename T>
 void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
                           SystemOutput<T>* output) const {
-  // TODO(amcastro-tri): replace hard-coded "1" with
-  // this->get_num_output_ports() after #3097 is merged.
-  DRAKE_ASSERT(output->get_num_ports() == 1);
+  DRAKE_ASSERT(System<T>::IsValidOutput(*output));
+  DRAKE_ASSERT(System<T>::IsValidContext(context));
+
   VectorInterface<T>* output_vector =
       output->get_mutable_port(0)->GetMutableVectorData();
-  DRAKE_ASSERT(output_vector != nullptr);
-  DRAKE_ASSERT(output_vector->get_value().rows() == length_);
 
-  // Check that there are the expected number of input ports.
-  // TODO(amcastro-tri): replace hard-coded "1" with
-  // this->get_num_input_ports() after #3097 is merged.
-  if (context.get_num_input_ports() != 1) {
-    throw std::out_of_range("Expected only one input port, but had " +
-        std::to_string(context.get_num_input_ports()));
-  }
-
-  // There is only one input.
   // TODO(amcastro-tri): Solve #3140 so that the next line reads:
   // auto& input_vector = System<T>::get_input_vector(context, 0);
   // where the return is an Eigen expression.
   const VectorInterface<T>* input_vector = context.get_vector_input(0);
-
-  // Check the expected length.
-  if (input_vector == nullptr || input_vector->get_value().rows() != length_) {
-    throw std::out_of_range("Input port is nullptr or has incorrect size.");
-  }
 
   // TODO(amcastro-tri): Solve #3140 so that we can readily access the Eigen
   // vector like so:
