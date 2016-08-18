@@ -48,102 +48,35 @@ struct DiagramOutput : public SystemOutput<T> {
 /// in a directed graph where the vertices are the constituent Systems
 /// themselves, and the edges connect the output of one constituent System
 /// to the input of another.
-///
-/// There are two phases in the lifecycle of a Diagram: the configuration phase
-/// (before finalization) and the execution phase (after finalization). The
-/// Diagram transitions irrevocably from configuration to execution when
-/// `Finalize` is called.
-///
-/// During configuration, Systems and connections can be added to the Diagram,
-/// but the context and output structures for the Diagram cannot be allocated,
-/// and thus the outputs and state derivatives cannot be computed.
-///
-/// During execution, Systems and connections may no longer be added to the
-/// Diagram, but computations can be performed on it as with any other
-/// system.
 template <typename T>
 class Diagram : public System<T> {
  public:
-  Diagram() {}
-  virtual ~Diagram() {}
+  typedef std::pair<const System<T>*, int> PortIdentifier;
 
-  void Connect(const SystemPortDescriptor<T>& src,
-               const SystemPortDescriptor<T>& dest) {
-    Connect(src.get_system(), src.get_index(), dest.get_system(),
-            dest.get_index());
-  }
-
-  void Connect(const System<T>* src, int src_port_index, const System<T>* dest,
-               int dest_port_index) {
-    ThrowIfFinal();
-    Register(src);
-    Register(dest);
-    PortIdentifier dest_id{dest, dest_port_index};
-    PortIdentifier src_id{src, src_port_index};
-    ThrowIfInputAlreadyWired(dest_id);
-    dependency_graph_[dest_id] = src_id;
-  }
-
-  void ExportInput(const System<T>* sys, int port_index) {
-    ThrowIfFinal();
-
-    // Add this port to our externally visible topology.
-    const auto& subsystem_ports = sys->get_input_ports();
-    if (port_index < 0 ||
-        port_index >= static_cast<int>(subsystem_ports.size())) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    const auto& subsystem_descriptor = subsystem_ports[port_index];
-    SystemPortDescriptor<T> descriptor(
-        this, kInputPort, this->get_input_ports().size(),
-        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
-        subsystem_descriptor.get_sampling());
-    this->DeclareInputPort(descriptor);
-
-    // Add this system and port to our internal wiring diagram.
-    Register(sys);
-    PortIdentifier id{sys, port_index};
-    ThrowIfInputAlreadyWired(id);
-    input_port_ids_.push_back(id);
-    diagram_input_set_.insert(id);
-    systems_.insert(sys);
-  }
-
-  void ExportOutput(const System<T>* sys, int port_index) {
-    ThrowIfFinal();
-
-    // Add this port to our externally visible topology.
-    const auto& subsystem_ports = sys->get_output_ports();
-    if (port_index < 0 ||
-        port_index >= static_cast<int>(subsystem_ports.size())) {
-      throw std::out_of_range("Output port out of range.");
-    }
-    const auto& subsystem_descriptor = subsystem_ports[port_index];
-    SystemPortDescriptor<T> descriptor(
-        this, kOutputPort, this->get_output_ports().size(),
-        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
-        subsystem_descriptor.get_sampling());
-    this->DeclareOutputPort(descriptor);
-
-    // Add this system and port to our internal wiring diagram.
-    Register(sys);
-    output_port_ids_.push_back(PortIdentifier{sys, port_index});
-  }
-
-  void Finalize() {
-    ThrowIfFinal();
-    if (systems_.size() == 0) {
-      throw std::logic_error("Cannot finalize an empty Diagram.");
-    }
-    sorted_systems_ = SortSystems();
+  /// Unless you know what you're doing, use a DiagramBuilder instead of
+  /// calling this constructor directly.
+  Diagram(const std::map<PortIdentifier, PortIdentifier>& dependency_graph,
+          const std::vector<const System<T>*>& sorted_systems,
+          const std::vector<Diagram<T>::PortIdentifier>& input_port_ids,
+          const std::vector<Diagram<T>::PortIdentifier>& output_port_ids)
+      : dependency_graph_(dependency_graph),
+        sorted_systems_(sorted_systems),
+        input_port_ids_(input_port_ids),
+        output_port_ids_(output_port_ids) {
     for (int i = 0; i < static_cast<int>(sorted_systems_.size()); ++i) {
       sorted_systems_map_[sorted_systems_[i]] = i;
     }
+    for (const PortIdentifier& id : input_port_ids) {
+      ExportInput(id);
+    }
+    for (const PortIdentifier& id : output_port_ids) {
+      ExportOutput(id);
+    }
   }
 
-  std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
-    ThrowIfNotFinal();
+  virtual ~Diagram() {}
 
+  std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>();
 
@@ -174,7 +107,6 @@ class Diagram : public System<T> {
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const ContextBase<T>& context) const override {
-    ThrowIfNotFinal();
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     if (diagram_context == nullptr) {
       throw std::logic_error(
@@ -192,8 +124,6 @@ class Diagram : public System<T> {
 
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override {
-    ThrowIfNotFinal();
-
     // Down-cast the context and output to DiagramContext and DiagramOutput.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_ASSERT(diagram_context != nullptr);
@@ -232,52 +162,58 @@ class Diagram : public System<T> {
   }
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
-    ThrowIfNotFinal();
     // TODO(david-german-tri): Actually allocate derivatives.
     return nullptr;
   }
 
   void EvalTimeDerivatives(const ContextBase<T>& context,
                            ContinuousState<T>* derivatives) const override {
-    ThrowIfNotFinal();
     // TODO(david-german-tri): Actually compute derivatives.
   }
 
   void MapVelocityToConfigurationDerivatives(
       const ContextBase<T>& context, const StateVector<T>& generalized_velocity,
       StateVector<T>* configuration_derivatives) const override {
-    ThrowIfNotFinal();
     // TODO(david-german-tri): Actually map velocity to derivatives.
   }
 
  private:
-  typedef std::pair<const System<T>*, int> PortIdentifier;
+  // Expose the given port as an input of the Diagram.
+  void ExportInput(const PortIdentifier& port) {
+    const System<T>* sys = port.first;
+    const int port_index = port.second;
 
-  void Register(const System<T>* sys) {
-    if (systems_.find(sys) != systems_.end()) {
-      // This system is already registered.
-      return;
+    // Add this port to our externally visible topology.
+    const auto& subsystem_ports = sys->get_input_ports();
+    if (port_index < 0 ||
+        port_index >= static_cast<int>(subsystem_ports.size())) {
+      throw std::out_of_range("Input port out of range.");
     }
-    systems_.insert(sys);
+    const auto& subsystem_descriptor = subsystem_ports[port_index];
+    SystemPortDescriptor<T> descriptor(
+        this, kInputPort, this->get_input_ports().size(),
+        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
+        subsystem_descriptor.get_sampling());
+    this->DeclareInputPort(descriptor);
   }
 
-  void ThrowIfFinal() const {
-    if (!sorted_systems_.empty()) {
-      throw std::logic_error("Diagram is already finalized.");
-    }
-  }
+  // Expose the given port as an output of the Diagram.
+  void ExportOutput(const PortIdentifier& port) {
+    const System<T>* sys = port.first;
+    const int port_index = port.second;
 
-  void ThrowIfNotFinal() const {
-    if (sorted_systems_.empty()) {
-      throw std::logic_error("Diagram is not finalized.");
+    // Add this port to our externally visible topology.
+    const auto& subsystem_ports = sys->get_output_ports();
+    if (port_index < 0 ||
+        port_index >= static_cast<int>(subsystem_ports.size())) {
+      throw std::out_of_range("Output port out of range.");
     }
-  }
-
-  void ThrowIfInputAlreadyWired(const PortIdentifier& id) const {
-    if (dependency_graph_.find(id) != dependency_graph_.end() ||
-        diagram_input_set_.find(id) != diagram_input_set_.end()) {
-      throw std::logic_error("Input port is already wired.");
-    }
+    const auto& subsystem_descriptor = subsystem_ports[port_index];
+    SystemPortDescriptor<T> descriptor(
+        this, kOutputPort, this->get_output_ports().size(),
+        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
+        subsystem_descriptor.get_sampling());
+    this->DeclareOutputPort(descriptor);
   }
 
   int GetSystemIndex(const System<T>* sys) const {
@@ -291,66 +227,9 @@ class Diagram : public System<T> {
   // sorted order of the diagram, instead of an actual pointer to the System.
   typename DiagramContext<T>::PortIdentifier ConvertToContextPortIdentifier(
       const PortIdentifier& id) const {
-    ThrowIfNotFinal();
     typename DiagramContext<T>::PortIdentifier output;
     output.first = GetSystemIndex(id.first);
     output.second = id.second;
-    return output;
-  }
-
-  // Runs Kahn's algorithm to compute the topological sort order of the
-  // Systems in the graph. If EvalOutput is called on each System in
-  // the order that is returned, each System's inputs will be valid by
-  // the time its EvalOutput is called.
-  //
-  // TODO(david-german-tri, bradking): Consider using functional form to
-  // produce a separate execution order for each output of the Diagram.
-  std::vector<const System<T>*> SortSystems() const {
-    std::vector<const System<T>*> output;
-
-    // Build two maps:
-    // A map from each system, to every system that depends on it.
-    std::map<const System<T>*, std::set<const System<T>*>> dependents;
-    // A map from each system, to every system on which it depends.
-    std::map<const System<T>*, std::set<const System<T>*>> dependencies;
-
-    for (const auto& connection : dependency_graph_) {
-      const System<T>* src = connection.second.first;
-      const System<T>* dest = connection.first.first;
-      dependents[src].insert(dest);
-      dependencies[dest].insert(src);
-    }
-
-    // Find the systems that have no inputs within the Diagram.
-    std::set<const System<T>*> nodes_with_in_degree_zero;
-    for (const System<T>* system : systems_) {
-      if (dependencies.find(system) == dependencies.end()) {
-        nodes_with_in_degree_zero.insert(system);
-      }
-    }
-
-    while (!nodes_with_in_degree_zero.empty()) {
-      // Pop a node with in-degree zero.
-      auto it = nodes_with_in_degree_zero.begin();
-      const System<T>* node = *it;
-      nodes_with_in_degree_zero.erase(it);
-
-      // Push the node onto the sorted output.
-      output.push_back(node);
-
-      for (const System<T>* dependent : dependents[node]) {
-        dependencies[dependent].erase(node);
-        if (dependencies[dependent].empty()) {
-          nodes_with_in_degree_zero.insert(dependent);
-        }
-      }
-    }
-
-    if (output.size() != systems_.size()) {
-      // TODO(david-german-tri): Attempt to break cycles using
-      // the direct-feedthrough configuration of a System.
-      throw std::logic_error("Cycle detected in Diagram.");
-    }
     return output;
   }
 
@@ -360,27 +239,21 @@ class Diagram : public System<T> {
   Diagram(Diagram<T>&& other) = delete;
   Diagram& operator=(Diagram<T>&& other) = delete;
 
-  // The ordered inputs and outputs of this Diagram.
-  std::vector<PortIdentifier> input_port_ids_;
-  std::vector<PortIdentifier> output_port_ids_;
-
-  // For fast membership queries: has this input port already been declared?
-  std::set<PortIdentifier> diagram_input_set_;
-
   // A map from the input ports of constituent systems, to the output ports of
   // the systems on which they depend.
-  std::map<PortIdentifier, PortIdentifier> dependency_graph_;
-
-  // The unsorted set of Systems in this Diagram.
-  std::set<const System<T>*> systems_;
+  const std::map<PortIdentifier, PortIdentifier> dependency_graph_;
 
   // The topologically sorted list of Systems in this Diagram. Only computed
   // when Finalize is called.
-  std::vector<const System<T>*> sorted_systems_;
+  const std::vector<const System<T>*> sorted_systems_;
 
   // For fast conversion queries: what is the index of this System in the
-  // sorted order?  Only computed when Finalize is called.
+  // sorted order?
   std::map<const System<T>*, int> sorted_systems_map_;
+
+  // The ordered inputs and outputs of this Diagram.
+  const std::vector<Diagram<T>::PortIdentifier> input_port_ids_;
+  const std::vector<Diagram<T>::PortIdentifier> output_port_ids_;
 };
 
 }  // namespace systems
