@@ -49,7 +49,6 @@ int main(int argc, char* argv[]) {
     floating_base_type = DrakeJoint::FIXED;
   } else if (FLAGS_base == "RPY") {
     floating_base_type = DrakeJoint::ROLLPITCHYAW;
-    std::cout << "base RPY";
   } else if (FLAGS_base == "QUAT") {
     floating_base_type = DrakeJoint::QUATERNION;
   } else {

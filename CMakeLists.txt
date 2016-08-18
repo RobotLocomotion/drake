@@ -109,6 +109,7 @@ drake_add_external(avl PUBLIC)
 drake_add_external(bertini)
 drake_add_external(bullet PUBLIC CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
+drake_add_external(gflags PUBLIC CMAKE)
 drake_add_external(gloptipoly)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC)
@@ -133,9 +134,6 @@ drake_add_external(googletest PUBLIC CMAKE
     -DBUILD_SHARED_LIBS=ON
     -DGTEST_CREATE_SHARED_LIBRARY=1 # Needed for parameterized tests on Windows
     -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib)
-
-# gflags
-drake_add_external(gflags PUBLIC CMAKE)
 
 # google_styleguide
 drake_add_external(google_styleguide PUBLIC
@@ -257,10 +255,10 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     cmake
     director
     eigen
+    gflags
     gloptipoly3
     google_styleguide
     googletest
-    gflags
     gurobi
     ipopt
     iris
