@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
 using Eigen::Dynamic;
@@ -21,7 +21,7 @@ using Eigen::VectorXd;
 
 using drake::TaylorVecXd;
 using drake::Vector1d;
-using drake::util::MatrixCompareType;
+using drake::MatrixCompareType;
 
 namespace drake {
 namespace solvers {
