@@ -1,3 +1,4 @@
+#include "drake/common/drake_assert.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "inverseKinBackend.h"
@@ -33,3 +34,28 @@ template DRAKEIK_EXPORT void inverseKinPointwise(
     const int num_constraints, RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions, MatrixBase<MatrixXd>* q_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
+
+DRAKEIK_EXPORT IKResults inverseKinPointwiseSimple(
+    RigidBodyTree* model,
+    const Eigen::VectorXd& t,
+    const Eigen::MatrixXd& q_seed,
+    const Eigen::MatrixXd& q_nom,
+    const std::vector<RigidBodyConstraint*>& constraint_array,
+    const IKoptions& ikoptions) {
+
+  Eigen::MatrixXd q_sol_mat(model->number_of_positions(), t.size());
+  q_sol_mat.fill(0);
+  IKResults results;
+  results.info.resize(t.size(), 0);
+  inverseKinBackend(
+      model, t.size(), t.data(), q_seed, q_nom,
+      constraint_array.size(),
+      const_cast<RigidBodyConstraint** const>(constraint_array.data()),
+      ikoptions, &q_sol_mat, results.info.data(),
+      &results.infeasible_constraints);
+  results.q_sol.resize(t.size());
+  for (int i = 0; i < t.size(); i++) {
+    results.q_sol[i] = q_sol_mat.col(i);
+  }
+  return results;
+}
