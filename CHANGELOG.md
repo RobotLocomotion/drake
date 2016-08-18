@@ -23,7 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
- - [#3168][] Renamed `RigidBodyTree::findAncestorBodies()` to be `RigidBodyTree::FindAncestorBodies()`. Updated parameter name to be style guide compliant. Modified method to return a vector of indices rather than add to an output vector parameter.
+ - [#3168][] Renamed `RigidBodyTree::findAncestorBodies()` to be `RigidBodyTree::FindAncestorBodies()`. Modified method to return the results rather than store them in a parameter.
  - [#3115][] Modified SDF parser method names to be style guide compliant and more meaningful.
  - [#3078][] Changed `RigidBodyTree::kWorldLinkName` to be `RigidBodyTree::kWorldName`.
  - [#3056][] Renamed methods that add model instances to `RigidBodyTree` and `RigidBodySystem`.

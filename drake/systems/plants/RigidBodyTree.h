@@ -260,12 +260,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * the parent's parent, etc., all the way to the root of this RigidBodyTree,
    * which represents the world.
    *
-   * @param[in] body_index An index within this RigidBodyTree's vector of
-   * bodies. The ancestors of the body at this index are found and their
-   * indexes are stored in @p ancesor_bodies.
+   * @param[in] body_index The index of the body in this RigidBodyTree for which
+   * the ancestors of the body are found. Ancestors are returned in a vector of
+   * body indexes.
    *
-   * @return A vector of indexes of the ancestor bodies of the body at index
-   * @p body_index.
+   * @return A vector of body indexes of the ancestor bodies of the body with
+   * index @p body_index.
    */
   std::vector<int> FindAncestorBodies(int body_index) const;
 
