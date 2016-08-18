@@ -1868,10 +1868,10 @@ std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
     int model_instance_id) const {
   // Verifies that parameter parent_body_index is valid.
   DRAKE_ABORT_UNLESS(parent_body_index >= 0 &&
-                     parent_body_index < static_cast<int>(bodies.size()));
+                     parent_body_index < get_number_of_bodies());
 
   // Obtains a reference to the parent body.
-  const RigidBody& parent_body = *(bodies.at(parent_body_index).get());
+  const RigidBody& parent_body = get_body(parent_body_index);
 
   // Checks every rigid body in this tree. If the rigid body is a child of
   // parent_body and its model instance id matches model_instance_id, save its
@@ -1971,10 +1971,14 @@ int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
   return link->get_body_index();
 }
 
-const RigidBody* RigidBodyTree::GetBody(int body_index) const {
+const RigidBody& RigidBodyTree::get_body(int body_index) const {
   DRAKE_ABORT_UNLESS(body_index >= 0 &&
-                     body_index < static_cast<int>(bodies.size()));
-  return bodies[body_index].get();
+                     body_index < get_number_of_bodies());
+  return *bodies[body_index].get();
+}
+
+int RigidBodyTree::get_number_of_bodies() const {
+  return static_cast<int>(bodies.size());
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.

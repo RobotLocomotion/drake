@@ -331,7 +331,8 @@ TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
 }
 
 // Verifies the correct functionality of RigidBodyTree::FindChildrenOfBody()
-// and RigidBodyTree::FindBaseBodies().
+// and RigidBodyTree::FindBaseBodies(). This also tests
+// RigidBodyTree::get_body() and RigidBodyTree::get_number_of_bodies().
 TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   // Adds kNumModelInstances instances of a particular URDF model to the tree.
   // Stores the model instance IDs in model_instance_id_list.
@@ -363,6 +364,8 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
 
   EXPECT_EQ(base_body_list.size(), children_of_world_list.size());
 
+  EXPECT_EQ(tree->get_number_of_bodies(), 3 * kNumModelInstances);
+
   for (int world_child_index : children_of_world_list) {
     bool found_child_in_base_body_list = false;
     for (int body_index : base_body_list) {
@@ -381,7 +384,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
       model_instance_id_list.at(0));
 
   EXPECT_EQ(base_body_specific_id_list.size(), 1);
-  EXPECT_EQ(tree->GetBody(base_body_specific_id_list.at(0))->get_name(),
+  EXPECT_EQ(tree->get_body(base_body_specific_id_list.at(0)).get_name(),
       "link1");
 
   // Obtains the children of the above "link1" body. Verify that there is only
@@ -391,14 +394,14 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
 
   EXPECT_EQ(children_of_one_base_body.size(), 1);
 
-  EXPECT_EQ(tree->GetBody(children_of_one_base_body.at(0))->get_name(),
+  EXPECT_EQ(tree->get_body(children_of_one_base_body.at(0)).get_name(),
       "link2");
 
   // Verifies that an empty list is returned if a non-matching model instance
   // ID is provided.
   int body_index = base_body_specific_id_list.at(0);
   int non_matching_model_instance_id =
-      tree->GetBody(body_index)->get_model_instance_id() + 1;
+      tree->get_body(body_index).get_model_instance_id() + 1;
 
   std::vector<int> list_of_children_bad_instance_id =
       tree->FindChildrenOfBody(body_index, non_matching_model_instance_id);

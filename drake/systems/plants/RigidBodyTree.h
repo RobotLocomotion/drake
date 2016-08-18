@@ -632,7 +632,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       int model_id = -1) const;
 
   /**
-   * Obtains a list of indexes of the bodies that are directly attached to the
+   * Obtains a vector of indexes of the bodies that are directly attached to the
    * world via any type of joint.
    */
   std::vector<int> FindBaseBodies(int model_instance_id = -1) const;
@@ -746,9 +746,16 @@ class DRAKERBM_EXPORT RigidBodyTree {
                                             int model_id = -1) const;
 
   /**
-   * Returns the body at index @p body_index.
+   * Returns the body at index @p body_index. Parameter @p body_index must be
+   * between zero and the number of bodies in this tree, which can be determined
+   * by calling RigidBodyTree::get_number_of_bodies().
    */
-  const RigidBody* GetBody(int body_index) const;
+  const RigidBody& get_body(int body_index) const;
+
+  /**
+   * Returns the number of bodies in this tree.
+   */
+  int get_number_of_bodies() const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
   // @param body_or_frame_id the index of the body or the id of the frame.
