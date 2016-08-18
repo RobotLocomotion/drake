@@ -20,6 +20,7 @@ drake_setup_git_hooks()
 ##########################################
 option(WITH_EIGEN "required c++ matrix library.  only disable if you have it already." ON)
 option(WITH_GOOGLETEST "required c++ unit test library.  only disable if you have it already." ON)
+option(WITH_GFLAGS "required c++ command-line library.  only disable if you have it already." ON)
 option(WITH_GOOGLE_STYLEGUIDE "provides cpplint.py style checking" ON)
 option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 option(WITH_BULLET "used for collision detection" ON)
@@ -132,6 +133,9 @@ drake_add_external(googletest PUBLIC CMAKE
     -DBUILD_SHARED_LIBS=ON
     -DGTEST_CREATE_SHARED_LIBRARY=1 # Needed for parameterized tests on Windows
     -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib)
+
+# gflags
+drake_add_external(gflags PUBLIC CMAKE)
 
 # google_styleguide
 drake_add_external(google_styleguide PUBLIC
@@ -256,6 +260,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     gloptipoly3
     google_styleguide
     googletest
+    gflags
     gurobi
     ipopt
     iris

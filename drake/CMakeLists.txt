@@ -198,6 +198,8 @@ if(WIN32)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1")
 endif()
 
+find_package(gflags REQUIRED)
+
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)
 
