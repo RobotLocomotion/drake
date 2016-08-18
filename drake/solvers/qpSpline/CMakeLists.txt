@@ -7,12 +7,4 @@ pods_install_pkg_config_file(drake-spline-generation
   REQUIRES
   VERSION 0.0.2)
 
-if(MATLAB_FOUND)
-  add_mex(nWaypointCubicSplinemex nWaypointCubicSplinemex.cpp)
-  target_link_libraries(nWaypointCubicSplinemex drakeSplineGeneration drakeMexUtil)
-
-  add_mex(nWaypointCubicSplineFreeKnotTimesmex nWaypointCubicSplineFreeKnotTimesmex.cpp)
-  target_link_libraries(nWaypointCubicSplineFreeKnotTimesmex drakeSplineGeneration drakeMexUtil)
-endif()
-
 add_subdirectory(test)
