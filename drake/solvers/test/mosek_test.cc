@@ -10,7 +10,6 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/optimization.h"
-#include "drake/util/testUtil.h"
 
 namespace drake {
 namespace solvers {

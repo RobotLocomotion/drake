@@ -199,10 +199,10 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 // with vector block input parameters. For more information, see:
 // https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
-  std::string file_name =
+  std::string filename =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
-  drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get());
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(filename, tree.get());
 
   VectorX<double> q;
   VectorX<double> v;
@@ -223,11 +223,12 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
 // model in the table. Furthermore, it should be called "two_dof_robot" and
 // the model instance ID should be 1 (zero was assigned to the world model).
 TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
-  std::string file_name =
+  std::string filename =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+
   ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get());
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(filename, tree.get());
 
   const int kExpectedTableSize = 1;
   const int kExpectedModelInstanceId = 0;
@@ -238,11 +239,102 @@ TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
   EXPECT_EQ(model_instance_id_table["two_dof_robot"], kExpectedModelInstanceId);
 }
 
+// Verifies that each rigid body in @p body_list appears exactly once in
+// @p expected_names.
+void VerifyBodyListIsCorrect(std::vector<const RigidBody*> body_list,
+    std::vector<std::string> expected_names) {
+  for (const RigidBody* body : body_list) {
+    EXPECT_NE(std::find(expected_names.begin(), expected_names.end(),
+        body->get_name()), expected_names.end());
+    std::remove_if(expected_names.begin(), expected_names.end(),
+        [body](std::string name) {return name == body->get_name();});
+  }
+}
+
+// Tests the correct functionality of RigidBodyTree::FindModelInstanceBodies().
+TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
+  std::string filename_2dof_robot =
+      drake::GetDrakePath() +
+      "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+
+  std::string filename_3dof_robot =
+      drake::GetDrakePath() +
+      "/systems/plants/test/rigid_body_tree/three_dof_robot.urdf";
+
+  std::string filename_4dof_robot =
+      drake::GetDrakePath() +
+      "/systems/plants/test/rigid_body_tree/four_dof_robot.urdf";
+
+  ModelInstanceIdTable model_instance_id_table_1 =
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          filename_2dof_robot, tree.get());
+
+  ModelInstanceIdTable model_instance_id_table_2 =
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          filename_3dof_robot, tree.get());
+
+  ModelInstanceIdTable model_instance_id_table_3 =
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          filename_4dof_robot, tree.get());
+
+  const std::string kTwoDofModelName = "two_dof_robot";
+  const std::string kThreeDofModelName = "three_dof_robot";
+  const std::string kFourDofModelName = "four_dof_robot";
+
+  // Gets the model instance IDs.
+  int two_dof_model_instance_id =
+      model_instance_id_table_1.at(kTwoDofModelName);
+  int three_dof_model_instance_id =
+      model_instance_id_table_2.at(kThreeDofModelName);
+  int four_dof_model_instance_id =
+      model_instance_id_table_3.at(kFourDofModelName);
+
+  // Gets the rigid bodies belonging to each model instance.
+  std::vector<const RigidBody*> two_dof_robot_bodies =
+      tree->FindModelInstanceBodies(two_dof_model_instance_id);
+
+  std::vector<const RigidBody*> three_dof_robot_bodies =
+      tree->FindModelInstanceBodies(three_dof_model_instance_id);
+
+  std::vector<const RigidBody*> four_dof_robot_bodies =
+      tree->FindModelInstanceBodies(four_dof_model_instance_id);
+
+  // Verifies the lengths of the vectors of rigid bodies are correct.
+  EXPECT_EQ(two_dof_robot_bodies.size(), 3u);
+  EXPECT_EQ(three_dof_robot_bodies.size(), 4u);
+  EXPECT_EQ(four_dof_robot_bodies.size(), 5u);
+
+  // Verifies that the model instance IDs and model names are correct.
+  for (const RigidBody* body : two_dof_robot_bodies) {
+    EXPECT_EQ(body->get_model_instance_id(), two_dof_model_instance_id);
+    EXPECT_EQ(body->get_model_name(), kTwoDofModelName);
+  }
+
+  for (const RigidBody* body : three_dof_robot_bodies) {
+    EXPECT_EQ(body->get_model_instance_id(), three_dof_model_instance_id);
+    EXPECT_EQ(body->get_model_name(), kThreeDofModelName);
+  }
+
+  for (const RigidBody* body : four_dof_robot_bodies) {
+    EXPECT_EQ(body->get_model_instance_id(), four_dof_model_instance_id);
+    EXPECT_EQ(body->get_model_name(), kFourDofModelName);
+  }
+
+  // Verifies that the names of the RigidBodies fall into the expected range of
+  // values.
+  VerifyBodyListIsCorrect(two_dof_robot_bodies,
+      {"link1", "link2", "link3"});
+  VerifyBodyListIsCorrect(three_dof_robot_bodies,
+      {"link1", "link2", "link3", "link4"});
+  VerifyBodyListIsCorrect(four_dof_robot_bodies,
+      {"link1", "link2", "link3", "link4", "link5"});
+}
+
 // Verifies the correct functionality of RigidBodyTree::FindChildrenOfBody()
 // and RigidBodyTree::FindBaseBodies().
 TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
-  // Defines the number of times we add a model instance as specified by a URDF
-  // to the tree.
+  // Defines the number of instances of a particular URDF model is added to the
+  // tree.
   const int kNumModelInstances = 10;
 
   std::string file_name =
@@ -252,7 +344,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
 
   for (int ii = 0; ii < kNumModelInstances; ++ii) {
     ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get());
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(file_name, tree.get());
     model_instance_id_list.push_back(model_instance_id_table["two_dof_robot"]);
   }
 

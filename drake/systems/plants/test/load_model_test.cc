@@ -48,7 +48,7 @@ TEST_P(LoadModelTest, TestNoOffset) {
   EXPECT_FALSE(world_body->hasParent());
 
   // Gets the link whose parent joint is called "base".
-  auto link1_body = rbs.getRigidBodyTree()->findJoint("base");
+  auto link1_body = rbs.getRigidBodyTree()->FindChildBodyOfJoint("base");
   EXPECT_TRUE(link1_body != nullptr);
   EXPECT_EQ(link1_body->get_name(), "link1");
 
@@ -59,7 +59,7 @@ TEST_P(LoadModelTest, TestNoOffset) {
               Eigen::Isometry3d::Identity().matrix());
 
   // Gets the link whose parent joint is called "joint1".
-  auto link2_body = rbs.getRigidBodyTree()->findJoint("joint1");
+  auto link2_body = rbs.getRigidBodyTree()->FindChildBodyOfJoint("joint1");
   EXPECT_TRUE(link2_body != nullptr);
   EXPECT_EQ(link2_body->get_name(), "link2");
 
@@ -99,7 +99,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
       DrakeJoint::QUATERNION, weld_to_frame);
 
   // Gets the link whose parent joint is called "base".
-  auto link1_body = rbs.getRigidBodyTree()->findJoint("base");
+  auto link1_body = rbs.getRigidBodyTree()->FindChildBodyOfJoint("base");
   EXPECT_TRUE(link1_body != nullptr);
   EXPECT_EQ(link1_body->get_name(), "link1");
 
@@ -111,7 +111,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
               T_model_to_world.matrix());
 
   // Gets the link whose parent joint is called "joint1".
-  auto link2_body = rbs.getRigidBodyTree()->findJoint("joint1");
+  auto link2_body = rbs.getRigidBodyTree()->FindChildBodyOfJoint("joint1");
   EXPECT_TRUE(link2_body != nullptr);
   EXPECT_EQ(link2_body->get_name(), "link2");
 
