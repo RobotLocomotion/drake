@@ -1121,7 +1121,7 @@ KinematicPath RigidBodyTree::findKinematicPath(
   int end_body = parseBodyOrFrameID(end_body_or_frame_idx);
   std::vector<int> end_body_ancestors =
       FindAncestorBodies(end_body);
-  end_body_ancestors.insert(end_body_ancesors.begin(), end_body);
+  end_body_ancestors.insert(end_body_ancestors.begin(), end_body);
 
   // find least common ancestor
   size_t common_size =
