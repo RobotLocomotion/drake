@@ -886,7 +886,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
   // Parses the additional tags understood by the RigidBodySystem. These include
   // actuators, sensors, etc.
   XMLDocument xml_doc;
-  xml_doc.Parse(description.c_str());
+  xml_doc.Parse(urdf_string.c_str());
 
   ParseUrdf(*this, &xml_doc, model_instance_id_table);
 

@@ -169,7 +169,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * Reads a model specification from a URDF string and adds an instance of
    * the model into this `RigidBodySystem`'s `RigidBodyTree`.
    *
-   * @param[in] description The URDF specification.
+   * @param[in] urdf_string The URDF specification.
    *
    * @param[in] root_dir The root directory in which to search for files
    * mentioned in the URDF.
@@ -190,8 +190,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * added to the `RigidBodyTree` to their instance IDs, which are unique within
    * the `RigidBodyTree`.
    */
-  drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
-      const std::string& description, const std::string& root_dir = ".",
+  drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfString(
+      const std::string& urdf_string, const std::string& root_dir = ".",
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);

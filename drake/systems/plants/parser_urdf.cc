@@ -1104,7 +1104,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   XMLDocument xml_doc;
-  xml_doc.Parse(description.c_str());
+  xml_doc.Parse(urdf_string.c_str());
   return ParseUrdf(&xml_doc, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
             weld_to_frame, tree);
 }
