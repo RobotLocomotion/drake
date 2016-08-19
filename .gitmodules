@@ -58,6 +58,7 @@
 [submodule "externals/bertini"]
 	path = externals/bertini
 	url = git@github.com:RobotLocomotion/bertini.git
+	ignore = untracked
 [submodule "externals/sedumi"]
 	path = externals/sedumi
 	url = git@github.com:RobotLocomotion/sedumi.git
