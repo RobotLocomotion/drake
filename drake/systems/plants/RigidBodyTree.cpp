@@ -1979,8 +1979,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
           transformPoints(cache, loops[i].axis_,
                           loops[i].frameA_->get_frame_index(),
                           loops[i].frameB_->get_frame_index());
-      ret.template middleRows<3>(6 * i + 3) =
-          axis_A_end_in_B - loops[i].axis_;
+      ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
     }
   }
   return ret;
