@@ -114,7 +114,8 @@ class SensorPublisherOdometry {
           RigidBodyTree::kWorldName;
       // TODO(liang.fok) Implement this!!
       // model_instance_struct->message->child_frame_id = model_instance_name +
-      //     "/" + rigid_body_system->getRigidBodyTree()->FindBaseBodies(model_instance_id);
+      //     "/" + rigid_body_system->getRigidBodyTree()->
+      //         FindBaseBodies(model_instance_id);
 
       model_instance_structs_.push_back(std::move(model_instance_struct));
     }
@@ -150,24 +151,24 @@ class SensorPublisherOdometry {
     // // Obtains a reference to the world link in the rigid body tree.
     // const RigidBody& world = rigid_body_tree->world();
 
-    // // Publishes an odometry message for each rigid body that's connected via a
-    // // floating (non-fixed) joint to the world.
+    // // Publishes an odometry message for each rigid body that's connected via
+    // // a floating (non-fixed) joint to the world.
     // for (auto const& rigid_body : rigid_body_tree->bodies) {
     //   // Skips the current rigid body if it does not have the world as the
     //   // parent.
     //   if (!rigid_body->has_as_parent(world)) continue;
 
-    //   // Skips the current rigid body if it's not connected to the world via a
-    //   // floating joint.
+    //   // Skips the current rigid body if it's not connected to the world via
+    //   // a floating joint.
     //   if (!rigid_body->getJoint().isFloating()) continue;
 
-    //   // Defines the key that can be used to obtain the publisher and message.
-    //   // The key is simply the model name since there should only be one
-    //   // odometry message and publisher per model.
+    //   // Defines the key that can be used to obtain the publisher and
+    //   // message. The key is simply the model name since there should only be
+    //   //  one odometry message and publisher per model.
     //   const std::string& key = rigid_body->get_model_name();
 
-    //   // Verifies that a nav_msgs::Odometry message for the current link exists
-    //   // in the odometry_messages_ map.
+    //   // Verifies that a nav_msgs::Odometry message for the current link
+    //   // exists in the odometry_messages_ map.
     //   auto message_in_map = odometry_messages_.find(key);
     //   if (message_in_map == odometry_messages_.end()) {
     //     throw std::runtime_error(
