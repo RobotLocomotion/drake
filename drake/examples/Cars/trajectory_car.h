@@ -5,6 +5,7 @@
 #include "drake/drakeCars_export.h"
 #include "drake/examples/Cars/curve2.h"
 #include "drake/examples/Cars/system1_cars_vectors.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 
@@ -92,6 +93,43 @@ class DRAKECARS_EXPORT TrajectoryCar1 {
   const Curve2<double> curve_;
   const double speed_;
   const double start_time_;
+};
+
+/// A System2 wrapper around the System1 TrajectoryCar1.
+template <typename T>
+class TrajectoryCar : public systems::LeafSystem<T> {
+ public:
+  TrajectoryCar(const Curve2<T>& curve, double speed, double start_time)
+      : wrapped_(curve, speed, start_time) {
+    this->DeclareOutputPort(systems::kVectorValued,
+                            SimpleCarStateIndices::kNumCoordinates,
+                            systems::kContinuousSampling);
+  }
+
+  void EvalOutput(const systems::ContextBase<T>& context,
+                  systems::SystemOutput<T>* output) const override {
+    DRAKE_ASSERT(output != nullptr);
+    DRAKE_ASSERT(output->get_num_ports() == 1);
+    systems::VectorInterface<T>* output_vector =
+        output->get_mutable_port(0)->GetMutableVectorData();
+    DRAKE_ASSERT(output_vector != nullptr);
+
+    // TODO(jwninmmer-tri) Once TrajectoryCar1 is otherwise unused and can be
+    // deleted, replace this forwarding code the TrajetoryCar1::output code
+    // directly, and delete TrajectoryCar1.
+    const NullVector<T> none;
+    output_vector->get_mutable_value() =
+        toEigen(wrapped_.output<T>(context.get_time(), none, none));
+  }
+
+ protected:
+  std::unique_ptr<systems::VectorInterface<T>> AllocateOutputVector(
+      const systems::SystemPortDescriptor<T>& descriptor) const override {
+    return std::make_unique<SimpleCarState<T>>();
+  }
+
+ private:
+  const TrajectoryCar1 wrapped_;
 };
 
 }  // namespace drake
