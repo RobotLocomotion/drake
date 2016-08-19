@@ -24,6 +24,7 @@ Unreleased: changes on master, not yet released
 ### Changed
 
  - [#3183][] The gflags library is now a required dependency from the superbuild.
+ - [#3168][] Renamed `RigidBodyTree::findAncestorBodies()` to be `RigidBodyTree::FindAncestorBodies()`. Modified method to return the results rather than store them in a parameter.
  - [#3157][] Renamed `RigidBodyTree::findJoint()` to be `RigidBodyTree::FindChildBodyOfJoint()` and `RigidBodyTree::findJointId()` to be `RigidBodyTree::FindIndexOfChildBodyOfJoint()`.
  - [#3115][] Modified SDF parser method names to be style guide compliant and more meaningful.
  - [#3078][] Changed `RigidBodyTree::kWorldLinkName` to be `RigidBodyTree::kWorldName`.
@@ -131,4 +132,5 @@ Changes in version v0.9.11 and before are not provided.
 [#3056]: https://github.com/RobotLocomotion/drake/issues/3056
 [#3078]: https://github.com/RobotLocomotion/drake/issues/3078
 [#3115]: https://github.com/RobotLocomotion/drake/issues/3115
+[#3168]: https://github.com/RobotLocomotion/drake/issues/3168
 [#3183]: https://github.com/RobotLocomotion/drake/issues/3183
