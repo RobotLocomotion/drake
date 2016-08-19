@@ -8,7 +8,7 @@ classdef RigidBodyJointTransmission < RigidBodyElement
     robotnum
     constraint_id
   end
-  
+
   methods
     function [obj,model] = updateConstraints(obj,model)
       link1 = model.findJointId(obj.joint1_name,obj.robotnum);
@@ -22,7 +22,7 @@ classdef RigidBodyJointTransmission < RigidBodyElement
       cnstr = DrakeFunctionConstraint(0,0,fcn);
       cnstr.grad_level = 2;
       cnstr.setName({sprintf('%s mimics %s through joint transmission',obj.joint1_name,obj.joint2_name)});
-      
+
       if(isempty(obj.constraint_id))
         [model,obj.constraint_id] = addPositionEqualityConstraint(model,cnstr);
       else

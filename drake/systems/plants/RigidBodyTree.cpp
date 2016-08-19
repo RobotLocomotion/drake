@@ -2030,7 +2030,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
   }
 
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q = cache.getQ();
-  for (int i = 0; i < static_cast<int>(joint_transmissions.size()); i++) {
+  for (int i = 0; i < static_cast<int>(joint_transmissions.size()); ++i) {
     int joint1_pos_idx =
         FindChildBodyOfJoint(joint_transmissions[i].GetJoint1Name(),
                              joint_transmissions[i].GetModelInstanceID())
@@ -2068,7 +2068,7 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
         loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
     constraint_count += 6;
   }
-  for (int i = 0; i < static_cast<int>(joint_transmissions.size()); i++) {
+  for (int i = 0; i < static_cast<int>(joint_transmissions.size()); ++i) {
     auto link1 =
         FindChildBodyOfJoint(joint_transmissions[i].GetJoint1Name(),
                              joint_transmissions[i].GetModelInstanceID());

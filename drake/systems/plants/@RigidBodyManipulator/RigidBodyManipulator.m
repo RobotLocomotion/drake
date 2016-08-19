@@ -919,7 +919,7 @@ classdef RigidBodyManipulator < Manipulator
         [jt,model] = updateConstraints(model.joint_transmission(j),model);
         model.joint_transmission(j) = jt;
       end
-      
+
       for j=1:length(model.position_constraints)
         % todo: generalize this by moving the updateConstraint logic above into
         % drakeFunction.RBM

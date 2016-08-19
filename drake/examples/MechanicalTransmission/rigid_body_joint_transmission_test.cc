@@ -21,7 +21,7 @@ namespace mechanical_transmission {
 namespace {
 /**
  * Loads mechanical_transmission.urdf, which says that
- * joint1_value = 0.5*joint2_value+1.0,
+ * joint1_value = 0.5 * joint2_value + 1.0,
  * and returns the RigidBodySystem.
  */
 std::shared_ptr<RigidBodySystem> ParseMechanicalTransmission() {
@@ -39,8 +39,9 @@ std::shared_ptr<RigidBodySystem> ParseMechanicalTransmission() {
 }
 
 /**
- * Evaluates the constraint joint1_value - 0.5*joint2_value-1.0, to check if the
- * mechanical transmission imposes the right constraint through URDF parsing.
+ * Evaluates the mechanical joint transmission constraint
+ * joint1_value - 0.5 * joint2_value - 1.0, the
+ * Jacobian J of the constraint, and the term Jdot * v.
  */
 void EvaluateMechanicalTransmissionConstraint(
     const std::shared_ptr<RigidBodyTree>& tree, double joint1_pos_val,
@@ -48,11 +49,11 @@ void EvaluateMechanicalTransmissionConstraint(
     Eigen::VectorXd& position_constraint,
     Eigen::MatrixXd& position_constraint_jacobian,
     Eigen::VectorXd& position_constraint_jac_dot_times_v, bool in_terms_of_qdot,
-    int model_id = -1) {
+    int model_instance_id = -1) {
   int nq = tree->number_of_positions();
   int nv = tree->number_of_velocities();
-  auto link1 = tree->FindChildBodyOfJoint("joint1", model_id);
-  auto link2 = tree->FindChildBodyOfJoint("joint2", model_id);
+  auto link1 = tree->FindChildBodyOfJoint("joint1", model_instance_id);
+  auto link2 = tree->FindChildBodyOfJoint("joint2", model_instance_id);
   int joint1_pos_idx = link1->get_position_start_index();
   int joint2_pos_idx = link2->get_position_start_index();
   int joint1_vel_idx = link1->get_velocity_start_index();
@@ -79,8 +80,7 @@ GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
   auto rigid_body_system = ParseMechanicalTransmission();
   auto tree = rigid_body_system->getRigidBodyTree();
 
-  // Joints values (1.0, 0.0) and should satisfy the constraint, check if the
-  // offset
+  // Joints values [1.0, 0.0] should satisfy the constraint; check if the offset
   // is set correctly.
   Eigen::VectorXd pos_cnstr;
   Eigen::MatrixXd pos_jac;
@@ -101,7 +101,8 @@ GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
   EXPECT_TRUE(CompareMatrices(
       pos_jac_dot_times_v, Eigen::Matrix<double, 1, 1>(0.0),
       Eigen::NumTraits<double>::epsilon(), MatrixCompareType::absolute));
-  // Joints values (2.0, 2.0) should satisfy the constraint.
+
+  // Joints values [2.0, 2.0] should satisfy the constraint.
   EvaluateMechanicalTransmissionConstraint(tree, 2.0, 2.0, 1.0, 0.5, pos_cnstr,
                                            pos_jac, pos_jac_dot_times_v,
                                            in_terms_of_qdot);
@@ -115,7 +116,7 @@ GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
       pos_jac_dot_times_v, Eigen::Matrix<double, 1, 1>(0.0),
       Eigen::NumTraits<double>::epsilon(), MatrixCompareType::absolute));
 
-  // Joints values (2.0, 3.0) should not satisfy the constraint.
+  // Joints values [2.0, 3.0] should not satisfy the constraint.
   EvaluateMechanicalTransmissionConstraint(tree, 2.0, 3.0, 1.0, 0.5, pos_cnstr,
                                            pos_jac, pos_jac_dot_times_v,
                                            in_terms_of_qdot);
@@ -130,7 +131,7 @@ GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
       Eigen::NumTraits<double>::epsilon(), MatrixCompareType::absolute));
 }
 
-// Test the simulation with the mechanical transmission.
+// Tests the simulation with the mechanical transmission.
 // From the  <mimic> element in the URDF, joint 1 mimics joint 2 with ratio of
 // 0.5 and an offset of 1. For more details, see:
 // http://wiki.ros.org/urdf/XML/joint.
@@ -208,7 +209,7 @@ GTEST_TEST(MechanicalTransmissionTest, MechanicalTransmissionSimulation) {
       0.5, 5e-2);
 }
 
-// Test if the joint transmission constraint is parsed correctly when we have
+// Tests if the joint transmission constraint is parsed correctly when we have
 // two identical model instances in the same rigid body tree.
 GTEST_TEST(MechanicalTransmissionTest,
            ParseMechanicalTransmissionMultipleModelInstance) {
