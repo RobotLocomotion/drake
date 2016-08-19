@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
   xG.thetadot = 0;
   PendulumInput<double> uG;
   uG.tau = 0;
-  auto c = timeInvariantLQR(*p, xG, uG, Q, R);
+  auto c = MakeTimeInvariantLqrSystem(*p, xG, uG, Q, R);
   auto v = std::make_shared<BotVisualizer<PendulumState> >(
       lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
       DrakeJoint::FIXED);

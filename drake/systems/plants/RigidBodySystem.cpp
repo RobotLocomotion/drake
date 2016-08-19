@@ -347,8 +347,9 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem& sys, XMLElement* node,
   XMLElement* parent_node = node->FirstChildElement("parent");
   if (!parent_node)
     throw runtime_error("propellor " + name + " is missing the parent node");
-  frame = drake::parsers::urdf::MakeRigidBodyFrameFromURDFNode(
-      *tree, *parent_node, node->FirstChildElement("origin"), name + "Frame");
+  frame = drake::parsers::urdf::MakeRigidBodyFrameFromUrdfNode(
+      *tree, *parent_node, node->FirstChildElement("origin"), name + "Frame",
+      model_instance_id);
   tree->addFrame(frame);
 
   axis << 1.0, 0.0, 0.0;
@@ -386,16 +387,18 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
   if (!link_ref_node)
     throw runtime_error("linear_spring_damper " + name +
                         " is missing the link1 node");
-  frameA = drake::parsers::urdf::MakeRigidBodyFrameFromURDFNode(
-      *tree, *link_ref_node, link_ref_node, name + "FrameA");
+  frameA = drake::parsers::urdf::MakeRigidBodyFrameFromUrdfNode(
+      *tree, *link_ref_node, link_ref_node, name + "FrameA",
+      model_instance_id);
   tree->addFrame(frameA);
 
   link_ref_node = node->FirstChildElement("link2");
   if (!link_ref_node)
     throw runtime_error("linear_spring_damper " + name +
                         " is missing the link2 node");
-  frameB = drake::parsers::urdf::MakeRigidBodyFrameFromURDFNode(
-      *tree, *link_ref_node, link_ref_node, name + "FrameB");
+  frameB = drake::parsers::urdf::MakeRigidBodyFrameFromUrdfNode(
+      *tree, *link_ref_node, link_ref_node, name + "FrameB",
+      model_instance_id);
   tree->addFrame(frameB);
 }
 
@@ -872,12 +875,13 @@ void parseSdf(RigidBodySystem& sys, XMLDocument* xml_doc,
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the URDF to the RigidBodyTree.
   ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::urdf::AddModelInstanceFromURDFString(
-          urdf_string, root_dir, floating_base_type, tree.get());
+      drake::parsers::urdf::AddModelInstanceFromUrdfString(
+          urdf_string, root_dir, floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional tags understood by the RigidBodySystem. These include
   // actuators, sensors, etc.
@@ -890,47 +894,74 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
 }
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfFile(
-    const string& urdf_filename,
+    const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the URDF to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::urdf::AddModelInstanceFromURDF(
-          urdf_filename, floating_base_type, weld_to_frame, tree.get());
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          filename, floating_base_type, weld_to_frame, tree.get());
 
   // Parses additional tags understood by rigid body system (e.g., actuators,
   // sensors, etc).
   XMLDocument xml_doc;
-  xml_doc.LoadFile(urdf_filename.data());
+  xml_doc.LoadFile(filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
     throw std::runtime_error(
         "RigidBodySystem::AddModelInstanceFromUrdfFile: ERROR: Failed to parse "
-        "xml in file " + urdf_filename + "\n" + xml_doc.ErrorName());
+        "xml in file " + filename + "\n" + xml_doc.ErrorName());
   }
+
   ParseUrdf(*this, &xml_doc, model_instance_id_table);
 
   return model_instance_id_table;
 }
 
-ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromSdfFile(
-    const string& sdf_filename,
+ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
+    const string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the robot to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
       drake::parsers::sdf::AddModelInstancesFromSdfFile(
-          sdf_filename, floating_base_type, weld_to_frame, tree.get());
+          filename, floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).
   XMLDocument xml_doc;
-  xml_doc.LoadFile(sdf_filename.data());
+  xml_doc.LoadFile(filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
     throw std::runtime_error(
-        "RigidBodySystem::AddModelInstanceFromSdfFile: ERROR: Failed to parse"
-        "xml in file " + sdf_filename + "\n" + xml_doc.ErrorName());
+        "RigidBodySystem::AddModelInstancesFromSdfFile: ERROR: Failed to parse"
+        "xml in file " + filename + "\n" + xml_doc.ErrorName());
+  }
+
+  parseSdf(*this, &xml_doc, model_instance_id_table);
+
+  return model_instance_id_table;
+}
+
+ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfString(
+    const string& sdf_string,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+
+  // Adds the robot to the rigid body tree.
+  ModelInstanceIdTable model_instance_id_table =
+      drake::parsers::sdf::AddModelInstancesFromSdfString(
+          sdf_string, floating_base_type, weld_to_frame, tree.get());
+
+  // Parses the additional SDF elements that are understood by RigidBodySystem,
+  // namely (actuators, sensors, etc.).
+  XMLDocument xml_doc;
+  xml_doc.Parse(sdf_string.c_str());
+  if (xml_doc.ErrorID() != XML_SUCCESS) {
+    throw std::runtime_error(
+        "RigidBodySystem::AddModelInstancesFromSdfString: ERROR: Failed "
+        " to parse XML in SDF string: " +
+            std::string(xml_doc.ErrorName()));
   }
   parseSdf(*this, &xml_doc, model_instance_id_table);
 
@@ -953,7 +984,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
     model_instance_id_table = AddModelInstanceFromUrdfFile(filename,
         floating_base_type, weld_to_frame);
   } else if (ext == ".sdf") {
-    model_instance_id_table = AddModelInstanceFromSdfFile(filename,
+    model_instance_id_table = AddModelInstancesFromSdfFile(filename,
         floating_base_type, weld_to_frame);
   } else {
     throw runtime_error(
@@ -962,6 +993,30 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
   }
 
   return model_instance_id_table;
+}
+
+ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromString(
+    const std::string& string_description,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+
+  // Parse the string using an XML parser.
+  XMLDocument xml_doc;
+  xml_doc.Parse(string_description.c_str());
+  if (xml_doc.ErrorID()) {
+    throw std::runtime_error("Failed to parse XML string: " +
+        std::string(xml_doc.ErrorName()));
+  }
+
+  if (xml_doc.FirstChildElement("sdf") != nullptr) {
+    return AddModelInstancesFromSdfString(
+        string_description, floating_base_type, weld_to_frame);
+  } else {
+    // Assume that it is a URDF file.
+    const std::string root_dir = ".";
+    return AddModelInstanceFromUrdfString(
+        string_description, root_dir, floating_base_type, weld_to_frame);
+  }
 }
 
 Eigen::VectorXd spatialForceInFrameToJointTorque(

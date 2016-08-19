@@ -153,6 +153,7 @@ macro(drake_add_cmake_external PROJECT)
   # Set up the external project build
   ExternalProject_Add(${PROJECT}
     LIST_SEPARATOR "${_ext_LIST_SEPARATOR}"
+    SOURCE_SUBDIR ${_ext_SOURCE_SUBDIR}
     SOURCE_DIR ${_ext_SOURCE_DIR}
     BINARY_DIR ${_ext_BINARY_DIR}
     DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}
@@ -187,14 +188,6 @@ macro(drake_add_foreign_external PROJECT)
       ${_ext_VERBOSE}
       BUILD_PREFIX=${CMAKE_INSTALL_PREFIX}
       BUILD_TYPE=$<CONFIGURATION>)
-    if(_ext_BUILD_COMMAND_DIR)
-      # FIXME: This is only needed for Director due to the unusual build setup
-      #        used by the same. We should fix director to be a 'normal' CMake
-      #        project, and remove this option
-      set(_ext_BUILD_COMMAND ${CMAKE_COMMAND}
-        -E chdir ${_ext_BUILD_COMMAND_DIR}
-        ${_ext_BUILD_COMMAND})
-    endif()
   endif()
 
   if(NOT _ext_BUILD_COMMAND STREQUAL "")
@@ -236,6 +229,7 @@ endmacro()
 #       ensure correct build order. (Dependencies which are not enabled will be
 #       ignored.)
 #
+#   SOURCE_SUBDIR <dir> - Specify SOURCE_SUBDIR for external
 #   SOURCE_DIR <dir> - Override default SOURCE_DIR for external
 #   BINARY_DIR <dir> - Override default BINARY_DIR for external
 #
@@ -266,9 +260,9 @@ function(drake_add_external PROJECT)
     INSTALL_COMMAND)
   set(_ext_flags LOCAL PUBLIC CMAKE ALWAYS)
   set(_ext_sv_args
+    SOURCE_SUBDIR
     SOURCE_DIR
     BINARY_DIR
-    BUILD_COMMAND_DIR # FIXME: fix director then remove this
   )
   set(_ext_mv_args
     CMAKE_ARGS
@@ -326,6 +320,9 @@ function(drake_add_external PROJECT)
   # Set source directory for external project
   if(NOT DEFINED _ext_SOURCE_DIR)
     set(_ext_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/${PROJECT})
+  endif()
+  if(NOT DEFINED _ext_SOURCE_SUBDIR)
+    set(_ext_SOURCE_SUBDIR .)
   endif()
 
   # Compute project dependencies

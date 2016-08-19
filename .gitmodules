@@ -95,3 +95,6 @@
 [submodule "externals/spdlog"]
 	path = externals/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "externals/gflags"]
+	path = externals/gflags
+	url = https://github.com/gflags/gflags.git

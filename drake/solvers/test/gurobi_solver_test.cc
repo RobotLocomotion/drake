@@ -4,15 +4,12 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/optimization.h"
-#include "drake/util/eigen_matrix_compare.h"
-#include "drake/util/testUtil.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace solvers {

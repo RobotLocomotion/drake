@@ -3,11 +3,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/plants/constraint/direct_collocation_constraint.h"
-#include "drake/util/eigen_matrix_compare.h"
-
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace systems {
@@ -42,7 +40,6 @@ GTEST_TEST(DirectCollocationConstraintPendulumDynamicsTest,
            DirectCollocationConstraintTest) {
   const int kNumStates = 2;
   const int kNumInputs = 1;
-
 
   // Initial state/input and expected result values came from running
   // the MATLAB code for PendulumPlant through the constraint function

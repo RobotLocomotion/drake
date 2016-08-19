@@ -40,6 +40,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   static const char* const kWorldName;
 
+  /**
+   * Defines the index of the body that represents the world within a
+   * RigidBodyTree.
+   */
+  static const int kWorldBodyIndex;
+
   RigidBodyTree(const std::string& urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type =
                     DrakeJoint::ROLLPITCHYAW);
@@ -286,6 +292,23 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const Eigen::MatrixBase<DerivedNormal>& normal,
       const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane) const;
 
+  /**
+   * Finds the ancestors of a body. The ancestors include the body's parent,
+   * the parent's parent, etc., all the way to the root of this RigidBodyTree,
+   * which represents the world.
+   *
+   * @param[in] body_index The index of the body in this RigidBodyTree for which
+   * the ancestors of the body are found. Ancestors are returned in a vector of
+   * body indexes.
+   *
+   * @return A vector of body indexes of the ancestor bodies of the body with
+   * index @p body_index.
+   */
+  std::vector<int> FindAncestorBodies(int body_index) const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindAncestorBodies() instead.")
+#endif
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body) const;
 
   KinematicPath findKinematicPath(int start_body_or_frame_idx,
@@ -632,6 +655,19 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       const std::string& model_name = "",
                       int model_id = -1) const;
 
+  /**
+   * Returns a vector of pointers to all rigid bodies in this tree that belong
+   * to a particular model instance.
+   *
+   * @param[in] model_instance_id The ID of the model instance whose rigid
+   * bodies are being searched for.
+   *
+   * @return A vector of pointers to every rigid body belonging to the sepcified
+   * model instance.
+   */
+  std::vector<const RigidBody*>
+  FindModelInstanceBodies(int model_instance_id);
+
 /**
  * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
  * instead.
@@ -644,6 +680,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       int model_id = -1) const;
 
   /**
+   * Obtains a vector of indexes of the bodies that are directly attached to the
+   * world via any type of joint.  This method has a time complexity of `O(N)`
+   * where `N` is the number of bodies in the tree, which can be determined by
+   * calling RigidBodyTree::get_number_of_bodies().
+   */
+  std::vector<int> FindBaseBodies(int model_instance_id = -1) const;
+
+  /**
    * Obtains the index of a rigid body within this rigid body tree. The rigid
    * body tree maintains a vector of pointers to all rigid bodies that are part
    * of the rigid body tree. The index of a rigid body is the index within this
@@ -652,41 +696,94 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @param[in] body_name The body whose index we want to find. It should
    * be unique within the searched models, otherwise an exception will be
    * thrown.
-   * @param[in] model_id The ID of the model. This parameter is optional. If
-   * supplied, only the model with the specified ID is searched; otherwise, all
-   * models are searched.
+   *
+   * @param[in] model_instance_id The ID of the model instance. This parameter
+   * is optional. If supplied, only the model instance with the specified
+   * instance ID is searched; otherwise, all model instances are searched.
+   *
    * @return The index of the specified rigid body.
+   *
    * @throws std::logic_error if no rigid body with the specified \p body_name
    * and \p model_id was found or if multiple matching rigid bodies were found.
    */
-  int FindBodyIndex(const std::string& body_name, int model_id = -1) const;
+  int FindBodyIndex(const std::string& body_name, int model_instance_id = -1)
+      const;
 
-/**
- * This is a deprecated version of `FindBodyIndex(...)`. Please use
- * `FindBodyIndex(...)` instead.
- */
+  /**
+   * Returns a vector of indexes of bodies that are the children of the body at
+   * index @p parent_body_index. The resulting list can be further filtered to
+   * be bodies that belong to model instance ID @p model_instance_id. This
+   * method has a time complexity of `O(N)` where `N` is the number of bodies
+   * in the tree, which can be determined by calling
+   * RigidBodyTree::get_number_of_bodies().
+   */
+  std::vector<int> FindChildrenOfBody(int parent_body_index,
+      int model_instance_id = -1) const;
+
+  /**
+   * This is a deprecated version of `FindBodyIndex(...)`. Please use
+   * `FindBodyIndex(...)` instead.
+   */
 #ifndef SWIG
-  DRAKE_DEPRECATED("Pleasse use RigidBodyTree::FindBodyIndex instead.")
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBodyIndex() instead.")
 #endif
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
-  // TODO(amcastro-tri): The name of this method is misleading.
-  // It returns a RigidBody when the user seems to request a joint.
   /**
    * Obtains a pointer to the rigid body whose parent joint is named
-   * \p joint_name and is part of a model with ID \p model_id.
+   * @p joint_name and is part of a model instance with ID @p model_instance_id.
    *
-   * @param[in] joint_name The name of the joint to find.
-   * @param[in] model_id The ID of the model that contains the joint. This
-   * parameter is optional. If supplied, only that model is searched; otherwise,
-   * all models are searched.
-   * @return A pointer to the rigid body whose joint is the one being searched
-   * for.
-   * @throws std::logic_error if no joint is found with the given name within
-   * the searched model(s).
+   * @param[in] joint_name The name of the parent joint of the rigid body to
+   * find.
+   *
+   * @param[in] model_instance_id The ID of the model instance that owns the
+   * rigid body to find. This parameter is optional. If supplied, the set of
+   * rigid bodies to search through is restricted to those that belong to the
+   * speified model instance. Otherwise, all rigid bodies in this tree are
+   * searched.
+   *
+   * @return A pointer to the rigid body whose parent joint is named
+   * @p joint_name joint and, if @p model_instance_id is specified, is part of
+   * the specified model instance.
+   *
+   * @throws std::runtime_error If either no rigid body is found or multiple
+   * matching rigid bodies are found.
    */
+  RigidBody* FindChildBodyOfJoint(const std::string& joint_name,
+      int model_instance_id = -1) const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Pleasse use FindChildBodyOfJoint() instead.")
+#endif
   RigidBody* findJoint(const std::string& joint_name, int model_id = -1) const;
 
+  /**
+   * Returns the index within the vector of rigid bodies of the rigid body whose
+   * parent joint is named @p joint_name and is part of a model instance with ID
+   * @p model_instance_id.
+   *
+   * @param[in] joint_name The name of the parent joint of the rigid body whose
+   * index is being searched for.
+   *
+   * @param[in] model_instance_id The ID of the model instance that owns the
+   * rigid body to find. This parameter is optional. If supplied, the set of
+   * rigid bodies to search through is restricted to those that belong to the
+   * speified model instance. Otherwise, all rigid bodies in this tree are
+   * searched.
+   *
+   * @return The index of the rigid body whose parent joint is named
+   * @p joint_name and, if @p model_instance_id is specified, is part of
+   * the specified model instance.
+   *
+   * @throws std::runtime_error If either no rigid body is found or multiple
+   * matching rigid bodies are found.
+   */
+  int FindIndexOfChildBodyOfJoint(const std::string& joint_name,
+      int model_instance_id = -1) const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Pleasse use FindIndexOfChildBodyOfJoint() instead.")
+#endif
   int findJointId(const std::string& joint_name, int model_id = -1) const;
 
   /**
@@ -700,6 +797,20 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
+
+  /**
+   * Returns the body at index @p body_index. Parameter @p body_index must be
+   * between zero and the number of bodies in this tree, which can be determined
+   * by calling RigidBodyTree::get_number_of_bodies(). Note that the body at
+   * index 0 represents the world.
+   */
+  const RigidBody& get_body(int body_index) const;
+
+  /**
+   * Returns the number of bodies in this tree. This includes the one body that
+   * represents the world.
+   */
+  int get_number_of_bodies() const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
   // @param body_or_frame_id the index of the body or the id of the frame.

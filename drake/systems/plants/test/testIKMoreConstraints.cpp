@@ -6,36 +6,41 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using drake::GetDrakePath;
-using drake::util::CompareMatrices;
-using drake::util::MatrixCompareType;
+namespace drake {
+namespace {
 
-// Find the joint position indices corresponding to 'name'
-std::vector<int> getJointPositionVectorIndices(const RigidBodyTree& model,
+/* Finds and returns the indices within the state vector of @p tree that contain
+ * the position states of a joint named @p name. The model instance ID is
+ * ignored in this search (joints belonging to all model instances are
+ * searched).
+ */
+std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree& tree,
                                                const std::string& name) {
-  RigidBody* joint_parent_body = model.findJoint(name);
-  int num_positions = joint_parent_body->getJoint().get_num_positions();
+  RigidBody* joint_child_body = tree.FindChildBodyOfJoint(name);
+  int num_positions = joint_child_body->getJoint().get_num_positions();
   std::vector<int> ret(static_cast<size_t>(num_positions));
 
-  // fill with sequentially increasing values, starting at
-  // joint_parent_body->get_position_start_index():
-  iota(ret.begin(), ret.end(), joint_parent_body->get_position_start_index());
+  // Since the joint position states are located in a contiguous region of the
+  // the rigid body tree's state vector, fill the return vector with
+  // sequentially increasing indices starting at
+  // `joint_child_body->get_position_start_index()`.
+  iota(ret.begin(), ret.end(), joint_child_body->get_position_start_index());
   return ret;
 }
 
 void findJointAndInsert(const RigidBodyTree& model, const std::string& name,
                         std::vector<int>& position_list) {
-  auto position_indices = getJointPositionVectorIndices(model, name);
+  auto position_indices = GetJointPositionVectorIndices(model, name);
 
   position_list.insert(position_list.end(), position_indices.begin(),
                        position_indices.end());
@@ -195,3 +200,6 @@ GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   EXPECT_TRUE(CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913),
                               1e-4, MatrixCompareType::absolute));
 }
+
+}  // namespace
+}  // namespace drake

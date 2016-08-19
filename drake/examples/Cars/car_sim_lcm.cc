@@ -3,6 +3,7 @@
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
@@ -26,8 +27,11 @@ int do_main(int argc, const char* argv[]) {
   // CreateRigidBodySystem() below.
   double duration = std::numeric_limits<double>::infinity();
 
+  drake::parsers::ModelInstanceIdTable model_instances;
+
   // Initializes the rigid body system.
-  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration);
+  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration,
+      &model_instances);
 
   // Initializes and cascades all of the other systems.
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);

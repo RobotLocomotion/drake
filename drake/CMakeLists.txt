@@ -117,7 +117,7 @@ elseif(MSVC)
 endif()
 
 # set up matlab build
-include(cmake/mex.cmake)
+include(../cmake/mex.cmake)
 if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
   if(DISABLE_MATLAB)
     message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
@@ -197,6 +197,8 @@ if(WIN32)
   # The following compiler flag is needed to support parameterized Google tests on Windows.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1")
 endif()
+
+find_package(gflags REQUIRED)
 
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)

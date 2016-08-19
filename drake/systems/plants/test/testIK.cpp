@@ -1,23 +1,22 @@
 #include <cstdlib>
-#include <Eigen/Dense>
 
+#include <Eigen/Dense>
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/vector.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using drake::GetDrakePath;
-using drake::util::CompareMatrices;
-using drake::util::MatrixCompareType;
+namespace drake {
+namespace {
 
 GTEST_TEST(testIK, atlasIK) {
   RigidBodyTree model(
@@ -84,9 +83,14 @@ GTEST_TEST(testIK, iiwaIK) {
   PostureConstraint pc(&model, tspan);
   drake::Vector1d joint_lb(0.9);
   drake::Vector1d joint_ub(1.0);
-  Eigen::VectorXi joint_idx(1);
-  joint_idx(0) = model.findJoint("iiwa_joint_4")->get_position_start_index();
-  pc.setJointLimits(joint_idx, joint_lb, joint_ub);
+
+  // Variable `joint_position_start_idx` below is a collection of offsets into
+  // the state vector referring to the positions of the joints to be
+  // constrained.
+  Eigen::VectorXi joint_position_start_idx(1);
+  joint_position_start_idx(0) = model.FindChildBodyOfJoint("iiwa_joint_4")->
+      get_position_start_index();
+  pc.setJointLimits(joint_position_start_idx, joint_lb, joint_ub);
 
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&wpc);
@@ -102,8 +106,8 @@ GTEST_TEST(testIK, iiwaIK) {
   EXPECT_EQ(info, 1);
 
   // Check that our constrained joint is within where we tried to constrain it.
-  EXPECT_GE(q_sol(joint_idx(0)), joint_lb(0));
-  EXPECT_LE(q_sol(joint_idx(0)), joint_ub(0));
+  EXPECT_GE(q_sol(joint_position_start_idx(0)), joint_lb(0));
+  EXPECT_LE(q_sol(joint_position_start_idx(0)), joint_ub(0));
 
   // Check that the link we were trying to position wound up where we expected.
   KinematicsCache<double> cache = model.doKinematics(q_sol);
@@ -111,3 +115,6 @@ GTEST_TEST(testIK, iiwaIK) {
       pos_end, model.relativeTransform(cache, 0, link_7_idx).translation(),
       pos_tol + 1e-6, MatrixCompareType::absolute));
 }
+
+}  // namespace
+}  // namespace drake

@@ -199,10 +199,10 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 // with vector block input parameters. For more information, see:
 // https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
-  std::string file_name =
+  std::string filename =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
-  drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get());
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(filename, tree.get());
 
   VectorX<double> q;
   VectorX<double> v;
@@ -223,11 +223,12 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
 // model in the table. Furthermore, it should be called "two_dof_robot" and
 // the model instance ID should be 1 (zero was assigned to the world model).
 TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
-  std::string file_name =
+  std::string filename =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+
   ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::urdf::AddModelInstanceFromURDF(file_name, tree.get());
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(filename, tree.get());
 
   const int kExpectedTableSize = 1;
   const int kExpectedModelInstanceId = 0;
@@ -236,6 +237,177 @@ TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
   EXPECT_NE(model_instance_id_table.find("two_dof_robot"),
       model_instance_id_table.end());
   EXPECT_EQ(model_instance_id_table["two_dof_robot"], kExpectedModelInstanceId);
+}
+
+// Verifies that each rigid body in @p body_list appears exactly once in
+// @p expected_names.
+void VerifyBodyListIsCorrect(std::vector<const RigidBody*> body_list,
+    std::vector<std::string> expected_names) {
+  for (const RigidBody* body : body_list) {
+    EXPECT_NE(std::find(expected_names.begin(), expected_names.end(),
+        body->get_name()), expected_names.end());
+    std::remove_if(expected_names.begin(), expected_names.end(),
+        [body](std::string name) {return name == body->get_name();});
+  }
+}
+
+// Tests the correct functionality of RigidBodyTree::FindModelInstanceBodies().
+TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
+  std::string filename_2dof_robot =
+      drake::GetDrakePath() +
+      "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+
+  std::string filename_3dof_robot =
+      drake::GetDrakePath() +
+      "/systems/plants/test/rigid_body_tree/three_dof_robot.urdf";
+
+  std::string filename_4dof_robot =
+      drake::GetDrakePath() +
+      "/systems/plants/test/rigid_body_tree/four_dof_robot.urdf";
+
+  ModelInstanceIdTable model_instance_id_table_1 =
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          filename_2dof_robot, tree.get());
+
+  ModelInstanceIdTable model_instance_id_table_2 =
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          filename_3dof_robot, tree.get());
+
+  ModelInstanceIdTable model_instance_id_table_3 =
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          filename_4dof_robot, tree.get());
+
+  const std::string kTwoDofModelName = "two_dof_robot";
+  const std::string kThreeDofModelName = "three_dof_robot";
+  const std::string kFourDofModelName = "four_dof_robot";
+
+  // Gets the model instance IDs.
+  int two_dof_model_instance_id =
+      model_instance_id_table_1.at(kTwoDofModelName);
+  int three_dof_model_instance_id =
+      model_instance_id_table_2.at(kThreeDofModelName);
+  int four_dof_model_instance_id =
+      model_instance_id_table_3.at(kFourDofModelName);
+
+  // Gets the rigid bodies belonging to each model instance.
+  std::vector<const RigidBody*> two_dof_robot_bodies =
+      tree->FindModelInstanceBodies(two_dof_model_instance_id);
+
+  std::vector<const RigidBody*> three_dof_robot_bodies =
+      tree->FindModelInstanceBodies(three_dof_model_instance_id);
+
+  std::vector<const RigidBody*> four_dof_robot_bodies =
+      tree->FindModelInstanceBodies(four_dof_model_instance_id);
+
+  // Verifies the lengths of the vectors of rigid bodies are correct.
+  EXPECT_EQ(two_dof_robot_bodies.size(), 3u);
+  EXPECT_EQ(three_dof_robot_bodies.size(), 4u);
+  EXPECT_EQ(four_dof_robot_bodies.size(), 5u);
+
+  // Verifies that the model instance IDs and model names are correct.
+  for (const RigidBody* body : two_dof_robot_bodies) {
+    EXPECT_EQ(body->get_model_instance_id(), two_dof_model_instance_id);
+    EXPECT_EQ(body->get_model_name(), kTwoDofModelName);
+  }
+
+  for (const RigidBody* body : three_dof_robot_bodies) {
+    EXPECT_EQ(body->get_model_instance_id(), three_dof_model_instance_id);
+    EXPECT_EQ(body->get_model_name(), kThreeDofModelName);
+  }
+
+  for (const RigidBody* body : four_dof_robot_bodies) {
+    EXPECT_EQ(body->get_model_instance_id(), four_dof_model_instance_id);
+    EXPECT_EQ(body->get_model_name(), kFourDofModelName);
+  }
+
+  // Verifies that the names of the RigidBodies fall into the expected range of
+  // values.
+  VerifyBodyListIsCorrect(two_dof_robot_bodies,
+      {"link1", "link2", "link3"});
+  VerifyBodyListIsCorrect(three_dof_robot_bodies,
+      {"link1", "link2", "link3", "link4"});
+  VerifyBodyListIsCorrect(four_dof_robot_bodies,
+      {"link1", "link2", "link3", "link4", "link5"});
+}
+
+// Verifies the correct functionality of RigidBodyTree::FindChildrenOfBody()
+// and RigidBodyTree::FindBaseBodies(). This also tests
+// RigidBodyTree::get_body() and RigidBodyTree::get_number_of_bodies().
+TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
+  // Adds kNumModelInstances instances of a particular URDF model to the tree.
+  // Stores the model instance IDs in model_instance_id_list.
+  const int kNumModelInstances = 10;
+
+  std::string file_name =
+      drake::GetDrakePath() +
+      "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+
+  std::vector<int> model_instance_id_list;
+
+  for (int i = 0; i < kNumModelInstances; ++i) {
+    ModelInstanceIdTable model_instance_id_table =
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(file_name, tree.get());
+    model_instance_id_list.push_back(model_instance_id_table["two_dof_robot"]);
+  }
+
+  // Obtains a list of base bodies and verifies that all of the bodies in this
+  // list are called "link1".
+  std::vector<int> base_body_list = tree->FindBaseBodies();
+  for (int index : base_body_list) {
+    EXPECT_EQ(tree->get_body(index).get_name(), "link1");
+  }
+
+  // Obtains a list of the world's children. Verifies that this list is
+  // identical to base_body_list.
+  std::vector<int> children_of_world_list =
+      tree->FindChildrenOfBody(RigidBodyTree::kWorldBodyIndex);
+
+  EXPECT_EQ(base_body_list.size(), children_of_world_list.size());
+
+  // There are three bodies per model instance plus one body for the world.
+  EXPECT_EQ(tree->get_number_of_bodies(), 3 * kNumModelInstances + 1);
+
+  for (int world_child_index : children_of_world_list) {
+    bool found_child_in_base_body_list = false;
+    for (int body_index : base_body_list) {
+      if (body_index == world_child_index) {
+        found_child_in_base_body_list = true;
+      }
+    }
+    EXPECT_TRUE(found_child_in_base_body_list);
+  }
+
+  // Obtains a list of base bodies that belong to a particular model instance.
+  // Verifies that this list has only one element, which is expected since, in
+  // this case, each model instance only has one connection to the world. Also
+  // verify that the name of this body is "link1".
+  std::vector<int> base_body_specific_id_list = tree->FindBaseBodies(
+      model_instance_id_list.at(0));
+
+  EXPECT_EQ(base_body_specific_id_list.size(), 1u);
+  EXPECT_EQ(tree->get_body(base_body_specific_id_list.at(0)).get_name(),
+      "link1");
+
+  // Obtains the children of the above "link1" body. Verify that there is only
+  // one child and it is called "link2".
+  std::vector<int> children_of_one_base_body = tree->FindChildrenOfBody(
+      base_body_specific_id_list.at(0));
+
+  EXPECT_EQ(children_of_one_base_body.size(), 1u);
+
+  EXPECT_EQ(tree->get_body(children_of_one_base_body.at(0)).get_name(),
+      "link2");
+
+  // Verifies that an empty list is returned if a non-matching model instance
+  // ID is provided.
+  int body_index = base_body_specific_id_list.at(0);
+  int non_matching_model_instance_id =
+      tree->get_body(body_index).get_model_instance_id() + 1;
+
+  std::vector<int> list_of_children_bad_instance_id =
+      tree->FindChildrenOfBody(body_index, non_matching_model_instance_id);
+
+  EXPECT_EQ(list_of_children_bad_instance_id.size(), 0u);
 }
 
 }  // namespace
