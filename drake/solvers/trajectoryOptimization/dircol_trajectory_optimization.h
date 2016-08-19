@@ -24,37 +24,16 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization
                                double trajectory_time_upper_bound);
 
   void AddDynamicConstraint(
-      const std::shared_ptr<Constraint>& constraint) override {
-    DRAKE_ASSERT(static_cast<int>(constraint->num_constraints()) ==
-                 num_states());
-
-    // For N-1 timesteps, add a constraint which depends on the knot
-    // value along with the state and input vectors at that knot and the
-    // next.
-    for (int i = 0; i < N() - 1; i++) {
-      opt_problem()->AddConstraint(
-          constraint,
-          {h_vars()(i), x_vars().segment(i * num_states(), num_states() * 2),
-           u_vars().segment(i * num_inputs(), num_inputs() * 2)});
-    }
-  }
+      const std::shared_ptr<Constraint>& constraint) override;
 
   void AddRunningCost(std::shared_ptr<Constraint> constraint) override;
 
-  /**
-   * Adds an integrated cost to all time steps.
-   *
-   * @param f A callable which meets the requirments of
-   * OptimizationProblem::AddCost().
-   */
   template <typename F>
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  AddRunningCost(F&& f) {
-    auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
-    AddRunningCost(c);
-    return c;
+  AddRunningCost(F&& f) override {
+    return DirectTrajectoryOptimization::AddRunningCost(f);
   }
 
   // TODO(sam.creasey) The MATLAB implementation of

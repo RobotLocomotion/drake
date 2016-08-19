@@ -44,8 +44,10 @@ class FinalCost {
 
 class MyDirectTrajOpt : public DirectTrajectoryOptimization {
  public:
-  MyDirectTrajOpt(int num_inputs, int num_states, int num_time_samples,
-                  double traj_time_lower_bound, double traj_time_upper_bound)
+  MyDirectTrajOpt(const int num_inputs, const int num_states,
+                  const int num_time_samples,
+                  const double traj_time_lower_bound,
+                  const double traj_time_upper_bound)
       : DirectTrajectoryOptimization(num_inputs, num_states, num_time_samples,
                                      traj_time_lower_bound,
                                      traj_time_upper_bound) {}

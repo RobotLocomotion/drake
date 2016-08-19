@@ -17,9 +17,9 @@ namespace solvers {
  * approaches to trajectory optimization.
  *
  * Subclasses must implement the two abstract methods:
- *  addRunningCost()
+ *  AddRunningCost()
  * and
- *  addDynamicConstraints()
+ *  AddDynamicConstraint()
  *
  * This class assumes that there are a fixed number (N) time steps/samples, and
  * that the trajectory is discretized into timesteps h (N-1 of these), state x
@@ -45,6 +45,22 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * and input as the elements of x when Eval is invoked.
    */
   virtual void AddRunningCost(std::shared_ptr<Constraint> constraint) = 0;
+
+  /**
+   * Adds an integrated cost to all time steps.
+   *
+   * @param f A callable which meets the requirments of
+   * OptimizationProblem::AddCost().
+   */
+  template <typename F>
+  typename std::enable_if<
+      !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
+      std::shared_ptr<Constraint>>::type
+  AddRunningCost(F&& f) {
+    auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
+    AddRunningCost(c);
+    return c;
+  }
 
   /**
    * Add upper and lower bounds on the input values.  Calling this
