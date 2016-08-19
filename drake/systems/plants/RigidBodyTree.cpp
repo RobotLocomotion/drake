@@ -1487,9 +1487,9 @@ RigidBodyTree::transformPointsJacobian(
   auto Jomega = J_geometric.template topRows<kSpaceDimension>();
   auto Jv = J_geometric.template bottomRows<kSpaceDimension>();
 
-  Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> JJ(
+  Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> J(
       points_base.size(), cols);  // TODO(tkoolen): size at compile time
-  JJ.setZero();
+  J.setZero();
 
   int row_start = 0;
   for (int i = 0; i < npoints; ++i) {
@@ -1497,15 +1497,15 @@ RigidBodyTree::transformPointsJacobian(
     int col = 0;
     for (std::vector<int>::iterator it = v_or_q_indices.begin();
          it != v_or_q_indices.end(); ++it) {
-      JJ.template block<kSpaceDimension, 1>(row_start, *it) = Jv.col(col);
-      JJ.template block<kSpaceDimension, 1>(row_start, *it).noalias() +=
+      J.template block<kSpaceDimension, 1>(row_start, *it) = Jv.col(col);
+      J.template block<kSpaceDimension, 1>(row_start, *it).noalias() +=
           Jomega.col(col).cross(points_base.col(i));
       col++;
     }
     row_start += kSpaceDimension;
   }
 
-  return JJ;
+  return J;
 }
 
 template <typename Scalar>
@@ -2126,34 +2126,34 @@ int RigidBodyTree::AddFloatingJoint(
 
   int num_floating_joints_added = 0;
 
-  for (auto index : link_indices) {
-    if (bodies[index]->get_parent() == nullptr) {
+  for (auto i : link_indices) {
+    if (bodies[i]->get_parent() == nullptr) {
       // The following code connects the parent-less link to the rigid body tree
       // using a floating joint.
-      bodies[index]->set_parent(weld_to_body);
+      bodies[i]->set_parent(weld_to_body);
 
       Eigen::Isometry3d transform_to_model = Eigen::Isometry3d::Identity();
       if (pose_map != nullptr &&
-          pose_map->find(bodies[index]->get_name()) != pose_map->end())
-        transform_to_model = pose_map->at(bodies[index]->get_name());
+          pose_map->find(bodies[i]->get_name()) != pose_map->end())
+        transform_to_model = pose_map->at(bodies[i]->get_name());
 
       switch (floating_base_type) {
         case DrakeJoint::FIXED: {
           std::unique_ptr<DrakeJoint> joint(new FixedJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          bodies[index]->setJoint(move(joint));
+          bodies[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         case DrakeJoint::ROLLPITCHYAW: {
           std::unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          bodies[index]->setJoint(move(joint));
+          bodies[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         case DrakeJoint::QUATERNION: {
           std::unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          bodies[index]->setJoint(move(joint));
+          bodies[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         default:
