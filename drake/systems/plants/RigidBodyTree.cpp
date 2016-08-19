@@ -1332,8 +1332,8 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 
   updateCompositeRigidBodyInertias(cache);
 
-  for (size_t ii = 0; ii < bodies.size(); ++ii) {
-    RigidBody& body_i = *bodies[ii];
+  for (size_t i = 0; i < bodies.size(); ++i) {
+    RigidBody& body_i = *bodies[i];
     if (body_i.hasParent()) {
       const auto& element_i = cache.getElement(body_i);
       int v_start_i = body_i.get_velocity_start_index();
@@ -1390,8 +1390,8 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
   TwistMatrix<Scalar> net_wrenches(kTwistSize, bodies.size());
   net_wrenches.col(0).setZero();
 
-  for (size_t ii = 0; ii < bodies.size(); ++ii) {
-    RigidBody& body = *bodies[ii];
+  for (size_t i = 0; i < bodies.size(); ++i) {
+    RigidBody& body = *bodies[i];
     if (body.hasParent()) {
       const auto& element = cache.getElement(body);
 
@@ -1403,18 +1403,18 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
       auto vdJoint = vd.middleRows(body.get_velocity_start_index(), nv_joint);
       spatial_accel.noalias() += element.motion_subspace_in_world * vdJoint;
 
-      net_wrenches.col(ii).noalias() = element.inertia_in_world * spatial_accel;
+      net_wrenches.col(i).noalias() = element.inertia_in_world * spatial_accel;
       if (include_velocity_terms) {
         auto I_times_twist =
             (element.inertia_in_world * element.twist_in_world).eval();
-        net_wrenches.col(ii).noalias() +=
+        net_wrenches.col(i).noalias() +=
             crossSpatialForce(element.twist_in_world, I_times_twist);
       }
 
-      auto f_ext_iterator = f_ext.find(bodies[ii].get());
+      auto f_ext_iterator = f_ext.find(bodies[i].get());
       if (f_ext_iterator != f_ext.end()) {
         const auto& f_ext_i = f_ext_iterator->second;
-        net_wrenches.col(ii) -=
+        net_wrenches.col(i) -=
             transformSpatialForce(element.transform_to_world, f_ext_i);
       }
     }
@@ -1422,14 +1422,14 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
   Matrix<Scalar, Eigen::Dynamic, 1> ret(num_velocities_, 1);
 
-  for (int ii = static_cast<int>(bodies.size()) - 1; ii >= 0; --ii) {
-    RigidBody& body = *bodies[ii];
+  for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; --i) {
+    RigidBody& body = *bodies[i];
     if (body.hasParent()) {
       const auto& element = cache.getElement(body);
       const auto& net_wrenches_const = net_wrenches;  // eliminates the need for
                                                       // another explicit
                                                       // instantiation
-      auto joint_wrench = net_wrenches_const.col(ii);
+      auto joint_wrench = net_wrenches_const.col(i);
       int nv_joint = body.getJoint().getNumVelocities();
       auto J_transpose = element.motion_subspace_in_world.transpose();
       ret.middleRows(body.get_velocity_start_index(), nv_joint).noalias() =
@@ -1492,14 +1492,14 @@ RigidBodyTree::transformPointsJacobian(
   JJ.setZero();
 
   int row_start = 0;
-  for (int ii = 0; ii < npoints; ++ii) {
+  for (int i = 0; i < npoints; ++i) {
     // translation part
     int col = 0;
     for (std::vector<int>::iterator it = v_or_q_indices.begin();
          it != v_or_q_indices.end(); ++it) {
       JJ.template block<kSpaceDimension, 1>(row_start, *it) = Jv.col(col);
       JJ.template block<kSpaceDimension, 1>(row_start, *it).noalias() +=
-          Jomega.col(col).cross(points_base.col(ii));
+          Jomega.col(col).cross(points_base.col(i));
       col++;
     }
     row_start += kSpaceDimension;
@@ -1567,9 +1567,9 @@ RigidBodyTree::forwardKinPositionGradient(const KinematicsCache<Scalar>& cache,
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(kSpaceDimension * npoints,
                                                      kSpaceDimension * npoints);
   ret.setZero();
-  for (int ii = 0; ii < npoints; ++ii) {
+  for (int i = 0; i < npoints; ++i) {
     ret.template block<kSpaceDimension, kSpaceDimension>(
-        kSpaceDimension * ii, kSpaceDimension * ii) = Tinv.linear();
+        kSpaceDimension * i, kSpaceDimension * i) = Tinv.linear();
   }
   return ret;
 }
@@ -1720,16 +1720,16 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   // indicate that no frame was found.
   int match_index = -1;
 
-  for (int ii = 0; ii < static_cast<int>(bodies.size()); ++ii) {
+  for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
     // Skips the current body if model_instance_id is not -1 and the body's
     // robot ID is not equal to the desired model instance ID.
     if (model_instance_id != -1
-        && model_instance_id != bodies[ii]->get_model_instance_id()) {
+        && model_instance_id != bodies[i]->get_model_instance_id()) {
       continue;
     }
 
     // Obtains a lower case version of the current body's model name.
-    string current_model_name = bodies[ii]->get_model_name();
+    string current_model_name = bodies[i]->get_model_name();
     std::transform(current_model_name.begin(), current_model_name.end(),
                    current_model_name.begin(), ::tolower);
 
@@ -1739,7 +1739,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
       continue;
 
     // Obtains a lower case version of the current body's name.
-    string current_body_name = bodies[ii]->get_name();
+    string current_body_name = bodies[i]->get_name();
     std::transform(current_body_name.begin(), current_body_name.end(),
                    current_body_name.begin(), ::tolower);
 
@@ -1748,7 +1748,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
     // an exception indicating there are multiple matches.
     if (current_body_name == body_name_lower) {
       if (match_index < 0) {
-        match_index = ii;
+        match_index = i;
       } else {
         throw std::logic_error(
             "RigidBodyTree::FindBody: ERROR: found multiple bodys named \"" +
@@ -1807,16 +1807,16 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   // indicate that no matching frame was found.
   int match_index = -1;
 
-  for (int ii = 0; ii < static_cast<int>(frames.size()); ++ii) {
+  for (int i = 0; i < static_cast<int>(frames.size()); ++i) {
     // Skips the current frame if model_instance_id is not -1 and the frame's
     // model instance ID is not equal to the desired model instance ID.
     if (model_instance_id != -1 && model_instance_id !=
-        frames[ii]->get_model_instance_id()) {
+        frames[i]->get_model_instance_id()) {
       continue;
     }
 
     // Obtains a lower case version of the current frame.
-    std::string current_frame_name = frames[ii]->get_name();
+    std::string current_frame_name = frames[i]->get_name();
     std::transform(current_frame_name.begin(), current_frame_name.end(),
                    current_frame_name.begin(), ::tolower);
 
@@ -1825,7 +1825,7 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
     // an exception indicating there are multiple matches.
     if (frame_name_lower == current_frame_name) {
       if (match_index < 0) {
-        match_index = ii;
+        match_index = i;
       } else {
         throw std::logic_error(
             "RigidBodyTree::findFrame: ERROR: Found multiple frames named \"" +
@@ -1879,17 +1879,17 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   // For each rigid body in this RigidBodyTree, the following code saves a
   // `true` or `false` in vector `name_match` based on whether the body's parent
   // joint's name matches @p joint_name.
-  for (size_t ii = 0; ii < bodies.size(); ++ii) {
-    if (bodies[ii]->hasParent()) {
+  for (size_t i = 0; i < bodies.size(); ++i) {
+    if (bodies[i]->hasParent()) {
       // Obtains the name of the rigid body's parent joint and then converts it
       // to be lower case.
-      std::string current_joint_name = bodies[ii]->getJoint().getName();
+      std::string current_joint_name = bodies[i]->getJoint().getName();
       std::transform(current_joint_name.begin(), current_joint_name.end(),
                      current_joint_name.begin(), ::tolower);
       if (current_joint_name == joint_name_lower) {
-        name_match[ii] = true;
+        name_match[i] = true;
       } else {
-        name_match[ii] = false;
+        name_match[i] = false;
       }
     }
   }
@@ -1897,10 +1897,10 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   // If model_instance_id is specified, go through the matching joints and
   // remove those that do not belong to the specified model instance.
   if (model_instance_id != -1) {
-    for (size_t ii = 0; ii < bodies.size(); ++ii) {
-      if (name_match[ii]) {
-        name_match[ii] =
-            (bodies[ii]->get_model_instance_id() == model_instance_id);
+    for (size_t i = 0; i < bodies.size(); ++i) {
+      if (name_match[i]) {
+        name_match[i] =
+            (bodies[i]->get_model_instance_id() == model_instance_id);
       }
     }
   }
@@ -1909,15 +1909,15 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   // if more than one match was found.
   size_t ind_match = 0;
   bool match_found = false;
-  for (size_t ii = 0; ii < bodies.size(); ++ii) {
-    if (name_match[ii]) {
+  for (size_t i = 0; i < bodies.size(); ++i) {
+    if (name_match[i]) {
       if (match_found) {
         throw std::runtime_error(
             "RigidBodyTree::FindChildBodyOfJoint: ERROR: Multiple joints found "
             " named \"" + joint_name + "\", model instance ID = " +
             std::to_string(model_instance_id) + ".");
       }
-      ind_match = ii;
+      ind_match = i;
       match_found = true;
     }
   }
@@ -1966,21 +1966,21 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
     const KinematicsCache<Scalar>& cache) const {
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
-  for (size_t ii = 0; ii < loops.size(); ++ii) {
+  for (size_t i = 0; i < loops.size(); ++i) {
     {  // position constraint
       auto ptA_in_B =
           transformPoints(cache, Vector3d::Zero(),
-                          loops[ii].frameA_->get_frame_index(),
-                          loops[ii].frameB_->get_frame_index());
-      ret.template middleRows<3>(6 * ii) = ptA_in_B;
+                          loops[i].frameA_->get_frame_index(),
+                          loops[i].frameB_->get_frame_index());
+      ret.template middleRows<3>(6 * i) = ptA_in_B;
     }
     {  // second position constraint (to constrain orientation)
       auto axis_A_end_in_B =
-          transformPoints(cache, loops[ii].axis_,
-                          loops[ii].frameA_->get_frame_index(),
-                          loops[ii].frameB_->get_frame_index());
-      ret.template middleRows<3>(6 * ii + 3) =
-          axis_A_end_in_B - loops[ii].axis_;
+          transformPoints(cache, loops[i].axis_,
+                          loops[i].frameA_->get_frame_index(),
+                          loops[i].frameB_->get_frame_index());
+      ret.template middleRows<3>(6 * i + 3) =
+          axis_A_end_in_B - loops[i].axis_;
     }
   }
   return ret;
@@ -1993,15 +1993,15 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
       6 * loops.size(), in_terms_of_qdot ? num_positions_ : num_velocities_);
 
-  for (size_t ii = 0; ii < loops.size(); ++ii) {
+  for (size_t i = 0; i < loops.size(); ++i) {
     // position constraint
-    ret.template middleRows<3>(6 * ii) = transformPointsJacobian(
-        cache, Vector3d::Zero(), loops[ii].frameA_->get_frame_index(),
-        loops[ii].frameB_->get_frame_index(), in_terms_of_qdot);
+    ret.template middleRows<3>(6 * i) = transformPointsJacobian(
+        cache, Vector3d::Zero(), loops[i].frameA_->get_frame_index(),
+        loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
     // second position constraint (to constrain orientation)
-    ret.template middleRows<3>(6 * ii + 3) = transformPointsJacobian(
-        cache, loops[ii].axis_, loops[ii].frameA_->get_frame_index(),
-        loops[ii].frameB_->get_frame_index(), in_terms_of_qdot);
+    ret.template middleRows<3>(6 * i + 3) = transformPointsJacobian(
+        cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
+        loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
   }
   return ret;
 }
@@ -2012,15 +2012,15 @@ RigidBodyTree::positionConstraintsJacDotTimesV(
     const KinematicsCache<Scalar>& cache) const {
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
 
-  for (size_t ii = 0; ii < loops.size(); ++ii) {
+  for (size_t i = 0; i < loops.size(); ++i) {
     // position constraint
-    ret.template middleRows<3>(6 * ii) = transformPointsJacobianDotTimesV(
-        cache, Vector3d::Zero(), loops[ii].frameA_->get_frame_index(),
-        loops[ii].frameB_->get_frame_index());
+    ret.template middleRows<3>(6 * i) = transformPointsJacobianDotTimesV(
+        cache, Vector3d::Zero(), loops[i].frameA_->get_frame_index(),
+        loops[i].frameB_->get_frame_index());
     // second position constraint (to constrain orientation)
-    ret.template middleRows<3>(6 * ii + 3) = transformPointsJacobianDotTimesV(
-        cache, loops[ii].axis_, loops[ii].frameA_->get_frame_index(),
-        loops[ii].frameB_->get_frame_index());
+    ret.template middleRows<3>(6 * i + 3) = transformPointsJacobianDotTimesV(
+        cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
+        loops[i].frameB_->get_frame_index());
   }
   return ret;
 }
@@ -2040,16 +2040,16 @@ void RigidBodyTree::jointLimitConstraints(MatrixBase<DerivedA> const& q,
 
   phi = VectorXd::Zero(numFiniteMin + numFiniteMax);
   J = MatrixXd::Zero(phi.size(), num_positions_);
-  for (size_t ii = 0; ii < numFiniteMin; ++ii) {
-    const int fi = finite_min_index[ii];
-    phi[ii] = q[fi] - joint_limit_min[fi];
-    J(ii, fi) = 1.0;
+  for (size_t i = 0; i < numFiniteMin; ++i) {
+    const int fi = finite_min_index[i];
+    phi[i] = q[fi] - joint_limit_min[fi];
+    J(i, fi) = 1.0;
   }
 
-  for (size_t ii = 0; ii < numFiniteMax; ++ii) {
-    const int fi = finite_max_index[ii];
-    phi[ii + numFiniteMin] = joint_limit_max[fi] - q[fi];
-    J(ii + numFiniteMin, fi) = -1.0;
+  for (size_t i = 0; i < numFiniteMax; ++i) {
+    const int fi = finite_max_index[i];
+    phi[i + numFiniteMin] = joint_limit_max[fi] - q[fi];
+    J(i + numFiniteMin, fi) = -1.0;
   }
 }
 
