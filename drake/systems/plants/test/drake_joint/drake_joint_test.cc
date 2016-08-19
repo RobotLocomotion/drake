@@ -16,6 +16,7 @@ namespace plants {
 namespace test {
 namespace {
 
+using drake::CompareMatrices;
 using drake::MatrixCompareType;
 using drake::parsers::ModelInstanceIdTable;
 
@@ -48,7 +49,7 @@ GTEST_TEST(DrakeJointTests, TestZeroOffset) {
 
   // Gets the body whose joint is the one we're looking for. This should return
   // the joint's child body.
-  RigidBody* body = rbs.getRigidBodyTree()->findJoint(kJointName,
+  RigidBody* body = rbs.getRigidBodyTree()->FindChildBodyOfJoint(kJointName,
       model_instance_id);
 
   EXPECT_EQ(body->get_name(), "link2");
@@ -61,7 +62,7 @@ GTEST_TEST(DrakeJointTests, TestZeroOffset) {
 
   // Since this joint's child body's frame and parent body's frame are
   // coincident, transform_to_parent_body should be identity.
-  EXPECT_TRUE(drake::util::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
      transform_to_parent_body.matrix(),
      Eigen::Isometry3d::Identity().matrix(),
      Eigen::NumTraits<double>::epsilon(),
@@ -109,7 +110,7 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
 
   // Gets the body whose joint is the one we're looking for. This should return
   // the joint's child body.
-  RigidBody* body = rbs.getRigidBodyTree()->findJoint(kJointName,
+  RigidBody* body = rbs.getRigidBodyTree()->FindChildBodyOfJoint(kJointName,
       model_instance_id);
 
   EXPECT_EQ(body->get_name(), "link2");
@@ -131,7 +132,7 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
       << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  EXPECT_TRUE(drake::util::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
      transform_to_parent_body.matrix(),
      expected_transform_to_parent_body.matrix(),
      Eigen::NumTraits<double>::epsilon(),
