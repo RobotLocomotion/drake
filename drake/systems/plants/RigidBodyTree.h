@@ -939,7 +939,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // Rigid body loops
   std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> loops;
 
-  // rigid body joint transmissions
+  // Rigid body joint transmissions
   std::vector<RigidBodyJointTransmission> joint_transmissions;
 
   drake::TwistVector<double> a_grav;

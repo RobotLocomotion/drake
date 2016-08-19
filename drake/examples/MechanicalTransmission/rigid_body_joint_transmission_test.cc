@@ -8,27 +8,29 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/trajectory_logger.h"
 
 using drake::RigidBodySystem;
 using Eigen::VectorXd;
 using drake::CompareMatrices;
 using drake::MatrixCompareType;
+using drake::parsers::ModelInstanceIdTable;
 
 namespace drake {
 namespace examples {
 namespace mechanical_transmission {
 namespace {
-/**
- * Loads mechanical_transmission.urdf, which says that
- * joint1_value = 0.5 * joint2_value + 1.0,
- * and returns the RigidBodySystem.
- */
-std::shared_ptr<RigidBodySystem> ParseMechanicalTransmission() {
+
+// Loads mechanical_transmission.urdf, which says that
+// joint1_value = 0.5 * joint2_value + 1.0,
+// and returns the RigidBodySystem.
+std::shared_ptr<RigidBodySystem> ParseMechanicalTransmission(
+    ModelInstanceIdTable& model_instance_id_table) {
   auto rigid_body_system = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  rigid_body_system->AddModelInstanceFromFile(
+  model_instance_id_table = rigid_body_system->AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/examples/MechanicalTransmission/mechanical_transmission.urdf",
       DrakeJoint::FIXED);
@@ -38,11 +40,9 @@ std::shared_ptr<RigidBodySystem> ParseMechanicalTransmission() {
   return rigid_body_system;
 }
 
-/**
- * Evaluates the mechanical joint transmission expression
- * joint1_value - 0.5 * joint2_value - 1.0, the
- * Jacobian J of the constraint, and the term Jdot * v.
- */
+// Evaluates the mechanical joint transmission expression
+// joint1_value - 0.5 * joint2_value - 1.0, the
+// Jacobian J of the constraint, and the term Jdot * v.
 void EvaluateMechanicalTransmissionConstraint(
     const std::shared_ptr<RigidBodyTree>& tree, double joint1_pos_val,
     double joint2_pos_val, double joint1_vel_val, double joint2_vel_val,
@@ -78,7 +78,8 @@ void EvaluateMechanicalTransmissionConstraint(
 // Tests if the mechanical joint transmission in the URDF is parsed correctly by
 // the URDF parser.
 GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
-  auto rigid_body_system = ParseMechanicalTransmission();
+  ModelInstanceIdTable model_instance_id_table;
+  auto rigid_body_system = ParseMechanicalTransmission(model_instance_id_table);
   auto tree = rigid_body_system->getRigidBodyTree();
 
   // Joints values [1.0, 0.0] should satisfy the constraint; check if the offset
@@ -154,7 +155,8 @@ GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
 //
 // The following check verifies that the above equation is true.
 GTEST_TEST(MechanicalTransmissionTest, MechanicalTransmissionSimulation) {
-  auto rigid_body_system = ParseMechanicalTransmission();
+  ModelInstanceIdTable model_instance_id_table;
+  auto rigid_body_system = ParseMechanicalTransmission(model_instance_id_table);
   auto tree = rigid_body_system->getRigidBodyTree();
   int nq = tree->number_of_positions();
   drake::SimulationOptions options;
@@ -216,13 +218,30 @@ GTEST_TEST(MechanicalTransmissionTest, MechanicalTransmissionSimulation) {
 // two identical model instances in the same rigid body tree.
 GTEST_TEST(MechanicalTransmissionTest,
            ParseMechanicalTransmissionMultipleModelInstance) {
-  auto rigid_body_system = ParseMechanicalTransmission();
-  rigid_body_system->AddModelInstanceFromFile(
+  ModelInstanceIdTable model_instance_id_table1;
+  auto rigid_body_system =
+      ParseMechanicalTransmission(model_instance_id_table1);
+  // Adds a second model instance to the rigid body tree
+  auto model_instance_id_table2 = rigid_body_system->AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/examples/MechanicalTransmission/mechanical_transmission.urdf",
       DrakeJoint::FIXED);
   auto tree = rigid_body_system->getRigidBodyTree();
 
+  int model_instance_id1 = model_instance_id_table1.begin()->second;
+  int model_instance_id2 = model_instance_id_table2.begin()->second;
+  int joint1_model0_vel_index =
+      tree->FindChildBodyOfJoint("joint1", model_instance_id1)
+          ->get_velocity_start_index();
+  int joint2_model0_vel_index =
+      tree->FindChildBodyOfJoint("joint2", model_instance_id1)
+          ->get_velocity_start_index();
+  int joint1_model1_vel_index =
+      tree->FindChildBodyOfJoint("joint1", model_instance_id2)
+          ->get_velocity_start_index();
+  int joint2_model1_vel_index =
+      tree->FindChildBodyOfJoint("joint2", model_instance_id2)
+          ->get_velocity_start_index();
   // Joint values (2.0,2.0,0.0,0.0) should satisfy the first joint transmission
   // constraint
   Eigen::VectorXd pos_cnstr;
@@ -231,10 +250,10 @@ GTEST_TEST(MechanicalTransmissionTest,
   bool in_terms_of_qdot = true;
   Eigen::Matrix<double, 2, 4> pos_jac_check;
   pos_jac_check.setZero();
-  pos_jac_check(0, 0) = 1.0;
-  pos_jac_check(0, 1) = -0.5;
-  pos_jac_check(1, 2) = 1.0;
-  pos_jac_check(1, 3) = -0.5;
+  pos_jac_check(0, joint1_model0_vel_index) = 1.0;
+  pos_jac_check(0, joint2_model0_vel_index) = -0.5;
+  pos_jac_check(1, joint1_model1_vel_index) = 1.0;
+  pos_jac_check(1, joint2_model1_vel_index) = -0.5;
   Eigen::Vector2d pos_jac_dot_times_v_check;
   pos_jac_dot_times_v_check.setZero();
   EvaluateMechanicalTransmissionConstraint(tree, 2.0, 2.0, 1.0, 0.5, pos_cnstr,
@@ -270,12 +289,14 @@ GTEST_TEST(MechanicalTransmissionTest,
 }
 
 // Tests if the joint transmission constraint is simulated correctly when we
-// have
-// two identical model instances in the same rigid body tree.
+// have two identical model instances in the same rigid body tree.
 GTEST_TEST(MechanicalTransmissionTest,
            SimulateMechanicalTransmissionMultipleModelInstance) {
-  auto rigid_body_system = ParseMechanicalTransmission();
-  rigid_body_system->AddModelInstanceFromFile(
+  ModelInstanceIdTable model_instance_id_table1;
+  auto rigid_body_system =
+      ParseMechanicalTransmission(model_instance_id_table1);
+  // add a second model instance to the rigid body system
+  auto model_instance_id_table2 = rigid_body_system->AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/examples/MechanicalTransmission/mechanical_transmission.urdf",
       DrakeJoint::FIXED);
@@ -299,22 +320,36 @@ GTEST_TEST(MechanicalTransmissionTest,
   VectorXd x0 = VectorXd::Zero(rigid_body_system->getNumStates());
   // Determines the indices within the `RigidBodySystem's` output vector
   // containing the positions and velocities of the two joints in the URDF.
+  int model_instance_id1 = model_instance_id_table1.begin()->second;
+  int model_instance_id2 = model_instance_id_table2.begin()->second;
   int joint1_model0_pos_index =
-      tree->FindChildBodyOfJoint("joint1", 0)->get_position_start_index();
+      tree->FindChildBodyOfJoint("joint1", model_instance_id1)
+          ->get_position_start_index();
   int joint2_model0_pos_index =
-      tree->FindChildBodyOfJoint("joint2", 0)->get_position_start_index();
+      tree->FindChildBodyOfJoint("joint2", model_instance_id1)
+          ->get_position_start_index();
   int joint1_model0_vel_index =
-      nq + tree->FindChildBodyOfJoint("joint1", 0)->get_velocity_start_index();
+      nq +
+      tree->FindChildBodyOfJoint("joint1", model_instance_id1)
+          ->get_velocity_start_index();
   int joint2_model0_vel_index =
-      nq + tree->FindChildBodyOfJoint("joint2", 0)->get_velocity_start_index();
+      nq +
+      tree->FindChildBodyOfJoint("joint2", model_instance_id1)
+          ->get_velocity_start_index();
   int joint1_model1_pos_index =
-      tree->FindChildBodyOfJoint("joint1", 1)->get_position_start_index();
+      tree->FindChildBodyOfJoint("joint1", model_instance_id2)
+          ->get_position_start_index();
   int joint2_model1_pos_index =
-      tree->FindChildBodyOfJoint("joint2", 1)->get_position_start_index();
+      tree->FindChildBodyOfJoint("joint2", model_instance_id2)
+          ->get_position_start_index();
   int joint1_model1_vel_index =
-      nq + tree->FindChildBodyOfJoint("joint1", 1)->get_velocity_start_index();
+      nq +
+      tree->FindChildBodyOfJoint("joint1", model_instance_id2)
+          ->get_velocity_start_index();
   int joint2_model1_vel_index =
-      nq + tree->FindChildBodyOfJoint("joint2", 1)->get_velocity_start_index();
+      nq +
+      tree->FindChildBodyOfJoint("joint2", model_instance_id2)
+          ->get_velocity_start_index();
 
   // Simulates the system with initial joint values (2.0,2.0,3.0,4.0) and
   // initial joint velocities (0.1,0.2,0.0,0.0). The trajectory should always

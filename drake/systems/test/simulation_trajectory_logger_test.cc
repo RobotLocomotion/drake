@@ -39,10 +39,10 @@ GTEST_TEST(TestTrajectoryLogger, TestTrajectoryLogger) {
     EXPECT_NEAR(traj.value[i](0), traj_val[i](0), 1E-5);
     EXPECT_NEAR(traj.value[i](1), traj_val[i](1), 1E-5);
   }
-  EXPECT_FALSE(traj.time.empty());
-  EXPECT_FALSE(traj.value.empty());
 
   // Tests clearing the trajectory.
+  EXPECT_FALSE(traj.time.empty());
+  EXPECT_FALSE(traj.value.empty());
   traj_logger->clearTrajectory();
   traj = traj_logger->getTrajectory();
   EXPECT_TRUE(traj.time.empty());
