@@ -344,7 +344,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
 
   std::vector<int> model_instance_id_list;
 
-  for (int ii = 0; ii < kNumModelInstances; ++ii) {
+  for (int i = 0; i < kNumModelInstances; ++i) {
     ModelInstanceIdTable model_instance_id_table =
       drake::parsers::urdf::AddModelInstanceFromUrdfFile(file_name, tree.get());
     model_instance_id_list.push_back(model_instance_id_table["two_dof_robot"]);
@@ -364,7 +364,8 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
 
   EXPECT_EQ(base_body_list.size(), children_of_world_list.size());
 
-  EXPECT_EQ(tree->get_number_of_bodies(), 3 * kNumModelInstances);
+  // There are three bodies per model instance plus one body for the world.
+  EXPECT_EQ(tree->get_number_of_bodies(), 3 * kNumModelInstances + 1);
 
   for (int world_child_index : children_of_world_list) {
     bool found_child_in_base_body_list = false;

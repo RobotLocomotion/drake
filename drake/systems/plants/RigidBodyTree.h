@@ -633,7 +633,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   /**
    * Obtains a vector of indexes of the bodies that are directly attached to the
-   * world via any type of joint.
+   * world via any type of joint.  This method has a time complexity of `O(N)`
+   * where `N` is the number of bodies in the tree, which can be determined by
+   * calling RigidBodyTree::get_number_of_bodies().
    */
   std::vector<int> FindBaseBodies(int model_instance_id = -1) const;
 
@@ -662,7 +664,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * Returns a vector of indexes of bodies that are the children of the body at
    * index @p parent_body_index. The resulting list can be further filtered to
-   * be bodies that belong to model instance ID @p model_instance_id.
+   * be bodies that belong to model instance ID @p model_instance_id. This
+   * method has a time complexity of `O(N)` where `N` is the number of bodies
+   * in the tree, which can be determined by calling
+   * RigidBodyTree::get_number_of_bodies().
    */
   std::vector<int> FindChildrenOfBody(int parent_body_index,
       int model_instance_id = -1) const;
@@ -748,12 +753,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * Returns the body at index @p body_index. Parameter @p body_index must be
    * between zero and the number of bodies in this tree, which can be determined
-   * by calling RigidBodyTree::get_number_of_bodies().
+   * by calling RigidBodyTree::get_number_of_bodies(). Note that the body at
+   * index 0 represents the world.
    */
   const RigidBody& get_body(int body_index) const;
 
   /**
-   * Returns the number of bodies in this tree.
+   * Returns the number of bodies in this tree. This includes the one body that
+   * represents the world.
    */
   int get_number_of_bodies() const;
 

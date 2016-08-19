@@ -1874,7 +1874,7 @@ std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
   const RigidBody& parent_body = get_body(parent_body_index);
 
   // Checks every rigid body in this tree. If the rigid body is a child of
-  // parent_body and its model instance id matches model_instance_id, save its
+  // parent_body and its model instance ID matches model_instance_id, save its
   // index in the result vector.
   std::vector<int> children_indexes;
   for (int ii = 0; ii < static_cast<int>(bodies.size()); ++ii) {
