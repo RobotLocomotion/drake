@@ -61,10 +61,10 @@ const set<int> RigidBodyTree::default_model_instance_id_set = {0};
 const char* const RigidBodyTree::kWorldName = "world";
 
 template <typename T>
-void getFiniteIndexes(T const& vv, std::vector<int>& finite_indexes) {
+void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
   finite_indexes.clear();
-  for (int i = 0; i < vv.size(); ++i) {
-    if (std::isfinite(static_cast<double>(vv[i]))) {
+  for (int i = 0; i < v.size(); ++i) {
+    if (std::isfinite(static_cast<double>(v[i]))) {
       finite_indexes.push_back(i);
     }
   }
@@ -217,7 +217,7 @@ void RigidBodyTree::compile(void) {
   B = MatrixXd::Zero(num_velocities_, actuators.size());
   for (size_t ia = 0; ia < actuators.size(); ++ia) {
     for (int i = 0; i < actuators[ia].body_->getJoint().getNumVelocities();
-          i++) {
+        ++i) {
       B(actuators[ia].body_->get_velocity_start_index() + i, ia) =
           actuators[ia].reduction_;
     }
