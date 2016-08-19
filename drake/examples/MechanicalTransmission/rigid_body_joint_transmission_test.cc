@@ -75,7 +75,8 @@ void EvaluateMechanicalTransmissionConstraint(
   return;
 }
 
-// Tests the ability to parse a URDF mechanical transmission specification.
+// Tests if the mechanical joint transmission in the URDF is parsed correctly by
+// the URDF parser
 GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
   auto rigid_body_system = ParseMechanicalTransmission();
   auto tree = rigid_body_system->getRigidBodyTree();
@@ -266,7 +267,7 @@ GTEST_TEST(MechanicalTransmissionTest,
                               MatrixCompareType::absolute));
 }
 
-// Test if the joint transmission constraint is simulated correctly when we have
+// Tests if the joint transmission constraint is simulated correctly when we have
 // two identical model instances in the same rigid body tree.
 GTEST_TEST(MechanicalTransmissionTest,
            SimulateMechanicalTransmissionMultipleModelInstance) {
