@@ -8,7 +8,7 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/common/eigen_matrix_compare.h"
 
 namespace drake {
 namespace systems {
@@ -16,7 +16,7 @@ namespace plants {
 namespace test {
 namespace {
 
-using drake::util::MatrixCompareType;
+using drake::MatrixCompareType;
 using drake::parsers::ModelInstanceIdTable;
 
 GTEST_TEST(DrakeJointTests, TestZeroOffset) {
