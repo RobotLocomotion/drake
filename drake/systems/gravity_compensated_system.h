@@ -36,7 +36,6 @@ class GravityCompensatedSystem {
   typedef std::shared_ptr<RigidBodySystem> RigidBodySystemPtr;
   typedef std::shared_ptr<RigidBodyTree> RigidBodyTreePtr;
 
-  template <typename DerivedA, typename DerivedB>
   GravityCompensatedSystem(const RigidBodySystemPtr& sys)
       : sys_(sys){
     sys_tree_ = sys->getRigidBodyTree();
@@ -46,7 +45,7 @@ class GravityCompensatedSystem {
   StateVector<ScalarType> dynamics(const ScalarType& t,
                                    const StateVector<ScalarType>& x,
                                    const InputVector<ScalarType>& u) const {
-    size_t num_DoF = sys_->;
+    size_t num_DoF = sys_->number_of_positions();
     KinematicsCache<double> cache_ = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
     eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
@@ -64,7 +63,7 @@ class GravityCompensatedSystem {
   OutputVector<ScalarType> output(const ScalarType& t,
                                   const StateVector<ScalarType>& x,
                                   const InputVector<ScalarType>& u) const {
-    size_t num_DoF = Kp_.cols();
+    size_t num_DoF = sys_->number_of_positions();
     KinematicsCache<double> cache_ = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
     eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
