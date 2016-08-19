@@ -124,6 +124,7 @@ int DoMain(int argc, const char* argv[]) {
   for (int ii = 0; ii < num_vehicles; ++ii) {
     const std::string description_parameter_name =
         std::string("car_description_") + std::to_string(ii + 1) + "_drake";
+
     std::string model_description = GetROSParameter<std::string>(node_handle,
         description_parameter_name);
 
@@ -153,7 +154,7 @@ int DoMain(int argc, const char* argv[]) {
             xyz,
             rpy));
     ModelInstanceIdTable model_instance_id_table =
-        rigid_body_sys->AddModelInstanceFromDescription(model_description,
+        rigid_body_sys->AddModelInstancesFromString(model_description,
             DrakeJoint::QUATERNION, weld_to_frame);
 
     // The model description contains a single model. Get its model instance ID,
@@ -181,7 +182,7 @@ int DoMain(int argc, const char* argv[]) {
   std::string world_description = GetROSParameter<std::string>(node_handle,
       "world_description");
   ModelInstanceIdTable world_instance_id_table =
-      rigid_body_sys->AddModelInstanceFromDescription(world_description,
+      rigid_body_sys->AddModelInstancesFromString(world_description,
           DrakeJoint::FIXED);
   int world_instance_id = world_instance_id_table[kWorldModelName];
   model_instance_name_table[world_instance_id] = kWorldModelName;
