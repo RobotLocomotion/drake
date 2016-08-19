@@ -80,7 +80,7 @@ class HistorySystem {
 };
 
 GTEST_TEST(SimpleCarTest, ZerosIn) {
-  SimpleCar dut;
+  SimpleCar1 dut;
   SimpleCarState1<double> state_zeros;
   DrivingCommand1<double> input_zeros;
 
@@ -96,7 +96,7 @@ GTEST_TEST(SimpleCarTest, Accelerating) {
   DrivingCommand1<double> max_throttle;
   max_throttle.set_throttle(1.);
 
-  auto car = std::make_shared<SimpleCar>();
+  auto car = std::make_shared<SimpleCar1>();
   SimpleCarState1<double> initial_state;
   auto history_system =
       std::make_shared<HistorySystem<SimpleCarState1>>(initial_state);
@@ -127,22 +127,22 @@ GTEST_TEST(SimpleCarTest, Accelerating) {
   // These clauses are deliberately broad; we don't care so much about the
   // exact values, but rather that we got somewhere.
   EXPECT_NEAR(history_system->states_[max_time].x(),
-              SimpleCar::kDefaultConfig.max_velocity *
+              SimpleCar1::kDefaultConfig.max_velocity *
               (end_time - start_time), 3e2);
   EXPECT_GT(history_system->states_[max_time].x(),
-            SimpleCar::kDefaultConfig.max_velocity *
+            SimpleCar1::kDefaultConfig.max_velocity *
             (end_time - start_time) / 2);
   EXPECT_EQ(history_system->states_[max_time].y(), 0.);
   EXPECT_EQ(history_system->states_[max_time].heading(), 0.);
   EXPECT_NEAR(history_system->states_[max_time].velocity(),
-              SimpleCar::kDefaultConfig.max_velocity, 1e-5);
+              SimpleCar1::kDefaultConfig.max_velocity, 1e-5);
 }
 
 GTEST_TEST(SimpleCarTest, Braking) {
   DrivingCommand1<double> max_brake;
   max_brake.set_brake(1.);
 
-  auto car = std::make_shared<SimpleCar>();
+  auto car = std::make_shared<SimpleCar1>();
   SimpleCarState1<double> initial_state;
   double speed = 10.;
   initial_state.set_velocity(speed);
@@ -184,7 +184,7 @@ GTEST_TEST(SimpleCarTest, Braking) {
 GTEST_TEST(SimpleCarTest, Steering) {
   DrivingCommand1<double> left(Eigen::Vector3d(M_PI / 2, 0., 0.));
 
-  auto car = std::make_shared<SimpleCar>();
+  auto car = std::make_shared<SimpleCar1>();
   SimpleCarState1<double> initial_state;
   double speed = 40.;
   initial_state.set_velocity(speed);
@@ -215,8 +215,8 @@ GTEST_TEST(SimpleCarTest, Steering) {
   EXPECT_EQ(history_system->states_[start_time].velocity(), speed);
 
   double min_turn_radius =
-      SimpleCar::kDefaultConfig.wheelbase /
-      std::tan(SimpleCar::kDefaultConfig.max_abs_steering_angle);
+      SimpleCar1::kDefaultConfig.wheelbase /
+      std::tan(SimpleCar1::kDefaultConfig.max_abs_steering_angle);
   double turn_epsilon = min_turn_radius * 1e-3;
 
   for (const auto& pair : history_system->states_) {
