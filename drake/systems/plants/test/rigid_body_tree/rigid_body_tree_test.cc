@@ -384,7 +384,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   std::vector<int> base_body_specific_id_list = tree->FindBaseBodies(
       model_instance_id_list.at(0));
 
-  EXPECT_EQ(base_body_specific_id_list.size(), 1);
+  EXPECT_EQ(base_body_specific_id_list.size(), 1u);
   EXPECT_EQ(tree->get_body(base_body_specific_id_list.at(0)).get_name(),
       "link1");
 
@@ -393,7 +393,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   std::vector<int> children_of_one_base_body = tree->FindChildrenOfBody(
       base_body_specific_id_list.at(0));
 
-  EXPECT_EQ(children_of_one_base_body.size(), 1);
+  EXPECT_EQ(children_of_one_base_body.size(), 1u);
 
   EXPECT_EQ(tree->get_body(children_of_one_base_body.at(0)).get_name(),
       "link2");
@@ -407,7 +407,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   std::vector<int> list_of_children_bad_instance_id =
       tree->FindChildrenOfBody(body_index, non_matching_model_instance_id);
 
-  EXPECT_EQ(list_of_children_bad_instance_id.size(), 0);
+  EXPECT_EQ(list_of_children_bad_instance_id.size(), 0u);
 }
 
 }  // namespace
