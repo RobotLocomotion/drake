@@ -10,8 +10,8 @@ Panels:
         - /Prius 31
         - /Prius 41
         - /Prius 51
-      Splitter Ratio: 0.822674
-    Tree Height: 581
+      Splitter Ratio: 0.588983
+    Tree Height: 831
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -58,16 +58,6 @@ Visualization Manager:
       Name: Axes
       Radius: 0.05
       Reference Frame: world
-      Value: true
-    - Angle Tolerance: 0.1
-      Class: rviz/Odometry
-      Color: 255; 25; 0
-      Enabled: true
-      Keep: 1000
-      Length: 1
-      Name: Odometry
-      Position Tolerance: 0.1
-      Topic: /drake/prius_1/odometry
       Value: true
     - Class: rviz/TF
       Enabled: true
@@ -539,8 +529,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.585927
-            Min Value: -0.0226953
+            Max Value: 0.58577
+            Min Value: -0.0226698
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -569,8 +559,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.48094
-            Min Value: 0.472168
+            Max Value: 0.480639
+            Min Value: 0.472475
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -599,8 +589,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.48043
-            Min Value: 0.447807
+            Max Value: 0.48012
+            Min Value: 0.448116
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -629,8 +619,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.479892
-            Min Value: 0.447799
+            Max Value: 0.480206
+            Min Value: 0.448157
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -741,6 +731,16 @@ Visualization Manager:
           Update Interval: 0
           Value: true
           Visual Enabled: true
+        - Angle Tolerance: 0.1
+          Class: rviz/Odometry
+          Color: 255; 25; 0
+          Enabled: true
+          Keep: 1000
+          Length: 1
+          Name: Odometry - Prius 1
+          Position Tolerance: 0.1
+          Topic: /drake/Prius_1/odometry
+          Value: true
       Enabled: true
       Name: Prius 1
     - Class: rviz/Group
@@ -748,8 +748,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.00219728
-            Min Value: -0.0165803
+            Max Value: 0.00219629
+            Min Value: -0.016585
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -808,8 +808,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.456064
-            Min Value: 0.43564
+            Max Value: 0.45596
+            Min Value: 0.435416
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -838,8 +838,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.467934
-            Min Value: 0.435572
+            Max Value: 0.467708
+            Min Value: 0.435307
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -950,6 +950,16 @@ Visualization Manager:
           Update Interval: 0
           Value: true
           Visual Enabled: true
+        - Angle Tolerance: 0.1
+          Class: rviz/Odometry
+          Color: 255; 25; 0
+          Enabled: true
+          Keep: 1000
+          Length: 1
+          Name: Odometry - Prius 2
+          Position Tolerance: 0.1
+          Topic: /drake/Prius_2/odometry
+          Value: true
       Enabled: true
       Name: Prius 2
     - Class: rviz/Group
@@ -957,8 +967,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.585809
-            Min Value: -0.0165802
+            Max Value: 0.585918
+            Min Value: -0.0165851
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -987,8 +997,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.492542
-            Min Value: 0.472357
+            Max Value: 0.492558
+            Min Value: 0.472213
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1047,8 +1057,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.491779
-            Min Value: 0.459888
+            Max Value: 0.491511
+            Min Value: 0.459617
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1159,6 +1169,16 @@ Visualization Manager:
           Update Interval: 0
           Value: true
           Visual Enabled: true
+        - Angle Tolerance: 0.1
+          Class: rviz/Odometry
+          Color: 255; 25; 0
+          Enabled: true
+          Keep: 1000
+          Length: 1
+          Name: Odometry - Prius 3
+          Position Tolerance: 0.1
+          Topic: /drake/Prius_3/odometry
+          Value: true
       Enabled: true
       Name: Prius 3
     - Class: rviz/Group
@@ -1166,8 +1186,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.579898
-            Min Value: -0.0283553
+            Max Value: 0.579204
+            Min Value: -0.0283484
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1196,8 +1216,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.493486
-            Min Value: 0.472858
+            Max Value: 0.493343
+            Min Value: 0.4728
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1226,8 +1246,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.492994
-            Min Value: 0.461025
+            Max Value: 0.49285
+            Min Value: 0.460903
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1368,6 +1388,16 @@ Visualization Manager:
           Update Interval: 0
           Value: true
           Visual Enabled: true
+        - Angle Tolerance: 0.1
+          Class: rviz/Odometry
+          Color: 255; 25; 0
+          Enabled: true
+          Keep: 1000
+          Length: 1
+          Name: Odometry - Prius 4
+          Position Tolerance: 0.1
+          Topic: /drake/Prius_4/odometry
+          Value: true
       Enabled: true
       Name: Prius 4
     - Class: rviz/Group
@@ -1375,8 +1405,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.00213916
-            Min Value: -0.028333
+            Max Value: 0.00213842
+            Min Value: -0.0283484
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1435,8 +1465,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.468577
-            Min Value: 0.4363
+            Max Value: 0.468912
+            Min Value: 0.436588
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1465,8 +1495,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.45638
-            Min Value: 0.436291
+            Max Value: 0.456565
+            Min Value: 0.436578
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1577,6 +1607,16 @@ Visualization Manager:
           Update Interval: 0
           Value: true
           Visual Enabled: true
+        - Angle Tolerance: 0.1
+          Class: rviz/Odometry
+          Color: 255; 25; 0
+          Enabled: true
+          Keep: 1000
+          Length: 1
+          Name: Odometry - Prius 5
+          Position Tolerance: 0.1
+          Topic: /drake/Prius_5/odometry
+          Value: true
       Enabled: true
       Name: Prius 5
   Enabled: true
@@ -1615,18 +1655,18 @@ Visualization Manager:
         Z: 0.630681
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.330927
+      Pitch: 0.465927
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.556676
+      Yaw: 0.591676
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 876
+  Height: 1126
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000016a000002d4fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000002d4000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000005ff0000004cfc0100000002fb0000000800540069006d00650100000000000005ff000002f600fffffffb0000000800540069006d006501000000000000045000000000000000000000048f000002d400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001ea000003cefc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000003ce000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007680000004cfc0100000002fb0000000800540069006d0065010000000000000768000002f600fffffffb0000000800540069006d0065010000000000000450000000000000000000000578000003ce00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -1635,6 +1675,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1535
-  X: 65
-  Y: 24
+  Width: 1896
+  X: 231
+  Y: 341

@@ -38,6 +38,7 @@ using drake::ros::systems::DrakeRosTfPublisher;
 using drake::ros::systems::run_ros_vehicle_sim;
 using drake::ros::systems::SensorPublisherJointState;
 using drake::ros::systems::SensorPublisherLidar;
+using drake::ros::systems::SensorPublisherOdometry;
 
 /**
  * Sits in a loop periodically publishing an identity transform for the
@@ -194,13 +195,6 @@ int DoMain(int argc, const char* argv[]) {
   // https://github.com/RobotLocomotion/drake/issues/3081
   std::thread worldTfPublisherThread(WorldTfPublisher, num_vehicles);
 
-  // std::cout << "==============================================" << std::endl;
-  // for(auto it = sim_instance_ids.cbegin(); it != sim_instance_ids.cend();
-  //     ++it) {
-  //   std::cout << it->first << " " << it->second << "\n";
-  // }
-  // std::cout << std::endl;
-
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
   // Initializes and cascades all of the other systems.
@@ -213,9 +207,9 @@ int DoMain(int argc, const char* argv[]) {
       SensorPublisherLidar<RigidBodySystem::StateVector>>(
           rigid_body_sys, model_instance_name_table);
 
-  // auto odometry_publisher = std::make_shared<
-  //     ::drake::ros::SensorPublisherOdometry<RigidBodySystem::StateVector>>(
-  //     rigid_body_sys);
+  auto odometry_publisher = std::make_shared<
+      SensorPublisherOdometry<RigidBodySystem::StateVector>>(
+          rigid_body_sys, model_instance_name_table);
 
   auto tf_publisher = std::make_shared<
       DrakeRosTfPublisher<RigidBodySystem::StateVector>>(
@@ -229,10 +223,12 @@ int DoMain(int argc, const char* argv[]) {
       cascade(
         cascade(
           cascade(
-            vehicle_sys,
-            tf_publisher),
-          joint_state_publisher),
-        lidar_publisher);
+            cascade(
+              vehicle_sys,
+              tf_publisher),
+            joint_state_publisher),
+          lidar_publisher),
+        odometry_publisher);
 
   // auto sys =
   //     cascade(

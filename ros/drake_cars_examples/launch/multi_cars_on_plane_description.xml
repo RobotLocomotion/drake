@@ -23,7 +23,7 @@ Loads five Prius models and one world model onto the ROS parameter server.
   <param name="car_description_1_drake" textfile="$(find drake)/drake/examples/Cars/models/prius/prius_with_lidar.sdf"/>
   <param name="car_description_1_drake_x"     type="double" value="0.0" />
   <param name="car_description_1_drake_y"     type="double" value="0.0" />
-  <param name="car_description_1_drake_z"     type="double" value="1.2" />
+  <param name="car_description_1_drake_z"     type="double" value="0.2" />
   <param name="car_description_1_drake_roll"  type="double" value="0.0" />
   <param name="car_description_1_drake_pitch" type="double" value="0.0" />
   <param name="car_description_1_drake_yaw"   type="double" value="0.0" />
@@ -31,7 +31,7 @@ Loads five Prius models and one world model onto the ROS parameter server.
   <param name="car_description_2_drake" textfile="$(find drake)/drake/examples/Cars/models/prius/prius_with_lidar.sdf"/>
   <param name="car_description_2_drake_x"     type="double" value="5.0" />
   <param name="car_description_2_drake_y"     type="double" value="5.0" />
-  <param name="car_description_2_drake_z"     type="double" value="1.2" />
+  <param name="car_description_2_drake_z"     type="double" value="0.2" />
   <param name="car_description_2_drake_roll"  type="double" value="0.0" />
   <param name="car_description_2_drake_pitch" type="double" value="0.0" />
   <param name="car_description_2_drake_yaw"   type="double" value="0.0" />
@@ -39,7 +39,7 @@ Loads five Prius models and one world model onto the ROS parameter server.
   <param name="car_description_3_drake" textfile="$(find drake)/drake/examples/Cars/models/prius/prius_with_lidar.sdf"/>
   <param name="car_description_3_drake_x"     type="double" value="-5.0" />
   <param name="car_description_3_drake_y"     type="double" value="5.0" />
-  <param name="car_description_3_drake_z"     type="double" value="1.2" />
+  <param name="car_description_3_drake_z"     type="double" value="0.2" />
   <param name="car_description_3_drake_roll"  type="double" value="0.0" />
   <param name="car_description_3_drake_pitch" type="double" value="0.0" />
   <param name="car_description_3_drake_yaw"   type="double" value="0.0" />
@@ -47,7 +47,7 @@ Loads five Prius models and one world model onto the ROS parameter server.
   <param name="car_description_4_drake" textfile="$(find drake)/drake/examples/Cars/models/prius/prius_with_lidar.sdf"/>
   <param name="car_description_4_drake_x"     type="double" value="-5.0" />
   <param name="car_description_4_drake_y"     type="double" value="-5.0" />
-  <param name="car_description_4_drake_z"     type="double" value="1.2" />
+  <param name="car_description_4_drake_z"     type="double" value="0.2" />
   <param name="car_description_4_drake_roll"  type="double" value="0.0" />
   <param name="car_description_4_drake_pitch" type="double" value="0.0" />
   <param name="car_description_4_drake_yaw"   type="double" value="0.0" />
@@ -55,7 +55,7 @@ Loads five Prius models and one world model onto the ROS parameter server.
   <param name="car_description_5_drake" textfile="$(find drake)/drake/examples/Cars/models/prius/prius_with_lidar.sdf"/>
   <param name="car_description_5_drake_x"     type="double" value="5.0" />
   <param name="car_description_5_drake_y"     type="double" value="-5.0" />
-  <param name="car_description_5_drake_z"     type="double" value="1.2" />
+  <param name="car_description_5_drake_z"     type="double" value="0.2" />
   <param name="car_description_5_drake_roll"  type="double" value="0.0" />
   <param name="car_description_5_drake_pitch" type="double" value="0.0" />
   <param name="car_description_5_drake_yaw"   type="double" value="0.0" />
