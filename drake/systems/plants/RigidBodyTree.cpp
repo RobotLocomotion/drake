@@ -21,7 +21,6 @@
 #include <fstream>
 #include <iostream>
 
-using namespace std;
 using namespace Eigen;
 
 using drake::AutoDiffUpTo73d;
@@ -40,6 +39,23 @@ using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::Gradient;
+
+using std::allocator;
+using std::cerr;
+using std::cout;
+using std::equal_to;
+using std::hash;
+using std::less;
+using std::map;
+using std::ofstream;
+using std::pair;
+using std::runtime_error;
+using std::set;
+using std::shared_ptr;
+using std::string;
+using std::unordered_map;
+using std::vector;
+using std::endl;
 
 const set<int> RigidBodyTree::default_model_instance_id_set = {0};
 const char* const RigidBodyTree::kWorldName = "world";
@@ -61,12 +77,12 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
 }
 
 RigidBodyTree::RigidBodyTree(
-    const std::string& urdf_filename,
+    const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type)
     : RigidBodyTree() {
-  // Adds the model defined in urdf_filename to this tree.
-  drake::parsers::urdf::AddModelInstanceFromURDF(
-      urdf_filename, floating_base_type, this);
+  // Adds the model defined in filename to this tree.
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      filename, floating_base_type, this);
 }
 
 RigidBodyTree::RigidBodyTree(void)
@@ -75,13 +91,14 @@ RigidBodyTree::RigidBodyTree(void)
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   // Adds the rigid body representing the world. It has model instance ID 0.
-  std::unique_ptr<RigidBody> b(new RigidBody());
-  b->set_name(RigidBodyTree::kWorldName);
+  std::unique_ptr<RigidBody> world_body(new RigidBody());
+  world_body->set_name(RigidBodyTree::kWorldName);
+  world_body->set_model_name(RigidBodyTree::kWorldName);
 
   // TODO(liang.fok): Assign the world body a unique model instance ID of zero.
   // See: https://github.com/RobotLocomotion/drake/issues/3088
 
-  bodies.push_back(std::move(b));
+  bodies.push_back(std::move(world_body));
 }
 
 RigidBodyTree::~RigidBodyTree(void) {}
@@ -1099,12 +1116,12 @@ KinematicPath RigidBodyTree::findKinematicPath(
 
   std::vector<int> start_body_ancestors =
       FindAncestorBodies(start_body);
-  start_body_ancestors.push_back(start_body);
+  start_body_ancestors.insert(start_body_ancestors.begin(), start_body);
 
   int end_body = parseBodyOrFrameID(end_body_or_frame_idx);
   std::vector<int> end_body_ancestors =
       FindAncestorBodies(end_body);
-  end_body_ancestors.push_back(end_body);
+  end_body_ancestors.insert(end_body_ancesors.begin(), end_body);
 
   // find least common ancestor
   size_t common_size =
@@ -1746,7 +1763,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
         throw std::logic_error(
             "RigidBodyTree::FindBody: ERROR: found multiple bodys named \"" +
             body_name + "\", model name = \"" + model_name +
-            "\", model intsance id = " + std::to_string(model_instance_id) +
+            "\", model instance id = " + std::to_string(model_instance_id) +
             ".");
       }
     }
@@ -1762,6 +1779,23 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
         body_name + "\", model name = \"" + model_name +
         "\", model instance id = " + std::to_string(model_instance_id) + ".");
   }
+}
+
+std::vector<const RigidBody*>
+RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
+  std::vector<const RigidBody*> result;
+
+  for (const auto& rigid_body : bodies) {
+    // TODO(liang.fok): Remove the world name check once the world is assigned
+    // its own model instance ID. See:
+    // https://github.com/RobotLocomotion/drake/issues/3088
+    if (rigid_body->get_name() != kWorldName &&
+        rigid_body->get_model_name() != kWorldName &&
+        rigid_body->get_model_instance_id() == model_instance_id) {
+      result.push_back(rigid_body.get());
+    }
+  }
+  return result;
 }
 
 RigidBody* RigidBodyTree::findLink(const std::string& link_name,
@@ -1836,13 +1870,14 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
   return body->get_body_index();
 }
 
+// TODO(liang.fok) Remove this method prior to Release 1.0.
 int RigidBodyTree::findLinkId(const std::string& link_name,
                               int model_instance_id) const {
   return FindBodyIndex(link_name, model_instance_id);
 }
 
-RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
-                                    int model_instance_id) const {
+RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
+                                               int model_instance_id) const {
   // Obtains a lower case version of joint_name.
   std::string joint_name_lower = joint_name;
   std::transform(joint_name_lower.begin(), joint_name_lower.end(),
@@ -1851,12 +1886,16 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
   vector<bool> name_match;
   name_match.resize(bodies.size());
 
-  for (size_t ii = 0; ii < bodies.size(); ii++) {
+  // For each rigid body in this RigidBodyTree, the following code saves a
+  // `true` or `false` in vector `name_match` based on whether the body's parent
+  // joint's name matches @p joint_name.
+  for (size_t ii = 0; ii < bodies.size(); ++ii) {
     if (bodies[ii]->hasParent()) {
-      string current_joint_name = bodies[ii]->getJoint().getName();
+      // Obtains the name of the rigid body's parent joint and then converts it
+      // to be lower case.
+      std::string current_joint_name = bodies[ii]->getJoint().getName();
       std::transform(current_joint_name.begin(), current_joint_name.end(),
-                     current_joint_name.begin(),
-                     ::tolower);  // convert to lower case
+                     current_joint_name.begin(), ::tolower);
       if (current_joint_name == joint_name_lower) {
         name_match[ii] = true;
       } else {
@@ -1865,8 +1904,10 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
     }
   }
 
+  // If model_instance_id is specified, go through the matching joints and
+  // remove those that do not belong to the specified model instance.
   if (model_instance_id != -1) {
-    for (size_t ii = 0; ii < bodies.size(); ii++) {
+    for (size_t ii = 0; ii < bodies.size(); ++ii) {
       if (name_match[ii]) {
         name_match[ii] =
             (bodies[ii]->get_model_instance_id() == model_instance_id);
@@ -1874,36 +1915,51 @@ RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
     }
   }
 
-  // Unlike the MATLAB implementation, I am not handling the fixed joints
+  // Checks to ensure only one match was found. Throws an `std::runtime_error`
+  // if more than one match was found.
   size_t ind_match = 0;
   bool match_found = false;
   for (size_t ii = 0; ii < bodies.size(); ++ii) {
     if (name_match[ii]) {
       if (match_found) {
-        throw std::logic_error(
-            "RigidBodyTree::findJoint: ERROR: Multiple joints found named \"" +
-            joint_name + "\", model instance ID = " +
+        throw std::runtime_error(
+            "RigidBodyTree::FindChildBodyOfJoint: ERROR: Multiple joints found "
+            " named \"" + joint_name + "\", model instance ID = " +
             std::to_string(model_instance_id) + ".");
       }
       ind_match = ii;
       match_found = true;
     }
   }
+
+  // Throws a `std::runtime_error` if no match was found. Otherwise, return
+  // a pointer to the matching rigid body.
   if (!match_found) {
-    throw std::logic_error(
-        "RigidBodyTree::findJoint: ERROR: Could not find unique joint " +
-        std::string("named \"") + joint_name + "\", model_instance_id = " +
-        std::to_string(model_instance_id));
+    throw std::runtime_error(
+        "RigidBodyTree::FindChildBodyOfJoint: ERROR: Could not find unique "
+        "joint named \"" + joint_name + "\", model_instance_id = " +
+        std::to_string(model_instance_id) + ".");
   } else {
     return bodies[ind_match].get();
   }
 }
 
-int RigidBodyTree::findJointId(const std::string& joint_name, int robot) const {
-  RigidBody* link = findJoint(joint_name, robot);
-  if (link == nullptr)
-    throw std::runtime_error("could not find joint id: " + joint_name);
+int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
+      int model_instance_id) const {
+  RigidBody* link = FindChildBodyOfJoint(joint_name, model_instance_id);
   return link->get_body_index();
+}
+
+// TODO(liang.fok) Remove this method prior to Release 1.0.
+RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
+    int model_id) const {
+  return FindChildBodyOfJoint(joint_name, model_id);
+}
+
+// TODO(liang.fok) Remove this method prior to Release 1.0.
+int RigidBodyTree::findJointId(const std::string& joint_name, int model_id)
+    const {
+  return  FindIndexOfChildBodyOfJoint(joint_name, model_id);
 }
 
 std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
@@ -2134,7 +2190,7 @@ void RigidBodyTree::addRobotFromURDFString(
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
-  drake::parsers::urdf::AddModelInstanceFromURDFString(
+  drake::parsers::urdf::AddModelInstanceFromUrdfString(
       xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
@@ -2146,37 +2202,37 @@ void RigidBodyTree::addRobotFromURDFString(
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromURDFString(
+  drake::parsers::urdf::AddModelInstanceFromUrdfString(
       xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDF(
-    const std::string& urdf_filename,
+    const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
-  drake::parsers::urdf::AddModelInstanceFromURDF(
-      urdf_filename, package_map, floating_base_type, weld_to_frame, this);
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      filename, package_map, floating_base_type, weld_to_frame, this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDF(
-    const std::string& urdf_filename,
+    const std::string& filename,
     std::map<std::string, std::string>& package_map,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromURDF(
-      urdf_filename, package_map, floating_base_type, weld_to_frame, this);
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      filename, package_map, floating_base_type, weld_to_frame, this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromSDF(
-    const std::string& sdf_filename,
+    const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::sdf::AddModelInstancesFromSdfFile(sdf_filename,
+  drake::parsers::sdf::AddModelInstancesFromSdfFile(filename,
       floating_base_type, weld_to_frame, this);
 }
 
