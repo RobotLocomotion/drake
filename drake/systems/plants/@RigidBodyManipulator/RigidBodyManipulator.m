@@ -15,6 +15,7 @@ classdef RigidBodyManipulator < Manipulator
       % note: need {} for arrays that will have multiple types (e.g.
       % a variety of derived classes), but can get away with [] for arrays
       % with elements that are all exactly the same type
+    joint_transmission = [];  % array of RigidBodyJointTransmission objects
     gravity=[0;0;-9.81];
     dim=3;
     terrain;
@@ -914,6 +915,11 @@ classdef RigidBodyManipulator < Manipulator
         model.loop(j) = loop;
       end
 
+      for j = 1:length(model.joint_transmission)
+        [jt,model] = updateConstraints(model.joint_transmission(j),model);
+        model.joint_transmission(j) = jt;
+      end
+      
       for j=1:length(model.position_constraints)
         % todo: generalize this by moving the updateConstraint logic above into
         % drakeFunction.RBM
