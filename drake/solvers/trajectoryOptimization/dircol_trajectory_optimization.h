@@ -32,7 +32,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  AddRunningCost(F&& f) override {
+  AddRunningCost(F&& f) {
     return DirectTrajectoryOptimization::AddRunningCost(f);
   }
 
