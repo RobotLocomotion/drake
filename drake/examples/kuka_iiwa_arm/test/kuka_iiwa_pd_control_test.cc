@@ -4,15 +4,14 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/robot_state_tap.h"
 #include "drake/systems/Simulation.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 using drake::AffineSystem;
 using drake::BotVisualizer;
@@ -21,7 +20,6 @@ using drake::PDControlSystem;
 using drake::RigidBodySystem;
 using drake::RobotStateTap;
 using Eigen::VectorXd;
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace examples {
