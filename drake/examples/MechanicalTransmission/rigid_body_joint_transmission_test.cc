@@ -226,12 +226,13 @@ GTEST_TEST(MechanicalTransmissionTest,
   Eigen::VectorXd pos_jac_dot_times_v;
   bool in_terms_of_qdot = true;
   Eigen::Matrix<double, 2, 4> pos_jac_check;
+  pos_jac_check.setZero();
   pos_jac_check(0, 0) = 1.0;
   pos_jac_check(0, 1) = -0.5;
   pos_jac_check(1, 2) = 1.0;
   pos_jac_check(1, 3) = -0.5;
   Eigen::Vector2d pos_jac_dot_times_v_check;
-  pos_jac_dot_times_v.setZero();
+  pos_jac_dot_times_v_check.setZero();
   EvaluateMechanicalTransmissionConstraint(tree, 2.0, 2.0, 1.0, 0.5, pos_cnstr,
                                            pos_jac, pos_jac_dot_times_v,
                                            in_terms_of_qdot, 0);
