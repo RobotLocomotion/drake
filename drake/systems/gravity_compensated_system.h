@@ -37,7 +37,7 @@ class GravityCompensatedSystem {
   typedef std::shared_ptr<RigidBodyTree> RigidBodyTreePtr;
 
   template <typename DerivedA, typename DerivedB>
-  GravityCompensatedPDPositionControlSystem(const RigidBodySystemPtr& sys)
+  GravityCompensatedSystem(const RigidBodySystemPtr& sys)
       : sys_(sys){
     sys_tree_ = sys->getRigidBodyTree();
   }
