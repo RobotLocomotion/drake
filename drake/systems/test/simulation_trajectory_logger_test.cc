@@ -42,7 +42,7 @@ GTEST_TEST(TestTrajectoryLogger, TestTrajectoryLogger) {
   EXPECT_FALSE(traj.time.empty());
   EXPECT_FALSE(traj.value.empty());
 
-  // Tests clearing trajectory.
+  // Tests clearing the trajectory.
   traj_logger->clearTrajectory();
   traj = traj_logger->getTrajectory();
   EXPECT_TRUE(traj.time.empty());

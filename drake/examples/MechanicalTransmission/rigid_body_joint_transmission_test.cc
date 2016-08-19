@@ -5,10 +5,10 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/trajectory_logger.h"
-#include "drake/common/eigen_matrix_compare.h"
 
 using drake::RigidBodySystem;
 using Eigen::VectorXd;
@@ -39,7 +39,7 @@ std::shared_ptr<RigidBodySystem> ParseMechanicalTransmission() {
 }
 
 /**
- * Evaluates the mechanical joint transmission constraint
+ * Evaluates the mechanical joint transmission expression
  * joint1_value - 0.5 * joint2_value - 1.0, the
  * Jacobian J of the constraint, and the term Jdot * v.
  */
@@ -121,6 +121,8 @@ GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
   EvaluateMechanicalTransmissionConstraint(tree, 2.0, 3.0, 1.0, 0.5, pos_cnstr,
                                            pos_jac, pos_jac_dot_times_v,
                                            in_terms_of_qdot);
+  // The pos_cnstr should be equal to -0.5. We check not only the constraint is
+  // violated (not equal to 0), but also in what way the constraint is violated.
   EXPECT_TRUE(CompareMatrices(pos_cnstr, Eigen::Matrix<double, 1, 1>(-0.5),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
@@ -267,7 +269,8 @@ GTEST_TEST(MechanicalTransmissionTest,
                               MatrixCompareType::absolute));
 }
 
-// Tests if the joint transmission constraint is simulated correctly when we have
+// Tests if the joint transmission constraint is simulated correctly when we
+// have
 // two identical model instances in the same rigid body tree.
 GTEST_TEST(MechanicalTransmissionTest,
            SimulateMechanicalTransmissionMultipleModelInstance) {

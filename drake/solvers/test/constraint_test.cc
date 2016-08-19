@@ -31,16 +31,14 @@ namespace {
  * the bounds and the linear matrix are correct after appending.
  */
 GTEST_TEST(TestConstraint, AppendLinearConstraint) {
-  /**
-   * For a given linear constraint 0.0 <= x(0) <= 1.0, we append a linear
-   * constraint 1.0 <= x(0) + x(1) + x(2) + x(3) <= 1.1
-   * to the existing constraints. We then check if the resulting overall
-   * constraint is in the correct form, i.e., its linear matrix should be
-   * [1 0 0 0;1 1 1 1], and the lower and upper bounds should
-   * be [0.0;1.0] and [1.0;1.1] respectively. Such that the resulting overall
-   * constraint is
-   * [0.0;1.0] <= [1 0 0 0; 1 1 1 1]*[x(0);x(1);x(2);x(3)] <= [1.0;1.1]
-   */
+  // For a given linear constraint 0.0 <= x(0) <= 1.0, we append a linear
+  // constraint 1.0 <= x(0) + x(1) + x(2) + x(3) <= 1.1
+  // to the existing constraints. We then check if the resulting overall
+  // constraint is in the correct form, i.e., its linear matrix should be
+  // [1 0 0 0;1 1 1 1], and the lower and upper bounds should
+  // be [0.0;1.0] and [1.0;1.1] respectively. Such that the resulting overall
+  // constraint is
+  // [0.0;1.0] <= [1 0 0 0; 1 1 1 1]*[x(0);x(1);x(2);x(3)] <= [1.0;1.1]
   Matrix<double, 1, 4> A;
   A.setZero();
   A(0) = 1.0;

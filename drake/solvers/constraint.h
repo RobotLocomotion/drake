@@ -254,7 +254,8 @@ class LinearConstraint : public Constraint {
   }
 
   /**
-   * Appends the constraint lb_append<= A_append*x<=ub_append to the existing linear constraints.
+   * Appends the constraint lb_append<= A_append*x<=ub_append to the existing 
+   * linear constraints.
    */
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   void AppendConstraint(const Eigen::MatrixBase<DerivedA>& A_append,
