@@ -40,6 +40,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   static const char* const kWorldName;
 
+  /**
+   * Defines the index of the body that represents the world within a
+   * RigidBodyTree.
+   */
+  static const int kWorldBodyIndex;
+
   RigidBodyTree(const std::string& urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type =
                     DrakeJoint::ROLLPITCHYAW);
@@ -643,6 +649,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
                       int model_id = -1) const;
 
   /**
+   * Obtains a vector of indexes of the bodies that are directly attached to the
+   * world via any type of joint.  This method has a time complexity of `O(N)`
+   * where `N` is the number of bodies in the tree, which can be determined by
+   * calling RigidBodyTree::get_number_of_bodies().
+   */
+  std::vector<int> FindBaseBodies(int model_instance_id = -1) const;
+
+  /**
    * Obtains the index of a rigid body within this rigid body tree. The rigid
    * body tree maintains a vector of pointers to all rigid bodies that are part
    * of the rigid body tree. The index of a rigid body is the index within this
@@ -664,12 +678,23 @@ class DRAKERBM_EXPORT RigidBodyTree {
   int FindBodyIndex(const std::string& body_name, int model_instance_id = -1)
       const;
 
-/**
- * This is a deprecated version of `FindBodyIndex(...)`. Please use
- * `FindBodyIndex(...)` instead.
- */
+  /**
+   * Returns a vector of indexes of bodies that are the children of the body at
+   * index @p parent_body_index. The resulting list can be further filtered to
+   * be bodies that belong to model instance ID @p model_instance_id. This
+   * method has a time complexity of `O(N)` where `N` is the number of bodies
+   * in the tree, which can be determined by calling
+   * RigidBodyTree::get_number_of_bodies().
+   */
+  std::vector<int> FindChildrenOfBody(int parent_body_index,
+      int model_instance_id = -1) const;
+
+  /**
+   * This is a deprecated version of `FindBodyIndex(...)`. Please use
+   * `FindBodyIndex(...)` instead.
+   */
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use FindBodyIndex() instead.")
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBodyIndex() instead.")
 #endif
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
@@ -741,6 +766,20 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
+
+  /**
+   * Returns the body at index @p body_index. Parameter @p body_index must be
+   * between zero and the number of bodies in this tree, which can be determined
+   * by calling RigidBodyTree::get_number_of_bodies(). Note that the body at
+   * index 0 represents the world.
+   */
+  const RigidBody& get_body(int body_index) const;
+
+  /**
+   * Returns the number of bodies in this tree. This includes the one body that
+   * represents the world.
+   */
+  int get_number_of_bodies() const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
   // @param body_or_frame_id the index of the body or the id of the frame.
