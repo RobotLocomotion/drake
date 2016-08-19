@@ -5,8 +5,6 @@
 
 #include <Eigen/Geometry>
 
-#include "robot_state_tap.h"
-
 #include "drake/drakeKukaIiwaArm_export.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/simulation_options.h"

@@ -3,16 +3,16 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/systems/plants/robot_state_tap.h"
 
 using drake::RigidBodySystem;
 using drake::BotVisualizer;
 using Eigen::VectorXd;
 using drake::RobotStateTap;
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace examples {

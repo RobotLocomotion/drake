@@ -59,6 +59,7 @@ using std::endl;
 
 const set<int> RigidBodyTree::default_model_instance_id_set = {0};
 const char* const RigidBodyTree::kWorldName = "world";
+const int RigidBodyTree::kWorldBodyIndex = 0;
 
 template <typename T>
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
@@ -1845,6 +1846,11 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   }
 }
 
+std::vector<int> RigidBodyTree::FindBaseBodies(int model_instance_id)
+    const {
+  return FindChildrenOfBody(kWorldBodyIndex, model_instance_id);
+}
+
 int RigidBodyTree::FindBodyIndex(const std::string& body_name,
                                  int model_instance_id) const {
   RigidBody* body = FindBody(body_name, "", model_instance_id);
@@ -1856,6 +1862,33 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
         std::to_string(model_instance_id) + ".");
   }
   return body->get_body_index();
+}
+
+std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
+    int model_instance_id) const {
+  // Verifies that parameter parent_body_index is valid.
+  DRAKE_ABORT_UNLESS(parent_body_index >= 0 &&
+                     parent_body_index < get_number_of_bodies());
+
+  // Obtains a reference to the parent body.
+  const RigidBody& parent_body = get_body(parent_body_index);
+
+  // Checks every rigid body in this tree. If the rigid body is a child of
+  // parent_body and its model instance ID matches model_instance_id, save its
+  // index in the result vector.
+  std::vector<int> children_indexes;
+  for (int ii = 0; ii < static_cast<int>(bodies.size()); ++ii) {
+    if (bodies.at(ii)->has_as_parent(parent_body)) {
+      if (model_instance_id != -1) {
+        if (bodies.at(ii)->get_model_instance_id() == model_instance_id) {
+          children_indexes.push_back(ii);
+        }
+      } else {
+        children_indexes.push_back(ii);
+      }
+    }
+  }
+  return children_indexes;
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
@@ -1936,6 +1969,16 @@ int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
       int model_instance_id) const {
   RigidBody* link = FindChildBodyOfJoint(joint_name, model_instance_id);
   return link->get_body_index();
+}
+
+const RigidBody& RigidBodyTree::get_body(int body_index) const {
+  DRAKE_ABORT_UNLESS(body_index >= 0 &&
+                     body_index < get_number_of_bodies());
+  return *bodies[body_index].get();
+}
+
+int RigidBodyTree::get_number_of_bodies() const {
+  return static_cast<int>(bodies.size());
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
@@ -2174,24 +2217,24 @@ int RigidBodyTree::AddFloatingJoint(
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDFString(
-    const std::string& description, const std::string& root_dir,
+    const std::string& xml_string, const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
-  drake::parsers::urdf::AddModelInstanceFromUrdfDescription(
-      description, package_map, root_dir, floating_base_type, weld_to_frame,
+  drake::parsers::urdf::AddModelInstanceFromUrdfString(
+      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDFString(
-    const std::string& description,
+    const std::string& xml_string,
     std::map<std::string, std::string>& package_map,
     const std::string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromUrdfDescription(
-      description, package_map, root_dir, floating_base_type, weld_to_frame,
+  drake::parsers::urdf::AddModelInstanceFromUrdfString(
+      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
 

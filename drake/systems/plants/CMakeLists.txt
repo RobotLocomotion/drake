@@ -39,7 +39,8 @@ drake_install_headers(
   parser_model_instance_id_table.h
   parser_sdf.h
   parser_urdf.h
-  rigid_body_loop.h)
+  rigid_body_loop.h
+  robot_state_tap.h)
 
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
@@ -189,7 +190,7 @@ pods_install_pkg_config_file(drake-rbsystem
 
 if(lcm_FOUND)
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
-  target_link_libraries(rigidBodyLCMNode drakeRBSystem drakeLCMSystem threads)
+  target_link_libraries(rigidBodyLCMNode gflags drakeRBSystem drakeLCMSystem threads)
   pods_install_executables(rigidBodyLCMNode)
   drake_install_headers(BotVisualizer.h)
 endif()

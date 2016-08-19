@@ -4,12 +4,12 @@
 #include <sstream>
 #include <string>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/material_map.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/xmlUtil.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 using drake::parsers::ModelInstanceIdTable;
 
@@ -105,9 +105,9 @@ void AddMaterialToMaterialMap(const string& material_name,
     // RGBA vectors is [0, 1], absolute and relative tolerance comparisons are
     // identical.
     auto& existing_color = material_iter->second;
-    if (!drake::util::CompareMatrices(
+    if (!drake::CompareMatrices(
             color_rgba, existing_color, 1e-10,
-            drake::util::MatrixCompareType::absolute)) {
+            drake::MatrixCompareType::absolute)) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
       stringstream error_buff;
@@ -1067,37 +1067,37 @@ ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
 
 }  // namespace
 
-ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  return AddModelInstanceFromUrdfDescription(urdf_string, package_map, tree);
+  return AddModelInstanceFromUrdfString(urdf_string, package_map, tree);
 }
 
-ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string,
     PackageMap& package_map,
     RigidBodyTree* tree) {
   const string root_dir = ".";
-  return AddModelInstanceFromUrdfDescription(
+  return AddModelInstanceFromUrdfString(
       urdf_string, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
       nullptr /*weld_to_frame*/, tree);
 }
 
-ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
-    const string& description,
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
+    const string& urdf_string,
     const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   PackageMap package_map;
-  return AddModelInstanceFromUrdfDescription(
-      description, package_map, root_dir, floating_base_type,
+  return AddModelInstanceFromUrdfString(
+      urdf_string, package_map, root_dir, floating_base_type,
       nullptr /* weld_to_frame */, tree);
 }
 
-ModelInstanceIdTable AddModelInstanceFromUrdfDescription(
-    const string& description,
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
+    const string& urdf_string,
     PackageMap& package_map,
     const string& root_dir,
     const DrakeJoint::FloatingBaseType floating_base_type,

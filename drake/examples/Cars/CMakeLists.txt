@@ -15,7 +15,9 @@ if(lcm_FOUND)
     simple_car.h
     simple_car-inl.h
     system1_cars_vectors.h
-    trajectory_car.h)
+    trajectory_car.h
+    system1_vector.h
+    )
   add_subdirectory(gen)
   pods_install_pkg_config_file(drake-cars
     LIBS -ldrakeCars
