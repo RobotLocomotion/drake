@@ -12,6 +12,7 @@ include(cmake/git/hooks.cmake)
 drake_setup_superbuild()
 drake_setup_platform()
 drake_setup_git_hooks()
+drake_setup_options()
 
 ###############################################################################
 # BEGIN external projects
