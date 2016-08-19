@@ -76,7 +76,7 @@ void EvaluateMechanicalTransmissionConstraint(
 }
 
 // Tests if the mechanical joint transmission in the URDF is parsed correctly by
-// the URDF parser
+// the URDF parser.
 GTEST_TEST(MechanicalTransmissionTest, ParseMechanicalTransmission) {
   auto rigid_body_system = ParseMechanicalTransmission();
   auto tree = rigid_body_system->getRigidBodyTree();
