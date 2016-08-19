@@ -22,9 +22,7 @@ class DRAKERBM_EXPORT RigidBodyJointTransmission {
         joint2_name_(joint2_name),
         multiplier_(multiplier),
         offset_(offset),
-        model_instance_id_(model_instance_id) {
-    DRAKE_ASSERT(multiplier > 0);
-  }
+        model_instance_id_(model_instance_id) {}
   std::string GetJoint1Name() const { return joint1_name_; }
   std::string GetJoint2Name() const { return joint2_name_; }
   double GetMultiplier() const { return multiplier_; }

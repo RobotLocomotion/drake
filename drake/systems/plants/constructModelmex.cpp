@@ -1,11 +1,11 @@
 #include <mex.h>
 
-#include <iostream>
 #include <cmath>
-#include "drake/util/drakeMexUtil.h"
-#include "rigidBodyTreeMexConversions.h"
+#include <iostream>
 #include <stdexcept>
 #include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/util/drakeMexUtil.h"
+#include "rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -439,6 +439,30 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                                          model->frames[frame_B_ind], axis));
   }
 
+  // JOINT TRANSMISSION CONSTRAINTS
+  // DEBUG
+  // mexPrintf("constructModelmex: Parsing joint transmission constraints\n");
+  // END_DEBUG
+  const mxArray* pJointTransmissions =
+      mxGetPropertySafe(pRBM, 0, "joint_transmission");
+  int num_joint_transmissions =
+      static_cast<int>(mxGetNumberOfElements(pJointTransmissions));
+  model->joint_transmissions.clear();
+  for (int i = 0; i < num_joint_transmissions; ++i) {
+    string joint1_name = mxGetStdString(
+        mxGetPropertySafe(pJointTransmissions, i, "joint1_name"));
+    string joint2_name = mxGetStdString(
+        mxGetPropertySafe(pJointTransmissions, i, "joint2_name"));
+    double multiplier =
+        mxGetScalar(mxGetPropertySafe(pJointTransmissions, i, "multiplier"));
+    double offset =
+        mxGetScalar(mxGetPropertySafe(pJointTransmissions, i, "offset"));
+    int model_instance_id = static_cast<int>(mxGetScalar(mxGetPropertySafe(
+                                pJointTransmissions, i, "robotnum"))) -
+                            1;
+    model->joint_transmissions.push_back(RigidBodyJointTransmission(
+        joint1_name, joint2_name, multiplier, offset, model_instance_id));
+  }
   // ACTUATORS
   //  LOOP CONSTRAINTS
   // DEBUG
