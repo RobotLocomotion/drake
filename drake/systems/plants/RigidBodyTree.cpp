@@ -59,6 +59,7 @@ using std::endl;
 
 const set<int> RigidBodyTree::default_model_instance_id_set = {0};
 const char* const RigidBodyTree::kWorldName = "world";
+const int RigidBodyTree::kWorldBodyIndex = 0;
 
 template <typename T>
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
@@ -1090,13 +1091,25 @@ int RigidBodyTree::parseBodyOrFrameID(const int body_or_frame_id) const {
   return parseBodyOrFrameID<double>(body_or_frame_id, nullptr);
 }
 
-void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
-                                       int body_idx) const {
-  const RigidBody* current_body = bodies[body_idx].get();
+std::vector<int> RigidBodyTree::FindAncestorBodies(
+    int body_index) const {
+  // Verifies that body_index is valid. Aborts if it is invalid.
+  DRAKE_ABORT_UNLESS(body_index >= 0 &&
+                     body_index < static_cast<int>(bodies.size()));
+
+  std::vector<int> ancestor_body_list;
+  const RigidBody* current_body = bodies[body_index].get();
   while (current_body->hasParent()) {
-    ancestor_bodies.push_back(current_body->get_parent()->get_body_index());
+    ancestor_body_list.push_back(current_body->get_parent()->get_body_index());
     current_body = current_body->get_parent();
   }
+  return ancestor_body_list;
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
+void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
+                                       int body_idx) const {
+  ancestor_bodies = FindAncestorBodies(body_idx);
 }
 
 KinematicPath RigidBodyTree::findKinematicPath(
@@ -1104,14 +1117,14 @@ KinematicPath RigidBodyTree::findKinematicPath(
   // find all ancestors of start_body and end_body
   int start_body = parseBodyOrFrameID(start_body_or_frame_idx);
 
-  std::vector<int> start_body_ancestors;
-  start_body_ancestors.push_back(start_body);
-  findAncestorBodies(start_body_ancestors, start_body);
+  std::vector<int> start_body_ancestors =
+      FindAncestorBodies(start_body);
+  start_body_ancestors.insert(start_body_ancestors.begin(), start_body);
 
   int end_body = parseBodyOrFrameID(end_body_or_frame_idx);
-  std::vector<int> end_body_ancestors;
-  end_body_ancestors.push_back(end_body);
-  findAncestorBodies(end_body_ancestors, end_body);
+  std::vector<int> end_body_ancestors =
+      FindAncestorBodies(end_body);
+  end_body_ancestors.insert(end_body_ancestors.begin(), end_body);
 
   // find least common ancestor
   size_t common_size =
@@ -1847,6 +1860,11 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   }
 }
 
+std::vector<int> RigidBodyTree::FindBaseBodies(int model_instance_id)
+    const {
+  return FindChildrenOfBody(kWorldBodyIndex, model_instance_id);
+}
+
 int RigidBodyTree::FindBodyIndex(const std::string& body_name,
                                  int model_instance_id) const {
   RigidBody* body = FindBody(body_name, "", model_instance_id);
@@ -1858,6 +1876,33 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
         std::to_string(model_instance_id) + ".");
   }
   return body->get_body_index();
+}
+
+std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
+    int model_instance_id) const {
+  // Verifies that parameter parent_body_index is valid.
+  DRAKE_ABORT_UNLESS(parent_body_index >= 0 &&
+                     parent_body_index < get_number_of_bodies());
+
+  // Obtains a reference to the parent body.
+  const RigidBody& parent_body = get_body(parent_body_index);
+
+  // Checks every rigid body in this tree. If the rigid body is a child of
+  // parent_body and its model instance ID matches model_instance_id, save its
+  // index in the result vector.
+  std::vector<int> children_indexes;
+  for (int ii = 0; ii < static_cast<int>(bodies.size()); ++ii) {
+    if (bodies.at(ii)->has_as_parent(parent_body)) {
+      if (model_instance_id != -1) {
+        if (bodies.at(ii)->get_model_instance_id() == model_instance_id) {
+          children_indexes.push_back(ii);
+        }
+      } else {
+        children_indexes.push_back(ii);
+      }
+    }
+  }
+  return children_indexes;
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
@@ -1938,6 +1983,16 @@ int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
       int model_instance_id) const {
   RigidBody* link = FindChildBodyOfJoint(joint_name, model_instance_id);
   return link->get_body_index();
+}
+
+const RigidBody& RigidBodyTree::get_body(int body_index) const {
+  DRAKE_ABORT_UNLESS(body_index >= 0 &&
+                     body_index < get_number_of_bodies());
+  return *bodies[body_index].get();
+}
+
+int RigidBodyTree::get_number_of_bodies() const {
+  return static_cast<int>(bodies.size());
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
