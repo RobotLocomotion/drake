@@ -111,18 +111,18 @@ void CheckLimitViolations(
     // constraints, we may be able to remove the need for this tolerance value.
     const double kJointLimitTolerance = 0.0261799;  // 1.5 degrees.
 
-    for (int ii = 0; ii < joint.getNumPositions(); ++ii) {
+    for (int ii = 0; ii < joint.get_num_positions(); ++ii) {
       double position = final_robot_state[robot_state_index++];
       if (position < min_limit[ii] - kJointLimitTolerance) {
         throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF " +
-                                 joint.getPositionName(ii) +
+                                 joint.get_position_name(ii) +
                                  ") violated minimum position limit (" +
                                  std::to_string(position) + " < " +
                                  std::to_string(min_limit[ii]) + ").");
       }
       if (position > max_limit[ii] + kJointLimitTolerance) {
         throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF " +
-                                 joint.getPositionName(ii) +
+                                 joint.get_position_name(ii) +
                                  ") violated maximum position limit (" +
                                  std::to_string(position) + " > " +
                                  std::to_string(max_limit[ii]) + ").");
