@@ -211,8 +211,7 @@ class PolynomialConstraint : public Constraint {
 
   /// To avoid repeated allocation, reuse a map for the evaluation point.
   mutable std::map<Polynomiald::VarType, double> double_evaluation_point_;
-  mutable std::map<Polynomiald::VarType, TaylorVarXd>
-      taylor_evaluation_point_;
+  mutable std::map<Polynomiald::VarType, TaylorVarXd> taylor_evaluation_point_;
 };
 
 // todo: consider implementing DifferentiableConstraint,
@@ -252,6 +251,29 @@ class LinearConstraint : public Constraint {
   virtual const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& A()
       const {
     return A_;
+  }
+
+  /**
+   * Appends the constraint lb_append<= A_append*x<=ub_append to the existing linear constraints.
+   */
+  template <typename DerivedA, typename DerivedLB, typename DerivedUB>
+  void AppendConstraint(const Eigen::MatrixBase<DerivedA>& A_append,
+                        const Eigen::MatrixBase<DerivedLB>& lb_append,
+                        const Eigen::MatrixBase<DerivedUB>& ub_append) {
+    DRAKE_ASSERT(A_append.cols() == A_.cols());
+    DRAKE_ASSERT(A_append.rows() == lb_append.rows());
+    DRAKE_ASSERT(A_append.rows() == ub_append.rows());
+    int num_new_constraints = A_.rows() + A_append.rows();
+    A_.conservativeResize(num_new_constraints, Eigen::NoChange);
+    A_.bottomRows(A_append.rows()) = A_append;
+    int prev_size = lower_bound().size();
+    Eigen::VectorXd new_lb(prev_size + lb_append.size());
+    Eigen::VectorXd new_ub(prev_size + ub_append.size());
+    new_lb.head(prev_size) = lower_bound();
+    new_lb.tail(lb_append.size()) = lb_append;
+    new_ub.head(prev_size) = upper_bound();
+    new_ub.tail(ub_append.size()) = ub_append;
+    set_bounds(new_lb, new_ub);
   }
 
  protected:

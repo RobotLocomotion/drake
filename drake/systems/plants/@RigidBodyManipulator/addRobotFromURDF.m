@@ -381,6 +381,29 @@ model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,coulomb_frict
 if node.hasAttribute('has_position_sensor')
   model.body(child).has_position_sensor = str2num(char(node.getAttribute('has_position_sensor')));
 end
+
+mimicNode = node.getElementsByTagName('mimic').item(0);
+if ~isempty(mimicNode)
+  mimic_multiplier = 1;
+  mimic_offset = 0;
+  if(~mimicNode.hasAttribute('joint'))
+    error('RigidBodyManipulator: mimic must have a joint tag');
+  end
+  mimic_joint = char(mimicNode.getAttribute('joint'));
+  if(mimicNode.hasAttribute('multiplier'))
+    mimic_multiplier = parseParamString(model,robotnum,char(mimicNode.getAttribute('multiplier')));
+  end
+  if(mimicNode.hasAttribute('offset'))
+    mimic_offset = parseParamString(model,robotnum,char(mimicNode.getAttribute('offset')));
+  end
+  new_joint_transmission = RigidBodyJointTransmission();
+  new_joint_transmission.joint1_name = name;
+  new_joint_transmission.joint2_name = mimic_joint;
+  new_joint_transmission.multiplier = mimic_multiplier;
+  new_joint_transmission.offset = mimic_offset;
+  new_joint_transmission.robotnum = robotnum;
+  model.joint_transmission = [model.joint_transmission new_joint_transmission];
+end
 end
 
 

@@ -1,0 +1,3 @@
+add_executable(rigid_body_joint_transmission_test rigid_body_joint_transmission_test.cc)
+target_link_libraries(rigid_body_joint_transmission_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+add_test(NAME rigid_body_joint_transmission_test COMMAND rigid_body_joint_transmission_test)
