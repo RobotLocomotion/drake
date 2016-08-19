@@ -383,7 +383,7 @@ GTEST_TEST(MechanicalTransmissionTest,
   // initial joint velocities (0.11,0.18,0.0,0.02). The initial joint positions
   // and the velocities do not satisfy the transmission constraint. We expect
   // at the end of the simulation, the final position should satisfy the joint
-  // transmission constraint
+  // transmission constraint.
   x0(joint1_model0_pos_index) = 2.1;
   x0(joint2_model0_pos_index) = 1.9;
   x0(joint1_model1_pos_index) = 3.1;
