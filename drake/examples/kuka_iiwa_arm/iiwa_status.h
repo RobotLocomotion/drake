@@ -1,10 +1,8 @@
 #pragma once
 
 #include <string>
-
 #include <Eigen/Core>
 
-#include "drake/systems/LCMSystem.h"
 #include "lcmtypes/drake/lcmt_iiwa_status.hpp"
 
 namespace drake {
@@ -87,6 +85,7 @@ bool decode(const drake::lcmt_iiwa_status& msg,
   wrap.set_value(new_value);
   return true;
 }
+
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
