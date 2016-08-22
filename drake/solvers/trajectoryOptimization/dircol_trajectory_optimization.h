@@ -28,14 +28,6 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization
 
   void AddRunningCost(std::shared_ptr<Constraint> constraint) override;
 
-  template <typename F>
-  typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
-      std::shared_ptr<Constraint>>::type
-  AddRunningCost(F&& f) {
-    return DirectTrajectoryOptimization::AddRunningCost(f);
-  }
-
   // TODO(sam.creasey) The MATLAB implementation of
   // DircolTrajectoryOptimization overrides the parent's
   // reconstructStateTrajectory to provide its own interpolation.

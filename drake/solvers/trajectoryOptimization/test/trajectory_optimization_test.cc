@@ -149,8 +149,8 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   EXPECT_DOUBLE_EQ(states(1, 0), 1);
   EXPECT_DOUBLE_EQ(states(1, kNumTimeSamples - 1), 15);
 
-  direct_traj.AddInitialCost(InitialCost());
-  direct_traj.AddFinalCost(FinalCost());
+  direct_traj.AddInitialCostFunc(InitialCost());
+  direct_traj.AddFinalCostFunc(FinalCost());
   result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
   EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
 

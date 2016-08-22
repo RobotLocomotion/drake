@@ -56,7 +56,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  AddRunningCost(F&& f) {
+  AddRunningCostFunc(F&& f) {
     auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
     AddRunningCost(c);
     return c;
@@ -124,7 +124,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  AddInitialCost(F&& f) {
+  AddInitialCostFunc(F&& f) {
     auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
     AddInitialCost(c);
     return c;
@@ -149,7 +149,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  AddFinalCost(F&& f) {
+  AddFinalCostFunc(F&& f) {
     auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
     AddFinalCost(c);
     return c;
