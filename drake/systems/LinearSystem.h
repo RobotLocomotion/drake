@@ -114,6 +114,16 @@ class AffineSystem {
 /**
  * This is a specialization of AffineSystem where the initial first derivative
  * of the system inputs (*xdot0*) and the system outputs (*y0*) are both zero.
+ * In other words, this system implements:
+ *
+ *
+ * @f[
+ *   \dot{x} = Ax + Bu\\
+ *   y = Cx + Du
+ * @f]
+ *
+ * Where *x* is the system state, *u* is the system inputs, and *y* is the
+ * system output.
  */
 template <template <typename> class StateVec,
           template <typename> class InputVec,
