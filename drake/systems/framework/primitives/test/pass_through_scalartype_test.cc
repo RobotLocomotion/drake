@@ -37,7 +37,8 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   typedef AutoDiffScalar<Vector3d> T;
 
   // Set a PassThrough system with input and output of size 3.
-  auto buffer = make_unique<PassThrough<T>>(3 /* length */);
+  std::unique_ptr<System<T>> buffer =
+      make_unique<PassThrough<T>>(3 /* length */);
   auto context = buffer->CreateDefaultContext();
   auto output = buffer->AllocateOutput(*context);
   auto input = make_unique<BasicVector<T>>(3 /* length */);
