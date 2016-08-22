@@ -1,1 +1,1 @@
-add_matlab_test(NAME solvers/BMI/test/testBMI COMMAND testBMI)
+add_matlab_test(NAME solvers/BMI/test/testBMI REQUIRES mosek spotless COMMAND testBMI)
