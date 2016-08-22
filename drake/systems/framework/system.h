@@ -33,7 +33,7 @@ class System {
   /// override this method to return false.
   // TODO(amcastro-tri): Provide a more descriptive mechanism to specify
   // pairwise (input_port, output_port) feedthrough.
-  virtual bool has_any_direct_feedthrough() const { return true;}
+  virtual bool has_any_direct_feedthrough() const { return true; }
 
   /// Returns the number of input ports of the system.
   int get_num_input_ports() const { return input_ports_.size(); }
@@ -69,12 +69,14 @@ class System {
 
   /// Checks that @p output is consistent with the number and size of output
   /// ports declared by the system.
-  /// @returns `true` if @p output is valid for this system and `false`
-  /// otherwise.
-  bool IsValidOutput(const SystemOutput<T>& output) const {
+  /// @returns `true` if @p output is non-null and valid for this system, or
+  /// `false` otherwise.
+  bool IsValidOutput(const SystemOutput<T>* output) const {
+    if (output == nullptr) return false;
+
     // Checks that the number of output ports in the system output is consistent
     // with the number of output ports declared by the System.
-    if (output.get_num_ports() != get_num_output_ports()) return false;
+    if (output->get_num_ports() != get_num_output_ports()) return false;
 
     // Checks the validity of each output port.
     for (int i = 0; i < get_num_output_ports(); ++i) {
@@ -82,7 +84,7 @@ class System {
       // once abstract ports are implemented in 3164.
       if (get_output_port(i).get_data_type() == kVectorValued) {
         const VectorInterface<T>* output_vector =
-            output.get_port(i).get_vector_data();
+            output->get_port(i).get_vector_data();
         if (output_vector == nullptr) return false;
         if (output_vector->get_value().rows() !=
             get_output_port(i).get_size()) return false;
@@ -174,6 +176,7 @@ class System {
   virtual T EvalNonConservativePower(const ContextBase<T>& context) const {
     return T(0);
   }
+
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. Solvers will provide this state as the
   /// output argument to EvalTimeDerivatives.

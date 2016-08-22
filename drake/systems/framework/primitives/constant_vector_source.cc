@@ -24,7 +24,7 @@ void ConstantVectorSource<T>::EvalOutput(const ContextBase<T>& context,
   // not user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
 
-  DRAKE_ASSERT(System<T>::IsValidOutput(*output));
+  DRAKE_ASSERT(System<T>::IsValidOutput(output));
   DRAKE_ASSERT(System<T>::IsValidContext(context));
 
   // TODO(amcastro-tri): Solve #3140 so that the next line reads:

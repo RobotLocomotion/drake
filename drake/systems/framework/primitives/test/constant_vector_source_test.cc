@@ -33,7 +33,7 @@ class ConstantVectorSourceTest : public ::testing::Test {
   }
 
   const Matrix<double, 2, 1, Eigen::DontAlign> kConstantVectorSource{2.0, 1.5};
-  std::unique_ptr<ConstantVectorSource<double>> source_;
+  std::unique_ptr<System<double>> source_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
