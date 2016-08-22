@@ -34,7 +34,7 @@ void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
 
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
-  System<T>::get_mutable_output_vector(*output, 0) =
+  System<T>::GetMutableOutputVector(*output, 0) =
       System<T>::get_input_vector(context, 0);
 }
 

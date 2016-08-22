@@ -40,7 +40,7 @@ void Gain<T>::EvalOutput(const ContextBase<T>& context,
 
   auto input_vector = System<T>::get_input_vector(context, 0);
 
-  System<T>::get_mutable_output_vector(*output, 0) = gain_ * input_vector;
+  System<T>::GetMutableOutputVector(*output, 0) = gain_ * input_vector;
 }
 
 }  // namespace systems

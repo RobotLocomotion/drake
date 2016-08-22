@@ -27,7 +27,7 @@ void ConstantVectorSource<T>::EvalOutput(const ContextBase<T>& context,
   DRAKE_ASSERT(System<T>::IsValidOutput(*output));
   DRAKE_ASSERT(System<T>::IsValidContext(context));
 
-  System<T>::get_mutable_output_vector(*output, 0) = source_value_;
+  System<T>::GetMutableOutputVector(*output, 0) = source_value_;
 }
 
 // Explicitly instantiates on the most common scalar types.

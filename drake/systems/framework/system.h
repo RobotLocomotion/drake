@@ -136,9 +136,9 @@ class System {
   }
 
   /// Returns a mutable Eigen expression for a vector valued output port with
-  /// index @p port_index in this system.
-  Eigen::VectorBlock<VectorX<T>> get_mutable_output_vector(
-      SystemOutput<T>& output, int port_index) const {
+  /// index @p port_index in this system. This call invalidates the cache.
+  Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(
+      SystemOutput<T> &output, int port_index) const {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
 
     VectorInterface<T>* output_vector =
@@ -150,7 +150,8 @@ class System {
     return output_vector->get_mutable_value();
   }
 
-  VectorX<T> get_continuous_state_vector(const ContextBase<T>& context) const {
+  // Returns a copy of the continuous state vector into an Eigen vector.
+  VectorX<T> GetContinuousStateVectorCopy(const ContextBase<T> &context) const {
     return context.get_state().continuous_state->get_state().CopyToVector();
   }
 
