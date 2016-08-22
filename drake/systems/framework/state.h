@@ -30,7 +30,7 @@ class ContinuousState {
     generalized_position_.reset(new StateSubvector<T>(state_.get()));
     generalized_velocity_.reset(new StateSubvector<T>(state_.get()));
     misc_continuous_state_.reset(
-        new StateSubvector<T>(state_.get(), 0, state_.size()));
+        new StateSubvector<T>(state_.get(), 0, state_->size()));
   }
 
   /// Constructs a ContinuousState that exposes second-order structure.
