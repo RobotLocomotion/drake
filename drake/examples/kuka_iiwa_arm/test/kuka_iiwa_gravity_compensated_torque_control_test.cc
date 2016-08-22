@@ -4,12 +4,12 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/systems/plants/robot_state_tap.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/gravity_compensated_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/robot_state_tap.h"
 
 using drake::AffineSystem;
 using drake::BotVisualizer;
@@ -32,7 +32,7 @@ namespace {
 GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControl0Input) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
-  const auto &iiwa_tree = iiwa_system->getRigidBodyTree();
+  const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
 
   // Initializes LCM.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
@@ -61,8 +61,7 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControl0Input) {
           Eigen::aligned_allocator<GravityCompensatedSystem<RigidBodySystem>>(),
           iiwa_system);
 
-  auto sys = cascade(cascade(controlled_robot, visualizer),
-                      robot_state_tap);
+  auto sys = cascade(cascade(controlled_robot, visualizer), robot_state_tap);
 
   drake::SimulationOptions options = SetupSimulation();
 
@@ -83,15 +82,15 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControl0Input) {
   // Expects norm of the joint position difference to be below a maximum value.
   double kMaxPositionErrorNorm = 1e-3;
   EXPECT_TRUE((xf.head(num_dof) - x0.head(num_dof)).squaredNorm() <
-      kMaxPositionErrorNorm);
+              kMaxPositionErrorNorm);
 
   // Expects final joint velocity has a norm smaller than a maximum value.
   // (since this controller guarantees no motion under no input and no
   //  external forces).
   double kMaxVelocityNorm = 1e-3;
   EXPECT_TRUE(xf.tail(num_dof).squaredNorm() < kMinVelocityNorm);
-  std::cout << " Final velocity : " << xf.tail(num_dof) << ", Errpr norm :" <<
-      xf.tail(num_dof).squaredNorm() << "\n";
+  std::cout << " Final velocity : " << xf.tail(num_dof)
+            << ", Errpr norm :" << xf.tail(num_dof).squaredNorm() << "\n";
 }
 
 // Test to verify behavior of the KUKA IIWA Arm under a gravity
@@ -102,7 +101,7 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControl0Input) {
 GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControlSmallInput) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
-  const auto &iiwa_tree = iiwa_system->getRigidBodyTree();
+  const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
 
   // Initializes LCM.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
@@ -140,9 +139,9 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControlSmallInput) {
       MatrixXd::Zero(0, 0), MatrixXd::Zero(0, 0), VectorXd::Zero(0),
       MatrixXd::Zero(num_dof, 0), MatrixXd::Zero(num_dof, 0),
       input_torque_vector);
-  auto sys = cascade(cascade(cascade(input_torque, controlled_robot),
-                             visualizer),
-                     robot_state_tap);
+  auto sys =
+      cascade(cascade(cascade(input_torque, controlled_robot), visualizer),
+              robot_state_tap);
 
   drake::SimulationOptions options = SetupSimulation();
 
@@ -164,13 +163,12 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControlSmallInput) {
   // minimum value.
   double kMinPositionErrorNorm = 1e-3;
   EXPECT_TRUE((xf.head(num_dof) - x0.head(num_dof)).squaredNorm() >
-      kMinPositionErrorNorm);
+              kMinPositionErrorNorm);
 
   // Expects final joint velocity has a norm larger than a minimum value (Since
   // the torque input results in continuous acceleration).
   double kMinVelocityNorm = 1e-3;
   EXPECT_TRUE(xf.tail(num_dof).squaredNorm() > kMinVelocityNorm);
-
 }
 
 }  // namespace
