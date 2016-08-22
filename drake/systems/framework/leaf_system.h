@@ -53,9 +53,16 @@ class LeafSystem : public System<T> {
     context->SetNumInputPorts(this->get_input_ports().size());
   }
 
-  /// By default, allocates no state. Child classes that need state should
-  /// override.
-  virtual void ReserveState(Context<T>* context) const {}
+  /// By default, delegates to AllocateTimeDerivatives. Child classes that need
+  /// any other variety of state should override.
+  virtual void ReserveState(Context<T>* context) const {
+    std::unique_ptr<ContinuousState<T>> continuous_state =
+        this->AllocateTimeDerivatives();
+    if (continuous_state) {
+      context->get_mutable_state()->continuous_state =
+          std::move(continuous_state);
+    }
+  }
 
   // SystemInterface objects are neither copyable nor moveable.
   explicit LeafSystem(const System<T>& other) = delete;
