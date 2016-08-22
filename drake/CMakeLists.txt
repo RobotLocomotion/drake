@@ -41,7 +41,7 @@ endif()
 
 # set up pods
 set(POD_NAME drake)
-include(cmake/pods.cmake)
+include(../cmake/pods.cmake)
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
@@ -77,13 +77,27 @@ endfunction()
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
+  if(APPLE)
+    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_SHARED_LINKER_FLAGS}")
+    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_MODULE_LINKER_FLAGS}")
+    set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
+  else()
+    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_SHARED_LINKER_FLAGS}")
+    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_MODULE_LINKER_FLAGS}")
+    set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
+  endif()
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
   endif()
+  # TODO(rdeits) Remove when https://github.com/jaeandersson/swig/pull/73 is
+  # accessible from the version of swig_matlab we are using
+  set(CXX_FLAGS_NO_ERROR_MAYBE_UNINITIALIZED "-Wno-error=maybe-uninitialized")
   set(CXX_FLAGS_NO_ERROR_SHADOW "-Wno-error=shadow -Wno-shadow")
   set(CXX_FLAGS_NO_SIGN_COMPARE "-Wno-sign-compare")
 elseif(MSVC)
@@ -203,7 +217,7 @@ find_package(gflags REQUIRED)
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)
 
-include(cmake/procman.cmake)  # helper script for writing procman files
+include(../cmake/procman.cmake)  # helper script for writing procman files
 
 # set up pseudo-target for threads
 find_package(Threads)
@@ -284,7 +298,7 @@ add_subdirectory(bindings)
 add_subdirectory(regtests)
 
 # setup MATLAB pods-compliance
-include(cmake/matlab_pods.cmake)
+include(../cmake/matlab_pods.cmake)
 pods_configure_matlab_paths()
 
 message(STATUS "Writing path utilities to ${CMAKE_INSTALL_PREFIX}/matlab")

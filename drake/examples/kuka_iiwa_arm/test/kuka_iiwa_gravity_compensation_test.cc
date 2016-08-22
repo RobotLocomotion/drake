@@ -4,10 +4,9 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/systems/cascade_system.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
-#include "drake/systems/pd_control_system.h"
+#include "drake/systems/gravity_compensated_pd_position_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/robot_state_tap.h"
@@ -15,10 +14,10 @@
 
 using drake::AffineSystem;
 using drake::BotVisualizer;
+using lcm::LCM;
 using Eigen::MatrixXd;
-using drake::PDControlSystem;
-using drake::RigidBodySystem;
 using drake::RobotStateTap;
+using drake::RigidBodySystem;
 using Eigen::VectorXd;
 
 namespace drake {
@@ -26,19 +25,20 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-// Test to verify behavior of the KUKA IIWA Arm under a PD joint position
-// controller. Since the robot is present in an environment with gravity,
-// the controller will not be able to stabilize the position precisely
-// and oscillations about the set-point will always be present in the
-// behaviour. The test verifies that the position reached is within some
-// bound with respect to the initial condition.
-GTEST_TEST(testIIWAArm, iiwaArmPDControl) {
+// Test to verify behavior of the KUKA IIWA Arm under a gravity
+// compensated PD joint position controller. Even under lower gains
+// (in contrast with a pure PD controller), accurate position control
+// is possible. The test looks for 2 things : (i) with the set-point
+// identical with the initial pose, the controller maintains the robot
+// pose with negligible errors over a given duration; (ii) the controller
+// maintains this pose with a negligible velocity error.
+GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
   const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
 
   // Initializes LCM.
-  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
+  std::shared_ptr<LCM> lcm = std::make_shared<LCM>();
 
   // Instantiates additional systems and cascades them with the rigid body
   // system.
@@ -51,34 +51,35 @@ GTEST_TEST(testIIWAArm, iiwaArmPDControl) {
 
   int num_dof = iiwa_tree->number_of_positions();
 
-  // Large gains intentionally used for demo.
-  const double Kp_common = 500.0;
-  const double Kd_common = 0.00;
+  // Smaller gains intentionally used for demo.
+  const double Kp_common = 10.0;  // Units : Nm/rad
+  const double Kd_common = 0.30;  // Units : Nm/rad/sec
   VectorXd Kpdiag = VectorXd::Constant(num_dof, Kp_common);
-  Kpdiag(1) = 800.0;
-  Kpdiag(3) = 700.0;
   VectorXd Kddiag = VectorXd::Constant(num_dof, Kd_common);
+
   MatrixXd Kp = Kpdiag.asDiagonal();
   MatrixXd Kd = Kddiag.asDiagonal();
 
   // Obtains an initial state of the simulation.
   VectorXd x0 = VectorXd::Zero(iiwa_system->getNumStates());
-  x0.head(num_dof) = iiwa_tree->getZeroConfiguration();
+  x0.head(iiwa_tree->number_of_positions()) = iiwa_tree->getZeroConfiguration();
 
-  Eigen::VectorXd arbitrary_initial_configuration(num_dof);
-  arbitrary_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
-  x0.head(num_dof) += arbitrary_initial_configuration;
+  Eigen::VectorXd random_initial_configuration(num_dof);
+  random_initial_configuration << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
+  x0.head(num_dof) += random_initial_configuration;
 
-  // Set point is the initial state.
+  // Set point is the initial configuration.
+  VectorXd set_point_vector = x0.head(num_dof);
   auto set_point = std::make_shared<
       AffineSystem<NullVector, NullVector, RigidBodySystem::StateVector>>(
       MatrixXd::Zero(0, 0), MatrixXd::Zero(0, 0), VectorXd::Zero(0),
-      MatrixXd::Zero(num_dof, 0), MatrixXd::Zero(num_dof, 0), x0.head(num_dof));
+      MatrixXd::Zero(num_dof, 0), MatrixXd::Zero(num_dof, 0), set_point_vector);
 
-  auto controlled_robot =
-      std::allocate_shared<PDControlSystem<RigidBodySystem>>(
-          Eigen::aligned_allocator<PDControlSystem<RigidBodySystem>>(),
-          iiwa_system, Kp, Kd);
+  auto controlled_robot = std::allocate_shared<
+      GravityCompensatedPDPositionControlSystem<RigidBodySystem>>(
+      Eigen::aligned_allocator<
+          GravityCompensatedPDPositionControlSystem<RigidBodySystem>>(),
+      iiwa_system, Kp, Kd);
 
   auto sys = cascade(cascade(cascade(set_point, controlled_robot), visualizer),
                      robot_state_tap);
@@ -99,15 +100,14 @@ GTEST_TEST(testIIWAArm, iiwaArmPDControl) {
   // Ensures joint position and velocity limits are not violated.
   EXPECT_NO_THROW(CheckLimitViolations(iiwa_system, xf));
 
-  // Expects norm of the joint position difference to be below a maximum value.
+  // Expects norm of the joint position error to be below a maximum value.
   double kMaxPositionErrorNorm = 1e-3;
-  EXPECT_TRUE((xf.head(num_dof) - x0.head(num_dof)).squaredNorm() <
+  EXPECT_TRUE((xf.head(num_dof) - set_point_vector).squaredNorm() <
               kMaxPositionErrorNorm);
 
-  // Expects final joint velocity has a norm larger than a minimum value.
-  // (since this controller won't stay at rest at the set-point).
+  // Expects final joint velocity has a norm to be smaller than a minimum value.
   double kMinVelocityNorm = 1e-3;
-  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() > kMinVelocityNorm);
+  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() < kMinVelocityNorm);
 }
 
 }  // namespace

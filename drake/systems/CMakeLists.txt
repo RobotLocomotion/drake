@@ -34,6 +34,7 @@ drake_install_headers(
   n_ary_state.h
   n_ary_system.h
   pd_control_system.h
+  gravity_compensated_pd_position_control_system.h
   Simulation.h
   simulation_options.h
   System.h

@@ -5,11 +5,11 @@
 #include "drake/drakeCars_export.h"
 #include "drake/examples/Cars/curve2.h"
 #include "drake/examples/Cars/system1_cars_vectors.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 
-/// TrajectoryCar -- a car that follows a pre-established trajectory,
-/// neglecting all physics.
+/// A car that follows a pre-established trajectory, neglecting all physics.
 ///
 /// state vector
 /// * none
@@ -23,12 +23,12 @@ namespace drake {
 //    heading is defined around the +z axis, so positive-turn-left
 /// * velocity
 ///
-class DRAKECARS_EXPORT TrajectoryCar {
+class DRAKECARS_EXPORT TrajectoryCar1 {
  public:
   /// Constructs a TrajectoryCar system that traces the given @p curve,
   /// at the given constant @p speed, starting at the given @p start_time.
   /// Throws an error if the curve is empty (a zero @p path_length).
-  TrajectoryCar(const Curve2<double>& curve, double speed, double start_time)
+  TrajectoryCar1(const Curve2<double>& curve, double speed, double start_time)
       : curve_(curve), speed_(speed), start_time_(start_time) {
     if (curve_.path_length() == 0.0) {
       throw std::invalid_argument{"empty curve"};
@@ -36,8 +36,8 @@ class DRAKECARS_EXPORT TrajectoryCar {
   }
 
   // Noncopyable.
-  TrajectoryCar(const TrajectoryCar&) = delete;
-  TrajectoryCar& operator=(const TrajectoryCar&) = delete;
+  TrajectoryCar1(const TrajectoryCar1&) = delete;
+  TrajectoryCar1& operator=(const TrajectoryCar1&) = delete;
 
   /// @name Implement the Drake System concept.
   //@{
@@ -50,16 +50,16 @@ class DRAKECARS_EXPORT TrajectoryCar {
   using OutputVector = SimpleCarState1<ScalarType>;
 
   template <typename ScalarType>
-  StateVector<ScalarType> dynamics(const ScalarType& time,
-                                   const StateVector<ScalarType>& state,
-                                   const InputVector<ScalarType>& input) const {
+  StateVector<ScalarType> dynamics(const ScalarType&,
+                                   const StateVector<ScalarType>&,
+                                   const InputVector<ScalarType>&) const {
     // No state means no dynamics.
     return StateVector<ScalarType>{};
   }
 
   template <typename ScalarType>
   OutputVector<ScalarType> output(const ScalarType& time,
-                                  const StateVector<ScalarType>& state,
+                                  const StateVector<ScalarType>&,
                                   const InputVector<ScalarType>&) const {
     // N.B. Never use InputVector data, because we are !isDirectFeedthrough.
 
@@ -93,6 +93,43 @@ class DRAKECARS_EXPORT TrajectoryCar {
   const Curve2<double> curve_;
   const double speed_;
   const double start_time_;
+};
+
+/// A System2 wrapper around the System1 TrajectoryCar1.
+template <typename T>
+class TrajectoryCar : public systems::LeafSystem<T> {
+ public:
+  TrajectoryCar(const Curve2<T>& curve, double speed, double start_time)
+      : wrapped_(curve, speed, start_time) {
+    this->DeclareOutputPort(systems::kVectorValued,
+                            SimpleCarStateIndices::kNumCoordinates,
+                            systems::kContinuousSampling);
+  }
+
+  void EvalOutput(const systems::ContextBase<T>& context,
+                  systems::SystemOutput<T>* output) const override {
+    DRAKE_ASSERT(output != nullptr);
+    DRAKE_ASSERT(output->get_num_ports() == 1);
+    systems::VectorInterface<T>* output_vector =
+        output->get_mutable_port(0)->GetMutableVectorData();
+    DRAKE_ASSERT(output_vector != nullptr);
+
+    // TODO(jwninmmer-tri) Once TrajectoryCar1 is otherwise unused and can be
+    // deleted, replace this forwarding code the TrajetoryCar1::output code
+    // directly, and delete TrajectoryCar1.
+    const NullVector<T> none;
+    output_vector->get_mutable_value() =
+        toEigen(wrapped_.output<T>(context.get_time(), none, none));
+  }
+
+ protected:
+  std::unique_ptr<systems::VectorInterface<T>> AllocateOutputVector(
+      const systems::SystemPortDescriptor<T>& descriptor) const override {
+    return std::make_unique<SimpleCarState<T>>();
+  }
+
+ private:
+  const TrajectoryCar1 wrapped_;
 };
 
 }  // namespace drake

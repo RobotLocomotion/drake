@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <string>
 
 #include <Eigen/Geometry>
 
@@ -32,8 +31,8 @@ std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
 DRAKEKUKAIIWAARM_EXPORT
 drake::SimulationOptions SetupSimulation(double initial_step_size = 0.002);
 
-/*
- * Check for joint position and joint velocity limit violations.
+/**
+ * Checks for joint position and velocity limit violations.
  * `std::runtime_error` is thrown if any limits are violated.
  */
 DRAKEKUKAIIWAARM_EXPORT

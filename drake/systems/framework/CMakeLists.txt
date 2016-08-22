@@ -7,6 +7,7 @@ set(sources
   context_base.cc
   context.cc
   diagram.cc
+  diagram_builder.cc
   diagram_context.cc
   leaf_system.cc
   primitives/adder.cc
@@ -42,6 +43,7 @@ set(installed_headers
   context.h
   context_base.h
   diagram.h
+  diagram_builder.h
   diagram_context.h
   leaf_state_vector.h
   leaf_system.h

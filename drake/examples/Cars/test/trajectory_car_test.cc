@@ -6,7 +6,6 @@
 #include "gtest/gtest.h"
 
 #include "drake/examples/Cars/curve2.h"
-#include "drake/systems/vector.h"
 
 namespace drake {
 namespace examples {
@@ -23,7 +22,8 @@ GTEST_TEST(TrajectoryCarTest, StationaryTest) {
   const Curve2d empty_curve{empty_waypoints};
   const double speed{99.0};
   const double start_time{0.0};
-  EXPECT_THROW((TrajectoryCar{empty_curve, speed, start_time}), std::exception);
+  EXPECT_THROW((TrajectoryCar1{empty_curve, speed, start_time}),
+               std::exception);
 }
 
 // Check the car's progress along some simple paths.  We just want to
@@ -71,7 +71,13 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
     };
     const Curve2d curve{waypoints};
     // The "device under test".
-    const TrajectoryCar car_dut{curve, it.speed, it.start_time};
+    const TrajectoryCar<double> car_dut{curve, it.speed, it.start_time};
+
+    // The test inputs (time) and outputs.
+    std::unique_ptr<systems::ContextBase<double>> context =
+        car_dut.CreateDefaultContext();
+    std::unique_ptr<systems::SystemOutput<double>> all_output =
+        car_dut.AllocateOutput(*context);
 
     // Check that the systems' outputs over time are correct over the
     // entire duration of the trajectory, but also including some time
@@ -87,12 +93,19 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
           start + (heading_vector * it.distance * fractional_progress);
       const double kMaxErrorRad = 1e-6;
 
-      const drake::NullVector<double> null_vector{};
-      auto output = car_dut.output(time, null_vector, null_vector);
-      EXPECT_DOUBLE_EQ(output.x(), expected_position(0));
-      EXPECT_DOUBLE_EQ(output.y(), expected_position(1));
-      EXPECT_NEAR(output.heading(), it.heading, kMaxErrorRad);
-      EXPECT_DOUBLE_EQ(output.velocity(), it.speed);
+      context->set_time(time);
+      car_dut.EvalOutput(*context, all_output.get());
+
+      ASSERT_EQ(1, all_output->get_num_ports());
+      const SimpleCarState<double>* output =
+          dynamic_cast<const SimpleCarState<double>*>(
+              all_output->get_port(0).get_vector_data());
+      ASSERT_NE(nullptr, output);
+
+      EXPECT_DOUBLE_EQ(expected_position(0), output->x());
+      EXPECT_DOUBLE_EQ(expected_position(1), output->y());
+      EXPECT_NEAR(it.heading, output->heading(), kMaxErrorRad);
+      EXPECT_DOUBLE_EQ(it.speed, output->velocity());
     }
   }
 }
