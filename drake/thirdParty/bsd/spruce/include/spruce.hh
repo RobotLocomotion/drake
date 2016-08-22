@@ -22,7 +22,7 @@
     #define DLLEXPORT_spruce __declspec( dllimport )
   #endif
 #else
-    #define DLLEXPORT_spruce
+    #define DLLEXPORT_spruce [[gnu::visibility("default")]]
 #endif
 
 namespace spruce

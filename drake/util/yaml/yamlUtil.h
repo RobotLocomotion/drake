@@ -5,24 +5,26 @@
 #include "yaml-cpp/yaml.h"
 #include "drake/systems/controllers/QPCommon.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/drakeYAMLUtil_export.h"
 
-YAML::Node applyDefaults(const YAML::Node& node,
-                         const YAML::Node& default_node);
-YAML::Node expandDefaults(const YAML::Node& node);
+DRAKEYAMLUTIL_EXPORT YAML::Node applyDefaults(
+  const YAML::Node& node, const YAML::Node& default_node);
+DRAKEYAMLUTIL_EXPORT YAML::Node expandDefaults(const YAML::Node& node);
 
 // yaml-cpp does not understand the DEFAULT: syntax for a default value or the
-// <<:
-// syntax to merge the contents of a node. This function wraps the map lookup
-// to provide the correct behavior.
-YAML::Node get(const YAML::Node& parent, const std::string& key);
+// <<: syntax to merge the contents of a node. This function wraps the map
+// lookup to provide the correct behavior.
+DRAKEYAMLUTIL_EXPORT YAML::Node get(
+  const YAML::Node& parent, const std::string& key);
 
-QPControllerParams loadSingleParamSet(const YAML::Node& config,
-                                      const RigidBodyTree& robot);
-std::map<std::string, QPControllerParams> loadAllParamSets(
+DRAKEYAMLUTIL_EXPORT QPControllerParams loadSingleParamSet(
+  const YAML::Node& config, const RigidBodyTree& robot);
+DRAKEYAMLUTIL_EXPORT std::map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree& robot);
-std::map<std::string, QPControllerParams> loadAllParamSets(
+DRAKEYAMLUTIL_EXPORT std::map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree& robot,
     std::ofstream& debug_output_file);
-RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
-                                              const RigidBodyTree& robot);
-KinematicModifications parseKinematicModifications(const YAML::Node& mods);
+DRAKEYAMLUTIL_EXPORT RobotPropertyCache parseKinematicTreeMetadata(
+  const YAML::Node& metadata, const RigidBodyTree& robot);
+DRAKEYAMLUTIL_EXPORT KinematicModifications parseKinematicModifications(
+  const YAML::Node& mods);
