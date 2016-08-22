@@ -36,8 +36,7 @@ class GravityCompensatedSystem {
   typedef std::shared_ptr<RigidBodySystem> RigidBodySystemPtr;
   typedef std::shared_ptr<RigidBodyTree> RigidBodyTreePtr;
 
-  GravityCompensatedSystem(const RigidBodySystemPtr& sys)
-      : sys_(sys){
+  explicit GravityCompensatedSystem(const RigidBodySystemPtr& sys) : sys_(sys) {
     sys_tree_ = sys->getRigidBodyTree();
   }
 
@@ -49,7 +48,7 @@ class GravityCompensatedSystem {
     KinematicsCache<double> cache_ = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
     eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-    f_ext;
+        f_ext;
     f_ext.clear();
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
@@ -67,7 +66,7 @@ class GravityCompensatedSystem {
     KinematicsCache<double> cache_ = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
     eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-    f_ext;
+        f_ext;
     f_ext.clear();
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
@@ -78,8 +77,7 @@ class GravityCompensatedSystem {
     // resolved.
     auto G = sys_tree_->inverseDynamics(cache_, f_ext, vd, false);
 
-    typename System::template InputVector<ScalarType> system_u =
-        toEigen(u) + G;
+    typename System::template InputVector<ScalarType> system_u = toEigen(u) + G;
 
     return sys_->output(t, x, system_u);
   }
