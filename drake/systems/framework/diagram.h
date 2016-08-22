@@ -22,7 +22,7 @@ namespace systems {
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
 template <typename T>
 struct DiagramOutput : public SystemOutput<T> {
-  int get_num_ports() const override { return ports_.size(); }
+  int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 
   OutputPort<T>* get_mutable_port(int index) override { return ports_[index]; }
 
@@ -95,7 +95,7 @@ class Diagram : public System<T> {
     }
     const auto& subsystem_descriptor = subsystem_ports[port_index];
     SystemPortDescriptor<T> descriptor(
-        this, kInputPort, this->get_input_ports().size(),
+        this, kInputPort, static_cast<int>(this->get_input_ports().size()),
         subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
         subsystem_descriptor.get_sampling());
     this->DeclareInputPort(descriptor);
@@ -120,7 +120,7 @@ class Diagram : public System<T> {
     }
     const auto& subsystem_descriptor = subsystem_ports[port_index];
     SystemPortDescriptor<T> descriptor(
-        this, kOutputPort, this->get_output_ports().size(),
+        this, kOutputPort, static_cast<int>(this->get_output_ports().size()),
         subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
         subsystem_descriptor.get_sampling());
     this->DeclareOutputPort(descriptor);

@@ -19,6 +19,7 @@ if(lcm_FOUND)
     VERSION 0.0.1)
 endif()
 
+add_subdirectory(analysis)
 add_subdirectory(frames)
 add_subdirectory(framework)
 add_subdirectory(plants)

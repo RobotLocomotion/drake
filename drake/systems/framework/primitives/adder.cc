@@ -34,7 +34,7 @@ void Adder<T>::EvalOutput(const ContextBase<T>& context,
       output->get_mutable_port(0)->GetMutableVectorData();
 
   // Zeroes the output.
-  const int n = output_vector->get_value().rows();
+  const int n = static_cast<int>(output_vector->get_value().rows());
   output_vector->get_mutable_value() = VectorX<T>::Zero(n);
 
   // Sum each input port into the output, after checking that it has the

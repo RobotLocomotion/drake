@@ -567,7 +567,7 @@ string Polynomial<CoefficientType>::IdToVariableName(const VarType id) {
 template <typename CoefficientType>
 void Polynomial<CoefficientType>::MakeMonomialsUnique(void) {
   VarType unique_var = 0;  // also update the univariate flag
-  for (int i = monomials_.size() - 1; i >= 0; i--) {
+  for (int i = static_cast<int>(monomials_.size()) - 1; i >= 0; i--) {
     if (monomials_[i].coefficient == 0) {
       monomials_.erase(monomials_.begin() + i);
       continue;

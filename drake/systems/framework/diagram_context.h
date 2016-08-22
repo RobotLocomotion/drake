@@ -146,7 +146,9 @@ class DiagramContext : public ContextBase<T> {
     return (*it).second.get();
   }
 
-  int get_num_input_ports() const override { return input_ids_.size(); }
+  int get_num_input_ports() const override {
+    return static_cast<int>(input_ids_.size());
+  }
 
   void SetInputPort(int index, std::unique_ptr<InputPort<T>> port) override {
     if (index < 0 || index >= get_num_input_ports()) {

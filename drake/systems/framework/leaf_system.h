@@ -50,7 +50,7 @@ class LeafSystem : public System<T> {
  private:
   /// Reserves inputs that have already been declared.
   void ReserveInputs(Context<T>* context) const {
-    context->SetNumInputPorts(this->get_input_ports().size());
+    context->SetNumInputPorts(this->get_num_input_ports());
   }
 
   /// By default, allocates no state. Child classes that need state should

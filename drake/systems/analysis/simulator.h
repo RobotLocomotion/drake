@@ -1,0 +1,333 @@
+#pragma once
+
+#include "drake/common/drake_assert.h"
+#include "drake/drakeSystemAnalysis_export.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/system.h"
+
+namespace drake {
+namespace systems {
+
+/** Used to specify a particular choice of integration method. 
+Currently the default is 2nd order Runge Kutta (explicit trapezoid rule). **/
+// TODO(sherm1) Replace with a more elaborate Integrator class and a much
+// wider assortment of integrators.
+enum class IntegratorType { UseDefault, ExplicitEuler, RungeKutta2 };
+
+/** A forward dynamics solver for hybrid dynamic systems represented by
+`System<T>` objects. Starting with an initial Context for a given System,
+%Simulator advances time and produces a series of Context values that forms a
+trajectory satisfying the system's dynamic equations to a specified accuracy.
+Only the Context is modified by a %Simulator; the System is const.
+
+A Drake System is a continuous/discrete/hybrid dynamic system where the
+continuous part is a DAE, that is, it is expected to consist of a set of
+differential equations and bilateral algebraic constraints. The set of active
+constraints may change as a result of particular events, such as contact.
+
+Given a current Context, we expect a System to provide us with
+ - derivatives for the continuous differential equations that already satisfy
+   the differentiated form of the constraints (typically, acceleration
+   constraints),
+ - a projection method for least-squares correction of violated higher-level
+   constraints (position and velocity level),
+ - a time-of-next-sample method that can be used to adjust the integrator
+   stepsize in preparation for a discrete update,
+ - a method that can update discrete variables when their sample time is
+   reached,
+ - witness (guard) functions for event isolation,
+ - event handlers (reset functions) for making appropriate changes to state and
+   mode variables when an event has been isolated.
+
+The continuous parts of the trajectory are advanced using a numerical
+integrator. Different integrators have different properties and you may choose
+your favorite. A default is provided which is adequate for most systems.
+**/
+template <typename T>
+class Simulator {
+ public:
+  /** Create a %Simulator that can advance a given System through time to
+  produce a trajectory consisting of a sequence of Context values.
+  The Simulator holds an internal, non-owned reference to the System
+  object so you must ensure that `system` has a longer lifetime than the
+  %Simulator. You may optionally provide a compatible Context that will be
+  used as the initial condition for the simulation; otherwise the System's
+  default Context will be used. If a Context object is provided, the %Simulator
+  will take over ownership of that object. **/
+  explicit Simulator(const System<T>* system,
+                     std::unique_ptr<Context<T>> context = nullptr);
+
+  /** Prepares the %Simulator for a simulation. This requires determining the
+  integrator type and processing options requested by the caller, and choosing
+  an initial step size to attempt. If the initial Context does not satisfy the
+  System's constraints, an attempt is made to modify the initial Context so that
+  it does. **/
+  // TODO(sherm1) Actually deal with constraints.
+  void Initialize();
+
+  /** Advance the System's trajectory until `final_time` is reached or some
+  other termination condition occurs. The System's `Publish()` method is called
+  at the start of each step. **/
+  // TODO(sherm1) Publish() should be called at publishing sample times.
+  void StepTo(const T& final_time);
+
+  /** Request that a particular type of integrator be used for the continuous
+  portions of the simulation. Otherwise a default integrator is chosen for
+  you. **/
+  void request_integrator(IntegratorType integrator) {
+    req_integrator_ = integrator;
+  }
+
+  /** Report the type of integrator actually being used. **/
+  IntegratorType get_integrator_in_use() const { return integrator_in_use_; }
+
+  /** Request that the integrator attempt to achieve a particular accuracy for
+  the continuous portions of the simulation. Otherwise a default accuracy is
+  chosen for you. *Accuracy* is a complicated topic but translates roughly to
+  the number of significant digits you want in the results. By convention it
+  is supplied as `10^-digits`, meaning that an accuracy of 1e-3 provides about
+  three significant digits. **/
+  // TODO(sherm1) Ignored at the moment.
+  void request_accuracy(double accuracy) { req_accuracy_ = accuracy; }
+
+  /** Report the accuracy setting actually being used. **/
+  double get_accuracy_in_use() const { return accuracy_in_use_; }
+
+  /** Request that the first attempted integration step have a particular size.
+  Otherwise the integrator will estimate a suitable size for the initial step
+  attempt. For variable-step integration this will be treated as a maximum size
+  subject to accuracy requirements and event occurrences. You can find out what
+  size *actually* worked with `get_actual_initial_step_size_taken()`. **/
+  void request_initial_stepsize(const T& step_size) {
+    req_initial_step_size_ = step_size;
+  }
+
+  /** Returns a const reference to the internally-maintained Context holding the
+  most recent step in the trajectory. This is suitable for publishing or
+  extracting information about this trajectory step. **/
+  const ContextBase<T>& get_context() const { return *context_; }
+
+  /** Returns a mutable pointer to the internally-maintained Context holding the
+  most recent step in the trajectory. This is suitable for use in updates,
+  sampling operations, event handlers, and constraint projection. You can
+  also modify this prior to calling Initialize() to set initial conditions. **/
+  ContextBase<T>* get_mutable_context() { return context_.get(); }
+
+  /** Replace the internally-maintained Context with a different one. The
+  current Context is deleted. This is useful for supplying non-default initial
+  conditions. You should invoke Initialize() after replacing the Context. **/
+  void reset_context(std::unique_ptr<Context<T>> context) {
+    context_ = std::move(context);
+  }
+
+  /** Transfer ownership of this %Simulator's internal Context to the caller.
+  The %Simulator will no longer contain a Context. **/
+  std::unique_ptr<ContextBase<T>> release_context() {
+    return std::move(context_);
+  }
+
+  /** @name                       Statistics
+  These methods track relevant activity of the %Simulator since the last call
+  to `Initialize()`. **/
+  /**@{**/
+  /** What what the actual size of the successful first step? **/
+  T get_actual_initial_step_size_taken() const {
+    return actual_initial_step_size_taken_;
+  }
+
+  /** What was the size of the smallest step taken since the last Initialize()
+  call? **/
+  T get_smallest_step_size_taken() const { return smallest_step_size_taken_; }
+
+  /** What was the size of the largest step taken since the last Initialize()
+  call? **/
+  T get_largest_step_size_taken() const { return largest_step_size_taken_; }
+
+  /** How many integration steps have been taken since the last Initialize()
+  call? **/
+  long long get_num_steps_taken() const { return num_steps_taken_; }
+
+  /** How many discrete sample events have been processed since the last
+  Initialize() call? **/
+  long long get_num_discrete_samples() const { return num_discrete_samples_; }
+  /**@}**/
+
+ private:
+  static constexpr double kDefaultAccuracy = 0.001;  // 1/10 of 1%.
+  static constexpr IntegratorType kDefaultIntegrator =
+      IntegratorType::RungeKutta2;
+  static constexpr double kMaxStretch = 0.01;  // Allow 1% step size stretch.
+  static constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+
+  const System<T>& system_;                      // Just a reference; not owned.
+  std::unique_ptr<ContextBase<T>> context_;      // Owned here.
+  std::unique_ptr<ContinuousState<T>> derivs_;   // Owned here.
+  std::unique_ptr<ContinuousState<T>> derivs1_;  // Owned here.
+
+  // These are the caller's requests, if any.
+  IntegratorType req_integrator_{IntegratorType::UseDefault};
+  double req_accuracy_{0};           // means "unspecified, use default"
+  double req_initial_step_size_{0};  // means "unspecified, use default"
+
+  // This is set true by Initialize().
+  bool initialization_done_{false};
+
+  IntegratorType integrator_in_use_{IntegratorType::UseDefault};
+  double accuracy_in_use_{kDefaultAccuracy};
+  T initial_step_size_in_use_{1e-3};
+
+  // This is set at the end of each step to guide the next one.
+  T next_step_size_to_try_{1e-3};
+
+  // Statistics.
+  T actual_initial_step_size_taken_{kNaN};
+  T smallest_step_size_taken_{kNaN};
+  T largest_step_size_taken_{kNaN};
+  long long num_steps_taken_{0};
+  long long num_discrete_samples_{0};
+};
+
+// TODO(sherm1) Move these implementations to the -inl.h file.
+
+template <typename T>
+Simulator<T>::Simulator(const System<T>* system,
+                        std::unique_ptr<Context<T>> context)
+    : system_(*system), context_(std::move(context)) {
+  DRAKE_ABORT_UNLESS(system != nullptr);
+  if (!context_) context_ = system_.CreateDefaultContext();
+  // TODO(sherm1) This should not be necessary because there should
+  // be a cache entry in context_ sized properly for state derivatives.
+  derivs_ = system_.AllocateTimeDerivatives();
+
+  // This temporary is needed for RK2.
+  // TODO(sherm1) Allocate temporaries in concrete integrators instead once
+  // there are more of them.
+  derivs1_ = system_.AllocateTimeDerivatives();
+}
+
+template <typename T>
+void Simulator<T>::Initialize() {
+  // TODO(sherm1) Modify Context to satisfy constraints.
+
+  if (req_integrator_ == IntegratorType::UseDefault)
+    integrator_in_use_ = kDefaultIntegrator;
+  else
+    integrator_in_use_ = req_integrator_;
+
+  if (req_accuracy_ > T(0)) accuracy_in_use_ = req_accuracy_;
+  if (req_initial_step_size_ > T(0))
+    initial_step_size_in_use_ = req_initial_step_size_;
+
+  next_step_size_to_try_ = initial_step_size_in_use_;
+
+  actual_initial_step_size_taken_ = T(kNaN);
+  smallest_step_size_taken_ = T(kNaN);
+  largest_step_size_taken_ = T(kNaN);
+  num_steps_taken_ = 0;
+  num_discrete_samples_ = 0;
+
+  // TODO(sherm1) Anything to initialize in context?
+  initialization_done_ = true;
+}
+
+template <typename T>
+void Simulator<T>::StepTo(const T& final_time) {
+  DRAKE_ABORT_UNLESS(initialization_done_);
+
+  // Find the continuous state xc within the Context, just once.
+  StateVector<T>* xc =
+      context_->get_mutable_state()->continuous_state->get_mutable_state();
+
+  // TODO(sherm1) Invoke selected integrator.
+  SampleActions sample_actions;
+  bool sample_time_hit = false;
+  while (context_->get_time() <= final_time) {
+    // Starting a new step on the trajectory.
+    const T start_time = context_->get_time();
+
+    // First make any necessary discrete updates.
+    if (sample_time_hit) {
+      system_.Update(context_.get(), sample_actions);
+      ++num_discrete_samples_;
+    }
+
+    // Now we can calculate start-of-step time derivatives.
+
+    // TODO(sherm1) This should be calculating into the cache so that
+    // Publish() doesn't have to recalculate if it wants to output
+    // derivatives.
+    system_.EvalTimeDerivatives(*context_, derivs_.get());
+
+    // The Context now contains the trajectory value at start-of-step.
+    // Allow System a chance to produce some output.
+    // TODO(sherm1) This should be called only at Publish sample times.
+    system_.Publish(*context_);
+
+    // That may have been the final trajectory entry.
+    if (start_time == final_time) break;
+
+    // Next, determine the end_time we are going to try to reach with the
+    // next step. Start with the ideal step size.
+    T end_time = start_time + next_step_size_to_try_;
+
+    // We can be persuaded to take a slightly bigger step if necessary to
+    // avoid a tiny sliver step before we have to do something discrete.
+    const T stretch_time = end_time + kMaxStretch * next_step_size_to_try_;
+
+    // How far can we go before we have to take a sampling break?
+    const T sample_time =
+        system_.CalcNextSampleTime(*context_, &sample_actions);
+    DRAKE_ASSERT(sample_time >= start_time);
+
+    // The step may be limited or stretched either by final time or sample
+    // time, whichever comes sooner.
+    sample_time_hit = false;
+    if (sample_time <= final_time) {
+      if (stretch_time >= sample_time) {
+        end_time = sample_time;
+        sample_time_hit = true;
+      }
+    } else {  // final_time < sample_time.
+      if (stretch_time >= final_time) end_time = final_time;
+    }
+
+    if (end_time > start_time) {
+      const T h = end_time - start_time;
+
+      // First stage is an explicit Euler step:
+      // xc1 = xc(t) + h * xcdot(t, xc(t), xd(t+), u(t))
+      const auto& xcdot = derivs_->get_state();
+      xc->PlusEqScaled(h, xcdot);  // xc += h * xcdot
+      context_->set_time(end_time);
+
+      // If we're using Explicit Euler, we're done.
+
+      // For RK2, we need another stage. We want
+      //    xc(t+h) = xc(t) + (h/2) * (xcdot + xcdot1)
+      //            = [xc(t) + h * xcdot] + (h/2) * (xcdot1 - xcdot)
+      if (get_integrator_in_use() == IntegratorType::RungeKutta2) {
+        system_.EvalTimeDerivatives(*context_, derivs1_.get());
+        const auto& xcdot1 = derivs1_->get_state();
+        xc->PlusEqScaled(h / 2, xcdot1);
+        xc->PlusEqScaled(-h / 2, xcdot);
+      }
+
+      // TODO(sherm1) Constraint projection goes here.
+
+      // TODO(sherm1) Accuracy control goes here.
+
+      // We successfully took a step -- collect statistics.
+      if (++num_steps_taken_ == 1) {  // The first step.
+        actual_initial_step_size_taken_ = h;
+        smallest_step_size_taken_ = h;
+        largest_step_size_taken_ = h;
+      } else {  // Not the first step.
+        if (h < smallest_step_size_taken_) smallest_step_size_taken_ = h;
+        if (h > largest_step_size_taken_) largest_step_size_taken_ = h;
+      }
+    }
+  }
+}
+
+}  // namespace systems
+}  // namespace drake

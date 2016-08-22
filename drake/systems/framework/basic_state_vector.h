@@ -33,8 +33,8 @@ class BasicStateVector : public LeafStateVector<T> {
   /// Constructs a BasicStateVector that owns a generic BasicVector with the
   /// specified @p data.
   explicit BasicStateVector(const std::vector<T>& data)
-      : BasicStateVector(data.size()) {
-    for (size_t i = 0; i < data.size(); ++i) {
+      : BasicStateVector(static_cast<int>(data.size())) {
+    for (int i = 0; i < static_cast<int>(data.size()); ++i) {
       SetAtIndex(i, data[i]);
     }
   }
