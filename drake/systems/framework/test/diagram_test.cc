@@ -4,6 +4,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -18,8 +19,7 @@ namespace {
 class DiagramTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    diagram_.reset(new Diagram<double>());
-    diagram_->set_name("Unicode Snowman's Favorite Diagram!!1!☃!");
+    DiagramBuilder<double> builder;
 
     adder0_.reset(new Adder<double>(2 /* inputs */, 3 /* length */));
     adder0_->set_name("adder0");
@@ -28,20 +28,18 @@ class DiagramTest : public ::testing::Test {
     adder2_.reset(new Adder<double>(2 /* inputs */, 3 /* length */));
     adder2_->set_name("adder2");
 
-    diagram_->Connect(adder0_.get(), 0 /* src_port_index */, adder1_.get(),
-                      0 /* dest_port_index */);
-    diagram_->Connect(adder0_.get(), 0 /* src_port_index */, adder2_.get(),
-                      0 /* dest_port_index */);
-    diagram_->Connect(adder1_.get(), 0 /* src_port_index */, adder2_.get(),
-                      1 /* dest_port_index */);
+    builder.Connect(adder0_->get_output_port(0), adder1_->get_input_port(0));
+    builder.Connect(adder0_->get_output_port(0), adder2_->get_input_port(0));
+    builder.Connect(adder1_->get_output_port(0), adder2_->get_input_port(1));
 
-    diagram_->ExportInput(adder0_.get(), 0);
-    diagram_->ExportInput(adder0_.get(), 1);
-    diagram_->ExportInput(adder1_.get(), 1);
-    diagram_->ExportOutput(adder1_.get(), 0);
-    diagram_->ExportOutput(adder2_.get(), 0);
+    builder.ExportInput(adder0_->get_input_port(0));
+    builder.ExportInput(adder0_->get_input_port(1));
+    builder.ExportInput(adder1_->get_input_port(1));
+    builder.ExportOutput(adder1_->get_output_port(0));
+    builder.ExportOutput(adder2_->get_output_port(0));
 
-    diagram_->Finalize();
+    diagram_ = builder.Build();
+    diagram_->set_name("Unicode Snowman's Favorite Diagram!!1!☃!");
 
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
@@ -131,45 +129,6 @@ TEST_F(DiagramTest, EvalOutput) {
 
   ASSERT_EQ(2, output_->get_num_ports());
   ExpectDefaultOutputs();
-}
-
-// Tests that an exception is thrown if the diagram contains a cycle.
-TEST_F(DiagramTest, Cycle) {
-  diagram_.reset(new Diagram<double>());
-  diagram_->set_name("Diagram with a cycle.  Oh no!");
-  auto adder = std::make_unique<Adder<double>>(1 /* inputs */, 1 /* length */);
-  // Connect the output port to the input port.
-  diagram_->Connect(adder.get(), 0, adder.get(), 0);
-  EXPECT_THROW(diagram_->Finalize(), std::logic_error);
-}
-
-// Tests that an exception is thrown when finalizing a diagram that has already
-// been finalized.
-TEST_F(DiagramTest, Refinalize) {
-  EXPECT_THROW(diagram_->Finalize(), std::logic_error);
-}
-
-// Tests that an exception is thrown when finalizing an empty diagram.
-TEST_F(DiagramTest, FinalizeWhenEmpty) {
-  diagram_.reset(new Diagram<double>());
-  diagram_->set_name("Empty diagram!");
-  EXPECT_THROW(diagram_->Finalize(), std::logic_error);
-}
-
-// Tests that an exception is thrown when getting the context of a diagram that
-// has not been finalized.
-TEST_F(DiagramTest, Unfinalized) {
-  diagram_.reset(new Diagram<double>());
-  diagram_->set_name("Unfinalized diagram!");
-  auto adder = std::make_unique<Adder<double>>(1 /* inputs */, 1 /* length */);
-  diagram_->ExportInput(adder.get(), 0);
-
-  // Before the diagram is finalized, CreateDefaultContext should throw.
-  EXPECT_THROW(diagram_->CreateDefaultContext(), std::logic_error);
-
-  // After the diagram is finalized, CreateDefaultContext should not throw.
-  diagram_->Finalize();
-  EXPECT_NO_THROW(diagram_->CreateDefaultContext());
 }
 
 // Tests that the same diagram can be evaluated into the same output with

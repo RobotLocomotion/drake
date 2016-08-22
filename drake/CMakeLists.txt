@@ -41,7 +41,7 @@ endif()
 
 # set up pods
 set(POD_NAME drake)
-include(cmake/pods.cmake)
+include(../cmake/pods.cmake)
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
@@ -203,7 +203,7 @@ find_package(gflags REQUIRED)
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)
 
-include(cmake/procman.cmake)  # helper script for writing procman files
+include(../cmake/procman.cmake)  # helper script for writing procman files
 
 # set up pseudo-target for threads
 find_package(Threads)
@@ -284,7 +284,7 @@ add_subdirectory(bindings)
 add_subdirectory(regtests)
 
 # setup MATLAB pods-compliance
-include(cmake/matlab_pods.cmake)
+include(../cmake/matlab_pods.cmake)
 pods_configure_matlab_paths()
 
 message(STATUS "Writing path utilities to ${CMAKE_INSTALL_PREFIX}/matlab")
