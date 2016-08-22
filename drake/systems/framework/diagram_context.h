@@ -146,6 +146,16 @@ class DiagramContext : public ContextBase<T> {
     return (*it).second.get();
   }
 
+  /// Returns the state structure for a given constituent system @p sys, or
+  /// nullptr if @p sys is not a constituent system.
+  State<T>* GetMutableSubsystemState(SystemIndex sys) {
+    auto it = contexts_.find(sys);
+    if (it == contexts_.end()) {
+      return nullptr;
+    }
+    return (*it).second->get_mutable_state();
+  }
+
   int get_num_input_ports() const override { return input_ids_.size(); }
 
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {

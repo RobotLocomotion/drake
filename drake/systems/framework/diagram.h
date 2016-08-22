@@ -9,6 +9,7 @@
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_context.h"
+#include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -17,13 +18,16 @@ namespace systems {
 
 template<typename T> class DiagramBuilder;
 
+namespace internal {
+
 /// DiagramOutput is an implementation of SystemOutput that holds unowned
 /// OutputPort pointers. It is used to expose the outputs of constituent
 /// systems as outputs of a Diagram.
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
 template <typename T>
-struct DiagramOutput : public SystemOutput<T> {
+class DiagramOutput : public SystemOutput<T> {
+ public:
   int get_num_ports() const override { return ports_.size(); }
 
   OutputPort* get_mutable_port(int index) override { return ports_[index]; }
@@ -45,6 +49,92 @@ struct DiagramOutput : public SystemOutput<T> {
  private:
   std::vector<OutputPort*> ports_;
 };
+
+/// DiagramTimeDerivatives is a ContinuousState consisting of StateSupervectors
+/// over a set of constituent ContinuousStates, which it owns. As the name
+/// suggests, it is only useful for the Diagram's time derivatives.
+///
+/// @tparam T The type of the output data. Must be a valid Eigen scalar.
+template <typename T>
+class DiagramTimeDerivatives : public ContinuousState<T> {
+ public:
+  /// Constructs a ContinuousState that is composed of other ContinuousStates.
+  /// The DiagramTimeDerivatives vector will have the same order as the
+  /// @p states parameter, which should be the sort order of the Diagram itself.
+  explicit DiagramTimeDerivatives(
+      std::vector<std::unique_ptr<ContinuousState<T>>> substates)
+      : ContinuousState<T>(MakeX(substates), MakeQ(substates), MakeV(substates),
+                           MakeZ(substates)),
+        substates_(std::move(substates)) {}
+
+  ~DiagramTimeDerivatives() override {}
+
+  int get_num_substates() const { return static_cast<int>(substates_.size()); }
+
+  const ContinuousState<T>& get_substate(int index) const {
+    return *substates_[index];
+  }
+
+  ContinuousState<T>* get_mutable_substate(int index) {
+    return substates_[index].get();
+  }
+
+ private:
+  /// Returns a supervector of all the constituent states.
+  static std::unique_ptr<StateVector<T>> MakeX(
+      const std::vector<std::unique_ptr<ContinuousState<T>>>& substates) {
+    std::vector<StateVector<T>*> sub_xs;
+    for (const auto& substate : substates) {
+      if (substate != nullptr) {
+        sub_xs.push_back(substate->get_mutable_state());
+      }
+    }
+    return std::make_unique<StateSupervector<T>>(sub_xs);
+  }
+
+  /// Returns a supervector of all the generalized positions of the constituent
+  /// states.
+  static std::unique_ptr<StateVector<T>> MakeQ(
+      const std::vector<std::unique_ptr<ContinuousState<T>>>& substates) {
+    std::vector<StateVector<T>*> sub_qs;
+    for (const auto& substate : substates) {
+      if (substate != nullptr) {
+        sub_qs.push_back(substate->get_mutable_generalized_position());
+      }
+    }
+    return std::make_unique<StateSupervector<T>>(sub_qs);
+  }
+
+  /// Returns a supervector of all the generalized velocities of the constituent
+  /// states.
+  static std::unique_ptr<StateVector<T>> MakeV(
+      const std::vector<std::unique_ptr<ContinuousState<T>>>& substates) {
+    std::vector<StateVector<T>*> sub_vs;
+    for (const auto& substate : substates) {
+      if (substate != nullptr) {
+        sub_vs.push_back(substate->get_mutable_generalized_velocity());
+      }
+    }
+    return std::make_unique<StateSupervector<T>>(sub_vs);
+  }
+
+  /// Returns a supervector of all the miscellaneous continuous states of the
+  /// constituent states.
+  static std::unique_ptr<StateVector<T>> MakeZ(
+      const std::vector<std::unique_ptr<ContinuousState<T>>>& substates) {
+    std::vector<StateVector<T>*> sub_zs;
+    for (const auto& substate : substates) {
+      if (substate != nullptr) {
+        sub_zs.push_back(substate->get_mutable_misc_continuous_state());
+      }
+    }
+    return std::make_unique<StateSupervector<T>>(sub_zs);
+  }
+
+  std::vector<std::unique_ptr<ContinuousState<T>>> substates_;
+};
+
+}  // namespace internal
 
 /// Diagram is a System composed of one or more constituent Systems, arranged
 /// in a directed graph where the vertices are the constituent Systems
@@ -97,7 +187,7 @@ class Diagram : public System<T> {
     // The output ports of this Diagram are output ports of its constituent
     // systems. Create a DiagramOutput with that many ports. They will be
     // connected to the appropriate subsystem outputs at `EvalOutput` time.
-    std::unique_ptr<DiagramOutput<T>> output(new DiagramOutput<T>);
+    auto output = std::make_unique<internal::DiagramOutput<T>>();
     output->get_mutable_ports()->resize(output_port_ids_.size());
 
     return std::unique_ptr<SystemOutput<T>>(output.release());
@@ -108,7 +198,7 @@ class Diagram : public System<T> {
     // Down-cast the context and output to DiagramContext and DiagramOutput.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_ASSERT(diagram_context != nullptr);
-    auto diagram_output = dynamic_cast<DiagramOutput<T>*>(output);
+    auto diagram_output = dynamic_cast<internal::DiagramOutput<T>*>(output);
     DRAKE_ASSERT(diagram_output != nullptr);
 
     // Populate the output with pointers to the appropriate subsystem outputs
@@ -132,30 +222,81 @@ class Diagram : public System<T> {
 
     // Since the diagram output now contains pointers to the subsystem outputs,
     // all we need to do is compute all the subsystem outputs in sorted order.
-    for (const System<T>* const system : sorted_systems_) {
-      const int index = GetSystemIndex(system);
-      const ContextBase<T>* subsystem_context =
-          diagram_context->GetSubsystemContext(index);
-      SystemOutput<T>* subsystem_output =
-          diagram_context->GetSubsystemOutput(index);
-      system->EvalOutput(*subsystem_context, subsystem_output);
-    }
+    //
+    // TODO(david-german-tri): This can be made less conservative. We don't need
+    // to compute intermediate outputs that don't affect the diagram outputs.
+    ComputeAllSubsystemOutputs(diagram_context);
   }
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
-    // TODO(david-german-tri): Actually allocate derivatives.
-    return nullptr;
+    std::vector<std::unique_ptr<ContinuousState<T>>> sub_derivatives;
+    for (const System<T>* const system : sorted_systems_) {
+      sub_derivatives.push_back(system->AllocateTimeDerivatives());
+    }
+    return std::unique_ptr<ContinuousState<T>>(
+        new internal::DiagramTimeDerivatives<T>(std::move(sub_derivatives)));
   }
 
   void EvalTimeDerivatives(const ContextBase<T>& context,
                            ContinuousState<T>* derivatives) const override {
-    // TODO(david-german-tri): Actually compute derivatives.
+    // Freshen all the subsystem inputs to match the provided context.
+    //
+    // TODO(david-german-tri): This can be made less conservative: we don't
+    // need to freshen inputs to subsystems with no state.
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_ASSERT(diagram_context != nullptr);
+    ComputeAllSubsystemOutputs(diagram_context);
+
+    auto diagram_derivatives =
+        dynamic_cast<internal::DiagramTimeDerivatives<T>*>(derivatives);
+    DRAKE_ABORT_UNLESS(diagram_derivatives != nullptr);
+    const int n = diagram_derivatives->get_num_substates();
+    DRAKE_ABORT_UNLESS(static_cast<int>(sorted_systems_.size()) == n);
+
+    // Evaluate the derivatives of each constituent system.
+    for (int i = 0; i < n; ++i) {
+      const ContextBase<T>* subcontext =
+          diagram_context->GetSubsystemContext(i);
+      ContinuousState<T>* subderivatives =
+          diagram_derivatives->get_mutable_substate(i);
+      sorted_systems_[i]->EvalTimeDerivatives(*subcontext, subderivatives);
+    }
   }
 
   void MapVelocityToConfigurationDerivatives(
       const ContextBase<T>& context, const StateVector<T>& generalized_velocity,
       StateVector<T>* configuration_derivatives) const override {
     // TODO(david-german-tri): Actually map velocity to derivatives.
+  }
+
+  /// Retrieves the state derivatives for a particular subsystem from the
+  /// derivatives for the entire diagram.
+  const ContinuousState<T>& GetSubsystemDerivatives(
+      const ContinuousState<T>& derivatives, const System<T>* subsystem) const {
+    auto diagram_derivatives =
+        dynamic_cast<const internal::DiagramTimeDerivatives<T>*>(&derivatives);
+    DRAKE_ABORT_UNLESS(diagram_derivatives != nullptr);
+    return diagram_derivatives->get_substate(GetSystemIndex(subsystem));
+  }
+
+  /// Retrieves the state derivatives for a particular subsystem from the
+  /// derivatives for the entire diagram.
+  ContinuousState<T>* GetMutableSubsystemDerivatives(
+      ContinuousState<T>* derivatives, const System<T>* subsystem) const {
+    auto diagram_derivatives =
+        dynamic_cast<internal::DiagramTimeDerivatives<T>*>(derivatives);
+    DRAKE_ABORT_UNLESS(diagram_derivatives != nullptr);
+    return diagram_derivatives->get_mutable_substate(GetSystemIndex(subsystem));
+  }
+
+  /// Retrieves the state for a particular subsystem from the context for the
+  /// entire diagram.
+  State<T>* GetMutableSubsystemState(ContextBase<T>* context,
+                                     const System<T>* subsystem) const {
+    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
+    const int i = GetSystemIndex(subsystem);
+    return diagram_context->GetMutableSubsystemState(i);
   }
 
  protected:
@@ -276,6 +417,21 @@ class Diagram : public System<T> {
     output.first = GetSystemIndex(id.first);
     output.second = id.second;
     return output;
+  }
+
+  // In sorted order, compute the outputs for all subsystems. This is also a
+  // blunt way to update the inputs for all subsystems to match the given
+  // @p context.
+  void ComputeAllSubsystemOutputs(const DiagramContext<T>* context) const {
+    // TODO(david-german-tri): Use the diagram-level cache to skip systems that
+    // are already fresh.
+    for (const System<T>* const system : sorted_systems_) {
+      const int index = GetSystemIndex(system);
+      const ContextBase<T>* subsystem_context =
+          context->GetSubsystemContext(index);
+      SystemOutput<T>* subsystem_output = context->GetSubsystemOutput(index);
+      system->EvalOutput(*subsystem_context, subsystem_output);
+    }
   }
 
   // Returns true if every port mentioned in the dependency_graph_ exists.
