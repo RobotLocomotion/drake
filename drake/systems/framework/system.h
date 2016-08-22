@@ -33,7 +33,7 @@ class System {
   /// override this method to return false.
   // TODO(amcastro-tri): Provide a more descriptive mechanism to specify
   // pairwise (input_port, output_port) feedthrough.
-  virtual bool has_any_direct_feedthrough() const { return true;}
+  virtual bool has_any_direct_feedthrough() const { return true; }
 
   /// Returns the number of input ports of the system.
   int get_num_input_ports() const { return input_ports_.size(); }
@@ -174,6 +174,7 @@ class System {
   virtual T EvalNonConservativePower(const ContextBase<T>& context) const {
     return T(0);
   }
+
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. Solvers will provide this state as the
   /// output argument to EvalTimeDerivatives.
