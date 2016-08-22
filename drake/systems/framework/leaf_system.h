@@ -36,9 +36,8 @@ class LeafSystem : public System<T> {
       const ContextBase<T>& context) const override {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (const auto& descriptor : this->get_output_ports()) {
-      std::unique_ptr<BasicVector<T>> data(
-          new BasicVector<T>(descriptor.get_size()));
-      std::unique_ptr<OutputPort<T>> port(new OutputPort<T>(std::move(data)));
+      std::unique_ptr<OutputPort<T>> port(new OutputPort<T>(std::move(
+          AllocateOutputVector(descriptor))));
       output->get_mutable_ports()->push_back(std::move(port));
     }
     return std::unique_ptr<SystemOutput<T>>(output.release());
@@ -46,6 +45,15 @@ class LeafSystem : public System<T> {
 
  protected:
   LeafSystem() {}
+
+  /// Given a port descriptor, allocate the vector storage.  The default
+  /// implementation in this class allocates a BasicVector.  Subclasses can
+  /// override to use output vector types other than BasicVector.
+  virtual std::unique_ptr<VectorInterface<T>> AllocateOutputVector(
+      const SystemPortDescriptor<T>& descriptor) const {
+    return std::unique_ptr<VectorInterface<T>>(
+        new BasicVector<T>(descriptor.get_size()));
+  }
 
  private:
   /// Reserves inputs that have already been declared.

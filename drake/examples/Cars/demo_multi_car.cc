@@ -50,7 +50,7 @@ int DoMain(int argc, const char* argv[]) {
   //  U: ()
   //  X: ()
   //  Y: [(xy-position, heading, velocity), ...] per SimpleCarState
-  auto cars_system = std::make_shared<NArySystem<TrajectoryCar>>();
+  auto cars_system = std::make_shared<NArySystem<TrajectoryCar1>>();
   // NarySystem for car visualization.
   // BotVisualizer:
   //  U: [(xy-position, heading, velocity), ...] per SimpleCarState

@@ -35,7 +35,7 @@ using drake::math::Gradient;
 #define DLLEXPORT __declspec(dllimport)
 #endif
 #else
-#define DLLEXPORT
+#define DLLEXPORT [[gnu::visibility("default")]]
 #endif
 
 DLLEXPORT bool isa(const mxArray* mxa, const char* class_str);
