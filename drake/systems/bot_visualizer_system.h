@@ -3,10 +3,10 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
-// #include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
-// #include "drake/systems/lcm/lcm_translator_dictionary.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
 namespace drake {
 namespace systems {
@@ -83,14 +83,15 @@ class DRAKELCMSYSTEM2_EXPORT BotVisualizerSystem : public System<double> {
   void initialize_draw_message();
 
   // A const reference to the RigidBodyTree whose rigid bodies are to be
-  // visulized.
+  // visualized.
   const RigidBodyTree& tree_;
 
   // A pointer to the LCM subsystem.
   ::lcm::LCM* lcm_;
 
-  // The LCM draw message to send to the Drake Visualizer.
-  drake::lcmt_viewer_draw draw_msg_;
+  // The LCM draw message to send to the Drake Visualizer. This member variable
+  // is declared mutable so it can be modified by EvalOutput().
+  mutable drake::lcmt_viewer_draw draw_msg_;
 };
 
 }  // namespace systems

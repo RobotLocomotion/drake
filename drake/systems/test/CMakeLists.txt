@@ -36,3 +36,5 @@ add_matlab_test(NAME systems/test/LinearGaussianDT.run COMMAND LinearGaussianDT.
 add_matlab_test(NAME systems/test/memoryTest COMMAND memoryTest)
 # add_matlab_test(NAME systems/test/runPendulum COMMAND runPendulum)  # FIXME: see #310
 add_matlab_test(NAME systems/test/testSimInput COMMAND testSimInput)
+
+add_subdirectory(bot_visualizer)

@@ -1,5 +1,6 @@
 #include "drake/systems/bot_visualizer_system.h"
 
+#include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/systems/framework/system_input.h"
 
 namespace drake {
@@ -49,8 +50,9 @@ void BotVisualizerSystem::EvalOutput(const ContextBase<double>& context,
 
   draw_msg_.timestamp = static_cast<int64_t>(context.get_time() * 1000.0);
 
-  const Eigen::VectorXd q = toEigen(u).head(tree_->number_of_positions());
-  KinematicsCache<double> cache = tree_->doKinematics(q);
+  const Eigen::VectorXd q = input_vector->get_value().head(
+      tree_.number_of_positions());
+  KinematicsCache<double> cache = tree_.doKinematics(q);
 
   for (size_t i = 0; i < tree_.bodies.size(); ++i) {
     auto transform = tree_.relativeTransform(cache, 0, i);
@@ -159,7 +161,7 @@ void BotVisualizerSystem::initialize_draw_message() {
   draw_msg_.num_links = tree_.bodies.size();
   std::vector<float> position = {0, 0, 0};
   std::vector<float> quaternion = {0, 0, 0, 1};
-  for (const auto& body : tree_->bodies) {
+  for (const auto& body : tree_.bodies) {
     draw_msg_.link_name.push_back(body->get_name());
     draw_msg_.robot_num.push_back(body->get_model_instance_id());
     draw_msg_.position.push_back(position);
