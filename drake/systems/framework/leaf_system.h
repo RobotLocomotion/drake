@@ -24,8 +24,8 @@ class LeafSystem : public System<T> {
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
-    std::unique_ptr<Context<T>> context(new Context<T>);
-    ReserveInputs(context.get());
+    auto context = std::make_unique<Context<T>>(
+        this->get_input_ports().size());
     ReserveState(context.get());
     return std::unique_ptr<ContextBase<T>>(context.release());
   }
@@ -56,11 +56,6 @@ class LeafSystem : public System<T> {
   }
 
  private:
-  /// Reserves inputs that have already been declared.
-  void ReserveInputs(Context<T>* context) const {
-    context->SetNumInputPorts(this->get_input_ports().size());
-  }
-
   /// By default, allocates no state. Child classes that need state should
   /// override.
   virtual void ReserveState(Context<T>* context) const {}

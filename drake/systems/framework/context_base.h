@@ -35,6 +35,7 @@ class ContextBase {
 
   /// Set the current time in seconds.
   void set_time(const T& time_sec) {
+    InvalidateTime();
     get_mutable_step_info()->time_sec = time_sec;
   }
 
@@ -53,8 +54,8 @@ class ContextBase {
 
   virtual const State<T>& get_state() const = 0;
 
-  /// Returns writable access to the State. No cache invalidation occurs until
-  /// mutable access is requested for particular blocks of state variables.
+  /// Returns writable access to the State.
+  /// Implementations should invalidate all cache lines that depend on state.
   virtual State<T>* get_mutable_state() = 0;
 
   /// Returns a deep copy of this ContextBase. The clone's input ports will
@@ -63,6 +64,17 @@ class ContextBase {
   std::unique_ptr<ContextBase<T>> Clone() const {
     return std::unique_ptr<ContextBase<T>>(DoClone());
   }
+
+  /// Invalidates all cache lines that depend on the time.
+  virtual void InvalidateTime() = 0;
+
+  /// Invalidates all cache lines that depend on the state.
+  /// TODO(david-german-tri): Provide finer-grained invalidation on q, v, z,
+  ///                         xc, xd, and mode variables.
+  virtual void InvalidateState() = 0;
+
+  /// Invalidates all cache lines that depend on the input port @p index.
+  virtual void InvalidateInputPort(int index) = 0;
 
  protected:
   /// Contains the return-type-covariant implementation of Clone().
