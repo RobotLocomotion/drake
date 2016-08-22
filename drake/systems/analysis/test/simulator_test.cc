@@ -76,6 +76,7 @@ class MySpringMassSystem : public SpringMassSystem {
   double sample_rate_{0.};  // Default is "don't sample".
 };
 
+// Try a purely continuous system with no sampling.
 GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
@@ -109,12 +110,15 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
        << simulator.get_largest_step_size_taken() << endl;
 }
 
+// Repeat the previous test but now the continuous steps are interrupted
+// by a discrete sample every 1/30 second. The step size doesn't divide that
+// evenly so we should get some step size modification here.
 GTEST_TEST(SimulatorTest, SpringMass) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 
   MySpringMassSystem spring_mass(kSpring, kMass, 30.);
-  spring_mass.set_publish(true);
+  // spring_mass.set_publish(true);
 
   Simulator<double> simulator(&spring_mass);  // use default Context
 

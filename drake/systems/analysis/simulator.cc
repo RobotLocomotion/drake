@@ -11,10 +11,5 @@ namespace systems {
 
 template class Simulator<double>;
 
-// TODO(sherm1) Just need some code so the library will get built.
-namespace {
-DRAKESYSTEMANALYSIS_EXPORT int ignore_this_thing() { return 0; }
-}
-
 }  // namespace systems
 }  // namespace drake
