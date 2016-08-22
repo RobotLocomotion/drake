@@ -19,7 +19,7 @@ namespace drake {
  *
  * @concept{system_concept}
  *
- * ![GravityCompensatedSystem](https://github.com/RobotLocomotion/drake/tree/master/drake/doc/images/GravityCompensatedSystem.svg)
+ * ![GravityCompensatedSystem](https://github.com/RobotLocomotion/drake/blob/master/drake/doc/images/GravityCompensatedSystem.svg)
  *
  */
 template <class System>
@@ -78,9 +78,6 @@ class GravityCompensatedSystem {
     // resolved.
     auto G = sys_tree_->inverseDynamics(cache_, f_ext, vd, false);
 
-//    typename System::template InputVector<ScalarType> system_u =
-//        Kp_ * (toEigen(u).head(Kp_.cols()) - toEigen(x).head(Kp_.cols())) +
-//            Kd_ * (toEigen(u).tail(Kd_.cols()) - toEigen(x).tail(Kd_.cols())) + G;
     typename System::template InputVector<ScalarType> system_u =
         toEigen(u) + G;
 
