@@ -129,6 +129,7 @@ function(mex_setup)
 
     get_mex_option(CFLAGS NAMES COMPFLAGS)
     get_mex_option(CXXFLAGS NAMES COMPFLAGS)
+    get_mex_option(DEFINES NAMES COMPDEFINES)
     get_mex_option(COPTIMFLAGS NAMES OPTIMFLAGS)
     get_mex_option(CXXOPTIMFLAGS NAMES OPTIMFLAGS)
     get_mex_option(CDEBUGFLAGS NAMES DEBUGFLAGS)
@@ -197,7 +198,7 @@ function(mex_setup)
   endif()
 
   # figure out LDFLAGS for exes and shared libraries
-  set (MEXLIB_LDFLAGS ${MEX_LDFLAGS} ${MEX_LD_ARGUMENTS} ${MEX_CLIBS} ${MEX_LINKLIBS} ${MEX_LINKEXPORT})
+  set (MEXLIB_LDFLAGS ${MEX_LDFLAGS} ${MEX_LD_ARGUMENTS} ${MEX_CXXLIBS} ${MEX_LINKLIBS} ${MEX_LINKEXPORT})
 
   if (NOT WIN32) # AND (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX))
     set(MEXLIB_LDFLAGS ${MEXLIB_LDFLAGS} "-ldl")
@@ -225,20 +226,20 @@ function(mex_setup)
 
 
   # todo: handle C separately from CXX?
-  set (MEX_COMPILE_FLAGS "${MEX_INCLUDE} ${MEX_CXXFLAGS} ${MEX_DEFINES} ${MEX_MATLABMEX} ${MEX_CXX_ARGUMENTS}")
-  string(TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
-  if (_build_type MATCHES DEBUG)
-    set(MEX_COMPILE_FLAGS "${MEX_CXXDEBUGFLAGS} ${MEX_COMPILE_FLAGS}")
-    if (MSVC)
-      string(REPLACE "/MD " "/MDd " MEX_COMPILE_FLAGS "${MEX_COMPILE_FLAGS}")
-    endif()
-  elseif (_build_type MATCHES RELEASE)
-    set(MEX_COMPILE_FLAGS "${MEX_CXXOPTIMFLAGS} ${MEX_COMPILE_FLAGS}")
-  endif()
+  set (MEX_COMPILE_FLAGS "${MEX_CXXFLAGS} ${MEX_DEFINES} ${MEX_CXX_ARGUMENTS}")
 
-  if (${MEX_COMPILE_FLAGS} MATCHES "-ansi")
-    string(REPLACE "-ansi" "" MEX_COMPILE_FLAGS "${MEX_COMPILE_FLAGS}")
-    message(WARNING "Your MEX compiler flags contained '-ansi', but we've removed that flag for compatibility with C++11")
+  # CMake will add the appropriate flags for the chosen build configuration
+  # instead of these flags
+  if(MSVC)
+    # Controlled by CMAKE_BUILD_TYPE
+    string(REPLACE "/MD " "" MEX_COMPILE_FLAGS "${MEX_COMPILE_FLAGS}")
+    # Controlled by CMAKE_VERBOSE_MAKEFILE
+    string(REPLACE "/nologo " "" MEX_COMPILE_FLAGS "${MEX_COMPILE_FLAGS}")
+    string(REPLACE "/nologo " "" MEXLIB_LDFLAGS "${MEXLIB_LDFLAGS}")
+  else()
+    # Controlled by CMAKE_C_STANDARD and CMAKE_CXX_STANDARD
+    string(REPLACE "-ansi " "" MEX_COMPILE_FLAGS "${MEX_COMPILE_FLAGS}")
+    string(REPLACE "-std=c++11 " "" MEX_COMPILE_FLAGS "${MEX_COMPILE_FLAGS}")
   endif()
 
   set(MEX_COMPILE_FLAGS "${MEX_COMPILE_FLAGS}" PARENT_SCOPE)
@@ -255,7 +256,7 @@ function(mex_setup)
   endif()
 
   set (MEXLIB_LDFLAGS "${MEXLIB_LDFLAGS}" PARENT_SCOPE)
-  # todo: add CLIBS or CXXLIBS to LINK_FLAGS selectively based in if it's a c or cxx target (always added C above)
+  # todo: add CLIBS or CXXLIBS to LINK_FLAGS selectively based on if it's a c or cxx target (always added CXX above)
 
   if (MATLAB_ROOT AND MEX_EXT)
      set (MATLAB_FOUND true PARENT_SCOPE)
@@ -269,7 +270,7 @@ function(mex_setup)
 
   compare_compilers(compilers_match "${CMAKE_CXX_COMPILER}" "${MEX_CXX}")
   if (NOT compilers_match)
-     message(WARNING "Your cmake CXX compiler is: \"${CMAKE_CXX_COMPILER}\" but your mex options end up pointing to: \"${MEX_CXX}\".  You must use the same compilers.  You can either:\n  a) Configure the mex compiler by running 'mex -setup' in  MATLAB, or \n  b) Set the default compiler for cmake by setting the CC environment variable in your terminal.")
+     message(WARNING "Your cmake CXX compiler is: \"${CMAKE_CXX_COMPILER}\" but your mex options end up pointing to: \"${MEX_CXX}\".  You must use the same compilers.  You can either:\n  a) Configure the mex compiler by running 'mex -setup' in  MATLAB, or \n  b) Set the default compiler for cmake by setting the CXX environment variable in your terminal.")
   endif()
 
   # NOTE:  would like to check LD also, but it appears to be difficult with cmake  (there is not explicit linker executable variable, only the make rule), and  even my mex code assumes that LD==LDCXX for simplicity.
@@ -313,12 +314,7 @@ function(add_mex)
     if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
       target_link_libraries(${target} liblast)
     else()
-      set_target_properties(${target} PROPERTIES
-        LINK_FLAGS_DEBUG	"${MEXLIB_LDDEBUGFLAGS} ${MEX_LDFLAGS}"
-        LINK_FLAGS_RELEASE	"${MEXLIB_LDOPTIMFLAGS} ${MEX_LDFLAGS}"
-        LINK_FLAGS_MINSIZEREL	"${MEXLIB_LDFLAGS} ${MEX_LDOPTIMFLAGS}"
-        LINK_FLAGS_RELWITHDEBINFO	"${MEXLIB_LDFLAGS} ${MEX_LDDEBUGFLAGS} ${MEX_LDOPTIMFLAGS}"
-      )
+      set_target_properties(${target} PROPERTIES LINK_FLAGS "${MEXLIB_LDFLAGS}")
     endif()
   elseif (isshared GREATER -1)
     add_library(${target} ${ARGV})
@@ -334,23 +330,15 @@ function(add_mex)
       string(REPLACE "/EXPORT:mexFunction" "" __ldflags "${__ldflags}")
       string(REGEX REPLACE "/implib:[^ ]+" "" __ldflags "${__ldflags}")
 
-      set_target_properties(${target} PROPERTIES
-        LINK_FLAGS_DEBUG	"${__ldflags} ${MEX_LDDEBUGFLAGS}"
-        LINK_FLAGS_RELEASE	"${__ldflags} ${MEX_LDOPTIMFLAGS}"
-        LINK_FLAGS_MINSIZEREL	"${__ldflags} ${MEX_LDOPTIMFLAGS}"
-        LINK_FLAGS_RELWITHDEBINFO	"${__ldflags} ${MEX_LDDEBUGFLAGS} ${MEX_LDOPTIMFLAGS}"
-      )
+      set_target_properties(${target} PROPERTIES LINK_FLAGS "${__ldflags}")
     endif()
   else ()
     add_library(${target} MODULE ${ARGV})
     set_target_properties(${target} PROPERTIES
-      COMPILE_FLAGS "-DMATLAB_MEX_FILE ${MEX_COMPILE_FLAGS}"
+      COMPILE_FLAGS "${MEX_COMPILE_FLAGS}"
       PREFIX ""
       SUFFIX ".${MEX_EXT}"
-      LINK_FLAGS_DEBUG	"${MEXLIB_LDFLAGS} ${MEX_LDDEBUGFLAGS}"
-      LINK_FLAGS_RELEASE	"${MEXLIB_LDFLAGS} ${MEX_LDOPTIMFLAGS}"
-      LINK_FLAGS_MINSIZEREL	"${MEXLIB_LDFLAGS} ${MEX_LDOPTIMFLAGS}"
-      LINK_FLAGS_RELWITHDEBINFO	"${MEXLIB_LDFLAGS} ${MEX_LDDEBUGFLAGS} ${MEX_LDOPTIMFLAGS}"
+      LINK_FLAGS "${MEXLIB_LDFLAGS}"
       ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       OUTPUT_NAME ${mexfilename}
@@ -367,12 +355,7 @@ function(add_mex)
 
     if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
       # see comment by the definition of liblast above
-      set_target_properties(${target} PROPERTIES
-        LINK_FLAGS_DEBUG "${MEX_LDDEBUGFLAGS}"
-        LINK_FLAGS_RELEASE "${MEX_LDOPTIMFLAGS}"
-        LINK_FLAGS_MINSIZEREL "${MEX_LDOPTIMFLAGS}"
-        LINK_FLAGS_RELWITHDEBINFO	"${MEX_LDDEBUGFLAGS} ${MEX_LDOPTIMFLAGS}"
-        )
+      set_target_properties(${target} PROPERTIES LINK_FLAGS "${MEXLIB_LDFLAGS}")
       target_link_libraries(${target} liblast)
     endif()
   endif()
