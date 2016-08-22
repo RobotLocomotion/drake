@@ -10,13 +10,13 @@
 namespace drake {
 
 /**
- * A time varying LQR controller to play back an input+state
+ * A time varying feedback controller to play back an input+state
  * trajectory.
  *
  * @concept{system_concept}
  */
 template <typename System>
-class SimpleLqrTrajectoryController {
+class SimpleFeedbackTrajectoryController {
  public:
   template <typename ScalarType>
   using InputVector = typename System::template StateVector<ScalarType>;
@@ -26,11 +26,11 @@ class SimpleLqrTrajectoryController {
   using OutputVector = typename System::template InputVector<ScalarType>;
   typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
-  SimpleLqrTrajectoryController(std::shared_ptr<System> sys,
-                                const PiecewisePolynomialType& utraj,
-                                const PiecewisePolynomialType& xtraj,
-                                const Eigen::MatrixXd& Q,
-                                const Eigen::MatrixXd& R)
+  SimpleFeedbackTrajectoryController(std::shared_ptr<System> sys,
+                                     const PiecewisePolynomialType& utraj,
+                                     const PiecewisePolynomialType& xtraj,
+                                     const Eigen::MatrixXd& Q,
+                                     const Eigen::MatrixXd& R)
       : sys_(sys), utraj_(utraj), xtraj_(xtraj), Q_(Q), R_(R) {}
 
   template <typename ScalarType>

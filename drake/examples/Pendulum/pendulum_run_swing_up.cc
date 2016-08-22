@@ -11,13 +11,13 @@
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
-#include "drake/systems/controllers/simple_lqr_trajectory_controller.h"
+#include "drake/systems/controllers/simple_feedback_trajectory_controller.h"
 #include "drake/systems/feedback_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/robot_state_tap.h"
 #include "drake/util/drakeAppUtil.h"
 
-using drake::SimpleLqrTrajectoryController;
+using drake::SimpleFeedbackTrajectoryController;
 using drake::solvers::SolutionResult;
 using drake::MatrixCompareType;
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
   Eigen::MatrixXd R(1, 1);
   R << 1;  // arbitrary, taken from PendulumPlant.m
 
-  auto control = std::make_shared<SimpleLqrTrajectoryController<Pendulum>>(
+  auto control = std::make_shared<SimpleFeedbackTrajectoryController<Pendulum>>(
       p, pp_traj, pp_xtraj, Q, R);
   auto traj_sys = drake::feedback(p, control);
   auto sys = drake::cascade(drake::cascade(traj_sys, visualizer),
