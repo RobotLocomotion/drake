@@ -99,7 +99,7 @@ void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
     dut->EvalOutput(*context.get(), output.get());
 
     // Gets the output of the LcmSubscriberSystem.
-    const drake::systems::VectorInterface<double>* vector =
+    const drake::systems::VectorBase<double>* vector =
         output->get_port(0).get_vector_data();
 
     // Downcasts the output vector to be a pointer to a BasicVector.
@@ -150,7 +150,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   const std::string channel_name =
       "drake_system2_lcm_test_subscriber_channel_name";
 
-  // Instantiates a LCM-VectorInterface translator.
+  // Instantiates a LCM-VectorBase translator.
   const TranslatorBetweenLcmtDrakeSignal translator(kDim);
 
   // Instantiates an LcmSubscriberSystem that receives LCM messages of type

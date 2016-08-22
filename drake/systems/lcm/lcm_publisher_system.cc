@@ -13,7 +13,7 @@ const int kPortIndex = 0;
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
-    const LcmAndVectorInterfaceTranslator& translator, ::lcm::LCM* lcm)
+    const LcmAndVectorBaseTranslator& translator, ::lcm::LCM* lcm)
     : channel_(channel), translator_(translator), lcm_(lcm) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
@@ -49,12 +49,12 @@ std::unique_ptr<SystemOutput<double>> LcmPublisherSystem::AllocateOutput(
 void LcmPublisherSystem::EvalOutput(const ContextBase<double>& context,
                                     SystemOutput<double>* output) const {
   // Obtains the input vector.
-  const VectorInterface<double>* input_vector =
+  const VectorBase<double>* input_vector =
       context.get_vector_input(kPortIndex);
 
   // Translates the input vector into an LCM message and publishes it onto the
   // specified LCM channel.
-  translator_.PublishVectorInterfaceToLCM(*input_vector, channel_, lcm_);
+  translator_.PublishVectorBaseToLCM(*input_vector, channel_, lcm_);
 }
 
 }  // namespace lcm

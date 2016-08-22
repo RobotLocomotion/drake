@@ -19,7 +19,7 @@ constexpr int kMiscLength = 1;
 constexpr int kLength = kPositionLength + kVelocityLength + kMiscLength;
 
 std::unique_ptr<StateVector<int>> MakeStateVector() {
-  std::unique_ptr<VectorInterface<int>> vec;
+  std::unique_ptr<VectorBase<int>> vec;
   vec.reset(new BasicVector<int>(kLength));
   vec->get_mutable_value() << 1, 2, 3, 4;
 

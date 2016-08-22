@@ -178,8 +178,8 @@ TEST_F(DiagramContextTest, Clone) {
                                 MatrixCompareType::absolute));
   }
 
-  // Verify that the graph structure was preserved: the VectorInterface in
-  // sys0 output port 0 should be pointer-equal to the VectorInterface in
+  // Verify that the graph structure was preserved: the VectorBase in
+  // sys0 output port 0 should be pointer-equal to the VectorBase in
   // sys1 input port 1.
   EXPECT_EQ(clone->GetSubsystemContext(1)->get_vector_input(1),
             clone->GetSubsystemOutput(0)->get_port(0).get_vector_data());

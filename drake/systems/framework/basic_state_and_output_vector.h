@@ -7,19 +7,19 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_state_vector.h"
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
 /// BasicStateAndOutputVector is a concrete class template that implements
 /// StateVector in a convenient manner for LeafSystem blocks, and implements
-/// VectorInterface so that it may also be used as an output.
+/// VectorBase so that it may also be used as an output.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
 class BasicStateAndOutputVector : public BasicStateVector<T>,
-                                  public VectorInterface<T> {
+                                  public VectorBase<T> {
  public:
   /// Constructs a BasicStateAndOutputVector of the specified @p size.
   explicit BasicStateAndOutputVector(int size) : BasicStateVector<T>(size) {}
@@ -30,13 +30,13 @@ class BasicStateAndOutputVector : public BasicStateVector<T>,
 
   /// Constructs a BasicStateAndOutputVector that owns an arbitrary @p vector,
   /// which must not be nullptr.
-  explicit BasicStateAndOutputVector(std::unique_ptr<VectorInterface<T>> vector)
+  explicit BasicStateAndOutputVector(std::unique_ptr<VectorBase<T>> vector)
       : BasicStateVector<T>(std::move(vector)) {}
 
-  // The size() method overrides both BasicStateVector and VectorInterface.
+  // The size() method overrides both BasicStateVector and VectorBase.
   int size() const override { return this->get_wrapped_vector().size(); }
 
-  // These VectorInterface overrides merely delegate to the wrapped object.
+  // These VectorBase overrides merely delegate to the wrapped object.
   void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
     this->get_wrapped_vector().set_value(value);
   }
@@ -47,10 +47,10 @@ class BasicStateAndOutputVector : public BasicStateVector<T>,
     return this->get_wrapped_vector().get_mutable_value();
   }
 
-  // This VectorInterface override must not delegate, because we need to
+  // This VectorBase override must not delegate, because we need to
   // maintain our class type (BasicStateAndOutputVector) during cloning.
-  std::unique_ptr<VectorInterface<T>> CloneVector() const override {
-    return std::unique_ptr<VectorInterface<T>>(DoClone());
+  std::unique_ptr<VectorBase<T>> CloneVector() const override {
+    return std::unique_ptr<VectorBase<T>>(DoClone());
   }
 
  protected:

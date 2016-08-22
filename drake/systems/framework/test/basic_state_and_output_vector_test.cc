@@ -23,7 +23,7 @@ GTEST_TEST(BasicStateAndOutputVectorTest, CoverDelegatedMethods) {
   BasicStateAndOutputVector<int> dut(kLength);
   EXPECT_EQ(kLength, dut.size());
 
-  // Touch most VectorInterface methods.
+  // Touch most VectorBase methods.
   dut.set_value((Eigen::VectorXi(kLength) << 10, 11).finished());
   EXPECT_EQ(11, dut.get_value()(1));
   dut.get_mutable_value()(1) = 5;
@@ -61,11 +61,11 @@ GTEST_TEST(BasicStateAndOutputVectorTest, MatchingSetAndGet) {
   // The device under test.
   BasicStateAndOutputVector<int> dut(kLength);
 
-  // Set via VectorInterface; get via BasicStateVector.
+  // Set via VectorBase; get via BasicStateVector.
   dut.get_mutable_value()(1) = 5;
   EXPECT_EQ(5, dut.GetAtIndex(1));
 
-  // Set via BasicStateVector; get via VectorInterface.
+  // Set via BasicStateVector; get via VectorBase.
   dut.SetAtIndex(0, 6);
   EXPECT_EQ(6, dut.get_value()(0));
 }
@@ -90,7 +90,7 @@ GTEST_TEST(BasicStateAndOutputVectorTest, CloneVector) {
   BasicStateAndOutputVector<int> dut(kLength);
   dut.set_value((Eigen::VectorXi(kLength) << 10, 11).finished());
 
-  std::unique_ptr<VectorInterface<int>> clone = dut.CloneVector();
+  std::unique_ptr<VectorBase<int>> clone = dut.CloneVector();
   BasicStateAndOutputVector<int>* typed_clone =
       dynamic_cast<BasicStateAndOutputVector<int>*>(clone.get());
   ASSERT_NE(nullptr, typed_clone);

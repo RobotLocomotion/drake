@@ -7,7 +7,7 @@
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {

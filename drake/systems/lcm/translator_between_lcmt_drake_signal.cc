@@ -12,10 +12,10 @@ namespace lcm {
 
 using std::runtime_error;
 
-void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorInterface(
+void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
     const ::lcm::ReceiveBuffer* rbuf,
-    VectorInterface<double>* vector_interface) const {
-  DRAKE_ABORT_UNLESS(vector_interface);
+    VectorBase<double>* vector_base) const {
+  DRAKE_ABORT_UNLESS(vector_base);
 
   // Decodes the LCM message using data from the receive buffer.
   drake::lcmt_drake_signal message;
@@ -29,39 +29,39 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorInterface(
 
   // Verifies that the size of the LCM message matches the size of the basic
   // vector. Throws an exception if the sizes do not match.
-  if (message.dim != vector_interface->size()) {
+  if (message.dim != vector_base->size()) {
     throw runtime_error(
       "drake::systems::lcm::TranslatorBetweenLcmtDrakeSignal: "
       "TranslateLcmToBasicVector: ERROR: Size of LCM message (" +
       std::to_string(message.dim) +
       ") is not equal to the size of the vector vector (" +
-      std::to_string(vector_interface->size()) + ").");
+      std::to_string(vector_base->size()) + ").");
   }
-  Eigen::VectorBlock<VectorX<double>> vector_interface_value =
-    vector_interface->get_mutable_value();
+  Eigen::VectorBlock<VectorX<double>> vector_base_value =
+    vector_base->get_mutable_value();
 
   // Saves the values in from the LCM message into the basic vector.
   // Assumes that the order of the values in both vectors are identical.
   for (int ii = 0; ii < message.dim; ++ii) {
-    vector_interface_value[ii] = message.val[ii];
+    vector_base_value[ii] = message.val[ii];
   }
 }
 
-void TranslatorBetweenLcmtDrakeSignal::PublishVectorInterfaceToLCM(
-    const VectorInterface<double>& vector_interface, const std::string& channel,
+void TranslatorBetweenLcmtDrakeSignal::PublishVectorBaseToLCM(
+    const VectorBase<double>& vector_base, const std::string& channel,
     ::lcm::LCM* lcm) const {
 
-  DRAKE_ASSERT(vector_interface.size() == get_vector_size());
+  DRAKE_ASSERT(vector_base.size() == get_vector_size());
 
   // Instantiates and initializes a LCM message capturing the state of
-  // parameter vector_interface.
+  // parameter vector_base.
   drake::lcmt_drake_signal message;
-  message.dim = vector_interface.size();
+  message.dim = vector_base.size();
   message.val.resize(message.dim);
   message.coord.resize(message.dim);
 
   Eigen::VectorBlock<const VectorX<double>> values =
-      vector_interface.get_value();
+      vector_base.get_value();
 
   for (int ii = 0; ii < message.dim; ++ii) {
     message.val[ii] = values[ii];

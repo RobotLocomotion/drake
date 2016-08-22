@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "drake/systems/framework/system_output.h"
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -29,7 +29,7 @@ class InputPort : public OutputPortListenerInterface {
   /// Returns the vector data on this port, or nullptr if this port is not
   /// vector-valued or not connected. Implementations must ensure that
   /// get_vector_data is O(1) and initiates no substantive computation.
-  virtual const VectorInterface<T>* get_vector_data() const = 0;
+  virtual const VectorBase<T>* get_vector_data() const = 0;
 
   /// Registers @p callback to be called whenever the value of get_version
   /// changes. The callback should invalidate data that depends on the value
@@ -74,7 +74,7 @@ class DependentInputPort : public InputPort<T> {
   /// Returns the value version of the connected output port.
   int64_t get_version() const override { return output_port_->get_version(); }
 
-  const VectorInterface<T>* get_vector_data() const override {
+  const VectorBase<T>* get_vector_data() const override {
     return output_port_->get_vector_data();
   }
 
@@ -98,7 +98,7 @@ class FreestandingInputPort : public InputPort<T> {
   /// Constructs a continuous FreestandingInputPort.
   /// Takes ownership of @p vector_data.
   explicit FreestandingInputPort(
-      std::unique_ptr<VectorInterface<T>> vector_data)
+      std::unique_ptr<VectorBase<T>> vector_data)
       : output_port_(std::move(vector_data)) {
     output_port_.add_dependent(this);
   }
@@ -109,7 +109,7 @@ class FreestandingInputPort : public InputPort<T> {
   /// to change whenever GetMutableVectorData is called.
   int64_t get_version() const override { return output_port_.get_version(); }
 
-  const VectorInterface<T>* get_vector_data() const override {
+  const VectorBase<T>* get_vector_data() const override {
     return output_port_.get_vector_data();
   }
 
@@ -122,7 +122,7 @@ class FreestandingInputPort : public InputPort<T> {
   /// particular, callers MUST NOT write on the returned pointer if there is any
   /// possibility this FreestandingInputPort has been accessed since the last
   /// time this method was called.
-  VectorInterface<T>* GetMutableVectorData() {
+  VectorBase<T>* GetMutableVectorData() {
     return output_port_.GetMutableVectorData();
   }
 

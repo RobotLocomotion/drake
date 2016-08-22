@@ -2,12 +2,12 @@
 
 #include <memory>
 
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 #include "drake/systems/vector.h"
 
 namespace drake {
 
-/// Models the drake::Vector concept based on some existing VectorInterface<T>,
+/// Models the drake::Vector concept based on some existing VectorBase<T>,
 /// named BaseVector.
 template <typename BaseVector, typename ScalarType>
 class System1Vector : public BaseVector {

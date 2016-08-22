@@ -5,7 +5,7 @@
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
+#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 
 namespace drake {
@@ -23,14 +23,14 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public System<double> {
    * @param[in] channel The LCM channel on which to publish.
    *
    * @param[in] translator The translator that converts between LCM message
-   * objects and `drake::systems::VectorInterface` objects. This reference
+   * objects and `drake::systems::VectorBase` objects. This reference
    * is aliased by this constructor and thus must remain valid for the lifetime
    * of this object.
    *
    * @param[in] lcm A pointer to the LCM subsystem.
    */
   LcmPublisherSystem(const std::string& channel,
-                     const LcmAndVectorInterfaceTranslator& translator,
+                     const LcmAndVectorBaseTranslator& translator,
                      ::lcm::LCM* lcm);
 
   /**
@@ -69,7 +69,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public System<double> {
       const ContextBase<double>& context) const override;
 
   /**
-   * Takes the VectorInterface from the input port of the context and publishes
+   * Takes the VectorBase from the input port of the context and publishes
    * it onto an LCM channel. Note that the output is ignored since this system
    * does not output anything.
    */
@@ -81,8 +81,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public System<double> {
   const std::string channel_;
 
   // The translator that converts between LCM messages and
-  // drake::systems::VectorInterface objects.
-  const LcmAndVectorInterfaceTranslator& translator_;
+  // drake::systems::VectorBase objects.
+  const LcmAndVectorBaseTranslator& translator_;
 
   // A pointer to the LCM subsystem.
   ::lcm::LCM* lcm_;

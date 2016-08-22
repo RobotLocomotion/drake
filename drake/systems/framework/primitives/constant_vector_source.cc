@@ -30,7 +30,7 @@ void ConstantVectorSource<T>::EvalOutput(const ContextBase<T>& context,
   // TODO(amcastro-tri): Solve #3140 so that the next line reads:
   // auto& output_vector = this->get_output_vector(context, 0);
   // where output_vector will be an Eigen expression.
-  VectorInterface<T>* output_vector =
+  VectorBase<T>* output_vector =
       output->get_mutable_port(0)->GetMutableVectorData();
 
   // TODO(amcastro-tri): Solve #3140 so that the Eigen output_vector can be

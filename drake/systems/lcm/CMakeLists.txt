@@ -20,7 +20,7 @@ if(lcm_FOUND)
     lcm_publisher_system.h
     lcm_subscriber_system.h
     lcm_translator_dictionary.h
-    lcm_and_vector_interface_translator.h
+    lcm_and_vector_base_translator.h
     translator_between_lcmt_drake_signal.h)
   pods_install_pkg_config_file(drake-lcm-system2
     LIBS -ldrakeLCMSystem2

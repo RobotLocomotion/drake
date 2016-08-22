@@ -7,7 +7,7 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
-#include "drake/systems/lcm/lcm_and_vector_interface_translator.h"
+#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
 namespace systems {
@@ -15,7 +15,7 @@ namespace lcm {
 
 /**
  * A dictionary that maps between LCM channel names and translators that
- * convert between LCM message objects and VectorInterface objects. All
+ * convert between LCM message objects and VectorBase objects. All
  * translators contained within the dictionary are guaranteed to remain in
  * existence throughout the lifespan of this object.
  */
@@ -40,7 +40,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmTranslatorDictionary {
    */
   void AddEntry(
       const std::string& channel_name,
-      std::unique_ptr<const LcmAndVectorInterfaceTranslator> translator);
+      std::unique_ptr<const LcmAndVectorBaseTranslator> translator);
 
   /**
    * Returns true if and only if a translator for @p channel_name exists in the
@@ -56,7 +56,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmTranslatorDictionary {
    * @throws std::runtime_error if a translator for @p channel_name does not
    * exist in this dictionary.
    */
-  const LcmAndVectorInterfaceTranslator& GetTranslator(
+  const LcmAndVectorBaseTranslator& GetTranslator(
       const std::string& channel_name) const;
 
   // Disable copy and assign.
@@ -66,7 +66,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmTranslatorDictionary {
  private:
   // This is the internal data structure for holding the translators and their
   // associated channel names.
-  std::map<std::string, std::unique_ptr<const LcmAndVectorInterfaceTranslator>>
+  std::map<std::string, std::unique_ptr<const LcmAndVectorBaseTranslator>>
       dictionary_;
 };
 

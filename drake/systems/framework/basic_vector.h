@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 #include <Eigen/Dense>
 
@@ -13,14 +13,14 @@ namespace drake {
 namespace systems {
 
 /// BasicVector is a semantics-free wrapper around an Eigen vector that
-/// satisfies VectorInterface. Once constructed, its size is fixed.
+/// satisfies VectorBase. Once constructed, its size is fixed.
 /// The BasicVector is initialized to the quiet_NaN of the Eigen scalar.
 /// If numeric_limits is not specialized on the Eigen scalar, the BasicVector
 /// will be initialized with the scalar's default constructor.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class BasicVector : public VectorInterface<T> {
+class BasicVector : public VectorBase<T> {
  public:
   explicit BasicVector(int size)
       : values_(VectorX<T>::Constant(
@@ -50,8 +50,8 @@ class BasicVector : public VectorInterface<T> {
   ///
   /// Uses the Non-Virtual Interface idiom because smart pointers do not have
   /// type covariance.
-  std::unique_ptr<VectorInterface<T>> CloneVector() const final {
-    return std::unique_ptr<VectorInterface<T>>(DoClone());
+  std::unique_ptr<VectorBase<T>> CloneVector() const final {
+    return std::unique_ptr<VectorBase<T>>(DoClone());
   }
 
  private:
