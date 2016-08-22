@@ -8,8 +8,7 @@
 
 namespace drake {
 
-/// TrajectoryCar -- a car that follows a pre-established trajectory,
-/// neglecting all physics.
+/// A car that follows a pre-established trajectory, neglecting all physics.
 ///
 /// state vector
 /// * none
@@ -23,12 +22,12 @@ namespace drake {
 //    heading is defined around the +z axis, so positive-turn-left
 /// * velocity
 ///
-class DRAKECARS_EXPORT TrajectoryCar {
+class DRAKECARS_EXPORT TrajectoryCar1 {
  public:
   /// Constructs a TrajectoryCar system that traces the given @p curve,
   /// at the given constant @p speed, starting at the given @p start_time.
   /// Throws an error if the curve is empty (a zero @p path_length).
-  TrajectoryCar(const Curve2<double>& curve, double speed, double start_time)
+  TrajectoryCar1(const Curve2<double>& curve, double speed, double start_time)
       : curve_(curve), speed_(speed), start_time_(start_time) {
     if (curve_.path_length() == 0.0) {
       throw std::invalid_argument{"empty curve"};
@@ -36,8 +35,8 @@ class DRAKECARS_EXPORT TrajectoryCar {
   }
 
   // Noncopyable.
-  TrajectoryCar(const TrajectoryCar&) = delete;
-  TrajectoryCar& operator=(const TrajectoryCar&) = delete;
+  TrajectoryCar1(const TrajectoryCar1&) = delete;
+  TrajectoryCar1& operator=(const TrajectoryCar1&) = delete;
 
   /// @name Implement the Drake System concept.
   //@{
@@ -50,16 +49,16 @@ class DRAKECARS_EXPORT TrajectoryCar {
   using OutputVector = SimpleCarState1<ScalarType>;
 
   template <typename ScalarType>
-  StateVector<ScalarType> dynamics(const ScalarType& time,
-                                   const StateVector<ScalarType>& state,
-                                   const InputVector<ScalarType>& input) const {
+  StateVector<ScalarType> dynamics(const ScalarType&,
+                                   const StateVector<ScalarType>&,
+                                   const InputVector<ScalarType>&) const {
     // No state means no dynamics.
     return StateVector<ScalarType>{};
   }
 
   template <typename ScalarType>
   OutputVector<ScalarType> output(const ScalarType& time,
-                                  const StateVector<ScalarType>& state,
+                                  const StateVector<ScalarType>&,
                                   const InputVector<ScalarType>&) const {
     // N.B. Never use InputVector data, because we are !isDirectFeedthrough.
 

@@ -23,7 +23,8 @@ GTEST_TEST(TrajectoryCarTest, StationaryTest) {
   const Curve2d empty_curve{empty_waypoints};
   const double speed{99.0};
   const double start_time{0.0};
-  EXPECT_THROW((TrajectoryCar{empty_curve, speed, start_time}), std::exception);
+  EXPECT_THROW((TrajectoryCar1{empty_curve, speed, start_time}),
+               std::exception);
 }
 
 // Check the car's progress along some simple paths.  We just want to
@@ -71,7 +72,7 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
     };
     const Curve2d curve{waypoints};
     // The "device under test".
-    const TrajectoryCar car_dut{curve, it.speed, it.start_time};
+    const TrajectoryCar1 car_dut{curve, it.speed, it.start_time};
 
     // Check that the systems' outputs over time are correct over the
     // entire duration of the trajectory, but also including some time

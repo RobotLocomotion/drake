@@ -17,7 +17,7 @@
 namespace drake {
 
 template <typename ScalarType>
-SimpleCar::StateVector<ScalarType> SimpleCar::dynamics(
+SimpleCar1::StateVector<ScalarType> SimpleCar1::dynamics(
     const ScalarType&,
     const StateVector<ScalarType>& state,
     const InputVector<ScalarType>& input) const {
@@ -54,7 +54,7 @@ SimpleCar::StateVector<ScalarType> SimpleCar::dynamics(
 }
 
 template <typename ScalarType>
-SimpleCar::OutputVector<ScalarType> SimpleCar::output(
+SimpleCar1::OutputVector<ScalarType> SimpleCar1::output(
     const ScalarType&,
     const StateVector<ScalarType>& state,
     const InputVector<ScalarType>&) const {
