@@ -88,9 +88,7 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControl0Input) {
   // (since this controller guarantees no motion under no input and no
   //  external forces).
   double kMaxVelocityNorm = 1e-3;
-  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() < kMinVelocityNorm);
-  std::cout << " Final velocity : " << xf.tail(num_dof)
-            << ", Errpr norm :" << xf.tail(num_dof).squaredNorm() << "\n";
+  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() < kMaxVelocityNorm);
 }
 
 // Test to verify behavior of the KUKA IIWA Arm under a gravity
