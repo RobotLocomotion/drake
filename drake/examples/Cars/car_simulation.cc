@@ -158,7 +158,8 @@ void AddFlatTerrainToWorld(
 std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
-CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
+CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
+    const std::map<int, std::string>* model_instance_name_table) {
   const auto& tree = rigid_body_sys->getRigidBodyTree();
 
   // Sets up PD controllers for throttle and steering.
@@ -170,9 +171,28 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   MatrixXd Kd(getNumInputs(*rigid_body_sys), tree->number_of_velocities());
   Kd.setZero();
 
+  // Instantiates a N x 3 matrix called map_driving_cmd_to_x_d where N is the
+  // number position and velocity states in the rigid body tree. The three
+  // columns are defined by drake::DrivingCommandIndices
+  // (see: drake/examples/Cars/car_simulation.h) to be as follows:
+  //
+  //  Column Index     Meaning
+  //      0            ??? Steering angle
+  //      1            ??? Throttle
+  //      2            ??? Brake
+  //
   Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(
       tree->number_of_positions() + tree->number_of_velocities(), 3);
   map_driving_cmd_to_x_d.setZero();
+
+  std::cout << "++++++++++++++++++++++++++++++++++++++++" << std::endl
+            << "  - Kp.size() = " << Kp.size() << std::endl
+            << "  - Kd.size() = " << Kd.size() << std::endl
+            << "  - map_driving_cmd_to_x_d size = ["
+            << map_driving_cmd_to_x_d.rows() << ", "
+            << map_driving_cmd_to_x_d.cols() << "]" << std::endl
+            << "  - Number of actuators: " << tree->actuators.size()
+            << std::endl;
 
   for (int actuator_idx = 0;
        actuator_idx < static_cast<int>(tree->actuators.size());

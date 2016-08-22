@@ -114,35 +114,34 @@ int DoMain(int argc, const char* argv[]) {
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  // Instantiates a data structure that maps model instance IDs to
-  // application-defined model instance names.
+  // Instantiates a map from model instance IDs to model instance names.
   std::map<int, std::string> model_instance_name_table;
 
   // Obtains the number of vehicles to simulate.
   int num_vehicles = GetROSParameter<int>(node_handle, "car_count");
 
   // Adds the vehicles to the rigid body system.
-  for (int ii = 0; ii < num_vehicles; ++ii) {
+  for (int i = 0; i < num_vehicles; ++i) {
     const std::string description_parameter_name =
-        std::string("car_description_") + std::to_string(ii + 1) + "_drake";
+        std::string("car_description_") + std::to_string(i + 1) + "_drake";
 
     std::string model_description = GetROSParameter<std::string>(node_handle,
         description_parameter_name);
 
     double world_x = GetROSParameter<double>(node_handle,
-        std::string("car_description_") + std::to_string(ii + 1) + "_drake_x");
+        std::string("car_description_") + std::to_string(i + 1) + "_drake_x");
     double world_y = GetROSParameter<double>(node_handle,
-        std::string("car_description_") + std::to_string(ii + 1) + "_drake_y");
+        std::string("car_description_") + std::to_string(i + 1) + "_drake_y");
     double world_z = GetROSParameter<double>(node_handle,
-        std::string("car_description_") + std::to_string(ii + 1) + "_drake_z");
+        std::string("car_description_") + std::to_string(i + 1) + "_drake_z");
     double world_roll = GetROSParameter<double>(node_handle,
-        std::string("car_description_") + std::to_string(ii + 1) +
+        std::string("car_description_") + std::to_string(i + 1) +
         "_drake_roll");
     double world_pitch = GetROSParameter<double>(node_handle,
-        std::string("car_description_") + std::to_string(ii + 1) +
+        std::string("car_description_") + std::to_string(i + 1) +
         "_drake_pitch");
     double world_yaw = GetROSParameter<double>(node_handle,
-        std::string("car_description_") + std::to_string(ii + 1) +
+        std::string("car_description_") + std::to_string(i + 1) +
         "_drake_yaw");
 
     Eigen::Vector3d xyz, rpy;
@@ -164,15 +163,14 @@ int DoMain(int argc, const char* argv[]) {
     if (model_instance_id_table.find(kModelName) ==
         model_instance_id_table.end()) {
       throw std::runtime_error(
-          "Failed to find a model instance whose model name is \"" +
-          kModelName + "\".");
+          "Failed to find instance of model named \"" + kModelName + "\".");
     }
 
     // Gets the model instance ID.
     int model_instance_id = model_instance_id_table[kModelName];
 
     // Derives a unique mdoel instance name.
-    std::string model_instance_name = kModelName + "_" + std::to_string(ii+1);
+    std::string model_instance_name = kModelName + "_" + std::to_string(i + 1);
 
     // Saves the model instance name in model_instance_name_table.
     model_instance_name_table[model_instance_id] = model_instance_name;
@@ -197,8 +195,24 @@ int DoMain(int argc, const char* argv[]) {
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
+  for (const auto& actuator : tree->actuators) {
+    std::cout << "Actuator: " << std::endl
+              << "  - actuator name: " << actuator.name_ << std::endl
+              << "  - model name: " << actuator.body_->get_model_name() << std::endl
+              << "  - model instance id: " << actuator.body_->get_model_instance_id()
+              << std::endl;
+  }
+
   // Initializes and cascades all of the other systems.
-  auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
+  // There are five vehicles each with the following three actuators:
+  //
+  //   1. left_wheel_joint
+  //   2. right_wheel_joint
+  //   3. steering
+  //
+  // Thus, there is a total of 3 * 5 = 15 actuators.
+  auto vehicle_sys = CreateVehicleSystem(rigid_body_sys,
+      &model_instance_name_table);
 
   // auto visualizer =
   //   std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
@@ -259,7 +273,8 @@ int DoMain(int argc, const char* argv[]) {
   drake::examples::cars::SetRigidBodySystemParameters(rigid_body_sys.get());
 
   // Starts the main simulation loop.
-  run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
+  run_ros_vehicle_sim(sys, kStartTime, duration, x0, model_instance_name_table,
+      options);
 
   worldTfPublisherThread.join();
   return 0;

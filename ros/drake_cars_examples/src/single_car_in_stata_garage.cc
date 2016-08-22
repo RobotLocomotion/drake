@@ -61,11 +61,11 @@ int do_main(int argc, const char* argv[]) {
 
   // Instantiates a map that converts model instance IDs to model instance
   // names.
-  std::map<int, std::string> model_instance_names;
+  std::map<int, std::string> model_instance_name_table;
   // TODO(liang.fok): Once #3088 is resolved, include the model instance ID and
-  // name of the world in model_instance_names.
-  model_instance_names[model_instances["prius_1"]] = "prius";
-  model_instance_names[model_instances["P1"]] = "stata_garage";
+  // name of the world in model_instance_name_table.
+  model_instance_name_table[model_instances["prius_1"]] = "prius";
+  model_instance_name_table[model_instances["P1"]] = "stata_garage";
 
   // Initializes and cascades all of the other systems.
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
@@ -75,19 +75,19 @@ int do_main(int argc, const char* argv[]) {
 
   auto lidar_publisher = std::make_shared<
       SensorPublisherLidar<RigidBodySystem::StateVector>>(
-      rigid_body_sys, model_instance_names);
+      rigid_body_sys, model_instance_name_table);
 
   auto odometry_publisher = std::make_shared<
       SensorPublisherOdometry<RigidBodySystem::StateVector>>(
-      rigid_body_sys, model_instance_names);
+      rigid_body_sys, model_instance_name_table);
 
   auto tf_publisher = std::make_shared<
       DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
-          model_instance_names);
+          model_instance_name_table);
 
   auto joint_state_publisher = std::make_shared<
       SensorPublisherJointState<RigidBodySystem::StateVector>>(
-      rigid_body_sys, model_instance_names);
+      rigid_body_sys, model_instance_name_table);
 
   auto sys =
       cascade(
@@ -115,7 +115,8 @@ int do_main(int argc, const char* argv[]) {
   const double kStartTime = 0;
 
   // Starts the simulation.
-  run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
+  run_ros_vehicle_sim(sys, kStartTime, duration, x0, model_instance_name_table,
+      options);
 
   return 0;
 }

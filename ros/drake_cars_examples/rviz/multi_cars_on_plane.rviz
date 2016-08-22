@@ -5,13 +5,14 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /TF1/Frames1
+        - /Model - World1
         - /Prius 11
         - /Prius 21
         - /Prius 31
         - /Prius 41
         - /Prius 51
       Splitter Ratio: 0.588983
-    Tree Height: 831
+    Tree Height: 581
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -503,7 +504,7 @@ Visualization Manager:
             {}
       Update Interval: 0
       Value: true
-    - Alpha: 0.5
+    - Alpha: 1
       Class: rviz/RobotModel
       Collision Enabled: false
       Enabled: true
@@ -529,8 +530,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.58577
-            Min Value: -0.0226698
+            Max Value: 0.584566
+            Min Value: -0.0226359
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -559,8 +560,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.480639
-            Min Value: 0.472475
+            Max Value: 0.481211
+            Min Value: 0.471894
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -589,8 +590,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.48012
-            Min Value: 0.448116
+            Max Value: 0.479709
+            Min Value: 0.447543
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -619,8 +620,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.480206
-            Min Value: 0.448157
+            Max Value: 0.480622
+            Min Value: 0.447585
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -748,8 +749,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.00219629
-            Min Value: -0.016585
+            Max Value: 0.00219593
+            Min Value: -0.0165871
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -808,8 +809,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.45596
-            Min Value: 0.435416
+            Max Value: 0.455915
+            Min Value: 0.43532
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -838,8 +839,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.467708
-            Min Value: 0.435307
+            Max Value: 0.46761
+            Min Value: 0.435194
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -967,8 +968,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.585918
-            Min Value: -0.0165851
+            Max Value: 0.586061
+            Min Value: -0.0165871
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -997,8 +998,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.492558
-            Min Value: 0.472213
+            Max Value: 0.492565
+            Min Value: 0.47215
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1057,8 +1058,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.491511
-            Min Value: 0.459617
+            Max Value: 0.491396
+            Min Value: 0.459501
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1186,8 +1187,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.579204
-            Min Value: -0.0283484
+            Max Value: 0.580524
+            Min Value: -0.0283328
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1216,8 +1217,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.493343
-            Min Value: 0.4728
+            Max Value: 0.493013
+            Min Value: 0.472672
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1246,8 +1247,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.49285
-            Min Value: 0.460903
+            Max Value: 0.49252
+            Min Value: 0.460621
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1405,8 +1406,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.00213842
-            Min Value: -0.0283484
+            Max Value: 0.00213929
+            Min Value: -0.0283328
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1465,8 +1466,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.468912
-            Min Value: 0.436588
+            Max Value: 0.468581
+            Min Value: 0.436306
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1495,8 +1496,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.456565
-            Min Value: 0.436578
+            Max Value: 0.456389
+            Min Value: 0.436296
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -1655,18 +1656,18 @@ Visualization Manager:
         Z: 0.630681
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.465927
+      Pitch: 0.290927
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.591676
+      Yaw: 0.666676
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1126
+  Height: 876
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000001ea000003cefc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000003ce000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007680000004cfc0100000002fb0000000800540069006d0065010000000000000768000002f600fffffffb0000000800540069006d0065010000000000000450000000000000000000000578000003ce00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001ea000002d4fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000002d4000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000005ff0000004cfc0100000002fb0000000800540069006d00650100000000000005ff000002f600fffffffb0000000800540069006d006501000000000000045000000000000000000000040f000002d400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -1675,6 +1676,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1896
-  X: 231
-  Y: 341
+  Width: 1535
+  X: 65
+  Y: 24

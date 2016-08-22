@@ -8,6 +8,7 @@
 #include "ros/ros.h"
 #include "ackermann_msgs/AckermannDriveStamped.h"
 
+#include "drake/examples/Cars/gen/driving_command.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/simulation_options.h"
 #include "drake/systems/System.h"
@@ -17,6 +18,7 @@ namespace drake {
 namespace ros {
 namespace systems {
 
+// Decodes @p msg into @p x.
 bool decode(const ackermann_msgs::AckermannDriveStamped& msg,
             drake::DrivingCommand<double>& x) {
   x.set_steering_angle(msg.drive.steering_angle);
@@ -52,7 +54,9 @@ class ROSAckermannCommandReceiverSystem {
   template <typename ScalarType>
   using OutputVector = Vector<ScalarType>;
 
-  ROSAckermannCommandReceiverSystem() : spinner_(1) {
+  ROSAckermannCommandReceiverSystem(
+        const std::map<int, std::string>& model_instance_name_table) :
+        spinner_(1) {
     ::ros::NodeHandle nh;
 
     // Instantiates a ROS topic subscriber that receives vehicle driving
@@ -60,6 +64,8 @@ class ROSAckermannCommandReceiverSystem {
     subscriber_ =
         nh.subscribe("ackermann_cmd", kSubscriberQueueSize,
                      &ROSAckermannCommandReceiverSystem::commandCallback, this);
+
+    std::cout << "************** data_.size() = " << data_.size() << std::endl;
 
     // Instantiates a child thread for receiving ROS messages.
     spinner_.start();
@@ -119,10 +125,11 @@ template <typename System>
 void run_ros_vehicle_sim(
     std::shared_ptr<System> sys, double t0, double tf,
     const typename System::template StateVector<double>& x0,
+    const std::map<int, std::string>& model_instance_name_table,
     const SimulationOptions& options = SimulationOptions()) {
   auto ros_ackermann_input =
       std::make_shared<internal::ROSAckermannCommandReceiverSystem<
-          System::template InputVector>>();
+          System::template InputVector>>(model_instance_name_table);
 
   auto ros_sys = cascade(ros_ackermann_input, sys);
 
