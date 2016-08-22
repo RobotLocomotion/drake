@@ -6,7 +6,7 @@ namespace lcm {
 
 void LcmTranslatorDictionary::AddEntry(
     const std::string& channel_name,
-    std::unique_ptr<const LcmAndVectorInterfaceTranslator> translator) {
+    std::unique_ptr<const LcmAndVectorBaseTranslator> translator) {
   if (!HasTranslator(channel_name)) {
     dictionary_[channel_name] = std::move(translator);
   } else {
@@ -24,7 +24,7 @@ bool LcmTranslatorDictionary::HasTranslator(
 /**
  * Returns a reference to the translator to use with the specified channel.
  */
-const LcmAndVectorInterfaceTranslator& LcmTranslatorDictionary::GetTranslator(
+const LcmAndVectorBaseTranslator& LcmTranslatorDictionary::GetTranslator(
     const std::string& channel_name) const {
   if (HasTranslator(channel_name)) {
     return *(dictionary_.find(channel_name)->second.get());

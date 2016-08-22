@@ -110,7 +110,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
                   systems::SystemOutput<T>* output) const override {
     DRAKE_ASSERT(output != nullptr);
     DRAKE_ASSERT(output->get_num_ports() == 1);
-    systems::VectorInterface<T>* output_vector =
+    systems::VectorBase<T>* output_vector =
         output->get_mutable_port(0)->GetMutableVectorData();
     DRAKE_ASSERT(output_vector != nullptr);
 
@@ -123,7 +123,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   }
 
  protected:
-  std::unique_ptr<systems::VectorInterface<T>> AllocateOutputVector(
+  std::unique_ptr<systems::VectorBase<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override {
     return std::make_unique<SimpleCarState<T>>();
   }

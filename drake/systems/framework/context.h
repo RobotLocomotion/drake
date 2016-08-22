@@ -8,7 +8,7 @@
 #include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -51,7 +51,7 @@ class Context : public ContextBase<T> {
     return static_cast<int>(inputs_.size());
   }
 
-  const VectorInterface<T>* get_vector_input(int index) const override {
+  const VectorBase<T>* get_vector_input(int index) const override {
     if (index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
     }

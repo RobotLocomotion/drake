@@ -83,7 +83,7 @@ class System {
       // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
       // once abstract ports are implemented in 3164.
       if (get_output_port(i).get_data_type() == kVectorValued) {
-        const VectorInterface<T>* output_vector =
+        const VectorBase<T>* output_vector =
             output->get_port(i).get_vector_data();
         if (output_vector == nullptr) return false;
         if (output_vector->get_value().rows() !=
@@ -110,7 +110,7 @@ class System {
       // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
       // once abstract ports are implemented in 3164.
       if (this->get_input_port(i).get_data_type() == kVectorValued) {
-        const VectorInterface<T>* input_vector = context.get_vector_input(i);
+        const VectorBase<T>* input_vector = context.get_vector_input(i);
         if (input_vector == nullptr) return false;
         if (input_vector->get_value().rows() !=
             get_input_port(i).get_size()) return false;
