@@ -112,9 +112,8 @@ if(snopt_c_FOUND AND MATLAB_FOUND)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
 
   # These warnings are not worth fixing.
-  set_target_properties(
-    NonlinearProgramSnoptmex
-    PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_ERROR_SHADOW})
+  target_compile_options(NonlinearProgramSnoptmex PRIVATE
+    ${CXX_FLAGS_NO_ERROR_SHADOW})
 endif()
 
 if(mosek_FOUND)
