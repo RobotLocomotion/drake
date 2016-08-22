@@ -4,7 +4,9 @@ if(simulink_FOUND)
 endif()
 
 if(lcm_FOUND)
-  add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
+  add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES
+    bot_visualizer_system.cc
+    LCMSystem.cpp)
   add_dependencies(drakeLCMSystem drake_lcmtypes_hpp)
   target_link_libraries(drakeLCMSystem lcm)
   if(WIN32)
@@ -28,6 +30,7 @@ add_subdirectory(robotInterfaces)
 add_subdirectory(lcm)
 
 drake_install_headers(
+  bot_visualizer_system.h
   cascade_system.h
   feedback_system.h
   LinearSystem.h
