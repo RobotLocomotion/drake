@@ -31,7 +31,7 @@ class AdderTest : public ::testing::Test {
     return make_unique<FreestandingInputPort<double>>(std::move(data));
   }
 
-  std::unique_ptr<Adder<double>> adder_;
+  std::unique_ptr<System<double>> adder_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input0_;

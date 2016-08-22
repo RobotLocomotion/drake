@@ -35,7 +35,7 @@ class PassThroughTest : public ::testing::Test {
     input_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
-  std::unique_ptr<PassThrough<double>> buffer_;
+  std::unique_ptr<System<double>> buffer_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
