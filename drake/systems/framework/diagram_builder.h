@@ -110,7 +110,10 @@ class DiagramBuilder {
     // Find the systems that have no inputs within the DiagramBuilder.
     std::vector<const System<T>*> nodes_with_in_degree_zero;
     for (const System<T>* system : registered_systems_) {
-      if (dependencies.find(system) == dependencies.end()) {
+      // For the purposes of execution order, a system with no direct
+      // feed-through from input to output is as if it has no inputs.
+      if (dependencies.find(system) == dependencies.end() ||
+          !system->has_any_direct_feedthrough()) {
         nodes_with_in_degree_zero.push_back(system);
       }
     }
@@ -132,9 +135,7 @@ class DiagramBuilder {
     }
 
     if (sorted_systems.size() != systems_.size()) {
-      // TODO(david-german-tri): Attempt to break cycles using
-      // the direct-feedthrough configuration of a System.
-      throw std::logic_error("Cycle detected in DiagramBuilder.");
+      throw std::logic_error("Algebraic loop detected in DiagramBuilder.");
     }
     return sorted_systems;
   }
