@@ -43,7 +43,7 @@ std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateContinuousState()
 template <typename T>
 void Integrator<T>::EvalTimeDerivatives(const ContextBase<T>& context,
                                         ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT(System<T>::IsValidContext(context));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   const VectorBase<T>* input = context.get_vector_input(0);
   derivatives->get_mutable_state()->SetFromVector(input->get_value());
 }
@@ -51,8 +51,8 @@ void Integrator<T>::EvalTimeDerivatives(const ContextBase<T>& context,
 template <typename T>
 void Integrator<T>::EvalOutput(const ContextBase<T>& context,
                                SystemOutput<T>* output) const {
-  DRAKE_ASSERT(System<T>::IsValidOutput(output));
-  DRAKE_ASSERT(System<T>::IsValidContext(context));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   VectorBase<T>* output_port =
       output->get_mutable_port(0)->GetMutableVectorData();

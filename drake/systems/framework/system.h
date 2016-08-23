@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/cache.h"
@@ -69,14 +70,13 @@ class System {
 
   /// Checks that @p output is consistent with the number and size of output
   /// ports declared by the system.
-  /// @returns `true` if @p output is non-null and valid for this system, or
-  /// `false` otherwise.
-  bool IsValidOutput(const SystemOutput<T>* output) const {
-    if (output == nullptr) return false;
+  /// @throw exception unless `output` is non-null and valid for this system.
+  void CheckValidOutput(const SystemOutput<T>* output) const {
+    DRAKE_THROW_UNLESS(output != nullptr);
 
     // Checks that the number of output ports in the system output is consistent
     // with the number of output ports declared by the System.
-    if (output->get_num_ports() != get_num_output_ports()) return false;
+    DRAKE_THROW_UNLESS(output->get_num_ports() == get_num_output_ports());
 
     // Checks the validity of each output port.
     for (int i = 0; i < get_num_output_ports(); ++i) {
@@ -85,24 +85,20 @@ class System {
       if (get_output_port(i).get_data_type() == kVectorValued) {
         const VectorBase<T>* output_vector =
             output->get_port(i).get_vector_data();
-        if (output_vector == nullptr) return false;
-        if (output_vector->get_value().rows() !=
-            get_output_port(i).get_size()) return false;
+        DRAKE_THROW_UNLESS(output_vector != nullptr);
+        DRAKE_THROW_UNLESS(output_vector->get_value().rows() ==
+                           get_output_port(i).get_size());
       }
     }
-
-    // All checks passed.
-    return true;
   }
 
   /// Checks that @p context is consistent for this system.
-  /// @returns `true` if @p context is valid for this system and `false`
-  /// otherwise.
-  bool IsValidContext(const ContextBase<T>& context) const {
+  /// @throw exception unless `context` is valid for this system.
+  void CheckValidContext(const ContextBase<T>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
-    if (context.get_num_input_ports() != this->get_num_input_ports())
-      return false;
+    DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
+                       this->get_num_input_ports());
 
     // Checks that the size of the input ports in the context matches the
     // declarations made by the system.
@@ -111,14 +107,11 @@ class System {
       // once abstract ports are implemented in 3164.
       if (this->get_input_port(i).get_data_type() == kVectorValued) {
         const VectorBase<T>* input_vector = context.get_vector_input(i);
-        if (input_vector == nullptr) return false;
-        if (input_vector->get_value().rows() !=
-            get_input_port(i).get_size()) return false;
+        DRAKE_THROW_UNLESS(input_vector != nullptr);
+        DRAKE_THROW_UNLESS(input_vector->get_value().rows() ==
+                           get_input_port(i).get_size());
       }
     }
-
-    // All checks passed.
-    return true;
   }
 
   /// Returns a default context, initialized with the correct
