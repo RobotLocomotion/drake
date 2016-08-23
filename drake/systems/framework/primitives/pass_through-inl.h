@@ -29,8 +29,8 @@ PassThrough<T>::PassThrough(int length) {
 template <typename T>
 void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
                           SystemOutput<T>* output) const {
-  DRAKE_ASSERT(System<T>::IsValidOutput(output));
-  DRAKE_ASSERT(System<T>::IsValidContext(context));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   VectorBase<T>* output_vector =
       output->get_mutable_port(0)->GetMutableVectorData();

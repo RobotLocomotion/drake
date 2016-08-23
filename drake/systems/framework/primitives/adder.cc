@@ -27,8 +27,8 @@ void Adder<T>::EvalOutput(const ContextBase<T>& context,
   // user error setting up the system graph. They do not require unit test
   // coverage, and should not run in release builds.
 
-  DRAKE_ASSERT(System<T>::IsValidOutput(output));
-  DRAKE_ASSERT(System<T>::IsValidContext(context));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   VectorBase<T>* output_vector =
       output->get_mutable_port(0)->GetMutableVectorData();
