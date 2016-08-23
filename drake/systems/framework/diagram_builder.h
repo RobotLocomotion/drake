@@ -18,6 +18,8 @@ namespace systems {
 template <typename T>
 class DiagramBuilder {
  public:
+  typedef typename Diagram<T>::PortIdentifier PortIdentifier;
+
   DiagramBuilder() {}
   virtual ~DiagramBuilder() {}
 
@@ -54,20 +56,25 @@ class DiagramBuilder {
         PortIdentifier{output.get_system(), output.get_index()});
   }
 
+  /// Produces the DiagramBlueprint that has been described by the calls to
+  /// Connect, ExportInput, and ExportOutput. Throws std::logic_error if the
+  /// graph is not buildable.
+  typename Diagram<T>::DiagramBlueprint Compile() {
+    if (registered_systems_.size() == 0) {
+      throw std::logic_error("Cannot Compile an empty DiagramBuilder.");
+    }
+    return typename Diagram<T>::DiagramBlueprint{
+        input_port_ids_, output_port_ids_, dependency_graph_, SortSystems()};
+  }
+
   /// Builds the Diagram that has been described by the calls to Connect,
   /// ExportInput, and ExportOutput. Throws std::logic_error if the graph is
   /// not buildable.
   std::unique_ptr<Diagram<T>> Build() {
-    if (registered_systems_.size() == 0) {
-      throw std::logic_error("Cannot Build with an empty DiagramBuilder.");
-    }
-    return std::make_unique<Diagram<T>>(dependency_graph_, SortSystems(),
-                                        input_port_ids_, output_port_ids_);
+    return std::make_unique<Diagram<T>>(Compile());
   }
 
  private:
-  typedef typename Diagram<T>::PortIdentifier PortIdentifier;
-
   void Register(const System<T>* sys) {
     if (systems_.find(sys) != systems_.end()) {
       // This system is already registered.

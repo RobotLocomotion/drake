@@ -3,14 +3,21 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/adder.h"
+#include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
 namespace {
+
+std::unique_ptr<FreestandingInputPort> MakeInput(
+    std::unique_ptr<BasicVector<double>> data) {
+  return std::make_unique<FreestandingInputPort>(std::move(data));
+}
 
 /// Sets up the following diagram:
 /// adder0_: (input0_ + input1_) -> A
@@ -75,12 +82,6 @@ class DiagramTest : public ::testing::Test {
     EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
     EXPECT_EQ(expected_output1[1], output1->get_value()[1]);
     EXPECT_EQ(expected_output1[2], output1->get_value()[2]);
-  }
-
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
-      std::unique_ptr<BasicVector<double>> data) {
-    return std::unique_ptr<FreestandingInputPort>(
-        new FreestandingInputPort(std::move(data)));
   }
 
   std::unique_ptr<Diagram<double>> diagram_;
@@ -172,6 +173,44 @@ TEST_F(DiagramTest, Clone) {
   // Check that the context that was cloned is unaffected.
   diagram_->EvalOutput(*context_, output_.get());
   ExpectDefaultOutputs();
+}
+
+// A Diagram that adds a constant to an input, and outputs the sum.
+class AddConstantDiagram : public Diagram<double> {
+ public:
+  explicit AddConstantDiagram(double constant) : Diagram<double>() {
+    constant_.reset(new ConstantVectorSource<double>(Vector1d{constant}));
+    adder_.reset(new Adder<double>(2 /* inputs */, 1 /* length */));
+
+    DiagramBuilder<double> builder;
+    builder.Connect(constant_->get_output_port(0), adder_->get_input_port(1));
+    builder.ExportInput(adder_->get_input_port(0));
+    builder.ExportOutput(adder_->get_output_port(0));
+    Initialize(builder.Compile());
+  }
+
+ private:
+  std::unique_ptr<Adder<double>> adder_;
+  std::unique_ptr<ConstantVectorSource<double>> constant_;
+};
+
+GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
+  AddConstantDiagram plus_seven(7.0);
+  auto context = plus_seven.CreateDefaultContext();
+  auto output = plus_seven.AllocateOutput(*context);
+  ASSERT_NE(nullptr, context);
+  ASSERT_NE(nullptr, output);
+
+  auto vec = std::make_unique<BasicVector<double>>(1 /* length */);
+  vec->get_mutable_value() << 12.0;
+  context->SetInputPort(0, MakeInput(std::move(vec)));
+
+  plus_seven.EvalOutput(*context, output.get());
+
+  ASSERT_EQ(1, output->get_num_ports());
+  const VectorBase<double>* output_vector = output->get_vector_data(0);
+  EXPECT_EQ(1, output_vector->get_value().rows());
+  EXPECT_EQ(19.0, output_vector->get_value().x());
 }
 
 }  // namespace
