@@ -9,7 +9,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 robot = RigidBodyManipulator(urdf,options);
-% stage_urdf = [getDrakePath,'/solvers/trajectoryOptimization/dev/MonkeyBar_stage.urdf'];
+% stage_urdf = [getDrakePath,'/matlab/solvers/trajectoryOptimization/dev/MonkeyBar_stage.urdf'];
 % robot = robot.addRobotFromURDF(stage_urdf,[0;0;-0.05],[0;pi/2;0]);
 nomdata = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
 nq = robot.getNumPositions();
