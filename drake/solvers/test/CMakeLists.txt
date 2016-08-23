@@ -25,6 +25,13 @@ if(gurobi_FOUND)
   add_test(NAME gurobi_solver_test COMMAND gurobi_solver_test)
 endif()
 
+if(dreal_FOUND)
+  add_executable(dreal_solver_test dreal_solver_test.cc)
+  target_link_libraries(dreal_solver_test drakeOptimization
+    ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME dreal_solver_test COMMAND dreal_solver_test)
+endif()
+
 add_matlab_test(NAME solvers/test/gloptipoly_constrained_test COMMAND gloptipoly_constrained_test)
 add_matlab_test(NAME solvers/test/rrt_basic COMMAND rrt_basic)
 add_matlab_test(NAME solvers/test/rrt_bugtrap COMMAND rrt_bugtrap)
