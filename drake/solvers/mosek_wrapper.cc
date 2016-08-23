@@ -754,7 +754,7 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     // As before, assume there is one objective.
     DRAKE_ASSERT(prog.generic_costs().size() == 1);
     SecondOrderConicConstraint *soc_objective =
-        dynamic_cast<SecondOrderConicConstraint *>(
+        static_cast<SecondOrderConicConstraint *>(
         prog.generic_costs().front().constraint().get());
     std::vector<SecondOrderConicConstraint> soc_constraints;
     totalconnum = prog.generic_constraints().size();
