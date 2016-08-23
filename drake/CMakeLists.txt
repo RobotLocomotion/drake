@@ -161,12 +161,13 @@ function(add_matlab_test)
     return()
   endif()
   set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
-  set(multiValueArgs PROPERTIES REQUIRES)
+  set(multiValueArgs PROPERTIES REQUIRES OPTIONAL)
   cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(parsed_args_REQUIRES)
     foreach(require ${parsed_args_REQUIRES})
-      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m")
+      string(TOUPPER ${require} requireUpper)
+      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m" AND NOT ${require}_FOUND AND NOT WITH_${requireUpper})
         message(STATUS "Not running ${parsed_args_NAME} because ${require} was not installed.")
         return()
       endif()
@@ -344,7 +345,7 @@ else()
 endif()
 
 if(MATLAB_FOUND)
-  add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
+  add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
     PROPERTIES TIMEOUT 300)
