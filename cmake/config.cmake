@@ -39,12 +39,6 @@ endfunction()
 #------------------------------------------------------------------------------
 function(drake_setup_java_for_matlab)
   if(NOT MATLAB_JVM_VERSION)
-    if(NOT MATLAB_EXECUTABLE)
-      message(WARNING
-        "Could not determine MATLAB JVM version because MATLAB executable was not set")
-      return()
-    endif()
-
     # Set arguments for running MATLAB
     set(_args -nodesktop -nodisplay -nosplash)
     set(_input_file /dev/null)
@@ -57,10 +51,13 @@ function(drake_setup_java_for_matlab)
     # Ask matlab for its JVM version
     execute_process(
       COMMAND "${MATLAB_EXECUTABLE}" ${_args} -logfile "${_logfile}" -r "version -java,quit"
-      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" TIMEOUT 300
-      RESULT_VARIABLE _result OUTPUT_QUIET INPUT_FILE ${_input_file})
+      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+      TIMEOUT 300
+      RESULT_VARIABLE _result
+      OUTPUT_QUIET
+      INPUT_FILE ${_input_file})
 
-    if(NOT _result AND EXISTS ${_logfile})
+    if(_result EQUAL 0 AND EXISTS ${_logfile})
       file(READ ${_logfile} _output)
 
       # Test for a valid result
