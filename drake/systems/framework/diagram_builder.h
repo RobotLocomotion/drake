@@ -57,12 +57,18 @@ class DiagramBuilder {
   /// Builds the Diagram that has been described by the calls to Connect,
   /// ExportInput, and ExportOutput. Throws std::logic_error if the graph is
   /// not buildable.
-  std::unique_ptr<Diagram<T>> Build() {
-    if (registered_systems_.size() == 0) {
-      throw std::logic_error("Cannot Build with an empty DiagramBuilder.");
-    }
-    return std::make_unique<Diagram<T>>(dependency_graph_, SortSystems(),
-                                        input_port_ids_, output_port_ids_);
+  std::unique_ptr<Diagram<T>> Build() const {
+    return std::unique_ptr<Diagram<T>>(new Diagram<T>(Compile()));
+  }
+
+  /// Configures @p target to have the topology that has been described by
+  /// the calls to Connect, ExportInput, and ExportOutput. Throws
+  /// std::logic_error if the graph is not buildable.
+  ///
+  /// Only Diagram subclasses should call this method. The target must not
+  /// already be initialized.
+  void BuildInto(Diagram<T>* target) const {
+    target->Initialize(Compile());
   }
 
  private:
@@ -144,6 +150,17 @@ class DiagramBuilder {
       throw std::logic_error("Algebraic loop detected in DiagramBuilder.");
     }
     return sorted_systems;
+  }
+
+  /// Produces the Blueprint that has been described by the calls to
+  /// Connect, ExportInput, and ExportOutput. Throws std::logic_error if the
+  /// graph is not buildable.
+  typename Diagram<T>::Blueprint Compile() const {
+    if (registered_systems_.size() == 0) {
+      throw std::logic_error("Cannot Compile an empty DiagramBuilder.");
+    }
+    return typename Diagram<T>::Blueprint{
+        input_port_ids_, output_port_ids_, dependency_graph_, SortSystems()};
   }
 
   // DiagramBuilder objects are neither copyable nor moveable.
