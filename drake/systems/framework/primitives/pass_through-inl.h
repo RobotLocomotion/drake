@@ -29,7 +29,7 @@ PassThrough<T>::PassThrough(int length) {
 template <typename T>
 void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
                           SystemOutput<T>* output) const {
-  DRAKE_ASSERT(System<T>::IsValidOutput(*output));
+  DRAKE_ASSERT(System<T>::IsValidOutput(output));
   DRAKE_ASSERT(System<T>::IsValidContext(context));
 
   VectorInterface<T>* output_vector =
