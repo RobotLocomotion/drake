@@ -22,7 +22,7 @@ namespace test {
  * </pre>
  *
  * It also provides accessors for obtaining copies of the message that were most
- * recently received.
+ * recently received. This is used for testing BotVisualizerSystem.
  */
 class BotVisualizerReceiver {
  public:

@@ -1,7 +1,8 @@
 if(lcm_FOUND)
   add_executable(bot_visualizer_test_one_urdf_box
       bot_visualizer_test_one_urdf_box.cc
-      bot_visualizer_system_receiver.cc)
+      bot_visualizer_system_receiver.cc
+      compare_lcm_messages.cc)
   target_link_libraries(bot_visualizer_test_one_urdf_box
       drakeBotVisualizerSystem
       drakeLCMSystem2

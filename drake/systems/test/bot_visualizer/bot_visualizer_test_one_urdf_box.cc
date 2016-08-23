@@ -17,106 +17,17 @@
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/test/bot_visualizer/bot_visualizer_system_receiver.h"
+#include "drake/systems/test/bot_visualizer/compare_lcm_messages.h"
 
 namespace drake {
 namespace systems {
+namespace test {
 namespace {
 
 const int kDim = 10;
 const int kPortNumber = 0;
 
 using drake::parsers::ModelInstanceIdTable;
-
-bool LoadMessageIsGood(const drake::lcmt_viewer_load_robot& load_message,
-    const RigidBodyTree& tree, int box_model_instance_id) {
-  // Aborts if the load message wasn't received yet.
-  if (load_message.num_links == -1) return false;
-
-  // Verifies that the draw message has two links and that their names and
-  // model instance IDs are correct.
-  int world_model_instance_id =
-      tree.get_body(RigidBodyTree::kWorldBodyIndex).get_model_instance_id();
-
-  EXPECT_EQ(load_message.num_links, 2);
-  EXPECT_EQ(load_message.link[0].name, "world");
-  EXPECT_EQ(load_message.link[0].robot_num, world_model_instance_id);
-  EXPECT_EQ(load_message.link[1].name, "box_link");
-  EXPECT_EQ(load_message.link[1].robot_num, box_model_instance_id);
-
-  // Verifies that the geometry of the world link is correct. In this case,
-  // the world has no geometry.
-  EXPECT_EQ(load_message.link[0].num_geom, 0);
-
-  // Verifies that the geometry of the box link is correct. In this case, the
-  // box link has a single box geometry.
-  EXPECT_EQ(load_message.link[1].num_geom, 1);
-
-  // Note that the following two lines cannot be combined into one due to the
-  // following mysterious link error:
-  //
-  //  gtest-printers.h:276: undefined reference to
-  //      `drake::lcmt_viewer_geometry_data::BOX'
-  //
-  uint8_t box_type = drake::lcmt_viewer_geometry_data::BOX;
-  EXPECT_EQ(load_message.link[1].geom[0].type, box_type);
-
-  EXPECT_EQ(load_message.link[1].geom[0].position[0], 0);
-  EXPECT_EQ(load_message.link[1].geom[0].position[1], 0);
-  EXPECT_EQ(load_message.link[1].geom[0].position[2], 0);
-
-  EXPECT_EQ(load_message.link[1].geom[0].quaternion[0], 1);
-  EXPECT_EQ(load_message.link[1].geom[0].quaternion[1], 0);
-  EXPECT_EQ(load_message.link[1].geom[0].quaternion[2], 0);
-  EXPECT_EQ(load_message.link[1].geom[0].quaternion[3], 0);
-
-  EXPECT_NEAR(load_message.link[1].geom[0].color[0], 0.2, 1e-6);
-  EXPECT_NEAR(load_message.link[1].geom[0].color[1], 0.3, 1e-6);
-  EXPECT_NEAR(load_message.link[1].geom[0].color[2], 0.4, 1e-6);
-  EXPECT_NEAR(load_message.link[1].geom[0].color[3], 0.9, 1e-6);
-
-  EXPECT_EQ(load_message.link[1].geom[0].float_data[0], 1);
-  EXPECT_EQ(load_message.link[1].geom[0].float_data[1], 1);
-  EXPECT_EQ(load_message.link[1].geom[0].float_data[2], 1);
-
-  return true;
-}
-
-bool DrawMessageIsGood(const drake::lcmt_viewer_draw& draw_message,
-    const RigidBodyTree& tree, int box_model_instance_id) {
-  // Aborts if the draw message wasn't received yet.
-  if (draw_message.num_links == -1) return false;
-
-  // Verifies that the draw message has two links and that their names and
-  // model instance IDs are correct.
-  EXPECT_EQ(draw_message.num_links, 2);
-  EXPECT_EQ(draw_message.link_name[0], "world");
-  EXPECT_EQ(draw_message.link_name[1], "box_link");
-  EXPECT_EQ(draw_message.robot_num[0],
-    tree.get_body(RigidBodyTree::kWorldBodyIndex).get_model_instance_id());
-  EXPECT_EQ(draw_message.robot_num[1], box_model_instance_id);
-
-  // Verifies that the world link is at position (0, 0, 0).
-  EXPECT_EQ(draw_message.position[0][0], 0);
-  EXPECT_EQ(draw_message.position[0][1], 0);
-  EXPECT_EQ(draw_message.position[0][2], 0);
-
-  // Verifies that the box link is at position (0, 0, 0.5).
-  EXPECT_EQ(draw_message.position[1][0], 0);
-  EXPECT_EQ(draw_message.position[1][1], 0);
-  EXPECT_EQ(draw_message.position[1][2], 0.5);
-
-  // Verifies that the rotations of both the world link and box link are zero.
-  EXPECT_EQ(draw_message.quaternion[0][0], 1);
-  EXPECT_EQ(draw_message.quaternion[0][1], 0);
-  EXPECT_EQ(draw_message.quaternion[0][2], 0);
-  EXPECT_EQ(draw_message.quaternion[0][3], 0);
-  EXPECT_EQ(draw_message.quaternion[1][0], 1);
-  EXPECT_EQ(draw_message.quaternion[1][1], 0);
-  EXPECT_EQ(draw_message.quaternion[1][2], 0);
-  EXPECT_EQ(draw_message.quaternion[1][3], 0);
-
-  return true;
-}
 
 // Tests the functionality of BotVisualizerSystem by making it load box.sdf.
 GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
@@ -190,6 +101,73 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
   // BotvisualizerSystem.
   bool done = false;
 
+  // Defines the expected load and draw messages.
+  drake::lcmt_viewer_load_robot expected_load_message;
+  {
+    expected_load_message.num_links = 2;
+    expected_load_message.link.resize(2);
+    expected_load_message.link[0].name = std::string(RigidBodyTree::kWorldName);
+    expected_load_message.link[0].robot_num =
+        tree.get_world_model_instance_id();
+    expected_load_message.link[0].num_geom = 0;
+
+    expected_load_message.link[1].name = "box_link";
+    expected_load_message.link[1].robot_num = box_model_instance_id;
+    expected_load_message.link[1].num_geom = 1;
+    expected_load_message.link[1].geom.resize(1);
+    expected_load_message.link[1].geom[0].type =
+        drake::lcmt_viewer_geometry_data::BOX;
+    expected_load_message.link[1].geom[0].position[0] = 0;
+    expected_load_message.link[1].geom[0].position[1] = 0;
+    expected_load_message.link[1].geom[0].position[2] = 0;
+    expected_load_message.link[1].geom[0].quaternion[0] = 1;
+    expected_load_message.link[1].geom[0].quaternion[1] = 0;
+    expected_load_message.link[1].geom[0].quaternion[2] = 0;
+    expected_load_message.link[1].geom[0].quaternion[3] = 0;
+    expected_load_message.link[1].geom[0].color[0] = 0.2;
+    expected_load_message.link[1].geom[0].color[1] = 0.3;
+    expected_load_message.link[1].geom[0].color[2] = 0.4;
+    expected_load_message.link[1].geom[0].color[3] = 0.9;
+    expected_load_message.link[1].geom[0].num_float_data = 3;
+    expected_load_message.link[1].geom[0].float_data.resize(3);
+    expected_load_message.link[1].geom[0].float_data[0] = 1;
+    expected_load_message.link[1].geom[0].float_data[1] = 1;
+    expected_load_message.link[1].geom[0].float_data[2] = 1;
+  }
+
+  drake::lcmt_viewer_draw expected_draw_message;
+  {
+    expected_draw_message.num_links = 2;
+    expected_draw_message.link_name.resize(2);
+    expected_draw_message.link_name[0] = std::string(RigidBodyTree::kWorldName);
+    expected_draw_message.link_name[1] = "box_link";
+    expected_draw_message.robot_num.resize(2);
+    expected_draw_message.robot_num[0] = tree.get_world_model_instance_id();
+    expected_draw_message.robot_num[1] = box_model_instance_id;
+
+    expected_draw_message.position.resize(2);
+    expected_draw_message.position[0].resize(3);
+    expected_draw_message.position[0][0] = 0;
+    expected_draw_message.position[0][1] = 0;
+    expected_draw_message.position[0][2] = 0;
+    expected_draw_message.position[1].resize(3);
+    expected_draw_message.position[1][0] = 0;
+    expected_draw_message.position[1][1] = 0;
+    expected_draw_message.position[1][2] = 0.5;
+
+    expected_draw_message.quaternion.resize(2);
+    expected_draw_message.quaternion[0].resize(4);
+    expected_draw_message.quaternion[0][0] = 1;
+    expected_draw_message.quaternion[0][1] = 0;
+    expected_draw_message.quaternion[0][2] = 0;
+    expected_draw_message.quaternion[0][3] = 0;
+    expected_draw_message.quaternion[1].resize(4);
+    expected_draw_message.quaternion[1][0] = 1;
+    expected_draw_message.quaternion[1][1] = 0;
+    expected_draw_message.quaternion[1][2] = 0;
+    expected_draw_message.quaternion[1][3] = 0;
+  }
+
   // This is used to prevent this unit test from running indefinitely when
   // the receiver fails to receive the LCM message published by the
   // BotvisualizerSystem.
@@ -211,8 +189,8 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
         receiver.GetReceivedDrawMessage();
 
     // Verifies that the size of the received LCM message is correct.
-    if (LoadMessageIsGood(load_message, tree, box_model_instance_id) &&
-        DrawMessageIsGood(draw_message, tree, box_model_instance_id)) {
+    if (CompareLoadMessage(load_message, expected_load_message) &&
+        CompareDrawMessage(draw_message, expected_draw_message)) {
       done = true;
     }
 
@@ -223,5 +201,6 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
 }
 
 }  // namespace
+}  // namespace test
 }  // namespace systems
 }  // namespace drake
