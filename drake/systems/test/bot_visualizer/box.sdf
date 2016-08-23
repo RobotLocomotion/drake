@@ -2,7 +2,7 @@
 
 <sdf version='1.6'>
   <model name='box'>
-    <pose>0 0 0 0 0 0</pose>
+    <pose>0 0 0.5 0 0 0</pose>
     <link name='box_link'>
       <pose>0 0 0 0 0 0</pose>
       <inertial>
