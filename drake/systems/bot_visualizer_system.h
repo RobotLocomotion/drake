@@ -73,7 +73,6 @@ class DRAKELCMSYSTEM2_EXPORT BotVisualizerSystem : public System<double> {
                   SystemOutput<double>* output) const override;
 
  private:
-
   // Sends the drake::lcmt_viewer_load_robot messages to the Drake Visualizer
   // informing it of what needs to be visualized. This is called once by the
   // constructor.

@@ -25,7 +25,7 @@
           </box>
         </geometry>
         <material>
-          <diffuse>1 1 1 1</diffuse>
+          <diffuse>0.2 0.3 0.4 0.9</diffuse>
         </material>
       </visual>
       <collision name='box_link_collision'>

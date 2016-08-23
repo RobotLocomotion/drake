@@ -36,7 +36,6 @@ if(lcm_FOUND)
     LIBS -ldrakeBotVisualizerSystem
     REQUIRES lcm
     VERSION 0.0.1)
-
 endif()
 
 add_subdirectory(frames)

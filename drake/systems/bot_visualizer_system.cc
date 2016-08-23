@@ -2,6 +2,7 @@
 
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -45,8 +46,7 @@ std::unique_ptr<SystemOutput<double>> BotVisualizerSystem::AllocateOutput(
 void BotVisualizerSystem::EvalOutput(const ContextBase<double>& context,
                                     SystemOutput<double>* output) const {
   // Obtains the input vector.
-  const VectorInterface<double>* input_vector =
-      context.get_vector_input(kPortIndex);
+  const VectorBase<double>* input_vector = context.get_vector_input(kPortIndex);
 
   draw_msg_.timestamp = static_cast<int64_t>(context.get_time() * 1000.0);
 

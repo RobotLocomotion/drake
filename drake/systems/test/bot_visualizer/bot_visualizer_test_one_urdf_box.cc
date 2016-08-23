@@ -9,20 +9,14 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_geometry_data.hpp"
 #include "drake/lcmt_viewer_load_robot.hpp"
-// #include "drake/lcmt_drake_signal.hpp"
 #include "drake/systems/framework/basic_vector.h"
-// #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-
-
-// #include "drake/systems/lcm/lcm_publisher_system.h"
-// #include "drake/systems/lcm/lcm_translator_dictionary.h"
-// #include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
-
+#include "drake/systems/test/bot_visualizer/bot_visualizer_system_receiver.h"
 
 namespace drake {
 namespace systems {
@@ -33,83 +27,96 @@ const int kPortNumber = 0;
 
 using drake::parsers::ModelInstanceIdTable;
 
-/**
- * Subscribes to the following:
- *
- * <pre>
- * LCM Channel Name         LCM Message Type
- * ----------------         ----------------
- * DRAKE_VIEWER_LOAD_ROBOT  drake::lcmt_viewer_load_robot
- * DRAKE_VIEWER_DRAW        drake::lcmt_viewer_draw
- * </pre>
- *
- * It also provides accessors for obtaining copies of the message that were most
- * recently received.
- */
-class BotVisualizerReceiver {
- public:
-  BotVisualizerReceiver(::lcm::LCM* lcm) {
-    // Sets up the LCM message subscribers.
-    ::lcm::Subscription* sub_load_msg =
-        lcm->subscribe("DRAKE_VIEWER_LOAD_ROBOT",
-            &BotVisualizerReceiver::HandleLoadMessage, this);
-    sub_load_msg->setQueueCapacity(1);
+bool LoadMessageIsGood(const drake::lcmt_viewer_load_robot& load_message,
+    const RigidBodyTree& tree, int box_model_instance_id) {
+  // Aborts if the load message wasn't received yet.
+  if (load_message.num_links == -1) return false;
 
-    ::lcm::Subscription* sub_draw_msg =
-        lcm->subscribe("DRAKE_VIEWER_DRAW",
-            &BotVisualizerReceiver::HandleDrawMessage, this);
-    sub_draw_msg->setQueueCapacity(1);
+  // Verifies that the draw message has two links and that their names and
+  // model instance IDs are correct.
+  int world_model_instance_id =
+      tree.get_body(RigidBodyTree::kWorldBodyIndex).get_model_instance_id();
 
-    // Initializes the fields of member variables load_message_ and
-    // draw_message_ so the test logic below can determine whether the
-    // desired message was received.
-    load_message_.num_links = -1;
-    draw_message_.num_links = -1;
-  }
+  EXPECT_EQ(load_message.num_links, 2);
+  EXPECT_EQ(load_message.link[0].name, "world");
+  EXPECT_EQ(load_message.link[0].robot_num, world_model_instance_id);
+  EXPECT_EQ(load_message.link[1].name, "box_link");
+  EXPECT_EQ(load_message.link[1].robot_num, box_model_instance_id);
 
-  drake::lcmt_viewer_load_robot GetReceivedLoadMessage() {
-    drake::lcmt_viewer_load_robot message_copy;
+  // Verifies that the geometry of the world link is correct. In this case,
+  // the world has no geometry.
+  EXPECT_EQ(load_message.link[0].num_geom, 0);
 
-    std::lock_guard<std::mutex> lock(load_message_mutex_);
-    message_copy = load_message_;
+  // Verifies that the geometry of the box link is correct. In this case, the
+  // box link has a single box geometry.
+  EXPECT_EQ(load_message.link[1].num_geom, 1);
 
-    return message_copy;
-  }
+  // Note that the following two lines cannot be combined into one due to the
+  // following mysterious link error:
+  //
+  //  gtest-printers.h:276: undefined reference to
+  //      `drake::lcmt_viewer_geometry_data::BOX'
+  //
+  uint8_t box_type = drake::lcmt_viewer_geometry_data::BOX;
+  EXPECT_EQ(load_message.link[1].geom[0].type, box_type);
 
-  drake::lcmt_viewer_draw GetReceivedDrawMessage() {
-    drake::lcmt_viewer_draw message_copy;
+  EXPECT_EQ(load_message.link[1].geom[0].position[0], 0);
+  EXPECT_EQ(load_message.link[1].geom[0].position[1], 0);
+  EXPECT_EQ(load_message.link[1].geom[0].position[2], 0);
 
-    std::lock_guard<std::mutex> lock(draw_message_mutex_);
-    message_copy = draw_message_;
+  EXPECT_EQ(load_message.link[1].geom[0].quaternion[0], 1);
+  EXPECT_EQ(load_message.link[1].geom[0].quaternion[1], 0);
+  EXPECT_EQ(load_message.link[1].geom[0].quaternion[2], 0);
+  EXPECT_EQ(load_message.link[1].geom[0].quaternion[3], 0);
 
-    return message_copy;
-  }
+  EXPECT_NEAR(load_message.link[1].geom[0].color[0], 0.2, 1e-6);
+  EXPECT_NEAR(load_message.link[1].geom[0].color[1], 0.3, 1e-6);
+  EXPECT_NEAR(load_message.link[1].geom[0].color[2], 0.4, 1e-6);
+  EXPECT_NEAR(load_message.link[1].geom[0].color[3], 0.9, 1e-6);
 
- private:
-  void HandleLoadMessage(const ::lcm::ReceiveBuffer* rbuf,
-                         const std::string& channel_name,
-                         const drake::lcmt_viewer_load_robot* msg) {
-    if (channel_name == "DRAKE_VIEWER_LOAD_ROBOT") {
-      std::lock_guard<std::mutex> lock(load_message_mutex_);
-      load_message_ = *msg;
-    }
-  }
+  EXPECT_EQ(load_message.link[1].geom[0].float_data[0], 1);
+  EXPECT_EQ(load_message.link[1].geom[0].float_data[1], 1);
+  EXPECT_EQ(load_message.link[1].geom[0].float_data[2], 1);
 
-  void HandleDrawMessage(const ::lcm::ReceiveBuffer* rbuf,
-                         const std::string& channel_name,
-                         const drake::lcmt_viewer_draw* msg) {
-    if (channel_name == "DRAKE_VIEWER_DRAW") {
-      std::lock_guard<std::mutex> lock(load_message_mutex_);
-      draw_message_ = *msg;
-    }
-  }
+  return true;
+}
 
-  std::mutex load_message_mutex_;
-  std::mutex draw_message_mutex_;
+bool DrawMessageIsGood(const drake::lcmt_viewer_draw& draw_message,
+    const RigidBodyTree& tree, int box_model_instance_id) {
+  // Aborts if the draw message wasn't received yet.
+  if (draw_message.num_links == -1) return false;
 
-  drake::lcmt_viewer_load_robot load_message_;
-  drake::lcmt_viewer_draw draw_message_;
-};
+  // Verifies that the draw message has two links and that their names and
+  // model instance IDs are correct.
+  EXPECT_EQ(draw_message.num_links, 2);
+  EXPECT_EQ(draw_message.link_name[0], "world");
+  EXPECT_EQ(draw_message.link_name[1], "box_link");
+  EXPECT_EQ(draw_message.robot_num[0],
+    tree.get_body(RigidBodyTree::kWorldBodyIndex).get_model_instance_id());
+  EXPECT_EQ(draw_message.robot_num[1], box_model_instance_id);
+
+  // Verifies that the world link is at position (0, 0, 0).
+  EXPECT_EQ(draw_message.position[0][0], 0);
+  EXPECT_EQ(draw_message.position[0][1], 0);
+  EXPECT_EQ(draw_message.position[0][2], 0);
+
+  // Verifies that the box link is at position (0, 0, 0.5).
+  EXPECT_EQ(draw_message.position[1][0], 0);
+  EXPECT_EQ(draw_message.position[1][1], 0);
+  EXPECT_EQ(draw_message.position[1][2], 0.5);
+
+  // Verifies that the rotations of both the world link and box link are zero.
+  EXPECT_EQ(draw_message.quaternion[0][0], 1);
+  EXPECT_EQ(draw_message.quaternion[0][1], 0);
+  EXPECT_EQ(draw_message.quaternion[0][2], 0);
+  EXPECT_EQ(draw_message.quaternion[0][3], 0);
+  EXPECT_EQ(draw_message.quaternion[1][0], 1);
+  EXPECT_EQ(draw_message.quaternion[1][1], 0);
+  EXPECT_EQ(draw_message.quaternion[1][2], 0);
+  EXPECT_EQ(draw_message.quaternion[1][3], 0);
+
+  return true;
+}
 
 // Tests the functionality of BotVisualizerSystem by making it load box.sdf.
 GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
@@ -129,9 +136,13 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
   // Verfies that only one model was loaded.
   EXPECT_EQ(model_instance_id_table.size(), 1);
 
+  // Obtains the model instance ID of the box that was just added to the
+  // RigidBodyTree.
+  int box_model_instance_id = model_instance_id_table.at("box");
+
   // Instantiates a receiver for the messages that are published by
   // BotVisualizerSystem.
-  BotVisualizerReceiver receiver(&lcm);
+  drake::systems::test::BotVisualizerReceiver receiver(&lcm);
 
   // Start the LCM recieve thread after all objects it can potentially use
   // are instantiated. Since objects are destructed in the reverse order of
@@ -155,13 +166,13 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
   // position states, which the BotVisualizerSystem uses when deriving the
   // transforms that are saved in the published drake::lcmt_viewer_draw
   // messages.
-  std::unique_ptr<VectorInterface<double>> vector_interface(
+  std::unique_ptr<VectorBase<double>> vector_base(
       new BasicVector<double>(tree.number_of_positions()));
 
   // Initializes the joint states to be zero.
   {
     Eigen::VectorBlock<VectorX<double>> vector_value =
-        vector_interface->get_mutable_value();
+        vector_base->get_mutable_value();
 
     vector_value.setZero();
   }
@@ -171,7 +182,7 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
   // created by the BotVisualizerSystem since we do not have write access to its
   // input vector.
   std::unique_ptr<InputPort<double>> input_port(
-      new FreestandingInputPort<double>(std::move(vector_interface)));
+      new FreestandingInputPort<double>(std::move(vector_base)));
 
   context->SetInputPort(kPortNumber, std::move(input_port));
 
@@ -200,30 +211,10 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
         receiver.GetReceivedDrawMessage();
 
     // Verifies that the size of the received LCM message is correct.
-    if (load_message.num_links != -1 && draw_message.num_links != -1) {
+    if (LoadMessageIsGood(load_message, tree, box_model_instance_id) &&
+        DrawMessageIsGood(draw_message, tree, box_model_instance_id)) {
       done = true;
     }
-    // if (received_message.dim == kDim) {
-    //   bool values_match = true;
-
-    //   for (int ii = 0; ii < kDim && values_match; ++ii) {
-    //     if (received_message.val[ii] != ii) values_match = false;
-    //   }
-
-    //   // At this point, if values_match is true, the received message contains
-    //   // the expected values, which implies that LcmPublisherSystem successfully
-    //   // published the VectorInterface as a drake::lcmt_drake_signal message.
-    //   //
-    //   // We cannot check whether the following member variables of
-    //   // drake::lcmt_drake_signal message was successfully transferred because
-    //   // BasicVector does not save this information:
-    //   //
-    //   //   1. coord
-    //   //   2. timestamp
-    //   //
-    //   // Thus, we must conclude that the experiment succeeded.
-    //   if (values_match) done = true;
-    // }
 
     if (!done) std::this_thread::sleep_for(std::chrono::milliseconds(kDelayMS));
   }
