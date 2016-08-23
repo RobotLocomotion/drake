@@ -5,6 +5,7 @@
 
 namespace drake {
 
+const int SimpleCarStateIndices::kNumCoordinates;
 const int SimpleCarStateIndices::kX;
 const int SimpleCarStateIndices::kY;
 const int SimpleCarStateIndices::kHeading;

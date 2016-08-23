@@ -5,6 +5,7 @@
 
 namespace drake {
 
+const int DrivingCommandIndices::kNumCoordinates;
 const int DrivingCommandIndices::kSteeringAngle;
 const int DrivingCommandIndices::kThrottle;
 const int DrivingCommandIndices::kBrake;
