@@ -14,7 +14,7 @@ def put(fileobj, text, newlines_after=0):
 
 INDICES_BEGIN = """
 /// Describes the row indices of a %(camel)s.
-struct %(indices)s {
+struct DRAKECARS_EXPORT %(indices)s {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = %(nfields)d;
 
@@ -37,6 +37,7 @@ def generate_indices(context, fields):
     camel = context["camel"]
     indices = context["indices"]
     nfields = len(fields)
+    kname = "kNumCoordinates"
     put(header, INDICES_BEGIN % locals(), 1)
     for k, field in enumerate(fields):
         kname = to_kname(field)
@@ -49,6 +50,8 @@ def generate_indices_storage(context, fields):
     camel = context["camel"]
     indices = context["indices"]
     nfields = len(fields)
+    kname = "kNumCoordinates"
+    put(cc, INDICES_FIELD_STORAGE % locals(), 1)
     for k, field in enumerate(fields):
         kname = to_kname(field)
         put(cc, INDICES_FIELD_STORAGE % locals(), 1)
@@ -151,6 +154,7 @@ HEADER_PREAMBLE = """
 #include <Eigen/Core>
 
 #include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
+#include "drake/drakeCars_export.h"
 #include "drake/systems/framework/basic_state_and_output_vector.h"
 
 namespace drake {
