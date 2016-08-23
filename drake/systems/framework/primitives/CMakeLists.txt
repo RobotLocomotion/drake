@@ -10,6 +10,7 @@ drake_install_headers(
   gain-inl.h
   integrator.h
   pass_through.h
-  pass_through-inl.h)
+  pass_through-inl.h
+  pid_controller.h)
 
 add_subdirectory(test)

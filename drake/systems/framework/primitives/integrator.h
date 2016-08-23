@@ -26,6 +26,11 @@ class Integrator : public LeafSystem<T> {
   explicit Integrator(int length);
   ~Integrator() override;
 
+  /// Sets the value of the integral modifying the state in the context.
+  /// @p value must be a column vector of the appropriate size.
+  void set_integral_value(ContextBase<T>* context,
+                          const Eigen::Ref<const VectorX<T>>& value) const;
+
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
   void EvalOutput(const ContextBase<T>& context,
