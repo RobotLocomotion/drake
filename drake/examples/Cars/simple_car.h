@@ -2,6 +2,7 @@
 
 #include "drake/drakeCars_export.h"
 #include "drake/examples/Cars/system1_cars_vectors.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
 namespace drake {
@@ -30,11 +31,11 @@ namespace drake {
 ///
 /// output vector: same as state vector.
 ///
-class DRAKECARS_EXPORT SimpleCar {
+class DRAKECARS_EXPORT SimpleCar1 {
  public:
   static const drake::lcmt_simple_car_config_t kDefaultConfig;
 
-  explicit SimpleCar(
+  explicit SimpleCar1(
       const drake::lcmt_simple_car_config_t& config = kDefaultConfig)
       : config_(config) {}
 

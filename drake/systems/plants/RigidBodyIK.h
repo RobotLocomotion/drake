@@ -69,7 +69,7 @@ DRAKEIK_EXPORT void inverseKin(RigidBodyTree* model,
                                Eigen::MatrixBase<DerivedC>* q_sol, int* info,
                                std::vector<std::string>* infeasible_constraint);
 
-IKResults inverseKinSimple(
+DRAKEIK_EXPORT IKResults inverseKinSimple(
     RigidBodyTree* model, const Eigen::VectorXd& q_seed,
     const Eigen::VectorXd& q_nom,
     const std::vector<RigidBodyConstraint*>& constraint_array,

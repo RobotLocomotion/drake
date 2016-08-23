@@ -24,7 +24,7 @@ namespace {
 int do_main(int argc, const char* argv[]) {
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
-  auto car = std::make_shared<SimpleCar>();
+  auto car = std::make_shared<SimpleCar1>();
   auto adapter = CreateSimpleCarVisualizationAdapter();
 
   //

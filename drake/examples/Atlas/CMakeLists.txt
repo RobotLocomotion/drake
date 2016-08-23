@@ -17,38 +17,38 @@ if (lcm_FOUND)
   add_test(NAME atlas_dynamics_demo COMMAND atlas_dynamics_demo 0.4)
 endif()
 
-add_matlab_test(NAME examples/Atlas/robotiqHandInspector COMMAND robotiqHandInspector)
-add_matlab_test(NAME examples/Atlas/runAtlasDynamics COMMAND runAtlasDynamics)
-add_matlab_test(NAME examples/Atlas/runAtlasFootstepPlanning COMMAND runAtlasFootstepPlanning)
-add_matlab_test(NAME examples/Atlas/runAtlasFrontalDynamics COMMAND runAtlasFrontalDynamics)
-add_matlab_test(NAME examples/Atlas/runAtlasJumping COMMAND runAtlasJumping REQUIRES gurobi)
-add_matlab_test(NAME examples/Atlas/runAtlasSagittalDynamics COMMAND runAtlasSagittalDynamics)
-add_matlab_test(NAME examples/Atlas/runAtlasWalkingPlanning COMMAND runAtlasWalkingPlanning)
-add_matlab_test(NAME examples/Atlas/runCOMFixedPointSearch COMMAND runCOMFixedPointSearch)
+add_matlab_test(NAME examples/Atlas/robotiqHandInspector OPTIONAL bullet COMMAND robotiqHandInspector)
+add_matlab_test(NAME examples/Atlas/runAtlasDynamics OPTIONAL bullet gurobi snopt COMMAND runAtlasDynamics)
+add_matlab_test(NAME examples/Atlas/runAtlasFootstepPlanning REQUIRES gurobi lcm OPTIONAL bullet snopt COMMAND runAtlasFootstepPlanning)
+add_matlab_test(NAME examples/Atlas/runAtlasFrontalDynamics OPTIONAL bullet gurobi snopt COMMAND runAtlasFrontalDynamics)
+add_matlab_test(NAME examples/Atlas/runAtlasJumping REQUIRES spotless OPTIONAL bullet gurobi snopt COMMAND runAtlasJumping)
+add_matlab_test(NAME examples/Atlas/runAtlasSagittalDynamics OPTIONAL bullet gurobi snopt COMMAND runAtlasSagittalDynamics)
+add_matlab_test(NAME examples/Atlas/runAtlasWalkingPlanning REQUIRES gurobi lcm OPTIONAL bullet snopt COMMAND runAtlasWalkingPlanning)
+add_matlab_test(NAME examples/Atlas/runCOMFixedPointSearch OPTIONAL bullet gurobi COMMAND runCOMFixedPointSearch)
 
 # Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
-# add_matlab_test(NAME examples/Atlas/runDRCDoorTask COMMAND runDRCDoorTask REQUIRES iris)
+# add_matlab_test(NAME examples/Atlas/runDRCDoorTask REQUIRES iris mosek COMMAND runDRCDoorTask)
 
-add_matlab_test(NAME examples/Atlas/runRobotiqPDControl COMMAND runRobotiqPDControl)
+add_matlab_test(NAME examples/Atlas/runRobotiqPDControl OPTIONAL bullet gurobi snopt COMMAND runRobotiqPDControl)
 
 if(LONG_RUNNING_TESTS)
 
   if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND UNIX AND NOT APPLE) # FIXME: see #3147.
-    add_matlab_test(NAME examples/Atlas/runAtlasBalancingPerturb COMMAND runAtlasBalancingPerturb PROPERTIES TIMEOUT 1500 REQUIRES gurobi)
-    add_matlab_test(NAME examples/Atlas/runAtlasManip COMMAND runAtlasManip PROPERTIES TIMEOUT 1500 REQUIRES gurobi)
+    add_matlab_test(NAME examples/Atlas/runAtlasBalancingPerturb COMMAND runAtlasBalancingPerturb PROPERTIES TIMEOUT 1500)
+    add_matlab_test(NAME examples/Atlas/runAtlasManip COMMAND runAtlasManip PROPERTIES TIMEOUT 1500)
   endif()
 
   # Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
-  # add_matlab_test(NAME examples/Atlas/runAtlasWalking COMMAND runAtlasWalking PROPERTIES TIMEOUT 1500 REQUIRES gurobi)
+  # add_matlab_test(NAME examples/Atlas/runAtlasWalking REQUIRES gurobi lcm COMMAND runAtlasWalking PROPERTIES TIMEOUT 1500)
 
-  # add_matlab_test(NAME examples/Atlas/runAtlasBalancing COMMAND runAtlasBalancing PROPERTIES TIMEOUT 1500 REQUIRES gurobi)  # FIXME: see #2839
-  # add_matlab_test(NAME examples/Atlas/runAtlasBalancingWithContactSensor COMMAND runAtlasBalancingWithContactSensor PROPERTIES TIMEOUT 1500 REQUIRES gurobi)  # FIXME: see #2839
-  # add_matlab_test(NAME examples/Atlas/runAtlasHandControl COMMAND runAtlasHandControl PROPERTIES TIMEOUT 3000)  # FIXME: see #2839
+  # add_matlab_test(NAME examples/Atlas/runAtlasBalancing REQUIRES gurobi COMMAND runAtlasBalancing PROPERTIES TIMEOUT 1500)  # FIXME: see #2839
+  # add_matlab_test(NAME examples/Atlas/runAtlasBalancingWithContactSensor REQUIRES gurobi COMMAND runAtlasBalancingWithContactSensor PROPERTIES TIMEOUT 1500)  # FIXME: see #2839
+  # add_matlab_test(NAME examples/Atlas/runAtlasHandControl REQUIRES gurobi COMMAND runAtlasHandControl PROPERTIES TIMEOUT 3000)  # FIXME: see #2839
 
   add_matlab_test(NAME examples/Atlas/runRobotiqTendons COMMAND runRobotiqTendons PROPERTIES TIMEOUT 1500)
 
   # Deactivated due to excessive timeouts.
-  # add_matlab_test(NAME examples/Atlas/runDRCPracticeTerrain COMMAND runDRCPracticeTerrain PROPERTIES TIMEOUT 3000 REQUIRES iris)  # FIXME
+  # add_matlab_test(NAME examples/Atlas/runDRCPracticeTerrain REQUIRES iris mosek COMMAND runDRCPracticeTerrain PROPERTIES TIMEOUT 3000)  # FIXME
 
 endif()
 

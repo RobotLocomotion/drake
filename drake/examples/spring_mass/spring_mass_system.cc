@@ -10,7 +10,7 @@ using systems::LeafSystemOutput;
 using systems::OutputPort;
 using systems::StateVector;
 using systems::SystemOutput;
-using systems::VectorInterface;
+using systems::VectorBase;
 
 namespace examples {
 
@@ -102,7 +102,7 @@ std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput(
   std::unique_ptr<LeafSystemOutput<double>> output(
       new LeafSystemOutput<double>);
   {
-    std::unique_ptr<VectorInterface<double>> data(new SpringMassStateVector());
+    std::unique_ptr<VectorBase<double>> data(new SpringMassStateVector());
     std::unique_ptr<OutputPort<double>> port(
         new OutputPort<double>(std::move(data)));
     output->get_mutable_ports()->push_back(std::move(port));

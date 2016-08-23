@@ -49,7 +49,7 @@ class ContextBase {
   /// Returns the vector data of the input port at @p index. Returns nullptr
   /// if that port is not a vector-valued port, or if it is not connected.
   /// Throws std::out_of_range if that port does not exist.
-  virtual const VectorInterface<T>* get_vector_input(int index) const = 0;
+  virtual const VectorBase<T>* get_vector_input(int index) const = 0;
 
   virtual const State<T>& get_state() const = 0;
 

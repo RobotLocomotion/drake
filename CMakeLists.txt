@@ -245,8 +245,10 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
   ${DRAKE_BUILD_COMMANDS}
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
-    -DWITH_DIRECTOR=${WITH_DIRECTOR}
+    -DWITH_AVL:BOOL=${WITH_AVL}
+    -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
+    -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
   DEPENDS
     bertini
@@ -303,7 +305,7 @@ if(WITH_SNOPT_PRECOMPILED)
     CONFIGURE_COMMAND ""
     BUILD_COMMAND cmake -E copy_directory
       ${CMAKE_BINARY_DIR}/snopt-precompiled/
-      ${PROJECT_SOURCE_DIR}/drake/solvers/
+      ${PROJECT_SOURCE_DIR}/drake/matlab/solvers/
     INSTALL_COMMAND "")
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install

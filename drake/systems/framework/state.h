@@ -10,7 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/state_subvector.h"
 #include "drake/systems/framework/state_vector.h"
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -30,7 +30,7 @@ class ContinuousState {
     generalized_position_.reset(new StateSubvector<T>(state_.get()));
     generalized_velocity_.reset(new StateSubvector<T>(state_.get()));
     misc_continuous_state_.reset(
-        new StateSubvector<T>(state_.get(), 0, state_.size()));
+        new StateSubvector<T>(state_.get(), 0, state_->size()));
   }
 
   /// Constructs a ContinuousState that exposes second-order structure.

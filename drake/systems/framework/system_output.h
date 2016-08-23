@@ -7,7 +7,7 @@
 
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/value.h"
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -35,12 +35,12 @@ template <typename T>
 class OutputPort {
  public:
   /// Takes ownership of @p data.
-  explicit OutputPort(std::unique_ptr<VectorInterface<T>> data)
+  explicit OutputPort(std::unique_ptr<VectorBase<T>> data)
       : vector_data_(std::move(data)) {}
 
   /// Returns the vector of data in this output port, or nullptr if this is
   /// an abstract-valued port.
-  const VectorInterface<T>* get_vector_data() const {
+  const VectorBase<T>* get_vector_data() const {
     return vector_data_.get();
   }
 
@@ -64,7 +64,7 @@ class OutputPort {
   /// their caches. Callers MUST NOT write on the returned pointer if there is
   /// any possibility this OutputPort has been accessed since the last time
   /// GetMutableVectorData was called.
-  VectorInterface<T>* GetMutableVectorData() {
+  VectorBase<T>* GetMutableVectorData() {
     ++version_;
     for (OutputPortListenerInterface* dependent : dependents_) {
       dependent->Invalidate();
@@ -87,7 +87,7 @@ class OutputPort {
 
   // The port data, if the port is vector-valued.
   // TODO(sherm1): Add abstract-valued ports.
-  std::unique_ptr<VectorInterface<T>> vector_data_;
+  std::unique_ptr<VectorBase<T>> vector_data_;
 
   // The list of consumers that should be notified when the value on this
   // output port changes.

@@ -1,1 +1,1 @@
-add_matlab_test(NAME systems/robotInterfaces/calibration/test/testJointCalibration COMMAND testJointCalibration)
+add_matlab_test(NAME systems/robotInterfaces/calibration/test/testJointCalibration OPTIONAL bullet COMMAND testJointCalibration)

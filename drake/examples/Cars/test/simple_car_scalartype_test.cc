@@ -34,7 +34,7 @@ namespace test {
 namespace {
 
 GTEST_TEST(SimpleCarScalarTypeTest, CompileTest) {
-  const SimpleCar dut;
+  const SimpleCar1 dut;
 
   const MST time_zero{};
   const SimpleCarState1<MST> state_zeros{};

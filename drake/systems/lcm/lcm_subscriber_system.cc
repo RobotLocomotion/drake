@@ -14,7 +14,7 @@ using std::make_unique;
 
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
-    const LcmAndVectorInterfaceTranslator& translator,
+    const LcmAndVectorBaseTranslator& translator,
     ::lcm::LCM* lcm)
     : channel_(channel),
       translator_(translator),
@@ -85,7 +85,7 @@ void LcmSubscriberSystem::HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                                         const std::string& channel) {
   if (channel == channel_) {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    translator_.TranslateLcmToVectorInterface(rbuf, &basic_vector_);
+    translator_.TranslateLcmToVectorBase(rbuf, &basic_vector_);
   } else {
     std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
               << "message for channel \"" << channel

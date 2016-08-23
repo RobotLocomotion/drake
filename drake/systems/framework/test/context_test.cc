@@ -31,7 +31,7 @@ class ContextTest : public ::testing::Test {
     // Input
     context_.SetNumInputPorts(kNumInputPorts);
     for (int i = 0; i < kNumInputPorts; ++i) {
-      std::unique_ptr<VectorInterface<double>> port_data(
+      std::unique_ptr<VectorBase<double>> port_data(
           new BasicVector<double>(kInputSize[i]));
       std::unique_ptr<FreestandingInputPort<double>> port(
           new FreestandingInputPort<double>(std::move(port_data)));

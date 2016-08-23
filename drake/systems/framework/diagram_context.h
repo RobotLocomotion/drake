@@ -163,7 +163,7 @@ class DiagramContext : public ContextBase<T> {
     // TODO(david-german-tri): Set invalidation callbacks.
   }
 
-  const VectorInterface<T>* get_vector_input(int index) const override {
+  const VectorBase<T>* get_vector_input(int index) const override {
     if (index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
     }

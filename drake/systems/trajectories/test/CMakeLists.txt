@@ -10,5 +10,5 @@ add_matlab_test(NAME systems/trajectories/test/expplusppFnderTest COMMAND expplu
 add_matlab_test(NAME systems/trajectories/test/feedbackTest COMMAND feedbackTest)
 add_matlab_test(NAME systems/trajectories/test/ppRateTransitionTest COMMAND ppRateTransitionTest)
 add_matlab_test(NAME systems/trajectories/test/ppdertest COMMAND ppdertest)
-add_matlab_test(NAME systems/trajectories/test/ppmathtest COMMAND ppmathtest)
+add_matlab_test(NAME systems/trajectories/test/ppmathtest REQUIRES spotless COMMAND ppmathtest)
 add_matlab_test(NAME systems/trajectories/test/pprefinetest COMMAND pprefinetest)
