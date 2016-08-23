@@ -5,6 +5,7 @@
 
 namespace drake {
 
+const int EulerFloatingJointStateIndices::kNumCoordinates;
 const int EulerFloatingJointStateIndices::kX;
 const int EulerFloatingJointStateIndices::kY;
 const int EulerFloatingJointStateIndices::kZ;

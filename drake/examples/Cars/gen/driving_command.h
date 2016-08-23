@@ -8,13 +8,14 @@
 
 #include <Eigen/Core>
 
+#include "drake/drakeCars_export.h"
 #include "drake/systems/framework/basic_state_and_output_vector.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
 namespace drake {
 
 /// Describes the row indices of a DrivingCommand.
-struct DrivingCommandIndices {
+struct DRAKECARS_EXPORT DrivingCommandIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 3;
 
