@@ -5,6 +5,7 @@
 
 #include <stdexcept>
 #include <string>
+
 #include <Eigen/Core>
 
 #include "drake/systems/framework/basic_state_and_output_vector.h"

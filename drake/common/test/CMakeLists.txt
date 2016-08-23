@@ -27,6 +27,10 @@ add_executable(eigen_matrix_compare_test eigen_matrix_compare_test.cc)
 target_link_libraries(eigen_matrix_compare_test ${GTEST_BOTH_LIBRARIES})
 add_test(NAME eigen_matrix_compare_test COMMAND eigen_matrix_compare_test)
 
+add_executable(drake_throw_test drake_throw_test.cc)
+target_link_libraries(drake_throw_test drakeCommon ${GTEST_BOTH_LIBRARIES})
+add_test(NAME drake_throw_test COMMAND drake_throw_test)
+
 # Adds "drake_assert.h" unit testing.
 add_executable(drake_assert_test_default drake_assert_test.cc)
 target_link_libraries(drake_assert_test_default drakeCommon ${GTEST_BOTH_LIBRARIES})
