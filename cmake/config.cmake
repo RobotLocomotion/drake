@@ -39,41 +39,59 @@ endfunction()
 #------------------------------------------------------------------------------
 function(drake_setup_java_for_matlab)
   if(NOT MATLAB_JVM_VERSION)
-    # Set arguments for running matlab
+    if(NOT MATLAB_EXECUTABLE)
+      message(WARNING
+        "Could not determine MATLAB JVM version because MATLAB executable was not set")
+      return()
+    endif()
+
+    # Set arguments for running MATLAB
     set(_args -nodesktop -nodisplay -nosplash)
+    set(_input_file /dev/null)
     if(WIN32)
       set(_args ${_args} -wait)
+      set(_input_file NUL)
     endif()
+    set(_logfile "${CMAKE_CURRENT_BINARY_DIR}/drake_setup_java_for_matlab.log")
 
     # Ask matlab for its JVM version
     execute_process(
-      COMMAND ${MATLAB_EXECUTABLE} ${_args} -r "version -java,quit"
-      RESULT_VARIABLE _result
-      ERROR_VARIABLE _output
-      OUTPUT_VARIABLE _output
-      TIMEOUT 180)
+      COMMAND "${MATLAB_EXECUTABLE}" ${_args} -logfile "${_logfile}" -r "version -java,quit"
+      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" TIMEOUT 300
+      RESULT_VARIABLE _result OUTPUT_QUIET INPUT_FILE ${_input_file})
 
-    # Test for a valid result
-    if(NOT _result AND _output MATCHES "Java ([0-9]+\\.[0-9]+)\\.[0-9_.]+")
-      set(MATLAB_JVM_VERSION ${CMAKE_MATCH_1} CACHE INTERNAL "")
-      set(_jdk_version "${Java_VERSION_MAJOR}.${Java_VERSION_MINOR}")
+    if(NOT _result AND EXISTS ${_logfile})
+      file(READ ${_logfile} _output)
 
-      # Compare against JDK version
-      if(NOT MATLAB_JVM_VERSION VERSION_EQUAL _jdk_version)
-        message(WARNING
-        "MATLAB JVM version (${MATLAB_JVM_VERSION}) does not match "
-        "installed Java Development Kit version (${_jdk_version})")
+      # Test for a valid result
+      if(_output MATCHES "Java ([0-9]+\\.[0-9]+)\\.([0-9_.]+)")
+        set(MATLAB_JVM_VERSION ${CMAKE_MATCH_1} CACHE INTERNAL "")
+        set(_jdk_version "${Java_VERSION_MAJOR}.${Java_VERSION_MINOR}")
 
-        # If JDK is newer, set build options to build Java code compatible
-        # with the matlab JVM
-        if(MATLAB_JVM_VERSION VERSION_LESS _jdk_version)
-          set(CMAKE_JAVA_COMPILE_FLAGS
-            -source ${MATLAB_JVM_VERSION} -target ${MATLAB_JVM_VERSION}
-            CACHE INTERNAL "")
+        # Compare against JDK version
+        if(MATLAB_JVM_VERSION VERSION_EQUAL _jdk_version)
+          message(STATUS
+            "The MATLAB JVM version is ${CMAKE_MATCH_1}.${CMAKE_MATCH_2}")
+        else()
+          message(WARNING
+            "MATLAB JVM version (${MATLAB_JVM_VERSION}) does not match "
+            "installed Java Development Kit version (${_jdk_version})")
+
+          # If JDK is newer, set build options to build Java code compatible
+          # with the MATLAB JVM
+          if(MATLAB_JVM_VERSION VERSION_LESS _jdk_version)
+            set(CMAKE_JAVA_COMPILE_FLAGS
+              -source ${MATLAB_JVM_VERSION} -target ${MATLAB_JVM_VERSION}
+              CACHE INTERNAL "")
+          endif()
         endif()
+      else()
+        message(WARNING
+          "Could not determine MATLAB JVM version because regular expression was not matched")
       endif()
     else()
-      message(WARNING "Could not determine MATLAB JVM version")
+      message(WARNING
+        "Could not determine MATLAB JVM version because MATLAB log file was not created")
     endif()
   endif()
 endfunction()
