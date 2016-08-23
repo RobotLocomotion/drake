@@ -20,7 +20,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -38,7 +38,7 @@ using systems::StateSubvector;
 using systems::StateVector;
 using systems::System;
 using systems::SystemOutput;
-using systems::VectorInterface;
+using systems::VectorBase;
 
 namespace examples {
 namespace {
@@ -62,7 +62,7 @@ class SpringMassSystemTest : public ::testing::Test {
     system_derivatives_ = system_->AllocateTimeDerivatives();
     const int nq = system_derivatives_->get_generalized_position().size();
     configuration_derivatives_ = std::unique_ptr<BasicStateVector<double>>(
-        new BasicStateVector<double>(std::unique_ptr<VectorInterface<double>>(
+        new BasicStateVector<double>(std::unique_ptr<VectorBase<double>>(
             new BasicVector<double>(nq))));
 
     // Set up some convenience pointers.
@@ -126,7 +126,7 @@ TEST_F(SpringMassSystemTest, CloneState) {
 TEST_F(SpringMassSystemTest, CloneOutput) {
   InitializeState(1.0, 2.0);
   system_->EvalOutput(*context_, system_output_.get());
-  std::unique_ptr<VectorInterface<double>> clone = output_->CloneVector();
+  std::unique_ptr<VectorBase<double>> clone = output_->CloneVector();
 
   SpringMassStateVector* typed_clone =
       dynamic_cast<SpringMassStateVector*>(clone.get());
@@ -145,7 +145,7 @@ TEST_F(SpringMassSystemTest, Output) {
   EXPECT_NEAR(0.1, output_->get_position(), 1e-14);
   EXPECT_EQ(0.25, output_->get_velocity());
 
-  // Check the output through the VectorInterface API.
+  // Check the output through the VectorBase API.
   ASSERT_EQ(3, output_->size());
   EXPECT_NEAR(0.1, output_->get_value()[0], 1e-14);
   EXPECT_EQ(0.25, output_->get_value()[1]);
@@ -325,7 +325,7 @@ void StepSemiExplicitEuler(double h, const System<double>& system,
   // const int nq = derivs.get_generalized_position().size();
   // auto configuration_derivatives =
   // std::make_unique<BasicStateVector<double>>(
-  //    std::unique_ptr<VectorInterface<double>>(new BasicVector<double>(nq)));
+  //    std::unique_ptr<VectorBase<double>>(new BasicVector<double>(nq)));
 
   const double t = context.get_time();
 

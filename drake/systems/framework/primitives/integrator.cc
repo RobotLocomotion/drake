@@ -44,7 +44,7 @@ template <typename T>
 void Integrator<T>::EvalTimeDerivatives(const ContextBase<T>& context,
                                         ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT(System<T>::IsValidContext(context));
-  const VectorInterface<T>* input = context.get_vector_input(0);
+  const VectorBase<T>* input = context.get_vector_input(0);
   derivatives->get_mutable_state()->SetFromVector(input->get_value());
 }
 
@@ -54,7 +54,7 @@ void Integrator<T>::EvalOutput(const ContextBase<T>& context,
   DRAKE_ASSERT(System<T>::IsValidOutput(output));
   DRAKE_ASSERT(System<T>::IsValidContext(context));
 
-  VectorInterface<T>* output_port =
+  VectorBase<T>* output_port =
       output->get_mutable_port(0)->GetMutableVectorData();
 
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
@@ -62,6 +62,7 @@ void Integrator<T>::EvalOutput(const ContextBase<T>& context,
   output_port->get_mutable_value() =
       context.get_state().continuous_state->get_state().CopyToVector();
 }
+
 
 // Explicitly instantiates on the most common scalar types.
 template class DRAKESYSTEMFRAMEWORK_EXPORT Integrator<double>;

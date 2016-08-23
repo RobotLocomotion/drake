@@ -4,4 +4,4 @@ if(bullet_FOUND)
   add_test(NAME model_test COMMAND model_test)
 endif()
 
-add_matlab_test(NAME systems/plants/collision/test/testActiveCollisionOptions COMMAND testActiveCollisionOptions)
+add_matlab_test(NAME systems/plants/collision/test/testActiveCollisionOptions OPTIONAL bullet COMMAND testActiveCollisionOptions)

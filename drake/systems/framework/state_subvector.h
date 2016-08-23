@@ -6,7 +6,7 @@
 #include <stdexcept>
 
 #include "drake/systems/framework/state_vector.h"
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
