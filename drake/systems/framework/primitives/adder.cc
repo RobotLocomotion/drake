@@ -30,7 +30,7 @@ void Adder<T>::EvalOutput(const ContextBase<T>& context,
   DRAKE_ASSERT(System<T>::IsValidOutput(output));
   DRAKE_ASSERT(System<T>::IsValidContext(context));
 
-  VectorInterface<T>* output_vector =
+  VectorBase<T>* output_vector =
       output->get_mutable_port(0)->GetMutableVectorData();
 
   // Zeroes the output.
@@ -40,7 +40,7 @@ void Adder<T>::EvalOutput(const ContextBase<T>& context,
   // Sum each input port into the output, after checking that it has the
   // expected length.
   for (int i = 0; i < context.get_num_input_ports(); i++) {
-    const VectorInterface<T>* input_vector = context.get_vector_input(i);
+    const VectorBase<T>* input_vector = context.get_vector_input(i);
     output_vector->get_mutable_value() += input_vector->get_value();
   }
 }
