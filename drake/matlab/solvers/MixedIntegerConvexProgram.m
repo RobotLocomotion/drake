@@ -64,12 +64,10 @@ classdef MixedIntegerConvexProgram
         checkDependency('yalmip');
         obj.symbolic_constraints = lmi();
       end
-
-      checkDependency('gurobi');
       
       obj.has_symbolic = has_symbolic;
       
-      obj.solver = 'gurobi';
+      obj = obj.setSolver('default');
     end
 
     function obj = addVariable(obj, name, type_, size_, lb, ub, start_)
@@ -360,12 +358,11 @@ classdef MixedIntegerConvexProgram
     end
 
     function [obj, solvertime, objval] = solveYalmip(obj, params)
-      checkDependency('gurobi');
       constraints = obj.symbolic_constraints;
       objective = obj.symbolic_objective;
 
       if nargin < 2 || isempty(params)
-        params = sdpsettings('solver', 'gurobi', 'verbose', 0);
+        params = sdpsettings('solver', obj.solver, 'verbose', 0);
       end
 
       % Now add in any constraints or objectives which were declared non-symbolically
@@ -475,10 +472,36 @@ classdef MixedIntegerConvexProgram
         checkDependency('gurobi');
       elseif(strcmpi(solver,'mosek'))
         checkDependency('mosek');
+      elseif(strcmpi(solver,'default'))
+        if(checkDependency('gurobi'))
+          solver = 'gurobi';
+        elseif(checkDependency('mosek'))
+          solver = 'mosek';
+        else
+          error('Drake:MixedIntegerConvexProgram:UnsupportedSolver','Supported solvers are not available. Install Gurobi or Mosek');
+        end
       else
         error('Drake:MixedIntegerConvexProgram:UnsupportedSolver','Solver not supported yet');
       end
       obj.solver = solver;
+    end
+    
+    function [solved_prob, solver_time, obj_val] = compareSolvers(obj)
+      solvers = {};
+      if(checkDependency('gurobi'))
+        solvers = [solvers,{'gurobi'}];
+      end
+      if(checkDependency('mosek'))
+        solvers = [solvers,{'mosek'}];
+      end
+      num_solvers = length(solvers);
+      solved_prob = cell(num_solvers,1);
+      solver_time = zeros(num_solvers,1);
+      obj_val = zeros(num_solvers,1);
+      for i = 1:num_solvers
+        solved_prob{i} = obj.setSolver(solvers{i});
+        [solved_prob{i},solver_time(i),obj_val(i)] = solved_prob{i}.solve();
+      end
     end
   end
 end
