@@ -61,7 +61,8 @@ add_matlab_test(NAME util/test/testDTransformSpatialForce COMMAND testDTransform
 add_matlab_test(NAME util/test/testDcross COMMAND testDcross)
 add_matlab_test(NAME util/test/testFlipExpmap COMMAND testFlipExpmap)
 add_matlab_test(NAME util/test/testGeometryConversionFunctionsComparison COMMAND testGeometryConversionFunctionsComparison)
-add_matlab_test(NAME util/test/testGeometryGradientsComparison COMMAND testGeometryGradientsComparison)
+# DISABLED due to #3224.
+# add_matlab_test(NAME util/test/testGeometryGradientsComparison COMMAND testGeometryGradientsComparison)
 add_matlab_test(NAME util/test/testMotionSubspace COMMAND testMotionSubspace)
 add_matlab_test(NAME util/test/testMotionSubspaceDotTimesV COMMAND testMotionSubspaceDotTimesV)
 add_matlab_test(NAME util/test/testOrientation COMMAND testOrientation)
