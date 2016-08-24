@@ -23,6 +23,10 @@ namespace test {
  *
  * It also provides accessors for obtaining copies of the message that were most
  * recently received. This is used for testing BotVisualizerSystem.
+ *
+ * A prefix can be appended to the channel names to allow multiple instances of
+ * this class to simultantously exist. This prefix is specified as an input
+ * parameter to the constructor.
  */
 class BotVisualizerReceiver {
  public:
