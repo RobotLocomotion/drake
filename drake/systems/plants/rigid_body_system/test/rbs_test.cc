@@ -71,15 +71,12 @@ class KukaArmTest : public ::testing::Test {
 
     context_ = system_->CreateDefaultContext();
     output_ = system_->AllocateOutput(*context_);
-
-    input_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
   unique_ptr<RigidBodySystem<double>> kuka_system_;
   System<double>* system_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
-  std::unique_ptr<BasicVector<double>> input_;
 };
 
 TEST_F(KukaArmTest, EvalOutput) {
@@ -90,6 +87,9 @@ TEST_F(KukaArmTest, EvalOutput) {
 
   // Checks the size of the input ports to match the number of generalized
   // forces that can be applied.
+  ASSERT_EQ(7, kuka_system_->get_num_generalized_positions());
+  ASSERT_EQ(7, kuka_system_->get_num_generalized_velocities());
+  ASSERT_EQ(14, kuka_system_->get_num_states());
   ASSERT_EQ(7, kuka_system_->get_num_generalized_forces());
   ASSERT_EQ(7, kuka_system_->get_input_port(0).get_size());
 
@@ -98,6 +98,9 @@ TEST_F(KukaArmTest, EvalOutput) {
   context_->SetInputPort(0, MakeInput(
       make_unique<BasicVector<double>>(
           kuka_system_->get_num_generalized_forces())));
+
+  kuka_system_->ObtainZeroConfiguration(context_.get());
+  
 
   // This call should not assert when compiling Debug builds.
   system_->EvalOutput(*context_, output_.get());

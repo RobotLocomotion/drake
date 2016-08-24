@@ -1,5 +1,6 @@
 #include "drake/systems/plants/rigid_body_system/rigid_body_system.h"
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_state_vector.h"
 // TODO(amcastro-tri): parsers are not "plants" and should therefore be moved
 // somewhere else. Maybe inside "multibody_dynamics/parsers" when that exists.

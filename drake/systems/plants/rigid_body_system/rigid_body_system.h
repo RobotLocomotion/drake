@@ -41,6 +41,25 @@ class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
 
   int get_num_outputs() const;
 
+  void set_position(ContextBase<T>* context, int position_index, T position) const {
+    context->get_mutable_state()->continuous_state->get_mutable_generalized_position()->SetAtIndex(position_index, position);
+  }
+
+  void set_velocity(ContextBase<T>* context, int velocity_index, T position) const {
+    context->get_mutable_state()->continuous_state->get_mutable_generalized_velocity()->SetAtIndex(velocity_index, position);
+  }
+
+  /// Sets the state in @p context so that generalized positions and velocities
+  /// are zero. For quaternion based joints the quaternion is set to be the
+  /// identity or zero rotation quaternion.
+  void ObtainZeroConfiguration(ContextBase<T>* context) const {
+    VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
+    x0.head(get_num_generalized_positions()) =
+        multibody_world_->getZeroConfiguration();
+    context->get_mutable_state()->continuous_state->get_mutable_state()->SetFromVector(x0);
+  }
+
+
   /**
    * Reads a model specification from a URDF file and adds an instance of the
    * model into this `RigidBodySystem`'s `RigidBodyTree`.
