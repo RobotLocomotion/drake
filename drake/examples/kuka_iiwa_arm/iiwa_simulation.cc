@@ -67,7 +67,7 @@ std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
 DRAKEKUKAIIWAARM_EXPORT
 Eigen::VectorXd ArbitraryIiwaInitialState() {
   const int state_dimension = 14;
-  const int num_dof = 7; // Fixed for the IIWA Arm.
+  const int num_dof = 7;  // Fixed for the IIWA Arm.
   Eigen::VectorXd arbitrary_initial_state =
       Eigen::VectorXd::Zero(state_dimension,1);
   arbitrary_initial_state.head(num_dof) << 0.01, -0.01, 0.01, 0.5,
