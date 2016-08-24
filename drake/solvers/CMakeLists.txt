@@ -95,15 +95,6 @@ if(gurobi_FOUND)
   pods_use_pkg_config_packages(drakeOptimization gurobi)
 endif()
 
-if(snopt_c_FOUND AND MATLAB_FOUND)
-  add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
-  pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
-
-  # These warnings are not worth fixing.
-  target_compile_options(NonlinearProgramSnoptmex PRIVATE
-    ${CXX_FLAGS_NO_ERROR_SHADOW})
-endif()
-
 if(mosek_FOUND)
   pods_use_pkg_config_packages(drakeOptimization mosek)
 endif()
