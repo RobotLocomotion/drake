@@ -133,6 +133,17 @@ class ContinuousState {
     return misc_continuous_state_.get();
   }
 
+  /// Sets the entire continuous state vector from an Eigen expression.
+  void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) {
+    DRAKE_ASSERT(value.size() == state_->size());
+    this->get_mutable_state()->SetFromVector(value);
+  }
+
+  /// Returns a copy of the entire continuous state vector into an Eigen vector.
+  VectorX<T> CopyToVector() const {
+    return this->get_state().CopyToVector();
+  }
+
  private:
   // The entire state vector.  May or may not own the underlying data.
   std::unique_ptr<VectorBase<T>> state_;
