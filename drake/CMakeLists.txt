@@ -348,10 +348,11 @@ else()
 endif()
 
 if(MATLAB_FOUND)
-  add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
-    COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
-    PROPERTIES TIMEOUT 300)
+  # DISABLED due to #3149.
+  # add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
+  #   COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
+  #   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
+  #   PROPERTIES TIMEOUT 300)
 endif()
 
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)
