@@ -1,11 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
-#include "drake/drakeRBS_export.h"
+#include "drake/drake_rbs_export.h"
 #include "drake/systems/framework/leaf_system.h"
 
-//#include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 namespace tinyxml2 {
@@ -19,21 +20,30 @@ namespace systems {
 // RigidBodySystem is a diagram containing the multibody dynamics engine system
 // connected to forcing systems and sensor systems.
 template<typename T>
-class DRAKERBS_EXPORT RigidBodySystem : public LeafSystem<T> {
+class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
  public:
   /// Doc.
-  RigidBodySystem() {
-    penetration_stiffness_ = 150;
-    penetration_damping_ = penetration_stiffness / 10.0;
+  RigidBodySystem();
 
-    //this->DeclareInputPort(kVectorValued, length, kContinuousSampling);
-    //this->DeclareOutputPort(kVectorValued, length, kContinuousSampling);
+  virtual ~RigidBodySystem() override;
 
-    // A default world with only the "world" body.
-    multibody_world_ = std::make_unique<RigidBodyTree>();
-  }
-
-  virtual ~RigidBodySystem() {}
+  /**
+   * Reads a model specification from a URDF file and adds an instance of the
+   * model into this `RigidBodySystem`'s `RigidBodyTree`.
+   *
+   * @param[in] filename The name of the file containing the URDF
+   * specification.
+   *
+   * @param[in] floating_base_type The type of joint that connects the model
+   * instance's root to this `RigidBodySystem`'s `RigidBodyTree`.
+   *
+   * @return A table mapping the names of the models whose instances were just
+   * added to the `RigidBodyTree` to their instance IDs, which are unique within
+   * the `RigidBodyTree`.
+   */
+  drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfFile(
+      const std::string& filename,
+      DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
 
 #if 0
   /**
@@ -167,14 +177,13 @@ class DRAKERBS_EXPORT RigidBodySystem : public LeafSystem<T> {
   // Replace by compute_initial_state()? return a ContinuousState or a Context?
   friend DRAKERBSYSTEM_EXPORT StateVector<double> getInitialState(
       const RigidBodySystem& sys);
-
 #endif
 
   // some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
   T penetration_stiffness_;
   T penetration_damping_;
-  T friction_coefficient;
+  T friction_coefficient_;
 
  private:
   std::unique_ptr<RigidBodyTree> multibody_world_;
