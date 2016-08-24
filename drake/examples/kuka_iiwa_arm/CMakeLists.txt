@@ -34,6 +34,19 @@ if(lcm_FOUND)
     drakeRBM
     drakeLCMSystem)
 
+  add_executable(run_kuka_iiwa_gravity_compensated_torque_control
+          run_kuka_iiwa_gravity_compensated_torque_control.cc)
+  target_link_libraries(run_kuka_iiwa_gravity_compensated_torque_control
+          drakeKukaIiwaArm
+          drakeRBSystem
+          drakeLCMSystem)
+
+  add_executable(run_kuka_iiwa_gravity_compensated_position_control
+          run_kuka_iiwa_gravity_compensated_position_control.cc)
+  target_link_libraries(run_kuka_iiwa_gravity_compensated_position_control
+          drakeKukaIiwaArm
+          drakeRBSystem
+          drakeLCMSystem)
 endif()
 
 add_subdirectory(test)

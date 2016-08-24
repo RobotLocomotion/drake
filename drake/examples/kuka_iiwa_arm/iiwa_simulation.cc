@@ -46,6 +46,35 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   return rigid_body_system;
 }
 
+std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
+    CreateKukaIiwaVisualizer(
+    const std::shared_ptr<drake::RigidBodySystem> iiwa_system) {
+
+  // Extract the tree.
+  const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
+
+  // Initializes LCM.
+  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
+
+  // Instantiates additional systems and cascades them with the rigid body
+  // system.
+  auto visualizer =
+      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,
+                                                                    iiwa_tree);
+  return(visualizer);
+}
+
+DRAKEKUKAIIWAARM_EXPORT
+Eigen::VectorXd ArbitraryIiwaInitialState() {
+  const int state_dimension = 14;
+  const int num_dof = 7; // Fixed for the IIWA Arm.
+  Eigen::VectorXd arbitrary_initial_state =
+      Eigen::VectorXd::Zero(state_dimension,1);
+  arbitrary_initial_state.head(num_dof) << 0.01, -0.01, 0.01, 0.5,
+  0.01, -0.01, 0.01;
+  return(arbitrary_initial_state);
+}
+
 drake::SimulationOptions SetupSimulation(double initial_step_size) {
   // Specifies the simulation options.
   drake::SimulationOptions options;
