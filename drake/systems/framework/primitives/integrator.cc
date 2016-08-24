@@ -57,7 +57,7 @@ void Integrator<T>::EvalOutput(const ContextBase<T>& context,
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   System<T>::GetMutableOutputVector(output, 0) =
-      System<T>::GetContinuousStateVectorCopy(context);
+      System<T>::CopyContinuousStateVector(context);
 }
 
 
