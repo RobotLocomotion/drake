@@ -214,6 +214,14 @@ int DoMain(int argc, const char* argv[]) {
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys,
       &model_instance_name_table);
 
+  std::cout
+      << "==========================================================="
+      << std::endl
+      << "Number of inputs of vehicle sys: " << drake::getNumInputs(*vehicle_sys.get())
+      // << std::endl
+      // << "Number of outputs of overall sys: " << drake::getNumOutputs(*sys.get())
+      << std::endl;
+
   // auto visualizer =
   //   std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
@@ -243,6 +251,14 @@ int DoMain(int argc, const char* argv[]) {
             joint_state_publisher),
           lidar_publisher),
         odometry_publisher);
+
+  std::cout
+      << "==========================================================="
+      << std::endl
+      << "Number of inputs of overall sys: " << drake::getNumInputs(*sys.get())
+      // << std::endl
+      // << "Number of outputs of overall sys: " << drake::getNumOutputs(*sys.get())
+      << std::endl;
 
   // auto sys =
   //     cascade(

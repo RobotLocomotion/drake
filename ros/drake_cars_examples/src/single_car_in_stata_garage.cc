@@ -67,8 +67,19 @@ int do_main(int argc, const char* argv[]) {
   model_instance_name_table[model_instances["prius_1"]] = "prius";
   model_instance_name_table[model_instances["P1"]] = "stata_garage";
 
+  std::map<int, std::string> model_instance_name_table_odometry;
+  model_instance_name_table_odometry[model_instances["prius_1"]] = "prius";
+
   // Initializes and cascades all of the other systems.
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
+
+  std::cout
+      << "==========================================================="
+      << std::endl
+      << "Number of inputs of vehicle sys: " << drake::getNumInputs(*vehicle_sys.get())
+      // << std::endl
+      // << "Number of outputs of overall sys: " << drake::getNumOutputs(*sys.get())
+      << std::endl;
 
   auto visualizer =
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
@@ -79,7 +90,7 @@ int do_main(int argc, const char* argv[]) {
 
   auto odometry_publisher = std::make_shared<
       SensorPublisherOdometry<RigidBodySystem::StateVector>>(
-      rigid_body_sys, model_instance_name_table);
+      rigid_body_sys, model_instance_name_table_odometry);
 
   auto tf_publisher = std::make_shared<
       DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
@@ -100,6 +111,14 @@ int do_main(int argc, const char* argv[]) {
             odometry_publisher),
           tf_publisher),
         joint_state_publisher);
+
+  std::cout
+      << "==========================================================="
+      << std::endl
+      << "Number of inputs of overall sys: " << drake::getNumInputs(*sys.get())
+      // << std::endl
+      // << "Number of outputs of overall sys: " << drake::getNumOutputs(*sys.get())
+      << std::endl;
 
   // Initializes the simulation options.
   SimulationOptions options = GetCarSimulationDefaultOptions();

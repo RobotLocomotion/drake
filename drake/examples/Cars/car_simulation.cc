@@ -186,11 +186,14 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
   map_driving_cmd_to_x_d.setZero();
 
   std::cout << "++++++++++++++++++++++++++++++++++++++++" << std::endl
-            << "  - Kp.size() = " << Kp.size() << std::endl
-            << "  - Kd.size() = " << Kd.size() << std::endl
-            << "  - map_driving_cmd_to_x_d size = ["
+            << "  - size of Kp = [" << Kp.rows() << ", " << Kp.cols() << "]"
+            << std::endl
+            << "  - size of Kd = [" << Kd.rows() << ", " << Kd.cols() << "]"
+            << std::endl
+            << "  - size of map_driving_cmd_to_x_d = ["
             << map_driving_cmd_to_x_d.rows() << ", "
-            << map_driving_cmd_to_x_d.cols() << "]" << std::endl
+            << map_driving_cmd_to_x_d.cols() << "]"
+            << std::endl
             << "  - Number of actuators: " << tree->actuators.size()
             << std::endl;
 
@@ -204,9 +207,15 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
       const auto& rigid_body = tree->actuators[actuator_idx].body_;
 
       // Sets the steering actuator's Kp gain.
+      std::cout << "Setting Kp[" << actuator_idx << ", "
+                << rigid_body->get_position_start_index() << "] to be "
+                << kpSteering << std::endl;
       Kp(actuator_idx, rigid_body->get_position_start_index()) = kpSteering;
 
       // Sets the steering actuator's Kd gain.
+      std::cout << "Setting Kd[" << actuator_idx << ", "
+                << rigid_body->get_position_start_index() << "] to be "
+                << kdSteering << std::endl;
       Kd(actuator_idx, rigid_body->get_velocity_start_index()) = kdSteering;
 
       // Saves the mapping between the driving command and the steering command.
@@ -247,6 +256,13 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
           map_driving_cmd_to_x_d),
       vehicle_with_pd);
 
+  std::cout
+      << "==========================================================="
+      << std::endl
+      << "Number of inputs of vehicle_sys: " << vehicle_sys->getNumInputs()
+      << std::endl
+      << "Number of outputs of vehicle_sys: " << vehicle_sys->getNumOutputs()
+      << std::endl;
   return vehicle_sys;
 }
 
