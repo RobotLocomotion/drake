@@ -31,11 +31,10 @@ int DoMain(int argc, char* argv[]) {
       if (++ii == argc) {
         throw std::runtime_error(
             "ERROR: Command line option \"--duration\" is not followed by a "
-                "value!");
+            "value!");
       }
       kDuration = atof(argv[ii]);
     }
-
   }
 
   const int num_dof = 7;
@@ -67,9 +66,7 @@ int DoMain(int argc, char* argv[]) {
 
   auto visualizer = CreateKukaIiwaVisualizer(iiwa_system);
 
-  auto sys =
-      cascade(cascade(set_point, controlled_robot), visualizer);
-
+  auto sys = cascade(cascade(set_point, controlled_robot), visualizer);
 
   // Specifies the start time of the simulation.
   const double kStartTime = 0;

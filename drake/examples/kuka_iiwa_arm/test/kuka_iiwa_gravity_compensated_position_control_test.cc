@@ -2,14 +2,13 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/systems/cascade_system.h"
 #include "drake/systems/LinearSystem.h"
+#include "drake/systems/Simulation.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/systems/gravity_compensated_pd_position_control_system.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/robot_state_tap.h"
-#include "drake/systems/Simulation.h"
 
 using drake::AffineSystem;
 using drake::CascadeSystem;
@@ -30,7 +29,7 @@ namespace {
 // identical with the initial pose, the controller maintains the robot
 // pose with negligible errors over a given duration; (ii) the controller
 // maintains this pose with a negligible velocity error.
-GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
+GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedPositionControl) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
   auto robot_state_tap =
@@ -71,7 +70,7 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensationControl) {
   const double kStartTime = 0;
 
   // Specifies the duration of the simulation.
-  const double kDuration = 1.0;
+  const double kDuration = 0.5;
 
   EXPECT_NO_THROW(
       drake::simulate(*sys.get(), kStartTime, kDuration, x0, options));

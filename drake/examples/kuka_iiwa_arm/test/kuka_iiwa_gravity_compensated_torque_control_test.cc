@@ -2,13 +2,12 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/systems/LinearSystem.h"
+#include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/gravity_compensated_system.h"
 #include "drake/systems/plants/robot_state_tap.h"
-#include "drake/systems/Simulation.h"
 
 using drake::AffineSystem;
 using drake::GravityCompensatedSystem;
@@ -17,7 +16,6 @@ using drake::RobotStateTap;
 using drake::SimulationOptions;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-
 
 namespace drake {
 namespace examples {
@@ -103,8 +101,7 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControlSmallInput) {
   auto robot_state_tap =
       std::make_shared<RobotStateTap<RigidBodySystem::StateVector>>();
 
-  auto sys =
-      cascade(cascade(input_torque, controlled_robot), robot_state_tap);
+  auto sys = cascade(cascade(input_torque, controlled_robot), robot_state_tap);
 
   drake::SimulationOptions options = SetupSimulation();
 

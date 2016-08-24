@@ -1,11 +1,11 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/systems/cascade_system.h"
-#include "drake/systems/gravity_compensated_system.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
-#include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/Simulation.h"
+#include "drake/systems/cascade_system.h"
+#include "drake/systems/gravity_compensated_system.h"
+#include "drake/systems/plants/BotVisualizer.h"
 
 using drake::AffineSystem;
 using drake::BotVisualizer;
@@ -33,7 +33,7 @@ int DoMain(int argc, char* argv[]) {
       if (++ii == argc) {
         throw std::runtime_error(
             "ERROR: Command line option \"--duration\" is not followed by a "
-                "value!");
+            "value!");
       }
       kDuration = atof(argv[ii]);
     }
@@ -42,7 +42,7 @@ int DoMain(int argc, char* argv[]) {
       if (++ii == argc) {
         throw std::runtime_error(
             "ERROR: Command line option \"--magnitude\" is not followed by a "
-                "value!");
+            "value!");
       }
       kInputTorqueMagnitude = atof(argv[ii]);
     }
@@ -66,8 +66,7 @@ int DoMain(int argc, char* argv[]) {
           Eigen::aligned_allocator<GravityCompensatedSystem<RigidBodySystem>>(),
           iiwa_system);
 
-  auto sys =
-      cascade(cascade(input_torque, controlled_robot), visualizer);
+  auto sys = cascade(cascade(input_torque, controlled_robot), visualizer);
 
   // Obtains an initial state of the simulation.
   VectorXd x0 = ArbitraryIiwaInitialState();
@@ -89,4 +88,3 @@ int DoMain(int argc, char* argv[]) {
 int main(int argc, char* argv[]) {
   return drake::examples::kuka_iiwa_arm::DoMain(argc, argv);
 }
-

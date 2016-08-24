@@ -2,14 +2,13 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/systems/cascade_system.h"
 #include "drake/systems/LinearSystem.h"
+#include "drake/systems/Simulation.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/robot_state_tap.h"
-#include "drake/systems/Simulation.h"
 
 using drake::AffineSystem;
 using Eigen::MatrixXd;
@@ -76,7 +75,7 @@ GTEST_TEST(testIIWAArm, iiwaArmPDControl) {
   const double kStartTime = 0;
 
   // Specifies the duration of the simulation.
-  const double kDuration = 1.0;
+  const double kDuration = 0.5;
 
   EXPECT_NO_THROW(
       drake::simulate(*sys.get(), kStartTime, kDuration, x0, options));
