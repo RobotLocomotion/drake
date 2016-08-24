@@ -44,6 +44,8 @@ The continuous parts of the trajectory are advanced using a numerical
 integrator. Different integrators have different properties; if you know about
 that you can choose the one that is most appropriate for your application.
 Otherwise, a default is provided which is adequate for most systems. **/
+// TODO(sherm1) When API stabilizes, should list the methods above in addition
+// to describing them.
 template <typename T>
 class Simulator {
  public:
