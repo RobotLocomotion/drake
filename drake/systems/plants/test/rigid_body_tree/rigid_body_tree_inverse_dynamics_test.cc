@@ -129,14 +129,38 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
 
   autoDiffToGradientMatrix(tree_->frictionTorques(v_autodiff));
 
-  double kTolerance = 1e-10;
-//  std::cout << mass_matrix << std::endl << std::endl;
-//  std::cout << mass_matrix_from_inverse_dynamics << std::endl << std::endl;
-  EXPECT_TRUE(mass_matrix.isApprox(mass_matrix_from_inverse_dynamics,
-      kTolerance));
-
   EXPECT_TRUE(CompareMatrices(mass_matrix,
                               mass_matrix_from_inverse_dynamics,
+                              1e-10, MatrixCompareType::absolute));
+}
+
+// Check that the gradient transpose of potential energy matches the vector of
+// generalized gravitational forces
+TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizeGravitationalForces) {
+  std::default_random_engine generator;
+
+  // compute vector of generalized gravitational forces
+  auto q = tree_->getRandomConfiguration(generator);
+  KinematicsCache<double> kinematics_cache(tree_->bodies);
+  kinematics_cache.initialize(q);
+  tree_->doKinematics(kinematics_cache);
+  eigen_aligned_unordered_map<const RigidBody *, TwistVector<double>> f_ext;
+  auto gravitational_forces = tree_->dynamicsBiasTerm(
+      kinematics_cache, f_ext,false);
+
+  auto q_autodiff = initializeAutoDiff(q);
+  typedef typename decltype(q_autodiff)::Scalar ADScalar;
+  KinematicsCache<ADScalar> kinematics_cache_autodiff(tree_->bodies);
+  kinematics_cache_autodiff.initialize(q_autodiff);
+  tree_->doKinematics(kinematics_cache_autodiff);
+  auto gravitational_acceleration = tree_->a_grav.tail<3>();
+  auto gravitational_force =
+      (gravitational_acceleration.cast<ADScalar>() * tree_->getMass()).eval();
+  auto center_of_mass = tree_->centerOfMass(kinematics_cache_autodiff);
+  auto potential_energy = -center_of_mass.dot(gravitational_force);
+
+  EXPECT_TRUE(CompareMatrices(gravitational_forces,
+                              potential_energy.derivatives(),
                               1e-10, MatrixCompareType::absolute));
 }
 
