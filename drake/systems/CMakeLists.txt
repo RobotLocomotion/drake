@@ -25,6 +25,7 @@ if(lcm_FOUND)
     drake_lcmtypes_hpp)
   target_link_libraries(drakeBotVisualizerSystem
     drakeRBM
+    drakeSystemFramework
     lcm)
   if(WIN32)
     target_link_libraries(drakeBotVisualizerSystem ws2_32)
