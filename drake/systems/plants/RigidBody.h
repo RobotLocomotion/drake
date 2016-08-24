@@ -105,26 +105,42 @@ class DRAKERBM_EXPORT RigidBody {
   int get_body_index() const;
 
   /**
-   * Sets the start index of this rigid body's position state within the
-   * `RigidBodyTree`'s state vector.
+   * Sets the start index of this rigid body's joint position state within the
+   * portion of `RigidBodyTree`'s state vector that holds the joint position
+   * state vector. Since the joint position state vector starts at the very
+   * beginning of `RigidBodyTree`'s state vector, the actual starting index of
+   * this rigid body's joint position state within `RigidBodyTree`'s state
+   * vector is @p position_start_index.
    */
   void set_position_start_index(int position_start_index);
 
   /**
-   * Returns the start index of this rigid body's position state within the
-   * `RigidBodyTree`'s state vector.
+   * Returns the start index of this rigid body's joint position state within
+   * the portion of `RigidBodyTree`'s state vector that holds the joint position
+   * state vector. Since the joint position state vector is located at the very
+   * beginning of `RigidBodyTree`'s state vector, the actual starting index of
+   * this body's joint position state within `RigidBodyTree`'s state vector is
+   * equal to this method's return value.
    */
   int get_position_start_index() const;
 
   /**
-   * Sets the start index of this rigid body's velocity state within the
-   * `RigidBodyTree`'s state vector.
+   * Sets the start index of this rigid body's joint velocity state within the
+   * portion of `RigidBodyTree`'s state vector that holds the joint velocity
+   * state vector. Since the joint velocity state vector immediately follows the
+   * joint position state vector in `RigidBodyTree`'s state vector, the actual
+   * starting index of this body's joint velocity state is
+   * @p velocity_start_index + RigidBodyTree::number_of_positions().
    */
   void set_velocity_start_index(int velocity_start_index);
 
   /**
-   * Returns the start index of this rigid body's velocity state within the
-   * `RigidBodyTree`'s state vector.
+   * Returns the start index of this rigid body's joint velocity state within
+   * the portion of the `RigidBodyTree`'s state vector that holds the joint
+   * velocity state vector. Since the joint velocity state vector immediately
+   * follows the joint position state vector in `RigidBodyTree`'s state vector,
+   * the actual starting index of this body's joint velocity state is this
+   * method's return value plus RigidBodyTree::number_of_positions().
    */
   int get_velocity_start_index() const;
 
