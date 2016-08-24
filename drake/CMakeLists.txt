@@ -97,9 +97,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   endif()
   # TODO(rdeits) Remove when https://github.com/jaeandersson/swig/pull/73 is
   # accessible from the version of swig_matlab we are using
-  set(CXX_FLAGS_NO_ERROR_MAYBE_UNINITIALIZED "-Wno-error=maybe-uninitialized")
-  set(CXX_FLAGS_NO_ERROR_SHADOW "-Wno-error=shadow -Wno-shadow")
-  set(CXX_FLAGS_NO_SIGN_COMPARE "-Wno-sign-compare")
+  set(CXX_FLAGS_NO_ERROR_MAYBE_UNINITIALIZED -Wno-error=maybe-uninitialized)
+  set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
+  set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
 elseif(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
   # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
@@ -126,8 +126,8 @@ elseif(MSVC)
 
   add_definitions(-D_USE_MATH_DEFINES) # to get math constants on MSVC (see https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx)
 
-  set(CXX_FLAGS_NO_ERROR_SHADOW "/wd4456 /wd4457")
-  set(CXX_FLAGS_NO_SIGN_COMPARE "/wd4018")
+  set(CXX_FLAGS_NO_ERROR_SHADOW /wd4456 /wd4457)
+  set(CXX_FLAGS_NO_SIGN_COMPARE /wd4018)
 endif()
 
 # set up matlab build
@@ -161,12 +161,13 @@ function(add_matlab_test)
     return()
   endif()
   set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
-  set(multiValueArgs PROPERTIES REQUIRES)
+  set(multiValueArgs PROPERTIES REQUIRES OPTIONAL)
   cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(parsed_args_REQUIRES)
     foreach(require ${parsed_args_REQUIRES})
-      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m")
+      string(TOUPPER ${require} requireUpper)
+      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m" AND NOT ${require}_FOUND AND NOT WITH_${requireUpper})
         message(STATUS "Not running ${parsed_args_NAME} because ${require} was not installed.")
         return()
       endif()
@@ -289,6 +290,9 @@ add_subdirectory(common)
 add_subdirectory(math)
 add_subdirectory(util)
 add_subdirectory(solvers)
+if(MATLAB_FOUND)
+  add_subdirectory(matlab)
+endif()
 add_subdirectory(systems)
 add_subdirectory(thirdParty/bsd/GetFullPath)
 add_subdirectory(thirdParty/bsd/spruce)
@@ -344,10 +348,11 @@ else()
 endif()
 
 if(MATLAB_FOUND)
-  add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
-    COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
-    PROPERTIES TIMEOUT 300)
+  # DISABLED due to #3149.
+  # add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
+  #   COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
+  #   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
+  #   PROPERTIES TIMEOUT 300)
 endif()
 
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)

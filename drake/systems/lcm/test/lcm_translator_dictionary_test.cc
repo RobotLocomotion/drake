@@ -8,7 +8,7 @@ namespace systems {
 namespace lcm {
 namespace {
 
-// Defines the dimension of the VectorInterface used by the translator defined
+// Defines the dimension of the VectorBase used by the translator defined
 // below.
 const int kDim = 10;
 

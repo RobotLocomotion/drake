@@ -37,12 +37,12 @@ class AffineSystem {
    * coefficients.
    *
    * @param[in] A The matrix coefficients of the system state *x* in the
-   * equation for the first derivative of the system's state *xdot*.
+   * equation for the time derivative of the system's state *xdot*.
    *
    * @param[in] B The matrix coefficients of the system input *u* in the
-   * equation for the first derivative of the system's state *xdot*.
+   * equation for the time derivative of the system's state *xdot*.
    *
-   * @param[in] xdot0 The initial value of the system state's first derivative.
+   * @param[in] xdot0 The initial value of the system state's time derivative.
    *
    * @param[in] C The matrix coefficients of the system state *x* in the
    * equation for the system's output *y*.
@@ -112,7 +112,7 @@ class AffineSystem {
 };
 
 /**
- * This is a specialization of AffineSystem where the initial first derivative
+ * This is a specialization of AffineSystem where the initial time derivative
  * of the system inputs (*xdot0*) and the system outputs (*y0*) are both zero.
  * In other words, this system implements:
  *
@@ -142,10 +142,10 @@ class LinearSystem : public AffineSystem<StateVec, InputVec, OutputVec> {
    * *y0* are zero.
    *
    * @param[in] A The matrix coefficients of the system state *x* in the
-   * equation for the first derivative of the system's state *xdot*.
+   * equation for the time derivative of the system's state *xdot*.
    *
    * @param[in] B The matrix coefficients of the system input *u* in the
-   * equation for the first derivative of the system's state *xdot*.
+   * equation for the time derivative of the system's state *xdot*.
    *
    * @param[in] C The matrix coefficients of the system state *x* in the
    * equation for the system's output *y*.

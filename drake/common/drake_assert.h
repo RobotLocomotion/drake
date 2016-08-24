@@ -33,6 +33,10 @@
 /// Treat @p DRAKE_ASSERT like a statement -- it must always be used
 /// in block scope, and must always be followed by a semicolon.
 #define DRAKE_ASSERT(condition)
+/// Like @p DRAKE_ASSERT, except that the expression must be void-valued; this
+/// allows for guarding expensive assertion-checking subroutines using the same
+/// macros as stand-alone assertions.
+#define DRAKE_ASSERT_VOID(expression)
 /// Evaluates @p condition and iff the value is false will ::abort() the
 /// program with a message showing at least the condition text, function name,
 /// file, and line.
@@ -68,14 +72,17 @@ namespace detail {
 // Abort the program with an error message.
 DRAKECOMMON_EXPORT
 void Abort(const char* condition, const char* func, const char* file, int line);
-}
-}
+}  // namespace detail
+}  // namespace drake
 
 #define DRAKE_ABORT()                                           \
   ::drake::detail::Abort(nullptr, __func__, __FILE__, __LINE__)
 
 #define DRAKE_ABORT_UNLESS(condition)                                   \
   do {                                                                  \
+    static_assert(                                                      \
+        std::is_convertible<decltype(condition), bool>::value,          \
+        "Condition should be bool-convertible.");                       \
     if (!(condition)) {                                                 \
       ::drake::detail::Abort(#condition, __func__, __FILE__, __LINE__); \
     }                                                                   \
@@ -87,11 +94,20 @@ void Abort(const char* condition, const char* func, const char* file, int line);
 #ifdef DRAKE_ASSERT_IS_ARMED
 // Assertions are enabled.
 # define DRAKE_ASSERT(condition) DRAKE_ABORT_UNLESS(condition)
+# define DRAKE_ASSERT_VOID(expression) do {                     \
+    static_assert(                                              \
+        std::is_convertible<decltype(expression), void>::value, \
+        "Expression should be void.");                          \
+    expression;                                                 \
+  } while (0)
 #else
 // Assertions are disabled, so just typecheck the expression.
 # define DRAKE_ASSERT(condition) static_assert(                 \
       std::is_convertible<decltype(condition), bool>::value,    \
-      "Assertion condition should be bool-convertible.")
+      "Condition should be bool-convertible.")
+# define DRAKE_ASSERT_VOID(expression) static_assert(           \
+      std::is_convertible<decltype(expression), void>::value,   \
+      "Expression should be void.")
 #endif
 
 #endif  // DRAKE_DOXYGEN_CXX

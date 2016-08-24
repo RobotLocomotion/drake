@@ -14,7 +14,7 @@ const int kLength = 2;
 class BasicStateVectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::unique_ptr<VectorInterface<int>> vec;
+    std::unique_ptr<VectorBase<int>> vec;
     vec.reset(new BasicVector<int>(kLength));
     vec->get_mutable_value() << 1, 2;
     state_vector_.reset(new BasicStateVector<int>(std::move(vec)));
