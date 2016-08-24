@@ -348,7 +348,7 @@ class System {
   virtual void DoUpdate(ContextBase<T>* context,
                         const SampleActions& actions) const {}
 
-  /// Implement this method if yout System has any discrete actions which must
+  /// Implement this method if your System has any discrete actions which must
   /// interrupt the continuous simulation. You may assume that the context
   /// has already been validated and the `actions` pointer is not null.
   /// The default implemention returns Infinity and does not write to `actions`.

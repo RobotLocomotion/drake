@@ -20,8 +20,6 @@ using examples::SpringMassSystem;
 
 class MySpringMassSystem : public SpringMassSystem {
  public:
-  using SpringMassSystem::SpringMassSystem;
-
   // Pass through to SpringMassSystem, except add sample rate in samples/s.
   MySpringMassSystem(double stiffness, double mass, double sample_rate)
       : SpringMassSystem(stiffness, mass, false /*no input force*/),
@@ -43,10 +41,9 @@ class MySpringMassSystem : public SpringMassSystem {
   }
 
   void DoUpdate(ContextBase<double>* context,
-                const SampleActions& actions) const override {
-  }
+                const SampleActions& actions) const override {}
 
-  // Force a sample at the next multiple the sample rate. If the current
+  // Force a sample at the next multiple of the sample rate. If the current
   // time is exactly at a sample time, we assume the sample has already been
   // done and return the following sample time. That means we don't get a
   // sample at 0 but will get one at the end.
@@ -72,7 +69,7 @@ class MySpringMassSystem : public SpringMassSystem {
   }
 
  private:
-  bool publish_{false};  // Whether to write to stdout.
+  bool publish_{false};     // Whether to write to stdout.
   double sample_rate_{0.};  // Default is "don't sample".
 };
 
@@ -82,7 +79,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   const double kMass = 2.0;      // kg
 
   MySpringMassSystem spring_mass(kSpring, kMass, 0.);
-  Simulator<double> simulator(&spring_mass);  // use default Context
+  Simulator<double> simulator(spring_mass);  // use default Context
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
@@ -90,13 +87,14 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   // Take all the defaults.
   simulator.Initialize();
 
-  EXPECT_TRUE(simulator.get_integrator_in_use() == IntegratorType::RungeKutta2);
+  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
+              IntegratorType::RungeKutta2);
 
   // Simulate for 1 second.
   simulator.StepTo(1.);
 
   const auto& context = simulator.get_context();
-  EXPECT_EQ(context.get_time(), 1.); // Should be exact.
+  EXPECT_EQ(context.get_time(), 1.);  // Should be exact.
 
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
   EXPECT_EQ(simulator.get_num_discrete_samples(), 0);
@@ -120,16 +118,17 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   MySpringMassSystem spring_mass(kSpring, kMass, 30.);
   // spring_mass.set_publish(true);
 
-  Simulator<double> simulator(&spring_mass);  // use default Context
+  Simulator<double> simulator(spring_mass);  // use default Context
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
 
   simulator.request_initial_stepsize(1e-3);
-  simulator.request_integrator(IntegratorType::RungeKutta2);
+  simulator.set_integrator_type(IntegratorType::RungeKutta2);
   simulator.Initialize();
 
-  EXPECT_TRUE(simulator.get_integrator_in_use() == IntegratorType::RungeKutta2);
+  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
+              IntegratorType::RungeKutta2);
 
   simulator.StepTo(1.);
 
