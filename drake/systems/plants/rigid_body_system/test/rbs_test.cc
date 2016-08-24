@@ -7,9 +7,10 @@
 #include "drake/common/drake_path.h"
 #include "drake/systems/plants/rigid_body_system/rigid_body_system.h"
 
+using drake::systems::RigidBodySystem;
+using Eigen::VectorXd;
 using std::make_unique;
 using std::unique_ptr;
-using drake::systems::RigidBodySystem;
 
 namespace drake {
 namespace systems {
@@ -80,6 +81,10 @@ class KukaArmTest : public ::testing::Test {
 };
 
 TEST_F(KukaArmTest, EvalOutput) {
+  const int kNumPositions = 7;
+  const int kNumVelocities = 7;
+  const int kNumStates = kNumPositions + kNumVelocities;
+
   // Checks that the number of input and output ports in the system and context
   // are consistent.
   ASSERT_EQ(1, kuka_system_->get_num_input_ports());
@@ -99,11 +104,38 @@ TEST_F(KukaArmTest, EvalOutput) {
       make_unique<BasicVector<double>>(
           kuka_system_->get_num_generalized_forces())));
 
-  kuka_system_->ObtainZeroConfiguration(context_.get());
-  
+  // Tests zero configuration. Move to another test.
+  {
+    kuka_system_->ObtainZeroConfiguration(context_.get());
+
+    VectorXd xc = context_->get_xc().CopyToVector();
+
+    // Asserts that for this case the zero configuration corresponds to a state
+    // vector with all entries equal to zero.
+    ASSERT_EQ(14, xc.size());
+    ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
+  }
+  // Sets the state to a non-zero value.
+  VectorXd desired_angles(kNumPositions);
+  desired_angles << 0.5, 0.1, -0.1, 0.2, 0.3, -0.2, 0.15;
+  for (int i = 0; i < kNumPositions; ++i) {
+    kuka_system_->set_position(context_.get(), i, desired_angles[i]);
+  }
+  VectorXd desired_state(kNumStates);
+  desired_state << desired_angles, VectorXd::Zero(kNumVelocities);
+  VectorXd xc = context_->get_xc().CopyToVector();
+  ASSERT_EQ(xc, desired_state);
+
+  ASSERT_EQ(1, output_->get_num_ports());
+  const BasicVector<double>* output_port =
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  ASSERT_NE(nullptr, output_port);
 
   // This call should not assert when compiling Debug builds.
   system_->EvalOutput(*context_, output_.get());
+
+  // Asserts the output equals the state.
+  EXPECT_EQ(desired_state, output_port->get_value());
 
 }
 

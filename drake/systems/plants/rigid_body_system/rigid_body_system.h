@@ -56,7 +56,7 @@ class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
     VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
     x0.head(get_num_generalized_positions()) =
         multibody_world_->getZeroConfiguration();
-    context->get_mutable_state()->continuous_state->get_mutable_state()->SetFromVector(x0);
+    context->get_mutable_xc()->SetFromVector(x0);
   }
 
 
