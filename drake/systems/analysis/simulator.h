@@ -145,12 +145,14 @@ class Simulator {
   conditions. You should invoke Initialize() after replacing the Context. **/
   void reset_context(std::unique_ptr<Context<T>> context) {
     context_ = std::move(context);
+    initialization_done_ = false;
   }
 
   /** Transfer ownership of this %Simulator's internal Context to the caller.
   The %Simulator will no longer contain a Context. **/
   std::unique_ptr<ContextBase<T>> release_context() {
     return std::move(context_);
+    initialization_done_ = false;
   }
 
   /** @name                       Statistics
