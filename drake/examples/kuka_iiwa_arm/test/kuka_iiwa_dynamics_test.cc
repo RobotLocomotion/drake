@@ -3,12 +3,11 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
+#include "drake/systems/Simulation.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/robot_state_tap.h"
-#include "drake/systems/cascade_system.h"
-#include "drake/systems/Simulation.h"
 #include "drake/util/testUtil.h"
 
 using drake::CascadeSystem;
