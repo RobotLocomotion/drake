@@ -48,11 +48,14 @@ const double kMass = 2.0;      // kg
 
 class SpringMassSystemTest : public ::testing::Test {
  public:
-  void SetUp() override { Initialize(); }
+  void SetUp() override {
+    Initialize();
+  }
 
   void Initialize(bool with_input_force = false) {
     // Construct the system I/O objects.
-    system_.reset(new SpringMassSystem(kSpring, kMass, with_input_force));
+    system_.reset(new SpringMassSystem(kSpring, kMass,
+                                       with_input_force));
     system_->set_name("test_system");
     context_ = system_->CreateDefaultContext();
     system_output_ = system_->AllocateOutput(*context_);
@@ -66,7 +69,7 @@ class SpringMassSystemTest : public ::testing::Test {
     state_ = dynamic_cast<SpringMassStateVector*>(
         context_->get_mutable_state()->continuous_state->get_mutable_state());
     output_ = dynamic_cast<const SpringMassStateVector*>(
-        system_output_->get_vector_data(0));
+        system_output_->get_port(0).get_vector_data());
     derivatives_ = dynamic_cast<SpringMassStateVector*>(
         system_derivatives_->get_mutable_state());
   }
@@ -80,9 +83,9 @@ class SpringMassSystemTest : public ::testing::Test {
   // Helper method to create input ports (free standing input ports) that are
   // not connected to any other output port in the system.
   // Used to test standalone systems not part of a Diagram.
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
+  static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
       std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort>(std::move(data));
+    return make_unique<FreestandingInputPort<double>>(std::move(data));
   }
 
  protected:

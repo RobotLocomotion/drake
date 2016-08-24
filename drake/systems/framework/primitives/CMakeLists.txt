@@ -3,8 +3,6 @@
 
 drake_install_headers(
   adder.h
-  constant_value_source.h
-  constant_value_source-inl.h
   constant_vector_source.h
   gain.h
   gain-inl.h

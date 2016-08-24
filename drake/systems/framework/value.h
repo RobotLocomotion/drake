@@ -6,7 +6,6 @@
 #include <typeinfo>
 
 #include "drake/drakeSystemFramework_export.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -31,9 +30,6 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// In Debug builds, if the types don't match, std::bad_cast will be
   /// thrown.  In Release builds, this is not guaranteed.
-  ///
-  /// TODO(david-german-tri): Once this uses static_cast under the hood in
-  /// Release builds, lower-case it.
   template <typename T>
   const T& GetValue() const {
     return DownCastOrMaybeThrow<T>()->get_value();
@@ -114,38 +110,6 @@ class Value : public AbstractValue {
 
  private:
   T value_;
-};
-
-/// A container class for VectorBase<T>.
-///
-/// @tparam T The type of the vector data. Must be a valid Eigen scalar.
-template <typename T>
-class VectorValue : public Value<VectorBase<T>*> {
- public:
-  explicit VectorValue(std::unique_ptr<VectorBase<T>> v)
-      : Value<VectorBase<T>*>(v.get()), owned_value_(std::move(v)) {}
-
-  // VectorValues are copyable but not moveable.
-  explicit VectorValue(const VectorValue<T>& other)
-      : Value<VectorBase<T>*>(nullptr),
-        owned_value_(other.get_value()->CloneVector()) {
-    this->set_value(owned_value_.get());
-  }
-
-  VectorValue& operator=(const VectorValue<T>& other) {
-    owned_value_->set_value(other.get_value()->get_value());
-    return *this;
-  }
-
-  explicit VectorValue(Value<T>&& other) = delete;
-  VectorValue& operator=(Value<T>&& other) = delete;
-
-  std::unique_ptr<AbstractValue> Clone() const override {
-    return std::make_unique<VectorValue<T>>(*this);
-  }
-
- private:
-  std::unique_ptr<VectorBase<T>> owned_value_;
 };
 
 }  // namespace systems

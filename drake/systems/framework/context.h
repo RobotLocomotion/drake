@@ -28,7 +28,7 @@ class Context : public ContextBase<T> {
   Context() {}
   virtual ~Context() {}
 
-  void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
+  void SetInputPort(int index, std::unique_ptr<InputPort<T>> port) override {
     if (index < 0 || index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
     }
@@ -52,19 +52,13 @@ class Context : public ContextBase<T> {
   }
 
   const VectorBase<T>* get_vector_input(int index) const override {
-    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_input_ports());
+    if (index >= get_num_input_ports()) {
+      throw std::out_of_range("Input port out of range.");
+    }
     if (inputs_[index] == nullptr) {
       return nullptr;
     }
-    return inputs_[index]->template get_vector_data<T>();
-  }
-
-  const AbstractValue* get_abstract_input(int index) const override {
-    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_input_ports());
-    if (inputs_[index] == nullptr) {
-      return nullptr;
-    }
-    return inputs_[index]->get_abstract_data();
+    return inputs_[index]->get_vector_data();
   }
 
   const State<T>& get_state() const override { return state_; }
@@ -104,8 +98,9 @@ class Context : public ContextBase<T> {
       if (port == nullptr) {
         context->inputs_.emplace_back(nullptr);
       } else {
-        context->inputs_.emplace_back(new FreestandingInputPort(
-            port->template get_vector_data<T>()->CloneVector()));
+        context->inputs_.emplace_back(
+            new FreestandingInputPort<T>(
+                port->get_vector_data()->CloneVector()));
       }
     }
 
@@ -123,7 +118,7 @@ class Context : public ContextBase<T> {
   Context& operator=(Context&& other) = delete;
 
   // The external inputs to the System.
-  std::vector<std::unique_ptr<InputPort>> inputs_;
+  std::vector<std::unique_ptr<InputPort<T>>> inputs_;
 
   // The internal state of the System.
   State<T> state_;
