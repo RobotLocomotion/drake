@@ -27,6 +27,13 @@ class BasicVector : public VectorBase<T> {
             size, std::numeric_limits<
                       typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
 
+  /// Constructs a BasicVector with the specified @p data.
+  explicit BasicVector(const std::vector<T>& data) : BasicVector(data.size()) {
+    for (size_t i = 0; i < data.size(); ++i) {
+      values_[i] = data[i];
+    }
+  }
+
   void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
     if (value.rows() != values_.rows()) {
       throw std::out_of_range(

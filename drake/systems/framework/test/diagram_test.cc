@@ -63,26 +63,24 @@ class DiagramTest : public ::testing::Test {
     expected_output1 += expected_output0;       // A + B
 
     const BasicVector<double>* output0 =
-        dynamic_cast<const BasicVector<double>*>(
-            output_->get_port(0).get_vector_data());
+        dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
     ASSERT_NE(nullptr, output0);
     EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
     EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
     EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
 
     const BasicVector<double>* output1 =
-        dynamic_cast<const BasicVector<double>*>(
-            output_->get_port(1).get_vector_data());
+        dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(1));
     ASSERT_NE(nullptr, output1);
     EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
     EXPECT_EQ(expected_output1[1], output1->get_value()[1]);
     EXPECT_EQ(expected_output1[2], output1->get_value()[2]);
   }
 
-  static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
+  static std::unique_ptr<FreestandingInputPort> MakeInput(
       std::unique_ptr<BasicVector<double>> data) {
-    return std::unique_ptr<FreestandingInputPort<double>>(
-        new FreestandingInputPort<double>(std::move(data)));
+    return std::unique_ptr<FreestandingInputPort>(
+        new FreestandingInputPort(std::move(data)));
   }
 
   std::unique_ptr<Diagram<double>> diagram_;
@@ -154,8 +152,8 @@ TEST_F(DiagramTest, Clone) {
 
   Eigen::Vector3d expected_output0;
   expected_output0 << 3 + 8 + 64, 6 + 16 + 128, 9 + 32 + 256;  // B
-  const BasicVector<double>* output0 = dynamic_cast<const BasicVector<double>*>(
-      output_->get_port(0).get_vector_data());
+  const BasicVector<double>* output0 =
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, output0);
   EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
   EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
@@ -164,8 +162,8 @@ TEST_F(DiagramTest, Clone) {
   Eigen::Vector3d expected_output1;
   expected_output1 << 3 + 8, 6 + 16, 9 + 32;  // A
   expected_output1 += expected_output0;       // A + B
-  const BasicVector<double>* output1 = dynamic_cast<const BasicVector<double>*>(
-      output_->get_port(1).get_vector_data());
+  const BasicVector<double>* output1 =
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(1));
   ASSERT_NE(nullptr, output1);
   EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
   EXPECT_EQ(expected_output1[1], output1->get_value()[1]);

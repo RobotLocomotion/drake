@@ -24,13 +24,13 @@ template <typename T>
 struct DiagramOutput : public SystemOutput<T> {
   int get_num_ports() const override { return ports_.size(); }
 
-  OutputPort<T>* get_mutable_port(int index) override { return ports_[index]; }
+  OutputPort* get_mutable_port(int index) override { return ports_[index]; }
 
-  const OutputPort<T>& get_port(int index) const override {
+  const OutputPort& get_port(int index) const override {
     return *ports_[index];
   }
 
-  std::vector<OutputPort<T>*>* get_mutable_ports() { return &ports_; }
+  std::vector<OutputPort*>* get_mutable_ports() { return &ports_; }
 
  protected:
   // Returns a clone that has the same number of output ports, set to nullptr.
@@ -41,7 +41,7 @@ struct DiagramOutput : public SystemOutput<T> {
   }
 
  private:
-  std::vector<OutputPort<T>*> ports_;
+  std::vector<OutputPort*> ports_;
 };
 
 /// Diagram is a System composed of one or more constituent Systems, arranged
