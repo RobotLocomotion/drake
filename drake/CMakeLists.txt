@@ -97,9 +97,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   endif()
   # TODO(rdeits) Remove when https://github.com/jaeandersson/swig/pull/73 is
   # accessible from the version of swig_matlab we are using
-  set(CXX_FLAGS_NO_ERROR_MAYBE_UNINITIALIZED "-Wno-error=maybe-uninitialized")
-  set(CXX_FLAGS_NO_ERROR_SHADOW "-Wno-error=shadow -Wno-shadow")
-  set(CXX_FLAGS_NO_SIGN_COMPARE "-Wno-sign-compare")
+  set(CXX_FLAGS_NO_ERROR_MAYBE_UNINITIALIZED -Wno-error=maybe-uninitialized)
+  set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
+  set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
 elseif(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
   # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
@@ -126,8 +126,8 @@ elseif(MSVC)
 
   add_definitions(-D_USE_MATH_DEFINES) # to get math constants on MSVC (see https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx)
 
-  set(CXX_FLAGS_NO_ERROR_SHADOW "/wd4456 /wd4457")
-  set(CXX_FLAGS_NO_SIGN_COMPARE "/wd4018")
+  set(CXX_FLAGS_NO_ERROR_SHADOW /wd4456 /wd4457)
+  set(CXX_FLAGS_NO_SIGN_COMPARE /wd4018)
 endif()
 
 # set up matlab build

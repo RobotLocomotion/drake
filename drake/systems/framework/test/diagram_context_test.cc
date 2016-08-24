@@ -44,8 +44,7 @@ class DiagramContextTest : public ::testing::Test {
     context_->ExportInput({1 /* adder1_ */, 0 /* port 0 */});
 
     context_->MakeState();
-    ContinuousState<double>* xc =
-        context_->get_state().continuous_state.get();
+    ContinuousState<double>* xc = context_->get_state().continuous_state.get();
     xc->get_mutable_state()->SetAtIndex(0, 42.0);
     xc->get_mutable_state()->SetAtIndex(1, 43.0);
   }
@@ -63,9 +62,9 @@ class DiagramContextTest : public ::testing::Test {
     vec1->get_mutable_value() << 256;
 
     context_->SetInputPort(
-        0, std::make_unique<FreestandingInputPort<double>>(std::move(vec0)));
+        0, std::make_unique<FreestandingInputPort>(std::move(vec0)));
     context_->SetInputPort(
-        1, std::make_unique<FreestandingInputPort<double>>(std::move(vec1)));
+        1, std::make_unique<FreestandingInputPort>(std::move(vec1)));
   }
 
   std::unique_ptr<DiagramContext<double>> context_;
@@ -162,8 +161,7 @@ TEST_F(DiagramContextTest, Clone) {
   EXPECT_EQ(kTime, clone->get_time());
 
   // Verify that the state was copied.
-  ContinuousState<double>* xc =
-      context_->get_state().continuous_state.get();
+  ContinuousState<double>* xc = context_->get_state().continuous_state.get();
 
   EXPECT_EQ(42.0, xc->get_state().GetAtIndex(0));
   EXPECT_EQ(43.0, xc->get_state().GetAtIndex(1));
@@ -182,7 +180,7 @@ TEST_F(DiagramContextTest, Clone) {
   // sys0 output port 0 should be pointer-equal to the VectorBase in
   // sys1 input port 1.
   EXPECT_EQ(clone->GetSubsystemContext(1)->get_vector_input(1),
-            clone->GetSubsystemOutput(0)->get_port(0).get_vector_data());
+            clone->GetSubsystemOutput(0)->get_vector_data(0));
 }
 
 }  // namespace

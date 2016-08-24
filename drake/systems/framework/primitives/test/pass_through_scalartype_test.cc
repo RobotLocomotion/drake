@@ -23,9 +23,9 @@ namespace {
 // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
 // the input of the PassThrough system.
 template<class T>
-std::unique_ptr<FreestandingInputPort<T>> MakeInput(
+std::unique_ptr<FreestandingInputPort> MakeInput(
     std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort<T>>(std::move(data));
+  return make_unique<FreestandingInputPort>(std::move(data));
 }
 
 // Tests the ability to take derivatives of the output with respect to
@@ -58,9 +58,8 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   buffer->EvalOutput(*context, output.get());
 
   ASSERT_EQ(1, output->get_num_ports());
-  const auto& output_vector =
-      dynamic_cast<const BasicVector<T>*>(
-          output->get_port(0).get_vector_data())->get_value();
+  const auto& output_vector = dynamic_cast<const BasicVector<T>*>(
+      output->get_vector_data(0))->get_value();
 
   // The expected output value equals the input.
   Vector3<T> expected;
