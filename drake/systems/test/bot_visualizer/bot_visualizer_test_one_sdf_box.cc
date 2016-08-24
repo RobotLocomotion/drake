@@ -93,8 +93,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfBox) {
   // VectorInterface. Note that we need to overwrite the original input port
   // created by the BotVisualizerSystem since we do not have write access to its
   // input vector.
-  std::unique_ptr<InputPort<double>> input_port(
-      new FreestandingInputPort<double>(std::move(vector_base)));
+  std::unique_ptr<InputPort> input_port(
+      new FreestandingInputPort(std::move(vector_base)));
 
   context->SetInputPort(kPortNumber, std::move(input_port));
 
