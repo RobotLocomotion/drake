@@ -128,23 +128,8 @@ class System {
     return input_vector->get_value();
   }
 
-  /// Returns a mutable Eigen expression for a vector valued output port with
-  /// index @p port_index in this system. This call invalidates the cache.
-  Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(SystemOutput<T>* output,
-                                                        int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
-
-    VectorBase<T>* output_vector = output->
-        get_mutable_port(port_index)->template GetMutableVectorData<T>();
-    DRAKE_ASSERT(output_vector != nullptr);
-    DRAKE_ASSERT(output_vector->get_value().rows() ==
-                 get_output_port(port_index).get_size());
-
-    return output_vector->get_mutable_value();
-  }
-
   // Returns a copy of the continuous state vector into an Eigen vector.
-  VectorX<T> GetContinuousStateVectorCopy(const ContextBase<T>& context) const {
+  VectorX<T> CopyContinuousStateVector(const ContextBase<T> &context) const {
     return context.get_state().continuous_state->get_state().CopyToVector();
   }
 
@@ -316,6 +301,23 @@ class System {
   /// output topology.
   void DeclareAbstractOutputPort(SamplingSpec sampling) {
     DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
+  }
+
+  /// Returns a mutable Eigen expression for a vector valued output port with
+  /// index @p port_index in this system. All InputPorts that directly depend
+  /// on this OutputPort will be notified that upstream data has changed, and
+  /// may invalidate cache entries as a result.
+  Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(SystemOutput<T>* output,
+                                                        int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
+
+    VectorBase<T>* output_vector = output->
+        get_mutable_port(port_index)->template GetMutableVectorData<T>();
+    DRAKE_ASSERT(output_vector != nullptr);
+    DRAKE_ASSERT(output_vector->get_value().rows() ==
+        get_output_port(port_index).get_size());
+
+    return output_vector->get_mutable_value();
   }
 
  private:
