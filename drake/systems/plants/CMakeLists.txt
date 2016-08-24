@@ -192,4 +192,5 @@ if(lcm_FOUND)
   drake_install_headers(BotVisualizer.h)
 endif()
 
+add_subdirectory(rigid_body_system)
 add_subdirectory(test)
