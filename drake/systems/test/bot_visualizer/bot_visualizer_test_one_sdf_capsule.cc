@@ -34,7 +34,9 @@ using drake::parsers::ModelInstanceIdTable;
 GTEST_TEST(LcmPublisherSystemTest, TestOneSdfCapsule) {
   // Defines a channel name postfix to ensure this unit test does not interfere
   // with other unit tests that use BotVisualizerSystem.
-  const std::string kChannelPostfix = "_CAPSULE";
+  std::hash<const char*> hash_function;
+  const std::string kChannelPostfix = "_CAPSULE" +
+      std::to_string(hash_function(__FILE__));
 
   // Instantiates the LCM subsystem.
   ::lcm::LCM lcm;
