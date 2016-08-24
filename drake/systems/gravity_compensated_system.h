@@ -36,7 +36,8 @@ class GravityCompensatedSystem {
   typedef std::shared_ptr<RigidBodySystem> RigidBodySystemPtr;
   typedef std::shared_ptr<RigidBodyTree> RigidBodyTreePtr;
 
-  explicit GravityCompensatedSystem(const RigidBodySystemPtr& sys) : sys_(sys) {
+  explicit GravityCompensatedSystem(const RigidBodySystemPtr& sys) :
+      sys_(sys) {
     sys_tree_ = sys->getRigidBodyTree();
   }
 
@@ -44,15 +45,15 @@ class GravityCompensatedSystem {
   StateVector<ScalarType> dynamics(const ScalarType& t,
                                    const StateVector<ScalarType>& x,
                                    const InputVector<ScalarType>& u) const {
-    size_t num_DoF = sys_->number_of_positions();
-    KinematicsCache<double> cache_ = sys_tree_->doKinematics(
+    int num_DoF = sys_->number_of_positions();
+    KinematicsCache<double> cache = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
     eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
         f_ext;
     f_ext.clear();
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
-    auto G = sys_tree_->inverseDynamics(cache_, f_ext, vd, false);
+    auto G = sys_tree_->inverseDynamics(cache, f_ext, vd, false);
 
     typename System::template InputVector<ScalarType> system_u = toEigen(u) + G;
     return sys_->dynamics(t, x, system_u);
@@ -62,8 +63,8 @@ class GravityCompensatedSystem {
   OutputVector<ScalarType> output(const ScalarType& t,
                                   const StateVector<ScalarType>& x,
                                   const InputVector<ScalarType>& u) const {
-    size_t num_DoF = sys_->number_of_positions();
-    KinematicsCache<double> cache_ = sys_tree_->doKinematics(
+    int num_DoF = sys_->number_of_positions();
+    KinematicsCache<double> cache = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
     eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
         f_ext;
@@ -75,7 +76,7 @@ class GravityCompensatedSystem {
     // with 0 external forces, 0 velocities and 0 accelerations.
     // TODO(naveenoid): Update to use simpler API once issue #3114 is
     // resolved.
-    auto G = sys_tree_->inverseDynamics(cache_, f_ext, vd, false);
+    auto G = sys_tree_->inverseDynamics(cache, f_ext, vd, false);
 
     typename System::template InputVector<ScalarType> system_u = toEigen(u) + G;
 
@@ -98,6 +99,9 @@ class GravityCompensatedSystem {
  private:
   RigidBodySystemPtr sys_;
   RigidBodyTreePtr sys_tree_;
+
+  template <typename ScalarType>
+  MatrixXd
 };
 
 }  // end namespace drake
