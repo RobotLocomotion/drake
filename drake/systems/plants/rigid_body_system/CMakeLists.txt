@@ -9,3 +9,5 @@ pods_install_pkg_config_file(drake-rbs
         CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
         LIBS -ldrake_rbs -ldrakeRBM
         VERSION 0.0.1)
+
+add_subdirectory(test)
