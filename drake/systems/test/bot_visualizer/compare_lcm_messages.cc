@@ -37,6 +37,12 @@ bool CompareLoadMessage(
                     expected.link[i].geom[j].color[k], 1e-6);
       }
 
+      if (received.link[i].geom[j].string_data != "" ||
+          expected.link[i].geom[j].string_data != "") {
+        EXPECT_NE(received.link[i].geom[j].string_data
+            .find(expected.link[i].geom[j].string_data), std::string::npos);
+      }
+
       EXPECT_EQ(received.link[i].geom[j].num_float_data,
                 expected.link[i].geom[j].num_float_data);
 

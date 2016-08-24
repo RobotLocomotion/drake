@@ -46,4 +46,16 @@ if(lcm_FOUND)
       ${GTEST_BOTH_LIBRARIES})
   add_test(NAME bot_visualizer_test_one_sdf_capsule COMMAND
       bot_visualizer_test_one_sdf_capsule)
+
+  add_executable(bot_visualizer_test_one_urdf_mesh
+      bot_visualizer_test_one_urdf_mesh.cc
+      bot_visualizer_system_receiver.cc
+      compare_lcm_messages.cc)
+  target_link_libraries(bot_visualizer_test_one_urdf_mesh
+      drakeBotVisualizerSystem
+      drakeLCMSystem2
+      lcm
+      ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME bot_visualizer_test_one_urdf_mesh COMMAND
+      bot_visualizer_test_one_urdf_mesh)
 endif()

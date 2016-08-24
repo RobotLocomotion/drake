@@ -47,7 +47,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfSphere) {
           nullptr,  // weld_to_frame
           &tree);
 
-  // Verfies that only one model was loaded.
+  // Verifies that only one model was loaded.
   EXPECT_EQ(model_instance_id_table.size(), 1);
 
   // Obtains the model instance ID of the model that was just added to the
@@ -58,10 +58,10 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfSphere) {
   // BotVisualizerSystem.
   drake::systems::test::BotVisualizerReceiver receiver(&lcm, kChannelPostfix);
 
-  // Start the LCM recieve thread after all objects it can potentially use
+  // Start the LCM receive thread after all objects it can potentially use
   // are instantiated. Since objects are destructed in the reverse order of
   // construction, this ensures the LCM receive thread stops before any
-  // resources it uses are destroyed. If the Lcm receive thread is stopped after
+  // resources it uses are destroyed. If the LCM receive thread is stopped after
   // the resources it relies on are destroyed, a segmentation fault may occur.
   drake::systems::lcm::LcmReceiveThread lcm_receive_thread(&lcm);
 
