@@ -1,0 +1,43 @@
+<?xml version='1.0' ?>
+
+<sdf version='1.6'>
+  <model name='sphere'>
+    <pose>0 0 0.5 0 0 0</pose>
+    <link name='sphere_link'>
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+       <pose>0 0 0 0 0 0</pose>
+        <mass>57.833</mass>
+        <inertia>
+          <ixx>2.71553</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>68.9</iyy>
+          <iyz>0</iyz>
+          <izz>71.6063</izz>
+        </inertia>
+      </inertial>
+      <visual name='sphere_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>12.3</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0.2 0.3 0.4 0.9</diffuse>
+        </material>
+      </visual>
+      <collision name='sphere_link_collision'>
+        <laser_retro>0</laser_retro>
+        <max_contacts>10</max_contacts>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>12.3</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

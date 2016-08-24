@@ -31,7 +31,7 @@ const int kPortNumber = 0;
 using drake::parsers::ModelInstanceIdTable;
 
 // Tests the functionality of BotVisualizerSystem by making it load box.sdf.
-GTEST_TEST(LcmPublisherSystemTest, TestOneSdfBox) {
+GTEST_TEST(LcmPublisherSystemTest, TestOneSdfSphere) {
   // Instantiates the LCM subsystem.
 
   ::lcm::LCM lcm;
@@ -40,7 +40,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfBox) {
   RigidBodyTree tree;
   ModelInstanceIdTable model_instance_id_table =
       drake::parsers::sdf::AddModelInstancesFromSdfFile(
-          drake::GetDrakePath() + "/systems/test/bot_visualizer/box.sdf",
+          drake::GetDrakePath() + "/systems/test/bot_visualizer/sphere.sdf",
           DrakeJoint::FIXED,  // floating_base_type
           nullptr,  // weld_to_frame
           &tree);
@@ -50,7 +50,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfBox) {
 
   // Obtains the model instance ID of the model that was just added to the
   // RigidBodyTree.
-  int model_instance_id = model_instance_id_table.at("box");
+  int model_instance_id = model_instance_id_table.at("sphere");
 
   // Instantiates a receiver for the messages that are published by
   // BotVisualizerSystem.
@@ -112,12 +112,12 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfBox) {
         tree.get_world_model_instance_id();
     expected_load_message.link[0].num_geom = 0;
 
-    expected_load_message.link[1].name = "box_link";
+    expected_load_message.link[1].name = "sphere_link";
     expected_load_message.link[1].robot_num = model_instance_id;
     expected_load_message.link[1].num_geom = 1;
     expected_load_message.link[1].geom.resize(1);
     expected_load_message.link[1].geom[0].type =
-        drake::lcmt_viewer_geometry_data::BOX;
+        drake::lcmt_viewer_geometry_data::SPHERE;
     expected_load_message.link[1].geom[0].position[0] = 0;
     expected_load_message.link[1].geom[0].position[1] = 0;
     expected_load_message.link[1].geom[0].position[2] = 0;
@@ -129,11 +129,9 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfBox) {
     expected_load_message.link[1].geom[0].color[1] = 0.3;
     expected_load_message.link[1].geom[0].color[2] = 0.4;
     expected_load_message.link[1].geom[0].color[3] = 0.9;
-    expected_load_message.link[1].geom[0].num_float_data = 3;
-    expected_load_message.link[1].geom[0].float_data.resize(3);
-    expected_load_message.link[1].geom[0].float_data[0] = 1;
-    expected_load_message.link[1].geom[0].float_data[1] = 1;
-    expected_load_message.link[1].geom[0].float_data[2] = 1;
+    expected_load_message.link[1].geom[0].num_float_data = 1;
+    expected_load_message.link[1].geom[0].float_data.resize(1);
+    expected_load_message.link[1].geom[0].float_data[0] = 12.3;
   }
 
   drake::lcmt_viewer_draw expected_draw_message;
@@ -141,7 +139,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfBox) {
     expected_draw_message.num_links = 2;
     expected_draw_message.link_name.resize(2);
     expected_draw_message.link_name[0] = std::string(RigidBodyTree::kWorldName);
-    expected_draw_message.link_name[1] = "box_link";
+    expected_draw_message.link_name[1] = "sphere_link";
     expected_draw_message.robot_num.resize(2);
     expected_draw_message.robot_num[0] = tree.get_world_model_instance_id();
     expected_draw_message.robot_num[1] = model_instance_id;
