@@ -20,16 +20,17 @@ class Integrator : public LeafSystem<T> {
   explicit Integrator(int length);
   ~Integrator() override;
 
- private:
+ public:
+  // System<T> overrides
   bool has_any_direct_feedthrough() const override;
-
-  std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
-
+  void EvalOutput(const ContextBase<T>& context,
+                  SystemOutput<T>* output) const override;
   void EvalTimeDerivatives(const ContextBase<T>& context,
                            ContinuousState<T>* derivatives) const override;
 
-  void EvalOutput(const ContextBase<T>& context,
-                  SystemOutput<T>* output) const override;
+ protected:
+  // LeafSystem<T> override
+  std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 };
 
 }  // namespace systems
