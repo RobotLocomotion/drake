@@ -26,7 +26,8 @@ namespace {
 // controller with 0 input torque. Since the robot is present in an
 // environment with gravity, under no external forces, starting from rest, the
 // robot should remain at rest. This test verifies that the arm remains at its
-// initial position within reasonable error bounds.
+// initial position within small error bounds.
+// initial position within small error bounds.
 GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControlZeroInput) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
