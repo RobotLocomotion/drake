@@ -30,7 +30,8 @@ class BotVisualizerReceiver {
    * A constructor that initializes the subscriptions to the LCM channels on
    * which BotVisualizerSystem publishes.
    */
-  explicit BotVisualizerReceiver(::lcm::LCM* lcm);
+  explicit BotVisualizerReceiver(::lcm::LCM* lcm,
+      std::string channel_postfix = "");
 
   /**
    * Returns the most recently received load message.
@@ -56,6 +57,8 @@ class BotVisualizerReceiver {
 
   drake::lcmt_viewer_load_robot load_message_;
   drake::lcmt_viewer_draw draw_message_;
+
+  std::string channel_postfix_;
 };
 
 }  // namespace test

@@ -2,7 +2,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/drakeLCMSystem2_export.h"
+#include "drake/drakeBotVisualizerSystem_export.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -28,8 +28,14 @@ namespace systems {
  * the position and orientation of each rigid body mentioned during
  * initialization. The LCM messages used during this phase is
  * `drake::lcmt_viewer_draw` and the channel name is "DRAKE_VIEWER_DRAW".
+ *
+ * To support multiple simultaneous instances of this system, which may
+ * occur when multiple unit tests are running in parallel, the channel names
+ * can be modified by a postfix string, which is specified as an input parameter
+ * to the constructor.
  */
-class DRAKELCMSYSTEM2_EXPORT BotVisualizerSystem : public System<double> {
+class DRAKEBOTVISUALIZERSYSTEM_EXPORT BotVisualizerSystem :
+    public System<double> {
  public:
   /**
    * A constructor that initializes the Drake visualizer by informing it of all
@@ -39,8 +45,12 @@ class DRAKELCMSYSTEM2_EXPORT BotVisualizerSystem : public System<double> {
    * reference must remain valid for the lifetime of this object.
    *
    * @param[in] lcm A pointer to the LCM subsystem.
+   *
+   * @param[in] channel_postfix A postfix that is appended to the end of the LCM
+   * channel names used by this system.
    */
-  BotVisualizerSystem(const RigidBodyTree& tree, ::lcm::LCM* lcm);
+  BotVisualizerSystem(const RigidBodyTree& tree, ::lcm::LCM* lcm,
+    std::string channel_postfix = "");
 
 
   ~BotVisualizerSystem() override;
@@ -91,6 +101,9 @@ class DRAKELCMSYSTEM2_EXPORT BotVisualizerSystem : public System<double> {
   // The LCM draw message to send to the Drake Visualizer. This member variable
   // is declared mutable so it can be modified by EvalOutput().
   mutable drake::lcmt_viewer_draw draw_msg_;
+
+  // The postfix of the channel names.
+  std::string channel_postfix_;
 };
 
 }  // namespace systems

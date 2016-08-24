@@ -8,6 +8,7 @@
       <inertial>
        <pose>0 0 0 0 0 0</pose>
         <mass>57.833</mass>
+        <!-- TODO(liang.fok): Make these inertia values realistic. -->
         <inertia>
           <ixx>2.71553</ixx>
           <ixy>0</ixy>

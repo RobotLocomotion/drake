@@ -4,15 +4,16 @@ namespace drake {
 namespace systems {
 namespace test {
 
-BotVisualizerReceiver::BotVisualizerReceiver(::lcm::LCM* lcm) {
+BotVisualizerReceiver::BotVisualizerReceiver(::lcm::LCM* lcm,
+    std::string channel_postfix) : channel_postfix_(channel_postfix) {
   // Sets up the LCM message subscribers.
   ::lcm::Subscription* sub_load_msg =
-      lcm->subscribe("DRAKE_VIEWER_LOAD_ROBOT",
+      lcm->subscribe("DRAKE_VIEWER_LOAD_ROBOT" + channel_postfix_,
           &BotVisualizerReceiver::HandleLoadMessage, this);
   sub_load_msg->setQueueCapacity(1);
 
   ::lcm::Subscription* sub_draw_msg =
-      lcm->subscribe("DRAKE_VIEWER_DRAW",
+      lcm->subscribe("DRAKE_VIEWER_DRAW" + channel_postfix_,
           &BotVisualizerReceiver::HandleDrawMessage, this);
   sub_draw_msg->setQueueCapacity(1);
 
@@ -43,7 +44,7 @@ drake::lcmt_viewer_draw BotVisualizerReceiver::GetReceivedDrawMessage() {
 
 void BotVisualizerReceiver::HandleLoadMessage(const ::lcm::ReceiveBuffer* rbuf,
     const std::string& channel_name, const drake::lcmt_viewer_load_robot* msg) {
-  if (channel_name == "DRAKE_VIEWER_LOAD_ROBOT") {
+  if (channel_name == "DRAKE_VIEWER_LOAD_ROBOT" + channel_postfix_) {
     std::lock_guard<std::mutex> lock(load_message_mutex_);
     load_message_ = *msg;
   }
@@ -51,7 +52,7 @@ void BotVisualizerReceiver::HandleLoadMessage(const ::lcm::ReceiveBuffer* rbuf,
 
 void BotVisualizerReceiver::HandleDrawMessage(const ::lcm::ReceiveBuffer* rbuf,
     const std::string& channel_name, const drake::lcmt_viewer_draw* msg) {
-  if (channel_name == "DRAKE_VIEWER_DRAW") {
+  if (channel_name == "DRAKE_VIEWER_DRAW" + channel_postfix_) {
     std::lock_guard<std::mutex> lock(load_message_mutex_);
     draw_message_ = *msg;
   }

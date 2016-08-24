@@ -31,11 +31,8 @@ using drake::parsers::ModelInstanceIdTable;
 
 // Tests the functionality of BotVisualizerSystem by making it load box.sdf.
 GTEST_TEST(LcmPublisherSystemTest, TestOneSdfBox) {
-  // Defines a channel name postfix to ensure this unit test does not interfere
-  // with other unit tests that use BotVisualizerSystem.
-  const std::string kChannelPostfix = "_BOX";
-
   // Instantiates the LCM subsystem.
+
   ::lcm::LCM lcm;
 
   // Instantiates a RigidBodyTree and loads an SDF containing a box into it.
@@ -56,7 +53,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfBox) {
 
   // Instantiates a receiver for the messages that are published by
   // BotVisualizerSystem.
-  drake::systems::test::BotVisualizerReceiver receiver(&lcm, kChannelPostfix);
+  drake::systems::test::BotVisualizerReceiver receiver(&lcm);
 
   // Start the LCM recieve thread after all objects it can potentially use
   // are instantiated. Since objects are destructed in the reverse order of
@@ -67,7 +64,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfBox) {
 
   // Instantiates a BotVisualizerSystem. It is called "dut" to indicate it is
   // the Device Under Test.
-  BotVisualizerSystem dut(tree, &lcm, kChannelPostfix);
+  BotVisualizerSystem dut(tree, &lcm);
   EXPECT_EQ(dut.get_name(), "BotVisualizerSystem");
 
   std::unique_ptr<ContextBase<double>> context = dut.CreateDefaultContext();

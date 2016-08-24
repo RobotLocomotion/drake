@@ -25,15 +25,17 @@ namespace systems {
 namespace test {
 namespace {
 
-const int kDim = 10;
 const int kPortNumber = 0;
 
 using drake::parsers::ModelInstanceIdTable;
 
 // Tests the functionality of BotVisualizerSystem by making it load box.sdf.
 GTEST_TEST(LcmPublisherSystemTest, TestOneSdfSphere) {
-  // Instantiates the LCM subsystem.
+  // Defines a channel name postfix to ensure this unit test does not interfere
+  // with other unit tests that use BotVisualizerSystem.
+  const std::string kChannelPostfix = "_SPHERE";
 
+  // Instantiates the LCM subsystem.
   ::lcm::LCM lcm;
 
   // Instantiates a RigidBodyTree and loads an SDF containing a box into it.
@@ -54,7 +56,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfSphere) {
 
   // Instantiates a receiver for the messages that are published by
   // BotVisualizerSystem.
-  drake::systems::test::BotVisualizerReceiver receiver(&lcm);
+  drake::systems::test::BotVisualizerReceiver receiver(&lcm, kChannelPostfix);
 
   // Start the LCM recieve thread after all objects it can potentially use
   // are instantiated. Since objects are destructed in the reverse order of
@@ -65,7 +67,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfSphere) {
 
   // Instantiates a BotVisualizerSystem. It is called "dut" to indicate it is
   // the Device Under Test.
-  BotVisualizerSystem dut(tree, &lcm);
+  BotVisualizerSystem dut(tree, &lcm, kChannelPostfix);
   EXPECT_EQ(dut.get_name(), "BotVisualizerSystem");
 
   std::unique_ptr<ContextBase<double>> context = dut.CreateDefaultContext();
@@ -131,7 +133,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfSphere) {
     expected_load_message.link[1].geom[0].color[3] = 0.9;
     expected_load_message.link[1].geom[0].num_float_data = 1;
     expected_load_message.link[1].geom[0].float_data.resize(1);
-    expected_load_message.link[1].geom[0].float_data[0] = 12.3;
+    expected_load_message.link[1].geom[0].float_data[0] = 5.5;
   }
 
   drake::lcmt_viewer_draw expected_draw_message;
@@ -152,7 +154,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestOneSdfSphere) {
     expected_draw_message.position[1].resize(3);
     expected_draw_message.position[1][0] = 0;
     expected_draw_message.position[1][1] = 0;
-    expected_draw_message.position[1][2] = 0.5;
+    expected_draw_message.position[1][2] = 5.5;
 
     expected_draw_message.quaternion.resize(2);
     expected_draw_message.quaternion[0].resize(4);

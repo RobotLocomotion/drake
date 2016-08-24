@@ -14,8 +14,9 @@ const int kPortIndex = 0;
 
 BotVisualizerSystem::BotVisualizerSystem(
     const RigidBodyTree& tree,
-    ::lcm::LCM* lcm)
-    : tree_(tree), lcm_(lcm) {
+    ::lcm::LCM* lcm,
+    std::string channel_postfix)
+    : tree_(tree), lcm_(lcm), channel_postfix_(channel_postfix) {
   initialize_drake_visualizer();
   initialize_draw_message();
 }
@@ -68,7 +69,7 @@ void BotVisualizerSystem::EvalOutput(const ContextBase<double>& context,
     }
   }
 
-  lcm_->publish("DRAKE_VIEWER_DRAW", &draw_msg_);
+  lcm_->publish("DRAKE_VIEWER_DRAW" + channel_postfix_, &draw_msg_);
 }
 
 void BotVisualizerSystem::initialize_drake_visualizer() {
@@ -154,7 +155,7 @@ void BotVisualizerSystem::initialize_drake_visualizer() {
     message.link.push_back(link);
   }
 
-  lcm_->publish("DRAKE_VIEWER_LOAD_ROBOT", &message);
+  lcm_->publish("DRAKE_VIEWER_LOAD_ROBOT" + channel_postfix_, &message);
 }
 
 void BotVisualizerSystem::initialize_draw_message() {

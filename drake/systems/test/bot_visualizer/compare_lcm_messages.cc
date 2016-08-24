@@ -68,11 +68,11 @@ bool CompareDrawMessage(
     EXPECT_EQ(received.link_name[i], expected.link_name[i]);
     EXPECT_EQ(received.robot_num[i], expected.robot_num[i]);
 
-    for (int j = 0; j < static_cast<int>(received.position.size()); ++j) {
+    for (int j = 0; j < 3; ++j) {
       EXPECT_NEAR(received.position[i][j], expected.position[i][j], 1e-6);
     }
 
-    for (int j = 0; j < static_cast<int>(received.quaternion.size()); ++j) {
+    for (int j = 0; j < 4; ++j) {
       EXPECT_NEAR(received.quaternion[i][j], expected.quaternion[i][j], 1e-6);
     }
   }

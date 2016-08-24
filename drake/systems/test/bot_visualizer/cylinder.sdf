@@ -1,9 +1,9 @@
 <?xml version='1.0' ?>
 
 <sdf version='1.6'>
-  <model name='sphere'>
-    <pose>0 0 5.5 0 0 0</pose>
-    <link name='sphere_link'>
+  <model name='cylinder'>
+    <pose>0 0 1 0 0 0</pose>
+    <link name='cylinder_link'>
       <pose>0 0 0 0 0 0</pose>
       <inertial>
        <pose>0 0 0 0 0 0</pose>
@@ -18,25 +18,27 @@
           <izz>71.6063</izz>
         </inertia>
       </inertial>
-      <visual name='sphere_link_visual'>
+      <visual name='cylinder_link_visual'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
-          <sphere>
-            <radius>5.5</radius>
-          </sphere>
+          <cylinder>
+            <radius>1</radius>
+            <length>2</length>
+          </cylinder>
         </geometry>
         <material>
           <diffuse>0.2 0.3 0.4 0.9</diffuse>
         </material>
       </visual>
-      <collision name='sphere_link_collision'>
+      <collision name='cylinder_link_collision'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
-          <sphere>
-            <radius>5.5</radius>
-          </sphere>
+          <cylinder>
+            <radius>1</radius>
+            <length>2</length>
+          </cylinder>
         </geometry>
       </collision>
     </link>
