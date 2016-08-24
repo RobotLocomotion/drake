@@ -21,7 +21,7 @@ namespace systems {
 /// TODO(david-german-tri): Consider moving to its own file.
 class DRAKESYSTEMFRAMEWORK_EXPORT OutputPortListenerInterface {
  public:
-  virtual ~OutputPortListenerInterface() {}
+  virtual ~OutputPortListenerInterface();
 
   /// Invalidates any data that depends on the OutputPort. Called whenever
   /// the OutputPort's version number is incremented.
@@ -30,7 +30,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPortListenerInterface {
 
 /// The OutputPort represents a data output from a System. Other Systems
 /// may depend on the OutputPort.
-class OutputPort {
+class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
  public:
   /// Constructs a vector-valued OutputPort.
   /// Takes ownership of @p vec.
@@ -39,8 +39,9 @@ class OutputPort {
   /// @tparam V The type of @p vec itself. Must implement VectorBase<T>.
   template <template <typename T> class V, typename T>
   explicit OutputPort(std::unique_ptr<V<T>> vec)
-      : data_(new VectorValue<T>(
-            std::unique_ptr<VectorBase<T>>(vec.release()))) {}
+      : data_(
+            new VectorValue<T>(std::unique_ptr<VectorBase<T>>(vec.release()))) {
+  }
 
   /// Constructs an abstract-valued OutputPort.
   /// Takes ownership of @p data.
@@ -54,6 +55,8 @@ class OutputPort {
   template <typename T>
   explicit OutputPort(std::unique_ptr<Value<T>> data)
       : data_(data.release()) {}
+
+  virtual ~OutputPort();
 
   /// Returns the abstract value in this port.
   const AbstractValue* get_abstract_data() const { return data_.get(); }

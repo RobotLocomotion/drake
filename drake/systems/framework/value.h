@@ -22,7 +22,7 @@ class Value;
 class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
  public:
   AbstractValue() {}
-  virtual ~AbstractValue() {}
+  virtual ~AbstractValue();
 
   /// Returns a copy of this AbstractValue.
   virtual std::unique_ptr<AbstractValue> Clone() const = 0;
@@ -101,6 +101,7 @@ template <typename T>
 class Value : public AbstractValue {
  public:
   explicit Value(const T& v) : value_(v) {}
+  ~Value() override {}
 
   // Values are copyable but not moveable.
   Value(const Value<T>& other) = default;
@@ -133,6 +134,7 @@ class VectorValue : public Value<VectorBase<T>*> {
  public:
   explicit VectorValue(std::unique_ptr<VectorBase<T>> v)
       : Value<VectorBase<T>*>(v.get()), owned_value_(std::move(v)) {}
+  ~VectorValue() override {}
 
   // VectorValues are copyable but not moveable.
   explicit VectorValue(const VectorValue<T>& other)

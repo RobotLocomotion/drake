@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/vector_base.h"
@@ -15,9 +16,10 @@ namespace systems {
 /// The InputPort describes a single input to a System. Users should not
 /// subclass InputPort: all InputPorts are either DependentInputPorts or
 /// FreestandingInputPorts.
-class InputPort : public OutputPortListenerInterface {
+class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
+    : public OutputPortListenerInterface {
  public:
-  ~InputPort() override {}
+  ~InputPort() override;
 
   /// Returns a positive number that increases monotonically, and changes
   /// whenever the data on this port changes, according to the source of
@@ -47,11 +49,7 @@ class InputPort : public OutputPortListenerInterface {
 
   /// Receives notification that the output port on which this InputPort
   /// depends has changed, and calls the invalidation_callback_.
-  void Invalidate() override {
-    if (invalidation_callback_ != nullptr) {
-      invalidation_callback_();
-    }
-  }
+  void Invalidate() override;
 
  protected:
   InputPort() {}
@@ -65,7 +63,7 @@ class InputPort : public OutputPortListenerInterface {
 /// The DependentInputPort wraps a pointer to the OutputPort of a System for use
 /// as an input to another System. Many DependentInputPorts may wrap a single
 /// OutputPort.
-class DependentInputPort : public InputPort {
+class DRAKESYSTEMFRAMEWORK_EXPORT DependentInputPort : public InputPort {
  public:
   /// Creates an input port connected to the given @p output_port, which
   /// must not be nullptr. The output port must outlive this input port.
@@ -75,7 +73,7 @@ class DependentInputPort : public InputPort {
   }
 
   /// Disconnects from the output port.
-  ~DependentInputPort() override { output_port_->remove_dependent(this); }
+  ~DependentInputPort() override;
 
   /// Returns the value version of the connected output port.
   int64_t get_version() const override { return output_port_->get_version(); }
@@ -95,7 +93,7 @@ class DependentInputPort : public InputPort {
 
 /// The FreestandingInputPort encapsulates a vector of data for use as an input
 /// to a System.
-class FreestandingInputPort : public InputPort {
+class DRAKESYSTEMFRAMEWORK_EXPORT FreestandingInputPort : public InputPort {
  public:
   /// Constructs a vector-valued FreestandingInputPort.
   /// Takes ownership of @p vec.
@@ -125,7 +123,7 @@ class FreestandingInputPort : public InputPort {
     output_port_.add_dependent(this);
   }
 
-  ~FreestandingInputPort() override { output_port_.remove_dependent(this); }
+  ~FreestandingInputPort() override;
 
   /// Returns a positive and monotonically increasing number that is guaranteed
   /// to change whenever GetMutableVectorData is called.
