@@ -83,8 +83,7 @@ class System {
       // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
       // once abstract ports are implemented in 3164.
       if (get_output_port(i).get_data_type() == kVectorValued) {
-        const VectorBase<T>* output_vector =
-            output->get_port(i).get_vector_data();
+        const VectorBase<T>* output_vector = output->get_vector_data(i);
         DRAKE_THROW_UNLESS(output_vector != nullptr);
         DRAKE_THROW_UNLESS(output_vector->get_value().rows() ==
                            get_output_port(i).get_size());
@@ -254,7 +253,13 @@ class System {
   /// to the input topology.
   void DeclareInputPort(PortDataType type, int size, SamplingSpec sampling) {
     input_ports_.emplace_back(this, kInputPort, input_ports_.size(),
-                                 kVectorValued, size, sampling);
+                              kVectorValued, size, sampling);
+  }
+
+  /// Adds an abstract-valued port with the specified @p sampling to the
+  /// input topology.
+  void DeclareAbstractInputPort(SamplingSpec sampling) {
+    DeclareInputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
   /// Adds a port with the specified @p descriptor to the output topology.
@@ -269,8 +274,15 @@ class System {
   /// to the output topology.
   void DeclareOutputPort(PortDataType type, int size, SamplingSpec sampling) {
     output_ports_.emplace_back(this, kOutputPort, output_ports_.size(),
-                                  kVectorValued, size, sampling);
+                               kVectorValued, size, sampling);
   }
+
+  /// Adds an abstract-valued port with the specified @p sampling to the
+  /// output topology.
+  void DeclareAbstractOutputPort(SamplingSpec sampling) {
+    DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
+  }
+
 
  private:
   // SystemInterface objects are neither copyable nor moveable.
