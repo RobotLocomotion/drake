@@ -21,9 +21,9 @@ namespace {
 // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
 // the input of the PassThrough system.
 template<class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
+std::unique_ptr<FreestandingInputPort<T>> MakeInput(
     std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
+  return make_unique<FreestandingInputPort<T>>(std::move(data));
 }
 
 class PassThroughTest : public ::testing::Test {
@@ -56,7 +56,8 @@ TEST_F(PassThroughTest, VectorThroughPassThroughSystem) {
   // TODO(amcastro-tri): Check with buffer_->get_num_output_ports() after #3097.
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_vector =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+      dynamic_cast<const BasicVector<double>*>(
+          output_->get_port(0).get_vector_data());
   ASSERT_NE(nullptr, output_vector);
   EXPECT_EQ(input_vector, output_vector->get_value());
 }

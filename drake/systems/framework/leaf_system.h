@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -72,8 +71,9 @@ class LeafSystem : public System<T> {
       const ContextBase<T>& context) const override {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (const auto& descriptor : this->get_output_ports()) {
-      output->get_mutable_ports()->emplace_back(
-          new OutputPort(AllocateOutputVector(descriptor)));
+      std::unique_ptr<OutputPort<T>> port(new OutputPort<T>(std::move(
+          AllocateOutputVector(descriptor))));
+      output->get_mutable_ports()->push_back(std::move(port));
     }
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
@@ -81,16 +81,6 @@ class LeafSystem : public System<T> {
   /// Returns the AllocateContinuousState value, which may be nullptr.
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     return AllocateContinuousState();
-  }
-
-  std::unique_ptr<OutputPort> static MakeOutputPortFromDescriptor(
-      const SystemPortDescriptor<T>& descriptor) {
-    // We can only auto-allocate vector-valued ports. There is no reasonable
-    // default type for abstract-valued ports.
-    DRAKE_ABORT_UNLESS(descriptor.get_data_type() == kVectorValued);
-    const int size = descriptor.get_size();
-    std::unique_ptr<VectorBase<T>> vec(new BasicVector<T>(size));
-    return std::make_unique<OutputPort>(std::move(vec));
   }
 
   // SystemInterface objects are neither copyable nor moveable.

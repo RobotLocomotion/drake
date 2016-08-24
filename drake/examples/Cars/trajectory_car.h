@@ -111,7 +111,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     DRAKE_ASSERT(output != nullptr);
     DRAKE_ASSERT(output->get_num_ports() == 1);
     systems::VectorBase<T>* output_vector =
-        output->GetMutableVectorData(0);
+        output->get_mutable_port(0)->GetMutableVectorData();
     DRAKE_ASSERT(output_vector != nullptr);
 
     // TODO(jwninmmer-tri) Once TrajectoryCar1 is otherwise unused and can be

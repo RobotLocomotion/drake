@@ -101,7 +101,7 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
       ASSERT_EQ(1, all_output->get_num_ports());
       const SimpleCarState<double>* output =
           dynamic_cast<const SimpleCarState<double>*>(
-              all_output->get_vector_data(0));
+              all_output->get_port(0).get_vector_data());
       ASSERT_NE(nullptr, output);
 
       EXPECT_DOUBLE_EQ(expected_position(0), output->x());

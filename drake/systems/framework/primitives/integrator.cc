@@ -54,7 +54,8 @@ void Integrator<T>::EvalOutput(const ContextBase<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  VectorBase<T>* output_port = output->GetMutableVectorData(0);
+  VectorBase<T>* output_port =
+      output->get_mutable_port(0)->GetMutableVectorData();
 
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).

@@ -75,7 +75,7 @@ class DiagramContext : public ContextBase<T> {
     if (src_port_index < 0 || src_port_index >= src_ports->get_num_ports()) {
       throw std::out_of_range("Source port out of range.");
     }
-    OutputPort* output_port = src_ports->get_mutable_port(src_port_index);
+    OutputPort<T>* output_port = src_ports->get_mutable_port(src_port_index);
 
     // Validate, construct, and install the destination port.
     SystemIndex dest_system_index = dest.first;
@@ -85,7 +85,7 @@ class DiagramContext : public ContextBase<T> {
         dest_port_index >= dest_context->get_num_input_ports()) {
       throw std::out_of_range("Destination port out of range.");
     }
-    auto input_port = std::make_unique<DependentInputPort>(output_port);
+    auto input_port = std::make_unique<DependentInputPort<T>>(output_port);
     dest_context->SetInputPort(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
@@ -148,7 +148,7 @@ class DiagramContext : public ContextBase<T> {
 
   int get_num_input_ports() const override { return input_ids_.size(); }
 
-  void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
+  void SetInputPort(int index, std::unique_ptr<InputPort<T>> port) override {
     if (index < 0 || index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
     }
@@ -168,19 +168,11 @@ class DiagramContext : public ContextBase<T> {
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
-    const ContextBase<T>* subsystem_context = GetSubsystemContext(system_index);
-    return subsystem_context->get_vector_input(port_index);
-  }
-
-  const AbstractValue* get_abstract_input(int index) const override {
-    if (index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
+    const auto it = contexts_.find(system_index);
+    if (it == contexts_.end()) {
+      return nullptr;
     }
-    const PortIdentifier& id = input_ids_[index];
-    SystemIndex system_index = id.first;
-    PortIndex port_index = id.second;
-    const ContextBase<T>* subsystem_context = GetSubsystemContext(system_index);
-    return subsystem_context->get_abstract_input(port_index);
+    return it->second->get_vector_input(port_index);
   }
 
   const State<T>& get_state() const override { return state_; }

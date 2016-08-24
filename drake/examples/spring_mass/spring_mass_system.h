@@ -66,15 +66,15 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   /// spring.
   /// @param[in] system_is_forced If `true`, the system has an input port for an
   /// external force. If `false`, the system has no inputs.
-  SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
-                   bool system_is_forced = false);
+  SpringMassSystem(double spring_constant_N_per_m,
+                   double mass_kg, bool system_is_forced = false);
 
   using MyContext = systems::ContextBase<double>;
   using MyContinuousState = systems::ContinuousState<double>;
   using MyOutput = systems::SystemOutput<double>;
 
   /// The input force to this system is not direct feedthrough.
-  bool has_any_direct_feedthrough() const override { return false; }
+  bool has_any_direct_feedthrough() const override { return false;}
 
   // Provide methods specific to this System.
 
@@ -220,12 +220,12 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
 
   static const SpringMassStateVector& get_output(const MyOutput& output) {
     return dynamic_cast<const SpringMassStateVector&>(
-        *output.get_vector_data(0));
+        *output.get_port(0).get_vector_data());
   }
 
   static SpringMassStateVector* get_mutable_output(MyOutput* output) {
     return dynamic_cast<SpringMassStateVector*>(
-        output->GetMutableVectorData(0));
+        output->get_mutable_port(0)->GetMutableVectorData());
   }
 
   static const SpringMassStateVector& get_state(const MyContext& context) {

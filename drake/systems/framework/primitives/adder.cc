@@ -22,10 +22,16 @@ Adder<T>::Adder(int num_inputs, int length) {
 template <typename T>
 void Adder<T>::EvalOutput(const ContextBase<T>& context,
                           SystemOutput<T>* output) const {
+  // Checks on the output structure are assertions, not exceptions,
+  // since failures would reflect a bug in the Adder implementation, not
+  // user error setting up the system graph. They do not require unit test
+  // coverage, and should not run in release builds.
+
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  VectorBase<T>* output_vector = output->GetMutableVectorData(0);
+  VectorBase<T>* output_vector =
+      output->get_mutable_port(0)->GetMutableVectorData();
 
   // Zeroes the output.
   const int n = output_vector->get_value().rows();
