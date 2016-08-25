@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -21,10 +22,39 @@ class LeafSystem : public System<T> {
  public:
   ~LeafSystem() override {}
 
+  // =========================================================================
+  // Implementations of System<T> methods.
+
+  std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
+    std::unique_ptr<Context<T>> context(new Context<T>);
+    // Reserve inputs that have already been declared.
+    context->SetNumInputPorts(this->get_input_ports().size());
+    // Reserve continuous state via delegation to subclass.
+    context->get_mutable_state()->continuous_state =
+        std::move(this->AllocateContinuousState());
+    // Reserve discrete state via delegation to subclass.
+    ReserveDiscreteState(context.get());
+    return std::unique_ptr<ContextBase<T>>(context.release());
+  }
+
+  std::unique_ptr<SystemOutput<T>> AllocateOutput(
+      const ContextBase<T>& context) const override {
+    std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
+    for (const auto& descriptor : this->get_output_ports()) {
+      output->get_mutable_ports()->emplace_back(
+          new OutputPort(AllocateOutputVector(descriptor)));
+    }
+    return std::unique_ptr<SystemOutput<T>>(output.release());
+  }
+
+  /// Returns the AllocateContinuousState value, which may be nullptr.
+  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
+    return AllocateContinuousState();
+  }
+
  protected:
   LeafSystem() {}
 
- private:
   // =========================================================================
   // New methods for subclasses to override
 
@@ -48,41 +78,7 @@ class LeafSystem : public System<T> {
         new BasicVector<T>(descriptor.get_size()));
   }
 
-  // =========================================================================
-  // Implementations of System<T> methods.
-
-  /// Returns a default context, initialized with the correct
-  /// numbers of concrete input ports and state variables for this System.
-  std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
-    std::unique_ptr<Context<T>> context(new Context<T>);
-    // Reserve inputs that have already been declared.
-    context->SetNumInputPorts(this->get_input_ports().size());
-    // Reserve continuous state via delegation to subclass.
-    context->get_mutable_state()->continuous_state =
-        std::move(this->AllocateContinuousState());
-    // Reserve discrete state via delegation to subclass.
-    ReserveDiscreteState(context.get());
-    return std::unique_ptr<ContextBase<T>>(context.release());
-  }
-
-  /// Returns a default output, initialized with the correct number of
-  /// concrete output ports for this System.
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const ContextBase<T>& context) const override {
-    std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
-    for (const auto& descriptor : this->get_output_ports()) {
-      std::unique_ptr<OutputPort<T>> port(new OutputPort<T>(std::move(
-          AllocateOutputVector(descriptor))));
-      output->get_mutable_ports()->push_back(std::move(port));
-    }
-    return std::unique_ptr<SystemOutput<T>>(output.release());
-  }
-
-  /// Returns the AllocateContinuousState value, which may be nullptr.
-  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
-    return AllocateContinuousState();
-  }
-
+ private:
   // SystemInterface objects are neither copyable nor moveable.
   explicit LeafSystem(const System<T>& other) = delete;
   LeafSystem& operator=(const System<T>& other) = delete;

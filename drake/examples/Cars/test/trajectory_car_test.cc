@@ -71,15 +71,13 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
     };
     const Curve2d curve{waypoints};
     // The "device under test".
-    std::unique_ptr<systems::System<double>> car_dut(
-        std::make_unique<TrajectoryCar<double>>(  // BR
-            curve, it.speed, it.start_time));
+    const TrajectoryCar<double> car_dut{curve, it.speed, it.start_time};
 
     // The test inputs (time) and outputs.
     std::unique_ptr<systems::ContextBase<double>> context =
-        car_dut->CreateDefaultContext();
+        car_dut.CreateDefaultContext();
     std::unique_ptr<systems::SystemOutput<double>> all_output =
-        car_dut->AllocateOutput(*context);
+        car_dut.AllocateOutput(*context);
 
     // Check that the systems' outputs over time are correct over the
     // entire duration of the trajectory, but also including some time
@@ -96,12 +94,12 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
       const double kMaxErrorRad = 1e-6;
 
       context->set_time(time);
-      car_dut->EvalOutput(*context, all_output.get());
+      car_dut.EvalOutput(*context, all_output.get());
 
       ASSERT_EQ(1, all_output->get_num_ports());
       const SimpleCarState<double>* output =
           dynamic_cast<const SimpleCarState<double>*>(
-              all_output->get_port(0).get_vector_data());
+              all_output->get_vector_data(0));
       ASSERT_NE(nullptr, output);
 
       EXPECT_DOUBLE_EQ(expected_position(0), output->x());
