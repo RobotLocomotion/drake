@@ -95,7 +95,7 @@ IdmWithTrajectoryAgent<T>::AllocateContinuousState() const {
 }
 
 template <typename T>
-std::unique_ptr<systems::VectorBase<T>>
+std::unique_ptr<systems::BasicVector<T>>
 IdmWithTrajectoryAgent<T>::AllocateOutputVector(
     const systems::SystemPortDescriptor<T>& descriptor) const {
   return std::make_unique<IdmWithTrajectoryAgentState<T>>();

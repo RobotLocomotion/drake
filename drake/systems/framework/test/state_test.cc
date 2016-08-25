@@ -19,13 +19,7 @@ constexpr int kMiscLength = 1;
 constexpr int kLength = kPositionLength + kVelocityLength + kMiscLength;
 
 std::unique_ptr<StateVector<int>> MakeStateVector() {
-  std::unique_ptr<VectorBase<int>> vec;
-  vec.reset(new BasicVector<int>(kLength));
-  vec->get_mutable_value() << 1, 2, 3, 4;
-
-  std::unique_ptr<StateVector<int>> state_vector(
-      new BasicStateVector<int>(std::move(vec)));
-  return state_vector;
+  return BasicStateVector<int>::Make({1, 2, 3, 4});
 }
 
 class ContinuousStateTest : public ::testing::Test {
@@ -39,6 +33,7 @@ class ContinuousStateTest : public ::testing::Test {
 };
 
 TEST_F(ContinuousStateTest, Access) {
+  EXPECT_EQ(kLength, continuous_state_->get_state().size());
   EXPECT_EQ(kPositionLength,
             continuous_state_->get_generalized_position().size());
   EXPECT_EQ(1, continuous_state_->get_generalized_position().GetAtIndex(0));

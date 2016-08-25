@@ -156,7 +156,7 @@ SimpleCar<T>::AllocateContinuousState() const {
 }
 
 template <typename T>
-std::unique_ptr<systems::VectorBase<T>> SimpleCar<T>::AllocateOutputVector(
+std::unique_ptr<systems::BasicVector<T>> SimpleCar<T>::AllocateOutputVector(
     const systems::SystemPortDescriptor<T>& descriptor) const {
   return std::make_unique<SimpleCarState<T>>();
 }

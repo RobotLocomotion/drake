@@ -101,7 +101,7 @@ class System {
       if (get_output_port(i).get_data_type() == kVectorValued) {
         const VectorBase<T>* output_vector = output->get_vector_data(i);
         DRAKE_THROW_UNLESS(output_vector != nullptr);
-        DRAKE_THROW_UNLESS(output_vector->get_value().rows() ==
+        DRAKE_THROW_UNLESS(output_vector->size() ==
                            get_output_port(i).get_size());
       }
     }
@@ -123,7 +123,7 @@ class System {
       if (this->get_input_port(i).get_data_type() == kVectorValued) {
         const VectorBase<T>* input_vector = context.get_vector_input(i);
         DRAKE_THROW_UNLESS(input_vector != nullptr);
-        DRAKE_THROW_UNLESS(input_vector->get_value().rows() ==
+        DRAKE_THROW_UNLESS(input_vector->size() ==
                            get_input_port(i).get_size());
       }
     }
@@ -138,7 +138,7 @@ class System {
         context.get_vector_input(port_index);
 
     DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->get_value().rows() ==
+    DRAKE_ASSERT(input_vector->size() ==
                  get_input_port(port_index).get_size());
 
     return input_vector->get_value();
@@ -382,7 +382,7 @@ class System {
     VectorBase<T>* output_vector = output->
         get_mutable_port(port_index)->template GetMutableVectorData<T>();
     DRAKE_ASSERT(output_vector != nullptr);
-    DRAKE_ASSERT(output_vector->get_value().rows() ==
+    DRAKE_ASSERT(output_vector->size() ==
         get_output_port(port_index).get_size());
 
     return output_vector->get_mutable_value();

@@ -14,13 +14,10 @@ const int kLength = 2;
 class BasicStateVectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::unique_ptr<VectorBase<int>> vec;
-    vec.reset(new BasicVector<int>(kLength));
-    vec->get_mutable_value() << 1, 2;
-    state_vector_.reset(new BasicStateVector<int>(std::move(vec)));
+    state_vector_ = BasicStateVector<int>::Make({1, 2});
   }
 
-  std::unique_ptr<StateVector<int>> state_vector_;
+  std::unique_ptr<BasicStateVector<int>> state_vector_;
 };
 
 TEST_F(BasicStateVectorTest, Access) {
@@ -37,8 +34,7 @@ TEST_F(BasicStateVectorTest, CopyToVector) {
 }
 
 TEST_F(BasicStateVectorTest, Clone) {
-  std::unique_ptr<LeafStateVector<int>> clone =
-      dynamic_cast<LeafStateVector<int>*>(state_vector_.get())->Clone();
+  auto clone = state_vector_->Clone();
 
   // Verify that type and data were preserved in the clone.
   BasicStateVector<int>* typed_clone =
@@ -87,7 +83,7 @@ TEST_F(BasicStateVectorTest, SizeBasedConstructor) {
 }
 
 TEST_F(BasicStateVectorTest, DataBasedConstructor) {
-  state_vector_.reset(new BasicStateVector<int>({1, 2, 3}));
+  state_vector_ = BasicStateVector<int>::Make({1, 2, 3});
   EXPECT_EQ(3, state_vector_->size());
   EXPECT_EQ(1, state_vector_->GetAtIndex(0));
   EXPECT_EQ(2, state_vector_->GetAtIndex(1));

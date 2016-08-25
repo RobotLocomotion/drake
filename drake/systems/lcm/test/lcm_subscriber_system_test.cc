@@ -221,7 +221,7 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
 
   CustomDrakeSignalTranslator() : LcmAndVectorBaseTranslator(kDim) {}
 
-  std::unique_ptr<VectorBase<double>> AllocateOutputVector() const override {
+  std::unique_ptr<BasicVector<double>> AllocateOutputVector() const override {
     return std::make_unique<CustomVector>();
   }
 

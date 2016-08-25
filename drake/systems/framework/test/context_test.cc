@@ -33,22 +33,18 @@ class ContextTest : public ::testing::Test {
     // Input
     context_.SetNumInputPorts(kNumInputPorts);
     for (int i = 0; i < kNumInputPorts; ++i) {
-      std::unique_ptr<VectorBase<double>> port_data(
-          new BasicVector<double>(kInputSize[i]));
-      std::unique_ptr<FreestandingInputPort> port(
-          new FreestandingInputPort(std::move(port_data)));
+      auto port_data = std::make_unique<BasicVector<double>>(kInputSize[i]);
+      auto port = std::make_unique<FreestandingInputPort>(std::move(port_data));
       context_.SetInputPort(i, std::move(port));
     }
 
     // State
-    std::unique_ptr<BasicVector<double>> state_data(
-        new BasicVector<double>(kStateSize));
-    state_data->get_mutable_value() << 1.0, 2.0, 3.0, 5.0, 8.0;
+    auto state = std::make_unique<BasicStateVector<double>>(kStateSize);
+    state->get_mutable_value() << 1.0, 2.0, 3.0, 5.0, 8.0;
 
     context_.get_mutable_state()->continuous_state.reset(
         new ContinuousState<double>(
-            std::unique_ptr<BasicStateVector<double>>(
-                new BasicStateVector<double>(std::move(state_data))),
+            std::move(state),
             kGeneralizedPositionSize, kGeneralizedVelocitySize,
             kMiscContinuousStateSize));
   }
