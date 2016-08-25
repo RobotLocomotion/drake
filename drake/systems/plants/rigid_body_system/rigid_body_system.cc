@@ -265,7 +265,7 @@ void RigidBodySystem<T>::EvalTimeDerivatives(
   VectorX<T> xdot(get_num_states());
   xdot << kinsol.transformPositionDotMappingToVelocityMapping(
       MatrixX<T>::Identity(nq, nq)) * v, vdot.value();
-  
+
   derivatives->get_mutable_state()->SetFromVector(xdot);
 }
 

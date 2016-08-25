@@ -17,17 +17,21 @@ using std::move;
 using std::unique_ptr;
 
 namespace drake {
+
+using systems::FreestandingInputPort;
+using systems::BasicVector;
+
+template <class T>
+    std::unique_ptr<FreestandingInputPort> MakeInput(
+    std::unique_ptr<BasicVector<T>> data) {
+return make_unique<FreestandingInputPort>(std::move(data));
+}
+
 namespace systems {
 namespace plants {
 namespace rigid_body_system {
 namespace test {
 namespace {
-
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
 
 // Tests the ability to load a URDF as part of the world of a rigid body system.
 GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
@@ -202,6 +206,7 @@ TEST_F(KukaArmTest, EvalTimeDerivatives) {
   // This call should not assert when compiling Debug builds.
   system_->EvalOutput(*context_, output_.get());
 
+  // There are some dynamic_cast's in there right now.
   EXPECT_NO_THROW(system_->EvalTimeDerivatives(*context_, derivatives_.get()));
 
   // Asserts the output equals the state.
@@ -216,3 +221,109 @@ TEST_F(KukaArmTest, EvalTimeDerivatives) {
 }  // namespace plants
 }  // namespace systems
 }  // namespace drake
+
+#include "drake/systems/plants/RigidBodySystem.h"
+
+namespace drake {
+
+using systems::plants::rigid_body_system::test::KukaArmTest;
+
+TEST_F(KukaArmTest, CompareWithRBS1Dynamics) {
+  //////////////////////////////////////////////////////////////////////////////
+  // Instantiate an RBS 1.0.
+  auto rbs1 = make_unique<RigidBodySystem>();
+
+  // Adds a URDF to the rigid body system. This URDF contains only fixed joints
+  // and is attached to the world via a fixed joint. Thus, everything in the
+  // URDF becomes part of the world.
+  rbs1->AddModelInstanceFromFile(
+      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      DrakeJoint::FIXED);
+
+  // Obtains an initial state of the simulation.
+  VectorXd x0 = VectorXd::Zero(rbs1->getNumStates());
+  x0.head(rbs1->number_of_positions()) =
+      rbs1->getRigidBodyTree()->getZeroConfiguration();
+
+  // Some non-zero velocities.
+  x0.tail(rbs1->number_of_velocities()) << 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0;
+
+  Eigen::VectorXd arbitrary_angles(rbs1->number_of_positions());
+  arbitrary_angles << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
+  x0.head(rbs1->number_of_positions()) += arbitrary_angles;
+
+  // Instantiates an input vector.
+  VectorX<double> u = VectorX<double>::Zero(rbs1->getNumInputs());
+  u << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0;
+
+  // Computes time derivatives.
+  auto rbs1_xdot = rbs1->dynamics(0.0, x0, u);
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Instantiate an RBS 2.0.
+  // Connect to a "fake" free standing input with the same values used for RBS1.
+  auto input_vector = std::make_unique<BasicVector<double>>(
+      kuka_system_->get_num_actuators());
+  input_vector->set_value(u);
+  context_->SetInputPort(0, MakeInput(move(input_vector)));
+
+  // Zeroes the state.
+  kuka_system_->ObtainZeroConfiguration(context_.get());
+
+  // Sets the state to a non-zero value matching the configuration for rbs1.
+  kuka_system_->set_state_vector(context_.get(), x0);
+  VectorXd xc = context_->get_xc().CopyToVector();
+  ASSERT_EQ(xc, x0);
+
+  ASSERT_EQ(1, output_->get_num_ports());
+  const BasicVector<double>* output_port =
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  ASSERT_NE(nullptr, output_port);
+
+  // This call should not assert when compiling Debug builds.
+  system_->EvalOutput(*context_, output_.get());
+
+  // There are some dynamic_cast's in there right now.
+  EXPECT_NO_THROW(system_->EvalTimeDerivatives(*context_, derivatives_.get()));
+
+  auto rbs2_xdot = derivatives_->get_state().CopyToVector();
+
+  // Compares RBS1 and RBS2 time derivatives.
+  EXPECT_TRUE(rbs2_xdot.isApprox(rbs1_xdot));
+}
+
+
+// Tests the ability to load a URDF as part of the world of a rigid body system.
+GTEST_TEST(RigidBodySystemTest, CompareWithRBS1) {
+  // Instantiates a rigid body system.
+  std::unique_ptr<RigidBodySystem> rigid_body_sys(new RigidBodySystem());
+
+  // Adds a URDF to the rigid body system. This URDF contains only fixed joints
+  // and is attached to the world via a fixed joint. Thus, everything in the
+  // URDF becomes part of the world.
+  rigid_body_sys->AddModelInstanceFromFile(
+      drake::GetDrakePath() +
+          "/systems/plants/test/rigid_body_system/world.urdf",
+      DrakeJoint::FIXED);
+
+  // Verifies that the number of states, inputs, and outputs are all zero.
+  EXPECT_EQ(rigid_body_sys->getNumStates(), 0u);
+  EXPECT_EQ(rigid_body_sys->getNumInputs(), 0u);
+  EXPECT_EQ(rigid_body_sys->getNumOutputs(), 0u);
+
+  // Obtains a const pointer to the rigid body tree within the rigid body
+  // system.
+  const std::shared_ptr<RigidBodyTree>& tree =
+      rigid_body_sys->getRigidBodyTree();
+
+  // Checks that the bodies in the world can be obtained and they have the
+  // correct model name.
+  for (auto& body_name :
+      {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
+    RigidBody* body = tree->FindBody(body_name);
+    EXPECT_NE(body, nullptr);
+    EXPECT_EQ(body->get_model_name(), "dual_ramps");
+  }
+}
+
+} // namespace drake

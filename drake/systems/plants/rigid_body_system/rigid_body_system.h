@@ -49,6 +49,11 @@ class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
     context->get_mutable_state()->continuous_state->get_mutable_generalized_velocity()->SetAtIndex(velocity_index, position);
   }
 
+  void set_state_vector(
+      ContextBase<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
+    context->get_mutable_state()->continuous_state->get_mutable_state()->SetFromVector(x);
+  }
+
   /// Sets the state in @p context so that generalized positions and velocities
   /// are zero. For quaternion based joints the quaternion is set to be the
   /// identity or zero rotation quaternion.
