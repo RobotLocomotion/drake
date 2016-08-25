@@ -1456,8 +1456,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
         const auto& body_to_world = cache_element.transform_to_world;
         net_wrench -= transformSpatialForce(body_to_world, external_wrench);
       }
-    }
-    else {
+    } else {
       body_accelerations.col(i) = -a_grav.cast<Scalar>();
       net_wrenches.col(i).setZero();
     }
@@ -2426,12 +2425,13 @@ RigidBodyTree::transformSpatialAcceleration<double>(
     int) const;
 
 // Explicit template instantiations for frictionTorques
-template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d> RigidBodyTree::frictionTorques(
-    Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const& v) const;
+template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
+RigidBodyTree::frictionTorques(
+    Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const &v) const;
 template DRAKERBM_EXPORT VectorX<AutoDiffXd> RigidBodyTree::frictionTorques(
-    Eigen::MatrixBase<VectorX<AutoDiffXd>> const& v) const;
+    Eigen::MatrixBase<VectorX<AutoDiffXd>> const &v) const;
 template DRAKERBM_EXPORT VectorX<double> RigidBodyTree::frictionTorques(
-    Eigen::MatrixBase<VectorX<double>> const& v) const;
+    Eigen::MatrixBase<VectorX<double>> const &v) const;
 
 // Explicit template instantiations for inverseDynamics.
 template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
