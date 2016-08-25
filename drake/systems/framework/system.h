@@ -63,22 +63,6 @@ class System {
     return output_ports_[port_number];
   }
 
-  /// Returns a mutable reference to the input port @p input_port.
-  SystemPortDescriptor<T>& get_mutable_input_port(int port_number) {
-    if (port_number >= get_num_input_ports()) {
-      throw std::out_of_range("port number out of range.");
-    }
-    return input_ports_[port_number];
-  }
-
-  /// Returns a mutable reference to the output port @p output_port.
-  SystemPortDescriptor<T>& get_mutable_output_port(int port_number) {
-    if (port_number >= get_num_output_ports()) {
-      throw std::out_of_range("port number out of range.");
-    }
-    return output_ports_[port_number];
-  }
-
   /// Returns descriptors for all the output ports of this system.
   const std::vector<SystemPortDescriptor<T>>& get_output_ports() const {
     return output_ports_;

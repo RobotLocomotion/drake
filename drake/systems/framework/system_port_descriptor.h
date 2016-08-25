@@ -81,16 +81,13 @@ class SystemPortDescriptor {
     }
     return size_;
   }
-  void set_size(int size) {
-    size_ = size;
-  }
 
  private:
   const System<T>* const system_;
   const PortFaceType face_;
   const int index_;
   const PortDataType data_type_;
-  int size_;
+  const int size_;
   const SamplingSpec sampling_;
 };
 
