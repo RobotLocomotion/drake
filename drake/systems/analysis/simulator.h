@@ -107,6 +107,11 @@ class Simulator {
   chosen for you. This is ignored for fixed-step integration since accuracy
   control requires variable step sizes.
 
+  Integrators vary in the range of accuracy (loosest to tightest) that they can
+  support. If you request accuracy outside the supported range for the chosen
+  integrator it will be quietly adjusted to be in range. You can find out the
+  accuracy setting actually being used using `get_accuracy_in_use()`.
+
   The precise meaning of *accuracy* is a complicated discussion, but translates
   roughly to the number of significant digits you want in the results. By
   convention it is supplied as `10^-digits`, meaning that an accuracy of 1e-3
