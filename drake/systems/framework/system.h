@@ -145,9 +145,9 @@ class System {
   /// This method is invoked by a Simulator at designated meaningful points
   /// along a trajectory, to allow the executing System a chance to take some
   /// kind of output action. Typical actions may include terminal output,
-  /// logging, plotting, and sending messages. Other than computational cost,
-  /// publishing has no effect on the progress of a simulation (but see note
-  /// below).
+  /// visualization, logging, plotting, and sending messages. Other than
+  /// computational cost, publishing has no effect on the progress of a
+  /// simulation (but see note below).
   ///
   /// By default Publish() will be called at the start of each continuous
   /// integration step, after discrete variables have been updated to the values
@@ -163,14 +163,14 @@ class System {
   /// case the change in step size may affect the numerical result somewhat
   /// since a smaller integrator step produces a more accurate solution.
   void Publish(const ContextBase<T>& context) const {
-      // TODO(sherm1) Validate context (at least in Debug).
-      DoPublish(context);
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DoPublish(context);
   }
 
   /// This method is called to perform discrete updates to the Context, with
   /// the particular actions to take supplied in `actions`.
   void Update(ContextBase<T>* context, const SampleActions& actions) const {
-    // TODO(sherm1) Validate context (at least in Debug).
+    DRAKE_ASSERT_VOID(CheckValidContext(*context));
     DoUpdate(context, actions);
   }
 
@@ -267,8 +267,8 @@ class System {
   ///
   /// The default implementation uses the identity mapping. It throws
   /// std::out_of_range if the @p generalized_velocity and
-  /// @p configuration_derivatives are not the same size. Child classes should
-  /// override this function if qdot != v.
+  /// @p configuration_derivatives are not the same size. Child classes must
+  /// override this function if qdot != v (even if they are the same size).
   ///
   /// Implementations may assume that @p configuration_derivatives is of
   /// the same size as the generalized position allocated in
@@ -286,7 +286,7 @@ class System {
           " != configuration_derivatives.size() " +
           std::to_string(configuration_derivatives->size()) +
           ". Do you need to override the default implementation of " +
-          "MapVelocityToConfigurationDerivatives?");
+          "MapVelocityToConfigurationDerivatives()?");
     }
 
     for (int i = 0; i < generalized_velocity.size(); ++i) {

@@ -126,10 +126,10 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
   const int kMaxCount = 10;
   const int kDelayMS = 500;
 
-  // We must periodically call dut->EvalOutput(...) since we do not know when
+  // We must periodically call dut->Publish(...) since we do not know when
   // the receiver will receive the message published by the LcmPublisherSystem.
   while (!done && count++ < kMaxCount) {
-    dut->EvalOutput(*context.get(), output.get());
+    dut->Publish(*context.get());
 
     // Gets the received message.
     const drake::lcmt_drake_signal received_message =

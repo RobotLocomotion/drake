@@ -7,14 +7,16 @@ namespace systems {
 namespace lcm {
 
 namespace {
-const int kNumInputPorts = 1;
 const int kPortIndex = 0;
 }  // namespace
 
 LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel,
-    const LcmAndVectorBaseTranslator& translator, ::lcm::LCM* lcm)
-    : channel_(channel), translator_(translator), lcm_(lcm) {}
+    const std::string& channel, const LcmAndVectorBaseTranslator& translator,
+    ::lcm::LCM* lcm)
+    : channel_(channel), translator_(translator), lcm_(lcm) {
+  DeclareInputPort(kVectorValued, translator_.get_vector_size(),
+                   kContinuousSampling);
+}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
@@ -33,7 +35,7 @@ std::string LcmPublisherSystem::get_name() const {
 std::unique_ptr<ContextBase<double>> LcmPublisherSystem::CreateDefaultContext()
     const {
   std::unique_ptr<Context<double>> context(new Context<double>());
-  context->SetNumInputPorts(kNumInputPorts);
+  context->SetNumInputPorts(get_num_input_ports());
   return std::unique_ptr<ContextBase<double>>(context.release());
 }
 
@@ -43,11 +45,7 @@ std::unique_ptr<SystemOutput<double>> LcmPublisherSystem::AllocateOutput(
   return output;
 }
 
-// TODO(liang.fok) Move the LCM message publishing logic into another method
-// that's more appropriate once it is defined by System. See:
-// https://github.com/RobotLocomotion/drake/issues/2836.
-void LcmPublisherSystem::EvalOutput(const ContextBase<double>& context,
-                                    SystemOutput<double>* output) const {
+void LcmPublisherSystem::DoPublish(const ContextBase<double>& context) const {
   // Obtains the input vector.
   const VectorBase<double>* input_vector =
       context.get_vector_input(kPortIndex);
