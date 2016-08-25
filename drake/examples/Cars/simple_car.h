@@ -82,4 +82,32 @@ class DRAKECARS_EXPORT SimpleCar1 {
   const drake::lcmt_simple_car_config_t config_;
 };
 
+/// A System2 wrapper around the System1 SimpleCar1.
+template <typename T>
+class SimpleCar : public systems::LeafSystem<T> {
+ public:
+  explicit SimpleCar(
+      const drake::lcmt_simple_car_config_t& config =
+      SimpleCar1::kDefaultConfig);
+
+ public:
+  // System<T> overrides
+  bool has_any_direct_feedthrough() const override;
+  void EvalOutput(const systems::ContextBase<T>& context,
+                  systems::SystemOutput<T>* output) const override;
+  void EvalTimeDerivatives(
+      const systems::ContextBase<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
+
+ protected:
+  // LeafSystem<T> overrides
+  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
+      const override;
+  std::unique_ptr<systems::VectorBase<T>> AllocateOutputVector(
+      const systems::SystemPortDescriptor<T>& descriptor) const override;
+
+ private:
+  const SimpleCar1 wrapped_;
+};
+
 }  // namespace drake
