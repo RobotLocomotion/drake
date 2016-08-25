@@ -31,25 +31,6 @@ namespace kuka_iiwa_arm {
 namespace {
 
 std::vector<RigidBodyConstraint*> generateDemoConstraints() {
-
-}
-
-
-int do_main(int argc, const char* argv[]) {
-
-  std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
-
-  const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
-
-  // Initializes LCM.
-  std::shared_ptr<LCM> lcm = std::make_shared<LCM>();
-
-  // Instantiates additional systems and cascades them with the rigid body
-  // system.
-  auto visualizer =
-      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,
-          iiwa_tree);
-
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).
 
@@ -110,27 +91,26 @@ int do_main(int argc, const char* argv[]) {
   constraint_array.push_back(&pc2);
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
-  IKoptions ikoptions(&tree);
-  int info[kNumTimesteps];
-  MatrixXd q_sol(tree.number_of_positions(), kNumTimesteps);
-  std::vector<std::string> infeasible_constraint;
 
-  inverseKinPointwise(&tree, kNumTimesteps, t, q0, q0, constraint_array.size(),
-                      constraint_array.data(), ikoptions, &q_sol, info,
-                      &infeasible_constraint);
-  bool info_good = true;
-  for (int i = 0; i < kNumTimesteps; i++) {
-    printf("INFO[%d] = %d ", i, info[i]);
-    if (info[i] != 1) {
-      info_good = false;
-    }
-  }
-  printf("\n");
+}
 
-  if (!info_good) {
-    std::cerr << "Solution failed, not sending." << std::endl;
-    return 1;
-  }
+
+int do_main(int argc, const char* argv[]) {
+
+  std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
+
+  const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
+
+  // Initializes LCM.
+  std::shared_ptr<LCM> lcm = std::make_shared<LCM>();
+
+  // Instantiates additional systems and cascades them with the rigid body
+  // system.
+  auto visualizer =
+      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,
+          iiwa_tree);
+
+
 
   // Now run through the plan.
   TrajectoryRunner runner(lcm, kNumTimesteps, t, q_sol);
