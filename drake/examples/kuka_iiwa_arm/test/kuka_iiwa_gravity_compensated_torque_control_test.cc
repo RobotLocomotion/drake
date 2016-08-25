@@ -70,7 +70,6 @@ VectorXd SimulateGravityCompensatedTorqueControlSystem(
 // environment with gravity, under no external forces, starting from rest, the
 // robot should remain at rest. This test verifies that the arm remains at its
 // initial position within small error bounds.
-// initial position within small error bounds.
 GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControlZeroInput) {
   // Applying Zero torque inputs.
   VectorXd input_torque_vector = VectorXd::Zero(kNumDof);
