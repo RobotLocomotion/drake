@@ -76,9 +76,13 @@ int do_main(int argc, const char* argv[]) {
   std::cout
       << "==========================================================="
       << std::endl
-      << "Number of inputs of vehicle sys: " << drake::getNumInputs(*vehicle_sys.get())
-      // << std::endl
-      // << "Number of outputs of overall sys: " << drake::getNumOutputs(*sys.get())
+      << "vehicle_sys:"
+      << std::endl
+      << "  - number of inputs: " << drake::getNumInputs(*vehicle_sys.get())
+      << std::endl
+      << "  - number of states: " << drake::getNumStates(*vehicle_sys.get())
+      << std::endl
+      << "  - number of outputs: " << drake::getNumOutputs(*vehicle_sys.get())
       << std::endl;
 
   auto visualizer =
@@ -115,9 +119,13 @@ int do_main(int argc, const char* argv[]) {
   std::cout
       << "==========================================================="
       << std::endl
-      << "Number of inputs of overall sys: " << drake::getNumInputs(*sys.get())
+      << "sys:"
+      << std::endl
+      << "  - number of inputs: " << drake::getNumInputs(*sys.get())
+      << std::endl
+      << "  - number of states: " << drake::getNumStates(*sys.get())
       // << std::endl
-      // << "Number of outputs of overall sys: " << drake::getNumOutputs(*sys.get())
+      // << "  - number of outputs: " << drake::getNumOutputs(*sys.get())
       << std::endl;
 
   // Initializes the simulation options.
