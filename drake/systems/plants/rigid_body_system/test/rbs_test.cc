@@ -5,11 +5,15 @@
 
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/common/drake_path.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_system/rigid_body_system.h"
 
+using drake::parsers::ModelInstanceIdTable;
 using drake::systems::RigidBodySystem;
 using Eigen::VectorXd;
 using std::make_unique;
+using std::move;
 using std::unique_ptr;
 
 namespace drake {
@@ -27,15 +31,17 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 
 // Tests the ability to load a URDF as part of the world of a rigid body system.
 GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
-  // Instantiates an empty rigid body system with only a "world" body.
-  auto rigid_body_sys = make_unique<RigidBodySystem<double>>();
+  // Instantiates an MBD model of the world.
+  auto mbd_world_ptr = make_unique<RigidBodyTree>();
+  ModelInstanceIdTable model_instance_id_table =
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          drake::GetDrakePath() +
+          "/systems/plants/rigid_body_system/test/world.urdf",
+          DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world_ptr.get());
 
-  // Adds a URDF to the rigid body system. This URDF contains only fixed joints
-  // and is attached to the world via a fixed joint. Thus, everything in the
-  // URDF becomes part of the world.
-  rigid_body_sys->AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() +
-      "/systems/plants/rigid_body_system/test/world.urdf", DrakeJoint::FIXED);
+  // Instantiates a RigidBodyPlant from an MBD model of the world.
+  auto rigid_body_sys =
+      make_unique<RigidBodySystem<double>>(move(mbd_world_ptr));
 
   // Verifies that the number of states, inputs, and outputs are all zero.
   EXPECT_EQ(rigid_body_sys->get_num_states(), 0);
@@ -44,8 +50,6 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
 
   // Obtains a const pointer to the underlying multibody world in the system.
   const RigidBodyTree& mbd_world = rigid_body_sys->get_multibody_world();
-
-  (void) mbd_world;
 
   // Checks that the bodies in the multibody world can be obtained by name and
   // that they have the correct model name.
@@ -60,12 +64,17 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
 class KukaArmTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    // Instantiate a rigid body system and load a Kuka arm model from a URDF
-    // file.
-    kuka_system_ = make_unique<RigidBodySystem<double>>();
-    kuka_system_->AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-        DrakeJoint::FIXED);
+
+    // Instantiates an MBD model of the world.
+    auto mbd_world = make_unique<RigidBodyTree>();
+    ModelInstanceIdTable model_instance_id_table =
+        drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+            drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+            DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
+
+    // Instantiates a RigidBodyPlant from an MBD model of the world.
+    kuka_system_ = make_unique<RigidBodySystem<double>>(move(mbd_world));
+
     // Pointer to the abstract system type used to access System<T> methods not
     // accessible to the users of RigidBodySystem<T>.
     system_ = kuka_system_.get();
@@ -95,14 +104,14 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_EQ(7, kuka_system_->get_num_generalized_positions());
   ASSERT_EQ(7, kuka_system_->get_num_generalized_velocities());
   ASSERT_EQ(14, kuka_system_->get_num_states());
-  ASSERT_EQ(7, kuka_system_->get_num_generalized_forces());
+  ASSERT_EQ(7, kuka_system_->get_num_actuators());
   ASSERT_EQ(7, kuka_system_->get_input_port(0).get_size());
 
   // Connect to a "fake" free standing input.
   //std::unique_ptr<BasicVector<double>> input_vector;
   context_->SetInputPort(0, MakeInput(
       make_unique<BasicVector<double>>(
-          kuka_system_->get_num_generalized_forces())));
+          kuka_system_->get_num_actuators())));
 
   // Tests zero configuration. Move to another test.
   {

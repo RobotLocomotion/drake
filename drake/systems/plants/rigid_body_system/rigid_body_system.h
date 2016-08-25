@@ -23,7 +23,7 @@ template<typename T>
 class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
  public:
   /// Doc.
-  RigidBodySystem();
+  RigidBodySystem(std::unique_ptr<const RigidBodyTree> mbd_world);
 
   virtual ~RigidBodySystem() override;
 
@@ -35,7 +35,7 @@ class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
 
   int get_num_states() const;
 
-  int get_num_generalized_forces() const;
+  int get_num_actuators() const;
 
   int get_num_inputs() const;
 
@@ -55,28 +55,9 @@ class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
   void ObtainZeroConfiguration(ContextBase<T>* context) const {
     VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
     x0.head(get_num_generalized_positions()) =
-        multibody_world_->getZeroConfiguration();
+        mbd_world_->getZeroConfiguration();
     context->get_mutable_xc()->SetFromVector(x0);
   }
-
-
-  /**
-   * Reads a model specification from a URDF file and adds an instance of the
-   * model into this `RigidBodySystem`'s `RigidBodyTree`.
-   *
-   * @param[in] filename The name of the file containing the URDF
-   * specification.
-   *
-   * @param[in] floating_base_type The type of joint that connects the model
-   * instance's root to this `RigidBodySystem`'s `RigidBodyTree`.
-   *
-   * @return A table mapping the names of the models whose instances were just
-   * added to the `RigidBodyTree` to their instance IDs, which are unique within
-   * the `RigidBodyTree`.
-   */
-  drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfFile(
-      const std::string& filename,
-      DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
 
  private:
   bool has_any_direct_feedthrough() const override;
@@ -91,12 +72,12 @@ class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
 
   // some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
-  T penetration_stiffness_;
-  T penetration_damping_;
-  T friction_coefficient_;
+  T penetration_stiffness_{150.0};  // An arbitrarily large number.
+  T penetration_damping_{0};
+  T friction_coefficient_{0};
 
  private:
-  std::unique_ptr<RigidBodyTree> multibody_world_;
+  std::unique_ptr<const RigidBodyTree> mbd_world_;
 };
 
 }  // namespace systems
