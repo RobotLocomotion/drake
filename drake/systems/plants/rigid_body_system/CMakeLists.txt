@@ -1,7 +1,7 @@
 set(source_files rigid_body_system.cc)
 
 add_library_with_exports(LIB_NAME drake_rbs SOURCE_FILES ${source_files})
-target_link_libraries(drake_rbs drakeRBM drakeSystemFramework)
+target_link_libraries(drake_rbs drakeSystemFramework drakeRBM drakeOptimization)
 
 drake_install_headers(rigid_body_system.h)
 pods_install_libraries(drake_rbs)

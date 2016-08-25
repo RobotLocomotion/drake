@@ -80,6 +80,7 @@ class KukaArmTest : public ::testing::Test {
 
     context_ = system_->CreateDefaultContext();
     output_ = system_->AllocateOutput(*context_);
+    derivatives_ = system_->AllocateTimeDerivatives();
   }
 
   const int kNumPositions_{7};
@@ -90,6 +91,7 @@ class KukaArmTest : public ::testing::Test {
   System<double>* system_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<ContinuousState<double>> derivatives_;
 };
 
 // Tests that the KukaArm system allocates in the context_ a continuous state
@@ -169,6 +171,44 @@ TEST_F(KukaArmTest, EvalOutput) {
   EXPECT_EQ(desired_state, output_port->get_value());
 
 }
+
+TEST_F(KukaArmTest, EvalTimeDerivatives) {
+
+  // Connect to a "fake" free standing input.
+  //std::unique_ptr<BasicVector<double>> input_vector;
+  context_->SetInputPort(0, MakeInput(
+      make_unique<BasicVector<double>>(
+          kuka_system_->get_num_actuators())));
+
+  // Zeroes the state.
+  kuka_system_->ObtainZeroConfiguration(context_.get());
+
+  // Sets the state to a non-zero value.
+  VectorXd desired_angles(kNumPositions_);
+  desired_angles << 0.5, 0.1, -0.1, 0.2, 0.3, -0.2, 0.15;
+  for (int i = 0; i < kNumPositions_; ++i) {
+    kuka_system_->set_position(context_.get(), i, desired_angles[i]);
+  }
+  VectorXd desired_state(kNumStates_);
+  desired_state << desired_angles, VectorXd::Zero(kNumVelocities_);
+  VectorXd xc = context_->get_xc().CopyToVector();
+  ASSERT_EQ(xc, desired_state);
+
+  ASSERT_EQ(1, output_->get_num_ports());
+  const BasicVector<double>* output_port =
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  ASSERT_NE(nullptr, output_port);
+
+  // This call should not assert when compiling Debug builds.
+  system_->EvalOutput(*context_, output_.get());
+
+  EXPECT_NO_THROW(system_->EvalTimeDerivatives(*context_, derivatives_.get()));
+
+  // Asserts the output equals the state.
+  EXPECT_EQ(desired_state, output_port->get_value());
+
+}
+
 
 }  // namespace
 }  // namespace test

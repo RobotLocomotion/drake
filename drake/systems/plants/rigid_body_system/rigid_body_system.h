@@ -64,8 +64,8 @@ class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
 
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 
-  //void EvalTimeDerivatives(const ContextBase<T>& context,
-  //                         ContinuousState<T>* derivatives) const override;
+  void EvalTimeDerivatives(const ContextBase<T>& context,
+                           ContinuousState<T>* derivatives) const override;
 
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override;
