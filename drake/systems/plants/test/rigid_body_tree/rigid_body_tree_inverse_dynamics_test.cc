@@ -58,7 +58,6 @@ class RigidBodyTreeInverseDynamicsTest: public ::testing::Test {
 // Robotic Manipulation" (1994). Lemma 4.2).
 // Note: property only holds true if qd = v
 TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
-
   int num_velocities = tree_rpy_->number_of_velocities();
 
   std::default_random_engine generator;
