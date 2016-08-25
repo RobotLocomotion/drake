@@ -13,6 +13,12 @@ namespace systems {
 
 /// An integrator for a continuous vector input.
 /// @tparam T The type being integrated. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+///
+/// They are already available to link against in libdrakeSystemFramework.
+/// No other values for T are currently supported.
 template <typename T>
 class Integrator : public LeafSystem<T> {
  public:
@@ -20,7 +26,6 @@ class Integrator : public LeafSystem<T> {
   explicit Integrator(int length);
   ~Integrator() override;
 
- public:
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
   void EvalOutput(const ContextBase<T>& context,
