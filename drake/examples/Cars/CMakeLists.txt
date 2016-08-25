@@ -7,7 +7,9 @@ if(lcm_FOUND)
     curve2.cc
     gen/driving_command.cc
     gen/euler_floating_joint_state.cc
+    gen/idm_with_trajectory_agent_state.cc
     gen/simple_car_state.cc
+    idm_with_trajectory_agent.cc
     simple_car.cc
     trajectory_car.cc)
   target_link_libraries(drakeCars drakeRBSystem drakeShapes drakeCommon drakeSystemFramework)
