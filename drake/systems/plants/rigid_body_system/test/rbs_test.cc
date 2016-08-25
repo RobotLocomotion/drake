@@ -40,16 +40,15 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
           DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world_ptr.get());
 
   // Instantiates a RigidBodyPlant from an MBD model of the world.
-  auto rigid_body_sys =
-      make_unique<RigidBodySystem<double>>(move(mbd_world_ptr));
+  RigidBodySystem<double> rigid_body_sys(move(mbd_world_ptr));
 
   // Verifies that the number of states, inputs, and outputs are all zero.
-  EXPECT_EQ(rigid_body_sys->get_num_states(), 0);
-  EXPECT_EQ(rigid_body_sys->get_num_inputs(), 0);
-  EXPECT_EQ(rigid_body_sys->get_num_outputs(), 0);
+  EXPECT_EQ(rigid_body_sys.get_num_states(), 0);
+  EXPECT_EQ(rigid_body_sys.get_num_inputs(), 0);
+  EXPECT_EQ(rigid_body_sys.get_num_outputs(), 0);
 
   // Obtains a const pointer to the underlying multibody world in the system.
-  const RigidBodyTree& mbd_world = rigid_body_sys->get_multibody_world();
+  const RigidBodyTree& mbd_world = rigid_body_sys.get_multibody_world();
 
   // Checks that the bodies in the multibody world can be obtained by name and
   // that they have the correct model name.
@@ -83,16 +82,47 @@ class KukaArmTest : public ::testing::Test {
     output_ = system_->AllocateOutput(*context_);
   }
 
+  const int kNumPositions_{7};
+  const int kNumVelocities_{7};
+  const int kNumStates_{kNumPositions_ + kNumVelocities_};
+
   unique_ptr<RigidBodySystem<double>> kuka_system_;
   System<double>* system_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
+// Tests that the KukaArm system allocates in the context_ a continuous state
+// of the proper size.
+TEST_F(KukaArmTest, StateHasTheRightSizes) {
+  const StateVector<double>& xc =
+      context_->get_state().continuous_state->get_generalized_position();
+  const StateVector<double>& vc =
+      context_->get_state().continuous_state->get_generalized_velocity();
+  const StateVector<double>& zc =
+      context_->get_state().continuous_state->get_misc_continuous_state();
+
+  EXPECT_EQ(7, xc.size());
+  EXPECT_EQ(7, vc.size());
+  EXPECT_EQ(0, zc.size());
+}
+
+TEST_F(KukaArmTest, ObtainZeroConfiguration) {
+  // Connect to a "fake" free standing input.
+  context_->SetInputPort(0, MakeInput(
+      make_unique<BasicVector<double>>(
+          kuka_system_->get_num_actuators())));
+
+  kuka_system_->ObtainZeroConfiguration(context_.get());
+
+  // Asserts that for this case the zero configuration corresponds to a state
+  // vector with all entries equal to zero.
+  VectorXd xc = context_->get_xc().CopyToVector();
+  ASSERT_EQ(14, xc.size());
+  ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
+}
+
 TEST_F(KukaArmTest, EvalOutput) {
-  const int kNumPositions = 7;
-  const int kNumVelocities = 7;
-  const int kNumStates = kNumPositions + kNumVelocities;
 
   // Checks that the number of input and output ports in the system and context
   // are consistent.
@@ -113,25 +143,17 @@ TEST_F(KukaArmTest, EvalOutput) {
       make_unique<BasicVector<double>>(
           kuka_system_->get_num_actuators())));
 
-  // Tests zero configuration. Move to another test.
-  {
-    kuka_system_->ObtainZeroConfiguration(context_.get());
+  // Zeroes the state.
+  kuka_system_->ObtainZeroConfiguration(context_.get());
 
-    VectorXd xc = context_->get_xc().CopyToVector();
-
-    // Asserts that for this case the zero configuration corresponds to a state
-    // vector with all entries equal to zero.
-    ASSERT_EQ(14, xc.size());
-    ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
-  }
   // Sets the state to a non-zero value.
-  VectorXd desired_angles(kNumPositions);
+  VectorXd desired_angles(kNumPositions_);
   desired_angles << 0.5, 0.1, -0.1, 0.2, 0.3, -0.2, 0.15;
-  for (int i = 0; i < kNumPositions; ++i) {
+  for (int i = 0; i < kNumPositions_; ++i) {
     kuka_system_->set_position(context_.get(), i, desired_angles[i]);
   }
-  VectorXd desired_state(kNumStates);
-  desired_state << desired_angles, VectorXd::Zero(kNumVelocities);
+  VectorXd desired_state(kNumStates_);
+  desired_state << desired_angles, VectorXd::Zero(kNumVelocities_);
   VectorXd xc = context_->get_xc().CopyToVector();
   ASSERT_EQ(xc, desired_state);
 
@@ -146,21 +168,6 @@ TEST_F(KukaArmTest, EvalOutput) {
   // Asserts the output equals the state.
   EXPECT_EQ(desired_state, output_port->get_value());
 
-}
-
-// Tests that the KukaArm system allocates in the context_ a continuous state
-// of the proper size.
-TEST_F(KukaArmTest, StateHasTheRightSizes) {
-  const StateVector<double>& xc =
-      context_->get_state().continuous_state->get_generalized_position();
-  const StateVector<double>& vc =
-      context_->get_state().continuous_state->get_generalized_velocity();
-  const StateVector<double>& zc =
-      context_->get_state().continuous_state->get_misc_continuous_state();
-
-  EXPECT_EQ(7, xc.size());
-  EXPECT_EQ(7, vc.size());
-  EXPECT_EQ(0, zc.size());
 }
 
 }  // namespace
