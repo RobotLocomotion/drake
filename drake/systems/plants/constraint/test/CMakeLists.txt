@@ -6,12 +6,15 @@ add_test(NAME direct_collocation_constraint_test
   COMMAND direct_collocation_constraint_test)
 
 add_matlab_test(NAME systems/plants/constraint/test/AllBodiesClosestDistanceConstraintTest REQUIRES lcm OPTIONAL bullet COMMAND AllBodiesClosestDistanceConstraintTest)
-add_matlab_test(NAME systems/plants/constraint/test/RelativeGazeTargetConstraintTest REQUIRES lcm OPTIONAL bullet COMMAND RelativeGazeTargetConstraintTest)
+# DISABLED due to #3149.
+# add_matlab_test(NAME systems/plants/constraint/test/RelativeGazeTargetConstraintTest REQUIRES lcm OPTIONAL bullet COMMAND RelativeGazeTargetConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/RelativePositionConstraintTest REQUIRES lcm OPTIONAL bullet COMMAND RelativePositionConstraintTest)
-add_matlab_test(NAME systems/plants/constraint/test/RelativeQuatConstraintTest REQUIRES lcm OPTIONAL bullet COMMAND RelativeQuatConstraintTest)
+# DISABLED due to #3149.
+# add_matlab_test(NAME systems/plants/constraint/test/RelativeQuatConstraintTest REQUIRES lcm OPTIONAL bullet COMMAND RelativeQuatConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/WorldPositionInFrameConstraintTest REQUIRES lcm OPTIONAL bullet COMMAND WorldPositionInFrameConstraintTest)
 add_matlab_test(NAME systems/plants/constraint/test/testMultipleTimeLinearPostureConstraint OPTIONAL bullet COMMAND testMultipleTimeLinearPostureConstraint)
-add_matlab_test(NAME systems/plants/constraint/test/testPostureConstraint OPTIONAL bullet COMMAND testPostureConstraint)
+# DISABLED due to #3149.
+# add_matlab_test(NAME systems/plants/constraint/test/testPostureConstraint OPTIONAL bullet COMMAND testPostureConstraint)
 add_matlab_test(NAME systems/plants/constraint/test/testQuasiStaticConstraint OPTIONAL bullet COMMAND testQuasiStaticConstraint)
 add_matlab_test(NAME systems/plants/constraint/test/testSingleTimeLinearPostureConstraint OPTIONAL bullet COMMAND testSingleTimeLinearPostureConstraint)
 

@@ -122,9 +122,9 @@ add_executable(drake_deprecated_test drake_deprecated_test.cc)
 target_link_libraries(drake_deprecated_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # Remove spurious warnings from the default build output.
-  set_target_properties(
+  target_compile_options(
     drake_deprecated_test
-    PROPERTIES COMPILE_FLAGS "-Wno-deprecated-declarations")
+    PRIVATE -Wno-deprecated-declarations)
 endif()
 add_test(NAME drake_deprecated_test COMMAND drake_deprecated_test)
 
@@ -143,9 +143,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   set_target_properties(
     drake_deprecated_test_nocompile
     PROPERTIES EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
-  set_target_properties(
+  target_compile_options(
     drake_deprecated_test_nocompile
-    PROPERTIES COMPILE_FLAGS "-Werror=deprecated-declarations")
+    PRIVATE -Werror=deprecated-declarations)
   add_test(NAME
     drake_deprecated_test_nocompile
     COMMAND ${CMAKE_COMMAND} --build . --target

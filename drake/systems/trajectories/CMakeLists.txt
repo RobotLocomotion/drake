@@ -30,9 +30,8 @@ if(BLAS_LIBRARY AND snopt_c_FOUND AND bullet_FOUND AND MATLAB_FOUND)
   target_link_libraries(ptToPolyBullet_mex drakeMexUtil)
 
   # These warnings are not worth fixing.
-  set_target_properties(
-    replanFunnels_mex shiftFunnel_snopt_mex 
-    PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_ERROR_SHADOW})
+  target_compile_options(replanFunnels_mex PRIVATE ${CXX_FLAGS_NO_ERROR_SHADOW})
+  target_compile_options(shiftFunnel_snopt_mex PRIVATE ${CXX_FLAGS_NO_ERROR_SHADOW})
 endif()
 
 add_subdirectory(test)

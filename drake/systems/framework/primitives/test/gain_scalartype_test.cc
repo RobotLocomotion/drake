@@ -23,10 +23,10 @@ namespace {
 
 // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
 // the input of the Gain system.
-template<class T>
-std::unique_ptr<FreestandingInputPort<T>> MakeInput(
+template <class T>
+std::unique_ptr<FreestandingInputPort> MakeInput(
     std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort<T>>(std::move(data));
+  return make_unique<FreestandingInputPort>(std::move(data));
 }
 
 // Tests the ability to take derivatives of the output with respect to some
@@ -46,8 +46,7 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   // does not necessarily need to be the same as the size of the derivatives
   // vectors and, for this unit test, they are not equal.
   const double kGain = 2.0;
-  std::unique_ptr<System<T>> gain = make_unique<Gain<T>>(
-      kGain /* gain */, 3 /* length */);
+  auto gain = make_unique<Gain<T>>(kGain /* gain */, 3 /* length */);
   auto context = gain->CreateDefaultContext();
   auto output = gain->AllocateOutput(*context);
   auto input = make_unique<BasicVector<T>>(3 /* length */);
@@ -69,8 +68,8 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
 
   ASSERT_EQ(1, output->get_num_ports());
   const auto& output_vector =
-      dynamic_cast<const BasicVector<T> *>(
-          output->get_port(0).get_vector_data())->get_value();
+      dynamic_cast<const BasicVector<T>*>(output->get_vector_data(0))
+          ->get_value();
 
   // The expected output value is the gain times the input vector.
   VectorX<T> expected = kGain * input_vector;
