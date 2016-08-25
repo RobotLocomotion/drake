@@ -2361,8 +2361,16 @@ RigidBodyTree::relativeTwist<double>(KinematicsCache<double> const&, int, int,
                                      int) const;
 
 // Explicit template instantiations for worldMomentumMatrix.
+template DRAKERBM_EXPORT TwistMatrix<AutoDiffUpTo73d>
+RigidBodyTree::worldMomentumMatrix<
+    AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d> &,
+                     set<int, less<int>, allocator<int>> const &, bool) const;
+template DRAKERBM_EXPORT TwistMatrix<AutoDiffXd>
+RigidBodyTree::worldMomentumMatrix<
+    AutoDiffXd>(KinematicsCache<AutoDiffXd> &,
+                set<int, less<int>, allocator<int>> const &, bool) const;
 template DRAKERBM_EXPORT TwistMatrix<double> RigidBodyTree::worldMomentumMatrix<
-    double>(KinematicsCache<double>&,
+    double>(KinematicsCache<double> &,
             set<int, less<int>, allocator<int>> const&, bool) const;
 
 // Explicit template instantiations for worldMomentumMatrixDotTimesV.
