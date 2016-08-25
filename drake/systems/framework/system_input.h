@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "drake/drakeSystemFramework_export.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -36,7 +36,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
   ///
   /// @tparam T The type of the input port. Must be a valid Eigen scalar.
   template <typename T>
-  const VectorBase<T>* get_vector_data() const {
+  const BasicVector<T>* get_vector_data() const {
     return get_output_port()->get_vector_data<T>();
   }
 
@@ -100,7 +100,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT FreestandingInputPort : public InputPort {
   /// Takes ownership of @p vec.
   ///
   /// @tparam T The type of the vector data. Must be a valid Eigen scalar.
-  /// @tparam V The type of @p vec itself. Must implement VectorBase<T>.
+  /// @tparam V The type of @p vec itself. Must implement BasicVector<T>.
   template <template <typename T> class V, typename T>
   explicit FreestandingInputPort(std::unique_ptr<V<T>> vec)
       : output_port_(std::move(vec)) {
@@ -148,7 +148,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT FreestandingInputPort : public InputPort {
   ///
   /// @tparam T The type of the input port. Must be a valid Eigen scalar.
   template <typename T>
-  VectorBase<T>* GetMutableVectorData() {
+  BasicVector<T>* GetMutableVectorData() {
     return output_port_.GetMutableVectorData<T>();
   }
 

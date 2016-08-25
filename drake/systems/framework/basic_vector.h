@@ -1,9 +1,10 @@
 #pragma once
 
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
+#include <memory>
 #include <stdexcept>
-#include <vector>
 
 #include "drake/systems/framework/vector_base.h"
 
@@ -28,10 +29,16 @@ class BasicVector : public VectorBase<T> {
                       typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
 
   /// Constructs a BasicVector with the specified @p data.
-  explicit BasicVector(const std::vector<T>& data) : BasicVector(data.size()) {
-    for (size_t i = 0; i < data.size(); ++i) {
-      values_[i] = data[i];
+  explicit BasicVector(const VectorX<T>& data) : values_(data) {}
+
+  static std::unique_ptr<BasicVector<T>> Make(
+      const std::initializer_list<T>& data) {
+    auto vec = std::make_unique<BasicVector<T>>(data.size());
+    int i = 0;
+    for (const T& datum : data) {
+      vec->SetAtIndex(i++, datum);
     }
+    return vec;
   }
 
   void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
@@ -53,24 +60,74 @@ class BasicVector : public VectorBase<T> {
     return values_.head(values_.rows());
   }
 
-  /// Copies the entire state to a new BasicVector.
+  const T GetAtIndex(int index) const override {
+    if (index >= size()) {
+      throw std::out_of_range("Index " + std::to_string(index) +
+                              " out of bounds for state vector of size " +
+                              std::to_string(size()));
+    }
+    return values_[index];
+  }
+
+  void SetAtIndex(int index, const T& value) override {
+    if (index >= size()) {
+      throw std::out_of_range("Index " + std::to_string(index) +
+                              " out of bounds for state vector of size " +
+                              std::to_string(size()));
+    }
+    values_[index] = value;
+  }
+
+  void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) override {
+    set_value(value);
+  }
+
+  VectorX<T> CopyToVector() const override { return values_; }
+
+  void ScaleAndAddToVector(const T& scale,
+                           Eigen::Ref<VectorX<T>> vec) const override {
+    if (vec.rows() != size()) {
+      throw std::out_of_range("Addends must be the same length.");
+    }
+    vec += scale * values_;
+  }
+
+  BasicVector& PlusEqScaled(const T& scale,
+                            const StateVector<T>& rhs) override {
+    rhs.ScaleAndAddToVector(scale, values_);
+    return *this;
+  }
+
+  /// Copies the entire vector to a new BasicVector, with the same concrete
+  /// implementation type.
   ///
   /// Uses the Non-Virtual Interface idiom because smart pointers do not have
   /// type covariance.
-  std::unique_ptr<VectorBase<T>> CloneVector() const final {
-    return std::unique_ptr<VectorBase<T>>(DoClone());
+  std::unique_ptr<BasicVector<T>> Clone() const {
+    return std::unique_ptr<BasicVector<T>>(DoClone());
+  }
+
+  // Assignment of BasicVectors could change size, so we forbid it.
+  BasicVector& operator=(const BasicVector& other) = delete;
+
+  // BasicVector objects are not moveable.
+  BasicVector(BasicVector&& other) = delete;
+  BasicVector& operator=(BasicVector&& other) = delete;
+
+ protected:
+  explicit BasicVector(const BasicVector& other)
+      : values_(other.values_) {}
+
+  /// Returns a new BasicVector containing a copy of the entire vector.
+  /// Caller must take ownership.
+  ///
+  /// Subclasses of BasicVector must override DoClone to return their covariant
+  /// type.
+  virtual BasicVector<T>* DoClone() const {
+    return new BasicVector<T>(*this);
   }
 
  private:
-  // Returns a new BasicStateVector containing a copy of the entire state.
-  // Subclasses of BasicVector must override DoClone to return their covariant
-  // type.
-  virtual BasicVector<T>* DoClone() const {
-    BasicVector* clone = new BasicVector(size());
-    clone->values_ = values_;
-    return clone;
-  }
-
   // The column vector of T values.
   VectorX<T> values_;
 };

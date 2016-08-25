@@ -99,15 +99,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
     double external_force = 0;
     DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
     if (system_is_forced_) {
-      const VectorBase<double>* input =
-          context.get_vector_input(0);
-      // TODO(amcastro-tri): Add VectorBase::component(int idx) on
-      // VectorBase.
-      // refactor get_vector_input --> get_input_vector?
-      // So that the line below would simply read:
-      // external_force = context.get_input_vector(0).component(0)
-      // and becomes a one liner.
-      external_force = input->get_value().x();
+      external_force = context.get_vector_input(0)->GetAtIndex(0);
     }
     return external_force;
   }
