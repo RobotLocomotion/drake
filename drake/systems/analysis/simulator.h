@@ -179,11 +179,11 @@ class Simulator {
 
   /** How many integration steps have been taken since the last Initialize()
   call? **/
-  long long get_num_steps_taken() const { return num_steps_taken_; }
+  int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
   /** How many discrete sample events have been processed since the last
   Initialize() call? **/
-  long long get_num_discrete_samples() const { return num_discrete_samples_; }
+  int64_t get_num_discrete_samples() const { return num_discrete_samples_; }
   /**@}**/
 
  private:
@@ -221,8 +221,8 @@ class Simulator {
   T actual_initial_step_size_taken_{kNaN};
   T smallest_step_size_taken_{kNaN};
   T largest_step_size_taken_{kNaN};
-  long long num_steps_taken_{0};
-  long long num_discrete_samples_{0};
+  int64_t num_steps_taken_{0};
+  int64_t num_discrete_samples_{0};
 };
 
 // No need for user code to instantiate these; they are in the library.

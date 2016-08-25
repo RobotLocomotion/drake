@@ -21,9 +21,9 @@ namespace systems {
 struct SampleActions {
   /// When the next discrete action is required.
   double time{std::numeric_limits<double>::quiet_NaN()};
-  // TODO(sherm1) Record (subsystem,eventlist) pairs indicating what is 
-  // supposed to happen at that time and providing O(1) access to the 
-  // appropriate update/sampler/event handler method. 
+  // TODO(sherm1) Record (subsystem,eventlist) pairs indicating what is
+  // supposed to happen at that time and providing O(1) access to the
+  // appropriate update/sampler/event handler method.
 };
 
 /// A superclass template for systems that receive input, maintain state, and
@@ -168,25 +168,25 @@ class System {
   }
 
   /// This method is called to perform discrete updates to the Context, with
-  /// the particular actions to take supplied in `actions`. 
+  /// the particular actions to take supplied in `actions`.
   void Update(ContextBase<T>* context, const SampleActions& actions) const {
-      // TODO(sherm1) Validate context (at least in Debug).
-      DoUpdate(context, actions);
+    // TODO(sherm1) Validate context (at least in Debug).
+    DoUpdate(context, actions);
   }
 
   /// This method is called by a Simulator during its calculation of the size of
   /// the next continuous step to attempt. The System returns the next time at
   /// which some discrete action must be taken, and records what those actions
   /// ought to be in the given SampleActions object, which must not be null.
-  /// Upon reaching that time, the Simulator invokes either a publication 
+  /// Upon reaching that time, the Simulator invokes either a publication
   /// action (with a const Context) or an update action (with a mutable
   /// Context). The SampleAction object is retained and returned to the System
   /// when it is time to take the action.
   double CalcNextSampleTime(const ContextBase<T>& context,
                             SampleActions* actions) const {
-      // TODO(sherm1) Validate context (at least in Debug).
-      DRAKE_ASSERT(actions != nullptr);
-      return DoCalcNextSampleTime(context, actions);
+    // TODO(sherm1) Validate context (at least in Debug).
+    DRAKE_ASSERT(actions != nullptr);
+    return DoCalcNextSampleTime(context, actions);
   }
 
   /// Computes the output for the given context, possibly updating values
