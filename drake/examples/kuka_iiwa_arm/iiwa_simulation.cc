@@ -50,7 +50,7 @@ std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
     CreateKukaIiwaVisualizer(
     const std::shared_ptr<drake::RigidBodySystem> iiwa_system) {
 
-  // Extract the tree.
+  // Extracts the tree.
   const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
 
   // Initializes LCM.
@@ -65,12 +65,12 @@ std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
 }
 
 DRAKEKUKAIIWAARM_EXPORT
-Eigen::VectorXd ArbitraryIiwaInitialState() {
-  const int state_dimension = 14;
-  const int num_dof = 7;  // Fixed for the IIWA Arm.
+Eigen::VectorXd GenerateArbitraryIiwaInitialState() {
+  const int kStateDimension = 14;
+  const int kNumDof = 7;  // Fixed for the IIWA Arm.
   Eigen::VectorXd arbitrary_initial_state =
-      Eigen::VectorXd::Zero(state_dimension,1);
-  arbitrary_initial_state.head(num_dof) << 0.01, -0.01, 0.01, 0.5,
+      Eigen::VectorXd::Zero(kStateDimension, 1);
+  arbitrary_initial_state.head(kNumDof) << 0.01, -0.01, 0.01, 0.5,
   0.01, -0.01, 0.01;
   return(arbitrary_initial_state);
 }

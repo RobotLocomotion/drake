@@ -86,7 +86,7 @@ class GravityCompensatedSystem {
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
 
-    // The generalised gravity effort is computed by calling inverse dynamics
+    // The generalized gravity effort is computed by calling inverse dynamics
     // with 0 external forces, 0 velocities and 0 accelerations.
     // TODO(naveenoid): Update to use simpler API once issue #3114 is
     // resolved.
