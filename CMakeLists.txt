@@ -33,6 +33,7 @@ else()
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_NLOPT "nonlinear optimization solver" ON)
+  option(WITH_DREAL "nonlinear SMT solver" ON)
   option(WITH_MOSEK "convex optimization solver; free for academics" OFF)
   # IPOPT is currently disabled on Mac due to MATLAB compatibility
   # issues: https://github.com/RobotLocomotion/drake/issues/2578
@@ -167,6 +168,11 @@ drake_add_external(nlopt PUBLIC
     --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt
   INSTALL_COMMAND ${MAKE_COMMAND} install)
 
+# dreal
+drake_add_external(dreal PUBLIC CMAKE
+  CMAKE_ARGS -DUSE_NLOPT=OFF
+  SOURCE_SUBDIR src)
+
 # textbook
 drake_add_external(textbook PUBLIC
   REQUIRES PythonInterp
@@ -250,6 +256,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     -DWITH_BERTINI:BOOL=${WITH_BERTINI}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
+    -DWITH_DREAL:BOOL=${WITH_DREAL}
     -DWITH_GLOPTIPOLY:BOOL=${WITH_GLOPTIPOLY}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
