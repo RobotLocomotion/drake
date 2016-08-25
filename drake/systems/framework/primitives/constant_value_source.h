@@ -19,6 +19,7 @@ namespace systems {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
+///
 /// They are already available to link against in libdrakeSystemFramework.
 template <typename T>
 class ConstantValueSource : public LeafSystem<T> {

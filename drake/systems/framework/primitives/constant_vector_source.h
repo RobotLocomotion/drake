@@ -16,6 +16,7 @@ namespace systems {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
+///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
 template <typename T>
