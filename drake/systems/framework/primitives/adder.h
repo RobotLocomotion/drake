@@ -14,6 +14,11 @@ namespace systems {
 
 /// An adder for arbitrarily many inputs of equal length.
 /// @tparam T The type of mathematical object being added.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// They are already available to link against in libdrakeSystemFramework.
+/// No other values for T are currently supported.
 template <typename T>
 class Adder : public LeafSystem<T> {
  public:
@@ -22,7 +27,7 @@ class Adder : public LeafSystem<T> {
   Adder(int num_inputs, int length);
 
   /// All inputs to this system are directly fed through to its output.
-  bool has_any_direct_feedthrough() const override { return true;}
+  bool has_any_direct_feedthrough() const override { return true; }
 
   /// Sums the input ports into the output port. If the input ports are not
   /// of number num_inputs_ or size length_, std::runtime_error will be thrown.
