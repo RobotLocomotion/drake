@@ -20,7 +20,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-// TODO(naveenoid) : Combine common components with
+// TODO(naveenoid) : Combine common code with
 // run_kuka_iiwa_gravity_compensated_position_control into a class
 // with a common method.
 
@@ -33,7 +33,7 @@ int DoMain(int argc, char* argv[]) {
   // Searches through the command line looking for a "--duration" flag followed
   // by a floating point number that specifies a custom duration, and a
   // "--magnitude" flag followed by a floating point number that specifies the
-  // custom magnitude of the excitation applied to the 5th joint along the
+  // custom magnitude of the torque applied to the 5th joint along the
   // chain.
   for (int i = 1; i < argc; ++i) {
     if (std::string(argv[i]) == "--duration") {

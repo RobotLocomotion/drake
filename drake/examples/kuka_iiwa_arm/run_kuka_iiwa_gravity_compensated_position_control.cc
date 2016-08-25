@@ -19,7 +19,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-// TODO(naveenoid) : Combine common components with
+// TODO(naveenoid) : Combine common code with
 // run_kuka_iiwa_gravity_compensated_torque_control into a class
 // with a common method.
 
