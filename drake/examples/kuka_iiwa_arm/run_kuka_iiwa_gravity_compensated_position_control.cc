@@ -1,3 +1,5 @@
+#include <gflags/gflags.h>
+
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/systems/LCMSystem.h"
@@ -19,6 +21,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+DEFINE_double(duration, 0.75, "Simulation duration");
+
 // TODO(naveenoid) : Combine common code with
 // run_kuka_iiwa_gravity_compensated_torque_control into a class
 // with a common method.
@@ -28,18 +32,8 @@ int DoMain(int argc, char* argv[]) {
 
   double kDuration = 0.75;
 
-  // Searches through the command line looking for a "--duration" flag followed
-  // by a floating point number that specifies a custom duration.
-  for (int i = 1; i < argc; ++i) {
-    if (std::string(argv[i]) == "--duration") {
-      if (++i == argc) {
-        throw std::runtime_error(
-            "ERROR: Command line option \"--duration\" is not followed by a "
-            "value!");
-      }
-      kDuration = atof(argv[i]);
-    }
-  }
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  kDuration = FLAGS_duration;
 
   const int kNumDof = 7;
 
