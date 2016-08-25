@@ -18,10 +18,10 @@ const int kLength = 9;
 class StateSupervectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    vec1_.reset(new BasicStateVector<int>({0, 1, 2, 3}));
-    vec2_.reset(new BasicStateVector<int>({4, 5}));
-    vec3_.reset(new BasicStateVector<int>({}));
-    vec4_.reset(new BasicStateVector<int>({6, 7, 8}));
+    vec1_ = BasicStateVector<int>::Make({0, 1, 2, 3});
+    vec2_ = BasicStateVector<int>::Make({4, 5});
+    vec3_ = BasicStateVector<int>::Make({});
+    vec4_ = BasicStateVector<int>::Make({6, 7, 8});
     supervector_ = std::make_unique<StateSupervector<int>>(
         std::vector<StateVector<int>*>{vec1_.get(), vec2_.get(),
                                        vec3_.get(), vec4_.get()});

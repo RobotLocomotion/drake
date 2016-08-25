@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/vector_base.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace systems {
@@ -14,6 +14,8 @@ namespace systems {
 /// StateVector is an abstract base class template for vector quantities within
 /// the state of a System.  Both composite Systems (Diagrams) and leaf Systems
 /// have state that satisfies StateVector.
+///
+/// TODO(david-german-tri): Collapse StateVector into VectorBase.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>

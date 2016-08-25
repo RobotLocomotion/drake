@@ -46,14 +46,12 @@ GTEST_TEST(BasicStateAndOutputVectorTest, Constructors) {
   EXPECT_EQ(kLength, by_size.size());
   EXPECT_EQ(0, by_size.get_value()(1));
 
-  BasicStateAndOutputVector<int> by_vector(std::vector<int>(kLength, 0));
-  EXPECT_EQ(kLength, by_vector.size());
-  EXPECT_EQ(0, by_vector.get_value()(1));
-
-  BasicStateAndOutputVector<int> by_interface(
-      std::make_unique<BasicVector<int>>(kLength));
-  EXPECT_EQ(kLength, by_interface.size());
-  EXPECT_EQ(0, by_interface.get_value()(1));
+  VectorX<int> source_vector(2);
+  source_vector << 512, 1024;
+  BasicStateAndOutputVector<int> by_eigen(source_vector);
+  EXPECT_EQ(2, by_eigen.size());
+  EXPECT_EQ(512, by_eigen.get_value()(0));
+  EXPECT_EQ(1024, by_eigen.get_value()(1));
 }
 
 // Confirm that setting and getting are the same, no matter the API.
@@ -76,7 +74,7 @@ GTEST_TEST(BasicStateAndOutputVectorTest, CloneState) {
   BasicStateAndOutputVector<int> dut(kLength);
   dut.SetFromVector((Eigen::VectorXi(kLength) << 10, 11).finished());
 
-  std::unique_ptr<LeafStateVector<int>> clone = dut.Clone();
+  std::unique_ptr<BasicVector<int>> clone = dut.Clone();
   BasicStateAndOutputVector<int>* typed_clone =
       dynamic_cast<BasicStateAndOutputVector<int>*>(clone.get());
   ASSERT_NE(nullptr, typed_clone);
@@ -90,7 +88,7 @@ GTEST_TEST(BasicStateAndOutputVectorTest, CloneVector) {
   BasicStateAndOutputVector<int> dut(kLength);
   dut.set_value((Eigen::VectorXi(kLength) << 10, 11).finished());
 
-  std::unique_ptr<VectorBase<int>> clone = dut.CloneVector();
+  std::unique_ptr<BasicVector<int>> clone = dut.Clone();
   BasicStateAndOutputVector<int>* typed_clone =
       dynamic_cast<BasicStateAndOutputVector<int>*>(clone.get());
   ASSERT_NE(nullptr, typed_clone);
