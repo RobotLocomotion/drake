@@ -247,26 +247,44 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
     -DWITH_AVL:BOOL=${WITH_AVL}
+    -DWITH_BERTINI:BOOL=${WITH_BERTINI}
+    -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
+    -DWITH_GLOPTIPOLY:BOOL=${WITH_GLOPTIPOLY}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
+    -DWITH_GUROBI:BOOL=${WITH_GUROBI}
+    -DWITH_IPOPT:BOOL=${WITH_IPOPT}
+    -DWITH_IRIS:BOOL=${WITH_IRIS}
+    -DWITH_LCM:BOOL=${WITH_LCM}
+    -DWITH_MOSEK:BOOL=${WITH_MOSEK}
+    -DWITH_NLOPT:BOOL=${WITH_NLOPT}
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
+    -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
+    -DWITH_SNOPT:BOOL=${WITH_SNOPT}
+    -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
+    -DWITH_XFOIL:BOOL=${WITH_XFOIL}
+    -DWITH_YALMIP:BOOL=${WITH_YALMIP}
   DEPENDS
+    avl
     bertini
     bot_core_lcmtypes
     bullet
     cmake
     director
+    dreal
     eigen
     gflags
-    gloptipoly3
+    gloptipoly
     google_styleguide
     googletest
+    gtk
     gurobi
     ipopt
     iris
     lcm
     libbot
+    meshconverters
     mosek
     nlopt
     octomap
