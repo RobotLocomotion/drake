@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 
-#include "drake/examples/spring_mass/spring_mass_system.h"
+#include "drake/systems/framework/examples/spring_mass_system.h"
 
 #include "gtest/gtest.h"
 
@@ -15,8 +15,6 @@ using std::endl;
 namespace drake {
 namespace systems {
 namespace {
-
-using examples::SpringMassSystem;
 
 class MySpringMassSystem : public SpringMassSystem {
  public:
