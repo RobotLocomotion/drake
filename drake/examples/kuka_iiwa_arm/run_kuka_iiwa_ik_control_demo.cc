@@ -2,6 +2,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
+#include "drake/examples/kuka_iiwa_arm/iiwa_ik_trajectory_generator.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/polynomial.h"
