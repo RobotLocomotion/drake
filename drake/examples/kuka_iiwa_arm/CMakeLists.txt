@@ -49,6 +49,12 @@ if(lcm_FOUND)
           drakeRBSystem
           drakeLCMSystem
           gflags)
+
+  add_executable(run_kuka_ik_control_demo run_kuka_ik_control_demo.cc)
+  target_link_libraries(run_kuka_ik_control_demo drakeIK
+          drakeTrajectories
+          drakeRBM
+          drakeLCMSystem)
 endif()
 
 add_subdirectory(test)
