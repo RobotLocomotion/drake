@@ -29,7 +29,8 @@ DRAKEKUKAIIWAARM_EXPORT
 std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
 
 /**
- * Generates a Bot Visualizer.
+ * Creates a Bot Visualizer that can be cascaded with @p iiwa_system and
+ * publishes LCM visualization messages using @p lcm.
  */
 DRAKEKUKAIIWAARM_EXPORT
 std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>

@@ -69,7 +69,7 @@ Eigen::VectorXd GenerateArbitraryIiwaInitialState() {
   Eigen::VectorXd arbitrary_initial_state =
       Eigen::VectorXd::Zero(kStateDimension, 1);
   arbitrary_initial_state.head(kNumDof) << 0.01, -0.01, 0.01, 0.5,
-    0.01, -0.01, 0.01;
+      0.01, -0.01, 0.01;
   return(arbitrary_initial_state);
 }
 
