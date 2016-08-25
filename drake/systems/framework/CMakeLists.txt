@@ -9,6 +9,7 @@ set(sources
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
+  examples/spring_mass_system.cc
   leaf_system.cc
   primitives/adder.cc
   primitives/constant_value_source.cc
@@ -75,5 +76,6 @@ pods_install_pkg_config_file(drake-system-framework
   REQUIRES
   VERSION 0.0.1)
 
+add_subdirectory(examples)
 add_subdirectory(primitives)
 add_subdirectory(test)

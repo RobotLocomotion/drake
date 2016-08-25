@@ -4,7 +4,7 @@
 #pragma warning(disable : 4800 4275)
 #endif
 
-#include "drake/examples/spring_mass/spring_mass_system.h"
+#include "drake/systems/framework/examples/spring_mass_system.h"
 
 #include <memory>
 
@@ -26,21 +26,7 @@ using std::make_unique;
 using std::unique_ptr;
 
 namespace drake {
-
-using systems::BasicVector;
-using systems::BasicStateVector;
-using systems::Context;
-using systems::ContextBase;
-using systems::ContinuousState;
-using systems::FreestandingInputPort;
-using systems::LeafStateVector;
-using systems::StateSubvector;
-using systems::StateVector;
-using systems::System;
-using systems::SystemOutput;
-using systems::VectorBase;
-
-namespace examples {
+namespace systems {
 namespace {
 
 const double kSpring = 300.0;  // N/m
@@ -529,5 +515,5 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
 }
 
 }  // namespace
-}  // namespace examples
+}  // namespace systems
 }  // namespace drake
