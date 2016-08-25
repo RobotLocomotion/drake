@@ -1,18 +1,7 @@
-#include "drake/examples/spring_mass/spring_mass_system.h"
+#include "drake/systems/framework/examples/spring_mass_system.h"
 
 namespace drake {
-
-using systems::ContextBase;
-using systems::BasicVector;
-using systems::Context;
-using systems::ContinuousState;
-using systems::LeafSystemOutput;
-using systems::OutputPort;
-using systems::StateVector;
-using systems::SystemOutput;
-using systems::VectorBase;
-
-namespace examples {
+namespace systems {
 
 namespace {
 constexpr int kStateSize = 3;  // position, velocity, power integral
@@ -155,5 +144,5 @@ void SpringMassSystem::EvalTimeDerivatives(
   derivative_vector->set_conservative_work(EvalConservativePower(context));
 }
 
-}  // namespace examples
+}  // namespace systems
 }  // namespace drake

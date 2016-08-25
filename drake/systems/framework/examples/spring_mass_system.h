@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include "drake/drakeSpringMassSystem_export.h"
+#include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_state_and_output_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/state_vector.h"
@@ -11,12 +11,12 @@
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
 
 /// The state of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters and meters/s.
-class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
-    : public systems::BasicStateAndOutputVector<double> {
+class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
+    : public BasicStateAndOutputVector<double> {
  public:
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
@@ -55,8 +55,8 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassStateVector
 /// @endverbatim
 ///
 /// Units are MKS (meters-kilograms-seconds).
-class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
-    : public systems::System<double> {
+class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
+    : public System<double> {
  public:
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
@@ -69,9 +69,9 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
                    bool system_is_forced = false);
 
-  using MyContext = systems::ContextBase<double>;
-  using MyContinuousState = systems::ContinuousState<double>;
-  using MyOutput = systems::SystemOutput<double>;
+  using MyContext = ContextBase<double>;
+  using MyContinuousState = ContinuousState<double>;
+  using MyOutput = SystemOutput<double>;
 
   /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }
@@ -99,7 +99,7 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
     double external_force = 0;
     DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
     if (system_is_forced_) {
-      const systems::VectorBase<double>* input =
+      const VectorBase<double>* input =
           context.get_vector_input(0);
       // TODO(amcastro-tri): Add VectorBase::component(int idx) on
       // VectorBase.
@@ -242,5 +242,5 @@ class DRAKESPRINGMASSSYSTEM_EXPORT SpringMassSystem
   const bool system_is_forced_{false};
 };
 
-}  // namespace examples
+}  // namespace systems
 }  // namespace drake
