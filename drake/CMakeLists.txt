@@ -160,6 +160,7 @@ endif()
 # note: default working directory is CMAKE_CURRENT_SOURCE_DIR
 # note: properties are set internally using set_tests_properties (<testname> PROPERTIES <prop1> <value1> ...)
 # note: packages in REQUIRES must write a file addpath_<package>.m to CMAKE_INSTALL_PREFIX/matlab
+# or define WITH_<package> or <package>_FOUND.
 function(add_matlab_test)
   # no matlab no tests
   if(NOT MATLAB_FOUND)
@@ -172,7 +173,7 @@ function(add_matlab_test)
   if(parsed_args_REQUIRES)
     foreach(require ${parsed_args_REQUIRES})
       string(TOUPPER ${require} requireUpper)
-      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m" AND NOT ${require}_FOUND AND NOT WITH_${requireUpper})
+      if(NOT WITH_${requireUpper} AND NOT ${require}_FOUND AND NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m")
         message(STATUS "Not running ${parsed_args_NAME} because ${require} was not installed.")
         return()
       endif()
