@@ -4,7 +4,7 @@
 #include "drake/examples/Cars/gen/driving_command.h"
 #include "drake/ros/parameter_server.h"
 #include "drake/ros/systems/ros_tf_publisher.h"
-#include "drake/ros/systems/ros_vehicle_system.h"
+#include "drake/ros/systems/ros_multi_vehicle_system.h"
 #include "drake/ros/systems/ros_sensor_publisher_joint_state.h"
 #include "drake/ros/systems/ros_sensor_publisher_lidar.h"
 #include "drake/ros/systems/ros_sensor_publisher_odometry.h"
@@ -29,7 +29,7 @@ namespace cars {
 namespace {
 
 using drake::examples::cars::CreateRigidBodySystem;
-using drake::examples::cars::CreateVehicleSystem;
+using drake::examples::cars::CreateMultiVehicleSystem;
 using drake::examples::cars::GetCarSimulationDefaultOptions;
 
 using drake::parsers::ModelInstanceIdTable;
@@ -176,6 +176,11 @@ int DoMain(int argc, const char* argv[]) {
     model_instance_name_table[model_instance_id] = model_instance_name;
   }
 
+  // Creates a copy of the model_instance_name_table that only contains vehicle
+  // models. This is used during the construction of the vehicle system.
+  std::map<int, std::string> vehicle_model_instance_name_table =
+      model_instance_name_table;
+
   // Obtains and adds the world model to the RigidBodyTree. Then stores its
   // model instance ID and name in model_instance_name_table.
   std::string world_description = GetROSParameter<std::string>(node_handle,
@@ -195,14 +200,6 @@ int DoMain(int argc, const char* argv[]) {
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
-  for (const auto& actuator : tree->actuators) {
-    std::cout << "Actuator: " << std::endl
-              << "  - actuator name: " << actuator.name_ << std::endl
-              << "  - model name: " << actuator.body_->get_model_name() << std::endl
-              << "  - model instance id: " << actuator.body_->get_model_instance_id()
-              << std::endl;
-  }
-
   // Initializes and cascades all of the other systems.
   // There are five vehicles each with the following three actuators:
   //
@@ -211,16 +208,8 @@ int DoMain(int argc, const char* argv[]) {
   //   3. steering
   //
   // Thus, there is a total of 3 * 5 = 15 actuators.
-  auto vehicle_sys = CreateVehicleSystem(rigid_body_sys,
-      &model_instance_name_table);
-
-  std::cout
-      << "==========================================================="
-      << std::endl
-      << "Number of inputs of vehicle sys: " << drake::getNumInputs(*vehicle_sys.get())
-      // << std::endl
-      // << "Number of outputs of overall sys: " << drake::getNumOutputs(*sys.get())
-      << std::endl;
+  auto vehicle_sys = CreateMultiVehicleSystem(rigid_body_sys,
+      &vehicle_model_instance_name_table);
 
   // auto visualizer =
   //   std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
@@ -252,14 +241,6 @@ int DoMain(int argc, const char* argv[]) {
           lidar_publisher),
         odometry_publisher);
 
-  std::cout
-      << "==========================================================="
-      << std::endl
-      << "Number of inputs of overall sys: " << drake::getNumInputs(*sys.get())
-      // << std::endl
-      // << "Number of outputs of overall sys: " << drake::getNumOutputs(*sys.get())
-      << std::endl;
-
   // auto sys =
   //     cascade(
   //         cascade(
@@ -289,8 +270,8 @@ int DoMain(int argc, const char* argv[]) {
   drake::examples::cars::SetRigidBodySystemParameters(rigid_body_sys.get());
 
   // Starts the main simulation loop.
-  run_ros_vehicle_sim(sys, kStartTime, duration, x0, model_instance_name_table,
-      options);
+  run_ros_vehicle_sim(sys, kStartTime, duration, x0,
+      vehicle_model_instance_name_table, options);
 
   worldTfPublisherThread.join();
   return 0;

@@ -71,19 +71,12 @@ int do_main(int argc, const char* argv[]) {
   model_instance_name_table_odometry[model_instances["prius_1"]] = "prius";
 
   // Initializes and cascades all of the other systems.
-  auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
 
-  std::cout
-      << "==========================================================="
-      << std::endl
-      << "vehicle_sys:"
-      << std::endl
-      << "  - number of inputs: " << drake::getNumInputs(*vehicle_sys.get())
-      << std::endl
-      << "  - number of states: " << drake::getNumStates(*vehicle_sys.get())
-      << std::endl
-      << "  - number of outputs: " << drake::getNumOutputs(*vehicle_sys.get())
-      << std::endl;
+  // The following method wraps the RigidBodySystem within a PD control system
+  // block that adds PD controllers for each actuator within the
+  // RigidBodySystem. It then cascades the PD control system block behind a
+  // gain block and returns the resulting cascade.
+  auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
 
   auto visualizer =
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
@@ -115,18 +108,6 @@ int do_main(int argc, const char* argv[]) {
             odometry_publisher),
           tf_publisher),
         joint_state_publisher);
-
-  std::cout
-      << "==========================================================="
-      << std::endl
-      << "sys:"
-      << std::endl
-      << "  - number of inputs: " << drake::getNumInputs(*sys.get())
-      << std::endl
-      << "  - number of states: " << drake::getNumStates(*sys.get())
-      // << std::endl
-      // << "  - number of outputs: " << drake::getNumOutputs(*sys.get())
-      << std::endl;
 
   // Initializes the simulation options.
   SimulationOptions options = GetCarSimulationDefaultOptions();

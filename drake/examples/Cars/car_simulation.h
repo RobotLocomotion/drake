@@ -128,12 +128,32 @@ void AddFlatTerrainToWorld(
 /**
  * Creates a vehicle system by instantiating PD controllers for the actuators
  * in the model and cascading it with a rigid body system. The expected names
- * of the actuators are "steering", "right_wheel_joint", "left_wheel_joint".
+ * of the actuators are "steering", "right_wheel_joint", and "left_wheel_joint".
+ *
+ * Here's a system block diagram:
+ *
+ * <pre>
+ * --------------       ------------------------------------------
+ * |            |       |                  --------------------- |
+ * | Gain Block |  -->  | PD Control Block | Rigid Body System | |
+ * |            |       |                  --------------------- |
+ * --------------       ------------------------------------------
+ * </pre>
+ *
+ * The following gains are hard-coded:
+ *  - Kp steering = 400
+ *  - Kd steering = 80
+ *  - Kp wheel joint = 0
+ *  - Kd wheel joint = 100
+ *
+ * Note that the wheel joint controllers have `Kp = 0`, meaning they are
+ * effectively velocity controllers.
  *
  * @param[in] rigid_body_sys The rigid body system.
  *
  * @param[in] model_instance_name_table A mapping from model instance IDs to
- * model instance names.
+ * model instance names. This table should only contain the vehicle model
+ * instances and not other models in the world.
  *
  * @return The resulting vehicle system.
  */
@@ -143,6 +163,46 @@ std::shared_ptr<CascadeSystem<
     PDControlSystem<RigidBodySystem>>>
 CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
     const std::map<int, std::string>* model_instance_name_table = nullptr);
+
+/**
+ * Creates a multi-vehicle system by instantiating PD controllers for the
+ * actuators in the model and cascading it with a rigid body system. The
+ * expected names of the actuators are "steering", "right_wheel_joint",
+ * and "left_wheel_joint".
+ *
+ * Here's a system block diagram:
+ *
+ * <pre>
+ * --------------       ------------------------------------------
+ * |            |       |                  --------------------- |
+ * | Gain Block |  -->  | PD Control Block | Rigid Body System | |
+ * |            |       |                  --------------------- |
+ * --------------       ------------------------------------------
+ * </pre>
+ *
+ * The following gains are hard-coded:
+ *  - Kp steering = 400
+ *  - Kd steering = 80
+ *  - Kp wheel joint = 0
+ *  - Kd wheel joint = 100
+ *
+ * Note that the wheel joint controllers have `Kp = 0`, meaning they are
+ * effectively velocity controllers.
+ *
+ * @param[in] rigid_body_sys The rigid body system.
+ *
+ * @param[in] model_instance_name_table A mapping from model instance IDs to
+ * model instance names. This table should only contain the vehicle model
+ * instances and not other models in the world.
+ *
+ * @return The resulting vehicle system.
+ */
+DRAKECARS_EXPORT
+std::shared_ptr<CascadeSystem<
+    Gain<MultiDrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
+    PDControlSystem<RigidBodySystem>>>
+CreateMultiVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
+    const std::map<int, std::string>* model_instance_name_table);
 
 /**
  * Creates a TrajectoryCar system with a fixed trajectory.
