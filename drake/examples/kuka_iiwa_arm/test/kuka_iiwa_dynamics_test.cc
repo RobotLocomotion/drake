@@ -35,7 +35,7 @@ GTEST_TEST(testIIWAArm, iiwaArmDynamics) {
   auto sys = cascade(iiwa_system, robot_state_tap);
 
   // Obtains an initial state of the simulation.
-  VectorXd x0 = ArbitraryIiwaInitialState();
+  VectorXd x0 = GenerateArbitraryIiwaInitialState();
 
   drake::SimulationOptions options = SetupSimulation();
 
