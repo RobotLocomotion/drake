@@ -22,8 +22,6 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using drake::CompareMatrices;
 
-using drake::math::initializeAutoDiffTuple;
-
 class RigidBodyTreeInverseDynamicsTest: public ::testing::Test {
  protected:
   virtual void SetUp() {
@@ -63,9 +61,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
 
   int num_velocities = tree_rpy_->number_of_velocities();
 
-  //  std::default_random_engine generator;
-//  auto q = tree_->getRandomConfiguration(generator);
-  auto q = tree_rpy_->getZeroConfiguration();
+  std::default_random_engine generator;
+  auto q = tree_rpy_->getRandomConfiguration(generator);
   auto qd = VectorXd::Constant(num_velocities, 1.).eval();
   auto qdd = VectorXd::Zero(tree_rpy_->number_of_velocities()).eval();
 
@@ -126,8 +123,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     auto mass_matrix = tree->massMatrix(kinematics_cache);
 
     auto vd_autodiff = initializeAutoDiff(vd);
-    typedef typename decltype(vd_autodiff)
-    ::Scalar ADScalar;
+    typedef typename decltype(vd_autodiff)::Scalar ADScalar;
     auto q_autodiff = q.cast<ADScalar>().eval();
     auto v_autodiff = v.cast<ADScalar>().eval();
     KinematicsCache<ADScalar> kinematics_cache_autodiff(tree->bodies);
@@ -186,32 +182,35 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   std::default_random_engine generator;
   int world_index = 0;
 
-  auto q = tree_quaternion_->getRandomConfiguration(generator);
-  auto v = VectorXd::Random(tree_quaternion_->number_of_velocities()).eval();
-  auto vd = VectorXd::Random(tree_quaternion_->number_of_velocities()).eval();
+  // use a quaternion-parameterized floating joint, so that torque vector for
+  // this joint is the same as the floating joint wrench
+  RigidBodyTree& tree = *tree_quaternion_;
+  auto q = tree.getRandomConfiguration(generator);
+  auto v = VectorXd::Random(tree.number_of_velocities()).eval();
+  auto vd = VectorXd::Random(tree.number_of_velocities()).eval();
   eigen_aligned_unordered_map<const RigidBody *, TwistVector<double>> f_ext;
 
-  KinematicsCache<double> kinematics_cache(tree_quaternion_->bodies);
+  KinematicsCache<double> kinematics_cache(tree.bodies);
   kinematics_cache.initialize(q, v);
-  tree_quaternion_->doKinematics(kinematics_cache, true);
+  tree.doKinematics(kinematics_cache, true);
 
   // compute gravitational wrench
-  auto gravitational_wrench_centroidal = (tree_quaternion_->a_grav *
-      tree_quaternion_->getMass()).eval();
+  auto gravitational_wrench_centroidal = (tree.a_grav *
+      tree.getMass()).eval();
   Eigen::Isometry3d centroidal_to_world;
   centroidal_to_world.setIdentity();
   centroidal_to_world.translation() =
-      tree_quaternion_->centerOfMass(kinematics_cache);
+      tree.centerOfMass(kinematics_cache);
   auto gravitational_wrench_world = transformSpatialForce(
       centroidal_to_world, gravitational_wrench_centroidal);
 
   // set external wrenches, keep track of total wrench
   Vector6<double> total_wrench_world = gravitational_wrench_world;
-  for (const auto &body_ptr : tree_quaternion_->bodies) {
+  for (const auto &body_ptr : tree.bodies) {
     if (body_ptr->hasParent()) {
       auto wrench_body = Vector6<double>::Random().eval();
       f_ext[body_ptr.get()] = wrench_body;
-      auto body_to_world = tree_quaternion_->relativeTransform(
+      auto body_to_world = tree.relativeTransform(
           kinematics_cache, world_index, body_ptr->get_body_index());
       auto wrench_world = transformSpatialForce(
           body_to_world, wrench_body);
@@ -220,13 +219,13 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   }
 
   // compute wrench across floating joint, add to total wrench
-  auto tau = tree_quaternion_->inverseDynamics(kinematics_cache, f_ext, vd);
-  auto &floating_body_ptr = tree_quaternion_->bodies[1];
+  auto tau = tree.inverseDynamics(kinematics_cache, f_ext, vd);
+  auto &floating_body_ptr = tree.bodies[1];
   int floating_joint_start_index = floating_body_ptr->
       get_velocity_start_index();
   Vector6<double> floating_joint_wrench_body = tau.segment<kTwistSize>(
       floating_joint_start_index);
-  auto body_to_world = tree_quaternion_->relativeTransform(
+  auto body_to_world = tree.relativeTransform(
       kinematics_cache, world_index, floating_body_ptr->get_body_index());
   auto floating_joint_wrench_world = transformSpatialForce(
       body_to_world, floating_joint_wrench_body);
@@ -241,10 +240,10 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto q_autodiff = initializeAutoDiffGivenGradientMatrix(q, MatrixXd(qd));
   auto v_autodiff = initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vd));
   typedef typename decltype(q_autodiff)::Scalar ADScalar;
-  KinematicsCache<ADScalar> kinematics_cache_autodiff(tree_quaternion_->bodies);
+  KinematicsCache<ADScalar> kinematics_cache_autodiff(tree.bodies);
   kinematics_cache_autodiff.initialize(q_autodiff, v_autodiff);
-  tree_quaternion_->doKinematics(kinematics_cache_autodiff);
-  auto momentum_matrix_autodiff = tree_quaternion_->worldMomentumMatrix(
+  tree.doKinematics(kinematics_cache_autodiff);
+  auto momentum_matrix_autodiff = tree.worldMomentumMatrix(
       kinematics_cache_autodiff);
   auto momentum_world_autodiff = momentum_matrix_autodiff * v_autodiff;
   auto momentum_rate = autoDiffToGradientMatrix(momentum_world_autodiff);
