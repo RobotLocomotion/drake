@@ -28,7 +28,7 @@ DRAKEKUKAIIWAARM_EXPORT
 std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
 
 /**
- * Generates a Bot visualizer and initialises the LCM to enable its usage.
+ * Generates a Bot Visualizer and initializes LCM to enable its usage.
  */
 DRAKEKUKAIIWAARM_EXPORT
 std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
@@ -42,7 +42,7 @@ std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
  * system at rest (0 velocities).
  */
 DRAKEKUKAIIWAARM_EXPORT
-Eigen::VectorXd ArbitraryIiwaInitialState();
+Eigen::VectorXd GenerateArbitraryIiwaInitialState();
 
 /**
  * Returns the simulation options for use by the Kuka IIWA simulation.

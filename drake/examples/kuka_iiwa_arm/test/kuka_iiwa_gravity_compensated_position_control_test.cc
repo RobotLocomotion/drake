@@ -22,7 +22,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-// Test to verify behavior of the KUKA IIWA Arm under a gravity
+// Test to verify the correct behavior of the KUKA IIWA Arm under a gravity
 // compensated PD joint position controller. Even under lower gains
 // (in contrast with a pure PD controller), accurate position control
 // is possible. The test looks for 2 things : (i) with the set-point
@@ -38,16 +38,16 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedPositionControl) {
   int num_dof = iiwa_system->getNumInputs();
 
   // Smaller gains intentionally used for demo.
-  const double Kp_common = 10.0;  // Units : Nm/rad
-  const double Kd_common = 0.30;  // Units : Nm/rad/sec
-  VectorXd Kpdiag = VectorXd::Constant(num_dof, Kp_common);
-  VectorXd Kddiag = VectorXd::Constant(num_dof, Kd_common);
+  const double kProportionalGainCommon = 10.0;  // Units : Nm/rad
+  const double kDerivativeGainCommon = 0.30;    // Units : Nm/rad/sec
+  VectorXd Kpdiag = VectorXd::Constant(num_dof, kProportionalGainCommon);
+  VectorXd Kddiag = VectorXd::Constant(num_dof, kDerivativeGainCommon);
 
   MatrixXd Kp = Kpdiag.asDiagonal();
   MatrixXd Kd = Kddiag.asDiagonal();
 
   // Obtains an initial state of the simulation.
-  VectorXd x0 = ArbitraryIiwaInitialState();
+  VectorXd x0 = GenerateArbitraryIiwaInitialState();
 
   // Set point is the initial configuration.
   VectorXd set_point_vector = x0.head(num_dof);
