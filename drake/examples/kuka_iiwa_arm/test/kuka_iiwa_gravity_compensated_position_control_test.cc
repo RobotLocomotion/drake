@@ -83,12 +83,12 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedPositionControl) {
 
   // Expects norm of the joint position error to be below a maximum value.
   double kMaxPositionErrorNorm = 1e-3;
-  EXPECT_TRUE((xf.head(num_dof) - set_point_vector).squaredNorm() <
+  EXPECT_LT((xf.head(num_dof) - set_point_vector).squaredNorm(),
               kMaxPositionErrorNorm);
 
   // Expects final joint velocity has a norm to be smaller than a minimum value.
   double kMinVelocityNorm = 1e-3;
-  EXPECT_TRUE(xf.tail(num_dof).squaredNorm() < kMinVelocityNorm);
+  EXPECT_LT(xf.tail(num_dof).squaredNorm(), kMinVelocityNorm);
 }
 
 }  // namespace
