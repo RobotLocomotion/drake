@@ -56,10 +56,10 @@ add_subdirectory(joints)
 
 if(MATLAB_FOUND)
   add_mex(rbmMexFunctions SHARED rigidBodyTreeMexFunctions.cpp)
+  pods_install_libraries(rbmMexFunctions)
   target_link_libraries(rbmMexFunctions drakeRBM drakeMexUtil)
   # These warnings are not worth fixing.
-  set_target_properties(
-    rbmMexFunctions PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_SIGN_COMPARE})
+  target_compile_options(rbmMexFunctions PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
 
   macro(add_rbm_mex)
     # TODO: use this again once I can assume everyone has CMAKE version >= 2.8.8
@@ -68,8 +68,7 @@ if(MATLAB_FOUND)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} rbmMexFunctions)
     # These warnings are not worth fixing.
-    set_target_properties(
-      ${ARGV} PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_SIGN_COMPARE})
+    target_compile_options(${ARGV} PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
   endmacro()
 
   add_rbm_mex(constructModelmex)
@@ -122,8 +121,7 @@ if(MATLAB_FOUND)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeIKoptions)
     # These warnings are not worth fixing.
-    set_target_properties(
-      ${ARGV} PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_SIGN_COMPARE})
+    target_compile_options(${ARGV} PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
   endmacro()
   add_ikoptions_mex(IKoptionsmex)
 
@@ -167,8 +165,7 @@ if(MATLAB_FOUND)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
     # These warnings are not worth fixing.
-    set_target_properties(
-      ${ARGV} PROPERTIES COMPILE_FLAGS ${CXX_FLAGS_NO_SIGN_COMPARE})
+    target_compile_options(${ARGV} PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
   endmacro()
 
   if(snopt_c_FOUND)

@@ -19,34 +19,42 @@ Integrator<T>::Integrator(int length) {
 }
 
 template <typename T>
-void Integrator<T>::ReserveState(Context<T>* context) const {
-  // The integrator has a state vector of the same dimension as its input
-  // and output.
-  DRAKE_ASSERT(System<T>::get_input_port(0).get_size() ==
-      System<T>::get_output_port(0).get_size());
-  int length = System<T>::get_input_port(0).get_size();
-  context->get_mutable_state()->continuous_state.reset(new ContinuousState<T>(
-      std::make_unique<BasicStateVector<T>>(length), 0 /* size of q */,
-      0 /* size of v */, length /* size of z */));
+Integrator<T>::~Integrator() {}
+
+// TODO(amcastro-tri): we should be able to express that initial conditions
+// feed through an integrator but the dynamic signal during simulation does
+// not.
+template <typename T>
+bool Integrator<T>::has_any_direct_feedthrough() const {
+  return false;
 }
 
 template <typename T>
-std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateTimeDerivatives()
+std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateContinuousState()
     const {
-  int length = System<T>::get_output_port(0).get_size();
+  // The integrator's state is first-order; its state vector length is the
+  // same as the input (and output) vector length.
+  const int length = System<T>::get_output_port(0).get_size();
+  DRAKE_ASSERT(System<T>::get_input_port(0).get_size() == length);
   return std::make_unique<ContinuousState<T>>(
-      std::make_unique<BasicStateVector<T>>(length), 0 /* size of q */,
-      0 /* size of v */, length /* size of z */);
+      std::make_unique<BasicStateVector<T>>(length));
+}
+
+template <typename T>
+void Integrator<T>::EvalTimeDerivatives(const ContextBase<T>& context,
+                                        ContinuousState<T>* derivatives) const {
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
+  const VectorBase<T>* input = context.get_vector_input(0);
+  derivatives->get_mutable_state()->SetFromVector(input->get_value());
 }
 
 template <typename T>
 void Integrator<T>::EvalOutput(const ContextBase<T>& context,
                                SystemOutput<T>* output) const {
-  DRAKE_ASSERT(System<T>::IsValidOutput(*output));
-  DRAKE_ASSERT(System<T>::IsValidContext(context));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  VectorInterface<T>* output_port =
-      output->get_mutable_port(0)->GetMutableVectorData();
+  VectorBase<T>* output_port = output->GetMutableVectorData(0);
 
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
@@ -54,14 +62,6 @@ void Integrator<T>::EvalOutput(const ContextBase<T>& context,
       context.get_state().continuous_state->get_state().CopyToVector();
 }
 
-template <typename T>
-void Integrator<T>::EvalTimeDerivatives(const ContextBase<T>& context,
-                                        ContinuousState<T>* derivatives) const {
-  // Checks that context is consistent with the definition of this system.
-  DRAKE_ASSERT(System<T>::IsValidContext(context));
-  const VectorInterface<T>* input = context.get_vector_input(0);
-  derivatives->get_mutable_state()->SetFromVector(input->get_value());
-}
 
 // Explicitly instantiates on the most common scalar types.
 template class DRAKESYSTEMFRAMEWORK_EXPORT Integrator<double>;

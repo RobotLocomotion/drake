@@ -34,8 +34,10 @@ using drake::math::Gradient;
 #else
 #define DLLEXPORT __declspec(dllimport)
 #endif
+#elif __GNUC__ >= 4
+#define DLLEXPORT __attribute__((visibility("default")))
 #else
-#define DLLEXPORT [[gnu::visibility("default")]]
+#define DLLEXPORT
 #endif
 
 DLLEXPORT bool isa(const mxArray* mxa, const char* class_str);

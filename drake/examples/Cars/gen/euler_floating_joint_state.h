@@ -5,15 +5,17 @@
 
 #include <stdexcept>
 #include <string>
+
 #include <Eigen/Core>
 
+#include "drake/drakeCars_export.h"
 #include "drake/systems/framework/basic_state_and_output_vector.h"
 #include "lcmtypes/drake/lcmt_euler_floating_joint_state_t.hpp"
 
 namespace drake {
 
 /// Describes the row indices of a EulerFloatingJointState.
-struct EulerFloatingJointStateIndices {
+struct DRAKECARS_EXPORT EulerFloatingJointStateIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 6;
 

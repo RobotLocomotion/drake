@@ -9,8 +9,10 @@ set(sources
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
+  examples/spring_mass_system.cc
   leaf_system.cc
   primitives/adder.cc
+  primitives/constant_value_source.cc
   primitives/constant_vector_source.cc
   primitives/gain.cc
   primitives/integrator.cc
@@ -24,7 +26,7 @@ set(sources
   system_output.cc
   system_port_descriptor.cc
   value.cc
-  vector_interface.cc)
+  vector_base.cc)
 
 # Headers that should be installed with Drake so that they
 # are available elsewhere via #include.
@@ -56,7 +58,7 @@ set(installed_headers
   system_output.h
   system_port_descriptor.h
   value.h
-  vector_interface.h)
+  vector_base.h)
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.
@@ -74,5 +76,6 @@ pods_install_pkg_config_file(drake-system-framework
   REQUIRES
   VERSION 0.0.1)
 
+add_subdirectory(examples)
 add_subdirectory(primitives)
 add_subdirectory(test)

@@ -13,10 +13,10 @@ if(lcm_FOUND AND NOT (WIN32 AND (CMAKE_SIZEOF_VOID_P EQUAL 4)))
 endif()
 
 # add_matlab_test(NAME examples/Quadrotor/Quadrotor.runOpenLoop COMMAND Quadrotor.runOpenLoop)  # FIXME
-add_matlab_test(NAME examples/Quadrotor/runDircol COMMAND runDircol)
-add_matlab_test(NAME examples/Quadrotor/runDircolWObs COMMAND runDircolWObs)
-add_matlab_test(NAME examples/Quadrotor/runLQR COMMAND runLQR)
-add_matlab_test(NAME examples/Quadrotor/runMixedIntegerSimpleForest COMMAND runMixedIntegerSimpleForest)
+add_matlab_test(NAME examples/Quadrotor/runDircol OPTIONAL bullet snopt COMMAND runDircol)
+add_matlab_test(NAME examples/Quadrotor/runDircolWObs REQUIRES bullet lcm OPTIONAL snopt COMMAND runDircolWObs)
+add_matlab_test(NAME examples/Quadrotor/runLQR OPTIONAL bullet COMMAND runLQR)
+add_matlab_test(NAME examples/Quadrotor/runMixedIntegerSimpleForest REQUIRES iris lcm mosek yalmip OPTIONAL bullet snopt COMMAND runMixedIntegerSimpleForest)
 
 add_subdirectory(test)
 add_subdirectory(crazyflie)

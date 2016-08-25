@@ -91,7 +91,7 @@ Execute the following commands to build the workspace::
     cd ~/dev/drake_catkin_workspace
     source /opt/ros/indigo/setup.bash
     catkin init
-    catkin build -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+    catkin build --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
 
 There are numerous optional flags that can be included after the ``catkin build``
 command listed above. The example above includes the build type flag that
@@ -213,7 +213,7 @@ Since a new package was added to the ROS workspace, re-build the workspace
 runs too slowly when compiled in the default ``Debug`` mode)::
 
     cd ~/dev/drake_catkin_workspace
-    catkin build -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+    catkin build --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
 
 Finally, to run the car simulation demo, execute::
 

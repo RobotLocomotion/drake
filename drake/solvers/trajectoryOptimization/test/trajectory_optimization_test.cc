@@ -42,12 +42,24 @@ class FinalCost {
   }
 };
 
+class MyDirectTrajOpt : public DirectTrajectoryOptimization {
+ public:
+  MyDirectTrajOpt(const int num_inputs, const int num_states,
+                  const int num_time_samples,
+                  const double traj_time_lower_bound,
+                  const double traj_time_upper_bound)
+      : DirectTrajectoryOptimization(num_inputs, num_states, num_time_samples,
+                                     traj_time_lower_bound,
+                                     traj_time_upper_bound) {}
+  void AddDynamicConstraint(const std::shared_ptr<Constraint>& constraint) {}
+  void AddRunningCost(std::shared_ptr<Constraint> constraint) {}
+};
+
 GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   const int kNumInputs(1);
   const int kNumStates(2);
   const int kNumTimeSamples(21);  // aka N.
-  DirectTrajectoryOptimization direct_traj(kNumInputs, kNumStates,
-                                           kNumTimeSamples, 0, 25);
+  MyDirectTrajOpt direct_traj(kNumInputs, kNumStates, kNumTimeSamples, 0, 25);
 
   const double t_init_in(7);
   const Polynomiald y = Polynomiald("y");
@@ -93,37 +105,29 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   PiecewisePolynomial<double> input_traj =
       direct_traj.ReconstructInputTrajectory();
 
-  EXPECT_TRUE(
-      CompareMatrices(constrained_input, inputs.col(kInputConstraintLo),
-                      1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(constrained_input,
-                      input_traj.value(times_out[kInputConstraintLo]),
-                      1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(constrained_input, inputs.col(kInputConstraintHi),
-                      1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(constrained_input,
-                      input_traj.value(times_out[kInputConstraintHi]),
-                      1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(constrained_input, inputs.col(kInputConstraintLo),
+                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(constrained_input,
+                              input_traj.value(times_out[kInputConstraintLo]),
+                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(constrained_input, inputs.col(kInputConstraintHi),
+                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(constrained_input,
+                              input_traj.value(times_out[kInputConstraintHi]),
+                              1e-10, MatrixCompareType::absolute));
 
   PiecewisePolynomial<double> state_traj =
       direct_traj.ReconstructStateTrajectory();
-  EXPECT_TRUE(
-      CompareMatrices(constrained_state, states.col(kStateConstraintLo),
-                      1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(constrained_state,
-                      state_traj.value(times_out[kStateConstraintLo]),
-                      1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(constrained_state, states.col(kStateConstraintHi),
-                      1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(constrained_state,
-                      state_traj.value(times_out[kStateConstraintHi]),
-                      1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(constrained_state, states.col(kStateConstraintLo),
+                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(constrained_state,
+                              state_traj.value(times_out[kStateConstraintLo]),
+                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(constrained_state, states.col(kStateConstraintHi),
+                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(constrained_state,
+                              state_traj.value(times_out[kStateConstraintHi]),
+                              1e-10, MatrixCompareType::absolute));
 
   // Add bounds on the inputs and make sure they're enforced.
   Vector1d input_min(1);
@@ -145,8 +149,8 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   EXPECT_DOUBLE_EQ(states(1, 0), 1);
   EXPECT_DOUBLE_EQ(states(1, kNumTimeSamples - 1), 15);
 
-  direct_traj.AddInitialCost(InitialCost());
-  direct_traj.AddFinalCost(FinalCost());
+  direct_traj.AddInitialCostFunc(InitialCost());
+  direct_traj.AddFinalCostFunc(FinalCost());
   result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
   EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
 

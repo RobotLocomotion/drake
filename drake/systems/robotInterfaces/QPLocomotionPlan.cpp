@@ -885,14 +885,14 @@ const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(
   return joint_indices;
 }
 
-template drake::lcmt_qp_controller_input
+template DRAKEQPLOCOMOTIONPLAN_EXPORT drake::lcmt_qp_controller_input
 QPLocomotionPlan::createQPControllerInput<
   Matrix<double, -1, 1, 0, -1, 1>,
   Matrix<double, -1, 1, 0, -1, 1>>(
       double, MatrixBase<Matrix<double, -1, 1, 0, -1, 1>> const&,
       MatrixBase<Matrix<double, -1, 1, 0, -1, 1>> const&,
       std::vector<bool, std::allocator<bool>> const&);
-template drake::lcmt_qp_controller_input
+template DRAKEQPLOCOMOTIONPLAN_EXPORT drake::lcmt_qp_controller_input
 QPLocomotionPlan::createQPControllerInput<
   Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0>>,
   Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0>>>(

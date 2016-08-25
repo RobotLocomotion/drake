@@ -63,7 +63,7 @@ class MessagePublisher {
 };
 
 void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
-   LcmSubscriberSystem* dut) {
+                    LcmSubscriberSystem* dut) {
   EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem::" + channel_name);
 
   // Instantiates a publisher of lcmt_drake_signal messages on the LCM network.
@@ -99,8 +99,8 @@ void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
     dut->EvalOutput(*context.get(), output.get());
 
     // Gets the output of the LcmSubscriberSystem.
-    const drake::systems::VectorInterface<double>* vector =
-        output->get_port(0).get_vector_data();
+    const drake::systems::VectorBase<double>* vector =
+        output->get_vector_data(0);
 
     // Downcasts the output vector to be a pointer to a BasicVector.
     const BasicVector<double>& basic_vector =
@@ -150,7 +150,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   const std::string channel_name =
       "drake_system2_lcm_test_subscriber_channel_name";
 
-  // Instantiates a LCM-VectorInterface translator.
+  // Instantiates a LCM-VectorBase translator.
   const TranslatorBetweenLcmtDrakeSignal translator(kDim);
 
   // Instantiates an LcmSubscriberSystem that receives LCM messages of type
@@ -175,8 +175,9 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
 
   // Creates a dictionary with one translator.
   LcmTranslatorDictionary dictionary;
-  dictionary.AddEntry(channel_name,
-    std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
+  dictionary.AddEntry(
+      channel_name,
+      std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
 
   EXPECT_TRUE(dictionary.HasTranslator(channel_name));
 

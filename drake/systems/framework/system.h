@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/cache.h"
@@ -33,7 +34,7 @@ class System {
   /// override this method to return false.
   // TODO(amcastro-tri): Provide a more descriptive mechanism to specify
   // pairwise (input_port, output_port) feedthrough.
-  virtual bool has_any_direct_feedthrough() const { return true;}
+  virtual bool has_any_direct_feedthrough() const { return true; }
 
   /// Returns the number of input ports of the system.
   int get_num_input_ports() const { return input_ports_.size(); }
@@ -69,38 +70,34 @@ class System {
 
   /// Checks that @p output is consistent with the number and size of output
   /// ports declared by the system.
-  /// @returns `true` if @p output is valid for this system and `false`
-  /// otherwise.
-  bool IsValidOutput(const SystemOutput<T>& output) const {
+  /// @throw exception unless `output` is non-null and valid for this system.
+  void CheckValidOutput(const SystemOutput<T>* output) const {
+    DRAKE_THROW_UNLESS(output != nullptr);
+
     // Checks that the number of output ports in the system output is consistent
     // with the number of output ports declared by the System.
-    if (output.get_num_ports() != get_num_output_ports()) return false;
+    DRAKE_THROW_UNLESS(output->get_num_ports() == get_num_output_ports());
 
     // Checks the validity of each output port.
     for (int i = 0; i < get_num_output_ports(); ++i) {
       // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
       // once abstract ports are implemented in 3164.
       if (get_output_port(i).get_data_type() == kVectorValued) {
-        const VectorInterface<T>* output_vector =
-            output.get_port(i).get_vector_data();
-        if (output_vector == nullptr) return false;
-        if (output_vector->get_value().rows() !=
-            get_output_port(i).get_size()) return false;
+        const VectorBase<T>* output_vector = output->get_vector_data(i);
+        DRAKE_THROW_UNLESS(output_vector != nullptr);
+        DRAKE_THROW_UNLESS(output_vector->get_value().rows() ==
+                           get_output_port(i).get_size());
       }
     }
-
-    // All checks passed.
-    return true;
   }
 
   /// Checks that @p context is consistent for this system.
-  /// @returns `true` if @p context is valid for this system and `false`
-  /// otherwise.
-  bool IsValidContext(const ContextBase<T>& context) const {
+  /// @throw exception unless `context` is valid for this system.
+  void CheckValidContext(const ContextBase<T>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
-    if (context.get_num_input_ports() != this->get_num_input_ports())
-      return false;
+    DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
+                       this->get_num_input_ports());
 
     // Checks that the size of the input ports in the context matches the
     // declarations made by the system.
@@ -108,15 +105,12 @@ class System {
       // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
       // once abstract ports are implemented in 3164.
       if (this->get_input_port(i).get_data_type() == kVectorValued) {
-        const VectorInterface<T>* input_vector = context.get_vector_input(i);
-        if (input_vector == nullptr) return false;
-        if (input_vector->get_value().rows() !=
-            get_input_port(i).get_size()) return false;
+        const VectorBase<T>* input_vector = context.get_vector_input(i);
+        DRAKE_THROW_UNLESS(input_vector != nullptr);
+        DRAKE_THROW_UNLESS(input_vector->get_value().rows() ==
+                           get_input_port(i).get_size());
       }
     }
-
-    // All checks passed.
-    return true;
   }
 
   /// Returns a default context, initialized with the correct
@@ -174,6 +168,7 @@ class System {
   virtual T EvalNonConservativePower(const ContextBase<T>& context) const {
     return T(0);
   }
+
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. Solvers will provide this state as the
   /// output argument to EvalTimeDerivatives.
@@ -258,7 +253,13 @@ class System {
   /// to the input topology.
   void DeclareInputPort(PortDataType type, int size, SamplingSpec sampling) {
     input_ports_.emplace_back(this, kInputPort, input_ports_.size(),
-                                 kVectorValued, size, sampling);
+                              kVectorValued, size, sampling);
+  }
+
+  /// Adds an abstract-valued port with the specified @p sampling to the
+  /// input topology.
+  void DeclareAbstractInputPort(SamplingSpec sampling) {
+    DeclareInputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
   /// Adds a port with the specified @p descriptor to the output topology.
@@ -273,8 +274,15 @@ class System {
   /// to the output topology.
   void DeclareOutputPort(PortDataType type, int size, SamplingSpec sampling) {
     output_ports_.emplace_back(this, kOutputPort, output_ports_.size(),
-                                  kVectorValued, size, sampling);
+                               kVectorValued, size, sampling);
   }
+
+  /// Adds an abstract-valued port with the specified @p sampling to the
+  /// output topology.
+  void DeclareAbstractOutputPort(SamplingSpec sampling) {
+    DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
+  }
+
 
  private:
   // SystemInterface objects are neither copyable nor moveable.

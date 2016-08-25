@@ -71,7 +71,7 @@ class MessageSubscriber {
 };
 
 void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
-    LcmPublisherSystem* dut) {
+                   LcmPublisherSystem* dut) {
   EXPECT_EQ(dut->get_name(), "LcmPublisherSystem::" + channel_name);
 
   // Instantiates a receiver of lcmt_drake_signal messages.
@@ -86,12 +86,12 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
   // Instantiates a BasicVector with known state. This is the basic vector that
   // we want the LcmPublisherSystem to publish as a drake::lcmt_drake_signal
   // message.
-  std::unique_ptr<VectorInterface<double>> vector_interface(
+  std::unique_ptr<VectorBase<double>> vector_base(
       new BasicVector<double>(kDim));
 
   {
     Eigen::VectorBlock<VectorX<double>> vector_value =
-        vector_interface->get_mutable_value();
+        vector_base->get_mutable_value();
 
     for (int ii = 0; ii < kDim; ++ii) {
       vector_value[ii] = ii;
@@ -99,11 +99,11 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
   }
 
   // Sets the value in the context's input port to be the above-defined
-  // VectorInterface. Note that we need to overwrite the original input port
+  // VectorBase. Note that we need to overwrite the original input port
   // created by the LcmPublisherSystem since we do not have write access to its
   // input vector.
-  std::unique_ptr<InputPort<double>> input_port(
-      new FreestandingInputPort<double>(std::move(vector_interface)));
+  std::unique_ptr<InputPort> input_port(
+      new FreestandingInputPort(std::move(vector_base)));
 
   context->SetInputPort(kPortNumber, std::move(input_port));
 
@@ -145,7 +145,7 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
 
       // At this point, if values_match is true, the received message contains
       // the expected values, which implies that LcmPublisherSystem successfully
-      // published the VectorInterface as a drake::lcmt_drake_signal message.
+      // published the VectorBase as a drake::lcmt_drake_signal message.
       //
       // We cannot check whether the following member variables of
       // drake::lcmt_drake_signal message was successfully transferred because
@@ -171,7 +171,7 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
   TranslatorBetweenLcmtDrakeSignal translator(kDim);
 
   // Instantiates an LcmPublisherSystem that takes as input System 2.0 Vectors
-  // of type drake::systems::VectorInterface and publishes LCM messages of type
+  // of type drake::systems::VectorBase and publishes LCM messages of type
   // drake::lcmt_drake_signal.
   //
   // The LcmPublisherSystem is called "dut" to indicate it is the
@@ -188,13 +188,14 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
 
   // Creates a dictionary with one translator.
   LcmTranslatorDictionary dictionary;
-  dictionary.AddEntry(channel_name,
-    std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
+  dictionary.AddEntry(
+      channel_name,
+      std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
 
   EXPECT_TRUE(dictionary.HasTranslator(channel_name));
 
   // Instantiates an LcmPublisherSystem that takes as input System 2.0 Vectors
-  // of type drake::systems::VectorInterface and publishes LCM messages of type
+  // of type drake::systems::VectorBase and publishes LCM messages of type
   // drake::lcmt_drake_signal.
   //
   // The LcmPublisherSystem is called "dut" to indicate it is the
