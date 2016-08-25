@@ -8,9 +8,9 @@
 
 #include <Eigen/Core>
 
+#include "lcmtypes/drake/lcmt_euler_floating_joint_state_t.hpp"
 #include "drake/drakeCars_export.h"
 #include "drake/systems/framework/basic_state_and_output_vector.h"
-#include "lcmtypes/drake/lcmt_euler_floating_joint_state_t.hpp"
 
 namespace drake {
 
