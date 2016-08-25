@@ -39,12 +39,12 @@ GTEST_TEST(testIIWAArm, iiwaArmPDControl) {
   int num_dof = iiwa_system->getNumInputs();
 
   // Large gains intentionally used for demo.
-  const double Kp_common = 500.0;
-  const double Kd_common = 0.00;
-  VectorXd Kpdiag = VectorXd::Constant(num_dof, Kp_common);
+  const double kProportionalGainCommon = 500.0;
+  const double kDerivativeGainCommon = 0.00;
+  VectorXd Kpdiag = VectorXd::Constant(num_dof, kProportionalGainCommon);
   Kpdiag(1) = 800.0;
   Kpdiag(3) = 700.0;
-  VectorXd Kddiag = VectorXd::Constant(num_dof, Kd_common);
+  VectorXd Kddiag = VectorXd::Constant(num_dof, kDerivativeGainCommon);
   MatrixXd Kp = Kpdiag.asDiagonal();
   MatrixXd Kd = Kddiag.asDiagonal();
 

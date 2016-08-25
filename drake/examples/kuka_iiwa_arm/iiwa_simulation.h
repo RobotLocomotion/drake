@@ -3,12 +3,13 @@
 #include <memory>
 
 #include <Eigen/Geometry>
+#include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeKukaIiwaArm_export.h"
+#include "drake/systems/LinearSystem.h"
+#include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/simulation_options.h"
-#include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/LinearSystem.h"
 
 namespace drake {
 namespace examples {
@@ -28,12 +29,13 @@ DRAKEKUKAIIWAARM_EXPORT
 std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
 
 /**
- * Generates a Bot Visualizer and initializes LCM to enable its usage.
+ * Generates a Bot Visualizer.
  */
 DRAKEKUKAIIWAARM_EXPORT
 std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
     CreateKukaIiwaVisualizer(
-    const std::shared_ptr<drake::RigidBodySystem> iiwa_system);
+    const std::shared_ptr<drake::RigidBodySystem> iiwa_system,
+    const std::shared_ptr<lcm::LCM> lcm);
 
 /**
  * Returns a vector corresponding to an arbitrarily fixed initial

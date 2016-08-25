@@ -19,6 +19,10 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+// TODO(naveenoid) : Combine common components with
+// run_kuka_iiwa_gravity_compensated_torque_control into a class
+// with a common method.
+
 int DoMain(int argc, char* argv[]) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
@@ -56,7 +60,7 @@ int DoMain(int argc, char* argv[]) {
   // The individual matrices of the AffineSystem are all set to zero barring
   // the initial output y0 which is then of the same dimension as the DoF
   // in the IIWA System. For more details please see :
-  // <http://drake.mit.edu/doxygen_cxx/classdrake_1_1_affine_system.html>
+  // http://drake.mit.edu/doxygen_cxx/classdrake_1_1_affine_system.html
   VectorXd set_point_vector = x0.head(kNumDof);
   auto set_point = std::make_shared<
       AffineSystem<NullVector, NullVector, RigidBodySystem::StateVector>>(
@@ -69,7 +73,8 @@ int DoMain(int argc, char* argv[]) {
           GravityCompensatedPDPositionControlSystem<RigidBodySystem>>(),
       iiwa_system, Kp, Kd);
 
-  auto visualizer = CreateKukaIiwaVisualizer(iiwa_system);
+  auto lcm = std::make_shared<lcm::LCM>();
+  auto visualizer = CreateKukaIiwaVisualizer(iiwa_system, lcm);
 
   auto sys = cascade(cascade(set_point, controlled_robot), visualizer);
 
