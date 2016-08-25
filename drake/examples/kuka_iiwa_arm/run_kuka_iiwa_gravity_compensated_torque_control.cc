@@ -1,3 +1,5 @@
+#include <gflags/gflags.h>
+
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/systems/LCMSystem.h"
@@ -20,6 +22,9 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+DEFINE_double(duration, 0.75, "Simulation duration");
+DEFINE_double(magnitude, 1.75, "Joint 5 Input torque magnitude");
+
 // TODO(naveenoid) : Combine common code with
 // run_kuka_iiwa_gravity_compensated_position_control into a class
 // with a common method.
@@ -30,30 +35,9 @@ int DoMain(int argc, char* argv[]) {
   double kDuration = 0.75;
   double kInputTorqueMagnitude = 1.75;
 
-  // Searches through the command line looking for a "--duration" flag followed
-  // by a floating point number that specifies a custom duration, and a
-  // "--magnitude" flag followed by a floating point number that specifies the
-  // custom magnitude of the torque applied to the 5th joint along the
-  // chain.
-  for (int i = 1; i < argc; ++i) {
-    if (std::string(argv[i]) == "--duration") {
-      if (++i == argc) {
-        throw std::runtime_error(
-            "ERROR: Command line option \"--duration\" is not followed by a "
-            "value!");
-      }
-      kDuration = atof(argv[i]);
-    }
-
-    if (std::string(argv[i]) == "--magnitude") {
-      if (++i == argc) {
-        throw std::runtime_error(
-            "ERROR: Command line option \"--magnitude\" is not followed by a "
-            "value!");
-      }
-      kInputTorqueMagnitude = atof(argv[i]);
-    }
-  }
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  kDuration = FLAGS_duration;
+  kInputTorqueMagnitude = FLAGS_magnitude;
 
   const int kNumDof = 7;
 
