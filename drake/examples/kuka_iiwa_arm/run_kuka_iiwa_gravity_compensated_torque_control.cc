@@ -28,35 +28,41 @@ int DoMain(int argc, char* argv[]) {
 
   // Searches through the command line looking for a "--duration" flag followed
   // by a floating point number that specifies a custom duration.
-  for (int ii = 1; ii < argc; ++ii) {
-    if (std::string(argv[ii]) == "--duration") {
-      if (++ii == argc) {
+  for (int i = 1; i < argc; ++i) {
+    if (std::string(argv[i]) == "--duration") {
+      if (++i == argc) {
         throw std::runtime_error(
             "ERROR: Command line option \"--duration\" is not followed by a "
             "value!");
       }
-      kDuration = atof(argv[ii]);
+      kDuration = atof(argv[i]);
     }
 
-    if (std::string(argv[ii]) == "--magnitude") {
-      if (++ii == argc) {
+    if (std::string(argv[i]) == "--magnitude") {
+      if (++i == argc) {
         throw std::runtime_error(
             "ERROR: Command line option \"--magnitude\" is not followed by a "
             "value!");
       }
-      kInputTorqueMagnitude = atof(argv[ii]);
+      kInputTorqueMagnitude = atof(argv[i]);
     }
   }
 
-  const int num_dof = 7;
+  const int kNumDof = 7;
 
-  // Applying a small input torque on 5th joint.
-  VectorXd input_torque_vector = VectorXd::Zero(num_dof);
+  // Applies a small input torque on 5th joint.
+  VectorXd input_torque_vector = VectorXd::Zero(kNumDof);
   input_torque_vector(4) = kInputTorqueMagnitude;
+
+  // The input torque is generated from a constant output AffineSystem.
+  // The individual matrices of the AffineSystem are all set to zero barring
+  // the initial output y0 which is then set to the dimension of the inputs
+  // to the IIWA System. For more details please see :
+  // <http://drake.mit.edu/doxygen_cxx/classdrake_1_1_affine_system.html>
   auto input_torque = std::make_shared<
       AffineSystem<NullVector, NullVector, RigidBodySystem::StateVector>>(
       MatrixXd::Zero(0, 0), MatrixXd::Zero(0, 0), VectorXd::Zero(0),
-      MatrixXd::Zero(num_dof, 0), MatrixXd::Zero(num_dof, 0),
+      MatrixXd::Zero(kNumDof, 0), MatrixXd::Zero(kNumDof, 0),
       input_torque_vector);
 
   auto visualizer = CreateKukaIiwaVisualizer(iiwa_system);
@@ -69,7 +75,7 @@ int DoMain(int argc, char* argv[]) {
   auto sys = cascade(cascade(input_torque, controlled_robot), visualizer);
 
   // Obtains an initial state of the simulation.
-  VectorXd x0 = ArbitraryIiwaInitialState();
+  VectorXd x0 = GenerateArbitraryIiwaInitialState();
   // Specifies the start time of the simulation.
   const double kStartTime = 0;
 

@@ -26,37 +26,42 @@ int DoMain(int argc, char* argv[]) {
 
   // Searches through the command line looking for a "--duration" flag followed
   // by a floating point number that specifies a custom duration.
-  for (int ii = 1; ii < argc; ++ii) {
-    if (std::string(argv[ii]) == "--duration") {
-      if (++ii == argc) {
+  for (int i = 1; i < argc; ++i) {
+    if (std::string(argv[i]) == "--duration") {
+      if (++i == argc) {
         throw std::runtime_error(
             "ERROR: Command line option \"--duration\" is not followed by a "
             "value!");
       }
-      kDuration = atof(argv[ii]);
+      kDuration = atof(argv[i]);
     }
   }
 
-  const int num_dof = 7;
+  const int kNumDof = 7;
 
-  // Smaller gains intentionally used for demo.
+  // Smaller gains intentionally used for demo. Gravity compensation enables
+  // the usage of small feedback gains and this example demonstrates that.
   const double Kp_common = 10.0;  // Units : Nm/rad
   const double Kd_common = 0.30;  // Units : Nm/rad/sec
-  VectorXd Kpdiag = VectorXd::Constant(num_dof, Kp_common);
-  VectorXd Kddiag = VectorXd::Constant(num_dof, Kd_common);
+  VectorXd Kpdiag = VectorXd::Constant(kNumDof, Kp_common);
+  VectorXd Kddiag = VectorXd::Constant(kNumDof, Kd_common);
 
   MatrixXd Kp = Kpdiag.asDiagonal();
   MatrixXd Kd = Kddiag.asDiagonal();
 
   // Obtains an initial state of the simulation.
-  VectorXd x0 = ArbitraryIiwaInitialState();
+  VectorXd x0 = GenerateArbitraryIiwaInitialState();
 
-  // Set point is the initial configuration.
-  VectorXd set_point_vector = x0.head(num_dof);
+  // The setpoint is generated from a constant output AffineSystem.
+  // The individual matrices of the AffineSystem are all set to zero barring
+  // the initial output y0 which is then of the same dimension as the DoF
+  // in the IIWA System. For more details please see :
+  // <http://drake.mit.edu/doxygen_cxx/classdrake_1_1_affine_system.html>
+  VectorXd set_point_vector = x0.head(kNumDof);
   auto set_point = std::make_shared<
       AffineSystem<NullVector, NullVector, RigidBodySystem::StateVector>>(
       MatrixXd::Zero(0, 0), MatrixXd::Zero(0, 0), VectorXd::Zero(0),
-      MatrixXd::Zero(num_dof, 0), MatrixXd::Zero(num_dof, 0), set_point_vector);
+      MatrixXd::Zero(kNumDof, 0), MatrixXd::Zero(kNumDof, 0), set_point_vector);
 
   auto controlled_robot = std::allocate_shared<
       GravityCompensatedPDPositionControlSystem<RigidBodySystem>>(
