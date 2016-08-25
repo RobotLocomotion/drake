@@ -43,6 +43,23 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoop) {
   EXPECT_NO_THROW(builder.Build());
 }
 
+// Tests that multiple cascaded elements that are not direct-feedthrough
+// are sortable.
+GTEST_TEST(DiagramBuilderTest, CascadedNonDirectFeedthrough) {
+  DiagramBuilder<double> builder;
+
+  Integrator<double> integrator1(1 /* length */);
+  Integrator<double> integrator2(1 /* length */);
+
+  builder.Connect(integrator1.get_output_port(0),
+                  integrator2.get_input_port(0));
+  builder.ExportInput(integrator1.get_input_port(0));
+  builder.ExportOutput(integrator2.get_output_port(0));
+
+  // There is no algebraic loop, so we should not throw.
+  EXPECT_NO_THROW(builder.Build());
+}
+
 // Tests that an exception is thrown when building an empty diagram.
 GTEST_TEST(DiagramBuilderTest, FinalizeWhenEmpty) {
   DiagramBuilder<double> builder;
