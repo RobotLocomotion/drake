@@ -112,20 +112,22 @@ class DiagramBuilder {
     for (const auto& connection : dependency_graph_) {
       const System<T>* src = connection.second.first;
       const System<T>* dest = connection.first.first;
-      dependents[src].insert(dest);
-      dependencies[dest].insert(src);
-    }
-
-    // Find the systems that have no inputs within the DiagramBuilder.
-    std::vector<const System<T>*> nodes_with_in_degree_zero;
-    for (const System<T>* system : registered_systems_) {
-      // For the purposes of execution order, a system with no direct
-      // feed-through from input to output is as if it has no inputs.
+      // If a system is not direct-feedthrough, the connections to its inputs
+      // are not relevant for detecting algebraic loops or determining
+      // execution order.
       //
       // TODO(david-german-tri): Make direct-feedthrough resolution more
       // fine-grained once #3170 is resolved.
-      if (dependencies.find(system) == dependencies.end() ||
-          !system->has_any_direct_feedthrough()) {
+      if (dest->has_any_direct_feedthrough()) {
+        dependents[src].insert(dest);
+        dependencies[dest].insert(src);
+      }
+    }
+
+    // Find the systems that have no direct-feedthrough inputs.
+    std::vector<const System<T>*> nodes_with_in_degree_zero;
+    for (const System<T>* system : registered_systems_) {
+      if (dependencies.find(system) == dependencies.end()) {
         nodes_with_in_degree_zero.push_back(system);
       }
     }
