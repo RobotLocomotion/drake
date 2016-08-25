@@ -1,5 +1,3 @@
-find_package(gflags REQUIRED)
-
 if(lcm_FOUND)
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
   target_link_libraries(run_kuka_iiwa_arm_dynamics
