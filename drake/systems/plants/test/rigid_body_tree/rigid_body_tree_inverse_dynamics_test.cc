@@ -73,7 +73,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   auto q_time_autodiff = initializeAutoDiffGivenGradientMatrix(
       q, qd_dynamic_num_rows);
   typedef typename decltype(q_time_autodiff)::Scalar TimeADScalar;
-  auto qd_time_autodiff = qd.cast<TimeADScalar>();
+  auto qd_time_autodiff = qd.cast<TimeADScalar>().eval();
   KinematicsCache<TimeADScalar> kinematics_cache_time_autodiff(
       tree_rpy_->bodies);
   kinematics_cache_time_autodiff.initialize(q_time_autodiff, qd_time_autodiff);
