@@ -20,6 +20,10 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+// TODO(naveenoid) : Combine common components with
+// run_kuka_iiwa_gravity_compensated_position_control into a class
+// with a common method.
+
 int DoMain(int argc, char* argv[]) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
@@ -27,7 +31,10 @@ int DoMain(int argc, char* argv[]) {
   double kInputTorqueMagnitude = 1.75;
 
   // Searches through the command line looking for a "--duration" flag followed
-  // by a floating point number that specifies a custom duration.
+  // by a floating point number that specifies a custom duration, and a
+  // "--magnitude" flag followed by a floating point number that specifies the
+  // custom magnitude of the excitation applied to the 5th joint along the
+  // chain.
   for (int i = 1; i < argc; ++i) {
     if (std::string(argv[i]) == "--duration") {
       if (++i == argc) {
@@ -58,14 +65,15 @@ int DoMain(int argc, char* argv[]) {
   // The individual matrices of the AffineSystem are all set to zero barring
   // the initial output y0 which is then set to the dimension of the inputs
   // to the IIWA System. For more details please see :
-  // <http://drake.mit.edu/doxygen_cxx/classdrake_1_1_affine_system.html>
+  // http://drake.mit.edu/doxygen_cxx/classdrake_1_1_affine_system.html
   auto input_torque = std::make_shared<
       AffineSystem<NullVector, NullVector, RigidBodySystem::StateVector>>(
       MatrixXd::Zero(0, 0), MatrixXd::Zero(0, 0), VectorXd::Zero(0),
       MatrixXd::Zero(kNumDof, 0), MatrixXd::Zero(kNumDof, 0),
       input_torque_vector);
 
-  auto visualizer = CreateKukaIiwaVisualizer(iiwa_system);
+  auto lcm = std::make_shared<lcm::LCM>();
+  auto visualizer = CreateKukaIiwaVisualizer(iiwa_system, lcm);
 
   auto controlled_robot =
       std::allocate_shared<GravityCompensatedSystem<RigidBodySystem>>(

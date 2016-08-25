@@ -36,7 +36,8 @@ class GravityCompensatedSystem {
   typedef std::shared_ptr<RigidBodySystem> RigidBodySystemPtr;
   typedef std::shared_ptr<RigidBodyTree> RigidBodyTreePtr;
 
-  explicit GravityCompensatedSystem(const RigidBodySystemPtr& sys) : sys_(sys) {
+  explicit GravityCompensatedSystem(const RigidBodySystemPtr& sys)
+      : sys_(sys) {
     sys_tree_ = sys->getRigidBodyTree();
   }
 
