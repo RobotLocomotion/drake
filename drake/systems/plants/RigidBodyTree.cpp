@@ -31,6 +31,7 @@ using drake::kRpySize;
 using drake::kSpaceDimension;
 using drake::Matrix3X;
 using drake::Matrix4X;
+using drake::Matrix6X;
 using drake::MatrixX;
 using drake::TwistMatrix;
 using drake::TwistVector;
@@ -1401,63 +1402,103 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
   updateCompositeRigidBodyInertias(cache);
 
-  TwistVector<Scalar> root_accel = -a_grav.cast<Scalar>();
-  TwistMatrix<Scalar> net_wrenches(kTwistSize, bodies.size());
-  net_wrenches.col(0).setZero();
+  // TODO(#3114) pass this in as an argument
+  const bool include_acceleration_terms = true;
 
+  // compute spatial accelerations and net wrenches that should be exerted to
+  // achieve those accelerations
+  // TODO(tkoolen) should preallocate:
+  Matrix6X<Scalar> body_accelerations(kTwistSize, bodies.size());
+  Matrix6X<Scalar> net_wrenches(kTwistSize, bodies.size());
   for (size_t i = 0; i < bodies.size(); ++i) {
-    RigidBody& body = *bodies[i];
+    const RigidBody& body = *bodies[i];
     if (body.has_mobilizer_joint()) {
-      const auto& element = cache.getElement(body);
+      const RigidBody& parent_body = *(body.get_parent());
+      const auto& cache_element = cache.getElement(body);
+      auto body_acceleration = body_accelerations.col(i);
 
-      TwistVector<Scalar> spatial_accel = root_accel;
-      if (include_velocity_terms)
-        spatial_accel += element.motion_subspace_in_world_dot_times_v;
+      // initialize body acceleration to acceleration of parent body
+      auto parent_acceleration =
+          body_accelerations.col(parent_body.get_body_index());
+      body_acceleration = parent_acceleration;
 
-      int nv_joint = body.getJoint().getNumVelocities();
-      auto vdJoint = vd.middleRows(body.get_velocity_start_index(), nv_joint);
-      spatial_accel.noalias() += element.motion_subspace_in_world * vdJoint;
-
-      net_wrenches.col(i).noalias() = element.inertia_in_world * spatial_accel;
+      // add bias acceleration relative to parent body
       if (include_velocity_terms) {
-        auto I_times_twist =
-            (element.inertia_in_world * element.twist_in_world).eval();
-        net_wrenches.col(i).noalias() +=
-            crossSpatialForce(element.twist_in_world, I_times_twist);
+        const auto& parent_cache_element = cache.getElement(parent_body);
+        body_acceleration += cache_element.motion_subspace_in_world_dot_times_v;
+        body_acceleration -=
+            parent_cache_element.motion_subspace_in_world_dot_times_v;
       }
 
-      auto f_ext_iterator = f_ext.find(bodies[i].get());
-      if (f_ext_iterator != f_ext.end()) {
-        const auto& f_ext_i = f_ext_iterator->second;
-        net_wrenches.col(i) -=
-            transformSpatialForce(element.transform_to_world, f_ext_i);
+      // add component due to joint acceleration
+      if (include_acceleration_terms) {
+        const DrakeJoint &joint = body.getJoint();
+        auto vd_joint = vd.middleRows(body.get_velocity_start_index(),
+                                      joint.getNumVelocities());
+        body_acceleration.noalias() +=
+            cache_element.motion_subspace_in_world * vd_joint;
       }
+
+      // compute net wrench required to achieve computed body acceleration
+      auto net_wrench = net_wrenches.col(i);
+      const auto& body_inertia = cache_element.inertia_in_world;
+      net_wrench.noalias() = body_inertia * body_acceleration;
+      if (include_velocity_terms) {
+        const auto& body_twist = cache_element.twist_in_world;
+        auto inertia_times_twist = (body_inertia * body_twist).eval();
+        net_wrench += crossSpatialForce(body_twist, inertia_times_twist);
+      }
+
+      // subtract off any external wrench that may be acting on body
+      auto external_wrench_it = f_ext.find(&body);
+      if (external_wrench_it != f_ext.end()) {
+        const auto& external_wrench = external_wrench_it->second;
+        const auto& body_to_world = cache_element.transform_to_world;
+        net_wrench -= transformSpatialForce(body_to_world, external_wrench);
+      }
+    }
+    else {
+      body_accelerations.col(i) = -a_grav.cast<Scalar>();
+      net_wrenches.col(i).setZero();
     }
   }
 
-  Matrix<Scalar, Eigen::Dynamic, 1> ret(num_velocities_, 1);
+  // do a backwards pass to compute joint wrenches from net wrenches (update in
+  // place), and project the joint wrenches onto the joint's motion subspace to
+  // find the joint torque
+  auto& joint_wrenches = net_wrenches;
+  // the following will eliminate the need for another explicit instantiation:
+  const auto& joint_wrenches_const = net_wrenches;
 
-  for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; --i) {
+  VectorX<Scalar> torques(num_velocities_, 1);
+  for (ptrdiff_t i = bodies.size() - 1; i >= 0; --i) {
     RigidBody& body = *bodies[i];
     if (body.has_mobilizer_joint()) {
-      const auto& element = cache.getElement(body);
-      const auto& net_wrenches_const = net_wrenches;  // eliminates the need for
-                                                      // another explicit
-                                                      // instantiation
-      auto joint_wrench = net_wrenches_const.col(i);
-      int nv_joint = body.getJoint().getNumVelocities();
-      auto J_transpose = element.motion_subspace_in_world.transpose();
-      ret.middleRows(body.get_velocity_start_index(), nv_joint).noalias() =
-          J_transpose * joint_wrench;
-      auto parent_net_wrench = net_wrenches.col(
-          body.get_parent()->get_body_index());
-      parent_net_wrench += joint_wrench;
+      const auto& cache_element = cache.getElement(body);
+      const auto& joint = body.getJoint();
+      auto joint_wrench = joint_wrenches_const.col(i);
+
+      // compute joint torques associated with joint wrench
+      const auto& motion_subspace = cache_element.motion_subspace_in_world;
+      auto joint_torques = torques.middleRows(body.get_velocity_start_index(),
+                                              joint.getNumVelocities());
+      joint_torques.noalias() = motion_subspace.transpose() * joint_wrench;
+
+      // add joint wrench (exerted upon 'body') to parent joint wrench
+      const RigidBody& parent_body = *(body.get_parent());
+      auto parent_joint_wrench =
+          joint_wrenches.col(parent_body.get_body_index());
+      parent_joint_wrench += joint_wrench;
     }
   }
 
-  if (include_velocity_terms) ret += frictionTorques(cache.getV());
+  if (include_velocity_terms) {
+    // TODO(#1476) frictionTorques uses abs. To support e.g. TrigPoly, there
+    // should be a version of inverseDynamics that doesn't call frictionTorques.
+    torques += frictionTorques(cache.getV());
+  }
 
-  return ret;
+  return torques;
 }
 
 template <typename DerivedV>
