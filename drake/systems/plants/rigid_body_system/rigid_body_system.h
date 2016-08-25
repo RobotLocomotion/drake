@@ -64,7 +64,6 @@ class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
     context->get_mutable_xc()->SetFromVector(x0);
   }
 
- private:
   bool has_any_direct_feedthrough() const override;
 
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
@@ -75,13 +74,13 @@ class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override;
 
+ private:
   // some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
   T penetration_stiffness_{150.0};  // An arbitrarily large number.
   T penetration_damping_{0};
   T friction_coefficient_{0};
 
- private:
   std::unique_ptr<const RigidBodyTree> mbd_world_;
 };
 

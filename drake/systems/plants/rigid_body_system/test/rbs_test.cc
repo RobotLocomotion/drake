@@ -78,13 +78,9 @@ class KukaArmTest : public ::testing::Test {
     // Instantiates a RigidBodyPlant from an MBD model of the world.
     kuka_system_ = make_unique<RigidBodySystem<double>>(move(mbd_world));
 
-    // Pointer to the abstract system type used to access System<T> methods not
-    // accessible to the users of RigidBodySystem<T>.
-    system_ = kuka_system_.get();
-
-    context_ = system_->CreateDefaultContext();
-    output_ = system_->AllocateOutput(*context_);
-    derivatives_ = system_->AllocateTimeDerivatives();
+    context_ = kuka_system_->CreateDefaultContext();
+    output_ = kuka_system_->AllocateOutput(*context_);
+    derivatives_ = kuka_system_->AllocateTimeDerivatives();
   }
 
   const int kNumPositions_{7};
@@ -92,7 +88,6 @@ class KukaArmTest : public ::testing::Test {
   const int kNumStates_{kNumPositions_ + kNumVelocities_};
 
   unique_ptr<RigidBodySystem<double>> kuka_system_;
-  System<double>* system_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
@@ -169,7 +164,7 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_NE(nullptr, output_port);
 
   // This call should not assert when compiling Debug builds.
-  system_->EvalOutput(*context_, output_.get());
+  kuka_system_->EvalOutput(*context_, output_.get());
 
   // Asserts the output equals the state.
   EXPECT_EQ(desired_state, output_port->get_value());
@@ -204,10 +199,10 @@ TEST_F(KukaArmTest, EvalTimeDerivatives) {
   ASSERT_NE(nullptr, output_port);
 
   // This call should not assert when compiling Debug builds.
-  system_->EvalOutput(*context_, output_.get());
+  kuka_system_->EvalOutput(*context_, output_.get());
 
   // There are some dynamic_cast's in there right now.
-  EXPECT_NO_THROW(system_->EvalTimeDerivatives(*context_, derivatives_.get()));
+  EXPECT_NO_THROW(kuka_system_->EvalTimeDerivatives(*context_, derivatives_.get()));
 
   // Asserts the output equals the state.
   EXPECT_EQ(desired_state, output_port->get_value());
@@ -281,10 +276,10 @@ TEST_F(KukaArmTest, CompareWithRBS1Dynamics) {
   ASSERT_NE(nullptr, output_port);
 
   // This call should not assert when compiling Debug builds.
-  system_->EvalOutput(*context_, output_.get());
+  kuka_system_->EvalOutput(*context_, output_.get());
 
   // There are some dynamic_cast's in there right now.
-  EXPECT_NO_THROW(system_->EvalTimeDerivatives(*context_, derivatives_.get()));
+  EXPECT_NO_THROW(kuka_system_->EvalTimeDerivatives(*context_, derivatives_.get()));
 
   auto rbs2_xdot = derivatives_->get_state().CopyToVector();
 
