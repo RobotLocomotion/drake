@@ -37,13 +37,13 @@ const char* kLcmCommandChannel = "IIWA_COMMAND";
 /// trajectory onto the robot.  The paramaters @p nT and @p t are
 /// identical to their usage for inverseKinPointwise (@p nT is number
 /// of time samples and @p t is an array of times in seconds).
-class TrajectoryRunner {
+class IKTrajectoryGenerator {
  public:
-  TrajectoryRunner(std::shared_ptr<lcm::LCM> lcm, int nT, const double* t,
+  IKTrajectoryGenerator(std::shared_ptr<lcm::LCM> lcm, int nT, const double* t,
                    const Eigen::MatrixXd& traj)
       : lcm_(lcm), nT_(nT), t_(t), traj_(traj) {
     lcm_->subscribe(IiwaStatus<double>::channel(),
-                    &TrajectoryRunner::HandleStatus, this);
+                    &IKTrajectoryGenerator::HandleStatus, this);
     DRAKE_ASSERT(traj_.cols() == nT);
   }
 
@@ -240,7 +240,7 @@ int do_main(int argc, const char* argv[]) {
   }
 
   // Now run through the plan.
-  TrajectoryRunner runner(lcm, kNumTimesteps, t, q_sol);
+  IKTrajectoryGenerator runner(lcm, kNumTimesteps, t, q_sol);
   runner.Run();
   return 0;
 }
