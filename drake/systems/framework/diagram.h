@@ -299,6 +299,12 @@ class Diagram : public System<T> {
     for (const auto& entry : dependency_graph_) {
       const System<T>* const dest = entry.first.first;
       const System<T>* const src = entry.second.first;
+      // If the destination system has no direct feedthrough, it does not
+      // matter whether it is sorted before or after the systems on which
+      // it depends.
+      if (!dest->has_any_direct_feedthrough()) {
+        continue;
+      }
       if (GetSystemIndex(dest) <= GetSystemIndex(src)) {
         return false;
       }
