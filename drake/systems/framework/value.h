@@ -22,7 +22,7 @@ class Value;
 class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
  public:
   AbstractValue() {}
-  virtual ~AbstractValue() {}
+  virtual ~AbstractValue();
 
   /// Returns a copy of this AbstractValue.
   virtual std::unique_ptr<AbstractValue> Clone() const = 0;
@@ -78,6 +78,15 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
   const Value<T>* DownCastOrMaybeThrow() const {
     const Value<T>* value = dynamic_cast<const Value<T>*>(this);
     if (value == nullptr) {
+      // This exception is commonly thrown when the AbstractValue does not
+      // contain the concrete value type requested.
+      //
+      // However, it may also be thrown on OS X when there are competing
+      // typeinfo symbols for the concrete value type in different Mach-O
+      // libraries. You can fix this by adding and exporting explicit
+      // instantiations for the value type in libDrakeSystemFramework. See
+      // "The following explicit instantiations..." at the bottom of this
+      // file for more information.
       throw std::bad_cast();
     }
     return value;
@@ -92,6 +101,7 @@ template <typename T>
 class Value : public AbstractValue {
  public:
   explicit Value(const T& v) : value_(v) {}
+  ~Value() override {}
 
   // Values are copyable but not moveable.
   Value(const Value<T>& other) = default;
@@ -124,6 +134,7 @@ class VectorValue : public Value<VectorBase<T>*> {
  public:
   explicit VectorValue(std::unique_ptr<VectorBase<T>> v)
       : Value<VectorBase<T>*>(v.get()), owned_value_(std::move(v)) {}
+  ~VectorValue() override {}
 
   // VectorValues are copyable but not moveable.
   explicit VectorValue(const VectorValue<T>& other)
@@ -147,6 +158,19 @@ class VectorValue : public Value<VectorBase<T>*> {
  private:
   std::unique_ptr<VectorBase<T>> owned_value_;
 };
+
+// The following explicit instantiations are in libDrakeSystemFramework.
+// It is necessary to explicitly instantiate, and export, any implementation
+// of AbstractValue that would otherwise be implicitly instantiated elsewhere
+// in the library. If you do not create and export an explicit instantiation,
+// the Mach-O linker will generate a hidden typeinfo symbol in
+// libDrakeSystemFramework, and another hidden symbol in other libraries. These
+// typeinfos will have identical contents, but will not be identical for
+// the purpose of dynamic_cast, which will thwart unerasure of AbstractValue.
+
+
+extern template class DRAKESYSTEMFRAMEWORK_EXPORT Value<VectorBase<double>*>;
+extern template class DRAKESYSTEMFRAMEWORK_EXPORT VectorValue<double>;
 
 }  // namespace systems
 }  // namespace drake

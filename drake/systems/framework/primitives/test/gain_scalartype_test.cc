@@ -46,8 +46,7 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   // does not necessarily need to be the same as the size of the derivatives
   // vectors and, for this unit test, they are not equal.
   const double kGain = 2.0;
-  std::unique_ptr<System<T>> gain = make_unique<Gain<T>>(
-      kGain /* gain */, 3 /* length */);
+  auto gain = make_unique<Gain<T>>(kGain /* gain */, 3 /* length */);
   auto context = gain->CreateDefaultContext();
   auto output = gain->AllocateOutput(*context);
   auto input = make_unique<BasicVector<T>>(3 /* length */);
