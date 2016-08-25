@@ -15,6 +15,8 @@
 namespace drake {
 namespace systems {
 
+template<typename T> class DiagramBuilder;
+
 /// DiagramOutput is an implementation of SystemOutput that holds unowned
 /// OutputPort pointers. It is used to expose the outputs of constituent
 /// systems as outputs of a Diagram.
@@ -47,55 +49,11 @@ struct DiagramOutput : public SystemOutput<T> {
 /// Diagram is a System composed of one or more constituent Systems, arranged
 /// in a directed graph where the vertices are the constituent Systems
 /// themselves, and the edges connect the output of one constituent System
-/// to the input of another.
+/// to the input of another. To construct a Diagram, use a DiagramBuilder.
 template <typename T>
 class Diagram : public System<T> {
  public:
-  typedef std::pair<const System<T>*, int> PortIdentifier;
-
-  /// Unless you know what you're doing, use a DiagramBuilder instead of
-  /// calling this constructor directly.
-  ///
-  /// @param dependency_graph A map from the input ports of constituent systems
-  ///                         to the output ports on which they depend. This
-  ///                         graph is possibly cyclic, but must not contain
-  ///                         an algebraic loop.
-  /// @param sorted_systems   A list of the systems in the dependency_graph in
-  ///                         a valid, sorted execution order, such that if
-  ///                         EvalOutput is called on each system in
-  ///                         succession, every system will have valid inputs
-  ///                         by the time its turn comes.
-  /// @param input_port_ids   The ordered subsystem ports that are inputs to
-  ///                         the entire diagram.
-  /// @param output_port_ids  The ordered subsystem ports that are outputs of
-  ///                         the entire diagram.
-  Diagram(const std::map<PortIdentifier, PortIdentifier>& dependency_graph,
-          const std::vector<const System<T>*>& sorted_systems,
-          const std::vector<PortIdentifier>& input_port_ids,
-          const std::vector<PortIdentifier>& output_port_ids)
-      : dependency_graph_(dependency_graph),
-        sorted_systems_(sorted_systems),
-        input_port_ids_(input_port_ids),
-        output_port_ids_(output_port_ids) {
-    // Generate a map from the System pointer to its index in the sort order.
-    for (int i = 0; i < static_cast<int>(sorted_systems_.size()); ++i) {
-      sorted_systems_map_[sorted_systems_[i]] = i;
-    }
-    // Every system must appear in the sort order exactly once.
-    DRAKE_ABORT_UNLESS(sorted_systems_.size() == sorted_systems_map_.size());
-    // Every port named in the dependency_graph_ must actually exist.
-    DRAKE_ASSERT(PortsAreValid());
-    // The sort order must square with the dependency_graph_.
-    DRAKE_ASSERT(SortOrderIsCorrect());
-
-    // Add the inputs to the Diagram topology, and check their invariants.
-    for (const PortIdentifier& id : input_port_ids) {
-      ExportInput(id);
-    }
-    for (const PortIdentifier& id : output_port_ids) {
-      ExportOutput(id);
-    }
-  }
+  typedef typename std::pair<const System<T>*, int> PortIdentifier;
 
   ~Diagram() override {}
 
@@ -200,8 +158,68 @@ class Diagram : public System<T> {
     // TODO(david-german-tri): Actually map velocity to derivatives.
   }
 
+ protected:
+  /// Constructs an uninitialized Diagram. Subclasses that use this constructor
+  /// are obligated to call DiagramBuilder::BuildInto(this).
+  Diagram() {}
+
  private:
-  // Expose the given port as an input of the Diagram.
+  // A structural outline of a Diagram, produced by DiagramBuilder.
+  struct Blueprint {
+    // The ordered subsystem ports that are inputs to the entire diagram.
+    std::vector<PortIdentifier> input_port_ids;
+    // The ordered subsystem ports that are outputs of the entire diagram.
+    std::vector<PortIdentifier> output_port_ids;
+    // A map from the input ports of constituent systems to the output ports
+    // on which they depend. This graph is possibly cyclic, but must not
+    // contain an algebraic loop.
+    std::map<PortIdentifier, PortIdentifier> dependency_graph;
+    // A list of the systems in the dependency graph in a valid, sorted
+    // execution order, such that if EvalOutput is called on each system in
+    // succession, every system will have valid inputs by the time its turn
+    // comes.
+    std::vector<const System<T>*> sorted_systems;
+  };
+
+  // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
+  // This constructor is private because only DiagramBuilder calls it.
+  explicit Diagram(const Blueprint& blueprint) { Initialize(blueprint); }
+
+  // Validates the given @p blueprint and sets up the Diagram accordingly.
+  void Initialize(const Blueprint& blueprint) {
+    // The Diagram must not already be initialized.
+    DRAKE_ABORT_UNLESS(sorted_systems_.empty());
+    // The initialization must be nontrivial.
+    DRAKE_ABORT_UNLESS(!blueprint.sorted_systems.empty());
+
+    // Copy the data from the blueprint into private member variables.
+    dependency_graph_ = blueprint.dependency_graph;
+    sorted_systems_ = blueprint.sorted_systems;
+    input_port_ids_ = blueprint.input_port_ids;
+    output_port_ids_ = blueprint.output_port_ids;
+
+    // Generate a map from the System pointer to its index in the sort order.
+    for (int i = 0; i < static_cast<int>(sorted_systems_.size()); ++i) {
+      sorted_systems_map_[sorted_systems_[i]] = i;
+    }
+
+    // Every system must appear in the sort order exactly once.
+    DRAKE_ABORT_UNLESS(sorted_systems_.size() == sorted_systems_map_.size());
+    // Every port named in the dependency_graph_ must actually exist.
+    DRAKE_ASSERT(PortsAreValid());
+    // The sort order must square with the dependency_graph_.
+    DRAKE_ASSERT(SortOrderIsCorrect());
+
+    // Add the inputs to the Diagram topology, and check their invariants.
+    for (const PortIdentifier& id : input_port_ids_) {
+      ExportInput(id);
+    }
+    for (const PortIdentifier& id : output_port_ids_) {
+      ExportOutput(id);
+    }
+  }
+
+  // Exposes the given port as an input of the Diagram.
   void ExportInput(const PortIdentifier& port) {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
@@ -222,7 +240,7 @@ class Diagram : public System<T> {
     this->DeclareInputPort(descriptor);
   }
 
-  // Expose the given port as an output of the Diagram.
+  // Exposes the given port as an output of the Diagram.
   void ExportOutput(const PortIdentifier& port) {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
@@ -296,18 +314,20 @@ class Diagram : public System<T> {
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems on which they depend.
-  const std::map<PortIdentifier, PortIdentifier> dependency_graph_;
+  std::map<PortIdentifier, PortIdentifier> dependency_graph_;
 
   // The topologically sorted list of Systems in this Diagram.
-  const std::vector<const System<T>*> sorted_systems_;
+  std::vector<const System<T>*> sorted_systems_;
 
   // For fast conversion queries: what is the index of this System in the
   // sorted order?
   std::map<const System<T>*, int> sorted_systems_map_;
 
   // The ordered inputs and outputs of this Diagram.
-  const std::vector<PortIdentifier> input_port_ids_;
-  const std::vector<PortIdentifier> output_port_ids_;
+  std::vector<PortIdentifier> input_port_ids_;
+  std::vector<PortIdentifier> output_port_ids_;
+
+  friend class DiagramBuilder<T>;
 };
 
 }  // namespace systems
