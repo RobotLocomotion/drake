@@ -29,12 +29,26 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
-int do_main(int argc, const char* argv[]) {
-  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
-  RigidBodyTree tree(
-      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      DrakeJoint::FIXED);
+std::vector<RigidBodyConstraint*> generateDemoConstraints() {
+
+}
+
+
+int do_main(int argc, const char* argv[]) {
+
+  std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
+
+  const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
+
+  // Initializes LCM.
+  std::shared_ptr<LCM> lcm = std::make_shared<LCM>();
+
+  // Instantiates additional systems and cascades them with the rigid body
+  // system.
+  auto visualizer =
+      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,
+          iiwa_tree);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).
