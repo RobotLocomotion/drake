@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/drakeLCMSystem2_export.h"
-#include "drake/systems/framework/vector_base.h"
+#include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace systems {
@@ -40,7 +40,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmAndVectorBaseTranslator {
    * The default implementation in this class returns nullptr.  Subclasses that
    * require custom VectorBase subtypes should override it.
    */
-  virtual std::unique_ptr<VectorBase<double>> AllocateOutputVector() const;
+  virtual std::unique_ptr<BasicVector<double>> AllocateOutputVector() const;
 
   /**
    * Translates LCM message bytes into a `drake::systems::VectorBase` object.

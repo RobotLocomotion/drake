@@ -83,9 +83,9 @@ class DiagramTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
 
-    input0_.reset(new BasicVector<double>({1, 2, 4}));
-    input1_.reset(new BasicVector<double>({8, 16, 32}));
-    input2_.reset(new BasicVector<double>({64, 128, 256}));
+    input0_ = BasicVector<double>::Make({1, 2, 4});
+    input1_ = BasicVector<double>::Make({8, 16, 32});
+    input2_ = BasicVector<double>::Make({64, 128, 256});
 
     // Initialize the integrator states.
     auto integrator0_xc = GetMutableContinuousState(integrator0());
@@ -292,9 +292,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
 
-    input0_.reset(new BasicVector<double>(std::vector<double>{8}));
-    input1_.reset(new BasicVector<double>(std::vector<double>{64}));
-    input2_.reset(new BasicVector<double>(std::vector<double>{512}));
+    input0_ = BasicVector<double>::Make({8});
+    input1_ = BasicVector<double>::Make({64});
+    input2_ = BasicVector<double>::Make({512});
 
     context_->SetInputPort(0, MakeInput(std::move(input0_)));
     context_->SetInputPort(1, MakeInput(std::move(input1_)));
