@@ -71,7 +71,7 @@ VectorXd SimulateGravityCompensatedTorqueControlSystem(
 // robot should remain at rest. This test verifies that the arm remains at its
 // initial position within small error bounds.
 GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControlZeroInput) {
-  // Applies zero torque to the joints on the simulated IIWA robot.
+  // Applies zero torque to the joints in the simulated IIWA robot.
   VectorXd input_torque_vector = VectorXd::Zero(kNumDof);
 
   // Obtains an initial state of the simulation.
@@ -83,14 +83,14 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControlZeroInput) {
 
   // Expects norm of the joint position difference to be below a maximum value.
   double kMaxPositionErrorNorm = 1e-3;
-  EXPECT_TRUE((xf.head(kNumDof) - x0.head(kNumDof)).squaredNorm() <
+  EXPECT_LT((xf.head(kNumDof) - x0.head(kNumDof)).squaredNorm(),
               kMaxPositionErrorNorm);
 
   // Expects final joint velocity has a norm smaller than a maximum value.
   // This should be true since this controller guarantees no motion under no
   // input and no external forces.
   double kMaxVelocityNorm = 1e-3;
-  EXPECT_TRUE(xf.tail(kNumDof).squaredNorm() < kMaxVelocityNorm);
+  EXPECT_LT(xf.tail(kNumDof).squaredNorm(), kMaxVelocityNorm);
 }
 
 // Verifies the correct behavior of the KUKA IIWA Arm under a gravity
@@ -112,13 +112,13 @@ GTEST_TEST(testIIWAArm, iiwaArmGravityCompensatedTorqueControlSmallInput) {
   // Expects norm of the joint position difference to be greater that a
   // minimum value.
   double kMinPositionErrorNorm = 1e-3;
-  EXPECT_TRUE((xf.head(kNumDof) - x0.head(kNumDof)).squaredNorm() >
-              kMinPositionErrorNorm);
+  EXPECT_LT(kMinPositionErrorNorm,
+            (xf.head(kNumDof) - x0.head(kNumDof)).squaredNorm());
 
   // Expects final joint velocity has a norm larger than a minimum value. This
   // should be true since the torque input results in continuous acceleration.
   double kMinVelocityNorm = 1e-3;
-  EXPECT_TRUE(xf.tail(kNumDof).squaredNorm() > kMinVelocityNorm);
+  EXPECT_LT(kMinVelocityNorm, xf.tail(kNumDof).squaredNorm());
 }
 
 }  // namespace
