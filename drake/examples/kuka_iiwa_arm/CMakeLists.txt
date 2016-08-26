@@ -7,15 +7,18 @@ if(lcm_FOUND)
   add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
 
   add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES
-          iiwa_simulation.cc)
+          iiwa_simulation.cc iiwa_ik_trajectory_generator.cc)
   target_link_libraries(drakeKukaIiwaArm
     drakeRBSystem
     drakeShapes
     drakeCommon
-    drakeLCMSystem)
+    drakeLCMSystem
+    drakeIK
+    drakeTrajectories)
   pods_install_libraries(drakeKukaIiwaArm)
   drake_install_headers(
-          iiwa_simulation.h)
+          iiwa_simulation.h
+          iiwa_ik_trajectory_generator.h)
   pods_install_pkg_config_file(drake-kuka-iiwa-arm
           LIBS -ldrakeKukaIiwaArm
           REQUIRES
@@ -50,11 +53,14 @@ if(lcm_FOUND)
           drakeLCMSystem
           gflags)
 
-  add_executable(run_kuka_ik_control_demo run_kuka_ik_control_demo.cc)
-  target_link_libraries(run_kuka_ik_control_demo drakeIK
+  add_executable(run_kuka_iiwa_ik_control_demo run_kuka_iiwa_ik_control_demo.cc)
+  target_link_libraries(run_kuka_iiwa_ik_control_demo
+          drakeKukaIiwaArm
+          drakeRBSystem
           drakeTrajectories
           drakeRBM
-          drakeLCMSystem)
+          drakeLCMSystem
+          drakeControlUtil)
 endif()
 
 add_subdirectory(test)
