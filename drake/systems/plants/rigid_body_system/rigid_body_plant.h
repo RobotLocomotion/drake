@@ -17,15 +17,15 @@ namespace drake {
 namespace systems {
 
 // TODO(amcastro-tri): Make RBS inherit from Diagram<T> once #3215 is solved.
-// RigidBodySystem is a diagram containing the multibody dynamics engine system
+// RigidBodyPlant is a diagram containing the multibody dynamics engine system
 // connected to forcing systems and sensor systems.
 template<typename T>
-class DRAKE_RBS_EXPORT RigidBodySystem : public LeafSystem<T> {
+class DRAKE_RBS_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Doc.
-  explicit RigidBodySystem(std::unique_ptr<const RigidBodyTree> mbd_world);
+  explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree> mbd_world);
 
-  ~RigidBodySystem() override;
+  ~RigidBodyPlant() override;
 
   const RigidBodyTree& get_multibody_world() const;
 

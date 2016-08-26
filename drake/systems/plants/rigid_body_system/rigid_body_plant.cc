@@ -1,4 +1,4 @@
-#include "drake/systems/plants/rigid_body_system/rigid_body_system.h"
+#include "drake/systems/plants/rigid_body_system/rigid_body_plant.h"
 
 #include <vector>
 
@@ -21,7 +21,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-RigidBodySystem<T>::RigidBodySystem(
+RigidBodyPlant<T>::RigidBodyPlant(
     std::unique_ptr<const RigidBodyTree> mbd_world) :
     mbd_world_(move(mbd_world)) {
   // The input to the system is the generalized forces on the actuators.
@@ -33,64 +33,64 @@ RigidBodySystem<T>::RigidBodySystem(
 }
 
 template <typename T>
-RigidBodySystem<T>::~RigidBodySystem() { }
+RigidBodyPlant<T>::~RigidBodyPlant() { }
 
 template <typename T>
-bool RigidBodySystem<T>::has_any_direct_feedthrough() const {
+bool RigidBodyPlant<T>::has_any_direct_feedthrough() const {
   return false;
 }
 
 template <typename T>
-const RigidBodyTree& RigidBodySystem<T>::get_multibody_world() const {
+const RigidBodyTree& RigidBodyPlant<T>::get_multibody_world() const {
   return *mbd_world_.get();
 }
 
 template <typename T>
-int RigidBodySystem<T>::get_num_generalized_positions() const {
+int RigidBodyPlant<T>::get_num_generalized_positions() const {
   return mbd_world_->number_of_positions();
 }
 
 template <typename T>
-int RigidBodySystem<T>::get_num_generalized_velocities() const {
+int RigidBodyPlant<T>::get_num_generalized_velocities() const {
   return mbd_world_->number_of_velocities();
 }
 
 template <typename T>
-int RigidBodySystem<T>::get_num_states() const {
+int RigidBodyPlant<T>::get_num_states() const {
   return get_num_generalized_positions() + get_num_generalized_velocities();
 }
 
 template <typename T>
-int RigidBodySystem<T>::get_num_actuators() const {
+int RigidBodyPlant<T>::get_num_actuators() const {
   return mbd_world_->actuators.size();
 }
 
 template <typename T>
-int RigidBodySystem<T>::get_num_inputs() const {
+int RigidBodyPlant<T>::get_num_inputs() const {
   return get_num_actuators();
 }
 
 template <typename T>
-int RigidBodySystem<T>::get_num_outputs() const {
+int RigidBodyPlant<T>::get_num_outputs() const {
   return get_num_states();
 }
 
 template <typename T>
-void RigidBodySystem<T>::set_position(ContextBase<T>* context,
+void RigidBodyPlant<T>::set_position(ContextBase<T>* context,
                                       int position_index, T position) const {
   context->get_mutable_state()->continuous_state->
       get_mutable_generalized_position()->SetAtIndex(position_index, position);
 }
 
 template <typename T>
-void RigidBodySystem<T>::set_velocity(ContextBase<T>* context,
+void RigidBodyPlant<T>::set_velocity(ContextBase<T>* context,
                   int velocity_index, T position) const {
   context->get_mutable_state()->continuous_state->
       get_mutable_generalized_velocity()->SetAtIndex(velocity_index, position);
 }
 
 template <typename T>
-void RigidBodySystem<T>::set_state_vector(ContextBase<T>* context,
+void RigidBodyPlant<T>::set_state_vector(ContextBase<T>* context,
                       const Eigen::Ref<const VectorX<T>> x) const {
   context->get_mutable_state()->continuous_state->
       get_mutable_state()->SetFromVector(x);
@@ -98,7 +98,7 @@ void RigidBodySystem<T>::set_state_vector(ContextBase<T>* context,
 
 template <typename T>
 std::unique_ptr<ContinuousState<T>>
-RigidBodySystem<T>::AllocateContinuousState() const {
+RigidBodyPlant<T>::AllocateContinuousState() const {
   // The state is second-order.
   DRAKE_ASSERT(System<T>::get_input_port(0).get_size() == get_num_actuators());
   // TODO(amcastro-tri): add z state to track energy conservation.
@@ -109,7 +109,7 @@ RigidBodySystem<T>::AllocateContinuousState() const {
 }
 
 template <typename T>
-void RigidBodySystem<T>::EvalOutput(const ContextBase<T>& context,
+void RigidBodyPlant<T>::EvalOutput(const ContextBase<T>& context,
                                     SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
@@ -122,7 +122,7 @@ void RigidBodySystem<T>::EvalOutput(const ContextBase<T>& context,
 }
 
 template <typename T>
-void RigidBodySystem<T>::EvalTimeDerivatives(
+void RigidBodyPlant<T>::EvalTimeDerivatives(
     const ContextBase<T>& context, ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   const VectorBase<T>* input = context.get_vector_input(0);
@@ -290,7 +290,7 @@ void RigidBodySystem<T>::EvalTimeDerivatives(
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKE_RBS_EXPORT RigidBodySystem<double>;
+template class DRAKE_RBS_EXPORT RigidBodyPlant<double>;
 
 }  // namespace systems
 }  // namespace drake

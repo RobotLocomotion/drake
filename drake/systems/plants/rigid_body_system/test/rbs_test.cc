@@ -7,10 +7,10 @@
 #include "drake/common/drake_path.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_system/rigid_body_system.h"
+#include "drake/systems/plants/rigid_body_system/rigid_body_plant.h"
 
 using drake::parsers::ModelInstanceIdTable;
-using drake::systems::RigidBodySystem;
+using drake::systems::RigidBodyPlant;
 using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
@@ -44,7 +44,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
           DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world_ptr.get());
 
   // Instantiates a RigidBodyPlant from an MBD model of the world.
-  RigidBodySystem<double> rigid_body_sys(move(mbd_world_ptr));
+  RigidBodyPlant<double> rigid_body_sys(move(mbd_world_ptr));
 
   // Verifies that the number of states, inputs, and outputs are all zero.
   EXPECT_EQ(rigid_body_sys.get_num_states(), 0);
@@ -75,7 +75,7 @@ class KukaArmTest : public ::testing::Test {
             DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
-    kuka_system_ = make_unique<RigidBodySystem<double>>(move(mbd_world));
+    kuka_system_ = make_unique<RigidBodyPlant<double>>(move(mbd_world));
 
     context_ = kuka_system_->CreateDefaultContext();
     output_ = kuka_system_->AllocateOutput(*context_);
@@ -86,7 +86,7 @@ class KukaArmTest : public ::testing::Test {
   const int kNumVelocities_{7};
   const int kNumStates_{kNumPositions_ + kNumVelocities_};
 
-  unique_ptr<RigidBodySystem<double>> kuka_system_;
+  unique_ptr<RigidBodyPlant<double>> kuka_system_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
