@@ -130,9 +130,9 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
     Scalar sy = sin(yaw);
 
     motion_subspace_dot_times_v[0] = -pitchd * yawd * cp;
-    motion_subspace_dot_times_v[1] = rolld * yawd * cp * cr - pitchd * yawd * 
+    motion_subspace_dot_times_v[1] = rolld * yawd * cp * cr - pitchd * yawd *
       sp * sr - pitchd * rolld * sr;
-    motion_subspace_dot_times_v[2] = -pitchd * rolld * cr - pitchd * yawd * 
+    motion_subspace_dot_times_v[2] = -pitchd * rolld * cr - pitchd * yawd *
       cr * sp - rolld * yawd * cp * sr;
     motion_subspace_dot_times_v[3] = yd * (yawd * cp * cy - pitchd * sp * sy) -
       xd * (pitchd * cy * sp + yawd * cp * sy) - pitchd * zd * cp;
