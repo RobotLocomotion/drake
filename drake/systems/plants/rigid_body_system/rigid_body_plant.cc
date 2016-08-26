@@ -25,9 +25,11 @@ RigidBodyPlant<T>::RigidBodyPlant(
     std::unique_ptr<const RigidBodyTree> mbd_world) :
     mbd_world_(move(mbd_world)) {
   // The input to the system is the generalized forces on the actuators.
+  // TODO(amcastro-tri): add separate input ports for each model_id.
   System<T>::DeclareInputPort(
       kVectorValued, get_num_actuators(), kContinuousSampling);
   // The output to the system is the state vector.
+  // TODO(amcastro-tri): add separate output ports for each model_id.
   System<T>::DeclareOutputPort(
       kVectorValued, get_num_states(), kContinuousSampling);
 }
@@ -84,14 +86,15 @@ void RigidBodyPlant<T>::set_position(ContextBase<T>* context,
 
 template <typename T>
 void RigidBodyPlant<T>::set_velocity(ContextBase<T>* context,
-                  int velocity_index, T position) const {
+                  int velocity_index, T velocity) const {
   context->get_mutable_state()->continuous_state->
-      get_mutable_generalized_velocity()->SetAtIndex(velocity_index, position);
+      get_mutable_generalized_velocity()->SetAtIndex(velocity_index, velocity);
 }
 
 template <typename T>
 void RigidBodyPlant<T>::set_state_vector(ContextBase<T>* context,
                       const Eigen::Ref<const VectorX<T>> x) const {
+  DRAKE_ASSERT(x.size() == get_num_states());
   context->get_mutable_state()->continuous_state->
       get_mutable_state()->SetFromVector(x);
 }
