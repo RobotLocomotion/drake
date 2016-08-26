@@ -20,14 +20,14 @@ template<typename T>
 class DRAKE_RBS_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a RigidBodyTree model of the world.
-  /// A %RigidBodyPlant has an vector valued input port for external actuation
+  /// A %RigidBodyPlant has a vector valued input port for external actuation
   /// with size equal to the number of actuators in the RigidBodyTree.
   /// A %RigidBodyPlant outputs the state of the system in a vector valued port.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree> mbd_world);
 
   ~RigidBodyPlant() override;
 
-  //// Returns a constant reference to the multibody dynamics model
+  /// Returns a constant reference to the multibody dynamics model
   /// of the world.
   const RigidBodyTree& get_multibody_world() const;
 
@@ -43,12 +43,12 @@ class DRAKE_RBS_EXPORT RigidBodyPlant : public LeafSystem<T> {
   /// Returns the number of actuators.
   int get_num_actuators() const;
 
-  /// Returns size of the input vector to the system. This will equal the number
-  /// of actuators.
+  /// Returns the size of the input vector to the system. This equals the
+  /// number of actuators.
   int get_num_inputs() const;
 
-  /// Returns the size of the output vector of the system. This will equal the
-  /// size of the continuous state vector.
+  /// Returns the size of the output vector of the system. This equals the size
+  /// of the continuous state vector.
   int get_num_outputs() const;
 
   /// Sets the generalized coordinate @p position_index to the value
@@ -61,14 +61,13 @@ class DRAKE_RBS_EXPORT RigidBodyPlant : public LeafSystem<T> {
   void set_velocity(ContextBase<T>* context,
                     int velocity_index, T velocity) const;
 
-  /// Sets the continuous state vector of the system from a reference to an
-  /// Eigen vector.
+  /// Sets the continuous state vector of the system to be @p x.
   void set_state_vector(ContextBase<T>* context,
                         const Eigen::Ref<const VectorX<T>> x) const;
 
   /// Sets the state in @p context so that generalized positions and velocities
   /// are zero. For quaternion based joints the quaternion is set to be the
-  /// identity or zero rotation quaternion.
+  /// identity (or equivalently a zero rotation).
   void ObtainZeroConfiguration(ContextBase<T>* context) const {
     VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
     x0.head(get_num_positions()) =
@@ -88,7 +87,7 @@ class DRAKE_RBS_EXPORT RigidBodyPlant : public LeafSystem<T> {
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 
  private:
-  // some parameters defining the contact.
+  // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
   T penetration_stiffness_{150.0};  // An arbitrarily large number.
   T penetration_damping_{0};

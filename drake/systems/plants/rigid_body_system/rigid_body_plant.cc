@@ -79,21 +79,24 @@ int RigidBodyPlant<T>::get_num_outputs() const {
 
 template <typename T>
 void RigidBodyPlant<T>::set_position(ContextBase<T>* context,
-                                      int position_index, T position) const {
+                                     int position_index, T position) const {
+  DRAKE_ASSERT(context != nullptr);
   context->get_mutable_state()->continuous_state->
       get_mutable_generalized_position()->SetAtIndex(position_index, position);
 }
 
 template <typename T>
 void RigidBodyPlant<T>::set_velocity(ContextBase<T>* context,
-                  int velocity_index, T velocity) const {
+                                     int velocity_index, T velocity) const {
+  DRAKE_ASSERT(context != nullptr);
   context->get_mutable_state()->continuous_state->
       get_mutable_generalized_velocity()->SetAtIndex(velocity_index, velocity);
 }
 
 template <typename T>
-void RigidBodyPlant<T>::set_state_vector(ContextBase<T>* context,
-                      const Eigen::Ref<const VectorX<T>> x) const {
+void RigidBodyPlant<T>::set_state_vector(
+    ContextBase<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
+  DRAKE_ASSERT(context != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
   context->get_mutable_state()->continuous_state->
       get_mutable_state()->SetFromVector(x);
@@ -113,7 +116,7 @@ RigidBodyPlant<T>::AllocateContinuousState() const {
 
 template <typename T>
 void RigidBodyPlant<T>::EvalOutput(const ContextBase<T>& context,
-                                    SystemOutput<T>* output) const {
+                                   SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
@@ -160,6 +163,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   Eigen::MatrixXd H_and_neg_JT = H;
 
   // f_ext here has zero size but is a required argument in dynamicsBiasTerm.
+  // TODO(amcastro-tri): f_ext should be made an optional parameter
+  // of dynamicsBiasTerm()
   eigen_aligned_unordered_map<const RigidBody*, Vector6<T>> f_ext;
   VectorX<T> C = mbd_world_->dynamicsBiasTerm(kinsol, f_ext);
   if (num_actuators > 0) C -= mbd_world_->B * u;
@@ -171,13 +176,12 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     for (auto const& b : mbd_world_->bodies) {
       if (!b->hasParent()) continue;
       auto const& joint = b->getJoint();
-      if (joint.getNumPositions() == 1 &&
-          joint.getNumVelocities() ==
-              1) {  // taking advantage of only single-axis joints having joint
-        // limits makes things easier/faster here
+      // only for single-axis joints.
+      if (joint.getNumPositions() == 1 && joint.getNumVelocities() == 1) {
+        // limits makes things easier/faster here.
         T qmin = joint.getJointLimitMin()(0),
             qmax = joint.getJointLimitMax()(0);
-        // tau = k*(qlimit-q) - b(qdot)
+        // tau = k * (qlimit-q) - b(qdot)
         if (q(b->get_position_start_index()) < qmin)
           C(b->get_velocity_start_index()) -=
               penetration_stiffness_ * (qmin - q(b->get_position_start_index()))
@@ -198,36 +202,33 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     vector<int> bodyA_idx, bodyB_idx;
 
     // TODO(amcastro-tri): get rid of this const_cast.
-    // Unfortunately collisionDetect modifies the collision model in the RBT
+    // Unfortunately collisionDetect() modifies the collision model in the RBT
     // when updating the collision element poses.
     const_cast<RigidBodyTree*>(mbd_world_.get())->collisionDetect(
         kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
 
     for (int i = 0; i < phi.rows(); i++) {
-      if (phi(i) < 0.0) {  // then i have contact
-        // todo: move this entire block to a shared an updated "contactJacobian"
-        // method in RigidBodyTree
+      if (phi(i) < 0.0) {  // There is contact.
         auto JA = mbd_world_->transformPointsJacobian(
             kinsol, xA.col(i), bodyA_idx[i], 0, false);
         auto JB = mbd_world_->transformPointsJacobian(
             kinsol, xB.col(i), bodyB_idx[i], 0, false);
         Vector3<T> this_normal = normal.col(i);
 
-        // Computes the surface tangent basis
+        // Computes the surface tangent basis.
         Vector3<T> tangent1;
-        if (1.0 - this_normal(2) < EPSILON) {  // handle the unit-normal case
-          // (since it's unit length, just
-          // check z)
+        if (1.0 - this_normal(2) < EPSILON) {
+          // Handles the unit-normal case. Since it's unit length, just check z.
           tangent1 << 1.0, 0.0, 0.0;
         } else if (1 + this_normal(2) < EPSILON) {
-          tangent1 << -1.0, 0.0, 0.0;  // same for the reflected case
-        } else {                       // now the general case
+          tangent1 << -1.0, 0.0, 0.0;  // Same for the reflected case.
+        } else {                       // Now the general case.
           tangent1 << this_normal(1), -this_normal(0), 0.0;
           tangent1 /= sqrt(this_normal(1) * this_normal(1) +
               this_normal(0) * this_normal(0));
         }
         Vector3<T> tangent2 = this_normal.cross(tangent1);
-        Matrix3<T> R;  // rotation into normal coordinates
+        Matrix3<T> R;  // Rotation into normal coordinates.
         R.row(0) = tangent1;
         R.row(1) = tangent2;
         R.row(2) = this_normal;
@@ -235,23 +236,22 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
         auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
 
         {
-          // spring law for normal force:  fA_normal = -k*phi - b*phidot
-          // and damping for tangential force:  fA_tangent = -b*tangentdot
-          // (bounded by the friction cone)
+          // Spring law for normal force:  fA_normal = -k * phi - b * phidot
+          // and damping for tangential force:  fA_tangent = -b * tangentdot
+          // (bounded by the friction cone).
           Vector3<T> fA;
-          fA(2) =
-              std::max<T>(-penetration_stiffness_ * phi(i) -
-                                penetration_damping_ * relative_velocity(2),
-                               0.0);
+          fA(2) = std::max<T>(
+              -penetration_stiffness_ * phi(i) -
+               penetration_damping_ * relative_velocity(2), 0.0);
           fA.head(2) =
               -std::min<T>(
                   penetration_damping_,
                   friction_coefficient_ * fA(2) /
-                      (relative_velocity.head(2).norm() + EPSILON)) *
-                  relative_velocity.head(2);  // epsilon to avoid divide by zero
+                  (relative_velocity.head(2).norm() + EPSILON)) *
+                  relative_velocity.head(2);  // Epsilon avoids divide by zero.
 
-          // equal and opposite: fB = -fA.
-          // tau = (R*JA)^T fA + (R*JB)^T fB = J^T fA
+          // Equal and opposite: fB = -fA.
+          // tau = (R * JA)^T * fA + (R * JB)^T * fB = J^T * fA.
           C -= J.transpose() * fA;
         }
       }
@@ -260,19 +260,18 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   if (mbd_world_->getNumPositionConstraints()) {
     size_t nc = mbd_world_->getNumPositionConstraints();
-    const T alpha = 5.0;  // 1/time constant of position constraint
-    // satisfaction (see my latex rigid body notes)
+    // 1/time constant of position constraint satisfaction.
+    const T alpha = 5.0;
 
     prog.AddContinuousVariables(
         nc, "position constraint force");
 
-    // then compute the constraint force
     auto phi = mbd_world_->positionConstraints(kinsol);
     auto J = mbd_world_->positionConstraintsJacobian(kinsol, false);
     auto Jdotv = mbd_world_->positionConstraintsJacDotTimesV(kinsol);
 
-    // phiddot = -2 alpha phidot - alpha^2 phi  (0 + critically damped
-    // stabilization term)
+    // Critically damped stabilization term.
+    // phiddot = -2 * alpha * phidot - alpha^2 * phi.
     prog.AddLinearEqualityConstraint(
         J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), {vdot});
     H_and_neg_JT.conservativeResize(
@@ -280,7 +279,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
   }
 
-  // add [H,-J^T]*[vdot;f] = -C
+  // Adds [H,-J^T] * [vdot;f] = -C.
   prog.AddLinearEqualityConstraint(H_and_neg_JT, -C);
 
   prog.Solve();

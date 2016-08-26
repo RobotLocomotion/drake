@@ -76,12 +76,12 @@ class ContextBase {
   /// mutable access is requested for particular blocks of state variables.
   virtual State<T>* get_mutable_state() = 0;
 
-  // Returns a mutable pointer to the continuous component ot the state vector.
+  /// Returns a mutable pointer to the continuous component of the state vector.
   StateVector<T>* get_mutable_xc() {
     return get_mutable_state()->continuous_state->get_mutable_state();
   }
 
-  // Returns a const pointer to the continuous component ot the state vector.
+  /// Returns a const reference to the continuous component of the state vector.
   const StateVector<T>& get_xc() const {
     return get_state().continuous_state->get_state();
   }

@@ -3,14 +3,13 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/common/drake_path.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_system/rigid_body_plant.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
-using drake::parsers::ModelInstanceIdTable;
 using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
@@ -31,13 +30,12 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 
 // Tests the ability to load a URDF as part of the world of a rigid body system.
 GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
-  // Instantiates an MBD model of the world.
+  // Instantiates an Multibody Dynamics (MBD) model of the world.
   auto mbd_world_ptr = make_unique<RigidBodyTree>();
-  ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-          drake::GetDrakePath() +
-          "/systems/plants/rigid_body_system/test/world.urdf",
-          DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world_ptr.get());
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::GetDrakePath() +
+      "/systems/plants/rigid_body_system/test/world.urdf",
+      DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world_ptr.get());
 
   // Instantiates a RigidBodyPlant from an MBD model of the world.
   RigidBodyPlant<double> rigid_body_sys(move(mbd_world_ptr));
@@ -65,10 +63,9 @@ class KukaArmTest : public ::testing::Test {
   void SetUp() override {
     // Instantiates an MBD model of the world.
     auto mbd_world = make_unique<RigidBodyTree>();
-    ModelInstanceIdTable model_instance_id_table =
-        drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-            drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-            DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
+    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+        drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+        DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
     kuka_system_ = make_unique<RigidBodyPlant<double>>(move(mbd_world));
@@ -88,8 +85,8 @@ class KukaArmTest : public ::testing::Test {
   std::unique_ptr<ContinuousState<double>> derivatives_;
 };
 
-// Tests that the KukaArm system allocates in the context_ a continuous state
-// of the proper size.
+// Tests that the KukaArm system allocates a continuous state of the proper
+// size in the context.
 TEST_F(KukaArmTest, StateHasTheRightSizes) {
   const StateVector<double>& xc =
       context_->get_state().continuous_state->get_generalized_position();
@@ -103,9 +100,9 @@ TEST_F(KukaArmTest, StateHasTheRightSizes) {
   EXPECT_EQ(0, zc.size());
 }
 
-// Tests method to obtain the zero configuration of the system for a Kuka arm
-// model. In this case the zero configuration corresponds to all joint angles
-// and velocities being zero.
+// Tests the method that obtains the zero configuration of the system for a
+// Kuka arm model. In this case the zero configuration corresponds to all joint
+// angles and velocities being zero.
 // The system configuration is written to a context.
 TEST_F(KukaArmTest, ObtainZeroConfiguration) {
   // Connect to a "fake" free standing input.
@@ -124,7 +121,7 @@ TEST_F(KukaArmTest, ObtainZeroConfiguration) {
   ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
 }
 
-// Tests RigidBodyPlant<T>::EvalOutput for a Kuka arm model.
+// Tests RigidBodyPlant<T>::EvalOutput() for a Kuka arm model.
 TEST_F(KukaArmTest, EvalOutput) {
   // Checks that the number of input and output ports in the system and context
   // are consistent.
@@ -171,7 +168,7 @@ TEST_F(KukaArmTest, EvalOutput) {
   EXPECT_EQ(desired_state, output_port->get_value());
 }
 
-// Tests RigidBodyPlant<T>::EvalTimeDerivatives for a Kuka arm model.
+// Tests RigidBodyPlant<T>::EvalTimeDerivatives() for a Kuka arm model.
 // The test is performed by comparing against the results obtained with an RBS1
 // model of the same Kuka arm.
 GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
@@ -191,10 +188,9 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   // Instantiates a RigidBodyPlant (System 2.0) model of the Kuka arm.
   //////////////////////////////////////////////////////////////////////////////
   auto mbd_world = make_unique<RigidBodyTree>();
-  ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-          drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-          DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
 
   // Instantiates a RigidBodyPlant from an MBD model of the world.
   auto rbs2 = make_unique<RigidBodyPlant<double>>(move(mbd_world));
@@ -252,7 +248,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   auto rbs2_xdot = derivatives->get_state().CopyToVector();
 
   //////////////////////////////////////////////////////////////////////////////
-  // Starts comparison.
+  // Performs the comparison.
   //////////////////////////////////////////////////////////////////////////////
   EXPECT_TRUE(rbs1->number_of_positions() == rbs2->get_num_positions());
   EXPECT_TRUE(rbs1->number_of_velocities() == rbs2->get_num_velocities());
