@@ -67,7 +67,6 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
 class KukaArmTest : public ::testing::Test {
  protected:
   void SetUp() override {
-
     // Instantiates an MBD model of the world.
     auto mbd_world = make_unique<RigidBodyTree>();
     ModelInstanceIdTable model_instance_id_table =
@@ -124,7 +123,6 @@ TEST_F(KukaArmTest, ObtainZeroConfiguration) {
 }
 
 TEST_F(KukaArmTest, EvalOutput) {
-
   // Checks that the number of input and output ports in the system and context
   // are consistent.
   ASSERT_EQ(1, kuka_system_->get_num_input_ports());
@@ -139,7 +137,6 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_EQ(7, kuka_system_->get_input_port(0).get_size());
 
   // Connect to a "fake" free standing input.
-  //std::unique_ptr<BasicVector<double>> input_vector;
   context_->SetInputPort(0, MakeInput(
       make_unique<BasicVector<double>>(
           kuka_system_->get_num_actuators())));
@@ -168,13 +165,10 @@ TEST_F(KukaArmTest, EvalOutput) {
 
   // Asserts the output equals the state.
   EXPECT_EQ(desired_state, output_port->get_value());
-
 }
 
 TEST_F(KukaArmTest, EvalTimeDerivatives) {
-
   // Connect to a "fake" free standing input.
-  //std::unique_ptr<BasicVector<double>> input_vector;
   context_->SetInputPort(0, MakeInput(
       make_unique<BasicVector<double>>(
           kuka_system_->get_num_actuators())));
@@ -198,15 +192,11 @@ TEST_F(KukaArmTest, EvalTimeDerivatives) {
       dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, output_port);
 
-  // This call should not assert when compiling Debug builds.
   kuka_system_->EvalOutput(*context_, output_.get());
-
-  // There are some dynamic_cast's in there right now.
-  EXPECT_NO_THROW(kuka_system_->EvalTimeDerivatives(*context_, derivatives_.get()));
+  kuka_system_->EvalTimeDerivatives(*context_, derivatives_.get());
 
   // Asserts the output equals the state.
   EXPECT_EQ(desired_state, output_port->get_value());
-
 }
 
 
@@ -275,11 +265,8 @@ TEST_F(KukaArmTest, CompareWithRBS1Dynamics) {
       dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, output_port);
 
-  // This call should not assert when compiling Debug builds.
   kuka_system_->EvalOutput(*context_, output_.get());
-
-  // There are some dynamic_cast's in there right now.
-  EXPECT_NO_THROW(kuka_system_->EvalTimeDerivatives(*context_, derivatives_.get()));
+  kuka_system_->EvalTimeDerivatives(*context_, derivatives_.get());
 
   auto rbs2_xdot = derivatives_->get_state().CopyToVector();
 
@@ -321,4 +308,4 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1) {
   }
 }
 
-} // namespace drake
+}  // namespace drake

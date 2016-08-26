@@ -21,16 +21,15 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-RigidBodySystem<T>::RigidBodySystem(std::unique_ptr<const RigidBodyTree> mbd_world) :
+RigidBodySystem<T>::RigidBodySystem(
+    std::unique_ptr<const RigidBodyTree> mbd_world) :
     mbd_world_(move(mbd_world)) {
-
   // The input to the system is the generalized forces on the actuators.
   System<T>::DeclareInputPort(
       kVectorValued, get_num_actuators(), kContinuousSampling);
   // The output to the system is the state vector.
   System<T>::DeclareOutputPort(
       kVectorValued, get_num_states(), kContinuousSampling);
-
 }
 
 template <typename T>
@@ -74,6 +73,27 @@ int RigidBodySystem<T>::get_num_inputs() const {
 template <typename T>
 int RigidBodySystem<T>::get_num_outputs() const {
   return get_num_states();
+}
+
+template <typename T>
+void RigidBodySystem<T>::set_position(ContextBase<T>* context,
+                                      int position_index, T position) const {
+  context->get_mutable_state()->continuous_state->
+      get_mutable_generalized_position()->SetAtIndex(position_index, position);
+}
+
+template <typename T>
+void RigidBodySystem<T>::set_velocity(ContextBase<T>* context,
+                  int velocity_index, T position) const {
+  context->get_mutable_state()->continuous_state->
+      get_mutable_generalized_velocity()->SetAtIndex(velocity_index, position);
+}
+
+template <typename T>
+void RigidBodySystem<T>::set_state_vector(ContextBase<T>* context,
+                      const Eigen::Ref<const VectorX<T>> x) const {
+  context->get_mutable_state()->continuous_state->
+      get_mutable_state()->SetFromVector(x);
 }
 
 template <typename T>
@@ -271,7 +291,6 @@ void RigidBodySystem<T>::EvalTimeDerivatives(
 
 // Explicitly instantiates on the most common scalar types.
 template class DRAKE_RBS_EXPORT RigidBodySystem<double>;
-//template class DRAKESYSTEMFRAMEWORK_EXPORT Gain<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
