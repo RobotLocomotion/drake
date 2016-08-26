@@ -123,8 +123,7 @@ int do_main(int argc, const char* argv[]) {
   const double kStartTime = 0;
 
   // Starts the simulation.
-  run_ros_vehicle_sim(sys, kStartTime, duration, x0, model_instance_name_table,
-      options);
+  run_ros_vehicle_sim(sys, kStartTime, duration, x0, options);
 
   return 0;
 }

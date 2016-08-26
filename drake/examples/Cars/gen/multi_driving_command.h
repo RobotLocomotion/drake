@@ -28,9 +28,9 @@ class MultiDrivingCommand : public systems::BasicStateAndOutputVector<T> {
   const int kNumVehicles = 5;
 
   /// Default constructor.  Sets all rows to zero.
-  MultiDrivingCommand() : systems::BasicStateAndOutputVector<T>(
-      15) { //K::kNumCoordinates * kNumVehicles) {
-    this->SetFromVector(VectorX<T>::Zero(15)); //K::kNumCoordinates * kNumVehicles));
+  // TODO(liang.fok): Replace 15 with K::kNumCoordinates * kNumVehicles
+  MultiDrivingCommand() : systems::BasicStateAndOutputVector<T>(15) {
+    this->SetFromVector(VectorX<T>::Zero(15));
   }
 
   /// @name Getters and Setters

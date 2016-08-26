@@ -151,18 +151,13 @@ void AddFlatTerrainToWorld(
  *
  * @param[in] rigid_body_sys The rigid body system.
  *
- * @param[in] model_instance_name_table A mapping from model instance IDs to
- * model instance names. This table should only contain the vehicle model
- * instances and not other models in the world.
- *
  * @return The resulting vehicle system.
  */
 DRAKECARS_EXPORT
 std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
-CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
-    const std::map<int, std::string>* model_instance_name_table = nullptr);
+CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
 
 /**
  * Creates a multi-vehicle system by instantiating PD controllers for the
