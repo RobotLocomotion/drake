@@ -1,9 +1,9 @@
 add_matlab_test(NAME matlab/solvers/test/gloptipoly_constrained_test REQUIRES gloptipoly3 sedumi  spotless COMMAND gloptipoly_constrained_test)
 add_matlab_test(NAME matlab/solvers/test/rrt_basic COMMAND rrt_basic)
 add_matlab_test(NAME matlab/solvers/test/rrt_bugtrap COMMAND rrt_bugtrap)
-add_matlab_test(NAME matlab/solvers/test/rrt_piano_mover REQUIRES lcm OPTIONAL bullet COMMAND rrt_piano_mover)
-add_matlab_test(NAME matlab/solvers/test/rrt_piano_mover_rotation REQUIRES lcm OPTIONAL bullet COMMAND rrt_piano_mover_rotation)
-add_matlab_test(NAME matlab/solvers/test/rrt_piano_mover_translation REQUIRES lcm OPTIONAL bullet COMMAND rrt_piano_mover_translation)
+add_matlab_test(NAME matlab/solvers/test/rrt_piano_mover REQUIRES lcm libbot OPTIONAL bullet COMMAND rrt_piano_mover)
+add_matlab_test(NAME matlab/solvers/test/rrt_piano_mover_rotation REQUIRES lcm libbot OPTIONAL bullet COMMAND rrt_piano_mover_rotation)
+add_matlab_test(NAME matlab/solvers/test/rrt_piano_mover_translation REQUIRES lcm libbot OPTIONAL bullet COMMAND rrt_piano_mover_translation)
 # add_matlab_test(NAME matlab/solvers/test/sixHumpCamel REQUIRES spotless OPTIONAL bertini gloptipoly3 snopt COMMAND sixHumpCamel)  # FIXME
 add_matlab_test(NAME matlab/solvers/test/testConstraint COMMAND testConstraint)
 add_matlab_test(NAME matlab/solvers/test/testGurobiLCP REQUIRES gurobi COMMAND testGurobiLCP)

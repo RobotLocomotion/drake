@@ -28,4 +28,4 @@ add_matlab_test(NAME examples/Atlas/test/testKin2 OPTIONAL bullet COMMAND testKi
 # add_matlab_test(NAME examples/Atlas/test/testKneeSingularity REQUIRES iris lcm mosek COMMAND testKneeSingularity)  # FIXME: see #1603
 add_matlab_test(NAME examples/Atlas/test/testMex OPTIONAL bullet COMMAND testMex)
 add_matlab_test(NAME examples/Atlas/test/testOutputGradients OPTIONAL bullet gurobi snopt COMMAND testOutputGradients)
-add_matlab_test(NAME examples/Atlas/test/testRunningPlanner REQUIRES bullet lcm OPTIONAL snopt COMMAND testRunningPlanner)
+add_matlab_test(NAME examples/Atlas/test/testRunningPlanner REQUIRES bullet lcm libbot OPTIONAL snopt COMMAND testRunningPlanner)
