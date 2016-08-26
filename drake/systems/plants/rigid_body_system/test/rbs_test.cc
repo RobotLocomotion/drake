@@ -109,6 +109,8 @@ TEST_F(KukaArmTest, StateHasTheRightSizes) {
 // The system configuration is written to a context.
 TEST_F(KukaArmTest, ObtainZeroConfiguration) {
   // Connect to a "fake" free standing input.
+  // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
+  // derivatives per #3218.
   context_->SetInputPort(0, MakeInput(
       make_unique<BasicVector<double>>(
           kuka_system_->get_num_actuators())));
@@ -138,6 +140,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_EQ(7, kuka_system_->get_input_port(0).get_size());
 
   // Connect to a "fake" free standing input.
+  // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
+  // derivatives per #3218.
   context_->SetInputPort(0, MakeInput(
       make_unique<BasicVector<double>>(
           kuka_system_->get_num_actuators())));
@@ -161,7 +165,6 @@ TEST_F(KukaArmTest, EvalOutput) {
       dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, output_port);
 
-  // This call should not assert when compiling Debug builds.
   kuka_system_->EvalOutput(*context_, output_.get());
 
   // Asserts the output equals the state.
@@ -234,6 +237,8 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
 
   // For rbs2:
   // Connect to a "fake" free standing input with the same values used for RBS1.
+  // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
+  // derivatives per #3218.
   auto input_vector = std::make_unique<BasicVector<double>>(
       rbs2->get_num_actuators());
   input_vector->set_value(u);
