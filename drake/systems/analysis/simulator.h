@@ -1,5 +1,8 @@
 #pragma once
 
+#include <tuple>
+#include <utility>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/drakeSystemAnalysis_export.h"
@@ -33,7 +36,7 @@ Given a current Context, we expect a System to provide us with
  - a projection method for least-squares correction of violated higher-level
    constraints (position and velocity level),
  - a time-of-next-sample method that can be used to adjust the integrator
-   stepsize in preparation for a discrete update,
+   step size in preparation for a discrete update,
  - a method that can update discrete variables when their sample time is
    reached,
  - witness (guard) functions for event isolation,
@@ -43,7 +46,16 @@ Given a current Context, we expect a System to provide us with
 The continuous parts of the trajectory are advanced using a numerical
 integrator. Different integrators have different properties; if you know about
 that you can choose the one that is most appropriate for your application.
-Otherwise, a default is provided which is adequate for most systems. **/
+Otherwise, a default is provided which is adequate for most systems.
+
+@tparam T The vector element type, which must be a valid Eigen scalar.
+
+Instantiated templates for the following kinds of T's are provided and
+available to link against in libdrakeSystemAnalysis:
+ - double
+ - AutoDiffXd
+
+ Other instantiations are permitted but take longer to compile. **/
 // TODO(sherm1) When API stabilizes, should list the methods above in addition
 // to describing them.
 template <typename T>
@@ -90,6 +102,10 @@ class Simulator {
   // TODO(sherm1) Publish() should be called at publishing sample times.
   void StepTo(const T& final_time);
 
+  /** @name                    Simulator Settings
+  These methods provide access to settings that affect the behavior of the
+  %Simulator. Individual integrators may have additional settings. **/
+  /**@{**/
   /** Specify that a particular type of integrator be used for the continuous
   portions of the simulation. Otherwise a default integrator is chosen for
   you. **/
@@ -127,12 +143,14 @@ class Simulator {
 
   /** Request that the first attempted integration step have a particular size.
   Otherwise the integrator will estimate a suitable size for the initial step
-  attempt. For variable-step integration this will be treated as a maximum size
+  attempt. For fixed-step integration, all steps will be taken at this step
+  size. For variable-step integration this will be treated as a maximum size
   subject to accuracy requirements and event occurrences. You can find out what
   size *actually* worked with `get_actual_initial_step_size_taken()`. **/
-  void request_initial_stepsize(double step_size) {
-    req_initial_step_size_ = step_size;
+  void request_initial_step_size_attempt(double step_size) {
+    req_initial_step_size_attempt_ = step_size;
   }
+  /**@}**/
 
   /** Returns a const reference to the internally-maintained Context holding the
   most recent step in the trajectory. This is suitable for publishing or
@@ -164,6 +182,16 @@ class Simulator {
   These methods track relevant activity of the %Simulator since the last call
   to `Initialize()`. **/
   /**@{**/
+  /** Forget accumulated statistics. These are reset to the values they have
+  post construction or immediately after `Initialize()`. **/
+  void reset_statistics() {
+    actual_initial_step_size_taken_ = kNaN;
+    smallest_step_size_taken_ = kNaN;
+    largest_step_size_taken_ = kNaN;
+    num_steps_taken_ = 0;
+    num_samples_taken_ = 0;
+  }
+
   /** What what the actual size of the successful first step? **/
   T get_actual_initial_step_size_taken() const {
     return actual_initial_step_size_taken_;
@@ -183,13 +211,32 @@ class Simulator {
 
   /** How many discrete sample events have been processed since the last
   Initialize() call? **/
-  int64_t get_num_discrete_samples() const { return num_discrete_samples_; }
+  int64_t get_num_samples_taken() const { return num_samples_taken_; }
   /**@}**/
 
  private:
-  static constexpr double kDefaultAccuracy = 0.001;  // 1/10 of 1%.
+  // Return a proposed end time for this step, and whether we picked that time
+  // because we hit the next sample time.
+  static std::pair<T, bool> ProposeStepEndTime(const T& step_start_time,
+                                               const T& ideal_step_size,
+                                               const T& next_sample_time,
+                                               const T& final_time);
+
+  // Put "in use" settings back to their default values and reset runtime
+  // variables. These will be modified afterwards in accordance with caller's
+  // requests.
+  void reset_simulator_settings_in_use() {
+    integrator_in_use_ = kDefaultIntegrator;
+    accuracy_in_use_ = kDefaultAccuracy;
+    initial_step_size_attempt_in_use_ = kDefaultInitialStepSizeAttempt;
+    next_step_size_to_try_ = initial_step_size_attempt_in_use_;
+    initialization_done_ = false;
+  }
+
+  static constexpr double kDefaultAccuracy = 1e-3;  // 1/10 of 1%.
   static constexpr IntegratorType kDefaultIntegrator =
       IntegratorType::RungeKutta2;
+  static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
   static constexpr double kMaxStretch = 0.01;  // Allow 1% step size stretch.
   static constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
@@ -204,25 +251,26 @@ class Simulator {
 
   // These are the caller's requests, if any.
   IntegratorType req_integrator_{IntegratorType::UseDefault};
-  double req_accuracy_{0};           // means "unspecified, use default"
-  double req_initial_step_size_{0};  // means "unspecified, use default"
+  double req_accuracy_{0};                   // means "unspecified, use default"
+  double req_initial_step_size_attempt_{0};  // means "unspecified, use default"
 
-  // This is set true by Initialize().
-  bool initialization_done_{false};
-
-  IntegratorType integrator_in_use_{IntegratorType::UseDefault};
+  // Simulation settings.
+  IntegratorType integrator_in_use_{kDefaultIntegrator};
   double accuracy_in_use_{kDefaultAccuracy};
-  T initial_step_size_in_use_{1e-3};
+  double initial_step_size_attempt_in_use_{kDefaultInitialStepSizeAttempt};
 
+  // Runtime variables.
   // This is set at the end of each step to guide the next one.
-  T next_step_size_to_try_{1e-3};
+  T next_step_size_to_try_{initial_step_size_attempt_in_use_};
+  // Set by Initialize() and reset by various traumas.
+  bool initialization_done_{false};
 
   // Statistics.
   T actual_initial_step_size_taken_{kNaN};
   T smallest_step_size_taken_{kNaN};
   T largest_step_size_taken_{kNaN};
   int64_t num_steps_taken_{0};
-  int64_t num_discrete_samples_{0};
+  int64_t num_samples_taken_{0};
 };
 
 // No need for user code to instantiate these; they are in the library.
@@ -246,31 +294,29 @@ Simulator<T>::Simulator(const System<T>& system,
 template <typename T>
 void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
+  // TODO(sherm1) Invoke System's initial conditions computation.
 
-  if (req_integrator_ == IntegratorType::UseDefault)
-    integrator_in_use_ = kDefaultIntegrator;
-  else
+  // Restore default values.
+  reset_statistics();
+  reset_simulator_settings_in_use();
+
+  // Override the default settings if the user has spoken.
+  if (req_integrator_ != IntegratorType::UseDefault)
     integrator_in_use_ = req_integrator_;
+  if (req_accuracy_ > 0) accuracy_in_use_ = req_accuracy_;
+  if (req_initial_step_size_attempt_ > 0)
+    initial_step_size_attempt_in_use_ = req_initial_step_size_attempt_;
 
-  if (req_accuracy_ > T(0)) accuracy_in_use_ = req_accuracy_;
-  if (req_initial_step_size_ > T(0))
-    initial_step_size_in_use_ = req_initial_step_size_;
-
-  next_step_size_to_try_ = initial_step_size_in_use_;
-
-  actual_initial_step_size_taken_ = T(kNaN);
-  smallest_step_size_taken_ = T(kNaN);
-  largest_step_size_taken_ = T(kNaN);
-  num_steps_taken_ = 0;
-  num_discrete_samples_ = 0;
-
-  // TODO(sherm1) Anything to initialize in context?
+  // Initialize runtime variables.
+  next_step_size_to_try_ = initial_step_size_attempt_in_use_;
   initialization_done_ = true;
 }
 
 template <typename T>
 void Simulator<T>::StepTo(const T& final_time) {
   if (!initialization_done_) Initialize();
+
+  DRAKE_THROW_UNLESS(final_time >= context_->get_time());
 
   // Find the continuous state xc within the Context, just once.
   StateVector<T>* xc =
@@ -286,7 +332,7 @@ void Simulator<T>::StepTo(const T& final_time) {
     // First make any necessary discrete updates.
     if (sample_time_hit) {
       system_.Update(context_.get(), sample_actions);
-      ++num_discrete_samples_;
+      ++num_samples_taken_;
     }
 
     // Now we can calculate start-of-step time derivatives.
@@ -304,32 +350,18 @@ void Simulator<T>::StepTo(const T& final_time) {
     // That may have been the final trajectory entry.
     if (step_start_time == final_time) break;
 
-    // Next, determine the end_time we are going to try to reach with the
-    // next step. Start with the ideal step size.
-    T step_end_time = step_start_time + next_step_size_to_try_;
-
-    // We can be persuaded to take a slightly bigger step if necessary to
-    // avoid a tiny sliver step before we have to do something discrete.
-    const T step_stretch_time =
-        step_end_time + kMaxStretch * next_step_size_to_try_;
-
     // How far can we go before we have to take a sampling break?
-    const T sample_time =
+    const T next_sample_time =
         system_.CalcNextSampleTime(*context_, &sample_actions);
-    DRAKE_ASSERT(sample_time >= step_start_time);
+    DRAKE_ASSERT(next_sample_time >= step_start_time);
 
-    // The step may be limited or stretched either by final time or sample
-    // time, whichever comes sooner.
-    sample_time_hit = false;
-    if (sample_time <= final_time) {
-      if (step_stretch_time >= sample_time) {
-        step_end_time = sample_time;
-        sample_time_hit = true;
-      }
-    } else {  // final_time < sample_time.
-      if (step_stretch_time >= final_time) step_end_time = final_time;
-    }
+    // Figure out the largest step we can reasonably take, and whether we had
+    // to stop there due to hitting the next sample time.
+    T step_end_time;
+    std::tie(step_end_time, sample_time_hit) = ProposeStepEndTime(
+        step_start_time, next_step_size_to_try_, next_sample_time, final_time);
 
+    // Attempt to take a step of the proposed size.
     if (step_end_time > step_start_time) {
       const T h = step_end_time - step_start_time;
 
@@ -367,6 +399,33 @@ void Simulator<T>::StepTo(const T& final_time) {
       }
     }
   }
+}
+
+template <typename T>
+std::pair<T, bool> Simulator<T>::ProposeStepEndTime(const T& step_start_time,
+                                                    const T& ideal_step_size,
+                                                    const T& next_sample_time,
+                                                    const T& final_time) {
+  // Start with the ideal step size.
+  T step_end_time = step_start_time + ideal_step_size;
+
+  // We can be persuaded to take a slightly bigger step if necessary to
+  // avoid a tiny sliver step before we have to do something discrete.
+  const T step_stretch_time = step_end_time + kMaxStretch * ideal_step_size;
+
+  // The step may be limited or stretched either by final time or sample
+  // time, whichever comes sooner.
+  bool sample_time_hit = false;
+  if (next_sample_time <= final_time) {
+    if (next_sample_time <= step_stretch_time) {
+      step_end_time = next_sample_time;
+      sample_time_hit = true;
+    }
+  } else {  // final_time < sample_time.
+    if (step_stretch_time >= final_time) step_end_time = final_time;
+  }
+
+  return std::make_pair(step_end_time, sample_time_hit);
 }
 
 }  // namespace systems

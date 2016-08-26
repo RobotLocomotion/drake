@@ -186,7 +186,8 @@ class System {
                             SampleActions* actions) const {
     // TODO(sherm1) Validate context (at least in Debug).
     DRAKE_ASSERT(actions != nullptr);
-    return DoCalcNextSampleTime(context, actions);
+    DoCalcNextSampleTime(context, actions);
+    return actions->time;
   }
 
   /// Computes the output for the given context, possibly updating values
@@ -363,11 +364,11 @@ class System {
   /// Implement this method if your System has any discrete actions which must
   /// interrupt the continuous simulation. You may assume that the context
   /// has already been validated and the `actions` pointer is not null.
-  /// The default implemention returns Infinity and does not write to `actions`.
-  virtual double DoCalcNextSampleTime(const ContextBase<T>& context,
-                                      SampleActions* actions) const {
+  /// The default implemention returns with `actions` having a next sample
+  /// time of Infinity and no actions to take.
+  virtual void DoCalcNextSampleTime(const ContextBase<T>& context,
+                                    SampleActions* actions) const {
     actions->time = std::numeric_limits<double>::infinity();
-    return actions->time;
   }
 
  private:

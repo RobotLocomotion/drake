@@ -45,12 +45,10 @@ class MySpringMassSystem : public SpringMassSystem {
   // time is exactly at a sample time, we assume the sample has already been
   // done and return the following sample time. That means we don't get a
   // sample at 0 but will get one at the end.
-  double DoCalcNextSampleTime(const ContextBase<double>& context,
-                              SampleActions* actions) const override {
-    if (sample_rate_ <= 0.) {
+  void DoCalcNextSampleTime(const ContextBase<double>& context,
+                            SampleActions* actions) const override {
+    if (sample_rate_ <= 0.)
       actions->time = std::numeric_limits<double>::infinity();
-      return actions->time;
-    }
 
     // For reliable behavior, convert floating point times into integer
     // sample counts. We want the ceiling unless it is the same as the floor.
@@ -63,7 +61,6 @@ class MySpringMassSystem : public SpringMassSystem {
     // Convert the next sample count back to a time to return.
     const double next_sample = which / sample_rate_;
     actions->time = next_sample;
-    return actions->time;
   }
 
  private:
@@ -95,15 +92,18 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   EXPECT_EQ(context.get_time(), 1.);  // Should be exact.
 
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
-  EXPECT_EQ(simulator.get_num_discrete_samples(), 0);
+  EXPECT_EQ(simulator.get_num_samples_taken(), 0);
 
   cout << "num steps taken=" << simulator.get_num_steps_taken() << endl;
-  cout << "num discrete samples=" << simulator.get_num_discrete_samples()
+  cout << "num discrete samples=" << simulator.get_num_samples_taken()
        << endl;
   cout << "actual initial step="
        << simulator.get_actual_initial_step_size_taken() << endl;
   cout << "min/max step=" << simulator.get_smallest_step_size_taken() << " / "
        << simulator.get_largest_step_size_taken() << endl;
+  
+  // Current time is 1. An earlier final time should fail.
+  EXPECT_THROW(simulator.StepTo(0.5), std::runtime_error);
 }
 
 // Repeat the previous test but now the continuous steps are interrupted
@@ -121,7 +121,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   // Set initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
 
-  simulator.request_initial_stepsize(1e-3);
+  simulator.request_initial_step_size_attempt(1e-3);
   simulator.set_integrator_type(IntegratorType::RungeKutta2);
   simulator.Initialize();
 
@@ -131,10 +131,10 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   simulator.StepTo(1.);
 
   EXPECT_GT(simulator.get_num_steps_taken(), 1000);
-  EXPECT_EQ(simulator.get_num_discrete_samples(), 30);
+  EXPECT_EQ(simulator.get_num_samples_taken(), 30);
 
   cout << "num steps taken=" << simulator.get_num_steps_taken() << endl;
-  cout << "num discrete samples=" << simulator.get_num_discrete_samples()
+  cout << "num discrete samples=" << simulator.get_num_samples_taken()
        << endl;
   cout << "actual initial step="
        << simulator.get_actual_initial_step_size_taken() << endl;
