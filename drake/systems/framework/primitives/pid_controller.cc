@@ -10,25 +10,35 @@ namespace systems {
 
 template <typename T>
 PidController<T>::PidController(
-    const T& Kp, const T& Ki, int length) : Diagram<T>() {
+    const T& Kp, const T& Ki, const T& Kd, int length) : Diagram<T>() {
+  DRAKE_ASSERT(Kp >= 0);
+  DRAKE_ASSERT(Ki >= 0);
+  DRAKE_ASSERT(Kd >= 0);
+  DRAKE_ASSERT(length > 0);
   pass_through_ = make_unique<PassThrough<T>>(length);
   proportional_gain_ = make_unique<Gain<T>>(Kp /* gain */, length /* length */);
-  integrator_gain_ = make_unique<Gain<T>>(Ki /* gain */, length /* length */);
+  integral_gain_ = make_unique<Gain<T>>(Ki /* gain */, length /* length */);
+  derivative_gain_ = make_unique<Gain<T>>(Kd /* gain */, length /* length */);
   integrator_ = make_unique<Integrator<T>>(length);
-  adder_ = make_unique<Adder<T>>(2 /* inputs */, length /* length */);
+  adder_ = make_unique<Adder<T>>(3 /* inputs */, length /* length */);
 
   DiagramBuilder<T> builder;
+  // Input 0 connects to the proportional and integral components.
   builder.ExportInput(pass_through_->get_input_port(0));
+  // Input 1 connects directly to the derivative component.
+  builder.ExportInput(derivative_gain_->get_input_port(0));
   builder.Connect(pass_through_->get_output_port(0),
                   proportional_gain_->get_input_port(0));
   builder.Connect(pass_through_->get_output_port(0),
                   integrator_->get_input_port(0));
   builder.Connect(integrator_->get_output_port(0),
-                  integrator_gain_->get_input_port(0));
+                  integral_gain_->get_input_port(0));
   builder.Connect(proportional_gain_->get_output_port(0),
                   adder_->get_input_port(0));
-  builder.Connect(integrator_gain_->get_output_port(0),
+  builder.Connect(integral_gain_->get_output_port(0),
                   adder_->get_input_port(1));
+  builder.Connect(derivative_gain_->get_output_port(0),
+                  adder_->get_input_port(2));
   builder.ExportOutput(adder_->get_output_port(0));
   builder.BuildInto(this);
 }
@@ -36,6 +46,17 @@ PidController<T>::PidController(
 template <typename T>
 bool PidController<T>::has_any_direct_feedthrough() const {
   return true;
+}
+
+template <typename T>
+const SystemPortDescriptor<T>& PidController<T>::get_error_signal_port() const {
+  return Diagram<T>::get_input_port(0);
+}
+
+template <typename T>
+const SystemPortDescriptor<T>&
+PidController<T>::get_error_signal_rate_port() const {
+  return Diagram<T>::get_input_port(1);
 }
 
 template <typename T>
