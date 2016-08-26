@@ -103,6 +103,10 @@ TEST_F(KukaArmTest, StateHasTheRightSizes) {
   EXPECT_EQ(0, zc.size());
 }
 
+// Tests method to obtain the zero configuration of the system for a Kuka arm
+// model. In this case the zero configuration corresponds to all joint angles
+// and velocities being zero.
+// The system configuration is written to a context.
 TEST_F(KukaArmTest, ObtainZeroConfiguration) {
   // Connect to a "fake" free standing input.
   context_->SetInputPort(0, MakeInput(
@@ -118,6 +122,7 @@ TEST_F(KukaArmTest, ObtainZeroConfiguration) {
   ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
 }
 
+// Tests RigidBodyPlant<T>::EvalOutput for a Kuka arm model.
 TEST_F(KukaArmTest, EvalOutput) {
   // Checks that the number of input and output ports in the system and context
   // are consistent.
@@ -163,6 +168,9 @@ TEST_F(KukaArmTest, EvalOutput) {
   EXPECT_EQ(desired_state, output_port->get_value());
 }
 
+// Tests RigidBodyPlant<T>::EvalTimeDerivatives for a Kuka arm model.
+// The test is performed by comparing against the results obtained with an RBS1
+// model of the same Kuka arm.
 GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   //////////////////////////////////////////////////////////////////////////////
   // Instantiates a RigidBodySystem (System 1.0) model of the Kuka arm.
