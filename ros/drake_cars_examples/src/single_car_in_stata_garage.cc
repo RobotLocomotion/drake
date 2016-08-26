@@ -36,10 +36,11 @@ using drake::ros::systems::SensorPublisherJointState;
 using drake::ros::systems::SensorPublisherLidar;
 using drake::ros::systems::SensorPublisherOdometry;
 
-/** Driving Simulator
- * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
+/**
+ * This implements the main method of the single car simulation. The vehicle
+ * resides within the Stata garage.
  */
-int do_main(int argc, const char* argv[]) {
+int DoMain(int argc, const char* argv[]) {
   ::ros::init(argc, const_cast<char**>(argv), "single_car_in_stata_garage");
 
   // Initializes the communication layer.
@@ -134,5 +135,5 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::ros::cars::do_main(argc, argv);
+  return drake::ros::cars::DoMain(argc, argv);
 }
