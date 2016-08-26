@@ -251,6 +251,12 @@ class Diagram : public System<T> {
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
 
+  int GetSystemIndex(const System<T>* sys) const {
+    auto it = sorted_systems_map_.find(sys);
+    DRAKE_ABORT_UNLESS(it != sorted_systems_map_.end());
+    return it->second;
+  }
+
  private:
   // A structural outline of a Diagram, produced by DiagramBuilder.
   struct Blueprint {
@@ -347,12 +353,6 @@ class Diagram : public System<T> {
         subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
         subsystem_descriptor.get_sampling());
     this->DeclareOutputPort(descriptor);
-  }
-
-  int GetSystemIndex(const System<T>* sys) const {
-    auto it = sorted_systems_map_.find(sys);
-    DRAKE_ABORT_UNLESS(it != sorted_systems_map_.end());
-    return it->second;
   }
 
   // Converts a PortIdentifier to a DiagramContext::PortIdentifier.

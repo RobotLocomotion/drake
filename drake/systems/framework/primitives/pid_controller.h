@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/gain.h"
@@ -21,6 +22,15 @@ class PidController : public Diagram<T> {
 
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
+
+  /// Sets @p context to a default state in which the integral of the
+  /// controller is zero.
+  void SetDefaultState(ContextBase<T>* context) const;
+
+  /// Sets the integral of the %PidController to zero.
+  /// @p value must be a column vector of the appropriate size.
+  void set_integral_value(ContextBase<T>* context,
+                          const Eigen::Ref<const VectorX<T>>& value) const;
 
  private:
   std::unique_ptr<Adder<T>> adder_;
