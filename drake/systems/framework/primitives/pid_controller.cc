@@ -47,10 +47,8 @@ void PidController<T>::SetDefaultState(ContextBase<T>* context) const {
 template <typename T>
 void PidController<T>::set_integral_value(
     ContextBase<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
-  auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
   ContextBase<T>* integrator_context =
-      diagram_context->GetMutableSubsystemContext(
-          Diagram<T>::GetSystemIndex(integrator_.get()));
+      Diagram<T>::GetMutableSubSystemContext(context, integrator_.get());
   integrator_->set_integral_value(integrator_context, value);
 }
 

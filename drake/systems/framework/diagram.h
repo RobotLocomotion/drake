@@ -257,6 +257,14 @@ class Diagram : public System<T> {
     return it->second;
   }
 
+  /// Returns the sub-context that corresponds to the system @p sub_system.
+  ContextBase<T>* GetMutableSubSystemContext(
+      ContextBase<T>* context, const System<T>* sub_system) const {
+    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+    return diagram_context->GetMutableSubsystemContext(
+        Diagram<T>::GetSystemIndex(sub_system));
+  }
+
  private:
   // A structural outline of a Diagram, produced by DiagramBuilder.
   struct Blueprint {
