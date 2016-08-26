@@ -40,14 +40,14 @@ class DiagramContinuousState : public ContinuousState<T> {
 
   int get_num_substates() const { return static_cast<int>(substates_.size()); }
 
-  // Returns the continuous state at the given @p index, or nullptr if that
-  // system is stateless.
+  /// Returns the continuous state at the given @p index, or nullptr if that
+  /// system is stateless.
   const ContinuousState<T>* get_substate(int index) const {
     return substates_[index];
   }
 
-  // Returns the continuous state at the given @p index, or nullptr if that
-  // system is stateless.
+  /// Returns the continuous state at the given @p index, or nullptr if that
+  /// system is stateless.
   ContinuousState<T>* get_mutable_substate(int index) {
     return substates_[index];
   }

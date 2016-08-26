@@ -221,7 +221,8 @@ class Diagram : public System<T> {
     auto diagram_derivatives =
         dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
     DRAKE_ABORT_UNLESS(diagram_derivatives != nullptr);
-    auto substate = diagram_derivatives->get_substate(GetSystemIndex(subsystem));
+    auto substate = diagram_derivatives->get_substate(
+        GetSystemIndex(subsystem));
     // TODO(david-german-tri): We should fail softer than this for stateless
     // systems.
     DRAKE_ABORT_UNLESS(substate != nullptr);
