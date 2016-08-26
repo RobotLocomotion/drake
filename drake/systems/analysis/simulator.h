@@ -281,7 +281,7 @@ void Simulator<T>::StepTo(const T& final_time) {
   bool sample_time_hit = false;
   while (context_->get_time() <= final_time) {
     // Starting a new step on the trajectory.
-    const T step_start = context_->get_time();
+    const T step_start_time = context_->get_time();
 
     // First make any necessary discrete updates.
     if (sample_time_hit) {
@@ -302,41 +302,42 @@ void Simulator<T>::StepTo(const T& final_time) {
     system_.Publish(*context_);
 
     // That may have been the final trajectory entry.
-    if (step_start == final_time) break;
+    if (step_start_time == final_time) break;
 
     // Next, determine the end_time we are going to try to reach with the
     // next step. Start with the ideal step size.
-    T step_end = step_start + next_step_size_to_try_;
+    T step_end_time = step_start_time + next_step_size_to_try_;
 
     // We can be persuaded to take a slightly bigger step if necessary to
     // avoid a tiny sliver step before we have to do something discrete.
-    const T step_stretch = step_end + kMaxStretch * next_step_size_to_try_;
+    const T step_stretch_time =
+        step_end_time + kMaxStretch * next_step_size_to_try_;
 
     // How far can we go before we have to take a sampling break?
     const T sample_time =
         system_.CalcNextSampleTime(*context_, &sample_actions);
-    DRAKE_ASSERT(sample_time >= step_start);
+    DRAKE_ASSERT(sample_time >= step_start_time);
 
     // The step may be limited or stretched either by final time or sample
     // time, whichever comes sooner.
     sample_time_hit = false;
     if (sample_time <= final_time) {
-      if (step_stretch >= sample_time) {
-        step_end = sample_time;
+      if (step_stretch_time >= sample_time) {
+        step_end_time = sample_time;
         sample_time_hit = true;
       }
     } else {  // final_time < sample_time.
-      if (step_stretch >= final_time) step_end = final_time;
+      if (step_stretch_time >= final_time) step_end_time = final_time;
     }
 
-    if (step_end > step_start) {
-      const T h = step_end - step_start;
+    if (step_end_time > step_start_time) {
+      const T h = step_end_time - step_start_time;
 
       // First stage is an explicit Euler step:
       // xc(t+h) = xc(t) + h * xcdot(t, xc(t), xd(t+), u(t))
       const auto& xcdot0 = derivs0_->get_state();
       xc->PlusEqScaled(h, xcdot0);  // xc += h * xcdot0
-      context_->set_time(step_end);
+      context_->set_time(step_end_time);
 
       // If we're using Explicit Euler, we're done.
 
