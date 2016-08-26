@@ -108,7 +108,7 @@ int DoMain(int argc, const char* argv[]) {
   ::ros::NodeHandle node_handle;
 
   // Initializes the LCM communication layer.
-  // std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
+  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
   // Initializes the rigid body system.
   auto rigid_body_sys = std::allocate_shared<RigidBodySystem>(
@@ -211,8 +211,8 @@ int DoMain(int argc, const char* argv[]) {
   auto vehicle_sys = CreateMultiVehicleSystem(rigid_body_sys,
       &vehicle_model_instance_name_table);
 
-  // auto visualizer =
-  //   std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
+  auto bot_visualizer_publisher =
+      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
   auto lidar_publisher = std::make_shared<
       SensorPublisherLidar<RigidBodySystem::StateVector>>(
@@ -235,23 +235,13 @@ int DoMain(int argc, const char* argv[]) {
         cascade(
           cascade(
             cascade(
-              vehicle_sys,
+              cascade(
+                vehicle_sys,
+                bot_visualizer_publisher),
               tf_publisher),
             joint_state_publisher),
           lidar_publisher),
         odometry_publisher);
-
-  // auto sys =
-  //     cascade(
-  //         cascade(
-  //             cascade(
-  //                 cascade(
-  //                     cascade(
-  //                         vehicle_sys, visualizer),
-  //                     lidar_publisher),
-  //                 odometry_publisher),
-  //             tf_publisher),
-  //         joint_state_publisher);
 
   // Initializes the simulation options.
   SimulationOptions options = GetCarSimulationDefaultOptions();
