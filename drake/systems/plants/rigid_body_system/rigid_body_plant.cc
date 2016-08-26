@@ -164,7 +164,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   // f_ext here has zero size but is a required argument in dynamicsBiasTerm.
   // TODO(amcastro-tri): f_ext should be made an optional parameter
-  // of dynamicsBiasTerm()
+  // of dynamicsBiasTerm().
   eigen_aligned_unordered_map<const RigidBody*, Vector6<T>> f_ext;
   VectorX<T> C = mbd_world_->dynamicsBiasTerm(kinsol, f_ext);
   if (num_actuators > 0) C -= mbd_world_->B * u;
@@ -176,9 +176,9 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     for (auto const& b : mbd_world_->bodies) {
       if (!b->hasParent()) continue;
       auto const& joint = b->getJoint();
-      // only for single-axis joints.
+      // Only for single-axis joints.
       if (joint.getNumPositions() == 1 && joint.getNumVelocities() == 1) {
-        // limits makes things easier/faster here.
+        // Limits makes things easier/faster here.
         T qmin = joint.getJointLimitMin()(0),
             qmax = joint.getJointLimitMax()(0);
         // tau = k * (qlimit-q) - b(qdot)
@@ -215,7 +215,9 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
             kinsol, xB.col(i), bodyB_idx[i], 0, false);
         Vector3<T> this_normal = normal.col(i);
 
-        // Computes the surface tangent basis.
+        // Computes a local surface coordinate frame with the local z axis
+        // aligned with the surface's normal. The other two axes are arbitrarily
+        // chosen to complete a right handed triplet.
         Vector3<T> tangent1;
         if (1.0 - this_normal(2) < EPSILON) {
           // Handles the unit-normal case. Since it's unit length, just check z.
@@ -228,7 +230,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
               this_normal(0) * this_normal(0));
         }
         Vector3<T> tangent2 = this_normal.cross(tangent1);
-        Matrix3<T> R;  // Rotation into normal coordinates.
+        // Transformation from world frame to local surface frame.
+        Matrix3<T> R;
         R.row(0) = tangent1;
         R.row(1) = tangent2;
         R.row(2) = this_normal;

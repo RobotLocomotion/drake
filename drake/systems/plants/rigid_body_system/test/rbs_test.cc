@@ -122,6 +122,8 @@ TEST_F(KukaArmTest, ObtainZeroConfiguration) {
 }
 
 // Tests RigidBodyPlant<T>::EvalOutput() for a Kuka arm model.
+// For a RigidBodyPlant<T> the output of the system should equal the
+// state vector.
 TEST_F(KukaArmTest, EvalOutput) {
   // Checks that the number of input and output ports in the system and context
   // are consistent.
