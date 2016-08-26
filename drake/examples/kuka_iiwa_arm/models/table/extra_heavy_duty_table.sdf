@@ -4,8 +4,26 @@
     <link name='link'>
       <pose frame=''>-0.243716 -0.625087 0 0 -0 0</pose>
       <inertial>
+        <!--
+        TODO(lucy-tri): Update this mass to be the correct mass. Update the
+        spatial inertia below once this mass changes.
+        -->        
         <mass>12</mass>
         <pose frame=''>0 0 0 0 -0 0</pose>
+        <!--
+        The spatial inertia values given below were derived based on the
+        equation for a cuboid:
+
+        https://en.wikipedia.org/wiki/List_of_moments_of_inertia#List_of_3D_inertia_tensors.
+
+        Obviously, the table is not a cuboid, meaning the inertia matrix is
+        imperfect. Having an accurate spatial inertia specification may be
+        important for us to know when / if a robot mounted on top of the
+        table will cause the table to tip over. It will also be necessary to
+        model what happens when a mobile robot bumps into the table.
+
+        TODO(lucy-tri): Compute a more accurate spatial inertia of this table.
+        -->
         <inertia>
           <ixx>1.161288</ixx>
           <ixy>0</ixy>
