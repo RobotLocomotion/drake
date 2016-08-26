@@ -251,13 +251,9 @@ class Diagram : public System<T> {
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
 
-  int GetSystemIndex(const System<T>* sys) const {
-    auto it = sorted_systems_map_.find(sys);
-    DRAKE_ABORT_UNLESS(it != sorted_systems_map_.end());
-    return it->second;
-  }
-
   /// Returns the sub-context that corresponds to the system @p sub_system.
+  /// Classes inheriting from %Diagram need access to this method in order to
+  /// pass their constituyent sub-system's the apropriate sub-context.
   ContextBase<T>* GetMutableSubSystemContext(
       ContextBase<T>* context, const System<T>* sub_system) const {
     auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
@@ -361,6 +357,12 @@ class Diagram : public System<T> {
         subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
         subsystem_descriptor.get_sampling());
     this->DeclareOutputPort(descriptor);
+  }
+
+  int GetSystemIndex(const System<T>* sys) const {
+    auto it = sorted_systems_map_.find(sys);
+    DRAKE_ABORT_UNLESS(it != sorted_systems_map_.end());
+    return it->second;
   }
 
   // Converts a PortIdentifier to a DiagramContext::PortIdentifier.
