@@ -29,9 +29,9 @@ class DRAKE_RBS_EXPORT RigidBodyPlant : public LeafSystem<T> {
 
   const RigidBodyTree& get_multibody_world() const;
 
-  int get_num_generalized_positions() const;
+  int get_num_positions() const;
 
-  int get_num_generalized_velocities() const;
+  int get_num_velocities() const;
 
   int get_num_states() const;
 
@@ -55,7 +55,7 @@ class DRAKE_RBS_EXPORT RigidBodyPlant : public LeafSystem<T> {
   /// identity or zero rotation quaternion.
   void ObtainZeroConfiguration(ContextBase<T>* context) const {
     VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
-    x0.head(get_num_generalized_positions()) =
+    x0.head(get_num_positions()) =
         mbd_world_->getZeroConfiguration();
     context->get_mutable_xc()->SetFromVector(x0);
   }

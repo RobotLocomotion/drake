@@ -46,18 +46,18 @@ const RigidBodyTree& RigidBodyPlant<T>::get_multibody_world() const {
 }
 
 template <typename T>
-int RigidBodyPlant<T>::get_num_generalized_positions() const {
+int RigidBodyPlant<T>::get_num_positions() const {
   return mbd_world_->number_of_positions();
 }
 
 template <typename T>
-int RigidBodyPlant<T>::get_num_generalized_velocities() const {
+int RigidBodyPlant<T>::get_num_velocities() const {
   return mbd_world_->number_of_velocities();
 }
 
 template <typename T>
 int RigidBodyPlant<T>::get_num_states() const {
-  return get_num_generalized_positions() + get_num_generalized_velocities();
+  return get_num_positions() + get_num_velocities();
 }
 
 template <typename T>
@@ -104,8 +104,8 @@ RigidBodyPlant<T>::AllocateContinuousState() const {
   // TODO(amcastro-tri): add z state to track energy conservation.
   return std::make_unique<ContinuousState<T>>(
       std::make_unique<BasicStateVector<T>>(get_num_states()),
-      get_num_generalized_positions() /* num_q */,
-      get_num_generalized_velocities() /* num_v */, 0 /* num_z */);
+      get_num_positions() /* num_q */,
+      get_num_velocities() /* num_v */, 0 /* num_z */);
 }
 
 template <typename T>
@@ -137,8 +137,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   // TODO(amcastro-tri): place kinematics cache in the context so it can be
   // reused.
-  int nq = get_num_generalized_positions();
-  int nv = get_num_generalized_velocities();
+  int nq = get_num_positions();
+  int nv = get_num_velocities();
   int num_actuators = get_num_actuators();
   // TODO(amcastro-tri): we would like to compile here with `auto` instead of
   // `VectorX<T>`. However it seems we get some sort of block from a block which
