@@ -18,6 +18,8 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   DRAKE_ASSERT(Ki >= 0);
   DRAKE_ASSERT(Kd >= 0);
 
+  System<T>::set_name("PidController");
+
   plant_ = make_unique<SpringMassSystem>(
       spring_stiffness, mass, true /* is forced */);
   controller_ = make_unique<PidController<T>>(Kp, Ki, Kd, 1);
@@ -25,7 +27,9 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   // A demux is used to split the output from the spring-mass system into two
   // ports. One port with the mass position and another port with the mass
   // velocity so that they can be connected to the controller.
-  demux_ = make_unique<Demultiplexer<T>>(2);
+  // The third output from the demultiplexer is the spring-mass system energy
+  // and it is left unconnected.
+  demux_ = make_unique<Demultiplexer<T>>(3);
 
   DiagramBuilder<T> builder;
   builder.Connect(plant_->get_output_port(0),
@@ -44,6 +48,7 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   // The output to this system is the output of the spring-mass system which
   // consists of a vector with position, velocity and energy.
   builder.ExportOutput(plant_->get_output_port(0));
+  builder.ExportOutput(demux_->get_output_port(2));
   builder.BuildInto(this);
 }
 

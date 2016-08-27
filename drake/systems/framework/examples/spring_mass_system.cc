@@ -44,6 +44,7 @@ SpringMassSystem::SpringMassSystem(double spring_constant_N_per_m,
     : spring_constant_N_per_m_(spring_constant_N_per_m),
       mass_kg_(mass_kg),
       system_is_forced_(system_is_forced) {
+  System<double>::set_name("SpringMassSystem");
   // Declare input port for forcing term.
   if(system_is_forced) {
     this->DeclareInputPort(kVectorValued, 1, kContinuousSampling);
