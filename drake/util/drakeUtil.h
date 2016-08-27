@@ -93,8 +93,6 @@ void addOffset(std::vector<T>& v, const T& offset) {
 
 DRAKEUTIL_EXPORT void baseZeroToBaseOne(std::vector<int>& vec);
 
-DRAKEUTIL_EXPORT double angleAverage(double theta1, double theta2);
-
 template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal,
           typename DerivedPoint>
 DRAKEUTIL_EXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(
