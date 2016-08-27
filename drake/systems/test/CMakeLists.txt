@@ -1,6 +1,6 @@
 add_executable(testAffineSystem testAffineSystem.cpp)
 add_test(NAME testAffineSystem COMMAND testAffineSystem)
-target_link_libraries(testAffineSystem drakeCommon)
+target_link_libraries(testAffineSystem drakeCommon ${GTEST_BOTH_LIBRARIES})
 
 add_executable(cascade_system_test cascade_system_test.cc)
 target_link_libraries(cascade_system_test drakeCommon ${GTEST_BOTH_LIBRARIES})
