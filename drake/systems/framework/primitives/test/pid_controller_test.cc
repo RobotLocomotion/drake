@@ -23,7 +23,7 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 }
 
 // Tests the EvalOutput() method for the PidController.
-GTEST_TEST(PidController, EvalOutput) {
+GTEST_TEST(PidController, EvalMethods) {
   const double kp = 2.0;
   const double ki = 3.0;
   const double kd = 1.0;
@@ -32,6 +32,7 @@ GTEST_TEST(PidController, EvalOutput) {
 
   auto context = controller.CreateDefaultContext();
   auto output = controller.AllocateOutput(*context);
+  auto derivatives = controller.AllocateTimeDerivatives();
   ASSERT_NE(nullptr, context);
   ASSERT_NE(nullptr, output);
 
@@ -67,6 +68,17 @@ GTEST_TEST(PidController, EvalOutput) {
   controller.EvalOutput(*context, output.get());
   EXPECT_EQ(kp * error_signal + ki * integral_value + kd * error_signal_rate,
             output_vector->get_value());
+
+  // Evaluates derivatives and asserts correctness.
+  controller.EvalTimeDerivatives(*context, derivatives.get());
+  ASSERT_EQ(3, derivatives->get_state().size());
+  ASSERT_EQ(0, derivatives->get_generalized_position().size());
+  ASSERT_EQ(0, derivatives->get_generalized_velocity().size());
+  ASSERT_EQ(3, derivatives->get_misc_continuous_state().size());
+
+  // The only state in the PID controller is the integral of the input signal.
+  // Therefore the time derivative of the state equals the input error signal.
+  EXPECT_EQ(error_signal, derivatives->get_state().CopyToVector());
 }
 
 }  // namespace
