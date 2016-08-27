@@ -1,5 +1,8 @@
 #include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
 
+#include <cstdint>
+#include <vector>
+
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_assert.h"
@@ -13,13 +16,13 @@ namespace lcm {
 using std::runtime_error;
 
 void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
-    const ::lcm::ReceiveBuffer* rbuf,
+    const void* lcm_message_bytes, int lcm_message_length,
     VectorBase<double>* vector_base) const {
   DRAKE_ABORT_UNLESS(vector_base);
 
   // Decodes the LCM message using data from the receive buffer.
   drake::lcmt_drake_signal message;
-  int status = message.decode(rbuf->data, 0, rbuf->data_size);
+  int status = message.decode(lcm_message_bytes, 0, lcm_message_length);
   if (status < 0) {
     throw runtime_error(
       "drake::systems::lcm::TranslatorBetweenLcmtDrakeSignal: "
@@ -47,9 +50,9 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
   }
 }
 
-void TranslatorBetweenLcmtDrakeSignal::PublishVectorBaseToLCM(
-    const VectorBase<double>& vector_base, const std::string& channel,
-    ::lcm::LCM* lcm) const {
+void TranslatorBetweenLcmtDrakeSignal::TranslateVectorBaseToLcm(
+    const VectorBase<double>& vector_base,
+    std::vector<uint8_t>* lcm_message_bytes) const {
 
   DRAKE_ASSERT(vector_base.size() == get_vector_size());
 
@@ -67,7 +70,9 @@ void TranslatorBetweenLcmtDrakeSignal::PublishVectorBaseToLCM(
     message.val[ii] = values[ii];
   }
 
-  lcm->publish(channel, &message);
+  const int lcm_message_length = message.getEncodedSize();
+  lcm_message_bytes->resize(lcm_message_length);
+  message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
 }
 
 }  // namespace lcm
