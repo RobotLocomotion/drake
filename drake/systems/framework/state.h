@@ -49,8 +49,8 @@ class ContinuousState {
   /// @param num_q The number of position variables.
   /// @param num_v The number of velocity variables.
   /// @param num_z The number of other variables.
-  ContinuousState(std::unique_ptr<StateVector<T>> state, int num_q,
-                  int num_v, int num_z) {
+  ContinuousState(std::unique_ptr<StateVector<T>> state, int num_q, int num_v,
+                  int num_z) {
     state_ = std::move(state);
     if (state_->size() != num_q + num_v + num_z) {
       throw std::out_of_range(
@@ -92,6 +92,8 @@ class ContinuousState {
     DRAKE_ASSERT(state_->size() == n);
     DRAKE_ASSERT(num_v <= num_q);
   }
+
+  virtual ~ContinuousState() {}
 
   /// Returns the entire state vector.
   const StateVector<T>& get_state() const { return *state_; }

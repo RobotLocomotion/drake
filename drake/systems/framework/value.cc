@@ -1,4 +1,13 @@
-// For now, this is an empty .cc file that only serves to confirm value.h is
-// a stand-alone header.
-
 #include "drake/systems/framework/value.h"
+
+namespace drake {
+namespace systems {
+
+AbstractValue::~AbstractValue() {}
+
+// Explicit instantiations for VectorValue<double>.
+template class Value<VectorBase<double>*>;
+template class VectorValue<double>;
+
+}  // namespace systems
+}  // namespace drake

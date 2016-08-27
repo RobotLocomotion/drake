@@ -30,7 +30,8 @@ template DRAKECARS_EXPORT                                       \
 SimpleCar1::OutputVector<ScalarType> drake::SimpleCar1::output( \
     const ScalarType&,                                          \
     const SimpleCar1::StateVector<ScalarType>&,                 \
-    const SimpleCar1::InputVector<ScalarType>&) const;
+    const SimpleCar1::InputVector<ScalarType>&) const;          \
+template class DRAKECARS_EXPORT SimpleCar<ScalarType>;
 
 // These instantiations must match the API documentation in simple_car.h.
 DRAKE_INSTANTIATE(double)

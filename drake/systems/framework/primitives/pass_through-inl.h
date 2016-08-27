@@ -23,30 +23,19 @@ PassThrough<T>::PassThrough(int length) {
   // TODO(amcastro-tri): remove the length parameter from the constructor once
   // #3109 supporting automatic lengths is resolved.
   this->DeclareInputPort(kVectorValued, length, kInheritedSampling);
+  // TODO(david-german-tri): Provide a way to infer the type.
   this->DeclareOutputPort(kVectorValued, length, kInheritedSampling);
 }
 
 template <typename T>
 void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
-                          SystemOutput<T>* output) const {
+                                SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
-  VectorBase<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
-
-  // TODO(amcastro-tri): Solve #3140 so that the next line reads:
-  // auto& input_vector = System<T>::get_input_vector(context, 0);
-  // where the return is an Eigen expression.
-  const VectorBase<T>* input_vector = context.get_vector_input(0);
-
-  // TODO(amcastro-tri): Solve #3140 so that we can readily access the Eigen
-  // vector like so:
-  // auto& output_vector = System<T>::get_output_vector(context, 0);
-  // where the return is an Eigen expression.
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
-  output_vector->get_mutable_value() = input_vector->get_value();
+  System<T>::GetMutableOutputVector(output, 0) =
+      System<T>::get_input_vector(context, 0);
 }
 
 }  // namespace systems

@@ -4,7 +4,7 @@
 #pragma warning(disable : 4800 4275)
 #endif
 
-#include "drake/examples/spring_mass/spring_mass_system.h"
+#include "drake/systems/framework/examples/spring_mass_system.h"
 
 #include <memory>
 
@@ -26,21 +26,7 @@ using std::make_unique;
 using std::unique_ptr;
 
 namespace drake {
-
-using systems::BasicVector;
-using systems::BasicStateVector;
-using systems::Context;
-using systems::ContextBase;
-using systems::ContinuousState;
-using systems::FreestandingInputPort;
-using systems::LeafStateVector;
-using systems::StateSubvector;
-using systems::StateVector;
-using systems::System;
-using systems::SystemOutput;
-using systems::VectorBase;
-
-namespace examples {
+namespace systems {
 namespace {
 
 const double kSpring = 300.0;  // N/m
@@ -48,14 +34,11 @@ const double kMass = 2.0;      // kg
 
 class SpringMassSystemTest : public ::testing::Test {
  public:
-  void SetUp() override {
-    Initialize();
-  }
+  void SetUp() override { Initialize(); }
 
   void Initialize(bool with_input_force = false) {
     // Construct the system I/O objects.
-    system_.reset(new SpringMassSystem(kSpring, kMass,
-                                       with_input_force));
+    system_.reset(new SpringMassSystem(kSpring, kMass, with_input_force));
     system_->set_name("test_system");
     context_ = system_->CreateDefaultContext();
     system_output_ = system_->AllocateOutput(*context_);
@@ -69,7 +52,7 @@ class SpringMassSystemTest : public ::testing::Test {
     state_ = dynamic_cast<SpringMassStateVector*>(
         context_->get_mutable_state()->continuous_state->get_mutable_state());
     output_ = dynamic_cast<const SpringMassStateVector*>(
-        system_output_->get_port(0).get_vector_data());
+        system_output_->get_vector_data(0));
     derivatives_ = dynamic_cast<SpringMassStateVector*>(
         system_derivatives_->get_mutable_state());
   }
@@ -83,9 +66,9 @@ class SpringMassSystemTest : public ::testing::Test {
   // Helper method to create input ports (free standing input ports) that are
   // not connected to any other output port in the system.
   // Used to test standalone systems not part of a Diagram.
-  static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
+  static std::unique_ptr<FreestandingInputPort> MakeInput(
       std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort<double>>(std::move(data));
+    return make_unique<FreestandingInputPort>(std::move(data));
   }
 
  protected:
@@ -532,5 +515,5 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
 }
 
 }  // namespace
-}  // namespace examples
+}  // namespace systems
 }  // namespace drake

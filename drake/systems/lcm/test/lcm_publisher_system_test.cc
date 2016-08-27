@@ -71,7 +71,7 @@ class MessageSubscriber {
 };
 
 void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
-    LcmPublisherSystem* dut) {
+                   LcmPublisherSystem* dut) {
   EXPECT_EQ(dut->get_name(), "LcmPublisherSystem::" + channel_name);
 
   // Instantiates a receiver of lcmt_drake_signal messages.
@@ -102,8 +102,8 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
   // VectorBase. Note that we need to overwrite the original input port
   // created by the LcmPublisherSystem since we do not have write access to its
   // input vector.
-  std::unique_ptr<InputPort<double>> input_port(
-      new FreestandingInputPort<double>(std::move(vector_base)));
+  std::unique_ptr<InputPort> input_port(
+      new FreestandingInputPort(std::move(vector_base)));
 
   context->SetInputPort(kPortNumber, std::move(input_port));
 
@@ -188,8 +188,9 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
 
   // Creates a dictionary with one translator.
   LcmTranslatorDictionary dictionary;
-  dictionary.AddEntry(channel_name,
-    std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
+  dictionary.AddEntry(
+      channel_name,
+      std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
 
   EXPECT_TRUE(dictionary.HasTranslator(channel_name));
 

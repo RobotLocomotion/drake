@@ -33,6 +33,7 @@ else()
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_NLOPT "nonlinear optimization solver" ON)
+  option(WITH_DREAL "nonlinear SMT solver" ON)
   option(WITH_MOSEK "convex optimization solver; free for academics" OFF)
   # IPOPT is currently disabled on Mac due to MATLAB compatibility
   # issues: https://github.com/RobotLocomotion/drake/issues/2578
@@ -115,6 +116,7 @@ drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC)
 drake_add_external(mosek PUBLIC)
 drake_add_external(octomap PUBLIC)
+drake_add_external(sedumi)
 drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE)
@@ -165,6 +167,11 @@ drake_add_external(nlopt PUBLIC
     --prefix=${CMAKE_INSTALL_PREFIX}
     --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt
   INSTALL_COMMAND ${MAKE_COMMAND} install)
+
+# dreal
+drake_add_external(dreal PUBLIC CMAKE
+  CMAKE_ARGS -DUSE_NLOPT=OFF
+  SOURCE_SUBDIR src)
 
 # textbook
 drake_add_external(textbook PUBLIC
@@ -246,26 +253,46 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
     -DWITH_AVL:BOOL=${WITH_AVL}
+    -DWITH_BERTINI:BOOL=${WITH_BERTINI}
+    -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
+    -DWITH_DREAL:BOOL=${WITH_DREAL}
+    -DWITH_GLOPTIPOLY:BOOL=${WITH_GLOPTIPOLY}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
+    -DWITH_GUROBI:BOOL=${WITH_GUROBI}
+    -DWITH_IPOPT:BOOL=${WITH_IPOPT}
+    -DWITH_IRIS:BOOL=${WITH_IRIS}
+    -DWITH_LCM:BOOL=${WITH_LCM}
+    -DWITH_LIBBOT:BOOL=${WITH_LIBBOT}
+    -DWITH_MOSEK:BOOL=${WITH_MOSEK}
+    -DWITH_NLOPT:BOOL=${WITH_NLOPT}
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
+    -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
+    -DWITH_SNOPT:BOOL=${WITH_SNOPT}
+    -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
+    -DWITH_XFOIL:BOOL=${WITH_XFOIL}
+    -DWITH_YALMIP:BOOL=${WITH_YALMIP}
   DEPENDS
+    avl
     bertini
     bot_core_lcmtypes
     bullet
     cmake
     director
+    dreal
     eigen
     gflags
-    gloptipoly3
+    gloptipoly
     google_styleguide
     googletest
+    gtk
     gurobi
     ipopt
     iris
     lcm
     libbot
+    meshconverters
     mosek
     nlopt
     octomap

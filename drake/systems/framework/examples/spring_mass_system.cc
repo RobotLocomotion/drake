@@ -1,18 +1,7 @@
-#include "drake/examples/spring_mass/spring_mass_system.h"
+#include "drake/systems/framework/examples/spring_mass_system.h"
 
 namespace drake {
-
-using systems::ContextBase;
-using systems::BasicVector;
-using systems::Context;
-using systems::ContinuousState;
-using systems::LeafSystemOutput;
-using systems::OutputPort;
-using systems::StateVector;
-using systems::SystemOutput;
-using systems::VectorBase;
-
-namespace examples {
+namespace systems {
 
 namespace {
 constexpr int kStateSize = 3;  // position, velocity, power integral
@@ -103,8 +92,7 @@ std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput(
       new LeafSystemOutput<double>);
   {
     std::unique_ptr<VectorBase<double>> data(new SpringMassStateVector());
-    std::unique_ptr<OutputPort<double>> port(
-        new OutputPort<double>(std::move(data)));
+    std::unique_ptr<OutputPort> port(new OutputPort(std::move(data)));
     output->get_mutable_ports()->push_back(std::move(port));
   }
   return std::unique_ptr<SystemOutput<double>>(output.release());
@@ -146,8 +134,8 @@ void SpringMassSystem::EvalTimeDerivatives(
   // By Newton's 2nd law, the derivative of velocity (acceleration) is f/m where
   // f is the force applied to the body by the spring, and m is the mass of the
   // body.
-  const double force_applied_to_body = EvalSpringForce(context)
-      + external_force;
+  const double force_applied_to_body =
+      EvalSpringForce(context) + external_force;
   derivative_vector->set_velocity(force_applied_to_body / mass_kg_);
 
   // We are integrating conservative power to get the work done by conservative
@@ -156,5 +144,5 @@ void SpringMassSystem::EvalTimeDerivatives(
   derivative_vector->set_conservative_work(EvalConservativePower(context));
 }
 
-}  // namespace examples
+}  // namespace systems
 }  // namespace drake

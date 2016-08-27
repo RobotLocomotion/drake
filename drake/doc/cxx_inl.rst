@@ -78,6 +78,7 @@ The header file declares and documents the class::
   ///
   /// Instantiated templates for the following kinds of T's are provided:
   /// - double
+  ///
   /// They are already available to link against in libmylibrary.
   template <typename T>
   class MyClass {

@@ -213,7 +213,7 @@ Since a new package was added to the ROS workspace, re-build the workspace
 runs too slowly when compiled in the default ``Debug`` mode)::
 
     cd ~/dev/drake_catkin_workspace
-    catkin build -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+    catkin build --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
 
 Finally, to run the car simulation demo, execute::
 

@@ -28,30 +28,12 @@ Gain<T>::Gain(const T& k, int length) : gain_(k) {
 
 template <typename T>
 void Gain<T>::EvalOutput(const ContextBase<T>& context,
-                          SystemOutput<T>* output) const {
-  // Checks that the single output port has the correct length.
-  // Checks on the output structure are assertions, not exceptions,
-  // since failures would reflect a bug in the Gain implementation, not
-  // user error setting up the system graph. They do not require unit test
-  // coverage, and should not run in release builds.
-
+                         SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  // There is only one input.
-  // TODO(amcastro-tri): Solve #3140 so that the next line reads:
-  // auto& input_vector = System<T>::get_input_vector(context, 0);
-  // where the return is an Eigen expression.
-  const VectorBase<T>* input_vector = context.get_vector_input(0);
-
-  VectorBase<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
-
-  // TODO(amcastro-tri): Solve #3140 so that we can readily access the Eigen
-  // vector like so:
-  // auto& output_vector = System<T>::get_output_vector(context, 0);
-  // where the return is an Eigen expression.
-  output_vector->get_mutable_value() = gain_ * input_vector->get_value();
+  auto input_vector = System<T>::get_input_vector(context, 0);
+  System<T>::GetMutableOutputVector(output, 0) = gain_ * input_vector;
 }
 
 }  // namespace systems
