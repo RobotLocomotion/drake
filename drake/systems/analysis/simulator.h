@@ -222,7 +222,7 @@ class Simulator {
   /** Return the step size the simulator would like to take next, based
   primarily on the integrator's accuracy prediction. For variable
   step integrators this will change as the simulation progresses. **/
-  T get_ideal_next_step_size() const { return next_step_size_to_try_; }
+  T get_ideal_next_step_size() const { return ideal_next_step_size_; }
 
  private:
   // Return a proposed end time for this step, and whether we picked that time
@@ -239,7 +239,7 @@ class Simulator {
     integrator_in_use_ = kDefaultIntegrator;
     accuracy_in_use_ = kDefaultAccuracy;
     initial_step_size_attempt_in_use_ = kDefaultInitialStepSizeAttempt;
-    next_step_size_to_try_ = initial_step_size_attempt_in_use_;
+    ideal_next_step_size_ = initial_step_size_attempt_in_use_;
     initialization_done_ = false;
   }
 
@@ -271,7 +271,7 @@ class Simulator {
 
   // Runtime variables.
   // This is set at the end of each step to guide the next one.
-  T next_step_size_to_try_{initial_step_size_attempt_in_use_};
+  T ideal_next_step_size_{initial_step_size_attempt_in_use_};
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
 
@@ -318,7 +318,7 @@ void Simulator<T>::Initialize() {
     initial_step_size_attempt_in_use_ = req_initial_step_size_attempt_;
 
   // Initialize runtime variables.
-  next_step_size_to_try_ = initial_step_size_attempt_in_use_;
+  ideal_next_step_size_ = initial_step_size_attempt_in_use_;
   initialization_done_ = true;
 }
 
@@ -369,7 +369,7 @@ void Simulator<T>::StepTo(const T& final_time) {
     // to stop there due to hitting the next sample time.
     T step_end_time;
     std::tie(step_end_time, sample_time_hit) = ProposeStepEndTime(
-        step_start_time, next_step_size_to_try_, next_sample_time, final_time);
+        step_start_time, ideal_next_step_size_, next_sample_time, final_time);
 
     // Attempt to take a step of the proposed size.
     if (step_end_time > step_start_time) {
@@ -431,8 +431,9 @@ std::pair<T, bool> Simulator<T>::ProposeStepEndTime(const T& step_start_time,
       step_end_time = next_sample_time;
       sample_time_hit = true;
     }
-  } else {  // final_time < sample_time.
-    if (step_stretch_time >= final_time) step_end_time = final_time;
+  } else {  // final_time < next_sample_time.
+    if (final_time <= step_stretch_time)
+      step_end_time = final_time;
   }
 
   return std::make_pair(step_end_time, sample_time_hit);

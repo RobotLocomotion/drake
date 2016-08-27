@@ -17,8 +17,8 @@ class MySpringMassSystem : public SpringMassSystem {
       : SpringMassSystem(stiffness, mass, false /*no input force*/),
         sample_rate_(sample_rate) {}
 
-  int get_publish_count() const {return publish_count_;}
-  int get_update_count() const {return update_count_;}
+  int get_publish_count() const { return publish_count_; }
+  int get_update_count() const { return update_count_; }
 
  private:
   // Publish t q u to standard output.
@@ -70,7 +70,8 @@ GTEST_TEST(SimulatorTest, MiscAPI) {
   simulator.request_initial_step_size_attempt(1e-8);
 
   simulator.Initialize();
-  EXPECT_TRUE(simulator.get_integrator_type_in_use() == IntegratorType::ExplicitEuler);
+  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
+              IntegratorType::ExplicitEuler);
   EXPECT_EQ(simulator.get_accuracy_in_use(), 1e-6);
   EXPECT_EQ(simulator.get_initial_step_size_attempt_in_use(), 1e-8);
 
@@ -120,7 +121,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   // Publish() should get called at start and finish.
   EXPECT_EQ(spring_mass.get_publish_count(), 1001);
   EXPECT_EQ(spring_mass.get_update_count(), 0);
-  
+
   // Current time is 1. An earlier final time should fail.
   EXPECT_THROW(simulator.StepTo(0.5), std::runtime_error);
 }

@@ -77,8 +77,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public System<double> {
   /**
    * This System has no output ports so EvalOutput() does nothing.
    */
-  void EvalOutput(const ContextBase<double>& /*context*/,
-                  SystemOutput<double>* /*output*/) const override {}
+  void EvalOutput(const ContextBase<double>& context,
+                  SystemOutput<double>* output) const override {}
 
  private:
   // The channel on which to publish LCM messages.

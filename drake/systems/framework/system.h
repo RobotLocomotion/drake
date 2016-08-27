@@ -156,12 +156,13 @@ class System {
   /// the first step of a simulation (after initialization) and after the final
   /// simulation step (after a final update to discrete variables).
   ///
-  /// @note When publishing is scheduled a particular times, those times likely
+  /// @note When publishing is scheduled at particular times, those times likely
   /// will not coincide with integrator step times. A Simulator may interpolate
   /// to generate a suitable Context, or it may adjust the integrator step size
   /// so that a step begins exactly at the next publication time. In the latter
   /// case the change in step size may affect the numerical result somewhat
   /// since a smaller integrator step produces a more accurate solution.
+  // TODO(sherm1) Provide sample rate option for Publish().
   void Publish(const ContextBase<T>& context) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DoPublish(context);

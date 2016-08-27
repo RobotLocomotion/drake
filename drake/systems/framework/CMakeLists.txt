@@ -62,8 +62,7 @@ set(installed_headers
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.
-set(private_headers
-  examples/spring_mass_system.h)
+set(private_headers)
 
 add_library_with_exports(LIB_NAME drakeSystemFramework
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})

@@ -66,7 +66,7 @@ std::unique_ptr<SystemOutput<double>> LcmSubscriberSystem::AllocateOutput(
   return std::unique_ptr<SystemOutput<double>>(output.release());
 }
 
-void LcmSubscriberSystem::EvalOutput(const ContextBase<double>& /*context*/,
+void LcmSubscriberSystem::EvalOutput(const ContextBase<double>&,
                                      SystemOutput<double>* output) const {
   BasicVector<double>& output_vector =
       dynamic_cast<BasicVector<double>&>(*output->GetMutableVectorData(0));
