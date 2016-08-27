@@ -9,6 +9,7 @@ set(sources
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
+  examples/controlled_spring_mass_system.cc
   examples/spring_mass_system.cc
   leaf_system.cc
   primitives/adder.cc
