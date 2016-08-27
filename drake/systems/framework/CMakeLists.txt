@@ -14,6 +14,7 @@ set(sources
   primitives/adder.cc
   primitives/constant_value_source.cc
   primitives/constant_vector_source.cc
+  primitives/demultiplexer.cc
   primitives/gain.cc
   primitives/integrator.cc
   primitives/pass_through.cc
