@@ -6,6 +6,7 @@ drake_install_headers(
   constant_value_source.h
   constant_value_source-inl.h
   constant_vector_source.h
+  demultiplexer.h
   gain.h
   gain-inl.h
   integrator.h
