@@ -7,7 +7,7 @@
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/system.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
@@ -21,7 +21,7 @@ namespace lcm {
  * System<double>'s port. The output port value is the most recently
  * decoded message, modulo any network or threading delays.
  */
-class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public System<double> {
+class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
  public:
   /**
    * A constructor.
@@ -63,19 +63,6 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public System<double> {
   LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
 
   std::string get_name() const override;
-
-  /**
-   * The default context for this system is one that has zero input ports and
-   * no state.
-   */
-  std::unique_ptr<ContextBase<double>> CreateDefaultContext() const override;
-
-  /**
-   * The output consists of a single port containing a
-   * `drake::systems::BasicVector<double>` object.
-   */
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const ContextBase<double>& context) const override;
 
   /**
    * Computes the output for the given context, possibly updating values

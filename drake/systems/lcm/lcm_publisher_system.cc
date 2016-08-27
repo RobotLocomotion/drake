@@ -7,14 +7,16 @@ namespace systems {
 namespace lcm {
 
 namespace {
-const int kNumInputPorts = 1;
 const int kPortIndex = 0;
 }  // namespace
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmAndVectorBaseTranslator& translator, ::lcm::LCM* lcm)
-    : channel_(channel), translator_(translator), lcm_(lcm) {}
+    : channel_(channel), translator_(translator), lcm_(lcm) {
+  DeclareInputPort(kVectorValued, translator_.get_vector_size(),
+                   kContinuousSampling);
+}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
@@ -28,19 +30,6 @@ LcmPublisherSystem::~LcmPublisherSystem() {}
 
 std::string LcmPublisherSystem::get_name() const {
   return "LcmPublisherSystem::" + channel_;
-}
-
-std::unique_ptr<ContextBase<double>> LcmPublisherSystem::CreateDefaultContext()
-    const {
-  std::unique_ptr<Context<double>> context(new Context<double>());
-  context->SetNumInputPorts(kNumInputPorts);
-  return std::unique_ptr<ContextBase<double>>(context.release());
-}
-
-std::unique_ptr<SystemOutput<double>> LcmPublisherSystem::AllocateOutput(
-    const ContextBase<double>& context) const {
-  std::unique_ptr<SystemOutput<double>> output(new LeafSystemOutput<double>);
-  return output;
 }
 
 // TODO(liang.fok) Move the LCM message publishing logic into another method
