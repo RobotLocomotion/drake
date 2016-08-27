@@ -1,15 +1,18 @@
-#include <iostream>
-
-#include "drake/util/testUtil.h"
 #include "drake/systems/LinearSystem.h"
+
+#include "gtest/gtest.h"
+
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/feedback_system.h"
 #include "drake/systems/test/system_test_util.h"
 
 using namespace std;
-using namespace drake;
 using namespace Eigen;
 
+namespace drake {
+namespace {
+
+// TODO()jwnimmer-tri) Unit tests should not use unseeded randomness.
 template <int StatesAtCompileTime, int InputsAtCompileTime,
           int OutputsAtCompileTime>
 shared_ptr<AffineSystem<EigenVector<StatesAtCompileTime>::template type,
@@ -47,21 +50,25 @@ void testSizes(size_t num_states, size_t num_inputs, size_t num_outputs) {
                                                      num_outputs);
   const auto& sys = *sys_ptr;
 
-  valuecheck(num_states, sys.getNumStates(), "Wrong number of states.");
-  valuecheck(num_inputs, sys.getNumInputs(), "Wrong number of inputs.");
-  valuecheck(num_outputs, sys.getNumOutputs(), "Wrong number of outputs.");
+  EXPECT_EQ(num_states, sys.getNumStates());
+  EXPECT_EQ(num_inputs, sys.getNumInputs());
+  EXPECT_EQ(num_outputs, sys.getNumOutputs());
 
-  valuecheck(num_states, getNumStates(sys));
-  valuecheck(num_inputs, getNumInputs(sys));
-  valuecheck(num_outputs, getNumOutputs(sys));
+  EXPECT_EQ(num_states, getNumStates(sys));
+  EXPECT_EQ(num_inputs, getNumInputs(sys));
+  EXPECT_EQ(num_outputs, getNumOutputs(sys));
 
   auto x = createStateVector<double>(sys);
-  valuecheck(num_states, static_cast<size_t>(x.size()),
-             "State vector size wrong");
+  EXPECT_EQ(num_states, static_cast<size_t>(x.size()));
 }
 
-int main(int argc, char* argv[]) {
+GTEST_TEST(AffineSystemTest, RandomDynamicSize) {
   testSizes<Dynamic, Dynamic, Dynamic>(3, 4, 5);
-  testSizes<3, 4, 5>(3, 4, 5);
-  return 0;
 }
+
+GTEST_TEST(AffineSystemTest, RandomFixedSize) {
+  testSizes<3, 4, 5>(3, 4, 5);
+}
+
+}  // namespace
+}  // namespace drake
