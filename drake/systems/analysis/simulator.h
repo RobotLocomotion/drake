@@ -169,7 +169,7 @@ class Simulator {
   ContextBase<T>* get_mutable_context() { return context_.get(); }
 
   /** Replace the internally-maintained Context with a different one. The
-  current Context is deleted. This is useful for supplying non-default initial
+  current Context is deleted. This is useful for supplying a new set of initial
   conditions. You should invoke Initialize() after replacing the Context. **/
   void reset_context(std::unique_ptr<Context<T>> context) {
     context_ = std::move(context);
@@ -284,8 +284,15 @@ class Simulator {
 };
 
 // No need for user code to instantiate these; they are in the library.
+
+// TODO(sherm1) Clean this up with a more nuanced export macro.
+#ifdef _MSC_VER
 extern template class Simulator<double>;
 extern template class Simulator<AutoDiffXd>;
+#else
+extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<double>;
+extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<AutoDiffXd>;
+#endif
 
 // TODO(sherm1) Move these implementations to an -inl.h file.
 

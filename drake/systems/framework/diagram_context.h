@@ -211,7 +211,6 @@ class DiagramContext : public ContextBase<T> {
     return (*it).second->get_mutable_state();
   }
 
-  int get_num_input_ports() const override { return input_ids_.size(); }
   int get_num_input_ports() const override {
     return static_cast<int>(input_ids_.size());
   }
