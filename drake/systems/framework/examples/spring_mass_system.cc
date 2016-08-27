@@ -1,5 +1,7 @@
 #include "drake/systems/framework/examples/spring_mass_system.h"
 
+#include "drake/systems/framework/basic_state_vector.h"
+
 namespace drake {
 namespace systems {
 
@@ -82,60 +84,29 @@ double SpringMassSystem::EvalNonConservativePower(const MyContext&) const {
   return power_nc;
 }
 
-// Reserve a context with no input, and a SpringMassStateVector state.
-std::unique_ptr<ContextBase<double>>
-SpringMassSystem::CreateDefaultContext() const {
-  std::unique_ptr<Context<double>> context(new Context<double>);
-  std::unique_ptr<SpringMassStateVector> state(new SpringMassStateVector(0, 0));
-  context->get_mutable_state()->continuous_state.reset(
-      new ContinuousState<double>(std::move(state), 1 /* size of q */,
-                                  1 /* size of v */, 1 /* size of z */));
-  if (system_is_forced_) context->SetNumInputPorts(1);
-  return std::unique_ptr<ContextBase<double>>(context.release());
-}
-
-std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput(
-    const ContextBase<double>& context) const {
-  std::unique_ptr<LeafSystemOutput<double>> output(
-      new LeafSystemOutput<double>);
-  {
-    std::unique_ptr<VectorBase<double>> data(new SpringMassStateVector());
-    std::unique_ptr<OutputPort> port(new OutputPort(std::move(data)));
-    output->get_mutable_ports()->push_back(std::move(port));
-  }
-  return std::unique_ptr<SystemOutput<double>>(output.release());
-}
-
 std::unique_ptr<ContinuousState<double>>
-SpringMassSystem::AllocateTimeDerivatives() const {
-  std::unique_ptr<SpringMassStateVector> derivs(
-      new SpringMassStateVector(0, 0));
-  return std::unique_ptr<ContinuousState<double>>(
-      new ContinuousState<double>(std::move(derivs), 1 /* size of q */,
-                                  1 /* size of v */, 1 /* size of z */));
+SpringMassSystem::AllocateContinuousState() const {
+  return std::make_unique<ContinuousState<double>>(
+      std::make_unique<BasicStateVector<double>>(3), 1, 1, 1);
 }
 
 // Assign the state to the output.
 void SpringMassSystem::EvalOutput(const ContextBase<double>& context,
                                   SystemOutput<double>* output) const {
   // TODO(david-german-tri): Cache the output of this function.
-  const SpringMassStateVector& state = get_state(context);
-  SpringMassStateVector* output_vector = get_mutable_output(output);
-  output_vector->set_position(state.get_position());
-  output_vector->set_velocity(state.get_velocity());
+  this->GetMutableOutputVector(output, 0) =
+      this->CopyContinuousStateVector(context);
 }
 
 // Compute the actual physics.
 void SpringMassSystem::EvalTimeDerivatives(
     const ContextBase<double>& context,
     ContinuousState<double>* derivatives) const {
-  // TODO(david-german-tri): Cache the output of this function.
-  const SpringMassStateVector& state = get_state(context);
 
-  SpringMassStateVector* derivative_vector = get_mutable_state(derivatives);
+  auto state_vec = this->CopyContinuousStateVector(context);
 
   // The derivative of position is velocity.
-  derivative_vector->set_position(state.get_velocity());
+  derivatives->get_mutable_state()->SetAtIndex(0, state_vec[1]);
 
   double external_force = get_input_force(context);
 
@@ -144,12 +115,12 @@ void SpringMassSystem::EvalTimeDerivatives(
   // body.
   const double force_applied_to_body =
       EvalSpringForce(context) + external_force;
-  derivative_vector->set_velocity(force_applied_to_body / mass_kg_);
+  derivatives->get_mutable_state()->SetAtIndex(1, force_applied_to_body / mass_kg_);
 
   // We are integrating conservative power to get the work done by conservative
   // force elements, that is, the net energy transferred between the spring and
   // the mass over time.
-  derivative_vector->set_conservative_work(EvalConservativePower(context));
+  derivatives->get_mutable_state()->SetAtIndex(2, EvalConservativePower(context));
 }
 
 }  // namespace systems

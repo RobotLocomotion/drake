@@ -18,8 +18,6 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   DRAKE_ASSERT(Ki >= 0);
   DRAKE_ASSERT(Kd >= 0);
 
-  System<T>::set_name("PidController");
-
   plant_ = make_unique<SpringMassSystem>(
       spring_stiffness, mass, true /* is forced */);
   controller_ = make_unique<PidController<T>>(Kp, Ki, Kd, 1);
@@ -48,7 +46,6 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   // The output to this system is the output of the spring-mass system which
   // consists of a vector with position, velocity and energy.
   builder.ExportOutput(plant_->get_output_port(0));
-  builder.ExportOutput(demux_->get_output_port(2));
   builder.BuildInto(this);
 }
 
@@ -69,6 +66,22 @@ void PidControlledSpringMassSystem<T>::SetDefaultState(
   plant_->set_position(plant_context, 0.0);
   plant_->set_velocity(plant_context, 0.0);
   plant_->set_conservative_work(plant_context, 0.0);
+}
+
+template <typename T>
+void PidControlledSpringMassSystem<T>::set_position(
+    ContextBase<T>* context, const T& position) const {
+  ContextBase<T>* plant_context =
+      Diagram<T>::GetMutableSubSystemContext(context, plant_.get());
+  plant_->set_position(plant_context, position);
+}
+
+template <typename T>
+void PidControlledSpringMassSystem<T>::set_velocity(
+    ContextBase<T>* context, const T& velocity) const {
+  ContextBase<T>* plant_context =
+      Diagram<T>::GetMutableSubSystemContext(context, plant_.get());
+  plant_->set_velocity(plant_context, velocity);
 }
 
 template class

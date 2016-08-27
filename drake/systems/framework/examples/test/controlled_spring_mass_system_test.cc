@@ -31,10 +31,10 @@ class DiagramTest : public ::testing::Test {
             kSpring, kMass, Kp, Ki, Kd);
 
     context_ = model_->CreateDefaultContext();
-    //output_ = model_->AllocateOutput(*context_);
+    output_ = model_->AllocateOutput(*context_);
 
     // Initialize to default conditions.
-    //model_->SetDefaultState(context_.get());
+    model_->SetDefaultState(context_.get());
   }
 
   // Returns the continuous state of the given @p system.
@@ -44,43 +44,6 @@ class DiagramTest : public ::testing::Test {
         ->continuous_state.get();
   }
 
-#if 0
-  // Asserts that output_ is what it should be for the default values
-  // of input0_, input1_, and input2_.
-  void ExpectDefaultOutputs() {
-    Eigen::Vector3d expected_output0;
-    expected_output0 << 1 + 8 + 64, 2 + 16 + 128, 4 + 32 + 256;  // B
-
-    Eigen::Vector3d expected_output1;
-    expected_output1 << 1 + 8, 2 + 16, 4 + 32;  // A
-    expected_output1 += expected_output0;       // A + B
-
-    Eigen::Vector3d expected_output2;
-    expected_output2 << 81, 243, 729;  // state of integrator1_
-
-    const BasicVector<double>* output0 =
-        dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
-    ASSERT_NE(nullptr, output0);
-    EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
-    EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
-    EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
-
-    const BasicVector<double>* output1 =
-        dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(1));
-    ASSERT_NE(nullptr, output1);
-    EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
-    EXPECT_EQ(expected_output1[1], output1->get_value()[1]);
-    EXPECT_EQ(expected_output1[2], output1->get_value()[2]);
-
-    const BasicVector<double>* output2 =
-        dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(2));
-    ASSERT_NE(nullptr, output2);
-    EXPECT_EQ(expected_output2[0], output2->get_value()[0]);
-    EXPECT_EQ(expected_output2[1], output2->get_value()[1]);
-    EXPECT_EQ(expected_output2[2], output2->get_value()[2]);
-  }
-#endif
-
   std::unique_ptr<PidControlledSpringMassSystem<double>> model_;
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -89,40 +52,62 @@ class DiagramTest : public ::testing::Test {
 // Tests that the diagram computes the correct sum.
 TEST_F(DiagramTest, EvalOutput) {
 
-  //model_->EvalOutput(*context_, output_.get());
+  // Sets a non-zero initial condition.
+  model_->set_position(context_.get(), 2.0);
+  model_->set_velocity(context_.get(), -1.0);
 
-  //ASSERT_EQ(3, output_->get_num_ports());
-  //ExpectDefaultOutputs();
+  model_->EvalOutput(*context_, output_.get());
+
+  ASSERT_EQ(1, output_->get_num_ports());
+  Eigen::Vector3d expected_output(2.0, -1.0, 0.0);
+
+  const BasicVector<double>* output =
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  ASSERT_NE(nullptr, output);
+  EXPECT_EQ(expected_output[0], output->get_value()[0]);
+  EXPECT_EQ(expected_output[1], output->get_value()[1]);
+  EXPECT_EQ(expected_output[2], output->get_value()[2]);
 }
 
-#if 0
 TEST_F(DiagramTest, EvalTimeDerivatives) {
-  AttachInputs();
   std::unique_ptr<ContinuousState<double>> derivatives =
-      diagram_->AllocateTimeDerivatives();
+      model_->AllocateTimeDerivatives();
 
-  diagram_->EvalTimeDerivatives(*context_, derivatives.get());
+  const double x0 = 2.0;
+  const double v0 = -1.0;
 
-  ASSERT_EQ(6, derivatives->get_state().size());
-  ASSERT_EQ(0, derivatives->get_generalized_position().size());
-  ASSERT_EQ(0, derivatives->get_generalized_velocity().size());
-  ASSERT_EQ(6, derivatives->get_misc_continuous_state().size());
+  // Sets a non-zero initial condition.
+  model_->set_position(context_.get(), x0);
+  model_->set_velocity(context_.get(), v0);
 
-  // The derivative of the first integrator is A.
-  const ContinuousState<double>& integrator0_xcdot =
-      diagram_->GetSubsystemDerivatives(*derivatives, integrator0_.get());
-  EXPECT_EQ(1 + 8, integrator0_xcdot.get_state().GetAtIndex(0));
-  EXPECT_EQ(2 + 16, integrator0_xcdot.get_state().GetAtIndex(1));
-  EXPECT_EQ(4 + 32, integrator0_xcdot.get_state().GetAtIndex(2));
+  model_->EvalTimeDerivatives(*context_, derivatives.get());
 
-  // The derivative of the second integrator is the state of the first.
-  const ContinuousState<double>& integrator1_xcdot =
-      diagram_->GetSubsystemDerivatives(*derivatives, integrator1_.get());
-  EXPECT_EQ(3, integrator1_xcdot.get_state().GetAtIndex(0));
-  EXPECT_EQ(9, integrator1_xcdot.get_state().GetAtIndex(1));
-  EXPECT_EQ(27, integrator1_xcdot.get_state().GetAtIndex(2));
+  // The spring-mass plant has a state vector of size 3. One position, one
+  // velocity and one misc state (energy). In addition, the model has an
+  // addition misc state corresponding to the integral of the PID controller.
+  // Therefore the size of the misc state vector is 2.
+  ASSERT_EQ(4, derivatives->get_state().size());
+  ASSERT_EQ(1, derivatives->get_generalized_position().size());
+  ASSERT_EQ(1, derivatives->get_generalized_velocity().size());
+  ASSERT_EQ(2, derivatives->get_misc_continuous_state().size());
+
+  // The derivatives of plant.
+  const ContinuousState<double>& plant_xcdot =
+      model_->GetSubsystemDerivatives(*derivatives, &model_->get_plant());
+  // Position derivative.
+  EXPECT_EQ(v0, plant_xcdot.get_state().GetAtIndex(0));
+
+  // Acceleration.
+  const double error = x0;  // target position is zero.
+  const double error_rate = v0;
+  const double pid_actuation = Kp * error +  Kd * error_rate;
+  EXPECT_EQ((-kSpring * x0 + pid_actuation) / kMass,
+            plant_xcdot.get_state().GetAtIndex(1));
+
+  // Work.
+  EXPECT_EQ(model_->get_plant().EvalConservativePower(*context_),
+            plant_xcdot.get_state().GetAtIndex(2));
 }
-#endif
 
 }  // namespace
 }  // namespace systems

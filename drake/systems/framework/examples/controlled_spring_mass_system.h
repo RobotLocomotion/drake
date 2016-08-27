@@ -33,6 +33,12 @@ class PidControlledSpringMassSystem : public Diagram<T> {
 
   ~PidControlledSpringMassSystem() override {}
 
+  void set_position(ContextBase<T>* context, const T& position) const;
+
+  void set_velocity(ContextBase<T>* context, const T& position) const;
+
+  const SpringMassSystem& get_plant() const { return *plant_.get(); }
+
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
 
