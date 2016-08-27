@@ -100,7 +100,7 @@ class DRAKEBOTVISUALIZERSYSTEM_EXPORT BotVisualizerSystem :
 
   // The LCM draw message to send to the Drake Visualizer. This member variable
   // is declared mutable so it can be modified by EvalOutput().
-  mutable drake::lcmt_viewer_draw draw_msg_;
+  drake::lcmt_viewer_draw draw_msg_;
 
   // The postfix of the channel names.
   std::string channel_postfix_;
