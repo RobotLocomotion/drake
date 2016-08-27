@@ -1,6 +1,7 @@
 #pragma once
 
-#include <lcm/lcm-cpp.hpp>
+#include <cstdint>
+#include <vector>
 
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
@@ -31,12 +32,12 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorBetweenLcmtDrakeSignal
       : LcmAndVectorBaseTranslator(size) {}
 
   void TranslateLcmToVectorBase(
-      const ::lcm::ReceiveBuffer* rbuf,
+      const void* lcm_message_bytes, int lcm_message_length,
       VectorBase<double>* vector_base) const override;
 
-  void PublishVectorBaseToLCM(
+  void TranslateVectorBaseToLcm(
       const VectorBase<double>& vector_base,
-          const std::string& channel, ::lcm::LCM* lcm) const override;
+      std::vector<uint8_t>* lcm_message_bytes) const override;
 };
 
 }  // namespace lcm
