@@ -33,9 +33,13 @@ class DiagramOutput : public SystemOutput<T> {
  public:
   int get_num_ports() const override { return ports_.size(); }
 
-  OutputPort* get_mutable_port(int index) override { return ports_[index]; }
+  OutputPort* get_mutable_port(int index) override {
+    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_ports());
+    return ports_[index];
+  }
 
   const OutputPort& get_port(int index) const override {
+    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_ports());
     return *ports_[index];
   }
 
@@ -123,17 +127,13 @@ class Diagram : public System<T> {
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const ContextBase<T>& context) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    if (diagram_context == nullptr) {
-      throw std::logic_error(
-          "Diagram::AllocateOutput was not given its own context.");
-    }
+    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
 
     // The output ports of this Diagram are output ports of its constituent
-    // systems. Create a DiagramOutput with that many ports. They will be
-    // connected to the appropriate subsystem outputs at `EvalOutput` time.
+    // systems. Create a DiagramOutput with that many ports.
     auto output = std::make_unique<internal::DiagramOutput<T>>();
     output->get_mutable_ports()->resize(output_port_ids_.size());
-
+    ExposeSubsystemOutputs(*diagram_context, output.get());
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
 
@@ -141,28 +141,14 @@ class Diagram : public System<T> {
                   SystemOutput<T>* output) const override {
     // Down-cast the context and output to DiagramContext and DiagramOutput.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_ASSERT(diagram_context != nullptr);
+    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
     auto diagram_output = dynamic_cast<internal::DiagramOutput<T>*>(output);
-    DRAKE_ASSERT(diagram_output != nullptr);
+    DRAKE_ABORT_UNLESS(diagram_output != nullptr);
 
     // Populate the output with pointers to the appropriate subsystem outputs
     // in the DiagramContext. We do this on every call to EvalOutput, so
-    // that the DiagramContext and Diagram are not tightly coupled.
-    DRAKE_ASSERT(diagram_output->get_num_ports() ==
-                 static_cast<int>(output_port_ids_.size()));
-    for (size_t i = 0; i < output_port_ids_.size(); ++i) {
-      const PortIdentifier& id = output_port_ids_[i];
-      // For each configured output port ID, obtain from the DiagramContext the
-      // actual OutputPort that produces it.
-      const int system_index = GetSystemIndex(id.first);
-      SystemOutput<T>* subsystem_output =
-          diagram_context->GetSubsystemOutput(system_index);
-
-      // Then, put a pointer to that OutputPort in the DiagramOutput.
-      const int port_index = id.second;
-      (*diagram_output->get_mutable_ports())[i] =
-          subsystem_output->get_mutable_port(port_index);
-    }
+    // that the diagram_context and diagram_output are not tightly coupled.
+    ExposeSubsystemOutputs(*diagram_context, diagram_output);
 
     // Since the diagram output now contains pointers to the subsystem outputs,
     // all we need to do is compute all the subsystem outputs in sorted order.
@@ -229,6 +215,19 @@ class Diagram : public System<T> {
     return *substate;
   }
 
+  /// Returns the sub-context that corresponds to the system @p subsystem.
+  /// Classes inheriting from %Diagram need access to this method in order to
+  /// pass their constituent subsystem's the apropriate subcontext.
+  ContextBase<T>* GetMutableSubsystemContext(
+      ContextBase<T>* context, const System<T>* subsystem) const {
+    DRAKE_ABORT_UNLESS(context != nullptr);
+    DRAKE_ABORT_UNLESS(subsystem != nullptr);
+    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
+    const int i = GetSystemIndex(subsystem);
+    return diagram_context->GetMutableSubsystemContext(i);
+  }
+
   /// Retrieves the state for a particular subsystem from the context for the
   /// entire diagram. Invalidates all entries in that subsystem's cache that
   /// depend on State. Returns nullptr if the subsystem is not part of the
@@ -238,12 +237,7 @@ class Diagram : public System<T> {
   /// invalidation.
   State<T>* GetMutableSubsystemState(ContextBase<T>* context,
                                      const System<T>* subsystem) const {
-    DRAKE_ABORT_UNLESS(context != nullptr);
-    DRAKE_ABORT_UNLESS(subsystem != nullptr);
-    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
-    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
-    const int i = GetSystemIndex(subsystem);
-    return diagram_context->GetMutableSubsystemState(i);
+    return GetMutableSubsystemContext(context, subsystem)->get_mutable_state();
   }
 
  protected:
@@ -364,6 +358,29 @@ class Diagram : public System<T> {
     output.first = GetSystemIndex(id.first);
     output.second = id.second;
     return output;
+  }
+
+  // Sets up the OutputPort pointers in @p output to point to the subsystem
+  // outputs, found in @p context, that are the outputs of this Diagram.
+  void ExposeSubsystemOutputs(const DiagramContext<T>& context,
+                              internal::DiagramOutput<T>* output) const {
+    // The number of output ports of this diagram must equal the number of
+    // ports in the provided DiagramOutput.
+    const int num_ports = static_cast<int>(output_port_ids_.size());
+    DRAKE_ABORT_UNLESS(output->get_num_ports() == num_ports);
+
+    for (int i = 0; i < num_ports; ++i) {
+      const PortIdentifier& id = output_port_ids_[i];
+      // For each configured output port ID, obtain from the DiagramContext the
+      // actual OutputPort that produces it.
+      const int sys_index = GetSystemIndex(id.first);
+      const int port_index = id.second;
+      SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(sys_index);
+      OutputPort* output_port = subsystem_output->get_mutable_port(port_index);
+
+      // Then, put a pointer to that OutputPort in the DiagramOutput.
+      (*output->get_mutable_ports())[i] = output_port;
+    }
   }
 
   // In sorted order, compute the outputs for all subsystems. This is also a
