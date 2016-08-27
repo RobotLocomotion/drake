@@ -3,8 +3,9 @@
 #include <memory>
 
 #include "drake/systems/framework/examples/spring_mass_system.h"
+#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
-#include "drake/systems/framework/primitives/pid_controller.h"
+#include "drake/systems/framework/primitives/pid_controller2.h"
 
 namespace drake {
 namespace systems {

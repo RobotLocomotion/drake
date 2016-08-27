@@ -2,12 +2,10 @@
 
 #include <memory>
 
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/context_base.h"
-#include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/integrator.h"
-#include "drake/systems/framework/primitives/pass_through.h"
+#include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace systems {
@@ -22,7 +20,7 @@ namespace systems {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class PidController : public Diagram<T> {
+class PidController : public LeafSystem<T> {
  public:
   /// Constructs a PID controller with proportional constant @p Kp,
   /// integral constant @p Ki and derivative constant @p Kd.
@@ -34,9 +32,6 @@ class PidController : public Diagram<T> {
   PidController(const T& Kp, const T& Ki, const T& Kd, int length);
 
   ~PidController() override {}
-
-  // System<T> overrides
-  bool has_any_direct_feedthrough() const override;
 
   /// Sets @p context to a default state in which the integral of the
   /// controller is zero.
@@ -53,13 +48,19 @@ class PidController : public Diagram<T> {
   /// Returns the input port to the time derivative or rate of the error signal.
   const SystemPortDescriptor<T>& get_error_signal_rate_port() const;
 
+  // System<T> overrides
+  bool has_any_direct_feedthrough() const override;
+  void EvalOutput(const ContextBase<T>& context,
+                  SystemOutput<T>* output) const override;
+  void EvalTimeDerivatives(const ContextBase<T>& context,
+                           ContinuousState<T>* derivatives) const override;
+
+ protected:
+  // LeafSystem<T> override
+  std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
+
  private:
-  std::unique_ptr<Adder<T>> adder_;
-  std::unique_ptr<Integrator<T>> integrator_;
-  std::unique_ptr<PassThrough<T>> pass_through_;
-  std::unique_ptr<Gain<T>> proportional_gain_;
-  std::unique_ptr<Gain<T>> integral_gain_;
-  std::unique_ptr<Gain<T>> derivative_gain_;
+  const T kp_, ki_, kd_;
 };
 
 }  // namespace systems
