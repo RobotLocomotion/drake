@@ -150,6 +150,11 @@ class Simulator {
   void request_initial_step_size_attempt(double step_size) {
     req_initial_step_size_attempt_ = step_size;
   }
+
+  /** Report the step size we will attempt for an initial step. **/
+  double get_initial_step_size_attempt_in_use() const {
+    return initial_step_size_attempt_in_use_;
+  }
   /**@}**/
 
   /** Returns a const reference to the internally-maintained Context holding the
@@ -213,6 +218,11 @@ class Simulator {
   Initialize() call? **/
   int64_t get_num_samples_taken() const { return num_samples_taken_; }
   /**@}**/
+
+  /** Return the step size the simulator would like to take next, based
+  primarily on the integrator's accuracy prediction. For variable
+  step integrators this will change as the simulation progresses. **/
+  T get_ideal_next_step_size() const { return next_step_size_to_try_; }
 
  private:
   // Return a proposed end time for this step, and whether we picked that time
