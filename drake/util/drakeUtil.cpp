@@ -12,11 +12,6 @@
 using namespace std;
 using namespace Eigen;
 
-void baseZeroToBaseOne(std::vector<int>& vec) {
-  for (std::vector<int>::iterator iter = vec.begin(); iter != vec.end(); iter++)
-    (*iter)++;
-}
-
 template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal,
           typename DerivedPoint>
 std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(

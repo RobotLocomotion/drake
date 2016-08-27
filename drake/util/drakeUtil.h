@@ -91,8 +91,6 @@ void addOffset(std::vector<T>& v, const T& offset) {
                  std::bind2nd(std::plus<double>(), offset));
 }
 
-DRAKEUTIL_EXPORT void baseZeroToBaseOne(std::vector<int>& vec);
-
 template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal,
           typename DerivedPoint>
 DRAKEUTIL_EXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(
