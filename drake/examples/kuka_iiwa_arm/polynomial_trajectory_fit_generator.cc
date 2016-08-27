@@ -19,6 +19,14 @@ PolynomialTrajectoryFitGenerator::PolynomialTrajectoryFitGenerator(
   num_points_ = time_stamps.size();
 }
 
+void PolynomialTrajectoryFitGenerator::ResetTrajectory(
+    const MatrixXd &joint_trajectories,
+    const std::vector<double> &time_stamps) {
+  time_stamps_.clear();
+  time_stamps_ = time_stamps;
+  joint_trajectories_ = joint_trajectories;
+}
+
 PiecewisePolynomial<double>
 PolynomialTrajectoryFitGenerator::GenerateTrajectoryPolynomial() {
   vector<PolynomialTrajectoryFitGenerator::PPMatrix> polys;
