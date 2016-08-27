@@ -8,7 +8,6 @@ namespace drake {
 namespace systems {
 
 namespace {
-const int kNumInputPorts = 1;
 const int kPortIndex = 0;
 }  // namespace
 
