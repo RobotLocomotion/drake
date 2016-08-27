@@ -9,14 +9,17 @@ set(sources
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
+  examples/controlled_spring_mass_system.cc
   examples/spring_mass_system.cc
   leaf_system.cc
   primitives/adder.cc
   primitives/constant_value_source.cc
   primitives/constant_vector_source.cc
+  primitives/demultiplexer.cc
   primitives/gain.cc
   primitives/integrator.cc
   primitives/pass_through.cc
+  primitives/pid_controller2.cc
   state.cc
   state_subvector.cc
   state_supervector.cc

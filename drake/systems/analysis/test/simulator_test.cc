@@ -28,10 +28,12 @@ class MySpringMassSystem : public SpringMassSystem {
   // Publish t q u to standard output.
   void DoPublish(const ContextBase<double>& context) const override {
     ++publish_count_;
+#if 0
     cout << context.get_time() << " "
          << get_position(context) << " "
          << get_velocity(context) << " "
          << get_conservative_work(context) << endl;
+#endif
   }
 
   void DoUpdate(ContextBase<double>* context,
@@ -108,6 +110,8 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
+  spring_mass.set_velocity(simulator.get_mutable_context(), 0.0);
+  spring_mass.set_conservative_work(simulator.get_mutable_context(), 0.0);
 
   // Take all the defaults.
   simulator.Initialize();
