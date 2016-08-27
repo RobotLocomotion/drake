@@ -196,10 +196,12 @@ struct LeafSystemOutput : public SystemOutput<T> {
   int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 
   OutputPort* get_mutable_port(int index) override {
+    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_ports());
     return ports_[index].get();
   }
 
   const OutputPort& get_port(int index) const override {
+    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_ports());
     return *ports_[index];
   }
 

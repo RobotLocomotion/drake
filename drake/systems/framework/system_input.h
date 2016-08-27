@@ -69,6 +69,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT DependentInputPort : public InputPort {
   /// must not be nullptr. The output port must outlive this input port.
   explicit DependentInputPort(OutputPort* output_port)
       : output_port_(output_port) {
+    DRAKE_ABORT_UNLESS(output_port_ != nullptr);
     output_port_->add_dependent(this);
   }
 
