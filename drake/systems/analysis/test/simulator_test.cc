@@ -37,8 +37,10 @@ class MySpringMassSystem : public SpringMassSystem {
   // sample at 0 but will get one at the end.
   void DoCalcNextSampleTime(const ContextBase<double>& context,
                             SampleActions* actions) const override {
-    if (sample_rate_ <= 0.)
+    if (sample_rate_ <= 0.) {
       actions->time = std::numeric_limits<double>::infinity();
+      return;
+    }
 
     // For reliable behavior, convert floating point times into integer
     // sample counts. We want the ceiling unless it is the same as the floor.
@@ -59,7 +61,7 @@ class MySpringMassSystem : public SpringMassSystem {
   mutable int update_count_{0};
 };
 
-GTEST_TEST(SimulatorTest,MiscAPI) {
+GTEST_TEST(SimulatorTest, MiscAPI) {
   MySpringMassSystem spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
@@ -73,6 +75,18 @@ GTEST_TEST(SimulatorTest,MiscAPI) {
   EXPECT_EQ(simulator.get_initial_step_size_attempt_in_use(), 1e-8);
 
   EXPECT_EQ(simulator.get_ideal_next_step_size(), 1e-8);
+}
+
+GTEST_TEST(SimulatorTest, ContextAccess) {
+  MySpringMassSystem spring_mass(1., 1., 0.);
+  Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  simulator.get_mutable_context()->set_time(3.);
+  EXPECT_EQ(simulator.get_context().get_time(), 3.);
+
+  auto context = simulator.release_context();
+  EXPECT_TRUE(simulator.get_mutable_context() == nullptr);
+  EXPECT_EQ(context->get_time(), 3.);
 }
 
 // Try a purely continuous system with no sampling.

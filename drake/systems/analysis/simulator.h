@@ -189,7 +189,7 @@ class Simulator {
   /**@{**/
   /** Forget accumulated statistics. These are reset to the values they have
   post construction or immediately after `Initialize()`. **/
-  void reset_statistics() {
+  void ResetStatistics() {
     actual_initial_step_size_taken_ = kNaN;
     smallest_step_size_taken_ = kNaN;
     largest_step_size_taken_ = kNaN;
@@ -307,7 +307,7 @@ void Simulator<T>::Initialize() {
   // TODO(sherm1) Invoke System's initial conditions computation.
 
   // Restore default values.
-  reset_statistics();
+  ResetStatistics();
   reset_simulator_settings_in_use();
 
   // Override the default settings if the user has spoken.
