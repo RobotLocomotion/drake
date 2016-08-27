@@ -28,19 +28,6 @@ std::string BotVisualizerSystem::get_name() const {
   return "BotVisualizerSystem";
 }
 
-std::unique_ptr<ContextBase<double>> BotVisualizerSystem::CreateDefaultContext()
-    const {
-  std::unique_ptr<Context<double>> context(new Context<double>());
-  context->SetNumInputPorts(get_num_input_ports());
-  return std::unique_ptr<ContextBase<double>>(context.release());
-}
-
-std::unique_ptr<SystemOutput<double>> BotVisualizerSystem::AllocateOutput(
-    const ContextBase<double>& context) const {
-  std::unique_ptr<SystemOutput<double>> output(new LeafSystemOutput<double>);
-  return output;
-}
-
 // TODO(liang.fok) Update this method to be Publish() once #3202 is merged.
 // For more information, see:
 //     https://github.com/RobotLocomotion/drake/issues/2836

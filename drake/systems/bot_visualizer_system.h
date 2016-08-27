@@ -5,7 +5,7 @@
 #include "drake/drakeBotVisualizerSystem_export.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/system.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 namespace drake {
@@ -35,7 +35,7 @@ namespace systems {
  * to the constructor.
  */
 class DRAKEBOTVISUALIZERSYSTEM_EXPORT BotVisualizerSystem :
-    public System<double> {
+    public LeafSystem<double> {
  public:
   /**
    * A constructor that initializes the Drake visualizer by informing it of all
@@ -60,18 +60,6 @@ class DRAKEBOTVISUALIZERSYSTEM_EXPORT BotVisualizerSystem :
   BotVisualizerSystem& operator=(const BotVisualizerSystem&) = delete;
 
   std::string get_name() const override;
-
-  /**
-   * The default context for this system is one that has one input port and
-   * no state.
-   */
-  std::unique_ptr<ContextBase<double>> CreateDefaultContext() const override;
-
-  /**
-   * The output contains zero ports.
-   */
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const ContextBase<double>& context) const override;
 
   /**
    * Takes the VectorInterface from the input port of the context, computes the
