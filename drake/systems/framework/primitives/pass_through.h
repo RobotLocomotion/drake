@@ -32,8 +32,6 @@ class PassThrough : public LeafSystem<T> {
   explicit PassThrough(int length);
 
   /// Sets the output port to equal the input port.
-  /// If the number of connected input or output ports is not one or the
-  /// input ports are not of size length_, `std::runtime_error` will be thrown.
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override;
 };
