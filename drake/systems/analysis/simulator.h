@@ -284,8 +284,8 @@ class Simulator {
 };
 
 // No need for user code to instantiate these; they are in the library.
-extern template class Simulator<double>;
-extern template class Simulator<AutoDiffXd>;
+//extern template class Simulator<double>;
+//extern template class Simulator<AutoDiffXd>;
 
 // TODO(sherm1) Move these implementations to an -inl.h file.
 

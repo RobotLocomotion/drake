@@ -6,6 +6,10 @@
 
 #include "drake/systems/framework/examples/spring_mass_system.h"
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
 namespace drake {
 namespace systems {
 namespace {
@@ -24,6 +28,10 @@ class MySpringMassSystem : public SpringMassSystem {
   // Publish t q u to standard output.
   void DoPublish(const ContextBase<double>& context) const override {
     ++publish_count_;
+    cout << context.get_time() << " "
+         << get_position(context) << " "
+         << get_velocity(context) << " "
+         << get_conservative_work(context) << endl;
   }
 
   void DoUpdate(ContextBase<double>* context,
