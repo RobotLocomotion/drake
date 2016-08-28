@@ -40,7 +40,10 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
                   controller_->get_error_signal_rate_port());
 
   // Close the feedback loop.
+  inverter_ = make_unique<Gain<T>>(-1.0, 1);
   builder.Connect(controller_->get_output_port(0),
+                  inverter_->get_input_port(0));
+  builder.Connect(inverter_->get_output_port(0),
                   plant_->get_input_port(0));
 
   // The output to this system is the output of the spring-mass system which

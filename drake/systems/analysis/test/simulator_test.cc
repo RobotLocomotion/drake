@@ -179,9 +179,9 @@ class MyControlledSpringMassSystem :
  public:
   // Pass through to SpringMassSystem, except add sample rate in samples/s.
   MyControlledSpringMassSystem(
-      double stiffness, double mass, double sample_rate)
-      : PidControlledSpringMassSystem(stiffness, mass, 0.0, 0.0, 0.0),
-        sample_rate_(sample_rate) {}
+      double stiffness, double mass, double kp, double ki, double kd)
+      : PidControlledSpringMassSystem(stiffness, mass, kp, ki, kd),
+        sample_rate_(0.0) {}
 
   int get_publish_count() const { return publish_count_; }
   int get_update_count() const { return update_count_; }
@@ -195,7 +195,6 @@ class MyControlledSpringMassSystem :
          << get_position(context) << " "
          << get_velocity(context) << " "
          << get_conservative_work(context) << endl;
-
   }
 
   void DoUpdate(ContextBase<double>* context,
@@ -236,8 +235,19 @@ class MyControlledSpringMassSystem :
 GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
+  // Open loop system frequency (squared).
+  const double wol = sqrt(kSpring / kMass);
 
-  MyControlledSpringMassSystem spring_mass(kSpring, kMass, 0.);
+  // Choose some controller constants.
+  double kp = kSpring;
+  double ki = 0.0;
+  // Closed loop system frequency.
+  const double wcl = sqrt(wol*wol + kp / kMass);
+  // Damping ratio.
+  const double zeta = 0.5;
+  double kd = 2.0 * kMass * wcl * zeta;
+
+  MyControlledSpringMassSystem spring_mass(kSpring, kMass, kp, ki, kd);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Sets initial conditions to zero.
@@ -270,6 +280,10 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 
   // Current time is 1. An earlier final time should fail.
   EXPECT_THROW(simulator.StepTo(0.5), std::runtime_error);
+
+  // TODO(amcastro-tri): before PR'ing
+  // Add here tests comparing with the analytical solution available for this
+  // case.
 }
 
 }  // namespace
