@@ -126,17 +126,22 @@ class DRAKERBM_EXPORT RigidBody {
    * like the following:
    *
    * <pre>
-   * [vector of position states][vector of velocity states] . . .
+   * [vector of model instance 1's position states]
+   * [vector of model instance 2's position states]
+   * ...
+   * [vector of model instance 1's velocity states]
+   * [vector of model instance 2's velocity states]
+   * ...
    * </pre>
    *
    * Parameter @p position_start_index is the index relative to the beginning of
-   * `[vector of position states]` where the position states of this body's
-   * parent joint begins.
+   * `[vector of model instance 1's position states]` where the position states
+   * of this rigid body's parent joint begins.
    *
-   * Since `[vector of position states]` is at the very beginning
-   * of the RigidBodyTree's full state vector, the starting index of this rigid
-   * body's parent joint's position state vector within the RigidBodyTree's full
-   * state vector is equal to @p position_start_index.
+   * Since `[vector of model instance 1's position states]` is at the very
+   * beginning of the RigidBodyTree's full state vector, the starting index of
+   * this rigid body's parent joint's position state vector within the
+   * RigidBodyTree's full state vector is equal to @p position_start_index.
    */
   void set_position_start_index(int position_start_index);
 
@@ -147,29 +152,34 @@ class DRAKERBM_EXPORT RigidBody {
   int get_position_start_index() const;
 
   /**
-   * Sets the start index of this rigid body's joint's contiguous generalized
-   * velocity `v` (joint velocity state variables) within the full RigidBodyTree
-   * generalized velocity vector.
+   * Sets the start index of this rigid body's parent joint's contiguous
+   * generalized velocity `v` (joint velocity state variables) within the full
+   * RigidBodyTree generalized velocity vector.
    *
    * In other words, the RigidBodyTree's generalized coordinate vector looks
    * like the following:
    *
    * <pre>
-   * [vector of position states][vector of velocity states] . . .
+   * [vector of model instance 1's position states]
+   * [vector of model instance 2's position states]
+   * ...
+   * [vector of model instance 1's velocity states]
+   * [vector of model instance 2's velocity states]
+   * ...
    * </pre>
    *
    * Parameter @p velocity_start_index is the index relative to the beginning of
-   * `[vector of velocity states]` where the velocity states of this body's
-   * parent joint begins.
+   * `[vector of model 1's velocity states]` where the velocity states of this
+   * body's parent joint begins.
    *
-   * Since `[vector of position states]` is at the very beginning of the
-   * RigidBodyTree's full state vector and `[vector of velocity states]`
-   * immediately follows it, the starting index of this rigid body's parent
-   * joint's velocity state vector within the RigidBodyTree's full state vector
-   * is equal to:
+   * Since `[vector of model instance 1's position states]` is at the very
+   * beginning of the RigidBodyTree's full state vector and
+   * `[vector of model instance 1's velocity states]` immediately follows it,
+   * the starting index of this rigid body's parent joint's velocity state
+   * vector within the RigidBodyTree's full state vector is equal to:
    *
    * <pre>
-   * velocity_start_index + RigidBodyTree::number_of_positions().
+   * velocity_start_index + RigidBodyTree::number_of_positions()
    * </pre>
    */
   void set_velocity_start_index(int velocity_start_index);
