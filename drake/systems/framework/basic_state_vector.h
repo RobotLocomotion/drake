@@ -72,6 +72,11 @@ class BasicStateVector : public LeafStateVector<T> {
 
   VectorX<T> CopyToVector() const override { return vector_->get_value(); }
 
+  // Returns a constant view to the underlying Eigen expression of this vector.
+  Eigen::VectorBlock<const VectorX<T>> get_vector() const {
+    return vector_->get_value();
+  }
+
   void ScaleAndAddToVector(const T& scale,
                            Eigen::Ref<VectorX<T>> vec) const override {
     if (vec.rows() != size()) {
