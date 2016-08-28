@@ -8,6 +8,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
@@ -27,6 +28,8 @@ namespace plants {
 namespace rigid_body_system {
 namespace test {
 namespace {
+
+const double deg_to_rad = M_PI / 180.0;
 
 template<typename T>
 class KukaDemo : public Diagram<T> {
@@ -59,19 +62,30 @@ class KukaDemo : public Diagram<T> {
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
     plant_ = make_unique<RigidBodyPlant<T>>(move(mbd_world));
-    torques_ = make_unique<ConstantVectorSource<T>>(
-        VectorX<T>::Zero(plant_->get_num_actuators()));
+
+    VectorX<double> desired_state = VectorX<double>::Zero(14);
+    desired_state[0] =   0.0 * deg_to_rad;  // base.
+    desired_state[1] =  45.0 * deg_to_rad;  // first elbow.
+    desired_state[2] =   0.0 * deg_to_rad;  // axial rotation.
+    desired_state[3] = -45.0 * deg_to_rad;  // second elbow.
+    desired_state[4] =  90.0 * deg_to_rad;  // axial rotation.
+    desired_state[5] =   0.0 * deg_to_rad;  // final wrist
+    desired_state[6] =   0.0 * deg_to_rad;  // end effector rotation.
+
+    target_state_ = make_unique<ConstantVectorSource<T>>(desired_state);
+    adder_ = make_unique<Adder<T>>(2 /*number of inputs*/,
+                                   plant_->get_num_states() /* size */);
 
     const double numerical_stiffness = 3000;
-    plant_->penetration_stiffness_ = numerical_stiffness;
+    plant_->penetration_stiffness_ = 10*numerical_stiffness;
 
     // Rough estimation of controller constants.
-    const double arm_mass = plant_->get_multibody_world().getMass();
+    const double arm_mass = plant_->get_multibody_world().getMass() / 7.0;
     // Closed loop frequency.
     const double wol = sqrt(numerical_stiffness / arm_mass);
 
     const double kp = numerical_stiffness/100.0;
-    const double ki = 20.0;
+    const double ki = 10.0;
     // Closed loop system frequency.
     const double wcl = sqrt(wol*wol + kp / arm_mass);
     // Damping ratio.
@@ -90,16 +104,23 @@ class KukaDemo : public Diagram<T> {
                                            plant_->get_num_positions());
 
     inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_actuators());
+    error_inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_states());
 
     viz_publisher_ = make_unique<BotVisualizerSystem>(
         plant_->get_multibody_world(), &lcm_);
 
     DiagramBuilder<T> builder;
-    //builder.Connect(torques_->get_output_port(0),
-     //               plant_->get_input_port(0));
+    // Target.
+    // TODO(amcastro-tri): connect planner output.
+    builder.Connect(target_state_->get_output_port(0),
+                    error_inverter_->get_input_port(0));
+    builder.Connect(error_inverter_->get_output_port(0),
+                    adder_->get_input_port(0));
+    builder.Connect(plant_->get_output_port(0),
+                    adder_->get_input_port(1));
 
     // Splits plant output port into a positions and velocities ports.
-    builder.Connect(plant_->get_output_port(0),
+    builder.Connect(adder_->get_output_port(0),
                     demux_->get_input_port(0));
 
     builder.Connect(demux_->get_output_port(0),
@@ -138,14 +159,14 @@ class KukaDemo : public Diagram<T> {
   std::unique_ptr<PidController<T>> controller_;
   std::unique_ptr<Demultiplexer<T>> demux_;
   std::unique_ptr<Gain<T>> inverter_;
-  std::unique_ptr<ConstantVectorSource<T>> torques_;
+  std::unique_ptr<Gain<T>> error_inverter_;
+  std::unique_ptr<Adder<T>> adder_;
+  std::unique_ptr<ConstantVectorSource<T>> target_state_;
   std::unique_ptr<BotVisualizerSystem> viz_publisher_;
   ::lcm::LCM lcm_;
 };
 
 GTEST_TEST(KukaDemo, Testing) {
-  const double deg_to_rad = M_PI / 180.0;
-
   KukaDemo<double> model;
   Simulator<double> simulator(model);  // Use default Context.
 
@@ -172,7 +193,7 @@ GTEST_TEST(KukaDemo, Testing) {
       IntegratorType::RungeKutta2);
 
   // Simulate for 1 seconds.
-  simulator.StepTo(5.);
+  simulator.StepTo(25.);
 
   const auto& context = simulator.get_context();
   EXPECT_EQ(context.get_time(), 1.);  // Should be exact.
