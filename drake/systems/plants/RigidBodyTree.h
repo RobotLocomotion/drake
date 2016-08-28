@@ -776,6 +776,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
   const RigidBody& get_body(int body_index) const;
 
   /**
+   * Returns the model instance ID of the world.
+   */
+  int get_world_model_instance_id() const;
+
+  /**
    * Returns the number of bodies in this tree. This includes the one body that
    * represents the world.
    */
