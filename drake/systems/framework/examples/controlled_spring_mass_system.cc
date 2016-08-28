@@ -69,6 +69,30 @@ void PidControlledSpringMassSystem<T>::SetDefaultState(
 }
 
 template <typename T>
+double PidControlledSpringMassSystem<T>::get_position(
+    const ContextBase<T>& context) const {
+  const ContextBase<T>* plant_context =
+      Diagram<T>::GetSubSystemContext(context, plant_.get());
+  return plant_->get_position(*plant_context);
+}
+
+template <typename T>
+double PidControlledSpringMassSystem<T>::get_velocity(
+    const ContextBase<T>& context) const {
+  const ContextBase<T>* plant_context =
+      Diagram<T>::GetSubSystemContext(context, plant_.get());
+  return plant_->get_velocity(*plant_context);
+}
+
+template <typename T>
+double PidControlledSpringMassSystem<T>::get_conservative_work(
+    const ContextBase<T>& context) const {
+  const ContextBase<T>* plant_context =
+      Diagram<T>::GetSubSystemContext(context, plant_.get());
+  return plant_->get_conservative_work(*plant_context);
+}
+
+template <typename T>
 void PidControlledSpringMassSystem<T>::set_position(
     ContextBase<T>* context, const T& position) const {
   ContextBase<T>* plant_context =
