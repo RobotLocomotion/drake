@@ -190,9 +190,9 @@ class Simulator {
   /** Forget accumulated statistics. These are reset to the values they have
   post construction or immediately after `Initialize()`. **/
   void ResetStatistics() {
-    actual_initial_step_size_taken_ = kNaN;
-    smallest_step_size_taken_ = kNaN;
-    largest_step_size_taken_ = kNaN;
+    actual_initial_step_size_taken_ = nan();
+    smallest_step_size_taken_ = nan();
+    largest_step_size_taken_ = nan();
     num_steps_taken_ = 0;
     num_samples_taken_ = 0;
   }
@@ -235,7 +235,7 @@ class Simulator {
   // Put "in use" settings back to their default values and reset runtime
   // variables. These will be modified afterwards in accordance with caller's
   // requests.
-  void reset_simulator_settings_in_use() {
+  void ResetSimulatorSettingsInUse() {
     integrator_in_use_ = kDefaultIntegrator;
     accuracy_in_use_ = kDefaultAccuracy;
     initial_step_size_attempt_in_use_ = kDefaultInitialStepSizeAttempt;
@@ -243,12 +243,18 @@ class Simulator {
     initialization_done_ = false;
   }
 
+  // TODO(sherm1) This a workaround for an apparent bug in clang 3.8 in which
+  // defining this as a static constexpr member kNaN failed to instantiate
+  // properly for the AutoDiffXd instantiation (worked in gcc and MSVC).
+  // Restore to sanity when some later clang is current.
+  static constexpr double nan() {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+
   static constexpr double kDefaultAccuracy = 1e-3;  // 1/10 of 1%.
   static constexpr IntegratorType kDefaultIntegrator =
       IntegratorType::RungeKutta2;
   static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
-  static constexpr double kMaxStretch = 0.01;  // Allow 1% step size stretch.
-  static constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
   const System<T>& system_;                  // Just a reference; not owned.
   std::unique_ptr<ContextBase<T>> context_;  // The trajectory Context.
@@ -276,9 +282,9 @@ class Simulator {
   bool initialization_done_{false};
 
   // Statistics.
-  T actual_initial_step_size_taken_{kNaN};
-  T smallest_step_size_taken_{kNaN};
-  T largest_step_size_taken_{kNaN};
+  T actual_initial_step_size_taken_{nan()};
+  T smallest_step_size_taken_{nan()};
+  T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
   int64_t num_samples_taken_{0};
 };
@@ -315,7 +321,7 @@ void Simulator<T>::Initialize() {
 
   // Restore default values.
   ResetStatistics();
-  reset_simulator_settings_in_use();
+  ResetSimulatorSettingsInUse();
 
   // Override the default settings if the user has spoken.
   if (req_integrator_ != IntegratorType::UseDefault)
@@ -423,6 +429,8 @@ std::pair<T, bool> Simulator<T>::ProposeStepEndTime(const T& step_start_time,
                                                     const T& ideal_step_size,
                                                     const T& next_sample_time,
                                                     const T& final_time) {
+  static constexpr double kMaxStretch = 0.01;  // Allow 1% step size stretch.
+
   // Start with the ideal step size.
   T step_end_time = step_start_time + ideal_step_size;
 
