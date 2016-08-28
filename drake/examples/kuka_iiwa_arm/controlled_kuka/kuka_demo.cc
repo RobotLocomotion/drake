@@ -9,6 +9,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/pid_controller2.h"
 #include "drake/systems/bot_visualizer_system.h"
@@ -61,14 +62,58 @@ class KukaDemo : public Diagram<T> {
     torques_ = make_unique<ConstantVectorSource<T>>(
         VectorX<T>::Zero(plant_->get_num_actuators()));
 
-    plant_->penetration_stiffness_ = 3000.0;
+    const double numerical_stiffness = 3000;
+    plant_->penetration_stiffness_ = numerical_stiffness;
+
+    // Rough estimation of controller constants.
+    const double arm_mass = plant_->get_multibody_world().getMass();
+    // Closed loop frequency.
+    const double wol = sqrt(numerical_stiffness / arm_mass);
+
+    const double kp = numerical_stiffness/100.0;
+    const double ki = 20.0;
+    // Closed loop system frequency.
+    const double wcl = sqrt(wol*wol + kp / arm_mass);
+    // Damping ratio.
+    const double zeta = 0.0;
+    const double kd = 2.0 * arm_mass * wcl * zeta;
+
+    controller_ = make_unique<PidController<T>>(kp, ki, kd,
+                                                plant_->get_num_positions());
+
+    // Split the input state into two signals one with the positions and one
+    // with the velocities.
+    // For Kuka:
+    // -  get_num_states() = 14
+    // -  get_num_positions() = 7
+    demux_ = make_unique<Demultiplexer<T>>(plant_->get_num_states(),
+                                           plant_->get_num_positions());
+
+    inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_actuators());
 
     viz_publisher_ = make_unique<BotVisualizerSystem>(
         plant_->get_multibody_world(), &lcm_);
 
     DiagramBuilder<T> builder;
-    builder.Connect(torques_->get_output_port(0),
+    //builder.Connect(torques_->get_output_port(0),
+     //               plant_->get_input_port(0));
+
+    // Splits plant output port into a positions and velocities ports.
+    builder.Connect(plant_->get_output_port(0),
+                    demux_->get_input_port(0));
+
+    builder.Connect(demux_->get_output_port(0),
+                    controller_->get_error_signal_port());
+    builder.Connect(demux_->get_output_port(1),
+                    controller_->get_error_signal_rate_port());
+
+    // Adds feedback.
+    builder.Connect(controller_->get_output_port(0),
+                    inverter_->get_input_port(0));
+    builder.Connect(inverter_->get_output_port(0),
                     plant_->get_input_port(0));
+
+    // Connects to visualizer.
     builder.Connect(plant_->get_output_port(0),
                     viz_publisher_->get_input_port(0));
     builder.ExportOutput(plant_->get_output_port(0));
@@ -77,20 +122,21 @@ class KukaDemo : public Diagram<T> {
 
   const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
 
- private:
-  // Publish t q u to standard output.
-  void DoPublish(const ContextBase<double>& context) const override {
-#if 0
-    cout << context.get_time() << " "
-         << get_position(context) << " "
-         << get_velocity(context) << " "
-         << get_conservative_work(context) << endl;
-#endif
+  void SetDefaultState(ContextBase<T>* context) const {
+    ContextBase<T>* controller_context =
+        Diagram<T>::GetMutableSubSystemContext(context, controller_.get());
+    controller_->set_integral_value(controller_context, VectorX<T>::Zero(7));
+
+    ContextBase<T>* plant_context =
+        Diagram<T>::GetMutableSubSystemContext(context, plant_.get());
+
+    plant_->ObtainZeroConfiguration(plant_context);
   }
 
  private:
   std::unique_ptr<RigidBodyPlant<T>> plant_;
   std::unique_ptr<PidController<T>> controller_;
+  std::unique_ptr<Demultiplexer<T>> demux_;
   std::unique_ptr<Gain<T>> inverter_;
   std::unique_ptr<ConstantVectorSource<T>> torques_;
   std::unique_ptr<BotVisualizerSystem> viz_publisher_;
@@ -103,12 +149,11 @@ GTEST_TEST(KukaDemo, Testing) {
   KukaDemo<double> model;
   Simulator<double> simulator(model);  // Use default Context.
 
-  // Zeroes the state.
-  model.get_kuka_plant().ObtainZeroConfiguration(
-      simulator.get_mutable_context());
+  // Zeroes the state and initializes controller state.
+  model.SetDefaultState(simulator.get_mutable_context());
 
   VectorX<double> desired_state = VectorX<double>::Zero(14);
-  desired_state[0] =  90.0 * deg_to_rad;  // base.
+  desired_state[0] =   0.0 * deg_to_rad;  // base.
   desired_state[1] =  45.0 * deg_to_rad;  // first elbow.
   desired_state[2] =   0.0 * deg_to_rad;  // axial rotation.
   desired_state[3] = -45.0 * deg_to_rad;  // second elbow.
