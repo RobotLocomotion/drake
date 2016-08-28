@@ -98,6 +98,7 @@ class KukaDemo : public Diagram<T> {
 };
 
 GTEST_TEST(KukaDemo, Testing) {
+  const double deg_to_rad = M_PI / 180.0;
 
   KukaDemo<double> model;
   Simulator<double> simulator(model);  // Use default Context.
@@ -105,6 +106,17 @@ GTEST_TEST(KukaDemo, Testing) {
   // Zeroes the state.
   model.get_kuka_plant().ObtainZeroConfiguration(
       simulator.get_mutable_context());
+
+  VectorX<double> desired_state = VectorX<double>::Zero(14);
+  desired_state[0] =  90.0 * deg_to_rad;  // base.
+  desired_state[1] =  45.0 * deg_to_rad;  // first elbow.
+  desired_state[2] =   0.0 * deg_to_rad;  // axial rotation.
+  desired_state[3] = -45.0 * deg_to_rad;  // second elbow.
+  desired_state[4] =  90.0 * deg_to_rad;  // axial rotation.
+  desired_state[5] =   0.0 * deg_to_rad;  // final wrist
+  desired_state[6] =   0.0 * deg_to_rad;  // end effector rotation.
+  model.get_kuka_plant().set_state_vector(
+      simulator.get_mutable_context(), desired_state);
 
   simulator.request_initial_step_size_attempt(0.002);
 
