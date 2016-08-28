@@ -60,13 +60,6 @@
       </geometry>
       <material name="Grey"/>
     </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/collision/link_0.obj"/>
-      </geometry>
-      <material name="Grey"/>
-    </collision>
     <self_collision_checking>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -97,13 +90,6 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/collision/link_1.obj"/>
-      </geometry>
-      <material name="Orange"/>
-    </collision>
   </link>
   <!-- joint between link_1 and link_2 -->
   <joint name="iiwa_joint_2" type="revolute">
@@ -128,13 +114,6 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/collision/link_2.obj"/>
-      </geometry>
-      <material name="Orange"/>
-    </collision>
   </link>
   <!-- joint between link_2 and link_3 -->
   <joint name="iiwa_joint_3" type="revolute">
@@ -159,13 +138,6 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/collision/link_3.obj"/>
-      </geometry>
-      <material name="Orange"/>
-    </collision>
   </link>
   <!-- joint between link_3 and link_4 -->
   <joint name="iiwa_joint_4" type="revolute">
@@ -190,13 +162,6 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/collision/link_4.obj"/>
-      </geometry>
-      <material name="Orange"/>
-    </collision>
   </link>
   <!-- joint between link_4 and link_5 -->
   <joint name="iiwa_joint_5" type="revolute">
@@ -221,13 +186,6 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/collision/link_5.obj"/>
-      </geometry>
-      <material name="Orange"/>
-    </collision>
   </link>
   <!-- joint between link_5 and link_6 -->
   <joint name="iiwa_joint_6" type="revolute">
@@ -252,13 +210,6 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/collision/link_6.obj"/>
-      </geometry>
-      <material name="Orange"/>
-    </collision>
   </link>
   <!-- joint between link_6 and link_7 -->
   <joint name="iiwa_joint_7" type="revolute">
