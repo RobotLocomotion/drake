@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include <Eigen/Geometry>
 #include <lcm/lcm-cpp.hpp>
@@ -23,13 +24,14 @@ namespace kuka_iiwa_arm {
  * - penetration_stiffness = 3000.0
  * - penetration_damping = 0
  *
- * @param with_collision Boolean flag to choose between robot URDFs with or
- * without collision tags. Default option is without these tags (true).
+ * @param file_name a string with the file name (and path) of the URDF to be
+ * loaded. Default argument is that of the IIWA Robot system with collision flags.
  * @return A shared pointer to a rigid body system.
  */
 DRAKEKUKAIIWAARM_EXPORT
 std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem(
-    bool with_collision = true);
+    const std::string& file_name = std::string(
+        "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf"));
 
 /**
  * Creates a Bot Visualizer that can be cascaded with @p iiwa_system and
@@ -52,9 +54,9 @@ Eigen::VectorXd GenerateArbitraryIiwaInitialState();
 
 /**
  * Returns the simulation options for use by the Kuka IIWA simulation.
- * @param initial_step_size sets the initial step size for the simulate method.
+ * @param initial_step_size Sets the initial step size for the simulate method.
  * Decrease if simulation is unstable.
- * @param real_time_factor sets the real time factor for the simulation.
+ * @param real_time_factor Sets the real time factor for the simulation.
  * Increase if simulation result renders faster than reality.
  */
 DRAKEKUKAIIWAARM_EXPORT
@@ -71,8 +73,11 @@ void CheckLimitViolations(
     const Eigen::VectorXd& final_robot_state);
 
 /**
- * Generates a demo joint trajectory by assigning constraints and computing a
- * corresponding Inverse Kinematic solution.
+ * Generates a demonstration joint trajectory by assigning constraints and
+ * computing a corresponding inverse kinematic solution. The demonstration
+ * sets up the arm to move from the (initial) straight up
+ * configuration to to reach a position in the front of the robot and then
+ * repeat this motion twice.
  */
 DRAKEKUKAIIWAARM_EXPORT
 void GenerateIKDemoJointTrajectory(
