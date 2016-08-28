@@ -11,6 +11,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/pid_controller2.h"
+#include "drake/systems/bot_visualizer_system.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_system/rigid_body_plant.h"
 
@@ -62,9 +63,14 @@ class KukaDemo : public Diagram<T> {
 
     plant_->penetration_stiffness_ = 3000.0;
 
+    viz_publisher_ = make_unique<BotVisualizerSystem>(
+        plant_->get_multibody_world(), &lcm_);
+
     DiagramBuilder<T> builder;
     builder.Connect(torques_->get_output_port(0),
                     plant_->get_input_port(0));
+    builder.Connect(plant_->get_output_port(0),
+                    viz_publisher_->get_input_port(0));
     builder.ExportOutput(plant_->get_output_port(0));
     builder.BuildInto(this);
   }
@@ -87,6 +93,8 @@ class KukaDemo : public Diagram<T> {
   std::unique_ptr<PidController<T>> controller_;
   std::unique_ptr<Gain<T>> inverter_;
   std::unique_ptr<ConstantVectorSource<T>> torques_;
+  std::unique_ptr<BotVisualizerSystem> viz_publisher_;
+  ::lcm::LCM lcm_;
 };
 
 GTEST_TEST(KukaDemo, Testing) {
@@ -107,7 +115,7 @@ GTEST_TEST(KukaDemo, Testing) {
       IntegratorType::RungeKutta2);
 
   // Simulate for 1 seconds.
-  simulator.StepTo(1.);
+  simulator.StepTo(5.);
 
   const auto& context = simulator.get_context();
   EXPECT_EQ(context.get_time(), 1.);  // Should be exact.
