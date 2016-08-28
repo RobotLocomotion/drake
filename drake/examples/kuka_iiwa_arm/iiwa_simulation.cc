@@ -9,23 +9,18 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 using Eigen::MatrixXd;
-using Eigen::Vector3d;
 using Eigen::Vector2d;
-using Eigen::VectorXi;
+using Eigen::Vector3d;
 using Eigen::VectorXd;
+using Eigen::VectorXi;
 using drake::RigidBodySystem;
 using lcm::LCM;
 
-std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(bool with_collision) {
+std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(
+const std::string &file_name) {
   // Instantiates a rigid body system and adds the robot arm to it.
   auto rigid_body_system = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
-
-  std::string file_name = "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf";
-
-  if (!with_collision) {
-    file_name = "/examples/kuka_iiwa_arm/urdf/iiwa14_collision_free.urdf";
-  }
 
   rigid_body_system->AddModelInstanceFromFile(drake::GetDrakePath() + file_name,
                                               DrakeJoint::FIXED);
@@ -169,7 +164,7 @@ void CheckLimitViolations(
   }
 }
 
-// TODO(naveenoid) : for now this method is copy-pasta from the kuka_ik_demo.cc
+// TODO(naveenoid) : For now this method is copy-paste from the kuka_ik_demo.cc.
 // Modify to fit future demo scenario requirements.
 void GenerateIKDemoJointTrajectory(
     const std::shared_ptr<RigidBodyTree> iiwa_tree,
@@ -194,15 +189,16 @@ void GenerateIKDemoJointTrajectory(
   Vector3d pos_ub = pos_end + Vector3d::Constant(0.005);
   WorldPositionConstraint wpc(iiwa_tree.get(),
                               iiwa_tree->FindBodyIndex("iiwa_link_ee"),
-                              Vector3d::Zero(), pos_lb, pos_ub, Vector2d(1, 3));
+                              Vector3d::Zero(), pos_lb, pos_ub,
+                              Vector2d(1, 3));
 
   // After the end effector constraint is released, apply the straight
-  // up configuration again.
+  // up (all joints at position zero) configuration again.
   PostureConstraint pc2(iiwa_tree.get(), Vector2d(4, 5.9));
   pc2.setJointLimits(joint_idx, joint_lb, joint_ub);
 
-  // Bring back the end effector constraint through second 9 of the
-  // demo.
+  // Bring back the end effector constraint when simulation time reaches 9
+  // seconds.
   WorldPositionConstraint wpc2(
       iiwa_tree.get(), iiwa_tree->FindBodyIndex("iiwa_link_ee"),
       Vector3d::Zero(), pos_lb, pos_ub, Vector2d(6, 9));
@@ -252,14 +248,14 @@ void GenerateIKDemoJointTrajectory(
 
   // Check feasibility of the result at each constraint point.
   bool info_good = true;
-  for (int i = 0; i < num_constraints; i++) {
+  for (int i = 0; i < num_constraints; ++i) {
     if (info[i] != 1) {
       info_good = false;
     }
   }
 
   if (!info_good) {
-    throw std::runtime_error("Inverse Kinematics solution not found");
+    throw std::runtime_error("Inverse Kinematics solution not found.");
   }
 }
 

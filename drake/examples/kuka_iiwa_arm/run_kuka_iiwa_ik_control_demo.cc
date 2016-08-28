@@ -26,8 +26,11 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-int do_main(int argc, const char* argv[]) {
-  std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem(false);
+int DoMain(int argc, const char **argv) {
+  const std::string kUrdfFileName =
+      "/examples/kuka_iiwa_arm/urdf/iiwa14_collision_free.urdf";
+  std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem(
+      kUrdfFileName);
 
   const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
 
@@ -44,6 +47,10 @@ int do_main(int argc, const char* argv[]) {
       std::make_shared<OpenLoopTrajectoryController<RigidBodySystem>>(pp);
   int num_dof = iiwa_tree->number_of_positions();
 
+  // The PD Gains are setup to be square diagonal matrices. These are therefore
+  // constructed from vectors. Since most of the load is on Joints 1 and 3
+  // (which support the subsequent links against gravity), the gains of these
+  // two joints are set higher.
   const double Kp_common = 7.5;    // Units : Nm/rad
   const double Kd_common = 0.075;  // Units : Nm/rad/sec
   VectorXd Kpdiag = VectorXd::Constant(num_dof, Kp_common);
@@ -75,7 +82,7 @@ int do_main(int argc, const char* argv[]) {
 
   auto sys = cascade(cascade(open_loop_planner, controlled_robot), visualizer);
 
-  // Simulation options
+  // Defines some simulation options
   const double kInitialStepSize = 0.001;
   const double kRealTimeFactor = 0.75;
 
@@ -101,5 +108,5 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::kuka_iiwa_arm::do_main(argc, argv);
+  return drake::examples::kuka_iiwa_arm::DoMain(argc, argv);
 }
