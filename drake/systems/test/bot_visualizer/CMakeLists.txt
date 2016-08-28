@@ -2,6 +2,7 @@ if(lcm_FOUND)
   add_executable(bot_visualizer_test_one_sdf_box
       bot_visualizer_test_one_sdf_box.cc
       bot_visualizer_system_receiver.cc
+      bot_visualizer_test.cc
       compare_lcm_messages.cc)
   target_link_libraries(bot_visualizer_test_one_sdf_box
       drakeBotVisualizerSystem
@@ -14,6 +15,7 @@ if(lcm_FOUND)
   add_executable(bot_visualizer_test_one_sdf_sphere
       bot_visualizer_test_one_sdf_sphere.cc
       bot_visualizer_system_receiver.cc
+      bot_visualizer_test.cc
       compare_lcm_messages.cc)
   target_link_libraries(bot_visualizer_test_one_sdf_sphere
       drakeBotVisualizerSystem
@@ -26,6 +28,7 @@ if(lcm_FOUND)
   add_executable(bot_visualizer_test_one_sdf_cylinder
       bot_visualizer_test_one_sdf_cylinder.cc
       bot_visualizer_system_receiver.cc
+      bot_visualizer_test.cc
       compare_lcm_messages.cc)
   target_link_libraries(bot_visualizer_test_one_sdf_cylinder
       drakeBotVisualizerSystem
@@ -38,6 +41,7 @@ if(lcm_FOUND)
   add_executable(bot_visualizer_test_one_sdf_capsule
       bot_visualizer_test_one_sdf_capsule.cc
       bot_visualizer_system_receiver.cc
+      bot_visualizer_test.cc
       compare_lcm_messages.cc)
   target_link_libraries(bot_visualizer_test_one_sdf_capsule
       drakeBotVisualizerSystem
@@ -50,6 +54,7 @@ if(lcm_FOUND)
   add_executable(bot_visualizer_test_one_urdf_mesh
       bot_visualizer_test_one_urdf_mesh.cc
       bot_visualizer_system_receiver.cc
+      bot_visualizer_test.cc
       compare_lcm_messages.cc)
   target_link_libraries(bot_visualizer_test_one_urdf_mesh
       drakeBotVisualizerSystem
