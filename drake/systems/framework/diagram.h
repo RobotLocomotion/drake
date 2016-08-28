@@ -29,7 +29,8 @@ namespace internal {
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
 template <typename T>
-struct DiagramOutput : public SystemOutput<T> {
+class DiagramOutput : public SystemOutput<T> {
+ public:
   int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 
   OutputPort* get_mutable_port(int index) override { return ports_[index]; }

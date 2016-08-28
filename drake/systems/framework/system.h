@@ -190,6 +190,11 @@ class System {
 
   /// This method is called to perform discrete updates to the Context, with
   /// the particular actions to take supplied in `actions`.
+  // TODO(sherm1) Per great suggestion from David German in #3202, this method
+  // should be modified to take a const context and provide a non-const
+  // reference to only the part that is allowed to change. This will likely
+  // require splitting into several APIs since different sample/update/event
+  // actions permit different modifications.
   void Update(ContextBase<T>* context, const SampleActions& actions) const {
     DRAKE_ASSERT_VOID(CheckValidContext(*context));
     DoUpdate(context, actions);
