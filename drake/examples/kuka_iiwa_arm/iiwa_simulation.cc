@@ -125,7 +125,7 @@ void CheckLimitViolations(
   for (int robot_state_index = 0, body_index = 0;
        body_index < static_cast<int>(bodies.size()); ++body_index) {
     // Skips rigid bodies without a parent (this includes the world link).
-    if (!bodies[body_index]->hasParent()) continue;
+    if (!bodies[body_index]->has_parent()) continue;
 
     const DrakeJoint& joint = bodies[body_index]->getJoint();
     const Eigen::VectorXd& min_limit = joint.getJointLimitMin();

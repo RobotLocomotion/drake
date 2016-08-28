@@ -259,7 +259,7 @@ class SensorPublisherJointState {
     for (auto const& rigid_body : rigid_body_tree->bodies) {
       // Skips the current rigid body if it does not have a parent. Note that
       // this includes the world.
-      if (!rigid_body->hasParent()) continue;
+      if (!rigid_body->has_parent()) continue;
 
       const DrakeJoint& joint = rigid_body->getJoint();
 

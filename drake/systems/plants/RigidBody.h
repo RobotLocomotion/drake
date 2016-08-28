@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
@@ -78,6 +79,18 @@ class DRAKERBM_EXPORT RigidBody {
    */
   const RigidBody* get_parent() const;
 
+  /**
+   * Returns whether this rigid body has a parent joint. A parent joint is one
+   * that conncts this rigid body to the next rigid body up the tree. Thus,
+   * by definition, all rigid bodies should have a parent except for the root
+   * of the tree, which is the world.
+   */
+  bool has_parent() const;
+
+  // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use has_parent().")
+#endif
   bool hasParent() const;
 
   /**
@@ -105,42 +118,65 @@ class DRAKERBM_EXPORT RigidBody {
   int get_body_index() const;
 
   /**
-   * Sets the start index of this rigid body's joint position state within the
-   * portion of `RigidBodyTree`'s state vector that holds the joint position
-   * state vector. Since the joint position state vector starts at the very
-   * beginning of `RigidBodyTree`'s state vector, the actual starting index of
-   * this rigid body's joint position state within `RigidBodyTree`'s state
-   * vector is @p position_start_index.
+   * Sets the start index of this rigid body's parent joint's contiguous
+   * generalized coordinates `q` (joint position state variables) within the
+   * full RigidBodyTree generalized coordinate vector.
+   *
+   * In other words, the RigidBodyTree's generalized coordinate vector looks
+   * like the following:
+   *
+   * <pre>
+   * [vector of position states][vector of velocity states] . . .
+   * </pre>
+   *
+   * Parameter @p position_start_index is the index relative to the beginning of
+   * `[vector of position states]` where the position states of this body's
+   * parent joint begins.
+   *
+   * Since `[vector of position states]` is at the very beginning
+   * of the RigidBodyTree's full state vector, the starting index of this rigid
+   * body's parent joint's position state vector within the RigidBodyTree's full
+   * state vector is equal to @p position_start_index.
    */
   void set_position_start_index(int position_start_index);
 
   /**
-   * Returns the start index of this rigid body's joint position state within
-   * the portion of `RigidBodyTree`'s state vector that holds the joint position
-   * state vector. Since the joint position state vector is located at the very
-   * beginning of `RigidBodyTree`'s state vector, the actual starting index of
-   * this body's joint position state within `RigidBodyTree`'s state vector is
-   * equal to this method's return value.
+   * Returns the start index of this body's parent jont's position states; see
+   * RigidBody::set_position_start_index() for more information.
    */
   int get_position_start_index() const;
 
   /**
-   * Sets the start index of this rigid body's joint velocity state within the
-   * portion of `RigidBodyTree`'s state vector that holds the joint velocity
-   * state vector. Since the joint velocity state vector immediately follows the
-   * joint position state vector in `RigidBodyTree`'s state vector, the actual
-   * starting index of this body's joint velocity state is
-   * @p velocity_start_index + RigidBodyTree::number_of_positions().
+   * Sets the start index of this rigid body's joint's contiguous generalized
+   * velocity `v` (joint velocity state variables) within the full RigidBodyTree
+   * generalized velocity vector.
+   *
+   * In other words, the RigidBodyTree's generalized coordinate vector looks
+   * like the following:
+   *
+   * <pre>
+   * [vector of position states][vector of velocity states] . . .
+   * </pre>
+   *
+   * Parameter @p velocity_start_index is the index relative to the beginning of
+   * `[vector of velocity states]` where the velocity states of this body's
+   * parent joint begins.
+   *
+   * Since `[vector of position states]` is at the very beginning of the
+   * RigidBodyTree's full state vector and `[vector of velocity states]`
+   * immediately follows it, the starting index of this rigid body's parent
+   * joint's velocity state vector within the RigidBodyTree's full state vector
+   * is equal to:
+   *
+   * <pre>
+   * velocity_start_index + RigidBodyTree::number_of_positions().
+   * </pre>
    */
   void set_velocity_start_index(int velocity_start_index);
 
   /**
-   * Returns the start index of this rigid body's joint velocity state within
-   * the portion of the `RigidBodyTree`'s state vector that holds the joint
-   * velocity state vector. Since the joint velocity state vector immediately
-   * follows the joint position state vector in `RigidBodyTree`'s state vector,
-   * the actual starting index of this body's joint velocity state is this
-   * method's return value plus RigidBodyTree::number_of_positions().
+   * Returns the start index of this body's parent jont's velocity states; see
+   * RigidBody::set_velocity_start_index() for more information.
    */
   int get_velocity_start_index() const;
 

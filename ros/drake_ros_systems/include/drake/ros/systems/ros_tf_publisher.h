@@ -293,7 +293,7 @@ class DrakeRosTfPublisher {
   // it is connected to the world via a fixed joint.
   bool PublishTfForRigidBody(const RigidBody* rigid_body) {
     // Skips parent-less links. This includes the world.
-    if (!rigid_body->hasParent()) return false;
+    if (!rigid_body->has_parent()) return false;
     return true;
   }
 
