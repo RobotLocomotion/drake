@@ -58,11 +58,15 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
 
   /**
    * Takes the VectorBase from the input port of the context and publishes
-   * it onto an LCM channel. Note that the output is ignored since this system
-   * does not output anything.
+   * it onto an LCM channel.
+   */
+  void DoPublish(const ContextBase<double>& context) const override;
+
+  /**
+   * This System has no output ports so EvalOutput() does nothing.
    */
   void EvalOutput(const ContextBase<double>& context,
-                  SystemOutput<double>* output) const override;
+                  SystemOutput<double>* output) const override {}
 
  private:
   // The channel on which to publish LCM messages.

@@ -43,7 +43,10 @@ SpringMassSystem::SpringMassSystem(double spring_constant_N_per_m,
                                    double mass_kg, bool system_is_forced)
     : spring_constant_N_per_m_(spring_constant_N_per_m),
       mass_kg_(mass_kg),
-      system_is_forced_(system_is_forced) {}
+      system_is_forced_(system_is_forced) {
+  if (system_is_forced_)
+    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
+}
 
 double SpringMassSystem::EvalSpringForce(const MyContext& context) const {
   const double k = spring_constant_N_per_m_, x = get_position(context),
@@ -82,7 +85,7 @@ SpringMassSystem::CreateDefaultContext() const {
   context->get_mutable_state()->continuous_state.reset(
       new ContinuousState<double>(std::move(state), 1 /* size of q */,
                                   1 /* size of v */, 1 /* size of z */));
-  if (system_is_forced_) context->SetNumInputPorts(1);
+  context->SetNumInputPorts(this->get_num_input_ports());
   return std::unique_ptr<ContextBase<double>>(context.release());
 }
 
@@ -121,6 +124,8 @@ void SpringMassSystem::EvalOutput(const ContextBase<double>& context,
 void SpringMassSystem::EvalTimeDerivatives(
     const ContextBase<double>& context,
     ContinuousState<double>* derivatives) const {
+  DRAKE_ASSERT_VOID(CheckValidContext(context));
+
   // TODO(david-german-tri): Cache the output of this function.
   const SpringMassStateVector& state = get_state(context);
 

@@ -39,7 +39,7 @@ std::string LcmSubscriberSystem::get_name() const {
   return "LcmSubscriberSystem::" + channel_;
 }
 
-void LcmSubscriberSystem::EvalOutput(const ContextBase<double>& context,
+void LcmSubscriberSystem::EvalOutput(const ContextBase<double>&,
                                      SystemOutput<double>* output) const {
   BasicVector<double>& output_vector =
       dynamic_cast<BasicVector<double>&>(*output->GetMutableVectorData(0));
