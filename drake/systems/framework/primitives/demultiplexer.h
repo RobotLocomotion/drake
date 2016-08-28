@@ -19,7 +19,9 @@ class Demultiplexer : public LeafSystem<T> {
   /// @p length and @p length scalar valued output ports.
   /// @param length is the size of the input signal to be demultiplexed into its
   /// individual components.
-  explicit Demultiplexer(int length);
+  /// @param output_ports_sizes The size of the output ports. @p length must be
+  /// a multiple of @p output_ports_sizes.
+  explicit Demultiplexer(int length, int output_ports_sizes = 1);
 
   /// Sets the i-th output port to the value of the i-th component of the input
   /// port.
