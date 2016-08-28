@@ -9,6 +9,13 @@ if(lcm_FOUND AND NOT WIN32)
   target_link_libraries(simple_car_test ${GTEST_BOTH_LIBRARIES} drakeCars)
   add_test(NAME simple_car_test COMMAND simple_car_test)
 
+  add_executable(simple_car_state_translator_test
+    simple_car_state_translator_test.cc)
+  target_link_libraries(simple_car_state_translator_test
+    ${GTEST_BOTH_LIBRARIES} drakeCars)
+  add_test(NAME simple_car_state_translator_test
+    COMMAND simple_car_state_translator_test)
+
   add_executable(idm_with_trajectory_agent_test
     idm_with_trajectory_agent_test.cc
     idm_with_trajectory_agent_scalartype_test.cc)
