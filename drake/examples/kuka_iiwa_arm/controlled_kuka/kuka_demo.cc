@@ -12,6 +12,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
+#include "drake/systems/framework/primitives/gravity_compensator.h"
 #include "drake/systems/framework/primitives/pid_controller2.h"
 #include "drake/systems/bot_visualizer_system.h"
 #include "drake/systems/plants/parser_urdf.h"
@@ -21,6 +22,9 @@ using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
+
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
 
 namespace drake {
 namespace systems {
@@ -67,33 +71,40 @@ class KukaDemo : public Diagram<T> {
     desired_state[0] =   0.0 * deg_to_rad;  // base.
     desired_state[1] =  45.0 * deg_to_rad;  // first elbow.
     desired_state[2] =   0.0 * deg_to_rad;  // axial rotation.
-    desired_state[3] = -45.0 * deg_to_rad;  // second elbow.
+    desired_state[3] = -90.0 * deg_to_rad;  // second elbow.
     desired_state[4] =  90.0 * deg_to_rad;  // axial rotation.
     desired_state[5] =   0.0 * deg_to_rad;  // final wrist
     desired_state[6] =   0.0 * deg_to_rad;  // end effector rotation.
 
     target_state_ = make_unique<ConstantVectorSource<T>>(desired_state);
-    adder_ = make_unique<Adder<T>>(2 /*number of inputs*/,
+    state_minus_target_ = make_unique<Adder<T>>(2 /*number of inputs*/,
                                    plant_->get_num_states() /* size */);
 
     const double numerical_stiffness = 3000;
     plant_->penetration_stiffness_ = 10*numerical_stiffness;
 
     // Rough estimation of controller constants.
-    const double arm_mass = plant_->get_multibody_world().getMass() / 7.0;
+    //const double arm_mass = plant_->get_multibody_world().getMass() / 7.0;
     // Closed loop frequency.
-    const double wol = sqrt(numerical_stiffness / arm_mass);
+    //const double wol = sqrt(numerical_stiffness / arm_mass);
 
-    const double kp = numerical_stiffness/100.0;
-    const double ki = 10.0;
+    // Naveen's constants: Kp=10, Ki=0, Kd=0.3
+    const double kp = 5.0; //numerical_stiffness/100.0;
+    const double ki = 0.0;
     // Closed loop system frequency.
-    const double wcl = sqrt(wol*wol + kp / arm_mass);
+    //const double wcl = sqrt(wol*wol + kp / arm_mass);
     // Damping ratio.
-    const double zeta = 0.0;
-    const double kd = 2.0 * arm_mass * wcl * zeta;
+    //const double zeta = 0.001;
+    //const double kd = 2.0 * arm_mass * wcl * zeta;
+    const double kd = 0.5;
+    PRINT_VAR(kd);
 
     controller_ = make_unique<PidController<T>>(kp, ki, kd,
                                                 plant_->get_num_positions());
+    gravity_compensator_ = make_unique<GravityCompensator<T>>(
+        plant_->get_multibody_world());
+    gcomp_minus_pid_ = make_unique<Adder<T>>(
+        2 /*number of inputs*/, plant_->get_num_actuators() /* size */);
 
     // Split the input state into two signals one with the positions and one
     // with the velocities.
@@ -115,12 +126,12 @@ class KukaDemo : public Diagram<T> {
     builder.Connect(target_state_->get_output_port(0),
                     error_inverter_->get_input_port(0));
     builder.Connect(error_inverter_->get_output_port(0),
-                    adder_->get_input_port(0));
+                    state_minus_target_->get_input_port(0));
     builder.Connect(plant_->get_output_port(0),
-                    adder_->get_input_port(1));
+                    state_minus_target_->get_input_port(1));
 
     // Splits plant output port into a positions and velocities ports.
-    builder.Connect(adder_->get_output_port(0),
+    builder.Connect(state_minus_target_->get_output_port(0),
                     demux_->get_input_port(0));
 
     builder.Connect(demux_->get_output_port(0),
@@ -128,10 +139,19 @@ class KukaDemo : public Diagram<T> {
     builder.Connect(demux_->get_output_port(1),
                     controller_->get_error_signal_rate_port());
 
+    // Connects the gravity compensator.
+    builder.Connect(plant_->get_output_port(0),
+                    gravity_compensator_->get_input_port(0));
+    builder.Connect(gravity_compensator_->get_output_port(0),
+                    gcomp_minus_pid_->get_input_port(0));
+
     // Adds feedback.
     builder.Connect(controller_->get_output_port(0),
                     inverter_->get_input_port(0));
     builder.Connect(inverter_->get_output_port(0),
+                    gcomp_minus_pid_->get_input_port(1));
+
+    builder.Connect(gcomp_minus_pid_->get_output_port(0),
                     plant_->get_input_port(0));
 
     // Connects to visualizer.
@@ -160,7 +180,9 @@ class KukaDemo : public Diagram<T> {
   std::unique_ptr<Demultiplexer<T>> demux_;
   std::unique_ptr<Gain<T>> inverter_;
   std::unique_ptr<Gain<T>> error_inverter_;
-  std::unique_ptr<Adder<T>> adder_;
+  std::unique_ptr<GravityCompensator<T>> gravity_compensator_;
+  std::unique_ptr<Adder<T>> state_minus_target_;
+  std::unique_ptr<Adder<T>> gcomp_minus_pid_;
   std::unique_ptr<ConstantVectorSource<T>> target_state_;
   std::unique_ptr<BotVisualizerSystem> viz_publisher_;
   ::lcm::LCM lcm_;
@@ -184,7 +206,7 @@ GTEST_TEST(KukaDemo, Testing) {
   model.get_kuka_plant().set_state_vector(
       simulator.get_mutable_context(), desired_state);
 
-  simulator.request_initial_step_size_attempt(0.002);
+  simulator.request_initial_step_size_attempt(0.001);
 
   // Take all the defaults.
   simulator.Initialize();
@@ -193,7 +215,7 @@ GTEST_TEST(KukaDemo, Testing) {
       IntegratorType::RungeKutta2);
 
   // Simulate for 1 seconds.
-  simulator.StepTo(25.);
+  simulator.StepTo(20.);
 
   const auto& context = simulator.get_context();
   EXPECT_EQ(context.get_time(), 1.);  // Should be exact.
