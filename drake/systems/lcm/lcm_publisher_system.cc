@@ -32,19 +32,6 @@ std::string LcmPublisherSystem::get_name() const {
   return "LcmPublisherSystem::" + channel_;
 }
 
-std::unique_ptr<ContextBase<double>> LcmPublisherSystem::CreateDefaultContext()
-    const {
-  std::unique_ptr<Context<double>> context(new Context<double>());
-  context->SetNumInputPorts(get_num_input_ports());
-  return std::unique_ptr<ContextBase<double>>(context.release());
-}
-
-std::unique_ptr<SystemOutput<double>> LcmPublisherSystem::AllocateOutput(
-    const ContextBase<double>& context) const {
-  std::unique_ptr<SystemOutput<double>> output(new LeafSystemOutput<double>);
-  return output;
-}
-
 void LcmPublisherSystem::DoPublish(const ContextBase<double>& context) const {
   // Obtains the input vector.
   const VectorBase<double>* input_vector =
