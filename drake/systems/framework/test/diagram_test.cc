@@ -20,26 +20,26 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
   return std::make_unique<FreestandingInputPort>(std::move(data));
 }
 
-/// Sets up the following diagram:
+/// ExampleDiagram has the following structure:
 /// adder0_: (input0_ + input1_) -> A
 /// adder1_: (A + input2_)       -> B, output 0
 /// adder2_: (A + B)             -> output 1
 /// integrator1_: A              -> C
 /// integrator2_: C              -> output 2
-class DiagramTest : public ::testing::Test {
- protected:
-  void SetUp() override {
+class ExampleDiagram : public Diagram<double> {
+ public:
+  explicit ExampleDiagram(int length) {
     DiagramBuilder<double> builder;
 
-    adder0_.reset(new Adder<double>(2 /* inputs */, 3 /* length */));
+    adder0_.reset(new Adder<double>(2 /* inputs */, length));
     adder0_->set_name("adder0");
-    adder1_.reset(new Adder<double>(2 /* inputs */, 3 /* length */));
+    adder1_.reset(new Adder<double>(2 /* inputs */, length));
     adder1_->set_name("adder1");
-    adder2_.reset(new Adder<double>(2 /* inputs */, 3 /* length */));
+    adder2_.reset(new Adder<double>(2 /* inputs */, length));
     adder2_->set_name("adder2");
 
-    integrator0_.reset(new Integrator<double>(3 /* length */));
-    integrator1_.reset(new Integrator<double>(3 /* length */));
+    integrator0_.reset(new Integrator<double>(length));
+    integrator1_.reset(new Integrator<double>(length));
 
     builder.Connect(adder0_->get_output_port(0), adder1_->get_input_port(0));
     builder.Connect(adder0_->get_output_port(0), adder2_->get_input_port(0));
@@ -57,7 +57,25 @@ class DiagramTest : public ::testing::Test {
     builder.ExportOutput(adder2_->get_output_port(0));
     builder.ExportOutput(integrator1_->get_output_port(0));
 
-    diagram_ = builder.Build();
+    builder.BuildInto(this);
+  }
+
+  Integrator<double>* integrator0() { return integrator0_.get(); }
+  Integrator<double>* integrator1() { return integrator1_.get(); }
+
+ private:
+  std::unique_ptr<Adder<double>> adder0_;
+  std::unique_ptr<Adder<double>> adder1_;
+  std::unique_ptr<Adder<double>> adder2_;
+
+  std::unique_ptr<Integrator<double>> integrator0_;
+  std::unique_ptr<Integrator<double>> integrator1_;
+};
+
+class DiagramTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    diagram_ = std::make_unique<ExampleDiagram>(kLength);
     diagram_->set_name("Unicode Snowman's Favorite Diagram!!1!☃!");
 
     context_ = diagram_->CreateDefaultContext();
@@ -68,13 +86,13 @@ class DiagramTest : public ::testing::Test {
     input2_.reset(new BasicVector<double>({64, 128, 256}));
 
     // Initialize the integrator states.
-    auto integrator0_xc = GetMutableContinuousState(integrator0_.get());
+    auto integrator0_xc = GetMutableContinuousState(integrator0());
     ASSERT_NE(nullptr, integrator0_xc);
     integrator0_xc->get_mutable_state()->SetAtIndex(0, 3);
     integrator0_xc->get_mutable_state()->SetAtIndex(1, 9);
     integrator0_xc->get_mutable_state()->SetAtIndex(2, 27);
 
-    auto integrator1_xc = GetMutableContinuousState(integrator1_.get());
+    auto integrator1_xc = GetMutableContinuousState(integrator1());
     ASSERT_NE(nullptr, integrator1_xc);
     integrator1_xc->get_mutable_state()->SetAtIndex(0, 81);
     integrator1_xc->get_mutable_state()->SetAtIndex(1, 243);
@@ -129,18 +147,16 @@ class DiagramTest : public ::testing::Test {
     context_->SetInputPort(2, MakeInput(std::move(input2_)));
   }
 
-  std::unique_ptr<Diagram<double>> diagram_;
+  Integrator<double>* integrator0() { return diagram_->integrator0(); }
+  Integrator<double>* integrator1() { return diagram_->integrator1(); }
+
+  const int kLength = 3;
+
+  std::unique_ptr<ExampleDiagram> diagram_;
 
   std::unique_ptr<BasicVector<double>> input0_;
   std::unique_ptr<BasicVector<double>> input1_;
   std::unique_ptr<BasicVector<double>> input2_;
-
-  std::unique_ptr<Adder<double>> adder0_;
-  std::unique_ptr<Adder<double>> adder1_;
-  std::unique_ptr<Adder<double>> adder2_;
-
-  std::unique_ptr<Integrator<double>> integrator0_;
-  std::unique_ptr<Integrator<double>> integrator1_;
 
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -148,19 +164,19 @@ class DiagramTest : public ::testing::Test {
 
 // Tests that the diagram exports the correct topology.
 TEST_F(DiagramTest, Topology) {
-  ASSERT_EQ(3u, diagram_->get_input_ports().size());
+  ASSERT_EQ(kLength, diagram_->get_num_input_ports());
   for (const auto& descriptor : diagram_->get_input_ports()) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kInputPort, descriptor.get_face());
-    EXPECT_EQ(3, descriptor.get_size());
+    EXPECT_EQ(kLength, descriptor.get_size());
     EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
   }
 
-  ASSERT_EQ(3u, diagram_->get_output_ports().size());
+  ASSERT_EQ(kLength, diagram_->get_num_output_ports());
   for (const auto& descriptor : diagram_->get_output_ports()) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kOutputPort, descriptor.get_face());
-    EXPECT_EQ(3, descriptor.get_size());
+    EXPECT_EQ(kLength, descriptor.get_size());
   }
 
   // The adder output ports have inherited sampling.
@@ -175,7 +191,7 @@ TEST_F(DiagramTest, EvalOutput) {
   AttachInputs();
   diagram_->EvalOutput(*context_, output_.get());
 
-  ASSERT_EQ(3, output_->get_num_ports());
+  ASSERT_EQ(kLength, output_->get_num_ports());
   ExpectDefaultOutputs();
 }
 
@@ -193,14 +209,14 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
 
   // The derivative of the first integrator is A.
   const ContinuousState<double>& integrator0_xcdot =
-      diagram_->GetSubsystemDerivatives(*derivatives, integrator0_.get());
+      diagram_->GetSubsystemDerivatives(*derivatives, integrator0());
   EXPECT_EQ(1 + 8, integrator0_xcdot.get_state().GetAtIndex(0));
   EXPECT_EQ(2 + 16, integrator0_xcdot.get_state().GetAtIndex(1));
   EXPECT_EQ(4 + 32, integrator0_xcdot.get_state().GetAtIndex(2));
 
   // The derivative of the second integrator is the state of the first.
   const ContinuousState<double>& integrator1_xcdot =
-      diagram_->GetSubsystemDerivatives(*derivatives, integrator1_.get());
+      diagram_->GetSubsystemDerivatives(*derivatives, integrator1());
   EXPECT_EQ(3, integrator1_xcdot.get_state().GetAtIndex(0));
   EXPECT_EQ(9, integrator1_xcdot.get_state().GetAtIndex(1));
   EXPECT_EQ(27, integrator1_xcdot.get_state().GetAtIndex(2));
@@ -220,7 +236,7 @@ TEST_F(DiagramTest, Clone) {
   // Create a clone of the context and change an input.
   auto clone = context_->Clone();
 
-  auto next_input_0 = std::make_unique<BasicVector<double>>(3 /* length */);
+  auto next_input_0 = std::make_unique<BasicVector<double>>(kLength);
   next_input_0->get_mutable_value() << 3, 6, 9;
   clone->SetInputPort(0, MakeInput(std::move(next_input_0)));
 
@@ -249,6 +265,88 @@ TEST_F(DiagramTest, Clone) {
   // Check that the context that was cloned is unaffected.
   diagram_->EvalOutput(*context_, output_.get());
   ExpectDefaultOutputs();
+}
+
+class DiagramOfDiagramsTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    subdiagram0_ = std::make_unique<ExampleDiagram>(kLength);
+    subdiagram1_ = std::make_unique<ExampleDiagram>(kLength);
+
+    DiagramBuilder<double> builder;
+    // Hook up the two diagrams in portwise series.
+    for (int i = 0; i < 3; i++) {
+      builder.ExportInput(subdiagram0_->get_input_port(i));
+      builder.Connect(subdiagram0_->get_output_port(i),
+                      subdiagram1_->get_input_port(i));
+      builder.ExportOutput(subdiagram1_->get_output_port(i));
+    }
+
+    diagram_ = builder.Build();
+
+    context_ = diagram_->CreateDefaultContext();
+    output_ = diagram_->AllocateOutput(*context_);
+
+    input0_.reset(new BasicVector<double>(std::vector<double>{8}));
+    input1_.reset(new BasicVector<double>(std::vector<double>{64}));
+    input2_.reset(new BasicVector<double>(std::vector<double>{512}));
+
+    context_->SetInputPort(0, MakeInput(std::move(input0_)));
+    context_->SetInputPort(1, MakeInput(std::move(input1_)));
+    context_->SetInputPort(2, MakeInput(std::move(input2_)));
+
+    // Initialize the integrator states.
+    ContextBase<double>* d0_context = diagram_->GetMutableSubsystemContext(
+        context_.get(), subdiagram0_.get());
+    ContextBase<double>* d1_context = diagram_->GetMutableSubsystemContext(
+        context_.get(), subdiagram1_.get());
+
+    State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
+        d0_context, subdiagram0_->integrator0());
+    integrator0_x->continuous_state->get_mutable_state()->SetAtIndex(0, 3);
+
+    State<double>* integrator1_x = subdiagram0_->GetMutableSubsystemState(
+        d0_context, subdiagram0_->integrator1());
+    integrator1_x->continuous_state->get_mutable_state()->SetAtIndex(0, 9);
+
+    State<double>* integrator2_x = subdiagram1_->GetMutableSubsystemState(
+        d1_context, subdiagram1_->integrator0());
+    integrator2_x->continuous_state->get_mutable_state()->SetAtIndex(0, 27);
+
+    State<double>* integrator3_x = subdiagram1_->GetMutableSubsystemState(
+        d1_context, subdiagram1_->integrator1());
+    integrator3_x->continuous_state->get_mutable_state()->SetAtIndex(0, 81);
+  }
+
+  const int kLength = 1;
+
+  std::unique_ptr<Diagram<double>> diagram_;
+  std::unique_ptr<ExampleDiagram> subdiagram0_;
+  std::unique_ptr<ExampleDiagram> subdiagram1_;
+
+  std::unique_ptr<BasicVector<double>> input0_;
+  std::unique_ptr<BasicVector<double>> input1_;
+  std::unique_ptr<BasicVector<double>> input2_;
+
+  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<SystemOutput<double>> output_;
+};
+
+// Tests that a diagram composed of diagrams can be evaluated.
+TEST_F(DiagramOfDiagramsTest, EvalOutput) {
+  diagram_->EvalOutput(*context_, output_.get());
+  // The outputs of subsystem0_ are:
+  //   output0 = 8 + 64 + 512 = 584
+  //   output1 = output0 + 8 + 64 = 656
+  //   output2 = 9 (state of integrator1_)
+
+  // So, the outputs of subsytem1_, and thus of the whole diagram, are:
+  //   output0 = 584 + 656 + 9 = 1249
+  //   output1 = output0 + 584 + 656 = 2489
+  //   output2 = 81 (state of integrator1_)
+  EXPECT_EQ(1249, output_->get_vector_data(0)->get_value().x());
+  EXPECT_EQ(2489, output_->get_vector_data(1)->get_value().x());
+  EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
 }
 
 // A Diagram that adds a constant to an input, and outputs the sum.
