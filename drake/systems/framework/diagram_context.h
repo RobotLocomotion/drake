@@ -104,6 +104,17 @@ class DiagramContext : public ContextBase<T> {
 
   DiagramContext() {}
 
+  /// Set the current time in seconds.
+  void set_time(const T& time_sec) override {
+    ContextBase<T>::set_time(time_sec);
+    for (auto &kv : contexts_) {
+      ContextBase<T> *subcontext = kv.second.get();
+      if (subcontext != nullptr) {
+        subcontext->set_time(time_sec);
+      }
+    }
+  }
+
   /// Declares a new subsystem in the DiagramContext. Subsystems are identified
   /// by number.
   ///
