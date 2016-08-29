@@ -139,8 +139,14 @@ PiecewisePolynomial<double> MakePlan() {
   std::vector<PPMatrix> polys;
   std::vector<double> times;
   const int nT_ = kNumTimesteps;
-  auto& traj_ = q_sol;
+
+  MatrixXd traj_(tree.number_of_positions() + tree.number_of_velocities(),
+                 kNumTimesteps);
+  traj_.setZero();
+  traj_.block(0, 0, tree.number_of_positions(), kNumTimesteps) = q_sol;
   auto& t_ = t;
+
+  PRINT_VAR(traj_);
 
   // For each timestep, create a PolynomialMatrix for each joint
   // position.  Each column of traj_ represents a particular time,
@@ -262,13 +268,17 @@ class KukaDemo : public Diagram<T> {
     // Create the planner.
     auto poly_trajectory = MakePlan();
 
+    target_plan_ = make_unique<TimeVaryingPolynomialSource<T>>(poly_trajectory);
+
     viz_publisher_ = make_unique<BotVisualizerSystem>(
         plant_->get_multibody_world(), &lcm_);
 
     DiagramBuilder<T> builder;
     // Target.
     // TODO(amcastro-tri): connect planner output.
-    builder.Connect(target_state_->get_output_port(0),
+    //builder.Connect(target_state_->get_output_port(0),
+    //                error_inverter_->get_input_port(0));
+    builder.Connect(target_plan_->get_output_port(0),
                     error_inverter_->get_input_port(0));
     builder.Connect(error_inverter_->get_output_port(0),
                     state_minus_target_->get_input_port(0));
@@ -329,6 +339,7 @@ class KukaDemo : public Diagram<T> {
   std::unique_ptr<Adder<T>> state_minus_target_;
   std::unique_ptr<Adder<T>> gcomp_minus_pid_;
   std::unique_ptr<ConstantVectorSource<T>> target_state_;
+  std::unique_ptr<TimeVaryingPolynomialSource<T>> target_plan_;
   std::unique_ptr<BotVisualizerSystem> viz_publisher_;
   ::lcm::LCM lcm_;
 };
@@ -341,6 +352,7 @@ GTEST_TEST(KukaDemo, Testing) {
   model.SetDefaultState(simulator.get_mutable_context());
 
   VectorX<double> desired_state = VectorX<double>::Zero(14);
+#if 0
   desired_state[0] =   0.0 * deg_to_rad;  // base.
   desired_state[1] =  45.0 * deg_to_rad;  // first elbow.
   desired_state[2] =   0.0 * deg_to_rad;  // axial rotation.
@@ -348,6 +360,7 @@ GTEST_TEST(KukaDemo, Testing) {
   desired_state[4] =  90.0 * deg_to_rad;  // axial rotation.
   desired_state[5] =   0.0 * deg_to_rad;  // final wrist
   desired_state[6] =   0.0 * deg_to_rad;  // end effector rotation.
+#endif
   model.get_kuka_plant().set_state_vector(
       simulator.get_mutable_context(), desired_state);
 
