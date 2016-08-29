@@ -23,7 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
- - [#3246][] Replaced `RigidBody::hasParent()` with `RigidBody::has_parent()`.
+ - [#3246][] Replaced `RigidBody::hasParent()` with `RigidBody::has_mobilizer_joint()`.
  - [#3191][] All matlab solvers code moved from solvers/ to matlab/solvers/.
  - [#3183][] The gflags library is now a required dependency from the superbuild.
  - [#3168][] Renamed `RigidBodyTree::findAncestorBodies()` to be `RigidBodyTree::FindAncestorBodies()`. Modified method to return the results rather than store them in a parameter.

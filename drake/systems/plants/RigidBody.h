@@ -80,16 +80,18 @@ class DRAKERBM_EXPORT RigidBody {
   const RigidBody* get_parent() const;
 
   /**
-   * Returns whether this rigid body has a parent joint. A parent joint is one
-   * that conncts this rigid body to the next rigid body up the tree. Thus,
-   * by definition, all rigid bodies should have a parent except for the root
-   * of the tree, which is the world.
+   * Returns whether this rigid body has a mobilizer joint. A mobilizer joint
+   * is an inboard joint (i.e., it is closer to the root of the RigidBodyTree
+   * than this RigidBody). In other words, the mobilizer joint forms a kinematic
+   * path from this RigidBody to the root of the RigidBodyTree. Thus, by
+   * definition, all RigidBody objects should have an inboard joint except for
+   * the RigidBodyTree's root, which is the world.
    */
-  bool has_parent() const;
+  bool has_mobilizer_joint() const;
 
   // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use has_parent().")
+  DRAKE_DEPRECATED("Please use has_mobilizer_joint().");
 #endif
   bool hasParent() const;
 
@@ -122,17 +124,8 @@ class DRAKERBM_EXPORT RigidBody {
    * generalized coordinates `q` (joint position state variables) within the
    * full RigidBodyTree generalized coordinate vector.
    *
-   * In other words, the RigidBodyTree's generalized coordinate vector looks
-   * like the following:
-   *
-   * <pre>
-   * [vector of model instance 1's position states]
-   * [vector of model instance 2's position states]
-   * ...
-   * [vector of model instance 1's velocity states]
-   * [vector of model instance 2's velocity states]
-   * ...
-   * </pre>
+   * See the documentation for RigidBodyTree for details on how the internal
+   * state of a RigidBodyTree is organized.
    *
    * Parameter @p position_start_index is the index relative to the beginning of
    * `[vector of model instance 1's position states]` where the position states
@@ -159,14 +152,8 @@ class DRAKERBM_EXPORT RigidBody {
    * In other words, the RigidBodyTree's generalized coordinate vector looks
    * like the following:
    *
-   * <pre>
-   * [vector of model instance 1's position states]
-   * [vector of model instance 2's position states]
-   * ...
-   * [vector of model instance 1's velocity states]
-   * [vector of model instance 2's velocity states]
-   * ...
-   * </pre>
+   * See the documentation for RigidBodyTree for details on how the internal
+   * state of a RigidBodyTree is organized.
    *
    * Parameter @p velocity_start_index is the index relative to the beginning of
    * `[vector of model 1's velocity states]` where the velocity states of this

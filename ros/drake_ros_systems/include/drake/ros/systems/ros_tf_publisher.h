@@ -292,8 +292,9 @@ class DrakeRosTfPublisher {
   // rigid body. A rigid body should be skipped if it is the world link or if
   // it is connected to the world via a fixed joint.
   bool PublishTfForRigidBody(const RigidBody* rigid_body) {
-    // Skips parent-less links. This includes the world.
-    if (!rigid_body->has_parent()) return false;
+    // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
+    // that represents the world.
+    if (!rigid_body->has_mobilizer_joint()) return false;
     return true;
   }
 
