@@ -138,7 +138,6 @@ double ParseDuration(int argc, const char* argv[]) {
 void AddFlatTerrainToWorld(
     const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
     double box_size, double box_depth) {
-
   DrakeShapes::Box geom(Eigen::Vector3d(box_size, box_size, box_depth));
   Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
   T_element_to_link.translation() << 0, 0,
@@ -301,8 +300,13 @@ CreateMultiVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
     const auto& rigid_body = tree->actuators[actuator_idx].body_;
 
     // TODO(liang.fok): This is brittle to the model instance ID and the
-    // presence of other models within the world. I'm not sure how to avoid this
-    // problem at this moment in time.
+    // presence of other non-vehicle model instances in the world, especially if
+    // the addition of these other model instances were interleved with the
+    // addition of vehicle model instances. I'm not sure how to avoid this
+    // problem. I believe this is OK since (1) this method is part of a library
+    // in drake-distro/drake/examples/, and (2) it is only used by example
+    // applications with full control over what's in the RigidBodyTree and the
+    // order in which they were added.
     int column_starting_index =
       (rigid_body->get_model_instance_id() - smallest_instance_id) * 3;
 

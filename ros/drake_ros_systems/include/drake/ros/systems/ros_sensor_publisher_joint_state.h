@@ -172,7 +172,7 @@ class SensorPublisherJointState {
       const std::vector<const RigidBody*>& rigid_body_list) {
     bool result = false;
     for (const auto& rigid_body : rigid_body_list) {
-      if (!rigid_body->getJoint().isFixed()) {
+      if (!rigid_body->getJoint().is_fixed()) {
         result = true;
       }
     }
