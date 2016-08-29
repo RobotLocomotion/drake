@@ -9,6 +9,7 @@ drake_install_headers(
   demultiplexer.h
   gain.h
   gain-inl.h
+  gravity_compensator.h
   integrator.h
   pass_through.h
   pass_through-inl.h
