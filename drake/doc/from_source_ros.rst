@@ -98,7 +98,7 @@ command listed above. For a full list, execute::
 
     catkin build --help
 
-The example above includes the build type flag that specifies a build mode of
+The example above includes the build type flag that specifies a build type of
 ``RelWithDebInfo``. Alternatives include ``Release`` and ``Debug``. Another
 flag is ``-DDISABLE_MATLAB=TRUE``, which
 disables MATLAB support. This may be useful if you have MATLAB installed but
