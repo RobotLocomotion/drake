@@ -77,8 +77,13 @@ endfunction()
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+if(NOT APPLE)
+  # The linker on OS X likes to hide the typeinfo for template classes unless
+  # they are explicitly instantiated and exported, which causes dynamic_cast to
+  # fail across library boundaries.
+  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+  set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
   if(APPLE)
@@ -155,6 +160,7 @@ endif()
 # note: default working directory is CMAKE_CURRENT_SOURCE_DIR
 # note: properties are set internally using set_tests_properties (<testname> PROPERTIES <prop1> <value1> ...)
 # note: packages in REQUIRES must write a file addpath_<package>.m to CMAKE_INSTALL_PREFIX/matlab
+# or define WITH_<package> or <package>_FOUND.
 function(add_matlab_test)
   # no matlab no tests
   if(NOT MATLAB_FOUND)
@@ -167,7 +173,7 @@ function(add_matlab_test)
   if(parsed_args_REQUIRES)
     foreach(require ${parsed_args_REQUIRES})
       string(TOUPPER ${require} requireUpper)
-      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m" AND NOT ${require}_FOUND AND NOT WITH_${requireUpper})
+      if(NOT WITH_${requireUpper} AND NOT ${require}_FOUND AND NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m")
         message(STATUS "Not running ${parsed_args_NAME} because ${require} was not installed.")
         return()
       endif()
@@ -242,7 +248,7 @@ if(lcm_FOUND)
   # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
   execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
   if(NOT LCMGL_BUILD_DIR)
-    message(WARNING "\n\n----- WARNING: bot2-lcmgl not found")
+    message(WARNING "\n\n----- IMPORTANT: bot2-lcmgl not found")
   else()
     string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
     find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${LCMGL_BUILD_DIR}/share/java/")

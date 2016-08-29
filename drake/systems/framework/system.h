@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <limits>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
@@ -13,6 +14,17 @@
 
 namespace drake {
 namespace systems {
+
+/// This information is returned along with the next update/sample/event time
+/// and is provided back to the System when that time is reached to ensure that
+/// the correct sampling actions are taken.
+struct SampleActions {
+  /// When the next discrete action is required.
+  double time{std::numeric_limits<double>::quiet_NaN()};
+  // TODO(sherm1) Record (subsystem,eventlist) pairs indicating what is
+  // supposed to happen at that time and providing O(1) access to the
+  // appropriate update/sampler/event handler method.
+};
 
 /// A superclass template for systems that receive input, maintain state, and
 /// produce output of a given mathematical type T.
@@ -37,10 +49,14 @@ class System {
   virtual bool has_any_direct_feedthrough() const { return true; }
 
   /// Returns the number of input ports of the system.
-  int get_num_input_ports() const { return input_ports_.size(); }
+  int get_num_input_ports() const {
+    return static_cast<int>(input_ports_.size());
+  }
 
   /// Returns the number of output ports of the system.
-  int get_num_output_ports() const { return output_ports_.size(); }
+  int get_num_output_ports() const {
+    return static_cast<int>(output_ports_.size());
+  }
 
   /// Returns descriptors for all the input ports of this system.
   const std::vector<SystemPortDescriptor<T>>& get_input_ports() const {
@@ -113,6 +129,26 @@ class System {
     }
   }
 
+  /// Returns an Eigen expression for a vector valued input port with index
+  /// @p port_index in this system.
+  Eigen::VectorBlock<const VectorX<T>> get_input_vector(
+      const ContextBase<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    const VectorBase<T>* input_vector =
+        context.get_vector_input(port_index);
+
+    DRAKE_ASSERT(input_vector != nullptr);
+    DRAKE_ASSERT(input_vector->get_value().rows() ==
+                 get_input_port(port_index).get_size());
+
+    return input_vector->get_value();
+  }
+
+  // Returns a copy of the continuous state vector into an Eigen vector.
+  VectorX<T> CopyContinuousStateVector(const ContextBase<T> &context) const {
+    return context.get_state().continuous_state->get_state().CopyToVector();
+  }
+
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.
   /// Since input port pointers are not owned by the context, they should
@@ -125,6 +161,60 @@ class System {
   /// System implementations should ignore it.
   virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const ContextBase<T>& context) const = 0;
+
+  /// This method is invoked by a Simulator at designated meaningful points
+  /// along a trajectory, to allow the executing System a chance to take some
+  /// kind of output action. Typical actions may include terminal output,
+  /// visualization, logging, plotting, and sending messages. Other than
+  /// computational cost, publishing has no effect on the progress of a
+  /// simulation (but see note below).
+  ///
+  /// By default Publish() will be called at the start of each continuous
+  /// integration step, after discrete variables have been updated to the values
+  /// they will hold throughout the step. However, a Simulator may allow control
+  /// over the publication rate. Publish() will always be called at the start of
+  /// the first step of a simulation (after initialization) and after the final
+  /// simulation step (after a final update to discrete variables).
+  ///
+  /// @note When publishing is scheduled at particular times, those times likely
+  /// will not coincide with integrator step times. A Simulator may interpolate
+  /// to generate a suitable Context, or it may adjust the integrator step size
+  /// so that a step begins exactly at the next publication time. In the latter
+  /// case the change in step size may affect the numerical result somewhat
+  /// since a smaller integrator step produces a more accurate solution.
+  // TODO(sherm1) Provide sample rate option for Publish().
+  void Publish(const ContextBase<T>& context) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DoPublish(context);
+  }
+
+  /// This method is called to perform discrete updates to the Context, with
+  /// the particular actions to take supplied in `actions`.
+  // TODO(sherm1) Per great suggestion from David German in #3202, this method
+  // should be modified to take a const context and provide a non-const
+  // reference to only the part that is allowed to change. This will likely
+  // require splitting into several APIs since different sample/update/event
+  // actions permit different modifications.
+  void Update(ContextBase<T>* context, const SampleActions& actions) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(*context));
+    DoUpdate(context, actions);
+  }
+
+  /// This method is called by a Simulator during its calculation of the size of
+  /// the next continuous step to attempt. The System returns the next time at
+  /// which some discrete action must be taken, and records what those actions
+  /// ought to be in the given SampleActions object, which must not be null.
+  /// Upon reaching that time, the Simulator invokes either a publication
+  /// action (with a const Context) or an update action (with a mutable
+  /// Context). The SampleAction object is retained and returned to the System
+  /// when it is time to take the action.
+  double CalcNextSampleTime(const ContextBase<T>& context,
+                            SampleActions* actions) const {
+    // TODO(sherm1) Validate context (at least in Debug).
+    DRAKE_ASSERT(actions != nullptr);
+    DoCalcNextSampleTime(context, actions);
+    return actions->time;
+  }
 
   /// Computes the output for the given context, possibly updating values
   /// in the cache.
@@ -204,8 +294,8 @@ class System {
   ///
   /// The default implementation uses the identity mapping. It throws
   /// std::out_of_range if the @p generalized_velocity and
-  /// @p configuration_derivatives are not the same size. Child classes should
-  /// override this function if qdot != v.
+  /// @p configuration_derivatives are not the same size. Child classes must
+  /// override this function if qdot != v (even if they are the same size).
   ///
   /// Implementations may assume that @p configuration_derivatives is of
   /// the same size as the generalized position allocated in
@@ -223,7 +313,7 @@ class System {
           " != configuration_derivatives.size() " +
           std::to_string(configuration_derivatives->size()) +
           ". Do you need to override the default implementation of " +
-          "MapVelocityToConfigurationDerivatives?");
+          "MapVelocityToConfigurationDerivatives()?");
     }
 
     for (int i = 0; i < generalized_velocity.size(); ++i) {
@@ -243,8 +333,7 @@ class System {
 
   /// Adds a port with the specified @p descriptor to the input topology.
   void DeclareInputPort(const SystemPortDescriptor<T>& descriptor) {
-    DRAKE_ASSERT(descriptor.get_index() ==
-                 static_cast<int>(input_ports_.size()));
+    DRAKE_ASSERT(descriptor.get_index() == get_num_input_ports());
     DRAKE_ASSERT(descriptor.get_face() == kInputPort);
     input_ports_.emplace_back(descriptor);
   }
@@ -252,7 +341,7 @@ class System {
   /// Adds a port with the specified @p type, @p size, and @p sampling
   /// to the input topology.
   void DeclareInputPort(PortDataType type, int size, SamplingSpec sampling) {
-    input_ports_.emplace_back(this, kInputPort, input_ports_.size(),
+    input_ports_.emplace_back(this, kInputPort, get_num_input_ports(),
                               kVectorValued, size, sampling);
   }
 
@@ -264,8 +353,7 @@ class System {
 
   /// Adds a port with the specified @p descriptor to the output topology.
   void DeclareOutputPort(const SystemPortDescriptor<T>& descriptor) {
-    DRAKE_ASSERT(descriptor.get_index() ==
-                 static_cast<int>(output_ports_.size()));
+    DRAKE_ASSERT(descriptor.get_index() == get_num_output_ports());
     DRAKE_ASSERT(descriptor.get_face() == kOutputPort);
     output_ports_.emplace_back(descriptor);
   }
@@ -273,7 +361,7 @@ class System {
   /// Adds a port with the specified @p type, @p size, and @p sampling
   /// to the output topology.
   void DeclareOutputPort(PortDataType type, int size, SamplingSpec sampling) {
-    output_ports_.emplace_back(this, kOutputPort, output_ports_.size(),
+    output_ports_.emplace_back(this, kOutputPort, get_num_output_ports(),
                                kVectorValued, size, sampling);
   }
 
@@ -283,6 +371,47 @@ class System {
     DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
+  /// Returns a mutable Eigen expression for a vector valued output port with
+  /// index @p port_index in this system. All InputPorts that directly depend
+  /// on this OutputPort will be notified that upstream data has changed, and
+  /// may invalidate cache entries as a result.
+  Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(SystemOutput<T>* output,
+                                                        int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
+
+    VectorBase<T>* output_vector = output->
+        get_mutable_port(port_index)->template GetMutableVectorData<T>();
+    DRAKE_ASSERT(output_vector != nullptr);
+    DRAKE_ASSERT(output_vector->get_value().rows() ==
+        get_output_port(port_index).get_size());
+
+    return output_vector->get_mutable_value();
+  }
+
+  /// Implement this in your concrete System if you want it to take some action
+  /// when the Simulator calls the Publish() method. This can be used for
+  /// sending messages, producing console output, debugging, logging, saving the
+  /// trajectory to a file, etc. You may assume that the `context` has already
+  /// been validated before it is passed to you here.
+  virtual void DoPublish(const ContextBase<T>& context) const {}
+
+  /// Implement this method if your System has any difference variables xd,
+  /// mode variables, or sampled input or output ports. The `actions` argument
+  /// specifies what to do and may include difference variable updates, port
+  /// sampling, or execution of event handlers that may make arbitrary changes
+  /// to the Context.
+  virtual void DoUpdate(ContextBase<T>* context,
+                        const SampleActions& actions) const {}
+
+  /// Implement this method if your System has any discrete actions which must
+  /// interrupt the continuous simulation. You may assume that the context
+  /// has already been validated and the `actions` pointer is not null.
+  /// The default implemention returns with `actions` having a next sample
+  /// time of Infinity and no actions to take.
+  virtual void DoCalcNextSampleTime(const ContextBase<T>& context,
+                                    SampleActions* actions) const {
+    actions->time = std::numeric_limits<double>::infinity();
+  }
 
  private:
   // SystemInterface objects are neither copyable nor moveable.

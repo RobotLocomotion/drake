@@ -16,6 +16,7 @@ namespace systems {
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 /// - AutoDiffXd
+///
 /// They are already available to link against in drakeSystemFramework.
 ///
 /// To use other specific scalar types see gain-inl.h.
