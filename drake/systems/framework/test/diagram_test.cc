@@ -62,6 +62,7 @@ class ExampleDiagram : public Diagram<double> {
     builder.BuildInto(this);
   }
 
+  Adder<double>* adder0() { return adder0_.get(); }
   Integrator<double>* integrator0() { return integrator0_.get(); }
   Integrator<double>* integrator1() { return integrator1_.get(); }
 
@@ -89,13 +90,13 @@ class DiagramTest : public ::testing::Test {
 
     // Initialize the integrator states.
     auto integrator0_xc = GetMutableContinuousState(integrator0());
-    ASSERT_NE(nullptr, integrator0_xc);
+    ASSERT_TRUE(integrator0_xc != nullptr);
     integrator0_xc->get_mutable_state()->SetAtIndex(0, 3);
     integrator0_xc->get_mutable_state()->SetAtIndex(1, 9);
     integrator0_xc->get_mutable_state()->SetAtIndex(2, 27);
 
     auto integrator1_xc = GetMutableContinuousState(integrator1());
-    ASSERT_NE(nullptr, integrator1_xc);
+    ASSERT_TRUE(integrator1_xc != nullptr);
     integrator1_xc->get_mutable_state()->SetAtIndex(0, 81);
     integrator1_xc->get_mutable_state()->SetAtIndex(1, 243);
     integrator1_xc->get_mutable_state()->SetAtIndex(2, 729);
@@ -123,21 +124,21 @@ class DiagramTest : public ::testing::Test {
 
     const BasicVector<double>* output0 =
         dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
-    ASSERT_NE(nullptr, output0);
+    ASSERT_TRUE(output0 != nullptr);
     EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
     EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
     EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
 
     const BasicVector<double>* output1 =
         dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(1));
-    ASSERT_NE(nullptr, output1);
+    ASSERT_TRUE(output1 != nullptr);
     EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
     EXPECT_EQ(expected_output1[1], output1->get_value()[1]);
     EXPECT_EQ(expected_output1[2], output1->get_value()[2]);
 
     const BasicVector<double>* output2 =
         dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(2));
-    ASSERT_NE(nullptr, output2);
+    ASSERT_TRUE(output2 != nullptr);
     EXPECT_EQ(expected_output2[0], output2->get_value()[0]);
     EXPECT_EQ(expected_output2[1], output2->get_value()[1]);
     EXPECT_EQ(expected_output2[2], output2->get_value()[2]);
@@ -149,6 +150,7 @@ class DiagramTest : public ::testing::Test {
     context_->SetInputPort(2, MakeInput(std::move(input2_)));
   }
 
+  Adder<double>* adder0() { return diagram_->adder0(); }
   Integrator<double>* integrator0() { return diagram_->integrator0(); }
   Integrator<double>* integrator1() { return diagram_->integrator1(); }
 
@@ -213,18 +215,20 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
   ASSERT_EQ(6, derivatives->get_misc_continuous_state().size());
 
   // The derivative of the first integrator is A.
-  const ContinuousState<double>& integrator0_xcdot =
+  const ContinuousState<double>* integrator0_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator0());
-  EXPECT_EQ(1 + 8, integrator0_xcdot.get_state().GetAtIndex(0));
-  EXPECT_EQ(2 + 16, integrator0_xcdot.get_state().GetAtIndex(1));
-  EXPECT_EQ(4 + 32, integrator0_xcdot.get_state().GetAtIndex(2));
+  ASSERT_TRUE(integrator0_xcdot != nullptr);
+  EXPECT_EQ(1 + 8, integrator0_xcdot->get_state().GetAtIndex(0));
+  EXPECT_EQ(2 + 16, integrator0_xcdot->get_state().GetAtIndex(1));
+  EXPECT_EQ(4 + 32, integrator0_xcdot->get_state().GetAtIndex(2));
 
   // The derivative of the second integrator is the state of the first.
-  const ContinuousState<double>& integrator1_xcdot =
+  const ContinuousState<double>* integrator1_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator1());
-  EXPECT_EQ(3, integrator1_xcdot.get_state().GetAtIndex(0));
-  EXPECT_EQ(9, integrator1_xcdot.get_state().GetAtIndex(1));
-  EXPECT_EQ(27, integrator1_xcdot.get_state().GetAtIndex(2));
+  ASSERT_TRUE(integrator1_xcdot != nullptr);
+  EXPECT_EQ(3, integrator1_xcdot->get_state().GetAtIndex(0));
+  EXPECT_EQ(9, integrator1_xcdot->get_state().GetAtIndex(1));
+  EXPECT_EQ(27, integrator1_xcdot->get_state().GetAtIndex(2));
 }
 
 // Tests that the same diagram can be evaluated into the same output with
@@ -252,7 +256,7 @@ TEST_F(DiagramTest, Clone) {
   expected_output0 << 3 + 8 + 64, 6 + 16 + 128, 9 + 32 + 256;  // B
   const BasicVector<double>* output0 =
       dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
-  ASSERT_NE(nullptr, output0);
+  ASSERT_TRUE(output0 != nullptr);
   EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
   EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
   EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
@@ -262,7 +266,7 @@ TEST_F(DiagramTest, Clone) {
   expected_output1 += expected_output0;       // A + B
   const BasicVector<double>* output1 =
       dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(1));
-  ASSERT_NE(nullptr, output1);
+  ASSERT_TRUE(output1 != nullptr);
   EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
   EXPECT_EQ(expected_output1[1], output1->get_value()[1]);
   EXPECT_EQ(expected_output1[2], output1->get_value()[2]);
@@ -270,6 +274,15 @@ TEST_F(DiagramTest, Clone) {
   // Check that the context that was cloned is unaffected.
   diagram_->EvalOutput(*context_, output_.get());
   ExpectDefaultOutputs();
+}
+
+// Tests that, when asked for the state derivatives of Systems that are
+// stateless, Diagram returns nullptr.
+TEST_F(DiagramTest, DerivativesOfStatelessSystemAreNullptr) {
+  std::unique_ptr<ContinuousState<double>> derivatives =
+      diagram_->AllocateTimeDerivatives();
+  EXPECT_EQ(nullptr,
+            diagram_->GetSubsystemDerivatives(*derivatives, adder0()));
 }
 
 class DiagramOfDiagramsTest : public ::testing::Test {
@@ -377,8 +390,8 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   AddConstantDiagram plus_seven(7.0);
   auto context = plus_seven.CreateDefaultContext();
   auto output = plus_seven.AllocateOutput(*context);
-  ASSERT_NE(nullptr, context);
-  ASSERT_NE(nullptr, output);
+  ASSERT_TRUE(context != nullptr);
+  ASSERT_TRUE(output != nullptr);
 
   auto vec = std::make_unique<BasicVector<double>>(1 /* length */);
   vec->get_mutable_value() << 12.0;
