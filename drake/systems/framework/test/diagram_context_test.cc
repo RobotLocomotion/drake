@@ -17,6 +17,7 @@ namespace drake {
 namespace systems {
 namespace {
 
+constexpr int kNumSystems = 4;
 constexpr double kTime = 12.0;
 
 class DiagramContextTest : public ::testing::Test {
@@ -85,6 +86,15 @@ TEST_F(DiagramContextTest, AddAndRetrieveConstituents) {
 
   EXPECT_NE(nullptr, context_->GetSubsystemOutput(4));
   EXPECT_NE(nullptr, context_->GetSubsystemContext(4));
+}
+
+// Tests that the time writes through to the subsystem contexts.
+TEST_F(DiagramContextTest, Time) {
+  context_->set_time(42.0);
+  EXPECT_EQ(42.0, context_->get_time());
+  for (int i = 0; i < kNumSystems; ++i) {
+    EXPECT_EQ(42.0, context_->GetSubsystemContext(i)->get_time());
+  }
 }
 
 // Tests that state variables appear in the diagram context, and write
