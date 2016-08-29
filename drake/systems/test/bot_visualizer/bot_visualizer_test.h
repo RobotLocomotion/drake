@@ -14,7 +14,7 @@ namespace systems {
 namespace test {
 
 /**
- * Tests BotVisualizeSystem by having it send load and draw messages for
+ * Tests BotVisualizerSystem by having it send load and draw messages for
  * visualizing @p tree. The messages actually received are compared against
  * @p expected_load_message and @p expected_draw_message. The LCM channel name
  * postfix to use is @p kChannelPostfix. This postfix is used to avoid
