@@ -11,6 +11,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/context.h"
 
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 namespace drake {
 namespace systems {
 
@@ -35,14 +38,8 @@ template <typename T>
 void TimeVaryingPolynomialSource<T>::EvalOutput(const ContextBase<T>& context,
                                         SystemOutput<T>* output) const {
   DRAKE_ASSERT(output->get_num_ports() == 1);
-  int time = context.get_time();
-
-
+  T time = context.get_time();
   System<T>::GetMutableOutputVector(output, 0) = pp_traj_.value(time);
-//  }
-
-//  AbstractValue* output_data = output->GetMutableData(0);
-//  *output_data = pp_traj_.value(time);
 }
 
 

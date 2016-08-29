@@ -46,7 +46,7 @@ namespace rigid_body_system {
 namespace test {
 namespace {
 
-PiecewisePolynomial<double> MakePlan() {
+unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   RigidBodyTree tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED);
@@ -157,27 +157,22 @@ PiecewisePolynomial<double> MakePlan() {
     const auto traj_now = traj_.col(i);
 
     // Produce interpolating polynomials for each joint coordinate.
-    for (int row = 0; row < traj_.rows(); row++) {
-      Eigen::Vector2d coeffs(0, 0);
-      coeffs[0] = traj_now(row);
-      if (i != nT_ - 1) {
+    if (i != nT_ - 1) {
+      for (int row = 0; row < traj_.rows(); row++) {
+        Eigen::Vector2d coeffs(0, 0);
+        coeffs[0] = traj_now(row);
         // Set the coefficient such that it will reach the value of
         // the next timestep at the time when we advance to the next
         // piece.  In the event that we're at the end of the
         // trajectory, this will be left 0.
         coeffs[1] = (traj_(row, i + 1) - coeffs[0]) / (t_[i + 1] - t_[i]);
+        poly_matrix(row) = PPPoly(coeffs);
       }
-      poly_matrix(row) = PPPoly(coeffs);
+      polys.push_back(poly_matrix);
     }
-    polys.push_back(poly_matrix);
     times.push_back(t_[i]);
   }
-
-  PPType pp_traj(polys, times);
-
-  // Now run through the plan.
-  //TrajectoryRunner runner(lcm, kNumTimesteps, t, q_sol);
-  //runner.Run();
+  auto pp_traj = make_unique<PPType>(polys, times);
   return pp_traj;
 }
 
@@ -188,6 +183,8 @@ class KukaDemo : public Diagram<T> {
  public:
   // Pass through to SpringMassSystem, except add sample rate in samples/s.
   KukaDemo() {
+    this->set_name("KukaDemo");
+
     // Instantiates an MBD model of the world.
     auto mbd_world = make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
@@ -237,15 +234,14 @@ class KukaDemo : public Diagram<T> {
     //const double wol = sqrt(numerical_stiffness / arm_mass);
 
     // Naveen's constants: Kp=10, Ki=0, Kd=0.3
-    const double kp = 5.0; //numerical_stiffness/100.0;
+    const double kp = 2.0; //numerical_stiffness/100.0;
     const double ki = 0.0;
     // Closed loop system frequency.
     //const double wcl = sqrt(wol*wol + kp / arm_mass);
     // Damping ratio.
     //const double zeta = 0.001;
     //const double kd = 2.0 * arm_mass * wcl * zeta;
-    const double kd = 0.5;
-    PRINT_VAR(kd);
+    const double kd = 1.0;
 
     controller_ = make_unique<PidController<T>>(kp, ki, kd,
                                                 plant_->get_num_positions());
@@ -265,10 +261,10 @@ class KukaDemo : public Diagram<T> {
     inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_actuators());
     error_inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_states());
 
-    // Create the planner.
-    auto poly_trajectory = MakePlan();
-
-    target_plan_ = make_unique<TimeVaryingPolynomialSource<T>>(poly_trajectory);
+    // Creates a plan.
+    poly_trajectory_ = MakePlan();
+    target_plan_ = make_unique<TimeVaryingPolynomialSource<T>>(
+        *poly_trajectory_);
 
     viz_publisher_ = make_unique<BotVisualizerSystem>(
         plant_->get_multibody_world(), &lcm_);
@@ -340,11 +336,13 @@ class KukaDemo : public Diagram<T> {
   std::unique_ptr<Adder<T>> gcomp_minus_pid_;
   std::unique_ptr<ConstantVectorSource<T>> target_state_;
   std::unique_ptr<TimeVaryingPolynomialSource<T>> target_plan_;
+  std::unique_ptr<PiecewisePolynomial<T>> poly_trajectory_;
   std::unique_ptr<BotVisualizerSystem> viz_publisher_;
   ::lcm::LCM lcm_;
 };
 
-GTEST_TEST(KukaDemo, Testing) {
+//GTEST_TEST(KukaDemo, Testing) {
+int DoMain() {
   KukaDemo<double> model;
   Simulator<double> simulator(model);  // Use default Context.
 
@@ -373,7 +371,7 @@ GTEST_TEST(KukaDemo, Testing) {
       IntegratorType::RungeKutta2);
 
   // Simulate for 1 seconds.
-  simulator.StepTo(20.);
+  simulator.StepTo(20.0);
 
   const auto& context = simulator.get_context();
   EXPECT_EQ(context.get_time(), 1.);  // Should be exact.
@@ -382,6 +380,7 @@ GTEST_TEST(KukaDemo, Testing) {
   EXPECT_EQ(simulator.get_num_samples_taken(), 0);
   EXPECT_LE(simulator.get_smallest_step_size_taken(),
             simulator.get_largest_step_size_taken());
+  return 0;
 }
 
 
@@ -391,3 +390,7 @@ GTEST_TEST(KukaDemo, Testing) {
 }  // namespace plants
 }  // namespace systems
 }  // namespace drake
+
+int main(int argc, const char* argv[]) {
+  return drake::systems::plants::rigid_body_system::test::DoMain();
+}
