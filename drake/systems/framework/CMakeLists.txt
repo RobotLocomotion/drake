@@ -18,7 +18,6 @@ set(sources
   primitives/integrator.cc
   primitives/pass_through.cc
   primitives/gravity_compensator.cc
-  primitives/time_varying_polynomial_source.cc
   state.cc
   state_subvector.cc
   state_supervector.cc
