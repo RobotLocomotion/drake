@@ -1,6 +1,7 @@
 #pragma once
 
-#include <lcm/lcm-cpp.hpp>
+#include <cstdint>
+#include <vector>
 
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/framework/vector_base.h"
@@ -11,7 +12,7 @@ namespace lcm {
 
 /**
  * Defines an abstract parent class of all translators that convert between
- * LCM message objects and `drake::systems::VectorBase` objects.
+ * LCM message bytes and `drake::systems::VectorBase` objects.
  */
 class LcmAndVectorBaseTranslator {
  public:
@@ -38,9 +39,13 @@ class LcmAndVectorBaseTranslator {
   }
 
   /**
-   * Translates an LCM message into a `drake::systems::VectorBase` object.
+   * Translates LCM message bytes into a `drake::systems::VectorBase` object.
    *
-   * @param[in] rbuf A pointer to a buffer holding the LCM message's data.
+   * @param[in] lcm_message_bytes A pointer to a buffer holding the LCM
+   * message's data.
+   *
+   * @param[in] lcm_message_length The number of bytes pointed to by
+   * the @p lcm_message_bytes.
    *
    * @param[out] vector_base A pointer to where the translation of the LCM
    * message should be stored. This pointer must not be `nullptr`.
@@ -50,25 +55,21 @@ class LcmAndVectorBaseTranslator {
    * This often occurs when the size of the @p vector_base does not equal
    * or is incompatible with the size of the decoded LCM message.
    */
-  virtual void TranslateLcmToVectorBase(const ::lcm::ReceiveBuffer* rbuf,
-    VectorBase<double>* vector_base) const = 0;
+  virtual void TranslateLcmToVectorBase(
+      const void* lcm_message_bytes, int lcm_message_length,
+      VectorBase<double>* vector_base) const = 0;
 
   /**
-   * Translates a `drake::systems::VectorBase` object into an LCM message
-   * and publishes it on the specified LCM channel.
+   * Translates a `drake::systems::VectorBase` object into LCM message bytes.
    *
-   * @param[in] vector_base A reference to the object to convert into an
-   * LCM message.
+   * @param[in] vector_base The object to convert into an LCM message.
    *
-   * @param[in] channel The name of the channel on which to publish the LCM
-   * message.
-   *
-   * @param[in] lcm A pointer to the LCM subsystem. This pointer must not be
-   * `nullptr`.
+   * @param[out] lcm_message_bytes The LCM message bytes.
+   * This pointer must not be `nullptr`.
    */
-  virtual void PublishVectorBaseToLCM(
+  virtual void TranslateVectorBaseToLcm(
       const VectorBase<double>& vector_base,
-      const std::string& channel, ::lcm::LCM* lcm) const = 0;
+      std::vector<uint8_t>* lcm_message_bytes) const = 0;
 
  private:
   // The size of the vector in the VectorBase.
