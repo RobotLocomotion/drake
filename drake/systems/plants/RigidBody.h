@@ -91,7 +91,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use has_mobilizer_joint().");
+  DRAKE_DEPRECATED("Please use has_mobilizer_joint().")
 #endif
   bool hasParent() const;
 
