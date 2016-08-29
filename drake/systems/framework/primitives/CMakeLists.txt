@@ -10,6 +10,7 @@ drake_install_headers(
   gain.h
   gain-inl.h
   gravity_compensator.h
+  time_varying_polynomial_source.h
   integrator.h
   pass_through.h
   pass_through-inl.h

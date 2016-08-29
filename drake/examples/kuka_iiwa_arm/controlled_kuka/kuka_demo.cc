@@ -14,6 +14,7 @@
 #include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/gravity_compensator.h"
 #include "drake/systems/framework/primitives/pid_controller2.h"
+#include "drake/systems/framework/primitives/time_varying_polynomial_source.h"
 #include "drake/systems/bot_visualizer_system.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_system/rigid_body_plant.h"
