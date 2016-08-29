@@ -116,22 +116,6 @@ TEST_F(DiagramContextTest, ConnectValid) {
                                     {1 /* adder1_ */, 1 /* port 1 */}));
 }
 
-// Tests that an exception is thrown when connecting from a source port that
-// does not exist.
-TEST_F(DiagramContextTest, ConnectInvalidSrcPort) {
-  EXPECT_THROW(context_->Connect({0 /* adder0_ */, 1 /* port 1 */},
-                                 {1 /* adder1_ */, 1 /* port 1 */}),
-               std::out_of_range);
-}
-
-// Tests that an exception is thrown when connecting to a destination port that
-// does not exist.
-TEST_F(DiagramContextTest, ConnectInvalidDestPort) {
-  EXPECT_THROW(context_->Connect({0 /* adder0_ */, 0 /* port 0 */},
-                                 {1 /* adder1_ */, 2 /* port 2 */}),
-               std::out_of_range);
-}
-
 // Tests that input ports can be assigned to the DiagramContext and then
 // retrieved.
 TEST_F(DiagramContextTest, SetAndGetInputPorts) {
