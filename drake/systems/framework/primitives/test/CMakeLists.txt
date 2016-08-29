@@ -27,3 +27,8 @@ add_test(NAME constant_vector_source_test COMMAND constant_vector_source_test)
 add_executable(gain_test gain_test.cc gain_scalartype_test.cc)
 target_link_libraries(gain_test drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
 add_test(NAME gain_test COMMAND gain_test)
+
+add_executable(gravity_compensator_test gravity_compensator_test.cc)
+target_link_libraries(gravity_compensator_test
+    drakeSystemFramework drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+add_test(NAME gravity_compensator_test COMMAND gravity_compensator_test)
