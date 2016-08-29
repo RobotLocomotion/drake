@@ -15,7 +15,7 @@ namespace kuka_iiwa_arm {
 
 /// This class converts an input trajectory (a sequence of via-points) into a
 /// PiecewisePolynomial.
-class PolynomialTrajectoryFitGenerator {
+ class DRAKEKUKAIIWAARM_EXPORT PolynomialTrajectoryFitGenerator {
  public:
   /// Helper typedefs for the methods in this class.
   typedef PiecewisePolynomial<double> PPType;

@@ -6,8 +6,8 @@ if(lcm_FOUND)
     drakeLCMSystem)
   add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
 
-  add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES
-          iiwa_simulation.cc polynomial_trajectory_fit_generator.cc)
+  add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES iiwa_simulation.cc
+          polynomial_trajectory_fit_generator.cc)
   target_link_libraries(drakeKukaIiwaArm
     drakeCommon
     drakeIK
@@ -15,12 +15,12 @@ if(lcm_FOUND)
     drakeRBSystem
     drakeShapes
     drakeTrajectories)
-  pods_install_libraries(drakeKukaIiwaArm)
   drake_install_headers(
-          iiwa_simulation.h
-          polynomial_trajectory_fit_generator.h)
+    iiwa_simulation.h
+    polynomial_trajectory_fit_generator.h)
+  pods_install_libraries(drakeKukaIiwaArm)
   pods_install_pkg_config_file(drake-kuka-iiwa-arm
-          LIBS -ldrakeKukaIiwaArm
+          LIBS -ldrakeKukaIiwaArm 
           REQUIRES
           VERSION 0.0.1)
   add_dependencies(drakeKukaIiwaArm
@@ -41,26 +41,17 @@ if(lcm_FOUND)
           run_kuka_iiwa_gravity_compensated_torque_control.cc)
   target_link_libraries(run_kuka_iiwa_gravity_compensated_torque_control
           drakeKukaIiwaArm
-          drakeLCMSystem
-          drakeRBSystem
           gflags)
 
   add_executable(run_kuka_iiwa_gravity_compensated_position_control
           run_kuka_iiwa_gravity_compensated_position_control.cc)
   target_link_libraries(run_kuka_iiwa_gravity_compensated_position_control
           drakeKukaIiwaArm
-          drakeLCMSystem
-          drakeRBSystem
           gflags)
 
   add_executable(run_kuka_iiwa_ik_control_demo run_kuka_iiwa_ik_control_demo.cc)
   target_link_libraries(run_kuka_iiwa_ik_control_demo
-          drakeControlUtil
-          drakeKukaIiwaArm
-          drakeLCMSystem
-          drakeRBM
-          drakeRBSystem
-          drakeTrajectories)
+          drakeKukaIiwaArm)
 endif()
 
 add_subdirectory(test)
