@@ -94,9 +94,13 @@ Execute the following commands to build the workspace::
     catkin build --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
 
 There are numerous optional flags that can be included after the ``catkin build``
-command listed above. The example above includes the build type flag that
-specifies the build should be ``RelWithDebInfo``. Alternative include
-``Release`` and ``Debug``. Another flag is ``-DDISABLE_MATLAB=TRUE``, which
+command listed above. For a full list, execute::
+
+    catkin build --help
+
+The example above includes the build type flag that specifies a build mode of
+``RelWithDebInfo``. Alternatives include ``Release`` and ``Debug``. Another
+flag is ``-DDISABLE_MATLAB=TRUE``, which
 disables MATLAB support. This may be useful if you have MATLAB installed but
 don't have access to a license server. There are many additional command line
 flags that, for example, enables support for certain optimizers like
@@ -106,7 +110,7 @@ in ``~/dev/drake_catkin_workspace/src/drake/CMakeLists.txt``.
 
 Note also that Catkin by default performs a multi-threaded build.
 If your computer does not have sufficient computational resources to support
-this, you can add a ``-j1`` flag after the ``catkin_make`` command to force a
+this, you can add a ``-j1`` flag after the ``catkin build`` command to force a
 single-threaded build, which uses fewer resources.
 
 Later, if you want to do a clean build, you can execute::
@@ -114,6 +118,8 @@ Later, if you want to do a clean build, you can execute::
     cd ~/dev/drake_catkin_workspace
     catkin clean
     cd src/drake
+    rm -rf externals
+    git reset --hard HEAD
     git clean -fdx
     cd ~/dev/drake_catkin_workspace
     source /opt/ros/indigo/setup.bash
@@ -225,4 +231,4 @@ To drive the vehicle around in simulation, open another terminal and execute::
 
     cd ~/dev/drake_catkin_workspace
     source devel/setup.bash
-    rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7
+    rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7 /drake/ackermann_cmd
