@@ -43,10 +43,10 @@ pods_find_pkg_config(ipopt)
 
 if(snopt_c_FOUND OR ipopt_FOUND)
   add_ik_gtest(testIK)
-  add_ik_gtest(testIKMoreConstraints)
   add_ik_gtest(testIKpointwise)
 endif()
 if (snopt_c_FOUND)
+  add_ik_gtest(testIKMoreConstraints)
   add_ik_gtest(testIKtraj)
 endif()
 
