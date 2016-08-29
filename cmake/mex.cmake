@@ -380,7 +380,13 @@ endfunction()
 
 function(get_compiler_version outvar compiler)
   if ( MSVC )
-    execute_process(COMMAND ${compiler} ERROR_VARIABLE ver ERROR_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE junk)
+    execute_process(
+      COMMAND "${compiler}"
+      ERROR_VARIABLE output
+      ERROR_STRIP_TRAILING_WHITESPACE
+      OUTPUT_VARIABLE output
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX MATCH "([0-9]+\\.[0-9]+\\.[0-9]+)" ver "${output}")
   else()
     string(REPLACE "\"" "" compiler ${compiler}) # remove quotes
     separate_arguments(c_args UNIX_COMMAND ${compiler})
