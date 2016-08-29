@@ -8,6 +8,7 @@ drake_install_headers(
   constant_vector_source.h
   gain.h
   gain-inl.h
+    time_varying_polynomial_source.h
   integrator.h
   pass_through.h
   pass_through-inl.h)
