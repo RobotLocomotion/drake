@@ -61,6 +61,7 @@ class ExampleDiagram : public Diagram<double> {
     builder.BuildInto(this);
   }
 
+  Adder<double>* adder0() { return adder0_.get(); }
   Integrator<double>* integrator0() { return integrator0_.get(); }
   Integrator<double>* integrator1() { return integrator1_.get(); }
 
@@ -148,6 +149,7 @@ class DiagramTest : public ::testing::Test {
     context_->SetInputPort(2, MakeInput(std::move(input2_)));
   }
 
+  Adder<double>* adder0() { return diagram_->adder0(); }
   Integrator<double>* integrator0() { return diagram_->integrator0(); }
   Integrator<double>* integrator1() { return diagram_->integrator1(); }
 
@@ -209,18 +211,20 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
   ASSERT_EQ(6, derivatives->get_misc_continuous_state().size());
 
   // The derivative of the first integrator is A.
-  const ContinuousState<double>& integrator0_xcdot =
+  const ContinuousState<double>* integrator0_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator0());
-  EXPECT_EQ(1 + 8, integrator0_xcdot.get_state().GetAtIndex(0));
-  EXPECT_EQ(2 + 16, integrator0_xcdot.get_state().GetAtIndex(1));
-  EXPECT_EQ(4 + 32, integrator0_xcdot.get_state().GetAtIndex(2));
+  ASSERT_NE(nullptr, integrator0_xcdot);
+  EXPECT_EQ(1 + 8, integrator0_xcdot->get_state().GetAtIndex(0));
+  EXPECT_EQ(2 + 16, integrator0_xcdot->get_state().GetAtIndex(1));
+  EXPECT_EQ(4 + 32, integrator0_xcdot->get_state().GetAtIndex(2));
 
   // The derivative of the second integrator is the state of the first.
-  const ContinuousState<double>& integrator1_xcdot =
+  const ContinuousState<double>* integrator1_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator1());
-  EXPECT_EQ(3, integrator1_xcdot.get_state().GetAtIndex(0));
-  EXPECT_EQ(9, integrator1_xcdot.get_state().GetAtIndex(1));
-  EXPECT_EQ(27, integrator1_xcdot.get_state().GetAtIndex(2));
+  ASSERT_NE(nullptr, integrator1_xcdot);
+  EXPECT_EQ(3, integrator1_xcdot->get_state().GetAtIndex(0));
+  EXPECT_EQ(9, integrator1_xcdot->get_state().GetAtIndex(1));
+  EXPECT_EQ(27, integrator1_xcdot->get_state().GetAtIndex(2));
 }
 
 // Tests that the same diagram can be evaluated into the same output with
@@ -266,6 +270,15 @@ TEST_F(DiagramTest, Clone) {
   // Check that the context that was cloned is unaffected.
   diagram_->EvalOutput(*context_, output_.get());
   ExpectDefaultOutputs();
+}
+
+// Tests that, when asked for the state derivatives of Systems that are
+// stateless, Diagram returns nullptr.
+TEST_F(DiagramTest, DerivativesOfStatelessSystemAreNullptr) {
+  std::unique_ptr<ContinuousState<double>> derivatives =
+      diagram_->AllocateTimeDerivatives();
+  EXPECT_EQ(nullptr,
+            diagram_->GetSubsystemDerivatives(*derivatives, adder0()));
 }
 
 class DiagramOfDiagramsTest : public ::testing::Test {
