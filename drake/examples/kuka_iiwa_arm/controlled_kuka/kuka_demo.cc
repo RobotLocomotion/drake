@@ -18,7 +18,19 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_system/rigid_body_plant.h"
 
+// Includes for the planner part. Move somewher else
+#include "drake/common/polynomial.h"
+#include "drake/systems/plants/IKoptions.h"
+#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
+
+using Eigen::Vector2d;
+using Eigen::Vector3d;
 using Eigen::VectorXd;
+using Eigen::VectorXi;
+using Eigen::MatrixXd;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
@@ -32,6 +44,135 @@ namespace plants {
 namespace rigid_body_system {
 namespace test {
 namespace {
+
+PiecewisePolynomial<double> MakePlan() {
+  RigidBodyTree tree(
+      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      DrakeJoint::FIXED);
+
+  // Create a basic pointwise IK trajectory for moving the iiwa arm.
+  // We start in the zero configuration (straight up).
+
+  // TODO(sam.creasey) We should start planning with the robot's
+  // current position rather than assuming vertical.
+  VectorXd zero_conf = tree.getZeroConfiguration();
+  VectorXd joint_lb = zero_conf - VectorXd::Constant(7, 0.01);
+  VectorXd joint_ub = zero_conf + VectorXd::Constant(7, 0.01);
+
+  PostureConstraint pc1(&tree, Vector2d(0, 0.5));
+  VectorXi joint_idx(7);
+  joint_idx << 0, 1, 2, 3, 4, 5, 6;
+  pc1.setJointLimits(joint_idx, joint_lb, joint_ub);
+
+  // Define an end effector constraint and make it active for the
+  // timespan from 1 to 3 seconds.
+  Vector3d pos_end;
+  pos_end << 0.6, 0, 0.325;
+  Vector3d pos_lb = pos_end - Vector3d::Constant(0.005);
+  Vector3d pos_ub = pos_end + Vector3d::Constant(0.005);
+  WorldPositionConstraint wpc(&tree, tree.FindBodyIndex("iiwa_link_ee"),
+                              Vector3d::Zero(), pos_lb, pos_ub, Vector2d(1, 3));
+
+  // After the end effector constraint is released, apply the straight
+  // up configuration again.
+  PostureConstraint pc2(&tree, Vector2d(4, 5.9));
+  pc2.setJointLimits(joint_idx, joint_lb, joint_ub);
+
+  // Bring back the end effector constraint through second 9 of the
+  // demo.
+  WorldPositionConstraint wpc2(&tree, tree.FindBodyIndex("iiwa_link_ee"),
+                               Vector3d::Zero(), pos_lb, pos_ub,
+                               Vector2d(6, 9));
+
+  // For part of the remaining time, constrain the second joint while
+  // preserving the end effector constraint.
+  //
+  // Variable `joint_position_start_idx` below is a collection of offsets into
+  // the state vector referring to the positions of the joints to be
+  // constrained.
+  Eigen::VectorXi joint_position_start_idx(1);
+  joint_position_start_idx(0) = tree.FindChildBodyOfJoint("iiwa_joint_2")->
+      get_position_start_index();
+  PostureConstraint pc3(&tree, Vector2d(6, 8));
+  pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
+
+
+  const int kNumTimesteps = 5;
+  double t[kNumTimesteps] = { 0.0, 2.0, 5.0, 7.0, 9.0 };
+  MatrixXd q0(tree.number_of_positions(), kNumTimesteps);
+  for (int i = 0; i < kNumTimesteps; i++) {
+    q0.col(i) = zero_conf;
+  }
+
+  std::vector<RigidBodyConstraint*> constraint_array;
+  constraint_array.push_back(&pc1);
+  constraint_array.push_back(&wpc);
+  constraint_array.push_back(&pc2);
+  constraint_array.push_back(&pc3);
+  constraint_array.push_back(&wpc2);
+  IKoptions ikoptions(&tree);
+  int info[kNumTimesteps];
+  MatrixXd q_sol(tree.number_of_positions(), kNumTimesteps);
+  std::vector<std::string> infeasible_constraint;
+
+  inverseKinPointwise(&tree, kNumTimesteps, t, q0, q0, constraint_array.size(),
+                      constraint_array.data(), ikoptions, &q_sol, info,
+                      &infeasible_constraint);
+  bool info_good = true;
+  for (int i = 0; i < kNumTimesteps; i++) {
+    printf("INFO[%d] = %d ", i, info[i]);
+    if (info[i] != 1) {
+      info_good = false;
+    }
+  }
+  printf("\n");
+
+  if (!info_good) {
+    throw std::runtime_error("Solution failed, not sending.");
+  }
+
+  // This comes from TrajectoryRunner in kuka_id_demo
+  typedef PiecewisePolynomial<double> PPType;
+  typedef PPType::PolynomialType PPPoly;
+  typedef PPType::PolynomialMatrix PPMatrix;
+  std::vector<PPMatrix> polys;
+  std::vector<double> times;
+  const int nT_ = kNumTimesteps;
+  auto& traj_ = q_sol;
+  auto& t_ = t;
+
+  // For each timestep, create a PolynomialMatrix for each joint
+  // position.  Each column of traj_ represents a particular time,
+  // and the rows of that column contain values for each joint
+  // coordinate.
+  for (int i = 0; i < nT_; i++) {
+    PPMatrix poly_matrix(traj_.rows(), 1);
+    const auto traj_now = traj_.col(i);
+
+    // Produce interpolating polynomials for each joint coordinate.
+    for (int row = 0; row < traj_.rows(); row++) {
+      Eigen::Vector2d coeffs(0, 0);
+      coeffs[0] = traj_now(row);
+      if (i != nT_ - 1) {
+        // Set the coefficient such that it will reach the value of
+        // the next timestep at the time when we advance to the next
+        // piece.  In the event that we're at the end of the
+        // trajectory, this will be left 0.
+        coeffs[1] = (traj_(row, i + 1) - coeffs[0]) / (t_[i + 1] - t_[i]);
+      }
+      poly_matrix(row) = PPPoly(coeffs);
+    }
+    polys.push_back(poly_matrix);
+    times.push_back(t_[i]);
+  }
+
+  PPType pp_traj(polys, times);
+
+  // Now run through the plan.
+  //TrajectoryRunner runner(lcm, kNumTimesteps, t, q_sol);
+  //runner.Run();
+  return pp_traj;
+}
 
 const double deg_to_rad = M_PI / 180.0;
 
@@ -116,6 +257,9 @@ class KukaDemo : public Diagram<T> {
 
     inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_actuators());
     error_inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_states());
+
+    // Create the planner.
+    auto poly_trajectory = MakePlan();
 
     viz_publisher_ = make_unique<BotVisualizerSystem>(
         plant_->get_multibody_world(), &lcm_);
