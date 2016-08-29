@@ -24,7 +24,7 @@ class GravityCompensator : public LeafSystem<T> {
   /// @param rigit_body_tree_ptr a shared pointer to a RigidBodyTree object
   /// which in turn is externally derived from a RigidBodySystem object to be
   /// controlled.
-  GravityCompensator(const std::shared_ptr<RigidBodyTree> rigid_body_tree_ptr);
+  GravityCompensator(const RigidBodyTree& rigid_body_tree);
 
   /// Sets the output port value to the generalised gravity forces corresponding
   /// to a joint configuration as specified in the input.
@@ -34,8 +34,9 @@ class GravityCompensator : public LeafSystem<T> {
                   SystemOutput<T>* output) const override;
 
  private:
-  const std::shared_ptr<RigidBodyTree> rigid_body_tree_ptr_;
+  const RigidBodyTree &rigid_body_tree_;
 };
 
 }  // namespace systems
 }  // namespace drake
+
