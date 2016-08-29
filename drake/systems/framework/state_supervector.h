@@ -71,7 +71,8 @@ class StateSupervector : public StateVector<T> {
                                      lookup_table_.end(), index);
 
     // Use the lookup result to identify the subvector that contains the index.
-    const int subvector_id = std::distance(lookup_table_.begin(), it);
+    const int subvector_id =
+        static_cast<int>(std::distance(lookup_table_.begin(), it));
     StateVector<T>* subvector = vectors_[subvector_id];
 
     // The item at index 0 in vectors_[subvector_id] corresponds to index

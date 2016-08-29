@@ -28,7 +28,7 @@ class LeafSystem : public System<T> {
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
     std::unique_ptr<Context<T>> context(new Context<T>);
     // Reserve inputs that have already been declared.
-    context->SetNumInputPorts(this->get_input_ports().size());
+    context->SetNumInputPorts(this->get_num_input_ports());
     // Reserve continuous state via delegation to subclass.
     context->get_mutable_state()->continuous_state =
         std::move(this->AllocateContinuousState());

@@ -168,9 +168,14 @@ class VectorValue : public Value<VectorBase<T>*> {
 // typeinfos will have identical contents, but will not be identical for
 // the purpose of dynamic_cast, which will thwart unerasure of AbstractValue.
 
-
+// TODO(sherm1) Clean this up with a more nuanced export macro.
+#ifdef _MSC_VER
+extern template class Value<VectorBase<double>*>;
+extern template class VectorValue<double>;
+#else
 extern template class DRAKESYSTEMFRAMEWORK_EXPORT Value<VectorBase<double>*>;
 extern template class DRAKESYSTEMFRAMEWORK_EXPORT VectorValue<double>;
+#endif
 
 }  // namespace systems
 }  // namespace drake

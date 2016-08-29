@@ -23,6 +23,8 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   ::lcm::Subscription* sub =
       lcm->subscribe(channel_, &LcmSubscriberSystem::HandleMessage, this);
   sub->setQueueCapacity(1);
+  DeclareOutputPort(kVectorValued, translator_.get_vector_size(),
+      kContinuousSampling);
 }
 
 LcmSubscriberSystem::LcmSubscriberSystem(
@@ -37,36 +39,7 @@ std::string LcmSubscriberSystem::get_name() const {
   return "LcmSubscriberSystem::" + channel_;
 }
 
-std::unique_ptr<ContextBase<double>> LcmSubscriberSystem::CreateDefaultContext()
-    const {
-  // Creates a new context for this system and sets the number of input ports
-  // to be zero. It leaves the context's state uninitialized since this system
-  // does not use it.
-  std::unique_ptr<Context<double>> context(new Context<double>());
-  context->SetNumInputPorts(0);
-
-  // Returns this system's context.
-  return std::unique_ptr<ContextBase<double>>(context.release());
-}
-
-std::unique_ptr<SystemOutput<double>> LcmSubscriberSystem::AllocateOutput(
-    const ContextBase<double>& context) const {
-  // Instantiates a BasicVector object and stores it in a managed pointer.
-  std::unique_ptr<BasicVector<double>> data(
-      new BasicVector<double>(translator_.get_vector_size()));
-
-  // Instantiates an OutputPort with the above BasicVector as the data type.
-  std::unique_ptr<OutputPort> port(new OutputPort(std::move(data)));
-
-  // Stores the above-defined OutputPort in this system output.
-  auto output = std::make_unique<LeafSystemOutput<double>>();
-  output->get_mutable_ports()->push_back(std::move(port));
-
-  // Returns this system's output.
-  return std::unique_ptr<SystemOutput<double>>(output.release());
-}
-
-void LcmSubscriberSystem::EvalOutput(const ContextBase<double>& context,
+void LcmSubscriberSystem::EvalOutput(const ContextBase<double>&,
                                      SystemOutput<double>* output) const {
   BasicVector<double>& output_vector =
       dynamic_cast<BasicVector<double>&>(*output->GetMutableVectorData(0));

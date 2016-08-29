@@ -4,11 +4,7 @@
     <link name='link'>
       <pose frame=''>-0.243716 -0.625087 0 0 -0 0</pose>
       <inertial>
-        <!--
-        TODO(lucy-tri): Update this mass to be the correct mass. Update the
-        spatial inertia below once this mass changes.
-        -->        
-        <mass>12</mass>
+        <mass>53.5</mass>
         <pose frame=''>0 0 0 0 -0 0</pose>
         <!--
         The spatial inertia values given below were derived based on the
@@ -25,12 +21,12 @@
         TODO(lucy-tri): Compute a more accurate spatial inertia of this table.
         -->
         <inertia>
-          <ixx>1.161288</ixx>
+          <ixx>5.177409</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>1.08644944</iyy>
+          <iyy>4.843753753</iyy>
           <iyz>0</iyz>
-          <izz>1.08644944</izz>
+          <izz>4.843753753</izz>
         </inertia>
       </inertial>
       <self_collide>0</self_collide>
