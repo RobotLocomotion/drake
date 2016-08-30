@@ -63,19 +63,20 @@ class TrajectoryRunner {
       const auto traj_now = traj_.col(i);
 
       // Produce interpolating polynomials for each joint coordinate.
-      for (int row = 0; row < traj_.rows(); row++) {
-        Eigen::Vector2d coeffs(0, 0);
-        coeffs[0] = traj_now(row);
-        if (i != nT_ - 1) {
+      if (i != nT_ - 1) {
+        for (int row = 0; row < traj_.rows(); row++) {
+          Eigen::Vector2d coeffs(0, 0);
+          coeffs[0] = traj_now(row);
+
           // Set the coefficient such that it will reach the value of
           // the next timestep at the time when we advance to the next
           // piece.  In the event that we're at the end of the
           // trajectory, this will be left 0.
           coeffs[1] = (traj_(row, i + 1) - coeffs[0]) / (t_[i + 1] - t_[i]);
+          poly_matrix(row) = PPPoly(coeffs);
         }
-        poly_matrix(row) = PPPoly(coeffs);
+        polys.push_back(poly_matrix);
       }
-      polys.push_back(poly_matrix);
       times.push_back(t_[i]);
     }
 
