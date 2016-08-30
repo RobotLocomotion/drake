@@ -17,6 +17,7 @@ set(sources
   primitives/gain.cc
   primitives/integrator.cc
   primitives/pass_through.cc
+  primitives/pid_controller2.cc
   state.cc
   state_subvector.cc
   state_supervector.cc
