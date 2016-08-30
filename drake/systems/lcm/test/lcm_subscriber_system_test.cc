@@ -34,6 +34,16 @@ class MessagePublisher {
     message_.timestamp = kTimestamp;
   }
 
+  ~MessagePublisher() {
+    const bool was_stopped = stop_;
+    if (!stop_) {
+      // This can happen if the test case raises an unexpected exception.
+      // We need to join the thread here, or else the thread dtor explodes.
+      Stop();
+      EXPECT_TRUE(was_stopped);
+    }
+  }
+
   void Start() {
     thread_.reset(new std::thread(&MessagePublisher::DoPublish, this));
   }
