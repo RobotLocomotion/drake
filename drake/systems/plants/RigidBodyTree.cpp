@@ -1405,8 +1405,8 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
   // TODO(#3114) pass this in as an argument
   const bool include_acceleration_terms = true;
 
-  // compute spatial accelerations and net wrenches that should be exerted to
-  // achieve those accelerations
+  // Compute spatial accelerations and net wrenches that should be exerted to
+  // achieve those accelerations.
   // TODO(tkoolen) should preallocate:
   Matrix6X<Scalar> body_accelerations(kTwistSize, bodies.size());
   Matrix6X<Scalar> net_wrenches(kTwistSize, bodies.size());
@@ -1417,12 +1417,12 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
       const auto& cache_element = cache.getElement(body);
       auto body_acceleration = body_accelerations.col(i);
 
-      // initialize body acceleration to acceleration of parent body
+      // Initialize body acceleration to acceleration of parent body.
       auto parent_acceleration =
           body_accelerations.col(parent_body.get_body_index());
       body_acceleration = parent_acceleration;
 
-      // add bias acceleration relative to parent body
+      // Add bias acceleration relative to parent body.
       if (include_velocity_terms) {
         const auto& parent_cache_element = cache.getElement(parent_body);
         body_acceleration += cache_element.motion_subspace_in_world_dot_times_v;
@@ -1430,7 +1430,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
             parent_cache_element.motion_subspace_in_world_dot_times_v;
       }
 
-      // add component due to joint acceleration
+      // Add component due to joint acceleration.
       if (include_acceleration_terms) {
         const DrakeJoint &joint = body.getJoint();
         auto vd_joint = vd.middleRows(body.get_velocity_start_index(),
@@ -1439,7 +1439,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
             cache_element.motion_subspace_in_world * vd_joint;
       }
 
-      // compute net wrench required to achieve computed body acceleration
+      // Compute net wrench required to achieve computed body acceleration.
       auto net_wrench = net_wrenches.col(i);
       const auto& body_inertia = cache_element.inertia_in_world;
       net_wrench.noalias() = body_inertia * body_acceleration;
@@ -1462,9 +1462,9 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
     }
   }
 
-  // do a backwards pass to compute joint wrenches from net wrenches (update in
+  // Do a backwards pass to compute joint wrenches from net wrenches (update in
   // place), and project the joint wrenches onto the joint's motion subspace to
-  // find the joint torque
+  // find the joint torque.
   auto& joint_wrenches = net_wrenches;
   // the following will eliminate the need for another explicit instantiation:
   const auto& joint_wrenches_const = net_wrenches;
@@ -1477,13 +1477,13 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
       const auto& joint = body.getJoint();
       auto joint_wrench = joint_wrenches_const.col(i);
 
-      // compute joint torques associated with joint wrench
+      // Compute joint torques associated with joint wrench.
       const auto& motion_subspace = cache_element.motion_subspace_in_world;
       auto joint_torques = torques.middleRows(body.get_velocity_start_index(),
                                               joint.getNumVelocities());
       joint_torques.noalias() = motion_subspace.transpose() * joint_wrench;
 
-      // add joint wrench (exerted upon 'body') to parent joint wrench
+      // Add joint wrench (exerted upon 'body') to parent joint wrench.
       const RigidBody& parent_body = *(body.get_parent());
       auto parent_joint_wrench =
           joint_wrenches.col(parent_body.get_body_index());
