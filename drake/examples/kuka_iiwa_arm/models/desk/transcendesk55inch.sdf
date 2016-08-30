@@ -1,11 +1,28 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
   <model name='transcendesk'>
+    <!--
+    To adjust the height of the table, see note below. Also recompute inertia.
+    -->
     <link name='table_base'>
       <pose frame=''>-0.243716 -0.625087 0 0 -0 0</pose>
       <inertial>
         <mass>30</mass>
         <pose frame=''>0 0 0 0 -0 0</pose>
+        <!--
+        The spatial inertia values given below were derived based on the
+        equation for a cuboid:
+
+        https://en.wikipedia.org/wiki/List_of_moments_of_inertia#List_of_3D_inertia_tensors.
+
+        Obviously, the table is not a cuboid, meaning the inertia matrix is
+        imperfect. Having an accurate spatial inertia specification may be
+        important for us to know when / if a robot mounted on top of the
+        table will cause the table to tip over. It will also be necessary to
+        model what happens when a mobile robot bumps into the table.
+
+        TODO(Lucy-tri): Compute a more accurate spatial inertia of this table.
+        -->
         <inertia>
           <ixx>9.825</ixx>
           <ixy>0</ixy>
@@ -410,6 +427,10 @@
       </collision>
     </link>
     <link name='table_upper'>
+      <!--
+      To adjust the height of the table, adjust the value of the third 
+      parameter in the pose frame, z. Also adjust inertia.
+      -->
       <pose frame=''>-0.243716 -0.625087 0.48 0 -0 0</pose>
       <inertial>
         <mass>53.5</mass>
@@ -550,6 +571,10 @@
         </surface>
       </collision>
     </link>
+    <!--
+    TODO(Lucy.tri): This joint could be used to simulate the way the table's
+    height can be adjusted. The limits need to be tuned and other params set.
+    -->
     <joint name='table_height' type='prismatic'>
       <parent>table_upper</parent>
       <child>table_base</child>
