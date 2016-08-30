@@ -26,7 +26,7 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
   virtual void SetUp() {
     trees_.clear();
 
-    std::string kAtlasUrdf =
+    const std::string kAtlasUrdf =
         drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf";
 
     tree_rpy_.reset(new RigidBodyTree());
