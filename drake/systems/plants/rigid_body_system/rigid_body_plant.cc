@@ -131,6 +131,7 @@ template <typename T>
 void RigidBodyPlant<T>::EvalTimeDerivatives(
     const ContextBase<T>& context, ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
+  DRAKE_ABORT_UNLESS(derivatives != nullptr);
   const VectorBase<T>* input = context.get_vector_input(0);
 
   // The input vector of actuation values.
@@ -166,8 +167,10 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // TODO(amcastro-tri): f_ext should be made an optional parameter
   // of dynamicsBiasTerm().
   eigen_aligned_unordered_map<const RigidBody*, Vector6<T>> f_ext;
-  VectorX<T> C = mbd_world_->dynamicsBiasTerm(kinsol, f_ext);
-  if (num_actuators > 0) C -= mbd_world_->B * u;
+  // right_hand_side is the right hand side of the system's equations:
+  // [H, -J^T] * [vdot; f] = -right_hand_side.
+  VectorX<T> right_hand_side = mbd_world_->dynamicsBiasTerm(kinsol, f_ext);
+  if (num_actuators > 0) right_hand_side -= mbd_world_->B * u;
 
   // Applies joint limit forces.
   // TODO(amcastro-tri): Maybe move to
@@ -183,11 +186,11 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
             qmax = joint.getJointLimitMax()(0);
         // tau = k * (qlimit-q) - b(qdot)
         if (q(b->get_position_start_index()) < qmin)
-          C(b->get_velocity_start_index()) -=
+          right_hand_side(b->get_velocity_start_index()) -=
               penetration_stiffness_ * (qmin - q(b->get_position_start_index()))
                   - penetration_damping_ * v(b->get_velocity_start_index());
         else if (q(b->get_position_start_index()) > qmax)
-          C(b->get_velocity_start_index()) -=
+          right_hand_side(b->get_velocity_start_index()) -=
               penetration_stiffness_ * (qmax - q(b->get_position_start_index()))
                   - penetration_damping_ * v(b->get_velocity_start_index());
       }
@@ -253,9 +256,14 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
                   (relative_velocity.head(2).norm() + EPSILON)) *
                   relative_velocity.head(2);  // Epsilon avoids divide by zero.
 
-          // Equal and opposite: fB = -fA.
-          // tau = (R * JA)^T * fA + (R * JB)^T * fB = J^T * fA.
-          C -= J.transpose() * fA;
+          // fB is equal and opposite to fA: fB = -fA.
+          // Therefore the generalized forces tau_c due to contact are:
+          // tau_c = (R * JA)^T * fA + (R * JB)^T * fB = J^T * fA.
+          // With J computed as above: J = R * (JA - JB).
+          // Since right_hand_side has a negative sign when on the RHS of the
+          // system of equations ([H,-J^T] * [vdot;f] + right_hand_side = 0),
+          // this term needs to be subtracted.
+          right_hand_side -= J.transpose() * fA;
         }
       }
     }
@@ -283,7 +291,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   }
 
   // Adds [H,-J^T] * [vdot;f] = -C.
-  prog.AddLinearEqualityConstraint(H_and_neg_JT, -C);
+  prog.AddLinearEqualityConstraint(H_and_neg_JT, -right_hand_side);
 
   prog.Solve();
 

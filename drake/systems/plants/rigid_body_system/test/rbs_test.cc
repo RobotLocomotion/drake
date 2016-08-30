@@ -28,7 +28,8 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
   return make_unique<FreestandingInputPort>(std::move(data));
 }
 
-// Tests the ability to load a URDF as part of the world of a rigid body system.
+// Tests the ability to load a URDF model instance into the world of a rigid
+// body system.
 GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   // Instantiates an Multibody Dynamics (MBD) model of the world.
   auto mbd_world_ptr = make_unique<RigidBodyTree>();
@@ -77,6 +78,7 @@ class KukaArmTest : public ::testing::Test {
 
   const int kNumPositions_{7};
   const int kNumVelocities_{7};
+  const int kNumActuators_{kNumPositions_};
   const int kNumStates_{kNumPositions_ + kNumVelocities_};
 
   unique_ptr<RigidBodyPlant<double>> kuka_system_;
@@ -95,8 +97,8 @@ TEST_F(KukaArmTest, StateHasTheRightSizes) {
   const StateVector<double>& zc =
       context_->get_state().continuous_state->get_misc_continuous_state();
 
-  EXPECT_EQ(7, xc.size());
-  EXPECT_EQ(7, vc.size());
+  EXPECT_EQ(kNumPositions_, xc.size());
+  EXPECT_EQ(kNumVelocities_, vc.size());
   EXPECT_EQ(0, zc.size());
 }
 
@@ -117,7 +119,7 @@ TEST_F(KukaArmTest, ObtainZeroConfiguration) {
   // Asserts that for this case the zero configuration corresponds to a state
   // vector with all entries equal to zero.
   VectorXd xc = context_->get_xc().CopyToVector();
-  ASSERT_EQ(14, xc.size());
+  ASSERT_EQ(kNumStates_, xc.size());
   ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
 }
 
@@ -132,11 +134,11 @@ TEST_F(KukaArmTest, EvalOutput) {
 
   // Checks the size of the input ports to match the number of generalized
   // forces that can be applied.
-  ASSERT_EQ(7, kuka_system_->get_num_positions());
-  ASSERT_EQ(7, kuka_system_->get_num_velocities());
-  ASSERT_EQ(14, kuka_system_->get_num_states());
-  ASSERT_EQ(7, kuka_system_->get_num_actuators());
-  ASSERT_EQ(7, kuka_system_->get_input_port(0).get_size());
+  ASSERT_EQ(kNumPositions_, kuka_system_->get_num_positions());
+  ASSERT_EQ(kNumVelocities_, kuka_system_->get_num_velocities());
+  ASSERT_EQ(kNumStates_, kuka_system_->get_num_states());
+  ASSERT_EQ(kNumActuators_, kuka_system_->get_num_actuators());
+  ASSERT_EQ(kNumActuators_, kuka_system_->get_input_port(0).get_size());
 
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
@@ -173,6 +175,12 @@ TEST_F(KukaArmTest, EvalOutput) {
 // Tests RigidBodyPlant<T>::EvalTimeDerivatives() for a Kuka arm model.
 // The test is performed by comparing against the results obtained with an RBS1
 // model of the same Kuka arm.
+// With RBS1 we refer to version 1.0 of a rigid body system as implemented in
+// the header file included in this test:
+// drake/systems/plants/RigidBodySystem.h
+// Within this test we will refer to the implementation under test as RBS2
+// (from System 2.0). Therefore the naming conventions for the variables in
+// this test.
 GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   //////////////////////////////////////////////////////////////////////////////
   // Instantiates a RigidBodySystem (System 1.0) model of the Kuka arm.
@@ -194,7 +202,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
 
-  // Instantiates a RigidBodyPlant from an MBD model of the world.
+  // Instantiates a RigidBodyPlant (System 2.0) from an MBD model of the world.
   auto rbs2 = make_unique<RigidBodyPlant<double>>(move(mbd_world));
 
   auto context = rbs2->CreateDefaultContext();
