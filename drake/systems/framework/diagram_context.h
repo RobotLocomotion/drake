@@ -139,23 +139,22 @@ class DiagramContext : public ContextBase<T> {
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
   void Connect(const PortIdentifier& src, const PortIdentifier& dest) {
-    // Validate and identify the source port.
+    // Identify and validate the source port.
     SystemIndex src_system_index = src.first;
     PortIndex src_port_index = src.second;
     SystemOutput<T>* src_ports = outputs_[src_system_index].get();
-    if (src_port_index < 0 || src_port_index >= src_ports->get_num_ports()) {
-      throw std::out_of_range("Source port out of range.");
-    }
+    DRAKE_ABORT_UNLESS(src_port_index >= 0);
+    DRAKE_ABORT_UNLESS(src_port_index < src_ports->get_num_ports());
     OutputPort* output_port = src_ports->get_mutable_port(src_port_index);
 
-    // Validate, construct, and install the destination port.
+    // Identify and validate the destination port.
     SystemIndex dest_system_index = dest.first;
     PortIndex dest_port_index = dest.second;
     ContextBase<T>* dest_context = contexts_[dest_system_index].get();
-    if (dest_port_index < 0 ||
-        dest_port_index >= dest_context->get_num_input_ports()) {
-      throw std::out_of_range("Destination port out of range.");
-    }
+    DRAKE_ABORT_UNLESS(dest_port_index >= 0);
+    DRAKE_ABORT_UNLESS(dest_port_index < dest_context->get_num_input_ports());
+
+    // Construct and install the destination port.
     auto input_port = std::make_unique<DependentInputPort>(output_port);
     dest_context->SetInputPort(dest_port_index, std::move(input_port));
 
@@ -197,18 +196,25 @@ class DiagramContext : public ContextBase<T> {
     return (*it).second.get();
   }
 
-  /// Returns the state structure for a given constituent system @p sys, or
-  /// nullptr if @p sys is not a constituent system. Invalidates all entries in
-  /// that subsystem's cache that depend on State.
-  ///
-  /// TODO(david-german-tri): Provide finer-grained accessors for finer-grained
-  /// invalidation.
-  State<T>* GetMutableSubsystemState(SystemIndex sys) {
+  /// Returns the context structure for a given subsystem @p sys, or
+  /// nullptr if @p sys is not a subsystem.
+  ContextBase<T>* GetMutableSubsystemContext(SystemIndex sys) {
     auto it = contexts_.find(sys);
     if (it == contexts_.end()) {
       return nullptr;
     }
-    return (*it).second->get_mutable_state();
+    return (*it).second.get();
+  }
+
+  /// Recursively sets the time on this context and all subcontexts.
+  void set_time(const T& time_sec) override {
+    ContextBase<T>::set_time(time_sec);
+    for (auto& kv : contexts_) {
+      ContextBase<T>* subcontext = kv.second.get();
+      if (subcontext != nullptr) {
+        subcontext->set_time(time_sec);
+      }
+    }
   }
 
   int get_num_input_ports() const override {

@@ -21,6 +21,19 @@ Integrator<T>::Integrator(int length) {
 template <typename T>
 Integrator<T>::~Integrator() {}
 
+template <typename T>
+void Integrator<T>::set_integral_value(
+    ContextBase<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
+  // TODO(amcastro-tri): Provide simple accessors here to avoid lengthy
+  // constructions.
+  auto state_vector =
+      context->get_mutable_state()->continuous_state->get_mutable_state();
+  // Asserts that the input value is a column vector of the appropriate size.
+  DRAKE_ASSERT(value.rows() == state_vector->size() && value.cols() == 1);
+  context->get_mutable_state()->continuous_state->
+      get_mutable_state()->SetFromVector(value);
+}
+
 // TODO(amcastro-tri): we should be able to express that initial conditions
 // feed through an integrator but the dynamic signal during simulation does
 // not.

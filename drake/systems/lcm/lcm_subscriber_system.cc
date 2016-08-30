@@ -52,7 +52,8 @@ void LcmSubscriberSystem::HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                                         const std::string& channel) {
   if (channel == channel_) {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    translator_.TranslateLcmToVectorBase(rbuf, &basic_vector_);
+    translator_.TranslateLcmToVectorBase(
+        rbuf->data, rbuf->data_size, &basic_vector_);
   } else {
     std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
               << "message for channel \"" << channel

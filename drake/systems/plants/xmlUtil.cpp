@@ -1,13 +1,16 @@
+#include "drake/systems/plants/xmlUtil.h"
+
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
+#include "spruce.hh"
+
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_assert.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/thirdParty/bsd/tinydir/tinydir.h"
-#include "xmlUtil.h"
 
 using namespace std;
 using namespace Eigen;
