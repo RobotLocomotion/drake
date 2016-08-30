@@ -1,0 +1,35 @@
+package drake;
+
+struct robot_plan_t
+{
+  int64_t utime;
+  string robot_name;  
+  int32_t num_states;
+  bot_core.robot_state_t plan[num_states]; // each individual state is also timed.
+  int32_t plan_info[num_states];  // info about the plan state, typically snopt_info value
+  
+  // Decoupling hand states from robot state as atlas api deals with them separately.
+  // Also drake expects robot joints excluding hand joints. 
+  int32_t num_grasp_transitions;
+  grasp_transition_state_t grasps[num_grasp_transitions];//each individual grasp state is also timed and a pose.
+  //grasp transitions can be triggered off time or when the ee reaches a particular pose.
+  
+  
+  //information for the controller. Flexibility to do mixed pos/impedance control for hands and feet
+  int8_t left_arm_control_type; 
+  int8_t right_arm_control_type; 
+  int8_t left_leg_control_type; 
+  int8_t right_leg_control_type; 
+  // see constants below  
+  const int8_t NONE=0;
+  const int8_t POSITION=1;
+  const int8_t IMPEDANCE=2;
+  const int8_t STIFF=3;
+  const int8_t COMPLIANT=4;
+
+  int32_t num_bytes;
+  byte matlab_data[num_bytes];
+}
+
+
+

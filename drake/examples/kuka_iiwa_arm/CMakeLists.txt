@@ -49,6 +49,18 @@ if(lcm_FOUND)
           drakeRBSystem
           drakeLCMSystem
           gflags)
+
+  pods_find_pkg_config(lcmtypes_bot2-core)
+  add_executable(kuka_director_ik_trajectory_publisher_standin
+      kuka_director_ik_trajectory_publisher_standin.cc)
+  target_link_libraries(kuka_director_ik_trajectory_publisher_standin
+      drakeKukaIiwaArm
+      drakeRBSystem
+      # drakeLCMSystem
+      lcm)
+  pods_use_pkg_config_packages(kuka_director_ik_trajectory_publisher_standin
+      lcmtypes_bot2-core)
+  include_directories(${CMAKE_INSTALL_PREFIX}/include/lcmtypes)
 endif()
 
 add_subdirectory(test)
