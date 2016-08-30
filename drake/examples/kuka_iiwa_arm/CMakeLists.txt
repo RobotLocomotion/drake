@@ -7,7 +7,8 @@ if(lcm_FOUND)
   add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
 
   add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES
-          iiwa_simulation.cc polynomial_trajectory_fit_generator.cc)
+    iiwa_simulation.cc
+    polynomial_trajectory_fit_generator.cc)
   target_link_libraries(drakeKukaIiwaArm
     drakeCommon
     drakeIK

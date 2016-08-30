@@ -17,7 +17,7 @@ using drake::RigidBodySystem;
 using lcm::LCM;
 
 std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(
-const std::string &file_name) {
+  const std::string &file_name) {
   // Instantiates a rigid body system and adds the robot arm to it.
   auto rigid_body_system = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
@@ -164,7 +164,7 @@ void CheckLimitViolations(
   }
 }
 
-// TODO(naveenoid) : For now this method is copy-paste from the kuka_ik_demo.cc.
+// TODO(naveenoid) : For now this method is copied from the kuka_ik_demo.cc.
 // Modify to fit future demo scenario requirements.
 void GenerateIKDemoJointTrajectory(
     const std::shared_ptr<RigidBodyTree> iiwa_tree,
@@ -198,7 +198,7 @@ void GenerateIKDemoJointTrajectory(
   pc2.setJointLimits(joint_idx, joint_lb, joint_ub);
 
   // Bring back the end effector constraint when simulation time reaches 9
-  // seconds.
+  // seconds after the simulation's start time.
   WorldPositionConstraint wpc2(
       iiwa_tree.get(), iiwa_tree->FindBodyIndex("iiwa_link_ee"),
       Vector3d::Zero(), pos_lb, pos_ub, Vector2d(6, 9));

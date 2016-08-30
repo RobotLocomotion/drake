@@ -24,8 +24,9 @@ namespace kuka_iiwa_arm {
  * - penetration_stiffness = 3000.0
  * - penetration_damping = 0
  *
- * @param file_name a string with the file name (and path) of the URDF to be
- * loaded. Default argument is that of the IIWA Robot system with collision flags.
+ * @param file_name A string with the filename (and path) of the URDF to be
+ * loaded. Default argument is that of the IIWA Robot system with collision
+ * flags.
  * @return A shared pointer to a rigid body system.
  */
 DRAKEKUKAIIWAARM_EXPORT
@@ -74,10 +75,9 @@ void CheckLimitViolations(
 
 /**
  * Generates a demonstration joint trajectory by assigning constraints and
- * computing a corresponding inverse kinematic solution. The demonstration
- * sets up the arm to move from the (initial) straight up
- * configuration to to reach a position in the front of the robot and then
- * repeat this motion twice.
+ * computing a corresponding inverse kinematic solution. The demonstration sets
+ * up the arm to move from the (initial) straight up configuration to to reach
+ * a position in the front of the robot and then repeat this motion twice.
  */
 DRAKEKUKAIIWAARM_EXPORT
 void GenerateIKDemoJointTrajectory(
