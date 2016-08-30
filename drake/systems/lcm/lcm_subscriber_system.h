@@ -58,23 +58,13 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
 
   ~LcmSubscriberSystem() override;
 
-  // Disable copy and assign.
-  LcmSubscriberSystem(const LcmSubscriberSystem&) = delete;
-  LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
-
   std::string get_name() const override;
 
-  /**
-   * Computes the output for the given context, possibly updating values
-   * in the cache. Note that the context is ignored since it contains no
-   * information.
-   */
   void EvalOutput(const ContextBase<double>& context,
                   SystemOutput<double>* output) const override;
 
  private:
-  // Translates the message contained within the receive buffer by storing its
-  // information in basic_vector_.
+  // Callback entry point from LCM into this class.
   void HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                      const std::string& channel);
 
@@ -93,6 +83,10 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
   // information is copied into this system's output port when Output(...) is
   // called.
   BasicVector<double> basic_vector_;
+
+  // Disable copy and assign.
+  LcmSubscriberSystem(const LcmSubscriberSystem&) = delete;
+  LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
 };
 
 }  // namespace lcm
