@@ -1,12 +1,11 @@
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_types.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/plants/parser_urdf.h"
-
 
 namespace drake {
 namespace systems {
@@ -22,7 +21,7 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using drake::CompareMatrices;
 
-class RigidBodyTreeInverseDynamicsTest: public ::testing::Test {
+class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     trees_.clear();
@@ -32,14 +31,14 @@ class RigidBodyTreeInverseDynamicsTest: public ::testing::Test {
 
     tree_rpy_.reset(new RigidBodyTree());
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        kAtlasUrdf, DrakeJoint::ROLLPITCHYAW,
-        nullptr /* weld_to_frame */, tree_rpy_.get());
+        kAtlasUrdf, DrakeJoint::ROLLPITCHYAW, nullptr /* weld_to_frame */,
+        tree_rpy_.get());
     trees_.push_back(tree_rpy_.get());
 
     tree_quaternion_.reset(new RigidBodyTree());
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        kAtlasUrdf, DrakeJoint::QUATERNION,
-        nullptr /* weld_to_frame */, tree_quaternion_.get());
+        kAtlasUrdf, DrakeJoint::QUATERNION, nullptr /* weld_to_frame */,
+        tree_quaternion_.get());
     trees_.push_back(tree_quaternion_.get());
   }
 
@@ -48,10 +47,8 @@ class RigidBodyTreeInverseDynamicsTest: public ::testing::Test {
   // generates build issues on Windows platforms. See git-hub issue #1854.
   std::unique_ptr<RigidBodyTree> tree_rpy_;
   std::unique_ptr<RigidBodyTree> tree_quaternion_;
-  std::vector<RigidBodyTree *> trees_;
+  std::vector<RigidBodyTree*> trees_;
 };
-
-
 
 // Check that mass matrix derivative minus two times Coriolis matrix is skew
 // symmetric (see e.g. Murray, Li, Sastry. "A Mathematical Introduction to
@@ -70,18 +67,18 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   // First convert qd to MatrixXd to make another explicit instantiation of
   // mass_matrix unnecessary.
   auto qd_dynamic_num_rows = MatrixXd(qd);
-  auto q_time_autodiff = initializeAutoDiffGivenGradientMatrix(
-      q, qd_dynamic_num_rows);
+  auto q_time_autodiff =
+      initializeAutoDiffGivenGradientMatrix(q, qd_dynamic_num_rows);
   typedef typename decltype(q_time_autodiff)::Scalar TimeADScalar;
   auto qd_time_autodiff = qd.cast<TimeADScalar>().eval();
   KinematicsCache<TimeADScalar> kinematics_cache_time_autodiff(
       tree_rpy_->bodies);
   kinematics_cache_time_autodiff.initialize(q_time_autodiff, qd_time_autodiff);
   tree_rpy_->doKinematics(kinematics_cache_time_autodiff);
-  auto mass_matrix_time_autodiff = tree_rpy_->massMatrix(
-      kinematics_cache_time_autodiff);
-  auto mass_matrix_dot_vectorized = autoDiffToGradientMatrix(
-      mass_matrix_time_autodiff);
+  auto mass_matrix_time_autodiff =
+      tree_rpy_->massMatrix(kinematics_cache_time_autodiff);
+  auto mass_matrix_dot_vectorized =
+      autoDiffToGradientMatrix(mass_matrix_time_autodiff);
   auto mass_matrix_dot = Eigen::Map<Eigen::MatrixXd>(
       mass_matrix_dot_vectorized.data(), num_velocities, num_velocities);
 
@@ -93,9 +90,9 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   KinematicsCache<QdADScalar> kinematics_cache_qd_autodiff(tree_rpy_->bodies);
   kinematics_cache_qd_autodiff.initialize(q_qd_autodiff, qd_qd_autodiff);
   tree_rpy_->doKinematics(kinematics_cache_qd_autodiff, true);
-  eigen_aligned_unordered_map<const RigidBody *, TwistVector<QdADScalar>> f_ext;
-  auto tau_autodiff = tree_rpy_->inverseDynamics(
-      kinematics_cache_qd_autodiff, f_ext, qdd_qd_autodiff, true);
+  eigen_aligned_unordered_map<const RigidBody*, TwistVector<QdADScalar>> f_ext;
+  auto tau_autodiff = tree_rpy_->inverseDynamics(kinematics_cache_qd_autodiff,
+                                                 f_ext, qdd_qd_autodiff, true);
   tau_autodiff -= tree_rpy_->frictionTorques(qd_qd_autodiff);
   auto coriolis_matrix = (autoDiffToGradientMatrix(tau_autodiff) / 2.).eval();
 
@@ -106,13 +103,12 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
                               1e-10, MatrixCompareType::absolute));
 }
 
-
 // Check that the gradient of the output of inverseDynamics with respect to
 // the joint acceleration vector is the mass matrix.
 TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
   std::default_random_engine generator;
 
-  for (RigidBodyTree *tree : trees_) {
+  for (RigidBodyTree* tree : trees_) {
     auto q = tree->getRandomConfiguration(generator);
     auto v = VectorXd::Random(tree->number_of_velocities()).eval();
     auto vd = VectorXd::Random(tree->number_of_velocities()).eval();
@@ -128,16 +124,15 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     KinematicsCache<ADScalar> kinematics_cache_autodiff(tree->bodies);
     kinematics_cache_autodiff.initialize(q_autodiff, v_autodiff);
     tree->doKinematics(kinematics_cache_autodiff, true);
-    eigen_aligned_unordered_map<const RigidBody *, TwistVector<ADScalar>> f_ext;
-    auto tau_autodiff = tree->inverseDynamics(kinematics_cache_autodiff, f_ext,
-                                              vd_autodiff);
-    auto mass_matrix_from_inverse_dynamics = autoDiffToGradientMatrix(
-        tau_autodiff);
+    eigen_aligned_unordered_map<const RigidBody*, TwistVector<ADScalar>> f_ext;
+    auto tau_autodiff =
+        tree->inverseDynamics(kinematics_cache_autodiff, f_ext, vd_autodiff);
+    auto mass_matrix_from_inverse_dynamics =
+        autoDiffToGradientMatrix(tau_autodiff);
 
     autoDiffToGradientMatrix(tree->frictionTorques(v_autodiff));
 
-    EXPECT_TRUE(CompareMatrices(mass_matrix,
-                                mass_matrix_from_inverse_dynamics,
+    EXPECT_TRUE(CompareMatrices(mass_matrix, mass_matrix_from_inverse_dynamics,
                                 1e-10, MatrixCompareType::absolute));
   }
 }
@@ -148,14 +143,14 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   std::default_random_engine generator;
 
   // Compute vector of generalized gravitational forces.
-  auto &tree = tree_rpy_;
+  auto& tree = tree_rpy_;
   auto q = tree->getRandomConfiguration(generator);
   KinematicsCache<double> kinematics_cache(tree->bodies);
   kinematics_cache.initialize(q);
   tree->doKinematics(kinematics_cache);
-  eigen_aligned_unordered_map<const RigidBody *, TwistVector<double>> f_ext;
-  auto gravitational_forces = tree->dynamicsBiasTerm(
-      kinematics_cache, f_ext, false);
+  eigen_aligned_unordered_map<const RigidBody*, TwistVector<double>> f_ext;
+  auto gravitational_forces =
+      tree->dynamicsBiasTerm(kinematics_cache, f_ext, false);
 
   // Compute derivatives of potential energy.
   auto q_autodiff = initializeAutoDiff(q);
@@ -165,14 +160,13 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   tree->doKinematics(kinematics_cache_autodiff);
   auto gravitational_acceleration = tree->a_grav.tail<3>().eval();
   auto gravitational_force =
-      (gravitational_acceleration.cast<ADScalar>()
-          * tree->getMass()).eval();
+      (gravitational_acceleration.cast<ADScalar>() * tree->getMass()).eval();
   auto center_of_mass = tree->centerOfMass(kinematics_cache_autodiff);
   ADScalar potential_energy = -center_of_mass.dot(gravitational_force);
 
   EXPECT_TRUE(CompareMatrices(gravitational_forces,
-                              potential_energy.derivatives(),
-                              1e-10, MatrixCompareType::absolute));
+                              potential_energy.derivatives(), 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 // Check that momentum rate of change is equal to the sum of all external
@@ -187,53 +181,50 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto q = tree.getRandomConfiguration(generator);
   auto v = VectorXd::Random(tree.number_of_velocities()).eval();
   auto vd = VectorXd::Random(tree.number_of_velocities()).eval();
-  eigen_aligned_unordered_map<const RigidBody *, TwistVector<double>> f_ext;
+  eigen_aligned_unordered_map<const RigidBody*, TwistVector<double>> f_ext;
 
   KinematicsCache<double> kinematics_cache(tree.bodies);
   kinematics_cache.initialize(q, v);
   tree.doKinematics(kinematics_cache, true);
 
   // Compute gravitational wrench.
-  auto gravitational_wrench_centroidal = (tree.a_grav *
-      tree.getMass()).eval();
+  auto gravitational_wrench_centroidal = (tree.a_grav * tree.getMass()).eval();
   Eigen::Isometry3d centroidal_to_world;
   centroidal_to_world.setIdentity();
-  centroidal_to_world.translation() =
-      tree.centerOfMass(kinematics_cache);
+  centroidal_to_world.translation() = tree.centerOfMass(kinematics_cache);
   auto gravitational_wrench_world = transformSpatialForce(
       centroidal_to_world, gravitational_wrench_centroidal);
 
   // Set external wrenches, keep track of total wrench.
   Vector6<double> total_wrench_world = gravitational_wrench_world;
-  for (const auto &body_ptr : tree.bodies) {
+  for (const auto& body_ptr : tree.bodies) {
     if (body_ptr->hasParent()) {
       auto wrench_body = Vector6<double>::Random().eval();
       f_ext[body_ptr.get()] = wrench_body;
-      auto body_to_world = tree.relativeTransform(
-          kinematics_cache, world_index, body_ptr->get_body_index());
-      auto wrench_world = transformSpatialForce(
-          body_to_world, wrench_body);
+      auto body_to_world = tree.relativeTransform(kinematics_cache, world_index,
+                                                  body_ptr->get_body_index());
+      auto wrench_world = transformSpatialForce(body_to_world, wrench_body);
       total_wrench_world += wrench_world;
     }
   }
 
   // Compute wrench across floating joint, add to total wrench.
   auto tau = tree.inverseDynamics(kinematics_cache, f_ext, vd);
-  auto &floating_body_ptr = tree.bodies[1];
-  int floating_joint_start_index = floating_body_ptr->
-      get_velocity_start_index();
-  Vector6<double> floating_joint_wrench_body = tau.segment<kTwistSize>(
-      floating_joint_start_index);
+  auto& floating_body_ptr = tree.bodies[1];
+  int floating_joint_start_index =
+      floating_body_ptr->get_velocity_start_index();
+  Vector6<double> floating_joint_wrench_body =
+      tau.segment<kTwistSize>(floating_joint_start_index);
   auto body_to_world = tree.relativeTransform(
       kinematics_cache, world_index, floating_body_ptr->get_body_index());
-  auto floating_joint_wrench_world = transformSpatialForce(
-      body_to_world, floating_joint_wrench_body);
+  auto floating_joint_wrench_world =
+      transformSpatialForce(body_to_world, floating_joint_wrench_body);
   total_wrench_world += floating_joint_wrench_world;
 
   // Compute rate of change of momentum.
   auto identity = MatrixXd::Identity(q.size(), q.size());
-  auto v_to_qd = kinematics_cache.transformPositionDotMappingToVelocityMapping(
-      identity);
+  auto v_to_qd =
+      kinematics_cache.transformPositionDotMappingToVelocityMapping(identity);
   auto qd = v_to_qd * v;
   // Convert to MatrixXd to make another explicit instantiation unnecessary.
   auto q_autodiff = initializeAutoDiffGivenGradientMatrix(q, MatrixXd(qd));
@@ -242,15 +233,14 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   KinematicsCache<ADScalar> kinematics_cache_autodiff(tree.bodies);
   kinematics_cache_autodiff.initialize(q_autodiff, v_autodiff);
   tree.doKinematics(kinematics_cache_autodiff);
-  auto momentum_matrix_autodiff = tree.worldMomentumMatrix(
-      kinematics_cache_autodiff);
+  auto momentum_matrix_autodiff =
+      tree.worldMomentumMatrix(kinematics_cache_autodiff);
   auto momentum_world_autodiff = momentum_matrix_autodiff * v_autodiff;
   auto momentum_rate = autoDiffToGradientMatrix(momentum_world_autodiff);
 
   // Newton-Euler: total wrench should equal momentum rate of change.
-  EXPECT_TRUE(CompareMatrices(momentum_rate,
-                              total_wrench_world,
-                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(momentum_rate, total_wrench_world, 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace
