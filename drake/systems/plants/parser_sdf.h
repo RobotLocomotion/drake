@@ -7,8 +7,6 @@
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/xmlUtil.h"
-#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 namespace drake {
 namespace parsers {
