@@ -1432,7 +1432,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
       // Add component due to joint acceleration.
       if (include_acceleration_terms) {
-        const DrakeJoint &joint = body.getJoint();
+        const DrakeJoint& joint = body.getJoint();
         auto vd_joint = vd.middleRows(body.get_velocity_start_index(),
                                       joint.getNumVelocities());
         body_acceleration.noalias() +=
@@ -2402,15 +2402,15 @@ RigidBodyTree::relativeTwist<double>(KinematicsCache<double> const&, int, int,
 
 // Explicit template instantiations for worldMomentumMatrix.
 template DRAKERBM_EXPORT TwistMatrix<AutoDiffUpTo73d>
-RigidBodyTree::worldMomentumMatrix<
-    AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d> &,
-                     set<int, less<int>, allocator<int>> const &, bool) const;
+RigidBodyTree::worldMomentumMatrix<AutoDiffUpTo73d>(
+    KinematicsCache<AutoDiffUpTo73d>&,
+    set<int, less<int>, allocator<int>> const&, bool) const;
 template DRAKERBM_EXPORT TwistMatrix<AutoDiffXd>
-RigidBodyTree::worldMomentumMatrix<
-    AutoDiffXd>(KinematicsCache<AutoDiffXd> &,
-                set<int, less<int>, allocator<int>> const &, bool) const;
+RigidBodyTree::worldMomentumMatrix<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd>&, set<int, less<int>, allocator<int>> const&,
+    bool) const;
 template DRAKERBM_EXPORT TwistMatrix<double> RigidBodyTree::worldMomentumMatrix<
-    double>(KinematicsCache<double> &,
+    double>(KinematicsCache<double>&,
             set<int, less<int>, allocator<int>> const&, bool) const;
 
 // Explicit template instantiations for worldMomentumMatrixDotTimesV.
@@ -2427,39 +2427,36 @@ RigidBodyTree::transformSpatialAcceleration<double>(
 // Explicit template instantiations for frictionTorques
 template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree::frictionTorques(
-    Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const &v) const;
+    Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const& v) const;
 template DRAKERBM_EXPORT VectorX<AutoDiffXd> RigidBodyTree::frictionTorques(
-    Eigen::MatrixBase<VectorX<AutoDiffXd>> const &v) const;
+    Eigen::MatrixBase<VectorX<AutoDiffXd>> const& v) const;
 template DRAKERBM_EXPORT VectorX<double> RigidBodyTree::frictionTorques(
-    Eigen::MatrixBase<VectorX<double>> const &v) const;
+    Eigen::MatrixBase<VectorX<double>> const& v) const;
 
 // Explicit template instantiations for inverseDynamics.
 template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
-    RigidBodyTree::inverseDynamics<AutoDiffUpTo73d>(
+RigidBodyTree::inverseDynamics<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
-    unordered_map<RigidBody const*, TwistVector<AutoDiffUpTo73d>,
-    hash<RigidBody const*>,
-    equal_to<RigidBody const*>,
-    Eigen::aligned_allocator<pair<RigidBody const* const,
-    TwistVector<AutoDiffUpTo73d>>>> const&,
+    unordered_map<
+        RigidBody const*, TwistVector<AutoDiffUpTo73d>, hash<RigidBody const*>,
+        equal_to<RigidBody const*>,
+        Eigen::aligned_allocator<
+            pair<RigidBody const* const, TwistVector<AutoDiffUpTo73d>>>> const&,
     VectorX<AutoDiffUpTo73d> const&, bool) const;
 template DRAKERBM_EXPORT VectorX<AutoDiffXd>
-    RigidBodyTree::inverseDynamics<AutoDiffXd>(
+RigidBodyTree::inverseDynamics<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
     unordered_map<RigidBody const*, TwistVector<AutoDiffXd>,
-    hash<RigidBody const*>,
-    equal_to<RigidBody const*>,
-    Eigen::aligned_allocator<pair<RigidBody const* const,
-    TwistVector<AutoDiffXd>>>> const&,
+                  hash<RigidBody const*>, equal_to<RigidBody const*>,
+                  Eigen::aligned_allocator<pair<
+                      RigidBody const* const, TwistVector<AutoDiffXd>>>> const&,
     VectorX<AutoDiffXd> const&, bool) const;
-template DRAKERBM_EXPORT VectorX<double>
-    RigidBodyTree::inverseDynamics<double>(
+template DRAKERBM_EXPORT VectorX<double> RigidBodyTree::inverseDynamics<double>(
     KinematicsCache<double>&,
-    unordered_map<RigidBody const*, TwistVector<double>,
-    hash<RigidBody const*>,
-    equal_to<RigidBody const*>,
-    Eigen::aligned_allocator<pair<RigidBody const* const,
-    TwistVector<double>>>> const&,
+    unordered_map<RigidBody const*, TwistVector<double>, hash<RigidBody const*>,
+                  equal_to<RigidBody const*>,
+                  Eigen::aligned_allocator<pair<RigidBody const* const,
+                                                TwistVector<double>>>> const&,
     VectorX<double> const&, bool) const;
 
 // Explicit template instantiations for jointLimitConstraints.
