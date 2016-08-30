@@ -34,6 +34,17 @@ class MessagePublisher {
     message_.timestamp = kTimestamp;
   }
 
+  ~MessagePublisher() {
+    EXPECT_TRUE(stop_);
+    // Test cases are required to call Stop() before completing, but sometimes
+    // fail to do so (e.g., if the test case raised an unexpected exception).
+    // If that happens, we need to join the thread here, or else its destructor
+    // will fail and confuse the gtest reporting of the earlier failures.
+    if (!stop_) {
+      Stop();
+    }
+  }
+
   void Start() {
     thread_.reset(new std::thread(&MessagePublisher::DoPublish, this));
   }
