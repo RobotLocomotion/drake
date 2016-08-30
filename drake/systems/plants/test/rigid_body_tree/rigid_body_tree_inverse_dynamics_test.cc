@@ -56,7 +56,7 @@ class RigidBodyTreeInverseDynamicsTest: public ::testing::Test {
 // Check that mass matrix derivative minus two times Coriolis matrix is skew
 // symmetric (see e.g. Murray, Li, Sastry. "A Mathematical Introduction to
 // Robotic Manipulation" (1994). Lemma 4.2).
-// Note: property only holds true if qd = v
+// Note: property only holds true if qd = v.
 TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   int num_velocities = tree_rpy_->number_of_velocities();
 
@@ -65,10 +65,10 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   auto qd = VectorXd::Constant(num_velocities, 1.).eval();
   auto qdd = VectorXd::Zero(tree_rpy_->number_of_velocities()).eval();
 
-  // compute mass matrix time derivative
+  // Compute mass matrix time derivative
 
-  // convert qd to MatrixXd to make another explicit instantiation of
-  // mass_matrix unnecessary
+  // First convert qd to MatrixXd to make another explicit instantiation of
+  // mass_matrix unnecessary.
   auto qd_dynamic_num_rows = MatrixXd(qd);
   auto q_time_autodiff = initializeAutoDiffGivenGradientMatrix(
       q, qd_dynamic_num_rows);
@@ -85,7 +85,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   auto mass_matrix_dot = Eigen::Map<Eigen::MatrixXd>(
       mass_matrix_dot_vectorized.data(), num_velocities, num_velocities);
 
-  // compute Coriolis matrix
+  // Compute Coriolis matrix (see Murray et al., eq. (4.23)).
   auto qd_qd_autodiff = initializeAutoDiff(qd);
   typedef typename decltype(qd_qd_autodiff)::Scalar QdADScalar;
   auto q_qd_autodiff = q.cast<QdADScalar>().eval();
@@ -99,7 +99,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   tau_autodiff -= tree_rpy_->frictionTorques(qd_qd_autodiff);
   auto coriolis_matrix = (autoDiffToGradientMatrix(tau_autodiff) / 2.).eval();
 
-  // assert that property holds
+  // Assert that property holds.
   auto skew = (mass_matrix_dot - 2 * coriolis_matrix).eval();
   EXPECT_TRUE(CompareMatrices((skew + skew.transpose()).eval(),
                               MatrixXd::Zero(num_velocities, num_velocities),
@@ -147,7 +147,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
 TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   std::default_random_engine generator;
 
-  // compute vector of generalized gravitational forces
+  // Compute vector of generalized gravitational forces.
   auto &tree = tree_rpy_;
   auto q = tree->getRandomConfiguration(generator);
   KinematicsCache<double> kinematics_cache(tree->bodies);
@@ -157,7 +157,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   auto gravitational_forces = tree->dynamicsBiasTerm(
       kinematics_cache, f_ext, false);
 
-  // compute derivatives of potential energy
+  // Compute derivatives of potential energy.
   auto q_autodiff = initializeAutoDiff(q);
   typedef typename decltype(q_autodiff)::Scalar ADScalar;
   KinematicsCache<ADScalar> kinematics_cache_autodiff(tree->bodies);
@@ -176,13 +176,13 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
 }
 
 // Check that momentum rate of change is equal to the sum of all external
-// wrenches exerted upon the mechanism
+// wrenches exerted upon the mechanism.
 TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   std::default_random_engine generator;
   int world_index = 0;
 
-  // use a quaternion-parameterized floating joint, so that torque vector for
-  // this joint is the same as the floating joint wrench
+  // Use a quaternion-parameterized floating joint, so that torque vector for
+  // this joint is the same as the floating joint wrench.
   RigidBodyTree& tree = *tree_quaternion_;
   auto q = tree.getRandomConfiguration(generator);
   auto v = VectorXd::Random(tree.number_of_velocities()).eval();
@@ -193,7 +193,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   kinematics_cache.initialize(q, v);
   tree.doKinematics(kinematics_cache, true);
 
-  // compute gravitational wrench
+  // Compute gravitational wrench.
   auto gravitational_wrench_centroidal = (tree.a_grav *
       tree.getMass()).eval();
   Eigen::Isometry3d centroidal_to_world;
@@ -203,7 +203,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto gravitational_wrench_world = transformSpatialForce(
       centroidal_to_world, gravitational_wrench_centroidal);
 
-  // set external wrenches, keep track of total wrench
+  // Set external wrenches, keep track of total wrench.
   Vector6<double> total_wrench_world = gravitational_wrench_world;
   for (const auto &body_ptr : tree.bodies) {
     if (body_ptr->hasParent()) {
@@ -217,7 +217,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
     }
   }
 
-  // compute wrench across floating joint, add to total wrench
+  // Compute wrench across floating joint, add to total wrench.
   auto tau = tree.inverseDynamics(kinematics_cache, f_ext, vd);
   auto &floating_body_ptr = tree.bodies[1];
   int floating_joint_start_index = floating_body_ptr->
@@ -230,12 +230,12 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
       body_to_world, floating_joint_wrench_body);
   total_wrench_world += floating_joint_wrench_world;
 
-  // compute rate of change of momentum
+  // Compute rate of change of momentum.
   auto identity = MatrixXd::Identity(q.size(), q.size());
   auto v_to_qd = kinematics_cache.transformPositionDotMappingToVelocityMapping(
       identity);
   auto qd = v_to_qd * v;
-  // convert to MatrixXd to make another explicit instantiation unnecessary
+  // Convert to MatrixXd to make another explicit instantiation unnecessary.
   auto q_autodiff = initializeAutoDiffGivenGradientMatrix(q, MatrixXd(qd));
   auto v_autodiff = initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vd));
   typedef typename decltype(q_autodiff)::Scalar ADScalar;
@@ -247,7 +247,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto momentum_world_autodiff = momentum_matrix_autodiff * v_autodiff;
   auto momentum_rate = autoDiffToGradientMatrix(momentum_world_autodiff);
 
-  // Newton-Euler: total wrench should equal momentum rate of change
+  // Newton-Euler: total wrench should equal momentum rate of change.
   EXPECT_TRUE(CompareMatrices(momentum_rate,
                               total_wrench_world,
                               1e-10, MatrixCompareType::absolute));
