@@ -27,6 +27,11 @@ Gain<T>::Gain(const T& k, int length) : gain_(k) {
 }
 
 template <typename T>
+const T& Gain<T>::get_gain() const {
+  return gain_;
+}
+
+template <typename T>
 void Gain<T>::EvalOutput(const ContextBase<T>& context,
                          SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
