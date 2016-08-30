@@ -162,10 +162,10 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   auto gravitational_force =
       (gravitational_acceleration.cast<ADScalar>() * tree->getMass()).eval();
   auto center_of_mass = tree->centerOfMass(kinematics_cache_autodiff);
-  ADScalar potential_energy = -center_of_mass.dot(gravitational_force);
+  ADScalar gravitational_potential_energy = -center_of_mass.dot(gravitational_force);
 
   EXPECT_TRUE(CompareMatrices(gravitational_forces,
-                              potential_energy.derivatives(), 1e-10,
+                              gravitational_potential_energy.derivatives(), 1e-10,
                               MatrixCompareType::absolute));
 }
 
