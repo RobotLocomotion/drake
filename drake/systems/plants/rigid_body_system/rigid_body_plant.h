@@ -19,7 +19,8 @@ namespace systems {
 template<typename T>
 class DRAKE_RBS_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
-  /// Instantiates a %RigidBodyPlant from a RigidBodyTree model of the world.
+  /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
+  /// the world in @p mbd_world.
   /// A %RigidBodyPlant has a vector valued input port for external actuation
   /// with size equal to the number of actuators in the RigidBodyTree.
   /// A %RigidBodyPlant outputs the state of the system in a vector valued port.
