@@ -44,18 +44,34 @@ PidController<T>::PidController(
 }
 
 template <typename T>
+T PidController<T>::get_Kp() const {
+  return proportional_gain_->get_gain();
+}
+
+template <typename T>
+T PidController<T>::get_Ki() const {
+  return integral_gain_->get_gain();
+}
+
+template <typename T>
+T PidController<T>::get_Kd() const {
+  return derivative_gain_->get_gain();
+}
+
+template <typename T>
 bool PidController<T>::has_any_direct_feedthrough() const {
+  if (get_Kp() == 0 && get_Kd() == 0) return false;
   return true;
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& PidController<T>::get_error_signal_port() const {
+const SystemPortDescriptor<T>& PidController<T>::get_error_port() const {
   return Diagram<T>::get_input_port(0);
 }
 
 template <typename T>
 const SystemPortDescriptor<T>&
-PidController<T>::get_error_signal_rate_port() const {
+PidController<T>::get_error_derivative_port() const {
   return Diagram<T>::get_input_port(1);
 }
 
@@ -69,7 +85,7 @@ template <typename T>
 void PidController<T>::set_integral_value(
     ContextBase<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   ContextBase<T>* integrator_context =
-      Diagram<T>::GetMutableSubSystemContext(context, integrator_.get());
+      Diagram<T>::GetMutableSubsystemContext(context, integrator_.get());
   integrator_->set_integral_value(integrator_context, value);
 }
 

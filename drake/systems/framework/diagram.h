@@ -251,14 +251,14 @@ class Diagram : public System<T> {
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
 
-  /// Returns the sub-context that corresponds to the system @p sub_system.
+  /// Returns the subcontext that corresponds to the system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituyent sub-system's the apropriate sub-context.
-  ContextBase<T>* GetMutableSubSystemContext(
-      ContextBase<T>* context, const System<T>* sub_system) const {
+  /// pass their constituent subsystems the appropriate subcontext.
+  ContextBase<T>* GetMutableSubsystemContext(
+      ContextBase<T> *context, const System<T> *subsystem) const {
     auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
     return diagram_context->GetMutableSubsystemContext(
-        Diagram<T>::GetSystemIndex(sub_system));
+        Diagram<T>::GetSystemIndex(subsystem));
   }
 
  private:

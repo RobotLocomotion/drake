@@ -30,6 +30,10 @@ GTEST_TEST(PidController, EvalMethods) {
   const int port_length = 3;
   PidController<double> controller(kp, ki, kd, port_length);
 
+  ASSERT_EQ(kp, controller.get_Kp());
+  ASSERT_EQ(ki, controller.get_Ki());
+  ASSERT_EQ(kd, controller.get_Kd());
+
   auto context = controller.CreateDefaultContext();
   auto output = controller.AllocateOutput(*context);
   auto derivatives = controller.AllocateTimeDerivatives();
@@ -38,7 +42,7 @@ GTEST_TEST(PidController, EvalMethods) {
 
   // Creates a "fake" free-standing input port.
   Vector3<double> error_signal(1.0, 2.0, 3.0);
-  Vector3<double> error_signal_rate(1.3, 0.9, 3.14);
+  Vector3<double> error_rate_signal(1.3, 0.9, 3.14);
 
   // Error signal input port.
   auto vec0 = std::make_unique<BasicVector<double>>(port_length);
@@ -47,7 +51,7 @@ GTEST_TEST(PidController, EvalMethods) {
 
   // Error signal rate input port.
   auto vec1 = std::make_unique<BasicVector<double>>(port_length);
-  vec1->get_mutable_value() << error_signal_rate;
+  vec1->get_mutable_value() << error_rate_signal;
   context->SetInputPort(1, MakeInput(std::move(vec1)));
 
   // Initializes the controllers' context to the default value in which the
@@ -58,7 +62,7 @@ GTEST_TEST(PidController, EvalMethods) {
   ASSERT_EQ(1, output->get_num_ports());
   const VectorBase<double>* output_vector = output->get_vector_data(0);
   EXPECT_EQ(3, output_vector->get_value().rows());
-  EXPECT_EQ(kp * error_signal + kd * error_signal_rate,
+  EXPECT_EQ(kp * error_signal + kd * error_rate_signal,
             output_vector->get_value());
 
   // Initializes the integral to a non-zero value. A more interesting example.
@@ -66,7 +70,7 @@ GTEST_TEST(PidController, EvalMethods) {
   integral_value << 3.0, 2.0, 1.0;
   controller.set_integral_value(context.get(), integral_value);
   controller.EvalOutput(*context, output.get());
-  EXPECT_EQ(kp * error_signal + ki * integral_value + kd * error_signal_rate,
+  EXPECT_EQ(kp * error_signal + ki * integral_value + kd * error_rate_signal,
             output_vector->get_value());
 
   // Evaluates derivatives and asserts correctness.
