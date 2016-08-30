@@ -168,9 +168,13 @@ void CheckLimitViolations(
 // Modify to fit future demo scenario requirements.
 void GenerateIKDemoJointTrajectory(
     const std::shared_ptr<RigidBodyTree> iiwa_tree,
-    MatrixXd& joint_trajectories, std::vector<double>& time_stamps) {
+    MatrixXd* joint_trajectories,
+    std::vector<double>* time_stamps) {
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).
+
+  MatrixXd joint_trajectories_local;
+  std::vector<double> time_stamps_local;
 
   VectorXd zero_conf = iiwa_tree->getZeroConfiguration();
   VectorXd joint_lb = zero_conf - VectorXd::Constant(7, 0.01);
@@ -215,11 +219,11 @@ void GenerateIKDemoJointTrajectory(
   PostureConstraint pc3(iiwa_tree.get(), Vector2d(6, 8));
   pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
-  time_stamps.push_back(0.0);
-  time_stamps.push_back(2.0);
-  time_stamps.push_back(5.0);
-  time_stamps.push_back(7.0);
-  time_stamps.push_back(9.0);
+  time_stamps_local.push_back(0.0);
+  time_stamps_local.push_back(2.0);
+  time_stamps_local.push_back(5.0);
+  time_stamps_local.push_back(7.0);
+  time_stamps_local.push_back(9.0);
 
   std::vector<RigidBodyConstraint*> constraint_array;
 
@@ -237,14 +241,14 @@ void GenerateIKDemoJointTrajectory(
   MatrixXd q0(iiwa_tree->number_of_positions(), num_constraints);
   q0 = zero_conf.replicate(1, num_constraints);
 
-  joint_trajectories =
+  joint_trajectories_local =
       MatrixXd::Zero(iiwa_tree->number_of_positions(), num_constraints);
   std::vector<std::string> infeasible_constraint;
 
-  inverseKinPointwise(iiwa_tree.get(), num_constraints, time_stamps.data(), q0,
-                      q0, constraint_array.size(), constraint_array.data(),
-                      ikoptions, &joint_trajectories, info.data(),
-                      &infeasible_constraint);
+  inverseKinPointwise(iiwa_tree.get(), num_constraints,
+    time_stamps_local.data(), q0, q0, constraint_array.size(),
+    constraint_array.data(), ikoptions, &joint_trajectories_local,
+    info.data(), &infeasible_constraint);
 
   // Check feasibility of the result at each constraint point.
   bool info_good = true;
@@ -257,6 +261,9 @@ void GenerateIKDemoJointTrajectory(
   if (!info_good) {
     throw std::runtime_error("Inverse Kinematics solution not found.");
   }
+
+  *joint_trajectories = joint_trajectories_local;
+  *time_stamps = time_stamps_local;
 }
 
 }  // namespace kuka_iiwa_arm

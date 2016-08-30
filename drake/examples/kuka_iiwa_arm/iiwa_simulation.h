@@ -58,7 +58,7 @@ Eigen::VectorXd GenerateArbitraryIiwaInitialState();
  * @param initial_step_size Sets the initial step size for the simulate method.
  * Decrease if simulation is unstable.
  * @param real_time_factor Sets the real time factor for the simulation.
- * Increase if simulation result renders faster than reality.
+ * Increase if simstd::vector<double>ulation result renders faster than reality.
  */
 DRAKEKUKAIIWAARM_EXPORT
 drake::SimulationOptions SetupSimulation(double initial_step_size = 0.002,
@@ -82,7 +82,8 @@ void CheckLimitViolations(
 DRAKEKUKAIIWAARM_EXPORT
 void GenerateIKDemoJointTrajectory(
     const std::shared_ptr<RigidBodyTree> iiwa_tree,
-    Eigen::MatrixXd& joint_trajectories, std::vector<double>& time_stamps);
+    Eigen::MatrixXd* joint_trajectories,
+    std::vector<double>* time_stamps);
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

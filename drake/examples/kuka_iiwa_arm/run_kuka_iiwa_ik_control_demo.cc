@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
@@ -26,7 +24,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-int DoMain(int argc, const char **argv) {
+int DoMain(int argc, const char *argv[]) {
   const std::string kUrdfFileName =
       "/examples/kuka_iiwa_arm/urdf/iiwa14_collision_free.urdf";
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem(
@@ -37,20 +35,18 @@ int DoMain(int argc, const char **argv) {
   MatrixXd joint_trajectories;
   std::vector<double> time_steps;
 
-  GenerateIKDemoJointTrajectory(iiwa_tree, joint_trajectories, time_steps);
-  PolynomialTrajectoryFitGenerator trajectory_runner(joint_trajectories,
-                                                     time_steps);
-  PiecewisePolynomial<double> pp =
-      trajectory_runner.GenerateTrajectoryPolynomial();
+  GenerateIKDemoJointTrajectory(iiwa_tree, &joint_trajectories, &time_steps);
+  PiecewisePolynomial<double> pp = PolynomialTrajectoryFitGenerator(
+      joint_trajectories, time_steps);
 
   auto open_loop_planner =
       std::make_shared<OpenLoopTrajectoryController<RigidBodySystem>>(pp);
   int num_dof = iiwa_tree->number_of_positions();
 
-  // The PD Gains are setup to be square diagonal matrices. These are therefore
-  // constructed from vectors. Since most of the load is on Joints 1 and 3
-  // (which support the subsequent links against gravity), the gains of these
-  // two joints are set higher.
+  // The PD gains are setup to be square diagonal matrices. These matrices are
+  // therefore constructed from vectors. Since most of the load is on joints 1
+  // and 3 (which support the subsequent links against gravity), the gains of
+  // these two joints are set higher.
   const double Kp_common = 7.5;    // Units : Nm/rad
   const double Kd_common = 0.075;  // Units : Nm/rad/sec
   VectorXd Kpdiag = VectorXd::Constant(num_dof, Kp_common);

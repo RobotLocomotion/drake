@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <!-- =================================================================================== -->
-<!-- |    This document was manually modified from from iiwa14.urdf                    | -->
+<!-- |          This document was manually modified from from iiwa14.urdf to            | -->
+<!-- |                          remove the collision tags                               | -->
 <!-- =================================================================================== -->
 <robot name="iiwa14" xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- Import Rviz colors -->
