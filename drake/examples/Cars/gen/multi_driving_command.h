@@ -24,13 +24,12 @@ class MultiDrivingCommand : public systems::BasicStateAndOutputVector<T> {
   typedef DrivingCommandIndices K;
 
   // Defines the number of vehicles in the system.
-  // TODO(liang.fok) Generalize this to support an arbitrary number of vehicles.
-  const int kNumVehicles = 5;
+  static constexpr int kNumVehicles = 5;
 
   /// Default constructor.  Sets all rows to zero.
-  // TODO(liang.fok): Replace 15 with K::kNumCoordinates * kNumVehicles
-  MultiDrivingCommand() : systems::BasicStateAndOutputVector<T>(15) {
-    this->SetFromVector(VectorX<T>::Zero(15));
+  MultiDrivingCommand() : systems::BasicStateAndOutputVector<T>(
+      K::kNumCoordinates * kNumVehicles) {
+    this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates * kNumVehicles));
   }
 
   /// @name Getters and Setters
