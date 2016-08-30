@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 #include "drake/drakeLCMSystem2_export.h"
@@ -29,6 +30,17 @@ class DRAKELCMSYSTEM2_EXPORT LcmAndVectorBaseTranslator {
    * object.
    */
   int get_vector_size() const;
+
+  /**
+   * Allocates the vector storage for an output port of our LCM message type,
+   * in case special storage is needed.  A result of nullptr indicates that no
+   * special vector is needed; the calling code can and should use a default
+   * vector implementation such as BasicVector.
+   *
+   * The default implementation in this class returns nullptr.  Subclasses that
+   * require custom VectorBase subtypes should override it.
+   */
+  virtual std::unique_ptr<VectorBase<double>> AllocateOutputVector() const;
 
   /**
    * Translates LCM message bytes into a `drake::systems::VectorBase` object.

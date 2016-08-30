@@ -13,6 +13,11 @@ int LcmAndVectorBaseTranslator::get_vector_size() const {
   return size_;
 }
 
+std::unique_ptr<VectorBase<double>>
+LcmAndVectorBaseTranslator::AllocateOutputVector() const {
+  return nullptr;
+}
+
 }  // namespace lcm
 }  // namespace systems
 }  // namespace drake
