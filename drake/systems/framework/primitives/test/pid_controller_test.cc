@@ -14,6 +14,8 @@ namespace drake {
 namespace systems {
 namespace {
 
+typedef Eigen::Matrix<double, 3, 1, Eigen::DontAlign> Vector3d;
+
 // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
 // the input of the Gain system.
 template <class T>
@@ -22,67 +24,86 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
   return make_unique<FreestandingInputPort>(std::move(data));
 }
 
-// Tests the EvalOutput() method for the PidController.
-GTEST_TEST(PidController, EvalMethods) {
-  const double kp = 2.0;
-  const double ki = 3.0;
-  const double kd = 1.0;
-  const int port_length = 3;
-  PidController<double> controller(kp, ki, kd, port_length);
+class PidControllerTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    context_ = controller_.CreateDefaultContext();
+    output_ = controller_.AllocateOutput(*context_);
+    derivatives_ = controller_.AllocateTimeDerivatives();
 
-  ASSERT_EQ(kp, controller.get_Kp());
-  ASSERT_EQ(ki, controller.get_Ki());
-  ASSERT_EQ(kd, controller.get_Kd());
+    // Error signal input port.
+    auto vec0 = std::make_unique<BasicVector<double>>(port_length_);
+    vec0->get_mutable_value() << error_signal_;
+    context_->SetInputPort(0, MakeInput(std::move(vec0)));
 
-  auto context = controller.CreateDefaultContext();
-  auto output = controller.AllocateOutput(*context);
-  auto derivatives = controller.AllocateTimeDerivatives();
-  ASSERT_NE(nullptr, context);
-  ASSERT_NE(nullptr, output);
+    // Error signal rate input port.
+    auto vec1 = std::make_unique<BasicVector<double>>(port_length_);
+    vec1->get_mutable_value() << error_rate_signal_;
+    context_->SetInputPort(1, MakeInput(std::move(vec1)));
+  }
 
-  // Creates a "fake" free-standing input port.
-  Vector3<double> error_signal(1.0, 2.0, 3.0);
-  Vector3<double> error_rate_signal(1.3, 0.9, 3.14);
+  const double kp_{2.0};
+  const double ki_{3.0};
+  const double kd_{1.0};
+  const int port_length_{3};
+  PidController<double> controller_{kp_, ki_, kd_, port_length_};
+  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<ContinuousState<double>> derivatives_;
+  Vector3d error_signal_{1.0, 2.0, 3.0};
+  Vector3d error_rate_signal_{1.3, 0.9, 3.14};
+};
 
-  // Error signal input port.
-  auto vec0 = std::make_unique<BasicVector<double>>(port_length);
-  vec0->get_mutable_value() << error_signal;
-  context->SetInputPort(0, MakeInput(std::move(vec0)));
+// Tests getter methods for controller constants.
+TEST_F(PidControllerTest, Getters) {
+  ASSERT_EQ(kp_, controller_.get_Kp());
+  ASSERT_EQ(ki_, controller_.get_Ki());
+  ASSERT_EQ(kd_, controller_.get_Kd());
+}
 
-  // Error signal rate input port.
-  auto vec1 = std::make_unique<BasicVector<double>>(port_length);
-  vec1->get_mutable_value() << error_rate_signal;
-  context->SetInputPort(1, MakeInput(std::move(vec1)));
+// Evaluates the output and asserts correctness.
+TEST_F(PidControllerTest, EvalOutput) {
+  ASSERT_NE(nullptr, context_);
+  ASSERT_NE(nullptr, output_);
 
   // Initializes the controllers' context to the default value in which the
   // integral is zero and evaluates the output.
-  controller.SetDefaultState(context.get());
-  controller.EvalOutput(*context, output.get());
-
-  ASSERT_EQ(1, output->get_num_ports());
-  const VectorBase<double>* output_vector = output->get_vector_data(0);
+  controller_.SetDefaultState(context_.get());
+  controller_.EvalOutput(*context_, output_.get());
+  ASSERT_EQ(1, output_->get_num_ports());
+  const VectorBase<double>* output_vector = output_->get_vector_data(0);
   EXPECT_EQ(3, output_vector->get_value().rows());
-  EXPECT_EQ(kp * error_signal + kd * error_rate_signal,
+  EXPECT_EQ(kp_ * error_signal_ + kd_ * error_rate_signal_,
             output_vector->get_value());
 
   // Initializes the integral to a non-zero value. A more interesting example.
-  VectorX<double> integral_value(port_length);
+  VectorX<double> integral_value(port_length_);
   integral_value << 3.0, 2.0, 1.0;
-  controller.set_integral_value(context.get(), integral_value);
-  controller.EvalOutput(*context, output.get());
-  EXPECT_EQ(kp * error_signal + ki * integral_value + kd * error_rate_signal,
-            output_vector->get_value());
+  controller_.set_integral_value(context_.get(), integral_value);
+  controller_.EvalOutput(*context_, output_.get());
+  EXPECT_EQ(
+      kp_ * error_signal_ + ki_ * integral_value + kd_ * error_rate_signal_,
+      output_vector->get_value());
+}
 
-  // Evaluates derivatives and asserts correctness.
-  controller.EvalTimeDerivatives(*context, derivatives.get());
-  ASSERT_EQ(3, derivatives->get_state().size());
-  ASSERT_EQ(0, derivatives->get_generalized_position().size());
-  ASSERT_EQ(0, derivatives->get_generalized_velocity().size());
-  ASSERT_EQ(3, derivatives->get_misc_continuous_state().size());
+// Evaluates derivatives and asserts correctness.
+TEST_F(PidControllerTest, EvalTimeDerivatives) {
+  ASSERT_NE(nullptr, context_);
+  ASSERT_NE(nullptr, derivatives_);
 
-  // The only state in the PID controller is the integral of the input signal.
+  // Initializes the controllers' context to the default value in which the
+  // integral is zero and evaluates the derivatives.
+  controller_.SetDefaultState(context_.get());
+
+  controller_.EvalTimeDerivatives(*context_, derivatives_.get());
+  ASSERT_EQ(3, derivatives_->get_state().size());
+  ASSERT_EQ(0, derivatives_->get_generalized_position().size());
+  ASSERT_EQ(0, derivatives_->get_generalized_velocity().size());
+  ASSERT_EQ(3, derivatives_->get_misc_continuous_state().size());
+
+  // The only state in the PID controller_ is the integral of the input signal.
   // Therefore the time derivative of the state equals the input error signal.
-  EXPECT_EQ(error_signal, derivatives->get_state().CopyToVector());
+  EXPECT_EQ(error_signal_, derivatives_->get_state().CopyToVector());
 }
 
 }  // namespace
