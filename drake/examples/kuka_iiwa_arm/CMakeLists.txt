@@ -6,8 +6,7 @@ if(lcm_FOUND)
     drakeLCMSystem)
   add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
 
-  add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES iiwa_simulation.cc
-          polynomial_trajectory_fit_generator.cc)
+  add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES iiwa_simulation.cc)
   target_link_libraries(drakeKukaIiwaArm
     drakeCommon
     drakeIK
@@ -16,8 +15,7 @@ if(lcm_FOUND)
     drakeShapes
     drakeTrajectories)
   drake_install_headers(
-    iiwa_simulation.h
-    polynomial_trajectory_fit_generator.h)
+    iiwa_simulation.h)
   pods_install_libraries(drakeKukaIiwaArm)
   pods_install_pkg_config_file(drake-kuka-iiwa-arm
           LIBS -ldrakeKukaIiwaArm 
@@ -48,10 +46,6 @@ if(lcm_FOUND)
   target_link_libraries(run_kuka_iiwa_gravity_compensated_position_control
           drakeKukaIiwaArm
           gflags)
-
-  add_executable(run_kuka_iiwa_ik_control_demo run_kuka_iiwa_ik_control_demo.cc)
-  target_link_libraries(run_kuka_iiwa_ik_control_demo
-          drakeKukaIiwaArm)
 endif()
 
 add_subdirectory(controlled_kuka)
