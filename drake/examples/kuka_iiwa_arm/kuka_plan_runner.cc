@@ -64,7 +64,7 @@ class RobotPlanRunner {
     while(true) {
       // The argument to handleTimeout is in msec, and should be
       // safely bigger than e.g. a 200Hz input rate.
-      int handled  = lcm_->handleTimeout(10);
+      int handled  = lcm_->handleTimeout(30000);   // 30 seconds
       if (handled <= 0) {
         std::cerr << "Failed to receive LCM status." << std::endl;
         return;
