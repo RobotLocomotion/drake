@@ -33,7 +33,7 @@ int DoMain(int argc, const char* argv[]) {
   std::cout << "Generating joint space trajectory..." << std::endl;
   Eigen::MatrixXd joint_trajectories;
   std::vector<double> time_stamps;
-  GenerateIKDemoJointTrajectory(tree, &joint_trajectories, &time_stamps);
+  GenerateIKDemoJointTrajectory(tree, joint_trajectories, time_stamps);
 
   // Saves the joint space trajectory in to an LCM message.
   std::cout << "Saving joint space trajectory into message..." << std::endl;
@@ -41,26 +41,32 @@ int DoMain(int argc, const char* argv[]) {
 
   plan_message.num_states = time_stamps.size();
   plan_message.plan.resize(time_stamps.size());
-  for (int i = 0; i < time_stamps.size(); ++i) {
+  plan_message.plan_info.resize(time_stamps.size());
+  std::cout << "  - Number of states: " << plan_message.num_states << std::endl;
+
+  for (int i = 0; i < static_cast<int>(time_stamps.size()); ++i) {
     bot_core::robot_state_t robot_state;
 
     // Note that this is multipled by kPlantime in kuka_plan_runner.cc, method
     // HandlePlan().
     robot_state.utime = i;
 
-    robot_state.num_joints = joint_trajectories.num_rows();
+    robot_state.num_joints = joint_trajectories.rows();
 
     robot_state.joint_name.resize(robot_state.num_joints);
     robot_state.joint_position.resize(robot_state.num_joints);
+    robot_state.joint_effort.resize(robot_state.num_joints);
+    robot_state.joint_velocity.resize(robot_state.num_joints);
 
-    for (int j = 0; j < robot_state.num_joints) {
+    for (int j = 0; j < robot_state.num_joints; ++j) {
       // The (i + 2) in the line below is to skip the world and root link of the
       // robot.
       const DrakeJoint& joint = tree->get_body(j + 2).getJoint();
 
       // For now assume each joint only has one position DOF.
-      // TODO(liang.fok) Generalize to support multi-DOF joints
-      robot_state.joint_name[j] = joint.getName(0);
+      // TODO(liang.fok) Generalize to support multi-DOF joints. The method call
+      // below should eventually use `DrakeJoint::getPositionName(int index)`.
+      robot_state.joint_name[j] = joint.getName();
 
       // Assume each joint only has 1 DOF.
       robot_state.joint_position[j] = joint_trajectories(j, i);
@@ -79,7 +85,7 @@ int DoMain(int argc, const char* argv[]) {
   // Publish the LCM message.
   std::cout << "Publishing the message..." << std::endl;
   lcm::LCM lcm;
-  lcm.publish(kChannelName, &plan);
+  lcm.publish(kChannelName, &plan_message);
 
   std::cout << "Done..." << std::endl;
   return 0;
