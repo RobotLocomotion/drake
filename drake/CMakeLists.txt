@@ -248,7 +248,7 @@ if(lcm_FOUND)
   # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
   execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
   if(NOT LCMGL_BUILD_DIR)
-    message(WARNING "\n\n----- WARNING: bot2-lcmgl not found")
+    message(WARNING "\n\n----- IMPORTANT: bot2-lcmgl not found")
   else()
     string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
     find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${LCMGL_BUILD_DIR}/share/java/")

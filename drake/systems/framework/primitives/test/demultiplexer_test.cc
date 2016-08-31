@@ -62,14 +62,14 @@ TEST_F(DemultiplexerTest, DemultiplexVector) {
   ASSERT_EQ(input_vector.size(), output_->get_num_ports());
   ASSERT_EQ(input_vector.size(), demux_->get_num_output_ports());
 
-  EXPECT_EQ(1, output_->get_vector_data(0)->size());
-  EXPECT_EQ(input_vector[0], output_->get_vector_data(0)->get_value()[0]);
+  ASSERT_EQ(1, output_->get_vector_data(0)->size());
+  ASSERT_EQ(input_vector[0], output_->get_vector_data(0)->get_value()[0]);
 
-  EXPECT_EQ(1, output_->get_vector_data(1)->size());
-  EXPECT_EQ(input_vector[1], output_->get_vector_data(1)->get_value()[0]);
+  ASSERT_EQ(1, output_->get_vector_data(1)->size());
+  ASSERT_EQ(input_vector[1], output_->get_vector_data(1)->get_value()[0]);
 
-  EXPECT_EQ(1, output_->get_vector_data(2)->size());
-  EXPECT_EQ(input_vector[2], output_->get_vector_data(2)->get_value()[0]);
+  ASSERT_EQ(1, output_->get_vector_data(2)->size());
+  ASSERT_EQ(input_vector[2], output_->get_vector_data(2)->get_value()[0]);
 }
 
 // Tests that Demultiplexer allocates no state variables in the context_.

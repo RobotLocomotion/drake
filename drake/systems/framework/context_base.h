@@ -35,7 +35,7 @@ class ContextBase {
   const T& get_time() const { return get_step_info().time_sec; }
 
   /// Set the current time in seconds.
-  void set_time(const T& time_sec) {
+  virtual void set_time(const T& time_sec)  {
     get_mutable_step_info()->time_sec = time_sec;
   }
 

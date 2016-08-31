@@ -46,7 +46,6 @@ SpringMassSystem::SpringMassSystem(double spring_constant_N_per_m,
     : spring_constant_N_per_m_(spring_constant_N_per_m),
       mass_kg_(mass_kg),
       system_is_forced_(system_is_forced) {
-  System<double>::set_name("SpringMassSystem");
   // Declare input port for forcing term.
   if(system_is_forced) {
     this->DeclareInputPort(kVectorValued, 1, kContinuousSampling);
@@ -102,6 +101,7 @@ void SpringMassSystem::EvalOutput(const ContextBase<double>& context,
 void SpringMassSystem::EvalTimeDerivatives(
     const ContextBase<double>& context,
     ContinuousState<double>* derivatives) const {
+  DRAKE_ASSERT_VOID(CheckValidContext(context));
 
   auto state_vec = this->CopyContinuousStateVector(context);
 

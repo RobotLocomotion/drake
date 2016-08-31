@@ -28,7 +28,7 @@ class LeafSystem : public System<T> {
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
     std::unique_ptr<Context<T>> context(new Context<T>);
     // Reserve inputs that have already been declared.
-    context->SetNumInputPorts(this->get_input_ports().size());
+    context->SetNumInputPorts(this->get_num_input_ports());
     // Reserve continuous state via delegation to subclass.
     context->get_mutable_state()->continuous_state =
         std::move(this->AllocateContinuousState());
@@ -71,7 +71,8 @@ class LeafSystem : public System<T> {
 
   /// Given a port descriptor, allocate the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses can
-  /// override to use output vector types other than BasicVector.
+  /// override to use output vector types other than BasicVector.  The
+  /// descriptor must match a port declared via DeclareOutputPort.
   virtual std::unique_ptr<VectorBase<T>> AllocateOutputVector(
       const SystemPortDescriptor<T>& descriptor) const {
     return std::unique_ptr<VectorBase<T>>(

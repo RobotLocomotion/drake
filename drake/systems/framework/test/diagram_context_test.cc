@@ -17,6 +17,7 @@ namespace drake {
 namespace systems {
 namespace {
 
+constexpr int kNumSystems = 4;
 constexpr double kTime = 12.0;
 
 class DiagramContextTest : public ::testing::Test {
@@ -87,6 +88,15 @@ TEST_F(DiagramContextTest, AddAndRetrieveConstituents) {
   EXPECT_NE(nullptr, context_->GetSubsystemContext(4));
 }
 
+// Tests that the time writes through to the subsystem contexts.
+TEST_F(DiagramContextTest, Time) {
+  context_->set_time(42.0);
+  EXPECT_EQ(42.0, context_->get_time());
+  for (int i = 0; i < kNumSystems; ++i) {
+    EXPECT_EQ(42.0, context_->GetSubsystemContext(i)->get_time());
+  }
+}
+
 // Tests that state variables appear in the diagram context, and write
 // transparently through to the constituent system contexts.
 TEST_F(DiagramContextTest, State) {
@@ -114,22 +124,6 @@ TEST_F(DiagramContextTest, State) {
 TEST_F(DiagramContextTest, ConnectValid) {
   EXPECT_NO_THROW(context_->Connect({0 /* adder0_ */, 0 /* port 0 */},
                                     {1 /* adder1_ */, 1 /* port 1 */}));
-}
-
-// Tests that an exception is thrown when connecting from a source port that
-// does not exist.
-TEST_F(DiagramContextTest, ConnectInvalidSrcPort) {
-  EXPECT_THROW(context_->Connect({0 /* adder0_ */, 1 /* port 1 */},
-                                 {1 /* adder1_ */, 1 /* port 1 */}),
-               std::out_of_range);
-}
-
-// Tests that an exception is thrown when connecting to a destination port that
-// does not exist.
-TEST_F(DiagramContextTest, ConnectInvalidDestPort) {
-  EXPECT_THROW(context_->Connect({0 /* adder0_ */, 0 /* port 0 */},
-                                 {1 /* adder1_ */, 2 /* port 2 */}),
-               std::out_of_range);
 }
 
 // Tests that input ports can be assigned to the DiagramContext and then
