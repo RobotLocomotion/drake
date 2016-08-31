@@ -57,86 +57,79 @@ class KukaDemo : public Diagram<T> {
   KukaDemo() {
     this->set_name("KukaDemo");
 
-    // Instantiates an MBD model of the world.
-    auto mbd_world = make_unique<RigidBodyTree>();
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14_collision_free.urdf",
-        DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
+  }
 
+  void SetupAndListenForPlan() {// Instantiates an MBD model of the world.
+      mbd_world = make_unique<RigidBodyTree>();
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+              drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14_collision_free.urdf",
+              DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
 
     // Adds the ground.
-    double kBoxWidth = 3;
-    double kBoxDepth = 0.2;
-    DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
-    Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-    // top of the box is at z = 0.
-    T_element_to_link.translation() << 0, 0, -kBoxDepth / 2.0;
+      double kBoxWidth = 3;
+      double kBoxDepth = 0.2;
+      DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
+      Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
+      // top of the box is at z = 0.
+      T_element_to_link.translation() << 0, 0, -kBoxDepth / 2.0;
 
-    RigidBody& world = mbd_world->world();
-    Eigen::Vector4d color;
-    color << 0.9297, 0.7930, 0.6758, 1;
-    world.AddVisualElement(
-        DrakeShapes::VisualElement(geom, T_element_to_link, color));
-    mbd_world->addCollisionElement(
-        RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
-        "terrain");
-    mbd_world->updateStaticCollisionElements();
+      RigidBody& world = mbd_world->world();
+      Eigen::Vector4d color;
+      color << 0.9297, 0.7930, 0.6758, 1;
+      world.AddVisualElement(
+              DrakeShapes::VisualElement(geom, T_element_to_link, color));
+      mbd_world->addCollisionElement(
+              RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
+              "terrain");
+      mbd_world->updateStaticCollisionElements();
 
-    // Instantiates a RigidBodyPlant from an MBD model of the world.
-    plant_ = make_unique<RigidBodyPlant<T>>(move(mbd_world));
+      // Instantiates a RigidBodyPlant from an MBD model of the world.
+      plant_ = make_unique<RigidBodyPlant<T>>(move(mbd_world));
 
-    VectorX<double> desired_state = VectorX<double>::Zero(14);
-    desired_state[0] =   0.0 * deg_to_rad;  // base.
-    desired_state[1] =  45.0 * deg_to_rad;  // first elbow.
-    desired_state[2] =   0.0 * deg_to_rad;  // axial rotation.
-    desired_state[3] = -90.0 * deg_to_rad;  // second elbow.
-    desired_state[4] =  90.0 * deg_to_rad;  // axial rotation.
-    desired_state[5] =   0.0 * deg_to_rad;  // final wrist
-    desired_state[6] =   0.0 * deg_to_rad;  // end effector rotation.
+      VectorX<double> desired_state = VectorX<double>::Zero(14);
+      desired_state[0] =   0.0 * deg_to_rad;  // base.
+      desired_state[1] =  45.0 * deg_to_rad;  // first elbow.
+      desired_state[2] =   0.0 * deg_to_rad;  // axial rotation.
+      desired_state[3] = -90.0 * deg_to_rad;  // second elbow.
+      desired_state[4] =  90.0 * deg_to_rad;  // axial rotation.
+      desired_state[5] =   0.0 * deg_to_rad;  // final wrist
+      desired_state[6] =   0.0 * deg_to_rad;  // end effector rotation.
 
-    target_state_ = make_unique<ConstantVectorSource<T>>(desired_state);
-    state_minus_target_ = make_unique<Adder<T>>(2 /*number of inputs*/,
-        plant_->get_num_states() /* size */);
+      target_state_ = make_unique<ConstantVectorSource<T>>(desired_state);
+      state_minus_target_ = make_unique<Adder<T>>(2 /*number of inputs*/,
+              plant_->get_num_states() /* size */);
 
-    const double numerical_stiffness = 3000;
-    plant_->penetration_stiffness_ = 10*numerical_stiffness;
+      const double numerical_stiffness = 3000;
+      plant_->penetration_stiffness_ = 10*numerical_stiffness;
 
-    // Rough estimation of controller constants.
-    //const double arm_mass = plant_->get_multibody_world().getMass() / 7.0;
-    // Closed loop frequency.
-    //const double wol = sqrt(numerical_stiffness / arm_mass);
+      // Naveen's constants: Kp=10, Ki=0, Kd=0.3
+      const double kp = 2.0; //numerical_stiffness/100.0;
+      const double ki = 0.0;
+ 
+      const double kd = 1.0;
 
-    // Naveen's constants: Kp=10, Ki=0, Kd=0.3
-    const double kp = 2.0; //numerical_stiffness/100.0;
-    const double ki = 0.0;
-    // Closed loop system frequency.
-    //const double wcl = sqrt(wol*wol + kp / arm_mass);
-    // Damping ratio.
-    //const double zeta = 0.001;
-    //const double kd = 2.0 * arm_mass * wcl * zeta;
-    const double kd = 1.0;
 
-    controller_ = make_unique<PidController<T>>(kp, ki, kd,
-        plant_->get_num_positions());
-    gravity_compensator_ = make_unique<GravityCompensator<T>>(
-        plant_->get_multibody_world());
-    gcomp_minus_pid_ = make_unique<Adder<T>>(
-        2 /*number of inputs*/, plant_->get_num_actuators() /* size */);
+      controller_ = make_unique<PidController<T>>(kp, ki, kd,
+              plant_->get_num_positions());
+      gravity_compensator_ = make_unique<GravityCompensator<T>>(
+              plant_->get_multibody_world());
+      gcomp_minus_pid_ = make_unique<Adder<T>>(
+              2 /*number of inputs*/, plant_->get_num_actuators() /* size */);
 
-    // Split the input state into two signals one with the positions and one
-    // with the velocities.
-    // For Kuka:
-    // -  get_num_states() = 14
-    // -  get_num_positions() = 7
-    demux_ = make_unique<Demultiplexer<T>>(plant_->get_num_states(),
-        plant_->get_num_positions());
+      // Split the input state into two signals one with the positions and one
+      // with the velocities.
+      // For Kuka:
+      // -  get_num_states() = 14
+      // -  get_num_positions() = 7
+      demux_ = make_unique<Demultiplexer<T>>(plant_->get_num_states(),
+              plant_->get_num_positions());
 
-    inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_actuators());
-    error_inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_states());
+      inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_actuators());
+      error_inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_states());
 
-    std::cout<<"Plan Runner thread begind listening\n";
-    // Creates a plan.
-    //poly_trajectory_ = MakePlan();
+      std::cout<<"Plan Runner thread begind listening\n";
+      // Creates a plan.
+      //poly_trajectory_ = MakePlan();
 
       viz_publisher_ = make_unique<BotVisualizerSystem>(
               plant_->get_multibody_world(), &lcm_);
@@ -151,55 +144,57 @@ class KukaDemo : public Diagram<T> {
       std::cout<<"Plan Runner terminated. A plan was received.\n";
 
       poly_trajectory_ = runner.GetReceivedPlan();
+      std::cout<<"Received plan ..\n";
+
       std::cout<<"Received plan @t=0: "<<poly_trajectory_->value(0 )<<"\n";
       std::cout<<"Received plan @t=1: "<<poly_trajectory_->value(1 )<<"\n";
 
       std::cout<<"Starting simulation.....\n\n";
       target_plan_ = make_unique<TimeVaryingPolynomialSource<T>>(
-              *poly_trajectory_);
+              *poly_trajectory_.get());
 
 
       DiagramBuilder<T> builder;
-    // Target.
-    // TODO(amcastro-tri): connect planner output.
-    //builder.Connect(target_state_->get_output_port(0),
-    //                error_inverter_->get_input_port(0));
-    builder.Connect(target_plan_->get_output_port(0),
-                    error_inverter_->get_input_port(0));
-    builder.Connect(error_inverter_->get_output_port(0),
-                    state_minus_target_->get_input_port(0));
-    builder.Connect(plant_->get_output_port(0),
-                    state_minus_target_->get_input_port(1));
+      // Target.
+      // TODO(amcastro-tri): connect planner output.
+      //builder.Connect(target_state_->get_output_port(0),
+      //                error_inverter_->get_input_port(0));
+      builder.Connect(target_plan_->get_output_port(0),
+                      error_inverter_->get_input_port(0));
+      builder.Connect(error_inverter_->get_output_port(0),
+                      state_minus_target_->get_input_port(0));
+      builder.Connect(plant_->get_output_port(0),
+                      state_minus_target_->get_input_port(1));
 
-    // Splits plant output port into a positions and velocities ports.
-    builder.Connect(state_minus_target_->get_output_port(0),
-                    demux_->get_input_port(0));
+      // Splits plant output port into a positions and velocities ports.
+      builder.Connect(state_minus_target_->get_output_port(0),
+                      demux_->get_input_port(0));
 
-    builder.Connect(demux_->get_output_port(0),
-                    controller_->get_error_signal_port());
-    builder.Connect(demux_->get_output_port(1),
-                    controller_->get_error_signal_rate_port());
+      builder.Connect(demux_->get_output_port(0),
+                      controller_->get_error_signal_port());
+      builder.Connect(demux_->get_output_port(1),
+                      controller_->get_error_signal_rate_port());
 
-    // Connects the gravity compensator.
-    builder.Connect(plant_->get_output_port(0),
-                    gravity_compensator_->get_input_port(0));
-    builder.Connect(gravity_compensator_->get_output_port(0),
-                    gcomp_minus_pid_->get_input_port(0));
+      // Connects the gravity compensator.
+      builder.Connect(plant_->get_output_port(0),
+                      gravity_compensator_->get_input_port(0));
+      builder.Connect(gravity_compensator_->get_output_port(0),
+                      gcomp_minus_pid_->get_input_port(0));
 
-    // Adds feedback.
-    builder.Connect(controller_->get_output_port(0),
-                    inverter_->get_input_port(0));
-    builder.Connect(inverter_->get_output_port(0),
-                    gcomp_minus_pid_->get_input_port(1));
+      // Adds feedback.
+      builder.Connect(controller_->get_output_port(0),
+                      inverter_->get_input_port(0));
+      builder.Connect(inverter_->get_output_port(0),
+                      gcomp_minus_pid_->get_input_port(1));
 
-    builder.Connect(gcomp_minus_pid_->get_output_port(0),
-                    plant_->get_input_port(0));
+      builder.Connect(gcomp_minus_pid_->get_output_port(0),
+                      plant_->get_input_port(0));
 
-    // Connects to visualizer.
-    builder.Connect(plant_->get_output_port(0),
-                    viz_publisher_->get_input_port(0));
-    builder.ExportOutput(plant_->get_output_port(0));
-    builder.BuildInto(this);
+      // Connects to visualizer.
+      builder.Connect(plant_->get_output_port(0),
+                      viz_publisher_->get_input_port(0));
+      builder.ExportOutput(plant_->get_output_port(0));
+      builder.BuildInto(this);
   }
 
   const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
@@ -228,6 +223,7 @@ class KukaDemo : public Diagram<T> {
   std::unique_ptr<TimeVaryingPolynomialSource<T>> target_plan_;
   std::unique_ptr<PiecewisePolynomial<T>> poly_trajectory_;
   std::unique_ptr<BotVisualizerSystem> viz_publisher_;
+  std::unique_ptr<RigidBodyTree> mbd_world;
   ::lcm::LCM lcm_;
 };
 
@@ -236,21 +232,9 @@ int DoMain() {
   KukaDemo<double> model;
   Simulator<double> simulator(model);  // Use default Context.
 
+  model.SetupAndListenForPlan();
   // Zeroes the state and initializes controller state.
   model.SetDefaultState(simulator.get_mutable_context());
-
-  VectorX<double> desired_state = VectorX<double>::Zero(14);
-#if 0
-  desired_state[0] =   0.0 * deg_to_rad;  // base.
-  desired_state[1] =  45.0 * deg_to_rad;  // first elbow.
-  desired_state[2] =   0.0 * deg_to_rad;  // axial rotation.
-  desired_state[3] = -45.0 * deg_to_rad;  // second elbow.
-  desired_state[4] =  90.0 * deg_to_rad;  // axial rotation.
-  desired_state[5] =   0.0 * deg_to_rad;  // final wrist
-  desired_state[6] =   0.0 * deg_to_rad;  // end effector rotation.
-#endif
-  model.get_kuka_plant().set_state_vector(
-      simulator.get_mutable_context(), desired_state);
 
   simulator.request_initial_step_size_attempt(0.001);
 
