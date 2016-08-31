@@ -12,12 +12,12 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-// const char* kLcmChannelName = "COMMITTED_ROBOT_PLAN";
+const char* kChannelName = "COMMITTED_ROBOT_PLAN";
 
 /**
- * Generates an joint-space trajectory for the Kuka IIWA robot, saves this
- * trajectory inside a robot_plan_t LCM message, and then publishes this LCM
- * on LCM channel kLcmChannelName.
+ * Generates a joint-space trajectory for the Kuka IIWA robot. This trajectory
+ * is saved in a robot_plan_t LCM message. The message is then published on
+ * LCM channel kChannelName.
  */
 int DoMain(int argc, const char* argv[]) {
   // Waits for the user to type a key.
@@ -31,15 +31,57 @@ int DoMain(int argc, const char* argv[]) {
 
   // Generates the joint space trajectory.
   std::cout << "Generating joint space trajectory..." << std::endl;
+  Eigen::MatrixXd joint_trajectories;
+  std::vector<double> time_stamps;
+  GenerateIKDemoJointTrajectory(tree, &joint_trajectories, &time_stamps);
 
   // Saves the joint space trajectory in to an LCM message.
   std::cout << "Saving joint space trajectory into message..." << std::endl;
-  // TODO
+  robot_plan_t plan_message;
+
+  plan_message.num_states = time_stamps.size();
+  plan_message.plan.resize(time_stamps.size());
+  for (int i = 0; i < time_stamps.size(); ++i) {
+    bot_core::robot_state_t robot_state;
+
+    // Note that this is multipled by kPlantime in kuka_plan_runner.cc, method
+    // HandlePlan().
+    robot_state.utime = i;
+
+    robot_state.num_joints = joint_trajectories.num_rows();
+
+    robot_state.joint_name.resize(robot_state.num_joints);
+    robot_state.joint_position.resize(robot_state.num_joints);
+
+    for (int j = 0; j < robot_state.num_joints) {
+      // The (i + 2) in the line below is to skip the world and root link of the
+      // robot.
+      const DrakeJoint& joint = tree->get_body(j + 2).getJoint();
+
+      // For now assume each joint only has one position DOF.
+      // TODO(liang.fok) Generalize to support multi-DOF joints
+      robot_state.joint_name[j] = joint.getName(0);
+
+      // Assume each joint only has 1 DOF.
+      robot_state.joint_position[j] = joint_trajectories(j, i);
+    }
+
+    // The following are not used by kuka_plan_runner.cc, method HandlePlan().
+    // robot_state.pose = ; // position_3d_t
+    // robot_state.twist; // bot_core::twist_t
+    // robot_state.force_torque = ; // bot_core::force_torque_t
+    // robot_state.joint_effort = ; // std::vector< float >
+    // robot_state.joint_velocity = ; // std::vector< float >
+
+    plan_message.plan.push_back(robot_state);
+  }
 
   // Publish the LCM message.
+  std::cout << "Publishing the message..." << std::endl;
   lcm::LCM lcm;
-  // lcm.publish()
+  lcm.publish(kChannelName, &plan);
 
+  std::cout << "Done..." << std::endl;
   return 0;
 }
 
