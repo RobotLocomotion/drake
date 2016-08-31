@@ -100,7 +100,7 @@ class TrajectoryRunner {
            cur_time_ms < (start_time_ms + end_time_offset_ms)) {
       // The argument to handleTimeout is in msec, and should be
       // safely bigger than e.g. a 200Hz input rate.
-      int handled  = lcm_->handleTimeout(30000);
+      int handled  = lcm_->handleTimeout(10);
       if (handled <= 0) {
         std::cerr << "Failed to receive LCM status." << std::endl;
         return;
