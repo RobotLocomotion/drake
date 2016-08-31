@@ -100,7 +100,7 @@ int DoMain(int argc, const char* argv[]) {
     // robot_state.joint_effort = ; // std::vector< float >
     // robot_state.joint_velocity = ; // std::vector< float >
 
-    plan_message.plan.push_back(robot_state);
+    plan_message.plan[i] = robot_state;
   }
 
   // Publish the LCM message.
