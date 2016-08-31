@@ -31,6 +31,9 @@ class Gain : public LeafSystem<T> {
   /// @param length is the size of the signal to be processed.
   Gain(const T& k, int length);
 
+  /// Returns the gain constant.
+  const T& get_gain() const;
+
   /// Sets the output port value to the product of the gain and the input port
   /// value. The gain is specified in the constructor.
   /// If number of connected input or output ports differs from one or, the

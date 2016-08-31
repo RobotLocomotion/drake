@@ -206,6 +206,17 @@ class DiagramContext : public ContextBase<T> {
     return (*it).second.get();
   }
 
+  /// Recursively sets the time on this context and all subcontexts.
+  void set_time(const T& time_sec) override {
+    ContextBase<T>::set_time(time_sec);
+    for (auto& kv : contexts_) {
+      ContextBase<T>* subcontext = kv.second.get();
+      if (subcontext != nullptr) {
+        subcontext->set_time(time_sec);
+      }
+    }
+  }
+
   int get_num_input_ports() const override {
     return static_cast<int>(input_ids_.size());
   }

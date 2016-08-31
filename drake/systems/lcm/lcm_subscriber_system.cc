@@ -16,8 +16,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
     const LcmAndVectorBaseTranslator& translator, ::lcm::LCM* lcm)
     : channel_(channel),
-      translator_(translator),
-      basic_vector_(translator_.get_vector_size()) {
+      translator_(translator) {
   DRAKE_ABORT_UNLESS(lcm);
   // Initializes the communication layer.
   ::lcm::Subscription* sub =
@@ -41,19 +40,38 @@ std::string LcmSubscriberSystem::get_name() const {
 
 void LcmSubscriberSystem::EvalOutput(const ContextBase<double>&,
                                      SystemOutput<double>* output) const {
-  BasicVector<double>& output_vector =
-      dynamic_cast<BasicVector<double>&>(*output->GetMutableVectorData(0));
+  VectorBase<double>* const output_vector = output->GetMutableVectorData(0);
+  std::lock_guard<std::mutex> lock(received_message_mutex_);
+  if (!received_message_.empty()) {
+    translator_.TranslateLcmToVectorBase(
+        received_message_.data(), received_message_.size(), output_vector);
+  }
+}
 
-  std::lock_guard<std::mutex> lock(data_mutex_);
-  output_vector.set_value(basic_vector_.get_value());
+void LcmSubscriberSystem::SetMessage(std::vector<uint8_t> message_bytes) {
+  std::lock_guard<std::mutex> lock(received_message_mutex_);
+  received_message_ = message_bytes;
+}
+
+std::unique_ptr<VectorBase<double>> LcmSubscriberSystem::AllocateOutputVector(
+    const SystemPortDescriptor<double>& descriptor) const {
+  DRAKE_ABORT_UNLESS(descriptor.get_index() == 0);
+  auto result = translator_.AllocateOutputVector();
+  if (result) {
+    return result;
+  }
+  return LeafSystem<double>::AllocateOutputVector(descriptor);
 }
 
 void LcmSubscriberSystem::HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                                         const std::string& channel) {
   if (channel == channel_) {
-    std::lock_guard<std::mutex> lock(data_mutex_);
-    translator_.TranslateLcmToVectorBase(
-        rbuf->data, rbuf->data_size, &basic_vector_);
+    const uint8_t* const rbuf_begin =
+        reinterpret_cast<const uint8_t*>(rbuf->data);
+    const uint8_t* const rbuf_end = rbuf_begin + rbuf->data_size;
+    std::lock_guard<std::mutex> lock(received_message_mutex_);
+    received_message_.clear();
+    received_message_.insert(received_message_.begin(), rbuf_begin, rbuf_end);
   } else {
     std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
               << "message for channel \"" << channel

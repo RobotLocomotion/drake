@@ -71,7 +71,8 @@ class LeafSystem : public System<T> {
 
   /// Given a port descriptor, allocate the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses can
-  /// override to use output vector types other than BasicVector.
+  /// override to use output vector types other than BasicVector.  The
+  /// descriptor must match a port declared via DeclareOutputPort.
   virtual std::unique_ptr<VectorBase<T>> AllocateOutputVector(
       const SystemPortDescriptor<T>& descriptor) const {
     return std::unique_ptr<VectorBase<T>>(

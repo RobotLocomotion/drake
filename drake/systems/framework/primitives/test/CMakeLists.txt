@@ -27,3 +27,12 @@ add_test(NAME constant_vector_source_test COMMAND constant_vector_source_test)
 add_executable(gain_test gain_test.cc gain_scalartype_test.cc)
 target_link_libraries(gain_test drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
 add_test(NAME gain_test COMMAND gain_test)
+
+add_executable(pid_controller_test pid_controller_test.cc)
+target_link_libraries(pid_controller_test drakeSystemFramework
+        ${GTEST_BOTH_LIBRARIES})
+add_test(NAME pid_controller_test COMMAND pid_controller_test)
+
+add_executable(demultiplexer_test demultiplexer_test.cc)
+target_link_libraries(demultiplexer_test drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
+add_test(NAME demultiplexer_test COMMAND demultiplexer_test)
