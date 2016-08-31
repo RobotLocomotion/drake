@@ -2,28 +2,10 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-// #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-// #include "drake/common/polynomial.h"
-// #include "drake/systems/plants/IKoptions.h"
-// #include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
+#include "drake/robot_plan_t.hpp"
 #include "drake/systems/plants/RigidBodyTree.h"
-// #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-// #include "drake/systems/trajectories/PiecewisePolynomial.h"
-// #include "drake/systems/vector.h"
-
-// #include "lcmtypes/drake/lcmt_iiwa_command.hpp"
-// #include "lcmtypes/drake/lcmt_iiwa_status.hpp"
-#include "lcmtypes/drake_robot_plan_t.h"
-
-// #include "iiwa_status.h"
-
-// using Eigen::MatrixXd;
-// using Eigen::VectorXd;
-// using Eigen::VectorXi;
-// using drake::Vector1d;
-// using Eigen::Vector2d;
-// using Eigen::Vector3d;
 
 namespace drake {
 namespace examples {
@@ -32,21 +14,31 @@ namespace {
 
 // const char* kLcmChannelName = "COMMITTED_ROBOT_PLAN";
 
-
 /**
  * Generates an joint-space trajectory for the Kuka IIWA robot, saves this
  * trajectory inside a robot_plan_t LCM message, and then publishes this LCM
  * on LCM channel kLcmChannelName.
  */
 int DoMain(int argc, const char* argv[]) {
-  lcm::LCM lcm;
+  // Waits for the user to type a key.
+  std::cout << "Please press any key to continue..." << std::endl;
+  getchar();
 
-  RigidBodyTree tree(
+  // Instantiates a RigidBodyTree containing an IIWA robot instance.
+  std::shared_ptr<RigidBodyTree> tree(new RigidBodyTree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      DrakeJoint::FIXED);
+      DrakeJoint::FIXED));
 
-  
+  // Generates the joint space trajectory.
+  std::cout << "Generating joint space trajectory..." << std::endl;
 
+  // Saves the joint space trajectory in to an LCM message.
+  std::cout << "Saving joint space trajectory into message..." << std::endl;
+  // TODO
+
+  // Publish the LCM message.
+  lcm::LCM lcm;
+  // lcm.publish()
 
   return 0;
 }
