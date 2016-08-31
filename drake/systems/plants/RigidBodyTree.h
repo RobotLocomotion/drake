@@ -37,21 +37,26 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * tree structure via DrakeJoint objects. It provides various utility methods
  * for computing kinematic and dynamics properties of the RigidBodyTree.
  *
- * The internal organization of a RigidBodyTree's generalized coordinate vector
- * and generalized velocity vector is as follows:
+ * The internal organization of a RigidBodyTree's generalized state vector is as
+ * follows:
  *
  * <pre>
- * [vector of model instance 1's position states]
- * [vector of model instance 2's position states]
+ * [vector of model instance 1's coordinate states]
+ * [vector of model instance 2's coordinate states]
  * ...
  * [vector of model instance 1's velocity states]
  * [vector of model instance 2's velocity states]
  * ...
  * </pre>
  *
- * RigidBody objects maintain indices to their coordinate and velocity states
- * within the above vector. These indeces can be obtained via
- * Rigidbody::get_position_start_index(), RigidBody::get_velocity_start_index().
+ * Each RigidBody object maintains indices to its mobilizer's generalized
+ * coordinate vector and generalized velocity vector in the RigidBodyTree's
+ * generalized state vector. The starting index of a RigidBody's mobilizer's
+ * generalized coordinate vector can be obtained by executing
+ * RigidBody::get_position_start_index(). The starting index of a RigidBody's
+ * mobilizer's generalized velocity vector can be computed as follows:
+ * RigidBodyTree::number_of_positions() +
+ * RigidBody::get_velget_velocity_start_index().
  */
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
