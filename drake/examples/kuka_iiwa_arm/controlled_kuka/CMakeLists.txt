@@ -13,7 +13,7 @@ add_test(NAME kuka_plan_listener_demo COMMAND kuka_plan_listener_demo)
 
 add_executable(kuka_director_plan_control_demo kuka_director_plan_control_demo.cc)
 target_link_libraries(kuka_director_plan_control_demo
-    drakeKukaIiwaArm drake_rbs drakeSystemAnalysis drakeRBSystem
+    drakeKukaIiwaArm drake_rbs  drakeBotVisualizerSystem drakeSystemAnalysis drakeRBSystem
     drakeLCMSystem2 ${GTEST_BOTH_LIBRARIES})
 #add_test(NAME kuka_plan_kuka_director_plan_control_demolistener_demo COMMAND kuka_director_plan_control_demo)
 
