@@ -61,6 +61,8 @@ int DoMain(int argc, const char* argv[]) {
   plan_message.plan.resize(time_stamps.size());
   plan_message.plan_info.resize(time_stamps.size());
   plan_message.num_grasp_transitions = 0;
+  plan_message.num_bytes = 0;
+
   std::cout << "  - Number of states: " << plan_message.num_states << std::endl;
 
   for (int i = 0; i < static_cast<int>(time_stamps.size()); ++i) {
