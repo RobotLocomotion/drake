@@ -38,7 +38,6 @@ void DoBotVisualizerTest(const RigidBodyTree& tree,
   EXPECT_EQ(dut.get_name(), "BotVisualizerSystem");
 
   std::unique_ptr<ContextBase<double>> context = dut.CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
 
   // Verifies that the context has one input port.
   EXPECT_EQ(context->get_num_input_ports(), 1);
@@ -86,7 +85,7 @@ void DoBotVisualizerTest(const RigidBodyTree& tree,
   // We must periodically call dut->EvalOutput(...) since we do not know when
   // the receiver will receive the message published by the BotvisualizerSystem.
   while (!done && count++ < kMaxCount) {
-    dut.EvalOutput(*context.get(), output.get());
+    dut.Publish(*context.get());
 
     // Gets the received message.
     const drake::lcmt_viewer_load_robot load_message =

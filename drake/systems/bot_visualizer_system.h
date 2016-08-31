@@ -62,15 +62,20 @@ class DRAKEBOTVISUALIZERSYSTEM_EXPORT BotVisualizerSystem :
   std::string get_name() const override;
 
   /**
+   * This System has no output ports so EvalOutput() does nothing.
+   */
+  void EvalOutput(const ContextBase<double>& context,
+                  SystemOutput<double>* output) const override {}
+
+ private:
+  /**
    * Takes the VectorInterface from the input port of the context, computes the
    * pose of each rigid body in the RigidBodyTree that was provided as an input
    * argument to the constructor, and publishes draw messages for visualizing
    * the current state of the model in Drake Visualizer.
    */
-  void EvalOutput(const ContextBase<double>& context,
-                  SystemOutput<double>* output) const override;
+  void DoPublish(const ContextBase<double>& context) const override;
 
- private:
   // Sends the drake::lcmt_viewer_load_robot messages to the Drake Visualizer
   // informing it of what needs to be visualized. This is called once by the
   // constructor.

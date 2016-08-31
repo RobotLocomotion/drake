@@ -28,11 +28,7 @@ std::string BotVisualizerSystem::get_name() const {
   return "BotVisualizerSystem";
 }
 
-// TODO(liang.fok) Update this method to be Publish() once #3202 is merged.
-// For more information, see:
-//     https://github.com/RobotLocomotion/drake/issues/2836
-void BotVisualizerSystem::EvalOutput(const ContextBase<double>& context,
-                                    SystemOutput<double>*) const {
+void BotVisualizerSystem::DoPublish(const ContextBase<double>& context) const {
   // Obtains the input vector.
   const VectorBase<double>* input_vector = context.get_vector_input(kPortIndex);
 
