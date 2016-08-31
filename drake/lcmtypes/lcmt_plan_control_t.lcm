@@ -1,0 +1,8 @@
+package drake;
+
+struct plan_control_t
+{
+   int64_t utime;
+   int16_t control;  // see constants below
+   const int16_t PAUSE=0, UNPAUSE=1, TERMINATE=2, REVERT=3;
+}

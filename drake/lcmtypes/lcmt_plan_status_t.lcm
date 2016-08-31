@@ -1,0 +1,31 @@
+package drake;
+
+struct plan_status_t {
+  int64_t utime;
+
+  int8_t execution_status;
+  const int8_t EXECUTION_STATUS_EXECUTING = 0;
+  const int8_t EXECUTION_STATUS_FINISHED = 1;
+  const int8_t EXECUTION_STATUS_NO_PLAN = 2;
+
+  // Timestamp of the last plan message received
+  int64_t last_plan_msg_utime;
+
+  // Time at which the last plan actually began executing
+  int64_t last_plan_start_utime;
+
+  int8_t plan_type;
+  const int8_t UNKNOWN      = 0;
+  const int8_t STANDING     = 1;
+  const int8_t WALKING      = 2;
+  const int8_t HARNESSED    = 3;
+  const int8_t QUASISTATIC  = 4;
+  const int8_t BRACING      = 5;
+  const int8_t CRAWLING     = 6;
+  const int8_t DUMMY        = 7;
+  const int8_t MANIPULATING = 8;
+  const int8_t RECOVERING   = 9;
+
+  boolean recovery_enabled;
+  boolean bracing_enabled;
+}

@@ -129,7 +129,8 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   printf("\n");
 
   if (!info_good) {
-    throw std::runtime_error("Solution failed, not sending.");
+//    throw std::runtime_error("Solution failed, not sending.");
+    std::cout << "IK has some errors";
   }
 
   // This comes from TrajectoryRunner in kuka_id_demo
@@ -188,7 +189,7 @@ class KukaDemo : public Diagram<T> {
     // Instantiates an MBD model of the world.
     auto mbd_world = make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+        drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14_collision_free.urdf",
         DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
 
     // Adds the ground.
@@ -362,7 +363,7 @@ int DoMain() {
   model.get_kuka_plant().set_state_vector(
       simulator.get_mutable_context(), desired_state);
 
-  simulator.request_initial_step_size_attempt(0.001);
+  simulator.request_initial_step_size_attempt(0.002);
 
   // Take all the defaults.
   simulator.Initialize();
