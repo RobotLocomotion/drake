@@ -39,6 +39,12 @@ int do_main(int argc, const char* argv[]) {
 
   RobotPlanRunner runner(lcm, tree);
   runner.Run();
+
+  std::cout<<"Plan Runner terminated. A plan was received.\n";
+
+  auto received_pp = runner.GetReceivedPlan();
+  std::cout<<"Received plan @t=0: "<<received_pp->value(0 )<<"\n";
+  std::cout<<"Received plan @t=1: "<<received_pp->value(1 )<<"\n";
   return 0;
 }
 

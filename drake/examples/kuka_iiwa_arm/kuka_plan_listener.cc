@@ -167,6 +167,13 @@ void RobotPlanRunner::Run() {
     ++plan_number_;
   }
 
+std::unique_ptr<PiecewisePolynomial<double>> RobotPlanRunner::GetReceivedPlan()
+{
+  auto pp_traj = std::make_unique<PiecewisePolynomial<double>>();
+  pp_traj = std::move(plan_);
+  return pp_traj;
+}
+
 //void RobotPlanner::ExtractPlanInfo(Eigen::MatrixXd *knot_points,
 //                           std::vector<double> *segment_times ) {
 //
