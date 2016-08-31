@@ -104,17 +104,6 @@ class DiagramContext : public ContextBase<T> {
 
   DiagramContext() {}
 
-  /// Set the current time in seconds.
-  void set_time(const T& time_sec) override {
-    ContextBase<T>::set_time(time_sec);
-    for (auto &kv : contexts_) {
-      ContextBase<T> *subcontext = kv.second.get();
-      if (subcontext != nullptr) {
-        subcontext->set_time(time_sec);
-      }
-    }
-  }
-
   /// Declares a new subsystem in the DiagramContext. Subsystems are identified
   /// by number.
   ///
@@ -207,8 +196,8 @@ class DiagramContext : public ContextBase<T> {
     return (*it).second.get();
   }
 
-  /// Returns the context structure for a given subsystem @p sys, or
-  /// nullptr if @p sys is not a subsystem.
+  /// Returns a mutable context structure for a given constituent system @p sys,
+  /// or nullptr if @p sys is not a constituent system.
   ContextBase<T>* GetMutableSubsystemContext(SystemIndex sys) {
     auto it = contexts_.find(sys);
     if (it == contexts_.end()) {
@@ -226,16 +215,6 @@ class DiagramContext : public ContextBase<T> {
         subcontext->set_time(time_sec);
       }
     }
-  }
-
-  /// Returns a mutable context structure for a given constituent system @p sys,
-  /// or nullptr if @p sys is not a constituent system.
-  ContextBase<T>* GetMutableSubsystemContext(SystemIndex sys) {
-    auto it = contexts_.find(sys);
-    if (it == contexts_.end()) {
-      return nullptr;
-    }
-    return (*it).second.get();
   }
 
   int get_num_input_ports() const override {
