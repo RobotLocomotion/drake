@@ -21,6 +21,7 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   plant_ = make_unique<SpringMassSystem>(
       spring_stiffness, mass, true /* is forced */);
   controller_ = make_unique<PidController<T>>(Kp, Ki, Kd, 1);
+  inverter_ = make_unique<Gain<T>>(-1 /* gain */, 1 /* size */);
 
   // A demux is used to split the output from the spring-mass system into two
   // ports. One port with the mass position and another port with the mass
@@ -41,6 +42,8 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
 
   // Close the feedback loop.
   builder.Connect(controller_->get_output_port(0),
+                  inverter_->get_input_port(0));
+  builder.Connect(inverter_->get_output_port(0),
                   plant_->get_input_port(0));
 
   // The output to this system is the output of the spring-mass system which

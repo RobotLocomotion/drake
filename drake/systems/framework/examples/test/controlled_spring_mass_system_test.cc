@@ -101,7 +101,7 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
   const double error = x0;  // target position is zero.
   const double error_rate = v0;
   const double pid_actuation = Kp * error +  Kd * error_rate;
-  EXPECT_EQ((-kSpring * x0 + pid_actuation) / kMass,
+  EXPECT_EQ((-kSpring * x0 - pid_actuation) / kMass,
             plant_xcdot.get_state().GetAtIndex(1));
 
   // Work.

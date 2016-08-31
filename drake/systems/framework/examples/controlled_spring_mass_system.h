@@ -2,9 +2,10 @@
 
 #include <memory>
 
-#include "drake/systems/framework/examples/spring_mass_system.h"
 #include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/examples/spring_mass_system.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
+#include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/pid_controller2.h"
 
 namespace drake {
@@ -50,6 +51,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   std::unique_ptr<SpringMassSystem> plant_;
   std::unique_ptr<PidController<T>> controller_;
   std::unique_ptr<Demultiplexer<T>> demux_;
+  std::unique_ptr<Gain<T>> inverter_;
 };
 
 }  // namespace systems
