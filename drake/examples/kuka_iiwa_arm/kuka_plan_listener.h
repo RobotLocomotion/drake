@@ -48,6 +48,8 @@ class DRAKEKUKAIIWAARM_EXPORT RobotPlanRunner {
   RobotPlanRunner(std::shared_ptr<lcm::LCM> lcm, const RigidBodyTree& tree);
 
   void Run();
+//
+ std::unique_ptr<PiecewisePolynomial<double>> GetReceivedPlan();
 
  private:
   void HandleStatus(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
