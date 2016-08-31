@@ -49,9 +49,9 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   builder.Connect(demux_->get_output_port(0),
                   state_minus_target_->get_input_port(1));
   builder.Connect(state_minus_target_->get_output_port(0),
-                  controller_->get_error_signal_port());
+                  controller_->get_error_port());
   builder.Connect(demux_->get_output_port(1),
-                  controller_->get_error_signal_rate_port());
+                  controller_->get_error_derivative_port());
 
   // Closes the feedback loop.
   builder.Connect(controller_->get_output_port(0),

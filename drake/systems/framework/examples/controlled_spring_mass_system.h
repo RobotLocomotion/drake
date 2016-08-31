@@ -8,7 +8,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/pid_controller2.h"
+#include "drake/systems/framework/primitives/pid_controller.h"
 
 namespace drake {
 namespace systems {
