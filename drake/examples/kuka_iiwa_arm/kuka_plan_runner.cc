@@ -6,6 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/polynomial.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_status.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/vector.h"
@@ -13,8 +14,6 @@
 #include "lcmtypes/drake/lcmt_iiwa_command.hpp"
 #include "lcmtypes/drake/lcmt_iiwa_status.hpp"
 #include "lcmtypes/drake/robot_plan_t.hpp"
-
-#include "iiwa_status.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;

@@ -4,6 +4,8 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_status.h"
+#include "drake/lcmt_iiwa_status.hpp"
 #include "drake/robot_plan_t.hpp"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -13,6 +15,7 @@ namespace kuka_iiwa_arm {
 namespace {
 
 const char* kChannelName = "COMMITTED_ROBOT_PLAN";
+const int kNumJoints = 7;
 
 /**
  * Generates a joint-space trajectory for the Kuka IIWA robot. This trajectory
@@ -23,6 +26,21 @@ int DoMain(int argc, const char* argv[]) {
   // Waits for the user to type a key.
   std::cout << "Please press any key to continue..." << std::endl;
   getchar();
+
+  std::cout << "Publishing IIWA status message..." << std::endl;
+  lcmt_iiwa_status status_message;
+  status_message.timestamp = 0;
+  status_message.num_joints = kNumJoints;
+  status_message.joint_position_measured.resize(kNumJoints);
+  status_message.joint_position_commanded.resize(kNumJoints);
+  status_message.joint_position_ipo.resize(kNumJoints);
+  status_message.joint_torque_measured.resize(kNumJoints);
+  status_message.joint_torque_commanded.resize(kNumJoints);
+  status_message.joint_torque_external.resize(kNumJoints);
+
+  lcm::LCM lcm;
+  lcm.publish(IiwaStatus<double>::channel(), &status_message);
+
 
   // Instantiates a RigidBodyTree containing an IIWA robot instance.
   std::shared_ptr<RigidBodyTree> tree(new RigidBodyTree(
@@ -84,7 +102,6 @@ int DoMain(int argc, const char* argv[]) {
 
   // Publish the LCM message.
   std::cout << "Publishing the message..." << std::endl;
-  lcm::LCM lcm;
   lcm.publish(kChannelName, &plan_message);
 
   std::cout << "Done..." << std::endl;
