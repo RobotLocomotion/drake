@@ -60,7 +60,10 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * The starting index of a RigidBody's mobilizer's generalized velocity vector
  * in the RigidBodyTree's generalized state vector can be computed as follows:
  * RigidBodyTree::number_of_positions() +
- * RigidBody::get_velget_velocity_start_index().
+ * RigidBody::get_velocity_start_index(). Note that the velocity index starts
+ * at the beginning of the velocity state variables and not at the beginning of
+ * the full state of this RigidBodyTree. This is why we need to add the total
+ * number of positions to the index to get its index in the full state vector.
  */
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
