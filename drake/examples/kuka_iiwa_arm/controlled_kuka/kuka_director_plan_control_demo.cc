@@ -84,7 +84,12 @@ class KukaDemo : public Diagram<T> {
       mbd_world->updateStaticCollisionElements();
 
       // Instantiates a RigidBodyPlant from an MBD model of the world.
-      plant_ = make_unique<RigidBodyPlant<T>>(move(mbd_world));
+      std::unique_ptr<RigidBodyTree> tree_duplicate(new RigidBodyTree());
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+              drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14_collision_free.urdf",
+              DrakeJoint::FIXED, nullptr /* weld to frame */, tree_duplicate.get());
+
+      plant_ = make_unique<RigidBodyPlant<T>>(move(tree_duplicate));
 
       VectorX<double> desired_state = VectorX<double>::Zero(14);
       desired_state[0] =   0.0 * deg_to_rad;  // base.
@@ -136,7 +141,7 @@ class KukaDemo : public Diagram<T> {
 
 //      auto lcm_shared = std::make_shared<lcm::LCM>
 //      std::shared_ptr<::lcm::LCM> lcm_shared
-      auto lcm_shared = std::make_shared<::lcm::LCM>(lcm_);
+      std::shared_ptr<::lcm::LCM> lcm_shared(new ::lcm::LCM());
 
       RobotPlanRunner runner(lcm_shared, *mbd_world.get());
       runner.Run();
@@ -150,6 +155,7 @@ class KukaDemo : public Diagram<T> {
       std::cout<<"Received plan @t=1: "<<poly_trajectory_->value(1 )<<"\n";
 
       std::cout<<"Starting simulation.....\n\n";
+
       target_plan_ = make_unique<TimeVaryingPolynomialSource<T>>(
               *poly_trajectory_.get());
 
@@ -200,14 +206,28 @@ class KukaDemo : public Diagram<T> {
   const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
 
   void SetDefaultState(ContextBase<T>* context) const {
-    ContextBase<T>* controller_context =
-        Diagram<T>::GetMutableSubSystemContext(context, controller_.get());
-    controller_->set_integral_value(controller_context, VectorX<T>::Zero(7));
+    std::cout << "KukaDemo::SetDefaultState(): Method called!" << std::endl;
 
+    // ContextBase<T>* controller_context =
+    //     Diagram<T>::GetMutableSubSystemContext(context, controller_.get());
+    // controller_->set_integral_value(controller_context, VectorX<T>::Zero(7));
+
+    std::cout << "KukaDemo::SetDefaultState(): Before plant_context." << std::endl;
+
+    // TODO(liang.fok): plant_context is nullptr!!!! This causes segfaults later.
+    // File an issue documenting this defect.
+    // Why does it work in kuka_demo.cc????
     ContextBase<T>* plant_context =
         Diagram<T>::GetMutableSubSystemContext(context, plant_.get());
+    std::cout
+        << "KukaDemo::SetDefaultState(): After plant_context."
+        << " - is plant_context nullptr? " << (plant_context == nullptr ? "yes" : "no") << std::endl
+        << " - plant_.get() << " << plant_.get()
+        << std::endl;
 
+    // TODO(liang.fok): This method 
     plant_->ObtainZeroConfiguration(plant_context);
+    std::cout << "KukaDemo::SetDefaultState(): Done method call." << std::endl;
   }
 
  private:
@@ -233,27 +253,30 @@ int DoMain() {
   Simulator<double> simulator(model);  // Use default Context.
 
   model.SetupAndListenForPlan();
+  std::cout << "DoMain: Zeroing the state and initializing the controller state." << std::endl;
   // Zeroes the state and initializes controller state.
   model.SetDefaultState(simulator.get_mutable_context());
 
+  int ii = 0;
+  std::cout << "DoMain: " << ii++ << std::endl;
   simulator.request_initial_step_size_attempt(0.001);
-
+std::cout << "DoMain: " << ii++ << std::endl;
   // Take all the defaults.
   simulator.Initialize();
-
+std::cout << "DoMain: " << ii++ << std::endl;
   EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
       IntegratorType::RungeKutta2);
-
+std::cout << "DoMain: " << ii++ << std::endl;
   // Simulate for 1 seconds.
   simulator.StepTo(20.0);
-
-  const auto& context = simulator.get_context();
-  EXPECT_EQ(context.get_time(), 1.);  // Should be exact.
-
-  EXPECT_EQ(simulator.get_num_steps_taken(), 500);
-  EXPECT_EQ(simulator.get_num_samples_taken(), 0);
-  EXPECT_LE(simulator.get_smallest_step_size_taken(),
-            simulator.get_largest_step_size_taken());
+std::cout << "DoMain: " << ii++ << std::endl;
+  // const auto& context = simulator.get_context();
+//   EXPECT_EQ(context.get_time(), 1.);  // Should be exact.
+// std::cout << "DoMain: " << ii++ << std::endl;
+//   EXPECT_EQ(simulator.get_num_steps_taken(), 500);
+//   EXPECT_EQ(simulator.get_num_samples_taken(), 0);
+//   EXPECT_LE(simulator.get_smallest_step_size_taken(),
+//             simulator.get_largest_step_size_taken());
   return 0;
 }
 

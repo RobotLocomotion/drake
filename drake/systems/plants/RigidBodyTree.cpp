@@ -284,6 +284,11 @@ Eigen::VectorXd RigidBodyTree::getRandomConfiguration(
 }
 
 string RigidBodyTree::getPositionName(int position_num) const {
+  std::cout
+      << "RigidBodyTree::getPositionName: Method called! " << std::endl
+      << " - position_num = " << position_num << std::endl
+      << " - num_positions_ = " << num_positions_ << std::endl;
+
   if (position_num < 0 || position_num >= num_positions_)
     throw std::runtime_error("position_num is out of range");
 
@@ -370,9 +375,18 @@ void RigidBodyTree::drawKinematicTree(
 }
 
 map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
-  map<string, int> name_to_index_map;
+  std::cout
+      << "RigidBodyTree::computePositionNameToIndexMap: "
+      << "Method called!" << std::endl
+      << "  - num_positions_ = " << num_positions_
+      << std::endl;
 
+  map<string, int> name_to_index_map;
   for (int i = 0; i < num_positions_; ++i) {
+    std::cout
+      << "RigidBodyTree::computePositionNameToIndexMap: "
+      << "getPositionName(" << i << ") = " << getPositionName(i)
+      << std::endl;
     name_to_index_map[getPositionName(i)] = i;
   }
   return name_to_index_map;

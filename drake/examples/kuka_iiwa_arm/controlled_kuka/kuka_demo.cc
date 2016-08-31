@@ -316,14 +316,19 @@ class KukaDemo : public Diagram<T> {
   const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
 
   void SetDefaultState(ContextBase<T>* context) const {
-    ContextBase<T>* controller_context =
-        Diagram<T>::GetMutableSubSystemContext(context, controller_.get());
-    controller_->set_integral_value(controller_context, VectorX<T>::Zero(7));
+    std::cout << "KukaDemo::SetDefaultState(): Method called!" << std::endl;
+    // ContextBase<T>* controller_context =
+    //     Diagram<T>::GetMutableSubSystemContext(context, controller_.get());
+    // controller_->set_integral_value(controller_context, VectorX<T>::Zero(7));
 
+
+    std::cout << "KukaDemo::SetDefaultState(): Before plant_context." << std::endl;
     ContextBase<T>* plant_context =
         Diagram<T>::GetMutableSubSystemContext(context, plant_.get());
+    std::cout << "KukaDemo::SetDefaultState(): After plant_context." << std::endl;
 
     plant_->ObtainZeroConfiguration(plant_context);
+    std::cout << "KukaDemo::SetDefaultState(): Done method call." << std::endl;
   }
 
  private:

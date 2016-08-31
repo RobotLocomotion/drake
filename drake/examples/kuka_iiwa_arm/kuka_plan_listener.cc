@@ -66,8 +66,8 @@ void RobotPlanRunner::Run() {
 //  cur_time_ms = iiwa_status_.timestamp;
 
 
-  if (plan_) {
-    std::cout<<"Plan received!\n";
+  if (plan_.get() != nullptr) {
+    std::cout << "Plan received!" << std::endl;
     break;
 //      if (plan_number_ != cur_plan_number) {
 //          std::cout << "Starting new plan." << std::endl;
@@ -112,14 +112,30 @@ void RobotPlanRunner::Run() {
   void RobotPlanRunner::HandlePlan(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
                   const robot_plan_t* plan) {
     std::cout << "New plan received." << std::endl;
+
+    int ii = 0;
+
     //Eigen::MatrixXd traj_mat(kNumJoints, plan->num_states);
+    std::cout << "RobotPlanPlanner::HandlePlan: Instantiating traj_mat of size [7, "
+              << plan->num_states << "]" << std::endl;
     Eigen::MatrixXd traj_mat(7, plan->num_states);
+
+    std::cout << "RobotPlanPlanner::HandlePlan: Zeroing traj_mat." << std::endl;
     traj_mat.fill(0);
 
+    std::cout << "RobotPlanPlanner::HandlePlan: " << ii++ << std::endl;
+
+    std::cout << "RobotPlanPlanner::HandlePlan: calling tree_.computePositionNameToIndexMap()..." << std::endl;
     std::map<std::string, int> name_to_idx =
         tree_.computePositionNameToIndexMap();
+
+    std::cout << "RobotPlanPlanner::HandlePlan: plan->num_states = " << plan->num_states << std::endl;
+
     for (int i = 0; i < plan->num_states; ++i) {
       const auto& state = plan->plan[i];
+
+      std::cout << "RobotPlanPlanner::HandlePlan: state " << i
+                << ", state->num_joints = " << state.num_joints << std::endl;
       for (int j = 0; j < state.num_joints; ++j) {
         if (name_to_idx.count(state.joint_name[j]) == 0) {
           continue;
@@ -129,11 +145,17 @@ void RobotPlanRunner::Run() {
       }
     }
 
+    std::cout << "RobotPlanPlanner::HandlePlan: " << ii++ << std::endl;
+
     std::cout << traj_mat << std::endl;
+
+std::cout << "RobotPlanPlanner::HandlePlan: " << ii++ << std::endl;
 
     std::vector<PPMatrix> polys;
     std::vector<double> times;
     const double kPlanTime = 2.5;
+
+std::cout << "RobotPlanPlanner::HandlePlan: " << ii++ << std::endl;
 
     // For each timestep, create a PolynomialMatrix for each joint
     // position.  Each column of traj_ represents a particular time,
@@ -162,9 +184,16 @@ void RobotPlanRunner::Run() {
       polys.push_back(poly_matrix);
       times.push_back((plan->plan[i].utime * kPlanTime) / 1e6);
     }
+
+    std::cout << "RobotPlanPlanner::HandlePlan: " << ii++ << std::endl;
+
+
     times.push_back(times.back() + 0.01);
     plan_.reset(new PPType(polys, times));
     ++plan_number_;
+
+    std::cout << "RobotPlanPlanner::HandlePlan: DONE!" << std::endl;
+
   }
 
 std::unique_ptr<PiecewisePolynomial<double>> RobotPlanRunner::GetReceivedPlan()
