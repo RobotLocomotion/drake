@@ -21,18 +21,19 @@ lcm_wrap_types(
   lcmt_foot_flag.lcm
   lcmt_force_torque.lcm
   lcmt_grasp_transition_state_t.lcm
-  lcmt_idm_with_trajectory_agent_state_t.lcm
+  lcmt_joint_pd_override.lcm
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
-  lcmt_joint_pd_override.lcm
   lcmt_piecewise_polynomial.lcm
   lcmt_polynomial.lcm
   lcmt_polynomial_matrix.lcm
+  lcmt_plan_control_t.lcm
+  lcmt_plan_status_t.lcm
   lcmt_qp_controller_input.lcm
   lcmt_quadrotor_input_t.lcm
   lcmt_quadrotor_output_t.lcm
-  lcmt_robot_plan_t.lcm
   lcmt_robot_state.lcm
+  lcmt_robot_plan_t.lcm
   lcmt_scope_data.lcm
   lcmt_simple_car_config_t.lcm
   lcmt_simple_car_state_t.lcm
@@ -65,9 +66,9 @@ install(FILES ${c_install_headers} DESTINATION include/lcmtypes)
 install(FILES ${cpp_install_headers} DESTINATION include/lcmtypes/drake)
 
 install(TARGETS drake_lcmtypes
-  ARCHIVE DESTINATION lib${LIB_SUFFIX}
-  INCLUDES DESTINATION include
-)
+    ARCHIVE DESTINATION lib${LIB_SUFFIX}
+    INCLUDES DESTINATION include
+    )
 
 if(PYTHONINTERP_FOUND)
   lcm_install_python(${python_install_sources})
@@ -77,15 +78,17 @@ if(JAVA_FOUND)
   if(NOT TARGET lcm-java)
     message(FATAL_ERROR "lcm-java not found; was LCM built with Java support?")
   endif()
+  pods_find_pkg_config(lcmtypes_bot2-core-java)
+  pods_use_pkg_config_classpath(lcmtypes_bot2-core-java)
 
   pods_find_pkg_config(lcmtypes_bot2-core-java)
   pods_use_pkg_config_classpath(lcmtypes_bot2-core-java)
 
   add_jar(lcmtypes_drake-java
-    OUTPUT_NAME lcmtypes_drake
-    INCLUDE_JARS lcm-java
-    SOURCES ${java_sources}
-  )
+      OUTPUT_NAME lcmtypes_drake
+      INCLUDE_JARS lcm-java
+      SOURCES ${java_sources}
+      )
 
   install_jar(lcmtypes_drake-java share/java)
 endif()

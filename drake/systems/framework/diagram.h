@@ -245,6 +245,26 @@ class Diagram : public System<T> {
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
 
+  /// Returns a const sub-context that corresponds to the system @p sub_system.
+  /// Classes inheriting from %Diagram need access to this method in order to
+  /// pass their constituyent sub-system's the apropriate sub-context.
+  const ContextBase<T>* GetSubSystemContext(
+      const ContextBase<T>& context, const System<T>* sub_system) const {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    return diagram_context->GetSubsystemContext(
+        Diagram<T>::GetSystemIndex(sub_system));
+  }
+
+  /// Returns the sub-context that corresponds to the system @p sub_system.
+  /// Classes inheriting from %Diagram need access to this method in order to
+  /// pass their constituyent sub-system's the apropriate sub-context.
+  ContextBase<T>* GetMutableSubSystemContext(
+      ContextBase<T>* context, const System<T>* sub_system) const {
+    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+    return diagram_context->GetMutableSubsystemContext(
+        Diagram<T>::GetSystemIndex(sub_system));
+  }
+
  private:
   // A structural outline of a Diagram, produced by DiagramBuilder.
   struct Blueprint {

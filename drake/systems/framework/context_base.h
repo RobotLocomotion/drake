@@ -35,7 +35,7 @@ class ContextBase {
   const T& get_time() const { return get_step_info().time_sec; }
 
   /// Set the current time in seconds.
-  virtual void set_time(const T& time_sec)  {
+  virtual void set_time(const T& time_sec) {
     get_mutable_step_info()->time_sec = time_sec;
   }
 
@@ -75,6 +75,16 @@ class ContextBase {
   /// Returns writable access to the State. No cache invalidation occurs until
   /// mutable access is requested for particular blocks of state variables.
   virtual State<T>* get_mutable_state() = 0;
+
+  /// Returns a mutable pointer to the continuous component of the state vector.
+  StateVector<T>* get_mutable_xc() {
+    return get_mutable_state()->continuous_state->get_mutable_state();
+  }
+
+  /// Returns a const reference to the continuous component of the state vector.
+  const StateVector<T>& get_xc() const {
+    return get_state().continuous_state->get_state();
+  }
 
   /// Returns a deep copy of this ContextBase. The clone's input ports will
   /// hold deep copies of the data that appears on this context's input ports

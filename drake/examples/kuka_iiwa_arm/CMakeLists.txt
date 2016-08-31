@@ -6,18 +6,23 @@ if(lcm_FOUND)
     drakeLCMSystem)
   add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
 
-  add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES
-          iiwa_simulation.cc)
+  add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES iiwa_simulation.cc
+      polynomial_trajectory_fit_generator.cc
+      kuka_plan_listener.cc)
   target_link_libraries(drakeKukaIiwaArm
+    drakeCommon
+    drakeIK
+    drakeLCMSystem
     drakeRBSystem
     drakeShapes
-    drakeCommon
-    drakeLCMSystem)
-  pods_install_libraries(drakeKukaIiwaArm)
+    drakeTrajectories)
   drake_install_headers(
-          iiwa_simulation.h)
+    iiwa_simulation.h
+    polynomial_trajectory_fit_generator.h
+    kuka_plan_listener.h)
+  pods_install_libraries(drakeKukaIiwaArm)
   pods_install_pkg_config_file(drake-kuka-iiwa-arm
-          LIBS -ldrakeKukaIiwaArm
+          LIBS -ldrakeKukaIiwaArm 
           REQUIRES
           VERSION 0.0.1)
   add_dependencies(drakeKukaIiwaArm
@@ -28,26 +33,32 @@ if(lcm_FOUND)
     drakeKukaIiwaArm
     drake_lcmtypes
     threads)
+
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
   target_link_libraries(kuka_ik_demo drakeIK
+    drakeLCMSystem
     drakeTrajectories
-    drakeRBM
-    drakeLCMSystem)
+    drakeRBM)
+
+  pods_find_pkg_config(lcmtypes_bot2-core)
+  add_executable(kuka_plan_runner kuka_plan_runner.cc)
+  target_link_libraries(kuka_plan_runner
+      drakeTrajectories
+      drakeRBM
+      drakeLCMSystem)
 
   add_executable(run_kuka_iiwa_gravity_compensated_torque_control
           run_kuka_iiwa_gravity_compensated_torque_control.cc)
   target_link_libraries(run_kuka_iiwa_gravity_compensated_torque_control
           drakeKukaIiwaArm
-          drakeRBSystem
-          drakeLCMSystem
           gflags)
+
+  include_directories(${CMAKE_INSTALL_PREFIX}/include/lcmtypes)
 
   add_executable(run_kuka_iiwa_gravity_compensated_position_control
           run_kuka_iiwa_gravity_compensated_position_control.cc)
   target_link_libraries(run_kuka_iiwa_gravity_compensated_position_control
           drakeKukaIiwaArm
-          drakeRBSystem
-          drakeLCMSystem
           gflags)
 
   pods_find_pkg_config(lcmtypes_bot2-core)
@@ -63,4 +74,5 @@ if(lcm_FOUND)
   include_directories(${CMAKE_INSTALL_PREFIX}/include/lcmtypes)
 endif()
 
+add_subdirectory(controlled_kuka)
 add_subdirectory(test)

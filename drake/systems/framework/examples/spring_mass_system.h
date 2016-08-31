@@ -8,6 +8,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
@@ -56,7 +57,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
 ///
 /// Units are MKS (meters-kilograms-seconds).
 class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
-    : public System<double> {
+    : public LeafSystem<double> {
  public:
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
@@ -86,12 +87,12 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
 
   /// Gets the current position of the mass in the given Context.
   double get_position(const MyContext& context) const {
-    return get_state(context).get_position();
+    return context.get_state().continuous_state->get_state().GetAtIndex(0);
   }
 
   /// Gets the current velocity of the mass in the given Context.
   double get_velocity(const MyContext& context) const {
-    return get_state(context).get_velocity();
+    return context.get_state().continuous_state->get_state().GetAtIndex(1);
   }
 
   /// @returns the external driving force to the system.
@@ -115,23 +116,26 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
   /// Gets the current value of the conservative power integral in the given
   /// Context.
   double get_conservative_work(const MyContext& context) const {
-    return get_state(context).get_conservative_work();
+    return context.get_state().continuous_state->get_state().GetAtIndex(2);
   }
 
   /// Sets the position of the mass in the given Context.
   void set_position(MyContext* context, double position) const {
-    get_mutable_state(context)->set_position(position);
+    context->get_mutable_state()->continuous_state->get_mutable_state()->SetAtIndex(0, position);
+    //get_mutable_state(context)->set_position(position);
   }
 
   /// Sets the velocity of the mass in the given Context.
   void set_velocity(MyContext* context, double velocity) const {
-    get_mutable_state(context)->set_velocity(velocity);
+    context->get_mutable_state()->continuous_state->get_mutable_state()->SetAtIndex(1, velocity);
+    //get_mutable_state(context)->set_velocity(velocity);
   }
 
   /// Sets the initial value of the conservative power integral in the given
   /// Context.
   void set_conservative_work(MyContext* context, double energy) const {
-    get_mutable_state(context)->set_conservative_work(energy);
+    context->get_mutable_state()->continuous_state->get_mutable_state()->SetAtIndex(2, energy);
+    //get_mutable_state(context)->set_conservative_work(energy);
   }
 
   /// Returns the force being applied by the spring to the mass in the given
@@ -188,7 +192,16 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
   double EvalNonConservativePower(const MyContext& context) const override;
 
   // Implement base class methods.
+  /// Allocates a state and sets initial conditions to zero.
+  std::unique_ptr<MyContext> CreateDefaultContext() const override {
+    auto context = LeafSystem<double>::CreateDefaultContext();
+    set_position(context.get(), 0.0);
+    set_velocity(context.get(), 0.0);
+    set_conservative_work(context.get(), 0.0);
+    return context;
+  }
 
+#if 0
   /// Allocates a state of type SpringMassStateVector.
   /// Allocates no input ports.
   std::unique_ptr<MyContext> CreateDefaultContext() const override;
@@ -199,11 +212,17 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
 
   /// Allocates state derivatives of type SpringMassStateVector.
   std::unique_ptr<MyContinuousState> AllocateTimeDerivatives() const override;
+#endif
 
   void EvalOutput(const MyContext& context, MyOutput* output) const override;
 
   void EvalTimeDerivatives(const MyContext& context,
                            MyContinuousState* derivatives) const override;
+
+ protected:
+  // LeafSystem<T> override
+  std::unique_ptr<ContinuousState<double>>
+  AllocateContinuousState() const override;
 
  private:
   // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,

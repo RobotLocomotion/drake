@@ -1,17 +1,17 @@
 package drake;
 
 //grasp transitions can be triggered off time or when the ee reaches a particular pose.
-struct grasp_transition_state_t 
+struct grasp_transition_state_t
 {
-    int64_t utime;  
-    int32_t affordance_uid;  
+    int64_t utime;
+    int32_t affordance_uid;
     bot_core.position_3d_t hand_pose; // world/body/affordance relative pose where grasp should activate.
-    
+
     boolean grasp_on;
-    int16_t grasp_type; // see constants below 
+    int16_t grasp_type; // see constants below
     const int16_t LEFT=0, RIGHT=1;
-    boolean power_grasp; 
-    
+    boolean power_grasp;
+
     //desired hand posture
     int32_t num_joints;
     string joint_name [num_joints];

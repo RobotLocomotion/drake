@@ -1,22 +1,29 @@
 #include "iiwa_simulation.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/systems/plants/IKoptions.h"
+#include "drake/systems/plants/RigidBodyIK.h"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
+using Eigen::VectorXi;
 using drake::RigidBodySystem;
 using lcm::LCM;
 
-std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
+std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(
+const std::string &file_name) {
   // Instantiates a rigid body system and adds the robot arm to it.
   auto rigid_body_system = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  rigid_body_system->AddModelInstanceFromFile(
-      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      DrakeJoint::FIXED);
+  rigid_body_system->AddModelInstanceFromFile(drake::GetDrakePath() + file_name,
+                                              DrakeJoint::FIXED);
 
   // Sets some simulation parameters.
   rigid_body_system->penetration_stiffness = 3000.0;
@@ -48,10 +55,9 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
 }
 
 std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
-    CreateKukaIiwaVisualizer(
+CreateKukaIiwaVisualizer(
     const std::shared_ptr<drake::RigidBodySystem> iiwa_system,
     const std::shared_ptr<lcm::LCM> lcm) {
-
   // Extracts the tree.
   const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
 
@@ -65,18 +71,19 @@ std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
 DRAKEKUKAIIWAARM_EXPORT
 Eigen::VectorXd GenerateArbitraryIiwaInitialState() {
   const int kStateDimension = 14;  // Fixed for the IIWA Arm.
-  const int kNumDof = 7;  // Fixed for the IIWA Arm.
+  const int kNumDof = 7;           // Fixed for the IIWA Arm.
   Eigen::VectorXd arbitrary_initial_state =
       Eigen::VectorXd::Zero(kStateDimension, 1);
-  arbitrary_initial_state.head(kNumDof) << 0.01, -0.01, 0.01, 0.5,
-      0.01, -0.01, 0.01;
-  return(arbitrary_initial_state);
+  arbitrary_initial_state.head(kNumDof) << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01,
+      0.01;
+  return (arbitrary_initial_state);
 }
 
-drake::SimulationOptions SetupSimulation(double initial_step_size) {
+drake::SimulationOptions SetupSimulation(double initial_step_size,
+                                         double real_time_factor) {
   // Specifies the simulation options.
   drake::SimulationOptions options;
-  options.realtime_factor = 0;  // As fast as possible.
+  options.realtime_factor = real_time_factor;
   options.initial_step_size = initial_step_size;
 
   // Prevents exception from being thrown when simulation runs slower than real
@@ -154,6 +161,101 @@ void CheckLimitViolations(
                                  std::to_string(max_limit[ii]) + ").");
       }
     }
+  }
+}
+
+// TODO(naveenoid) : For now this method is copy-paste from the kuka_ik_demo.cc.
+// Modify to fit future demo scenario requirements.
+void GenerateIKDemoJointTrajectory(
+    const std::shared_ptr<RigidBodyTree> iiwa_tree,
+    MatrixXd& joint_trajectories, std::vector<double>& time_stamps) {
+  // Create a basic pointwise IK trajectory for moving the iiwa arm.
+  // We start in the zero configuration (straight up).
+
+  VectorXd zero_conf = iiwa_tree->getZeroConfiguration();
+  VectorXd joint_lb = zero_conf - VectorXd::Constant(7, 0.01);
+  VectorXd joint_ub = zero_conf + VectorXd::Constant(7, 0.01);
+
+  PostureConstraint pc1(iiwa_tree.get(), Vector2d(0, 0.5));
+  VectorXi joint_idx(7);
+  joint_idx << 0, 1, 2, 3, 4, 5, 6;
+  pc1.setJointLimits(joint_idx, joint_lb, joint_ub);
+
+  // Define an end effector constraint and make it active for the
+  // timespan from 1 to 3 seconds.
+  Vector3d pos_end;
+  pos_end << 0.6, 0, 0.325;
+  Vector3d pos_lb = pos_end - Vector3d::Constant(0.005);
+  Vector3d pos_ub = pos_end + Vector3d::Constant(0.005);
+  WorldPositionConstraint wpc(iiwa_tree.get(),
+                              iiwa_tree->FindBodyIndex("iiwa_link_ee"),
+                              Vector3d::Zero(), pos_lb, pos_ub,
+                              Vector2d(1, 3));
+
+  // After the end effector constraint is released, apply the straight
+  // up (all joints at position zero) configuration again.
+  PostureConstraint pc2(iiwa_tree.get(), Vector2d(4, 5.9));
+  pc2.setJointLimits(joint_idx, joint_lb, joint_ub);
+
+  // Bring back the end effector constraint when simulation time reaches 9
+  // seconds.
+  WorldPositionConstraint wpc2(
+      iiwa_tree.get(), iiwa_tree->FindBodyIndex("iiwa_link_ee"),
+      Vector3d::Zero(), pos_lb, pos_ub, Vector2d(6, 9));
+
+  // For part of the remaining time, constrain the second joint while
+  // preserving the end effector constraint.
+  //
+  // Variable `joint_position_start_idx` below is a collection of offsets into
+  // the state vector referring to the positions of the joints to be
+  // constrained.
+  Eigen::VectorXi joint_position_start_idx(1);
+  joint_position_start_idx(0) = iiwa_tree->FindChildBodyOfJoint("iiwa_joint_2")
+                                    ->get_position_start_index();
+  PostureConstraint pc3(iiwa_tree.get(), Vector2d(6, 8));
+  pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
+
+  time_stamps.push_back(0.0);
+  time_stamps.push_back(2.0);
+  time_stamps.push_back(5.0);
+  time_stamps.push_back(7.0);
+  time_stamps.push_back(9.0);
+
+  std::vector<RigidBodyConstraint*> constraint_array;
+
+  constraint_array.push_back(&pc1);
+  constraint_array.push_back(&wpc);
+  constraint_array.push_back(&pc2);
+  constraint_array.push_back(&pc3);
+  constraint_array.push_back(&wpc2);
+
+  int num_constraints = constraint_array.size();
+
+  IKoptions ikoptions(iiwa_tree.get());
+  std::vector<int> info(num_constraints);
+
+  MatrixXd q0(iiwa_tree->number_of_positions(), num_constraints);
+  q0 = zero_conf.replicate(1, num_constraints);
+
+  joint_trajectories =
+      MatrixXd::Zero(iiwa_tree->number_of_positions(), num_constraints);
+  std::vector<std::string> infeasible_constraint;
+
+  inverseKinPointwise(iiwa_tree.get(), num_constraints, time_stamps.data(), q0,
+                      q0, constraint_array.size(), constraint_array.data(),
+                      ikoptions, &joint_trajectories, info.data(),
+                      &infeasible_constraint);
+
+  // Check feasibility of the result at each constraint point.
+  bool info_good = true;
+  for (int i = 0; i < num_constraints; ++i) {
+    if (info[i] != 1) {
+      info_good = false;
+    }
+  }
+
+  if (!info_good) {
+    throw std::runtime_error("Inverse Kinematics solution not found.");
   }
 }
 
