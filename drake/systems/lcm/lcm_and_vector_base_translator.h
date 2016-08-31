@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 #include "drake/drakeLCMSystem2_export.h"
@@ -14,29 +15,32 @@ namespace lcm {
  * Defines an abstract parent class of all translators that convert between
  * LCM message bytes and `drake::systems::VectorBase` objects.
  */
-class LcmAndVectorBaseTranslator {
+class DRAKELCMSYSTEM2_EXPORT LcmAndVectorBaseTranslator {
  public:
   /**
    * The constructor.
    *
    * @param[in] size The size of the vector in the `VectorBase`.
    */
-  explicit LcmAndVectorBaseTranslator(int size) : size_(size) {
-  }
-
-  // Disable copy and assign.
-  LcmAndVectorBaseTranslator(const LcmAndVectorBaseTranslator&) =
-      delete;
-  LcmAndVectorBaseTranslator& operator=(
-      const LcmAndVectorBaseTranslator&) = delete;
+  explicit LcmAndVectorBaseTranslator(int size);
+  virtual ~LcmAndVectorBaseTranslator();
 
   /**
    * Returns the size of the vector in the `drake::systems::VectorBase`
    * object.
    */
-  int get_vector_size() const {
-    return size_;
-  }
+  int get_vector_size() const;
+
+  /**
+   * Allocates the vector storage for an output port of our LCM message type,
+   * in case special storage is needed.  A result of nullptr indicates that no
+   * special vector is needed; the calling code can and should use a default
+   * vector implementation such as BasicVector.
+   *
+   * The default implementation in this class returns nullptr.  Subclasses that
+   * require custom VectorBase subtypes should override it.
+   */
+  virtual std::unique_ptr<VectorBase<double>> AllocateOutputVector() const;
 
   /**
    * Translates LCM message bytes into a `drake::systems::VectorBase` object.
@@ -74,6 +78,12 @@ class LcmAndVectorBaseTranslator {
  private:
   // The size of the vector in the VectorBase.
   const int size_;
+
+  // Disable copy and assign.
+  LcmAndVectorBaseTranslator(const LcmAndVectorBaseTranslator&) =
+      delete;
+  LcmAndVectorBaseTranslator& operator=(
+      const LcmAndVectorBaseTranslator&) = delete;
 };
 
 }  // namespace lcm

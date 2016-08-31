@@ -58,23 +58,31 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
 
   ~LcmSubscriberSystem() override;
 
-  // Disable copy and assign.
-  LcmSubscriberSystem(const LcmSubscriberSystem&) = delete;
-  LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
-
   std::string get_name() const override;
 
-  /**
-   * Computes the output for the given context, possibly updating values
-   * in the cache. Note that the context is ignored since it contains no
-   * information.
-   */
   void EvalOutput(const ContextBase<double>& context,
                   SystemOutput<double>* output) const override;
 
+  /**
+   * Sets the `message_bytes` that will provide the value for `EvalOutput`;
+   * typically only used for unit testing.
+   *
+   * This class's constructors subscribe to an `LCM` channel that provides the
+   * values for `EvalOutput`.  However, if `LCM` is not providing any message
+   * data (e.g., in a unit test, or if the channel is not being published
+   * during a simulation), this method can be used to provide a value.
+   *
+   * When both `LCM` and `SetMessage` are updating the output value, the most
+   * recent update wins.
+   */
+  void SetMessage(std::vector<uint8_t> message_bytes);
+
+ protected:
+  std::unique_ptr<VectorBase<double>> AllocateOutputVector(
+      const SystemPortDescriptor<double>& descriptor) const override;
+
  private:
-  // Translates the message contained within the receive buffer by storing its
-  // information in basic_vector_.
+  // Callback entry point from LCM into this class.
   void HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                      const std::string& channel);
 
@@ -85,14 +93,15 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
   // drake::systems::VectorBase objects.
   const LcmAndVectorBaseTranslator& translator_;
 
-  // A mutex for protecting data that's shared by the LCM receive thread and
-  // the thread that calls LcmSubscriberSystem::Output().
-  mutable std::mutex data_mutex_;
+  // The mutex that guards received_message_.
+  mutable std::mutex received_message_mutex_;
 
-  // Holds the information contained with the latest LCM message. This
-  // information is copied into this system's output port when Output(...) is
-  // called.
-  BasicVector<double> basic_vector_;
+  // The bytes of the most recently received LCM message.
+  std::vector<uint8_t> received_message_;
+
+  // Disable copy and assign.
+  LcmSubscriberSystem(const LcmSubscriberSystem&) = delete;
+  LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
 };
 
 }  // namespace lcm
