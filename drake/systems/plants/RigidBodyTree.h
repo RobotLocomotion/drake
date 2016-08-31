@@ -62,8 +62,9 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * RigidBodyTree::number_of_positions() +
  * RigidBody::get_velocity_start_index(). Note that the velocity index starts
  * at the beginning of the velocity state variables and not at the beginning of
- * the full state of this RigidBodyTree. This is why we need to add the total
- * number of positions to the index to get its index in the full state vector.
+ * the full state of this RigidBodyTree. This is why the total number of
+ * positions needs to be added to the velocity index to get its index in the
+ * RigidBodyTree's full state vector.
  */
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
