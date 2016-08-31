@@ -3,14 +3,6 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
-#include "drake/common/eigen_types.h"
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/integrator.h"
-#include "drake/systems/framework/system_port_descriptor.h"
-
 using std::make_unique;
 
 namespace drake {
@@ -19,16 +11,17 @@ namespace {
 
 const double kSpring = 300.0;  // N/m
 const double kMass = 2.0;      // kg
-const double Kp = 1.0;
-const double Kd = 1.0;
-const double Ki = 1.0;
+const double Kp = 1.0;  // Controller's proportional constant.
+const double Kd = 1.0;  // Controller's derivative constant.
+const double Ki = 1.0;  // Controller's integral constant.
+const double x_target = 1.0;  // The target position.
 
 class DiagramTest : public ::testing::Test {
  protected:
   void SetUp() override {
     model_ =
         make_unique<PidControlledSpringMassSystem<double>>(
-            kSpring, kMass, Kp, Ki, Kd);
+            kSpring, kMass, Kp, Ki, Kd, x_target);
 
     context_ = model_->CreateDefaultContext();
     output_ = model_->AllocateOutput(*context_);
@@ -51,7 +44,6 @@ class DiagramTest : public ::testing::Test {
 
 // Tests that the diagram computes the correct sum.
 TEST_F(DiagramTest, EvalOutput) {
-
   // Sets a non-zero initial condition.
   model_->set_position(context_.get(), 2.0);
   model_->set_velocity(context_.get(), -1.0);
@@ -74,7 +66,7 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
       model_->AllocateTimeDerivatives();
 
   const double x0 = 2.0;
-  const double v0 = -1.0;
+  const double v0 = -1.5;
 
   // Sets a non-zero initial condition.
   model_->set_position(context_.get(), x0);
@@ -98,8 +90,8 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
   EXPECT_EQ(v0, plant_xcdot.get_state().GetAtIndex(0));
 
   // Acceleration.
-  const double error = x0;  // target position is zero.
-  const double error_rate = v0;
+  const double error = x0 - x_target;
+  const double error_rate = v0;  // target velocity is zero.
   const double pid_actuation = Kp * error +  Kd * error_rate;
   EXPECT_EQ((-kSpring * x0 - pid_actuation) / kMass,
             plant_xcdot.get_state().GetAtIndex(1));

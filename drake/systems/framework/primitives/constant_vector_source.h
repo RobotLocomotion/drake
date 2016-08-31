@@ -29,6 +29,12 @@ class ConstantVectorSource : public LeafSystem<T> {
   explicit ConstantVectorSource(
       const Eigen::Ref<const VectorX<T>>& source_value);
 
+  /// Constructs a system with a scalar valued of type T output that is constant
+  /// and equals the supplied @p source_value at all times.
+  /// @param source_value the constant value of the output so that
+  /// `y = source_value` at all times.
+  explicit ConstantVectorSource(const T& source_value);
+
   /// Outputs a signal with a fixed value as specified by the user.
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override;

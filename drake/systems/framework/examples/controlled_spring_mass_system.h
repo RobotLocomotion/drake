@@ -4,6 +4,8 @@
 
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/examples/spring_mass_system.h"
+#include "drake/systems/framework/primitives/adder.h"
+#include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/pid_controller2.h"
@@ -29,8 +31,10 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   /// @param Kp the proportional constant.
   /// @param Ki the integral constant.
   /// @param Kd the derivative constant.
+  /// @param target_position the derivative constant.
   PidControlledSpringMassSystem(const T& spring_stiffness, const T& mass,
-                                const T& Kp, const T& Ki, const T& Kd);
+                                const T& Kp, const T& Ki, const T& Kd,
+                                const T& target_position);
 
   ~PidControlledSpringMassSystem() override {}
 
@@ -51,7 +55,10 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   std::unique_ptr<SpringMassSystem> plant_;
   std::unique_ptr<PidController<T>> controller_;
   std::unique_ptr<Demultiplexer<T>> demux_;
-  std::unique_ptr<Gain<T>> inverter_;
+  std::unique_ptr<Gain<T>> pid_inverter_;
+  std::unique_ptr<Gain<T>> target_inverter_;
+  std::unique_ptr<ConstantVectorSource<T>> target_;
+  std::unique_ptr<Adder<T>> state_minus_target_;
 };
 
 }  // namespace systems

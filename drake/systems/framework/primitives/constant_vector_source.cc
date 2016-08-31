@@ -1,6 +1,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -14,6 +15,12 @@ ConstantVectorSource<T>::ConstantVectorSource(
     : source_value_(source_value) {
   this->DeclareOutputPort(kVectorValued, source_value.rows(),
                           kContinuousSampling);
+}
+
+template <typename T>
+ConstantVectorSource<T>::ConstantVectorSource(const T& source_value)
+    : source_value_(Vector1<T>::Constant(source_value)) {
+  this->DeclareOutputPort(kVectorValued, 1, kContinuousSampling);
 }
 
 template <typename T>
