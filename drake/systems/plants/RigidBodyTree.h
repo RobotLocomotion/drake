@@ -34,27 +34,31 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
 /**
  * Maintains a vector of RigidBody objects that are arranged into a kinematic
- * tree structure via DrakeJoint objects. It provides various utility methods
- * for computing kinematic and dynamics properties of the RigidBodyTree.
+ * tree via DrakeJoint objects. It provides various utility methods for
+ * computing kinematic and dynamics properties of the RigidBodyTree.
  *
  * The internal organization of a RigidBodyTree's generalized state vector is as
  * follows:
  *
  * <pre>
- * [vector of model instance 1's coordinate states]
- * [vector of model instance 2's coordinate states]
+ * [model instance 1's generalized coordinate vector]
+ * [model instance 2's generalized coordinate vector]
  * ...
- * [vector of model instance 1's velocity states]
- * [vector of model instance 2's velocity states]
+ * [model instance 1's generalized velocity vector]
+ * [model instance 2's generalized velocity vector]
  * ...
  * </pre>
  *
  * Each RigidBody object maintains indices to its mobilizer's generalized
  * coordinate vector and generalized velocity vector in the RigidBodyTree's
- * generalized state vector. The starting index of a RigidBody's mobilizer's
- * generalized coordinate vector can be obtained by executing
- * RigidBody::get_position_start_index(). The starting index of a RigidBody's
- * mobilizer's generalized velocity vector can be computed as follows:
+ * generalized state vector.
+ *
+ * The starting index of a RigidBody's mobilizer's generalized coordinate vector
+ * in the RigidBodyTree's generalized state vector can be obtained by executing
+ * RigidBody::get_position_start_index().
+ *
+ * The starting index of a RigidBody's mobilizer's generalized velocity vector
+ * in the RigidBodyTree's generalized state vector can be computed as follows:
  * RigidBodyTree::number_of_positions() +
  * RigidBody::get_velget_velocity_start_index().
  */
