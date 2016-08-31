@@ -248,12 +248,20 @@ if(lcm_FOUND)
   # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
   execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
   if(NOT LCMGL_BUILD_DIR)
-    message(WARNING "\n\n----- IMPORTANT: bot2-lcmgl not found")
+    message("
+  --------------------------------------------------------------------------------
+    *** IMPORTANT: bot2-lcmgl build directory not found. ***
+  --------------------------------------------------------------------------------
+    ")
   else()
     string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
     find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${LCMGL_BUILD_DIR}/share/java/")
     if(NOT LCMGL_JAR_FILE)
-      message(FATAL_ERROR "\n\n----- ERROR: bot2-lcmgl not found")
+      message(FATAL_ERROR "
+  --------------------------------------------------------------------------------
+    *** IMPORTANT: bot2-lcmgl JAR file not found. ***
+  --------------------------------------------------------------------------------
+      ")
     else()
       message(STATUS "Found bot2-lcmgl")
     endif()
@@ -280,7 +288,11 @@ else()
     set(eigen3_FOUND 1)
     include_directories(${EIGEN3_INCLUDE_DIR})
   else()
-    message(FATAL_ERROR "Could not find eigen, which is a required depedency")
+    message(FATAL_ERROR "
+  --------------------------------------------------------------------------------
+    *** IMPORTANT: REQUIRED dependency Eigen 3 not found. ***
+  --------------------------------------------------------------------------------
+    ")
   endif()
 endif()
 
