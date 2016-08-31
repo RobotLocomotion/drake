@@ -1,6 +1,5 @@
 # pragma once
 
-
 #include <cstdint>
 #include <memory>
 
@@ -12,7 +11,9 @@
 namespace drake {
 namespace systems {
 
-/// A source block with a which generates the value of  at all times.
+/// A source block with a which generates the value of a PieceWisePolynomial
+/// at all times.
+///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
@@ -23,13 +24,15 @@ namespace systems {
 template <typename T>
 class TimeVaryingPolynomialSource : public LeafSystem<T> {
  public:
-  /// Constructs a system with a vector output that is constant and equals the
-  /// supplied @p source_value at all times.
-  /// @param source_value the constant value of the output so that
-  /// `y = source_value` at all times.
+  /// Constructs a system with a vector output that is time-varying and equals
+  /// the value of the piecewise polynomial evaluated at a each time.
+  /// supplied
+  /// @param pp_traj PiecewisePolynomial used by the system. so that the output
+  /// is `y = pp_traj(t)` at all times.
   explicit TimeVaryingPolynomialSource(const PiecewisePolynomial<double>& pp_traj);
 
-  /// Outputs a signal with a fixed value as specified by the user.
+  /// Outputs a signal with a time-varying polynomial value as specified by the
+  /// user.
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override;
 
