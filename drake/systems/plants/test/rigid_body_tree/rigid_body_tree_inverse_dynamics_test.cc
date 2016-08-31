@@ -162,11 +162,12 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   auto gravitational_force =
       (gravitational_acceleration.cast<ADScalar>() * tree->getMass()).eval();
   auto center_of_mass = tree->centerOfMass(kinematics_cache_autodiff);
-  ADScalar gravitational_potential_energy = -center_of_mass.dot(gravitational_force);
+  ADScalar gravitational_potential_energy =
+      -center_of_mass.dot(gravitational_force);
 
   EXPECT_TRUE(CompareMatrices(gravitational_forces,
-                              gravitational_potential_energy.derivatives(), 1e-10,
-                              MatrixCompareType::absolute));
+                              gravitational_potential_energy.derivatives(),
+                              1e-10, MatrixCompareType::absolute));
 }
 
 // Check that momentum rate of change is equal to the sum of all external
