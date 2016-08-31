@@ -1,0 +1,26 @@
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="drake_prius" >
+  <!-- RViz uses package:// for the model path. -->
+  <property name="modelPath"
+            value="package://drake_cars_examples/models/drake_prius" />
+
+  <xacro:include
+      filename="$(find drake_cars_examples)/models/drake_prius/xacro/drake_prius_base.xacro" />
+
+  <link name="world">
+    <inertial>
+      <mass value="0" />
+      <origin rpy="0 0 0"
+              xyz="${world_x} ${world_y} ${world_z}" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+
+  <joint name="virtual_floating_dofs" type="floating">
+    <origin rpy="${world_roll} ${world_pitch} ${world_yaw}"
+            xyz="${world_x} ${world_y} ${world_z}" />
+    <axis xyz="0 0 1" />
+    <parent link="world" />
+    <child link="chassis_floor" />
+  </joint>
+
+</robot>

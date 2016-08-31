@@ -12,6 +12,11 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
 
   virtual ~FixedJoint() {}
 
+  /**
+   * Returns true since this joint is fixed.
+   */
+  bool is_fixed() const override { return true; };
+
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {

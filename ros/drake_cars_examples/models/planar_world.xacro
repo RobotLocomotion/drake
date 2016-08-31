@@ -1,0 +1,30 @@
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="planar_world" >
+
+  <link name="ground_plane">
+    <!--
+    Inertia data is arbitrary. Its purpose here is to evade the
+         joint-welding checks in RigidBodyTree.cpp. The resulting world-object
+         joint should be a full 6DF floating joint.
+    -->
+<!--     <inertial>
+      <mass value="14.28" />
+      <inertia iyy=".77843904" ixx=".49991220" izz=".49991220" />
+    </inertial> -->
+    <visual>
+      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <geometry>
+        <box size="40.0 40.0 2.0" />
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1" />
+      </material>
+    </visual>
+    <collision name="world_link_collision">
+      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <geometry>
+        <box size="40.0 40.0 2.0" />
+      </geometry>
+    </collision>
+  </link>
+
+</robot>

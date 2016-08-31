@@ -1,0 +1,13 @@
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="Prius" >
+
+  <property name="world_roll" value="0" />
+  <property name="world_pitch" value="0" />
+  <property name="world_yaw" value="0" />
+  <property name="world_x" value="5" />
+  <property name="world_y" value="-5" />
+  <property name="world_z" value="1.2" />
+
+  <xacro:include
+      filename="$(find drake_cars_examples)/models/drake_prius/xacro/drake_prius_free_in_world_base.xacro" />
+
+</robot>

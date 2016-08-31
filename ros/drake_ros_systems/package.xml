@@ -42,6 +42,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>ackermann_msgs</build_depend>
   <build_depend>drake</build_depend>
+  <build_depend>drake_ros_common</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>tf</build_depend>
 

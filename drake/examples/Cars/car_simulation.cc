@@ -13,6 +13,7 @@ using drake::parsers::ModelInstanceIdTable;
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using drake::parsers::ModelInstanceIdTable;
 
 namespace drake {
 namespace examples {
@@ -168,19 +169,33 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   MatrixXd Kd(getNumInputs(*rigid_body_sys), tree->number_of_velocities());
   Kd.setZero();
 
-  Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(
-      tree->number_of_positions() + tree->number_of_velocities(), 3);
+  // Computes the length of x_d, the desired state of each actuator DOF.
+  int length_of_x_d =
+      tree->number_of_positions() + tree->number_of_velocities();
+
+  // Instantiates a N x 3 matrix called map_driving_cmd_to_x_d where N is the
+  // number position and velocity states in the rigid body tree. The three
+  // columns are defined by drake::DrivingCommandIndices
+  // (see: drake/examples/Cars/car_simulation.h) to be as follows:
+  //
+  //  Column Index     Meaning
+  //      0            gain of Steering angle
+  //      1            gain of Throttle
+  //      2            gain of Brake
+  //
+  Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(length_of_x_d, 3);
   map_driving_cmd_to_x_d.setZero();
 
   for (int actuator_idx = 0;
        actuator_idx < static_cast<int>(tree->actuators.size());
        actuator_idx++) {
+    // Obtains the actuator's name.
     const std::string& actuator_name = tree->actuators[actuator_idx].name_;
 
-    if (actuator_name == "steering") {
-      // Obtains the rigid body to which the actuator is attached.
-      const auto& rigid_body = tree->actuators[actuator_idx].body_;
+    // Obtains the rigid body to which the actuator is attached.
+    const auto& rigid_body = tree->actuators[actuator_idx].body_;
 
+    if (actuator_name == "steering") {
       // Sets the steering actuator's Kp gain.
       Kp(actuator_idx, rigid_body->get_position_start_index()) = kpSteering;
 
@@ -188,15 +203,13 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
       Kd(actuator_idx, rigid_body->get_velocity_start_index()) = kdSteering;
 
       // Saves the mapping between the driving command and the steering command.
-      map_driving_cmd_to_x_d(rigid_body->get_position_start_index(),
-                             DrivingCommandIndices::kSteeringAngle) =
+      map_driving_cmd_to_x_d(
+          rigid_body->get_position_start_index(),
+          DrivingCommandIndices::kSteeringAngle) =
           1;  // steering command
 
     } else if (actuator_name == "right_wheel_joint" ||
                actuator_name == "left_wheel_joint") {
-      // Obtains the rigid body to which the actuator is attached.
-      const auto& rigid_body = tree->actuators[actuator_idx].body_;
-
       // Sets the throttle Kd gain.
       Kd(actuator_idx, rigid_body->get_velocity_start_index()) = kThrottle;
 
@@ -223,6 +236,122 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
               Gain<DrivingCommand1,
                    PDControlSystem<RigidBodySystem>::InputVector>>(),
           map_driving_cmd_to_x_d),
+      vehicle_with_pd);
+
+  return vehicle_sys;
+}
+
+std::shared_ptr<CascadeSystem<
+    Gain<MultiDrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
+    PDControlSystem<RigidBodySystem>>>
+CreateMultiVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
+    const std::map<int, std::string>* model_instance_name_table) {
+  const auto& tree = rigid_body_sys->getRigidBodyTree();
+
+  // Sets up PD controllers for throttle and steering.
+  const double kpSteering = 400, kdSteering = 80, kThrottle = 100;
+
+  MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->number_of_positions());
+  Kp.setZero();
+
+  MatrixXd Kd(getNumInputs(*rigid_body_sys), tree->number_of_velocities());
+  Kd.setZero();
+
+  // Computes the number of columns in the map_driving_cmd_to_x_d matrix.
+  // Since each vehicle has 3 commands (steering, throttle, and brake), the
+  // number of columns should be 3 times the number of vehicles.
+  int number_of_driving_commands = 3 * model_instance_name_table->size();
+
+  // Computes the length of x_d, the desired state of each actuator DOF.
+  int length_of_x_d =
+      tree->number_of_positions() + tree->number_of_velocities();
+
+  // Instantiates a N x number_of_driving_commands matrix called
+  // map_driving_cmd_to_x_d where N is the number position and velocity states
+  // in the rigid body tree. The number_of_driving_commands is determined by
+  // the number of commands per vehicle (three as described below) multipled
+  // by the number of vehicles:
+  //
+  //      Column Index                 Meaning
+  //      vehicle number * 3           gain of Steering angle
+  //      vehicle number * 3 + 1       gain of Throttle
+  //      vehicle number * 3 + 2       gain of Brake
+  //
+  MatrixX<double> map_driving_cmd_to_x_d(length_of_x_d,
+                                         number_of_driving_commands);
+  map_driving_cmd_to_x_d.setZero();
+
+  // Obtains the smallest model instance ID from model_instance_name_table.
+  // This is used to compute the starting column index in
+  // map_driving_cmd_to_x_d for a particular vehicle model instance.
+  int smallest_instance_id = std::numeric_limits<int>::max();
+  for (const auto& iterator : *model_instance_name_table) {
+    if (iterator.first < smallest_instance_id)
+      smallest_instance_id = iterator.first;
+  }
+
+  for (int actuator_idx = 0;
+       actuator_idx < static_cast<int>(tree->actuators.size());
+       actuator_idx++) {
+    // Obtains the actuator's name.
+    const std::string& actuator_name = tree->actuators[actuator_idx].name_;
+
+    // Obtains the rigid body to which the actuator is attached.
+    const auto& rigid_body = tree->actuators[actuator_idx].body_;
+
+    // TODO(liang.fok): This is brittle to the model instance ID and the
+    // presence of other non-vehicle model instances in the world, especially if
+    // the addition of these other model instances were interleved with the
+    // addition of vehicle model instances. I'm not sure how to avoid this
+    // problem. I believe this is OK since (1) this method is part of a library
+    // in drake-distro/drake/examples/, and (2) it is only used by example
+    // applications with full control over what's in the RigidBodyTree and the
+    // order in which they were added.
+    int column_starting_index =
+      (rigid_body->get_model_instance_id() - smallest_instance_id) * 3;
+
+    if (actuator_name == "steering") {
+      // Sets the steering actuator's Kp gain.
+      Kp(actuator_idx, rigid_body->get_position_start_index()) = kpSteering;
+
+      // Sets the steering actuator's Kd gain.
+      Kd(actuator_idx, rigid_body->get_velocity_start_index()) = kdSteering;
+
+      // Saves the mapping between the driving command and the steering command.
+      map_driving_cmd_to_x_d(
+          rigid_body->get_position_start_index(),
+          column_starting_index + DrivingCommandIndices::kSteeringAngle) =
+          1;  // steering command
+
+    } else if (actuator_name == "right_wheel_joint" ||
+               actuator_name == "left_wheel_joint") {
+      // Sets the throttle Kd gain.
+      Kd(actuator_idx, rigid_body->get_velocity_start_index()) = kThrottle;
+
+      // Saves the mapping between the driving command and the throttle command.
+      map_driving_cmd_to_x_d(
+          tree->number_of_positions() + rigid_body->get_velocity_start_index(),
+          column_starting_index + DrivingCommandIndices::kThrottle) = 20;
+
+      // Saves the mapping between the driving command and the braking command.
+      map_driving_cmd_to_x_d(
+          tree->number_of_positions() + rigid_body->get_velocity_start_index(),
+          column_starting_index + DrivingCommandIndices::kBrake) = -20;
+    }
+  }
+
+  auto vehicle_with_pd = std::allocate_shared<PDControlSystem<RigidBodySystem>>(
+      Eigen::aligned_allocator<PDControlSystem<RigidBodySystem>>(),
+      rigid_body_sys, Kp, Kd);
+
+  auto vehicle_sys = cascade(
+      std::allocate_shared<
+          Gain<MultiDrivingCommand1,
+              PDControlSystem<RigidBodySystem>::InputVector>>(
+            Eigen::aligned_allocator<
+                Gain<MultiDrivingCommand1,
+                PDControlSystem<RigidBodySystem>::InputVector>>(),
+            map_driving_cmd_to_x_d),
       vehicle_with_pd);
 
   return vehicle_sys;

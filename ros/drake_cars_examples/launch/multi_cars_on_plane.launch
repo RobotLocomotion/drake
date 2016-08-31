@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+
+<launch>
+  <include file="$(find drake_cars_examples)/launch/multi_cars_on_plane_rviz.launch" />
+  <include file="$(find drake_cars_examples)/launch/multi_cars_on_plane_drake.launch" />
+</launch>

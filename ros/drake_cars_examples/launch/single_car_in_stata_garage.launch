@@ -12,7 +12,8 @@ To run it:
 
   <node name="single_car_in_stata_garage" pkg="drake_cars_examples"
     type="single_car_in_stata_garage" output="screen"
-    args="$(find drake)/drake/examples/Cars/models/prius/prius_with_lidar.sdf $(find drake)/drake/examples/Cars/models/stata_garage_p1.sdf"/>
+    args="$(find drake)/drake/examples/Cars/models/prius/prius_with_lidar.sdf $(find drake)/drake/examples/Cars/models/stata_garage_p1.sdf"
+    ns="drake"/>
 
-  <include file="$(find drake_cars_examples)/launch/golfcart_adapter.launch" />
+  <!-- <include file="$(find drake_cars_examples)/launch/golfcart_adapter.launch" /> -->
 </launch>

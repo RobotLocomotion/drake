@@ -1079,7 +1079,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     PackageMap& package_map,
     RigidBodyTree* tree) {
   const string root_dir = ".";
-
   return AddModelInstanceFromUrdfString(
       urdf_string, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
       nullptr /*weld_to_frame*/, tree);
@@ -1092,7 +1091,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   PackageMap package_map;
-
   return AddModelInstanceFromUrdfString(
       urdf_string, package_map, root_dir, floating_base_type,
       nullptr /* weld_to_frame */, tree);
@@ -1116,9 +1114,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
-
   PackageMap package_map;
-
   return AddModelInstanceFromUrdfFile(filename, package_map,
       DrakeJoint::ROLLPITCHYAW, nullptr /* weld_to_frame */, tree);
 }
@@ -1129,9 +1125,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
-
   PackageMap package_map;
-
   return AddModelInstanceFromUrdfFile(
       filename, package_map, floating_base_type, nullptr /*weld_to_frame*/,
       tree);
@@ -1144,9 +1138,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
-
   PackageMap package_map;
-
   return AddModelInstanceFromUrdfFile(
     filename, package_map, floating_base_type, weld_to_frame, tree);
 }

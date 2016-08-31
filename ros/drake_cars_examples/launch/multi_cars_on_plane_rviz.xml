@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<launch>
+  <!-- Start RViz -->
+  <include file="$(find drake_cars_examples)/launch/rviz.xml">
+    <arg name="RVizConfigFile" value="$(find drake_cars_examples)/rviz/multi_cars_on_plane.rviz" />
+  </include>
+</launch>

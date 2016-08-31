@@ -36,10 +36,11 @@ using drake::ros::systems::SensorPublisherJointState;
 using drake::ros::systems::SensorPublisherLidar;
 using drake::ros::systems::SensorPublisherOdometry;
 
-/** Driving Simulator
- * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
+/**
+ * This implements the main method of the single car simulation. The vehicle
+ * resides within the Stata garage.
  */
-int do_main(int argc, const char* argv[]) {
+int DoMain(int argc, const char* argv[]) {
   ::ros::init(argc, const_cast<char**>(argv), "single_car_in_stata_garage");
 
   // Initializes the communication layer.
@@ -59,7 +60,23 @@ int do_main(int argc, const char* argv[]) {
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
+  // Instantiates a map that converts model instance IDs to model instance
+  // names.
+  std::map<int, std::string> model_instance_name_table;
+  // TODO(liang.fok): Once #3088 is resolved, include the model instance ID and
+  // name of the world in model_instance_name_table.
+  model_instance_name_table[model_instances["prius_1"]] = "prius";
+  model_instance_name_table[model_instances["P1"]] = "stata_garage";
+
+  std::map<int, std::string> model_instance_name_table_odometry;
+  model_instance_name_table_odometry[model_instances["prius_1"]] = "prius";
+
   // Initializes and cascades all of the other systems.
+
+  // The following method wraps the RigidBodySystem within a PD control system
+  // block that adds PD controllers for each actuator within the
+  // RigidBodySystem. It then cascades the PD control system block behind a
+  // gain block and returns the resulting cascade.
   auto vehicle_sys = CreateVehicleSystem(rigid_body_sys);
 
   auto visualizer =
@@ -67,18 +84,19 @@ int do_main(int argc, const char* argv[]) {
 
   auto lidar_publisher = std::make_shared<
       SensorPublisherLidar<RigidBodySystem::StateVector>>(
-      rigid_body_sys);
+      rigid_body_sys, model_instance_name_table);
 
   auto odometry_publisher = std::make_shared<
       SensorPublisherOdometry<RigidBodySystem::StateVector>>(
-      rigid_body_sys);
+      rigid_body_sys, model_instance_name_table_odometry);
 
   auto tf_publisher = std::make_shared<
-      DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree);
+      DrakeRosTfPublisher<RigidBodySystem::StateVector>>(tree,
+          model_instance_name_table);
 
   auto joint_state_publisher = std::make_shared<
       SensorPublisherJointState<RigidBodySystem::StateVector>>(
-      rigid_body_sys);
+      rigid_body_sys, model_instance_name_table);
 
   auto sys =
       cascade(
@@ -117,5 +135,5 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::ros::cars::do_main(argc, argv);
+  return drake::ros::cars::DoMain(argc, argv);
 }

@@ -1,0 +1,1681 @@
+Panels:
+  - Class: rviz/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /TF1/Frames1
+        - /Model - World1
+        - /Prius 11
+        - /Prius 21
+        - /Prius 31
+        - /Prius 41
+        - /Prius 51
+      Splitter Ratio: 0.588983
+    Tree Height: 581
+  - Class: rviz/Selection
+    Name: Selection
+  - Class: rviz/Tool Properties
+    Expanded:
+      - /2D Pose Estimate1
+      - /2D Nav Goal1
+      - /Publish Point1
+    Name: Tool Properties
+    Splitter Ratio: 0.588679
+  - Class: rviz/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+  - Class: rviz/Time
+    Experimental: false
+    Name: Time
+    SyncMode: 0
+    SyncSource: LaserScan - front
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 5
+      Class: rviz/Grid
+      Color: 160; 160; 164
+      Enabled: false
+      Line Style:
+        Line Width: 0.03
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 100
+      Reference Frame: <Fixed Frame>
+      Value: false
+    - Class: rviz/Axes
+      Enabled: true
+      Length: 10
+      Name: Axes
+      Radius: 0.05
+      Reference Frame: world
+      Value: true
+    - Class: rviz/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+        Prius_1/body:
+          Value: true
+        Prius_1/chassis_floor:
+          Value: true
+        Prius_1/front_axle:
+          Value: true
+        Prius_1/front_laser:
+          Value: true
+        Prius_1/front_lidar_link:
+          Value: true
+        Prius_1/left_hub:
+          Value: true
+        Prius_1/left_tie_rod_arm:
+          Value: true
+        Prius_1/left_wheel:
+          Value: true
+        Prius_1/left_wheel_rear:
+          Value: true
+        Prius_1/rear_axle:
+          Value: true
+        Prius_1/rear_left_laser:
+          Value: true
+        Prius_1/rear_left_lidar_link:
+          Value: true
+        Prius_1/rear_right_laser:
+          Value: true
+        Prius_1/rear_right_lidar_link:
+          Value: true
+        Prius_1/right_hub:
+          Value: true
+        Prius_1/right_pinFrameA:
+          Value: true
+        Prius_1/right_pinFrameB:
+          Value: true
+        Prius_1/right_tie_rod_arm:
+          Value: true
+        Prius_1/right_wheel:
+          Value: true
+        Prius_1/right_wheel_rear:
+          Value: true
+        Prius_1/tie_rod:
+          Value: true
+        Prius_1/top_laser:
+          Value: true
+        Prius_1/top_lidar_link:
+          Value: true
+        Prius_1/world:
+          Value: true
+        Prius_2/body:
+          Value: true
+        Prius_2/chassis_floor:
+          Value: true
+        Prius_2/front_axle:
+          Value: true
+        Prius_2/front_laser:
+          Value: true
+        Prius_2/front_lidar_link:
+          Value: true
+        Prius_2/left_hub:
+          Value: true
+        Prius_2/left_tie_rod_arm:
+          Value: true
+        Prius_2/left_wheel:
+          Value: true
+        Prius_2/left_wheel_rear:
+          Value: true
+        Prius_2/rear_axle:
+          Value: true
+        Prius_2/rear_left_laser:
+          Value: true
+        Prius_2/rear_left_lidar_link:
+          Value: true
+        Prius_2/rear_right_laser:
+          Value: true
+        Prius_2/rear_right_lidar_link:
+          Value: true
+        Prius_2/right_hub:
+          Value: true
+        Prius_2/right_pinFrameA:
+          Value: true
+        Prius_2/right_pinFrameB:
+          Value: true
+        Prius_2/right_tie_rod_arm:
+          Value: true
+        Prius_2/right_wheel:
+          Value: true
+        Prius_2/right_wheel_rear:
+          Value: true
+        Prius_2/tie_rod:
+          Value: true
+        Prius_2/top_laser:
+          Value: true
+        Prius_2/top_lidar_link:
+          Value: true
+        Prius_2/world:
+          Value: true
+        Prius_3/body:
+          Value: true
+        Prius_3/chassis_floor:
+          Value: true
+        Prius_3/front_axle:
+          Value: true
+        Prius_3/front_laser:
+          Value: true
+        Prius_3/front_lidar_link:
+          Value: true
+        Prius_3/left_hub:
+          Value: true
+        Prius_3/left_tie_rod_arm:
+          Value: true
+        Prius_3/left_wheel:
+          Value: true
+        Prius_3/left_wheel_rear:
+          Value: true
+        Prius_3/rear_axle:
+          Value: true
+        Prius_3/rear_left_laser:
+          Value: true
+        Prius_3/rear_left_lidar_link:
+          Value: true
+        Prius_3/rear_right_laser:
+          Value: true
+        Prius_3/rear_right_lidar_link:
+          Value: true
+        Prius_3/right_hub:
+          Value: true
+        Prius_3/right_pinFrameA:
+          Value: true
+        Prius_3/right_pinFrameB:
+          Value: true
+        Prius_3/right_tie_rod_arm:
+          Value: true
+        Prius_3/right_wheel:
+          Value: true
+        Prius_3/right_wheel_rear:
+          Value: true
+        Prius_3/tie_rod:
+          Value: true
+        Prius_3/top_laser:
+          Value: true
+        Prius_3/top_lidar_link:
+          Value: true
+        Prius_3/world:
+          Value: true
+        Prius_4/body:
+          Value: true
+        Prius_4/chassis_floor:
+          Value: true
+        Prius_4/front_axle:
+          Value: true
+        Prius_4/front_laser:
+          Value: true
+        Prius_4/front_lidar_link:
+          Value: true
+        Prius_4/left_hub:
+          Value: true
+        Prius_4/left_tie_rod_arm:
+          Value: true
+        Prius_4/left_wheel:
+          Value: true
+        Prius_4/left_wheel_rear:
+          Value: true
+        Prius_4/rear_axle:
+          Value: true
+        Prius_4/rear_left_laser:
+          Value: true
+        Prius_4/rear_left_lidar_link:
+          Value: true
+        Prius_4/rear_right_laser:
+          Value: true
+        Prius_4/rear_right_lidar_link:
+          Value: true
+        Prius_4/right_hub:
+          Value: true
+        Prius_4/right_pinFrameA:
+          Value: true
+        Prius_4/right_pinFrameB:
+          Value: true
+        Prius_4/right_tie_rod_arm:
+          Value: true
+        Prius_4/right_wheel:
+          Value: true
+        Prius_4/right_wheel_rear:
+          Value: true
+        Prius_4/tie_rod:
+          Value: true
+        Prius_4/top_laser:
+          Value: true
+        Prius_4/top_lidar_link:
+          Value: true
+        Prius_4/world:
+          Value: true
+        Prius_5/body:
+          Value: true
+        Prius_5/chassis_floor:
+          Value: true
+        Prius_5/front_axle:
+          Value: true
+        Prius_5/front_laser:
+          Value: true
+        Prius_5/front_lidar_link:
+          Value: true
+        Prius_5/left_hub:
+          Value: true
+        Prius_5/left_tie_rod_arm:
+          Value: true
+        Prius_5/left_wheel:
+          Value: true
+        Prius_5/left_wheel_rear:
+          Value: true
+        Prius_5/rear_axle:
+          Value: true
+        Prius_5/rear_left_laser:
+          Value: true
+        Prius_5/rear_left_lidar_link:
+          Value: true
+        Prius_5/rear_right_laser:
+          Value: true
+        Prius_5/rear_right_lidar_link:
+          Value: true
+        Prius_5/right_hub:
+          Value: true
+        Prius_5/right_pinFrameA:
+          Value: true
+        Prius_5/right_pinFrameB:
+          Value: true
+        Prius_5/right_tie_rod_arm:
+          Value: true
+        Prius_5/right_wheel:
+          Value: true
+        Prius_5/right_wheel_rear:
+          Value: true
+        Prius_5/tie_rod:
+          Value: true
+        Prius_5/top_laser:
+          Value: true
+        Prius_5/top_lidar_link:
+          Value: true
+        Prius_5/world:
+          Value: true
+        ground_plane:
+          Value: true
+        planar_world/ground_plane:
+          Value: true
+        world:
+          Value: true
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        world:
+          Prius_1/chassis_floor:
+            Prius_1/body:
+              {}
+            Prius_1/front_axle:
+              Prius_1/left_tie_rod_arm:
+                Prius_1/left_hub:
+                  Prius_1/left_wheel:
+                    {}
+                Prius_1/tie_rod:
+                  Prius_1/right_pinFrameB:
+                    {}
+              Prius_1/right_tie_rod_arm:
+                Prius_1/right_hub:
+                  Prius_1/right_wheel:
+                    {}
+                Prius_1/right_pinFrameA:
+                  {}
+            Prius_1/front_lidar_link:
+              Prius_1/front_laser:
+                {}
+            Prius_1/rear_axle:
+              Prius_1/left_wheel_rear:
+                {}
+              Prius_1/right_wheel_rear:
+                {}
+            Prius_1/rear_left_lidar_link:
+              Prius_1/rear_left_laser:
+                {}
+            Prius_1/rear_right_lidar_link:
+              Prius_1/rear_right_laser:
+                {}
+            Prius_1/top_lidar_link:
+              Prius_1/top_laser:
+                {}
+          Prius_1/world:
+            {}
+          Prius_2/chassis_floor:
+            Prius_2/body:
+              {}
+            Prius_2/front_axle:
+              Prius_2/left_tie_rod_arm:
+                Prius_2/left_hub:
+                  Prius_2/left_wheel:
+                    {}
+                Prius_2/tie_rod:
+                  Prius_2/right_pinFrameB:
+                    {}
+              Prius_2/right_tie_rod_arm:
+                Prius_2/right_hub:
+                  Prius_2/right_wheel:
+                    {}
+                Prius_2/right_pinFrameA:
+                  {}
+            Prius_2/front_lidar_link:
+              Prius_2/front_laser:
+                {}
+            Prius_2/rear_axle:
+              Prius_2/left_wheel_rear:
+                {}
+              Prius_2/right_wheel_rear:
+                {}
+            Prius_2/rear_left_lidar_link:
+              Prius_2/rear_left_laser:
+                {}
+            Prius_2/rear_right_lidar_link:
+              Prius_2/rear_right_laser:
+                {}
+            Prius_2/top_lidar_link:
+              Prius_2/top_laser:
+                {}
+          Prius_2/world:
+            {}
+          Prius_3/chassis_floor:
+            Prius_3/body:
+              {}
+            Prius_3/front_axle:
+              Prius_3/left_tie_rod_arm:
+                Prius_3/left_hub:
+                  Prius_3/left_wheel:
+                    {}
+                Prius_3/tie_rod:
+                  Prius_3/right_pinFrameB:
+                    {}
+              Prius_3/right_tie_rod_arm:
+                Prius_3/right_hub:
+                  Prius_3/right_wheel:
+                    {}
+                Prius_3/right_pinFrameA:
+                  {}
+            Prius_3/front_lidar_link:
+              Prius_3/front_laser:
+                {}
+            Prius_3/rear_axle:
+              Prius_3/left_wheel_rear:
+                {}
+              Prius_3/right_wheel_rear:
+                {}
+            Prius_3/rear_left_lidar_link:
+              Prius_3/rear_left_laser:
+                {}
+            Prius_3/rear_right_lidar_link:
+              Prius_3/rear_right_laser:
+                {}
+            Prius_3/top_lidar_link:
+              Prius_3/top_laser:
+                {}
+          Prius_3/world:
+            {}
+          Prius_4/chassis_floor:
+            Prius_4/body:
+              {}
+            Prius_4/front_axle:
+              Prius_4/left_tie_rod_arm:
+                Prius_4/left_hub:
+                  Prius_4/left_wheel:
+                    {}
+                Prius_4/tie_rod:
+                  Prius_4/right_pinFrameB:
+                    {}
+              Prius_4/right_tie_rod_arm:
+                Prius_4/right_hub:
+                  Prius_4/right_wheel:
+                    {}
+                Prius_4/right_pinFrameA:
+                  {}
+            Prius_4/front_lidar_link:
+              Prius_4/front_laser:
+                {}
+            Prius_4/rear_axle:
+              Prius_4/left_wheel_rear:
+                {}
+              Prius_4/right_wheel_rear:
+                {}
+            Prius_4/rear_left_lidar_link:
+              Prius_4/rear_left_laser:
+                {}
+            Prius_4/rear_right_lidar_link:
+              Prius_4/rear_right_laser:
+                {}
+            Prius_4/top_lidar_link:
+              Prius_4/top_laser:
+                {}
+          Prius_4/world:
+            {}
+          Prius_5/chassis_floor:
+            Prius_5/body:
+              {}
+            Prius_5/front_axle:
+              Prius_5/left_tie_rod_arm:
+                Prius_5/left_hub:
+                  Prius_5/left_wheel:
+                    {}
+                Prius_5/tie_rod:
+                  Prius_5/right_pinFrameB:
+                    {}
+              Prius_5/right_tie_rod_arm:
+                Prius_5/right_hub:
+                  Prius_5/right_wheel:
+                    {}
+                Prius_5/right_pinFrameA:
+                  {}
+            Prius_5/front_lidar_link:
+              Prius_5/front_laser:
+                {}
+            Prius_5/rear_axle:
+              Prius_5/left_wheel_rear:
+                {}
+              Prius_5/right_wheel_rear:
+                {}
+            Prius_5/rear_left_lidar_link:
+              Prius_5/rear_left_laser:
+                {}
+            Prius_5/rear_right_lidar_link:
+              Prius_5/rear_right_laser:
+                {}
+            Prius_5/top_lidar_link:
+              Prius_5/top_laser:
+                {}
+          Prius_5/world:
+            {}
+          ground_plane:
+            {}
+          planar_world/ground_plane:
+            {}
+      Update Interval: 0
+      Value: true
+    - Alpha: 1
+      Class: rviz/RobotModel
+      Collision Enabled: false
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        ground_plane:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Name: Model - World
+      Robot Description: drake/world_description
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+    - Class: rviz/Group
+      Displays:
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.584566
+            Min Value: -0.0226359
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - top
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Spheres
+          Topic: /drake/Prius_1/lidar/top_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.481211
+            Min Value: 0.471894
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - front
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_1/lidar/front_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.479709
+            Min Value: 0.447543
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - rear right
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_1/lidar/rear_left_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.480622
+            Min Value: 0.447585
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - rear left
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_1/lidar/rear_right_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Class: rviz/RobotModel
+          Collision Enabled: false
+          Enabled: true
+          Links:
+            All Links Enabled: true
+            Expand Joint Details: false
+            Expand Link Details: false
+            Expand Tree: false
+            Link Tree Style: Links in Alphabetic Order
+            body:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            chassis_floor:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            front_axle:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_hub:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_tie_rod_arm:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_wheel:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_wheel_rear:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            rear_axle:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_hub:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_tie_rod_arm:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_wheel:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_wheel_rear:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            tie_rod:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            world:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+          Name: Model - Prius 1
+          Robot Description: drake/car_description_1_rviz
+          TF Prefix: Prius_1
+          Update Interval: 0
+          Value: true
+          Visual Enabled: true
+        - Angle Tolerance: 0.1
+          Class: rviz/Odometry
+          Color: 255; 25; 0
+          Enabled: true
+          Keep: 1000
+          Length: 1
+          Name: Odometry - Prius 1
+          Position Tolerance: 0.1
+          Topic: /drake/Prius_1/odometry
+          Value: true
+      Enabled: true
+      Name: Prius 1
+    - Class: rviz/Group
+      Displays:
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.00219593
+            Min Value: -0.0165871
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - top
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Spheres
+          Topic: /drake/Prius_2/lidar/top_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: -9999
+            Min Value: 9999
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - front
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_2/lidar/front_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.455915
+            Min Value: 0.43532
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - rear left
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_2/lidar/rear_left_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.46761
+            Min Value: 0.435194
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - rear right
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_2/lidar/rear_right_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Class: rviz/RobotModel
+          Collision Enabled: false
+          Enabled: true
+          Links:
+            All Links Enabled: true
+            Expand Joint Details: false
+            Expand Link Details: false
+            Expand Tree: false
+            Link Tree Style: Links in Alphabetic Order
+            body:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            chassis_floor:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            front_axle:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_hub:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_tie_rod_arm:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_wheel:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_wheel_rear:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            rear_axle:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_hub:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_tie_rod_arm:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_wheel:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_wheel_rear:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            tie_rod:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            world:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+          Name: Model - Prius 2
+          Robot Description: drake/car_description_2_rviz
+          TF Prefix: Prius_2
+          Update Interval: 0
+          Value: true
+          Visual Enabled: true
+        - Angle Tolerance: 0.1
+          Class: rviz/Odometry
+          Color: 255; 25; 0
+          Enabled: true
+          Keep: 1000
+          Length: 1
+          Name: Odometry - Prius 2
+          Position Tolerance: 0.1
+          Topic: /drake/Prius_2/odometry
+          Value: true
+      Enabled: true
+      Name: Prius 2
+    - Class: rviz/Group
+      Displays:
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.586061
+            Min Value: -0.0165871
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - top
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Spheres
+          Topic: /drake/Prius_3/lidar/top_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.492565
+            Min Value: 0.47215
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - front
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_3/lidar/front_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: -9999
+            Min Value: 9999
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - rear left
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_3/lidar/rear_left_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.491396
+            Min Value: 0.459501
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - rear right
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_3/lidar/rear_right_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Class: rviz/RobotModel
+          Collision Enabled: false
+          Enabled: true
+          Links:
+            All Links Enabled: true
+            Expand Joint Details: false
+            Expand Link Details: false
+            Expand Tree: false
+            Link Tree Style: Links in Alphabetic Order
+            body:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            chassis_floor:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            front_axle:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_hub:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_tie_rod_arm:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_wheel:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_wheel_rear:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            rear_axle:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_hub:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_tie_rod_arm:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_wheel:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_wheel_rear:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            tie_rod:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            world:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+          Name: Model - Prius 3
+          Robot Description: drake/car_description_3_rviz
+          TF Prefix: Prius_3
+          Update Interval: 0
+          Value: true
+          Visual Enabled: true
+        - Angle Tolerance: 0.1
+          Class: rviz/Odometry
+          Color: 255; 25; 0
+          Enabled: true
+          Keep: 1000
+          Length: 1
+          Name: Odometry - Prius 3
+          Position Tolerance: 0.1
+          Topic: /drake/Prius_3/odometry
+          Value: true
+      Enabled: true
+      Name: Prius 3
+    - Class: rviz/Group
+      Displays:
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.580524
+            Min Value: -0.0283328
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - top
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Spheres
+          Topic: /drake/Prius_4/lidar/top_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.493013
+            Min Value: 0.472672
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - front
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_4/lidar/front_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.49252
+            Min Value: 0.460621
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - rear left
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_4/lidar/rear_left_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: -9999
+            Min Value: 9999
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - rear right
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_4/lidar/rear_right_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Class: rviz/RobotModel
+          Collision Enabled: false
+          Enabled: true
+          Links:
+            All Links Enabled: true
+            Expand Joint Details: false
+            Expand Link Details: false
+            Expand Tree: false
+            Link Tree Style: Links in Alphabetic Order
+            body:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            chassis_floor:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            front_axle:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_hub:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_tie_rod_arm:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_wheel:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_wheel_rear:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            rear_axle:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_hub:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_tie_rod_arm:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_wheel:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_wheel_rear:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            tie_rod:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            world:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+          Name: Model - Prius 4
+          Robot Description: drake/car_description_4_rviz
+          TF Prefix: Prius_4
+          Update Interval: 0
+          Value: true
+          Visual Enabled: true
+        - Angle Tolerance: 0.1
+          Class: rviz/Odometry
+          Color: 255; 25; 0
+          Enabled: true
+          Keep: 1000
+          Length: 1
+          Name: Odometry - Prius 4
+          Position Tolerance: 0.1
+          Topic: /drake/Prius_4/odometry
+          Value: true
+      Enabled: true
+      Name: Prius 4
+    - Class: rviz/Group
+      Displays:
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.00213929
+            Min Value: -0.0283328
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - top
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Spheres
+          Topic: /drake/Prius_5/lidar/top_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: -9999
+            Min Value: 9999
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - front
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_5/lidar/front_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.468581
+            Min Value: 0.436306
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - rear left
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_5/lidar/rear_left_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.456389
+            Min Value: 0.436296
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/LaserScan
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: LaserScan - rear right
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.25
+          Style: Flat Squares
+          Topic: /drake/Prius_5/lidar/rear_right_laser
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Class: rviz/RobotModel
+          Collision Enabled: false
+          Enabled: true
+          Links:
+            All Links Enabled: true
+            Expand Joint Details: false
+            Expand Link Details: false
+            Expand Tree: false
+            Link Tree Style: Links in Alphabetic Order
+            body:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            chassis_floor:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            front_axle:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_hub:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_tie_rod_arm:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_wheel:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            left_wheel_rear:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            rear_axle:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_hub:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_tie_rod_arm:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_wheel:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            right_wheel_rear:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            tie_rod:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            world:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+          Name: Model - Prius 5
+          Robot Description: drake/car_description_5_rviz
+          TF Prefix: Prius_5
+          Update Interval: 0
+          Value: true
+          Visual Enabled: true
+        - Angle Tolerance: 0.1
+          Class: rviz/Odometry
+          Color: 255; 25; 0
+          Enabled: true
+          Keep: 1000
+          Length: 1
+          Name: Odometry - Prius 5
+          Position Tolerance: 0.1
+          Topic: /drake/Prius_5/odometry
+          Value: true
+      Enabled: true
+      Name: Prius 5
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: world
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+      Hide Inactive Objects: true
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+    - Class: rviz/SetInitialPose
+      Topic: /initialpose
+    - Class: rviz/SetGoal
+      Topic: /move_base_simple/goal
+    - Class: rviz/PublishPoint
+      Single click: true
+      Topic: /clicked_point
+  Value: true
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Distance: 21.3639
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.06
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 0.118881
+        Y: 1.17176
+        Z: 0.630681
+      Name: Current View
+      Near Clip Distance: 0.01
+      Pitch: 0.290927
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz)
+      Yaw: 0.666676
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 876
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd0000000400000000000001ea000002d4fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000002d4000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000005ff0000004cfc0100000002fb0000000800540069006d00650100000000000005ff000002f600fffffffb0000000800540069006d006501000000000000045000000000000000000000040f000002d400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Selection:
+    collapsed: false
+  Time:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Views:
+    collapsed: false
+  Width: 1535
+  X: 65
+  Y: 24

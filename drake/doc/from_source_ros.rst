@@ -231,4 +231,4 @@ To drive the vehicle around in simulation, open another terminal and execute::
 
     cd ~/dev/drake_catkin_workspace
     source devel/setup.bash
-    rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7
+    rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7 /drake/ackermann_cmd

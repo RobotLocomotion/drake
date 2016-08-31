@@ -4,7 +4,12 @@ project(drake_cars_examples)
 set(CMAKE_CXX_STANDARD 14)
 
 ## Finds the required macros and libraries.
-find_package(catkin REQUIRED COMPONENTS roscpp tf sensor_msgs drake_ros_systems)
+find_package(catkin REQUIRED COMPONENTS
+  drake_ros_common
+  drake_ros_systems
+  roscpp
+  tf
+  sensor_msgs)
 
 
 # Assuming drake is being built in the same workspace, which builds eigen into
@@ -31,6 +36,19 @@ target_link_libraries(golfcart_adapter ${catkin_LIBRARIES})
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 add_executable(single_car_in_stata_garage src/single_car_in_stata_garage.cc)
 target_link_libraries(single_car_in_stata_garage
+  ${catkin_LIBRARIES}
+  drakeCars
+  drakeCommon
+  drakeRBM
+  drakeRBSystem
+  drakeLCMSystem
+  drakeShapes
+  drakeJoints
+  drakeRigidBodyConstraint
+  lcm)
+
+add_executable(multi_cars_on_plane src/multi_cars_on_plane.cc)
+target_link_libraries(multi_cars_on_plane
   ${catkin_LIBRARIES}
   drakeCars
   drakeCommon
