@@ -15,7 +15,7 @@ std::shared_ptr<logging::logger>* onetime_create_log() {
   std::shared_ptr<logging::logger>* result =
       new std::shared_ptr<logging::logger>(spdlog::get("console"));
   if (!*result) {
-    *result = spdlog::stderr_logger_st("console");
+    *result = spdlog::stderr_logger_mt("console");
   }
   return result;
 }

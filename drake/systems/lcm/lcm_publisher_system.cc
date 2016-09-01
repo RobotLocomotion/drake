@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "drake/common/text_logging.h"
 #include "drake/systems/framework/system_input.h"
 
 namespace drake {
@@ -36,6 +37,8 @@ std::string LcmPublisherSystem::get_name() const {
 }
 
 void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
+  SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
+
   // Obtains the input vector.
   const VectorBase<double>* const input_vector =
       context.get_vector_input(kPortIndex);
