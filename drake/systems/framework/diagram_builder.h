@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_port_descriptor.h"
@@ -32,6 +33,26 @@ class DiagramBuilder {
     Register(src.get_system());
     Register(dest.get_system());
     dependency_graph_[dest_id] = src_id;
+  }
+
+  /// Declares that sole input port on the @p dest system is connected to sole
+  /// output port on the @p src system.  Throws an exception if the sole-port
+  /// precondition is not met (i.e., if @p dest has no input ports, or @p dest
+  /// has more than one input port, or @p src has no output ports, or @p src
+  /// has more than one output port).
+  void Connect(const System<T>& src, const System<T>& dest) {
+    DRAKE_THROW_UNLESS(src.get_num_output_ports() == 1);
+    DRAKE_THROW_UNLESS(dest.get_num_input_ports() == 1);
+    Connect(src.get_output_port(0), dest.get_input_port(0));
+  }
+
+  /// Cascades @p src and @p dest.  The sole input port on the @p dest system
+  /// is connected to sole output port on the @p src system.  Throws an
+  /// exception if the sole-port precondition is not met (i.e., if @p dest has
+  /// no input ports, or @p dest has more than one input port, or @p src has no
+  /// output ports, or @p src has more than one output port).
+  void Cascade(const System<T>& src, const System<T>& dest) {
+    Connect(src, dest);
   }
 
   /// Declares that the given @p input port of a constituent system is an input
