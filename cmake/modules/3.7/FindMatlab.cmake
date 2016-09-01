@@ -795,7 +795,7 @@ function(matlab_add_unit_test)
             "-Dno_unittest_framework=${${prefix}_NO_UNITTEST_FRAMEWORK}"
             "-DMatlab_ADDITIONNAL_STARTUP_OPTIONS=${${prefix}_MATLAB_ADDITIONAL_STARTUP_OPTIONS}"
             "-Dunittest_file_to_run=${${prefix}_UNITTEST_FILE}"
-            "-Dcustom_Matlab_test_command=${${prefix}_CUSTOM_TEST_COMMAND}}"
+            "-Dcustom_Matlab_test_command=${${prefix}_CUSTOM_TEST_COMMAND}"
             "-Dcmd_to_run_before_test=${${prefix}_UNITTEST_PRECOMMAND}"
             -P ${_FindMatlab_SELF_DIR}/MatlabTestsRedirect.cmake
            ${${prefix}_TEST_ARGS}
