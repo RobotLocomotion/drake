@@ -59,7 +59,7 @@ foreach(s IN LISTS additional_paths)
 endforeach()
 
 if(custom_Matlab_test_command)
-  set(unittest_to_run ${custom_Matlab_test_command})
+  set(unittest_to_run "${custom_Matlab_test_command}")
 else()
   set(unittest_to_run "runtests('${unittest_file_to_run_name}'), exit(max([ans(1,:).Failed]))")
 endif()
@@ -70,7 +70,8 @@ if(no_unittest_framework)
 endif()
 
 set(Matlab_SCRIPT_TO_RUN
-    "addpath(${concat_string}); ${cmd_to_run_before_test}; ${unittest_to_run}")
+    "addpath(${concat_string}); ${cmd_to_run_before_test}; ${unittest_to_run}"
+   )
 
 if(NOT working_directory)
   set(working_directory "${output_directory}")

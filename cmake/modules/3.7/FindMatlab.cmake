@@ -786,18 +786,18 @@ function(matlab_add_unit_test)
 
   add_test(NAME ${${prefix}_NAME}
            COMMAND ${CMAKE_COMMAND}
-           "-Dtest_name=${${prefix}_NAME}"
-           "-Dadditional_paths=${${prefix}_ADDITIONAL_PATH}}"
-           "-Dtest_timeout=${${prefix}_TIMEOUT}"
-           "-Doutput_directory=${_matlab_temporary_folder}"
-           "-Dworking_directory=${${prefix}_WORKING_DIRECTORY}"
-           "-DMatlab_PROGRAM=${Matlab_MAIN_PROGRAM}"
-           "-Dno_unittest_framework=${${prefix}_NO_UNITTEST_FRAMEWORK}"
-           "-DMatlab_ADDITIONNAL_STARTUP_OPTIONS=${${prefix}_MATLAB_ADDITIONAL_STARTUP_OPTIONS}"
-           "-Dunittest_file_to_run=${${prefix}_UNITTEST_FILE}"
-           "-Dcustom_Matlab_test_command=${${prefix}_CUSTOM_TEST_COMMAND}}"
-           "-Dcmd_to_run_before_test=${${prefix}_UNITTEST_PRECOMMAND}"
-           -P ${_FindMatlab_SELF_DIR}/MatlabTestsRedirect.cmake
+            "-Dtest_name=${${prefix}_NAME}"
+            "-Dadditional_paths=${${prefix}_ADDITIONAL_PATH}}"
+            "-Dtest_timeout=${${prefix}_TIMEOUT}"
+            "-Doutput_directory=${_matlab_temporary_folder}"
+            "-Dworking_directory=${${prefix}_WORKING_DIRECTORY}"
+            "-DMatlab_PROGRAM=${Matlab_MAIN_PROGRAM}"
+            "-Dno_unittest_framework=${${prefix}_NO_UNITTEST_FRAMEWORK}"
+            "-DMatlab_ADDITIONNAL_STARTUP_OPTIONS=${${prefix}_MATLAB_ADDITIONAL_STARTUP_OPTIONS}"
+            "-Dunittest_file_to_run=${${prefix}_UNITTEST_FILE}"
+            "-Dcustom_Matlab_test_command=${${prefix}_CUSTOM_TEST_COMMAND}}"
+            "-Dcmd_to_run_before_test=${${prefix}_UNITTEST_PRECOMMAND}"
+            -P ${_FindMatlab_SELF_DIR}/MatlabTestsRedirect.cmake
            ${${prefix}_TEST_ARGS}
            ${${prefix}_UNPARSED_ARGUMENTS}
            )
