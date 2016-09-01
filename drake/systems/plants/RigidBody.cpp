@@ -53,7 +53,10 @@ void RigidBody::set_parent(RigidBody* parent) { parent_ = parent; }
 
 const RigidBody* RigidBody::get_parent() const { return parent_; }
 
-bool RigidBody::hasParent() const { return parent_ != nullptr; }
+bool RigidBody::has_mobilizer_joint() const { return parent_ != nullptr; }
+
+// TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
+bool RigidBody::hasParent() const { return has_mobilizer_joint(); }
 
 void RigidBody::set_body_index(int body_index) { body_index_ = body_index; }
 
@@ -228,7 +231,7 @@ const drake::SquareTwistMatrix<double>& RigidBody::get_spatial_inertia()
 
 ostream& operator<<(ostream& out, const RigidBody& b) {
   std::string parent_joint_name =
-      b.hasParent() ? b.getJoint().getName() : "no parent joint";
+      b.has_mobilizer_joint() ? b.getJoint().getName() : "no parent joint";
 
   std::stringstream collision_element_str;
   collision_element_str << "[";

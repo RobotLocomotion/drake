@@ -257,9 +257,9 @@ class SensorPublisherJointState {
 
     // Saves the joint state information
     for (auto const& rigid_body : rigid_body_tree->bodies) {
-      // Skips the current rigid body if it does not have a parent. Note that
-      // this includes the world.
-      if (!rigid_body->hasParent()) continue;
+      // Skips rigid bodies without a mobilizer joint. This includes the
+      // RigidBody that represents the world.
+      if (!rigid_body->has_mobilizer_joint()) continue;
 
       const DrakeJoint& joint = rigid_body->getJoint();
 

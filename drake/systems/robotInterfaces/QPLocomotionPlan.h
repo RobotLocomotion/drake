@@ -140,7 +140,7 @@ struct QPLocomotionPlanSettings {
     for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
          ++body_it) {
       RigidBody& body = **body_it;
-      if (body.hasParent()) {
+      if (body.has_mobilizer_joint()) {
         const DrakeJoint& joint = body.getJoint();
         for (auto joint_name_it = joint_name_substrings.begin();
              joint_name_it != joint_name_substrings.end(); ++joint_name_it) {

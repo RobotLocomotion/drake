@@ -118,7 +118,7 @@ void RigidBodyTree::SortTree() {
   if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
 
   for (size_t i = 0; i < bodies.size() - 1; ) {
-    if (bodies[i]->hasParent()) {
+    if (bodies[i]->has_mobilizer_joint()) {
       auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
                                [&](std::unique_ptr<RigidBody> const& p) {
                                  return bodies[i]->has_as_parent(*p);
@@ -165,7 +165,7 @@ void RigidBodyTree::compile(void) {
   //   RigidBodyTree::downwards_body_iterator: travels the tree downwards from
   //   the root towards the last leaf.
   for (size_t i = 0; i < bodies.size(); ++i) {
-    if (bodies[i]->hasParent() &&
+    if (bodies[i]->has_mobilizer_joint() &&
         bodies[i]->get_spatial_inertia().isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); ++j) {
@@ -203,7 +203,7 @@ void RigidBodyTree::compile(void) {
   num_velocities_ = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       body.set_position_start_index(num_positions_);
       num_positions_ += body.getJoint().getNumPositions();
       body.set_velocity_start_index(num_velocities_);
@@ -231,7 +231,7 @@ void RigidBodyTree::compile(void) {
                                        std::numeric_limits<double>::infinity());
   for (size_t i = 0; i < bodies.size(); ++i) {
     auto& body = bodies[i];
-    if (body->hasParent()) {
+    if (body->has_mobilizer_joint()) {
       const DrakeJoint& joint = body->getJoint();
       joint_limit_min.segment(body->get_position_start_index(),
                               joint.getNumPositions()) =
@@ -259,7 +259,7 @@ void RigidBodyTree::compile(void) {
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
   Eigen::VectorXd q(num_positions_);
   for (const auto& body_ptr : bodies) {
-    if (body_ptr->hasParent()) {
+    if (body_ptr->has_mobilizer_joint()) {
       const DrakeJoint& joint = body_ptr->getJoint();
       q.middleRows(
           body_ptr->get_position_start_index(), joint.getNumPositions()) =
@@ -273,7 +273,7 @@ Eigen::VectorXd RigidBodyTree::getRandomConfiguration(
     std::default_random_engine& generator) const {
   Eigen::VectorXd q(num_positions_);
   for (const auto& body_ptr : bodies) {
-    if (body_ptr->hasParent()) {
+    if (body_ptr->has_mobilizer_joint()) {
       const DrakeJoint& joint = body_ptr->getJoint();
       q.middleRows(
           body_ptr->get_position_start_index(), joint.getNumPositions()) =
@@ -330,7 +330,7 @@ void RigidBodyTree::drawKinematicTree(
     dotfile << "spatial inertia=" << endl << body->get_spatial_inertia()
             << endl;
     dotfile << "\"];" << endl;
-    if (body->hasParent()) {
+    if (body->has_mobilizer_joint()) {
       const auto& joint = body->getJoint();
       dotfile << "  " << body->get_name() << " -> "
               << body->get_parent()->get_name()
@@ -401,7 +401,7 @@ void RigidBodyTree::updateCollisionElements(
 void RigidBodyTree::updateStaticCollisionElements() {
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    if (!body.hasParent()) {
+    if (!body.has_mobilizer_joint()) {
       updateCollisionElements(body, Isometry3d::Identity());
     }
   }
@@ -413,7 +413,7 @@ void RigidBodyTree::updateDynamicCollisionElements(
   // object.  and it's presumably somewhat expensive.
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       updateCollisionElements(body, cache.getElement(body).transform_to_world);
     }
   }
@@ -719,7 +719,7 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
     RigidBody& body = *bodies[i];
     KinematicsCacheElement<Scalar>& element = cache.getElement(body);
 
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       const KinematicsCacheElement<Scalar>& parent_element =
           cache.getElement(*body.get_parent());
       const DrakeJoint& joint = body.getJoint();
@@ -825,7 +825,7 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
     // N.B. Reverse iteration.
     for (auto it = bodies.rbegin(); it != bodies.rend(); ++it) {
       const RigidBody& body = **it;
-      if (body.hasParent()) {
+      if (body.has_mobilizer_joint()) {
         const auto& element = cache.getElement(body);
         auto& parent_element = cache.getElement(*body.get_parent());
         parent_element.crb_in_world += element.crb_in_world;
@@ -850,7 +850,7 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
   int gradient_row_start = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       const auto& element = cache.getElement(body);
       const DrakeJoint& joint = body.getJoint();
       int ncols_joint =
@@ -887,7 +887,7 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
   ret.setZero();
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       if (is_part_of_model_instances(body, model_instance_id_set)) {
         const auto& element = cache.getElement(body);
         ret.noalias() += element.inertia_in_world *
@@ -1099,7 +1099,7 @@ std::vector<int> RigidBodyTree::FindAncestorBodies(
 
   std::vector<int> ancestor_body_list;
   const RigidBody* current_body = bodies[body_index].get();
-  while (current_body->hasParent()) {
+  while (current_body->has_mobilizer_joint()) {
     ancestor_body_list.push_back(current_body->get_parent()->get_body_index());
     current_body = current_body->get_parent();
   }
@@ -1347,7 +1347,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 
   for (size_t i = 0; i < bodies.size(); ++i) {
     RigidBody& body_i = *bodies[i];
-    if (body_i.hasParent()) {
+    if (body_i.has_mobilizer_joint()) {
       const auto& element_i = cache.getElement(body_i);
       int v_start_i = body_i.get_velocity_start_index();
       int nv_i = body_i.getJoint().getNumVelocities();
@@ -1360,7 +1360,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 
       // Hij
       const RigidBody* body_j(body_i.get_parent());
-      while (body_j->hasParent()) {
+      while (body_j->has_mobilizer_joint()) {
         const auto& element_j = cache.getElement(*body_j);
         int v_start_j = body_j->get_velocity_start_index();
         int nv_j = body_j->getJoint().getNumVelocities();
@@ -1405,7 +1405,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
   for (size_t i = 0; i < bodies.size(); ++i) {
     RigidBody& body = *bodies[i];
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       const auto& element = cache.getElement(body);
 
       TwistVector<Scalar> spatial_accel = root_accel;
@@ -1437,7 +1437,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
   for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; --i) {
     RigidBody& body = *bodies[i];
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       const auto& element = cache.getElement(body);
       const auto& net_wrenches_const = net_wrenches;  // eliminates the need for
                                                       // another explicit
@@ -1466,7 +1466,7 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree::frictionTorques(
 
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       const DrakeJoint& joint = body.getJoint();
       int nv_joint = joint.getNumVelocities();
       int v_start_joint = body.get_velocity_start_index();
@@ -1925,7 +1925,7 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   // `true` or `false` in vector `name_match` based on whether the body's parent
   // joint's name matches @p joint_name.
   for (size_t i = 0; i < bodies.size(); ++i) {
-    if (bodies[i]->hasParent()) {
+    if (bodies[i]->has_mobilizer_joint()) {
       // Obtains the name of the rigid body's parent joint and then converts it
       // to be lower case.
       std::string current_joint_name = bodies[i]->getJoint().getName();

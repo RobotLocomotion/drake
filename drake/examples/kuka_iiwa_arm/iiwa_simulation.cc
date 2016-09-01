@@ -124,8 +124,9 @@ void CheckLimitViolations(
   std::vector<std::unique_ptr<RigidBody>>& bodies = tree->bodies;
   for (int robot_state_index = 0, body_index = 0;
        body_index < static_cast<int>(bodies.size()); ++body_index) {
-    // Skips rigid bodies without a parent (this includes the world link).
-    if (!bodies[body_index]->hasParent()) continue;
+    // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
+    // that represents the world.
+    if (!bodies[body_index]->has_mobilizer_joint()) continue;
 
     const DrakeJoint& joint = bodies[body_index]->getJoint();
     const Eigen::VectorXd& min_limit = joint.getJointLimitMin();

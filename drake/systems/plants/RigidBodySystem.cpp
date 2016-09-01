@@ -126,7 +126,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // apply joint limit forces
   {
     for (auto const& b : tree->bodies) {
-      if (!b->hasParent()) continue;
+      if (!b->has_mobilizer_joint()) continue;
       auto const& joint = b->getJoint();
       if (joint.getNumPositions() == 1 &&
           joint.getNumVelocities() ==

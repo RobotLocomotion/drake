@@ -101,9 +101,9 @@ class KinematicsCache {
     for (const auto& body_unique_ptr : bodies_in) {
       const RigidBody& body = *body_unique_ptr;
       int num_positions_joint =
-          body.hasParent() ? body.getJoint().getNumPositions() : 0;
+          body.has_mobilizer_joint() ? body.getJoint().getNumPositions() : 0;
       int num_velocities_joint =
-          body.hasParent() ? body.getJoint().getNumVelocities() : 0;
+          body.has_mobilizer_joint() ? body.getJoint().getNumVelocities() : 0;
       elements.insert({&body, KinematicsCacheElement<Scalar>(
                                   num_positions_joint, num_velocities_joint)});
       bodies.push_back(&body);
@@ -176,7 +176,7 @@ class KinematicsCache {
     int mat_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody& body = **it;
-      if (body.hasParent()) {
+      if (body.has_mobilizer_joint()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
         ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() =
@@ -200,7 +200,7 @@ class KinematicsCache {
     int mat_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody& body = **it;
-      if (body.hasParent()) {
+      if (body.has_mobilizer_joint()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
         ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() =
@@ -264,7 +264,7 @@ class KinematicsCache {
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_positions = [](
         int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
-      return body_ptr->hasParent()
+      return body_ptr->has_mobilizer_joint()
                  ? result + body_ptr->getJoint().getNumPositions()
                  : result;
     };
@@ -276,7 +276,7 @@ class KinematicsCache {
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_velocities = [](
         int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
-      return body_ptr->hasParent()
+      return body_ptr->has_mobilizer_joint()
                  ? result + body_ptr->getJoint().getNumVelocities()
                  : result;
     };

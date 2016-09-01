@@ -44,8 +44,8 @@ TEST_P(LoadModelTest, TestNoOffset) {
   auto world_body = rbs.getRigidBodyTree()->FindBody("world");
   EXPECT_TRUE(world_body != nullptr);
 
-  // Verifies that the world link does not have a parent.
-  EXPECT_FALSE(world_body->hasParent());
+  // Verifies that the world link does not have a mobilizer joint.
+  EXPECT_FALSE(world_body->has_mobilizer_joint());
 
   // Gets the link whose parent joint is called "base".
   auto link1_body = rbs.getRigidBodyTree()->FindChildBodyOfJoint("base");

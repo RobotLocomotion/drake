@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
@@ -78,6 +79,20 @@ class DRAKERBM_EXPORT RigidBody {
    */
   const RigidBody* get_parent() const;
 
+  /**
+   * Returns whether this rigid body has a mobilizer joint. A mobilizer joint
+   * is an inboard joint (i.e., it is closer to the root of the RigidBodyTree
+   * than this RigidBody). In other words, the mobilizer joint forms a kinematic
+   * path from this RigidBody to the root of the RigidBodyTree. Thus, by
+   * definition, all RigidBody objects should have an inboard joint except for
+   * the RigidBodyTree's root, which is the world.
+   */
+  bool has_mobilizer_joint() const;
+
+  // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use has_mobilizer_joint().")
+#endif
   bool hasParent() const;
 
   /**
@@ -105,26 +120,34 @@ class DRAKERBM_EXPORT RigidBody {
   int get_body_index() const;
 
   /**
-   * Sets the start index of this rigid body's position state within the
-   * `RigidBodyTree`'s state vector.
+   * Sets the start index of this rigid body's mobilizer joint's contiguous
+   * generalized coordinates `q` (joint position state variables) within the
+   * full RigidBodyTree generalized coordinate vector.
+   *
+   * For more details about the semantics of @p position_start_index, see the
+   * documentation for RigidBodyTree.
    */
   void set_position_start_index(int position_start_index);
 
   /**
-   * Returns the start index of this rigid body's position state within the
-   * `RigidBodyTree`'s state vector.
+   * Returns the start index of this body's parent jont's position states; see
+   * RigidBody::set_position_start_index() for more information.
    */
   int get_position_start_index() const;
 
   /**
-   * Sets the start index of this rigid body's velocity state within the
-   * `RigidBodyTree`'s state vector.
+   * Sets the start index of this rigid body's mobilizer joint's contiguous
+   * generalized velocity `v` (joint velocity state variables) within the full
+   * RigidBodyTree generalized velocity vector.
+   *
+   * For more details about the semantics of @p velocity_start_index, see the
+   * documentation for RigidBodyTree.
    */
   void set_velocity_start_index(int velocity_start_index);
 
   /**
-   * Returns the start index of this rigid body's velocity state within the
-   * `RigidBodyTree`'s state vector.
+   * Returns the start index of this body's parent jont's velocity states; see
+   * RigidBody::set_velocity_start_index() for more information.
    */
   int get_velocity_start_index() const;
 
