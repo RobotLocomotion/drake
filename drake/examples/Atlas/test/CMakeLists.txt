@@ -1,20 +1,18 @@
-if(LONG_RUNNING_TESTS)
-  add_matlab_test(NAME examples/Atlas/test/multiRobotTest COMMAND multiRobotTest PROPERTIES TIMEOUT 1500)
+add_matlab_test(NAME examples/Atlas/test/multiRobotTest COMMAND multiRobotTest)
 
-  # Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
-  # add_matlab_test(NAME examples/Atlas/test/runAtlasFastBackwardWalking REQUIRES gurobi lcm COMMAND runAtlasFastBackwardWalking PROPERTIES TIMEOUT 1500)
-  # add_matlab_test(NAME examples/Atlas/test/runAtlasFastWalking REQUIRES gurobi lcm COMMAND runAtlasFastWalking PROPERTIES TIMEOUT 1500)
-  # add_matlab_test(NAME examples/Atlas/test/runAtlasTurning REQUIRES gurobi lcm COMMAND runAtlasTurning PROPERTIES TIMEOUT 1500)
-  # add_matlab_test(NAME examples/Atlas/test/runAtlasTurning270 REQUIRES gurobi lcm COMMAND runAtlasTurning270 PROPERTIES TIMEOUT 1500)
-  # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingNarrowStairs REQUIRES iris lcm mosek COMMAND runAtlasWalkingNarrowStairs PROPERTIES TIMEOUT 1500)
-  # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingStairs REQUIRES iris lcm mosek COMMAND runAtlasWalkingStairs PROPERTIES TIMEOUT 1500)
-  # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingTestWraparound REQUIRES gurobi lcm COMMAND runAtlasWalkingTestWraparound PROPERTIES TIMEOUT 1500)
-  # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingTiltedBlocks REQUIRES iris lcm mosek COMMAND runAtlasWalkingTiltedBlocks PROPERTIES TIMEOUT 1500)
-  # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingDownStairs REQUIRES iris lcm mosek COMMAND runAtlasWalkingDownStairs PROPERTIES TIMEOUT 1500)
+# Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
+# add_matlab_test(NAME examples/Atlas/test/runAtlasFastBackwardWalking REQUIRES gurobi lcm COMMAND runAtlasFastBackwardWalking)
+# add_matlab_test(NAME examples/Atlas/test/runAtlasFastWalking REQUIRES gurobi lcm COMMAND runAtlasFastWalking)
+# add_matlab_test(NAME examples/Atlas/test/runAtlasTurning REQUIRES gurobi lcm COMMAND runAtlasTurning)
+# add_matlab_test(NAME examples/Atlas/test/runAtlasTurning270 REQUIRES gurobi lcm COMMAND runAtlasTurning270)
+# add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingNarrowStairs REQUIRES iris lcm mosek COMMAND runAtlasWalkingNarrowStairs)
+# add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingStairs REQUIRES iris lcm mosek COMMAND runAtlasWalkingStairs)
+# add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingTestWraparound REQUIRES gurobi lcm COMMAND runAtlasWalkingTestWraparound)
+# add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingTiltedBlocks REQUIRES iris lcm mosek COMMAND runAtlasWalkingTiltedBlocks)
+# add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingDownStairs REQUIRES iris lcm mosek COMMAND runAtlasWalkingDownStairs)
 
-  # See Github Issues #2553 #2538
-  # add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingHeelSupport REQUIRES iris lcm mosek COMMAND runAtlasWalkingHeelSupport PROPERTIES TIMEOUT 1500)
-endif()
+# See Github Issues #2553 #2538
+# add_matlab_test(NAME examples/Atlas/test/runAtlasWalkingHeelSupport REQUIRES iris lcm mosek COMMAND runAtlasWalkingHeelSupport)
 
 add_matlab_test(NAME examples/Atlas/test/runDRCDrillTask OPTIONAL bullet snopt COMMAND runDRCDrillTask)
 add_matlab_test(NAME examples/Atlas/test/runDRCValveTask OPTIONAL bullet snopt COMMAND runDRCValveTask)

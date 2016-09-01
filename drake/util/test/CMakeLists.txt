@@ -61,8 +61,7 @@ add_matlab_test(NAME util/test/testDTransformSpatialForce COMMAND testDTransform
 add_matlab_test(NAME util/test/testDcross COMMAND testDcross)
 add_matlab_test(NAME util/test/testFlipExpmap COMMAND testFlipExpmap)
 add_matlab_test(NAME util/test/testGeometryConversionFunctionsComparison COMMAND testGeometryConversionFunctionsComparison)
-# DISABLED due to #3224.
-# add_matlab_test(NAME util/test/testGeometryGradientsComparison COMMAND testGeometryGradientsComparison)
+# add_matlab_test(NAME util/test/testGeometryGradientsComparison COMMAND testGeometryGradientsComparison)  # FIXME: see #3224
 add_matlab_test(NAME util/test/testMotionSubspace COMMAND testMotionSubspace)
 add_matlab_test(NAME util/test/testMotionSubspaceDotTimesV COMMAND testMotionSubspaceDotTimesV)
 add_matlab_test(NAME util/test/testOrientation COMMAND testOrientation)
@@ -72,8 +71,8 @@ add_matlab_test(NAME util/test/testQuat COMMAND testQuat)
 add_matlab_test(NAME util/test/testQuat2expmap COMMAND testQuat2expmap)
 add_matlab_test(NAME util/test/testQuat2expmapSequence COMMAND testQuat2expmapSequence)
 add_matlab_test(NAME util/test/testQuat2rotmat COMMAND testQuat2rotmat)
-# add_matlab_test(NAME util/test/testQuatConjugate COMMAND testQuatConjugate)  # FIXME
-# add_matlab_test(NAME util/test/testQuatProduct COMMAND testQuatProduct)  # FIXME
+# add_matlab_test(NAME util/test/testQuatConjugate COMMAND testQuatConjugate)  # FIXME: see #3313
+# add_matlab_test(NAME util/test/testQuatProduct COMMAND testQuatProduct)  # FIXME: see #3313
 add_matlab_test(NAME util/test/testQuatRotateVec COMMAND testQuatRotateVec)
 add_matlab_test(NAME util/test/testQuatdot2angularvel COMMAND testQuatdot2angularvel)
 add_matlab_test(NAME util/test/testQuatdot2angularvelMatrix COMMAND testQuatdot2angularvelMatrix)
