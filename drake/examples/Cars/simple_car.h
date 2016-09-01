@@ -1,8 +1,8 @@
 #pragma once
 
 #include "drake/drakeCars_export.h"
-#include "drake/examples/Cars/gen/driving_command.h"
-#include "drake/examples/Cars/gen/simple_car_state.h"
+#include "drake/examples/Cars/system1_cars_vectors.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
 namespace drake {
@@ -11,7 +11,7 @@ namespace drake {
 /// all physics.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to @see http://drake.mit.edu/cxx_inl.html.
+/// this class, please refer to http://drake.mit.edu/cxx_inl.html.
 ///
 /// configuration:
 /// * see lcmt_simple_car_config_t
@@ -31,11 +31,11 @@ namespace drake {
 ///
 /// output vector: same as state vector.
 ///
-class DRAKECARS_EXPORT SimpleCar {
+class DRAKECARS_EXPORT SimpleCar1 {
  public:
   static const drake::lcmt_simple_car_config_t kDefaultConfig;
 
-  explicit SimpleCar(
+  explicit SimpleCar1(
       const drake::lcmt_simple_car_config_t& config = kDefaultConfig)
       : config_(config) {}
 
@@ -49,18 +49,19 @@ class DRAKECARS_EXPORT SimpleCar {
   /// Instantiated templates for the following ScalarTypes are provided:
   /// - double
   /// - drake::TaylorVarXd
+  ///
   /// They are already available to link against in libdrakeCars.
   ///
   /// To use other unusual ScalarType substitutions,
-  /// @see http://drake.mit.edu/cxx_inl.html.
+  /// see http://drake.mit.edu/cxx_inl.html.
   //@{
 
   template <typename ScalarType>
-  using StateVector = SimpleCarState<ScalarType>;
+  using StateVector = SimpleCarState1<ScalarType>;
   template <typename ScalarType>
-  using InputVector = DrivingCommand<ScalarType>;
+  using InputVector = DrivingCommand1<ScalarType>;
   template <typename ScalarType>
-  using OutputVector = SimpleCarState<ScalarType>;
+  using OutputVector = SimpleCarState1<ScalarType>;
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& time,
@@ -79,6 +80,34 @@ class DRAKECARS_EXPORT SimpleCar {
 
  private:
   const drake::lcmt_simple_car_config_t config_;
+};
+
+/// A System2 wrapper around the System1 SimpleCar1.
+template <typename T>
+class SimpleCar : public systems::LeafSystem<T> {
+ public:
+  explicit SimpleCar(
+      const drake::lcmt_simple_car_config_t& config =
+      SimpleCar1::kDefaultConfig);
+
+ public:
+  // System<T> overrides
+  bool has_any_direct_feedthrough() const override;
+  void EvalOutput(const systems::ContextBase<T>& context,
+                  systems::SystemOutput<T>* output) const override;
+  void EvalTimeDerivatives(
+      const systems::ContextBase<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
+
+ protected:
+  // LeafSystem<T> overrides
+  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
+      const override;
+  std::unique_ptr<systems::VectorBase<T>> AllocateOutputVector(
+      const systems::SystemPortDescriptor<T>& descriptor) const override;
+
+ private:
+  const SimpleCar1 wrapped_;
 };
 
 }  // namespace drake

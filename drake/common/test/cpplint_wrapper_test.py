@@ -47,7 +47,7 @@ class TestStringMethods(unittest.TestCase):
         self.run_and_expect(
             [filename],
             0,
-            [r"Checking \.+\n",
+            [r"Checking \.+\r?\n",
              r"TOTAL 1 files passed"])
         self.run_and_expect(
             ["--no-summarize", filename],
@@ -63,13 +63,13 @@ class TestStringMethods(unittest.TestCase):
         self.run_and_expect(
             [filename],
             0,
-            [r"Checking \.+\n",
+            [r"Checking \.+\r?\n",
              r"TOTAL 1 files passed"])
         # Test that pass-through arguments works.
         self.run_and_expect(
             [filename, "--", "--linelength=40"],
             1,
-            [r"Checking \.+\n",
+            [r"Checking \.+\r?\n",
              r"TOTAL 1 files checked",
              r"found [123] warnings",
              r"whitespace/line_length"])
@@ -78,7 +78,7 @@ class TestStringMethods(unittest.TestCase):
         self.run_and_expect(
             [self.get_absolute_filename('cpplint_wrapper_test.py')],
             0,
-            [r"Ignoring .*/cpplint_wrapper_test.py",
+            [r"Ignoring .*[/\\]cpplint_wrapper_test.py",
              r"TOTAL 0 files"])
 
     def test_num_processes(self):
@@ -100,7 +100,7 @@ class TestStringMethods(unittest.TestCase):
         self.run_and_expect(
             ["--num-processes=2"] + [filename] * 25,
             0,
-            [r"Checking \.+\n",
+            [r"Checking \.+\r?\n",
              r"TOTAL 25 files passed"])
 
 

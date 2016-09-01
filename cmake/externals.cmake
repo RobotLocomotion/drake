@@ -105,6 +105,23 @@ function(drake_forceupdate PROJECT)
         )
     endif()
   endif()
+
+  # TODO Once we require CMake 3.7, replace calls to drake_forceupdate with
+  # drake_add_submodule_sync_dependency
+  drake_add_submodule_sync_dependency(${PROJECT})
+endfunction()
+
+#------------------------------------------------------------------------------
+# Add a dependency on synchronizing submodules
+#------------------------------------------------------------------------------
+function(drake_add_submodule_sync_dependency PROJECT)
+  if(AUTO_UPDATE_EXTERNALS)
+    foreach(_step_target ${PROJECT} ${PROJECT}-update)
+      if(TARGET ${_step_target})
+        add_dependencies(${_step_target} submodule-sync)
+      endif()
+    endforeach()
+  endif()
 endfunction()
 
 #------------------------------------------------------------------------------
@@ -153,6 +170,7 @@ macro(drake_add_cmake_external PROJECT)
   # Set up the external project build
   ExternalProject_Add(${PROJECT}
     LIST_SEPARATOR "${_ext_LIST_SEPARATOR}"
+    SOURCE_SUBDIR ${_ext_SOURCE_SUBDIR}
     SOURCE_DIR ${_ext_SOURCE_DIR}
     BINARY_DIR ${_ext_BINARY_DIR}
     DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}
@@ -187,14 +205,6 @@ macro(drake_add_foreign_external PROJECT)
       ${_ext_VERBOSE}
       BUILD_PREFIX=${CMAKE_INSTALL_PREFIX}
       BUILD_TYPE=$<CONFIGURATION>)
-    if(_ext_BUILD_COMMAND_DIR)
-      # FIXME: This is only needed for Director due to the unusual build setup
-      #        used by the same. We should fix director to be a 'normal' CMake
-      #        project, and remove this option
-      set(_ext_BUILD_COMMAND ${CMAKE_COMMAND}
-        -E chdir ${_ext_BUILD_COMMAND_DIR}
-        ${_ext_BUILD_COMMAND})
-    endif()
   endif()
 
   if(NOT _ext_BUILD_COMMAND STREQUAL "")
@@ -236,6 +246,7 @@ endmacro()
 #       ensure correct build order. (Dependencies which are not enabled will be
 #       ignored.)
 #
+#   SOURCE_SUBDIR <dir> - Specify SOURCE_SUBDIR for external
 #   SOURCE_DIR <dir> - Override default SOURCE_DIR for external
 #   BINARY_DIR <dir> - Override default BINARY_DIR for external
 #
@@ -266,9 +277,9 @@ function(drake_add_external PROJECT)
     INSTALL_COMMAND)
   set(_ext_flags LOCAL PUBLIC CMAKE ALWAYS)
   set(_ext_sv_args
+    SOURCE_SUBDIR
     SOURCE_DIR
     BINARY_DIR
-    BUILD_COMMAND_DIR # FIXME: fix director then remove this
   )
   set(_ext_mv_args
     CMAKE_ARGS
@@ -327,6 +338,9 @@ function(drake_add_external PROJECT)
   if(NOT DEFINED _ext_SOURCE_DIR)
     set(_ext_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/${PROJECT})
   endif()
+  if(NOT DEFINED _ext_SOURCE_SUBDIR)
+    set(_ext_SOURCE_SUBDIR .)
+  endif()
 
   # Compute project dependencies
   drake_compute_dependencies(_ext_deps ${_ext_DEPENDS})
@@ -367,21 +381,14 @@ function(drake_add_external PROJECT)
 
     # Add external to download dependencies
     add_dependencies(download-all ${PROJECT}-update)
-  endif()
-
-  if(AUTO_UPDATE_EXTERNALS AND CMAKE_GENERATOR STREQUAL "Ninja")
+  elseif(CMAKE_GENERATOR STREQUAL "Ninja" AND CMAKE_VERSION VERSION_LESS 3.7)
     # Due to a quirk of how the CMake Ninja generator computes dependencies,
     # all targets that contain a submodule update command, or depend on a
     # target that does, need to depend on the submodule-sync target, or the
     # direct dependency will be lost.
     #
-    # TODO(bradking) This is expected to be fixed in CMake 3.7; add a version
-    # check when that is confirmed.
-    foreach(_step_target ${PROJECT} ${PROJECT}-update)
-      if(TARGET ${_step_target})
-        add_dependencies(${_step_target} submodule-sync)
-      endif()
-    endforeach()
+    # TODO remove when we require CMake 3.7
+    drake_add_submodule_sync_dependency(${PROJECT})
   endif()
 
   # Add extra per-project targets

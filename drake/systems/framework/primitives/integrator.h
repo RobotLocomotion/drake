@@ -3,45 +3,44 @@
 #include <cstdint>
 #include <memory>
 
-#include "drake/systems/framework/cache.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
-#include "drake/systems/framework/vector_interface.h"
 
 namespace drake {
 namespace systems {
 
 /// An integrator for a continuous vector input.
 /// @tparam T The type being integrated. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+///
+/// They are already available to link against in libdrakeSystemFramework.
+/// No other values for T are currently supported.
 template <typename T>
 class Integrator : public LeafSystem<T> {
  public:
   /// @param length is the size of the input port.
   explicit Integrator(int length);
-  ~Integrator() override {}
+  ~Integrator() override;
 
-  /// Integrator's output is not a direct feedthrough of its input.
-  // TODO(amcastro-tri): we should be able to express that initial conditions
-  // feed through an integrator but the dynamic signal during simulation
-  // does not.
-  bool has_any_direct_feedthrough() const override { return false;}
+  /// Sets the value of the integral modifying the state in the context.
+  /// @p value must be a column vector of the appropriate size.
+  void set_integral_value(ContextBase<T>* context,
+                          const Eigen::Ref<const VectorX<T>>& value) const;
 
-  /// Integrates the input ports into the output port. If the input ports are
-  /// not of the length specified in the constructor, std::runtime_error will
-  /// be thrown.
+  // System<T> overrides
+  bool has_any_direct_feedthrough() const override;
   void EvalOutput(const ContextBase<T>& context,
                   SystemOutput<T>* output) const override;
-
-  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override;
-
   void EvalTimeDerivatives(const ContextBase<T>& context,
                            ContinuousState<T>* derivatives) const override;
 
- private:
-  void ReserveState(Context<T>* context) const override;
-
-  int length_{0};
+ protected:
+  // LeafSystem<T> override
+  std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 };
 
 }  // namespace systems

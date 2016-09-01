@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 #include <Eigen/Dense>
 
@@ -13,19 +13,26 @@ namespace drake {
 namespace systems {
 
 /// BasicVector is a semantics-free wrapper around an Eigen vector that
-/// satisfies VectorInterface. Once constructed, its size is fixed.
+/// satisfies VectorBase. Once constructed, its size is fixed.
 /// The BasicVector is initialized to the quiet_NaN of the Eigen scalar.
 /// If numeric_limits is not specialized on the Eigen scalar, the BasicVector
 /// will be initialized with the scalar's default constructor.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class BasicVector : public VectorInterface<T> {
+class BasicVector : public VectorBase<T> {
  public:
   explicit BasicVector(int size)
       : values_(VectorX<T>::Constant(
             size, std::numeric_limits<
                       typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
+
+  /// Constructs a BasicVector with the specified @p data.
+  explicit BasicVector(const std::vector<T>& data) : BasicVector(data.size()) {
+    for (size_t i = 0; i < data.size(); ++i) {
+      values_[i] = data[i];
+    }
+  }
 
   void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
     if (value.rows() != values_.rows()) {
@@ -50,8 +57,8 @@ class BasicVector : public VectorInterface<T> {
   ///
   /// Uses the Non-Virtual Interface idiom because smart pointers do not have
   /// type covariance.
-  std::unique_ptr<VectorInterface<T>> Clone() const final {
-    return std::unique_ptr<VectorInterface<T>>(DoClone());
+  std::unique_ptr<VectorBase<T>> CloneVector() const final {
+    return std::unique_ptr<VectorBase<T>>(DoClone());
   }
 
  private:

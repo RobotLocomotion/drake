@@ -5,18 +5,14 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 namespace drake {
-
-using util::CompareMatrices;
-using util::MatrixCompareType;
-
 namespace math {
 namespace {
 

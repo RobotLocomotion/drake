@@ -12,6 +12,13 @@ target_link_libraries(basic_state_vector_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
 add_test(NAME basic_state_vector_test COMMAND basic_state_vector_test)
 
+add_executable(basic_state_and_output_vector_test
+  basic_state_and_output_vector_test.cc)
+target_link_libraries(basic_state_and_output_vector_test drakeSystemFramework
+  ${GTEST_BOTH_LIBRARIES})
+add_test(NAME basic_state_and_output_vector_test
+  COMMAND basic_state_and_output_vector_test)
+
 add_executable(state_subvector_test state_subvector_test.cc)
 target_link_libraries(state_subvector_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
@@ -51,6 +58,11 @@ add_executable(diagram_test diagram_test.cc)
 target_link_libraries(diagram_test
                       drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
 add_test(NAME diagram_test COMMAND diagram_test)
+
+add_executable(diagram_builder_test diagram_builder_test.cc)
+target_link_libraries(diagram_builder_test
+                      drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
+add_test(NAME diagram_builder_test COMMAND diagram_builder_test)
 
 add_executable(diagram_context_test diagram_context_test.cc)
 target_link_libraries(diagram_context_test

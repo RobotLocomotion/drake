@@ -10,7 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/state_subvector.h"
 #include "drake/systems/framework/state_vector.h"
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -30,7 +30,7 @@ class ContinuousState {
     generalized_position_.reset(new StateSubvector<T>(state_.get()));
     generalized_velocity_.reset(new StateSubvector<T>(state_.get()));
     misc_continuous_state_.reset(
-        new StateSubvector<T>(state_.get(), 0, state_.size()));
+        new StateSubvector<T>(state_.get(), 0, state_->size()));
   }
 
   /// Constructs a ContinuousState that exposes second-order structure.
@@ -49,8 +49,8 @@ class ContinuousState {
   /// @param num_q The number of position variables.
   /// @param num_v The number of velocity variables.
   /// @param num_z The number of other variables.
-  ContinuousState(std::unique_ptr<StateVector<T>> state, int num_q,
-                  int num_v, int num_z) {
+  ContinuousState(std::unique_ptr<StateVector<T>> state, int num_q, int num_v,
+                  int num_z) {
     state_ = std::move(state);
     if (state_->size() != num_q + num_v + num_z) {
       throw std::out_of_range(
@@ -92,6 +92,8 @@ class ContinuousState {
     DRAKE_ASSERT(state_->size() == n);
     DRAKE_ASSERT(num_v <= num_q);
   }
+
+  virtual ~ContinuousState() {}
 
   /// Returns the entire state vector.
   const StateVector<T>& get_state() const { return *state_; }

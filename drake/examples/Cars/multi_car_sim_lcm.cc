@@ -1,5 +1,4 @@
 #include "drake/examples/Cars/car_simulation.h"
-#include "drake/examples/Cars/gen/driving_command.h"
 #include "drake/common/drake_path.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
@@ -65,7 +64,7 @@ int do_main(int argc, const char* argv[]) {
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
-  AddFlatTerrain(tree);
+  AddFlatTerrainToWorld(tree);
 
   // Initializes and cascades all of the systems.
   auto visualizer =

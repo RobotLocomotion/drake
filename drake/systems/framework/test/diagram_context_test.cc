@@ -6,21 +6,18 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/integrator.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 namespace drake {
-
-using util::CompareMatrices;
-using util::MatrixCompareType;
-
 namespace systems {
 namespace {
 
+constexpr int kNumSystems = 4;
 constexpr double kTime = 12.0;
 
 class DiagramContextTest : public ::testing::Test {
@@ -48,8 +45,7 @@ class DiagramContextTest : public ::testing::Test {
     context_->ExportInput({1 /* adder1_ */, 0 /* port 0 */});
 
     context_->MakeState();
-    ContinuousState<double>* xc =
-        context_->get_state().continuous_state.get();
+    ContinuousState<double>* xc = context_->get_state().continuous_state.get();
     xc->get_mutable_state()->SetAtIndex(0, 42.0);
     xc->get_mutable_state()->SetAtIndex(1, 43.0);
   }
@@ -67,9 +63,9 @@ class DiagramContextTest : public ::testing::Test {
     vec1->get_mutable_value() << 256;
 
     context_->SetInputPort(
-        0, std::make_unique<FreestandingInputPort<double>>(std::move(vec0)));
+        0, std::make_unique<FreestandingInputPort>(std::move(vec0)));
     context_->SetInputPort(
-        1, std::make_unique<FreestandingInputPort<double>>(std::move(vec1)));
+        1, std::make_unique<FreestandingInputPort>(std::move(vec1)));
   }
 
   std::unique_ptr<DiagramContext<double>> context_;
@@ -90,6 +86,15 @@ TEST_F(DiagramContextTest, AddAndRetrieveConstituents) {
 
   EXPECT_NE(nullptr, context_->GetSubsystemOutput(4));
   EXPECT_NE(nullptr, context_->GetSubsystemContext(4));
+}
+
+// Tests that the time writes through to the subsystem contexts.
+TEST_F(DiagramContextTest, Time) {
+  context_->set_time(42.0);
+  EXPECT_EQ(42.0, context_->get_time());
+  for (int i = 0; i < kNumSystems; ++i) {
+    EXPECT_EQ(42.0, context_->GetSubsystemContext(i)->get_time());
+  }
 }
 
 // Tests that state variables appear in the diagram context, and write
@@ -121,22 +126,6 @@ TEST_F(DiagramContextTest, ConnectValid) {
                                     {1 /* adder1_ */, 1 /* port 1 */}));
 }
 
-// Tests that an exception is thrown when connecting from a source port that
-// does not exist.
-TEST_F(DiagramContextTest, ConnectInvalidSrcPort) {
-  EXPECT_THROW(context_->Connect({0 /* adder0_ */, 1 /* port 1 */},
-                                 {1 /* adder1_ */, 1 /* port 1 */}),
-               std::out_of_range);
-}
-
-// Tests that an exception is thrown when connecting to a destination port that
-// does not exist.
-TEST_F(DiagramContextTest, ConnectInvalidDestPort) {
-  EXPECT_THROW(context_->Connect({0 /* adder0_ */, 0 /* port 0 */},
-                                 {1 /* adder1_ */, 2 /* port 2 */}),
-               std::out_of_range);
-}
-
 // Tests that input ports can be assigned to the DiagramContext and then
 // retrieved.
 TEST_F(DiagramContextTest, SetAndGetInputPorts) {
@@ -166,8 +155,7 @@ TEST_F(DiagramContextTest, Clone) {
   EXPECT_EQ(kTime, clone->get_time());
 
   // Verify that the state was copied.
-  ContinuousState<double>* xc =
-      context_->get_state().continuous_state.get();
+  ContinuousState<double>* xc = context_->get_state().continuous_state.get();
 
   EXPECT_EQ(42.0, xc->get_state().GetAtIndex(0));
   EXPECT_EQ(43.0, xc->get_state().GetAtIndex(1));
@@ -182,11 +170,11 @@ TEST_F(DiagramContextTest, Clone) {
                                 MatrixCompareType::absolute));
   }
 
-  // Verify that the graph structure was preserved: the VectorInterface in
-  // sys0 output port 0 should be pointer-equal to the VectorInterface in
+  // Verify that the graph structure was preserved: the VectorBase in
+  // sys0 output port 0 should be pointer-equal to the VectorBase in
   // sys1 input port 1.
   EXPECT_EQ(clone->GetSubsystemContext(1)->get_vector_input(1),
-            clone->GetSubsystemOutput(0)->get_port(0).get_vector_data());
+            clone->GetSubsystemOutput(0)->get_vector_data(0));
 }
 
 }  // namespace

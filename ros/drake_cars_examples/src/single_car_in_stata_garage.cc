@@ -49,8 +49,13 @@ int do_main(int argc, const char* argv[]) {
   // CreateRigidBodySystem() below.
   double duration = std::numeric_limits<double>::infinity();
 
+  // Instantiates a data structure that maps model instance names to their model
+  // instance IDs.
+  drake::parsers::ModelInstanceIdTable model_instances;
+
   // Initializes the rigid body system.
-  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration);
+  auto rigid_body_sys = CreateRigidBodySystem(argc, argv, &duration,
+      &model_instances);
 
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 

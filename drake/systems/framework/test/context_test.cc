@@ -2,20 +2,18 @@
 
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
-
-using util::CompareMatrices;
-using util::MatrixCompareType;
-
 namespace systems {
 
 constexpr int kNumInputPorts = 2;
@@ -35,10 +33,10 @@ class ContextTest : public ::testing::Test {
     // Input
     context_.SetNumInputPorts(kNumInputPorts);
     for (int i = 0; i < kNumInputPorts; ++i) {
-      std::unique_ptr<VectorInterface<double>> port_data(
+      std::unique_ptr<VectorBase<double>> port_data(
           new BasicVector<double>(kInputSize[i]));
-      std::unique_ptr<FreestandingInputPort<double>> port(
-          new FreestandingInputPort<double>(std::move(port_data)));
+      std::unique_ptr<FreestandingInputPort> port(
+          new FreestandingInputPort(std::move(port_data)));
       context_.SetInputPort(i, std::move(port));
     }
 
@@ -78,8 +76,8 @@ TEST_F(ContextTest, GetVectorInput) {
   // Add input port 0 to the context, but leave input port 1 uninitialized.
   std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
   vec->get_mutable_value() << 5, 6;
-  std::unique_ptr<FreestandingInputPort<int>> port(
-      new FreestandingInputPort<int>(std::move(vec)));
+  std::unique_ptr<FreestandingInputPort> port(
+      new FreestandingInputPort(std::move(vec)));
   context.SetInputPort(0, std::move(port));
 
   // Test that port 0 is retrievable.
@@ -89,9 +87,23 @@ TEST_F(ContextTest, GetVectorInput) {
 
   // Test that port 1 is nullptr.
   EXPECT_EQ(nullptr, context.get_vector_input(1));
+}
 
-  // Test that out-of-bounds ports throw an exception.
-  EXPECT_THROW(context.get_vector_input(2), std::out_of_range);
+TEST_F(ContextTest, GetAbstractInput) {
+  Context<int> context;
+  context.SetNumInputPorts(2);
+
+  // Add input port 0 to the context, but leave input port 1 uninitialized.
+  std::unique_ptr<AbstractValue> value(new Value<std::string>("foo"));
+  std::unique_ptr<FreestandingInputPort> port(
+      new FreestandingInputPort(std::move(value)));
+  context.SetInputPort(0, std::move(port));
+
+  // Test that port 0 is retrievable.
+  EXPECT_EQ("foo", *context.get_input_value<std::string>(0));
+
+  // Test that port 1 is nullptr.
+  EXPECT_EQ(nullptr, context.get_abstract_input(1));
 }
 
 TEST_F(ContextTest, Clone) {

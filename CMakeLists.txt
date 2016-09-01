@@ -20,6 +20,7 @@ drake_setup_git_hooks()
 ##########################################
 option(WITH_EIGEN "required c++ matrix library.  only disable if you have it already." ON)
 option(WITH_GOOGLETEST "required c++ unit test library.  only disable if you have it already." ON)
+option(WITH_GFLAGS "required c++ command-line library.  only disable if you have it already." ON)
 option(WITH_GOOGLE_STYLEGUIDE "provides cpplint.py style checking" ON)
 option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 option(WITH_BULLET "used for collision detection" ON)
@@ -32,6 +33,7 @@ else()
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_NLOPT "nonlinear optimization solver" ON)
+  option(WITH_DREAL "nonlinear SMT solver" ON)
   option(WITH_MOSEK "convex optimization solver; free for academics" OFF)
   # IPOPT is currently disabled on Mac due to MATLAB compatibility
   # issues: https://github.com/RobotLocomotion/drake/issues/2578
@@ -108,11 +110,13 @@ drake_add_external(avl PUBLIC)
 drake_add_external(bertini)
 drake_add_external(bullet PUBLIC CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
+drake_add_external(gflags PUBLIC CMAKE)
 drake_add_external(gloptipoly)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC)
 drake_add_external(mosek PUBLIC)
 drake_add_external(octomap PUBLIC)
+drake_add_external(sedumi)
 drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE)
@@ -163,6 +167,11 @@ drake_add_external(nlopt PUBLIC
     --prefix=${CMAKE_INSTALL_PREFIX}
     --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt
   INSTALL_COMMAND ${MAKE_COMMAND} install)
+
+# dreal
+drake_add_external(dreal PUBLIC CMAKE
+  CMAKE_ARGS -DUSE_NLOPT=OFF
+  SOURCE_SUBDIR src)
 
 # textbook
 drake_add_external(textbook PUBLIC
@@ -220,8 +229,14 @@ drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
   DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
 
 # director
-drake_add_external(director PUBLIC
-  BUILD_COMMAND_DIR distro/pods/drake-distro # FIXME: fix need for this
+drake_add_external(director PUBLIC CMAKE
+  SOURCE_SUBDIR distro/superbuild
+  CMAKE_ARGS
+    -DUSE_LCM=ON # TODO: predicate on whether we have LCM enabled?
+    -DUSE_LCMGL=ON
+    -DUSE_SYSTEM_LCM=ON
+    -DUSE_EXTERNAL_INSTALL=ON
+  INSTALL_COMMAND :
   DEPENDS bot_core_lcmtypes lcm libbot)
 
 # signalscope
@@ -237,24 +252,47 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
   ${DRAKE_BUILD_COMMANDS}
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
-    -DWITH_DIRECTOR=${WITH_DIRECTOR}
+    -DWITH_AVL:BOOL=${WITH_AVL}
+    -DWITH_BERTINI:BOOL=${WITH_BERTINI}
+    -DWITH_BULLET:BOOL=${WITH_BULLET}
+    -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
+    -DWITH_DREAL:BOOL=${WITH_DREAL}
+    -DWITH_GLOPTIPOLY:BOOL=${WITH_GLOPTIPOLY}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
+    -DWITH_GUROBI:BOOL=${WITH_GUROBI}
+    -DWITH_IPOPT:BOOL=${WITH_IPOPT}
+    -DWITH_IRIS:BOOL=${WITH_IRIS}
+    -DWITH_LCM:BOOL=${WITH_LCM}
+    -DWITH_LIBBOT:BOOL=${WITH_LIBBOT}
+    -DWITH_MOSEK:BOOL=${WITH_MOSEK}
+    -DWITH_NLOPT:BOOL=${WITH_NLOPT}
+    -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
+    -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
+    -DWITH_SNOPT:BOOL=${WITH_SNOPT}
+    -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
+    -DWITH_XFOIL:BOOL=${WITH_XFOIL}
+    -DWITH_YALMIP:BOOL=${WITH_YALMIP}
   DEPENDS
+    avl
     bertini
     bot_core_lcmtypes
     bullet
     cmake
     director
+    dreal
     eigen
-    gloptipoly3
+    gflags
+    gloptipoly
     google_styleguide
     googletest
+    gtk
     gurobi
     ipopt
     iris
     lcm
     libbot
+    meshconverters
     mosek
     nlopt
     octomap
@@ -294,7 +332,7 @@ if(WITH_SNOPT_PRECOMPILED)
     CONFIGURE_COMMAND ""
     BUILD_COMMAND cmake -E copy_directory
       ${CMAKE_BINARY_DIR}/snopt-precompiled/
-      ${PROJECT_SOURCE_DIR}/drake/solvers/
+      ${PROJECT_SOURCE_DIR}/drake/matlab/solvers/
     INSTALL_COMMAND "")
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install

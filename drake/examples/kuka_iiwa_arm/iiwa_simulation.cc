@@ -1,13 +1,13 @@
 #include "iiwa_simulation.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/LCMSystem.h"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
 using drake::RigidBodySystem;
+using lcm::LCM;
 
 std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   // Instantiates a rigid body system and adds the robot arm to it.
@@ -45,6 +45,32 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   tree->updateStaticCollisionElements();
 
   return rigid_body_system;
+}
+
+std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
+    CreateKukaIiwaVisualizer(
+    const std::shared_ptr<drake::RigidBodySystem> iiwa_system,
+    const std::shared_ptr<lcm::LCM> lcm) {
+
+  // Extracts the tree.
+  const auto& iiwa_tree = iiwa_system->getRigidBodyTree();
+
+  // Instantiates a BotVisualizer for @p iiwa_system
+  auto visualizer =
+      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,
+                                                                    iiwa_tree);
+  return visualizer;
+}
+
+DRAKEKUKAIIWAARM_EXPORT
+Eigen::VectorXd GenerateArbitraryIiwaInitialState() {
+  const int kStateDimension = 14;  // Fixed for the IIWA Arm.
+  const int kNumDof = 7;  // Fixed for the IIWA Arm.
+  Eigen::VectorXd arbitrary_initial_state =
+      Eigen::VectorXd::Zero(kStateDimension, 1);
+  arbitrary_initial_state.head(kNumDof) << 0.01, -0.01, 0.01, 0.5,
+      0.01, -0.01, 0.01;
+  return(arbitrary_initial_state);
 }
 
 drake::SimulationOptions SetupSimulation(double initial_step_size) {

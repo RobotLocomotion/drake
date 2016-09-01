@@ -14,7 +14,6 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
 #include "drake/examples/Cars/car_simulation.h"
-#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
 #include "drake/examples/Cars/trajectory_car.h"
 
 using drake::AffineSystem;
@@ -27,7 +26,7 @@ namespace examples {
 namespace cars {
 namespace {
 
-int do_main(int argc, const char* argv[]) {
+int DoMain(int argc, const char* argv[]) {
   int num_cars = 100;
   if (argc == 2) {
     num_cars = atoi(argv[1]);
@@ -51,7 +50,7 @@ int do_main(int argc, const char* argv[]) {
   //  U: ()
   //  X: ()
   //  Y: [(xy-position, heading, velocity), ...] per SimpleCarState
-  auto cars_system = std::make_shared<NArySystem<TrajectoryCar>>();
+  auto cars_system = std::make_shared<NArySystem<TrajectoryCar1>>();
   // NarySystem for car visualization.
   // BotVisualizer:
   //  U: [(xy-position, heading, velocity), ...] per SimpleCarState
@@ -66,7 +65,7 @@ int do_main(int argc, const char* argv[]) {
   // Add all of the desired cars.
   for (int i = 0; i < num_cars; ++i) {
     // Add the visualization entity.
-    drake::parsers::urdf::AddModelInstanceFromURDF(
+    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         (i % 5) ? kSedanUrdf : kBreadtruckUrdf, DrakeJoint::ROLLPITCHYAW,
         nullptr /* weld_to_frame */, world_tree.get());
 
@@ -102,5 +101,5 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::cars::do_main(argc, argv);
+  return drake::examples::cars::DoMain(argc, argv);
 }

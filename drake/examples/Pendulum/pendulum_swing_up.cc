@@ -6,7 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/solvers/Function.h"
-#include "drake/systems/plants/constraint/dynamic_constraint.h"
+#include "drake/systems/plants/constraint/direct_collocation_constraint.h"
 
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
@@ -84,11 +84,11 @@ void AddSwingUpTrajectoryParams(
       std::make_shared<LinearEqualityConstraint>(
           Eigen::Matrix2d::Identity(), xG), {num_time_samples - 1});
 
-  dircol_traj->AddRunningCost(PendulumRunningCost());
-  dircol_traj->AddFinalCost(PendulumFinalCost());
+  dircol_traj->AddRunningCostFunc(PendulumRunningCost());
+  dircol_traj->AddFinalCostFunc(PendulumFinalCost());
   dircol_traj->AddDynamicConstraint(
-      std::make_shared<drake::systems::SystemDynamicConstraint<Pendulum>>(
-          pendulum));
+      std::make_shared<
+      drake::systems::SystemDirectCollocationConstraint<Pendulum>>(pendulum));
 }
 
 }  // pendulum

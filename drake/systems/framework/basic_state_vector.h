@@ -7,18 +7,17 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_state_vector.h"
-#include "drake/systems/framework/vector_interface.h"
-#include "leaf_state_vector.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
 /// BasicStateVector is a concrete class template that implements
-/// StateVector in a convenient manner for leaf Systems,
-/// by owning and wrapping a VectorInterface<T>.
+/// StateVector in a convenient manner for LeafSystem blocks,
+/// by owning and wrapping a VectorBase<T>.
 ///
 /// It will often be convenient to inherit from BasicStateVector, and add
-/// additional semantics specific to the leaf System. Such child classes must
+/// additional semantics specific to the LeafSystem. Such child classes must
 /// override DoClone with an implementation that returns their concrete type.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
@@ -29,20 +28,20 @@ class BasicStateVector : public LeafStateVector<T> {
   /// specified @p size.
   explicit BasicStateVector(int size)
       : BasicStateVector(
-            std::unique_ptr<VectorInterface<T>>(new BasicVector<T>(size))) {}
+            std::unique_ptr<VectorBase<T>>(new BasicVector<T>(size))) {}
 
   /// Constructs a BasicStateVector that owns a generic BasicVector with the
   /// specified @p data.
   explicit BasicStateVector(const std::vector<T>& data)
-      : BasicStateVector(data.size()) {
-    for (size_t i = 0; i < data.size(); ++i) {
+      : BasicStateVector(static_cast<int>(data.size())) {
+    for (int i = 0; i < static_cast<int>(data.size()); ++i) {
       SetAtIndex(i, data[i]);
     }
   }
 
   /// Constructs a BasicStateVector that owns an arbitrary @p vector, which
   /// must not be nullptr.
-  explicit BasicStateVector(std::unique_ptr<VectorInterface<T>> vector)
+  explicit BasicStateVector(std::unique_ptr<VectorBase<T>> vector)
       : vector_(std::move(vector)) {}
 
   int size() const override {
@@ -88,16 +87,20 @@ class BasicStateVector : public LeafStateVector<T> {
   }
 
  protected:
+  // Clone other's wrapped vector, in case is it not a BasicVector.
   BasicStateVector(const BasicStateVector& other)
-      : BasicStateVector(other.size()) {
-    SetFromVector(other.vector_->get_value());
-  }
+      : BasicStateVector(other.vector_->CloneVector()) {}
 
- private:
   BasicStateVector<T>* DoClone() const override {
     return new BasicStateVector<T>(*this);
   }
 
+  /// Returns a mutable reference to the underlying VectorBase.
+  VectorBase<T>& get_wrapped_vector() { return *vector_; }
+  /// Returns a const reference to the underlying VectorBase.
+  const VectorBase<T>& get_wrapped_vector() const { return *vector_; }
+
+ private:
   // Assignment of BasicStateVectors could change size, so we forbid it.
   BasicStateVector& operator=(const BasicStateVector& other) = delete;
 
@@ -105,7 +108,7 @@ class BasicStateVector : public LeafStateVector<T> {
   BasicStateVector(BasicStateVector&& other) = delete;
   BasicStateVector& operator=(BasicStateVector&& other) = delete;
 
-  std::unique_ptr<VectorInterface<T>> vector_;
+  std::unique_ptr<VectorBase<T>> vector_;
 };
 
 }  // namespace systems

@@ -5,16 +5,24 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeCars SOURCE_FILES
     car_simulation.cc
     curve2.cc
+    gen/driving_command.cc
+    gen/euler_floating_joint_state.cc
+    gen/idm_with_trajectory_agent_state.cc
+    gen/simple_car_state.cc
+    idm_with_trajectory_agent.cc
     simple_car.cc
     trajectory_car.cc)
-  target_link_libraries(drakeCars drakeRBSystem drakeShapes drakeCommon)
+  target_link_libraries(drakeCars drakeRBSystem drakeShapes drakeCommon drakeSystemFramework)
   pods_install_libraries(drakeCars)
   drake_install_headers(
     curve2.h
     car_simulation.h
     simple_car.h
     simple_car-inl.h
-    trajectory_car.h)
+    system1_cars_vectors.h
+    trajectory_car.h
+    system1_vector.h
+    )
   add_subdirectory(gen)
   pods_install_pkg_config_file(drake-cars
     LIBS -ldrakeCars

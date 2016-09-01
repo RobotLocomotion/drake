@@ -16,6 +16,77 @@
 namespace drake {
 namespace systems {
 
+/// DiagramContinuousState is a ContinuousState consisting of StateSupervectors
+/// over a set of constituent ContinuousStates.
+///
+/// @tparam T The type of the output data. Must be a valid Eigen scalar.
+template <typename T>
+class DiagramContinuousState : public ContinuousState<T> {
+ public:
+  /// Constructs a ContinuousState that is composed of other ContinuousStates,
+  /// which are not owned by this object and must outlive it. Some of the
+  /// subsystem states may be nullptr if the system is stateless.
+  ///
+  /// The DiagramContinuousState vector will have the same order as the
+  /// @p states parameter, which should be the sort order of the Diagram itself.
+  explicit DiagramContinuousState(
+      std::vector<ContinuousState<T>*> substates)
+      : ContinuousState<T>(
+            Span(substates, x_selector), Span(substates, q_selector),
+            Span(substates, v_selector), Span(substates, z_selector)),
+        substates_(std::move(substates)) {}
+
+  ~DiagramContinuousState() override {}
+
+  int get_num_substates() const { return static_cast<int>(substates_.size()); }
+
+  /// Returns the continuous state at the given @p index, or nullptr if that
+  /// system is stateless.
+  const ContinuousState<T>* get_substate(int index) const {
+    return substates_[index];
+  }
+
+  /// Returns the continuous state at the given @p index, or nullptr if that
+  /// system is stateless.
+  ContinuousState<T>* get_mutable_substate(int index) {
+    return substates_[index];
+  }
+
+ private:
+  // Returns a StateSupervector over the x, q, v, or z components of each
+  // substate in @p substates, as indicated by @p selector.
+  static std::unique_ptr<StateVector<T>> Span(
+      const std::vector<ContinuousState<T>*>& substates,
+      std::function<StateVector<T>*(ContinuousState<T>&)> selector) {
+    std::vector<StateVector<T>*> sub_xs;
+    for (const auto& substate : substates) {
+      if (substate != nullptr) {
+        sub_xs.push_back(selector(*substate));
+      }
+    }
+    return std::make_unique<StateSupervector<T>>(sub_xs);
+  }
+
+  // Returns the entire state vector in @p xc.
+  static StateVector<T>* x_selector(ContinuousState<T>& xc) {
+    return xc.get_mutable_state();
+  }
+  // Returns the generalized position vector in @p xc.
+  static StateVector<T>* q_selector(ContinuousState<T>& xc) {
+    return xc.get_mutable_generalized_position();
+  }
+  // Returns the generalized velocity vector in @p xc.
+  static StateVector<T>* v_selector(ContinuousState<T>& xc) {
+    return xc.get_mutable_generalized_velocity();
+  }
+  // Returns the misc continuous state vector in @p xc.
+  static StateVector<T>* z_selector(ContinuousState<T>& xc) {
+    return xc.get_mutable_misc_continuous_state();
+  }
+
+  std::vector<ContinuousState<T>*> substates_;
+};
+
 /// The DiagramContext is a container for all of the data necessary to uniquely
 /// determine the computations performed by a Diagram. Specifically, a
 /// DiagramContext contains contexts and outputs for all the constituent
@@ -68,24 +139,23 @@ class DiagramContext : public ContextBase<T> {
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
   void Connect(const PortIdentifier& src, const PortIdentifier& dest) {
-    // Validate and identify the source port.
+    // Identify and validate the source port.
     SystemIndex src_system_index = src.first;
     PortIndex src_port_index = src.second;
     SystemOutput<T>* src_ports = outputs_[src_system_index].get();
-    if (src_port_index < 0 || src_port_index >= src_ports->get_num_ports()) {
-      throw std::out_of_range("Source port out of range.");
-    }
-    OutputPort<T>* output_port = src_ports->get_mutable_port(src_port_index);
+    DRAKE_ABORT_UNLESS(src_port_index >= 0);
+    DRAKE_ABORT_UNLESS(src_port_index < src_ports->get_num_ports());
+    OutputPort* output_port = src_ports->get_mutable_port(src_port_index);
 
-    // Validate, construct, and install the destination port.
+    // Identify and validate the destination port.
     SystemIndex dest_system_index = dest.first;
     PortIndex dest_port_index = dest.second;
     ContextBase<T>* dest_context = contexts_[dest_system_index].get();
-    if (dest_port_index < 0 ||
-        dest_port_index >= dest_context->get_num_input_ports()) {
-      throw std::out_of_range("Destination port out of range.");
-    }
-    auto input_port = std::make_unique<DependentInputPort<T>>(output_port);
+    DRAKE_ABORT_UNLESS(dest_port_index >= 0);
+    DRAKE_ABORT_UNLESS(dest_port_index < dest_context->get_num_input_ports());
+
+    // Construct and install the destination port.
+    auto input_port = std::make_unique<DependentInputPort>(output_port);
     dest_context->SetInputPort(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
@@ -98,32 +168,12 @@ class DiagramContext : public ContextBase<T> {
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
   void MakeState() {
-    // Generate the continuous state supervectors.
-    std::vector<StateVector<T>*> continuous_states;
-    std::vector<StateVector<T>*> continuous_qs;
-    std::vector<StateVector<T>*> continuous_vs;
-    std::vector<StateVector<T>*> continuous_zs;
-
+    std::vector<ContinuousState<T>*> substates;
     for (auto& it : contexts_) {
-      ContinuousState<T>* xc =
-          it.second->get_mutable_state()->continuous_state.get();
-
-      // Skip subsystems that have no continuous state.
-      if (xc == nullptr) {
-        continue;
-      }
-
-      continuous_states.push_back(xc->get_mutable_state());
-      continuous_qs.push_back(xc->get_mutable_generalized_position());
-      continuous_vs.push_back(xc->get_mutable_generalized_velocity());
-      continuous_zs.push_back(xc->get_mutable_misc_continuous_state());
+      substates.push_back(
+          it.second->get_mutable_state()->continuous_state.get());
     }
-
-    state_.continuous_state = std::make_unique<ContinuousState<T>>(
-        std::make_unique<StateSupervector<T>>(continuous_states),
-        std::make_unique<StateSupervector<T>>(continuous_qs),
-        std::make_unique<StateSupervector<T>>(continuous_vs),
-        std::make_unique<StateSupervector<T>>(continuous_zs));
+    state_.continuous_state.reset(new DiagramContinuousState<T>(substates));
   }
 
   /// Returns the output structure for a given constituent system @p sys, or
@@ -146,9 +196,32 @@ class DiagramContext : public ContextBase<T> {
     return (*it).second.get();
   }
 
-  int get_num_input_ports() const override { return input_ids_.size(); }
+  /// Returns the context structure for a given subsystem @p sys, or
+  /// nullptr if @p sys is not a subsystem.
+  ContextBase<T>* GetMutableSubsystemContext(SystemIndex sys) {
+    auto it = contexts_.find(sys);
+    if (it == contexts_.end()) {
+      return nullptr;
+    }
+    return (*it).second.get();
+  }
 
-  void SetInputPort(int index, std::unique_ptr<InputPort<T>> port) override {
+  /// Recursively sets the time on this context and all subcontexts.
+  void set_time(const T& time_sec) override {
+    ContextBase<T>::set_time(time_sec);
+    for (auto& kv : contexts_) {
+      ContextBase<T>* subcontext = kv.second.get();
+      if (subcontext != nullptr) {
+        subcontext->set_time(time_sec);
+      }
+    }
+  }
+
+  int get_num_input_ports() const override {
+    return static_cast<int>(input_ids_.size());
+  }
+
+  void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
     if (index < 0 || index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
     }
@@ -161,18 +234,26 @@ class DiagramContext : public ContextBase<T> {
     // TODO(david-german-tri): Set invalidation callbacks.
   }
 
-  const VectorInterface<T>* get_vector_input(int index) const override {
+  const VectorBase<T>* get_vector_input(int index) const override {
     if (index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
     }
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
-    const auto it = contexts_.find(system_index);
-    if (it == contexts_.end()) {
-      return nullptr;
+    const ContextBase<T>* subsystem_context = GetSubsystemContext(system_index);
+    return subsystem_context->get_vector_input(port_index);
+  }
+
+  const AbstractValue* get_abstract_input(int index) const override {
+    if (index >= get_num_input_ports()) {
+      throw std::out_of_range("Input port out of range.");
     }
-    return it->second->get_vector_input(port_index);
+    const PortIdentifier& id = input_ids_[index];
+    SystemIndex system_index = id.first;
+    PortIndex port_index = id.second;
+    const ContextBase<T>* subsystem_context = GetSubsystemContext(system_index);
+    return subsystem_context->get_abstract_input(port_index);
   }
 
   const State<T>& get_state() const override { return state_; }

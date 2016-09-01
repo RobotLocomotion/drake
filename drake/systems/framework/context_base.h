@@ -2,6 +2,7 @@
 
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -34,14 +35,14 @@ class ContextBase {
   const T& get_time() const { return get_step_info().time_sec; }
 
   /// Set the current time in seconds.
-  void set_time(const T& time_sec) {
+  virtual void set_time(const T& time_sec)  {
     get_mutable_step_info()->time_sec = time_sec;
   }
 
   /// Connects the input port @p port to this Context at the given @p index.
   /// Disconnects whatever input port was previously there, and deregisters
   /// it from the output port on which it depends.
-  virtual void SetInputPort(int index, std::unique_ptr<InputPort<T>> port) = 0;
+  virtual void SetInputPort(int index, std::unique_ptr<InputPort> port) = 0;
 
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
@@ -49,7 +50,25 @@ class ContextBase {
   /// Returns the vector data of the input port at @p index. Returns nullptr
   /// if that port is not a vector-valued port, or if it is not connected.
   /// Throws std::out_of_range if that port does not exist.
-  virtual const VectorInterface<T>* get_vector_input(int index) const = 0;
+  virtual const VectorBase<T>* get_vector_input(int index) const = 0;
+
+  /// Returns the abstract data of the input port at @p index. Returns nullptr
+  /// if that port is not connected. Throws std::out_of_range if that port
+  /// does not exist.
+  virtual const AbstractValue* get_abstract_input(int index) const = 0;
+
+  /// Returns the data of the input port at @p index, or nullptr if that port
+  /// is not connected.
+  ///
+  /// @tparam V The type of data expected.
+  template <typename V>
+  const V* get_input_value(int index) const {
+    const AbstractValue* value = get_abstract_input(index);
+    if (value == nullptr) {
+      return nullptr;
+    }
+    return &(value->GetValue<V>());
+  }
 
   virtual const State<T>& get_state() const = 0;
 

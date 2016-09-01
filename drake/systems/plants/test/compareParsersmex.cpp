@@ -3,15 +3,17 @@
 #include <cmath>
 #include <iostream>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeMexUtil.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
 using namespace Eigen;
 using namespace std;
-using drake::util::MatrixCompareType;
+
+using drake::CompareMatrices;
+using drake::MatrixCompareType;
 
 /*
  * compares C++ robots generated via the matlab constructModelmex with the same
@@ -57,8 +59,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   for (int i = 0; i < cpp_model->bodies.size(); i++) {
     if (cpp_model->bodies[i]->hasParent() &&
         cpp_model->bodies[i]->getJoint().getNumPositions() > 0) {
-      RigidBody* b =
-          matlab_model->findJoint(cpp_model->bodies[i]->getJoint().getName());
+      RigidBody* b = matlab_model->FindChildBodyOfJoint(
+          cpp_model->bodies[i]->getJoint().getName());
       if (b == nullptr) continue;
       for (int j = 0; j < b->getJoint().getNumPositions(); j++) {
         P(cpp_model->bodies[i]->get_position_start_index() + j,

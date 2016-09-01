@@ -8,7 +8,7 @@
 #include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/systems/framework/vector_interface.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -28,7 +28,7 @@ class Context : public ContextBase<T> {
   Context() {}
   virtual ~Context() {}
 
-  void SetInputPort(int index, std::unique_ptr<InputPort<T>> port) override {
+  void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
     if (index < 0 || index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
     }
@@ -51,14 +51,20 @@ class Context : public ContextBase<T> {
     return static_cast<int>(inputs_.size());
   }
 
-  const VectorInterface<T>* get_vector_input(int index) const override {
-    if (index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
-    }
+  const VectorBase<T>* get_vector_input(int index) const override {
+    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_input_ports());
     if (inputs_[index] == nullptr) {
       return nullptr;
     }
-    return inputs_[index]->get_vector_data();
+    return inputs_[index]->template get_vector_data<T>();
+  }
+
+  const AbstractValue* get_abstract_input(int index) const override {
+    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_input_ports());
+    if (inputs_[index] == nullptr) {
+      return nullptr;
+    }
+    return inputs_[index]->get_abstract_data();
   }
 
   const State<T>& get_state() const override { return state_; }
@@ -98,8 +104,8 @@ class Context : public ContextBase<T> {
       if (port == nullptr) {
         context->inputs_.emplace_back(nullptr);
       } else {
-        context->inputs_.emplace_back(
-            new FreestandingInputPort<T>(port->get_vector_data()->Clone()));
+        context->inputs_.emplace_back(new FreestandingInputPort(
+            port->template get_vector_data<T>()->CloneVector()));
       }
     }
 
@@ -117,7 +123,7 @@ class Context : public ContextBase<T> {
   Context& operator=(Context&& other) = delete;
 
   // The external inputs to the System.
-  std::vector<std::unique_ptr<InputPort<T>>> inputs_;
+  std::vector<std::unique_ptr<InputPort>> inputs_;
 
   // The internal state of the System.
   State<T> state_;

@@ -1,9 +1,9 @@
 #pragma once
 
 /// @file
-/// Template method implementations for @see simple_car.h.
+/// Template method implementations for simple_car.h.
 /// Most users should only include that file, not this one.
-/// For background, @see http://drake.mit.edu/cxx_inl.html.
+/// For background, see http://drake.mit.edu/cxx_inl.html.
 
 #include "simple_car.h"
 
@@ -13,13 +13,11 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/Cars/gen/driving_command.h"
-#include "drake/examples/Cars/gen/simple_car_state.h"
 
 namespace drake {
 
 template <typename ScalarType>
-SimpleCar::StateVector<ScalarType> SimpleCar::dynamics(
+SimpleCar1::StateVector<ScalarType> SimpleCar1::dynamics(
     const ScalarType&,
     const StateVector<ScalarType>& state,
     const InputVector<ScalarType>& input) const {
@@ -56,11 +54,111 @@ SimpleCar::StateVector<ScalarType> SimpleCar::dynamics(
 }
 
 template <typename ScalarType>
-SimpleCar::OutputVector<ScalarType> SimpleCar::output(
+SimpleCar1::OutputVector<ScalarType> SimpleCar1::output(
     const ScalarType&,
     const StateVector<ScalarType>& state,
     const InputVector<ScalarType>&) const {
   return state;
+}
+
+template <typename T>
+SimpleCar<T>::SimpleCar(const drake::lcmt_simple_car_config_t& config)
+    : wrapped_(config) {
+  this->DeclareInputPort(systems::kVectorValued,
+                         DrivingCommandIndices::kNumCoordinates,
+                         systems::kContinuousSampling);
+  this->DeclareOutputPort(systems::kVectorValued,
+                          SimpleCarStateIndices::kNumCoordinates,
+                          systems::kContinuousSampling);
+}
+
+template <typename T>
+bool SimpleCar<T>::has_any_direct_feedthrough() const {
+  return wrapped_.isDirectFeedthrough();
+}
+
+namespace detail {
+template <typename T>
+std::pair<SimpleCarState1<T>, DrivingCommand1<T>> ConvertContextToSystem1(
+    const systems::ContextBase<T>& context) {
+  // Convert the state into System1 data.
+  const systems::StateVector<T>& context_state =
+      context.get_state().continuous_state->get_state();
+  const SimpleCarState<T>* const simple_car_state =
+      dynamic_cast<const SimpleCarState<T>*>(&context_state);
+  DRAKE_ASSERT(simple_car_state != nullptr);
+  const SimpleCarState1<T> state(simple_car_state->get_value());
+
+  // Convert the input into System1 data.
+  // TODO(jwnimmer-tri) Why does this return a pointer instead of ref?
+  const systems::VectorBase<T>* const context_vector_input =
+      context.get_vector_input(0);
+  DRAKE_ASSERT(context_vector_input != nullptr);
+  const DrivingCommand<T>* const driving_command_input =
+      dynamic_cast<const DrivingCommand<T>*>(context_vector_input);
+  DRAKE_ASSERT(driving_command_input != nullptr);
+  const DrivingCommand1<T> input(driving_command_input->get_value());
+
+  return std::make_pair(state, input);
+}
+}  // namespace detail
+
+template <typename T>
+void SimpleCar<T>::EvalOutput(const systems::ContextBase<T>& context,
+                              systems::SystemOutput<T>* output) const {
+  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
+  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
+
+  // Convert the context into System1 data.
+  SimpleCarState1<T> state;
+  DrivingCommand1<T> input;
+  std::tie(state, input) = detail::ConvertContextToSystem1(context);
+
+  // Obtain the structure we need to write into.
+  systems::VectorBase<T>* const output_vector = output->GetMutableVectorData(0);
+  DRAKE_ASSERT(output_vector != nullptr);
+
+  // Delegate to the System1 version of this block.
+  output_vector->get_mutable_value() =
+      toEigen(wrapped_.output<T>(context.get_time(), state, input));
+}
+
+template <typename T>
+void SimpleCar<T>::EvalTimeDerivatives(
+    const systems::ContextBase<T>& context,
+    systems::ContinuousState<T>* derivatives) const {
+  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
+
+  // Convert the context into System1 data.
+  SimpleCarState1<T> state;
+  DrivingCommand1<T> input;
+  std::tie(state, input) = detail::ConvertContextToSystem1(context);
+
+  // Obtain the structure we need to write into.
+  DRAKE_ASSERT(derivatives != nullptr);
+  systems::StateVector<T>* const derivatives_state =
+      derivatives->get_mutable_state();
+  DRAKE_ASSERT(derivatives_state != nullptr);
+  SimpleCarState<T>* const simple_car_derivatives =
+      dynamic_cast<SimpleCarState<T>*>(derivatives_state);
+  DRAKE_ASSERT(simple_car_derivatives != nullptr);
+
+  // Delegate to the System1 version of this block.
+  simple_car_derivatives->get_mutable_value() =
+      toEigen(wrapped_.dynamics<T>(context.get_time(), state, input));
+}
+
+template <typename T>
+std::unique_ptr<systems::ContinuousState<T>>
+SimpleCar<T>::AllocateContinuousState() const {
+  return std::make_unique<systems::ContinuousState<T>>(
+      std::make_unique<SimpleCarState<T>>());
+}
+
+template <typename T>
+std::unique_ptr<systems::VectorBase<T>> SimpleCar<T>::AllocateOutputVector(
+    const systems::SystemPortDescriptor<T>& descriptor) const {
+  return std::make_unique<SimpleCarState<T>>();
 }
 
 }  // namespace drake

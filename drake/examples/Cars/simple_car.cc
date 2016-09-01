@@ -8,7 +8,7 @@ const double kInchToMeter = 0.0254;
 const double kDegToRadian = 0.0174532925199;
 
 // kDefaultConfig approximates a 2010 Toyota Prius.
-const lcmt_simple_car_config_t SimpleCar::kDefaultConfig = {
+const lcmt_simple_car_config_t SimpleCar1::kDefaultConfig = {
   0,
   106.3 * kInchToMeter,
   59.9 * kInchToMeter,
@@ -22,15 +22,16 @@ const lcmt_simple_car_config_t SimpleCar::kDefaultConfig = {
 // Explicitly instantiate all ScalarType-using definitions.
 #define DRAKE_INSTANTIATE(ScalarType)                           \
 template DRAKECARS_EXPORT                                       \
-SimpleCar::StateVector<ScalarType> SimpleCar::dynamics(         \
+SimpleCar1::StateVector<ScalarType> SimpleCar1::dynamics(       \
       const ScalarType&,                                        \
-      const SimpleCar::StateVector<ScalarType>&,                \
-      const SimpleCar::InputVector<ScalarType>&) const;         \
+      const SimpleCar1::StateVector<ScalarType>&,               \
+      const SimpleCar1::InputVector<ScalarType>&) const;        \
 template DRAKECARS_EXPORT                                       \
-SimpleCar::OutputVector<ScalarType> drake::SimpleCar::output(   \
+SimpleCar1::OutputVector<ScalarType> drake::SimpleCar1::output( \
     const ScalarType&,                                          \
-    const SimpleCar::StateVector<ScalarType>&,                  \
-    const SimpleCar::InputVector<ScalarType>&) const;
+    const SimpleCar1::StateVector<ScalarType>&,                 \
+    const SimpleCar1::InputVector<ScalarType>&) const;          \
+template class DRAKECARS_EXPORT SimpleCar<ScalarType>;
 
 // These instantiations must match the API documentation in simple_car.h.
 DRAKE_INSTANTIATE(double)

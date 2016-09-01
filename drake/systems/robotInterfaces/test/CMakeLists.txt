@@ -1,4 +1,4 @@
-add_matlab_test(NAME systems/robotInterfaces/test/octomapSimpleExample COMMAND octomapSimpleExample)
-add_matlab_test(NAME systems/robotInterfaces/test/testFootstepSolvers COMMAND testFootstepSolvers)
-add_matlab_test(NAME systems/robotInterfaces/test/testFootstepSolversNoRegions COMMAND testFootstepSolversNoRegions)
-add_matlab_test(NAME systems/robotInterfaces/test/testInfeasibleFootstepProblems COMMAND testInfeasibleFootstepProblems)
+add_matlab_test(NAME systems/robotInterfaces/test/octomapSimpleExample REQUIRES lcm libbot octomap COMMAND octomapSimpleExample)
+add_matlab_test(NAME systems/robotInterfaces/test/testFootstepSolvers REQUIRES gurobi yalmip OPTIONAL bullet snopt COMMAND testFootstepSolvers)
+add_matlab_test(NAME systems/robotInterfaces/test/testFootstepSolversNoRegions REQUIRES gurobi yalmip OPTIONAL bullet snopt COMMAND testFootstepSolversNoRegions)
+add_matlab_test(NAME systems/robotInterfaces/test/testInfeasibleFootstepProblems REQUIRES gurobi yalmip OPTIONAL bullet snopt COMMAND testInfeasibleFootstepProblems)

@@ -58,6 +58,7 @@
 [submodule "externals/bertini"]
 	path = externals/bertini
 	url = git@github.com:RobotLocomotion/bertini.git
+	ignore = untracked
 [submodule "externals/sedumi"]
 	path = externals/sedumi
 	url = git@github.com:RobotLocomotion/sedumi.git
@@ -91,7 +92,14 @@
 	ignore = untracked
 [submodule "externals/google_styleguide"]
 	path = externals/google_styleguide
-	url = https://github.com/google/styleguide.git
+	url = https://github.com/mwoehlke-kitware/styleguide.git
 [submodule "externals/spdlog"]
 	path = externals/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "externals/gflags"]
+	path = externals/gflags
+	url = https://github.com/gflags/gflags.git
+[submodule "externals/dreal"]
+	path = externals/dreal
+	url = https://github.com/dreal/dreal3.git
+	ignore = untracked

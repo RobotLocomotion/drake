@@ -5,243 +5,166 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/systems/Simulation.h"
-#include "drake/systems/cascade_system.h"
-#include "drake/systems/simulation_options.h"
-#include "drake/systems/vector.h"
-#include "drake/util/eigen_matrix_compare.h"
-
-using drake::util::MatrixCompareType;
-using drake::NullVector;
-using drake::SimulationOptions;
-
 namespace drake {
 namespace examples {
-namespace simple_car {
-namespace test {
+namespace cars {
+namespace {
 
-template <template <typename> class Vector>
-class ConstantInputSystem {
- public:
-  template <typename ScalarType>
-  using StateVector = NullVector<ScalarType>;
-  template <typename ScalarType>
-  using InputVector = NullVector<ScalarType>;
-  template <typename ScalarType>
-  using OutputVector = Vector<ScalarType>;
-
-  explicit ConstantInputSystem(const OutputVector<double>& constant)
-      : output_(constant) {}
-
-  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
-                               const InputVector<double>& u) const {
-    return StateVector<double>();
+class SimpleCarTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    dut_.reset(new SimpleCar<double>);
+    context_ = dut_->CreateDefaultContext();
+    output_ = dut_->AllocateOutput(*context_);
+    derivatives_ = dut_->AllocateTimeDerivatives();
+    SetInputValue(0, 0, 0);
   }
 
-  OutputVector<double> output(const double& t, const StateVector<double>& x,
-                              const InputVector<double>& u) const {
-    return output_;
+  void SetInputValue(double steering_angle, double throttle, double brake) {
+    auto value = std::make_unique<DrivingCommand<double>>();
+    value->set_steering_angle(steering_angle);
+    value->set_throttle(throttle);
+    value->set_brake(brake);
+    context_->SetInputPort(
+        0, std::make_unique<systems::FreestandingInputPort>(std::move(value)));
   }
 
- private:
-  const OutputVector<double> output_;
+  SimpleCarState<double>* continuous_state() {
+    auto result = dynamic_cast<SimpleCarState<double>*>(
+        context_->get_mutable_state()->continuous_state->get_mutable_state());
+    if (result == nullptr) { throw std::bad_cast(); }
+    return result;
+  }
+
+  std::unique_ptr<systems::System<double>> dut_;  //< The device under test.
+  std::unique_ptr<systems::ContextBase<double>> context_;
+  std::unique_ptr<systems::SystemOutput<double>> output_;
+  std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
 
-template <template <typename> class Vector>
-class HistorySystem {
- public:
-  template <typename ScalarType>
-  using StateVector = NullVector<ScalarType>;
-  template <typename ScalarType>
-  using InputVector = Vector<ScalarType>;
-  template <typename ScalarType>
-  using OutputVector = NullVector<ScalarType>;
+TEST_F(SimpleCarTest, Topology) {
+  ASSERT_EQ(1, dut_->get_num_input_ports());
+  const auto& input_descriptor = dut_->get_input_ports().at(0);
+  EXPECT_EQ(systems::kVectorValued, input_descriptor.get_data_type());
+  EXPECT_EQ(systems::kInputPort, input_descriptor.get_face());
+  EXPECT_EQ(DrivingCommandIndices::kNumCoordinates,
+            input_descriptor.get_size());
+  EXPECT_EQ(systems::kContinuousSampling, input_descriptor.get_sampling());
 
-  explicit HistorySystem(const InputVector<double> initial)
-      : initial_(initial) {}
-
-  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
-                               const InputVector<double>& u) const {
-    return StateVector<double>();
-  }
-
-  OutputVector<double> output(const double& t, const StateVector<double>& x,
-                              const InputVector<double>& u) const {
-    // Pack-rat the inputs.
-    if (!std::isfinite(t)) {
-      throw std::logic_error("HistorySystem: timestamp is not finite!");
-    }
-    states_[t] = u;
-    return OutputVector<double>();
-  }
-
-  const InputVector<double> initial_;
-  mutable std::map<double, InputVector<double>> states_;
-};
-
-GTEST_TEST(SimpleCarTest, ZerosIn) {
-  SimpleCar dut;
-  SimpleCarState<double> state_zeros;
-  DrivingCommand<double> input_zeros;
-
-  SimpleCarState<double> rates =
-      dut.dynamics(0., state_zeros, input_zeros);
-
-  const double tolerance = 1e-8;
-  EXPECT_TRUE(CompareMatrices(toEigen(state_zeros), toEigen(rates),
-                              tolerance, MatrixCompareType::absolute));
+  ASSERT_EQ(1, dut_->get_num_output_ports());
+  const auto& output_descriptor = dut_->get_output_ports().at(0);
+  EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
+  EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
+  EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates,
+            output_descriptor.get_size());
+  EXPECT_EQ(systems::kContinuousSampling, output_descriptor.get_sampling());
 }
 
-GTEST_TEST(SimpleCarTest, Accelerating) {
-  DrivingCommand<double> max_throttle;
-  max_throttle.set_throttle(1.);
+TEST_F(SimpleCarTest, Output) {
+  // Grab a pointer to where the EvalOutput results end up.
+  const SimpleCarState<double>* const result =
+      dynamic_cast<const SimpleCarState<double>*>(output_->get_vector_data(0));
+  ASSERT_NE(nullptr, result);
 
-  auto car = std::make_shared<SimpleCar>();
-  SimpleCarState<double> initial_state;
-  auto history_system =
-      std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
-  auto lead_foot = drake::cascade(
-      drake::cascade(
-          std::make_shared<ConstantInputSystem<DrivingCommand>>(
-              max_throttle),
-          car),
-      history_system);
+  // Starting state and output is all zeros.
+  dut_->EvalOutput(*context_, output_.get());
+  EXPECT_EQ(0.0, result->x());
+  EXPECT_EQ(0.0, result->y());
+  EXPECT_EQ(0.0, result->heading());
+  EXPECT_EQ(0.0, result->velocity());
 
-  double start_time = 0.;
-  double end_time = 100.;
-  drake::simulate(*lead_foot, start_time, end_time, initial_state);
+  // New state just propagates through.
+  continuous_state()->set_x(1.0);
+  continuous_state()->set_y(2.0);
+  continuous_state()->set_heading(3.0);
+  continuous_state()->set_velocity(4.0);
+  dut_->EvalOutput(*context_, output_.get());
+  EXPECT_EQ(1.0, result->x());
+  EXPECT_EQ(2.0, result->y());
+  EXPECT_EQ(3.0, result->heading());
+  EXPECT_EQ(4.0, result->velocity());
 
-  double step_size = SimulationOptions().initial_step_size;
-  int steps = (end_time - start_time) / step_size;
-
-  EXPECT_EQ(static_cast<int>(history_system->states_.size()), steps);
-
-  double max_time = history_system->states_.rbegin()->first;
-  EXPECT_NEAR(max_time, end_time - step_size, 1e-5);
-
-  EXPECT_EQ(history_system->states_[start_time].x(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].y(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].heading(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].velocity(), 0.);
-
-  // These clauses are deliberately broad; we don't care so much about the
-  // exact values, but rather that we got somewhere.
-  EXPECT_NEAR(history_system->states_[max_time].x(),
-              SimpleCar::kDefaultConfig.max_velocity *
-              (end_time - start_time), 3e2);
-  EXPECT_GT(history_system->states_[max_time].x(),
-            SimpleCar::kDefaultConfig.max_velocity *
-            (end_time - start_time) / 2);
-  EXPECT_EQ(history_system->states_[max_time].y(), 0.);
-  EXPECT_EQ(history_system->states_[max_time].heading(), 0.);
-  EXPECT_NEAR(history_system->states_[max_time].velocity(),
-              SimpleCar::kDefaultConfig.max_velocity, 1e-5);
+  // The input doesn't matter.
+  SetInputValue(0.3, 0.5, 0.7);
+  dut_->EvalOutput(*context_, output_.get());
+  EXPECT_EQ(1.0, result->x());
+  EXPECT_EQ(2.0, result->y());
+  EXPECT_EQ(3.0, result->heading());
+  EXPECT_EQ(4.0, result->velocity());
 }
 
-GTEST_TEST(SimpleCarTest, Braking) {
-  DrivingCommand<double> max_brake;
-  max_brake.set_brake(1.);
+TEST_F(SimpleCarTest, Derivatives) {
+  const double kTolerance = 1e-10;
 
-  auto car = std::make_shared<SimpleCar>();
-  SimpleCarState<double> initial_state;
-  double speed = 10.;
-  initial_state.set_velocity(speed);
+  // Grab a pointer to where the EvalTimeDerivatives results end up.
+  const SimpleCarState<double>* const result =
+      dynamic_cast<const SimpleCarState<double>*>(
+          derivatives_->get_mutable_state());
+  ASSERT_NE(nullptr, result);
 
-  auto history_system =
-      std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
-  auto panic_stop = drake::cascade(
-      drake::cascade(
-          std::make_shared<ConstantInputSystem<DrivingCommand>>(
-              max_brake),
-          car),
-      history_system);
+  // Starting state is all zeros.
+  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_EQ(0.0, result->x());
+  EXPECT_EQ(0.0, result->y());
+  EXPECT_EQ(0.0, result->heading());
+  EXPECT_EQ(0.0, result->velocity());
 
-  double start_time = 0.;
-  double end_time = 100.;
-  drake::simulate(*panic_stop, start_time, end_time, initial_state);
+  // Half throttle yields half of the max acceleration.
+  const double max_acceleration = SimpleCar1::kDefaultConfig.max_acceleration;
+  SetInputValue(0.0, 0.5, 0.0);
+  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_EQ(0.0, result->x());
+  EXPECT_EQ(0.0, result->y());
+  EXPECT_EQ(0.0, result->heading());
+  EXPECT_NEAR(0.5 * max_acceleration, result->velocity(), kTolerance);
 
-  double step_size = SimulationOptions().initial_step_size;
-  int steps = (end_time - start_time) / step_size;
+  // Set speed to mid-range, with zero input.
+  continuous_state()->set_velocity(10.0);
+  SetInputValue(0.0, 0.0, 0.0);
+  // At heading 0, we are moving along +x.
+  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR(10.0, result->x(), kTolerance);
+  EXPECT_EQ(0.0, result->y());
+  EXPECT_EQ(0.0, result->heading());
+  EXPECT_EQ(0.0, result->velocity());
 
-  EXPECT_EQ(static_cast<int>(history_system->states_.size()), steps);
+  // A non-zero steering_angle turns in the same direction.  We'd like to turn
+  // at 0.1 rad/s at a speed of 10m/s, so we want a curvature of 0.01.
+  const double wheelbase = SimpleCar1::kDefaultConfig.wheelbase;
+  const double steering_angle = std::atan(0.01 * wheelbase);
+  SetInputValue(steering_angle, 0.0, 0.0);
+  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR(10.0, result->x(), kTolerance);
+  EXPECT_EQ(0.0, result->y());
+  EXPECT_NEAR(0.1, result->heading(), kTolerance);
+  EXPECT_EQ(0.0, result->velocity());
+  SetInputValue(-steering_angle, 0.0, 0.0);
+  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR(10.0, result->x(), kTolerance);
+  EXPECT_EQ(0.0, result->y());
+  EXPECT_NEAR(-0.1, result->heading(), kTolerance);
+  EXPECT_EQ(0.0, result->velocity());
 
-  double max_time = history_system->states_.rbegin()->first;
-  EXPECT_NEAR(max_time, end_time - step_size, 1e-5);
+  // Half brake yields half of the max acceleration.
+  SetInputValue(0.0, 0.0, 0.5);
+  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR(10.0, result->x(), kTolerance);
+  EXPECT_EQ(0.0, result->y());
+  EXPECT_EQ(0.0, result->heading());
+  EXPECT_NEAR(-0.5 * SimpleCar1::kDefaultConfig.max_acceleration,
+              result->velocity(), kTolerance);
 
-  EXPECT_EQ(history_system->states_[start_time].x(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].y(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].heading(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].velocity(), speed);
-
-  // This clause is deliberately broad; we don't care so much about the exact
-  // value, but rather that we stopped reasonably.
-  EXPECT_LT(history_system->states_[max_time].x(), 20.);
-  EXPECT_EQ(history_system->states_[max_time].y(), 0.);
-  EXPECT_EQ(history_system->states_[max_time].heading(), 0.);
-  EXPECT_NEAR(history_system->states_[max_time].velocity(), 0., 1e-5);
+  // A heading of +90deg points us at +y.
+  continuous_state()->set_heading(0.5 * M_PI);
+  SetInputValue(0.0, 0.0, 0.0);
+  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR(0.0, result->x(), kTolerance);
+  EXPECT_NEAR(10.0, result->y(), kTolerance);
+  EXPECT_EQ(0.0, result->heading());
+  EXPECT_EQ(0.0, result->velocity());
 }
 
-GTEST_TEST(SimpleCarTest, Steering) {
-  DrivingCommand<double> left(Eigen::Vector3d(M_PI / 2, 0., 0.));
-
-  auto car = std::make_shared<SimpleCar>();
-  SimpleCarState<double> initial_state;
-  double speed = 40.;
-  initial_state.set_velocity(speed);
-
-  auto history_system =
-      std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
-  auto brickyard = drake::cascade(
-      drake::cascade(
-          std::make_shared<ConstantInputSystem<DrivingCommand>>(left),
-          car),
-      history_system);
-
-  double start_time = 0.;
-  double end_time = 100.;
-  drake::simulate(*brickyard, start_time, end_time, initial_state);
-
-  double step_size = SimulationOptions().initial_step_size;
-  int steps = (end_time - start_time) / step_size;
-
-  EXPECT_EQ(static_cast<int>(history_system->states_.size()), steps);
-
-  double max_time = history_system->states_.rbegin()->first;
-  EXPECT_NEAR(max_time, end_time - step_size, 1e-5);
-
-  EXPECT_EQ(history_system->states_[start_time].x(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].y(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].heading(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].velocity(), speed);
-
-  double min_turn_radius =
-      SimpleCar::kDefaultConfig.wheelbase /
-      std::tan(SimpleCar::kDefaultConfig.max_abs_steering_angle);
-  double turn_epsilon = min_turn_radius * 1e-3;
-
-  for (const auto& pair : history_system->states_) {
-    const auto& state = pair.second;
-    // Our drive circle should fit in a small box.
-    EXPECT_GT(state.x(), -(min_turn_radius + turn_epsilon));
-    EXPECT_LT(state.x(), min_turn_radius + turn_epsilon);
-    EXPECT_GT(state.y(), -turn_epsilon);
-    EXPECT_LT(state.y(), (2 * min_turn_radius + turn_epsilon));
-    // Our drive state should be near the predicted circle.
-    EXPECT_NEAR(std::hypot(state.x(), state.y() - min_turn_radius),
-                min_turn_radius, 1e-2);
-  }
-
-  // Predict our final heading.
-  double predicted_heading =
-      std::remainder((speed / min_turn_radius) * (max_time - start_time),
-                      2 * M_PI);
-  double end_heading =
-      std::remainder(history_system->states_[max_time].heading(), 2 * M_PI);
-  EXPECT_NEAR(end_heading, predicted_heading, 1e-5);
-
-  EXPECT_EQ(history_system->states_[max_time].velocity(), speed);
-}
-}
-}
-}
-}
+}  // namespace
+}  // namespace cars
+}  // namespace examples
+}  // namespace drake
