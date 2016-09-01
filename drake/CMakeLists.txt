@@ -195,7 +195,7 @@ function(add_matlab_test)
   matlab_add_unit_test(NAME ${parsed_args_NAME}
     ADDITIONAL_PATH ${additional_paths}
     UNITTEST_PRECOMMAND ${cmd_to_run_before_test}
-    CUSTOM_TEST_COMMAND \"${custom_Matlab_test_command}\"
+    CUSTOM_TEST_COMMAND ${custom_Matlab_test_command}
     WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY}
     TIMEOUT -1) # use an infinite timeout and rely on add_test ctest timeout
 
