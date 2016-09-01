@@ -27,12 +27,9 @@ PidController<T>::PidController(
   builder.ExportInput(pass_through_->get_input_port(0));
   // Input 1 connects directly to the derivative component.
   builder.ExportInput(derivative_gain_->get_input_port(0));
-  builder.Connect(pass_through_->get_output_port(0),
-                  proportional_gain_->get_input_port(0));
-  builder.Connect(pass_through_->get_output_port(0),
-                  integrator_->get_input_port(0));
-  builder.Connect(integrator_->get_output_port(0),
-                  integral_gain_->get_input_port(0));
+  builder.Connect(*pass_through_, *proportional_gain_);
+  builder.Connect(*pass_through_, *integrator_);
+  builder.Connect(*integrator_, *integral_gain_);
   builder.Connect(proportional_gain_->get_output_port(0),
                   adder_->get_input_port(0));
   builder.Connect(integral_gain_->get_output_port(0),

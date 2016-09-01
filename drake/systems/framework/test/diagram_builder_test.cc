@@ -5,6 +5,9 @@
 
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/primitives/adder.h"
+#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/framework/primitives/demultiplexer.h"
+#include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/integrator.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -64,6 +67,47 @@ GTEST_TEST(DiagramBuilderTest, CascadedNonDirectFeedthrough) {
 GTEST_TEST(DiagramBuilderTest, FinalizeWhenEmpty) {
   DiagramBuilder<double> builder;
   EXPECT_THROW(builder.Build(), std::logic_error);
+}
+
+// Helper class that has one input port, and no output ports.
+template <typename T>
+class Sink : public LeafSystem<T> {
+ public:
+  Sink() { this->DeclareInputPort(kVectorValued, 1, kContinuousSampling); }
+  void EvalOutput(const ContextBase<T>&, SystemOutput<T>*) const override {}
+};
+
+// Tests the sole-port based overload of Connect().
+GTEST_TEST(DiagramBuilderTest, ConnectSolePorts) {
+  const ConstantVectorSource<double> out1(Vector1d::Ones());
+  const Sink<double> in1;
+  const Gain<double> in1out1(1.0 /* gain */, 1 /* length */);
+  const Adder<double> in2out1(2 /* inputs */, 1 /* length */);
+  const Demultiplexer<double> in1out2(2 /* length */);
+
+  // A diagram of Source->Gain->Sink is successful.
+  {
+    DiagramBuilder<double> builder;
+    EXPECT_NO_THROW(builder.Connect(out1, in1out1));
+    EXPECT_NO_THROW(builder.Connect(in1out1, in1));
+    EXPECT_NO_THROW(builder.Build());
+  }
+
+  // The cascade synonym also works.
+  EXPECT_NO_THROW(DiagramBuilder<double>().Cascade(out1, in1out1));
+
+  // A diagram of Gain->Source is has too few dest inputs.
+  using std::exception;
+  EXPECT_THROW(DiagramBuilder<double>().Connect(in1out1, out1), exception);
+
+  // A diagram of Source->In2out1 is has too many dest inputs.
+  EXPECT_THROW(DiagramBuilder<double>().Connect(out1, in2out1), exception);
+
+  // A diagram of Sink->Gain is has too few src inputs.
+  EXPECT_THROW(DiagramBuilder<double>().Connect(in1, in1out1), exception);
+
+  // A diagram of Demux->Gain is has too many src inputs.
+  EXPECT_THROW(DiagramBuilder<double>().Connect(in1out2, in1out1), exception);
 }
 
 }  // namespace
