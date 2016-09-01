@@ -6,6 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/integrator.h"
@@ -385,6 +386,59 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   const VectorBase<double>* output_vector = output->get_vector_data(0);
   EXPECT_EQ(1, output_vector->get_value().rows());
   EXPECT_EQ(19.0, output_vector->get_value().x());
+}
+
+// PublishingSystem has an input port for a single double. It publishes that
+// double to a function provided in the constructor.
+class PublishingSystem : public LeafSystem<double> {
+ public:
+  explicit PublishingSystem(std::function<void(int)> callback)
+      : callback_(callback) {
+    this->DeclareInputPort(kVectorValued, 1, kInheritedSampling);
+  }
+
+  void EvalOutput(const ContextBase<double>& context,
+                  SystemOutput<double>* output) const override {}
+
+ protected:
+  void DoPublish(const ContextBase<double>& context) const override {
+    CheckValidContext(context);
+    callback_(context.get_vector_input(0)->get_value()[0]);
+  }
+
+ private:
+  std::function<void(int)> callback_;
+};
+
+// PublishNumberDiagram publishes a double provided to its constructor.
+class PublishNumberDiagram : public Diagram<double> {
+ public:
+  explicit PublishNumberDiagram(double constant) : Diagram<double>() {
+    constant_.reset(new ConstantVectorSource<double>(Vector1d{constant}));
+    publisher_.reset(new PublishingSystem([this](double v) { this->set(v); }));
+
+    DiagramBuilder<double> builder;
+    builder.Connect(constant_->get_output_port(0),
+                    publisher_->get_input_port(0));
+    builder.BuildInto(this);
+  }
+
+  double get() const { return published_value_; }
+
+ private:
+  void set(double value) { published_value_ = value; }
+
+  std::unique_ptr<ConstantVectorSource<double>> constant_;
+  std::unique_ptr<PublishingSystem> publisher_;
+  double published_value_ = 0;
+};
+
+GTEST_TEST(DiagramPublishTest, Publish) {
+  PublishNumberDiagram publishing_diagram(42.0);
+  EXPECT_EQ(0, publishing_diagram.get());
+  auto context = publishing_diagram.CreateDefaultContext();
+  publishing_diagram.Publish(*context);
+  EXPECT_EQ(42.0, publishing_diagram.get());
 }
 
 }  // namespace
