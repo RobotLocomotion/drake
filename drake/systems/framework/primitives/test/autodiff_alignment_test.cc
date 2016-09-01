@@ -17,8 +17,7 @@ template <typename Scalar>
 using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
 int main() {
-  typedef Eigen::Matrix<double, 2, 1, Eigen::DontAlign> Vector2d_unaligned;
-  typedef AutoDiffScalar<Vector2d_unaligned> T;
+  typedef AutoDiffScalar<Vector2d> T;
 
   VectorX<T> a(3);
   a << 1.0, 3.14, 2.18;
