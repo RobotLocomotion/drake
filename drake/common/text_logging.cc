@@ -15,7 +15,10 @@ std::shared_ptr<logging::logger>* onetime_create_log() {
   std::shared_ptr<logging::logger>* result =
       new std::shared_ptr<logging::logger>(spdlog::get("console"));
   if (!*result) {
-    *result = spdlog::stderr_logger_st("console");
+    // We use the logger_mt (instead of logger_st) so more than one thread can
+    // use this logger and have their messages be staggered by line, instead of
+    // co-mingling their character bytes.
+    *result = spdlog::stderr_logger_mt("console");
   }
   return result;
 }

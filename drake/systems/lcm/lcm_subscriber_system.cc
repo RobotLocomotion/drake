@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_output.h"
 
@@ -65,6 +66,8 @@ std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
 
 void LcmSubscriberSystem::HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                                         const std::string& channel) {
+  SPDLOG_TRACE(drake::log(), "Receiving LCM {} message", channel);
+
   if (channel == channel_) {
     const uint8_t* const rbuf_begin =
         reinterpret_cast<const uint8_t*>(rbuf->data);
