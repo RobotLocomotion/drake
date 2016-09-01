@@ -207,8 +207,8 @@ class Diagram : public System<T> {
     auto diagram_derivatives =
         dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
     DRAKE_ABORT_UNLESS(diagram_derivatives != nullptr);
-    auto substate = diagram_derivatives->get_substate(
-        GetSystemIndex(subsystem));
+    auto substate =
+        diagram_derivatives->get_substate(GetSystemIndex(subsystem));
     // TODO(david-german-tri): We should fail softer than this for stateless
     // systems.
     DRAKE_ABORT_UNLESS(substate != nullptr);
@@ -218,8 +218,8 @@ class Diagram : public System<T> {
   /// Returns the sub-context that corresponds to the system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
   /// pass their constituent subsystem's the apropriate subcontext.
-  ContextBase<T>* GetMutableSubsystemContext(
-      ContextBase<T>* context, const System<T>* subsystem) const {
+  ContextBase<T>* GetMutableSubsystemContext(ContextBase<T>* context,
+                                             const System<T>* subsystem) const {
     DRAKE_ABORT_UNLESS(context != nullptr);
     DRAKE_ABORT_UNLESS(subsystem != nullptr);
     auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
@@ -244,6 +244,23 @@ class Diagram : public System<T> {
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
+
+  void DoPublish(const ContextBase<T>& context) const override {
+    // Freshen all the subsystem inputs to match the provided context.
+    //
+    // TODO(david-german-tri): This can be made less conservative: we don't
+    // need to freshen inputs to subsystems that don't Publish.
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
+    ComputeAllSubsystemOutputs(diagram_context);
+
+    for (const System<T>* const system : sorted_systems_) {
+      const int index = GetSystemIndex(system);
+      const ContextBase<T>* subsystem_context =
+          diagram_context->GetSubsystemContext(index);
+      system->Publish(*subsystem_context);
+    }
+  }
 
  private:
   // A structural outline of a Diagram, produced by DiagramBuilder.
