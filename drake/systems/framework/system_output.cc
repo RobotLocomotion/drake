@@ -1,11 +1,19 @@
 #include "drake/systems/framework/system_output.h"
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace systems {
 
 OutputPortListenerInterface::~OutputPortListenerInterface() {}
 
-OutputPort::~OutputPort() {}
+OutputPort::~OutputPort() {
+  // Notify any input ports that are still connected to this output port that
+  // this output port no longer exists.
+  for (OutputPortListenerInterface* dependent : dependents_) {
+    dependent->Disconnect();
+  }
+}
 
 
 std::unique_ptr<OutputPort> OutputPort::Clone() const {

@@ -13,12 +13,15 @@ namespace systems {
 
 class TestOutputPortListener : public OutputPortListenerInterface {
  public:
-  void Invalidate() override { invalidations_++; };
+  void Invalidate() override { invalidations_++; }
+  void Disconnect() override { disconnections_++; }
 
   int get_invalidations() { return invalidations_; }
+  int get_disconnections() { return disconnections_; }
 
  private:
   int invalidations_ = 0;
+  int disconnections_ = 0;
 };
 
 class OutputPortVectorTest : public ::testing::Test {
@@ -66,7 +69,8 @@ TEST_F(OutputPortVectorTest, Clone) {
                          clone->template get_vector_data<int>()));
 }
 
-// Tests that listeners are notified when GetMutableVectorData is called.
+// Tests that listeners are notified when GetMutableVectorData is called, and
+// when the OutputPort is deleted.
 TEST_F(OutputPortVectorTest, Listeners) {
   TestOutputPortListener a, b, c;
   port_->add_dependent(&a);
@@ -82,6 +86,13 @@ TEST_F(OutputPortVectorTest, Listeners) {
   EXPECT_EQ(1, a.get_invalidations());
   EXPECT_EQ(2, b.get_invalidations());
   EXPECT_EQ(1, c.get_invalidations());
+
+  // Only the listeners that are connected at the time the OutputPort is
+  // destroyed get a disconnect notification.
+  port_.reset();
+  EXPECT_EQ(0, a.get_disconnections());
+  EXPECT_EQ(1, b.get_disconnections());
+  EXPECT_EQ(1, c.get_disconnections());
 }
 
 class OutputPortAbstractValueTest : public ::testing::Test {

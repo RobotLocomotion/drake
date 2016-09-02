@@ -300,10 +300,6 @@ class DiagramContext : public ContextBase<T> {
  private:
   std::vector<PortIdentifier> input_ids_;
 
-  // Order is critical: Output ports must outlive the DependentInputPorts that
-  // depend on them, because the input ports unregister themselves from output
-  // port change notifications at destruction time. Thus, outputs_ must be
-  // declared before contexts_, so that contexts_ is destroyed before outputs_.
   std::map<SystemIndex, std::unique_ptr<SystemOutput<T>>> outputs_;
   std::map<SystemIndex, std::unique_ptr<ContextBase<T>>> contexts_;
 
