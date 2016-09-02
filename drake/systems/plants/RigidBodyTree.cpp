@@ -1400,6 +1400,11 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
   cache.checkCachedKinematicsSettings(
       include_velocity_terms, include_velocity_terms, "inverseDynamics");
 
+  // Let w denote the world rigid body. Note that all quantities used in this
+  // algorithm are expressed in world frame. For each body i, compute its
+  // rigid body inertia in world frame, denoted I^w_i.
+  // Composite rigid body inertias are computed as well, but note that we don't
+  // actually need composite rigid body inertias for this algorithm.
   updateCompositeRigidBodyInertias(cache);
 
   // TODO(#3114) pass this in as an argument
@@ -1415,6 +1420,44 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
     if (body.has_mobilizer_joint()) {
       const RigidBody& parent_body = *(body.get_parent());
       const auto& cache_element = cache.getElement(body);
+
+      // Denote the spatial acceleration twist derivative) of body i with
+      // respect to the world as Tdot^w_i. Let lambda(i) denote the parent of
+      // body i. The spatial acceleration of body i is the sum of the spatial
+      // acceleration of lambda(i) and the relative acceleration of i with
+      // respect to lambda(i):
+      //
+      //    Tdot^w_i = Tdot^w_lambda(i) + Tdot^lambda(i)_i
+      //
+      // The relative acceleration Tdot^lambda(i)_i is the derivative of the
+      // twist T^lambda(i)_i of i with respect to lambda(i). The twist
+      // T^lambda(i)_i can be written as
+      //
+      //    T^lambda(i)_i = J^lambda(i)_i v_i
+      //
+      // where J^lambda(i)_i is the motion subspace, expressed in world
+      // frame, of the joint between i and lambda(i) (a geometric Jacobian),
+      // and v_i is the joint velocity vector for this joint. Differentiating
+      // results in
+      //
+      //    Tdot^lambda(i)_i = Jdot^lambda(i)_i v_i + J^lambda(i)_i vdot_i
+      //
+      // where the term Jdot^lambda(i)_i v_i will be referred to as the bias
+      // acceleration of body i w.r.t. lambda(i), and is seen to be the
+      // spatial acceleration of body i w.r.t lambda(i) when there is no
+      // joint acceleration (vdot_i = 0).
+      // KinematicsCache stores the bias acceleration of each body with
+      // respect to the world: Jdot^w_i v^w_i, where v^w_i denotes the vector of
+      // joint velocities on the path between body i and the world. The bias
+      // acceleration with respect to lambda(i) can be obtained simply as
+      //
+      //    Jdot^lambda(i)_i v_i = Jdot^w_i v^w_i - Jdot^w_lambda(i)
+      //        v^w_lambda(i)
+      //
+      // In the code, we refer to:
+      // * Tdot^w_lambda(i) as parent_acceleration,
+      // * Jdot^w_i v^w_i as motion_subspace_in_world_dot_times_v,
+      // * vdot_i as vd_joint.
       auto body_acceleration = body_accelerations.col(i);
 
       // Initialize body acceleration to acceleration of parent body.
@@ -1439,7 +1482,30 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
             cache_element.motion_subspace_in_world * vd_joint;
       }
 
-      // Compute net wrench required to achieve computed body acceleration.
+      // Now that the spatial acceleration of the body with respect to the
+      // world is known, we compute the net wrench on the body required to
+      // effect the acceleration.
+      // Denote the (spatial) momentum of body i as h_i. h_i can be computed as
+      //
+      //    h_i = I^w_i T^w_i
+      //
+      // The Newton-Euler equations state that
+      //
+      //    hdot_i = W_i
+      //
+      // where W_i is the net wrench exerted upon body i. Differentiating, we
+      // find
+      //
+      //   W_i = hdot_i = Idot^w_i T^w_i + I^w_i Tdot^w_i
+      //
+      // The term Idot^w_i T^w_i is
+      //
+      //   Idot^w_i = cross(T^w_i, I^w_i T^w_i)
+      //
+      // where cross denotes a spatial force cross product. This can be
+      // derived by differentiating the transformation rule for spatial
+      // inertias.
+
       auto net_wrench = net_wrenches.col(i);
       const auto& body_inertia = cache_element.inertia_in_world;
       net_wrench.noalias() = body_inertia * body_acceleration;
@@ -1449,7 +1515,8 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
         net_wrench += crossSpatialForce(body_twist, inertia_times_twist);
       }
 
-      // subtract off any external wrench that may be acting on body
+      // Subtract off any external wrench that may be acting on body (and
+      // hence contributing to the achievement of the net wrench).
       auto external_wrench_it = f_ext.find(&body);
       if (external_wrench_it != f_ext.end()) {
         const auto& external_wrench = external_wrench_it->second;
@@ -1477,13 +1544,23 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
       const auto& joint = body.getJoint();
       auto joint_wrench = joint_wrenches_const.col(i);
 
-      // Compute joint torques associated with joint wrench.
+      // Compute joint torques associated with the joint wrench. Joint torque
+      // tau_i can be computed from the wrench across the joint between i and
+      // lambda(i) as
+      //
+      //    J^lambda(i)_i ' * W_i
+      //
+      // This can be derived from a power balance.
       const auto& motion_subspace = cache_element.motion_subspace_in_world;
       auto joint_torques = torques.middleRows(body.get_velocity_start_index(),
                                               joint.getNumVelocities());
       joint_torques.noalias() = motion_subspace.transpose() * joint_wrench;
 
-      // Add joint wrench (exerted upon 'body') to parent joint wrench.
+      // The joint wrench W exerted upon body i through the joint between i
+      // and lambda(i) acts in the opposite direction on lambda(i) (Newton's
+      // third law). This wrench, -W, should be subtracted from the net
+      // wrench exerted upon lambda(i) (similar to external wrenches), so W
+      // should be *added* to the net wrench.
       const RigidBody& parent_body = *(body.get_parent());
       auto parent_joint_wrench =
           joint_wrenches.col(parent_body.get_body_index());
