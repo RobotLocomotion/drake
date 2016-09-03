@@ -3,11 +3,36 @@
 #include <Eigen/Core>
 #include <iostream>
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
+
+#include "lcmtypes/bot_core/vector_3d_t.hpp"
+#include "lcmtypes/bot_core/quaternion_t.hpp"
+#include "lcmtypes/bot_core/position_3d_t.hpp"
+#include "lcmtypes/bot_core/twist_t.hpp"
 #include "lcmtypes/drake/lcmt_polynomial.hpp"
 #include "lcmtypes/drake/lcmt_polynomial_matrix.hpp"
 #include "lcmtypes/drake/lcmt_piecewise_polynomial.hpp"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 #include "drake/drakeLCMUtil_export.h"
+
+// Suppress pose_t shadowing warning (member and local variable both named pos).
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#include "lcmtypes/bot_core/pose_t.hpp"
+#pragma clang diagnostic pop
+
+DRAKELCMUTIL_EXPORT void EncodeVector3d(
+    const Eigen::Ref<const Eigen::Vector3d>& vec, bot_core::vector_3d_t& msg);
+
+DRAKELCMUTIL_EXPORT void EncodeQuaternion(
+    const Eigen::Ref<const Eigen::Vector4d>& vec, bot_core::quaternion_t& msg);
+
+// Note that bot_core::position_3d_t is badly named.
+DRAKELCMUTIL_EXPORT void EncodePose(
+    const Eigen::Isometry3d& pose, bot_core::position_3d_t& msg);
+
+DRAKELCMUTIL_EXPORT void EncodeTwist(
+    const Eigen::Ref<const Eigen::Matrix<double, 6, 1>>& twist,
+    bot_core::twist_t& msg);
 
 DRAKELCMUTIL_EXPORT void encodePolynomial(const Polynomial<double>& polynomial,
                                           drake::lcmt_polynomial& msg);
