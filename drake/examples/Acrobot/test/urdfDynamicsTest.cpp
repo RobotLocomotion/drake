@@ -24,11 +24,11 @@ GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
 
   auto r_urdf = RigidBodySystem();
   r_urdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.urdf", DrakeJoint::FIXED);
+      "/examples/Acrobot/Acrobot.urdf", FIXED);
 
   auto r_sdf = RigidBodySystem();
   r_sdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.sdf", DrakeJoint::FIXED);
+      "/examples/Acrobot/Acrobot.sdf", FIXED);
 
   // for debugging:
   /*

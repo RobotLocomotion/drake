@@ -4,6 +4,7 @@
 
 #include "drake/examples/Cars/curve2.h"
 #include "drake/examples/Cars/trajectory_car.h"
+#include "drake/systems/plants/joints/drake_joint_type.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 
 using drake::AffineSystem;
@@ -32,14 +33,14 @@ void PrintUsageInstructions(const std::string& executable_name) {
     << std::endl
     << "    the vehicle model(s) and are thus attached to the world via"
     << std::endl
-    << "    DrakeJoint::QUATERNION joints."
+    << "    QUATERNION joints."
     << std::endl
     << std::endl
     << "  - world_model_files is a space-separated list of paths to URDF or"
     << std::endl
     << "    SDF files. This list can be of length zero or more. The models"
     << std::endl
-    << "    within these files are connected to the world via DrakeJoint::FIXED"
+    << "    within these files are connected to the world via FIXED"
     << std::endl
     << "    joints."
     << std::endl
@@ -65,7 +66,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
   // Adds a model instance.
   ModelInstanceIdTable vehicle_instance_id_table =
       rigid_body_sys->AddModelInstanceFromFile(argv[1],
-          DrakeJoint::QUATERNION);
+          QUATERNION);
 
   // Verifies that only one vehicle was added to the world.
   if (vehicle_instance_id_table.size() != 1) {
@@ -93,7 +94,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
         *duration = atof(argv[ii]);
     } else {
       ModelInstanceIdTable world_instance_id_table =
-          rigid_body_sys->AddModelInstanceFromFile(argv[ii], DrakeJoint::FIXED);
+          rigid_body_sys->AddModelInstanceFromFile(argv[ii], FIXED);
       drake::parsers::AddModelInstancesToTable(world_instance_id_table,
           model_instance_id_table);
     }

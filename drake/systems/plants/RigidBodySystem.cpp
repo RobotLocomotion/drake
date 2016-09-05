@@ -875,7 +875,7 @@ void parseSdf(RigidBodySystem& sys, XMLDocument* xml_doc,
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseJointType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the URDF to the RigidBodyTree.
@@ -895,7 +895,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfFile(
     const string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseJointType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the URDF to the rigid body tree.
@@ -920,7 +920,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfFile(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
     const string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseJointType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the robot to the rigid body tree.
@@ -945,7 +945,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfString(
     const string& sdf_string,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseJointType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the robot to the rigid body tree.
@@ -970,7 +970,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfString(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
     const std::string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseJointType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   spruce::path p(filename);
   auto ext = p.extension();
@@ -997,7 +997,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromString(
     const std::string& string_description,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseJointType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Parse the string using an XML parser.

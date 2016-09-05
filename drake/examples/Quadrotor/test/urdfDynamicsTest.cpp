@@ -19,7 +19,7 @@ namespace {
 GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto rbsys = RigidBodySystem();
   rbsys.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Quadrotor/quadrotor.urdf", DrakeJoint::ROLLPITCHYAW);
+      "/examples/Quadrotor/quadrotor.urdf", ROLLPITCHYAW);
 
   auto p = Quadrotor();
 

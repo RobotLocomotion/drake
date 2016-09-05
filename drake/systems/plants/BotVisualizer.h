@@ -5,6 +5,7 @@
 
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/System.h"
+#include "drake/systems/plants/joints/drake_joint_type.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 // these could all go in the cpp file:
@@ -42,7 +43,7 @@ class BotVisualizer {
 
   BotVisualizer(std::shared_ptr<lcm::LCM> lcm,
                 const std::string& urdf_filename,
-                const DrakeJoint::FloatingBaseType floating_base_type)
+                const FloatingBaseJointType floating_base_type)
       : tree_(new RigidBodyTree(urdf_filename, floating_base_type)), lcm_(lcm) {
     init();
   }

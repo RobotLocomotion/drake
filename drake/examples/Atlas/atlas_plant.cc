@@ -10,7 +10,7 @@ AtlasPlant::AtlasPlant() {
   sys_.reset(new drake::RigidBodySystem());
   sys_->AddModelInstanceFromFile(
       drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
-      DrakeJoint::QUATERNION);
+      QUATERNION);
 
   x0_ = VectorXd::Zero(sys_->getNumStates());
   SetInitialConfiguration();

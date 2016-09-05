@@ -60,8 +60,7 @@ int main(int argc, char* argv[]) {
   if (!lcm->good()) return 1;
 
   auto visualizer = std::make_shared<drake::BotVisualizer<PendulumState>>(
-      lcm, drake::GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      DrakeJoint::FIXED);
+      lcm, drake::GetDrakePath() + "/examples/Pendulum/Pendulum.urdf", FIXED);
   auto robot_state_tap =
       std::make_shared<drake::RobotStateTap<PendulumState>>();
 

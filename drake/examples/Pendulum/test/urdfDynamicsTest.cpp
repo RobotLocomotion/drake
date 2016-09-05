@@ -16,7 +16,7 @@ namespace {
 
 GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(
-      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf", DrakeJoint::FIXED));
+      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf", FIXED));
   auto rbsys = RigidBodySystem(tree);
   auto p = Pendulum();
 

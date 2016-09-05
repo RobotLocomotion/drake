@@ -335,11 +335,11 @@ class Attachment {
  public:
   std::string attach_to_frame;
   std::string urdf_filename;
-  DrakeJoint::FloatingBaseType joint_type;
+  FloatingBaseJointType joint_type;
 
   Attachment(
       const std::string& attach_to_frame_, const std::string& urdf_filename_,
-      const DrakeJoint::FloatingBaseType& joint_type_ = DrakeJoint::FIXED)
+      const FloatingBaseJointType& joint_type_ = FIXED)
       : attach_to_frame(attach_to_frame_),
         urdf_filename(urdf_filename_),
         joint_type(joint_type_) {

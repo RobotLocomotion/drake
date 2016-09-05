@@ -414,15 +414,15 @@ JointNames parseRobotJointNames(const YAML::Node& joint_names,
 
 namespace YAML {
 template <>
-struct convert<DrakeJoint::FloatingBaseType> {
-  static bool decode(const Node& node, DrakeJoint::FloatingBaseType& rhs) {
+struct convert<FloatingBaseJointType> {
+  static bool decode(const Node& node, FloatingBaseJointType& rhs) {
     std::string joint_type = node.as<std::string>();
     if (joint_type == "FIXED") {
-      rhs = DrakeJoint::FIXED;
+      rhs = FIXED;
     } else if (joint_type == "ROLLPITCHYAW") {
-      rhs = DrakeJoint::ROLLPITCHYAW;
+      rhs = ROLLPITCHYAW;
     } else if (joint_type == "QUATERNION") {
-      rhs = DrakeJoint::QUATERNION;
+      rhs = QUATERNION;
     } else {
       return false;
     }
@@ -445,9 +445,9 @@ struct convert<Attachment> {
     rhs.attach_to_frame = node["frame"].as<std::string>();
     rhs.urdf_filename = node["urdf"].as<std::string>();
     if (node["joint_type"]) {
-      rhs.joint_type = node["joint_type"].as<DrakeJoint::FloatingBaseType>();
+      rhs.joint_type = node["joint_type"].as<FloatingBaseJointType>();
     } else {
-      rhs.joint_type = DrakeJoint::FIXED;
+      rhs.joint_type = FIXED;
     }
     return true;
   }

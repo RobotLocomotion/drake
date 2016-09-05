@@ -44,13 +44,13 @@ int main(int argc, char* argv[]) {
 
   // todo: consider moving this logic into the RigidBodySystem class so it can
   // be reused
-  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
+  FloatingBaseJointType floating_base_type = QUATERNION;
   if (FLAGS_base == "FIXED") {
-    floating_base_type = DrakeJoint::FIXED;
+    floating_base_type = FIXED;
   } else if (FLAGS_base == "RPY") {
-    floating_base_type = DrakeJoint::ROLLPITCHYAW;
+    floating_base_type = ROLLPITCHYAW;
   } else if (FLAGS_base == "QUAT") {
-    floating_base_type = DrakeJoint::QUATERNION;
+    floating_base_type = QUATERNION;
   } else {
     throw std::runtime_error(string("Unknown base type") + FLAGS_base +
                              "; must be FIXED, RPY, or QUAT");

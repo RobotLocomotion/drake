@@ -158,7 +158,7 @@ int do_main(int argc, const char* argv[]) {
 
   RigidBodyTree tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      DrakeJoint::FIXED);
+      FIXED);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).

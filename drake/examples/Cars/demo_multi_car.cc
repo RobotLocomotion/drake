@@ -55,7 +55,7 @@ int DoMain(int argc, const char* argv[]) {
   // BotVisualizer:
   //  U: [(xy-position, heading, velocity), ...] per SimpleCarState
   //  X: ()
-  //  Y: [(x, y, z, roll, pitch, yaw), ...] per DrakeJoint::ROLLPITCHYAW per car
+  //  Y: [(x, y, z, roll, pitch, yaw), ...] per ROLLPITCHYAW per car
   auto cars_vis_adapter = std::make_shared<
     NArySystem<decltype(car_vis_adapter)::element_type>>();
   // NB:  One could compose the other way as well (i.e., individually cascade
@@ -66,7 +66,7 @@ int DoMain(int argc, const char* argv[]) {
   for (int i = 0; i < num_cars; ++i) {
     // Add the visualization entity.
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        (i % 5) ? kSedanUrdf : kBreadtruckUrdf, DrakeJoint::ROLLPITCHYAW,
+        (i % 5) ? kSedanUrdf : kBreadtruckUrdf, ROLLPITCHYAW,
         nullptr /* weld_to_frame */, world_tree.get());
 
     // Add the trajectory car, and its visualization adapter.

@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
   auto c = MakeTimeInvariantLqrSystem(*p, xG, uG, Q, R);
   auto v = std::make_shared<BotVisualizer<PendulumState> >(
       lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      DrakeJoint::FIXED);
+      FIXED);
 
   auto sys = cascade(feedback(p, c), v);
 

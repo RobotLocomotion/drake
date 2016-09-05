@@ -57,7 +57,7 @@ int main() {
       std::string(
           "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
   HumanoidStatus robot_status(
-      std::make_unique<RigidBodyTree>(urdf, DrakeJoint::ROLLPITCHYAW));
+      std::make_unique<RigidBodyTree>(urdf, ROLLPITCHYAW));
 
   // Sets state and does kinematics.
   VectorXd q(robot_status.robot().number_of_positions());

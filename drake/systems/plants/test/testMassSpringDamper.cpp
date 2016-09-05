@@ -18,7 +18,7 @@ GTEST_TEST(testMassSpringDamper, AllTests) {
   auto sys = make_shared<RigidBodySystem>();
   sys->AddModelInstanceFromFile(
       GetDrakePath() + "/systems/plants/test/MassSpringDamper.urdf",
-      DrakeJoint::FIXED);
+      FIXED);
 
   double mass = 1.0, k = 10.0, b = 1.0;
   Matrix<double, 2, 1> xdot_desired;

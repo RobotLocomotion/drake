@@ -16,7 +16,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
 
   rigid_body_system->AddModelInstanceFromFile(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      DrakeJoint::FIXED);
+      FIXED);
 
   // Sets some simulation parameters.
   rigid_body_system->penetration_stiffness = 3000.0;
