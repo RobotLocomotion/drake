@@ -5,6 +5,7 @@
 
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/joints/drake_joint_type.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
@@ -125,7 +126,7 @@ DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
     const std::string& root_dir,
-    const FloatingBaseJointType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
@@ -162,7 +163,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
     PackageMap& package_map,
     const std::string& root_dir,
-    const FloatingBaseJointType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
@@ -210,7 +211,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
-    const FloatingBaseJointType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
 
 /**
@@ -239,7 +240,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
-    const FloatingBaseJointType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
@@ -273,7 +274,7 @@ DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     std::map<std::string, std::string>& package_map,
-    const FloatingBaseJointType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 

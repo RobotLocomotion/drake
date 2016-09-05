@@ -3,11 +3,14 @@
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
 using namespace std;
 using namespace Eigen;
 using namespace drake;
+
+using drake::systems::plants::joints::FloatingBaseType;
 
 /** @page rigidBodyLCMNode rigidBodyLCMNode Application
  * @ingroup simulation
@@ -44,7 +47,7 @@ int main(int argc, char* argv[]) {
 
   // todo: consider moving this logic into the RigidBodySystem class so it can
   // be reused
-  FloatingBaseJointType floating_base_type = QUATERNION;
+  FloatingBaseType floating_base_type = QUATERNION;
   if (FLAGS_base == "FIXED") {
     floating_base_type = FIXED;
   } else if (FLAGS_base == "RPY") {

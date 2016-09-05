@@ -3,7 +3,7 @@
 // #include <string>
 
 #include "drake/drakeRBM_export.h"
-#include "drake/systems/plants/joints/drake_joint_type.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -40,7 +40,7 @@ namespace parsers {
 DRAKERBM_EXPORT
 int AddFloatingJoint(
 	RigidBodyTree* tree,
-    FloatingBaseJointType floating_base_type,
+    drake::systems::plants::joints::FloatingBaseType floating_base_type,
     const std::vector<int>& link_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
     const PoseMap* pose_map = nullptr);

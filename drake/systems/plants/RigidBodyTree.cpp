@@ -8,6 +8,7 @@
 #include "drake/math/gradient.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -39,6 +40,7 @@ using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::Gradient;
+using drake::systems::plants::joints::FloatingBaseType;
 
 using std::allocator;
 using std::cerr;
@@ -78,7 +80,7 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
 
 RigidBodyTree::RigidBodyTree(
     const std::string& filename,
-    const FloatingBaseJointType floating_base_type)
+    const FloatingBaseType floating_base_type)
     : RigidBodyTree() {
   // Adds the model defined in filename to this tree.
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
@@ -2144,7 +2146,7 @@ void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string, const std::string& root_dir,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   drake::parsers::urdf::AddModelInstanceFromUrdfString(
@@ -2157,7 +2159,7 @@ void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string,
     std::map<std::string, std::string>& package_map,
     const std::string& root_dir,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::urdf::AddModelInstanceFromUrdfString(
       xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
@@ -2167,7 +2169,7 @@ void RigidBodyTree::addRobotFromURDFString(
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDF(
     const std::string& filename,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
@@ -2178,7 +2180,7 @@ void RigidBodyTree::addRobotFromURDF(
 void RigidBodyTree::addRobotFromURDF(
     const std::string& filename,
     std::map<std::string, std::string>& package_map,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       filename, package_map, floating_base_type, weld_to_frame, this);
@@ -2187,7 +2189,7 @@ void RigidBodyTree::addRobotFromURDF(
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromSDF(
     const std::string& filename,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::sdf::AddModelInstancesFromSdfFile(filename,
       floating_base_type, weld_to_frame, this);

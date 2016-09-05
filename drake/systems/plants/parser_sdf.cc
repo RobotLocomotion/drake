@@ -9,6 +9,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_common.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -28,6 +29,8 @@
 using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
+
+using drake::systems::plants::joints::FloatingBaseType;
 
 namespace drake {
 namespace parsers {
@@ -240,7 +243,7 @@ void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   // By default all collision elements added to the world from an SDF file are
   // flagged as static.
   // We would also like to flag as static bodies connected to the world with a
-  // FloatingBaseJointType::FIXED joint.
+  // FloatingBaseType::FIXED joint.
   // However this is not possible at this stage since joints were not parsed
   // yet.
   // Solutions to this problem would be:
@@ -658,7 +661,7 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
 // name is already in this table.
 void ParseModel(RigidBodyTree* tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const FloatingBaseJointType floating_base_type,
+                const FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
                 ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
@@ -750,7 +753,7 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
 
 void ParseWorld(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const FloatingBaseJointType floating_base_type,
+                const FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
                 ModelInstanceIdTable* model_instance_id_table) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
@@ -762,7 +765,7 @@ void ParseWorld(RigidBodyTree* model, XMLElement* node,
 
 ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
     PackageMap& package_map, const string& root_dir,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   populatePackageMap(package_map);
 
@@ -805,7 +808,7 @@ ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
 
 ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     const string& filename,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
@@ -815,7 +818,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
 
 ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const string& filename,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
@@ -843,7 +846,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
 
 ModelInstanceIdTable AddModelInstancesFromSdfString(
     const string& sdf_string,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.

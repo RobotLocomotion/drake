@@ -1,13 +1,16 @@
 #include "drake/systems/plants/parser_common.h"
 
 #include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
+
+using drake::systems::plants::joints::FloatingBaseType;
 
 namespace drake {
 namespace parsers {
 
 int AddFloatingJoint(
     RigidBodyTree* tree,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     const std::vector<int>& link_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const PoseMap* pose_map) {

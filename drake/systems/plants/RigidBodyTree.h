@@ -19,7 +19,7 @@
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
-// #include "drake/systems/plants/joints/drake_joint_type.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_actuator.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
@@ -81,8 +81,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   static const int kWorldBodyIndex;
 
   RigidBodyTree(const std::string& urdf_filename,
-                const FloatingBaseJointType floating_base_type =
-                    FloatingBaseJointType::ROLLPITCHYAW);
+                const drake::systems::plants::joints::FloatingBaseType
+                    floating_base_type = ROLLPITCHYAW);
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
@@ -91,8 +91,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
-      const FloatingBaseJointType floating_base_type =
-          FloatingBaseJointType::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -102,8 +102,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::string& xml_string,
       std::map<std::string, std::string>& package_map,
       const std::string& root_dir = ".",
-      const FloatingBaseJointType floating_base_type =
-          FloatingBaseJointType::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -111,8 +111,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
-      const FloatingBaseJointType floating_base_type =
-          FloatingBaseJointType::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -121,16 +121,16 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void addRobotFromURDF(
       const std::string& urdf_filename,
       std::map<std::string, std::string>& package_map,
-      const FloatingBaseJointType floating_base_type =
-          FloatingBaseJointType::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstancesFromSdfFile.")
 #endif
   void addRobotFromSDF(const std::string& sdf_filename,
-                       const FloatingBaseJointType floating_base_type =
-                           FloatingBaseJointType::QUATERNION,
+                       const drake::systems::plants::joints::FloatingBaseType
+                           floating_base_type = QUATERNION,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**

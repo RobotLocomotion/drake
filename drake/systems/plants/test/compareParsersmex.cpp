@@ -5,6 +5,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeMexUtil.h"
 #include "drake/util/testUtil.h"
@@ -14,6 +15,7 @@ using namespace std;
 
 using drake::CompareMatrices;
 using drake::MatrixCompareType;
+using drake::systems::plants::joints::FloatingBaseType;
 
 /*
  * compares C++ robots generated via the matlab constructModelmex with the same
@@ -34,7 +36,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   mxGetString(prhs[1], urdf_file, 1000);
   char floating_base_type_str[100] = "rpy";
   if (nrhs > 2) mxGetString(prhs[2], floating_base_type_str, 100);
-  FloatingBaseJointType floating_base_type = QUATERNION;
+  FloatingBaseType floating_base_type = QUATERNION;
   if (strcmp(floating_base_type_str, "fixed") == 0)
     floating_base_type = FIXED;
   else if (strcmp(floating_base_type_str, "rpy") == 0)
