@@ -406,27 +406,27 @@ classdef MixedIntegerConvexProgram
       prob = obj.getMosekModel();
       params = struct();
       start_time = clock();
-      [r,res] = mosekopt('minimize',prob,params);
+      [return_code,result] = mosekopt('minimize',prob,params);
       end_time = clock();
       solvertime = etime(end_time,start_time);
       if(isfield(prob,'ints') && ~isempty(prob.ints))
-        if(~strcmp(res.sol.int.prosta,'PRIMAL_FEASIBLE'))
+        if(~strcmp(result.sol.int.prosta,'PRIMAL_FEASIBLE'))
           error('Drake:MixedIntegerConvexProgram:INFEASIBLE','The mixed-integer problem is not feasible');
         end
-        obj = obj.extractResult(res.sol.int.xx);
-        objval = res.sol.int.pobjval;
+        obj = obj.extractResult(result.sol.int.xx);
+        objval = result.sol.int.pobjval;
       else
-        if(strcmp(res.sol.itr.prosta,'PRIMAL_INFEASIBLE'))
+        if(strcmp(result.sol.itr.prosta,'PRIMAL_INFEASIBLE'))
           error('Drake:MixedIntegerConvexProgram:PrimalInfeasible','The probelm is primal infeasible');
-        elseif(strcmp(res.sol.itr.prosta,'DUAL_INFEASIBLE'))
+        elseif(strcmp(result.sol.itr.prosta,'DUAL_INFEASIBLE'))
           error('Drake:MixedIntegerConvexProgram:DualInfeasible','The problem is dual infeasible');
-        elseif(strcmp(res.sol.itr.prosta,'PRIMAL_AND_DUAL_INFEASIBLE'))
+        elseif(strcmp(result.sol.itr.prosta,'PRIMAL_AND_DUAL_INFEASIBLE'))
           error('Drake:MixedIntegerConvexProgram:PrimalDualInfeasible','The problem is primal and dual infeasible');
-        elseif(strcmp(res.sol.itr.prosta,'UNKNOWN'))
+        elseif(strcmp(result.sol.itr.prosta,'UNKNOWN'))
           warning('Drake:MixedIntegerConvexProgram:Unknown','The problem solution is unknown');
         end
-        obj = obj.extractResult(res.sol.itr.xx);
-        objval = res.sol.itr.pobjval;
+        obj = obj.extractResult(result.sol.itr.xx);
+        objval = result.sol.itr.pobjval;
       end
     end
     
