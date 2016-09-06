@@ -23,6 +23,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#3276][] The `measure::execution()` function has been replaced by `MeasureExecutionTime()`.
  - [#3246][] Replaced `RigidBody::hasParent()` with `RigidBody::has_mobilizer_joint()`.
  - [#3191][] All matlab solvers code moved from solvers/ to matlab/solvers/.
  - [#3183][] The gflags library is now a required dependency from the superbuild.
@@ -36,7 +37,6 @@ Unreleased: changes on master, not yet released
  - [#3010][] All header file names under `solvers` are now spelled with lower case and underscore names.
  - [#2984][] Renamed and moved `Polynomial.h` and `TrigPoly.h` from `drake/util` to `drake/common` and into the `drakeCommon` library.
  - [#2963][] Rename RigidBody::CollisionElement to RigidBodyCollisionElement.
- - [#3010][] All header file names under `solvers` are now spelled with lower case and underscore names.
  - [#3003][] Made `RigidBodyFrame` member variables private. Added accessors.
  - [#2997][] Renamed drake/Path.h to drake/common/drake_path.h
  - [#2983][] Renamed namespace `Drake` to be `drake`.
@@ -139,3 +139,4 @@ Changes in version v0.9.11 and before are not provided.
 [#3183]: https://github.com/RobotLocomotion/drake/issues/3183
 [#3191]: https://github.com/RobotLocomotion/drake/issues/3191
 [#3246]: https://github.com/RobotLocomotion/drake/issues/3246
+[#3276]: https://github.com/RobotLocomotion/drake/issues/3276
