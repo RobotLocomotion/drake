@@ -6,7 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/drakeSystemAnalysis_export.h"
-#include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
