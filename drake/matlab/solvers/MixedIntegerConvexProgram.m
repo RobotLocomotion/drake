@@ -417,13 +417,13 @@ classdef MixedIntegerConvexProgram
         objval = result.sol.int.pobjval;
       else
         if(strcmp(result.sol.itr.prosta,'PRIMAL_INFEASIBLE'))
-          error('Drake:MixedIntegerConvexProgram:PrimalInfeasible','The probelm is primal infeasible');
+          error('Drake:MixedIntegerConvexProgram:PrimalInfeasible','The problem is primal infeasible');
         elseif(strcmp(result.sol.itr.prosta,'DUAL_INFEASIBLE'))
           error('Drake:MixedIntegerConvexProgram:DualInfeasible','The problem is dual infeasible');
         elseif(strcmp(result.sol.itr.prosta,'PRIMAL_AND_DUAL_INFEASIBLE'))
           error('Drake:MixedIntegerConvexProgram:PrimalDualInfeasible','The problem is primal and dual infeasible');
         elseif(strcmp(result.sol.itr.prosta,'UNKNOWN'))
-          warning('Drake:MixedIntegerConvexProgram:Unknown','The problem solution is unknown');
+          warning('Drake:MixedIntegerConvexProgram:Unknown','The problem solution status is unknown');
         end
         obj = obj.extractResult(result.sol.itr.xx);
         objval = result.sol.itr.pobjval;
@@ -433,6 +433,10 @@ classdef MixedIntegerConvexProgram
     function prob = getMosekModel(obj)
       prob.c = obj.c;
       [prob.qosubi,prob.qosubj,prob.qoval] = find(2*obj.Q);
+      % Mosek only requires specifying the lower triangular part of the
+      % Q matrix. Q(prob.qosubi,prob.qosubj) are the non-zero entries in
+      % the lower triangular part of Q. lower_idx finds out the entries in
+      % the lower triangular part.
       lower_idx = prob.qosubi>=prob.qosubj;
       prob.qosubi = prob.qosubi(lower_idx);
       prob.qosubj = prob.qosubj(lower_idx);
