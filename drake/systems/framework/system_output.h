@@ -26,10 +26,16 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPortListenerInterface {
   /// Invalidates any data that depends on the OutputPort. Called whenever
   /// the OutputPort's version number is incremented.
   virtual void Invalidate() = 0;
+
+  /// Notifies the consumer that the OutputPort is no longer valid and should
+  /// not be read.
+  virtual void Disconnect() = 0;
 };
 
 /// The OutputPort represents a data output from a System. Other Systems
-/// may depend on the OutputPort.
+/// may depend on the OutputPort. When an OutputPort is deleted, it will
+/// automatically notify the listeners that depend on it to disconnect,
+/// meaning those ports will resolve to nullptr.
 class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
  public:
   /// Constructs a vector-valued OutputPort.

@@ -95,6 +95,22 @@ class Diagram : public System<T> {
 
   ~Diagram() override {}
 
+  /// Returns true if any output of the Diagram might have direct-feedthrough
+  /// from any input of the Diagram.
+  bool has_any_direct_feedthrough() const override {
+    // TODO(david-german-tri, bradking): Make this less conservative once the
+    // sparsity matrix is available.
+
+    // For each output, see whether it has direct feedthrough all the way back
+    // to any input.
+    for (const auto& output_port_id : output_port_ids_) {
+      if (HasDirectFeedthroughFromAnyInput(output_port_id)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>();
@@ -448,6 +464,54 @@ class Diagram : public System<T> {
       }
     }
     return true;
+  }
+
+  // Checks whether any input port of the Diagram feeds directly through to the
+  // given @p output_port_id.
+  bool HasDirectFeedthroughFromAnyInput(
+      const PortIdentifier& output_port_id) const {
+    // TODO(david-german-tri, bradking): This can be made less conservative
+    // once the sparsity matrix is available.
+
+    // If the system producing output_port_id has no direct-feedthrough, then
+    // there is definitely no direct-feedthrough to output_port_id.
+    const System<T>* system = output_port_id.first;
+    if (!system->has_any_direct_feedthrough()) {
+      return false;
+    }
+
+    // Otherwise, we need to check each of the system's input ports.
+    for (int i = 0; i < system->get_num_input_ports(); ++i) {
+      PortIdentifier input_port_id{system, i};
+
+      // If input_port_id is an input port of the entire Diagram,
+      // there may be direct-feedthrough to output_port_id. Since we don't have
+      // a full sparsity matrix yet, we err on the side of caution and report
+      // direct-feedthrough.
+      //
+      // TODO(david-german-tri): This should be an O(1) lookup, not O(N).
+      for (const PortIdentifier& diagram_input_id : input_port_ids_) {
+        if (diagram_input_id == input_port_id) {
+          return true;
+        }
+      }
+
+      // If input_port_id is connected to some other System's output port,
+      // there is direct feedthrough to output_port_id if there is
+      // direct-feedthrough to the upstream output port. Check recursively.
+      auto upstream_it = dependency_graph_.find(input_port_id);
+      if (upstream_it != dependency_graph_.end()) {
+        const PortIdentifier& upstream_port = upstream_it->second;
+        if (HasDirectFeedthroughFromAnyInput(upstream_port)) {
+          return true;
+        }
+      }
+    }
+
+    // If none of the system's input ports create a direct-feedthrough path
+    // back to an input of the Diagram, there is no direct-feedthrough to
+    // output_port_id.
+    return false;
   }
 
   // Diagram objects are neither copyable nor moveable.

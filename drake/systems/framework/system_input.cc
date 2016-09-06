@@ -11,10 +11,21 @@ void InputPort::Invalidate() {
   }
 }
 
-DependentInputPort::~DependentInputPort() {
-  output_port_->remove_dependent(this);
+DependentInputPort::DependentInputPort(OutputPort* output_port)
+    : output_port_(output_port) {
+  DRAKE_ABORT_UNLESS(output_port_ != nullptr);
+  output_port_->add_dependent(this);
 }
 
+DependentInputPort::~DependentInputPort() {
+  if (output_port_ != nullptr) {
+    output_port_->remove_dependent(this);
+  }
+}
+
+void DependentInputPort::Disconnect() {
+  output_port_ = nullptr;
+}
 
 FreestandingInputPort::FreestandingInputPort(
     std::unique_ptr<AbstractValue> data)
