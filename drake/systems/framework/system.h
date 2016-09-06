@@ -300,39 +300,24 @@ class System {
     return;
   }
 
-  /// Transforms the velocity (v) in the given Context state to the derivative
+  /// Transforms the velocity (v) in the given @p context to the derivative
   /// of the configuration (qdot). The transformation must be linear in velocity
   /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
   /// in the number of generalized velocity states.
   ///
-  /// The default implementation uses the identity mapping. It throws
-  /// std::out_of_range if the @p generalized_velocity and
-  /// @p configuration_derivatives are not the same size. Child classes must
-  /// override this function if qdot != v (even if they are the same size).
-  ///
-  /// Implementations may assume that @p configuration_derivatives is of
-  /// the same size as the generalized position allocated in
-  /// CreateDefaultContext()->continuous_state.get_generalized_position(),
-  /// and should populate it with elementwise-corresponding derivatives of
-  /// position. Implementations that are not second-order systems may simply
-  /// do nothing.
+  /// In the typical case, the mapping from v to qdot should only be a function
+  /// of State. Therefore, most concrete Systems should override
+  /// DoMapVelocityToConfigurationDerivatives instead of overriding this
+  /// function. However, this function is virtual to support some framework
+  /// implementation details, and as an escape hatch for Systems that need to
+  /// use the Cache to compute the mapping efficiently. Systems that override
+  /// this function MUST NOT consult the time or inputs in the Context.
   virtual void MapVelocityToConfigurationDerivatives(
       const Context<T>& context, const VectorBase<T>& generalized_velocity,
       VectorBase<T>* configuration_derivatives) const {
-    if (generalized_velocity.size() != configuration_derivatives->size()) {
-      throw std::out_of_range(
-          "generalized_velocity.size() " +
-          std::to_string(generalized_velocity.size()) +
-          " != configuration_derivatives.size() " +
-          std::to_string(configuration_derivatives->size()) +
-          ". Do you need to override the default implementation of " +
-          "MapVelocityToConfigurationDerivatives()?");
-    }
-
-    for (int i = 0; i < generalized_velocity.size(); ++i) {
-      configuration_derivatives->SetAtIndex(i,
-                                            generalized_velocity.GetAtIndex(i));
-    }
+    DoMapVelocityToConfigurationDerivatives(context.get_state(),
+                                            generalized_velocity,
+                                            configuration_derivatives);
   }
 
   // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity
@@ -435,6 +420,40 @@ class System {
   virtual void DoCalcNextSampleTime(const Context<T>& context,
                                     SampleActions* actions) const {
     actions->time = std::numeric_limits<double>::infinity();
+  }
+
+  /// Transforms the velocity (v) in the given @p state to the derivative
+  /// of the configuration (qdot). The transformation must be linear in velocity
+  /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
+  /// in the number of generalized velocity states.
+  ///
+  /// The default implementation uses the identity mapping. It throws
+  /// std::runtime_error if the @p generalized_velocity and
+  /// @p configuration_derivatives are not the same size. Child classes must
+  /// override this function if qdot != v (even if they are the same size).
+  ///
+  /// Implementations may assume that @p configuration_derivatives is of
+  /// the same size as the generalized position allocated in
+  /// CreateDefaultContext()->continuous_state.get_generalized_position(),
+  /// and should populate it with elementwise-corresponding derivatives of
+  /// position. Implementations that are not second-order systems may simply
+  /// do nothing.
+  virtual void DoMapVelocityToConfigurationDerivatives(
+      const State<T>& state, const VectorBase<T>& generalized_velocity,
+      VectorBase<T>* configuration_derivatives) const {
+    // If a concrete subclass of System<T> has a generalized velocity and a
+    // generalized configuration such that the derivatives of configuration
+    // are not exactly the velocity, that subclass must override
+    // MapVelocityToConfigurationDerivatives. In the particular case where
+    // generalized velocity and generalized configuration are not even the
+    // same size, we detect this error and abort.
+    const int n = generalized_velocity.size();
+    // You need to override System<T>::MapVelocityToConfigurationDerivatives!
+    DRAKE_THROW_UNLESS(configuration_derivatives->size() == n);
+    for (int i = 0; i < n; ++i) {
+      const T value = generalized_velocity.GetAtIndex(i);
+      configuration_derivatives->SetAtIndex(i, value);
+    }
   }
 
  private:

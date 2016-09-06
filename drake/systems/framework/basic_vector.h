@@ -88,6 +88,10 @@ class BasicVector : public VectorBase<T> {
     set_value(value);
   }
 
+  void SetFrom(const VectorBase<T>& value) override {
+    set_value(value.CopyToVector());
+  }
+
   VectorX<T> CopyToVector() const override { return values_; }
 
   void ScaleAndAddToVector(const T& scale,
