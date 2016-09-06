@@ -23,7 +23,6 @@ using drake::cascade;
 using drake::systems::plants::joints::ROLLPITCHYAW;
 
 namespace drake {
-namespace examples {
 namespace cars {
 namespace {
 
@@ -98,9 +97,8 @@ int DoMain(int argc, const char* argv[]) {
 
 }  // namespace
 }  // namespace cars
-}  // namespace examples
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::cars::DoMain(argc, argv);
+  return drake::cars::DoMain(argc, argv);
 }

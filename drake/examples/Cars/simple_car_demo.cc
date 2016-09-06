@@ -11,13 +11,7 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
-using drake::AffineSystem;
-using drake::BotVisualizer;
-using drake::NullVector;
-using drake::cascade;
-
 namespace drake {
-namespace examples {
 namespace cars {
 namespace {
 
@@ -55,9 +49,8 @@ int do_main(int argc, const char* argv[]) {
 
 }  // namespace
 }  // namespace cars
-}  // namespace examples
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::cars::do_main(argc, argv);
+  return drake::cars::do_main(argc, argv);
 }

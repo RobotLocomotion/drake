@@ -11,7 +11,7 @@ using namespace Eigen;
 using namespace drake;
 
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
-typedef AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
+typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 
 template <typename... Args, typename ReturnType>
 auto make_function(ReturnType (*p)(Args...))

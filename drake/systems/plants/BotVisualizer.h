@@ -5,8 +5,8 @@
 
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/System.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 // these could all go in the cpp file:
 #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"

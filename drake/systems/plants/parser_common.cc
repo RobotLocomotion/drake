@@ -1,15 +1,18 @@
 #include "drake/systems/plants/parser_common.h"
 
-#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
+#include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
+#include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
+
+namespace drake {
+namespace parsers {
 
 using drake::systems::plants::joints::FloatingBaseType;
 using drake::systems::plants::joints::FIXED;
 using drake::systems::plants::joints::ROLLPITCHYAW;
 using drake::systems::plants::joints::QUATERNION;
-
-namespace drake {
-namespace parsers {
 
 int AddFloatingJoint(
     RigidBodyTree* tree,

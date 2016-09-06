@@ -9,6 +9,7 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/integrator.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -82,9 +83,9 @@ class DiagramTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
 
-    input0_.reset(new BasicVector<double>({1, 2, 4}));
-    input1_.reset(new BasicVector<double>({8, 16, 32}));
-    input2_.reset(new BasicVector<double>({64, 128, 256}));
+    input0_ = BasicVector<double>::Make({1, 2, 4});
+    input1_ = BasicVector<double>::Make({8, 16, 32});
+    input2_ = BasicVector<double>::Make({64, 128, 256});
 
     // Initialize the integrator states.
     auto integrator0_xc = GetMutableContinuousState(integrator0());
@@ -185,6 +186,9 @@ TEST_F(DiagramTest, Topology) {
   EXPECT_EQ(kInheritedSampling, diagram_->get_output_port(1).get_sampling());
   // The integrator output port has continuous sampling.
   EXPECT_EQ(kContinuousSampling, diagram_->get_output_port(2).get_sampling());
+
+  // The diagram has direct feedthrough.
+  EXPECT_TRUE(diagram_->has_any_direct_feedthrough());
 }
 
 // Tests that the diagram computes the correct sum.
@@ -288,9 +292,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
 
-    input0_.reset(new BasicVector<double>(std::vector<double>{8}));
-    input1_.reset(new BasicVector<double>(std::vector<double>{64}));
-    input2_.reset(new BasicVector<double>(std::vector<double>{512}));
+    input0_ = BasicVector<double>::Make({8});
+    input1_ = BasicVector<double>::Make({64});
+    input2_ = BasicVector<double>::Make({512});
 
     context_->SetInputPort(0, MakeInput(std::move(input0_)));
     context_->SetInputPort(1, MakeInput(std::move(input1_)));
@@ -439,6 +443,52 @@ GTEST_TEST(DiagramPublishTest, Publish) {
   auto context = publishing_diagram.CreateDefaultContext();
   publishing_diagram.Publish(*context);
   EXPECT_EQ(42.0, publishing_diagram.get());
+}
+
+// FeedbackDiagram is a diagram containing a feedback loop of two
+// constituent diagrams, an Integrator and a Gain. The Integrator is not
+// direct-feedthrough, so there is no algebraic loop.
+class FeedbackDiagram : public Diagram<double> {
+ public:
+  FeedbackDiagram() : Diagram<double>() {
+    integrator_ = std::make_unique<Integrator<double>>(1 /* length */);
+    gain_ = std::make_unique<Gain<double>>(1.0 /* gain */, 1 /* length */);
+
+    DiagramBuilder<double> integrator_builder;
+    integrator_builder.ExportInput(integrator_->get_input_port(0));
+    integrator_builder.ExportOutput(integrator_->get_output_port(0));
+    integrator_diagram_ = integrator_builder.Build();
+
+    DiagramBuilder<double> gain_builder;
+    gain_builder.ExportInput(gain_->get_input_port(0));
+    gain_builder.ExportOutput(gain_->get_output_port(0));
+    gain_diagram_ = gain_builder.Build();
+
+    DiagramBuilder<double> builder;
+    builder.Connect(*integrator_diagram_, *gain_diagram_);
+    builder.Connect(*gain_diagram_, *integrator_diagram_);
+    builder.BuildInto(this);
+  }
+
+ private:
+  std::unique_ptr<Integrator<double>> integrator_;
+  std::unique_ptr<Gain<double>> gain_;
+  std::unique_ptr<Diagram<double>> integrator_diagram_;
+  std::unique_ptr<Diagram<double>> gain_diagram_;
+};
+
+// Tests that since there are no outputs, there is no direct feedthrough.
+GTEST_TEST(FeedbackDiagramTest, HasDirectFeedthrough) {
+  FeedbackDiagram diagram;
+  EXPECT_FALSE(diagram.has_any_direct_feedthrough());
+}
+
+// Tests that a FeedbackDiagram's context can be deleted without accessing
+// already-freed memory. https://github.com/RobotLocomotion/drake/issues/3349
+GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
+  FeedbackDiagram diagram;
+  auto context = diagram.CreateDefaultContext();
+  EXPECT_NO_THROW(context.reset());
 }
 
 }  // namespace

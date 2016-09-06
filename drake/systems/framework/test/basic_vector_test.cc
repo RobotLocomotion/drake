@@ -69,16 +69,16 @@ GTEST_TEST(BasicVectorTest, SetWholeVector) {
   EXPECT_EQ(next_value, vec.get_value());
 }
 
-// Tests that when BasicVector is cloned, its type and data are preserved.
+// Tests that when BasicVector is cloned, its data is preserved.
 GTEST_TEST(BasicVectorTest, Clone) {
   BasicVector<int> vec(2);
   vec.get_mutable_value() << 1, 2;
-  std::unique_ptr<VectorBase<int>> clone = vec.CloneVector();
 
-  BasicVector<int>* typed_clone = dynamic_cast<BasicVector<int>*>(clone.get());
+  std::unique_ptr<BasicVector<int>> clone = vec.Clone();
+
   Eigen::Vector2i expected;
   expected << 1, 2;
-  EXPECT_EQ(expected, typed_clone->get_value());
+  EXPECT_EQ(expected, clone->get_value());
 }
 
 // Tests that an error is thrown when the BasicVector is set from a vector

@@ -15,6 +15,7 @@
 #include "drake/common/drake_assert.h"
 
 namespace drake {
+namespace cars {
 
 template <typename T>
 IdmWithTrajectoryAgent<T>::IdmWithTrajectoryAgent() {
@@ -95,10 +96,11 @@ IdmWithTrajectoryAgent<T>::AllocateContinuousState() const {
 }
 
 template <typename T>
-std::unique_ptr<systems::VectorBase<T>>
+std::unique_ptr<systems::BasicVector<T>>
 IdmWithTrajectoryAgent<T>::AllocateOutputVector(
     const systems::SystemPortDescriptor<T>& descriptor) const {
   return std::make_unique<IdmWithTrajectoryAgentState<T>>();
 }
 
+}  // namespace cars
 }  // namespace drake

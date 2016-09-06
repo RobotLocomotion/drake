@@ -7,8 +7,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/value.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -26,17 +26,23 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPortListenerInterface {
   /// Invalidates any data that depends on the OutputPort. Called whenever
   /// the OutputPort's version number is incremented.
   virtual void Invalidate() = 0;
+
+  /// Notifies the consumer that the OutputPort is no longer valid and should
+  /// not be read.
+  virtual void Disconnect() = 0;
 };
 
 /// The OutputPort represents a data output from a System. Other Systems
-/// may depend on the OutputPort.
+/// may depend on the OutputPort. When an OutputPort is deleted, it will
+/// automatically notify the listeners that depend on it to disconnect,
+/// meaning those ports will resolve to nullptr.
 class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
  public:
   /// Constructs a vector-valued OutputPort.
   /// Takes ownership of @p vec.
   ///
   /// @tparam T The type of the vector data. Must be a valid Eigen scalar.
-  /// @tparam V The type of @p vec itself. Must implement VectorBase<T>.
+  /// @tparam V The type of @p vec itself. Must implement BasicVector<T>.
   template <template <typename T> class V, typename T>
   explicit OutputPort(std::unique_ptr<V<T>> vec)
       : data_(new VectorValue<T>(std::move(vec))) {
@@ -63,8 +69,8 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
   /// Returns the vector of data in this output port. Throws std::bad_cast
   /// if this is not a vector-valued port.
   template <typename T>
-  const VectorBase<T>* get_vector_data() const {
-    return data_->GetValue<VectorBase<T>*>();
+  const BasicVector<T>* get_vector_data() const {
+    return data_->GetValue<BasicVector<T>*>();
   }
 
   /// Returns a positive and monotonically increasing number that is guaranteed
@@ -100,9 +106,9 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
   ///
   /// Throws std::bad_cast if this is not a vector-valued port.
   template <typename T>
-  VectorBase<T>* GetMutableVectorData() {
+  BasicVector<T>* GetMutableVectorData() {
     InvalidateAndIncrement();
-    return data_->GetValue<VectorBase<T>*>();
+    return data_->GetValue<BasicVector<T>*>();
   }
 
   /// Returns a clone of this OutputPort containing a clone of the data, but
@@ -153,7 +159,7 @@ class SystemOutput {
 
   /// Returns the vector value in the port at @p index. Throws std::bad_cast if
   /// the port is not vector-valued.
-  const VectorBase<T>* get_vector_data(int index) const {
+  const BasicVector<T>* get_vector_data(int index) const {
     DRAKE_ASSERT(index >= 0 && index < get_num_ports());
     return get_port(index).template get_vector_data<T>();
   }
@@ -175,7 +181,7 @@ class SystemOutput {
   /// GetMutableVectorData was called.
   ///
   /// Throws std::bad_cast if this is not a vector-valued port.
-  VectorBase<T>* GetMutableVectorData(int index) {
+  BasicVector<T>* GetMutableVectorData(int index) {
     DRAKE_ASSERT(index >= 0 && index < get_num_ports());
     return get_mutable_port(index)->template GetMutableVectorData<T>();
   }

@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/material_map.h"
@@ -1044,7 +1045,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
   // Adds the floating joint(s) that connect the newly added robot model to the
   // rest of the rigid body tree.
   AddFloatingJoint(tree, actual_floating_base_type, link_indices,
-                          weld_to_frame);
+                   weld_to_frame);
 
   return model_instance_id_table;
 }

@@ -4,6 +4,7 @@
 // See drake/examples/Cars/lcm_vector_gen.py.
 
 namespace drake {
+namespace cars {
 
 const int IdmWithTrajectoryAgentStateIndices::kNumCoordinates;
 const int IdmWithTrajectoryAgentStateIndices::kXE;
@@ -12,4 +13,5 @@ const int IdmWithTrajectoryAgentStateIndices::kXA;
 const int IdmWithTrajectoryAgentStateIndices::kVA;
 const int IdmWithTrajectoryAgentStateIndices::kAA;
 
+}  // namespace cars
 }  // namespace drake

@@ -18,7 +18,6 @@ using drake::systems::plants::joints::FIXED;
 using drake::systems::plants::joints::QUATERNION;
 
 namespace drake {
-namespace examples {
 namespace cars {
 
 const char kDurationFlag[] = "--duration";
@@ -333,5 +332,4 @@ VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys) {
 }
 
 }  // namespace cars
-}  // namespace examples
 }  // namespace drake

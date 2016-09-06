@@ -6,6 +6,7 @@
 #include "drake/systems/vector.h"
 
 namespace drake {
+namespace cars {
 
 /// Models the drake::Vector concept based on some existing VectorBase<T>,
 /// named BaseVector.
@@ -52,4 +53,5 @@ class System1Vector : public BaseVector {
   //@}
 };
 
+}  // namespace cars
 }  // namespace drake

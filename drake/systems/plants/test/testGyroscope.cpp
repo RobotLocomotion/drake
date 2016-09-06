@@ -4,7 +4,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;

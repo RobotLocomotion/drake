@@ -15,6 +15,7 @@
 #include "drake/common/drake_assert.h"
 
 namespace drake {
+namespace cars {
 
 template <typename ScalarType>
 SimpleCar1::StateVector<ScalarType> SimpleCar1::dynamics(
@@ -156,9 +157,10 @@ SimpleCar<T>::AllocateContinuousState() const {
 }
 
 template <typename T>
-std::unique_ptr<systems::VectorBase<T>> SimpleCar<T>::AllocateOutputVector(
+std::unique_ptr<systems::BasicVector<T>> SimpleCar<T>::AllocateOutputVector(
     const systems::SystemPortDescriptor<T>& descriptor) const {
   return std::make_unique<SimpleCarState<T>>();
 }
 
+}  // namespace cars
 }  // namespace drake
