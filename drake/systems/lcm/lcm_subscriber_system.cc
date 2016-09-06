@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/basic_state_vector.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
