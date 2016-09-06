@@ -79,7 +79,6 @@ class ExampleDiagram : public Diagram<double> {
   Integrator<double>* integrator1_ = nullptr;
 };
 
-
 class DiagramTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -288,8 +287,7 @@ TEST_F(DiagramTest, Clone) {
 TEST_F(DiagramTest, DerivativesOfStatelessSystemAreNullptr) {
   std::unique_ptr<ContinuousState<double>> derivatives =
       diagram_->AllocateTimeDerivatives();
-  EXPECT_EQ(nullptr,
-            diagram_->GetSubsystemDerivatives(*derivatives, adder0()));
+  EXPECT_EQ(nullptr, diagram_->GetSubsystemDerivatives(*derivatives, adder0()));
 }
 
 class DiagramOfDiagramsTest : public ::testing::Test {
@@ -324,29 +322,33 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     context_->SetInputPort(2, MakeInput(std::move(input2_)));
 
     // Initialize the integrator states.
-    Context<double>* d0_context = diagram_->GetMutableSubsystemContext(
-        context_.get(), subdiagram0_);
-    Context<double>* d1_context = diagram_->GetMutableSubsystemContext(
-        context_.get(), subdiagram1_);
+    Context<double>* d0_context =
+        diagram_->GetMutableSubsystemContext(context_.get(), subdiagram0_);
+    Context<double>* d1_context =
+        diagram_->GetMutableSubsystemContext(context_.get(), subdiagram1_);
 
     State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator0());
-    integrator0_x->get_mutable_continuous_state()->get_mutable_state()
+    integrator0_x->get_mutable_continuous_state()
+        ->get_mutable_state()
         ->SetAtIndex(0, 3);
 
     State<double>* integrator1_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator1());
-    integrator1_x->get_mutable_continuous_state()->get_mutable_state()
+    integrator1_x->get_mutable_continuous_state()
+        ->get_mutable_state()
         ->SetAtIndex(0, 9);
 
     State<double>* integrator2_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator0());
-    integrator2_x->get_mutable_continuous_state()->get_mutable_state()
+    integrator2_x->get_mutable_continuous_state()
+        ->get_mutable_state()
         ->SetAtIndex(0, 27);
 
     State<double>* integrator3_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator1());
-    integrator3_x->get_mutable_continuous_state()->get_mutable_state()
+    integrator3_x->get_mutable_continuous_state()
+        ->get_mutable_state()
         ->SetAtIndex(0, 81);
   }
 
@@ -448,10 +450,10 @@ class PublishNumberDiagram : public Diagram<double> {
   explicit PublishNumberDiagram(double constant) : Diagram<double>() {
     DiagramBuilder<double> builder;
 
-    constant_ = builder.AddSystem<ConstantVectorSource<double>>(
-        Vector1d{constant});
-    publisher_ = builder.AddSystem<PublishingSystem>(
-        [this](double v) { this->set(v); });
+    constant_ =
+        builder.AddSystem<ConstantVectorSource<double>>(Vector1d{constant});
+    publisher_ =
+        builder.AddSystem<PublishingSystem>([this](double v) { this->set(v); });
 
     builder.Connect(constant_->get_output_port(),
                     publisher_->get_input_port(0));
@@ -522,17 +524,109 @@ GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
   EXPECT_NO_THROW(context.reset());
 }
 
+// A vector with a scalar configuration and scalar velocity.
+class SecondOrderStateVector : public BasicVector<double> {
+ public:
+  SecondOrderStateVector() : BasicVector<double>(2) {}
+
+  double q() const { return GetAtIndex(0); }
+  double v() const { return GetAtIndex(1); }
+
+  void set_q(double q) { SetAtIndex(0, q); }
+  void set_v(double v) { SetAtIndex(1, v); }
+};
+
+// A minimal system that has second-order state.
+class SecondOrderStateSystem : public LeafSystem<double> {
+ public:
+  SecondOrderStateSystem() {
+    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
+  }
+
+  void EvalOutput(const Context<double>& context,
+                  SystemOutput<double>* output) const override {}
+
+  SecondOrderStateVector* x(Context<double>* context) const {
+    return dynamic_cast<SecondOrderStateVector*>(
+        context->get_mutable_continuous_state()->get_mutable_state());
+  }
+
+ protected:
+  std::unique_ptr<ContinuousState<double>> AllocateContinuousState()
+      const override {
+    return std::make_unique<ContinuousState<double>>(
+        std::make_unique<SecondOrderStateVector>(), 1 /* num_q */,
+        1 /* num_v */, 0 /* num_z */);
+  }
+
+  // qdot = 2 * v.
+  void DoMapVelocityToConfigurationDerivatives(
+      const Context<double>& context,
+      const Eigen::Ref<const VectorX<double>>& generalized_velocity,
+      VectorBase<double>* configuration_derivatives) const override {
+    configuration_derivatives->SetAtIndex(
+        0, 2 * generalized_velocity[0]);
+  }
+};
+
+// A diagram that has second-order state.
+class SecondOrderStateDiagram : public Diagram<double> {
+ public:
+  SecondOrderStateDiagram() : Diagram<double>() {
+    DiagramBuilder<double> builder;
+    sys1_ = builder.template AddSystem<SecondOrderStateSystem>();
+    sys2_ = builder.template AddSystem<SecondOrderStateSystem>();
+    builder.ExportInput(sys1_->get_input_port(0));
+    builder.ExportInput(sys2_->get_input_port(0));
+    builder.BuildInto(this);
+  }
+
+  SecondOrderStateSystem* sys1() { return sys1_; }
+  SecondOrderStateSystem* sys2() { return sys2_; }
+
+  // Returns the state of the given subsystem.
+  SecondOrderStateVector* x(Context<double>* context,
+                            const SecondOrderStateSystem* subsystem) {
+    Context<double>* subsystem_context =
+        GetMutableSubsystemContext(context, subsystem);
+    return subsystem->x(subsystem_context);
+  }
+
+ private:
+  SecondOrderStateSystem* sys1_ = nullptr;
+  SecondOrderStateSystem* sys2_ = nullptr;
+};
+
+// Tests that MapVelocityToConfigurationDerivatives recursively invokes
+// MapVelocityToConfigurationDerivatives on the constituent systems,
+// and preserves placewise correspondence.
+GTEST_TEST(SecondOrderStateTest, MapVelocityToConfigurationDerivatives) {
+  SecondOrderStateDiagram diagram;
+  std::unique_ptr<Context<double>> context = diagram.CreateDefaultContext();
+  diagram.x(context.get(), diagram.sys1())->set_v(13);
+  diagram.x(context.get(), diagram.sys2())->set_v(17);
+
+  BasicVector<double> configuration_derivatives(2);
+  const VectorBase<double>& v =
+      context->get_continuous_state()->get_generalized_velocity();
+  diagram.MapVelocityToConfigurationDerivatives(*context, v,
+                                                &configuration_derivatives);
+
+  // The order of these derivatives is arbitrary, so this test is brittle.
+  // TODO(david-german-tri): Use UnorderedElementsAre once gmock is available
+  // in the superbuild. https://github.com/RobotLocomotion/drake/issues/3133
+  EXPECT_EQ(configuration_derivatives.GetAtIndex(0), 34);
+  EXPECT_EQ(configuration_derivatives.GetAtIndex(1), 26);
+}
+
 // Test for GetSystems.
-GTEST_TEST(DiagramBuilderTest, GetSystems) {
+GTEST_TEST(GetSystemsTest, GetSystems) {
   auto diagram = std::make_unique<ExampleDiagram>(2);
   EXPECT_EQ((std::vector<const System<double>*>{
-        diagram->adder0(),
-        diagram->adder1(),
-        diagram->adder2(),
-        diagram->integrator0(),
-        diagram->integrator1(),
-      }),
-    diagram->GetSystems());
+                diagram->adder0(), diagram->adder1(), diagram->adder2(),
+                diagram->integrator0(), diagram->integrator1(),
+            }),
+            diagram->GetSystems());
 }
 
 }  // namespace

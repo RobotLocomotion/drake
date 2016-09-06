@@ -346,9 +346,9 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 }
 
 template <typename T>
-void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
+void RigidBodyPlant<T>::DoMapVelocityToConfigurationDerivatives(
     const Context<T>& context,
-    const VectorBase<T>& generalized_velocity,
+    const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     VectorBase<T>* positions_derivative) const {
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
@@ -367,7 +367,7 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
   // `VectorX<T>`. However it seems we get some sort of block from a block which
   // is not instantiated in drakeRBM.
   VectorX<T> q = x.topRows(nq);
-  VectorX<T> v = generalized_velocity.CopyToVector();
+  VectorX<T> v = generalized_velocity;
 
   // TODO(amcastro-tri): place kinematics cache in the context so it can be
   // reused.
