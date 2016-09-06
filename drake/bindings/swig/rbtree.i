@@ -68,17 +68,18 @@
 // SWIG doesn't support them.
 %ignore RigidBodyTree::bodies;
 %include "drake/systems/plants/RigidBodyTree.h"
+%include "drake/systems/plants/joints/floating_base_types.h"
 %extend RigidBodyTree {
   RigidBodyTree(const std::string& urdf_filename, const std::string& joint_type) {
     // FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2
-    DrakeJoint::FloatingBaseType floating_base_type;
+    FloatingBaseType floating_base_type;
 
     if (joint_type == "FIXED")
-      floating_base_type = DrakeJoint::FIXED;
+      floating_base_type = FIXED;
     else if (joint_type == "ROLLPITCHYAW")
-      floating_base_type = DrakeJoint::ROLLPITCHYAW;
+      floating_base_type = ROLLPITCHYAW;
     else if (joint_type == "QUATERNION")
-      floating_base_type = DrakeJoint::QUATERNION;
+      floating_base_type = QUATERNION;
     else {
       std::cerr << "Joint Type not supported" << std::endl;
       return nullptr;
