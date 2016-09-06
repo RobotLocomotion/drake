@@ -112,11 +112,12 @@ class Diagram : public System<T> {
   }
 
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
+    const int num_systems = static_cast<int>(sorted_systems_.size());
     // Reserve inputs as specified during Diagram initialization.
-    auto context = std::make_unique<DiagramContext<T>>();
+    auto context = std::make_unique<DiagramContext<T>>(num_systems);
 
     // Add each constituent system to the Context.
-    for (int i = 0; i < static_cast<int>(sorted_systems_.size()); ++i) {
+    for (int i = 0; i < num_systems; ++i) {
       const System<T>* const sys = sorted_systems_[i];
       auto subcontext = sys->CreateDefaultContext();
       auto suboutput = sys->AllocateOutput(*subcontext);
@@ -216,44 +217,44 @@ class Diagram : public System<T> {
   }
 
   /// Retrieves the state derivatives for a particular subsystem from the
-  /// derivatives for the entire diagram.
-  const ContinuousState<T>& GetSubsystemDerivatives(
+  /// derivatives for the entire diagram. Aborts if @p subsystem is not
+  /// actually a subsystem of this diagram. Returns nullptr if @p subsystem
+  /// is stateless.
+  const ContinuousState<T>* GetSubsystemDerivatives(
       const ContinuousState<T>& derivatives, const System<T>* subsystem) const {
     DRAKE_ABORT_UNLESS(subsystem != nullptr);
     auto diagram_derivatives =
         dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
     DRAKE_ABORT_UNLESS(diagram_derivatives != nullptr);
-    auto substate =
-        diagram_derivatives->get_substate(GetSystemIndex(subsystem));
-    // TODO(david-german-tri): We should fail softer than this for stateless
-    // systems.
-    DRAKE_ABORT_UNLESS(substate != nullptr);
-    return *substate;
+    const int i = GetSystemIndexOrAbort(subsystem);
+    return diagram_derivatives->get_substate(i);
   }
 
-  /// Returns the sub-context that corresponds to the system @p subsystem.
+  /// Returns the subcontext that corresponds to the system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituent subsystem's the apropriate subcontext.
+  /// pass their constituent subsystem's the apropriate subcontext. Aborts if
+  /// @p subsystem is not actually a subsystem of this diagram.
   ContextBase<T>* GetMutableSubsystemContext(ContextBase<T>* context,
                                              const System<T>* subsystem) const {
     DRAKE_ABORT_UNLESS(context != nullptr);
     DRAKE_ABORT_UNLESS(subsystem != nullptr);
     auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
     DRAKE_ABORT_UNLESS(diagram_context != nullptr);
-    const int i = GetSystemIndex(subsystem);
+    const int i = GetSystemIndexOrAbort(subsystem);
     return diagram_context->GetMutableSubsystemContext(i);
   }
 
   /// Retrieves the state for a particular subsystem from the context for the
   /// entire diagram. Invalidates all entries in that subsystem's cache that
-  /// depend on State. Returns nullptr if the subsystem is not part of the
-  /// diagram.
+  /// depend on State. Aborts if @p subsystem is not actually a subsystem of
+  /// this diagram.
   ///
   /// TODO(david-german-tri): Provide finer-grained accessors for finer-grained
   /// invalidation.
   State<T>* GetMutableSubsystemState(ContextBase<T>* context,
                                      const System<T>* subsystem) const {
-    return GetMutableSubsystemContext(context, subsystem)->get_mutable_state();
+    ContextBase<T>* subcontext = GetMutableSubsystemContext(context, subsystem);
+    return subcontext->get_mutable_state();
   }
 
  protected:
@@ -271,10 +272,8 @@ class Diagram : public System<T> {
     ComputeAllSubsystemOutputs(diagram_context);
 
     for (const System<T>* const system : sorted_systems_) {
-      const int index = GetSystemIndex(system);
-      const ContextBase<T>* subsystem_context =
-          diagram_context->GetSubsystemContext(index);
-      system->Publish(*subsystem_context);
+      const int i = GetSystemIndexOrAbort(system);
+      system->Publish(*diagram_context->GetSubsystemContext(i));
     }
   }
 
@@ -339,7 +338,7 @@ class Diagram : public System<T> {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
     // Fail quickly if this system is not part of the sort order.
-    DRAKE_ABORT_UNLESS(GetSystemIndex(sys) >= 0);
+    GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
     const auto& subsystem_ports = sys->get_input_ports();
@@ -360,7 +359,7 @@ class Diagram : public System<T> {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
     // Fail quickly if this system is not part of the sort order.
-    DRAKE_ABORT_UNLESS(GetSystemIndex(sys) >= 0);
+    GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
     const auto& subsystem_ports = sys->get_output_ports();
@@ -376,7 +375,9 @@ class Diagram : public System<T> {
     this->DeclareOutputPort(descriptor);
   }
 
-  int GetSystemIndex(const System<T>* sys) const {
+  // Returns the index of the given @p sys in the sorted order of this diagram,
+  // or aborts if @p sys is not a member of the diagram.
+  int GetSystemIndexOrAbort(const System<T>* sys) const {
     auto it = sorted_systems_map_.find(sys);
     DRAKE_ABORT_UNLESS(it != sorted_systems_map_.end());
     return it->second;
@@ -388,7 +389,7 @@ class Diagram : public System<T> {
   typename DiagramContext<T>::PortIdentifier ConvertToContextPortIdentifier(
       const PortIdentifier& id) const {
     typename DiagramContext<T>::PortIdentifier output;
-    output.first = GetSystemIndex(id.first);
+    output.first = GetSystemIndexOrAbort(id.first);
     output.second = id.second;
     return output;
   }
@@ -406,7 +407,7 @@ class Diagram : public System<T> {
       const PortIdentifier& id = output_port_ids_[i];
       // For each configured output port ID, obtain from the DiagramContext the
       // actual OutputPort that produces it.
-      const int sys_index = GetSystemIndex(id.first);
+      const int sys_index = GetSystemIndexOrAbort(id.first);
       const int port_index = id.second;
       SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(sys_index);
       OutputPort* output_port = subsystem_output->get_mutable_port(port_index);
@@ -424,10 +425,9 @@ class Diagram : public System<T> {
     // TODO(david-german-tri): Use the diagram-level cache to skip systems that
     // are already fresh.
     for (const System<T>* const system : sorted_systems_) {
-      const int index = GetSystemIndex(system);
-      const ContextBase<T>* subsystem_context =
-          context->GetSubsystemContext(index);
-      SystemOutput<T>* subsystem_output = context->GetSubsystemOutput(index);
+      const int i = GetSystemIndexOrAbort(system);
+      const ContextBase<T>* subsystem_context = context->GetSubsystemContext(i);
+      SystemOutput<T>* subsystem_output = context->GetSubsystemOutput(i);
       system->EvalOutput(*subsystem_context, subsystem_output);
     }
   }
@@ -459,7 +459,7 @@ class Diagram : public System<T> {
       if (!dest->has_any_direct_feedthrough()) {
         continue;
       }
-      if (GetSystemIndex(dest) <= GetSystemIndex(src)) {
+      if (GetSystemIndexOrAbort(dest) <= GetSystemIndexOrAbort(src)) {
         return false;
       }
     }
