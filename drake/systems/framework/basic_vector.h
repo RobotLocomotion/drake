@@ -88,6 +88,10 @@ class BasicVector : public VectorBase<T> {
     set_value(value);
   }
 
+  void SetFrom(const VectorBase<T>& value) override {
+    set_value(value.CopyToVector());
+  }
+
   VectorX<T> CopyToVector() const override { return values_; }
 
   void ScaleAndAddToVector(const T& scale,
@@ -98,8 +102,7 @@ class BasicVector : public VectorBase<T> {
     vec += scale * values_;
   }
 
-  BasicVector& PlusEqScaled(const T& scale,
-                            const VectorBase<T>& rhs) override {
+  BasicVector& PlusEqScaled(const T& scale, const VectorBase<T>& rhs) override {
     rhs.ScaleAndAddToVector(scale, values_);
     return *this;
   }
@@ -121,17 +124,14 @@ class BasicVector : public VectorBase<T> {
   BasicVector& operator=(BasicVector&& other) = delete;
 
  protected:
-  explicit BasicVector(const BasicVector& other)
-      : values_(other.values_) {}
+  explicit BasicVector(const BasicVector& other) : values_(other.values_) {}
 
   /// Returns a new BasicVector containing a copy of the entire vector.
   /// Caller must take ownership.
   ///
   /// Subclasses of BasicVector must override DoClone to return their covariant
   /// type.
-  virtual BasicVector<T>* DoClone() const {
-    return new BasicVector<T>(*this);
-  }
+  virtual BasicVector<T>* DoClone() const { return new BasicVector<T>(*this); }
 
  private:
   // The column vector of T values.

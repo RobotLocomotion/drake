@@ -13,6 +13,7 @@
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state.h"
+#include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -216,10 +217,63 @@ class Diagram : public System<T>,
     }
   }
 
+  /// The @p generalized_velocity vector must have the same size and order as
+  /// the generalized velocity in the ContinuousState that this Diagram reserves
+  /// in its context.
   void MapVelocityToConfigurationDerivatives(
       const Context<T>& context, const VectorBase<T>& generalized_velocity,
       VectorBase<T>* configuration_derivatives) const override {
-    // TODO(david-german-tri): Actually map velocity to derivatives.
+    // Check that the dimensions of the continuous state in the context match
+    // the dimensions of the provided generalized velocity and configuration
+    // derivatives.
+    const ContinuousState<T>* xc = context.get_continuous_state();
+    DRAKE_DEMAND(xc != nullptr);
+    const int nq = xc->get_generalized_position().size();
+    const int nv = xc->get_generalized_velocity().size();
+    DRAKE_DEMAND(nq == configuration_derivatives->size());
+    DRAKE_DEMAND(nv == generalized_velocity.size());
+
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    // We cast away const from the generalized_velocity so that we can
+    // construct Subvectors over it. We never actually write to the
+    // generalized velocity, through this pointer or those subvectors, so the
+    // const qualifier on generalized_velocity is honored.
+    // TODO(david-german-tri): Consider using a `ConstSubvector` instead,
+    // after #3208 is resolved.
+    auto diagram_v = const_cast<VectorBase<T>*>(&generalized_velocity);
+
+    // Iterate over the subsystems in sorted order, asking each subsystem to
+    // map its subslice of velocity to configuration derivatives. This approach
+    // is valid because the DiagramContinuousState guarantees that the subsystem
+    // states are concatenated in sorted order.
+    int v_index = 0;  // The next index to read in diagram_v.
+    int q_index = 0;  // The next index to write in diagram_qdot.
+    for (int i = 0; i < static_cast<int>(sorted_systems_.size()); ++i) {
+      // Find the continuous state of subsystem i.
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      const ContinuousState<T>* sub_xc = subcontext->get_continuous_state();
+      // If subsystem i is stateless, skip it.
+      if (sub_xc == nullptr) continue;
+
+      // Select the chunk of generalized_velocity belonging to subsystem i.
+      const int num_v = sub_xc->get_generalized_velocity().size();
+      const Subvector<T> v_slice(diagram_v, v_index, num_v);
+
+      // Select the chunk of configuration_derivatives belonging to subsystem i.
+      const int num_q = sub_xc->get_generalized_position().size();
+      Subvector<T> dq_slice(configuration_derivatives, q_index, num_q);
+
+      // Delegate the actual mapping to subsystem i itself.
+      sorted_systems_[i]->MapVelocityToConfigurationDerivatives(
+          *subcontext, v_slice, &dq_slice);
+
+      // Advance the indices.
+      v_index += num_v;
+      q_index += num_q;
+    }
   }
 
   /// Retrieves the state derivatives for a particular subsystem from the
@@ -350,9 +404,7 @@ class Diagram : public System<T>,
 
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
   // This constructor is private because only DiagramBuilder calls it.
-  explicit Diagram(const Blueprint& blueprint) {
-    Initialize(blueprint);
-  }
+  explicit Diagram(const Blueprint& blueprint) { Initialize(blueprint); }
 
   // Validates the given @p blueprint and sets up the Diagram accordingly.
   void Initialize(const Blueprint& blueprint) {
