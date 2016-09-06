@@ -3,9 +3,9 @@
 #include <memory>
 #include <vector>
 
+#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/cache.h"
-#include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/vector_base.h"
@@ -51,7 +51,7 @@ class Context : public ContextBase<T> {
     return static_cast<int>(inputs_.size());
   }
 
-  const VectorBase<T>* get_vector_input(int index) const override {
+  const BasicVector<T>* get_vector_input(int index) const override {
     DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_input_ports());
     if (inputs_[index] == nullptr) {
       return nullptr;
@@ -86,14 +86,14 @@ class Context : public ContextBase<T> {
   ContextBase<T>* DoClone() const override {
     Context<T>* context = new Context<T>();
 
-    // Make a deep copy of the state using LeafStateVector::Clone().
+    // Make a deep copy of the state using BasicStateVector::Clone().
     if (this->get_state().continuous_state != nullptr) {
       const ContinuousState<T>& xc = *this->get_state().continuous_state;
       const int num_q = xc.get_generalized_position().size();
       const int num_v = xc.get_generalized_velocity().size();
       const int num_z = xc.get_misc_continuous_state().size();
-      const LeafStateVector<T>& xc_vector =
-          dynamic_cast<const LeafStateVector<T>&>(xc.get_state());
+      const BasicStateVector<T>& xc_vector =
+          dynamic_cast<const BasicStateVector<T>&>(xc.get_state());
       context->get_mutable_state()->continuous_state.reset(
           new ContinuousState<T>(xc_vector.Clone(), num_q, num_v, num_z));
     }
@@ -105,7 +105,7 @@ class Context : public ContextBase<T> {
         context->inputs_.emplace_back(nullptr);
       } else {
         context->inputs_.emplace_back(new FreestandingInputPort(
-            port->template get_vector_data<T>()->CloneVector()));
+            port->template get_vector_data<T>()->Clone()));
       }
     }
 

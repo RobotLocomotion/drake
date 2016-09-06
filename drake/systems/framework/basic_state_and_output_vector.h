@@ -16,57 +16,32 @@ namespace systems {
 /// StateVector in a convenient manner for LeafSystem blocks, and implements
 /// VectorBase so that it may also be used as an output.
 ///
+/// TODO(david-german-tri): Collapse BasicStateAndOutputVector into BasicVector.
+///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
-class BasicStateAndOutputVector : public BasicStateVector<T>,
-                                  public VectorBase<T> {
+class BasicStateAndOutputVector : public BasicStateVector<T> {
  public:
   /// Constructs a BasicStateAndOutputVector of the specified @p size.
   explicit BasicStateAndOutputVector(int size) : BasicStateVector<T>(size) {}
 
-  /// Constructs a BasicStateAndOutputVector with the specified @p data.
-  explicit BasicStateAndOutputVector(const std::vector<T>& data)
+  // Constructs a BasicStateVector with the specified @p data.
+  explicit BasicStateAndOutputVector(const VectorX<T>& data)
       : BasicStateVector<T>(data) {}
 
-  /// Constructs a BasicStateAndOutputVector that owns an arbitrary @p vector,
-  /// which must not be nullptr.
-  explicit BasicStateAndOutputVector(std::unique_ptr<VectorBase<T>> vector)
-      : BasicStateVector<T>(std::move(vector)) {}
-
-  // The size() method overrides both BasicStateVector and VectorBase.
-  int size() const override { return this->get_wrapped_vector().size(); }
-
-  // These VectorBase overrides merely delegate to the wrapped object.
-  void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
-    this->get_wrapped_vector().set_value(value);
-  }
-  Eigen::VectorBlock<const VectorX<T>> get_value() const override {
-    return this->get_wrapped_vector().get_value();
-  }
-  Eigen::VectorBlock<VectorX<T>> get_mutable_value() override {
-    return this->get_wrapped_vector().get_mutable_value();
-  }
-
-  // This VectorBase override must not delegate, because we need to
-  // maintain our class type (BasicStateAndOutputVector) during cloning.
-  std::unique_ptr<VectorBase<T>> CloneVector() const override {
-    return std::unique_ptr<VectorBase<T>>(DoClone());
-  }
+  // Disable assignment and move, for consistency with parent class.
+  BasicStateAndOutputVector& operator=(const BasicStateAndOutputVector&) =
+      delete;
+  BasicStateAndOutputVector(BasicStateAndOutputVector&&) = delete;
+  BasicStateAndOutputVector& operator=(BasicStateAndOutputVector&&) = delete;
 
  protected:
-  BasicStateAndOutputVector(const BasicStateAndOutputVector& other)
+  explicit BasicStateAndOutputVector(const BasicStateAndOutputVector& other)
       : BasicStateVector<T>(other) {}
 
   BasicStateAndOutputVector<T>* DoClone() const override {
     return new BasicStateAndOutputVector<T>(*this);
   }
-
- private:
-  // Disable these, for consistency with parent class.
-  BasicStateAndOutputVector& operator=(const BasicStateAndOutputVector&) =
-      delete;
-  BasicStateAndOutputVector(BasicStateAndOutputVector&&) = delete;
-  BasicStateAndOutputVector& operator=(BasicStateAndOutputVector&&) = delete;
 };
 
 }  // namespace systems

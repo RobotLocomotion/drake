@@ -13,7 +13,7 @@ int LcmAndVectorBaseTranslator::get_vector_size() const {
   return size_;
 }
 
-std::unique_ptr<VectorBase<double>>
+std::unique_ptr<BasicVector<double>>
 LcmAndVectorBaseTranslator::AllocateOutputVector() const {
   return nullptr;
 }

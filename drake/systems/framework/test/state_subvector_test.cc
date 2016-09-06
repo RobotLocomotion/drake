@@ -18,7 +18,7 @@ const int kSubVectorLength = 2;
 class StateSubvectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    state_vector_.reset(new BasicStateVector<int>({1, 2, 3, 4}));
+    state_vector_ = BasicStateVector<int>::Make({1, 2, 3, 4});
   }
 
   std::unique_ptr<StateVector<int>> state_vector_;
