@@ -302,19 +302,18 @@ class System {
   virtual void MapVelocityToConfigurationDerivatives(
       const Context<T>& context, const VectorBase<T>& generalized_velocity,
       VectorBase<T>* configuration_derivatives) const {
-    if (generalized_velocity.size() != configuration_derivatives->size()) {
-      throw std::out_of_range(
-          "generalized_velocity.size() " +
-          std::to_string(generalized_velocity.size()) +
-          " != configuration_derivatives.size() " +
-          std::to_string(configuration_derivatives->size()) +
-          ". Do you need to override the default implementation of " +
-          "MapVelocityToConfigurationDerivatives()?");
-    }
-
-    for (int i = 0; i < generalized_velocity.size(); ++i) {
-      configuration_derivatives->SetAtIndex(i,
-                                            generalized_velocity.GetAtIndex(i));
+    // If a concrete subclass of System<T> has a generalized velocity and a
+    // generalized configuration such that the derivatives of configuration
+    // are not exactly the velocity, that subclass must override
+    // MapVelocityToConfigurationDerivatives. In the particular case where
+    // generalized velocity and generalized configuration are not even the
+    // same size, we detect this error and abort.
+    const int n = generalized_velocity.size();
+    // You need to override System<T>::MapVelocityToConfigurationDerivatives!
+    DRAKE_ABORT_UNLESS(configuration_derivatives->size() == n);
+    for (int i = 0; i < n; ++i) {
+      const T value = generalized_velocity.GetAtIndex(i);
+      configuration_derivatives->SetAtIndex(i, value);
     }
   }
 
