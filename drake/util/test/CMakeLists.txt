@@ -63,7 +63,7 @@ add_matlab_test(NAME util/test/testDcross COMMAND testDcross)
 add_matlab_test(NAME util/test/testFlipExpmap COMMAND testFlipExpmap)
 add_matlab_test(NAME util/test/testGeometryConversionFunctionsComparison COMMAND testGeometryConversionFunctionsComparison)
 # DISABLED due to #3224.
-if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if(NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   add_matlab_test(NAME util/test/testGeometryGradientsComparison
                   COMMAND testGeometryGradientsComparison)
 endif()
