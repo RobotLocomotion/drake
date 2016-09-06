@@ -120,7 +120,6 @@ drake_add_external(sedumi)
 drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE)
-drake_add_external(swig_matlab PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
 drake_add_external(xfoil PUBLIC)
 drake_add_external(yalmip PUBLIC)
@@ -129,6 +128,11 @@ drake_add_external(yalmip PUBLIC)
 drake_add_external(cmake PUBLIC ALWAYS
   BUILD_COMMAND :
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/cmake)
+
+# dreal
+drake_add_external(dreal PUBLIC CMAKE
+  CMAKE_ARGS -DUSE_NLOPT=OFF
+  SOURCE_SUBDIR src)
 
 # googletest
 drake_add_external(googletest PUBLIC CMAKE
@@ -168,10 +172,13 @@ drake_add_external(nlopt PUBLIC
     --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt
   INSTALL_COMMAND ${MAKE_COMMAND} install)
 
-# dreal
-drake_add_external(dreal PUBLIC CMAKE
-  CMAKE_ARGS -DUSE_NLOPT=OFF
-  SOURCE_SUBDIR src)
+# swig_matlab
+drake_add_external(swig_matlab PUBLIC
+  PATCH_COMMAND ./autogen.sh
+  CONFIGURE_COMMAND ./configure
+    --prefix=${CMAKE_INSTALL_PREFIX}
+    --with-matlab
+  INSTALL_COMMAND ${MAKE_COMMAND} install)
 
 # textbook
 drake_add_external(textbook PUBLIC
