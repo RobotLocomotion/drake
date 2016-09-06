@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 
 namespace drake {
+namespace cars {
 
 /// Curve2 -- a path through two-dimensional Cartesian space.
 ///
@@ -127,4 +128,5 @@ class Curve2 {
   const T path_length_;
 };
 
+}  // namespace cars
 }  // namespace drake

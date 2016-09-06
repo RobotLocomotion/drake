@@ -6,6 +6,7 @@
 #include "drake/examples/Cars/system1_vector.h"
 
 namespace drake {
+namespace cars {
 
 // TODO(jwnimmer-tri) These renamings are temporary, in order to support the
 // incremental porting of Cars from System1 to System2.
@@ -18,4 +19,5 @@ using EulerFloatingJointState1 =
 template <typename T>
 using SimpleCarState1 = class System1Vector<SimpleCarState<T>, T>;
 
+}  // namespace cars
 }  // namespace drake
