@@ -4,6 +4,7 @@
 // See drake/examples/Cars/lcm_vector_gen.py.
 
 namespace drake {
+namespace cars {
 
 const int EulerFloatingJointStateIndices::kNumCoordinates;
 const int EulerFloatingJointStateIndices::kX;
@@ -13,4 +14,5 @@ const int EulerFloatingJointStateIndices::kRoll;
 const int EulerFloatingJointStateIndices::kPitch;
 const int EulerFloatingJointStateIndices::kYaw;
 
+}  // namespace cars
 }  // namespace drake

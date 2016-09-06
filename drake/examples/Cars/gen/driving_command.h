@@ -8,11 +8,12 @@
 
 #include <Eigen/Core>
 
-#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 #include "drake/drakeCars_export.h"
 #include "drake/systems/framework/basic_state_and_output_vector.h"
+#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
 namespace drake {
+namespace cars {
 
 /// Describes the row indices of a DrivingCommand.
 struct DRAKECARS_EXPORT DrivingCommandIndices {
@@ -82,4 +83,5 @@ bool decode(const drake::lcmt_driving_command_t& msg,
   return true;
 }
 
+}  // namespace cars
 }  // namespace drake
