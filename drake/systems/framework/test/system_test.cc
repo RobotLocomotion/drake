@@ -6,10 +6,10 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
-#include "drake/systems/framework/context.h"
-#include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/context_base.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
@@ -54,7 +54,7 @@ class TestSystem : public System<double> {
 class SystemTest : public ::testing::Test {
  protected:
   TestSystem system_;
-  Context<double> context_;
+  LeafContext<double> context_;
 };
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {

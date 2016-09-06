@@ -80,7 +80,7 @@ double SpringMassSystem::EvalNonConservativePower(const MyContext&) const {
 // Reserve a context with no input, and a SpringMassStateVector state.
 std::unique_ptr<ContextBase<double>>
 SpringMassSystem::CreateDefaultContext() const {
-  std::unique_ptr<Context<double>> context(new Context<double>);
+  std::unique_ptr<LeafContext<double>> context(new LeafContext<double>);
   std::unique_ptr<SpringMassStateVector> state(new SpringMassStateVector(0, 0));
   context->get_mutable_state()->continuous_state.reset(
       new ContinuousState<double>(std::move(state), 1 /* size of q */,

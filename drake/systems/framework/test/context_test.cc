@@ -1,4 +1,4 @@
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 
 #include <memory>
 #include <stdexcept>
@@ -53,7 +53,7 @@ class ContextTest : public ::testing::Test {
             kMiscContinuousStateSize));
   }
 
-  Context<double> context_;
+  LeafContext<double> context_;
 };
 
 TEST_F(ContextTest, GetNumInputPorts) {
@@ -70,7 +70,7 @@ TEST_F(ContextTest, SetOutOfBoundsInputPort) {
 }
 
 TEST_F(ContextTest, GetVectorInput) {
-  Context<int> context;
+  LeafContext<int> context;
   context.SetNumInputPorts(2);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
@@ -90,7 +90,7 @@ TEST_F(ContextTest, GetVectorInput) {
 }
 
 TEST_F(ContextTest, GetAbstractInput) {
-  Context<int> context;
+  LeafContext<int> context;
   context.SetNumInputPorts(2);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.

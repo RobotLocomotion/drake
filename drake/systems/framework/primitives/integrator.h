@@ -3,8 +3,8 @@
 #include <cstdint>
 #include <memory>
 
-#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/context_base.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
 
