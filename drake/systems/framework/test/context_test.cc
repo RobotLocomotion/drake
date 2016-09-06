@@ -8,7 +8,6 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/value.h"
@@ -39,7 +38,7 @@ class ContextTest : public ::testing::Test {
     }
 
     // State
-    auto state = std::make_unique<BasicStateVector<double>>(kStateSize);
+    auto state = std::make_unique<BasicVector<double>>(kStateSize);
     state->get_mutable_value() << 1.0, 2.0, 3.0, 5.0, 8.0;
 
     context_.get_mutable_state()->continuous_state.reset(
@@ -127,8 +126,8 @@ TEST_F(ContextTest, Clone) {
   EXPECT_EQ(expected, contents);
 
   // Verify that the state type was preserved.
-  BasicStateVector<double>* xc_data =
-      dynamic_cast<BasicStateVector<double>*>(xc->get_mutable_state());
+  BasicVector<double>* xc_data =
+      dynamic_cast<BasicVector<double>*>(xc->get_mutable_state());
   ASSERT_NE(nullptr, xc_data);
   EXPECT_EQ(kStateSize, xc_data->size());
 

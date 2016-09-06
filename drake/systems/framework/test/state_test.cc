@@ -5,7 +5,6 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
-#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/state_vector.h"
 
@@ -19,7 +18,7 @@ constexpr int kMiscLength = 1;
 constexpr int kLength = kPositionLength + kVelocityLength + kMiscLength;
 
 std::unique_ptr<StateVector<int>> MakeStateVector() {
-  return BasicStateVector<int>::Make({1, 2, 3, 4});
+  return BasicVector<int>::Make({1, 2, 3, 4});
 }
 
 class ContinuousStateTest : public ::testing::Test {
