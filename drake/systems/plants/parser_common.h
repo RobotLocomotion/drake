@@ -1,21 +1,28 @@
 #pragma once
 
-// #include <string>
-
 #include "drake/drakeRBM_export.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
 
 namespace drake {
 namespace parsers {
 
+// TODO(liang.fok): Deprecate this method. See: #3361.
 /**
- * Adds one floating joint to each link specified in @p link_indices that does
- * not already have a parent. Typically, @p link_indices is created while
- * calling RigidBodyTree::add_rigid_body(). The floating joints connect the
- * links and of their child branches to the rigid body tree.
+ * Adds a floating joint to each link specified by @p link_indices that does
+ * not already have a parent.
+ *
+ * This method is only intended to be called by parsers since parsers add bodies
+ * to the RigidBodyTree _en masse_. The logic in this method is necessary to
+ * identify which of the rigid bodies specified by @p link_indices get floating
+ * joints.
+ *
+ * When manually adding a model instance to the RigidBodyTree, i.e., directly
+ * using the C++ API rather than via a parser, this method should _not_ be
+ * necessary since floating joints can be directly added by calling
+ * RigidBody::setJoint().
  *
  * @param[out] tree The RigidBodyTree to which to add the floating joints.
  *

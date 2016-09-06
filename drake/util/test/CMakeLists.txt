@@ -20,11 +20,12 @@ endif()
 
 if(lcm_FOUND)
 add_executable(testLCMUtil testLCMUtil.cpp)
-target_link_libraries(testLCMUtil drakeLCMUtil)
+target_link_libraries(testLCMUtil drakeLCMUtil ${GTEST_BOTH_LIBRARIES})
+add_test(NAME testLCMUtil COMMAND testLCMUtil)
 endif()
 
 add_executable(testConvexHull testConvexHull.cpp)
-target_link_libraries(testConvexHull drakeConvexHull)
+target_link_libraries(testConvexHull drakeConvexHull ${GTEST_BOTH_LIBRARIES})
 add_test(NAME testConvexHull COMMAND testConvexHull)
 
 add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)

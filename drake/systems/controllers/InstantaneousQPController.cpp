@@ -13,7 +13,6 @@
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/lcmUtil.h"
-#include "drake/util/testUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
 #include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
 

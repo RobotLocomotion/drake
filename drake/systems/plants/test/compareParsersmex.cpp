@@ -8,7 +8,6 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/util/drakeMexUtil.h"
-#include "drake/util/testUtil.h"
 
 using namespace Eigen;
 using namespace std;

@@ -4,7 +4,6 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_urdf.h"
-#include "drake/util/testUtil.h"
 
 using Eigen::Matrix3Xd;
 using Eigen::VectorXd;

@@ -1,6 +1,9 @@
 #include "drake/systems/plants/parser_common.h"
 
-#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
+#include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
+#include "drake/systems/plants/joints/FixedJoint.h"
 
 namespace drake {
 namespace parsers {
