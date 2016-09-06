@@ -306,7 +306,7 @@ class System {
   /// in the number of generalized velocity states.
   ///
   /// The default implementation uses the identity mapping. It throws
-  /// std::out_of_range if the @p generalized_velocity and
+  /// std::runtime_error if the @p generalized_velocity and
   /// @p configuration_derivatives are not the same size. Child classes must
   /// override this function if qdot != v (even if they are the same size).
   ///
@@ -319,20 +319,16 @@ class System {
   virtual void MapVelocityToConfigurationDerivatives(
       const Context<T>& context, const VectorBase<T>& generalized_velocity,
       VectorBase<T>* configuration_derivatives) const {
-    if (generalized_velocity.size() != configuration_derivatives->size()) {
-      throw std::out_of_range(
-          "generalized_velocity.size() " +
-          std::to_string(generalized_velocity.size()) +
-          " != configuration_derivatives.size() " +
-          std::to_string(configuration_derivatives->size()) +
-          ". Do you need to override the default implementation of " +
-          "MapVelocityToConfigurationDerivatives()?");
-    }
-
-    for (int i = 0; i < generalized_velocity.size(); ++i) {
-      configuration_derivatives->SetAtIndex(i,
-                                            generalized_velocity.GetAtIndex(i));
-    }
+    // If a concrete subclass of System<T> has a generalized velocity and a
+    // generalized configuration such that the derivatives of configuration
+    // are not exactly the velocity, that subclass must override
+    // MapVelocityToConfigurationDerivatives. In the particular case where
+    // generalized velocity and generalized configuration are not even the
+    // same size, we detect this error and abort.
+    const int n = generalized_velocity.size();
+    // You need to override System<T>::MapVelocityToConfigurationDerivatives!
+    DRAKE_THROW_UNLESS(configuration_derivatives->size() == n);
+    configuration_derivatives->SetFrom(generalized_velocity);
   }
 
   // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity
