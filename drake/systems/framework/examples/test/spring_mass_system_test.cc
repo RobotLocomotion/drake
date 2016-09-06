@@ -43,7 +43,7 @@ class SpringMassSystemTest : public ::testing::Test {
     system_output_ = system_->AllocateOutput(*context_);
     system_derivatives_ = system_->AllocateTimeDerivatives();
     const int nq = system_derivatives_->get_generalized_position().size();
-    configuration_derivatives_ = std::make_unique<BasicStateVector<double>>(nq);
+    configuration_derivatives_ = std::make_unique<BasicVector<double>>(nq);
 
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector*>(
@@ -73,7 +73,7 @@ class SpringMassSystemTest : public ::testing::Test {
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> system_output_;
   std::unique_ptr<ContinuousState<double>> system_derivatives_;
-  std::unique_ptr<BasicStateVector<double>> configuration_derivatives_;
+  std::unique_ptr<BasicVector<double>> configuration_derivatives_;
 
   SpringMassStateVector* state_;
   const SpringMassStateVector* output_;
@@ -301,13 +301,6 @@ void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
 void StepSemiExplicitEuler(double h, const System<double>& system,
                            ContinuousState<double>& derivs,  // in/out
                            ContextBase<double>& context) {
-  // Allocate a temp to hold qdot. This would normally be done once per
-  // integration, not per time step!
-  // const int nq = derivs.get_generalized_position().size();
-  // auto configuration_derivatives =
-  // std::make_unique<BasicStateVector<double>>(
-  //    std::unique_ptr<VectorBase<double>>(new BasicVector<double>(nq)));
-
   const double t = context.get_time();
 
   // Invalidate z-dependent quantities.

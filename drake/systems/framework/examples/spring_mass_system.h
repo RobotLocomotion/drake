@@ -4,7 +4,7 @@
 #include <string>
 
 #include "drake/drakeSystemFramework_export.h"
-#include "drake/systems/framework/basic_state_and_output_vector.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system.h"
@@ -16,7 +16,7 @@ namespace systems {
 /// The state of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters and meters/s.
 class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
-    : public BasicStateAndOutputVector<double> {
+    : public BasicVector<double> {
  public:
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
