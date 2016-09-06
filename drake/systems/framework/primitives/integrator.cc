@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
-#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 
@@ -50,7 +49,7 @@ std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateContinuousState()
   const int length = System<T>::get_output_port(0).get_size();
   DRAKE_ASSERT(System<T>::get_input_port(0).get_size() == length);
   return std::make_unique<ContinuousState<T>>(
-      std::make_unique<BasicStateVector<T>>(length));
+      std::make_unique<BasicVector<T>>(length));
 }
 
 template <typename T>

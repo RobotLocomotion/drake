@@ -16,7 +16,7 @@ gen () {
     shift
     $mydir/lcm_vector_gen.py \
         --lcmtype-dir=$drake/lcmtypes \
-        --header-dir=$mydir/gen \
+        --cxx-dir=$mydir/gen \
         --title="$title" "$@"
 }
 
