@@ -437,7 +437,7 @@ classdef MixedIntegerConvexProgram
       % Q matrix. Q(prob.qosubi,prob.qosubj) are the non-zero entries in
       % the lower triangular part of Q. lower_idx finds out the entries in
       % the lower triangular part.
-      lower_idx = prob.qosubi>=prob.qosubj;
+      lower_idx = prob.qosubi >= prob.qosubj;
       prob.qosubi = prob.qosubi(lower_idx);
       prob.qosubj = prob.qosubj(lower_idx);
       prob.qoval = prob.qoval(lower_idx);
