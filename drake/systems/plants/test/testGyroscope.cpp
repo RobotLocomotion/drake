@@ -3,6 +3,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/util/testUtil.h"
 
 using Eigen::Vector3d;
@@ -30,7 +31,7 @@ Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys,
 }
 
 GTEST_TEST(testGyroscope, AllTests) {
-  FloatingBaseJointType floating_base_type = QUATERNION;
+  FloatingBaseType floating_base_type = QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",

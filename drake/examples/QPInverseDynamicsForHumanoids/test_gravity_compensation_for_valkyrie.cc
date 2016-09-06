@@ -1,5 +1,6 @@
 #include "drake/common/drake_path.h"
-#include "qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {
   // Make controller.

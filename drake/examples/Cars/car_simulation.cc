@@ -4,7 +4,7 @@
 
 #include "drake/examples/Cars/curve2.h"
 #include "drake/examples/Cars/trajectory_car.h"
-#include "drake/systems/plants/joints/drake_joint_type.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 
 using drake::AffineSystem;

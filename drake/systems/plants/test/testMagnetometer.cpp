@@ -4,7 +4,9 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/util/testUtil.h"
+
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -31,7 +33,7 @@ Vector3d getMagnetometerOutput(shared_ptr<RigidBodySystem> const& sys,
 }
 
 GTEST_TEST(testMagnetometer, AllTests) {
-  FloatingBaseJointType floating_base_type = QUATERNION;
+  FloatingBaseType floating_base_type = QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",

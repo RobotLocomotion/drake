@@ -1,6 +1,8 @@
 #include "yamlUtil.h"
 // #include <regex>
 
+#include "drake/systems/plants/joints/floating_base_types.h"
+
 using namespace std;
 
 YAML::Node applyDefaults(const YAML::Node& node,
@@ -414,8 +416,8 @@ JointNames parseRobotJointNames(const YAML::Node& joint_names,
 
 namespace YAML {
 template <>
-struct convert<FloatingBaseJointType> {
-  static bool decode(const Node& node, FloatingBaseJointType& rhs) {
+struct convert<FloatingBaseType> {
+  static bool decode(const Node& node, FloatingBaseType& rhs) {
     std::string joint_type = node.as<std::string>();
     if (joint_type == "FIXED") {
       rhs = FIXED;
@@ -445,7 +447,7 @@ struct convert<Attachment> {
     rhs.attach_to_frame = node["frame"].as<std::string>();
     rhs.urdf_filename = node["urdf"].as<std::string>();
     if (node["joint_type"]) {
-      rhs.joint_type = node["joint_type"].as<FloatingBaseJointType>();
+      rhs.joint_type = node["joint_type"].as<FloatingBaseType>();
     } else {
       rhs.joint_type = FIXED;
     }

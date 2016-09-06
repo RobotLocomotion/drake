@@ -1,6 +1,7 @@
 #include "iiwa_simulation.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {

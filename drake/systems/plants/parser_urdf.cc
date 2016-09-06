@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/material_map.h"
 #include "drake/systems/plants/parser_common.h"
@@ -445,7 +446,7 @@ void ParseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   // By default all collision elements added to the world from an URDF file are
   // flagged as static.
   // We would also like to flag as static bodies connected to the world with a
-  // FloatingBaseJointType::FIXED joint.
+  // FloatingBaseType::FIXED joint.
   // However this is not possible at this stage since joints were not parsed
   // yet.
   // Solutions to this problem would be:
@@ -874,7 +875,7 @@ void ParseFrame(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
  * pointer.
  */
 void ParseWorldJoint(XMLElement* node,
-                     FloatingBaseJointType& floating_base_type,
+                     FloatingBaseType& floating_base_type,
                      std::shared_ptr<RigidBodyFrame>& weld_to_frame) {
   bool found_world_joint = false;
 
@@ -912,9 +913,9 @@ void ParseWorldJoint(XMLElement* node,
       weld_to_frame->set_transform_to_body(transform_to_parent_body);
 
       if (joint_type == "fixed") {
-        floating_base_type = FloatingBaseJointType::FIXED;
+        floating_base_type = FloatingBaseType::FIXED;
       } else if (joint_type == "continuous") {
-        floating_base_type = FloatingBaseJointType::QUATERNION;
+        floating_base_type = FloatingBaseType::QUATERNION;
       }
 
       // Throws an exception if the joint connecting the model to the world
@@ -931,7 +932,7 @@ void ParseWorldJoint(XMLElement* node,
 
 ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
     const PackageMap& package_map, const string& root_dir,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
@@ -960,7 +961,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
   // actual type may be specified by the URDF itself when the URDF contains a
   // world link and a joint connecting to the world link. By default,
   // actual_floating_base_type equals parameter floating_base_type.
-  FloatingBaseJointType actual_floating_base_type = floating_base_type;
+  FloatingBaseType actual_floating_base_type = floating_base_type;
 
   // Maintains a list of links that were added to the rigid body tree.
   // This is iterated over by AddFloatingJoint() to determine where to attach
@@ -1048,7 +1049,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
 
 ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
                PackageMap& package_map, const string& root_dir,
-               const FloatingBaseJointType floating_base_type,
+               const FloatingBaseType floating_base_type,
                std::shared_ptr<RigidBodyFrame> weld_to_frame,
                RigidBodyTree* tree) {
   populatePackageMap(package_map);
@@ -1089,7 +1090,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string,
     const string& root_dir,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   PackageMap package_map;
@@ -1103,7 +1104,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string,
     PackageMap& package_map,
     const string& root_dir,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   XMLDocument xml_doc;
@@ -1126,7 +1127,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
@@ -1140,7 +1141,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
@@ -1154,7 +1155,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename, PackageMap& package_map,
-    const FloatingBaseJointType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.

@@ -9,7 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/gradient.h"
 #include "drake/drakeJoints_export.h"
-#include "drake/systems/plants/joints/drake_joint_type.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar)                      \
   virtual Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(       \
