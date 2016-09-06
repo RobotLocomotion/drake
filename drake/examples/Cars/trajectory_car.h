@@ -124,7 +124,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   }
 
  protected:
-  std::unique_ptr<systems::VectorBase<T>> AllocateOutputVector(
+  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override {
     return std::make_unique<SimpleCarState<T>>();
   }

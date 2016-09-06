@@ -58,13 +58,10 @@ class SystemTest : public ::testing::Test {
 };
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
-  std::unique_ptr<BasicVector<double>> vec1(new BasicVector<double>(kSize));
-  std::unique_ptr<BasicVector<double>> vec2(new BasicVector<double>(kSize));
-  vec1->get_mutable_value() << 1.0, 2.0, 3.0;
-  BasicStateVector<double> state_vec1(std::move(vec1));
-  BasicStateVector<double> state_vec2(std::move(vec2));
+  auto state_vec1 = BasicStateVector<double>::Make({1.0, 2.0, 3.0});
+  BasicStateVector<double> state_vec2(kSize);
 
-  system_.MapVelocityToConfigurationDerivatives(context_, state_vec1,
+  system_.MapVelocityToConfigurationDerivatives(context_, *state_vec1,
                                                 &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
@@ -72,14 +69,11 @@ TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
 }
 
 TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
-  std::unique_ptr<BasicVector<double>> vec1(new BasicVector<double>(kSize));
-  std::unique_ptr<BasicVector<double>> vec2(new BasicVector<double>(kSize + 1));
-  vec1->get_mutable_value() << 1.0, 2.0, 3.0;
-  BasicStateVector<double> state_vec1(std::move(vec1));
-  BasicStateVector<double> state_vec2(std::move(vec2));
+  auto state_vec1 = BasicStateVector<double>::Make({1.0, 2.0, 3.0});
+  BasicStateVector<double> state_vec2(kSize + 1);
 
   EXPECT_THROW(system_.MapVelocityToConfigurationDerivatives(
-                   context_, state_vec1, &state_vec2),
+                   context_, *state_vec1, &state_vec2),
                std::out_of_range);
 }
 
