@@ -8,14 +8,9 @@
 #include "drake/util/drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
-using drake::BotVisualizer;
-using drake::Gain;
-using drake::SimulationOptions;
-
 using Eigen::VectorXd;
 
 namespace drake {
-namespace examples {
 namespace cars {
 namespace {
 
@@ -59,9 +54,8 @@ int do_main(int argc, const char* argv[]) {
 
 }  // namespace
 }  // namespace cars
-}  // namespace examples
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::cars::do_main(argc, argv);
+  return drake::cars::do_main(argc, argv);
 }

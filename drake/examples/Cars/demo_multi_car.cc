@@ -16,13 +16,7 @@
 #include "drake/examples/Cars/car_simulation.h"
 #include "drake/examples/Cars/trajectory_car.h"
 
-using drake::AffineSystem;
-using drake::BotVisualizer;
-using drake::NullVector;
-using drake::cascade;
-
 namespace drake {
-namespace examples {
 namespace cars {
 namespace {
 
@@ -97,9 +91,8 @@ int DoMain(int argc, const char* argv[]) {
 
 }  // namespace
 }  // namespace cars
-}  // namespace examples
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::cars::DoMain(argc, argv);
+  return drake::cars::DoMain(argc, argv);
 }

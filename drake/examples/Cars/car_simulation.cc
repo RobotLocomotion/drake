@@ -7,16 +7,13 @@
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 
-using drake::AffineSystem;
-using drake::NullVector;
-using drake::parsers::ModelInstanceIdTable;
-
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+using drake::parsers::ModelInstanceIdTable;
+
 namespace drake {
-namespace examples {
 namespace cars {
 
 const char kDurationFlag[] = "--duration";
@@ -331,5 +328,4 @@ VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys) {
 }
 
 }  // namespace cars
-}  // namespace examples
 }  // namespace drake

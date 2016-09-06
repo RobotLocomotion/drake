@@ -8,6 +8,7 @@
 #include "ros/ros.h"
 #include "ackermann_msgs/AckermannDriveStamped.h"
 
+#include "drake/examples/Cars/gen/driving_command.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/simulation_options.h"
 #include "drake/systems/System.h"
@@ -18,7 +19,7 @@ namespace ros {
 namespace systems {
 
 bool decode(const ackermann_msgs::AckermannDriveStamped& msg,
-            drake::DrivingCommand<double>& x) {
+            drake::cars::DrivingCommand<double>& x) {
   x.set_steering_angle(msg.drive.steering_angle);
   if (msg.drive.speed > 0) {
     x.set_throttle(msg.drive.speed);
