@@ -8,7 +8,6 @@
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/robot_state_tap.h"
-#include "drake/util/testUtil.h"
 
 using drake::CascadeSystem;
 using drake::RigidBodySystem;

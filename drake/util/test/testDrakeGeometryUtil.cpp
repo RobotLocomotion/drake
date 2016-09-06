@@ -8,7 +8,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/testUtil.h"
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;

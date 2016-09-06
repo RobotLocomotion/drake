@@ -1,9 +1,10 @@
+#include "drake/examples/Pendulum/Pendulum.h"
+
+#include "gtest/gtest.h"
+
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
-#include "gtest/gtest.h"
 
 using drake::GetDrakePath;
 using drake::getRandomVector;
