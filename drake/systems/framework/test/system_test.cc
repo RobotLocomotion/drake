@@ -8,7 +8,6 @@
 
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/context_base.h"
-#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system.h"
@@ -58,8 +57,8 @@ class SystemTest : public ::testing::Test {
 };
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
-  auto state_vec1 = BasicStateVector<double>::Make({1.0, 2.0, 3.0});
-  BasicStateVector<double> state_vec2(kSize);
+  auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
+  BasicVector<double> state_vec2(kSize);
 
   system_.MapVelocityToConfigurationDerivatives(context_, *state_vec1,
                                                 &state_vec2);
@@ -69,8 +68,8 @@ TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
 }
 
 TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
-  auto state_vec1 = BasicStateVector<double>::Make({1.0, 2.0, 3.0});
-  BasicStateVector<double> state_vec2(kSize + 1);
+  auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
+  BasicVector<double> state_vec2(kSize + 1);
 
   EXPECT_THROW(system_.MapVelocityToConfigurationDerivatives(
                    context_, *state_vec1, &state_vec2),

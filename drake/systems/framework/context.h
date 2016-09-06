@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "drake/systems/framework/basic_state_vector.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/state.h"
@@ -86,14 +86,14 @@ class Context : public ContextBase<T> {
   ContextBase<T>* DoClone() const override {
     Context<T>* context = new Context<T>();
 
-    // Make a deep copy of the state using BasicStateVector::Clone().
+    // Make a deep copy of the state using BasicVector::Clone().
     if (this->get_state().continuous_state != nullptr) {
       const ContinuousState<T>& xc = *this->get_state().continuous_state;
       const int num_q = xc.get_generalized_position().size();
       const int num_v = xc.get_generalized_velocity().size();
       const int num_z = xc.get_misc_continuous_state().size();
-      const BasicStateVector<T>& xc_vector =
-          dynamic_cast<const BasicStateVector<T>&>(xc.get_state());
+      const BasicVector<T>& xc_vector =
+          dynamic_cast<const BasicVector<T>&>(xc.get_state());
       context->get_mutable_state()->continuous_state.reset(
           new ContinuousState<T>(xc_vector.Clone(), num_q, num_v, num_z));
     }

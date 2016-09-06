@@ -11,7 +11,7 @@ constexpr int kStateSize = 3;  // position, velocity, power integral
 
 SpringMassStateVector::SpringMassStateVector(double initial_position,
                                              double initial_velocity)
-    : BasicStateAndOutputVector<double>(kStateSize) {
+    : BasicVector<double>(kStateSize) {
   set_position(initial_position);
   set_velocity(initial_velocity);
   set_conservative_work(0);

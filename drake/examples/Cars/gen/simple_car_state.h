@@ -9,7 +9,7 @@
 #include <Eigen/Core>
 
 #include "drake/drakeCars_export.h"
-#include "drake/systems/framework/basic_state_and_output_vector.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "lcmtypes/drake/lcmt_simple_car_state_t.hpp"
 
 namespace drake {
@@ -27,15 +27,15 @@ struct DRAKECARS_EXPORT SimpleCarStateIndices {
   static const int kVelocity = 3;
 };
 
-/// Specializes BasicStateAndOutputVector with specific getters and setters.
+/// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class SimpleCarState : public systems::BasicStateAndOutputVector<T> {
+class SimpleCarState : public systems::BasicVector<T> {
  public:
   // An abbreviation for our row index constants.
   typedef SimpleCarStateIndices K;
 
   /// Default constructor.  Sets all rows to zero.
-  SimpleCarState() : systems::BasicStateAndOutputVector<T>(K::kNumCoordinates) {
+  SimpleCarState() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 

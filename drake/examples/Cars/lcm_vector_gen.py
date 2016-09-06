@@ -60,7 +60,7 @@ def generate_indices_storage(context, fields):
 
 DEFAULT_CTOR = """
   /// Default constructor.  Sets all rows to zero.
-  %(camel)s() : systems::BasicStateAndOutputVector<T>(K::kNumCoordinates) {
+  %(camel)s() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 """
@@ -153,9 +153,9 @@ HEADER_PREAMBLE = """
 
 #include <Eigen/Core>
 
-#include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 #include "drake/drakeCars_export.h"
-#include "drake/systems/framework/basic_state_and_output_vector.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
 namespace drake {
 namespace cars {
@@ -163,9 +163,9 @@ namespace cars {
 
 CLASS_BEGIN = """
 
-/// Specializes BasicStateAndOutputVector with specific getters and setters.
+/// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class %(camel)s : public systems::BasicStateAndOutputVector<T> {
+class %(camel)s : public systems::BasicVector<T> {
  public:
   // An abbreviation for our row index constants.
   typedef %(indices)s K;
