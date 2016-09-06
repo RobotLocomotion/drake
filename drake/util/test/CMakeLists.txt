@@ -24,7 +24,7 @@ target_link_libraries(testLCMUtil drakeLCMUtil)
 endif()
 
 add_executable(testConvexHull testConvexHull.cpp)
-target_link_libraries(testConvexHull drakeConvexHull)
+target_link_libraries(testConvexHull drakeConvexHull ${GTEST_BOTH_LIBRARIES})
 add_test(NAME testConvexHull COMMAND testConvexHull)
 
 add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
