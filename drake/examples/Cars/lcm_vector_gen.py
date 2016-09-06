@@ -158,6 +158,7 @@ HEADER_PREAMBLE = """
 #include "drake/systems/framework/basic_state_and_output_vector.h"
 
 namespace drake {
+namespace cars {
 """
 
 CLASS_BEGIN = """
@@ -180,6 +181,7 @@ CLASS_END = """
 """
 
 HEADER_POSTAMBLE = """
+}  // namespace cars
 }  // namespace drake
 """
 
@@ -190,9 +192,11 @@ CC_PREAMBLE = """
 // See %(generator)s.
 
 namespace drake {
+namespace cars {
 """
 
 CC_POSTAMBLE = """
+}  // namespace cars
 }  // namespace drake
 """
 

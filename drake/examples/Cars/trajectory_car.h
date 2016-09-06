@@ -8,6 +8,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
+namespace cars {
 
 /// A car that follows a pre-established trajectory, neglecting all physics.
 ///
@@ -132,4 +133,5 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   const TrajectoryCar1 wrapped_;
 };
 
+}  // namespace cars
 }  // namespace drake
