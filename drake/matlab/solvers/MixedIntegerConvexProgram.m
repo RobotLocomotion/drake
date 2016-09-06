@@ -424,6 +424,8 @@ classdef MixedIntegerConvexProgram
           error('Drake:MixedIntegerConvexProgram:PrimalDualInfeasible','The problem is primal and dual infeasible');
         elseif(strcmp(result.sol.itr.prosta,'UNKNOWN'))
           warning('Drake:MixedIntegerConvexProgram:Unknown','The problem solution status is unknown');
+        else
+          error('Drake:MixedIntegerConvexProgram:UnsupportedResponse', 'The response from Mosek is not supported');
         end
         obj = obj.extractResult(result.sol.itr.xx);
         objval = result.sol.itr.pobjval;
