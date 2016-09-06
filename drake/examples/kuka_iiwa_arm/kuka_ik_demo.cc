@@ -6,6 +6,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/polynomial.h"
 #include "drake/systems/plants/IKoptions.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
@@ -158,7 +159,7 @@ int do_main(int argc, const char* argv[]) {
 
   RigidBodyTree tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      FIXED);
+      drake::systems::plants::joints::FIXED);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).

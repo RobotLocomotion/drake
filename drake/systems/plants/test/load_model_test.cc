@@ -8,6 +8,8 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 
 using drake::RigidBodySystem;
+using drake::systems::plants::joints::FIXED;
+using drake::systems::plants::joints::QUATERNION;
 
 namespace drake {
 namespace systems {

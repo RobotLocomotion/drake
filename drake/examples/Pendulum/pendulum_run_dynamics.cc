@@ -4,7 +4,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/polynomial.h"
 #include "drake/examples/Pendulum/Pendulum.h"
-#include "drake/systems/plants/joints/drake_joint_type.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/LCMSystem.h"
@@ -20,7 +20,8 @@ int main(int argc, char* argv[]) {
 
   auto p = make_shared<Pendulum>();
   auto v = make_shared<BotVisualizer<PendulumState> >(
-      lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf", FIXED);
+      lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      drake::systems::plants::joints::FIXED);
 
   PendulumState<double> x0;
   x0.theta = 1;

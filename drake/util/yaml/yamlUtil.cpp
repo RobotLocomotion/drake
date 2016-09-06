@@ -5,7 +5,10 @@
 
 using namespace std;
 
+using drake::systems::plants::joints::FIXED;
 using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::QUATERNION;
+using drake::systems::plants::joints::ROLLPITCHYAW;
 
 YAML::Node applyDefaults(const YAML::Node& node,
                          const YAML::Node& default_node) {

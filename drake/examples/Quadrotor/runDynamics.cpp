@@ -18,6 +18,7 @@ using namespace drake;
 using namespace Eigen;
 
 using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::QUATERNION;
 
 int main(int argc, char* argv[]) {
   const size_t num_lidar_points = 100;

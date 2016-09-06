@@ -340,8 +340,8 @@ class Attachment {
 
   Attachment(
       const std::string& attach_to_frame_, const std::string& urdf_filename_,
-      const using drake::systems::plants::joints::FloatingBaseType&
-          joint_type_ = FIXED)
+      const drake::systems::plants::joints::FloatingBaseType&
+          joint_type_ = drake::systems::plants::joints::FIXED)
       : attach_to_frame(attach_to_frame_),
         urdf_filename(urdf_filename_),
         joint_type(joint_type_) {

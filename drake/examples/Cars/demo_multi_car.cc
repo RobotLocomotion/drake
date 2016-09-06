@@ -20,6 +20,7 @@ using drake::AffineSystem;
 using drake::BotVisualizer;
 using drake::NullVector;
 using drake::cascade;
+using drake::systems::plants::joints::ROLLPITCHYAW;
 
 namespace drake {
 namespace examples {

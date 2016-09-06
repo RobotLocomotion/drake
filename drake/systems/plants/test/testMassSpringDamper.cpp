@@ -7,8 +7,10 @@
 
 using Eigen::Matrix;
 using std::make_shared;
+
 using drake::GetDrakePath;
 using drake::RigidBodySystem;
+using drake::systems::plants::joints::FIXED;
 using drake::toEigen;
 
 namespace drake {

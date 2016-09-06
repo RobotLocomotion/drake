@@ -14,6 +14,8 @@ namespace rigid_body_system {
 namespace {
 
 using drake::RigidBodySystem;
+using drake::systems::plants::joints::FIXED;
+using drake::systems::plants::joints::QUATERNION;
 
 // Tests the ability to load a URDF as part of the world of a rigid body system.
 GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {

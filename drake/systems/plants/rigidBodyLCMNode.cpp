@@ -10,7 +10,10 @@ using namespace std;
 using namespace Eigen;
 using namespace drake;
 
+using drake::systems::plants::joints::FIXED;
 using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::QUATERNION;
+using drake::systems::plants::joints::ROLLPITCHYAW;
 
 /** @page rigidBodyLCMNode rigidBodyLCMNode Application
  * @ingroup simulation

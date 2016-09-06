@@ -16,6 +16,7 @@ using drake::GetDrakePath;
 using drake::RigidBodySystem;
 using drake::RigidBodyAccelerometer;
 using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::QUATERNION;
 
 namespace drake {
 namespace systems {

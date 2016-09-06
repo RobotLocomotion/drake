@@ -10,6 +10,7 @@
 using drake::GetDrakePath;
 using drake::getRandomVector;
 using drake::RigidBodySystem;
+using drake::systems::plants::joints::ROLLPITCHYAW;
 
 namespace drake {
 namespace examples {

@@ -11,6 +11,7 @@
 using drake::BotVisualizer;
 using drake::Gain;
 using drake::SimulationOptions;
+using drake::systems::plants::joints::QUATERNION;
 
 using Eigen::VectorXd;
 

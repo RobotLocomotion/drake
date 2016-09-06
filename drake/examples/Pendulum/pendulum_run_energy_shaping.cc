@@ -4,7 +4,7 @@
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/joints/drake_joint_type.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/feedback_system.h"
 #include "drake/util/drakeAppUtil.h"
@@ -45,7 +45,8 @@ int main(int argc, char* argv[]) {
     x0 << 0.1, 0.2;
 
     auto v = std::make_shared<BotVisualizer<PendulumState> >(
-        lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf", FIXED);
+        lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+        drake::systems::plants::joints::FIXED);
     auto sys = cascade(feedback(p, c), v);
     simulate(*sys, 0, 10, x0, options);
   }

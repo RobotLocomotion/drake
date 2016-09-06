@@ -10,6 +10,8 @@
 using Eigen::VectorXd;
 using std::make_shared;
 
+using drake::systems::plants::joints::FIXED;
+
 namespace drake {
 namespace {
 

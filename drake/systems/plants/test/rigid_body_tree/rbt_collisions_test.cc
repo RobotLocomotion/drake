@@ -1,7 +1,7 @@
 #include <memory>
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/joints/drake_joint_type.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -50,7 +50,7 @@ class RBTCollisionTest: public ::testing::Test {
     drake::parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
         drake::GetDrakePath() +
         "/systems/plants/test/rigid_body_tree/small_sphere_on_large_box.sdf",
-            QUATERNION, &tree_);
+            drake::systems::plants::joints::QUATERNION, &tree_);
 
     small_sphere_ = tree_.FindBody("small_sphere");
     large_box_ = tree_.FindBody("large_box");

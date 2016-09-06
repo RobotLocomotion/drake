@@ -8,6 +8,7 @@
 using drake::GetDrakePath;
 using drake::getRandomVector;
 using drake::RigidBodySystem;
+using drake::systems::plants::joints::FIXED;
 
 namespace drake {
 namespace examples {

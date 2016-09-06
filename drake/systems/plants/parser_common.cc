@@ -4,6 +4,9 @@
 #include "drake/systems/plants/joints/floating_base_types.h"
 
 using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::FIXED;
+using drake::systems::plants::joints::ROLLPITCHYAW;
+using drake::systems::plants::joints::QUATERNION;
 
 namespace drake {
 namespace parsers {

@@ -10,6 +10,7 @@
 
 using std::make_shared;
 using drake::RigidBodySystem;
+using drake::systems::plants::joints::QUATERNION;
 using Eigen::VectorXd;
 
 namespace drake {

@@ -15,6 +15,7 @@
 
 using drake::parsers::ModelInstanceIdTable;
 using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::ROLLPITCHYAW;
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;

@@ -4,7 +4,6 @@
 #include <string>
 
 #include "drake/drakeRBM_export.h"
-#include "drake/systems/plants/joints/drake_joint_type.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"

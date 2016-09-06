@@ -6,8 +6,10 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-using drake::RigidBodySystem;
 using lcm::LCM;
+
+using drake::RigidBodySystem;
+using drake::systems::plants::joints::FIXED;
 
 std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   // Instantiates a rigid body system and adds the robot arm to it.

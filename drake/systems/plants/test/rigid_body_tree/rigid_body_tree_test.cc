@@ -19,6 +19,7 @@ namespace {
 
 using drake::parsers::ModelInstanceIdTable;
 using drake::parsers::AddFloatingJoint;
+using drake::systems::plants::joints::QUATERNION;
 
 class RigidBodyTreeTest : public ::testing::Test {
  protected:

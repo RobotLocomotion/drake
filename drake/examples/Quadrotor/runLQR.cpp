@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
   auto c = MakeTimeInvariantLqrSystem(*quad, xG, uG, Q, R);
   auto v = std::make_shared<BotVisualizer<QuadrotorState> >(
       lcm, GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-      ROLLPITCHYAW);
+      drake::systems::plants::joints::ROLLPITCHYAW);
 
   auto sys = cascade(feedback(quad, c), v);
 

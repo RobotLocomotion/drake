@@ -4,16 +4,18 @@
 
 #include "drake/examples/Cars/curve2.h"
 #include "drake/examples/Cars/trajectory_car.h"
-#include "drake/systems/plants/joints/drake_joint_type.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
-
-using drake::AffineSystem;
-using drake::NullVector;
-using drake::parsers::ModelInstanceIdTable;
 
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+
+using drake::AffineSystem;
+using drake::NullVector;
+using drake::parsers::ModelInstanceIdTable;
+using drake::systems::plants::joints::FIXED;
+using drake::systems::plants::joints::QUATERNION;
 
 namespace drake {
 namespace examples {

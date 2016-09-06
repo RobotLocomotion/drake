@@ -1,13 +1,16 @@
 #include <vector>
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/joints/drake_joint_type.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/testUtil.h"
 
 using Eigen::Matrix3Xd;
 using Eigen::VectorXd;
+
+using drake::systems::plants::joints::ROLLPITCHYAW;
+using drake::systems::plants::joints::FIXED;
 
 int main(int argc, char* argv[]) {
   RigidBodyTree tree;

@@ -6,6 +6,8 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::Isometry3d;
 
+using drake::systems::plants::joints::QUATERNION;
+
 AtlasPlant::AtlasPlant() {
   sys_.reset(new drake::RigidBodySystem());
   sys_->AddModelInstanceFromFile(

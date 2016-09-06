@@ -1,6 +1,8 @@
 #include "drake/common/drake_path.h"
 #include "qp_controller.h"
 
+using drake::systems::plants::joints::ROLLPITCHYAW;
+
 QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {
   // Make controller.
   QPController con;
