@@ -64,8 +64,8 @@ add_matlab_test(NAME util/test/testFlipExpmap COMMAND testFlipExpmap)
 add_matlab_test(NAME util/test/testGeometryConversionFunctionsComparison COMMAND testGeometryConversionFunctionsComparison)
 # DISABLED due to #3224.
 if(NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-  add_matlab_test(NAME util/test/testGeometryGradientsComparison
-                  COMMAND testGeometryGradientsComparison)
+  drake_add_matlab_test(NAME util/test/testGeometryGradientsComparison
+                        COMMAND testGeometryGradientsComparison)
 endif()
 add_matlab_test(NAME util/test/testMotionSubspace COMMAND testMotionSubspace)
 add_matlab_test(NAME util/test/testMotionSubspaceDotTimesV COMMAND testMotionSubspaceDotTimesV)
@@ -76,8 +76,8 @@ add_matlab_test(NAME util/test/testQuat COMMAND testQuat)
 add_matlab_test(NAME util/test/testQuat2expmap COMMAND testQuat2expmap)
 add_matlab_test(NAME util/test/testQuat2expmapSequence COMMAND testQuat2expmapSequence)
 add_matlab_test(NAME util/test/testQuat2rotmat COMMAND testQuat2rotmat)
-# add_matlab_test(NAME util/test/testQuatConjugate COMMAND testQuatConjugate)  # FIXME
-# add_matlab_test(NAME util/test/testQuatProduct COMMAND testQuatProduct)  # FIXME
+# add_matlab_test(NAME util/test/testQuatConjugate COMMAND testQuatConjugate)  # FIXME: see #3313
+# add_matlab_test(NAME util/test/testQuatProduct COMMAND testQuatProduct)  # FIXME: see #3313
 add_matlab_test(NAME util/test/testQuatRotateVec COMMAND testQuatRotateVec)
 add_matlab_test(NAME util/test/testQuatdot2angularvel COMMAND testQuatdot2angularvel)
 add_matlab_test(NAME util/test/testQuatdot2angularvelMatrix COMMAND testQuatdot2angularvelMatrix)
