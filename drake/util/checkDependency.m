@@ -97,10 +97,16 @@ else % then try to evaluate the dependency now...
         end
       end
     case 'lcmgl'
-      checkDependency('lcm');
-      conf.lcmgl_enabled = logical(exist('bot_lcmgl.data_t','class'));
+      if nargout<1
+        checkDependency('lcm');
+        lcm_enabled = true;
+      else
+        % suppress warning
+        lcm_enabled = checkDependency('lcm');
+      end
+      conf.lcmgl_enabled = lcm_enabled && logical(exist('bot_lcmgl.data_t','class'));
 
-      if (~conf.lcmgl_enabled)
+      if (lcm_enabled && ~conf.lcmgl_enabled)
         try % try to add bot2-lcmgl.jar
           lcm_java_classpath = getCMakeParam('LCMGL_JAR_FILE');
           javaaddpathProtectGlobals(lcm_java_classpath);
@@ -139,8 +145,7 @@ else % then try to evaluate the dependency now...
     case {'snopt','studentsnopt'}
       [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
       if (~conf.snopt_enabled && ~conf.studentsnopt_enabled)
-        pod_pkg_config('snopt');
-        [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
+        conf.snopt_enabled = pod_pkg_config('snopt');
       end
 
       if ~conf.snopt_enabled && ~conf.studentsnopt_enabled && nargout<1
