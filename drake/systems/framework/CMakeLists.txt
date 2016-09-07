@@ -45,7 +45,6 @@ set(installed_headers
   diagram_builder.h
   diagram_context.h
   leaf_context.h
-  leaf_state_vector.h
   leaf_system.h
   state.h
   state_subvector.h
