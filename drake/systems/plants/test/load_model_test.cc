@@ -14,6 +14,7 @@ namespace plants {
 namespace test {
 namespace {
 
+using drake::systems::plants::joints::kFixed;
 using drake::systems::plants::joints::kQuaternion;
 
 /**
@@ -158,7 +159,7 @@ TEST_P(LoadModelTest, TestWeld) {
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/models/cylindrical_0dof_robot." + GetParam(),
-      drake::systems::plants::joints::kFixed, weld_to_frame);
+      kFixed, weld_to_frame);
 
   // Verifies that the newly added link exists and is in the correct location.
   auto link_body = rbs.getRigidBodyTree()->FindBody("link");

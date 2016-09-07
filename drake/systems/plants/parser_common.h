@@ -47,7 +47,7 @@ namespace parsers {
 DRAKERBM_EXPORT
 int AddFloatingJoint(
     RigidBodyTree* tree,
-    drake::systems::plants::joints::FloatingBaseType floating_base_type,
+    systems::plants::joints::FloatingBaseType floating_base_type,
     const std::vector<int>& body_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
     const PoseMap* pose_map = nullptr);

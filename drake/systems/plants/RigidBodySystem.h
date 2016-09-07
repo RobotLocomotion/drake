@@ -8,6 +8,10 @@
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
+using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::kQuaternion;
+using drake::systems::plants::joints::kRollPitchYaw;
+
 /** Rigid Body Dynamics Engine Class Design  (still needs to be implemented
  * below)
  *
@@ -193,8 +197,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfString(
       const std::string& urdf_string, const std::string& root_dir = ".",
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
+      const FloatingBaseType floating_base_type = kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -221,8 +224,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfFile(
       const std::string& filename,
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kQuaternion,
+      const FloatingBaseType floating_base_type = kQuaternion,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -256,8 +258,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstancesFromSdfFile(
       const std::string& filename,
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kQuaternion,
+      const FloatingBaseType floating_base_type = kQuaternion,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -292,8 +293,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstancesFromSdfString(
       const std::string& sdf_string,
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kQuaternion,
+      const FloatingBaseType floating_base_type = kQuaternion,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -321,8 +321,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromFile(
       const std::string& filename,
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kQuaternion,
+      const FloatingBaseType floating_base_type = kQuaternion,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -350,8 +349,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstancesFromString(
       const std::string& string_description,
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kQuaternion,
+      const FloatingBaseType floating_base_type = kQuaternion,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {

@@ -9,8 +9,8 @@ using Eigen::Vector4d;
 AtlasPlant::AtlasPlant() {
   sys_.reset(new drake::RigidBodySystem());
   sys_->AddModelInstanceFromFile(
-      drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
-      drake::systems::plants::joints::kQuaternion);
+      GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
+      systems::plants::joints::kQuaternion);
 
   x0_ = VectorXd::Zero(sys_->getNumStates());
   SetInitialConfiguration();
