@@ -1113,7 +1113,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
   return ParseUrdf(&xml_doc, package_map, root_dir, kRollPitchYaw,
-            weld_to_frame, tree);
+      weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
@@ -1153,7 +1153,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
   PackageMap package_map;
 
   return AddModelInstanceFromUrdfFile(
-    filename, package_map, floating_base_type, weld_to_frame, tree);
+      filename, package_map, floating_base_type, weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
@@ -1181,7 +1181,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
   }
 
   return ParseUrdf(&xml_doc, package_map, root_dir, floating_base_type,
-            weld_to_frame, tree);
+      weld_to_frame, tree);
 }
 
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
