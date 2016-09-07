@@ -16,6 +16,9 @@ using namespace std;
 using drake::CompareMatrices;
 using drake::MatrixCompareType;
 using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::kFixed;
+using drake::systems::plants::joints::kQuaternion;
+using drake::systems::plants::joints::kRollPitchYaw;
 
 /*
  * compares C++ robots generated via the matlab constructModelmex with the same
