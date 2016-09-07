@@ -9,7 +9,7 @@ add_matlab_test(NAME matlab/solvers/test/testConstraint COMMAND testConstraint)
 add_matlab_test(NAME matlab/solvers/test/testGurobiLCP REQUIRES gurobi COMMAND testGurobiLCP)
 add_matlab_test(NAME matlab/solvers/test/testLQRmex OPTIONAL bullet COMMAND testLQRmex)
 add_matlab_test(NAME matlab/solvers/test/testMixedIntegerConvexDemo REQUIRES gurobi yalmip COMMAND testMixedIntegerConvexDemo)
-# add_matlab_test(NAME matlab/solvers/test/testMultipleTaskSpaceRRTStar REQUIRES lcm OPTIONAL bullet COMMAND testMultipleTaskSpaceRRTStar SIZE large)   # FIXME: see #3149
+add_matlab_test(NAME matlab/solvers/test/testMultipleTaskSpaceRRTStar REQUIRES lcm OPTIONAL bullet COMMAND testMultipleTaskSpaceRRTStar SIZE large)
 add_matlab_test(NAME matlab/solvers/test/testNLP OPTIONAL ipopt snopt COMMAND testNLP)
 add_matlab_test(NAME matlab/solvers/test/testQP OPTIONAL gurobi snopt COMMAND testQP)
-# add_matlab_test(NAME matlab/solvers/test/testTaskSpaceRRT REQUIRES lcm snopt OPTIONAL bullet COMMAND testTaskSpaceRRT SIZE large)  # FIXME: see #3149
+add_matlab_test(NAME matlab/solvers/test/testTaskSpaceRRT REQUIRES lcm snopt OPTIONAL bullet COMMAND testTaskSpaceRRT SIZE large)
