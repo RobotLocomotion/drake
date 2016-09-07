@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/integrator.h"
 #include "drake/systems/framework/system.h"
@@ -77,7 +78,7 @@ class DiagramContextTest : public ::testing::Test {
 TEST_F(DiagramContextTest, RetrieveConstituents) {
   // All of the subsystems should be leaf Systems.
   for (int i = 0; i < kNumSystems; ++i) {
-    auto context = dynamic_cast<const Context<double>*>(
+    auto context = dynamic_cast<const LeafContext<double>*>(
         context_->GetSubsystemContext(i));
     EXPECT_TRUE(context != nullptr);
 
