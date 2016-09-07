@@ -3,11 +3,11 @@ set(sources
   basic_vector.cc
   cache.cc
   context_base.cc
-  context.cc
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
   examples/spring_mass_system.cc
+  leaf_context.cc
   leaf_system.cc
   primitives/adder.cc
   primitives/constant_value_source.cc
@@ -40,11 +40,11 @@ set(sources
 set(installed_headers
   basic_vector.h
   cache.h
-  context.h
   context_base.h
   diagram.h
   diagram_builder.h
   diagram_context.h
+  leaf_context.h
   leaf_system.h
   state.h
   state_subvector.h

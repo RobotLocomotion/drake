@@ -9,8 +9,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/cache.h"
-#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_context.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_port_descriptor.h"

@@ -13,20 +13,20 @@
 namespace drake {
 namespace systems {
 
-/// The Context is a container for all of the data necessary to uniquely
+/// %LeafContext is a container for all of the data necessary to uniquely
 /// determine the computations performed by a leaf System. Specifically, a
-/// Context contains and owns the State, and also contains (but does not own)
-/// pointers to the value sources for Inputs, as well as the simulation time
-/// and the cache.
+/// %LeafContext contains and owns the State, and also contains (but does not
+/// own) pointers to the value sources for Inputs, as well as the simulation
+/// time and the cache.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 // TODO(david-german-tri): Manage cache invalidation.
 template <typename T>
-class Context : public ContextBase<T> {
+class LeafContext : public ContextBase<T> {
  public:
-  Context() {}
-  virtual ~Context() {}
+  LeafContext() {}
+  virtual ~LeafContext() {}
 
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
     if (index < 0 || index >= get_num_input_ports()) {
@@ -84,7 +84,7 @@ class Context : public ContextBase<T> {
  protected:
   /// The caller owns the returned memory.
   ContextBase<T>* DoClone() const override {
-    Context<T>* context = new Context<T>();
+    LeafContext<T>* context = new LeafContext<T>();
 
     // Make a deep copy of the state using BasicVector::Clone().
     if (this->get_state().continuous_state != nullptr) {
@@ -116,11 +116,11 @@ class Context : public ContextBase<T> {
   }
 
  private:
-  // Context objects are neither copyable nor moveable.
-  Context(const Context& other) = delete;
-  Context& operator=(const Context& other) = delete;
-  Context(Context&& other) = delete;
-  Context& operator=(Context&& other) = delete;
+  // LeafContext objects are neither copyable nor moveable.
+  LeafContext(const LeafContext& other) = delete;
+  LeafContext& operator=(const LeafContext& other) = delete;
+  LeafContext(LeafContext&& other) = delete;
+  LeafContext& operator=(LeafContext&& other) = delete;
 
   // The external inputs to the System.
   std::vector<std::unique_ptr<InputPort>> inputs_;

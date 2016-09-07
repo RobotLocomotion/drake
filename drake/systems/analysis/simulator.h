@@ -6,7 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/drakeSystemAnalysis_export.h"
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
@@ -171,7 +171,7 @@ class Simulator {
   /** Replace the internally-maintained Context with a different one. The
   current Context is deleted. This is useful for supplying a new set of initial
   conditions. You should invoke Initialize() after replacing the Context. **/
-  void reset_context(std::unique_ptr<Context<T>> context) {
+  void reset_context(std::unique_ptr<ContextBase<T>> context) {
     context_ = std::move(context);
     initialization_done_ = false;
   }

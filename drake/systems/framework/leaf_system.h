@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 
@@ -26,7 +26,7 @@ class LeafSystem : public System<T> {
   // Implementations of System<T> methods.
 
   std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
-    std::unique_ptr<Context<T>> context(new Context<T>);
+    std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     // Reserve inputs that have already been declared.
     context->SetNumInputPorts(this->get_num_input_ports());
     // Reserve continuous state via delegation to subclass.
@@ -67,7 +67,7 @@ class LeafSystem : public System<T> {
 
   /// Reserves the discrete state as required by CreateDefaultContext.  By
   /// default, reserves no state. Systems with discrete state should override.
-  virtual void ReserveDiscreteState(Context<T>* context) const {}
+  virtual void ReserveDiscreteState(LeafContext<T>* context) const {}
 
   /// Given a port descriptor, allocate the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses can

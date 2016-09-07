@@ -20,7 +20,7 @@ struct StepInfo {
 
 /// ContextBase is an abstract base class template that represents all
 /// the inputs to a System: time, state, and input vectors. The framework
-/// provides two concrete subclasses of ContextBase: Context (for
+/// provides two concrete subclasses of ContextBase: LeafContext (for
 /// leaf Systems) and DiagramContext (for composite Systems). Users are
 /// discouraged from creating additional subclasses.
 ///
