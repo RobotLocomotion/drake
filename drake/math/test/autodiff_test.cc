@@ -87,22 +87,29 @@ TEST_F(AutodiffTest, ToGradientMatrix) {
       << gradients;
 }
 
+template <typename Derived>
+void FillWithNumbersIncreasingFromZero(Eigen::MatrixBase<Derived>& matrix) {
+  for (Eigen::Index i = 0; i < matrix.size(); i++) {
+    matrix(i) = i;
+  }
+}
+
 class AutodiffJacobianTest : public ::testing::Test {};
 
 TEST_F(AutodiffJacobianTest, QuadraticForm) {
   using Eigen::Matrix3d;
   using Eigen::Vector3d;
 
-  srand(1);
   Matrix3d A;
-  A.setRandom();
+  FillWithNumbersIncreasingFromZero(A);
 
   auto quadratic_form = [&](const auto& x) {
     using Scalar = typename std::remove_reference<decltype(x)>::type::Scalar;
     return (x.transpose() * A.cast<Scalar>().eval() * x).eval();
   };
 
-  Vector3d x = Vector3d::Random();
+  Vector3d x;
+  FillWithNumbersIncreasingFromZero(x);
   auto jac_chunk_size_default = jacobian(quadratic_form, x);
   auto jac_chunk_size_1 = jacobian<1>(quadratic_form, x);
   auto jac_chunk_size_3 = jacobian<3>(quadratic_form, x);
@@ -147,14 +154,20 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   using Eigen::VectorXd;
   using Eigen::Index;
 
-  srand(1);
   Index n = 4;
   Index m = 5;
-  MatrixXd A = MatrixXd::Random(n, m);
-  VectorXd b = VectorXd::Random(n);
-  MatrixXd C = MatrixXd::Random(n, n);
-  MatrixXd D = MatrixXd::Random(n, m);
-  VectorXd e = VectorXd::Random(n);
+
+  MatrixXd A(n, m);
+  VectorXd b(n);
+  MatrixXd C(n, n);
+  MatrixXd D(n, m);
+  VectorXd e(n);
+
+  FillWithNumbersIncreasingFromZero(A);
+  FillWithNumbersIncreasingFromZero(b);
+  FillWithNumbersIncreasingFromZero(C);
+  FillWithNumbersIncreasingFromZero(D);
+  FillWithNumbersIncreasingFromZero(e);
 
   auto quadratic_function = [&](const auto& x) {
     using Scalar = typename std::remove_reference<decltype(x)>::type::Scalar;
@@ -163,7 +176,8 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
         .eval();
   };
 
-  VectorXd x = VectorXd::Random(m);
+  VectorXd x(m);
+  FillWithNumbersIncreasingFromZero(x);
 
   auto hess_chunk_size_default = hessian(quadratic_function, x);
   auto hess_chunk_size_2_4 = hessian<2, 4>(quadratic_function, x);
