@@ -17,7 +17,7 @@ ConstantVectorSource<T>::ConstantVectorSource(
 }
 
 template <typename T>
-void ConstantVectorSource<T>::EvalOutput(const ContextBase<T>& context,
+void ConstantVectorSource<T>::EvalOutput(const Context<T>& context,
                                          SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));

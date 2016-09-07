@@ -80,7 +80,7 @@ double SpringMassSystem::EvalNonConservativePower(const MyContext&) const {
 }
 
 // Reserve a context with no input, and a SpringMassStateVector state.
-std::unique_ptr<ContextBase<double>>
+std::unique_ptr<Context<double>>
 SpringMassSystem::CreateDefaultContext() const {
   std::unique_ptr<LeafContext<double>> context(new LeafContext<double>);
   std::unique_ptr<SpringMassStateVector> state(new SpringMassStateVector(0, 0));
@@ -88,11 +88,11 @@ SpringMassSystem::CreateDefaultContext() const {
       new ContinuousState<double>(std::move(state), 1 /* size of q */,
                                   1 /* size of v */, 1 /* size of z */));
   context->SetNumInputPorts(this->get_num_input_ports());
-  return std::unique_ptr<ContextBase<double>>(context.release());
+  return std::unique_ptr<Context<double>>(context.release());
 }
 
 std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput(
-    const ContextBase<double>& context) const {
+    const Context<double>& context) const {
   std::unique_ptr<LeafSystemOutput<double>> output(
       new LeafSystemOutput<double>);
   {
@@ -113,7 +113,7 @@ SpringMassSystem::AllocateTimeDerivatives() const {
 }
 
 // Assign the state to the output.
-void SpringMassSystem::EvalOutput(const ContextBase<double>& context,
+void SpringMassSystem::EvalOutput(const Context<double>& context,
                                   SystemOutput<double>* output) const {
   // TODO(david-german-tri): Cache the output of this function.
   const SpringMassStateVector& state = get_state(context);
@@ -124,7 +124,7 @@ void SpringMassSystem::EvalOutput(const ContextBase<double>& context,
 
 // Compute the actual physics.
 void SpringMassSystem::EvalTimeDerivatives(
-    const ContextBase<double>& context,
+    const Context<double>& context,
     ContinuousState<double>* derivatives) const {
   DRAKE_ASSERT_VOID(CheckValidContext(context));
 

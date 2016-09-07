@@ -83,7 +83,7 @@ void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
   MessagePublisher publisher(channel_name, lcm);
   publisher.Start();
 
-  std::unique_ptr<ContextBase<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
 
   // Start the LCM recieve thread after all objects it can potentially use

@@ -25,7 +25,7 @@ class LeafSystem : public System<T> {
   // =========================================================================
   // Implementations of System<T> methods.
 
-  std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
+  std::unique_ptr<Context<T>> CreateDefaultContext() const override {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     // Reserve inputs that have already been declared.
     context->SetNumInputPorts(this->get_num_input_ports());
@@ -34,11 +34,11 @@ class LeafSystem : public System<T> {
         std::move(this->AllocateContinuousState());
     // Reserve discrete state via delegation to subclass.
     ReserveDiscreteState(context.get());
-    return std::unique_ptr<ContextBase<T>>(context.release());
+    return std::unique_ptr<Context<T>>(context.release());
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const ContextBase<T>& context) const override {
+      const Context<T>& context) const override {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (const auto& descriptor : this->get_output_ports()) {
       output->get_mutable_ports()->emplace_back(

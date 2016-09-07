@@ -7,7 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/drakeSystemFramework_export.h"
-#include "drake/systems/framework/context_base.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_port_descriptor.h"
@@ -109,7 +109,7 @@ class System {
 
   /// Checks that @p context is consistent for this system.
   /// @throw exception unless `context` is valid for this system.
-  void CheckValidContext(const ContextBase<T>& context) const {
+  void CheckValidContext(const Context<T>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
     DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
@@ -132,7 +132,7 @@ class System {
   /// Returns an Eigen expression for a vector valued input port with index
   /// @p port_index in this system.
   Eigen::VectorBlock<const VectorX<T>> get_input_vector(
-      const ContextBase<T>& context, int port_index) const {
+      const Context<T>& context, int port_index) const {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
     const VectorBase<T>* input_vector =
         context.get_vector_input(port_index);
@@ -145,7 +145,7 @@ class System {
   }
 
   // Returns a copy of the continuous state vector into an Eigen vector.
-  VectorX<T> CopyContinuousStateVector(const ContextBase<T> &context) const {
+  VectorX<T> CopyContinuousStateVector(const Context<T> &context) const {
     return context.get_state().continuous_state->get_state().CopyToVector();
   }
 
@@ -153,14 +153,14 @@ class System {
   /// numbers of concrete input ports and state variables for this System.
   /// Since input port pointers are not owned by the context, they should
   /// simply be initialized to nullptr.
-  virtual std::unique_ptr<ContextBase<T>> CreateDefaultContext() const = 0;
+  virtual std::unique_ptr<Context<T>> CreateDefaultContext() const = 0;
 
   /// Returns a default output, initialized with the correct number of
   /// concrete output ports for this System. @p context is provided as
   /// an argument to support some specialized use cases. Most typical
   /// System implementations should ignore it.
   virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const ContextBase<T>& context) const = 0;
+      const Context<T>& context) const = 0;
 
   /// This method is invoked by a Simulator at designated meaningful points
   /// along a trajectory, to allow the executing System a chance to take some
@@ -183,7 +183,7 @@ class System {
   /// case the change in step size may affect the numerical result somewhat
   /// since a smaller integrator step produces a more accurate solution.
   // TODO(sherm1) Provide sample rate option for Publish().
-  void Publish(const ContextBase<T>& context) const {
+  void Publish(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DoPublish(context);
   }
@@ -195,7 +195,7 @@ class System {
   // reference to only the part that is allowed to change. This will likely
   // require splitting into several APIs since different sample/update/event
   // actions permit different modifications.
-  void Update(ContextBase<T>* context, const SampleActions& actions) const {
+  void Update(Context<T>* context, const SampleActions& actions) const {
     DRAKE_ASSERT_VOID(CheckValidContext(*context));
     DoUpdate(context, actions);
   }
@@ -208,7 +208,7 @@ class System {
   /// action (with a const Context) or an update action (with a mutable
   /// Context). The SampleAction object is retained and returned to the System
   /// when it is time to take the action.
-  double CalcNextSampleTime(const ContextBase<T>& context,
+  double CalcNextSampleTime(const Context<T>& context,
                             SampleActions* actions) const {
     // TODO(sherm1) Validate context (at least in Debug).
     DRAKE_ASSERT(actions != nullptr);
@@ -218,18 +218,18 @@ class System {
 
   /// Computes the output for the given context, possibly updating values
   /// in the cache.
-  virtual void EvalOutput(const ContextBase<T>& context,
+  virtual void EvalOutput(const Context<T>& context,
                           SystemOutput<T>* output) const = 0;
 
   /// Returns the potential energy currently stored in the configuration
   /// provided in the given @p context. Non-physical Systems will return 0.
-  virtual T EvalPotentialEnergy(const ContextBase<T>& context) const {
+  virtual T EvalPotentialEnergy(const Context<T>& context) const {
     return T(0);
   }
 
   /// Returns the kinetic energy currently present in the motion provided in
   /// the given @p context. Non-physical Systems will return 0.
-  virtual T EvalKineticEnergy(const ContextBase<T>& context) const {
+  virtual T EvalKineticEnergy(const Context<T>& context) const {
     return T(0);
   }
 
@@ -242,7 +242,7 @@ class System {
   /// (J/s).
   ///
   /// By default, returns zero. Continuous, physical systems should override.
-  virtual T EvalConservativePower(const ContextBase<T>& context) const {
+  virtual T EvalConservativePower(const Context<T>& context) const {
     return T(0);
   }
 
@@ -255,7 +255,7 @@ class System {
   /// This method is meaningful only for physical systems; others return 0.
   ///
   /// By default, returns zero. Continuous, physical systems should override.
-  virtual T EvalNonConservativePower(const ContextBase<T>& context) const {
+  virtual T EvalNonConservativePower(const Context<T>& context) const {
     return T(0);
   }
 
@@ -282,7 +282,7 @@ class System {
   ///
   /// @param derivatives The output vector. Will be the same length as the
   ///                    state vector Context.state.continuous_state.
-  virtual void EvalTimeDerivatives(const ContextBase<T>& context,
+  virtual void EvalTimeDerivatives(const Context<T>& context,
                                    ContinuousState<T>* derivatives) const {
     return;
   }
@@ -304,7 +304,7 @@ class System {
   /// position. Implementations that are not second-order systems may simply
   /// do nothing.
   virtual void MapVelocityToConfigurationDerivatives(
-      const ContextBase<T>& context, const StateVector<T>& generalized_velocity,
+      const Context<T>& context, const StateVector<T>& generalized_velocity,
       StateVector<T>* configuration_derivatives) const {
     if (generalized_velocity.size() != configuration_derivatives->size()) {
       throw std::out_of_range(
@@ -393,14 +393,14 @@ class System {
   /// sending messages, producing console output, debugging, logging, saving the
   /// trajectory to a file, etc. You may assume that the `context` has already
   /// been validated before it is passed to you here.
-  virtual void DoPublish(const ContextBase<T>& context) const {}
+  virtual void DoPublish(const Context<T>& context) const {}
 
   /// Implement this method if your System has any difference variables xd,
   /// mode variables, or sampled input or output ports. The `actions` argument
   /// specifies what to do and may include difference variable updates, port
   /// sampling, or execution of event handlers that may make arbitrary changes
   /// to the Context.
-  virtual void DoUpdate(ContextBase<T>* context,
+  virtual void DoUpdate(Context<T>* context,
                         const SampleActions& actions) const {}
 
   /// Implement this method if your System has any discrete actions which must
@@ -408,7 +408,7 @@ class System {
   /// has already been validated and the `actions` pointer is not null.
   /// The default implemention returns with `actions` having a next sample
   /// time of Infinity and no actions to take.
-  virtual void DoCalcNextSampleTime(const ContextBase<T>& context,
+  virtual void DoCalcNextSampleTime(const Context<T>& context,
                                     SampleActions* actions) const {
     actions->time = std::numeric_limits<double>::infinity();
   }

@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "drake/common/eigen_types.h"
-#include "drake/systems/framework/context_base.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
 
@@ -30,7 +30,7 @@ class ConstantVectorSource : public LeafSystem<T> {
       const Eigen::Ref<const VectorX<T>>& source_value);
 
   /// Outputs a signal with a fixed value as specified by the user.
-  void EvalOutput(const ContextBase<T>& context,
+  void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 
  private:

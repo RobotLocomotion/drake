@@ -111,7 +111,7 @@ class Diagram : public System<T> {
     return false;
   }
 
-  std::unique_ptr<ContextBase<T>> CreateDefaultContext() const override {
+  std::unique_ptr<Context<T>> CreateDefaultContext() const override {
     const int num_systems = static_cast<int>(sorted_systems_.size());
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>(num_systems);
@@ -138,11 +138,11 @@ class Diagram : public System<T> {
     }
 
     context->MakeState();
-    return std::unique_ptr<ContextBase<T>>(context.release());
+    return std::unique_ptr<Context<T>>(context.release());
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const ContextBase<T>& context) const override {
+      const Context<T>& context) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_ABORT_UNLESS(diagram_context != nullptr);
 
@@ -154,7 +154,7 @@ class Diagram : public System<T> {
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
 
-  void EvalOutput(const ContextBase<T>& context,
+  void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override {
     // Down-cast the context and output to DiagramContext and DiagramOutput.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
@@ -184,7 +184,7 @@ class Diagram : public System<T> {
         new internal::DiagramTimeDerivatives<T>(std::move(sub_derivatives)));
   }
 
-  void EvalTimeDerivatives(const ContextBase<T>& context,
+  void EvalTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const override {
     // Freshen all the subsystem inputs to match the provided context.
     //
@@ -202,7 +202,7 @@ class Diagram : public System<T> {
 
     // Evaluate the derivatives of each constituent system.
     for (int i = 0; i < n; ++i) {
-      const ContextBase<T>* subcontext =
+      const Context<T>* subcontext =
           diagram_context->GetSubsystemContext(i);
       ContinuousState<T>* subderivatives =
           diagram_derivatives->get_mutable_substate(i);
@@ -211,7 +211,7 @@ class Diagram : public System<T> {
   }
 
   void MapVelocityToConfigurationDerivatives(
-      const ContextBase<T>& context, const StateVector<T>& generalized_velocity,
+      const Context<T>& context, const StateVector<T>& generalized_velocity,
       StateVector<T>* configuration_derivatives) const override {
     // TODO(david-german-tri): Actually map velocity to derivatives.
   }
@@ -234,8 +234,8 @@ class Diagram : public System<T> {
   /// Classes inheriting from %Diagram need access to this method in order to
   /// pass their constituent subsystem's the apropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
-  ContextBase<T>* GetMutableSubsystemContext(ContextBase<T>* context,
-                                             const System<T>* subsystem) const {
+  Context<T>* GetMutableSubsystemContext(Context<T>* context,
+                                         const System<T>* subsystem) const {
     DRAKE_ABORT_UNLESS(context != nullptr);
     DRAKE_ABORT_UNLESS(subsystem != nullptr);
     auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
@@ -251,9 +251,9 @@ class Diagram : public System<T> {
   ///
   /// TODO(david-german-tri): Provide finer-grained accessors for finer-grained
   /// invalidation.
-  State<T>* GetMutableSubsystemState(ContextBase<T>* context,
+  State<T>* GetMutableSubsystemState(Context<T>* context,
                                      const System<T>* subsystem) const {
-    ContextBase<T>* subcontext = GetMutableSubsystemContext(context, subsystem);
+    Context<T>* subcontext = GetMutableSubsystemContext(context, subsystem);
     return subcontext->get_mutable_state();
   }
 
@@ -262,7 +262,7 @@ class Diagram : public System<T> {
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
 
-  void DoPublish(const ContextBase<T>& context) const override {
+  void DoPublish(const Context<T>& context) const override {
     // Freshen all the subsystem inputs to match the provided context.
     //
     // TODO(david-german-tri): This can be made less conservative: we don't
@@ -426,7 +426,7 @@ class Diagram : public System<T> {
     // are already fresh.
     for (const System<T>* const system : sorted_systems_) {
       const int i = GetSystemIndexOrAbort(system);
-      const ContextBase<T>* subsystem_context = context->GetSubsystemContext(i);
+      const Context<T>* subsystem_context = context->GetSubsystemContext(i);
       SystemOutput<T>* subsystem_output = context->GetSubsystemOutput(i);
       system->EvalOutput(*subsystem_context, subsystem_output);
     }

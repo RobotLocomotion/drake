@@ -28,7 +28,7 @@ PassThrough<T>::PassThrough(int length) {
 }
 
 template <typename T>
-void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
+void PassThrough<T>::EvalOutput(const Context<T>& context,
                                 SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));

@@ -35,7 +35,7 @@ std::string LcmPublisherSystem::get_name() const {
   return "LcmPublisherSystem::" + channel_;
 }
 
-void LcmPublisherSystem::DoPublish(const ContextBase<double>& context) const {
+void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
   // Obtains the input vector.
   const VectorBase<double>* const input_vector =
       context.get_vector_input(kPortIndex);

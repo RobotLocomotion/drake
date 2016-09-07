@@ -23,7 +23,7 @@ class Demultiplexer : public LeafSystem<T> {
 
   /// Sets the i-th output port to the value of the i-th component of the input
   /// port.
-  void EvalOutput(const ContextBase<T>& context,
+  void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 };
 

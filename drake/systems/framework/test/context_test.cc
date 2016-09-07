@@ -102,7 +102,7 @@ TEST_F(ContextTest, GetAbstractInput) {
 }
 
 TEST_F(ContextTest, Clone) {
-  std::unique_ptr<ContextBase<double>> clone = context_.Clone();
+  std::unique_ptr<Context<double>> clone = context_.Clone();
 
   // Verify that the time was copied.
   EXPECT_EQ(kTime, clone->get_time());

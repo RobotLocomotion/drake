@@ -7,7 +7,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context_base.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system.h"
@@ -32,21 +32,21 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
-  std::unique_ptr<ContextBase<double>> CreateDefaultContext()
+  std::unique_ptr<Context<double>> CreateDefaultContext()
       const override {
     return nullptr;
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const ContextBase<double>& context) const override {
+      const Context<double>& context) const override {
     return nullptr;
   }
 
-  void EvalOutput(const ContextBase<double>& context,
+  void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {}
 
   void EvalTimeDerivatives(
-      const ContextBase<double>& context,
+      const Context<double>& context,
       ContinuousState<double>* derivatives) const override {}
 };
 

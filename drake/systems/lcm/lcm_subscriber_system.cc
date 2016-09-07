@@ -38,7 +38,7 @@ std::string LcmSubscriberSystem::get_name() const {
   return "LcmSubscriberSystem::" + channel_;
 }
 
-void LcmSubscriberSystem::EvalOutput(const ContextBase<double>&,
+void LcmSubscriberSystem::EvalOutput(const Context<double>&,
                                      SystemOutput<double>* output) const {
   VectorBase<double>* const output_vector = output->GetMutableVectorData(0);
   std::lock_guard<std::mutex> lock(received_message_mutex_);

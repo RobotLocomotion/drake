@@ -15,7 +15,7 @@ Demultiplexer<T>::Demultiplexer(int length) {
 }
 
 template <typename T>
-void Demultiplexer<T>::EvalOutput(const ContextBase<T>& context,
+void Demultiplexer<T>::EvalOutput(const Context<T>& context,
                                   SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));

@@ -94,10 +94,10 @@ class SimpleCar : public systems::LeafSystem<T> {
  public:
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
-  void EvalOutput(const systems::ContextBase<T>& context,
+  void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
   void EvalTimeDerivatives(
-      const systems::ContextBase<T>& context,
+      const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
  protected:

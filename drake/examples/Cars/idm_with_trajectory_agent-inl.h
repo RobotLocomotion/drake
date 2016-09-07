@@ -29,7 +29,7 @@ IdmWithTrajectoryAgent<T>::~IdmWithTrajectoryAgent() {}
 
 template <typename T>
 void IdmWithTrajectoryAgent<T>::EvalOutput(
-    const systems::ContextBase<T>& context,
+    const systems::Context<T>& context,
     systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
@@ -46,7 +46,7 @@ void IdmWithTrajectoryAgent<T>::EvalOutput(
 
 template <typename T>
 void IdmWithTrajectoryAgent<T>::EvalTimeDerivatives(
-    const systems::ContextBase<T>& context,
+    const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 

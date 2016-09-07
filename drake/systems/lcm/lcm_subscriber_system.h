@@ -60,7 +60,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
 
   std::string get_name() const override;
 
-  void EvalOutput(const ContextBase<double>& context,
+  void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override;
 
   /**

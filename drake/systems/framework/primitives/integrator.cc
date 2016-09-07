@@ -22,7 +22,7 @@ Integrator<T>::~Integrator() {}
 
 template <typename T>
 void Integrator<T>::set_integral_value(
-    ContextBase<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
+    Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   // TODO(amcastro-tri): Provide simple accessors here to avoid lengthy
   // constructions.
   auto state_vector =
@@ -53,7 +53,7 @@ std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateContinuousState()
 }
 
 template <typename T>
-void Integrator<T>::EvalTimeDerivatives(const ContextBase<T>& context,
+void Integrator<T>::EvalTimeDerivatives(const Context<T>& context,
                                         ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   const BasicVector<T>* input = context.get_vector_input(0);
@@ -61,7 +61,7 @@ void Integrator<T>::EvalTimeDerivatives(const ContextBase<T>& context,
 }
 
 template <typename T>
-void Integrator<T>::EvalOutput(const ContextBase<T>& context,
+void Integrator<T>::EvalOutput(const Context<T>& context,
                                SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));

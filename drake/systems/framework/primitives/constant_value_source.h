@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "drake/systems/framework/context_base.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
@@ -28,9 +28,9 @@ class ConstantValueSource : public LeafSystem<T> {
   explicit ConstantValueSource(std::unique_ptr<AbstractValue> value);
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const ContextBase<T>& context) const override;
+      const Context<T>& context) const override;
 
-  void EvalOutput(const ContextBase<T>& context,
+  void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 
  private:

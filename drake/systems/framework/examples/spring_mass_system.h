@@ -69,7 +69,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
   SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
                    bool system_is_forced = false);
 
-  using MyContext = ContextBase<double>;
+  using MyContext = Context<double>;
   using MyContinuousState = ContinuousState<double>;
   using MyOutput = SystemOutput<double>;
 
