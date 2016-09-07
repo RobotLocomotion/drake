@@ -76,7 +76,7 @@
 	url = https://github.com/rdeits/swigmake.git
 [submodule "externals/swig_matlab"]
 	path = externals/swig_matlab
-	url = https://github.com/rdeits/swig-matlab-pod.git
+	url = https://github.com/jaeandersson/swig.git
 [submodule "externals/yaml_cpp"]
 	path = externals/yaml_cpp
 	url = https://github.com/jbeder/yaml-cpp.git
