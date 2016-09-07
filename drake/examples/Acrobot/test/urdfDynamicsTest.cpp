@@ -14,7 +14,7 @@ namespace examples {
 namespace acrobot {
 namespace {
 
-using drake::systems::plants::joints::FIXED;
+using drake::systems::plants::joints::kFixed;
 
 // Tests whether the dynamics of Acrobot are the same regardless of whether
 // it is loaded via direct Acrobot object instantiation, URDF, or SDF. This
@@ -27,11 +27,11 @@ GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
 
   auto r_urdf = RigidBodySystem();
   r_urdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.urdf", FIXED);
+      "/examples/Acrobot/Acrobot.urdf", kFixed);
 
   auto r_sdf = RigidBodySystem();
   r_sdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.sdf", FIXED);
+      "/examples/Acrobot/Acrobot.sdf", kFixed);
 
   // for debugging:
   /*

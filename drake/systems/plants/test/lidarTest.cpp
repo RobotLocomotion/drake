@@ -12,7 +12,7 @@
 using Eigen::VectorXd;
 using std::make_shared;
 
-using drake::systems::plants::joints::FIXED;
+using drake::systems::plants::joints::kFixed;
 
 namespace drake {
 namespace {
@@ -20,7 +20,7 @@ namespace {
 GTEST_TEST(LidarTest, BasicTest) {
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
-      GetDrakePath() + "/systems/plants/test/lidarTest.sdf", FIXED);
+      GetDrakePath() + "/systems/plants/test/lidarTest.sdf", kFixed);
 
   // Verifies that the RigidBodyDepthSensor accessors return the correct values.
   auto sensors = rigid_body_sys->GetSensors();

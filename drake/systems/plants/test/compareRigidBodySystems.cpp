@@ -10,7 +10,7 @@
 
 using std::make_shared;
 using drake::RigidBodySystem;
-using drake::systems::plants::joints::QUATERNION;
+using drake::systems::plants::joints::kQuaternion;
 using Eigen::VectorXd;
 
 namespace drake {
@@ -23,11 +23,11 @@ char* model_file_2 = nullptr;
 GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
   // Creates a rigid body system using the first model.
   auto r1 = make_shared<RigidBodySystem>();
-  r1->AddModelInstanceFromFile(model_file_1, QUATERNION);
+  r1->AddModelInstanceFromFile(model_file_1, kQuaternion);
 
   // Creates a rigid body system using the second model.
   auto r2 = make_shared<RigidBodySystem>();
-  r2->AddModelInstanceFromFile(model_file_2, QUATERNION);
+  r2->AddModelInstanceFromFile(model_file_2, kQuaternion);
 
   // for debugging:
   // r1->getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");

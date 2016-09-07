@@ -9,7 +9,7 @@
 using drake::GetDrakePath;
 using drake::getRandomVector;
 using drake::RigidBodySystem;
-using drake::systems::plants::joints::FIXED;
+using drake::systems::plants::joints::kFixed;
 
 namespace drake {
 namespace examples {
@@ -18,7 +18,7 @@ namespace {
 
 GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(
-      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf", FIXED));
+      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf", kFixed));
   auto rbsys = RigidBodySystem(tree);
   auto p = Pendulum();
 

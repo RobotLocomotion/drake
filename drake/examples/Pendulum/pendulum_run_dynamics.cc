@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
   auto p = make_shared<Pendulum>();
   auto v = make_shared<BotVisualizer<PendulumState> >(
       lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      drake::systems::plants::joints::FIXED);
+      drake::systems::plants::joints::kFixed);
 
   PendulumState<double> x0;
   x0.theta = 1;

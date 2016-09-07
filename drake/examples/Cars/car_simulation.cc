@@ -14,8 +14,8 @@ using Eigen::VectorXd;
 using drake::AffineSystem;
 using drake::NullVector;
 using drake::parsers::ModelInstanceIdTable;
-using drake::systems::plants::joints::FIXED;
-using drake::systems::plants::joints::QUATERNION;
+using drake::systems::plants::joints::kFixed;
+using drake::systems::plants::joints::kQuaternion;
 
 namespace drake {
 namespace cars {
@@ -34,14 +34,14 @@ void PrintUsageInstructions(const std::string& executable_name) {
     << std::endl
     << "    the vehicle model(s) and are thus attached to the world via"
     << std::endl
-    << "    QUATERNION joints."
+    << "    kQuaternion joints."
     << std::endl
     << std::endl
     << "  - world_model_files is a space-separated list of paths to URDF or"
     << std::endl
     << "    SDF files. This list can be of length zero or more. The models"
     << std::endl
-    << "    within these files are connected to the world via FIXED"
+    << "    within these files are connected to the world via kFixed"
     << std::endl
     << "    joints."
     << std::endl
@@ -67,7 +67,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
   // Adds a model instance.
   ModelInstanceIdTable vehicle_instance_id_table =
       rigid_body_sys->AddModelInstanceFromFile(argv[1],
-          QUATERNION);
+          kQuaternion);
 
   // Verifies that only one vehicle was added to the world.
   if (vehicle_instance_id_table.size() != 1) {
@@ -95,7 +95,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
         *duration = atof(argv[ii]);
     } else {
       ModelInstanceIdTable world_instance_id_table =
-          rigid_body_sys->AddModelInstanceFromFile(argv[ii], FIXED);
+          rigid_body_sys->AddModelInstanceFromFile(argv[ii], kFixed);
       drake::parsers::AddModelInstancesToTable(world_instance_id_table,
           model_instance_id_table);
     }

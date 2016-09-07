@@ -75,11 +75,11 @@
     drake::systems::plants::joints::FloatingBaseType floating_base_type;
 
     if (joint_type == "FIXED")
-      floating_base_type = drake::systems::plants::joints::FIXED;
+      floating_base_type = drake::systems::plants::joints::kFixed;
     else if (joint_type == "ROLLPITCHYAW")
-      floating_base_type = drake::systems::plants::joints::ROLLPITCHYAW;
+      floating_base_type = drake::systems::plants::joints::kRollPitchYaw;
     else if (joint_type == "QUATERNION")
-      floating_base_type = drake::systems::plants::joints::QUATERNION;
+      floating_base_type = drake::systems::plants::joints::kQuaternion;
     else {
       std::cerr << "Joint Type not supported" << std::endl;
       return nullptr;

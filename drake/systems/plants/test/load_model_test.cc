@@ -9,8 +9,8 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 
 using drake::RigidBodySystem;
-using drake::systems::plants::joints::FIXED;
-using drake::systems::plants::joints::QUATERNION;
+using drake::systems::plants::joints::kFixed;
+using drake::systems::plants::joints::kQuaternion;
 
 namespace drake {
 namespace systems {
@@ -36,7 +36,7 @@ TEST_P(LoadModelTest, TestNoOffset) {
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/models/cylindrical_1dof_robot." + GetParam(),
-      QUATERNION);
+      kQuaternion);
 
   // Verifies that RigidBodyTree cannot find a link thatn does not exist.
   EXPECT_THROW(rbs.getRigidBodyTree()->FindBody("not_a_link"),
@@ -99,7 +99,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/models/cylindrical_1dof_robot." + GetParam(),
-      QUATERNION, weld_to_frame);
+      kQuaternion, weld_to_frame);
 
   // Gets the link whose parent joint is called "base".
   auto link1_body = rbs.getRigidBodyTree()->FindChildBodyOfJoint("base");
@@ -139,7 +139,7 @@ TEST_P(LoadModelTest, TestWeld) {
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/models/cylindrical_1dof_robot." + GetParam(),
-      QUATERNION);
+      kQuaternion);
 
   // Loads a zero-DOF SDF robot model and weld it to the end of the
   // one DOF robot's link 2.
@@ -160,7 +160,7 @@ TEST_P(LoadModelTest, TestWeld) {
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/models/cylindrical_0dof_robot." + GetParam(),
-      FIXED, weld_to_frame);
+      kFixed, weld_to_frame);
 
   // Verifies that the newly added link exists and is in the correct location.
   auto link_body = rbs.getRigidBodyTree()->FindBody("link");
@@ -180,7 +180,7 @@ GTEST_TEST(LoadSDFTest, TestInternalOffset) {
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/models/cylindrical_1dof_robot_offset_z1.sdf",
-      QUATERNION);
+      kQuaternion);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to Z = 1.
@@ -220,7 +220,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffset1) {
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/models/cylindrical_1dof_robot_offset_z1.sdf",
-      QUATERNION, weld_to_frame);
+      kQuaternion, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to X = 2, Z = 1.
@@ -265,7 +265,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffset2) {
   rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
                            "/systems/plants/test/models/"
                            "cylindrical_1dof_robot_offset_z1_r90.sdf",
-                       QUATERNION, weld_to_frame);
+                       kQuaternion, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to identity.

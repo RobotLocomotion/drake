@@ -16,7 +16,7 @@
 
 using drake::parsers::ModelInstanceIdTable;
 using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::ROLLPITCHYAW;
+using drake::systems::plants::joints::kRollPitchYaw;
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
@@ -449,7 +449,7 @@ void ParseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   // By default all collision elements added to the world from an URDF file are
   // flagged as static.
   // We would also like to flag as static bodies connected to the world with a
-  // FloatingBaseType::FIXED joint.
+  // FloatingBaseType::kFixed joint.
   // However this is not possible at this stage since joints were not parsed
   // yet.
   // Solutions to this problem would be:
@@ -916,9 +916,9 @@ void ParseWorldJoint(XMLElement* node,
       weld_to_frame->set_transform_to_body(transform_to_parent_body);
 
       if (joint_type == "fixed") {
-        floating_base_type = FloatingBaseType::FIXED;
+        floating_base_type = FloatingBaseType::kFixed;
       } else if (joint_type == "continuous") {
-        floating_base_type = FloatingBaseType::QUATERNION;
+        floating_base_type = FloatingBaseType::kQuaternion;
       }
 
       // Throws an exception if the joint connecting the model to the world
@@ -1086,7 +1086,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
   const string root_dir = ".";
 
   return AddModelInstanceFromUrdfString(
-      urdf_string, package_map, root_dir, ROLLPITCHYAW,
+      urdf_string, package_map, root_dir, kRollPitchYaw,
       nullptr /*weld_to_frame*/, tree);
 }
 
@@ -1112,7 +1112,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     RigidBodyTree* tree) {
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
-  return ParseUrdf(&xml_doc, package_map, root_dir, ROLLPITCHYAW,
+  return ParseUrdf(&xml_doc, package_map, root_dir, kRollPitchYaw,
             weld_to_frame, tree);
 }
 
@@ -1125,7 +1125,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
   PackageMap package_map;
 
   return AddModelInstanceFromUrdfFile(filename, package_map,
-      ROLLPITCHYAW, nullptr /* weld_to_frame */, tree);
+      kRollPitchYaw, nullptr /* weld_to_frame */, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(

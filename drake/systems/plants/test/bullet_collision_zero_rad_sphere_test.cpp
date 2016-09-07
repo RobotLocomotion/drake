@@ -8,8 +8,8 @@
 using Eigen::Matrix3Xd;
 using Eigen::VectorXd;
 
-using drake::systems::plants::joints::ROLLPITCHYAW;
-using drake::systems::plants::joints::FIXED;
+using drake::systems::plants::joints::kRollPitchYaw;
+using drake::systems::plants::joints::kFixed;
 
 int main(int argc, char* argv[]) {
   RigidBodyTree tree;
@@ -17,12 +17,12 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < 10; ++i) {
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/systems/plants/test/PointMass.urdf",
-            ROLLPITCHYAW, &tree);
+            kRollPitchYaw, &tree);
   }
 
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() + "/systems/plants/test/FallingBrick.urdf",
-          FIXED, &tree);
+          kFixed, &tree);
 
   VectorXd q = VectorXd::Random(tree.number_of_positions());
   VectorXd v = VectorXd::Random(tree.number_of_velocities());

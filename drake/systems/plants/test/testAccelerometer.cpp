@@ -15,7 +15,7 @@ using drake::GetDrakePath;
 using drake::RigidBodySystem;
 using drake::RigidBodyAccelerometer;
 using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::QUATERNION;
+using drake::systems::plants::joints::kQuaternion;
 
 namespace drake {
 namespace systems {
@@ -33,7 +33,7 @@ Vector3d getAccelerometerOutput(shared_ptr<RigidBodySystem> const& sys,
 }
 
 GTEST_TEST(testAccelerometer, AllTests) {
-  FloatingBaseType floating_base_type = QUATERNION;
+  FloatingBaseType floating_base_type = kQuaternion;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",

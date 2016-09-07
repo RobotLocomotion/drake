@@ -10,9 +10,9 @@ namespace drake {
 namespace parsers {
 
 using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::FIXED;
-using drake::systems::plants::joints::ROLLPITCHYAW;
-using drake::systems::plants::joints::QUATERNION;
+using drake::systems::plants::joints::kFixed;
+using drake::systems::plants::joints::kRollPitchYaw;
+using drake::systems::plants::joints::kQuaternion;
 
 int AddFloatingJoint(
     RigidBodyTree* tree,
@@ -66,19 +66,19 @@ int AddFloatingJoint(
         transform_to_model = pose_map->at(tree->bodies[i]->get_name());
 
       switch (floating_base_type) {
-        case FIXED: {
+        case kFixed: {
           std::unique_ptr<DrakeJoint> joint(new FixedJoint(
               floating_joint_name, transform_to_world * transform_to_model));
           tree->bodies[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
-        case ROLLPITCHYAW: {
+        case kRollPitchYaw: {
           std::unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
           tree->bodies[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
-        case QUATERNION: {
+        case kQuaternion: {
           std::unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
           tree->bodies[i]->setJoint(move(joint));

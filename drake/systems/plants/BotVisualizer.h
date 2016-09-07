@@ -8,23 +8,22 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
-// these could all go in the cpp file:
 #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
 
 namespace drake {
 
-/** BotVisualizer<RobotStateVector>
- * @brief A system which takes the robot state as input and publishes an lcm
- *draw command to the drake visualizer
+/**
+ * A system that takes the robot state as input and publishes an lcm
+ * draw command to the drake visualizer.
+ *
  * @concept{system_concept}
  *
  * The resulting system has no internal state; the publish command is executed
- *on every call to the output method.
+ * on every call to the output method.
  * For convenience, the input is passed directly through as an output.
  *
  */
-
 template <template <typename> class RobotStateVector>
 class BotVisualizer {
  public:

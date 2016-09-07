@@ -18,7 +18,7 @@ using namespace drake;
 using namespace Eigen;
 
 using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::QUATERNION;
+using drake::systems::plants::joints::kQuaternion;
 
 int main(int argc, char* argv[]) {
   const size_t num_lidar_points = 100;
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if (!lcm->good()) return 1;
 
-  FloatingBaseType floating_base_type = QUATERNION;
+  FloatingBaseType floating_base_type = kQuaternion;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/warehouse.sdf", floating_base_type);

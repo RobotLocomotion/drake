@@ -5,10 +5,10 @@
 
 using namespace std;
 
-using drake::systems::plants::joints::FIXED;
 using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::QUATERNION;
-using drake::systems::plants::joints::ROLLPITCHYAW;
+using drake::systems::plants::joints::kFixed;
+using drake::systems::plants::joints::kQuaternion;
+using drake::systems::plants::joints::kRollPitchYaw;
 
 YAML::Node applyDefaults(const YAML::Node& node,
                          const YAML::Node& default_node) {
@@ -424,12 +424,12 @@ template <>
 struct convert<FloatingBaseType> {
   static bool decode(const Node& node, FloatingBaseType& rhs) {
     std::string joint_type = node.as<std::string>();
-    if (joint_type == "FIXED") {
-      rhs = FIXED;
-    } else if (joint_type == "ROLLPITCHYAW") {
-      rhs = ROLLPITCHYAW;
-    } else if (joint_type == "QUATERNION") {
-      rhs = QUATERNION;
+    if (joint_type == "kFixed") {
+      rhs = kFixed;
+    } else if (joint_type == "kRollPitchYaw") {
+      rhs = kRollPitchYaw;
+    } else if (joint_type == "kQuaternion") {
+      rhs = kQuaternion;
     } else {
       return false;
     }
@@ -454,7 +454,7 @@ struct convert<Attachment> {
     if (node["joint_type"]) {
       rhs.joint_type = node["joint_type"].as<FloatingBaseType>();
     } else {
-      rhs.joint_type = FIXED;
+      rhs.joint_type = kFixed;
     }
     return true;
   }

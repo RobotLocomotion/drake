@@ -49,7 +49,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree. The model instance is connected to the world via
- * a joint of type `ROLLPITCHYAW`. The model instance's frame
+ * a joint of type `kRollPitchYaw`. The model instance's frame
  * is equal to the world's coordinate frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
@@ -72,7 +72,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree. The model instance is connected to the world via
- * a joint of type `ROLLPITCHYAW`. The model instance's frame is
+ * a joint of type `kRollPitchYaw`. The model instance's frame is
  * equal to the world's coordinate frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
@@ -169,7 +169,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree. The model instance is connected to the world via a joint of
- * type `ROLLPITCHYAW`. The model instance's frame is equal to the
+ * type `kRollPitchYaw`. The model instance's frame is equal to the
  * world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing a URDF
@@ -190,7 +190,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree. The model instance is connected to the world via a joint of
- * type `ROLLPITCHYAW`. The model's frame is equal to the world's
+ * type `kRollPitchYaw`. The model's frame is equal to the world's
  * coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing a URDF
@@ -216,7 +216,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree. The model instance is connected to the world via a joint of
- * type `ROLLPITCHYAW` joint. The model instance's frame is equal
+ * type `kRollPitchYaw` joint. The model instance's frame is equal
  * to the world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing a URDF
@@ -246,7 +246,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree.  The model instance is connected to the world via a joint of
- * type `ROLLPITCHYAW`. The model instance's frame is equal to the
+ * type `kRollPitchYaw`. The model instance's frame is equal to the
  * world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing a URDF

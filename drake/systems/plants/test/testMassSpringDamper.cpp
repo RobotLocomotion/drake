@@ -10,7 +10,7 @@ using std::make_shared;
 
 using drake::GetDrakePath;
 using drake::RigidBodySystem;
-using drake::systems::plants::joints::FIXED;
+using drake::systems::plants::joints::kFixed;
 using drake::toEigen;
 
 namespace drake {
@@ -20,7 +20,7 @@ GTEST_TEST(testMassSpringDamper, AllTests) {
   auto sys = make_shared<RigidBodySystem>();
   sys->AddModelInstanceFromFile(
       GetDrakePath() + "/systems/plants/test/MassSpringDamper.urdf",
-      FIXED);
+      kFixed);
 
   double mass = 1.0, k = 10.0, b = 1.0;
   Matrix<double, 2, 1> xdot_desired;

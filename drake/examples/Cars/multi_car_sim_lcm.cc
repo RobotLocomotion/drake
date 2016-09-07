@@ -11,7 +11,7 @@
 using drake::BotVisualizer;
 using drake::Gain;
 using drake::SimulationOptions;
-using drake::systems::plants::joints::QUATERNION;
+using drake::systems::plants::joints::kQuaternion;
 
 using Eigen::VectorXd;
 
@@ -55,7 +55,7 @@ int do_main(int argc, const char* argv[]) {
 
     rigid_body_sys->AddModelInstanceFromFile(drake::GetDrakePath() +
       "/examples/Cars/models/prius/prius.sdf",
-      QUATERNION, car_offset);
+      kQuaternion, car_offset);
   }
 
   SetRigidBodySystemParameters(rigid_body_sys.get());
