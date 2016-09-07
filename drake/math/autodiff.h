@@ -377,7 +377,7 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
    called on @p f.
 
    @p MaxChunkSizeOuter and @p MaxChunkSizeInner can be used to control chunk
-   sizes (see <jacobian>"()").
+   sizes (see ::jacobian).
 
    See ::jacobian for requirements on the function @p f and the argument
    @p x.

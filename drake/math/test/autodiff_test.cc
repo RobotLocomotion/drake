@@ -93,6 +93,7 @@ TEST_F(AutodiffJacobianTest, QuadraticForm) {
   using Eigen::Matrix3d;
   using Eigen::Vector3d;
 
+  srand(1);
   Matrix3d A;
   A.setRandom();
 
@@ -146,6 +147,7 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   using Eigen::VectorXd;
   using Eigen::Index;
 
+  srand(1);
   Index n = 4;
   Index m = 5;
   MatrixXd A = MatrixXd::Random(n, m);
