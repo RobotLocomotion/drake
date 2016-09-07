@@ -239,6 +239,9 @@ endmacro()
 #       Specifies a URL of a source package (zip file, tarball) to be
 #       downloaded. Implies that the external is not a submodule.
 #
+#  URL_SHA <size>=<hash>
+#       Specifies the expected SHA hash of the downloaded package.
+#
 #   REQUIRES <deps...>
 #       List of packages (checked via `find_package`) that are required to
 #       build the external. Only checked if the external will be built.
@@ -283,6 +286,7 @@ function(drake_add_external PROJECT)
     SOURCE_DIR
     BINARY_DIR
     URL
+    URL_SHA
   )
   set(_ext_mv_args
     CMAKE_ARGS
@@ -358,6 +362,10 @@ function(drake_add_external PROJECT)
   if(DEFINED _ext_URL)
     set(_ext_DOWNLOAD_AND_UPDATE_COMMANDS
       URL "${_ext_URL}")
+    if(DEFINED _ext_URL_SHA)
+      list(APPEND _ext_DOWNLOAD_AND_UPDATE_COMMANDS
+        URL_HASH "SHA${_ext_URL_SHA}")
+    endif()
   else()
     # Manage updates to the submodule
     if(NOT _ext_LOCAL)
