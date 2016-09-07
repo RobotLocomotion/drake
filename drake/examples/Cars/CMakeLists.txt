@@ -6,9 +6,13 @@ if(lcm_FOUND)
     car_simulation.cc
     curve2.cc
     gen/driving_command.cc
+    gen/driving_command_translator.cc
     gen/euler_floating_joint_state.cc
+    gen/euler_floating_joint_state_translator.cc
     gen/idm_with_trajectory_agent_state.cc
+    gen/idm_with_trajectory_agent_state_translator.cc
     gen/simple_car_state.cc
+    gen/simple_car_state_translator.cc
     idm_with_trajectory_agent.cc
     simple_car.cc
     trajectory_car.cc

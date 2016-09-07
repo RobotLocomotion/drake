@@ -27,6 +27,18 @@ gen "simple car state" x y heading velocity
 
 $CLANG_FORMAT --style=file -i \
   $mydir/gen/driving_command.h \
+  $mydir/gen/driving_command.cc \
+  $mydir/gen/driving_command_translator.h \
+  $mydir/gen/driving_command_translator.cc \
   $mydir/gen/euler_floating_joint_state.h \
+  $mydir/gen/euler_floating_joint_state.cc \
+  $mydir/gen/euler_floating_joint_state_translator.h \
+  $mydir/gen/euler_floating_joint_state_translator.cc \
   $mydir/gen/idm_with_trajectory_agent_state.h \
-  $mydir/gen/simple_car_state.h
+  $mydir/gen/idm_with_trajectory_agent_state.cc \
+  $mydir/gen/idm_with_trajectory_agent_state_translator.h \
+  $mydir/gen/idm_with_trajectory_agent_state_translator.cc \
+  $mydir/gen/simple_car_state.h \
+  $mydir/gen/simple_car_state.cc \
+  $mydir/gen/simple_car_state_translator.h \
+  $mydir/gen/simple_car_state_translator.cc
