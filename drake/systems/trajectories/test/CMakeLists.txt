@@ -1,10 +1,10 @@
 add_executable(testPiecewisePolynomial testPiecewisePolynomial.cpp)
 target_link_libraries(testPiecewisePolynomial drakeTrajectories ${GTEST_BOTH_LIBRARIES})
-add_test(NAME testPiecewisePolynomial COMMAND testPiecewisePolynomial)
+drake_add_test(NAME testPiecewisePolynomial COMMAND testPiecewisePolynomial)
 
 add_executable(testExponentialPlusPiecewisePolynomial testExponentialPlusPiecewisePolynomial.cpp)
 target_link_libraries(testExponentialPlusPiecewisePolynomial drakeTrajectories ${GTEST_BOTH_LIBRARIES})
-add_test(NAME testExponentialPlusPiecewisePolynomial COMMAND testExponentialPlusPiecewisePolynomial)
+drake_add_test(NAME testExponentialPlusPiecewisePolynomial COMMAND testExponentialPlusPiecewisePolynomial)
 
 add_matlab_test(NAME systems/trajectories/test/expplusppFnderTest COMMAND expplusppFnderTest)
 add_matlab_test(NAME systems/trajectories/test/feedbackTest COMMAND feedbackTest)
