@@ -24,8 +24,6 @@ namespace parsers {
  * necessary since floating joints can be directly added by calling
  * RigidBody::setJoint().
  *
- * @param[out] tree The RigidBodyTree to which to add the floating joints.
- *
  * @param[in] floating_base_type The floating joint's type.
  *
  * @param[in] body_indices A list of body indexes to check. A floating joint is
@@ -37,7 +35,10 @@ namespace parsers {
  *
  * @param[in] pose_map A mapping where the key is the body's name and the value
  * is the transform from the frame of the body to the frame of the model to
- * which the body belongs.
+ * which the body belongs. This parameter will may be nullptr, in which case an
+ * identity transform is used.
+ *
+ * @param[out] tree The RigidBodyTree to which to add the floating joints.
  *
  * @return The number of floating joint added to this rigid body tree.
  *
@@ -46,11 +47,11 @@ namespace parsers {
  */
 DRAKERBM_EXPORT
 int AddFloatingJoint(
-    RigidBodyTree* tree,
     systems::plants::joints::FloatingBaseType floating_base_type,
     const std::vector<int>& body_indices,
-    const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
-    const PoseMap* pose_map = nullptr);
+    const std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    const PoseMap* pose_map,
+    RigidBodyTree* tree);
 
 }  // namespace parsers
 }  // namespace drake

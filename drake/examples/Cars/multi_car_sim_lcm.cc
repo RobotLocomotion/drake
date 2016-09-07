@@ -15,10 +15,6 @@ namespace {
 
 using Eigen::VectorXd;
 
-using drake::BotVisualizer;
-using drake::Gain;
-using drake::SimulationOptions;
-
 int do_main(int argc, const char* argv[]) {
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();

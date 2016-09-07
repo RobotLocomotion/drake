@@ -20,10 +20,6 @@ namespace drake {
 namespace cars {
 namespace {
 
-using drake::AffineSystem;
-using drake::BotVisualizer;
-using drake::NullVector;
-using drake::cascade;
 using drake::systems::plants::joints::kRollPitchYaw;
 
 int DoMain(int argc, const char* argv[]) {

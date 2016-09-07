@@ -15,11 +15,11 @@ using drake::systems::plants::joints::kRollPitchYaw;
 using drake::systems::plants::joints::kQuaternion;
 
 int AddFloatingJoint(
-    RigidBodyTree* tree,
     const FloatingBaseType floating_base_type,
     const std::vector<int>& body_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    const PoseMap* pose_map) {
+    const PoseMap* pose_map,
+    RigidBodyTree* tree) {
   std::string floating_joint_name;
   RigidBody* weld_to_body{nullptr};
   Eigen::Isometry3d transform_to_world;
@@ -96,9 +96,9 @@ int AddFloatingJoint(
     // the newly freed body (i.e., the body without a joint) to the world.
     throw std::runtime_error(
         "No root bodies found. Every body referenced by the supplied list of "
-        "body indices has a joint connecting it to some other body).  You're "
-        "about to loop indefinitely in the RigidBodyTree::compile() method. "
-        "This scenario is still not supported in Drake.");
+        "body indices has a joint connecting it to some other body.  This will "
+        "result in RigidBodyTree::compile() looping indefinitely. This "
+        "scenario currently not supported in Drake.");
   }
 
   return num_floating_joints_added;
