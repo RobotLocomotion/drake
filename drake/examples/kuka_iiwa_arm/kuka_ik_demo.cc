@@ -2,11 +2,14 @@
 
 #include <lcm/lcm-cpp.hpp>
 
+#include "lcmtypes/drake/lcmt_iiwa_command.hpp"
+#include "lcmtypes/drake/lcmt_iiwa_status.hpp"
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/polynomial.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_status.h"
 #include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
@@ -14,22 +17,18 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/vector.h"
 
-#include "lcmtypes/drake/lcmt_iiwa_command.hpp"
-#include "lcmtypes/drake/lcmt_iiwa_status.hpp"
-
-#include "iiwa_status.h"
-
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
-using Eigen::VectorXi;
-using drake::Vector1d;
-using Eigen::Vector2d;
-using Eigen::Vector3d;
-
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
+
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
+using Eigen::VectorXi;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+
+using drake::Vector1d;
 
 const char* kLcmCommandChannel = "IIWA_COMMAND";
 

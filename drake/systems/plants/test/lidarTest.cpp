@@ -2,25 +2,26 @@
 
 #include "gtest/gtest.h"
 
+#include "lcmtypes/bot_core/planar_lidar_t.hpp"
+
 #include "drake/common/drake_path.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
-#include "lcmtypes/bot_core/planar_lidar_t.hpp"
-
-using Eigen::VectorXd;
-using std::make_shared;
-
-using drake::systems::plants::joints::kFixed;
 
 namespace drake {
 namespace {
 
+using std::make_shared;
+
+using Eigen::VectorXd;
+
 GTEST_TEST(LidarTest, BasicTest) {
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
-      GetDrakePath() + "/systems/plants/test/lidarTest.sdf", kFixed);
+      GetDrakePath() + "/systems/plants/test/lidarTest.sdf",
+      drake::systems::plants::joints::kFixed);
 
   // Verifies that the RigidBodyDepthSensor accessors return the correct values.
   auto sensors = rigid_body_sys->GetSensors();
@@ -87,7 +88,7 @@ GTEST_TEST(LidarTest, BasicTest) {
   const double max_range = lidar_sensor->max_range();
   const double tol = 1.0e-6;
 
-  for (int i = 0; i < distances.size(); i++) {
+  for (int i = 0; i < distances.size(); ++i) {
     double theta = min_yaw + (max_yaw - min_yaw) * i / (distances.size() - 1);
 
     // We've implicitly hard-coded the box geometry from the SDF for the
@@ -120,7 +121,7 @@ GTEST_TEST(LidarTest, BasicTest) {
   msg.radstep = (max_yaw - min_yaw) / (distances.size() - 1);
 
   msg.nranges = distances.size();
-  for (int i = 0; i < distances.size(); i++) msg.ranges.push_back(distances(i));
+  for (int i = 0; i < distances.size(); ++i) msg.ranges.push_back(distances(i));
 
   lcm->publish("DRAKE_PLANAR_LIDAR_0_rear_wall", &msg);
 }

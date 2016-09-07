@@ -17,7 +17,7 @@ using drake::systems::plants::joints::kQuaternion;
 int AddFloatingJoint(
     RigidBodyTree* tree,
     const FloatingBaseType floating_base_type,
-    const std::vector<int>& link_indices,
+    const std::vector<int>& body_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const PoseMap* pose_map) {
   std::string floating_joint_name;
@@ -54,7 +54,7 @@ int AddFloatingJoint(
 
   int num_floating_joints_added = 0;
 
-  for (auto i : link_indices) {
+  for (auto i : body_indices) {
     if (tree->bodies[i]->get_parent() == nullptr) {
       // The following code connects the parent-less link to the rigid body tree
       // using a floating joint.
@@ -91,13 +91,14 @@ int AddFloatingJoint(
   }
 
   if (num_floating_joints_added == 0) {
+    // TODO(liang.fok) Handle this by disconnecting one of the internal nodes,
+    // replacing the disconnected joint with a loop joint, and then connecting
+    // the newly freed body (i.e., the body without a joint) to the world.
     throw std::runtime_error(
-        "No root links found (every link in the rigid body model has a joint "
-        "connecting it to some other joint).  You're about to loop "
-        "indefinitely in the compile() method.  Still need to handle this "
-        "case.");
-    // could handle it by disconnecting one of the internal nodes, making that a
-    // loop joint, and connecting the new free joint to the world
+        "No root bodies found. Every body referenced by the supplied list of "
+        "body indices has a joint connecting it to some other body).  You're "
+        "about to loop indefinitely in the RigidBodyTree::compile() method. "
+        "This scenario is still not supported in Drake.");
   }
 
   return num_floating_joints_added;

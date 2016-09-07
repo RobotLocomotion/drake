@@ -6,7 +6,6 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/material_map.h"
@@ -14,15 +13,9 @@
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/xmlUtil.h"
 
-using drake::parsers::ModelInstanceIdTable;
-using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::kRollPitchYaw;
-
-using Eigen::Isometry3d;
-using Eigen::Matrix;
-using Eigen::Matrix3d;
-using Eigen::Vector3d;
-using Eigen::Vector4d;
+namespace drake {
+namespace parsers {
+namespace urdf {
 
 using std::allocate_shared;
 using std::cerr;
@@ -36,12 +29,19 @@ using std::stringstream;
 using std::unique_ptr;
 using std::vector;
 
+using Eigen::Isometry3d;
+using Eigen::Matrix;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
-namespace drake {
-namespace parsers {
-namespace urdf {
+using drake::parsers::ModelInstanceIdTable;
+using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::kRollPitchYaw;
+
 namespace {
 
 void ParseInertial(RigidBody* body, XMLElement* node) {

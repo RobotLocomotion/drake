@@ -16,15 +16,15 @@
 #include "drake/examples/Cars/car_simulation.h"
 #include "drake/examples/Cars/trajectory_car.h"
 
+namespace drake {
+namespace cars {
+namespace {
+
 using drake::AffineSystem;
 using drake::BotVisualizer;
 using drake::NullVector;
 using drake::cascade;
 using drake::systems::plants::joints::kRollPitchYaw;
-
-namespace drake {
-namespace cars {
-namespace {
 
 int DoMain(int argc, const char* argv[]) {
   int num_cars = 100;

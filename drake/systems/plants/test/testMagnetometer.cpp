@@ -3,26 +3,20 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
-
-
-using Eigen::Vector3d;
-using Eigen::Vector4d;
-using Eigen::VectorXd;
-using std::shared_ptr;
-using std::make_shared;
-using drake::GetDrakePath;
-using drake::RigidBodyMagnetometer;
-using drake::RigidBodySystem;
-using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::kQuaternion;
 
 namespace drake {
 namespace systems {
 namespace plants {
 namespace {
+
+using std::make_shared;
+using std::shared_ptr;
+
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
 
 Vector3d getMagnetometerOutput(shared_ptr<RigidBodySystem> const& sys,
                                Vector3d const& rpy) {
@@ -35,7 +29,8 @@ Vector3d getMagnetometerOutput(shared_ptr<RigidBodySystem> const& sys,
 }
 
 GTEST_TEST(testMagnetometer, AllTests) {
-  FloatingBaseType floating_base_type = kQuaternion;
+  drake::systems::plants::joints::FloatingBaseType floating_base_type =
+      drake::systems::plants::joints::kQuaternion;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",

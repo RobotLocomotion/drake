@@ -14,8 +14,8 @@
 namespace drake {
 
 /**
- * A system that takes the robot state as input and publishes an lcm
- * draw command to the drake visualizer.
+ * A system that takes the robot state as input and publishes an LCM
+ * draw command to the Drake Visualizer.
  *
  * @concept{system_concept}
  *

@@ -8,15 +8,18 @@
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
-using std::make_shared;
-using drake::RigidBodySystem;
-using drake::systems::plants::joints::kQuaternion;
-using Eigen::VectorXd;
-
 namespace drake {
 namespace systems {
 namespace plants {
 namespace {
+
+using std::make_shared;
+
+using Eigen::VectorXd;
+
+using drake::RigidBodySystem;
+using drake::systems::plants::joints::kQuaternion;
+
 char* model_file_1 = nullptr;
 char* model_file_2 = nullptr;
 

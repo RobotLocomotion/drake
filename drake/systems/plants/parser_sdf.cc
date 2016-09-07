@@ -26,16 +26,16 @@
 #define PCLOSE pclose
 #endif
 
+namespace drake {
+namespace parsers {
+namespace sdf {
+namespace {
+
 using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
 
 using drake::systems::plants::joints::FloatingBaseType;
-
-namespace drake {
-namespace parsers {
-namespace sdf {
-namespace {
 
 void ParseSdfInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                       PoseMap& pose_map, const Isometry3d& T_link) {

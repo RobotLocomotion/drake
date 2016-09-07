@@ -1,20 +1,15 @@
+#include "gtest/gtest.h"
+
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Acrobot/Acrobot.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "gtest/gtest.h"
-
-using drake::RigidBodySystem;
-using drake::getRandomVector;
-using drake::GetDrakePath;
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {
 namespace acrobot {
 namespace {
-
-using drake::systems::plants::joints::kFixed;
 
 // Tests whether the dynamics of Acrobot are the same regardless of whether
 // it is loaded via direct Acrobot object instantiation, URDF, or SDF. This
@@ -27,11 +22,11 @@ GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
 
   auto r_urdf = RigidBodySystem();
   r_urdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.urdf", kFixed);
+      "/examples/Acrobot/Acrobot.urdf", drake::systems::plants::joints::kFixed);
 
   auto r_sdf = RigidBodySystem();
   r_sdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.sdf", kFixed);
+      "/examples/Acrobot/Acrobot.sdf", drake::systems::plants::joints::kFixed);
 
   // for debugging:
   /*

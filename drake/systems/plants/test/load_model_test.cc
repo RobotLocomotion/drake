@@ -4,19 +4,17 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-
-using drake::RigidBodySystem;
-using drake::systems::plants::joints::kFixed;
-using drake::systems::plants::joints::kQuaternion;
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace systems {
 namespace plants {
 namespace test {
 namespace {
+
+using drake::systems::plants::joints::kQuaternion;
 
 /**
  * Defines a class that extends Google Test's ::testing::TestWithParam
@@ -160,7 +158,7 @@ TEST_P(LoadModelTest, TestWeld) {
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/models/cylindrical_0dof_robot." + GetParam(),
-      kFixed, weld_to_frame);
+      drake::systems::plants::joints::kFixed, weld_to_frame);
 
   // Verifies that the newly added link exists and is in the correct location.
   auto link_body = rbs.getRigidBodyTree()->FindBody("link");

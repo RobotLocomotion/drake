@@ -3,7 +3,6 @@
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 

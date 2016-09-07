@@ -1,3 +1,5 @@
+#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
+
 #include "drake/examples/Cars/car_simulation.h"
 #include "drake/common/drake_path.h"
 #include "drake/systems/LCMSystem.h"
@@ -6,18 +8,16 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
-#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
-
-using drake::BotVisualizer;
-using drake::Gain;
-using drake::SimulationOptions;
-using drake::systems::plants::joints::kQuaternion;
-
-using Eigen::VectorXd;
 
 namespace drake {
 namespace cars {
 namespace {
+
+using Eigen::VectorXd;
+
+using drake::BotVisualizer;
+using drake::Gain;
+using drake::SimulationOptions;
 
 int do_main(int argc, const char* argv[]) {
   // Initializes the communication layer.
@@ -55,7 +55,7 @@ int do_main(int argc, const char* argv[]) {
 
     rigid_body_sys->AddModelInstanceFromFile(drake::GetDrakePath() +
       "/examples/Cars/models/prius/prius.sdf",
-      kQuaternion, car_offset);
+      drake::systems::plants::joints::kQuaternion, car_offset);
   }
 
   SetRigidBodySystemParameters(rigid_body_sys.get());

@@ -7,6 +7,9 @@
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 
+namespace drake {
+namespace cars {
+
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -16,9 +19,6 @@ using drake::NullVector;
 using drake::parsers::ModelInstanceIdTable;
 using drake::systems::plants::joints::kFixed;
 using drake::systems::plants::joints::kQuaternion;
-
-namespace drake {
-namespace cars {
 
 const char kDurationFlag[] = "--duration";
 

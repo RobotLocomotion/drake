@@ -9,9 +9,6 @@ namespace kuka_iiwa_arm {
 
 using lcm::LCM;
 
-using drake::RigidBodySystem;
-using drake::systems::plants::joints::kFixed;
-
 std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   // Instantiates a rigid body system and adds the robot arm to it.
   auto rigid_body_system = std::allocate_shared<RigidBodySystem>(
@@ -19,7 +16,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
 
   rigid_body_system->AddModelInstanceFromFile(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      kFixed);
+      drake::systems::plants::joints::kFixed);
 
   // Sets some simulation parameters.
   rigid_body_system->penetration_stiffness = 3000.0;

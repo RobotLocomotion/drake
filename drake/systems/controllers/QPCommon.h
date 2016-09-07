@@ -6,7 +6,6 @@
 
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/robotInterfaces/Side.h"
