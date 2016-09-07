@@ -4,4 +4,4 @@ if(bullet_FOUND)
   drake_add_test(NAME model_test COMMAND model_test)
 endif()
 
-add_matlab_test(NAME systems/plants/collision/test/testActiveCollisionOptions OPTIONAL bullet COMMAND testActiveCollisionOptions)
+drake_add_matlab_test(NAME systems/plants/collision/test/testActiveCollisionOptions OPTIONAL bullet COMMAND testActiveCollisionOptions)

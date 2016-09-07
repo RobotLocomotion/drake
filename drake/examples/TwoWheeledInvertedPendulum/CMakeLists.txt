@@ -1,4 +1,4 @@
-add_matlab_test(NAME examples/TwoWheeledInvertedPendulum/runObserverControl COMMAND runObserverControl)
-add_matlab_test(NAME examples/TwoWheeledInvertedPendulum/runSwingUp OPTIONAL snopt COMMAND runSwingUp)
+drake_add_matlab_test(NAME examples/TwoWheeledInvertedPendulum/runObserverControl COMMAND runObserverControl)
+drake_add_matlab_test(NAME examples/TwoWheeledInvertedPendulum/runSwingUp OPTIONAL snopt COMMAND runSwingUp)
 
 add_subdirectory(test)

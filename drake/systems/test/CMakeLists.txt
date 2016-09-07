@@ -30,9 +30,9 @@ add_executable(simulation_trajectory_logger_test simulation_trajectory_logger_te
 target_link_libraries(simulation_trajectory_logger_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME simulation_trajectory_logger_test COMMAND simulation_trajectory_logger_test)
 
-add_matlab_test(NAME systems/test/HybridSystemSampleTimeTest.run COMMAND HybridSystemSampleTimeTest.run)
-add_matlab_test(NAME systems/test/LinearGaussianDT.run COMMAND LinearGaussianDT.run)
-# add_matlab_test(NAME systems/test/linear_gaussian_dt COMMAND linear_gaussian_dt)  # FIXME: see #366
-add_matlab_test(NAME systems/test/memoryTest OPTIONAL bullet COMMAND memoryTest)
-# add_matlab_test(NAME systems/test/runPendulum COMMAND runPendulum)  # FIXME: see #310
-add_matlab_test(NAME systems/test/testSimInput COMMAND testSimInput)
+drake_add_matlab_test(NAME systems/test/HybridSystemSampleTimeTest.run COMMAND HybridSystemSampleTimeTest.run)
+drake_add_matlab_test(NAME systems/test/LinearGaussianDT.run COMMAND LinearGaussianDT.run)
+# drake_add_matlab_test(NAME systems/test/linear_gaussian_dt COMMAND linear_gaussian_dt)  # FIXME: see #366
+drake_add_matlab_test(NAME systems/test/memoryTest OPTIONAL bullet COMMAND memoryTest)
+# drake_add_matlab_test(NAME systems/test/runPendulum COMMAND runPendulum)  # FIXME: see #310
+drake_add_matlab_test(NAME systems/test/testSimInput COMMAND testSimInput)

@@ -65,12 +65,12 @@ endfunction()
 #------------------------------------------------------------------------------
 # Add a MATLAB test to the drake project to be run by ctest.
 #
-#   add_matlab_test(NAME <name> COMMAND <matlab_string_to_evaluate>
-#                  [CONFIGURATIONS <configuration>...]
-#                  [REQUIRES <external>...]
-#                  [OPTIONAL <external>...]
-#                  [SIZE <small | medium | large | enormous>]
-#                  [WORKING_DIRECTORY <directory>])
+#   drake_add_matlab_test(NAME <name> COMMAND <matlab_string_to_evaluate>
+#                         [CONFIGURATIONS <configuration>...]
+#                         [REQUIRES <external>...]
+#                         [OPTIONAL <external>...]
+#                         [SIZE <small | medium | large | enormous>]
+#                         [WORKING_DIRECTORY <directory>])
 #
 # Arguments:
 #   COMMAND
@@ -92,7 +92,7 @@ endfunction()
 #     in which to execute the test. If not specified, the test will be run with
 #     the working directory set to CMAKE_CURRENT_SOURCE_DIR.
 #------------------------------------------------------------------------------
-function(add_matlab_test)
+function(drake_add_matlab_test)
   if(NOT MATLAB_FOUND)
     return()
   endif()
@@ -146,4 +146,12 @@ function(add_matlab_test)
     WORKING_DIRECTORY ${_WORKING_DIRECTORY}
     ${_test_args})
   set_tests_properties(${_NAME} PROPERTIES LABELS ${_SIZE} TIMEOUT ${_TIMEOUT})
+endfunction()
+
+#------------------------------------------------------------------------------
+# Deprecated.
+#------------------------------------------------------------------------------
+function(add_matlab_test)
+  message(WARNING "The function add_matlab_test is deprecated; use drake_add_matlab_test instead.")
+  drake_add_matlab_test(${ARGN})
 endfunction()
