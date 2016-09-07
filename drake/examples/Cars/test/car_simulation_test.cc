@@ -5,9 +5,7 @@
 #include "drake/examples/Cars/car_simulation.h"
 
 namespace drake {
-namespace examples {
 namespace cars {
-namespace test {
 namespace {
 
 GTEST_TEST(CarSimulationTest, SimpleCarVisualizationAdapter) {
@@ -43,7 +41,5 @@ GTEST_TEST(CarSimulationTest, SimpleCarVisualizationAdapter) {
 }
 
 }  // namespace
-}  // namespace test
 }  // namespace cars
-}  // namespace examples
 }  // namespace drake

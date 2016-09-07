@@ -6,6 +6,7 @@
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
 namespace drake {
+namespace cars {
 
 /// SimpleCar -- model an idealized response to driving commands, neglecting
 /// all physics.
@@ -103,11 +104,12 @@ class SimpleCar : public systems::LeafSystem<T> {
   // LeafSystem<T> overrides
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;
-  std::unique_ptr<systems::VectorBase<T>> AllocateOutputVector(
+  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override;
 
  private:
   const SimpleCar1 wrapped_;
 };
 
+}  // namespace cars
 }  // namespace drake

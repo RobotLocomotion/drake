@@ -15,14 +15,7 @@
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
-using drake::RigidBodySystem;
-using drake::PDControlSystem;
-using drake::CascadeSystem;
-using drake::Gain;
-using drake::SimulationOptions;
-
 namespace drake {
-namespace examples {
 namespace cars {
 
 /**
@@ -167,5 +160,4 @@ DRAKECARS_EXPORT
 Eigen::VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys);
 
 }  // namespace cars
-}  // namespace examples
 }  // namespace drake

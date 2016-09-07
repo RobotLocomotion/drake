@@ -9,6 +9,7 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/integrator.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -61,6 +62,7 @@ class ExampleDiagram : public Diagram<double> {
     builder.BuildInto(this);
   }
 
+  Adder<double>* adder0() { return adder0_.get(); }
   Integrator<double>* integrator0() { return integrator0_.get(); }
   Integrator<double>* integrator1() { return integrator1_.get(); }
 
@@ -82,19 +84,19 @@ class DiagramTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
 
-    input0_.reset(new BasicVector<double>({1, 2, 4}));
-    input1_.reset(new BasicVector<double>({8, 16, 32}));
-    input2_.reset(new BasicVector<double>({64, 128, 256}));
+    input0_ = BasicVector<double>::Make({1, 2, 4});
+    input1_ = BasicVector<double>::Make({8, 16, 32});
+    input2_ = BasicVector<double>::Make({64, 128, 256});
 
     // Initialize the integrator states.
     auto integrator0_xc = GetMutableContinuousState(integrator0());
-    ASSERT_NE(nullptr, integrator0_xc);
+    ASSERT_TRUE(integrator0_xc != nullptr);
     integrator0_xc->get_mutable_state()->SetAtIndex(0, 3);
     integrator0_xc->get_mutable_state()->SetAtIndex(1, 9);
     integrator0_xc->get_mutable_state()->SetAtIndex(2, 27);
 
     auto integrator1_xc = GetMutableContinuousState(integrator1());
-    ASSERT_NE(nullptr, integrator1_xc);
+    ASSERT_TRUE(integrator1_xc != nullptr);
     integrator1_xc->get_mutable_state()->SetAtIndex(0, 81);
     integrator1_xc->get_mutable_state()->SetAtIndex(1, 243);
     integrator1_xc->get_mutable_state()->SetAtIndex(2, 729);
@@ -122,21 +124,21 @@ class DiagramTest : public ::testing::Test {
 
     const BasicVector<double>* output0 =
         dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
-    ASSERT_NE(nullptr, output0);
+    ASSERT_TRUE(output0 != nullptr);
     EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
     EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
     EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
 
     const BasicVector<double>* output1 =
         dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(1));
-    ASSERT_NE(nullptr, output1);
+    ASSERT_TRUE(output1 != nullptr);
     EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
     EXPECT_EQ(expected_output1[1], output1->get_value()[1]);
     EXPECT_EQ(expected_output1[2], output1->get_value()[2]);
 
     const BasicVector<double>* output2 =
         dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(2));
-    ASSERT_NE(nullptr, output2);
+    ASSERT_TRUE(output2 != nullptr);
     EXPECT_EQ(expected_output2[0], output2->get_value()[0]);
     EXPECT_EQ(expected_output2[1], output2->get_value()[1]);
     EXPECT_EQ(expected_output2[2], output2->get_value()[2]);
@@ -148,6 +150,7 @@ class DiagramTest : public ::testing::Test {
     context_->SetInputPort(2, MakeInput(std::move(input2_)));
   }
 
+  Adder<double>* adder0() { return diagram_->adder0(); }
   Integrator<double>* integrator0() { return diagram_->integrator0(); }
   Integrator<double>* integrator1() { return diagram_->integrator1(); }
 
@@ -185,6 +188,9 @@ TEST_F(DiagramTest, Topology) {
   EXPECT_EQ(kInheritedSampling, diagram_->get_output_port(1).get_sampling());
   // The integrator output port has continuous sampling.
   EXPECT_EQ(kContinuousSampling, diagram_->get_output_port(2).get_sampling());
+
+  // The diagram has direct feedthrough.
+  EXPECT_TRUE(diagram_->has_any_direct_feedthrough());
 }
 
 // Tests that the diagram computes the correct sum.
@@ -209,18 +215,20 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
   ASSERT_EQ(6, derivatives->get_misc_continuous_state().size());
 
   // The derivative of the first integrator is A.
-  const ContinuousState<double>& integrator0_xcdot =
+  const ContinuousState<double>* integrator0_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator0());
-  EXPECT_EQ(1 + 8, integrator0_xcdot.get_state().GetAtIndex(0));
-  EXPECT_EQ(2 + 16, integrator0_xcdot.get_state().GetAtIndex(1));
-  EXPECT_EQ(4 + 32, integrator0_xcdot.get_state().GetAtIndex(2));
+  ASSERT_TRUE(integrator0_xcdot != nullptr);
+  EXPECT_EQ(1 + 8, integrator0_xcdot->get_state().GetAtIndex(0));
+  EXPECT_EQ(2 + 16, integrator0_xcdot->get_state().GetAtIndex(1));
+  EXPECT_EQ(4 + 32, integrator0_xcdot->get_state().GetAtIndex(2));
 
   // The derivative of the second integrator is the state of the first.
-  const ContinuousState<double>& integrator1_xcdot =
+  const ContinuousState<double>* integrator1_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator1());
-  EXPECT_EQ(3, integrator1_xcdot.get_state().GetAtIndex(0));
-  EXPECT_EQ(9, integrator1_xcdot.get_state().GetAtIndex(1));
-  EXPECT_EQ(27, integrator1_xcdot.get_state().GetAtIndex(2));
+  ASSERT_TRUE(integrator1_xcdot != nullptr);
+  EXPECT_EQ(3, integrator1_xcdot->get_state().GetAtIndex(0));
+  EXPECT_EQ(9, integrator1_xcdot->get_state().GetAtIndex(1));
+  EXPECT_EQ(27, integrator1_xcdot->get_state().GetAtIndex(2));
 }
 
 // Tests that the same diagram can be evaluated into the same output with
@@ -248,7 +256,7 @@ TEST_F(DiagramTest, Clone) {
   expected_output0 << 3 + 8 + 64, 6 + 16 + 128, 9 + 32 + 256;  // B
   const BasicVector<double>* output0 =
       dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
-  ASSERT_NE(nullptr, output0);
+  ASSERT_TRUE(output0 != nullptr);
   EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
   EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
   EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
@@ -258,7 +266,7 @@ TEST_F(DiagramTest, Clone) {
   expected_output1 += expected_output0;       // A + B
   const BasicVector<double>* output1 =
       dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(1));
-  ASSERT_NE(nullptr, output1);
+  ASSERT_TRUE(output1 != nullptr);
   EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
   EXPECT_EQ(expected_output1[1], output1->get_value()[1]);
   EXPECT_EQ(expected_output1[2], output1->get_value()[2]);
@@ -266,6 +274,15 @@ TEST_F(DiagramTest, Clone) {
   // Check that the context that was cloned is unaffected.
   diagram_->EvalOutput(*context_, output_.get());
   ExpectDefaultOutputs();
+}
+
+// Tests that, when asked for the state derivatives of Systems that are
+// stateless, Diagram returns nullptr.
+TEST_F(DiagramTest, DerivativesOfStatelessSystemAreNullptr) {
+  std::unique_ptr<ContinuousState<double>> derivatives =
+      diagram_->AllocateTimeDerivatives();
+  EXPECT_EQ(nullptr,
+            diagram_->GetSubsystemDerivatives(*derivatives, adder0()));
 }
 
 class DiagramOfDiagramsTest : public ::testing::Test {
@@ -288,9 +305,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
 
-    input0_.reset(new BasicVector<double>(std::vector<double>{8}));
-    input1_.reset(new BasicVector<double>(std::vector<double>{64}));
-    input2_.reset(new BasicVector<double>(std::vector<double>{512}));
+    input0_ = BasicVector<double>::Make({8});
+    input1_ = BasicVector<double>::Make({64});
+    input2_ = BasicVector<double>::Make({512});
 
     context_->SetInputPort(0, MakeInput(std::move(input0_)));
     context_->SetInputPort(1, MakeInput(std::move(input1_)));
@@ -373,8 +390,8 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   AddConstantDiagram plus_seven(7.0);
   auto context = plus_seven.CreateDefaultContext();
   auto output = plus_seven.AllocateOutput(*context);
-  ASSERT_NE(nullptr, context);
-  ASSERT_NE(nullptr, output);
+  ASSERT_TRUE(context != nullptr);
+  ASSERT_TRUE(output != nullptr);
 
   auto vec = std::make_unique<BasicVector<double>>(1 /* length */);
   vec->get_mutable_value() << 12.0;
@@ -439,6 +456,52 @@ GTEST_TEST(DiagramPublishTest, Publish) {
   auto context = publishing_diagram.CreateDefaultContext();
   publishing_diagram.Publish(*context);
   EXPECT_EQ(42.0, publishing_diagram.get());
+}
+
+// FeedbackDiagram is a diagram containing a feedback loop of two
+// constituent diagrams, an Integrator and a Gain. The Integrator is not
+// direct-feedthrough, so there is no algebraic loop.
+class FeedbackDiagram : public Diagram<double> {
+ public:
+  FeedbackDiagram() : Diagram<double>() {
+    integrator_ = std::make_unique<Integrator<double>>(1 /* length */);
+    gain_ = std::make_unique<Gain<double>>(1.0 /* gain */, 1 /* length */);
+
+    DiagramBuilder<double> integrator_builder;
+    integrator_builder.ExportInput(integrator_->get_input_port(0));
+    integrator_builder.ExportOutput(integrator_->get_output_port(0));
+    integrator_diagram_ = integrator_builder.Build();
+
+    DiagramBuilder<double> gain_builder;
+    gain_builder.ExportInput(gain_->get_input_port(0));
+    gain_builder.ExportOutput(gain_->get_output_port(0));
+    gain_diagram_ = gain_builder.Build();
+
+    DiagramBuilder<double> builder;
+    builder.Connect(*integrator_diagram_, *gain_diagram_);
+    builder.Connect(*gain_diagram_, *integrator_diagram_);
+    builder.BuildInto(this);
+  }
+
+ private:
+  std::unique_ptr<Integrator<double>> integrator_;
+  std::unique_ptr<Gain<double>> gain_;
+  std::unique_ptr<Diagram<double>> integrator_diagram_;
+  std::unique_ptr<Diagram<double>> gain_diagram_;
+};
+
+// Tests that since there are no outputs, there is no direct feedthrough.
+GTEST_TEST(FeedbackDiagramTest, HasDirectFeedthrough) {
+  FeedbackDiagram diagram;
+  EXPECT_FALSE(diagram.has_any_direct_feedthrough());
+}
+
+// Tests that a FeedbackDiagram's context can be deleted without accessing
+// already-freed memory. https://github.com/RobotLocomotion/drake/issues/3349
+GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
+  FeedbackDiagram diagram;
+  auto context = diagram.CreateDefaultContext();
+  EXPECT_NO_THROW(context.reset());
 }
 
 }  // namespace

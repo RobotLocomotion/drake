@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/basic_state_vector.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
@@ -53,7 +53,7 @@ void LcmSubscriberSystem::SetMessage(std::vector<uint8_t> message_bytes) {
   received_message_ = message_bytes;
 }
 
-std::unique_ptr<VectorBase<double>> LcmSubscriberSystem::AllocateOutputVector(
+std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
     const SystemPortDescriptor<double>& descriptor) const {
   DRAKE_ABORT_UNLESS(descriptor.get_index() == 0);
   auto result = translator_.AllocateOutputVector();

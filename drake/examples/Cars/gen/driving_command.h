@@ -8,11 +8,12 @@
 
 #include <Eigen/Core>
 
-#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 #include "drake/drakeCars_export.h"
-#include "drake/systems/framework/basic_state_and_output_vector.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
 namespace drake {
+namespace cars {
 
 /// Describes the row indices of a DrivingCommand.
 struct DRAKECARS_EXPORT DrivingCommandIndices {
@@ -25,15 +26,15 @@ struct DRAKECARS_EXPORT DrivingCommandIndices {
   static const int kBrake = 2;
 };
 
-/// Specializes BasicStateAndOutputVector with specific getters and setters.
+/// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class DrivingCommand : public systems::BasicStateAndOutputVector<T> {
+class DrivingCommand : public systems::BasicVector<T> {
  public:
   // An abbreviation for our row index constants.
   typedef DrivingCommandIndices K;
 
   /// Default constructor.  Sets all rows to zero.
-  DrivingCommand() : systems::BasicStateAndOutputVector<T>(K::kNumCoordinates) {
+  DrivingCommand() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
@@ -82,4 +83,5 @@ bool decode(const drake::lcmt_driving_command_t& msg,
   return true;
 }
 
+}  // namespace cars
 }  // namespace drake

@@ -25,10 +25,10 @@ namespace ros {
 namespace cars {
 namespace {
 
-using drake::examples::cars::CreateRigidBodySystem;
-using drake::examples::cars::CreateVehicleSystem;
-using drake::examples::cars::GetCarSimulationDefaultOptions;
-using drake::examples::cars::ParseDuration;
+using drake::cars::CreateRigidBodySystem;
+using drake::cars::CreateVehicleSystem;
+using drake::cars::GetCarSimulationDefaultOptions;
+using drake::cars::ParseDuration;
 
 using drake::ros::systems::DrakeRosTfPublisher;
 using drake::ros::systems::run_ros_vehicle_sim;

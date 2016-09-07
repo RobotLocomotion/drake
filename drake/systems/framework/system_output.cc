@@ -5,7 +5,13 @@ namespace systems {
 
 OutputPortListenerInterface::~OutputPortListenerInterface() {}
 
-OutputPort::~OutputPort() {}
+OutputPort::~OutputPort() {
+  // Notify any input ports that are still connected to this output port that
+  // this output port no longer exists.
+  for (OutputPortListenerInterface* dependent : dependents_) {
+    dependent->Disconnect();
+  }
+}
 
 
 std::unique_ptr<OutputPort> OutputPort::Clone() const {

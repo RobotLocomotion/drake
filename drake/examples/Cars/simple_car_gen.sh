@@ -16,7 +16,7 @@ gen () {
     shift
     $mydir/lcm_vector_gen.py \
         --lcmtype-dir=$drake/lcmtypes \
-        --header-dir=$mydir/gen \
+        --cxx-dir=$mydir/gen \
         --title="$title" "$@"
 }
 
@@ -25,7 +25,7 @@ gen "euler floating joint state" x y z roll pitch yaw
 gen "idm with trajectory agent state" x_e v_e x_a v_a a_a
 gen "simple car state" x y heading velocity
 
-$CLANG_FORMAT --style=Google -i \
+$CLANG_FORMAT --style=file -i \
   $mydir/gen/driving_command.h \
   $mydir/gen/euler_floating_joint_state.h \
   $mydir/gen/idm_with_trajectory_agent_state.h \

@@ -13,7 +13,6 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/leaf_state_vector.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_subvector.h"
 #include "drake/systems/framework/state_vector.h"
@@ -44,9 +43,7 @@ class SpringMassSystemTest : public ::testing::Test {
     system_output_ = system_->AllocateOutput(*context_);
     system_derivatives_ = system_->AllocateTimeDerivatives();
     const int nq = system_derivatives_->get_generalized_position().size();
-    configuration_derivatives_ = std::unique_ptr<BasicStateVector<double>>(
-        new BasicStateVector<double>(std::unique_ptr<VectorBase<double>>(
-            new BasicVector<double>(nq))));
+    configuration_derivatives_ = std::make_unique<BasicVector<double>>(nq);
 
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector*>(
@@ -76,7 +73,7 @@ class SpringMassSystemTest : public ::testing::Test {
   std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> system_output_;
   std::unique_ptr<ContinuousState<double>> system_derivatives_;
-  std::unique_ptr<BasicStateVector<double>> configuration_derivatives_;
+  std::unique_ptr<BasicVector<double>> configuration_derivatives_;
 
   SpringMassStateVector* state_;
   const SpringMassStateVector* output_;
@@ -97,7 +94,7 @@ TEST_F(SpringMassSystemTest, Construction) {
 TEST_F(SpringMassSystemTest, CloneState) {
   InitializeState(1.0, 2.0);
   state_->set_conservative_work(3.0);
-  std::unique_ptr<LeafStateVector<double>> clone = state_->Clone();
+  std::unique_ptr<BasicVector<double>> clone = state_->Clone();
   SpringMassStateVector* typed_clone =
       dynamic_cast<SpringMassStateVector*>(clone.get());
   ASSERT_NE(nullptr, typed_clone);
@@ -109,10 +106,11 @@ TEST_F(SpringMassSystemTest, CloneState) {
 TEST_F(SpringMassSystemTest, CloneOutput) {
   InitializeState(1.0, 2.0);
   system_->EvalOutput(*context_, system_output_.get());
-  std::unique_ptr<VectorBase<double>> clone = output_->CloneVector();
+  std::unique_ptr<BasicVector<double>> clone = output_->Clone();
 
   SpringMassStateVector* typed_clone =
       dynamic_cast<SpringMassStateVector*>(clone.get());
+  ASSERT_NE(nullptr, typed_clone);
   EXPECT_EQ(1.0, typed_clone->get_position());
   EXPECT_EQ(2.0, typed_clone->get_velocity());
 }
@@ -303,13 +301,6 @@ void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
 void StepSemiExplicitEuler(double h, const System<double>& system,
                            ContinuousState<double>& derivs,  // in/out
                            ContextBase<double>& context) {
-  // Allocate a temp to hold qdot. This would normally be done once per
-  // integration, not per time step!
-  // const int nq = derivs.get_generalized_position().size();
-  // auto configuration_derivatives =
-  // std::make_unique<BasicStateVector<double>>(
-  //    std::unique_ptr<VectorBase<double>>(new BasicVector<double>(nq)));
-
   const double t = context.get_time();
 
   // Invalidate z-dependent quantities.

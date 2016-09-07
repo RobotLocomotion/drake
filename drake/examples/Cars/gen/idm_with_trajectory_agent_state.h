@@ -8,11 +8,12 @@
 
 #include <Eigen/Core>
 
-#include "lcmtypes/drake/lcmt_idm_with_trajectory_agent_state_t.hpp"
 #include "drake/drakeCars_export.h"
-#include "drake/systems/framework/basic_state_and_output_vector.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "lcmtypes/drake/lcmt_idm_with_trajectory_agent_state_t.hpp"
 
 namespace drake {
+namespace cars {
 
 /// Describes the row indices of a IdmWithTrajectoryAgentState.
 struct DRAKECARS_EXPORT IdmWithTrajectoryAgentStateIndices {
@@ -27,17 +28,15 @@ struct DRAKECARS_EXPORT IdmWithTrajectoryAgentStateIndices {
   static const int kAA = 4;
 };
 
-/// Specializes BasicStateAndOutputVector with specific getters and setters.
+/// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class IdmWithTrajectoryAgentState
-    : public systems::BasicStateAndOutputVector<T> {
+class IdmWithTrajectoryAgentState : public systems::BasicVector<T> {
  public:
   // An abbreviation for our row index constants.
   typedef IdmWithTrajectoryAgentStateIndices K;
 
   /// Default constructor.  Sets all rows to zero.
-  IdmWithTrajectoryAgentState()
-      : systems::BasicStateAndOutputVector<T>(K::kNumCoordinates) {
+  IdmWithTrajectoryAgentState() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
@@ -91,4 +90,5 @@ bool decode(const drake::lcmt_idm_with_trajectory_agent_state_t& msg,
   return true;
 }
 
+}  // namespace cars
 }  // namespace drake

@@ -8,6 +8,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
+namespace cars {
 
 /// A car that follows a pre-established trajectory, neglecting all physics.
 ///
@@ -123,7 +124,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   }
 
  protected:
-  std::unique_ptr<systems::VectorBase<T>> AllocateOutputVector(
+  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override {
     return std::make_unique<SimpleCarState<T>>();
   }
@@ -132,4 +133,5 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   const TrajectoryCar1 wrapped_;
 };
 
+}  // namespace cars
 }  // namespace drake

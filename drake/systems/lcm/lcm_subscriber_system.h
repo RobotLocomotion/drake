@@ -78,7 +78,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
   void SetMessage(std::vector<uint8_t> message_bytes);
 
  protected:
-  std::unique_ptr<VectorBase<double>> AllocateOutputVector(
+  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const SystemPortDescriptor<double>& descriptor) const override;
 
  private:

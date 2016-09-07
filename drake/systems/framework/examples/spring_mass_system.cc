@@ -1,5 +1,7 @@
 #include "drake/systems/framework/examples/spring_mass_system.h"
 
+#include "drake/systems/framework/basic_vector.h"
+
 namespace drake {
 namespace systems {
 
@@ -9,7 +11,7 @@ constexpr int kStateSize = 3;  // position, velocity, power integral
 
 SpringMassStateVector::SpringMassStateVector(double initial_position,
                                              double initial_velocity)
-    : BasicStateAndOutputVector<double>(kStateSize) {
+    : BasicVector<double>(kStateSize) {
   set_position(initial_position);
   set_velocity(initial_velocity);
   set_conservative_work(0);
@@ -94,7 +96,7 @@ std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput(
   std::unique_ptr<LeafSystemOutput<double>> output(
       new LeafSystemOutput<double>);
   {
-    std::unique_ptr<VectorBase<double>> data(new SpringMassStateVector());
+    std::unique_ptr<BasicVector<double>> data(new SpringMassStateVector());
     std::unique_ptr<OutputPort> port(new OutputPort(std::move(data)));
     output->get_mutable_ports()->push_back(std::move(port));
   }

@@ -1,3 +1,5 @@
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
+
 #include <iostream>
 #include <random>
 #include <vector>
@@ -6,8 +8,6 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/util/testUtil.h"
 
 using Eigen::Matrix;
 using std::default_random_engine;
@@ -52,9 +52,9 @@ void testIntegralAndDerivative() {
 
   // check continuity at knot points
   for (int i = 0; i < piecewise.getNumberOfSegments() - 1; ++i) {
-    valuecheck(integral.getPolynomial(i)
-               .EvaluateUnivariate(integral.getDuration(i)),
-               integral.getPolynomial(i + 1).EvaluateUnivariate(0.0));
+    EXPECT_EQ(integral.getPolynomial(i)
+              .EvaluateUnivariate(integral.getDuration(i)),
+              integral.getPolynomial(i + 1).EvaluateUnivariate(0.0));
   }
 }
 
