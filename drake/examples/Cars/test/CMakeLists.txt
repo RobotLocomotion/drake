@@ -1,11 +1,15 @@
-if(lcm_FOUND AND NOT WIN32)
+if(lcm_FOUND)
   add_executable(curve2_test curve2_test.cc)
   target_link_libraries(curve2_test ${GTEST_BOTH_LIBRARIES} drakeCars)
   add_test(NAME curve2_test COMMAND curve2_test)
 
-  add_executable(simple_car_test
-    simple_car_test.cc
-    simple_car_scalartype_test.cc)
+  if(NOT WIN32)
+    add_executable(simple_car_test simple_car_test.cc
+      simple_car_scalartype_test.cc)
+  else()
+    # The dllimport in simple_car_scalartype_test doesn't work.
+    add_executable(simple_car_test simple_car_test.cc)
+  endif()
   target_link_libraries(simple_car_test ${GTEST_BOTH_LIBRARIES} drakeCars)
   add_test(NAME simple_car_test COMMAND simple_car_test)
 
@@ -16,9 +20,15 @@ if(lcm_FOUND AND NOT WIN32)
   add_test(NAME simple_car_state_translator_test
     COMMAND simple_car_state_translator_test)
 
-  add_executable(idm_with_trajectory_agent_test
-    idm_with_trajectory_agent_test.cc
-    idm_with_trajectory_agent_scalartype_test.cc)
+  if(NOT WIN32)
+    add_executable(idm_with_trajectory_agent_test
+      idm_with_trajectory_agent_test.cc
+      idm_with_trajectory_agent_scalartype_test.cc)
+  else()
+    # The dllimport in idm_with_trajectory_agent_scalartype_test doesn't work.
+    add_executable(idm_with_trajectory_agent_test
+      idm_with_trajectory_agent_test.cc)
+  endif() 
   target_link_libraries(idm_with_trajectory_agent_test
     ${GTEST_BOTH_LIBRARIES} drakeCars)
   add_test(NAME idm_with_trajectory_agent_test
