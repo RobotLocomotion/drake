@@ -44,11 +44,21 @@ endfunction()
 #                  [WORKING_DIRECTORY <directory>])
 #
 # Arguments:
+#   COMMAND
+#     Specify the test command-line. If <command> specifies an executable
+#     target, it will automatically be replaced by the location of the
+#     executable created at build time.
+#   CONFIGURATIONS
+#     Restrict execution of the test to only the named configurations.
 #   SIZE
 #     Set the size of the test. Test sizes are primarily defined by the number
 #     of seconds to allow for the test execution. If not specified, the size of
 #     the test will be set to small. The LABEL test property will be set to the
 #     size of the test.
+#   WORKING_DIRECTORY
+#     Set the WORKING_DIRECTORY test property to specify the working directory
+#     in which to execute the test. If not specified, the test will be run with
+#     the working directory set to CMAKE_CURRENT_BINARY_DIR.
 #------------------------------------------------------------------------------
 function(drake_add_test)
   cmake_parse_arguments("" "" "NAME;SIZE" "" ${ARGN})
@@ -84,6 +94,8 @@ endfunction()
 # Arguments:
 #   COMMAND
 #     Specify the MATLAB string to evaluate.
+#  CONFIGURATIONS
+#     Restrict execution of the test to only the named configurations.
 #   REQUIRES
 #     Declare required external dependencies. Each required dependency must
 #     write a file named addpath_<external>.m to CMAKE_INSTALL_PREFIX/matlab or
