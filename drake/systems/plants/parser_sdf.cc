@@ -9,6 +9,8 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/systems/plants/parser_common.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/xmlUtil.h"
@@ -24,14 +26,16 @@
 #define PCLOSE pclose
 #endif
 
-using namespace std;
-using namespace Eigen;
-using namespace tinyxml2;
-
 namespace drake {
 namespace parsers {
 namespace sdf {
 namespace {
+
+using namespace std;
+using namespace Eigen;
+using namespace tinyxml2;
+
+using drake::systems::plants::joints::FloatingBaseType;
 
 void ParseSdfInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                       PoseMap& pose_map, const Isometry3d& T_link) {
@@ -239,7 +243,7 @@ void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   // By default all collision elements added to the world from an SDF file are
   // flagged as static.
   // We would also like to flag as static bodies connected to the world with a
-  // DrakeJoint::FloatingBaseType::FIXED joint.
+  // FloatingBaseType::kFixed joint.
   // However this is not possible at this stage since joints were not parsed
   // yet.
   // Solutions to this problem would be:
@@ -657,7 +661,7 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
 // name is already in this table.
 void ParseModel(RigidBodyTree* tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const DrakeJoint::FloatingBaseType floating_base_type,
+                const FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
                 ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
@@ -691,8 +695,8 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
   }
 
   // Maintains a list of links that were added to the rigid body tree.
-  // This is iterated over by method AddFloatingJoint() to determine where
-  // to attach floating joints.
+  // This is iterated over by AddFloatingJoint() to determine where to attach
+  // floating joints.
   std::vector<int> link_indices;
 
   // Parses the model's link elements.
@@ -743,13 +747,13 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
 
   // Adds the floating joint that connects the newly added robot model to the
   // rest of the rigid body tree.
-  tree->AddFloatingJoint(floating_base_type, link_indices,
-                                    weld_to_frame, &pose_map);
+  AddFloatingJoint(floating_base_type, link_indices, weld_to_frame,
+                   &pose_map, tree);
 }
 
 void ParseWorld(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const DrakeJoint::FloatingBaseType floating_base_type,
+                const FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
                 ModelInstanceIdTable* model_instance_id_table) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
@@ -761,7 +765,7 @@ void ParseWorld(RigidBodyTree* model, XMLElement* node,
 
 ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
     PackageMap& package_map, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   populatePackageMap(package_map);
 
@@ -804,7 +808,7 @@ ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
 
 ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     const string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
@@ -814,7 +818,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
 
 ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
@@ -842,7 +846,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
 
 ModelInstanceIdTable AddModelInstancesFromSdfString(
     const string& sdf_string,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.

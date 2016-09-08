@@ -6,6 +6,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/util/drakeMexUtil.h"
 
 using namespace Eigen;
@@ -13,6 +14,10 @@ using namespace std;
 
 using drake::CompareMatrices;
 using drake::MatrixCompareType;
+using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::kFixed;
+using drake::systems::plants::joints::kQuaternion;
+using drake::systems::plants::joints::kRollPitchYaw;
 
 /*
  * compares C++ robots generated via the matlab constructModelmex with the same
@@ -33,13 +38,13 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   mxGetString(prhs[1], urdf_file, 1000);
   char floating_base_type_str[100] = "rpy";
   if (nrhs > 2) mxGetString(prhs[2], floating_base_type_str, 100);
-  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
+  FloatingBaseType floating_base_type = kQuaternion;
   if (strcmp(floating_base_type_str, "fixed") == 0)
-    floating_base_type = DrakeJoint::FIXED;
+    floating_base_type = kFixed;
   else if (strcmp(floating_base_type_str, "rpy") == 0)
-    floating_base_type = DrakeJoint::ROLLPITCHYAW;
+    floating_base_type = kRollPitchYaw;
   else if (strcmp(floating_base_type_str, "quat") == 0)
-    floating_base_type = DrakeJoint::QUATERNION;
+    floating_base_type = kQuaternion;
   else
     mexErrMsgIdAndTxt(
         "Drake:compareParsersmex:BadInputs",

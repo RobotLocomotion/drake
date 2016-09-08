@@ -7,17 +7,15 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/material_map.h"
+#include "drake/systems/plants/parser_common.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/xmlUtil.h"
 
-using drake::parsers::ModelInstanceIdTable;
-
-using Eigen::Isometry3d;
-using Eigen::Matrix;
-using Eigen::Matrix3d;
-using Eigen::Vector3d;
-using Eigen::Vector4d;
+namespace drake {
+namespace parsers {
+namespace urdf {
 
 using std::allocate_shared;
 using std::cerr;
@@ -31,12 +29,19 @@ using std::stringstream;
 using std::unique_ptr;
 using std::vector;
 
+using Eigen::Isometry3d;
+using Eigen::Matrix;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
-namespace drake {
-namespace parsers {
-namespace urdf {
+using drake::parsers::ModelInstanceIdTable;
+using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::kRollPitchYaw;
+
 namespace {
 
 void ParseInertial(RigidBody* body, XMLElement* node) {
@@ -444,7 +449,7 @@ void ParseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
   // By default all collision elements added to the world from an URDF file are
   // flagged as static.
   // We would also like to flag as static bodies connected to the world with a
-  // DrakeJoint::FloatingBaseType::FIXED joint.
+  // FloatingBaseType::kFixed joint.
   // However this is not possible at this stage since joints were not parsed
   // yet.
   // Solutions to this problem would be:
@@ -873,7 +878,7 @@ void ParseFrame(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
  * pointer.
  */
 void ParseWorldJoint(XMLElement* node,
-                     DrakeJoint::FloatingBaseType& floating_base_type,
+                     FloatingBaseType& floating_base_type,
                      std::shared_ptr<RigidBodyFrame>& weld_to_frame) {
   bool found_world_joint = false;
 
@@ -911,9 +916,9 @@ void ParseWorldJoint(XMLElement* node,
       weld_to_frame->set_transform_to_body(transform_to_parent_body);
 
       if (joint_type == "fixed") {
-        floating_base_type = DrakeJoint::FloatingBaseType::FIXED;
+        floating_base_type = FloatingBaseType::kFixed;
       } else if (joint_type == "continuous") {
-        floating_base_type = DrakeJoint::FloatingBaseType::QUATERNION;
+        floating_base_type = FloatingBaseType::kQuaternion;
       }
 
       // Throws an exception if the joint connecting the model to the world
@@ -930,7 +935,7 @@ void ParseWorldJoint(XMLElement* node,
 
 ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
     const PackageMap& package_map, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
@@ -959,11 +964,11 @@ ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
   // actual type may be specified by the URDF itself when the URDF contains a
   // world link and a joint connecting to the world link. By default,
   // actual_floating_base_type equals parameter floating_base_type.
-  DrakeJoint::FloatingBaseType actual_floating_base_type = floating_base_type;
+  FloatingBaseType actual_floating_base_type = floating_base_type;
 
   // Maintains a list of links that were added to the rigid body tree.
-  // This is iterated over by method AddFloatingJoint() to determine where
-  // to attach floating joints.
+  // This is iterated over by AddFloatingJoint() to determine where to attach
+  // floating joints.
   std::vector<int> link_indices;
 
   // Parses the model's link elements.
@@ -1039,15 +1044,15 @@ ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
 
   // Adds the floating joint(s) that connect the newly added robot model to the
   // rest of the rigid body tree.
-  tree->AddFloatingJoint(actual_floating_base_type, link_indices,
-                          weld_to_frame);
+  AddFloatingJoint(actual_floating_base_type, link_indices,
+                   weld_to_frame, nullptr /* pose_map */, tree);
 
   return model_instance_id_table;
 }
 
 ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
                PackageMap& package_map, const string& root_dir,
-               const DrakeJoint::FloatingBaseType floating_base_type,
+               const FloatingBaseType floating_base_type,
                std::shared_ptr<RigidBodyFrame> weld_to_frame,
                RigidBodyTree* tree) {
   populatePackageMap(package_map);
@@ -1081,14 +1086,14 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
   const string root_dir = ".";
 
   return AddModelInstanceFromUrdfString(
-      urdf_string, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
+      urdf_string, package_map, root_dir, kRollPitchYaw,
       nullptr /*weld_to_frame*/, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string,
     const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   PackageMap package_map;
@@ -1102,13 +1107,13 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string,
     PackageMap& package_map,
     const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
-  return ParseUrdf(&xml_doc, package_map, root_dir, DrakeJoint::ROLLPITCHYAW,
-            weld_to_frame, tree);
+  return ParseUrdf(&xml_doc, package_map, root_dir, kRollPitchYaw,
+      weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
@@ -1120,12 +1125,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
   PackageMap package_map;
 
   return AddModelInstanceFromUrdfFile(filename, package_map,
-      DrakeJoint::ROLLPITCHYAW, nullptr /* weld_to_frame */, tree);
+      kRollPitchYaw, nullptr /* weld_to_frame */, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_ABORT_UNLESS(tree);
@@ -1139,7 +1144,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
@@ -1148,12 +1153,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
   PackageMap package_map;
 
   return AddModelInstanceFromUrdfFile(
-    filename, package_map, floating_base_type, weld_to_frame, tree);
+      filename, package_map, floating_base_type, weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename, PackageMap& package_map,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
@@ -1176,7 +1181,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
   }
 
   return ParseUrdf(&xml_doc, package_map, root_dir, floating_base_type,
-            weld_to_frame, tree);
+      weld_to_frame, tree);
 }
 
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(

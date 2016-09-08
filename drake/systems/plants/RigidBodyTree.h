@@ -15,13 +15,13 @@
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
-#include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
-#include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
-#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_actuator.h"
+#include "drake/systems/plants/rigid_body_collision_element.h"
+#include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
@@ -80,9 +80,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   static const int kWorldBodyIndex;
 
-  RigidBodyTree(const std::string& urdf_filename,
-                const DrakeJoint::FloatingBaseType floating_base_type =
-                    DrakeJoint::ROLLPITCHYAW);
+  RigidBodyTree(
+      const std::string& urdf_filename,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = drake::systems::plants::joints::kRollPitchYaw);
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
@@ -91,8 +92,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -102,8 +103,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::string& xml_string,
       std::map<std::string, std::string>& package_map,
       const std::string& root_dir = ".",
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -111,8 +112,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -121,16 +122,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void addRobotFromURDF(
       const std::string& urdf_filename,
       std::map<std::string, std::string>& package_map,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstancesFromSdfFile.")
 #endif
   void addRobotFromSDF(const std::string& sdf_filename,
-                       const DrakeJoint::FloatingBaseType floating_base_type =
-                           DrakeJoint::QUATERNION,
+                       const drake::systems::plants::joints::FloatingBaseType
+                           floating_base_type =
+                               drake::systems::plants::joints::kQuaternion,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -900,31 +902,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @param[in] body The rigid body to add to this rigid body tree.
    */
   void add_rigid_body(std::unique_ptr<RigidBody> body);
-
-  /**
-   * Adds one floating joint to each link specified in the list of link indicies
-   * that does not already have a parent. Typically, the list of link indices is
-   * created while calling add_rigid_body(). The purpose of the floating joint
-   * is to connect the links and of their child branches to the rigid body tree.
-   *
-   * @param floating_base_type The floating joint's type.
-   * @param link_indices A list of link indexes to check. A floating joint is
-   * added to any link in this list that does not have a parent joint.
-   * @param weld_to_frame The frame to which the floating joint should attach
-   * the parent-less non-world links. This parameter may be nullptr, in which
-   * case the link is welded to the world with zero offset.
-   * @param pose_map A mapping where the key is the link's name and the value
-   * is the transform from the frame of the link to the frame of the model
-   * to which the link belongs.
-   * @return The number of floating joint added to this rigid body tree.
-   * @throws A std::runtime_error if the floating_base_type is unrecognized or
-   * zero floating joints were added to the model.
-   */
-  int AddFloatingJoint(
-      DrakeJoint::FloatingBaseType floating_base_type,
-      const std::vector<int>& link_indices,
-      const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
-      const PoseMap* pose_map = nullptr);
 
   /**
    * @brief Returns a mutable reference to the RigidBody associated with the

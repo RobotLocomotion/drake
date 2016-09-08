@@ -2,15 +2,15 @@
 
 namespace drake {
 
+using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using Eigen::Isometry3d;
 
 AtlasPlant::AtlasPlant() {
   sys_.reset(new drake::RigidBodySystem());
   sys_->AddModelInstanceFromFile(
-      drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
-      DrakeJoint::QUATERNION);
+      GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
+      systems::plants::joints::kQuaternion);
 
   x0_ = VectorXd::Zero(sys_->getNumStates());
   SetInitialConfiguration();

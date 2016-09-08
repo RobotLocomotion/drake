@@ -13,6 +13,7 @@ pods_install_pkg_config_file(drake-xml-util
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   parser_model_instance_id_table.cc
+  parser_common.cc
   parser_sdf.cc
   parser_urdf.cc
   RigidBodyTree.cpp
@@ -37,6 +38,7 @@ drake_install_headers(
   RigidBody.h
   RigidBodyTree.h
   parser_model_instance_id_table.h
+  parser_common.h
   parser_sdf.h
   parser_urdf.h
   rigid_body_loop.h

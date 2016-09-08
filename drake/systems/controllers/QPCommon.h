@@ -7,6 +7,7 @@
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/util/drakeUtil.h"
 
@@ -335,11 +336,12 @@ class Attachment {
  public:
   std::string attach_to_frame;
   std::string urdf_filename;
-  DrakeJoint::FloatingBaseType joint_type;
+  drake::systems::plants::joints::FloatingBaseType joint_type;
 
   Attachment(
       const std::string& attach_to_frame_, const std::string& urdf_filename_,
-      const DrakeJoint::FloatingBaseType& joint_type_ = DrakeJoint::FIXED)
+      const drake::systems::plants::joints::FloatingBaseType&
+          joint_type_ = drake::systems::plants::joints::kFixed)
       : attach_to_frame(attach_to_frame_),
         urdf_filename(urdf_filename_),
         joint_type(joint_type_) {
