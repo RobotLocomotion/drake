@@ -30,5 +30,5 @@ if(WITH_DIRECTOR)
 endif()
 
 if(MATLAB_FOUND)
-  add_matlab_test(NAME addpath_spotless_test COMMAND "addpath_spotless;")
+  drake_add_matlab_test(NAME addpath_spotless_test COMMAND "addpath_spotless;")
 endif()

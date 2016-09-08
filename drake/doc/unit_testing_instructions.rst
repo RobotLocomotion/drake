@@ -36,7 +36,7 @@ MATLAB Code
 -----------
 
 Please write an example and add it as a test in the directory's
-``CMakeLists.txt`` using ``add_matlab_test()``.  ``ctest`` will consider the
+``CMakeLists.txt`` using ``drake_add_matlab_test()``.  ``ctest`` will consider the
 test failed if it times out or calls ``error``.
 
 .. _enable-long-running-unit-test:

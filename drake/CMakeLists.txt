@@ -309,7 +309,7 @@ else()
 endif()
 
 if(MATLAB_FOUND)
-  add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
+  drake_add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot SIZE large)
 endif()
