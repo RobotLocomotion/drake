@@ -26,7 +26,7 @@ class IdmWithTrajectoryAgentTest : public ::testing::Test {
   }
 
   std::unique_ptr<systems::System<double>> dut_;  //< The device under test.
-  std::unique_ptr<systems::ContextBase<double>> context_;
+  std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
