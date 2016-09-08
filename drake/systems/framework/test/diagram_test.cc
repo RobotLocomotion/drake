@@ -400,8 +400,8 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   plus_seven.EvalOutput(*context, output.get());
 
   ASSERT_EQ(1, output->get_num_ports());
-  const VectorBase<double>* output_vector = output->get_vector_data(0);
-  EXPECT_EQ(1, output_vector->get_value().rows());
+  const BasicVector<double>* output_vector = output->get_vector_data(0);
+  EXPECT_EQ(1, output_vector->size());
   EXPECT_EQ(19.0, output_vector->get_value().x());
 }
 

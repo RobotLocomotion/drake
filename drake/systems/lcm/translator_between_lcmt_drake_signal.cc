@@ -40,13 +40,11 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
       ") is not equal to the size of the vector vector (" +
       std::to_string(vector_base->size()) + ").");
   }
-  Eigen::VectorBlock<VectorX<double>> vector_base_value =
-    vector_base->get_mutable_value();
 
   // Saves the values in from the LCM message into the basic vector.
   // Assumes that the order of the values in both vectors are identical.
   for (int ii = 0; ii < message.dim; ++ii) {
-    vector_base_value[ii] = message.val[ii];
+    vector_base->SetAtIndex(ii, message.val[ii]);
   }
 }
 
@@ -63,11 +61,8 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateVectorBaseToLcm(
   message.val.resize(message.dim);
   message.coord.resize(message.dim);
 
-  Eigen::VectorBlock<const VectorX<double>> values =
-      vector_base.get_value();
-
   for (int ii = 0; ii < message.dim; ++ii) {
-    message.val[ii] = values[ii];
+    message.val[ii] = vector_base.GetAtIndex(ii);
   }
 
   const int lcm_message_length = message.getEncodedSize();

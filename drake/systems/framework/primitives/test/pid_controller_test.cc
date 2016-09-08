@@ -71,8 +71,8 @@ TEST_F(PidControllerTest, EvalOutput) {
   controller_.SetDefaultState(context_.get());
   controller_.EvalOutput(*context_, output_.get());
   ASSERT_EQ(1, output_->get_num_ports());
-  const VectorBase<double>* output_vector = output_->get_vector_data(0);
-  EXPECT_EQ(3, output_vector->get_value().rows());
+  const BasicVector<double>* output_vector = output_->get_vector_data(0);
+  EXPECT_EQ(3, output_vector->size());
   EXPECT_EQ(kp_ * error_signal_ + kd_ * error_rate_signal_,
             output_vector->get_value());
 

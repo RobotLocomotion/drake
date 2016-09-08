@@ -35,7 +35,8 @@ void IdmWithTrajectoryAgent<T>::EvalOutput(
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
 
   // Obtain the structure we need to write into.
-  systems::VectorBase<T>* const output_vector = output->GetMutableVectorData(0);
+  systems::BasicVector<T>* const output_vector =
+      output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
 
   // TODO(david-german-tri): Remove this copy by allowing output ports to be

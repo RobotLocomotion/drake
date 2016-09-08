@@ -134,7 +134,7 @@ class System {
   Eigen::VectorBlock<const VectorX<T>> get_input_vector(
       const Context<T>& context, int port_index) const {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    const VectorBase<T>* input_vector =
+    const BasicVector<T>* input_vector =
         context.get_vector_input(port_index);
 
     DRAKE_ASSERT(input_vector != nullptr);
@@ -379,8 +379,7 @@ class System {
                                                         int port_index) const {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
 
-    VectorBase<T>* output_vector = output->
-        get_mutable_port(port_index)->template GetMutableVectorData<T>();
+    BasicVector<T>* output_vector = output->GetMutableVectorData(port_index);
     DRAKE_ASSERT(output_vector != nullptr);
     DRAKE_ASSERT(output_vector->size() ==
         get_output_port(port_index).get_size());

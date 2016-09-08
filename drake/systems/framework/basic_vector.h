@@ -41,7 +41,7 @@ class BasicVector : public VectorBase<T> {
     return vec;
   }
 
-  void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
+  void set_value(const Eigen::Ref<const VectorX<T>>& value) {
     if (value.rows() != values_.rows()) {
       throw std::out_of_range(
           "Cannot set a BasicVector of size " + std::to_string(values_.rows()) +
@@ -52,11 +52,11 @@ class BasicVector : public VectorBase<T> {
 
   int size() const override { return static_cast<int>(values_.rows()); }
 
-  Eigen::VectorBlock<const VectorX<T>> get_value() const override {
+  Eigen::VectorBlock<const VectorX<T>> get_value() const {
     return values_.head(values_.rows());
   }
 
-  Eigen::VectorBlock<VectorX<T>> get_mutable_value() override {
+  Eigen::VectorBlock<VectorX<T>> get_mutable_value() {
     return values_.head(values_.rows());
   }
 
