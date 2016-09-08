@@ -111,7 +111,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
                   systems::SystemOutput<T>* output) const override {
     DRAKE_ASSERT(output != nullptr);
     DRAKE_ASSERT(output->get_num_ports() == 1);
-    systems::VectorBase<T>* output_vector =
+    systems::BasicVector<T>* output_vector =
         output->GetMutableVectorData(0);
     DRAKE_ASSERT(output_vector != nullptr);
 

@@ -16,7 +16,7 @@ namespace systems {
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
-class StateSubvector : public StateVector<T> {
+class StateSubvector : public VectorBase<T> {
  public:
   /// Constructs a subvector of vector that consists of num_elements starting
   /// at first_element.
