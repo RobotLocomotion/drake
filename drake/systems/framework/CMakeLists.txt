@@ -20,7 +20,6 @@ set(sources
   state.cc
   state_subvector.cc
   state_supervector.cc
-  state_vector.cc
   system.cc
   system_input.cc
   system_output.cc
@@ -49,7 +48,6 @@ set(installed_headers
   state.h
   state_subvector.h
   state_supervector.h
-  state_vector.h
   system.h
   system_input.h
   system_output.h

@@ -30,8 +30,7 @@ class DiagramContinuousState : public ContinuousState<T> {
   ///
   /// The DiagramContinuousState vector will have the same order as the
   /// @p states parameter, which should be the sort order of the Diagram itself.
-  explicit DiagramContinuousState(
-      std::vector<ContinuousState<T>*> substates)
+  explicit DiagramContinuousState(std::vector<ContinuousState<T>*> substates)
       : ContinuousState<T>(
             Span(substates, x_selector), Span(substates, q_selector),
             Span(substates, v_selector), Span(substates, z_selector)),
@@ -58,10 +57,10 @@ class DiagramContinuousState : public ContinuousState<T> {
  private:
   // Returns a StateSupervector over the x, q, v, or z components of each
   // substate in @p substates, as indicated by @p selector.
-  static std::unique_ptr<StateVector<T>> Span(
+  static std::unique_ptr<VectorBase<T>> Span(
       const std::vector<ContinuousState<T>*>& substates,
-      std::function<StateVector<T>*(ContinuousState<T>&)> selector) {
-    std::vector<StateVector<T>*> sub_xs;
+      std::function<VectorBase<T>*(ContinuousState<T>&)> selector) {
+    std::vector<VectorBase<T>*> sub_xs;
     for (const auto& substate : substates) {
       if (substate != nullptr) {
         sub_xs.push_back(selector(*substate));
@@ -71,19 +70,19 @@ class DiagramContinuousState : public ContinuousState<T> {
   }
 
   // Returns the entire state vector in @p xc.
-  static StateVector<T>* x_selector(ContinuousState<T>& xc) {
+  static VectorBase<T>* x_selector(ContinuousState<T>& xc) {
     return xc.get_mutable_state();
   }
   // Returns the generalized position vector in @p xc.
-  static StateVector<T>* q_selector(ContinuousState<T>& xc) {
+  static VectorBase<T>* q_selector(ContinuousState<T>& xc) {
     return xc.get_mutable_generalized_position();
   }
   // Returns the generalized velocity vector in @p xc.
-  static StateVector<T>* v_selector(ContinuousState<T>& xc) {
+  static VectorBase<T>* v_selector(ContinuousState<T>& xc) {
     return xc.get_mutable_generalized_velocity();
   }
   // Returns the misc continuous state vector in @p xc.
-  static StateVector<T>* z_selector(ContinuousState<T>& xc) {
+  static VectorBase<T>* z_selector(ContinuousState<T>& xc) {
     return xc.get_mutable_misc_continuous_state();
   }
 
@@ -110,8 +109,7 @@ class DiagramContext : public Context<T> {
   /// Constructs a DiagramContext with the given @p num_subsystems, which is
   /// final: you cannot resize a DiagramContext after construction.
   explicit DiagramContext(const int num_subsystems)
-      : outputs_(num_subsystems),
-        contexts_(num_subsystems) {}
+      : outputs_(num_subsystems), contexts_(num_subsystems) {}
 
   /// Declares a new subsystem in the DiagramContext. Subsystems are identified
   /// by number. If the subsystem has already been declared, aborts.
@@ -155,8 +153,7 @@ class DiagramContext : public Context<T> {
     // Identify and validate the destination port.
     SystemIndex dest_system_index = dest.first;
     PortIndex dest_port_index = dest.second;
-    Context<T>* dest_context =
-        GetMutableSubsystemContext(dest_system_index);
+    Context<T>* dest_context = GetMutableSubsystemContext(dest_system_index);
     DRAKE_ABORT_UNLESS(dest_port_index >= 0);
     DRAKE_ABORT_UNLESS(dest_port_index < dest_context->get_num_input_ports());
 
@@ -176,8 +173,7 @@ class DiagramContext : public Context<T> {
   void MakeState() {
     std::vector<ContinuousState<T>*> substates;
     for (auto& context : contexts_) {
-      substates.push_back(
-          context->get_mutable_state()->continuous_state.get());
+      substates.push_back(context->get_mutable_state()->continuous_state.get());
     }
     state_.continuous_state.reset(new DiagramContinuousState<T>(substates));
   }
@@ -233,8 +229,8 @@ class DiagramContext : public Context<T> {
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
-    GetMutableSubsystemContext(system_index)->SetInputPort(port_index,
-                                                           std::move(port));
+    GetMutableSubsystemContext(system_index)
+        ->SetInputPort(port_index, std::move(port));
     // TODO(david-german-tri): Set invalidation callbacks.
   }
 

@@ -342,7 +342,7 @@ void Simulator<T>::StepTo(const T& final_time) {
   DRAKE_THROW_UNLESS(final_time >= context_->get_time());
 
   // Find the continuous state xc within the Context, just once.
-  StateVector<T>* xc =
+  VectorBase<T>* xc =
       context_->get_mutable_state()->continuous_state->get_mutable_state();
 
   // TODO(sherm1) Invoke selected integrator.
