@@ -52,7 +52,7 @@ void IdmWithTrajectoryAgent<T>::EvalTimeDerivatives(
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
   // Obtain the state.
-  const systems::StateVector<T>& context_state =
+  const systems::VectorBase<T>& context_state =
       context.get_state().continuous_state->get_state();
   const IdmWithTrajectoryAgentState<T>* const state =
       dynamic_cast<const IdmWithTrajectoryAgentState<T>*>(&context_state);
@@ -60,7 +60,7 @@ void IdmWithTrajectoryAgent<T>::EvalTimeDerivatives(
 
   // Obtain the structure we need to write into.
   DRAKE_ASSERT(derivatives != nullptr);
-  systems::StateVector<T>* const derivatives_state =
+  systems::VectorBase<T>* const derivatives_state =
       derivatives->get_mutable_state();
   DRAKE_ASSERT(derivatives_state != nullptr);
   IdmWithTrajectoryAgentState<T>* const new_derivatives =

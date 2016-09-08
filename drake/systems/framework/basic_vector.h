@@ -99,7 +99,7 @@ class BasicVector : public VectorBase<T> {
   }
 
   BasicVector& PlusEqScaled(const T& scale,
-                            const StateVector<T>& rhs) override {
+                            const VectorBase<T>& rhs) override {
     rhs.ScaleAndAddToVector(scale, values_);
     return *this;
   }

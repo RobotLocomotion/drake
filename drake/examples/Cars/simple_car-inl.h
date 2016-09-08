@@ -13,6 +13,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_assert.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace cars {
@@ -83,7 +84,7 @@ template <typename T>
 std::pair<SimpleCarState1<T>, DrivingCommand1<T>> ConvertContextToSystem1(
     const systems::Context<T>& context) {
   // Convert the state into System1 data.
-  const systems::StateVector<T>& context_state =
+  const systems::VectorBase<T>& context_state =
       context.get_state().continuous_state->get_state();
   const SimpleCarState<T>* const simple_car_state =
       dynamic_cast<const SimpleCarState<T>*>(&context_state);
@@ -138,7 +139,7 @@ void SimpleCar<T>::EvalTimeDerivatives(
 
   // Obtain the structure we need to write into.
   DRAKE_ASSERT(derivatives != nullptr);
-  systems::StateVector<T>* const derivatives_state =
+  systems::VectorBase<T>* const derivatives_state =
       derivatives->get_mutable_state();
   DRAKE_ASSERT(derivatives_state != nullptr);
   SimpleCarState<T>* const simple_car_derivatives =
