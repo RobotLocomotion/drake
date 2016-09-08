@@ -23,12 +23,16 @@ me=$(readlink -f $0)
 mydir=$(dirname $0)
 DRAKE=$(readlink -f $mydir/../..)
 DRAKE_DIST=$(readlink -f $DRAKE/..)
-DRAKE_BUILD=${DRAKE_BUILD:-$DRAKE_DIST/build}
+DRAKE_DIST_BUILD=${DRAKE_DIST_BUILD:-$DRAKE_DIST/build}
+if ! [ -d $DRAKE_DIST_BUILD/install/bin ]; then
+    echo "error: $0: cannot find DRAKE_DIST_BUILD at '$DRAKE_DIST_BUILD'"
+    exit 1
+fi
 
-$DRAKE_BUILD/install/bin/bot-spy &
-$DRAKE_BUILD/install/bin/drake-visualizer &
+$DRAKE_DIST_BUILD/install/bin/bot-spy &
+$DRAKE_DIST_BUILD/install/bin/drake-visualizer &
 sleep 1  # Wait, to be sure drake-visualizer sees the load_robot message.
-$DRAKE_BUILD/drake/bin/demo_multi_car $1 &
+$DRAKE_DIST_BUILD/drake/bin/demo_multi_car $1 &
 
 wait
 
