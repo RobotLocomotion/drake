@@ -1,10 +1,16 @@
 function ok = checkDependency(dep,command)
 % Drake code which depends on an external library or program should
 % check that dependency by calling this function.
-%   example:
-%     checkDependency('snopt')
-% or
-%     if (~checkDependency('snopt')) error('my error'); end
+%
+% For a required dependency, do not capture the output. The MATLAB script will
+% fail and emit an error message to the console.
+%
+%     checkDependency('snopt');
+%
+% For an optional dependency, capture the output. The MATLAB script will
+% continue regardless and will not emit a warning message to the console.
+%
+%     no_snopt = ~checkDependency('snopt');
 %
 % @param dep the name of the dependency to check
 % @param command can be 'disable', 'enable'
@@ -98,10 +104,11 @@ else % then try to evaluate the dependency now...
       end
     case 'lcmgl'
       if nargout<1
+        % If no outputs are captured, the caller wants a console error message,
+        % so do not capture outputs on the recursive call either.
         checkDependency('lcm');
         lcm_enabled = true;
       else
-        % suppress warning
         lcm_enabled = checkDependency('lcm');
       end
       conf.lcmgl_enabled = lcm_enabled && logical(exist('bot_lcmgl.data_t','class'));
