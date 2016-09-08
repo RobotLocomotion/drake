@@ -5,7 +5,7 @@ cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
-include(../cmake/functions.cmake)
+include(../cmake/test.cmake)
 
 drake_setup_platform()
 
