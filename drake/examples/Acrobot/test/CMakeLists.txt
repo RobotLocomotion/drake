@@ -17,5 +17,5 @@ add_matlab_test(NAME examples/Acrobot/test/testManipulatorEquations REQUIRES spo
 add_matlab_test(NAME examples/Acrobot/test/testMass OPTIONAL bullet COMMAND testMass)
 add_matlab_test(NAME examples/Acrobot/test/testTSRB OPTIONAL bullet gurobi COMMAND testTSRB)
 add_matlab_test(NAME examples/Acrobot/test/testTrajOpt OPTIONAL bullet snopt COMMAND testTrajOpt)
-add_matlab_test(NAME examples/Acrobot/test/trigPolyTest REQUIRES spotless OPTIONAL bullet COMMAND trigPolyTest PROPERTIES TIMEOUT 750)
+add_matlab_test(NAME examples/Acrobot/test/trigPolyTest REQUIRES spotless OPTIONAL bullet COMMAND trigPolyTest)
 add_matlab_test(NAME examples/Acrobot/test/urdfDynamicsTest OPTIONAL bullet COMMAND urdfDynamicsTest)

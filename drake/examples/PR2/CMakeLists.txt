@@ -1,6 +1,3 @@
 add_matlab_test(NAME examples/PR2/drawPR2 OPTIONAL bullet COMMAND drawPR2)
-# add_matlab_test(NAME examples/PR2/runSaggitalPassive COMMAND runSaggitalPassive)  # FIXME
-
-if(LONG_RUNNING_TESTS)
-  add_matlab_test(NAME examples/PR2/runPassive COMMAND runPassive PROPERTIES TIMEOUT 3000)
-endif()
+# add_matlab_test(NAME examples/PR2/runSaggitalPassive COMMAND runSaggitalPassive)  # FIXME: see #3313
+add_matlab_test(NAME examples/PR2/runPassive COMMAND runPassive SIZE large)

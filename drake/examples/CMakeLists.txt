@@ -21,10 +21,10 @@ add_matlab_test(NAME examples/VanDerPol.run REQUIRES spotless OPTIONAL mosek sed
 
 add_matlab_test(NAME examples/commonLyapunovForLinearSystems REQUIRES mosek spotless COMMAND commonLyapunovForLinearSystems)
 
-if(LONG_RUNNING_TESTS)
-  add_matlab_test(NAME examples/DoubleIntegrator.runValueIteration COMMAND DoubleIntegrator.runValueIteration PROPERTIES TIMEOUT 1500)
-  add_matlab_test(NAME examples/VanDerPol.particleDemo COMMAND VanDerPol.particleDemo PROPERTIES TIMEOUT 1500)
-endif()
+
+add_matlab_test(NAME examples/DoubleIntegrator.runValueIteration COMMAND DoubleIntegrator.runValueIteration SIZE large)
+add_matlab_test(NAME examples/VanDerPol.particleDemo COMMAND VanDerPol.particleDemo SIZE large)
+
 
 # recurse into all example subdirectories
 # note: the GLOB workflow is typically not recommended due to the fact that CMake will not be able

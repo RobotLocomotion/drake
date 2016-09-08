@@ -47,9 +47,9 @@ endif()
 
 add_subdirectory(test)
 
-add_matlab_test(NAME examples/Pendulum/PendulumEnergyShaping.run OPTIONAL lcm COMMAND PendulumEnergyShaping.run)
+add_matlab_test(NAME examples/Pendulum/PendulumEnergyShaping.run OPTIONAL lcm COMMAND PendulumEnergyShaping.run SIZE large)
 add_matlab_test(NAME examples/Pendulum/globalStability REQUIRES mosek spotless OPTIONAL lcm COMMAND globalStability)
-add_matlab_test(NAME examples/Pendulum/runDLQR OPTIONAL lcm COMMAND runDLQR)
+add_matlab_test(NAME examples/Pendulum/runDLQR OPTIONAL lcm COMMAND runDLQR SIZE large)
 add_matlab_test(NAME examples/Pendulum/runLQR OPTIONAL lcm COMMAND runLQR)
 add_matlab_test(NAME examples/Pendulum/runLQRtest REQUIRES spotless OPTIONAL lcm mosek sedumi COMMAND runLQRtest)
 add_matlab_test(NAME examples/Pendulum/runPassive OPTIONAL lcm COMMAND runPassive)
@@ -58,7 +58,5 @@ add_matlab_test(NAME examples/Pendulum/runSwingUp OPTIONAL lcm snopt COMMAND run
 add_matlab_test(NAME examples/Pendulum/runTrigLQR REQUIRES spotless OPTIONAL lcm COMMAND runTrigLQR)
 add_matlab_test(NAME examples/Pendulum/PendulumEnergyControl.run REQUIRES spotless OPTIONAL lcm mosek sedumi COMMAND PendulumEnergyControl.run)
 
-if(LONG_RUNNING_TESTS)
-  # add_matlab_test(NAME examples/Pendulum/runTrajectorySwingUpAndBalance REQUIRES spotless OPTIONAL mosek sedumi snopt COMMAND runTrajectorySwingUpAndBalance PROPERTIES TIMEOUT 1500)  # FIXME: see #2305
-  add_matlab_test(NAME examples/Pendulum/runValueIteration COMMAND runValueIteration PROPERTIES TIMEOUT 1500)
-endif()
+# add_matlab_test(NAME examples/Pendulum/runTrajectorySwingUpAndBalance REQUIRES spotless OPTIONAL mosek sedumi snopt COMMAND runTrajectorySwingUpAndBalance)  # FIXME: see #2305
+add_matlab_test(NAME examples/Pendulum/runValueIteration COMMAND runValueIteration SIZE large)
