@@ -99,7 +99,6 @@ function(mex_setup)
   if (NOT _matlab_root)
     message(FATAL_ERROR "Failed to extract MATLAB_ROOT")
   endif()
-  message(STATUS "************************** MATLAB ROOT: _matlab_root=${_matlab_root}")
   string(STRIP ${_matlab_root} MATLAB_ROOT)
 
   set(matlab "${matlab}" CACHE FILEPATH "${matlab}")
