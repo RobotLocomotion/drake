@@ -2,7 +2,7 @@ add_executable(direct_collocation_constraint_test
   direct_collocation_constraint_test.cc)
 target_link_libraries(direct_collocation_constraint_test
   drakeDynamicConstraint ${GTEST_BOTH_LIBRARIES})
-add_test(NAME direct_collocation_constraint_test
+drake_add_test(NAME direct_collocation_constraint_test
   COMMAND direct_collocation_constraint_test)
 
 # add_matlab_test(NAME systems/plants/constraint/test/RelativeGazeTargetConstraintTest REQUIRES lcm libbot OPTIONAL bullet COMMAND RelativeGazeTargetConstraintTest SIZE large)  # FIXME: see #3149

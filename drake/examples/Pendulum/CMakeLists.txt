@@ -17,7 +17,7 @@ if(lcm_FOUND)
     drakeRBM
     drakeLCMSystem
     threads)
-  add_test(NAME pendulum_run_dynamics
+  drake_add_test(NAME pendulum_run_dynamics
     COMMAND pendulum_run_dynamics --non-realtime)
 
   add_executable(pendulum_run_energy_shaping pendulum_run_energy_shaping.cc)
@@ -25,11 +25,11 @@ if(lcm_FOUND)
     drakeRBM
     drakeLCMSystem
     threads)
-  # add_test(NAME pendulum_run_energy_shaping COMMAND pendulum_run_energy_shaping --non-realtime)  # FIXME: disabled for now since it's not a good test, since it will always timeout
+  # drake_add_test(NAME pendulum_run_energy_shaping COMMAND pendulum_run_energy_shaping --non-realtime)  # FIXME: disabled for now since it's not a good test, since it will always timeout
 
   add_executable(pendulum_run_lqr pendulum_run_lqr.cc)
   target_link_libraries(pendulum_run_lqr drakeRBM drakeLCMSystem)
-  add_test(NAME pendulum_run_lqr
+  drake_add_test(NAME pendulum_run_lqr
     COMMAND pendulum_run_lqr --non-realtime)
 
   add_executable(pendulum_run_swing_up pendulum_run_swing_up.cc)
@@ -40,7 +40,7 @@ if(lcm_FOUND)
   # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
   # issues #2352, #2569.
   if(ipopt_FOUND OR nlopt_FOUND OR snopt_c_FOUND)
-    add_test(NAME pendulum_run_swing_up
+    drake_add_test(NAME pendulum_run_swing_up
       COMMAND pendulum_run_swing_up --non-realtime)
   endif()
 endif()

@@ -1,7 +1,7 @@
 if(lcm_FOUND)
   add_executable(curve2_test curve2_test.cc)
   target_link_libraries(curve2_test ${GTEST_BOTH_LIBRARIES} drakeCars)
-  add_test(NAME curve2_test COMMAND curve2_test)
+  drake_add_test(NAME curve2_test COMMAND curve2_test)
 
   if(NOT WIN32)
     add_executable(simple_car_test simple_car_test.cc
@@ -11,7 +11,7 @@ if(lcm_FOUND)
     add_executable(simple_car_test simple_car_test.cc)
   endif()
   target_link_libraries(simple_car_test ${GTEST_BOTH_LIBRARIES} drakeCars)
-  add_test(NAME simple_car_test COMMAND simple_car_test)
+  drake_add_test(NAME simple_car_test COMMAND simple_car_test)
 
   add_executable(simple_car_state_translator_test
     simple_car_state_translator_test.cc)
@@ -31,14 +31,14 @@ if(lcm_FOUND)
   endif() 
   target_link_libraries(idm_with_trajectory_agent_test
     ${GTEST_BOTH_LIBRARIES} drakeCars)
-  add_test(NAME idm_with_trajectory_agent_test
+  drake_add_test(NAME idm_with_trajectory_agent_test
     COMMAND idm_with_trajectory_agent_test)
 
   add_executable(trajectory_car_test trajectory_car_test.cc)
   target_link_libraries(trajectory_car_test ${GTEST_BOTH_LIBRARIES} drakeCars)
-  add_test(NAME trajectory_car_test COMMAND trajectory_car_test)
+  drake_add_test(NAME trajectory_car_test COMMAND trajectory_car_test)
 
   add_executable(car_simulation_test car_simulation_test.cc)
   target_link_libraries(car_simulation_test ${GTEST_BOTH_LIBRARIES} drakeCars)
-  add_test(NAME car_simulation_test COMMAND car_simulation_test)
+  drake_add_test(NAME car_simulation_test COMMAND car_simulation_test)
 endif()

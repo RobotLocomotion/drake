@@ -5,7 +5,7 @@
 
 add_executable(testDrakeGradientUtil testDrakeGradientUtil.cpp)
 target_link_libraries(testDrakeGradientUtil drakeGeometryUtil)
-add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil)
+drake_add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil SIZE medium)
 
 if(MATLAB_FOUND)
   add_mex(testQuatmex testQuatmex.cpp)
@@ -26,11 +26,11 @@ endif()
 
 add_executable(testConvexHull testConvexHull.cpp)
 target_link_libraries(testConvexHull drakeConvexHull ${GTEST_BOTH_LIBRARIES})
-add_test(NAME testConvexHull COMMAND testConvexHull)
+drake_add_test(NAME testConvexHull COMMAND testConvexHull)
 
 add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
 target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil ${GTEST_BOTH_LIBRARIES})
-add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
+drake_add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
 
 add_matlab_test(NAME util/test/PassByValueMapTest COMMAND PassByValueMapTest)
 add_matlab_test(NAME util/test/angleDiffTest COMMAND angleDiffTest)

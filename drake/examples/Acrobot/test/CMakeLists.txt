@@ -1,7 +1,7 @@
 if(lcm_FOUND)
   add_executable(acrobotURDFDynamicsTest urdfDynamicsTest.cpp)
   target_link_libraries(acrobotURDFDynamicsTest drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME acrobotURDFDynamicsTest COMMAND acrobotURDFDynamicsTest)
+  drake_add_test(NAME acrobotURDFDynamicsTest COMMAND acrobotURDFDynamicsTest)
 endif()
 
 add_matlab_test(NAME examples/Acrobot/test/dHtest OPTIONAL bullet COMMAND dHtest)
