@@ -152,7 +152,9 @@ else % then try to evaluate the dependency now...
     case {'snopt','studentsnopt'}
       [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
       if (~conf.snopt_enabled && ~conf.studentsnopt_enabled)
-        conf.snopt_enabled = pod_pkg_config('snopt');
+        % Capture the output to prevent a spurious or duplicate console warning.
+        snopt_enabled = pod_pkg_config('snopt');
+        [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
       end
 
       if ~conf.snopt_enabled && ~conf.studentsnopt_enabled && nargout<1
