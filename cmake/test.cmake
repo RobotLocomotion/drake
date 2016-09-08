@@ -158,11 +158,6 @@ function(drake_add_matlab_test)
   set(_test_command
     "try, eval('${_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${_exit_status}); end; force_close_system; exit(0)")
 
-  if(RANDOMIZE_MATLAB_TESTS)
-    set(_test_command
-      "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${_test_command}")
-  endif()
-
   set(_test_args TEST_ARGS ${_UNPARSED_ARGUMENTS})
 
   matlab_add_unit_test(

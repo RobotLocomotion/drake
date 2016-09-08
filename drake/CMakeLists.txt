@@ -27,7 +27,6 @@ endif()
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
-option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random seed" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
