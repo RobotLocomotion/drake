@@ -202,8 +202,7 @@ class Diagram : public System<T> {
 
     // Evaluate the derivatives of each constituent system.
     for (int i = 0; i < n; ++i) {
-      const Context<T>* subcontext =
-          diagram_context->GetSubsystemContext(i);
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
       ContinuousState<T>* subderivatives =
           diagram_derivatives->get_mutable_substate(i);
       sorted_systems_[i]->EvalTimeDerivatives(*subcontext, subderivatives);
@@ -211,8 +210,8 @@ class Diagram : public System<T> {
   }
 
   void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context, const StateVector<T>& generalized_velocity,
-      StateVector<T>* configuration_derivatives) const override {
+      const Context<T>& context, const VectorBase<T>& generalized_velocity,
+      VectorBase<T>* configuration_derivatives) const override {
     // TODO(david-german-tri): Actually map velocity to derivatives.
   }
 

@@ -6,9 +6,9 @@
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -55,8 +55,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
 /// @endverbatim
 ///
 /// Units are MKS (meters-kilograms-seconds).
-class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
-    : public System<double> {
+class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public System<double> {
  public:
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
