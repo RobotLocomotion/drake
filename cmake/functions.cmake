@@ -1,3 +1,40 @@
+option(TEST_TIMEOUT_MULTIPLIER
+  "Positive integer by which to multiply test timeouts" 1)
+mark_as_advanced(TEST_TIMEOUT_MULTIPLIER)
+
+
+#------------------------------------------------------------------------------
+# Compute the timeout of a test given its size.
+#
+# Arguments:
+#   <SIZE> - The desired size of the test.
+#   <SIZE_OUTVAR> - The actual size of the test.
+#   <SIZE_OUTVAR> - The computed timeout of the test.
+#------------------------------------------------------------------------------
+function(drake_compute_test_timeout SIZE SIZE_OUTVAR TIMEOUT_OUTVAR)
+  # http://googletesting.blogspot.com/2010/12/test-sizes.html
+  if(SIZE STREQUAL small)
+    set(_timeout 60)
+  elseif(SIZE STREQUAL medium)
+    set(_timeout 300)
+  elseif(SIZE STREQUAL large)
+    set(_timeout 900)
+  elseif(SIZE STREQUAL enormous)
+    set(_timeout 2700)
+  else()
+    set(SIZE small)
+    set(_timeout 60)
+  endif()
+
+  if(TEST_TIMEOUT_MULTIPLIER GREATER 1)
+    math(EXPR _timeout "${_timeout} * ${TEST_TIMEOUT_MULTIPLIER}")
+  endif()
+
+  set(${SIZE_OUTVAR} ${SIZE} PARENT_SCOPE)
+  set(${TIMEOUT_OUTVAR} ${_timeout} PARENT_SCOPE)
+endfunction()
+
+
 #------------------------------------------------------------------------------
 # Add a test to the drake project to be run by ctest.
 #
@@ -20,47 +57,19 @@ function(drake_add_test)
     set(_SIZE small)
   endif()
 
-  drake_compute_test_timeout("${_SIZE}")
+  drake_compute_test_timeout(${_SIZE} _size _timeout)
 
-  if(LONG_RUNNING_TESTS OR _SIZE MATCHES "(small|medium)")
+  if(LONG_RUNNING_TESTS OR _size MATCHES "(small|medium)")
     add_test(NAME ${_NAME} ${_UNPARSED_ARGUMENTS})
-    set_tests_properties(${_NAME} PROPERTIES LABELS ${_SIZE} TIMEOUT ${_TIMEOUT})
+    set_tests_properties(${_NAME} PROPERTIES
+      LABELS ${_size}
+      TIMEOUT ${_timeout})
   else()
-    message(STATUS "Not running ${_NAME} because ${_SIZE} tests are not enabled")
+    message(STATUS
+      "Not running ${_NAME} because ${_size} tests are not enabled")
   endif()
 endfunction()
 
-option(TEST_TIMEOUT_MULTIPLIER "Positive integer by which to multiply test timeouts" 1)
-mark_as_advanced(TEST_TIMEOUT_MULTIPLIER)
-
-#------------------------------------------------------------------------------
-# Compute the timeout of a test given its size.
-#
-# Arguments:
-#   <_SIZE> - The size of the test.
-#------------------------------------------------------------------------------
-function(drake_compute_test_timeout _SIZE)
-  # http://googletesting.blogspot.com/2010/12/test-sizes.html
-  if(_SIZE STREQUAL small)
-    set(_TIMEOUT 60)
-  elseif(_SIZE STREQUAL medium)
-    set(_TIMEOUT 300)
-  elseif(_SIZE STREQUAL large)
-    set(_TIMEOUT 900)
-  elseif(_SIZE STREQUAL enormous)
-    set(_TIMEOUT 2700)
-  else()
-    set(_SIZE small)
-    set(_TIMEOUT 60)
-  endif()
-
-  if(TEST_TIMEOUT_MULTIPLIER GREATER 1)
-    math(EXPR test_timeout "${_TIMEOUT} * ${TEST_TIMEOUT_MULTIPLIER}")
-  endif()
-
-  set(_SIZE ${_SIZE} PARENT_SCOPE)
-  set(_TIMEOUT ${_TIMEOUT} PARENT_SCOPE)
-endfunction()
 
 #------------------------------------------------------------------------------
 # Add a MATLAB test to the drake project to be run by ctest.
@@ -103,10 +112,11 @@ function(drake_add_matlab_test)
     set(_SIZE medium)
   endif()
 
-  drake_compute_test_timeout("${_SIZE}")
+  drake_compute_test_timeout(${_SIZE} _size _timeout)
 
-  if(NOT LONG_RUNNING_TESTS AND NOT _SIZE MATCHES "(small|medium)")
-    message(STATUS "Not running ${_NAME} because ${_SIZE} tests are not enabled")
+  if(NOT LONG_RUNNING_TESTS AND NOT _size MATCHES "(small|medium)")
+    message(STATUS
+      "Not running ${_NAME} because ${_size} tests are not enabled")
     return()
   endif()
 
@@ -114,7 +124,8 @@ function(drake_add_matlab_test)
     foreach(_require ${_REQUIRES})
       string(TOUPPER ${_require} _require_upper)
       if(NOT WITH_${_require_upper} AND NOT ${_require}_FOUND AND NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${_require}.m")
-        message(STATUS "Not running ${_NAME} because ${_require} was not installed")
+        message(STATUS
+          "Not running ${_NAME} because ${_require} was not installed")
         return()
       endif()
     endforeach()
@@ -125,14 +136,19 @@ function(drake_add_matlab_test)
     set(_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
 
-  set(_additional_paths "${CMAKE_INSTALL_PREFIX}/matlab;${_WORKING_DIRECTORY};")
-  set(_test_precommand "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
+  set(_additional_paths
+    "${CMAKE_INSTALL_PREFIX}/matlab;${_WORKING_DIRECTORY};")
+  set(_test_precommand
+    "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
 
-  set(_exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
-  set(_test_command "try, eval('${_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${_exit_status}); end; force_close_system; exit(0)")
+  set(_exit_status
+    "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # FIXME: missing dependency => pass
+  set(_test_command
+    "try, eval('${_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${_exit_status}); end; force_close_system; exit(0)")
 
   if(RANDOMIZE_MATLAB_TESTS)
-    set(_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${_test_command}")
+    set(_test_command
+      "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${_test_command}")
   endif()
 
   set(_test_args TEST_ARGS ${_UNPARSED_ARGUMENTS})
@@ -145,13 +161,17 @@ function(drake_add_matlab_test)
     TIMEOUT -1
     WORKING_DIRECTORY ${_WORKING_DIRECTORY}
     ${_test_args})
-  set_tests_properties(${_NAME} PROPERTIES LABELS ${_SIZE} TIMEOUT ${_TIMEOUT})
+  set_tests_properties(${_NAME} PROPERTIES
+    LABELS ${_size}
+    TIMEOUT ${_timeout})
 endfunction()
+
 
 #------------------------------------------------------------------------------
 # Deprecated.
 #------------------------------------------------------------------------------
 function(add_matlab_test)
-  message(WARNING "The function add_matlab_test is deprecated; use drake_add_matlab_test instead.")
+  message(WARNING
+    "The function add_matlab_test is deprecated; use drake_add_matlab_test instead.")
   drake_add_matlab_test(${ARGN})
 endfunction()
