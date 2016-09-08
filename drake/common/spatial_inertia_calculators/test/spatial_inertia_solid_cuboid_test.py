@@ -58,9 +58,9 @@ class TestSpatialInertiaCalculatorCuboid(unittest.TestCase):
         """
         expected_output = \
             "Computing spatial inertia of solid cuboid with properties:\n" \
-            "  - x axis length = 0.37\n" \
-            "  - y axis length = 0.17\n" \
-            "  - z axis length = 0.2\n" \
+            "  - length along cuboid's x axis = 0.37\n" \
+            "  - length along cuboid's y axis = 0.17\n" \
+            "  - length along cuboid's z axis = 0.2\n" \
             "  - mass = 5.0\n" \
             "Results\n" \
             "  - ixx = 0.0287083333333\n" \
