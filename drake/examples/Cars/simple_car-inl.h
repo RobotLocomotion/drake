@@ -116,7 +116,8 @@ void SimpleCar<T>::EvalOutput(const systems::Context<T>& context,
   std::tie(state, input) = detail::ConvertContextToSystem1(context);
 
   // Obtain the structure we need to write into.
-  systems::VectorBase<T>* const output_vector = output->GetMutableVectorData(0);
+  systems::BasicVector<T>* const output_vector =
+      output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
 
   // Delegate to the System1 version of this block.

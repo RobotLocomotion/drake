@@ -19,7 +19,7 @@ namespace systems {
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
-class StateSupervector : public StateVector<T> {
+class StateSupervector : public VectorBase<T> {
  public:
   /// Constructs a supervector consisting of all the vectors in
   /// subvectors, which must live at least as long as this supervector.
