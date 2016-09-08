@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/systems/framework/context_base.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/gain.h"
@@ -54,11 +54,11 @@ class PidController : public Diagram<T> {
 
   /// Sets @p context to a default state in which the integral of the error
   /// signal is zero.
-  void SetDefaultState(ContextBase<T>* context) const;
+  void SetDefaultState(Context<T>* context) const;
 
   /// Sets the integral of the %PidController to @p value.
   /// @p value must be a column vector of the appropriate size.
-  void set_integral_value(ContextBase<T>* context,
+  void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
   /// Returns the input port to the error signal.

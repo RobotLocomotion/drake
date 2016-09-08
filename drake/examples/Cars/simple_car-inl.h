@@ -81,7 +81,7 @@ bool SimpleCar<T>::has_any_direct_feedthrough() const {
 namespace detail {
 template <typename T>
 std::pair<SimpleCarState1<T>, DrivingCommand1<T>> ConvertContextToSystem1(
-    const systems::ContextBase<T>& context) {
+    const systems::Context<T>& context) {
   // Convert the state into System1 data.
   const systems::StateVector<T>& context_state =
       context.get_state().continuous_state->get_state();
@@ -105,7 +105,7 @@ std::pair<SimpleCarState1<T>, DrivingCommand1<T>> ConvertContextToSystem1(
 }  // namespace detail
 
 template <typename T>
-void SimpleCar<T>::EvalOutput(const systems::ContextBase<T>& context,
+void SimpleCar<T>::EvalOutput(const systems::Context<T>& context,
                               systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
@@ -126,7 +126,7 @@ void SimpleCar<T>::EvalOutput(const systems::ContextBase<T>& context,
 
 template <typename T>
 void SimpleCar<T>::EvalTimeDerivatives(
-    const systems::ContextBase<T>& context,
+    const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 

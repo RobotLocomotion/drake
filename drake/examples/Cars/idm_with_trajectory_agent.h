@@ -28,10 +28,10 @@ class IdmWithTrajectoryAgent : public systems::LeafSystem<T> {
   ~IdmWithTrajectoryAgent() override;
 
   // System<T> overrides
-  void EvalOutput(const systems::ContextBase<T>& context,
+  void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
   void EvalTimeDerivatives(
-      const systems::ContextBase<T>& context,
+      const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
  protected:

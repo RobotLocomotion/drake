@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context_base.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_supervector.h"
 #include "drake/systems/framework/system_input.h"
@@ -101,7 +101,7 @@ class DiagramContinuousState : public ContinuousState<T> {
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
-class DiagramContext : public ContextBase<T> {
+class DiagramContext : public Context<T> {
  public:
   typedef int SystemIndex;
   typedef int PortIndex;
@@ -118,7 +118,7 @@ class DiagramContext : public ContextBase<T> {
   ///
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
-  void AddSystem(SystemIndex index, std::unique_ptr<ContextBase<T>> context,
+  void AddSystem(SystemIndex index, std::unique_ptr<Context<T>> context,
                  std::unique_ptr<SystemOutput<T>> output) {
     DRAKE_ABORT_UNLESS(contexts_[index] == nullptr);
     DRAKE_ABORT_UNLESS(outputs_[index] == nullptr);
@@ -155,7 +155,7 @@ class DiagramContext : public ContextBase<T> {
     // Identify and validate the destination port.
     SystemIndex dest_system_index = dest.first;
     PortIndex dest_port_index = dest.second;
-    ContextBase<T>* dest_context =
+    Context<T>* dest_context =
         GetMutableSubsystemContext(dest_system_index);
     DRAKE_ABORT_UNLESS(dest_port_index >= 0);
     DRAKE_ABORT_UNLESS(dest_port_index < dest_context->get_num_input_ports());
@@ -195,7 +195,7 @@ class DiagramContext : public ContextBase<T> {
   /// Returns the context structure for a given constituent system @p index.
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
-  const ContextBase<T>* GetSubsystemContext(SystemIndex index) const {
+  const Context<T>* GetSubsystemContext(SystemIndex index) const {
     const int num_contexts = static_cast<int>(contexts_.size());
     DRAKE_ABORT_UNLESS(index >= 0 && index < num_contexts);
     DRAKE_ABORT_UNLESS(contexts_[index] != nullptr);
@@ -205,7 +205,7 @@ class DiagramContext : public ContextBase<T> {
   /// Returns the context structure for a given subsystem @p index.
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
-  ContextBase<T>* GetMutableSubsystemContext(SystemIndex index) {
+  Context<T>* GetMutableSubsystemContext(SystemIndex index) {
     const int num_contexts = static_cast<int>(contexts_.size());
     DRAKE_ABORT_UNLESS(index >= 0 && index < num_contexts);
     DRAKE_ABORT_UNLESS(contexts_[index] != nullptr);
@@ -214,7 +214,7 @@ class DiagramContext : public ContextBase<T> {
 
   /// Recursively sets the time on this context and all subcontexts.
   void set_time(const T& time_sec) override {
-    ContextBase<T>::set_time(time_sec);
+    Context<T>::set_time(time_sec);
     for (auto& subcontext : contexts_) {
       if (subcontext != nullptr) {
         subcontext->set_time(time_sec);
@@ -305,7 +305,7 @@ class DiagramContext : public ContextBase<T> {
   std::vector<PortIdentifier> input_ids_;
 
   std::vector<std::unique_ptr<SystemOutput<T>>> outputs_;
-  std::vector<std::unique_ptr<ContextBase<T>>> contexts_;
+  std::vector<std::unique_ptr<Context<T>>> contexts_;
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems on which they depend.

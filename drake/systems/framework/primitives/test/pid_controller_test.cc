@@ -47,7 +47,7 @@ class PidControllerTest : public ::testing::Test {
   const double kd_{1.0};
   const int port_length_{3};
   PidController<double> controller_{kp_, ki_, kd_, port_length_};
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
   Vector3d error_signal_{1.0, 2.0, 3.0};

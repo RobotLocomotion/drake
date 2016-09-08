@@ -32,7 +32,7 @@ const T& Gain<T>::get_gain() const {
 }
 
 template <typename T>
-void Gain<T>::EvalOutput(const ContextBase<T>& context,
+void Gain<T>::EvalOutput(const Context<T>& context,
                          SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));

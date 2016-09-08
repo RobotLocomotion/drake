@@ -73,15 +73,15 @@ PidController<T>::get_error_derivative_port() const {
 }
 
 template <typename T>
-void PidController<T>::SetDefaultState(ContextBase<T>* context) const {
+void PidController<T>::SetDefaultState(Context<T>* context) const {
   const int length = Diagram<T>::get_input_port(0).get_size();
   set_integral_value(context, VectorX<T>::Zero(length));
 }
 
 template <typename T>
 void PidController<T>::set_integral_value(
-    ContextBase<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
-  ContextBase<T>* integrator_context =
+    Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
+  Context<T>* integrator_context =
       Diagram<T>::GetMutableSubsystemContext(context, integrator_.get());
   integrator_->set_integral_value(integrator_context, value);
 }

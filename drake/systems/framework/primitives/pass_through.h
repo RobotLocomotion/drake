@@ -32,7 +32,7 @@ class PassThrough : public LeafSystem<T> {
   explicit PassThrough(int length);
 
   /// Sets the output port to equal the input port.
-  void EvalOutput(const ContextBase<T>& context,
+  void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 };
 

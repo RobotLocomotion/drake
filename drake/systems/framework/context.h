@@ -18,18 +18,18 @@ struct StepInfo {
   T time_sec{};
 };
 
-/// ContextBase is an abstract base class template that represents all
+/// Context is an abstract base class template that represents all
 /// the inputs to a System: time, state, and input vectors. The framework
-/// provides two concrete subclasses of ContextBase: LeafContext (for
+/// provides two concrete subclasses of Context: LeafContext (for
 /// leaf Systems) and DiagramContext (for composite Systems). Users are
 /// discouraged from creating additional subclasses.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
-class ContextBase {
+class Context {
  public:
-  virtual ~ContextBase() {}
+  virtual ~Context() {}
 
   /// Returns the current time in seconds.
   const T& get_time() const { return get_step_info().time_sec; }
@@ -76,16 +76,16 @@ class ContextBase {
   /// mutable access is requested for particular blocks of state variables.
   virtual State<T>* get_mutable_state() = 0;
 
-  /// Returns a deep copy of this ContextBase. The clone's input ports will
+  /// Returns a deep copy of this Context. The clone's input ports will
   /// hold deep copies of the data that appears on this context's input ports
   /// at the time the clone is created.
-  std::unique_ptr<ContextBase<T>> Clone() const {
-    return std::unique_ptr<ContextBase<T>>(DoClone());
+  std::unique_ptr<Context<T>> Clone() const {
+    return std::unique_ptr<Context<T>>(DoClone());
   }
 
  protected:
   /// Contains the return-type-covariant implementation of Clone().
-  virtual ContextBase<T>* DoClone() const = 0;
+  virtual Context<T>* DoClone() const = 0;
 
   /// Returns a const reference to current time and step information.
   const StepInfo<T>& get_step_info() const { return step_info_; }

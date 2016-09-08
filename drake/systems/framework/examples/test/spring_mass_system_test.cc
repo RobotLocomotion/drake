@@ -70,7 +70,7 @@ class SpringMassSystemTest : public ::testing::Test {
 
  protected:
   std::unique_ptr<SpringMassSystem> system_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> system_output_;
   std::unique_ptr<ContinuousState<double>> system_derivatives_;
   std::unique_ptr<BasicVector<double>> configuration_derivatives_;
@@ -256,7 +256,7 @@ The numerical routine here should then be used in a separate test to make sure
 the autodifferentiated matrices agree with the numerical one. Also, consider
 switching to central differences here to get more decimal places. */
 MatrixX<double> CalcDxdotDx(const System<double>& system,
-                            const ContextBase<double>& context) {
+                            const Context<double>& context) {
   const double perturb = 1e-7;  // roughly sqrt(precision)
   auto derivs0 = system.AllocateTimeDerivatives();
   system.EvalTimeDerivatives(context, derivs0.get());
@@ -284,7 +284,7 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
 
 /* Explicit Euler (unstable): x1 = x0 + h xdot(t0,x0) */
 void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
-                       ContextBase<double>& context) {
+                       Context<double>& context) {
   const double t = context.get_time();
   // Invalidate all xc-dependent quantities.
   StateVector<double>* xc =
@@ -300,7 +300,7 @@ void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
     q1 = q0 + h qdot(q0,v1) */
 void StepSemiExplicitEuler(double h, const System<double>& system,
                            ContinuousState<double>& derivs,  // in/out
-                           ContextBase<double>& context) {
+                           Context<double>& context) {
   const double t = context.get_time();
 
   // Invalidate z-dependent quantities.
@@ -338,7 +338,7 @@ void StepSemiExplicitEuler(double h, const System<double>& system,
     while (norm(dx)/norm(x0) > tol) */
 void StepImplicitEuler(double h, const System<double>& system,
                        ContinuousState<double>& derivs,  // in/out
-                       ContextBase<double>& context) {
+                       Context<double>& context) {
   const double t = context.get_time();
 
   // Invalidate all xc-dependent quantities.
@@ -371,7 +371,7 @@ void StepImplicitEuler(double h, const System<double>& system,
 /* Calculate the total energy for this system in the given Context.
 TODO(sherm1): assuming there is only KE and PE to worry about. */
 double CalcEnergy(const SpringMassSystem& system,
-                  const ContextBase<double>& context) {
+                  const Context<double>& context) {
   return system.EvalPotentialEnergy(context) +
          system.EvalKineticEnergy(context);
 }

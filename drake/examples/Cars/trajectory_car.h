@@ -107,7 +107,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
                             systems::kContinuousSampling);
   }
 
-  void EvalOutput(const systems::ContextBase<T>& context,
+  void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override {
     DRAKE_ASSERT(output != nullptr);
     DRAKE_ASSERT(output->get_num_ports() == 1);

@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "drake/systems/framework/cache.h"
-#include "drake/systems/framework/context_base.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
@@ -32,7 +32,7 @@ class Adder : public LeafSystem<T> {
 
   /// Sums the input ports into the output port. If the input ports are not
   /// of number num_inputs_ or size length_, std::runtime_error will be thrown.
-  void EvalOutput(const ContextBase<T>& context,
+  void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 };
 

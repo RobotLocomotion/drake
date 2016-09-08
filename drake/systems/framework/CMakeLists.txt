@@ -2,7 +2,7 @@
 set(sources
   basic_vector.cc
   cache.cc
-  context_base.cc
+  context.cc
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
@@ -40,7 +40,7 @@ set(sources
 set(installed_headers
   basic_vector.h
   cache.h
-  context_base.h
+  context.h
   diagram.h
   diagram_builder.h
   diagram_context.h

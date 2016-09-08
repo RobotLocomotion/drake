@@ -32,7 +32,7 @@ class AdderTest : public ::testing::Test {
   }
 
   std::unique_ptr<System<double>> adder_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input0_;
   std::unique_ptr<BasicVector<double>> input1_;

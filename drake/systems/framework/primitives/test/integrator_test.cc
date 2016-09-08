@@ -45,7 +45,7 @@ class IntegratorTest : public ::testing::Test {
   }
 
   std::unique_ptr<System<double>> integrator_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;

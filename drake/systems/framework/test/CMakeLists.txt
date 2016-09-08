@@ -37,10 +37,10 @@ target_link_libraries(system_output_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
 add_test(NAME system_output_test COMMAND system_output_test)
 
-add_executable(context_test context_test.cc)
-target_link_libraries(context_test drakeSystemFramework
+add_executable(leaf_context_test leaf_context_test.cc)
+target_link_libraries(leaf_context_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
-add_test(NAME context_test COMMAND context_test)
+add_test(NAME leaf_context_test COMMAND leaf_context_test)
 
 add_executable(diagram_test diagram_test.cc)
 target_link_libraries(diagram_test

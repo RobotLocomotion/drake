@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context_base.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
@@ -23,7 +23,7 @@ namespace systems {
 ///           scalar.
 // TODO(david-german-tri): Manage cache invalidation.
 template <typename T>
-class LeafContext : public ContextBase<T> {
+class LeafContext : public Context<T> {
  public:
   LeafContext() {}
   virtual ~LeafContext() {}
@@ -83,7 +83,7 @@ class LeafContext : public ContextBase<T> {
 
  protected:
   /// The caller owns the returned memory.
-  ContextBase<T>* DoClone() const override {
+  Context<T>* DoClone() const override {
     LeafContext<T>* context = new LeafContext<T>();
 
     // Make a deep copy of the state using BasicVector::Clone().

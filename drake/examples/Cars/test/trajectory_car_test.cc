@@ -72,7 +72,7 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
     const TrajectoryCar<double> car_dut{curve, it.speed, it.start_time};
 
     // The test inputs (time) and outputs.
-    std::unique_ptr<systems::ContextBase<double>> context =
+    std::unique_ptr<systems::Context<double>> context =
         car_dut.CreateDefaultContext();
     std::unique_ptr<systems::SystemOutput<double>> all_output =
         car_dut.AllocateOutput(*context);

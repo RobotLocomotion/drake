@@ -162,7 +162,7 @@ class DiagramTest : public ::testing::Test {
   std::unique_ptr<BasicVector<double>> input1_;
   std::unique_ptr<BasicVector<double>> input2_;
 
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
@@ -314,9 +314,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     context_->SetInputPort(2, MakeInput(std::move(input2_)));
 
     // Initialize the integrator states.
-    ContextBase<double>* d0_context = diagram_->GetMutableSubsystemContext(
+    Context<double>* d0_context = diagram_->GetMutableSubsystemContext(
         context_.get(), subdiagram0_.get());
-    ContextBase<double>* d1_context = diagram_->GetMutableSubsystemContext(
+    Context<double>* d1_context = diagram_->GetMutableSubsystemContext(
         context_.get(), subdiagram1_.get());
 
     State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
@@ -346,7 +346,7 @@ class DiagramOfDiagramsTest : public ::testing::Test {
   std::unique_ptr<BasicVector<double>> input1_;
   std::unique_ptr<BasicVector<double>> input2_;
 
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
@@ -414,11 +414,11 @@ class PublishingSystem : public LeafSystem<double> {
     this->DeclareInputPort(kVectorValued, 1, kInheritedSampling);
   }
 
-  void EvalOutput(const ContextBase<double>& context,
+  void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {}
 
  protected:
-  void DoPublish(const ContextBase<double>& context) const override {
+  void DoPublish(const Context<double>& context) const override {
     CheckValidContext(context);
     callback_(context.get_vector_input(0)->get_value()[0]);
   }
