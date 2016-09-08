@@ -59,3 +59,4 @@ pods_install_pkg_config_file(drake-common
   VERSION 0.0.1)
 
 add_subdirectory(test)
+add_subdirectory(spatial_inertia_calculators)
