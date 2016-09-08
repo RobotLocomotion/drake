@@ -33,7 +33,9 @@ namespace {
 
 using namespace std;
 using namespace Eigen;
-using namespace tinyxml2;
+
+using tinyxml2::XMLElement;
+using tinyxml2::XMLDocument;
 
 using drake::systems::plants::joints::FloatingBaseType;
 
