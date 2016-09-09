@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/drakeSystemAnalysis_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -265,6 +266,9 @@ class Simulator {
   std::unique_ptr<ContinuousState<T>> derivs0_;
   std::unique_ptr<ContinuousState<T>> derivs1_;
 
+  // Pre-allocated temporaries for updated difference states.
+  std::unique_ptr<DiscreteState<T>> discrete_updates_;
+
   // These are the caller's requests, if any.
   IntegratorType req_integrator_{IntegratorType::UseDefault};
   double req_accuracy_{0};                   // means "unspecified, use default"
@@ -312,6 +316,8 @@ Simulator<T>::Simulator(const System<T>& system,
   // there are more of them.
   derivs0_ = system_.AllocateTimeDerivatives();
   derivs1_ = system_.AllocateTimeDerivatives();
+
+  discrete_updates_ = system_.AllocateDiscreteUpdate();
 }
 
 template <typename T>
@@ -346,17 +352,36 @@ void Simulator<T>::StepTo(const T& final_time) {
       context_->get_mutable_continuous_state()->get_mutable_state();
 
   // TODO(sherm1) Invoke selected integrator.
-  SampleActions sample_actions;
+  UpdateActions<T> update_actions;
   bool sample_time_hit = false;
   while (context_->get_time() <= final_time) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
+    log()->trace("Starting a simulation step at {}", step_start_time);
 
-    // First make any necessary discrete updates.
+    // First take any necessary discrete actions.
     if (sample_time_hit) {
-      system_.Update(context_.get(), sample_actions);
+      for (const DiscreteEvent<T>& event : update_actions.events) {
+        switch (event.action) {
+          case DiscreteEvent<T>::kPublishAction:
+            system_.Publish(*context_, event);
+            break;
+          case DiscreteEvent<T>::kUpdateAction:
+            // First, compute the discrete updates into a temporary buffer.
+            system_.Update(*context_, event, discrete_updates_.get());
+            // Then, write them back into the context.
+            context_->get_mutable_discrete_state()->CopyFrom(
+                *discrete_updates_);
+            break;
+          default:
+            DRAKE_ABORT_MSG("Unknown DiscreteEvent action.");
+            break;
+        }
+      }
       ++num_samples_taken_;
     }
+    // Once the discrete updates have been made, clean them up.
+    update_actions.events.clear();
 
     // Now we can calculate start-of-step time derivatives.
 
@@ -375,7 +400,7 @@ void Simulator<T>::StepTo(const T& final_time) {
 
     // How far can we go before we have to take a sampling break?
     const T next_sample_time =
-        system_.CalcNextSampleTime(*context_, &sample_actions);
+        system_.CalcNextUpdateTime(*context_, &update_actions);
     DRAKE_ASSERT(next_sample_time >= step_start_time);
 
     // Figure out the largest step we can reasonably take, and whether we had

@@ -1,6 +1,9 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/systems/framework/continuous_state.h"
+#include "drake/systems/framework/discrete_state.h"
 
 namespace drake {
 namespace systems {
@@ -29,6 +32,18 @@ class State {
     return continuous_state_.get();
   }
 
+  void set_discrete_state(std::unique_ptr<DiscreteState<T>> xd) {
+    discrete_state_ = std::move(xd);
+  }
+
+  const DiscreteState<T>* get_discrete_state() const {
+    return discrete_state_.get();
+  }
+
+  DiscreteState<T>* get_mutable_discrete_state() {
+    return discrete_state_.get();
+  }
+
   // State is not copyable or moveable.
   State(const State& other) = delete;
   State& operator=(const State& other) = delete;
@@ -37,7 +52,7 @@ class State {
 
  private:
   std::unique_ptr<ContinuousState<T>> continuous_state_;
-  // TODO(david-german-tri): Add discrete state variables.
+  std::unique_ptr<DiscreteState<T>> discrete_state_;
 };
 
 }  // namespace systems
