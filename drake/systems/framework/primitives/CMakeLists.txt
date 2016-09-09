@@ -13,6 +13,7 @@ drake_install_headers(
   multiplexer.h
   pass_through.h
   pass_through-inl.h
-  pid_controller.h)
+  pid_controller.h
+  zero_order_hold.h)
 
 add_subdirectory(test)

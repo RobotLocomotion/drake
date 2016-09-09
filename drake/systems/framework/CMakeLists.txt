@@ -22,6 +22,7 @@ set(sources
   primitives/multiplexer.cc
   primitives/pass_through.cc
   primitives/pid_controller.cc
+  primitives/zero_order_hold.cc
   state.cc
   state_subvector.cc
   state_supervector.cc
