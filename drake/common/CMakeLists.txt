@@ -32,6 +32,7 @@ set(installed_headers
   eigen_types.h
   functional_form.h
   nice_type_name.h
+  number_traits.h
   polynomial.h
   sorted_vectors_have_intersection.h
   text_logging.h
