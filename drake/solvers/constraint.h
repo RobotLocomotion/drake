@@ -170,6 +170,58 @@ class QuadraticConstraint : public Constraint {
   Eigen::VectorXd b_;
 };
 
+/** A MatrixInnerProductConstraint takes a matrix X, and computes its
+   inner product with another matrix A. The following linear constraint is
+   imposed
+   <pre>
+   lb <= trace(A'*X) <= ub
+   </pre>
+ */
+class MatrixInnerProductConstraint: public Constraint {
+public:
+  template<typename DerivedA>
+  MatrixInnerProductConstraint(const Eigen::MatrixBase<DerivedA>& A, double lb, double ub)
+      : Constraint(1, drake::Vector1d::Constant(lb), drake::Vector1d::Constant(ub)) {
+    A_(A);
+  }
+
+  void Eval(const Eigen::Ref<const Eigen::MatrixXd> &X, Eigen::VectorXd &y) const  {
+    // call Eval with a Matrix X
+    y.resize(num_constraints());
+    y(0) = A_.cwiseProduct(X).sum();
+  }
+
+  void Eval(const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const override {
+    // Call Eval with a vector x
+    Eigen::MatrixXd X = x;
+    if(X.size() != A_.size()) {
+      DRAKE_ABORT_MSG("X is not of the right size in drake::solvers::MatrixInnerProductConstraint::Eval");
+    }
+    X.conservativeResize(A_.rows(), A_.cols());
+    Eval(X, y);
+  }
+
+  void Eval(const Eigen::Ref<const TaylorMatXd>& X,
+            TaylorVarXd& y) const {
+    //y.resize(num_constraints());
+    auto inner_product = A_.cast<TaylorVarXd>().cwiseProduct(X).sum();
+    //y = inner_product(0);
+  }
+
+  void Eval(const Eigen::Ref<const TaylorVecXd> &x, TaylorVarXd& y) const override {
+    TaylorMatXd X = x;
+    if(X.size() != A_.size()) {
+      DRAKE_ABORT_MSG("X is not of the right size in drake::solvers::MatrixInnerProductConstraint::Eval");
+    }
+    X.conservativeResize(A_.rows(), A_.cols());
+    Eval(X, y);
+  }
+  virtual const Eigen::MatrixXd& A() const { return A_; }
+
+private:
+  Eigen::MatrixXd A_;
+};
+
 /** A semidefinite constraint  that takes a symmetric matrix as
  well as a linear component.
  <pre>
