@@ -44,3 +44,6 @@ add_executable(time_varying_polynomial_source_test time_varying_polynomial_sourc
 target_link_libraries(time_varying_polynomial_source_test
     drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME time_varying_polynomial_source_test COMMAND time_varying_polynomial_source_test)
+
+drake_add_cc_test(zero_order_hold_test)
+target_link_libraries(zero_order_hold_test drakeSystemFramework)

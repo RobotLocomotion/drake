@@ -1,0 +1,38 @@
+#pragma once
+
+#include <memory>
+#include <vector>
+
+#include "drake/systems/framework/leaf_system.h"
+
+namespace drake {
+namespace systems {
+
+/// A ZeroOrderHold block with input `u`, which may be discrete or continuous,
+/// and discrete output `y`, where the y is sampled from u with a fixed period.
+template <typename T>
+class ZeroOrderHold : public LeafSystem<T> {
+ public:
+  /// Constructs a ZeroOrderHold system with the given @p period_sec.
+  ZeroOrderHold(const T& period_sec, int length);
+
+  // In a zero-order hold, the output depends only on the state, so there is
+  // no direct-feedthrough.
+  bool has_any_direct_feedthrough() const override { return false; }
+
+  /// Sets the output port value to the value that is currently latched in the
+  /// zero-order hold.
+  void EvalOutput(const Context<T>& context,
+                  SystemOutput<T>* output) const override;
+
+ protected:
+  /// Latches the input port into the discrete state.
+  void DoUpdate(const Context<T>& context,
+                DiscreteState<T>* discrete_state) const override;
+
+  std::vector<std::unique_ptr<BasicVector<T>>>
+  AllocateDifferenceState() const override;
+};
+
+}  // namespace systems
+}  // namespace drake
