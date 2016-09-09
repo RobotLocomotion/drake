@@ -1,16 +1,10 @@
 function ok = checkDependency(dep,command)
 % Drake code which depends on an external library or program should
 % check that dependency by calling this function.
-%
-% For a required dependency, do not capture the output. The MATLAB script will
-% fail and emit an error message to the console.
-%
-%     checkDependency('snopt');
-%
-% For an optional dependency, capture the output. The MATLAB script will
-% continue regardless and will not emit a warning message to the console.
-%
-%     no_snopt = ~checkDependency('snopt');
+%   example:
+%     checkDependency('snopt')
+% or
+%     if (~checkDependency('snopt')) error('my error'); end
 %
 % @param dep the name of the dependency to check
 % @param command can be 'disable', 'enable'
@@ -103,17 +97,10 @@ else % then try to evaluate the dependency now...
         end
       end
     case 'lcmgl'
-      if nargout<1
-        % If no outputs are captured, the caller wants a console error message,
-        % so do not capture outputs on the recursive call either.
-        checkDependency('lcm');
-        lcm_enabled = true;
-      else
-        lcm_enabled = checkDependency('lcm');
-      end
-      conf.lcmgl_enabled = lcm_enabled && logical(exist('bot_lcmgl.data_t','class'));
+      checkDependency('lcm');
+      conf.lcmgl_enabled = logical(exist('bot_lcmgl.data_t','class'));
 
-      if (lcm_enabled && ~conf.lcmgl_enabled)
+      if (~conf.lcmgl_enabled)
         try % try to add bot2-lcmgl.jar
           lcm_java_classpath = getCMakeParam('LCMGL_JAR_FILE');
           javaaddpathProtectGlobals(lcm_java_classpath);
@@ -152,8 +139,7 @@ else % then try to evaluate the dependency now...
     case {'snopt','studentsnopt'}
       [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
       if (~conf.snopt_enabled && ~conf.studentsnopt_enabled)
-        % Capture the output to prevent a spurious or duplicate console warning.
-        snopt_enabled = pod_pkg_config('snopt');
+        pod_pkg_config('snopt');
         [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
       end
 
