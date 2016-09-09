@@ -72,6 +72,46 @@ class Context {
     return get_mutable_state()->get_mutable_continuous_state();
   }
 
+  /// Returns a mutable pointer to the difference component of the state, or
+  /// nullptr if there is no difference state.
+  DifferenceState<T>* get_mutable_difference_state() {
+    return get_mutable_state()->get_mutable_difference_state();
+  }
+
+  /// Returns a mutable pointer to element @p index of the difference state.
+  /// Asserts if there is no difference state, or if @p index doesn't exist.
+  BasicVector<T>* get_mutable_difference_state(int index) {
+    DifferenceState<T>* xd = get_mutable_difference_state();
+    DRAKE_ASSERT(xd != nullptr);
+    return xd->get_mutable_difference_state(index);
+  }
+
+  /// Sets the discrete state to @p xd, deleting whatever was there before.
+  void set_difference_state(std::unique_ptr<DifferenceState<T>> xd) {
+    get_mutable_state()->set_difference_state(std::move(xd));
+  }
+
+  /// Returns a const pointer to the discrete difference component of the
+  /// state at @p index.
+  const VectorBase<T>* get_difference_state(int index) const {
+    const DifferenceState<T>* xd = get_state().get_difference_state();
+    if (xd == nullptr) return nullptr;
+    return xd->get_difference_state(index);
+  }
+
+  /// Returns a const pointer to the discrete modal component of the state at
+  /// @p index. Throws std::bad_cast if the type of the modal state is not U.
+  ///
+  /// @tparam U The type of the modal state.
+  template <typename U>
+  const U* get_modal_state(int index) const {
+    const DifferenceState<T>* xd = get_state().get_difference_state();
+    if (xd == nullptr) return nullptr;
+    const AbstractValue* xm = xd->get_modal_state(index);
+    if (xm == nullptr) return nullptr;
+    return &xm->template GetValue<U>();
+  }
+
   /// Returns a const pointer to the continuous component of the state,
   /// or nullptr if there is no continuous state.
   const ContinuousState<T>* get_continuous_state() const {

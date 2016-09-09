@@ -13,23 +13,23 @@ class System;
 
 constexpr int kAutoSize = -1;
 
-struct SamplingSpec {
-  typedef enum {
-    kInherited = 0,
-    kContinuous = 1,
-  } Type;
+/// SamplingSpec describes whether a port has inherited, continuous, or
+/// discrete sampling. Since ports in Drake are not actually sampled, this is
+/// only potentially useful for detecting unintended connections at Diagram
+/// connection time.
+// TODO(david-german-tri, sherm1): Consider just getting rid of this.
+typedef enum {
+  kInherited = 0,
+  kContinuous = 1,
+  kDiscrete = 2,
+} SamplingSpec;
 
-  Type type;
-  double period;
+constexpr SamplingSpec kInheritedSampling = SamplingSpec::kInherited;
+constexpr SamplingSpec kContinuousSampling = SamplingSpec::kContinuous;
+constexpr SamplingSpec kDiscreteSampling = SamplingSpec::kDiscrete;
 
-  bool operator==(const SamplingSpec& other) const {
-    return type == other.type && period == other.period;
-  }
-};
-
-constexpr SamplingSpec kInheritedSampling = {SamplingSpec::kInherited, 0.0};
-constexpr SamplingSpec kContinuousSampling = {SamplingSpec::kContinuous, 0.0};
-
+// TODO(david-german-tri): Create separate InputPortDescriptor and
+// OutputPortDescriptor, then get rid of this enum.
 typedef enum {
   kInputPort = 0,
   kOutputPort = 1,
