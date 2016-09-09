@@ -1,6 +1,8 @@
 #pragma once
 
 #include "drake/systems/framework/continuous_state.h"
+#include "drake/systems/framework/value.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -29,6 +31,30 @@ class State {
     return continuous_state_.get();
   }
 
+  void set_difference_state(std::unique_ptr<VectorBase<T>> xd) {
+    difference_state_ = std::move(xd);
+  }
+
+  const VectorBase<T>* get_difference_state() const {
+    return difference_state_.get();
+  }
+
+  VectorBase<T>* get_mutable_difference_state() {
+    return difference_state_.get();
+  }
+
+  void set_modal_state(std::unique_ptr<AbstractValue> xm) {
+    modal_state_ = std::move(xm);
+  }
+
+  const AbstractValue* get_modal_state() const {
+    return modal_state_.get();
+  }
+
+  AbstractValue* get_mutable_modal_state() {
+    return modal_state_.get();
+  }
+
   // State is not copyable or moveable.
   State(const State& other) = delete;
   State& operator=(const State& other) = delete;
@@ -37,7 +63,8 @@ class State {
 
  private:
   std::unique_ptr<ContinuousState<T>> continuous_state_;
-  // TODO(david-german-tri): Add discrete state variables.
+  std::unique_ptr<VectorBase<T>> difference_state_;
+  std::unique_ptr<AbstractValue> modal_state_;
 };
 
 }  // namespace systems

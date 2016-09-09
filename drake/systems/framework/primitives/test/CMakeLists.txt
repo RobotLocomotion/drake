@@ -39,3 +39,6 @@ drake_add_test(NAME demultiplexer_test COMMAND demultiplexer_test)
 
 drake_add_cc_test(multiplexer_test)
 target_link_libraries(multiplexer_test drakeSystemFramework)
+
+drake_add_cc_test(zero_order_hold_test)
+target_link_libraries(zero_order_hold_test drakeSystemFramework)

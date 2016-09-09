@@ -17,6 +17,7 @@ struct SamplingSpec {
   typedef enum {
     kInherited = 0,
     kContinuous = 1,
+    kDiscrete = 2,
   } Type;
 
   Type type;
@@ -29,6 +30,9 @@ struct SamplingSpec {
 
 constexpr SamplingSpec kInheritedSampling = {SamplingSpec::kInherited, 0.0};
 constexpr SamplingSpec kContinuousSampling = {SamplingSpec::kContinuous, 0.0};
+constexpr SamplingSpec DiscreteSampling(double period_sec) {
+  return SamplingSpec{SamplingSpec::kDiscrete, period_sec};
+}
 
 typedef enum {
   kInputPort = 0,

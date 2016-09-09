@@ -31,6 +31,14 @@ MST operator-(double, const MST&) { return MST{}; }
 MST operator*(double, const MST&) { return MST{}; }
 }  // namespace
 
+
+// Override the is_numeric trait, since there are no rounding operations
+// on MST.
+template<> struct DRAKEAUTOMOTIVE_EXPORT drake::is_numeric<MST> {
+  static constexpr bool value = false;
+};
+
+
 namespace drake {
 namespace automotive {
 template class DRAKEAUTOMOTIVE_EXPORT IdmWithTrajectoryAgent<MST>;

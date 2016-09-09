@@ -72,6 +72,54 @@ class Context {
     return get_mutable_state()->get_mutable_continuous_state();
   }
 
+  /// Returns a const pointer to the discrete difference component of the
+  /// state, or nullptr if there is no difference state.
+  const VectorBase<T>* get_difference_state() const {
+    return get_state().get_difference_state();
+  }
+
+  /// Sets the discrete difference state to @p xd, deleting whatever was there
+  /// before.
+  void set_difference_state(std::unique_ptr<VectorBase<T>> xd) {
+    get_mutable_state()->set_difference_state(std::move(xd));
+  }
+
+  /// Returns a mutable pointer to the discrete difference component of the
+  /// state, or nullptr if there is no discrete difference state.
+  VectorBase<T>* get_mutable_difference_state() {
+    return get_mutable_state()->get_mutable_difference_state();
+  }
+
+  /// Returns a const pointer to the discrete modal component of the
+  /// state, or nullptr if there is no modal state. Throws std::bad_cast
+  /// if the type of the modal state is not U.
+  ///
+  /// @tparam U The type of the modal state.
+  template <typename U>
+  const U* get_modal_state() const {
+    const AbstractValue* xm = get_state().get_modal_state();
+    if (xm == nullptr) return nullptr;
+    return &xm->template GetValue<U>();
+  }
+
+  /// Sets the discrete modal state to @p xm, deleting whatever was there
+  /// before.
+  void set_modal_state(std::unique_ptr<AbstractValue> xm) {
+    get_mutable_state()->set_modal_state(std::move(xm));
+  }
+
+  /// Returns a mutable pointer to the discrete modal component of the
+  /// state, or nullptr if there is no discrete modal state. Throws
+  /// std::bad_cast if the type of the modal state is not U.
+  ///
+  /// @tparam U The type of the modal state.
+  template <typename U>
+  T* get_mutable_modal_state() {
+    AbstractValue* xm = get_state().get_mutable_modal_state();
+    if (xm == nullptr) return nullptr;
+    return &xm->template GetMutableValue<U>();
+  }
+
   /// Returns a const pointer to the continuous component of the state,
   /// or nullptr if there is no continuous state.
   const ContinuousState<T>* get_continuous_state() const {

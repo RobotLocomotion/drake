@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/drakeSystemAnalysis_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -259,6 +260,11 @@ class Simulator {
   const System<T>& system_;                  // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
 
+  // The output structure of the system being simulated.  We don't actually
+  // care about the outputs in the course of simulation, but sometimes, the
+  // System interface demands the opportunity to write to its outputs.
+  std::unique_ptr<SystemOutput<T>> output_;
+
   // TODO(sherm1) These are pre-allocated temporaries for use by Integrators;
   // move them to the Integrator classes when those exist. The actual number
   // needed varies for different integrators.
@@ -307,6 +313,7 @@ Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
     : system_(system), context_(std::move(context)) {
   if (!context_) context_ = system_.CreateDefaultContext();
+  output_ = system_.AllocateOutput(*context_);
 
   // TODO(sherm1) Allocate temporaries in concrete integrators instead once
   // there are more of them.
@@ -346,17 +353,19 @@ void Simulator<T>::StepTo(const T& final_time) {
       context_->get_mutable_continuous_state()->get_mutable_state();
 
   // TODO(sherm1) Invoke selected integrator.
-  SampleActions sample_actions;
+  UpdateActions<T> update_actions;
   bool sample_time_hit = false;
   while (context_->get_time() <= final_time) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
+    log()->trace("Starting a simulation step at {}", step_start_time);
 
     // First make any necessary discrete updates.
     if (sample_time_hit) {
-      system_.Update(context_.get(), sample_actions);
+      system_.HandleDiscreteEvents(update_actions.events, context_.get());
       ++num_samples_taken_;
     }
+    update_actions.events.clear();
 
     // Now we can calculate start-of-step time derivatives.
 
@@ -375,7 +384,7 @@ void Simulator<T>::StepTo(const T& final_time) {
 
     // How far can we go before we have to take a sampling break?
     const T next_sample_time =
-        system_.CalcNextSampleTime(*context_, &sample_actions);
+        system_.CalcNextUpdateTime(*context_, &update_actions);
     DRAKE_ASSERT(next_sample_time >= step_start_time);
 
     // Figure out the largest step we can reasonably take, and whether we had
