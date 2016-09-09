@@ -61,3 +61,6 @@ add_executable(cache_test cache_test.cc)
 target_link_libraries(cache_test
                       drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
 add_test(NAME cache_test COMMAND cache_test)
+
+drake_add_cc_test(leaf_system_test)
+target_link_libraries(leaf_system_test drakeSystemFramework)
