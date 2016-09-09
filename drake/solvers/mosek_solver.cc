@@ -22,6 +22,8 @@ SolutionResult MosekSolver::Solve(OptimizationProblem& prog) const {
         prog.GetSolverOptionsStr("Mosek").at("problemtype").find("quadratic")
             != std::string::npos ||
         prog.GetSolverOptionsStr("Mosek").at("problemtype").find("sdp")
+            != std::string::npos ||
+        prog.GetSolverOptionsStr("Mosek").at("problemtype").find("soc")
             != std::string::npos) {
       return MosekWrapper::Solve(prog);
     }

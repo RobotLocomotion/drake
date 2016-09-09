@@ -606,12 +606,21 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * - "maxormin"
    *   + Maximize or minimize current problem using either "max" or "min".
    * - "problemtype"
-   *   + Currently only accepts "linear", "quadratic", and "sdp".
+   *   + Currently only accepts "linear", "quadratic", "sdp", and "soc".
    * - "constant"
    *   + Adds a constant value to the objective of quadratic and SDP problems.
-   * - "conesubscript"
-   *   + Denotes which variable x_i satisfies the cone relation:
-   *   + x_i >= (sqrt(sum(x_j^2))), i!=j
+   * - "conesubscripts"
+   *   + A string starting with "r" (for rotated) or "l" (for lorentz) followed
+   *     by the cone variable subscripts separated by spaces.
+   *   + Denotes which variables satisfy the cone relation (where x_0 is the
+   *     first variable subscript given):
+   *   + x_0 >= (sqrt(sum(x_i^2))), i>=1     -or-
+   *     2*x_0*x_1 >= sum_i(x_i^2), i >=2
+   * - "numbarvar"
+       + Only for applicable for "sdp", it is the number of elements in the
+         lower triangle of your of your positive semidefinite matrix variable.
+         Consider each index a separate variable for setting number of variables
+         in your OptimizationProblem.
    * TODO(alexdunyak): Calling OptimizationProblem::Solve will not invoke mosek at this
    * time.
    */

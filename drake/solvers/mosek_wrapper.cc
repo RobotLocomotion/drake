@@ -1,7 +1,9 @@
 #include "drake/solvers/mosek_wrapper.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
+#include <sstream>
 #include <vector>
 
 
@@ -119,6 +121,7 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     const SemidefiniteConstraint& sdp_objective,
     const std::vector<SemidefiniteConstraint>& sdp_constraints,
     const std::vector<int>& lorentz_cone_subscripts,
+    const std::vector<int>& rotated_cone_subscripts,
     int numbarvar)
       : numvar_(static_cast<MSKint32t>(num_variables)),
         numcon_(static_cast<MSKint32t>(num_constraints)),
@@ -134,8 +137,7 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
     // Append numvar_ variables, initially fixed at zero
     if (result_ == MSK_RES_OK)
       result_ = MSK_appendvars(task_, numvar_);
-    if (result_ == MSK_RES_OK && !(sdp_constraints.empty() ||
-        sdp_objective.G().isZero())) {
+    if (result_ == MSK_RES_OK && numbarvar_ != 0) {
       int dimbarvar = sdp_objective.G().rows();
       result_ = MSK_appendbarvars(task_, 1, &dimbarvar);
     }
@@ -144,12 +146,56 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
       result_ = MSK_putcfix(task_, constant_eqn_term);
   }
   // add the equation to maximize to the environment.
-  if (!sdp_objective.G().isZero())
-    AddSDPObjective(sdp_objective);
-  if (!sdp_constraints.empty())
-    AddSDPConstraints(sdp_constraints);
-  if (!sdp_constraints.empty())
+  AddSDPObjective(sdp_objective);
+  AddSDPConstraints(sdp_constraints);
+  if (!lorentz_cone_subscripts.empty())
     AppendLorentzCone(lorentz_cone_subscripts);
+  else if (!rotated_cone_subscripts.empty())
+    AppendRotatedCone(rotated_cone_subscripts);
+  AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
+      lower_variable_bounds);
+  AddLinearConstraintBounds(mosek_constraint_bounds, upper_constraint_bounds,
+      lower_constraint_bounds);
+}
+
+// Second order cone programming
+MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
+    const std::vector<MSKboundkeye>& mosek_constraint_bounds,
+    const std::vector<double>& upper_constraint_bounds,
+    const std::vector<double>& lower_constraint_bounds,
+    const std::vector<MSKboundkeye>& mosek_variable_bounds,
+    const std::vector<double>& upper_variable_bounds,
+    const std::vector<double>& lower_variable_bounds,
+    double constant_eqn_term,
+    const SecondOrderConicConstraint& soc_objective,
+    const std::vector<SecondOrderConicConstraint>& soc_constraints,
+    const std::vector<int>& lorentz_cone_subscripts,
+    const std::vector<int>& rotated_cone_subscripts)
+      : numvar_(static_cast<MSKint32t>(num_variables)),
+        numcon_(static_cast<MSKint32t>(num_constraints)),
+        numbarvar_(0),
+        env_(NULL), task_(NULL), solutions_(std::vector<double>()) {
+  result_ = MSK_makeenv(&env_, NULL);
+  if (result_ == MSK_RES_OK) {
+    // Creates optimization task
+    result_ = MSK_maketask(env_, numcon_, numvar_, &task_);
+    // Append numcon_ empty constraints
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_appendcons(task_, numcon_);
+    // Append numvar_ variables, initially fixed at zero
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_appendvars(task_, numvar_);
+    // Add fixed term, optional
+    if (result_ == MSK_RES_OK && constant_eqn_term != 0)
+      result_ = MSK_putcfix(task_, constant_eqn_term);
+  }
+  // add the equation to maximize to the environment.
+  AddSDPObjective(static_cast<SemidefiniteConstraint>(soc_objective));
+  AddSDPConstraints(soc_constraints);
+  if (!lorentz_cone_subscripts.empty())
+    AppendLorentzCone(lorentz_cone_subscripts);
+  else if (!rotated_cone_subscripts.empty())
+    AppendRotatedCone(rotated_cone_subscripts);
   AddVariableBounds(mosek_variable_bounds, upper_variable_bounds,
       lower_variable_bounds);
   AddLinearConstraintBounds(mosek_constraint_bounds, upper_constraint_bounds,
@@ -159,22 +205,18 @@ MosekWrapper::MosekWrapper(int num_variables, int num_constraints,
 void MosekWrapper::AppendLorentzCone(
       const std::vector<int>& lorentz_cone_subscripts) {
   if (result_ == MSK_RES_OK) {
-    // If no subscripts set, assume that x_0 >= sqrt(sum(x_i^2)) for i > 0.
     // Adapted from http://docs.mosek.com/7.1/capi/MSK_appendcone_.html
-    // Currently, it only handles Lorentz the Lorentz cone.
-    // TODO(alexdunyak): Allow other cones as described here:
-    // http://docs.mosek.com/7.1/capi/Conic_quadratic_optimization.html
-    if (lorentz_cone_subscripts.empty()) {
-      std::vector<int> empty_cone_subscripts(numvar_);
-      for (int i = 0; i < numvar_; i++) {
-        empty_cone_subscripts[i] = i;
-      }
-      result_ = MSK_appendcone(task_, MSK_CT_QUAD, 0.0, numvar_,
-                          &empty_cone_subscripts[0]);
-    } else {
-      result_ = MSK_appendcone(task_, MSK_CT_QUAD, 0.0, numvar_,
-                          &lorentz_cone_subscripts[0]);
-    }
+    result_ = MSK_appendcone(task_, MSK_CT_QUAD, 0.0, numvar_,
+                             &lorentz_cone_subscripts[0]);
+  }
+}
+
+void MosekWrapper::AppendRotatedCone(
+      const std::vector<int>& rotated_cone_subscripts) {
+  if (result_ == MSK_RES_OK) {
+    // Adapted from http://docs.mosek.com/7.1/capi/MSK_appendcone_.html
+    result_ = MSK_appendcone(task_, MSK_CT_RQUAD, 0.0, numvar_,
+                             &rotated_cone_subscripts[0]);
   }
 }
 
@@ -199,17 +241,19 @@ void MosekWrapper::AddSDPObjective(
   // Matrix(i, j) = sdp_values[k], and sdp_i[k] = i, sdp_j[k] = j
   const Eigen::MatrixXd& matrixterm = sdp_objective.G();
   int numnonzero = 0;
-  for (int i = 0; static_cast<unsigned int>(i) < matrixterm.rows(); i++) {
-    for (int j = 0; j <= i; j++) {
-      if (matrixterm(i, j) != 0) {
-        sdp_i.push_back(static_cast<MSKint32t>(i));
-        sdp_j.push_back(static_cast<MSKint32t>(j));
-        sdp_values.push_back(matrixterm(i, j));
-        numnonzero++;
+  if (matrixterm.rows() != 0 && matrixterm.cols() != 0) {
+    for (int i = 0; static_cast<unsigned int>(i) < matrixterm.rows(); i++) {
+      for (int j = 0; j <= i; j++) {
+        if (matrixterm(i, j) != 0) {
+          sdp_i.push_back(static_cast<MSKint32t>(i));
+          sdp_j.push_back(static_cast<MSKint32t>(j));
+          sdp_values.push_back(matrixterm(i, j));
+          numnonzero++;
+        }
       }
     }
   }
-  if (result_ == MSK_RES_OK)
+  if (result_ == MSK_RES_OK && numnonzero > 0) {
     result_ = MSK_appendsparsesymmat(task_,
                                 matrixterm.rows(),
                                 numnonzero,
@@ -217,12 +261,14 @@ void MosekWrapper::AddSDPObjective(
                                 &sdp_j[0],
                                 &sdp_values[0],
                                 &idx);
-  if (result_ == MSK_RES_OK)
-    result_ = MSK_putbarcj(task_, 0, 1, &idx, &falpha);
+    if (result_ == MSK_RES_OK)
+      result_ = MSK_putbarcj(task_, 0, 1, &idx, &falpha);
+  }
 }
 
+template <typename T>
 void MosekWrapper::AddSDPConstraints(
-    const std::vector<SemidefiniteConstraint>& sdp_constraints) {
+    const std::vector<T>& sdp_constraints) {
   // The linear terms are constructed by creating a matrix of all linear terms
   // and adding that row by row to Mosek.
   // See: http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
@@ -285,26 +331,30 @@ void MosekWrapper::AddSDPConstraints(
     constraintnonzero.push_back(currentnonzero);
     currentnonzero = 0;
   }
-  int matrixdim = sdp_constraints[0].G().rows();
   MSKint32t previousentries = 0;
   MSKint64t idx;
   double falpha = 1.0;
   // Now that the relevant arrays are in memory, add each constraint to Mosek.
-  for (int k = 0; k < static_cast<int>(sdp_constraints.size()); k++) {
-    if (result_ == MSK_RES_OK) {
-      result_ = MSK_appendsparsesymmat(
-          task_,
-          static_cast<MSKint32t>(matrixdim),
-          static_cast<MSKint32t>(constraintnonzero[k]),
-          &bar_i[previousentries],
-          &bar_j[previousentries],
-          &bar_value[previousentries],
-          &idx);
+  // First check that there were semidefinite constraints.
+  if (static_cast<int>(sdp_constraints.size()) !=
+        std::count(constraintnonzero.begin(), constraintnonzero.end(), 0)) {
+    int matrixdim = sdp_constraints[0].G().rows();
+    for (int k = 0; k < static_cast<int>(sdp_constraints.size()); k++) {
+      if (result_ == MSK_RES_OK) {
+        result_ = MSK_appendsparsesymmat(
+            task_,
+            static_cast<MSKint32t>(matrixdim),
+            static_cast<MSKint32t>(constraintnonzero[k]),
+            &bar_i[previousentries],
+            &bar_j[previousentries],
+            &bar_value[previousentries],
+            &idx);
+      }
+      if (result_ == MSK_RES_OK) {
+        result_ = MSK_putbaraij(task_, k, 0, 1, &idx, &falpha);
+      }
+      previousentries += constraintnonzero[k];
     }
-    if (result_ == MSK_RES_OK) {
-      result_ = MSK_putbaraij(task_, k, 0, 1, &idx, &falpha);
-    }
-    previousentries += constraintnonzero[k];
   }
 }
 
@@ -641,7 +691,6 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
     mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
                                               lower_constraint_bounds);
     double constant_eqn_term;
-    std::vector<int> lorentz_cone_subscripts;
     if (prog.GetSolverOptionsDouble("Mosek").count("constant")
          == 0) {
       constant_eqn_term = 0;
@@ -649,12 +698,31 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
       constant_eqn_term = prog.GetSolverOptionsDouble("Mosek").at(
           "constant");
     }
-    if (prog.GetSolverOptionsInt("Mosek").count("conesubscript") != 0) {
-      lorentz_cone_subscripts.push_back(
-          prog.GetSolverOptionsInt("Mosek").at("conesubscript"));
-      for (int k = 0; k < static_cast<int>(prog.num_vars()); k++) {
-        if (lorentz_cone_subscripts[0] != k)
-          lorentz_cone_subscripts.push_back(k);
+    std::vector<int> lorentz_cone_subscripts;
+    std::vector<int> rotated_cone_subscripts;
+    if (prog.GetSolverOptionsStr("Mosek").count("conesubscript") != 0) {
+      std::string cone = prog.GetSolverOptionsStr(
+          "Mosek").at("conesubscript");
+      if (cone.find("l") != std::string::npos ||
+          cone.find("L") != std::string::npos) {
+        // Lorentz cone, split the string on whitespace
+        std::stringstream ss(cone);
+        std::string buffer;
+        while (ss >> buffer) {
+          if (buffer.find("l") == std::string::npos &&
+              buffer.find("L") == std::string::npos)
+            lorentz_cone_subscripts.push_back(std::stoi(buffer));
+        }
+      } else if (cone.find("r") != std::string::npos ||
+          cone.find("R") != std::string::npos) {
+        // Rotated cone, split the string on whitespace
+        std::stringstream ss(cone);
+        std::string buffer;
+        while (ss >> buffer) {
+          if (buffer.find("r") == std::string::npos &&
+              buffer.find("R") == std::string::npos)
+            rotated_cone_subscripts.push_back(std::stoi(buffer));
+        }
       }
     }
     int numbarvar = 0;
@@ -672,7 +740,91 @@ SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
                      *sdp_objective,
                      sdp_constraints,
                      lorentz_cone_subscripts,
+                     rotated_cone_subscripts,
                      numbarvar);
+    std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
+    std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
+    SolutionResult s = opt.OptimizeTask(mom, ptype);
+    // Add decision variables to hold bar variables.
+    prog.SetDecisionVariableValues(opt.GetEigenVectorSolutions());
+    return s;
+  } else if (prog.GetSolverOptionsStr("Mosek").at("problemtype").find("soc")
+        != std::string::npos) {
+    // Second order cone programming
+    // As before, assume there is one objective.
+    DRAKE_ASSERT(prog.generic_costs().size() == 1);
+    SecondOrderConicConstraint *soc_objective =
+        static_cast<SecondOrderConicConstraint *>(
+        prog.generic_costs().front().constraint().get());
+    std::vector<SecondOrderConicConstraint> soc_constraints;
+    totalconnum = prog.generic_constraints().size();
+    for (const auto& soc_con : prog.generic_constraints()) {
+      SecondOrderConicConstraint *soc_con_ptr =
+          dynamic_cast<SecondOrderConicConstraint *>(
+              soc_con.constraint().get());
+      SecondOrderConicConstraint obj = *soc_con_ptr;
+      soc_constraints.push_back(obj);
+      if (soc_con_ptr->upper_bound()(0) !=
+          std::numeric_limits<double>::infinity())
+        upper_constraint_bounds.push_back(soc_con_ptr->upper_bound()(0));
+      else
+        upper_constraint_bounds.push_back(+MSK_INFINITY);
+      if (soc_con_ptr->lower_bound()(0) !=
+          -std::numeric_limits<double>::infinity())
+        lower_constraint_bounds.push_back(soc_con_ptr->lower_bound()(0));
+      else
+        lower_constraint_bounds.push_back(-MSK_INFINITY);
+    }
+    mosek_constraint_bounds = FindMosekBounds(upper_constraint_bounds,
+                                              lower_constraint_bounds);
+    double constant_eqn_term;
+    if (prog.GetSolverOptionsDouble("Mosek").count("constant")
+         == 0) {
+      constant_eqn_term = 0;
+    } else {
+      constant_eqn_term = prog.GetSolverOptionsDouble("Mosek").at(
+          "constant");
+    }
+    std::vector<int> lorentz_cone_subscripts;
+    std::vector<int> rotated_cone_subscripts;
+    if (prog.GetSolverOptionsStr("Mosek").count("conesubscript") != 0) {
+      std::string cone = prog.GetSolverOptionsStr(
+          "Mosek").at("conesubscript");
+      if (cone.find("l") != std::string::npos ||
+          cone.find("L") != std::string::npos) {
+        // Lorentz cone, split the string on whitespace
+        std::stringstream ss(cone);
+        std::string buffer;
+        while (ss >> buffer) {
+          if (buffer.find("l") == std::string::npos &&
+              buffer.find("L") == std::string::npos)
+            lorentz_cone_subscripts.push_back(std::stoi(buffer));
+        }
+      } else if (cone.find("r") != std::string::npos ||
+          cone.find("R") != std::string::npos) {
+        // Rotated cone, split the string on whitespace
+        std::stringstream ss(cone);
+        std::string buffer;
+        while (ss >> buffer) {
+          if (buffer.find("r") == std::string::npos &&
+              buffer.find("R") == std::string::npos)
+            rotated_cone_subscripts.push_back(std::stoi(buffer));
+        }
+      }
+    }
+    MosekWrapper opt(prog.num_vars(),
+                     totalconnum,
+                     mosek_constraint_bounds,
+                     upper_constraint_bounds,
+                     lower_constraint_bounds,
+                     mosek_variable_bounds,
+                     upper_variable_bounds,
+                     lower_variable_bounds,
+                     constant_eqn_term,
+                     *soc_objective,
+                     soc_constraints,
+                     lorentz_cone_subscripts,
+                     rotated_cone_subscripts);
     std::string mom = prog.GetSolverOptionsStr("Mosek").at("maxormin");
     std::string ptype = prog.GetSolverOptionsStr("Mosek").at("problemtype");
     SolutionResult s = opt.OptimizeTask(mom, ptype);
@@ -688,7 +840,8 @@ SolutionResult MosekWrapper::OptimizeTask(const std::string& maxormin,
   solutions_.clear();
   MSKsoltypee problemtype = MSK_SOL_BAS;
   if (ptype.find("quadratic") != std::string::npos ||
-      ptype.find("sdp") != std::string::npos)
+      ptype.find("sdp") != std::string::npos ||
+      ptype.find("soc") != std::string::npos)
     problemtype = MSK_SOL_ITR;
   else if (ptype.find("linear") != std::string::npos)
     problemtype = MSK_SOL_BAS;
