@@ -4,6 +4,7 @@ set(sources
   cache.cc
   context.cc
   continuous_state.cc
+  difference_state.cc
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
@@ -23,6 +24,7 @@ set(sources
   primitives/pass_through.cc
   primitives/pid_controller.cc
   primitives/time_varying_polynomial_source.cc
+  primitives/zero_order_hold.cc
   state.cc
   subvector.cc
   supervector.cc
@@ -50,6 +52,7 @@ set(installed_headers
   diagram.h
   diagram_builder.h
   diagram_context.h
+  difference_state.h
   leaf_context.h
   leaf_system.h
   input_port_evaluator_interface.h
