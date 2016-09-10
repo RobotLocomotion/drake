@@ -78,7 +78,7 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   virtual bool isFloating() const { return false; }
 
   /**
-   * Returns whether this joint is fixed.
+   * Returns true if this joint is a FixedJoint.
    */
   bool is_fixed() const { return num_positions == 0; }
 
