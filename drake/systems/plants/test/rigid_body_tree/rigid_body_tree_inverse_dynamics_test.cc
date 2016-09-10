@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/systems/plants/parser_urdf.h"
 
 namespace drake {
 namespace systems {
@@ -103,25 +103,25 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
       // Note that the derivative vector may not be initialized (has zero
       // length) if the component is constant in time.
       auto& derivatives = mass_matrix_time_autodiff(i, j).derivatives();
-      mass_matrix_dot(i , j) = derivatives.size() == 1 ? derivatives[0] : 0.;
+      mass_matrix_dot(i, j) = derivatives.size() == 1 ? derivatives[0] : 0.;
     }
   }
 
   // Compute Coriolis matrix (see Murray et al., eq. (4.23)).
-   auto qd_to_coriolis_term = [&](const auto& qd_arg) {
-     using Scalar =
+  auto qd_to_coriolis_term = [&](const auto& qd_arg) {
+    using Scalar =
         typename std::remove_reference<decltype(qd_arg)>::type::Scalar;
-     KinematicsCache<Scalar> kinematics_cache_coriolis(tree_rpy_->bodies);
-     kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
-     tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
-     eigen_aligned_unordered_map<const RigidBody*, TwistVector<Scalar>> f_ext;
-     auto coriolis_term = tree_rpy_->inverseDynamics
-         (kinematics_cache_coriolis, f_ext, qdd.cast<Scalar>().eval(), true);
-     coriolis_term -= tree_rpy_->frictionTorques(qd_arg);
-     return coriolis_term;
+    KinematicsCache<Scalar> kinematics_cache_coriolis(tree_rpy_->bodies);
+    kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
+    tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
+    eigen_aligned_unordered_map<const RigidBody*, TwistVector<Scalar>> f_ext;
+    auto coriolis_term = tree_rpy_->inverseDynamics(
+        kinematics_cache_coriolis, f_ext, qdd.cast<Scalar>().eval(), true);
+    coriolis_term -= tree_rpy_->frictionTorques(qd_arg);
+    return coriolis_term;
   };
-  auto coriolis_term_qd_jacobian = autoDiffToGradientMatrix(jacobian<kChunkSize>
-      (qd_to_coriolis_term, qd));
+  auto coriolis_term_qd_jacobian =
+      autoDiffToGradientMatrix(jacobian<kChunkSize>(qd_to_coriolis_term, qd));
   auto coriolis_matrix = (coriolis_term_qd_jacobian / 2.).eval();
 
   // Asserts that the the Coriolis matrix is a square matrix with a dimension
@@ -165,13 +165,13 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
       eigen_aligned_unordered_map<const RigidBody*, TwistVector<Scalar>> f_ext;
       return tree->inverseDynamics(kinematics_cache_2, f_ext, vd_arg);
     };
-    auto mass_matrix_from_inverse_dynamics = autoDiffToGradientMatrix
-        (jacobian<kChunkSize>(vd_to_mass_matrix, vd));
+    auto mass_matrix_from_inverse_dynamics =
+        autoDiffToGradientMatrix(jacobian<kChunkSize>(vd_to_mass_matrix, vd));
 
-    ASSERT_EQ(tree->number_of_velocities(), mass_matrix_from_inverse_dynamics
-        .rows());
-    ASSERT_EQ(tree->number_of_velocities(), mass_matrix_from_inverse_dynamics
-        .cols());
+    ASSERT_EQ(tree->number_of_velocities(),
+              mass_matrix_from_inverse_dynamics.rows());
+    ASSERT_EQ(tree->number_of_velocities(),
+              mass_matrix_from_inverse_dynamics.cols());
 
     EXPECT_TRUE(CompareMatrices(mass_matrix, mass_matrix_from_inverse_dynamics,
                                 1e-10, MatrixCompareType::absolute));
@@ -205,26 +205,28 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   // Compute the vector gradient of potential energy.
 
   auto gravitational_acceleration = tree->a_grav.tail<3>();
-  auto gravitational_force = (gravitational_acceleration * tree->getMass())
-      .eval();
+  auto gravitational_force =
+      (gravitational_acceleration * tree->getMass()).eval();
   auto q_to_gravitational_potential_energy = [&](const auto& q_arg) {
     using Scalar =
-    typename std::remove_reference<decltype(q_arg)>::type::Scalar;
+        typename std::remove_reference<decltype(q_arg)>::type::Scalar;
     KinematicsCache<Scalar> kinematics_cache_2(tree->bodies);
     kinematics_cache_2.initialize(q_arg);
     tree->doKinematics(kinematics_cache_2);
     auto center_of_mass = tree->centerOfMass(kinematics_cache_2);
-    Scalar gravitational_potential_energy = -center_of_mass.dot
-      (gravitational_force.cast<Scalar>().eval());
+    Scalar gravitational_potential_energy =
+        -center_of_mass.dot(gravitational_force.cast<Scalar>().eval());
     // The jacobian function expects a Matrix as output, so:
     return Eigen::Matrix<Scalar, 1, 1>(gravitational_potential_energy);
   };
-  auto gravitational_forces_from_potential_energy = jacobian<kChunkSize>
-      (q_to_gravitational_potential_energy, q).value().derivatives();
+  auto gravitational_forces_from_potential_energy =
+      jacobian<kChunkSize>(q_to_gravitational_potential_energy, q)
+          .value()
+          .derivatives();
 
   EXPECT_TRUE(CompareMatrices(gravitational_forces,
-                              gravitational_forces_from_potential_energy,
-                              1e-10, MatrixCompareType::absolute));
+                              gravitational_forces_from_potential_energy, 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 // Check that momentum rate of change is equal to the sum of all external
@@ -326,8 +328,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   tree.doKinematics(kinematics_cache_autodiff);
   auto momentum_matrix_time_autodiff =
       tree.worldMomentumMatrix(kinematics_cache_autodiff);
-  auto momentum_world_time_autodiff = momentum_matrix_time_autodiff *
-      v_time_autodiff;
+  auto momentum_world_time_autodiff =
+      momentum_matrix_time_autodiff * v_time_autodiff;
   auto momentum_rate = autoDiffToGradientMatrix(momentum_world_time_autodiff);
 
   // Newton-Euler: total wrench should equal momentum rate of change.
