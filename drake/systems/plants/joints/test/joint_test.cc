@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include  <memory>
 
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/systems/plants/joints/HelicalJoint.h"
@@ -13,52 +14,49 @@ namespace plants {
 namespace joints {
 namespace {
 
-// Note that in the tests below, "dut" stands for "Device Under Test".
+using std::unique_ptr;
 
-GTEST_TEST(DrakeJointTests, TestFixedJoint) {
-  FixedJoint dut("foo", Eigen::Isometry3d::Identity());
-  EXPECT_TRUE(dut.is_fixed());
-}
+class DrakeJointTests : public ::testing::Test {
+ protected:
+  virtual void SetUp() {
+    // Defines some parameters that are needed to instantiate joints.
+    std::string name = "foo";
+    Eigen::Vector3d axis;
+    axis << 1, 0, 0;
+    Eigen::Isometry3d transform_to_parent_body = Eigen::Isometry3d::Identity();
+    double pitch = 1.0;
 
-GTEST_TEST(DrakeJointTests, TestHelicalJoint) {
-  Eigen::Vector3d axis;
-  axis << 1, 0, 0;
+    // Instantiates one of each type of joint.
+    fixed_joint_.reset(
+        new FixedJoint(name, transform_to_parent_body));
+    helical_joint_.reset(
+        new HelicalJoint(name, transform_to_parent_body, axis, pitch));
+    prismatic_joint_.reset(
+        new PrismaticJoint(name, transform_to_parent_body, axis));
+    quaternion_floating_joint_.reset(
+        new QuaternionFloatingJoint(name, transform_to_parent_body));
+    revolute_joint_.reset(
+        new RevoluteJoint(name, transform_to_parent_body, axis));
+    roll_pitch_yaw_joint_.reset(
+        new RollPitchYawFloatingJoint(name, transform_to_parent_body));
+  }
 
-  double pitch = 1.0;
+ public:
+  unique_ptr<FixedJoint> fixed_joint_;
+  unique_ptr<HelicalJoint> helical_joint_;
+  unique_ptr<PrismaticJoint> prismatic_joint_;
+  unique_ptr<QuaternionFloatingJoint> quaternion_floating_joint_;
+  unique_ptr<RevoluteJoint> revolute_joint_;
+  unique_ptr<RollPitchYawFloatingJoint> roll_pitch_yaw_joint_;
+};
 
-  HelicalJoint dut("foo", Eigen::Isometry3d::Identity(), axis, pitch);
-  EXPECT_FALSE(dut.is_fixed());
-}
-
-GTEST_TEST(DrakeJointTests, TestPrismaticJoint) {
-  Eigen::Vector3d translation_axis_in;
-  translation_axis_in << 1, 0, 0;
-
-  PrismaticJoint dut("foo", Eigen::Isometry3d::Identity(),
-     translation_axis_in);
-
-  EXPECT_FALSE(dut.is_fixed());
-}
-
-GTEST_TEST(DrakeJointTests, TestQuaternionFloatingJoint) {
-  QuaternionFloatingJoint dut("foo", Eigen::Isometry3d::Identity());
-  EXPECT_FALSE(dut.is_fixed());
-}
-
-GTEST_TEST(DrakeJointTests, TestRevoluteJoint) {
-  Eigen::Vector3d rotation_axis;
-  rotation_axis << 1, 0, 0;
-
-  RevoluteJoint dut("foo", Eigen::Isometry3d::Identity(), rotation_axis);
-  EXPECT_FALSE(dut.is_fixed());
-}
-
-GTEST_TEST(DrakeJointTests, TestRollPitchYawFloatingJoint) {
-  Eigen::Vector3d rotation_axis;
-  rotation_axis << 1, 0, 0;
-
-  RollPitchYawFloatingJoint dut("foo", Eigen::Isometry3d::Identity());
-  EXPECT_FALSE(dut.is_fixed());
+TEST_F(DrakeJointTests, TestIfJointIsFixed) {
+  EXPECT_TRUE(fixed_joint_->is_fixed());
+  EXPECT_FALSE(helical_joint_->is_fixed());
+  EXPECT_FALSE(prismatic_joint_->is_fixed());
+  EXPECT_FALSE(quaternion_floating_joint_->is_fixed());
+  EXPECT_FALSE(revolute_joint_->is_fixed());
+  EXPECT_FALSE(roll_pitch_yaw_joint_->is_fixed());
 }
 
 }  // namespace
