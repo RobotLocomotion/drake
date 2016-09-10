@@ -39,8 +39,7 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
 
     tree_rpy_ = std::make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        kAtlasUrdf, kRollPitchYaw, nullptr /* weld_to_frame
- * */,
+        kAtlasUrdf, kRollPitchYaw, nullptr /* weld_to_frame */,
         tree_rpy_.get());
     trees_.push_back(tree_rpy_.get());
 
