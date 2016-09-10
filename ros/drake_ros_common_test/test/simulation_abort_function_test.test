@@ -1,0 +1,4 @@
+<launch>
+  <test pkg="drake_ros_common_test" test-name="simulation_abort_function_test"
+        type="simulation_abort_function_test" />
+</launch>
