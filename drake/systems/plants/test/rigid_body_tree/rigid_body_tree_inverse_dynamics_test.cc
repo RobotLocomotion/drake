@@ -32,7 +32,7 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
     const std::string kAtlasUrdf =
         drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf";
 
-    tree_rpy_.reset(new RigidBodyTree());
+    tree_rpy_ = std::make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         kAtlasUrdf, kRollPitchYaw, nullptr /* weld_to_frame
  * */,
@@ -72,8 +72,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
 
   std::default_random_engine generator;
   auto q = tree_rpy_->getRandomConfiguration(generator);
-  auto qd = VectorXd::Constant(num_velocities, 1.);
-  auto qdd = VectorXd::Zero(num_velocities);
+  auto qd = VectorXd::Random(num_velocities).eval();
+  auto qdd = VectorXd::Zero(num_velocities).eval();
 
   // Compute mass matrix time derivative
 
@@ -165,8 +165,6 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
         .rows());
     ASSERT_EQ(tree->number_of_velocities(), mass_matrix_from_inverse_dynamics
         .cols());
-
-    autoDiffToGradientMatrix(tree->frictionTorques(v_autodiff));
 
     EXPECT_TRUE(CompareMatrices(mass_matrix, mass_matrix_from_inverse_dynamics,
                                 1e-10, MatrixCompareType::absolute));
