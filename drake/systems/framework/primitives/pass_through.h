@@ -23,6 +23,8 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 // TODO(amcastro-tri): cross reference PidController when implemented.
+/// @ingroup systems
+
 template <typename T>
 class PassThrough : public LeafSystem<T> {
  public:

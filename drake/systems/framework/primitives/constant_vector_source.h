@@ -13,6 +13,7 @@ namespace systems {
 
 /// A source block with a constant output port at all times.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @ingroup systems
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
