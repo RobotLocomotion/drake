@@ -5,6 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
@@ -18,11 +19,15 @@ using drake::parsers::ModelInstanceIdTable;
 using drake::math::initializeAutoDiff;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::initializeAutoDiffGivenGradientMatrix;
+using drake::math::jacobian;
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using drake::CompareMatrices;
 using drake::systems::plants::joints::kRollPitchYaw;
 using drake::systems::plants::joints::kQuaternion;
+
+constexpr const int kChunkSize =
+    drake::AutoDiffUpTo73d::DerType::MaxRowsAtCompileTime;
 
 class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
  protected:
@@ -103,18 +108,21 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   }
 
   // Compute Coriolis matrix (see Murray et al., eq. (4.23)).
-  auto qd_qd_autodiff = initializeAutoDiff(qd);
-  typedef typename decltype(qd_qd_autodiff)::Scalar QdADScalar;
-  auto q_qd_autodiff = q.cast<QdADScalar>().eval();
-  auto qdd_qd_autodiff = qdd.cast<QdADScalar>().eval();
-  KinematicsCache<QdADScalar> kinematics_cache_qd_autodiff(tree_rpy_->bodies);
-  kinematics_cache_qd_autodiff.initialize(q_qd_autodiff, qd_qd_autodiff);
-  tree_rpy_->doKinematics(kinematics_cache_qd_autodiff, true);
-  eigen_aligned_unordered_map<const RigidBody*, TwistVector<QdADScalar>> f_ext;
-  auto tau_autodiff = tree_rpy_->inverseDynamics(kinematics_cache_qd_autodiff,
-                                                 f_ext, qdd_qd_autodiff, true);
-  tau_autodiff -= tree_rpy_->frictionTorques(qd_qd_autodiff);
-  auto coriolis_matrix = (autoDiffToGradientMatrix(tau_autodiff) / 2.).eval();
+   auto qd_to_coriolis_term = [&](const auto& qd_arg) {
+     using Scalar =
+        typename std::remove_reference<decltype(qd_arg)>::type::Scalar;
+     KinematicsCache<Scalar> kinematics_cache_coriolis(tree_rpy_->bodies);
+     kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
+     tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
+     eigen_aligned_unordered_map<const RigidBody*, TwistVector<Scalar>> f_ext;
+     auto coriolis_term = tree_rpy_->inverseDynamics
+         (kinematics_cache_coriolis, f_ext, qdd.cast<Scalar>().eval(), true);
+     coriolis_term -= tree_rpy_->frictionTorques(qd_arg);
+     return coriolis_term;
+  };
+  auto coriolis_term_qd_jacobian = autoDiffToGradientMatrix(jacobian<kChunkSize>
+      (qd_to_coriolis_term, qd));
+  auto coriolis_matrix = (coriolis_term_qd_jacobian / 2.).eval();
 
   // Asserts that the the Coriolis matrix is a square matrix with a dimension
   // equal to the number of DOF's in the rigid body tree.
@@ -148,18 +156,17 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     tree->doKinematics(kinematics_cache);
     auto mass_matrix = tree->massMatrix(kinematics_cache);
 
-    auto vd_autodiff = initializeAutoDiff(vd);
-    typedef typename decltype(vd_autodiff)::Scalar ADScalar;
-    auto q_autodiff = q.cast<ADScalar>().eval();
-    auto v_autodiff = v.cast<ADScalar>().eval();
-    KinematicsCache<ADScalar> kinematics_cache_autodiff(tree->bodies);
-    kinematics_cache_autodiff.initialize(q_autodiff, v_autodiff);
-    tree->doKinematics(kinematics_cache_autodiff, true);
-    eigen_aligned_unordered_map<const RigidBody*, TwistVector<ADScalar>> f_ext;
-    auto tau_autodiff =
-        tree->inverseDynamics(kinematics_cache_autodiff, f_ext, vd_autodiff);
-    auto mass_matrix_from_inverse_dynamics =
-        autoDiffToGradientMatrix(tau_autodiff);
+    auto vd_to_mass_matrix = [&](const auto& vd_arg) {
+      using Scalar =
+          typename std::remove_reference<decltype(vd_arg)>::type::Scalar;
+      KinematicsCache<Scalar> kinematics_cache_2(tree->bodies);
+      kinematics_cache_2.initialize(q.cast<Scalar>(), v.cast<Scalar>());
+      tree->doKinematics(kinematics_cache_2, true);
+      eigen_aligned_unordered_map<const RigidBody*, TwistVector<Scalar>> f_ext;
+      return tree->inverseDynamics(kinematics_cache_2, f_ext, vd_arg);
+    };
+    auto mass_matrix_from_inverse_dynamics = autoDiffToGradientMatrix
+        (jacobian<kChunkSize>(vd_to_mass_matrix, vd));
 
     ASSERT_EQ(tree->number_of_velocities(), mass_matrix_from_inverse_dynamics
         .rows());
@@ -196,20 +203,27 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
       tree->dynamicsBiasTerm(kinematics_cache, f_ext, false);
 
   // Compute the vector gradient of potential energy.
-  auto q_autodiff = initializeAutoDiff(q);
-  typedef typename decltype(q_autodiff)::Scalar ADScalar;
-  KinematicsCache<ADScalar> kinematics_cache_autodiff(tree->bodies);
-  kinematics_cache_autodiff.initialize(q_autodiff);
-  tree->doKinematics(kinematics_cache_autodiff);
-  auto gravitational_acceleration = tree->a_grav.tail<3>().eval();
-  auto gravitational_force =
-      (gravitational_acceleration.cast<ADScalar>() * tree->getMass()).eval();
-  auto center_of_mass = tree->centerOfMass(kinematics_cache_autodiff);
-  ADScalar gravitational_potential_energy =
-      -center_of_mass.dot(gravitational_force);
+
+  auto gravitational_acceleration = tree->a_grav.tail<3>();
+  auto gravitational_force = (gravitational_acceleration * tree->getMass())
+      .eval();
+  auto q_to_gravitational_potential_energy = [&](const auto& q_arg) {
+    using Scalar =
+    typename std::remove_reference<decltype(q_arg)>::type::Scalar;
+    KinematicsCache<Scalar> kinematics_cache_2(tree->bodies);
+    kinematics_cache_2.initialize(q_arg);
+    tree->doKinematics(kinematics_cache_2);
+    auto center_of_mass = tree->centerOfMass(kinematics_cache_2);
+    Scalar gravitational_potential_energy = -center_of_mass.dot
+      (gravitational_force.cast<Scalar>().eval());
+    // The jacobian function expects a Matrix as output, so:
+    return Eigen::Matrix<Scalar, 1, 1>(gravitational_potential_energy);
+  };
+  auto gravitational_forces_from_potential_energy = jacobian<kChunkSize>
+      (q_to_gravitational_potential_energy, q).value().derivatives();
 
   EXPECT_TRUE(CompareMatrices(gravitational_forces,
-                              gravitational_potential_energy.derivatives(),
+                              gravitational_forces_from_potential_energy,
                               1e-10, MatrixCompareType::absolute));
 }
 
