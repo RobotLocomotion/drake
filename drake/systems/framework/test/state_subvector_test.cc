@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/state_vector.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -20,7 +20,7 @@ class StateSubvectorTest : public ::testing::Test {
     state_vector_ = BasicVector<int>::Make({1, 2, 3, 4});
   }
 
-  std::unique_ptr<StateVector<int>> state_vector_;
+  std::unique_ptr<VectorBase<int>> state_vector_;
 };
 
 TEST_F(StateSubvectorTest, NullptrVector) {
@@ -68,7 +68,7 @@ TEST_F(StateSubvectorTest, Mutation) {
   EXPECT_EQ(4, state_vector_->GetAtIndex(3));
 }
 
-// Tests that a StateVector can be added to a StateSubvector.
+// Tests that a VectorBase can be added to a StateSubvector.
 TEST_F(StateSubvectorTest, PlusEq) {
   BasicVector<int> addend(2);
   addend.SetAtIndex(0, 7);

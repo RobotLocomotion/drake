@@ -15,7 +15,6 @@
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_subvector.h"
-#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
@@ -80,7 +79,7 @@ class SpringMassSystemTest : public ::testing::Test {
   SpringMassStateVector* derivatives_;
 
  private:
-  std::unique_ptr<StateVector<double>> erased_derivatives_;
+  std::unique_ptr<VectorBase<double>> erased_derivatives_;
 };
 
 TEST_F(SpringMassSystemTest, Construction) {
@@ -287,7 +286,7 @@ void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
                        Context<double>& context) {
   const double t = context.get_time();
   // Invalidate all xc-dependent quantities.
-  StateVector<double>* xc =
+  VectorBase<double>* xc =
       context.get_mutable_state()->continuous_state->get_mutable_state();
   const auto& dxc = derivs.get_state();
   xc->PlusEqScaled(h, dxc);  // xc += h*dxc
@@ -304,14 +303,14 @@ void StepSemiExplicitEuler(double h, const System<double>& system,
   const double t = context.get_time();
 
   // Invalidate z-dependent quantities.
-  StateVector<double>* xz =
+  VectorBase<double>* xz =
       context.get_mutable_state()
           ->continuous_state->get_mutable_misc_continuous_state();
   const auto& dxz = derivs.get_misc_continuous_state();
   xz->PlusEqScaled(h, dxz);  // xz += h*dxz
 
   // Invalidate v-dependent quantities.
-  StateVector<double>* xv =
+  VectorBase<double>* xv =
       context.get_mutable_state()
           ->continuous_state->get_mutable_generalized_velocity();
   const auto& dxv = derivs.get_generalized_velocity();
@@ -320,7 +319,7 @@ void StepSemiExplicitEuler(double h, const System<double>& system,
   context.set_time(t + h);
 
   // Invalidate q-dependent quantities.
-  StateVector<double>* xq =
+  VectorBase<double>* xq =
       context.get_mutable_state()
           ->continuous_state->get_mutable_generalized_position();
   auto dxq = derivs.get_mutable_generalized_position();
@@ -342,7 +341,7 @@ void StepImplicitEuler(double h, const System<double>& system,
   const double t = context.get_time();
 
   // Invalidate all xc-dependent quantities.
-  StateVector<double>* x1 =
+  VectorBase<double>* x1 =
       context.get_mutable_state()->continuous_state->get_mutable_state();
 
   const auto vx0 = x1->CopyToVector();

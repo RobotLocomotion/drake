@@ -5,25 +5,23 @@
 #include <cstdint>
 #include <stdexcept>
 
-#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
 /// StateSubvector is a concrete class template that implements
-/// StateVector by providing a sliced view of a StateVector.
+/// VectorBase by providing a sliced view of a VectorBase.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
-class StateSubvector : public StateVector<T> {
+class StateSubvector : public VectorBase<T> {
  public:
   /// Constructs a subvector of vector that consists of num_elements starting
   /// at first_element.
   /// @param vector The vector to slice.  Must not be nullptr. Must remain
   ///               valid for the lifetime of this object.
-  StateSubvector(StateVector<T>* vector, int first_element,
-                 int num_elements)
+  StateSubvector(VectorBase<T>* vector, int first_element, int num_elements)
       : vector_(vector),
         first_element_(first_element),
         num_elements_(num_elements) {
@@ -39,7 +37,7 @@ class StateSubvector : public StateVector<T> {
   /// Constructs an empty subvector.
   /// @param vector The vector to slice.  Must not be nullptr. Must remain
   ///               valid for the lifetime of this object.
-  explicit StateSubvector(StateVector<T>* vector)
+  explicit StateSubvector(VectorBase<T>* vector)
       : StateSubvector(vector, 0, 0) {}
 
   int size() const override { return num_elements_; }
@@ -69,7 +67,7 @@ class StateSubvector : public StateVector<T> {
   StateSubvector(StateSubvector&& other) = delete;
   StateSubvector& operator=(StateSubvector&& other) = delete;
 
-  StateVector<T>* vector_{nullptr};
+  VectorBase<T>* vector_{nullptr};
   int first_element_{0};
   int num_elements_{0};
 };

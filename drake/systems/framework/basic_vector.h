@@ -41,7 +41,12 @@ class BasicVector : public VectorBase<T> {
     return vec;
   }
 
-  void set_value(const Eigen::Ref<const VectorX<T>>& value) override {
+  int size() const override { return static_cast<int>(values_.rows()); }
+
+  /// Sets the vector to the given value. After a.set_value(b.get_value()), a
+  /// must be identical to b.
+  /// Throws std::out_of_range if the new value has different dimensions.
+  void set_value(const Eigen::Ref<const VectorX<T>>& value) {
     if (value.rows() != values_.rows()) {
       throw std::out_of_range(
           "Cannot set a BasicVector of size " + std::to_string(values_.rows()) +
@@ -50,13 +55,14 @@ class BasicVector : public VectorBase<T> {
     values_ = value;
   }
 
-  int size() const override { return static_cast<int>(values_.rows()); }
-
-  Eigen::VectorBlock<const VectorX<T>> get_value() const override {
+  /// Returns the entire vector as a const Eigen::VectorBlock.
+  Eigen::VectorBlock<const VectorX<T>> get_value() const {
     return values_.head(values_.rows());
   }
 
-  Eigen::VectorBlock<VectorX<T>> get_mutable_value() override {
+  /// Returns the entire vector as a mutable Eigen::VectorBlock, which allows
+  /// mutation of the values, but does not allow resizing the vector itself.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_value() {
     return values_.head(values_.rows());
   }
 
@@ -93,7 +99,7 @@ class BasicVector : public VectorBase<T> {
   }
 
   BasicVector& PlusEqScaled(const T& scale,
-                            const StateVector<T>& rhs) override {
+                            const VectorBase<T>& rhs) override {
     rhs.ScaleAndAddToVector(scale, values_);
     return *this;
   }

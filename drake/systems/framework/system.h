@@ -1,14 +1,14 @@
 #pragma once
 
+#include <limits>
 #include <string>
 #include <vector>
-#include <limits>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/drakeSystemFramework_export.h"
-#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/cache.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -134,18 +134,16 @@ class System {
   Eigen::VectorBlock<const VectorX<T>> get_input_vector(
       const Context<T>& context, int port_index) const {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    const VectorBase<T>* input_vector =
-        context.get_vector_input(port_index);
+    const BasicVector<T>* input_vector = context.get_vector_input(port_index);
 
     DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->size() ==
-                 get_input_port(port_index).get_size());
+    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
 
     return input_vector->get_value();
   }
 
   // Returns a copy of the continuous state vector into an Eigen vector.
-  VectorX<T> CopyContinuousStateVector(const Context<T> &context) const {
+  VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
     return context.get_state().continuous_state->get_state().CopyToVector();
   }
 
@@ -229,9 +227,7 @@ class System {
 
   /// Returns the kinetic energy currently present in the motion provided in
   /// the given @p context. Non-physical Systems will return 0.
-  virtual T EvalKineticEnergy(const Context<T>& context) const {
-    return T(0);
-  }
+  virtual T EvalKineticEnergy(const Context<T>& context) const { return T(0); }
 
   /// Returns the rate at which mechanical energy is being converted *from*
   /// potential energy *to* kinetic energy by this system in the given Context.
@@ -304,8 +300,8 @@ class System {
   /// position. Implementations that are not second-order systems may simply
   /// do nothing.
   virtual void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context, const StateVector<T>& generalized_velocity,
-      StateVector<T>* configuration_derivatives) const {
+      const Context<T>& context, const VectorBase<T>& generalized_velocity,
+      VectorBase<T>* configuration_derivatives) const {
     if (generalized_velocity.size() != configuration_derivatives->size()) {
       throw std::out_of_range(
           "generalized_velocity.size() " +
@@ -340,15 +336,21 @@ class System {
 
   /// Adds a port with the specified @p type, @p size, and @p sampling
   /// to the input topology.
-  void DeclareInputPort(PortDataType type, int size, SamplingSpec sampling) {
-    input_ports_.emplace_back(this, kInputPort, get_num_input_ports(),
-                              kVectorValued, size, sampling);
+  /// @return descriptor of declared port.
+  const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size,
+                                                  SamplingSpec sampling) {
+    int port_number = get_num_input_ports();
+    input_ports_.emplace_back(this, kInputPort, port_number, kVectorValued,
+                              size, sampling);
+    return input_ports_.back();
   }
 
   /// Adds an abstract-valued port with the specified @p sampling to the
   /// input topology.
-  void DeclareAbstractInputPort(SamplingSpec sampling) {
-    DeclareInputPort(kAbstractValued, 0 /* size */, sampling);
+  /// @return descriptor of declared port.
+  const SystemPortDescriptor<T>& DeclareAbstractInputPort(
+      SamplingSpec sampling) {
+    return DeclareInputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
   /// Adds a port with the specified @p descriptor to the output topology.
@@ -360,15 +362,21 @@ class System {
 
   /// Adds a port with the specified @p type, @p size, and @p sampling
   /// to the output topology.
-  void DeclareOutputPort(PortDataType type, int size, SamplingSpec sampling) {
-    output_ports_.emplace_back(this, kOutputPort, get_num_output_ports(),
-                               kVectorValued, size, sampling);
+  /// @return descriptor of declared port.
+  const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type, int size,
+                                                   SamplingSpec sampling) {
+    int port_number = get_num_output_ports();
+    output_ports_.emplace_back(this, kOutputPort, port_number, kVectorValued,
+                               size, sampling);
+    return output_ports_.back();
   }
 
   /// Adds an abstract-valued port with the specified @p sampling to the
   /// output topology.
-  void DeclareAbstractOutputPort(SamplingSpec sampling) {
-    DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
+  /// @return descriptor of declared port.
+  const SystemPortDescriptor<T>& DeclareAbstractOutputPort(
+      SamplingSpec sampling) {
+    return DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
   /// Returns a mutable Eigen expression for a vector valued output port with
@@ -379,11 +387,10 @@ class System {
                                                         int port_index) const {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
 
-    VectorBase<T>* output_vector = output->
-        get_mutable_port(port_index)->template GetMutableVectorData<T>();
+    BasicVector<T>* output_vector = output->GetMutableVectorData(port_index);
     DRAKE_ASSERT(output_vector != nullptr);
     DRAKE_ASSERT(output_vector->size() ==
-        get_output_port(port_index).get_size());
+                 get_output_port(port_index).get_size());
 
     return output_vector->get_mutable_value();
   }
