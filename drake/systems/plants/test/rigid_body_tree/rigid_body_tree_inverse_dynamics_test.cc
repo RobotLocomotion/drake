@@ -6,6 +6,7 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/plants/parser_urdf.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace systems {
@@ -20,6 +21,8 @@ using drake::math::initializeAutoDiffGivenGradientMatrix;
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using drake::CompareMatrices;
+using drake::systems::plants::joints::kRollPitchYaw;
+using drake::systems::plants::joints::kQuaternion;
 
 class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
  protected:
@@ -31,13 +34,14 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
 
     tree_rpy_.reset(new RigidBodyTree());
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        kAtlasUrdf, DrakeJoint::ROLLPITCHYAW, nullptr /* weld_to_frame */,
+        kAtlasUrdf, kRollPitchYaw, nullptr /* weld_to_frame
+ * */,
         tree_rpy_.get());
     trees_.push_back(tree_rpy_.get());
 
     tree_quaternion_ = std::make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        kAtlasUrdf, DrakeJoint::QUATERNION, nullptr /* weld_to_frame */,
+        kAtlasUrdf, kQuaternion, nullptr /* weld_to_frame */,
         tree_quaternion_.get());
     trees_.push_back(tree_quaternion_.get());
   }
