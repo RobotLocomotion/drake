@@ -3,21 +3,24 @@
 @mainpage
 <h3>Overview</h3>
 
-<p>Drake's C++ library is divided into data-structures (Vectors, Dynamical
-Systems, ...) and algorithms which operate on those structures.  Those
-algorithms are grouped into the following categories:</p>
+<p>Drake's C++ library is composed primarily of an interface for solving numerical optimization problems, interfaces for modeling dynamical system, and collection of state-of-the-art algorithms for optimization on dynamical systems:</p>
 <ul>
-<li><a href="group__modeling.html">Modeling Dynamical Systems</a></li>
-<li><a href="class_rigid_body_tree.html">Rigid-Body Kinematics and
-Dynamics</a></li>
-<li><a href="group__simulation.html">Simulation</a></li>
-<li>Analysis</li>
-<li>Planning</li>
-<li>Feedback Control Design</li>
-<li>State Estimation</li>
-<li>System Identification</li>
+  <li><a href="group__solvers.html">Formulating and Solving Optimization Problems</a></li>
+  <li><a href="group__systems.html">Modeling Dynamical Systems</a></li>
+  <ul>
+    <li><a href="class_rigid_body_tree.html">Rigid-Body Kinematics and
+  Dynamics</a></li>
+  </ul>
+  <li>Algorithms</li>
+  <ul>
+    <li><a href="group__simulation.html">Simulation</a></li>
+    <li>Analysis</li>
+    <li>Planning</li>
+    <li>Feedback Control Design</li>
+    <li>State Estimation</li>
+    <li>System Identification</li>
+  </ul>
 </ul>
-
 <p>
 For more general information, you can also visit the <a
 href="https://github.com/RobotLocomotion/drake/wiki/Documentation">Drake
@@ -34,8 +37,8 @@ more about generic programming</a>.</p>
 <h3>How do I document the code I am contributing?</h3>
 
 <p>
-If you want to make your own doxygen locally, run <b><i>make doxygen</i></b> in
-the root drake directory.  You may need to install doxygen (e.g., with <i>sudo
+If you want to make your own doxygen locally, run <b><i>make documentation</i></b> in
+the build/drake directory.  You may need to install doxygen (e.g., with <i>sudo
 apt-get install doxygen</i> on Ubuntu).</p>
 <p>
 
@@ -52,3 +55,4 @@ should always be up to date.</p>
 Brought to you by the MIT Robot Locomotion Group:
 http://groups.csail.mit.edu/locomotion/
 */
+
