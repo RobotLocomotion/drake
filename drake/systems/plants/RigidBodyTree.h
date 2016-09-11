@@ -9,6 +9,7 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/eigen_stl_types.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
@@ -24,7 +25,6 @@
 #include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeUtil.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
@@ -339,7 +339,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /// Convenience alias for rigid body to external wrench map, for use with
   /// inverseDynamics and dynamicsBiasTerm.
   template <typename Scalar>
-  using BodyToWrenchMap = eigen_aligned_unordered_map<
+  using BodyToWrenchMap = drake::eigen_aligned_std_unordered_map<
     RigidBody const*, drake::TwistVector<Scalar>>;
 #endif
 
@@ -356,7 +356,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<
+      const drake::eigen_aligned_std_unordered_map<
           RigidBody const*, drake::TwistVector<Scalar>>& external_wrenches,
       bool include_velocity_terms = true) const;
 
@@ -390,7 +390,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<
+      const drake::eigen_aligned_std_unordered_map<
           RigidBody const*, drake::TwistVector<Scalar>>& external_wrenches,
       const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd,
       bool include_velocity_terms = true) const;
