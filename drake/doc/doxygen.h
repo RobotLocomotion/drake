@@ -3,7 +3,8 @@
 @mainpage
 <h3>Overview</h3>
 
-<p>Drake's C++ library is composed primarily of an interface for solving numerical optimization problems, interfaces for modeling dynamical system, and collection of state-of-the-art algorithms for optimization on dynamical systems:</p>
+<p>Drake's C++ library is composed primarily of an interface for solving numerical optimization problems, interfaces for
+ modeling dynamical system, and collection of state-of-the-art algorithms for optimization on dynamical systems:</p>
 <ul>
   <li><a href="group__solvers.html">Formulating and Solving Optimization Problems</a></li>
   <li><a href="group__systems.html">Modeling Dynamical Systems</a></li>
@@ -51,8 +52,5 @@ the <a href="https://github.com/RobotLocomotion/drake">github repository</a>, so
 it
 should always be up to date.</p>
 
-<br /><br /><br /><br /><hr />
-Brought to you by the MIT Robot Locomotion Group:
-http://groups.csail.mit.edu/locomotion/
 */
 

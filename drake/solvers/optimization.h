@@ -23,7 +23,7 @@ namespace solvers {
 
 /** @defgroup solvers Formulating and Solving Optimization Problems
  * @{
- * drake wraps a number of commercial solvers (+ a few custom solvers) to provide a common
+ * Drake wraps a number of commercial solvers (+ a few custom solvers) to provide a common
  * interface for convex optimization, mixed-integer convex optimization, and
  * other non-convex mathematical programs.
  *
@@ -136,7 +136,7 @@ namespace solvers {
  *
  * @nbsp
  * &dagger; indicates that this is a commercial solvers (note that some have free licenses for academics).
- * drake must be able to locate the solver on your system during the configuration step (when you run cmake),
+ * Drake must be able to locate the solver on your system during the configuration step (when you run cmake),
  * otherwise that solver will be disabled.
  *
  * @}
