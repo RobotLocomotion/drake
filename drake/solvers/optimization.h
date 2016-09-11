@@ -130,9 +130,13 @@ namespace solvers {
  * </tr>
  * </table>
  *
- * &dagger; indicates that this is a commercial solvers (note that some have free licenses for academics).
- * Drake must be able to locate the solver on your system during the configuration step (when you run cmake),
- * otherwise that solver will be disabled.
+ * &dagger; indicates that this is a commercial solver which requires a license (note that some have free licenses
+ * for academics).
+ *
+ * Note: Drake must be able to locate each solver on your system during the configuration step (when you run cmake),
+ * otherwise that solver will be disabled.  To simplify this process, we have attempted to make solvers available as a
+ * part of the Drake superbuild, but we are unable to publicly share the distributions for commercially licensed
+ * solvers.
  *
  * @}
  */
