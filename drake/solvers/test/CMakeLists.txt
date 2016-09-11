@@ -1,4 +1,4 @@
-add_executable(optimization_problem_test optimization_problem_test.cc)
+add_executable(optimization_problem_test mathematical_program_test.cc)
 target_link_libraries(optimization_problem_test drakeOptimization
   ${GTEST_BOTH_LIBRARIES})
 add_test(NAME optimization_problem_test COMMAND optimization_problem_test)

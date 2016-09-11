@@ -12,7 +12,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/math/autodiff.h"
-#include "drake/solvers/optimization.h"
 
 using Ipopt::Index;
 using Ipopt::IpoptCalculatedQuantities;
@@ -458,7 +457,7 @@ bool IpoptSolver::available() const {
   return true;
 }
 
-SolutionResult IpoptSolver::Solve(OptimizationProblem &prog) const {
+SolutionResult IpoptSolver::Solve(MathematicalProgram &prog) const {
   DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();

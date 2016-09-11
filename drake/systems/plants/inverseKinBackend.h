@@ -15,7 +15,7 @@ class IKoptions;
 
 namespace drake {
 namespace solvers {
-class OptimizationProblem;
+class MathematicalProgram;
 }
 }
 
@@ -24,13 +24,13 @@ namespace systems {
 namespace plants {
 
 // TODO(sam.creasey) The infeasible_constraint return argument is
-// currently not functional because OptimizationProblem has no support
+// currently not functional because MathematicalProgram has no support
 // for determining which constraints were infeasible.  Once this is
 // fixed, we should restore functionality here.
 
 /// This function is primarily documented through RigidBodyIK.h.  All
 /// parameters are passthroughs from there.  The infeasible_constraint
-/// parameter is currently always empty untitl OptimizationProblem
+/// parameter is currently always empty untitl MathematicalProgram
 /// supports determining which constraints were infeasible.
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 void inverseKinBackend(RigidBodyTree *model, const int nT,
@@ -46,7 +46,7 @@ void inverseKinBackend(RigidBodyTree *model, const int nT,
 /// This function is primarily documented through RigidBodyIK.h.  All
 /// parameters are passthroughs from inverseKinTraj().  The
 /// infeasible_constraint parameter is currently always empty untitl
-/// OptimizationProblem supports determining which constraints were
+/// MathematicalProgram supports determining which constraints were
 /// infeasible.
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
@@ -65,12 +65,12 @@ void inverseKinTrajBackend(
 
 /// Translate a solver result into something expected for the info
 /// output parameter.
-int GetIKSolverInfo(const drake::solvers::OptimizationProblem& prog,
+int GetIKSolverInfo(const drake::solvers::MathematicalProgram& prog,
                     drake::solvers::SolutionResult result);
 
 /// Set solver options based on IK options.
 void SetIKSolverOptions(const IKoptions& ikoptions,
-                        drake::solvers::OptimizationProblem* prog);
+                        drake::solvers::MathematicalProgram* prog);
 
 /// Add a single time linear posture constraint to @p prog at time @p
 /// t covering @p vars.  @p nq is the number of positions in the
@@ -78,7 +78,7 @@ void SetIKSolverOptions(const IKoptions& ikoptions,
 void AddSingleTimeLinearPostureConstraint(
     const double *t, const RigidBodyConstraint*, int nq,
     const drake::solvers::DecisionVariableView& vars,
-    drake::solvers::OptimizationProblem* prog);
+    drake::solvers::MathematicalProgram* prog);
 
 /// Add a single time linear posture constraint to @p prog at time @p
 /// t covering @p vars.  @p kin_helper is the KinematicsCacheHelper for the
@@ -87,7 +87,7 @@ void AddQuasiStaticConstraint(
     const double *t, const RigidBodyConstraint*,
     KinematicsCacheHelper<double>* kin_helper,
     const drake::solvers::DecisionVariableView& vars,
-    drake::solvers::OptimizationProblem* prog);
+    drake::solvers::MathematicalProgram* prog);
 }
 }
 }

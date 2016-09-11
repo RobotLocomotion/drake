@@ -5,7 +5,7 @@
 #include <iostream>  // For LUMPED_SYSTEM_IDENTIFICATION_VERBOSE below.
 
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -264,7 +264,7 @@ SystemIdentification<T>::EstimateParameters(
   DRAKE_ASSERT(num_data >= num_to_estimate);
 
   // Build up our optimization problem's decision variables.
-  OptimizationProblem problem;
+  MathematicalProgram problem;
   const auto parameter_variables =
       problem.AddContinuousVariables(num_to_estimate, "param");
   const auto error_variables =

@@ -6,7 +6,6 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/optimization.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -15,7 +14,7 @@ namespace drake {
 namespace solvers {
 namespace {
 
-void RunQuadraticProgram(OptimizationProblem* prog) {
+void RunQuadraticProgram(MathematicalProgram* prog) {
   GurobiSolver gurobi_solver;
   SolutionResult result = SolutionResult::kUnknownError;
   ASSERT_NO_THROW(result = gurobi_solver.Solve(*prog));
@@ -27,7 +26,7 @@ void RunQuadraticProgram(OptimizationProblem* prog) {
 //  subj to  x + 2 y + 3 z >= 4
 //           x +   y       >= 1
 GTEST_TEST(testGurobi, gurobiQPExample1) {
-  OptimizationProblem prog;
+      MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(3);
 
   Eigen::MatrixXd Q = Eigen::Matrix<double, 3, 3>::Identity();
@@ -71,7 +70,7 @@ GTEST_TEST(testGurobi, gurobiQPExample1) {
 // The values were chosen at random but were hardcoded
 // to enable test reproducibility.
 GTEST_TEST(testGurobi, convexQPExample) {
-  OptimizationProblem prog;
+      MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(5);
   MatrixXd Q = MatrixXd::Constant(5, 5, 0.0);
   VectorXd Qdiag = VectorXd::Constant(5, 0.0);
@@ -98,7 +97,7 @@ GTEST_TEST(testGurobi, convexQPExample) {
 // The values were chosen at random but were hardcoded
 // to enable test reproducibility.
 GTEST_TEST(testGurobi, convexQPMultiCostExample) {
-  OptimizationProblem prog;
+      MathematicalProgram prog;
   const DecisionVariableView x1 = prog.AddContinuousVariables(3, "x1");
   MatrixXd Q1 = MatrixXd::Constant(3, 3, 0.0);
   VectorXd Q1diag = VectorXd::Constant(3, 0.0);

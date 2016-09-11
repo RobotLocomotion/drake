@@ -10,7 +10,7 @@ bool GurobiSolver::available() const {
 }
 
 SolutionResult GurobiSolver::Solve(
-    OptimizationProblem& prog) const {
+    const MathematicalProgram& prog) const {
   throw std::runtime_error(
       "The Gurobi bindings were not compiled.  You'll need to use a different "
           "solver.");

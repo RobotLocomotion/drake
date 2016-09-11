@@ -2,7 +2,7 @@
 
 #include "KinematicsCache.h"
 #include "drake/drakeRBSystem_export.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/systems/System.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
@@ -447,7 +447,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   bool direct_feedthrough;
 
   /*
-  mutable OptimizationProblem dynamics_program;
+  mutable MathematicalProgram dynamics_program;
   */
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
