@@ -23,14 +23,16 @@ namespace solvers {
 
 /** @defgroup solvers Formulating and Solving Optimization Problems
  * @{
- * Drake wraps a number of commercial solvers (+ a few custom solvers) to provide a common
- * interface for convex optimization, mixed-integer convex optimization, and
- * other non-convex mathematical programs.
+ * Drake wraps a number of commercial solvers (+ a few custom solvers) to
+ * provide a common interface for convex optimization, mixed-integer convex
+ * optimization, and other non-convex mathematical programs.
  *
- * The OptimizationProblem class handles the coordination of decision variables, objectives, and constraints.  The
- * OptimizationProblem::Solve() method reflects on the accumulated objectives and constraints and will dispatch to the
- * most appropirate solver.  Alternatively, one can invoke specific solver by instantiating its
- * MathematicalProgramSolverInterface and passing the OptimizationProblem directly to the
+ * The OptimizationProblem class handles the coordination of decision variables,
+ * objectives, and constraints.  The OptimizationProblem::Solve() method
+ * reflects on the accumulated objectives and constraints and will dispatch to
+ * the most appropirate solver.  Alternatively, one can invoke specific solver
+ * by instantiating its MathematicalProgramSolverInterface and passing the
+ * OptimizationProblem directly to the
  * MathematicalProgramSolverInterface::Solve() method.
  *
  * Our solver coverage still has many gaps, but is under active development.
@@ -46,23 +48,25 @@ namespace solvers {
  * <tr>
  *   <td>Solver</td>
  *   <td><a href="https://en.wikipedia.org/wiki/Linear_programming">LP</a></td>
- *   <td><a
- * href="https://en.wikipedia.org/wiki/Quadratic_programming">QP</a></td>
- *   <td><a
- * href="https://en.wikipedia.org/wiki/Second-order_cone_programming">SOCP</a></td>
- *   <td><a
- * href="https://en.wikipedia.org/wiki/Semidefinite_programming">SDP</a></td>
- *   <td><a
- * href="https://en.wikipedia.org/wiki/Sum-of-squares_optimization">SOS</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Quadratic_programming">
+ *     QP</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Second-order_cone_programming">
+ *     SOCP</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Semidefinite_programming">
+ *     SDP</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Sum-of-squares_optimization">
+ *     SOS</a></td>
  * </tr>
- * <tr><td>&dagger; <a href="http://www.gurobi.com/products/gurobi-optimizer">Gurobi</a></td>
+ * <tr><td>&dagger; <a href="http://www.gurobi.com/products/gurobi-optimizer">
+ *    Gurobi</a></td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  *    <td></td>
  *    <td></td>
  *    <td></td>
  *  </tr>
- * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">Mosek</a></td>
+ * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">
+ *    Mosek</a></td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  *    <td></td>
@@ -81,13 +85,15 @@ namespace solvers {
  *   <td>MISOCP</a></td>
  *   <td>MISDP</a></td>
  * </tr>
- * <tr><td>&dagger; <a href="http://www.gurobi.com/products/gurobi-optimizer">Gurobi</a></td>
+ * <tr><td>&dagger; <a href="http://www.gurobi.com/products/gurobi-optimizer">
+ *    Gurobi</a></td>
  *    <td></td>
  *    <td></td>
  *    <td></td>
  *    <td></td>
  *  </tr>
- * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">Mosek</a></td>
+ * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">
+ *    Mosek</a></td>
  *    <td></td>
  *    <td></td>
  *    <td></td>
@@ -100,14 +106,16 @@ namespace solvers {
  * <table>
  * <tr>
  *   <td>Solver</td>
- *   <td><a href="https://en.wikipedia.org/wiki/Nonlinear_programming">Nonlinear
- * Programs</a></td>
- *   <td><a
- * href="https://en.wikipedia.org/wiki/Linear_complementarity_problem">LCP</a></td>
- *   <td><a
- * href="https://en.wikipedia.org/wiki/Satisfiability_modulo_theories">SMT</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Nonlinear_programming">
+ *     Nonlinear Program</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Linear_complementarity_problem">
+ *   LCP</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Satisfiability_modulo_theories">
+ *     SMT</a></td>
  * </tr>
- * <tr><td>&dagger; <a href="http://www.sbsi-sol-optimize.com/asp/sol_product_snopt.htm">SNOPT</a></td></tr>
+ * <tr><td>&dagger;
+ *   <a href="http://www.sbsi-sol-optimize.com/asp/sol_product_snopt.htm">
+ *    SNOPT</a></td></tr>
  *    <td align="center">&diams;</td>
  *    <td></td>
  *    <td></td>
@@ -115,11 +123,13 @@ namespace solvers {
  *    <td align="center">&diams;</td>
  *    <td></td>
  *    <td></td>
- * <tr><td><a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">NLopt</a></td></tr>
+ * <tr><td><a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">
+ *    NLopt</a></td></tr>
  *    <td align="center">&diams;</td>
  *    <td></td>
  *    <td></td>
- * <tr><td><a href="https://github.com/PositronicsLab/Moby">Moby LCP</a></td>
+ * <tr><td><a href="https://github.com/PositronicsLab/Moby">
+ *    Moby LCP</a></td>
  *    <td></td>
  *    <td align="center">&diams;</td>
  *    <td></td>
@@ -130,13 +140,14 @@ namespace solvers {
  * </tr>
  * </table>
  *
- * &dagger; indicates that this is a commercial solver which requires a license (note that some have free licenses
- * for academics).
+ * &dagger; indicates that this is a commercial solver which requires a license
+ * (note that some have free licenses for academics).
  *
- * Note: Drake must be able to locate each solver on your system during the configuration step (when you run cmake),
- * otherwise that solver will be disabled.  To simplify this process, we have attempted to make solvers available as a
- * part of the Drake superbuild, but we are unable to publicly share the distributions for commercially licensed
- * solvers.
+ * Note: Drake must be able to locate each solver on your system during the
+ * configuration step (when you run cmake), otherwise that solver will be
+ * disabled.  To simplify this process, we have attempted to make solvers
+ * available as a part of the Drake superbuild, but we are unable to publicly
+ * share the distributions for commercially licensed solvers.
  *
  * @}
  */
