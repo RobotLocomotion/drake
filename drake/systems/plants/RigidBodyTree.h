@@ -348,8 +348,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<RigidBody const*,
-                                        drake::TwistVector<Scalar>>& f_ext,
+      const eigen_aligned_unordered_map<
+          RigidBody const*, drake::TwistVector<Scalar>>& external_wrenches,
       bool include_velocity_terms = true) const;
 
   /** \brief Compute
@@ -371,7 +371,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   *
   * Algorithm: recursive Newton-Euler. Does not explicitly compute mass matrix.
   * \param cache a KinematicsCache constructed given \f$ q \f$ and \f$ v \f$
-  * \param f_ext external wrenches exerted upon bodies. Expressed in body frame.
+  * \param external_wrenches external wrenches exerted upon bodies
+  * (\f$ f_\text{ext} \f$). Expressed in body frame.
   * \param vd \f$ \dot{v} \f$
   * \param include_velocity_terms whether to include velocity-dependent terms in
   *\f$ C(q, v, f_\text{ext}) \f$. Setting \a include_velocity_terms to false is
@@ -381,8 +382,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<RigidBody const*,
-                                        drake::TwistVector<Scalar>>& f_ext,
+      const eigen_aligned_unordered_map<
+          RigidBody const*, drake::TwistVector<Scalar>>& external_wrenches,
       const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd,
       bool include_velocity_terms = true) const;
 
