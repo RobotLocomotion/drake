@@ -27,21 +27,19 @@ namespace solvers {
  * interface for convex optimization, mixed-integer convex optimization, and
  * other non-convex mathematical programs.
  *
- * @nbsp
- * The OptimizationProblem class handles the coordination of decision variables,
- * objectives, and constraints, then automatically dispatches to the most
- * relevant solver.  All solver wrappers implement the MathematicalProgramSolverInterface.
+ * The OptimizationProblem class handles the coordination of decision variables, objectives, and constraints.  The
+ * OptimizationProblem::Solve() method reflects on the accumulated objectives and constraints and will dispatch to the
+ * most appropirate solver.  Alternatively, one can invoke specific solver by instantiating its
+ * MathematicalProgramSolverInterface and passing the OptimizationProblem directly to the
+ * MathematicalProgramSolverInterface::Solve() method.
  *
- * @nbsp
  * Our solver coverage still has many gaps, but is under active development.
  *
- * @nbsp
  * <b>Closed-form solutions</b>
  *
  * The LinearSystemSolver and EqualityConstrainedQPSolver classes provide
  * efficient closed-form solutions to these special cases.
  *
- * @nbsp
  * <b>Convex Optimization</b>
  *
  * <table>
@@ -73,7 +71,6 @@ namespace solvers {
  * </tr>
  * </table>
  *
- * @nbsp
  * <b>Mixed-Integer Convex Optimization</b>
  *
  * <table>
@@ -98,7 +95,6 @@ namespace solvers {
  * </tr>
  * </table>
  *
- * @nbsp
  * <b>Nonconvex Programming</b>
  *
  * <table>
@@ -134,7 +130,6 @@ namespace solvers {
  * </tr>
  * </table>
  *
- * @nbsp
  * &dagger; indicates that this is a commercial solvers (note that some have free licenses for academics).
  * Drake must be able to locate the solver on your system during the configuration step (when you run cmake),
  * otherwise that solver will be disabled.

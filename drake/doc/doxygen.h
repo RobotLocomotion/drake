@@ -28,11 +28,10 @@ href="https://github.com/RobotLocomotion/drake/wiki/Documentation">Drake
 documentation main page</a></p>
 </p>
 
-<p> Drake's C++ libraries use template metaprogramming to enable more advanced
+<p> Drake's C++ libraries use a small amount of template metaprogramming to enable more advanced
 features (autodiff, symbolic computation, etc).  We have tried to avoid users
 having to be expert template programmers, but this is a good reference if you'd
-like to <a
-href="http://www.generic-programming.org/languages/cpp/techniques.php">learn
+like to <a href="http://www.generic-programming.org/languages/cpp/techniques.php">learn
 more about generic programming</a>.</p>
 
 <h3>How do I document the code I am contributing?</h3>
@@ -47,10 +46,8 @@ apt-get install doxygen</i> on Ubuntu).</p>
 out the Doxygen C++ documentation</a></p>
 
 <p>Drake's doxygen documentation for the master branch is automatically updated
-on every push to
-the <a href="https://github.com/RobotLocomotion/drake">github repository</a>, so
-it
-should always be up to date.</p>
+on every push to the <a href="https://github.com/RobotLocomotion/drake">github repository</a>, so
+it should always be up to date.</p>
 
 */
 
