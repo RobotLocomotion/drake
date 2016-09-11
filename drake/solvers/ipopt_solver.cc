@@ -177,7 +177,7 @@ struct ResultCache {
 // the duration of the Solve() call.
 class IpoptSolver_NLP : public Ipopt::TNLP {
  public:
-  explicit IpoptSolver_NLP(OptimizationProblem* problem)
+  explicit IpoptSolver_NLP(MathematicalProgram* problem)
       : problem_(problem),
         result_(SolutionResult::kUnknownError) {}
 
@@ -444,7 +444,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     }
   }
 
-  OptimizationProblem* const problem_;
+  MathematicalProgram* const problem_;
   std::unique_ptr<ResultCache> cost_cache_;
   std::unique_ptr<ResultCache> constraint_cache_;
   SolutionResult result_;
