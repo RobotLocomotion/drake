@@ -335,6 +335,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(
       KinematicsCache<Scalar>& cache) const;
 
+#ifndef SWIG
+  /// Convenience alias for rigid body to external wrench map, for use with
+  /// inverseDynamics and dynamicsBiasTerm.
+  template <typename Scalar>
+  using BodyToWrenchMap = eigen_aligned_unordered_map<
+    RigidBody const*, drake::TwistVector<Scalar>>;
+#endif
+
   /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator
   *equations
   *  \f[

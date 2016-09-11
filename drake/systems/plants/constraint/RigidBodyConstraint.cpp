@@ -2296,10 +2296,9 @@ void GravityCompensationTorqueConstraint::eval(const double* t,
       q);
   KinematicsCache<Scalar> cache_with_gradients =
       getRobotPointer()->doKinematics(q);
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<Scalar>>
-      f_ext;
-  auto G_autodiff =
-      getRobotPointer()->dynamicsBiasTerm(cache_with_gradients, f_ext, false);
+  const RigidBodyTree::BodyToWrenchMap<Scalar> no_external_wrenches;
+  auto G_autodiff = getRobotPointer()->dynamicsBiasTerm(
+      cache_with_gradients, no_external_wrenches, false);
   auto G = autoDiffToValueMatrix(G_autodiff);
   auto dG = autoDiffToGradientMatrix(G_autodiff);
 
