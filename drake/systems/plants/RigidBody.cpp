@@ -35,6 +35,8 @@ void RigidBody::set_model_instance_id(int model_instance_id) {
   model_instance_id_ = model_instance_id;
 }
 
+// TODO(liang.fok): Deprecate this method in favor of add_joint().
+// This requires, among potentially other things, updating the parsers.
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint) {
   joint_ = move(joint);
 }
