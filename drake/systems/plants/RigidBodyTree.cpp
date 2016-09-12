@@ -1997,6 +1997,10 @@ int RigidBodyTree::get_number_of_bodies() const {
   return static_cast<int>(bodies.size());
 }
 
+int RigidBodyTree::get_world_model_instance_id() const {
+  return bodies[kWorldBodyIndex]->get_model_instance_id();
+}
+
 // TODO(liang.fok) Remove this method prior to Release 1.0.
 RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
     int model_id) const {
