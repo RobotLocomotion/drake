@@ -1,2 +1,2 @@
-add_matlab_test(NAME examples/Glider/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)
-add_matlab_test(NAME examples/Glider/test/verifyURDF OPTIONAL bullet COMMAND verifyURDF)
+drake_add_matlab_test(NAME examples/Glider/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)
+drake_add_matlab_test(NAME examples/Glider/test/verifyURDF OPTIONAL bullet COMMAND verifyURDF)
