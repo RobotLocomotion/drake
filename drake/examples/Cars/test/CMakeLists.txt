@@ -34,6 +34,13 @@ if(lcm_FOUND)
   drake_add_test(NAME idm_with_trajectory_agent_test
     COMMAND idm_with_trajectory_agent_test)
 
+  add_executable(simple_car_to_euler_floating_joint_test
+    simple_car_to_euler_floating_joint_test.cc)
+  target_link_libraries(simple_car_to_euler_floating_joint_test
+    ${GTEST_BOTH_LIBRARIES} drakeCars)
+  add_test(NAME simple_car_to_euler_floating_joint_test
+    COMMAND simple_car_to_euler_floating_joint_test)
+  
   add_executable(trajectory_car_test trajectory_car_test.cc)
   target_link_libraries(trajectory_car_test ${GTEST_BOTH_LIBRARIES} drakeCars)
   drake_add_test(NAME trajectory_car_test COMMAND trajectory_car_test)
