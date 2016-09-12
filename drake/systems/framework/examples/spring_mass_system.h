@@ -15,6 +15,7 @@ namespace systems {
 
 /// The state of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters and meters/s.
+
 class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
     : public BasicVector<double> {
  public:
@@ -55,6 +56,8 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
 /// @endverbatim
 ///
 /// Units are MKS (meters-kilograms-seconds).
+/// @ingroup systems
+
 class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public System<double> {
  public:
   /// Construct a spring-mass system with a fixed spring constant and given

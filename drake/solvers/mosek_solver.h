@@ -11,11 +11,6 @@
 namespace drake {
 namespace solvers {
 
-/** MosekSolver
-* A wrapper class that calls the correct version of MosekLP or (eventually)
-* MosekQP. The functions are defined in the relevant .h files if mosek is
-* included.
-*/
 class DRAKEOPTIMIZATION_EXPORT MosekSolver :
     public MathematicalProgramSolverInterface {
  public:
