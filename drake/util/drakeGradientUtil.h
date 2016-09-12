@@ -14,9 +14,10 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
-#include "drake/math/gradient.h"
-
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/gradient.h"
 
 template <std::size_t Size>
 std::array<int, Size> intRange(int start) {
@@ -305,4 +306,11 @@ void gradientMatrixToAutoDiff(
           gradient.row(row + col * auto_diff_matrix.rows()).transpose();
     }
   }
+}
+
+template <typename Derived>
+DRAKE_DEPRECATED("Use the drake::math version instead")
+void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat,
+                                    const typename Derived::Scalar& scalar) {
+  drake::math::resizeDerivativesToMatchScalar(mat, scalar);
 }
