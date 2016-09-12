@@ -18,15 +18,17 @@ if(WITH_DIRECTOR)
       ${CMAKE_INSTALL_PREFIX}/bin/directorPython
       ${CMAKE_CURRENT_SOURCE_DIR}/visualizer_startup_test.py)
   if(hasDisplay)
-    add_test(NAME visualizer_startup_test_default_display
-             COMMAND ${visualizerStartupTestCommand})
+    drake_add_test(NAME visualizer_startup_test_default_display
+             COMMAND ${visualizerStartupTestCommand}
+             SIZE medium)
   elseif(xvfb-run)
-    add_test(NAME visualizer_startup_test_xvfb
+    drake_add_test(NAME visualizer_startup_test_xvfb
              COMMAND xvfb-run -s "-screen 0 1024x768x24"
-             ${visualizerStartupTestCommand})
+             ${visualizerStartupTestCommand}
+             SIZE medium)
   endif()
 endif()
 
 if(MATLAB_FOUND)
-  add_matlab_test(NAME addpath_spotless_test COMMAND "addpath_spotless;")
+  drake_add_matlab_test(NAME addpath_spotless_test COMMAND "addpath_spotless;")
 endif()

@@ -79,38 +79,35 @@ function(mex_setup)
   find_program(matlab matlab)
   if ( NOT matlab )
     if (isrequired GREATER -1)
-      message(FATAL_ERROR "matlab is REQUIRED, but I could not find the matlab executable.")
+      message(FATAL_ERROR "Could NOT find MATLAB main program executable")
     endif()
-    message(STATUS "Could not find matlab executable.  mex support will be disabled")
+    message(STATUS "Could NOT find MATLAB main program executable. MEX support will be disabled.")
     return()
   endif()
-  if ( WIN32 )
-    # matlab -n is not supported on windows (asked matlab for a work-around)
-    get_filename_component(_matlab_root ${matlab} PATH)
-    get_filename_component(_matlab_root ${_matlab_root} PATH)
-    find_program(winmat NAMES MATLAB PATHS ${_matlab_root}/bin/win32 ${_matlab_root}/bin/win64 NO_DEFAULT_PATH) # replace bin\matlab.exe with bin\win**\MATLAB.exe
 
-#   todo: consider replacing the line in drake/Makefile with this, but then drake-admin/postProcessCTest would have to run cmake and parse the output
-#    find_program(python NAMES python)
-#    set(python "${python}" CACHE FILEPATH "${python}")
-  else()
-    execute_process(COMMAND ${matlab} -e COMMAND grep -e "MATLAB=" COMMAND cut -d "=" -f2 OUTPUT_VARIABLE _matlab_root TIMEOUT 60)
-  endif()
-  if (NOT _matlab_root)
-    message(FATAL_ERROR "Failed to extract MATLAB_ROOT")
-  endif()
-  string(STRIP ${_matlab_root} MATLAB_ROOT)
+  set(matlab "${matlab}" CACHE FILEPATH "MATLAB main program executable")
 
-  set(matlab "${matlab}" CACHE FILEPATH "${matlab}")
+  # logic from upstream FindMatlab.cmake...
+
+  # resolve symlinks
+  get_filename_component(MATLAB_ROOT "${matlab}" REALPATH)
+
+  # get the directory (the command below has to be run twice)
+  # this will be the matlab root
+  get_filename_component(MATLAB_ROOT "${MATLAB_ROOT}" DIRECTORY)
+  get_filename_component(MATLAB_ROOT "${MATLAB_ROOT}" DIRECTORY) # Matlab should be in bin
+
   find_program(mex NAMES mex mex.bat HINTS ${MATLAB_ROOT}/bin NO_DEFAULT_PATH)
   if (NOT mex)
-     message(FATAL_ERROR "Failed to find mex executable")
+     message(FATAL_ERROR "Could NOT find MEX compiler")
   endif()
 
   find_program(mexext NAMES mexext mexext.bat HINTS ${MATLAB_ROOT}/bin)
-  execute_process(COMMAND ${mexext} OUTPUT_VARIABLE MEX_EXT OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if (mexext)
+    execute_process(COMMAND ${mexext} OUTPUT_VARIABLE MEX_EXT OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif()
   if (NOT MEX_EXT)
-     message(FATAL_ERROR "Failed to extract MEX_EXT")
+     message(FATAL_ERROR "Could NOT determine binary MEX filename extension")
   endif()
 
   find_file(simulink_FOUND NAMES simstruc.h HINTS ${MATLAB_ROOT}/simulink/include)
@@ -417,6 +414,5 @@ function(compare_compilers outvar compiler1 compiler2)
   endif()
 
 endfunction()
-
 
 include(CMakeParseArguments)

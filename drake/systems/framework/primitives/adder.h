@@ -13,6 +13,7 @@ namespace drake {
 namespace systems {
 
 /// An adder for arbitrarily many inputs of equal length.
+/// @ingroup systems
 /// @tparam T The type of mathematical object being added.
 ///
 /// Instantiated templates for the following kinds of T's are provided:

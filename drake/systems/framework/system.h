@@ -15,6 +15,23 @@
 namespace drake {
 namespace systems {
 
+
+/** @defgroup systems Modeling Dynamical Systems
+ * @{
+ * @brief Drake uses a Simulink-inspired description of dynamical systems.
+ *
+ * Includes basic building blocks (adders, integrators, delays, etc),
+ * physics models of mechanical systems, and a growing list of sensors,
+ * actuators, controllers, planners, estimators.
+ *
+ * All dynamical systems derive from the System base class, and must
+ * explicitly  declare all State, parameters, and noise/disturbances inputs.
+ * The Diagram class permits modeling complex systems from libraries of parts.
+ * @}
+ */
+
+
+
 /// This information is returned along with the next update/sample/event time
 /// and is provided back to the System when that time is reached to ensure that
 /// the correct sampling actions are taken.

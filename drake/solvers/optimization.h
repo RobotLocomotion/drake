@@ -1,25 +1,156 @@
 #pragma once
 
+#include <Eigen/Core>
 #include <algorithm>
 #include <initializer_list>
 #include <iostream>
 #include <list>
 #include <map>
 #include <memory>
-#include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/drakeOptimization_export.h"
-#include "drake/solvers/constraint.h"
-#include "drake/solvers/Function.h"
-#include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/decision_variable.h"
-#include "drake/solvers/solution_result.h"
 #include "drake/common/polynomial.h"
+#include "drake/drakeOptimization_export.h"
+#include "drake/solvers/Function.h"
+#include "drake/solvers/constraint.h"
+#include "drake/solvers/decision_variable.h"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solution_result.h"
 
 namespace drake {
 namespace solvers {
+
+/** @defgroup solvers Formulating and Solving Optimization Problems
+ * @{
+ * Drake wraps a number of commercial solvers (+ a few custom solvers) to
+ * provide a common interface for convex optimization, mixed-integer convex
+ * optimization, and other non-convex mathematical programs.
+ *
+ * The OptimizationProblem class handles the coordination of decision variables,
+ * objectives, and constraints.  The OptimizationProblem::Solve() method
+ * reflects on the accumulated objectives and constraints and will dispatch to
+ * the most appropirate solver.  Alternatively, one can invoke specific solver
+ * by instantiating its MathematicalProgramSolverInterface and passing the
+ * OptimizationProblem directly to the
+ * MathematicalProgramSolverInterface::Solve() method.
+ *
+ * Our solver coverage still has many gaps, but is under active development.
+ *
+ * <b>Closed-form solutions</b>
+ *
+ * The LinearSystemSolver and EqualityConstrainedQPSolver classes provide
+ * efficient closed-form solutions to these special cases.
+ *
+ * <b>Convex Optimization</b>
+ *
+ * <table>
+ * <tr>
+ *   <td>Solver</td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Linear_programming">LP</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Quadratic_programming">
+ *     QP</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Second-order_cone_programming">
+ *     SOCP</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Semidefinite_programming">
+ *     SDP</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Sum-of-squares_optimization">
+ *     SOS</a></td>
+ * </tr>
+ * <tr><td>&dagger; <a href="http://www.gurobi.com/products/gurobi-optimizer">
+ *    Gurobi</a></td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ *  </tr>
+ * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">
+ *    Mosek</a></td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ * </tr>
+ * </table>
+ *
+ * <b>Mixed-Integer Convex Optimization</b>
+ *
+ * <table>
+ * <tr>
+ *   <td>Solver</td>
+ *   <td>MILP</a></td>
+ *   <td>MIQP</a></td>
+ *   <td>MISOCP</a></td>
+ *   <td>MISDP</a></td>
+ * </tr>
+ * <tr><td>&dagger; <a href="http://www.gurobi.com/products/gurobi-optimizer">
+ *    Gurobi</a></td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ *  </tr>
+ * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">
+ *    Mosek</a></td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ * </tr>
+ * </table>
+ *
+ * <b>Nonconvex Programming</b>
+ *
+ * <table>
+ * <tr>
+ *   <td>Solver</td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Nonlinear_programming">
+ *     Nonlinear Program</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Linear_complementarity_problem">
+ *   LCP</a></td>
+ *   <td><a href="https://en.wikipedia.org/wiki/Satisfiability_modulo_theories">
+ *     SMT</a></td>
+ * </tr>
+ * <tr><td>&dagger;
+ *   <a href="http://www.sbsi-sol-optimize.com/asp/sol_product_snopt.htm">
+ *    SNOPT</a></td></tr>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ *    <td></td>
+ * <tr><td><a href="https://projects.coin-or.org/Ipopt">Ipopt</a></td></tr>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ *    <td></td>
+ * <tr><td><a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">
+ *    NLopt</a></td></tr>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ *    <td></td>
+ * <tr><td><a href="https://github.com/PositronicsLab/Moby">
+ *    Moby LCP</a></td>
+ *    <td></td>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ * <tr><td><a href="https://dreal.github.io/">dReal</a></td>
+ *    <td></td>
+ *    <td></td>
+ *    <td align="center">&diams;</td>
+ * </tr>
+ * </table>
+ *
+ * &dagger; indicates that this is a commercial solver which requires a license
+ * (note that some have free licenses for academics).
+ *
+ * Note: Drake must be able to locate each solver on your system during the
+ * configuration step (when you run cmake), otherwise that solver will be
+ * disabled.  To simplify this process, we have attempted to make solvers
+ * available as a part of the Drake superbuild, but we are unable to publicly
+ * share the distributions for commercially licensed solvers.
+ *
+ * @}
+ */
 
 class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   /** Binding
@@ -346,8 +477,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * @brief Adds linear equality constraints referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
    */
-  void AddConstraint(
-      std::shared_ptr<LinearEqualityConstraint> con, VariableList const& vars) {
+  void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
+                     VariableList const& vars) {
     problem_type_.AddLinearEqualityConstraint();
     linear_equality_constraints_.push_back(
         Binding<LinearEqualityConstraint>(con, vars));
@@ -495,9 +626,9 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
             linear_constraint_ub[poly_num] -= monomial.coefficient;
           } else if (monomial.terms.size() == 1) {
             const Polynomiald::VarType term_var = monomial.terms[0].var;
-            int var_num = (std::find(poly_vars.begin(), poly_vars.end(),
-                                     term_var) -
-                           poly_vars.begin());
+            int var_num =
+                (std::find(poly_vars.begin(), poly_vars.end(), term_var) -
+                 poly_vars.begin());
             DRAKE_ASSERT(var_num < static_cast<int>(poly_vars.size()));
             linear_constraint_matrix(poly_num, var_num) = monomial.coefficient;
           } else {
@@ -513,8 +644,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
         return constraint;
       } else {
         std::shared_ptr<LinearConstraint> constraint(
-            new LinearConstraint(linear_constraint_matrix,
-                                 linear_constraint_lb,
+            new LinearConstraint(linear_constraint_matrix, linear_constraint_lb,
                                  linear_constraint_ub));
         AddConstraint(constraint, vars);
         return constraint;
@@ -612,7 +742,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * - "conesubscript"
    *   + Denotes which variable x_i satisfies the cone relation:
    *   + x_i >= (sqrt(sum(x_j^2))), i!=j
-   * TODO(alexdunyak): Calling OptimizationProblem::Solve will not invoke mosek at this
+   * TODO(alexdunyak): Calling OptimizationProblem::Solve will not invoke mosek
+   * at this
    * time.
    */
   void SetSolverOption(const std::string& solver_name,

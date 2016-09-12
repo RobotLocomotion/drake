@@ -12,6 +12,7 @@ namespace systems {
 /// The input to this system directly feeds through to its output.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @ingroup systems
 template <typename T>
 class Demultiplexer : public LeafSystem<T> {
  public:
