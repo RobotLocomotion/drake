@@ -3,6 +3,7 @@
 #include "DrakeJointImpl.h"
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -230,7 +231,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dqdot_to_v) const {
     qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
-    drake::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
+    drake::math::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
 
     if (dqdot_to_v) {
       dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
@@ -245,7 +246,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {
     v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
-    drake::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
+    drake::math::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
 
     if (dv_to_qdot) {
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
