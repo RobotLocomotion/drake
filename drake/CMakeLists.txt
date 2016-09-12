@@ -45,7 +45,7 @@ include(../cmake/pods.cmake)
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
-  pods_install_headers(${ARGV} DESTINATION drake/${rel_path})
+  install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
 endfunction()
 
 # set up automatic export header generation
