@@ -7,7 +7,6 @@
 #include <cstring>
 
 #include "drake/math/autodiff.h"
-#include "drake/solvers/optimization.h"
 
 namespace snopt {
 #include "snopt.hh"
@@ -30,7 +29,7 @@ unsigned int constexpr snopt_mincw = 500;
 unsigned int constexpr snopt_miniw = 500;
 unsigned int constexpr snopt_minrw = 500;
 
-struct SNOPTData : public OptimizationProblem::SolverData {
+struct SNOPTData : public MathematicalProgram::SolverData {
   std::vector<char> cw;
   std::vector<snopt::integer> iw;
   std::vector<snopt::doublereal> rw;
@@ -173,7 +172,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                          snopt::doublereal ru[], snopt::integer* lenru) {
   // Our snOptA call passes the snopt workspace as the user workspace and
   // reserves one 8-char of space to pass the problem pointer.
-  OptimizationProblem const* current_problem = NULL;
+  MathematicalProgram const* current_problem = NULL;
   {
     char* const pcp = reinterpret_cast<char*>(&current_problem);
     char const* const cu_cp = cu + 8 * snopt_mincw;
@@ -253,11 +252,11 @@ bool SnoptSolver::available() const {
   return true;
 }
 
-SolutionResult SnoptSolver::Solve(OptimizationProblem& prog) const {
+SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
   SNOPTRun cur(*d);
 
-  OptimizationProblem const* current_problem = &prog;
+  MathematicalProgram const* current_problem = &prog;
 
   // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
   // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as

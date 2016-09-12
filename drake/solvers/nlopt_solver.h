@@ -13,7 +13,7 @@ class DRAKEOPTIMIZATION_EXPORT NloptSolver :
   // This solver is implemented in various pieces depending on if
   // NLOpt was available during compilation.
   bool available() const override;
-  SolutionResult Solve(OptimizationProblem& prog) const override;
+  SolutionResult Solve(MathematicalProgram& prog) const override;
 };
 
 }  // namespace solvers

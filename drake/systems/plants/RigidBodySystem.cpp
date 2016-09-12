@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/math/quaternion.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
@@ -103,7 +103,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // happily, this clunkier version seems fast enough for now
   // the optimization framework should support this (though it has not been
   // tested thoroughly yet)
-  drake::solvers::OptimizationProblem prog;
+  drake::solvers::MathematicalProgram prog;
   auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree->massMatrix(kinsol);
@@ -294,7 +294,7 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
   if (sys.tree->getNumPositionConstraints()) {
     // todo: move this up to the system level?
 
-    drake::solvers::OptimizationProblem prog;
+    drake::solvers::MathematicalProgram prog;
     std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> const&
         loops = sys.tree->loops;
 

@@ -4,7 +4,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/solvers/optimization.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 
@@ -19,7 +18,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekSolver :
   */
   bool available() const override;
 
-  SolutionResult Solve(OptimizationProblem& prog) const override;
+  SolutionResult Solve(MathematicalProgram& prog) const override;
 };
 
 }
