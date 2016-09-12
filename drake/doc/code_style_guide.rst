@@ -45,7 +45,12 @@ Clarifications
 * No dynamic allocation in the inner simulation/control loops.  Code should be
   still be thread-safe (e.g. be careful with pre-allocations).
 * Classes and methods should be documented using
-  `doxygen <https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html>`_.
+  `Doxygen <https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html>`_.
+
+  * Only use Doxygen comments (``///`` or ``/** */``) on published APIs (public
+    or protected classes and methods).  Code with private access or declared in
+    ``.cc`` files should not use the Doxygen format.
+
 * Embrace templates/C++14 when it makes the code more correct (more clear or
   more readable also implies more correct).  Minimize template requirements on
   public interfaces.  Avoid explicit template instantiations in cc files when
@@ -178,7 +183,7 @@ MATLAB Style
 * All of the above rules still hold as relevant (e.g. variable names).
 * A short list of variable name exceptions for common acronyms:
    * `rpy` or `somethingRPY` (for roll-pitch-yaw)
-* All classes and methods should be commented with doxygen compatible
+* All classes and methods should be commented with Doxygen compatible
   formatting (using the tags `@param` to describe each input, `@option` to
   describe the elements of an option structure, `@retval` to describe each
   output, and `@default` to describe default values for an input.  Class
