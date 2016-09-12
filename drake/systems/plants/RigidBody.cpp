@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-#include "drake/util/drakeGeometryUtil.h"
+#include "drake/math/geometry.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;

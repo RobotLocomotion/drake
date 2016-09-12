@@ -3,9 +3,9 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
+#include "drake/math/geometry.h"
 #include "drake/util/mexify.h"
 #include "drake/util/standardMexConversions.h"
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/makeFunction.h"
 
 using namespace std;
@@ -23,7 +23,7 @@ pair<Vector3d, typename Gradient<Vector3d, 3>::type> unwrapExpmapWithGradient(
   auto expmap2_autodiff = initializeAutoDiff(expmap2);
   auto expmap1_autodiff =
       (expmap1.cast<decltype(expmap2_autodiff)::Scalar>()).eval();
-  auto unwrapped_autodiff = unwrapExpmap(expmap1_autodiff, expmap2_autodiff);
+  auto unwrapped_autodiff = drake::math::unwrapExpmap(expmap1_autodiff, expmap2_autodiff);
   return make_pair(autoDiffToValueMatrix(unwrapped_autodiff),
                    autoDiffToGradientMatrix(unwrapped_autodiff));
 }
@@ -31,7 +31,7 @@ pair<Vector3d, typename Gradient<Vector3d, 3>::type> unwrapExpmapWithGradient(
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nlhs == 1) {
     auto func =
-        make_function(&unwrapExpmap<Map<const Vector3d>, Map<const Vector3d>>);
+        make_function(&drake::math::unwrapExpmap<Map<const Vector3d>, Map<const Vector3d>>);
     mexCallFunction(nlhs, plhs, nrhs, prhs, true, func);
   } else if (nlhs == 2) {
     auto func = make_function(&unwrapExpmapWithGradient);

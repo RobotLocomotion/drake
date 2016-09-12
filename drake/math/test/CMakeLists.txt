@@ -9,3 +9,7 @@ drake_add_test(NAME expmap_test COMMAND expmap_test)
 add_executable(rotation_conversion_test rotation_conversion_test.cc)
 target_link_libraries(rotation_conversion_test ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME rotation_conversion_test COMMAND rotation_conversion_test)
+
+add_executable(geometry_test geometry_test.cc)
+target_link_libraries(geometry_test drakeMath ${GTEST_BOTH_LIBRARIES})
+drake_add_test(NAME geometry_test COMMAND geometry_test)

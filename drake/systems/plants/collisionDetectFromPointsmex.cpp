@@ -5,9 +5,9 @@
 #include <memory>
 
 #include "drake/common/constants.h"
+#include "drake/math/geometry.h"
 #include "drake/util/drakeMexUtil.h"
 #include "RigidBodyTree.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 using namespace Eigen;
 using namespace std;

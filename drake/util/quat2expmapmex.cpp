@@ -2,10 +2,10 @@
 
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/expmap.h"
+#include "drake/math/geometry.h"
 #include "drake/math/gradient.h"
 #include "drake/util/mexify.h"
 #include "drake/util/standardMexConversions.h"
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/makeFunction.h"
 
 using namespace std;

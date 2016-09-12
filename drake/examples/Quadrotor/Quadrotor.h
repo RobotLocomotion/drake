@@ -3,10 +3,10 @@
 #include <cmath>
 #include <iostream>
 
+#include "drake/math/geometry.h"
 #include "drake/math/gradient.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/System.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 template <typename ScalarType = double>
 class QuadrotorState {  // models the drake::Vector concept
