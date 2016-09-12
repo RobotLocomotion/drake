@@ -68,12 +68,14 @@ Did you document your API?  Did you comment your complexity?
 
 - Every nontrivial public symbol must have a doxygen-formatted
   comment.
-
 - If you are uncertain of your formatting, consider
   :ref:`generating the doxygen <documentation-generation-instructions>`
   and checking how it looks in a browser.
+- Only use doxygen comments (``///`` or ``/** */``) on published APIs (public
+  or protected classes and methods).  Code with private access or declared in
+  ``.cc`` files should not use the doxygen format.
 - Most private methods with multiple callers should have a
-  documentation comment.
+  documentation comment (but not phrased as a doxygen comment).
 - Anything in your code that confuses you or makes you read it twice
   to understand its workings should have an implementation comment.
 

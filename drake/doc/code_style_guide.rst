@@ -46,6 +46,11 @@ Clarifications
   still be thread-safe (e.g. be careful with pre-allocations).
 * Classes and methods should be documented using
   `doxygen <https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html>`_.
+
+  * Only use doxygen comments (``///`` or ``/** */``) on published APIs (public
+    or protected classes and methods).  Code with private access or declared in
+    ``.cc`` files should not use the doxygen format.
+
 * Embrace templates/C++14 when it makes the code more correct (more clear or
   more readable also implies more correct).  Minimize template requirements on
   public interfaces.  Avoid explicit template instantiations in cc files when
