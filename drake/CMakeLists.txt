@@ -30,8 +30,6 @@ option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random se
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# prepend module path so we can override FindMatlab.cmake
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
   find_package(PythonInterp 3)
@@ -194,7 +192,7 @@ function(add_matlab_test)
   matlab_add_unit_test(NAME ${parsed_args_NAME}
     ADDITIONAL_PATH ${additional_paths}
     UNITTEST_PRECOMMAND ${cmd_to_run_before_test}
-    CUSTOM_TEST_COMMAND \"${custom_Matlab_test_command}\"
+    CUSTOM_TEST_COMMAND ${custom_Matlab_test_command}
     WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY}
     TIMEOUT -1) # use an infinite timeout and rely on add_test ctest timeout
 
