@@ -50,8 +50,7 @@ void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
   int npoints = 3;
   drake::TwistVector<double> spatial_acceleration;
   spatial_acceleration.setRandom();
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-      f_ext;
+  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
 
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree::centerOfMass<double>, cache,
@@ -132,9 +131,11 @@ void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
                  old_expressed_in_body_or_frame_ind,
                  new_expressed_in_body_or_frame_ind);
   checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
-                 &RigidBodyTree::dynamicsBiasTerm<double>, cache, f_ext, true);
+                 &RigidBodyTree::dynamicsBiasTerm<double>, cache,
+                 no_external_wrenches, true);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::dynamicsBiasTerm<double>, cache, f_ext, false);
+                 &RigidBodyTree::dynamicsBiasTerm<double>, cache,
+                 no_external_wrenches, false);
 }
 
 int main() {

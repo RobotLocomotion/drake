@@ -47,9 +47,8 @@ int main(int argc, char* argv[]) {
   auto H = model->massMatrix(cache);
   cout << H << endl;
 
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-      f_ext;
-  auto C = model->dynamicsBiasTerm(cache, f_ext);
+  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  auto C = model->dynamicsBiasTerm(cache, no_external_wrenches);
   cout << C << endl;
 
   cout << model->B << endl;

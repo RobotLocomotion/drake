@@ -60,13 +60,12 @@ void scenario2(
   default_random_engine generator;
   uniform_real_distribution<> uniform(0, 1);
 
-  const eigen_aligned_unordered_map<RigidBody const*,
-                                    drake::TwistVector<Scalar>> f_ext;
+  const RigidBodyTree::BodyToWrenchMap<Scalar> no_external_wrenches;
   for (const auto& state : states) {
     cache.initialize(state.first, state.second);
     model.doKinematics(cache, true);
     auto H = model.massMatrix(cache);
-    auto C = model.dynamicsBiasTerm(cache, f_ext);
+    auto C = model.dynamicsBiasTerm(cache, no_external_wrenches);
     if (uniform(generator) <
         1e-15) {  // print with some probability to avoid optimizing away
       printMatrix<decltype(H)::RowsAtCompileTime,

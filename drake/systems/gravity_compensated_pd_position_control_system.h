@@ -56,12 +56,11 @@ class GravityCompensatedPDPositionControlSystem {
     size_t num_DoF = Kp_.cols();
     KinematicsCache<double> cache_ = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
-    eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-        f_ext;
-    f_ext.clear();
+    const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
-    auto G = sys_tree_->inverseDynamics(cache_, f_ext, vd, false);
+    auto G = sys_tree_->inverseDynamics(cache_, no_external_wrenches, vd,
+                                        false);
 
     typename System::template InputVector<ScalarType> system_u =
         Kp_ * (toEigen(u).head(Kp_.cols()) - toEigen(x).head(Kp_.cols())) +
@@ -76,9 +75,7 @@ class GravityCompensatedPDPositionControlSystem {
     size_t num_DoF = Kp_.cols();
     KinematicsCache<double> cache_ = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
-    eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-        f_ext;
-    f_ext.clear();
+    const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
 
@@ -86,7 +83,8 @@ class GravityCompensatedPDPositionControlSystem {
     // with 0 external forces, 0 velocities and 0 accelerations.
     // TODO(naveenoid): Update to use simpler API once issue #3114 is
     // resolved.
-    auto G = sys_tree_->inverseDynamics(cache_, f_ext, vd, false);
+    auto G = sys_tree_->inverseDynamics(cache_, no_external_wrenches, vd,
+                                        false);
 
     typename System::template InputVector<ScalarType> system_u =
         Kp_ * (toEigen(u).head(Kp_.cols()) - toEigen(x).head(Kp_.cols())) +
