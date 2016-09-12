@@ -58,6 +58,28 @@ class DRAKERBM_EXPORT RigidBody {
   void setJoint(std::unique_ptr<DrakeJoint> joint);
 
   /**
+   * Adds degrees of freedom to this body by connecting it to @p parent with
+   * @p joint. The body takes ownership of the joint.
+   *
+   * Note that this is specifically a tree joint and that by "parent" we mean a
+   * body that is closer to "world" in the tree topology.
+   *
+   * The @p parent pointer is copied and stored meaning its lifetime must
+   * exceed the lifetime of this RigidBody.
+   *
+   * @param[in] parent The RigidBody this body gets connected to.
+   * @param[in] joint The DrakeJoint connecting this body to @p parent and
+   * adding degrees of freedom to this body.
+   * @returns A pointer to the joint just added to the body.
+   */
+  template<typename JointType>
+  JointType* add_joint(RigidBody* parent, std::unique_ptr<JointType> joint) {
+    set_parent(parent);
+    setJoint(move(joint));
+    return static_cast<JointType*>(joint_.get());
+  }
+
+  /**
    * An accessor to this rigid body's parent joint. By "parent joint" we
    * mean the joint through which this rigid body connects to its parent rigid
    * body in the rigid body tree.
