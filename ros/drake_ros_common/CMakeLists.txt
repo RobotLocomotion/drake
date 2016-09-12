@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(drake_ros_common)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -19,8 +19,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-file(GLOB ${PROJECT_NAME}_SRCS src/*.cc)
-add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRCS})
+add_library(${PROJECT_NAME} SHARED src/parameter_server.cc)
 
 install(DIRECTORY include/${PROJECT_NAME}/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}

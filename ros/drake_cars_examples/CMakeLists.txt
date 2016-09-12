@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(drake_cars_examples)
 
 set(CMAKE_CXX_STANDARD 14)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(drake_ros_common_test)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 14)
 find_package(catkin REQUIRED COMPONENTS drake_ros_common roscpp)
 
 catkin_package(
-  INCLUDE_DIRS include
+  # INCLUDE_DIRS include
   #LIBRARIES
   #CATKIN_DEPENDS
   #DEPENDS
@@ -14,9 +14,13 @@ catkin_package(
 
 if (CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
+
+  # The inclusion of ${CMAKE_INSTALL_PREFIX}/include is necessary to ensure the
+  # correct version of gtest is used.
   include_directories(
       ${CMAKE_INSTALL_PREFIX}/include
       ${catkin_INCLUDE_DIRS})
+
   add_rostest_gtest(
       parameter_server_test
       test/parameter_server_test.test
