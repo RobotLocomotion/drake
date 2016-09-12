@@ -1381,19 +1381,19 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
     KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const*, TwistVector<Scalar>>&
-        f_ext,
+    const eigen_aligned_unordered_map<
+        RigidBody const*, TwistVector<Scalar>>& external_wrenches,
     bool include_velocity_terms) const {
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities_, 1);
   vd.setZero();
-  return inverseDynamics(cache, f_ext, vd, include_velocity_terms);
+  return inverseDynamics(cache, external_wrenches, vd, include_velocity_terms);
 }
 
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
     KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const*, TwistVector<Scalar>>&
-        f_ext,
+    const eigen_aligned_unordered_map<
+        RigidBody const*, TwistVector<Scalar>>& external_wrenches,
     const Matrix<Scalar, Eigen::Dynamic, 1>& vd,
     bool include_velocity_terms) const {
   cache.checkCachedKinematicsSettings(
@@ -1426,11 +1426,11 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
             crossSpatialForce(element.twist_in_world, I_times_twist);
       }
 
-      auto f_ext_iterator = f_ext.find(bodies[i].get());
-      if (f_ext_iterator != f_ext.end()) {
-        const auto& f_ext_i = f_ext_iterator->second;
+      auto external_wrench_iter = external_wrenches.find(bodies[i].get());
+      if (external_wrench_iter != external_wrenches.end()) {
+        const auto& external_wrench = external_wrench_iter->second;
         net_wrenches.col(i) -=
-            transformSpatialForce(element.transform_to_world, f_ext_i);
+            transformSpatialForce(element.transform_to_world, external_wrench);
       }
     }
   }
