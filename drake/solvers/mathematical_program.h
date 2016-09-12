@@ -30,7 +30,7 @@ namespace solvers {
  * The MathematicalProgram class handles the coordination of decision variables,
  * objectives, and constraints.  The MathematicalProgram::Solve() method
  * reflects on the accumulated objectives and constraints and will dispatch to
- * the most appropirate solver.  Alternatively, one can invoke specific solver
+ * the most appropriate solver.  Alternatively, one can invoke specific solver
  * by instantiating its MathematicalProgramSolverInterface and passing the
  * MathematicalProgram directly to the
  * MathematicalProgramSolverInterface::Solve() method.
@@ -208,7 +208,7 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
 
     VariableList const& variable_list() const { return variable_list_; }
 
-    /** covers()
+    /** Covers()
      * @brief returns true iff the given @p index of the enclosing
      * MathematicalProgram is included in this Binding.*/
     bool Covers(size_t index) const {
@@ -230,8 +230,8 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
       return count;
     }
 
-    /** writeThrough()
-     * @brief Write the elements of @p solution to the bound elements of
+    /** WriteThrough()
+     * @brief Writes the elements of @p solution to the bound elements of
      * the @p output vector.
      */
     void WriteThrough(const Eigen::VectorXd& solution,
