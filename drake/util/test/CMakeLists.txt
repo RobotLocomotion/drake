@@ -28,10 +28,6 @@ add_executable(testConvexHull testConvexHull.cpp)
 target_link_libraries(testConvexHull drakeConvexHull ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME testConvexHull COMMAND testConvexHull)
 
-add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
-target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
-
 drake_add_matlab_test(NAME util/test/PassByValueMapTest COMMAND PassByValueMapTest)
 drake_add_matlab_test(NAME util/test/angleDiffTest COMMAND angleDiffTest)
 drake_add_matlab_test(NAME util/test/asintest REQUIRES spotless COMMAND asintest)

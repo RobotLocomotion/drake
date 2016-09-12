@@ -8,7 +8,8 @@ set(sources
   gradient.cc
   quaternion.cc
   roll_pitch_yaw.cc
-  rotation_matrix.cc)
+  rotation_matrix.cc
+  geometry.cc)
 
 # Headers that should be installed with Drake so that they
 # are available elsewhere via #include.
@@ -21,7 +22,8 @@ set(installed_headers
   gradient.h
   quaternion.h
   roll_pitch_yaw.h
-  rotation_matrix.h)
+  rotation_matrix.h
+  geometry.h)
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.

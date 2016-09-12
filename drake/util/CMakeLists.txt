@@ -59,15 +59,6 @@ endif()
 
 drake_install_headers(drakeGradientUtil.h)
 
-add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUtil.cpp)
-target_link_libraries(drakeGeometryUtil drakeCommon)
-pods_install_libraries(drakeGeometryUtil)
-drake_install_headers(drakeGeometryUtil.h)
-pods_install_pkg_config_file(drake-geometry-util
-  LIBS -ldrakeGeometryUtil -ldrakeCommon
-  REQUIRES
-  VERSION 0.0.1)
-
 add_library_with_exports(LIB_NAME drakeConvexHull SOURCE_FILES convexHull.cpp)
 pods_install_libraries(drakeConvexHull)
 drake_install_headers(convexHull.h)
@@ -83,22 +74,22 @@ if(MATLAB_FOUND)
   target_link_libraries(cartesian2cylindricalmex drakeMath)
 
   add_mex(quat2expmapmex quat2expmapmex.cpp)
-  target_link_libraries(quat2expmapmex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(quat2expmapmex drakeMexUtil drakeMath)
 
   add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
-  target_link_libraries(expmap2quatImplmex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(expmap2quatImplmex drakeMexUtil drakeMath)
 
   add_mex(flipExpmapmex flipExpmapmex.cpp)
-  target_link_libraries(flipExpmapmex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(flipExpmapmex drakeMexUtil drakeMath)
 
   add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
-  target_link_libraries(unwrapExpmapmex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(unwrapExpmapmex drakeMexUtil drakeMath)
 
   add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
-  target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeMath)
 
   add_mex(closestExpmapmex closestExpmapmex.cpp)
-  target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(closestExpmapmex drakeMexUtil drakeMath)
 
   add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp)
   target_link_libraries(resolveCenterOfPressuremex drakeMexUtil drakeUtil)

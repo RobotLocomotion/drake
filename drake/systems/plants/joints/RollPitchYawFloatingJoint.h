@@ -5,7 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/util/drakeGeometryUtil.h"
+#include "drake/math/geometry.h"
 
 class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
     : public DrakeJointImpl<RollPitchYawFloatingJoint> {

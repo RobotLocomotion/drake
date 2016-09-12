@@ -3,8 +3,8 @@
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/geometry.h"
 #include "drake/systems/plants/joints/DrakeJointImpl.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
     : public DrakeJointImpl<QuaternionFloatingJoint> {

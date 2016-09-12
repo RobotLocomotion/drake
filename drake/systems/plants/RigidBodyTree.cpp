@@ -11,7 +11,6 @@
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_urdf.h"
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
 #include <algorithm>

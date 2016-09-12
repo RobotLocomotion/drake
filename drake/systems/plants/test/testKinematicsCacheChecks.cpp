@@ -8,7 +8,7 @@
 #include <map>
 
 #include "drake/common/eigen_types.h"
-#include "drake/util/drakeGeometryUtil.h"
+#include "drake/math/geometry.h"
 
 using namespace std;
 using namespace Eigen;
