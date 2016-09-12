@@ -28,6 +28,7 @@ set(installed_headers
   drake_path.h
   drake_throw.h
   eigen_autodiff_types.h
+  eigen_stl_types.h
   eigen_types.h
   functional_form.h
   nice_type_name.h
