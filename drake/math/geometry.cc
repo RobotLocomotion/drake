@@ -7,6 +7,8 @@
 
 using namespace Eigen;
 
+namespace drake {
+namespace math {
 double angleDiff(double phi1, double phi2) {
   double d = phi2 - phi1;
   if (d > 0.0) {
@@ -17,7 +19,7 @@ double angleDiff(double phi1, double phi2) {
   return d;
 }
 
-Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator) {
+Vector4d uniformlyRandomAxisAngle(std::default_random_engine &generator) {
   std::normal_distribution<double> normal;
   std::uniform_real_distribution<double> uniform(-M_PI, M_PI);
   double angle = uniform(generator);
@@ -29,19 +31,20 @@ Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator) {
   return a;
 }
 
-Vector4d uniformlyRandomQuat(std::default_random_engine& generator) {
+Vector4d uniformlyRandomQuat(std::default_random_engine &generator) {
   return drake::math::axis2quat(uniformlyRandomAxisAngle(generator));
 }
 
-Eigen::Matrix3d uniformlyRandomRotmat(std::default_random_engine& generator) {
+Eigen::Matrix3d
+uniformlyRandomRotmat(std::default_random_engine &generator) {
   return drake::math::axis2rotmat(uniformlyRandomAxisAngle(generator));
 }
 
-Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine& generator) {
+Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine &generator) {
   return drake::math::axis2rpy(uniformlyRandomAxisAngle(generator));
 }
 
-DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type) {
+int rotationRepresentationSize(int rotation_type) {
   switch (rotation_type) {
     case 0:
       return 0;
@@ -53,6 +56,9 @@ DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type) {
       return 4;
       break;
     default:
-      throw std::runtime_error("rotation representation type not recognized");
+      throw std::runtime_error(
+          "rotation representation type not recognized");
   }
 }
+} // namespace math
+} // namespace drake

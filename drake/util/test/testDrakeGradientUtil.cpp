@@ -10,7 +10,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/test/measure_execution.h"
-#include "drake/util/drakeGeometryUtil.h"
+#include "drake/math/geometry.h"
 
 using namespace Eigen;
 

@@ -19,11 +19,11 @@ set(installed_headers
   axis_angle.h
   cylindrical.h
   expmap.h
+  geometry.h
   gradient.h
   quaternion.h
   roll_pitch_yaw.h
-  rotation_matrix.h
-  geometry.h)
+  rotation_matrix.h)
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.

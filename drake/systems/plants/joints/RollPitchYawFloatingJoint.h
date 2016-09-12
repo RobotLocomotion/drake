@@ -46,7 +46,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
     auto rpy =
         q.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
     Eigen::Matrix<Scalar, drake::kSpaceDimension, drake::kRpySize> E;
-    rpydot2angularvelMatrix(rpy, E);
+    drake::math::rpydot2angularvelMatrix(rpy, E);
     Eigen::Matrix<Scalar, 3, 3> R = drake::math::rpy2rotmat(rpy);
     motion_subspace.template block<3, 3>(0, 0).setZero();
     motion_subspace.template block<3, 3>(0, 3) = R.transpose() * E;

@@ -4,18 +4,18 @@
 # add_mex(debugMexTest debugMexTest.cpp)
 
 add_executable(testDrakeGradientUtil testDrakeGradientUtil.cpp)
-target_link_libraries(testDrakeGradientUtil drakeGeometryUtil)
+target_link_libraries(testDrakeGradientUtil drakeMath)
 drake_add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil SIZE medium)
 
 if(MATLAB_FOUND)
   add_mex(testQuatmex testQuatmex.cpp)
-  target_link_libraries(testQuatmex drakeGeometryUtil)
+  target_link_libraries(testQuatmex drakeMath)
 
   add_mex(testGeometryGradientsmex testGeometryGradientsmex.cpp)
-  target_link_libraries(testGeometryGradientsmex drakeGeometryUtil drakeMexUtil)
+  target_link_libraries(testGeometryGradientsmex drakeMath drakeMexUtil)
 
   add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
-  target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil drakeMexUtil)
+  target_link_libraries(testGeometryConversionFunctionsmex drakeMath drakeMexUtil)
 endif()
 
 if(lcm_FOUND)

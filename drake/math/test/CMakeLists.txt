@@ -12,4 +12,4 @@ drake_add_test(NAME rotation_conversion_test COMMAND rotation_conversion_test)
 
 add_executable(geometry_test geometry_test.cc)
 target_link_libraries(geometry_test drakeMath ${GTEST_BOTH_LIBRARIES})
-add_test(NAME geometry_test COMMAND geometry_test.cc)
+drake_add_test(NAME geometry_test COMMAND geometry_test)

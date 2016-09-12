@@ -1,7 +1,3 @@
-/// @file
-/// THIS FILE IS DEPRECATED.
-/// Its contents are moving into drake/math.
-
 #pragma once
 
 #include <Eigen/Dense>
@@ -10,12 +6,9 @@
 #include <random>
 
 #include "drake/common/constants.h"
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
-#include "drake/math/gradient.h"
+#include "drake/util/drakeGradientUtil.h"
 
 namespace drake {
 namespace math {
