@@ -24,7 +24,7 @@ constexpr int kMiscContinuousStateSize = 1;
 
 constexpr double kTime = 12.0;
 
-class ContextTest : public ::testing::Test {
+class LeafContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_.set_time(kTime);
@@ -48,23 +48,31 @@ class ContextTest : public ::testing::Test {
             kMiscContinuousStateSize));
   }
 
+  std::unique_ptr<AbstractValue> PackValue(int value) {
+    return std::unique_ptr<AbstractValue>(new Value<int>(value));
+  }
+
+  int UnpackValue(const AbstractValue* value) {
+    return dynamic_cast<const Value<int>*>(value)->get_value();
+  }
+
   LeafContext<double> context_;
 };
 
-TEST_F(ContextTest, GetNumInputPorts) {
+TEST_F(LeafContextTest, GetNumInputPorts) {
   ASSERT_EQ(kNumInputPorts, context_.get_num_input_ports());
 }
 
-TEST_F(ContextTest, ClearInputPorts) {
+TEST_F(LeafContextTest, ClearInputPorts) {
   context_.ClearInputPorts();
   EXPECT_EQ(0, context_.get_num_input_ports());
 }
 
-TEST_F(ContextTest, SetOutOfBoundsInputPort) {
+TEST_F(LeafContextTest, SetOutOfBoundsInputPort) {
   EXPECT_THROW(context_.SetInputPort(3, nullptr), std::out_of_range);
 }
 
-TEST_F(ContextTest, GetVectorInput) {
+TEST_F(LeafContextTest, GetVectorInput) {
   LeafContext<int> context;
   context.SetNumInputPorts(2);
 
@@ -84,7 +92,7 @@ TEST_F(ContextTest, GetVectorInput) {
   EXPECT_EQ(nullptr, context.get_vector_input(1));
 }
 
-TEST_F(ContextTest, GetAbstractInput) {
+TEST_F(LeafContextTest, GetAbstractInput) {
   LeafContext<int> context;
   context.SetNumInputPorts(2);
 
@@ -101,9 +109,21 @@ TEST_F(ContextTest, GetAbstractInput) {
   EXPECT_EQ(nullptr, context.get_abstract_input(1));
 }
 
-TEST_F(ContextTest, Clone) {
-  std::unique_ptr<Context<double>> clone = context_.Clone();
+// Tests that items can be stored and retrieved in the cache, even when
+// the LeafContext is const.
+TEST_F(LeafContextTest, SetAndGetCache) {
+  const LeafContext<double>& ctx = context_;
+  CacheTicket ticket = ctx.CreateCacheEntry({});
+  ctx.InitCachedValue(ticket, PackValue(42));
+  const AbstractValue* value = ctx.GetCachedValue(ticket);
+  EXPECT_EQ(42, UnpackValue(value));
 
+  ctx.SetCachedValue<int>(ticket, 43);
+  EXPECT_EQ(43, UnpackValue(ctx.GetCachedValue(ticket)));
+}
+
+TEST_F(LeafContextTest, Clone) {
+  std::unique_ptr<Context<double>> clone = context_.Clone();
   // Verify that the time was copied.
   EXPECT_EQ(kTime, clone->get_time());
 
