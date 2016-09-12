@@ -14,6 +14,7 @@ namespace plants {
 namespace joints {
 namespace {
 
+using std::make_unique;
 using std::unique_ptr;
 
 class DrakeJointTests : public ::testing::Test {
@@ -27,18 +28,18 @@ class DrakeJointTests : public ::testing::Test {
     double pitch = 1.0;
 
     // Instantiates one of each type of joint.
-    fixed_joint_.reset(
-        new FixedJoint(name, transform_to_parent_body));
-    helical_joint_.reset(
-        new HelicalJoint(name, transform_to_parent_body, axis, pitch));
-    prismatic_joint_.reset(
-        new PrismaticJoint(name, transform_to_parent_body, axis));
-    quaternion_floating_joint_.reset(
-        new QuaternionFloatingJoint(name, transform_to_parent_body));
-    revolute_joint_.reset(
-        new RevoluteJoint(name, transform_to_parent_body, axis));
-    roll_pitch_yaw_joint_.reset(
-        new RollPitchYawFloatingJoint(name, transform_to_parent_body));
+    fixed_joint_ =
+        make_unique<FixedJoint>(name, transform_to_parent_body);
+    helical_joint_ =
+        make_unique<HelicalJoint>(name, transform_to_parent_body, axis, pitch);
+    prismatic_joint_ =
+        make_unique<PrismaticJoint>(name, transform_to_parent_body, axis);
+    quaternion_floating_joint_ =
+        make_unique<QuaternionFloatingJoint>(name, transform_to_parent_body);
+    revolute_joint_ =
+        make_unique<RevoluteJoint>(name, transform_to_parent_body, axis);
+    roll_pitch_yaw_joint_ =
+        make_unique<RollPitchYawFloatingJoint>(name, transform_to_parent_body);
   }
 
  public:
