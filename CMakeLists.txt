@@ -225,13 +225,28 @@ if(WIN32)
       INSTALL_COMMAND ${lcm_BUILD_COMMAND} --target install)
   endif()
 
-  drake_add_external(gtk PUBLIC CMAKE)
+ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(gtk_build 3.6.4-20131201_win64)
+    set(gtk_sha
+      97440094ceb6c42258637e75d6d576a12c173bae19a581901f7f053156c9ccbf)
+  else()
+    set(gtk_build 3.6.4-20130921_win32)
+    set(gtk_sha
+      1c1a6019746ae58c6a112e59c6b50463b838900d2244c494d94dea8ebea0f715)
+  endif()
+
+  drake_add_external(gtk PUBLIC
+    URL http://win32builder.gnome.org/gtk+-bundle_${gtk_build}.zip
+    URL_SHA 256=${gtk_sha}
+    BUILD_COMMAND :
+    INSTALL_COMMAND :)
+
   drake_add_external(lcm PUBLIC CMAKE
     ${lcm_FORCE_RELEASE_BUILD_COMMANDS}
     CMAKE_ARGS
       -DBUILD_SHARED_LIBS=ON # Because LCM has no ABI decoration
       -DCMAKE_BUILD_TYPE=Release # See above
-      -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_SOURCE_DIR}/externals/gtk/gtk3
+      -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_SOURCE_DIR}/externals/gtk
     DEPENDS gtk)
 else()
   drake_add_external(lcm PUBLIC CMAKE

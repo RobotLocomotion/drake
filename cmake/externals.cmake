@@ -174,8 +174,7 @@ macro(drake_add_cmake_external PROJECT)
     SOURCE_DIR ${_ext_SOURCE_DIR}
     BINARY_DIR ${_ext_BINARY_DIR}
     DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}
-    DOWNLOAD_COMMAND ${_ext_DOWNLOAD_COMMAND}
-    UPDATE_COMMAND ${_ext_UPDATE_COMMAND}
+    ${_ext_DOWNLOAD_AND_UPDATE_COMMANDS}
     ${_ext_EXTRA_COMMANDS}
     INDEPENDENT_STEP_TARGETS update
     BUILD_ALWAYS 1
@@ -217,8 +216,7 @@ macro(drake_add_foreign_external PROJECT)
     SOURCE_DIR ${_ext_SOURCE_DIR}
     BINARY_DIR ${_ext_BINARY_DIR}
     DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}
-    DOWNLOAD_COMMAND "${_ext_DOWNLOAD_COMMAND}"
-    UPDATE_COMMAND "${_ext_UPDATE_COMMAND}"
+    ${_ext_DOWNLOAD_AND_UPDATE_COMMANDS}
     PATCH_COMMAND "${_ext_PATCH_COMMAND}"
     CONFIGURE_COMMAND "${_ext_CONFIGURE_COMMAND}"
     BUILD_COMMAND "${_ext_BUILD_COMMAND}"
@@ -236,6 +234,13 @@ endmacro()
 #   PUBLIC - External is public
 #   CMAKE  - External uses CMake
 #   ALWAYS - External is always built
+#
+#   URL <url>
+#       Specifies a URL of a source package (zip file, tarball) to be
+#       downloaded. Implies that the external is not a submodule.
+#
+#  URL_SHA <size>=<hash>
+#       Specifies the expected SHA hash of the downloaded package.
 #
 #   REQUIRES <deps...>
 #       List of packages (checked via `find_package`) that are required to
@@ -280,6 +285,8 @@ function(drake_add_external PROJECT)
     SOURCE_SUBDIR
     SOURCE_DIR
     BINARY_DIR
+    URL
+    URL_SHA
   )
   set(_ext_mv_args
     CMAKE_ARGS
@@ -352,19 +359,32 @@ function(drake_add_external PROJECT)
       "Preparing to build ${PROJECT} with dependencies ${_ext_deps}")
   endif()
 
-  # Manage updates to the submodule
-  if(NOT _ext_LOCAL)
-    # Compute the path to the submodule for this external
-    file(RELATIVE_PATH _ext_GIT_SUBMODULE_PATH
-      ${PROJECT_SOURCE_DIR} ${_ext_SOURCE_DIR})
-
-    # Set up submodule and commands for synchronizing submodule
-    drake_add_submodule(${_ext_GIT_SUBMODULE_PATH}
-      _ext_DOWNLOAD_COMMAND _ext_UPDATE_COMMAND)
+  if(DEFINED _ext_URL)
+    set(_ext_DOWNLOAD_AND_UPDATE_COMMANDS
+      URL "${_ext_URL}")
+    if(DEFINED _ext_URL_SHA)
+      list(APPEND _ext_DOWNLOAD_AND_UPDATE_COMMANDS
+        URL_HASH "SHA${_ext_URL_SHA}")
+    endif()
   else()
-    # Local "externals" have no download or update step
-    set(_ext_DOWNLOAD_COMMAND "")
-    set(_ext_UPDATE_COMMAND "")
+    # Manage updates to the submodule
+    if(NOT _ext_LOCAL)
+      # Compute the path to the submodule for this external
+      file(RELATIVE_PATH _ext_GIT_SUBMODULE_PATH
+        ${PROJECT_SOURCE_DIR} ${_ext_SOURCE_DIR})
+
+      # Set up submodule and commands for synchronizing submodule
+      drake_add_submodule(${_ext_GIT_SUBMODULE_PATH}
+        _ext_DOWNLOAD_COMMAND _ext_UPDATE_COMMAND)
+    else()
+      # Local "externals" have no download or update step
+      set(_ext_DOWNLOAD_COMMAND "")
+      set(_ext_UPDATE_COMMAND "")
+    endif()
+
+    set(_ext_DOWNLOAD_AND_UPDATE_COMMANDS
+      DOWNLOAD_COMMAND "${_ext_DOWNLOAD_COMMAND}"
+      UPDATE_COMMAND "${_ext_UPDATE_COMMAND}")
   endif()
 
   # Add the external project
@@ -375,7 +395,7 @@ function(drake_add_external PROJECT)
     drake_add_foreign_external(${PROJECT})
   endif()
 
-  if(NOT _ext_LOCAL)
+  if(NOT _ext_LOCAL AND NOT DEFINED _ext_URL)
     # Set up build step to ensure project is updated before build
     drake_forceupdate(${PROJECT})
 
