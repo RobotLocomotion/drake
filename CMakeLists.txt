@@ -107,7 +107,6 @@ endif()
 
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(bertini)
-drake_add_external(bullet PUBLIC CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(gloptipoly)
 drake_add_external(gurobi)
@@ -124,6 +123,28 @@ drake_add_external(yalmip PUBLIC)
 # avl
 # The Ninja generator does not support Fortran.
 drake_add_external(avl PUBLIC CMAKE GENERATOR "Unix Makefiles")
+
+# bullet
+if(WIN32)
+  set(BULLET_EXTRA_CMAKE_ARGS -DUSE_MSVC_RUNTIME_LIBRARY_DLL=ON)
+else()
+  set(BULLET_EXTRA_CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
+endif()
+
+drake_add_external(bullet PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_BULLET2_DEMOS=OFF
+    -DBUILD_CPU_DEMOS=OFF
+    -DBUILD_EXTRAS=OFF
+    -DBUILD_OPENGL3_DEMOS=OFF
+    -DBUILD_UNIT_TESTS=OFF
+    -DCMAKE_DEBUG_POSTFIX=
+    -DCMAKE_MINSIZEREL_POSTFIX=
+    -DCMAKE_RELWITHDEBINFO_POSTFIX=
+    -DINSTALL_LIBS=ON
+    -DPKGCONFIG_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/lib/pkgconfig
+    -DUSE_DOUBLE_PRECISION=ON
+    ${BULLET_EXTRA_CMAKE_ARGS})
 
 # cmake
 drake_add_external(cmake PUBLIC ALWAYS
