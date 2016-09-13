@@ -5,12 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 find_package(catkin REQUIRED COMPONENTS drake_ros_common roscpp)
 
-catkin_package(
-  # INCLUDE_DIRS include
-  #LIBRARIES
-  #CATKIN_DEPENDS
-  #DEPENDS
-)
+catkin_package()
 
 if (CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
