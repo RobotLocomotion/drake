@@ -63,7 +63,7 @@ VectorXd QuaternionFloatingJoint::randomConfiguration(
   q[2] = normal(generator);
 
   // orientation
-  Vector4d quat = drake::math::uniformlyRandomQuat(generator);
+  Vector4d quat = drake::math::UniformlyRandomQuat(generator);
   q[3] = quat(0);
   q[4] = quat(1);
   q[5] = quat(2);

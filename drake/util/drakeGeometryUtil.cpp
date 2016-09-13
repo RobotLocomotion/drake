@@ -19,19 +19,19 @@ double angleDiff(double phi1, double phi2) {
 }
 
 Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator) {
-  return drake::math::uniformlyRandomAxisAngle(generator);
+  return drake::math::UniformlyRandomAxisAngle(generator);
 }
 
 Vector4d uniformlyRandomQuat(std::default_random_engine& generator) {
-  return drake::math::uniformlyRandomQuat(generator);
+  return drake::math::UniformlyRandomQuat(generator);
 }
 
 Eigen::Matrix3d uniformlyRandomRotmat(std::default_random_engine& generator) {
-  return drake::math::uniformlyRandomRotmat(generator);
+  return drake::math::UniformlyRandomRotmat(generator);
 }
 
 Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine& generator) {
-  return drake::math::uniformlyRandomRPY(generator);
+  return drake::math::UniformlyRandomRPY(generator);
 }
 
 DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type) {

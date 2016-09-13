@@ -31,7 +31,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DHomogTrans) {
   std::default_random_engine generator;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Vector4d q = drake::math::uniformlyRandomQuat(generator);
+    Vector4d q = drake::math::UniformlyRandomQuat(generator);
     T = Quaterniond(q(0), q(1), q(2), q(3));
     //  T.setIdentity();
     //  T = AngleAxisd(M_PI_2, Vector3d(1.0, 0.0, 0.0));
@@ -60,7 +60,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DHomogTransInv) {
   Isometry3d T;
   std::default_random_engine generator;
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Vector4d q = drake::math::uniformlyRandomQuat(generator);
+    Vector4d q = drake::math::UniformlyRandomQuat(generator);
     //    T = Quaterniond(q(0), q(1), q(2), q(3)) *
     //    Translation3d(Vector3d::Random());
     T = Quaterniond(q(0), q(1), q(2), q(3));
@@ -100,7 +100,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjoint) {
   std::default_random_engine generator;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Vector4d q = drake::math::uniformlyRandomQuat(generator);
+    Vector4d q = drake::math::UniformlyRandomQuat(generator);
     T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
     auto S = Matrix<double, 6, Dynamic>::Random(6, nv).eval();
     auto qdot_to_v = MatrixXd::Random(nv, nq).eval();
@@ -123,7 +123,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjointTranspose) {
   std::default_random_engine generator;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Vector4d q = drake::math::uniformlyRandomQuat(generator);
+    Vector4d q = drake::math::UniformlyRandomQuat(generator);
     T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
     auto S = Matrix<double, 6, Dynamic>::Random(6, nv).eval();
     auto qdot_to_v = MatrixXd::Random(nv, nq).eval();
