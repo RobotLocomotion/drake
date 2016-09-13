@@ -35,9 +35,9 @@ int DoMain(int argc, const char* argv[]) {
   auto car_vis_adapter = CreateSimpleCarVisualizationAdapter();
 
   const std::string kSedanUrdf = drake::GetDrakePath() +
-      "/examples/Cars/models/sedan.urdf";
+      "/automotive/models/sedan.urdf";
   const std::string kBreadtruckUrdf = drake::GetDrakePath() +
-      "/examples/Cars/models/breadtruck.urdf";
+      "/automotive/models/breadtruck.urdf";
 
   // RigidBodyTree for visualization.
   auto world_tree = std::make_shared<RigidBodyTree>();

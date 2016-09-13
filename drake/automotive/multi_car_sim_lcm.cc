@@ -50,7 +50,7 @@ int do_main(int argc, const char* argv[]) {
         Eigen::Vector3d(0, 0, 0));
 
     rigid_body_sys->AddModelInstanceFromFile(drake::GetDrakePath() +
-      "/examples/Cars/models/prius/prius.sdf",
+      "/automotive/models/prius/prius.sdf",
       drake::systems::plants::joints::kQuaternion, car_offset);
   }
 
