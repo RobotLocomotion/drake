@@ -74,7 +74,6 @@ cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization toob
 cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32;WITH_MOSEK" OFF)
 cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-cmake_dependent_option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 
 ###########################################
 # External Projects that are OFF by default
@@ -88,6 +87,7 @@ if(NOT WIN32) # many of these might work on win32 with little or no work... they
   option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
   option(WITH_OCTOMAP "provides oct-tree data structures")
   option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
+  option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 endif()
 
 # Option to skip building drake proper via the superbuild. This allows the
@@ -322,6 +322,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     swigmake
     yalmip
     yaml_cpp
+    xfoil
 )
 
 # END external projects
