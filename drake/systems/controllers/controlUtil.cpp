@@ -315,7 +315,8 @@ getActiveSupports(
       r, q, qd, available_supports, contact_force_detected, contact_threshold);
 
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>> active_supports;
+              Eigen::aligned_allocator<SupportStateElement>>
+      active_supports;
 
   for (size_t i = 0; i < available_supports.size(); i++) {
     if (active_supp_mask(i)) {
@@ -463,7 +464,8 @@ void evaluateXYZExpmapCubicSpline(double t,
   }
 
   auto omega_autodiff =
-      (quatdot2angularvelMatrix(quat_autodiff) * quat_dot_autodiff).eval();
+      (drake::math::quatdot2angularvelMatrix(quat_autodiff) * quat_dot_autodiff)
+          .eval();
   auto omega = xyzdot_angular_vel.tail<3>();
   auto omega_dot = xyzddot_angular_accel.tail<3>();
   for (int i = 0; i < omega_autodiff.size(); i++) {

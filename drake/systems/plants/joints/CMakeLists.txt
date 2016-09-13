@@ -7,7 +7,7 @@ add_library_with_exports(LIB_NAME drakeJoints SOURCE_FILES
   RevoluteJoint.cpp
   RollPitchYawFloatingJoint.cpp)
 
-target_link_libraries(drakeJoints drakeGeometryUtil)
+target_link_libraries(drakeJoints drakeMath)
 
 pods_install_libraries(drakeJoints)
 drake_install_headers(

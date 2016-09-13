@@ -10,6 +10,7 @@
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/geometry.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
@@ -23,7 +24,6 @@
 #include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
 #define BASIS_VECTOR_HALF_COUNT \

@@ -1,23 +1,18 @@
-/// @file
-/// THIS FILE IS DEPRECATED.
-/// Its contents are moving into drake/math.
-
 #pragma once
 
 #include <Eigen/Dense>
-#include <cstring>
 #include <cmath>
+#include <cstring>
 #include <random>
 
 #include "drake/common/constants.h"
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/drakeGeometryUtil_export.h"
-#include "drake/math/gradient.h"
+#include "drake/drakeMath_export.h"
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeGradientUtil.h"
 
+namespace drake {
+namespace math {
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
 
 DRAKE_DEPRECATED("Use drake::kQuaternionSize instead.")
@@ -29,15 +24,18 @@ const int SPACE_DIMENSION = 3;
 
 const int RotmatSize = drake::kSpaceDimension * drake::kSpaceDimension;
 
-DRAKEGEOMETRYUTIL_EXPORT double angleDiff(double phi1, double phi2);
+DRAKEMATH_EXPORT double angleDiff(double phi1, double phi2);
 
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d uniformlyRandomAxisAngle(
+DRAKEMATH_EXPORT Eigen::Vector4d uniformlyRandomAxisAngle(
     std::default_random_engine& generator);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d uniformlyRandomQuat(
+
+DRAKEMATH_EXPORT Eigen::Vector4d uniformlyRandomQuat(
     std::default_random_engine& generator);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix3d uniformlyRandomRotmat(
+
+DRAKEMATH_EXPORT Eigen::Matrix3d uniformlyRandomRotmat(
     std::default_random_engine& generator);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector3d uniformlyRandomRPY(
+
+DRAKEMATH_EXPORT Eigen::Vector3d uniformlyRandomRPY(
     std::default_random_engine& generator);
 
 // NOTE: not reshaping second derivative to Matlab geval output format!
@@ -76,11 +74,11 @@ void normalizeVec(
   }
 }
 
-DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type);
+DRAKEMATH_EXPORT int rotationRepresentationSize(int rotation_type);
 
 /*
- * rotation conversion gradient functions
- */
+* rotation conversion gradient functions
+*/
 template <typename Derived>
 typename drake::math::Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
                                drake::kQuaternionSize>::type
@@ -122,9 +120,10 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
 
   typename DerivedDR::Index nq = dR.cols();
   typedef typename DerivedR::Scalar Scalar;
-  typedef typename drake::math::Gradient<
-      Eigen::Matrix<Scalar, drake::kRpySize, 1>,
-      DerivedDR::ColsAtCompileTime>::type ReturnType;
+  typedef
+      typename drake::math::Gradient<Eigen::Matrix<Scalar, drake::kRpySize, 1>,
+                                     DerivedDR::ColsAtCompileTime>::type
+          ReturnType;
   ReturnType drpy(drake::kRpySize, nq);
 
   auto dR11_dq =
@@ -272,8 +271,8 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
 }
 
 /*
- * cross product related
- */
+* cross product related
+*/
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(
     const Eigen::MatrixBase<Derived>& p) {
@@ -296,8 +295,8 @@ Eigen::Matrix<typename DerivedA::Scalar, 3, Eigen::Dynamic> dcrossProduct(
 }
 
 /*
- * angular velocity conversion functions
- */
+* angular velocity conversion functions
+*/
 template <typename DerivedQ, typename DerivedM, typename DerivedDM>
 void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
                               Eigen::MatrixBase<DerivedM>& M,
@@ -383,13 +382,12 @@ void angularvel2rpydotMatrix(
 template <typename DerivedRPY, typename DerivedE>
 void rpydot2angularvelMatrix(
     const Eigen::MatrixBase<DerivedRPY>& rpy, Eigen::MatrixBase<DerivedE>& E,
-    typename drake::math::Gradient<DerivedE, drake::kRpySize, 1>::type*
-        dE = nullptr) {
+    typename drake::math::Gradient<DerivedE, drake::kRpySize, 1>::type* dE =
+        nullptr) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
                                            drake::kRpySize);
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedE>,
-                                           drake::kSpaceDimension,
-                                           drake::kRpySize);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(
+      Eigen::MatrixBase<DerivedE>, drake::kSpaceDimension, drake::kRpySize);
   typedef typename DerivedRPY::Scalar Scalar;
   Scalar p = rpy(1);
   Scalar y = rpy(2);
@@ -425,8 +423,8 @@ void rpydot2angularvel(
     const Eigen::MatrixBase<DerivedRPY>& rpy,
     const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
     Eigen::MatrixBase<DerivedOMEGA>& omega,
-    typename drake::math::Gradient<DerivedOMEGA, drake::kRpySize,
-                                   1>::type* domega = nullptr) {
+    typename drake::math::Gradient<DerivedOMEGA, drake::kRpySize, 1>::type*
+        domega = nullptr) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
                                            drake::kRpySize);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>,
@@ -446,12 +444,13 @@ void rpydot2angularvel(
 }
 
 /*
- * spatial transform functions
- */
+* spatial transform functions
+*/
 template <typename Derived>
 struct TransformSpatial {
   typedef typename Eigen::Matrix<typename Derived::Scalar, drake::kTwistSize,
-                                 Derived::ColsAtCompileTime> type;
+                                 Derived::ColsAtCompileTime>
+      type;
 };
 
 template <typename DerivedM>
@@ -459,7 +458,8 @@ typename TransformSpatial<DerivedM>::type transformSpatialMotion(
     const Eigen::Transform<typename DerivedM::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedM>& M) {
   Eigen::Matrix<typename DerivedM::Scalar, drake::kTwistSize,
-                DerivedM::ColsAtCompileTime> ret(drake::kTwistSize, M.cols());
+                DerivedM::ColsAtCompileTime>
+      ret(drake::kTwistSize, M.cols());
   ret.template topRows<3>().noalias() = T.linear() * M.template topRows<3>();
   ret.template bottomRows<3>().noalias() =
       -ret.template topRows<3>().colwise().cross(T.translation());
@@ -523,7 +523,8 @@ typename TransformSpatial<DerivedF>::type transformSpatialForce(
     const Eigen::Transform<typename DerivedF::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedF>& F) {
   Eigen::Matrix<typename DerivedF::Scalar, drake::kTwistSize,
-                DerivedF::ColsAtCompileTime> ret(drake::kTwistSize, F.cols());
+                DerivedF::ColsAtCompileTime>
+      ret(drake::kTwistSize, F.cols());
   ret.template bottomRows<3>().noalias() =
       T.linear() * F.template bottomRows<3>().eval();
   ret.template topRows<3>() =
@@ -758,13 +759,14 @@ drake::TwistMatrix<typename DerivedA::Scalar> dCrossSpatialForce(
 }
 
 /*
- * spatial transform gradient methods
- */
+* spatial transform gradient methods
+*/
 template <typename DerivedQdotToV>
 struct DHomogTrans {
   typedef typename Eigen::Matrix<typename DerivedQdotToV::Scalar,
                                  HOMOGENEOUS_TRANSFORM_SIZE,
-                                 DerivedQdotToV::ColsAtCompileTime> type;
+                                 DerivedQdotToV::ColsAtCompileTime>
+      type;
 };
 
 template <typename DerivedS, typename DerivedQdotToV>
@@ -881,3 +883,5 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> unwrapExpmap(
     return expmap2;
   }
 }
+}  // namespace math
+}  // namespace drake

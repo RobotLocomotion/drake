@@ -1,4 +1,4 @@
-#include "drake/util/drakeGeometryUtil.h"
+#include "drake/math/geometry.h"
 
 #include <Eigen/Sparse>
 #include <stdexcept>
@@ -7,6 +7,8 @@
 
 using namespace Eigen;
 
+namespace drake {
+namespace math {
 double angleDiff(double phi1, double phi2) {
   double d = phi2 - phi1;
   if (d > 0.0) {
@@ -41,7 +43,7 @@ Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine& generator) {
   return drake::math::axis2rpy(uniformlyRandomAxisAngle(generator));
 }
 
-DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type) {
+int rotationRepresentationSize(int rotation_type) {
   switch (rotation_type) {
     case 0:
       return 0;
@@ -56,3 +58,5 @@ DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type) {
       throw std::runtime_error("rotation representation type not recognized");
   }
 }
+}  // namespace math
+}  // namespace drake

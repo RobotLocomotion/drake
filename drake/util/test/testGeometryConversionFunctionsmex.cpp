@@ -1,9 +1,9 @@
 #include "drake/common/constants.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/geometry.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeMexUtil.h"
 
 using namespace Eigen;
@@ -33,7 +33,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   Matrix<double, kQuaternionSize, kSpaceDimension> omega2qd;
   Gradient<Matrix<double, kQuaternionSize, kSpaceDimension>, kQuaternionSize,
-      1>::type domega2qd;
+           1>::type domega2qd;
   Matrix<double, kRpySize, kSpaceDimension> omega2rpyd;
   Gradient<Matrix<double, kRpySize, kSpaceDimension>, kRpySize, 1>::type
       domega2rpyd;
@@ -41,25 +41,26 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       ddomega2rpyd;
   Matrix<double, kSpaceDimension, kQuaternionSize> qd2omega;
   Gradient<Matrix<double, kSpaceDimension, kQuaternionSize>, kQuaternionSize,
-      1>::type dqd2omega;
+           1>::type dqd2omega;
 
-  angularvel2quatdotMatrix(q, omega2qd, &domega2qd);
-  angularvel2rpydotMatrix(rpy, omega2rpyd, &domega2rpyd, &ddomega2rpyd);
+  drake::math::angularvel2quatdotMatrix(q, omega2qd, &domega2qd);
+  drake::math::angularvel2rpydotMatrix(rpy, omega2rpyd, &domega2rpyd,
+                                       &ddomega2rpyd);
   Matrix<double, kSpaceDimension, kRpySize> rpyd2omega;
   Gradient<Matrix<double, kSpaceDimension, kRpySize>, kRpySize, 1>::type
       drpyd2omega;
-  rpydot2angularvelMatrix(rpy, rpyd2omega, &drpyd2omega);
+  drake::math::rpydot2angularvelMatrix(rpy, rpyd2omega, &drpyd2omega);
 
   auto qd2omega_autodiff =
-      quatdot2angularvelMatrix(initializeAutoDiff(q));
+      drake::math::quatdot2angularvelMatrix(initializeAutoDiff(q));
   qd2omega = autoDiffToValueMatrix(qd2omega_autodiff);
   dqd2omega = autoDiffToGradientMatrix(qd2omega_autodiff);
 
   auto R = drake::math::quat2rotmat(q);
-  auto dq2R = dquat2rotmat(q);
-  Matrix<double, RotmatSize, Dynamic> dR = dq2R * dq;
-  auto drpydR = drotmat2rpy(R, dR);
-  auto dqdR = drotmat2quat(R, dR);
+  auto dq2R = drake::math::dquat2rotmat(q);
+  Matrix<double, drake::math::RotmatSize, Dynamic> dR = dq2R * dq;
+  auto drpydR = drake::math::drotmat2rpy(R, dR);
+  auto dqdR = drake::math::drotmat2quat(R, dR);
 
   int outnum = 0;
   plhs[outnum++] = eigenToMatlab(omega2qd);

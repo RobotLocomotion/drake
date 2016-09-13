@@ -12,11 +12,11 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/expmap.h"
+#include "drake/math/geometry.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/qpSpline/splineGeneration.h"
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/convexHull.h"
@@ -554,7 +554,7 @@ void QPLocomotionPlan::updateSwingTrajectory(
 
   Vector4d x0_quat = drake::math::rotmat2quat(x0_pose.linear());
   Matrix<double, kQuaternionSize, kSpaceDimension> Phi;
-  angularvel2quatdotMatrix(
+  drake::math::angularvel2quatdotMatrix(
       x0_quat, Phi,
       static_cast<Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
   auto quatdot = (Phi * x0_twist.topRows<3>()).eval();

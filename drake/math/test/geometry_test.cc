@@ -1,3 +1,5 @@
+#include "drake/math/geometry.h"
+
 #include <cmath>
 #include <iostream>
 
@@ -7,7 +9,6 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
@@ -18,13 +19,13 @@ using Eigen::MatrixXd;
 using Eigen::Dynamic;
 using Eigen::Quaterniond;
 using Eigen::Translation3d;
+using drake::math::angleDiff;
 using std::default_random_engine;
 
 namespace drake {
-namespace util {
+namespace math {
 namespace {
-
-GTEST_TEST(DrakeGeometryUtilTest, DHomogTrans) {
+GTEST_TEST(GeometryTest, DHomogTrans) {
   const int ntests = 1;
   Isometry3d T;
   std::default_random_engine generator;
@@ -53,7 +54,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DHomogTrans) {
   }
 }
 
-GTEST_TEST(DrakeGeometryUtilTest, DHomogTransInv) {
+GTEST_TEST(GeometryTest, DHomogTransInv) {
   const int ntests = 1;
   const bool check = true;
   Isometry3d T;
@@ -89,7 +90,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DHomogTransInv) {
   }
 }
 
-GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjoint) {
+GTEST_TEST(GeometryTest, DTransformAdjoint) {
   const int ntests = 1;
   const int nv = 6;
   const int nq = 34;
@@ -112,7 +113,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjoint) {
   }
 }
 
-GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjointTranspose) {
+GTEST_TEST(GeometryTest, DTransformAdjointTranspose) {
   const int ntests = 1;
   const int nv = 6;
   const int nq = 34;
@@ -135,7 +136,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjointTranspose) {
   }
 }
 
-GTEST_TEST(DrakeGeometryUtilTest, NormalizeVec) {
+GTEST_TEST(GeometryTest, NormalizeVec) {
   const int ntests = 1;
   const int x_rows = 4;
 
@@ -148,7 +149,7 @@ GTEST_TEST(DrakeGeometryUtilTest, NormalizeVec) {
   }
 }
 
-GTEST_TEST(DrakeGeometryUtilTest, SpatialCrossProduct) {
+GTEST_TEST(GeometryTest, SpatialCrossProduct) {
   auto a = (drake::TwistVector<double>::Random()).eval();
   auto b = (drake::SquareTwistMatrix<double>::Identity()).eval();
   auto a_crm_b = crossSpatialMotion(a, b);
@@ -156,7 +157,6 @@ GTEST_TEST(DrakeGeometryUtilTest, SpatialCrossProduct) {
   EXPECT_TRUE(CompareMatrices(a_crf_b, -a_crm_b.transpose(), 1e-8,
                               MatrixCompareType::absolute));
 }
-
 }  // namespace
 }  // namespace util
 }  // namespace drake

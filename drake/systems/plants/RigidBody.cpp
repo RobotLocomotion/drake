@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-#include "drake/util/drakeGeometryUtil.h"
+#include "drake/math/geometry.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
@@ -92,27 +92,27 @@ void RigidBody::AddCollisionElement(DrakeCollision::ElementId id) {
 }
 
 void RigidBody::AddCollisionElementToGroup(const std::string& group_name,
-    DrakeCollision::ElementId id) {
+                                           DrakeCollision::ElementId id) {
   collision_element_groups_[group_name].push_back(id);
 }
 
 const std::vector<DrakeCollision::ElementId>&
-    RigidBody::get_collision_element_ids() const {
+RigidBody::get_collision_element_ids() const {
   return collision_element_ids_;
 }
 
 std::vector<DrakeCollision::ElementId>&
-    RigidBody::get_mutable_collision_element_ids() {
+RigidBody::get_mutable_collision_element_ids() {
   return collision_element_ids_;
 }
 
 const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    RigidBody::get_group_to_collision_ids_map() const {
+RigidBody::get_group_to_collision_ids_map() const {
   return collision_element_groups_;
 }
 
 std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    RigidBody::get_mutable_group_to_collision_ids_map() {
+RigidBody::get_mutable_group_to_collision_ids_map() {
   return collision_element_groups_;
 }
 
@@ -132,21 +132,21 @@ void RigidBody::setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
 const DrakeCollision::bitmask& RigidBody::getCollisionFilterIgnores() const {
   return collision_filter_ignores_;
 }
-void RigidBody::setCollisionFilterIgnores(const DrakeCollision::bitmask&
-    ignores) {
+void RigidBody::setCollisionFilterIgnores(
+    const DrakeCollision::bitmask& ignores) {
   collision_filter_ignores_ = ignores;
 }
 
-void RigidBody::addToCollisionFilterGroup(const DrakeCollision::bitmask&
-    group) {
+void RigidBody::addToCollisionFilterGroup(
+    const DrakeCollision::bitmask& group) {
   collision_filter_group_ |= group;
 }
-void RigidBody::ignoreCollisionFilterGroup(const DrakeCollision::bitmask&
-    group) {
+void RigidBody::ignoreCollisionFilterGroup(
+    const DrakeCollision::bitmask& group) {
   collision_filter_ignores_ |= group;
 }
-void RigidBody::collideWithCollisionFilterGroup(const DrakeCollision::bitmask&
-    group) {
+void RigidBody::collideWithCollisionFilterGroup(
+    const DrakeCollision::bitmask& group) {
   collision_filter_ignores_ &= ~group;
 }
 
@@ -188,8 +188,8 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
 
 void RigidBody::ApplyTransformToJointFrame(
     const Eigen::Isometry3d& transform_body_to_joint) {
-  spatial_inertia_ = transformSpatialInertia(transform_body_to_joint,
-      spatial_inertia_);
+  spatial_inertia_ = drake::math::transformSpatialInertia(
+      transform_body_to_joint, spatial_inertia_);
   for (auto& v : visual_elements_) {
     v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
   }
@@ -203,13 +203,9 @@ void RigidBody::set_contact_points(const Eigen::Matrix3Xd& contact_points) {
   contact_points_ = contact_points;
 }
 
-void RigidBody::set_mass(double mass) {
-  mass_ = mass;
-}
+void RigidBody::set_mass(double mass) { mass_ = mass; }
 
-double RigidBody::get_mass() const {
-  return mass_;
-}
+double RigidBody::get_mass() const { return mass_; }
 
 void RigidBody::set_center_of_mass(const Eigen::Vector3d& center_of_mass) {
   center_of_mass_ = center_of_mass;
@@ -219,13 +215,12 @@ const Eigen::Vector3d& RigidBody::get_center_of_mass() const {
   return center_of_mass_;
 }
 
-void RigidBody::set_spatial_inertia(const drake::SquareTwistMatrix<double>&
-    spatial_inertia) {
+void RigidBody::set_spatial_inertia(
+    const drake::SquareTwistMatrix<double>& spatial_inertia) {
   spatial_inertia_ = spatial_inertia;
 }
 
-const drake::SquareTwistMatrix<double>& RigidBody::get_spatial_inertia()
-    const {
+const drake::SquareTwistMatrix<double>& RigidBody::get_spatial_inertia() const {
   return spatial_inertia_;
 }
 

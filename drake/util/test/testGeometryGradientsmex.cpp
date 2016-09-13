@@ -1,7 +1,7 @@
 #include <mex.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/util/drakeGeometryUtil.h"
+#include "drake/math/geometry.h"
 #include "drake/util/drakeMexUtil.h"
 
 using Eigen::Isometry3d;
@@ -18,7 +18,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   int argnum = 0;
   Isometry3d T;
   memcpy(T.data(), mxGetPr(prhs[argnum++]),
-         sizeof(double) * HOMOGENEOUS_TRANSFORM_SIZE);
+         sizeof(double) * drake::math::HOMOGENEOUS_TRANSFORM_SIZE);
   auto S = matlabToEigen<drake::kTwistSize, Eigen::Dynamic>(prhs[argnum++]);
   auto qdot_to_v =
       matlabToEigen<Eigen::Dynamic, Eigen::Dynamic>(prhs[argnum++]);
@@ -26,15 +26,16 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   auto dX = matlabToEigen<Eigen::Dynamic, Eigen::Dynamic>(prhs[argnum++]);
   auto x = matlabToEigen<4, 1>(prhs[argnum++]);
 
-  auto dT = dHomogTrans(T, S, qdot_to_v).eval();
-  auto dTInv = dHomogTransInv(T, dT).eval();
-  auto dAdT = dTransformSpatialMotion(T, X, dT, dX).eval();
-  auto dAdTInv_transpose = dTransformSpatialForce(T, X, dT, dX).eval();
+  auto dT = drake::math::dHomogTrans(T, S, qdot_to_v).eval();
+  auto dTInv = drake::math::dHomogTransInv(T, dT).eval();
+  auto dAdT = drake::math::dTransformSpatialMotion(T, X, dT, dX).eval();
+  auto dAdTInv_transpose =
+      drake::math::dTransformSpatialForce(T, X, dT, dX).eval();
 
   Vector4d x_norm;
   Gradient<Vector4d, 4, 1>::type dx_norm;
   Gradient<Vector4d, 4, 2>::type ddx_norm;
-  normalizeVec(x, x_norm, &dx_norm, &ddx_norm);
+  drake::math::normalizeVec(x, x_norm, &dx_norm, &ddx_norm);
 
   int outnum = 0;
   plhs[outnum++] = eigenToMatlab(dT);

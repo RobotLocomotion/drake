@@ -6,9 +6,9 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
+#include "drake/math/geometry.h"
 #include "drake/math/quaternion.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 using namespace Eigen;
 
@@ -960,7 +960,7 @@ void EulerConstraint::eval(const double* t, KinematicsCache<double>& cache,
     while (i < n_constraint) {
       if (!null_constraint_rows_[valid_row_idx]) {
         c(i) = rpy(valid_row_idx);
-        c(i) = angleDiff(avg_rpy_[i], c(i)) + avg_rpy_[i];
+        c(i) = drake::math::angleDiff(avg_rpy_[i], c(i)) + avg_rpy_[i];
         dc.row(i) = drpy.row(valid_row_idx);
         valid_row_idx++;
         i++;

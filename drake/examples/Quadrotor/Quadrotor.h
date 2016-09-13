@@ -3,10 +3,10 @@
 #include <cmath>
 #include <iostream>
 
+#include "drake/math/geometry.h"
 #include "drake/math/gradient.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/System.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 template <typename ScalarType = double>
 class QuadrotorState {  // models the drake::Vector concept
@@ -175,7 +175,7 @@ class Quadrotor {
 
     Eigen::Matrix<Scalar, 3, 1> rpydot(x.rolldot, x.pitchdot, x.yawdot);
     Eigen::Matrix<Scalar, 3, 1> pqr;
-    rpydot2angularvel(rpy, rpydot, pqr);
+    drake::math::rpydot2angularvel(rpy, rpydot, pqr);
     pqr = R.adjoint() * pqr;
 
     Eigen::Matrix<Scalar, 3, 1> pqr_dot_term1;
@@ -187,7 +187,7 @@ class Quadrotor {
     typename drake::math::Gradient<Eigen::Matrix<Scalar, 3, 3>, 3>::type dPhi;
     typename drake::math::Gradient<Eigen::Matrix<Scalar, 3, 3>, 3, 2>::type*
         ddPhi = nullptr;
-    angularvel2rpydotMatrix(rpy, Phi, &dPhi, ddPhi);
+    drake::math::angularvel2rpydotMatrix(rpy, Phi, &dPhi, ddPhi);
 
     Eigen::Matrix<Scalar, 9, 3> drpy2drotmat = drake::math::drpy2rotmat(rpy);
     Eigen::Matrix<Scalar, 9, 1> Rdot_vec;
