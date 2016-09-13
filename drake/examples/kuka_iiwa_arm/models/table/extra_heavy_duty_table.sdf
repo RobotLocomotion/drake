@@ -3,9 +3,10 @@
   <!--
   This is a model of the following table: http://www.mcmaster.com/#8020T32.
 
-  The table is oriented such that its X axis is parallel with the table's depth,
-  the Y axis is parallel with the table's width, and its Z axis is parallel with
-  the table's height.
+  The table model's frame is oriented such that Z is positive up. Suppose you're
+  facing the "front" edge of the table that is 28" wide with its positive Z axis
+  pointing up, the positive X axis will be pointing towards you and the
+  positive Y axis will be pointing to your right.
 
   Its dimensions are:
     - width (length along Y axis):  30" (0.762 m)
@@ -23,11 +24,6 @@
         equation for a cuboid:
 
         https://en.wikipedia.org/wiki/List_of_moments_of_inertia#List_of_3D_inertia_tensors.
-
-        It can be computed by executing the following commands:
-
-        $ cd drake-distro/drake/common/spatial_inertia_calculators
-        $ ./spatial_inertia_solid_cuboid.py 0.7112 0.762 0.762 53.5
 
         Obviously, the table is not a cuboid meaning the spatial inertia matrix
         is imperfect. Having accurate spatial inertia information may be
