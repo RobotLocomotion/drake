@@ -425,7 +425,7 @@ void RigidBodyTree::updateDynamicCollisionElements(
 void RigidBodyTree::getTerrainContactPoints(
     const RigidBody& body, Eigen::Matrix3Xd* terrain_points) const {
   // Ensures terrain_points is a valid pointer.
-  DRAKE_ABORT_UNLESS(terrain_points);
+  DRAKE_DEMAND(terrain_points);
 
   // Clears matrix before filling it again.
   size_t num_points = 0;
@@ -1096,7 +1096,7 @@ int RigidBodyTree::parseBodyOrFrameID(const int body_or_frame_id) const {
 std::vector<int> RigidBodyTree::FindAncestorBodies(
     int body_index) const {
   // Verifies that body_index is valid. Aborts if it is invalid.
-  DRAKE_ABORT_UNLESS(body_index >= 0 &&
+  DRAKE_DEMAND(body_index >= 0 &&
                      body_index < static_cast<int>(bodies.size()));
 
   std::vector<int> ancestor_body_list;
@@ -1883,7 +1883,7 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
 std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
     int model_instance_id) const {
   // Verifies that parameter parent_body_index is valid.
-  DRAKE_ABORT_UNLESS(parent_body_index >= 0 &&
+  DRAKE_DEMAND(parent_body_index >= 0 &&
                      parent_body_index < get_number_of_bodies());
 
   // Obtains a reference to the parent body.
@@ -1988,7 +1988,7 @@ int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
 }
 
 const RigidBody& RigidBodyTree::get_body(int body_index) const {
-  DRAKE_ABORT_UNLESS(body_index >= 0 &&
+  DRAKE_DEMAND(body_index >= 0 &&
                      body_index < get_number_of_bodies());
   return *bodies[body_index].get();
 }

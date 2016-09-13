@@ -42,10 +42,10 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
     if (context.get_time() == 0.0) {
       PublishLoadRobot();
     }
-    DRAKE_ABORT_UNLESS(sent_load_robot_);
+    DRAKE_DEMAND(sent_load_robot_);
 
     auto input = context.get_vector_input(0)->get_value().cast<float>();
-    DRAKE_ABORT_UNLESS(input.size() == 6);
+    DRAKE_DEMAND(input.size() == 6);
 
     drake::lcmt_viewer_draw draw_msg;
     draw_msg.num_links = 1;

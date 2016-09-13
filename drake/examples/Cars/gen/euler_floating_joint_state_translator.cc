@@ -20,7 +20,7 @@ void EulerFloatingJointStateTranslator::TranslateVectorBaseToLcm(
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
       dynamic_cast<const EulerFloatingJointState<double>*>(&vector_base);
-  DRAKE_ABORT_UNLESS(vector != nullptr);
+  DRAKE_DEMAND(vector != nullptr);
   drake::lcmt_euler_floating_joint_state_t message;
   message.x = vector->x();
   message.y = vector->y();
@@ -36,10 +36,10 @@ void EulerFloatingJointStateTranslator::TranslateVectorBaseToLcm(
 void EulerFloatingJointStateTranslator::TranslateLcmToVectorBase(
     const void* lcm_message_bytes, int lcm_message_length,
     systems::VectorBase<double>* vector_base) const {
-  DRAKE_ABORT_UNLESS(vector_base != nullptr);
+  DRAKE_DEMAND(vector_base != nullptr);
   auto* const my_vector =
       dynamic_cast<EulerFloatingJointState<double>*>(vector_base);
-  DRAKE_ABORT_UNLESS(my_vector != nullptr);
+  DRAKE_DEMAND(my_vector != nullptr);
 
   drake::lcmt_euler_floating_joint_state_t message;
   int status = message.decode(lcm_message_bytes, 0, lcm_message_length);

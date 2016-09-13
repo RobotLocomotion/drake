@@ -100,7 +100,7 @@ void AddMaterialToMaterialMap(const string& material_name,
                               const Vector4d& color_rgba,
                               MaterialMap* materials) {
   // Verifies that parameter materials is not nullptr.
-  DRAKE_ABORT_UNLESS(materials);
+  DRAKE_DEMAND(materials);
 
   // Determines if the material is already in the map.
   auto material_iter = materials->find(material_name);
@@ -1118,7 +1118,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename,
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_DEMAND(tree);
   PackageMap package_map;
   return AddModelInstanceFromUrdfFile(filename, package_map,
       kRollPitchYaw, nullptr /* weld_to_frame */, tree);
@@ -1129,7 +1129,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_DEMAND(tree);
   PackageMap package_map;
   return AddModelInstanceFromUrdfFile(
       filename, package_map, floating_base_type, nullptr /*weld_to_frame*/,
@@ -1142,7 +1142,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_DEMAND(tree);
   PackageMap package_map;
   return AddModelInstanceFromUrdfFile(
       filename, package_map, floating_base_type, weld_to_frame, tree);
@@ -1154,7 +1154,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_DEMAND(tree);
 
   // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;

@@ -34,12 +34,12 @@ class DiagramOutput : public SystemOutput<T> {
   int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 
   OutputPort* get_mutable_port(int index) override {
-    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_ports());
+    DRAKE_DEMAND(index >= 0 && index < get_num_ports());
     return ports_[index];
   }
 
   const OutputPort& get_port(int index) const override {
-    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_ports());
+    DRAKE_DEMAND(index >= 0 && index < get_num_ports());
     return *ports_[index];
   }
 
@@ -144,7 +144,7 @@ class Diagram : public System<T> {
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
+    DRAKE_DEMAND(diagram_context != nullptr);
 
     // The output ports of this Diagram are output ports of its constituent
     // systems. Create a DiagramOutput with that many ports.
@@ -158,9 +158,9 @@ class Diagram : public System<T> {
                   SystemOutput<T>* output) const override {
     // Down-cast the context and output to DiagramContext and DiagramOutput.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
+    DRAKE_DEMAND(diagram_context != nullptr);
     auto diagram_output = dynamic_cast<internal::DiagramOutput<T>*>(output);
-    DRAKE_ABORT_UNLESS(diagram_output != nullptr);
+    DRAKE_DEMAND(diagram_output != nullptr);
 
     // Populate the output with pointers to the appropriate subsystem outputs
     // in the DiagramContext. We do this on every call to EvalOutput, so
@@ -191,14 +191,14 @@ class Diagram : public System<T> {
     // TODO(david-german-tri): This can be made less conservative: we don't
     // need to freshen inputs to subsystems with no state.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
+    DRAKE_DEMAND(diagram_context != nullptr);
     ComputeAllSubsystemOutputs(diagram_context);
 
     auto diagram_derivatives =
         dynamic_cast<DiagramContinuousState<T>*>(derivatives);
-    DRAKE_ABORT_UNLESS(diagram_derivatives != nullptr);
+    DRAKE_DEMAND(diagram_derivatives != nullptr);
     const int n = diagram_derivatives->get_num_substates();
-    DRAKE_ABORT_UNLESS(static_cast<int>(sorted_systems_.size()) == n);
+    DRAKE_DEMAND(static_cast<int>(sorted_systems_.size()) == n);
 
     // Evaluate the derivatives of each constituent system.
     for (int i = 0; i < n; ++i) {
@@ -221,10 +221,10 @@ class Diagram : public System<T> {
   /// is stateless.
   const ContinuousState<T>* GetSubsystemDerivatives(
       const ContinuousState<T>& derivatives, const System<T>* subsystem) const {
-    DRAKE_ABORT_UNLESS(subsystem != nullptr);
+    DRAKE_DEMAND(subsystem != nullptr);
     auto diagram_derivatives =
         dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
-    DRAKE_ABORT_UNLESS(diagram_derivatives != nullptr);
+    DRAKE_DEMAND(diagram_derivatives != nullptr);
     const int i = GetSystemIndexOrAbort(subsystem);
     return diagram_derivatives->get_substate(i);
   }
@@ -235,10 +235,10 @@ class Diagram : public System<T> {
   /// @p subsystem is not actually a subsystem of this diagram.
   Context<T>* GetMutableSubsystemContext(Context<T>* context,
                                          const System<T>* subsystem) const {
-    DRAKE_ABORT_UNLESS(context != nullptr);
-    DRAKE_ABORT_UNLESS(subsystem != nullptr);
+    DRAKE_DEMAND(context != nullptr);
+    DRAKE_DEMAND(subsystem != nullptr);
     auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
-    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
+    DRAKE_DEMAND(diagram_context != nullptr);
     const int i = GetSystemIndexOrAbort(subsystem);
     return diagram_context->GetMutableSubsystemContext(i);
   }
@@ -267,7 +267,7 @@ class Diagram : public System<T> {
     // TODO(david-german-tri): This can be made less conservative: we don't
     // need to freshen inputs to subsystems that don't Publish.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_ABORT_UNLESS(diagram_context != nullptr);
+    DRAKE_DEMAND(diagram_context != nullptr);
     ComputeAllSubsystemOutputs(diagram_context);
 
     for (const System<T>* const system : sorted_systems_) {
@@ -301,9 +301,9 @@ class Diagram : public System<T> {
   // Validates the given @p blueprint and sets up the Diagram accordingly.
   void Initialize(const Blueprint& blueprint) {
     // The Diagram must not already be initialized.
-    DRAKE_ABORT_UNLESS(sorted_systems_.empty());
+    DRAKE_DEMAND(sorted_systems_.empty());
     // The initialization must be nontrivial.
-    DRAKE_ABORT_UNLESS(!blueprint.sorted_systems.empty());
+    DRAKE_DEMAND(!blueprint.sorted_systems.empty());
 
     // Copy the data from the blueprint into private member variables.
     dependency_graph_ = blueprint.dependency_graph;
@@ -317,7 +317,7 @@ class Diagram : public System<T> {
     }
 
     // Every system must appear in the sort order exactly once.
-    DRAKE_ABORT_UNLESS(sorted_systems_.size() == sorted_systems_map_.size());
+    DRAKE_DEMAND(sorted_systems_.size() == sorted_systems_map_.size());
     // Every port named in the dependency_graph_ must actually exist.
     DRAKE_ASSERT(PortsAreValid());
     // The sort order must square with the dependency_graph_.
@@ -378,7 +378,7 @@ class Diagram : public System<T> {
   // or aborts if @p sys is not a member of the diagram.
   int GetSystemIndexOrAbort(const System<T>* sys) const {
     auto it = sorted_systems_map_.find(sys);
-    DRAKE_ABORT_UNLESS(it != sorted_systems_map_.end());
+    DRAKE_DEMAND(it != sorted_systems_map_.end());
     return it->second;
   }
 
@@ -400,7 +400,7 @@ class Diagram : public System<T> {
     // The number of output ports of this diagram must equal the number of
     // ports in the provided DiagramOutput.
     const int num_ports = static_cast<int>(output_port_ids_.size());
-    DRAKE_ABORT_UNLESS(output->get_num_ports() == num_ports);
+    DRAKE_DEMAND(output->get_num_ports() == num_ports);
 
     for (int i = 0; i < num_ports; ++i) {
       const PortIdentifier& id = output_port_ids_[i];
@@ -420,7 +420,7 @@ class Diagram : public System<T> {
   // blunt way to update the inputs for all subsystems to match the given
   // @p context.
   void ComputeAllSubsystemOutputs(const DiagramContext<T>* context) const {
-    DRAKE_ABORT_UNLESS(context != nullptr);
+    DRAKE_DEMAND(context != nullptr);
     // TODO(david-german-tri): Use the diagram-level cache to skip systems that
     // are already fresh.
     for (const System<T>* const system : sorted_systems_) {

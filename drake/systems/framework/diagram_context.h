@@ -43,14 +43,14 @@ class DiagramContinuousState : public ContinuousState<T> {
   /// Returns the continuous state at the given @p index, or nullptr if that
   /// system is stateless. Aborts if @p index is out-of-bounds.
   const ContinuousState<T>* get_substate(int index) const {
-    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_substates());
+    DRAKE_DEMAND(index >= 0 && index < get_num_substates());
     return substates_[index];
   }
 
   /// Returns the continuous state at the given @p index, or nullptr if that
   /// system is stateless. Aborts if @p index is out-of-bounds.
   ContinuousState<T>* get_mutable_substate(int index) {
-    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_substates());
+    DRAKE_DEMAND(index >= 0 && index < get_num_substates());
     return substates_[index];
   }
 
@@ -118,8 +118,8 @@ class DiagramContext : public Context<T> {
   /// context allocation only.
   void AddSystem(SystemIndex index, std::unique_ptr<Context<T>> context,
                  std::unique_ptr<SystemOutput<T>> output) {
-    DRAKE_ABORT_UNLESS(contexts_[index] == nullptr);
-    DRAKE_ABORT_UNLESS(outputs_[index] == nullptr);
+    DRAKE_DEMAND(contexts_[index] == nullptr);
+    DRAKE_DEMAND(outputs_[index] == nullptr);
     contexts_[index] = std::move(context);
     outputs_[index] = std::move(output);
   }
@@ -132,7 +132,7 @@ class DiagramContext : public Context<T> {
   /// context allocation only.
   void ExportInput(const PortIdentifier& id) {
     const SystemIndex system_index = id.first;
-    DRAKE_ABORT_UNLESS(contexts_[system_index] != nullptr);
+    DRAKE_DEMAND(contexts_[system_index] != nullptr);
     input_ids_.emplace_back(id);
   }
 
@@ -146,16 +146,16 @@ class DiagramContext : public Context<T> {
     SystemIndex src_system_index = src.first;
     PortIndex src_port_index = src.second;
     SystemOutput<T>* src_ports = GetSubsystemOutput(src_system_index);
-    DRAKE_ABORT_UNLESS(src_port_index >= 0);
-    DRAKE_ABORT_UNLESS(src_port_index < src_ports->get_num_ports());
+    DRAKE_DEMAND(src_port_index >= 0);
+    DRAKE_DEMAND(src_port_index < src_ports->get_num_ports());
     OutputPort* output_port = src_ports->get_mutable_port(src_port_index);
 
     // Identify and validate the destination port.
     SystemIndex dest_system_index = dest.first;
     PortIndex dest_port_index = dest.second;
     Context<T>* dest_context = GetMutableSubsystemContext(dest_system_index);
-    DRAKE_ABORT_UNLESS(dest_port_index >= 0);
-    DRAKE_ABORT_UNLESS(dest_port_index < dest_context->get_num_input_ports());
+    DRAKE_DEMAND(dest_port_index >= 0);
+    DRAKE_DEMAND(dest_port_index < dest_context->get_num_input_ports());
 
     // Construct and install the destination port.
     auto input_port = std::make_unique<DependentInputPort>(output_port);
@@ -183,8 +183,8 @@ class DiagramContext : public Context<T> {
   /// DiagramContext at that index.
   SystemOutput<T>* GetSubsystemOutput(SystemIndex index) const {
     const int num_outputs = static_cast<int>(outputs_.size());
-    DRAKE_ABORT_UNLESS(index >= 0 && index < num_outputs);
-    DRAKE_ABORT_UNLESS(outputs_[index] != nullptr);
+    DRAKE_DEMAND(index >= 0 && index < num_outputs);
+    DRAKE_DEMAND(outputs_[index] != nullptr);
     return outputs_[index].get();
   }
 
@@ -193,8 +193,8 @@ class DiagramContext : public Context<T> {
   /// DiagramContext at that index.
   const Context<T>* GetSubsystemContext(SystemIndex index) const {
     const int num_contexts = static_cast<int>(contexts_.size());
-    DRAKE_ABORT_UNLESS(index >= 0 && index < num_contexts);
-    DRAKE_ABORT_UNLESS(contexts_[index] != nullptr);
+    DRAKE_DEMAND(index >= 0 && index < num_contexts);
+    DRAKE_DEMAND(contexts_[index] != nullptr);
     return contexts_[index].get();
   }
 
@@ -203,8 +203,8 @@ class DiagramContext : public Context<T> {
   /// DiagramContext at that index.
   Context<T>* GetMutableSubsystemContext(SystemIndex index) {
     const int num_contexts = static_cast<int>(contexts_.size());
-    DRAKE_ABORT_UNLESS(index >= 0 && index < num_contexts);
-    DRAKE_ABORT_UNLESS(contexts_[index] != nullptr);
+    DRAKE_DEMAND(index >= 0 && index < num_contexts);
+    DRAKE_DEMAND(contexts_[index] != nullptr);
     return contexts_[index].get();
   }
 
@@ -266,8 +266,8 @@ class DiagramContext : public Context<T> {
 
     // Clone all the subsystem contexts and outputs.
     for (int i = 0; i < num_subsystems; ++i) {
-      DRAKE_ABORT_UNLESS(contexts_[i] != nullptr);
-      DRAKE_ABORT_UNLESS(outputs_[i] != nullptr);
+      DRAKE_DEMAND(contexts_[i] != nullptr);
+      DRAKE_DEMAND(outputs_[i] != nullptr);
       // When a leaf context is cloned, it will clone the data that currently
       // appears on each of its input ports into a FreestandingInputPort.
       clone->contexts_[i] = contexts_[i]->Clone();

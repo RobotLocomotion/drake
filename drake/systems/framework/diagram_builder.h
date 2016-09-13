@@ -25,8 +25,8 @@ class DiagramBuilder {
   /// Declares that input port @p dest is connected to output port @p src.
   void Connect(const SystemPortDescriptor<T>& src,
                const SystemPortDescriptor<T>& dest) {
-    DRAKE_ABORT_UNLESS(src.get_face() == kOutputPort);
-    DRAKE_ABORT_UNLESS(dest.get_face() == kInputPort);
+    DRAKE_DEMAND(src.get_face() == kOutputPort);
+    DRAKE_DEMAND(dest.get_face() == kInputPort);
     PortIdentifier dest_id{dest.get_system(), dest.get_index()};
     PortIdentifier src_id{src.get_system(), src.get_index()};
     ThrowIfInputAlreadyWired(dest_id);
@@ -58,7 +58,7 @@ class DiagramBuilder {
   /// Declares that the given @p input port of a constituent system is an input
   /// to the entire Diagram.
   void ExportInput(const SystemPortDescriptor<T>& input) {
-    DRAKE_ABORT_UNLESS(input.get_face() == kInputPort);
+    DRAKE_DEMAND(input.get_face() == kInputPort);
     PortIdentifier id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
     Register(input.get_system());
@@ -69,7 +69,7 @@ class DiagramBuilder {
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.
   void ExportOutput(const SystemPortDescriptor<T>& output) {
-    DRAKE_ABORT_UNLESS(output.get_face() == kOutputPort);
+    DRAKE_DEMAND(output.get_face() == kOutputPort);
     Register(output.get_system());
     output_port_ids_.push_back(
         PortIdentifier{output.get_system(), output.get_index()});

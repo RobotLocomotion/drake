@@ -52,7 +52,7 @@ class LeafContext : public Context<T> {
   }
 
   const BasicVector<T>* get_vector_input(int index) const override {
-    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_input_ports());
+    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
     if (inputs_[index] == nullptr) {
       return nullptr;
     }
@@ -60,7 +60,7 @@ class LeafContext : public Context<T> {
   }
 
   const AbstractValue* get_abstract_input(int index) const override {
-    DRAKE_ABORT_UNLESS(index >= 0 && index < get_num_input_ports());
+    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
     if (inputs_[index] == nullptr) {
       return nullptr;
     }
