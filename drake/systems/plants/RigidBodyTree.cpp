@@ -89,7 +89,7 @@ RigidBodyTree::RigidBodyTree(
 
 RigidBodyTree::RigidBodyTree(void)
     : collision_model_(DrakeCollision::newModel()) {
-  // Sets the gravity vector;
+  // Sets the gravity vector.
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   // Adds the rigid body representing the world. It has model instance ID 0.
