@@ -27,7 +27,7 @@ int main() {
   cout << M << endl << endl;
 
   RigidBodyTree::BodyToWrenchMap<double> external_wrenches;
-  drake::TwistVector<double> f_ext_r_foot;
+  drake::WrenchVector<double> f_ext_r_foot;
   f_ext_r_foot.setRandom();
   external_wrenches.insert({model.FindBody("r_foot"), f_ext_r_foot});
 
