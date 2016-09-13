@@ -2,7 +2,9 @@
 <package>
   <name>drake_ros_common_test</name>
   <version>0.0.0</version>
-  <description>This package contains unit tests for drake_ros_common.</description>
+  <description>
+    This package contains unit tests for drake_ros_common.
+  </description>
   <maintainer email="drake-users@mit.edu">Chien-Liang Fok</maintainer>
   <license>BSD</license>
 

@@ -10,7 +10,6 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS
-  #DEPENDS
 )
 
 ## Specifies additional locations of header files.
