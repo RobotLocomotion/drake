@@ -8,7 +8,7 @@
 #include "ros/ros.h"
 #include "ackermann_msgs/AckermannDriveStamped.h"
 
-#include "drake/examples/Cars/gen/driving_command.h"
+#include "drake/automotive/gen/driving_command.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/simulation_options.h"
 #include "drake/systems/System.h"

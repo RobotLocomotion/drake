@@ -99,7 +99,7 @@ if(lcm_FOUND)
   drake_add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
 
   if(snopt_c_FOUND)
-    drake_add_test(NAME comparePriusURDFtoSDF COMMAND compareRigidBodySystems prius.sdf prius.urdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Cars/models/prius")
+    drake_add_test(NAME comparePriusURDFtoSDF COMMAND compareRigidBodySystems prius.sdf prius.urdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/automotive/models/prius")
   endif()
 
   add_executable(load_model_test load_model_test.cc)
