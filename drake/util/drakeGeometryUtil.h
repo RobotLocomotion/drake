@@ -18,6 +18,7 @@
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeGradientUtil.h"
 
+DRAKE_DEPRECATED("Use drake::kHomogeneousTransformSize instead.")
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
 
 DRAKE_DEPRECATED("Use drake::kQuaternionSize instead.")
@@ -26,7 +27,7 @@ DRAKE_DEPRECATED("Use drake::kRpySize instead.")
 const int RPY_SIZE = 3;
 DRAKE_DEPRECATED("Use drake::kSpaceDimension instead.")
 const int SPACE_DIMENSION = 3;
-
+DRAKE_DEPRECATED("Use drake::kRotmatSize instead.")
 const int RotmatSize = drake::kSpaceDimension * drake::kSpaceDimension;
 
 DRAKEGEOMETRYUTIL_EXPORT double angleDiff(double phi1, double phi2);
@@ -117,7 +118,7 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
                                            drake::kSpaceDimension,
                                            drake::kSpaceDimension);
   EIGEN_STATIC_ASSERT(
-      Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == RotmatSize,
+      Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == drake::kRotmatSize,
       THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   typename DerivedDR::Index nq = dR.cols();
@@ -167,7 +168,7 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
                                            drake::kSpaceDimension,
                                            drake::kSpaceDimension);
   EIGEN_STATIC_ASSERT(
-      Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == RotmatSize,
+      Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == drake::kRotmatSize,
       THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   typedef typename DerivedR::Scalar Scalar;
@@ -763,7 +764,7 @@ drake::TwistMatrix<typename DerivedA::Scalar> dCrossSpatialForce(
 template <typename DerivedQdotToV>
 struct DHomogTrans {
   typedef typename Eigen::Matrix<typename DerivedQdotToV::Scalar,
-                                 HOMOGENEOUS_TRANSFORM_SIZE,
+                                 drake::kHomogeneousTransform,
                                  DerivedQdotToV::ColsAtCompileTime> type;
 };
 
@@ -777,7 +778,7 @@ typename DHomogTrans<DerivedQdotToV>::type dHomogTrans(
   typename DerivedQdotToV::Index nq = qdot_to_v.cols();
   auto qdot_to_twist = (S * qdot_to_v).eval();
 
-  const int numel = HOMOGENEOUS_TRANSFORM_SIZE;
+  const int numel = drake::kHomogeneousTransform;
   Eigen::Matrix<typename DerivedQdotToV::Scalar, numel, nq_at_compile_time> ret(
       numel, nq);
 
@@ -823,7 +824,7 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
   auto dinvT_R = transposeGrad(dR, R.rows());
   auto dinvT_p = (-R.transpose() * dp - matGradMult(dinvT_R, p)).eval();
 
-  const int numel = HOMOGENEOUS_TRANSFORM_SIZE;
+  const int numel = drake::kHomogeneousTransform;
   Eigen::Matrix<typename DerivedDT::Scalar, numel, DerivedDT::ColsAtCompileTime>
       ret(numel, nq);
   setSubMatrixGradient<Eigen::Dynamic>(ret, dinvT_R, rows, R_cols, T.Rows);
