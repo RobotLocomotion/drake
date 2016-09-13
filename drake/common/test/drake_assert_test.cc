@@ -14,7 +14,7 @@ GTEST_TEST(DrakeAssertDeathTest, AbortTest) {
       "abort: failure at .*drake_assert_test.cc:.. in TestBody");
 }
 
-GTEST_TEST(DrakeAssertDeathTest, AbortUnlessTest) {
+GTEST_TEST(DrakeAssertDeathTest, DemandTest) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   ASSERT_DEATH(
       { DRAKE_DEMAND(false); },

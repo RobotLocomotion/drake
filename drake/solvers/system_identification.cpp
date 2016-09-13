@@ -357,9 +357,9 @@ SystemIdentification<T>::LumpedSystemIdentification(
         // nesting violations (`s = sin(y), y = cos(z)`) will be caught by
         // the TrigPoly constructor.
         DRAKE_DEMAND(k_v_pair.second.s ==
-                           original_sin_cos_map[k_v_pair.first].s);
+                     original_sin_cos_map[k_v_pair.first].s);
         DRAKE_DEMAND(k_v_pair.second.c ==
-                           original_sin_cos_map[k_v_pair.first].c);
+                     original_sin_cos_map[k_v_pair.first].c);
       } else {
         original_sin_cos_map[k_v_pair.first] = k_v_pair.second;
       }
