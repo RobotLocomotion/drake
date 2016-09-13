@@ -18,7 +18,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     const LcmAndVectorBaseTranslator& translator, ::lcm::LCM* lcm)
     : channel_(channel),
       translator_(translator) {
-  DRAKE_ABORT_UNLESS(lcm);
+  DRAKE_DEMAND(lcm);
   // Initializes the communication layer.
   ::lcm::Subscription* sub =
       lcm->subscribe(channel_, &LcmSubscriberSystem::HandleMessage, this);
@@ -56,7 +56,7 @@ void LcmSubscriberSystem::SetMessage(std::vector<uint8_t> message_bytes) {
 
 std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
     const SystemPortDescriptor<double>& descriptor) const {
-  DRAKE_ABORT_UNLESS(descriptor.get_index() == 0);
+  DRAKE_DEMAND(descriptor.get_index() == 0);
   auto result = translator_.AllocateOutputVector();
   if (result) {
     return result;

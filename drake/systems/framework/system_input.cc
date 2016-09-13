@@ -13,7 +13,7 @@ void InputPort::Invalidate() {
 
 DependentInputPort::DependentInputPort(OutputPort* output_port)
     : output_port_(output_port) {
-  DRAKE_ABORT_UNLESS(output_port_ != nullptr);
+  DRAKE_DEMAND(output_port_ != nullptr);
   output_port_->add_dependent(this);
 }
 

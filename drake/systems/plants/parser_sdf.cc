@@ -667,8 +667,8 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
                 ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_ABORT_UNLESS(tree);
-  DRAKE_ABORT_UNLESS(node);
+  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(node);
 
   // The pose_map is needed because SDF specifies almost everything in the
   // model's coordinate frame.
@@ -813,7 +813,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     const FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
-  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_DEMAND(tree);
   return AddModelInstancesFromSdfFile(filename, floating_base_type,
       nullptr /* weld_to_frame */, tree);
 }
@@ -824,7 +824,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
-  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_DEMAND(tree);
 
   PackageMap package_map;
 
@@ -852,7 +852,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
-  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_DEMAND(tree);
 
   PackageMap package_map;
 

@@ -28,7 +28,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
 
   /// Returns the data on this port, or nullptr if this port is not connected.
   const AbstractValue* get_abstract_data() const {
-    DRAKE_ABORT_UNLESS(get_output_port() != nullptr);
+    DRAKE_DEMAND(get_output_port() != nullptr);
     return get_output_port()->get_abstract_data();
   }
 
@@ -38,7 +38,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
   /// @tparam T The type of the input port. Must be a valid Eigen scalar.
   template <typename T>
   const BasicVector<T>* get_vector_data() const {
-    DRAKE_ABORT_UNLESS(get_output_port() != nullptr);
+    DRAKE_DEMAND(get_output_port() != nullptr);
     return get_output_port()->get_vector_data<T>();
   }
 

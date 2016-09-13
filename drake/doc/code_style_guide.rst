@@ -169,11 +169,21 @@ Additional Rules
   allowing this common, clutter-reducing practice. For discussion, see
   `stackoverflow <http://stackoverflow.com/questions/5813700/difference-between-size-t-and-stdsize-t>`_
   and Drake `#2374 <https://github.com/RobotLocomotion/drake/issues/2374>`_.
-* Never use ``assert()`` from ``<cassert>``; instead, use ``DRAKE_ASSERT``.
-  Never use ``DRAKE_ASSERT(false)``; instead, use ``DRAKE_ABORT()``.
-  Use ``DRAKE_ABORT_UNLESS(`` *condition* ``)`` for assertions that will
-  never be disabled, even in release mode.  For discussion, see Drake
-  `#1935 <https://github.com/RobotLocomotion/drake/issues/1935>`_.
+* Rules for assertions:
+
+  * Never use ``assert()`` from ``<cassert>``.
+  * Use ``DRAKE_ASSERT(`` *condition* ``)`` to compile and assert only
+    in debug builds.
+  * Use ``DRAKE_DEMAND(`` *condition* ``)`` to assert in any kind of
+    build (including release).
+  * When checking for nonnullness, either ``DRAKE_DEMAND(ptr)`` or
+    ``DRAKE_DEMAND(ptr != nullptr)`` is allowed; use whichever seems
+    clearer in context.
+  * When failing unconditionally, never use ``DRAKE_ASSERT(false)``;
+    instead, use ``DRAKE_ABORT()``.
+  * For discussion, see Drake
+    `#1935 <https://github.com/RobotLocomotion/drake/issues/1935>`_ and
+    `#3355 <https://github.com/RobotLocomotion/drake/issues/3355>`_.
 
 .. _code-style-guide-matlab:
 

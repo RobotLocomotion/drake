@@ -18,7 +18,7 @@ using std::runtime_error;
 void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
     const void* lcm_message_bytes, int lcm_message_length,
     VectorBase<double>* vector_base) const {
-  DRAKE_ABORT_UNLESS(vector_base);
+  DRAKE_DEMAND(vector_base);
 
   // Decodes the LCM message using data from the receive buffer.
   drake::lcmt_drake_signal message;

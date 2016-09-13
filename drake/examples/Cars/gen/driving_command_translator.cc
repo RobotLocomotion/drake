@@ -20,7 +20,7 @@ void DrivingCommandTranslator::TranslateVectorBaseToLcm(
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
       dynamic_cast<const DrivingCommand<double>*>(&vector_base);
-  DRAKE_ABORT_UNLESS(vector != nullptr);
+  DRAKE_DEMAND(vector != nullptr);
   drake::lcmt_driving_command_t message;
   message.steering_angle = vector->steering_angle();
   message.throttle = vector->throttle();
@@ -33,9 +33,9 @@ void DrivingCommandTranslator::TranslateVectorBaseToLcm(
 void DrivingCommandTranslator::TranslateLcmToVectorBase(
     const void* lcm_message_bytes, int lcm_message_length,
     systems::VectorBase<double>* vector_base) const {
-  DRAKE_ABORT_UNLESS(vector_base != nullptr);
+  DRAKE_DEMAND(vector_base != nullptr);
   auto* const my_vector = dynamic_cast<DrivingCommand<double>*>(vector_base);
-  DRAKE_ABORT_UNLESS(my_vector != nullptr);
+  DRAKE_DEMAND(my_vector != nullptr);
 
   drake::lcmt_driving_command_t message;
   int status = message.decode(lcm_message_bytes, 0, lcm_message_length);
