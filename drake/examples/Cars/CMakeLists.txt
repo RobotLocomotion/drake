@@ -23,6 +23,7 @@ if(lcm_FOUND)
     drakeLCMSystem2
     drakeRBSystem
     drakeShapes
+    drakeSystemAnalysis
     drakeSystemFramework
     )
   pods_install_libraries(drakeCars)
