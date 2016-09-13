@@ -7,9 +7,13 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace drake;
+using std::make_shared;
+using std::shared_ptr;
+using std::string;
+
+using Eigen::Isometry3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
 
 using drake::systems::plants::joints::FloatingBaseType;
 using drake::systems::plants::joints::kFixed;
@@ -41,7 +45,11 @@ DEFINE_string(base, "QUAT",
               "must be kFixed or RPY or QUAT");
 DEFINE_bool(add_flat_terrain, false, "add flat terrain");
 
-int main(int argc, char* argv[]) {
+namespace drake {
+namespace systems {
+namespace plants {
+
+int do_main(int argc, char* argv[]) {
   gflags::SetUsageMessage("[options] full_path_to_urdf_or_sdf_file");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (argc < 2) {
@@ -103,4 +111,12 @@ int main(int argc, char* argv[]) {
   //  getInitialState(*sys), options);
 
   return 0;
+}
+
+}  // namespace plants
+}  // namespace systems
+}  // namespace drake
+
+int main(int argc, char* argv[]) {
+  return drake::systems::plants::do_main(argc, argv);
 }
