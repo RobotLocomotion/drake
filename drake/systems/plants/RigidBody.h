@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/drakeRBM_export.h"
@@ -55,7 +56,38 @@ class DRAKERBM_EXPORT RigidBody {
    * @param[in] joint The parent joint of this rigid body. Note that this
    * rigid body assumes ownership of this joint.
    */
+  // TODO(liang.fok): Deprecate this method in favor of add_joint().
+  // This requires, among potentially other things, updating the parsers.
   void setJoint(std::unique_ptr<DrakeJoint> joint);
+
+  /**
+   * Adds degrees of freedom to this body by connecting it to @p parent with
+   * @p joint. The body takes ownership of the joint.
+   *
+   * This method aborts with an error message if the user attempts to assign a
+   * joint to a body that already has one.
+   *
+   * Note that this is specifically a tree joint and that by "parent" we mean a
+   * body that is closer to "world" in the tree topology.
+   *
+   * The @p parent pointer is copied and stored meaning its lifetime must
+   * exceed the lifetime of this RigidBody.
+   *
+   * @param[in] parent The RigidBody this body gets connected to.
+   * @param[in] joint The DrakeJoint connecting this body to @p parent and
+   * adding degrees of freedom to this body.
+   * @returns A pointer to the joint just added to the body.
+   */
+  template<typename JointType>
+  JointType* add_joint(RigidBody* parent, std::unique_ptr<JointType> joint) {
+    if (joint_ != nullptr) {
+      DRAKE_ABORT_MSG(
+          "Attempting to assign a new joint to a body that already has one");
+    }
+    set_parent(parent);
+    setJoint(move(joint));
+    return static_cast<JointType*>(joint_.get());
+  }
 
   /**
    * An accessor to this rigid body's parent joint. By "parent joint" we
