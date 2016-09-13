@@ -12,11 +12,9 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/framework/context.h"
-#include "drake/systems/framework/leaf_state_vector.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_subvector.h"
-#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
@@ -44,9 +42,7 @@ class SpringMassSystemTest : public ::testing::Test {
     system_output_ = system_->AllocateOutput(*context_);
     system_derivatives_ = system_->AllocateTimeDerivatives();
     const int nq = system_derivatives_->get_generalized_position().size();
-    configuration_derivatives_ = std::unique_ptr<BasicStateVector<double>>(
-        new BasicStateVector<double>(std::unique_ptr<VectorBase<double>>(
-            new BasicVector<double>(nq))));
+    configuration_derivatives_ = std::make_unique<BasicVector<double>>(nq);
 
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector*>(
@@ -73,17 +69,17 @@ class SpringMassSystemTest : public ::testing::Test {
 
  protected:
   std::unique_ptr<SpringMassSystem> system_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> system_output_;
   std::unique_ptr<ContinuousState<double>> system_derivatives_;
-  std::unique_ptr<BasicStateVector<double>> configuration_derivatives_;
+  std::unique_ptr<BasicVector<double>> configuration_derivatives_;
 
   SpringMassStateVector* state_;
   const SpringMassStateVector* output_;
   SpringMassStateVector* derivatives_;
 
  private:
-  std::unique_ptr<StateVector<double>> erased_derivatives_;
+  std::unique_ptr<VectorBase<double>> erased_derivatives_;
 };
 
 TEST_F(SpringMassSystemTest, Construction) {
@@ -97,7 +93,7 @@ TEST_F(SpringMassSystemTest, Construction) {
 TEST_F(SpringMassSystemTest, CloneState) {
   InitializeState(1.0, 2.0);
   state_->set_conservative_work(3.0);
-  std::unique_ptr<LeafStateVector<double>> clone = state_->Clone();
+  std::unique_ptr<BasicVector<double>> clone = state_->Clone();
   SpringMassStateVector* typed_clone =
       dynamic_cast<SpringMassStateVector*>(clone.get());
   ASSERT_NE(nullptr, typed_clone);
@@ -109,10 +105,11 @@ TEST_F(SpringMassSystemTest, CloneState) {
 TEST_F(SpringMassSystemTest, CloneOutput) {
   InitializeState(1.0, 2.0);
   system_->EvalOutput(*context_, system_output_.get());
-  std::unique_ptr<VectorBase<double>> clone = output_->CloneVector();
+  std::unique_ptr<BasicVector<double>> clone = output_->Clone();
 
   SpringMassStateVector* typed_clone =
       dynamic_cast<SpringMassStateVector*>(clone.get());
+  ASSERT_NE(nullptr, typed_clone);
   EXPECT_EQ(1.0, typed_clone->get_position());
   EXPECT_EQ(2.0, typed_clone->get_velocity());
 }
@@ -258,7 +255,7 @@ The numerical routine here should then be used in a separate test to make sure
 the autodifferentiated matrices agree with the numerical one. Also, consider
 switching to central differences here to get more decimal places. */
 MatrixX<double> CalcDxdotDx(const System<double>& system,
-                            const ContextBase<double>& context) {
+                            const Context<double>& context) {
   const double perturb = 1e-7;  // roughly sqrt(precision)
   auto derivs0 = system.AllocateTimeDerivatives();
   system.EvalTimeDerivatives(context, derivs0.get());
@@ -286,10 +283,10 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
 
 /* Explicit Euler (unstable): x1 = x0 + h xdot(t0,x0) */
 void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
-                       ContextBase<double>& context) {
+                       Context<double>& context) {
   const double t = context.get_time();
   // Invalidate all xc-dependent quantities.
-  StateVector<double>* xc =
+  VectorBase<double>* xc =
       context.get_mutable_state()->continuous_state->get_mutable_state();
   const auto& dxc = derivs.get_state();
   xc->PlusEqScaled(h, dxc);  // xc += h*dxc
@@ -302,25 +299,18 @@ void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
     q1 = q0 + h qdot(q0,v1) */
 void StepSemiExplicitEuler(double h, const System<double>& system,
                            ContinuousState<double>& derivs,  // in/out
-                           ContextBase<double>& context) {
-  // Allocate a temp to hold qdot. This would normally be done once per
-  // integration, not per time step!
-  // const int nq = derivs.get_generalized_position().size();
-  // auto configuration_derivatives =
-  // std::make_unique<BasicStateVector<double>>(
-  //    std::unique_ptr<VectorBase<double>>(new BasicVector<double>(nq)));
-
+                           Context<double>& context) {
   const double t = context.get_time();
 
   // Invalidate z-dependent quantities.
-  StateVector<double>* xz =
+  VectorBase<double>* xz =
       context.get_mutable_state()
           ->continuous_state->get_mutable_misc_continuous_state();
   const auto& dxz = derivs.get_misc_continuous_state();
   xz->PlusEqScaled(h, dxz);  // xz += h*dxz
 
   // Invalidate v-dependent quantities.
-  StateVector<double>* xv =
+  VectorBase<double>* xv =
       context.get_mutable_state()
           ->continuous_state->get_mutable_generalized_velocity();
   const auto& dxv = derivs.get_generalized_velocity();
@@ -329,7 +319,7 @@ void StepSemiExplicitEuler(double h, const System<double>& system,
   context.set_time(t + h);
 
   // Invalidate q-dependent quantities.
-  StateVector<double>* xq =
+  VectorBase<double>* xq =
       context.get_mutable_state()
           ->continuous_state->get_mutable_generalized_position();
   auto dxq = derivs.get_mutable_generalized_position();
@@ -347,11 +337,11 @@ void StepSemiExplicitEuler(double h, const System<double>& system,
     while (norm(dx)/norm(x0) > tol) */
 void StepImplicitEuler(double h, const System<double>& system,
                        ContinuousState<double>& derivs,  // in/out
-                       ContextBase<double>& context) {
+                       Context<double>& context) {
   const double t = context.get_time();
 
   // Invalidate all xc-dependent quantities.
-  StateVector<double>* x1 =
+  VectorBase<double>* x1 =
       context.get_mutable_state()->continuous_state->get_mutable_state();
 
   const auto vx0 = x1->CopyToVector();
@@ -380,7 +370,7 @@ void StepImplicitEuler(double h, const System<double>& system,
 /* Calculate the total energy for this system in the given Context.
 TODO(sherm1): assuming there is only KE and PE to worry about. */
 double CalcEnergy(const SpringMassSystem& system,
-                  const ContextBase<double>& context) {
+                  const Context<double>& context) {
   return system.EvalPotentialEnergy(context) +
          system.EvalKineticEnergy(context);
 }

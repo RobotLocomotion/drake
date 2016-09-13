@@ -1,3 +1,3 @@
-add_matlab_test(NAME examples/HolonomicDrive/HolonomicDrivePlant.runTrajectory OPTIONAL snopt COMMAND HolonomicDrivePlant.runTrajectory)
-add_matlab_test(NAME examples/HolonomicDrive/HolonomicDrivePlant.runOpenLoop COMMAND HolonomicDrivePlant.runOpenLoop)
-add_matlab_test(NAME examples/HolonomicDrive/HolonomicDrivePlant.unitModel COMMAND HolonomicDrivePlant.unitModel)
+drake_add_matlab_test(NAME examples/HolonomicDrive/HolonomicDrivePlant.runTrajectory OPTIONAL snopt COMMAND HolonomicDrivePlant.runTrajectory)
+drake_add_matlab_test(NAME examples/HolonomicDrive/HolonomicDrivePlant.runOpenLoop COMMAND HolonomicDrivePlant.runOpenLoop)
+drake_add_matlab_test(NAME examples/HolonomicDrive/HolonomicDrivePlant.unitModel COMMAND HolonomicDrivePlant.unitModel)

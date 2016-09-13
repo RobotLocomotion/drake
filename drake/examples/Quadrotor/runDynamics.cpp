@@ -2,19 +2,22 @@
 #include <iostream>
 
 #include "drake/common/drake_path.h"
+#include "drake/examples/Quadrotor/QuadrotorInput.h"
+#include "drake/examples/Quadrotor/QuadrotorOutput.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/util/drakeAppUtil.h"
-
-#include "QuadrotorInput.h"
-#include "QuadrotorOutput.h"
 
 using namespace std;
 using namespace drake;
 using namespace Eigen;
+
+using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::kQuaternion;
 
 int main(int argc, char* argv[]) {
   const size_t num_lidar_points = 100;
@@ -46,7 +49,7 @@ int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if (!lcm->good()) return 1;
 
-  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
+  FloatingBaseType floating_base_type = kQuaternion;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/warehouse.sdf", floating_base_type);

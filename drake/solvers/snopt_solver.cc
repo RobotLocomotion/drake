@@ -7,7 +7,6 @@
 #include <cstring>
 
 #include "drake/math/autodiff.h"
-#include "drake/solvers/optimization.h"
 
 namespace snopt {
 #include "snopt.hh"
@@ -30,7 +29,7 @@ unsigned int constexpr snopt_mincw = 500;
 unsigned int constexpr snopt_miniw = 500;
 unsigned int constexpr snopt_minrw = 500;
 
-struct SNOPTData : public OptimizationProblem::SolverData {
+struct SNOPTData : public MathematicalProgram::SolverData {
   std::vector<char> cw;
   std::vector<snopt::integer> iw;
   std::vector<snopt::doublereal> rw;
@@ -110,11 +109,23 @@ struct SNOPTData : public OptimizationProblem::SolverData {
 };
 
 struct SNOPTRun {
-  explicit SNOPTRun(SNOPTData& d) : D(d) {
-    // Minimum default allocation needed by snInit
-    D.min_alloc_w(snopt_mincw, snopt_miniw * 1000, snopt_minrw * 1000);
+  SNOPTRun(SNOPTData& d, MathematicalProgram const* current_problem) : D(d) {
+    // Use the minimum default allocation needed by snInit.  The +1
+    // added to snopt_mincw is to make room for the instance pointer.
+    D.min_alloc_w(snopt_mincw + 1, snopt_miniw * 1000, snopt_minrw * 1000);
 
     snInit();
+
+    // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
+    // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
+    // expressed in Fortran array slicing.  Use the space to pass our problem
+    // instance pointer to our userfun.
+    snSeti("User character workspace", snopt_mincw + 1);
+    {
+      char const* const pcp = reinterpret_cast<char*>(&current_problem);
+      char* const cu_cp = d.cw.data() + 8 * snopt_mincw;
+      std::copy(pcp, pcp + sizeof(current_problem), cu_cp);
+    }
   }
 
   ~SNOPTRun() {
@@ -173,7 +184,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                          snopt::doublereal ru[], snopt::integer* lenru) {
   // Our snOptA call passes the snopt workspace as the user workspace and
   // reserves one 8-char of space to pass the problem pointer.
-  OptimizationProblem const* current_problem = NULL;
+  MathematicalProgram const* current_problem = NULL;
   {
     char* const pcp = reinterpret_cast<char*>(&current_problem);
     char const* const cu_cp = cu + 8 * snopt_mincw;
@@ -253,22 +264,9 @@ bool SnoptSolver::available() const {
   return true;
 }
 
-SolutionResult SnoptSolver::Solve(OptimizationProblem& prog) const {
+SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
-  SNOPTRun cur(*d);
-
-  OptimizationProblem const* current_problem = &prog;
-
-  // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
-  // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
-  // expressed in Fortran array slicing.   Use the space to pass our problem
-  // instance pointer to our userfun.
-  cur.snSeti("User character workspace", snopt_mincw + 1);
-  {
-    char const* const pcp = reinterpret_cast<char*>(&current_problem);
-    char* const cu_cp = d->cw.data() + 8 * snopt_mincw;
-    std::copy(pcp, pcp + sizeof(current_problem), cu_cp);
-  }
+  SNOPTRun cur(*d, &prog);
 
   snopt::integer nx = prog.num_vars();
   d->min_alloc_x(nx);
@@ -451,10 +449,10 @@ SolutionResult SnoptSolver::Solve(OptimizationProblem& prog) const {
       &Cold, &nF, &nx, &nxname, &nFname, &ObjAdd, &ObjRow, Prob, snopt_userfun,
       iAfun, jAvar, &lenA, &lenA, A, iGfun, jGvar, &lenG, &lenG, xlow, xupp,
       xnames, Flow, Fupp, Fnames, x, xstate, xmul, F, Fstate, Fmul, &info,
-      &mincw, &miniw, &minrw, &nS, &nInf, &sInf, d->cw.data(), &d->lencw,
-      d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
+      &mincw, &miniw, &minrw, &nS, &nInf, &sInf,
       // Pass the snopt workspace as the user workspace.  We already set
       // the maxcu option to reserve some of it for our user code.
+      d->cw.data(), &d->lencw, d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
       d->cw.data(), &d->lencw, d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
       npname, 8 * nxname, 8 * nFname, 8 * d->lencw, 8 * d->lencw);
 

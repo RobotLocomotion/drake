@@ -1,19 +1,36 @@
 #pragma once
 
+#include <limits>
 #include <string>
 #include <vector>
-#include <limits>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/drakeSystemFramework_export.h"
-#include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/cache.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
+
+
+/** @defgroup systems Modeling Dynamical Systems
+ * @{
+ * @brief Drake uses a Simulink-inspired description of dynamical systems.
+ *
+ * Includes basic building blocks (adders, integrators, delays, etc),
+ * physics models of mechanical systems, and a growing list of sensors,
+ * actuators, controllers, planners, estimators.
+ *
+ * All dynamical systems derive from the System base class, and must
+ * explicitly  declare all State, parameters, and noise/disturbances inputs.
+ * The Diagram class permits modeling complex systems from libraries of parts.
+ * @}
+ */
+
+
 
 /// This information is returned along with the next update/sample/event time
 /// and is provided back to the System when that time is reached to ensure that
@@ -101,7 +118,7 @@ class System {
       if (get_output_port(i).get_data_type() == kVectorValued) {
         const VectorBase<T>* output_vector = output->get_vector_data(i);
         DRAKE_THROW_UNLESS(output_vector != nullptr);
-        DRAKE_THROW_UNLESS(output_vector->get_value().rows() ==
+        DRAKE_THROW_UNLESS(output_vector->size() ==
                            get_output_port(i).get_size());
       }
     }
@@ -109,7 +126,7 @@ class System {
 
   /// Checks that @p context is consistent for this system.
   /// @throw exception unless `context` is valid for this system.
-  void CheckValidContext(const ContextBase<T>& context) const {
+  void CheckValidContext(const Context<T>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
     DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
@@ -123,7 +140,7 @@ class System {
       if (this->get_input_port(i).get_data_type() == kVectorValued) {
         const VectorBase<T>* input_vector = context.get_vector_input(i);
         DRAKE_THROW_UNLESS(input_vector != nullptr);
-        DRAKE_THROW_UNLESS(input_vector->get_value().rows() ==
+        DRAKE_THROW_UNLESS(input_vector->size() ==
                            get_input_port(i).get_size());
       }
     }
@@ -132,20 +149,18 @@ class System {
   /// Returns an Eigen expression for a vector valued input port with index
   /// @p port_index in this system.
   Eigen::VectorBlock<const VectorX<T>> get_input_vector(
-      const ContextBase<T>& context, int port_index) const {
+      const Context<T>& context, int port_index) const {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    const VectorBase<T>* input_vector =
-        context.get_vector_input(port_index);
+    const BasicVector<T>* input_vector = context.get_vector_input(port_index);
 
     DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->get_value().rows() ==
-                 get_input_port(port_index).get_size());
+    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
 
     return input_vector->get_value();
   }
 
   // Returns a copy of the continuous state vector into an Eigen vector.
-  VectorX<T> CopyContinuousStateVector(const ContextBase<T> &context) const {
+  VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
     return context.get_state().continuous_state->get_state().CopyToVector();
   }
 
@@ -153,14 +168,14 @@ class System {
   /// numbers of concrete input ports and state variables for this System.
   /// Since input port pointers are not owned by the context, they should
   /// simply be initialized to nullptr.
-  virtual std::unique_ptr<ContextBase<T>> CreateDefaultContext() const = 0;
+  virtual std::unique_ptr<Context<T>> CreateDefaultContext() const = 0;
 
   /// Returns a default output, initialized with the correct number of
   /// concrete output ports for this System. @p context is provided as
   /// an argument to support some specialized use cases. Most typical
   /// System implementations should ignore it.
   virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const ContextBase<T>& context) const = 0;
+      const Context<T>& context) const = 0;
 
   /// This method is invoked by a Simulator at designated meaningful points
   /// along a trajectory, to allow the executing System a chance to take some
@@ -183,7 +198,7 @@ class System {
   /// case the change in step size may affect the numerical result somewhat
   /// since a smaller integrator step produces a more accurate solution.
   // TODO(sherm1) Provide sample rate option for Publish().
-  void Publish(const ContextBase<T>& context) const {
+  void Publish(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DoPublish(context);
   }
@@ -195,7 +210,7 @@ class System {
   // reference to only the part that is allowed to change. This will likely
   // require splitting into several APIs since different sample/update/event
   // actions permit different modifications.
-  void Update(ContextBase<T>* context, const SampleActions& actions) const {
+  void Update(Context<T>* context, const SampleActions& actions) const {
     DRAKE_ASSERT_VOID(CheckValidContext(*context));
     DoUpdate(context, actions);
   }
@@ -208,7 +223,7 @@ class System {
   /// action (with a const Context) or an update action (with a mutable
   /// Context). The SampleAction object is retained and returned to the System
   /// when it is time to take the action.
-  double CalcNextSampleTime(const ContextBase<T>& context,
+  double CalcNextSampleTime(const Context<T>& context,
                             SampleActions* actions) const {
     // TODO(sherm1) Validate context (at least in Debug).
     DRAKE_ASSERT(actions != nullptr);
@@ -218,20 +233,18 @@ class System {
 
   /// Computes the output for the given context, possibly updating values
   /// in the cache.
-  virtual void EvalOutput(const ContextBase<T>& context,
+  virtual void EvalOutput(const Context<T>& context,
                           SystemOutput<T>* output) const = 0;
 
   /// Returns the potential energy currently stored in the configuration
   /// provided in the given @p context. Non-physical Systems will return 0.
-  virtual T EvalPotentialEnergy(const ContextBase<T>& context) const {
+  virtual T EvalPotentialEnergy(const Context<T>& context) const {
     return T(0);
   }
 
   /// Returns the kinetic energy currently present in the motion provided in
   /// the given @p context. Non-physical Systems will return 0.
-  virtual T EvalKineticEnergy(const ContextBase<T>& context) const {
-    return T(0);
-  }
+  virtual T EvalKineticEnergy(const Context<T>& context) const { return T(0); }
 
   /// Returns the rate at which mechanical energy is being converted *from*
   /// potential energy *to* kinetic energy by this system in the given Context.
@@ -242,7 +255,7 @@ class System {
   /// (J/s).
   ///
   /// By default, returns zero. Continuous, physical systems should override.
-  virtual T EvalConservativePower(const ContextBase<T>& context) const {
+  virtual T EvalConservativePower(const Context<T>& context) const {
     return T(0);
   }
 
@@ -255,7 +268,7 @@ class System {
   /// This method is meaningful only for physical systems; others return 0.
   ///
   /// By default, returns zero. Continuous, physical systems should override.
-  virtual T EvalNonConservativePower(const ContextBase<T>& context) const {
+  virtual T EvalNonConservativePower(const Context<T>& context) const {
     return T(0);
   }
 
@@ -282,7 +295,7 @@ class System {
   ///
   /// @param derivatives The output vector. Will be the same length as the
   ///                    state vector Context.state.continuous_state.
-  virtual void EvalTimeDerivatives(const ContextBase<T>& context,
+  virtual void EvalTimeDerivatives(const Context<T>& context,
                                    ContinuousState<T>* derivatives) const {
     return;
   }
@@ -304,8 +317,8 @@ class System {
   /// position. Implementations that are not second-order systems may simply
   /// do nothing.
   virtual void MapVelocityToConfigurationDerivatives(
-      const ContextBase<T>& context, const StateVector<T>& generalized_velocity,
-      StateVector<T>* configuration_derivatives) const {
+      const Context<T>& context, const VectorBase<T>& generalized_velocity,
+      VectorBase<T>* configuration_derivatives) const {
     if (generalized_velocity.size() != configuration_derivatives->size()) {
       throw std::out_of_range(
           "generalized_velocity.size() " +
@@ -340,15 +353,21 @@ class System {
 
   /// Adds a port with the specified @p type, @p size, and @p sampling
   /// to the input topology.
-  void DeclareInputPort(PortDataType type, int size, SamplingSpec sampling) {
-    input_ports_.emplace_back(this, kInputPort, get_num_input_ports(),
-                              kVectorValued, size, sampling);
+  /// @return descriptor of declared port.
+  const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size,
+                                                  SamplingSpec sampling) {
+    int port_number = get_num_input_ports();
+    input_ports_.emplace_back(this, kInputPort, port_number, kVectorValued,
+                              size, sampling);
+    return input_ports_.back();
   }
 
   /// Adds an abstract-valued port with the specified @p sampling to the
   /// input topology.
-  void DeclareAbstractInputPort(SamplingSpec sampling) {
-    DeclareInputPort(kAbstractValued, 0 /* size */, sampling);
+  /// @return descriptor of declared port.
+  const SystemPortDescriptor<T>& DeclareAbstractInputPort(
+      SamplingSpec sampling) {
+    return DeclareInputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
   /// Adds a port with the specified @p descriptor to the output topology.
@@ -360,15 +379,21 @@ class System {
 
   /// Adds a port with the specified @p type, @p size, and @p sampling
   /// to the output topology.
-  void DeclareOutputPort(PortDataType type, int size, SamplingSpec sampling) {
-    output_ports_.emplace_back(this, kOutputPort, get_num_output_ports(),
-                               kVectorValued, size, sampling);
+  /// @return descriptor of declared port.
+  const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type, int size,
+                                                   SamplingSpec sampling) {
+    int port_number = get_num_output_ports();
+    output_ports_.emplace_back(this, kOutputPort, port_number, kVectorValued,
+                               size, sampling);
+    return output_ports_.back();
   }
 
   /// Adds an abstract-valued port with the specified @p sampling to the
   /// output topology.
-  void DeclareAbstractOutputPort(SamplingSpec sampling) {
-    DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
+  /// @return descriptor of declared port.
+  const SystemPortDescriptor<T>& DeclareAbstractOutputPort(
+      SamplingSpec sampling) {
+    return DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
   /// Returns a mutable Eigen expression for a vector valued output port with
@@ -379,11 +404,10 @@ class System {
                                                         int port_index) const {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
 
-    VectorBase<T>* output_vector = output->
-        get_mutable_port(port_index)->template GetMutableVectorData<T>();
+    BasicVector<T>* output_vector = output->GetMutableVectorData(port_index);
     DRAKE_ASSERT(output_vector != nullptr);
-    DRAKE_ASSERT(output_vector->get_value().rows() ==
-        get_output_port(port_index).get_size());
+    DRAKE_ASSERT(output_vector->size() ==
+                 get_output_port(port_index).get_size());
 
     return output_vector->get_mutable_value();
   }
@@ -393,14 +417,14 @@ class System {
   /// sending messages, producing console output, debugging, logging, saving the
   /// trajectory to a file, etc. You may assume that the `context` has already
   /// been validated before it is passed to you here.
-  virtual void DoPublish(const ContextBase<T>& context) const {}
+  virtual void DoPublish(const Context<T>& context) const {}
 
   /// Implement this method if your System has any difference variables xd,
   /// mode variables, or sampled input or output ports. The `actions` argument
   /// specifies what to do and may include difference variable updates, port
   /// sampling, or execution of event handlers that may make arbitrary changes
   /// to the Context.
-  virtual void DoUpdate(ContextBase<T>* context,
+  virtual void DoUpdate(Context<T>* context,
                         const SampleActions& actions) const {}
 
   /// Implement this method if your System has any discrete actions which must
@@ -408,7 +432,7 @@ class System {
   /// has already been validated and the `actions` pointer is not null.
   /// The default implemention returns with `actions` having a next sample
   /// time of Infinity and no actions to take.
-  virtual void DoCalcNextSampleTime(const ContextBase<T>& context,
+  virtual void DoCalcNextSampleTime(const Context<T>& context,
                                     SampleActions* actions) const {
     actions->time = std::numeric_limits<double>::infinity();
   }

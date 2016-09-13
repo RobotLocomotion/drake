@@ -6,8 +6,9 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
-#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -39,6 +40,7 @@ using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::Gradient;
+using drake::systems::plants::joints::FloatingBaseType;
 
 using std::allocator;
 using std::cerr;
@@ -78,7 +80,7 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
 
 RigidBodyTree::RigidBodyTree(
     const std::string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type)
+    const FloatingBaseType floating_base_type)
     : RigidBodyTree() {
   // Adds the model defined in filename to this tree.
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
@@ -87,7 +89,7 @@ RigidBodyTree::RigidBodyTree(
 
 RigidBodyTree::RigidBodyTree(void)
     : collision_model_(DrakeCollision::newModel()) {
-  // Sets the gravity vector;
+  // Sets the gravity vector.
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   // Adds the rigid body representing the world. It has model instance ID 0.
@@ -118,7 +120,7 @@ void RigidBodyTree::SortTree() {
   if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
 
   for (size_t i = 0; i < bodies.size() - 1; ) {
-    if (bodies[i]->hasParent()) {
+    if (bodies[i]->has_mobilizer_joint()) {
       auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
                                [&](std::unique_ptr<RigidBody> const& p) {
                                  return bodies[i]->has_as_parent(*p);
@@ -165,7 +167,7 @@ void RigidBodyTree::compile(void) {
   //   RigidBodyTree::downwards_body_iterator: travels the tree downwards from
   //   the root towards the last leaf.
   for (size_t i = 0; i < bodies.size(); ++i) {
-    if (bodies[i]->hasParent() &&
+    if (bodies[i]->has_mobilizer_joint() &&
         bodies[i]->get_spatial_inertia().isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); ++j) {
@@ -203,7 +205,7 @@ void RigidBodyTree::compile(void) {
   num_velocities_ = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       body.set_position_start_index(num_positions_);
       num_positions_ += body.getJoint().getNumPositions();
       body.set_velocity_start_index(num_velocities_);
@@ -231,7 +233,7 @@ void RigidBodyTree::compile(void) {
                                        std::numeric_limits<double>::infinity());
   for (size_t i = 0; i < bodies.size(); ++i) {
     auto& body = bodies[i];
-    if (body->hasParent()) {
+    if (body->has_mobilizer_joint()) {
       const DrakeJoint& joint = body->getJoint();
       joint_limit_min.segment(body->get_position_start_index(),
                               joint.getNumPositions()) =
@@ -259,7 +261,7 @@ void RigidBodyTree::compile(void) {
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
   Eigen::VectorXd q(num_positions_);
   for (const auto& body_ptr : bodies) {
-    if (body_ptr->hasParent()) {
+    if (body_ptr->has_mobilizer_joint()) {
       const DrakeJoint& joint = body_ptr->getJoint();
       q.middleRows(
           body_ptr->get_position_start_index(), joint.getNumPositions()) =
@@ -273,7 +275,7 @@ Eigen::VectorXd RigidBodyTree::getRandomConfiguration(
     std::default_random_engine& generator) const {
   Eigen::VectorXd q(num_positions_);
   for (const auto& body_ptr : bodies) {
-    if (body_ptr->hasParent()) {
+    if (body_ptr->has_mobilizer_joint()) {
       const DrakeJoint& joint = body_ptr->getJoint();
       q.middleRows(
           body_ptr->get_position_start_index(), joint.getNumPositions()) =
@@ -330,7 +332,7 @@ void RigidBodyTree::drawKinematicTree(
     dotfile << "spatial inertia=" << endl << body->get_spatial_inertia()
             << endl;
     dotfile << "\"];" << endl;
-    if (body->hasParent()) {
+    if (body->has_mobilizer_joint()) {
       const auto& joint = body->getJoint();
       dotfile << "  " << body->get_name() << " -> "
               << body->get_parent()->get_name()
@@ -401,7 +403,7 @@ void RigidBodyTree::updateCollisionElements(
 void RigidBodyTree::updateStaticCollisionElements() {
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    if (!body.hasParent()) {
+    if (!body.has_mobilizer_joint()) {
       updateCollisionElements(body, Isometry3d::Identity());
     }
   }
@@ -413,7 +415,7 @@ void RigidBodyTree::updateDynamicCollisionElements(
   // object.  and it's presumably somewhat expensive.
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       updateCollisionElements(body, cache.getElement(body).transform_to_world);
     }
   }
@@ -423,7 +425,7 @@ void RigidBodyTree::updateDynamicCollisionElements(
 void RigidBodyTree::getTerrainContactPoints(
     const RigidBody& body, Eigen::Matrix3Xd* terrain_points) const {
   // Ensures terrain_points is a valid pointer.
-  DRAKE_ABORT_UNLESS(terrain_points);
+  DRAKE_DEMAND(terrain_points);
 
   // Clears matrix before filling it again.
   size_t num_points = 0;
@@ -719,7 +721,7 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
     RigidBody& body = *bodies[i];
     KinematicsCacheElement<Scalar>& element = cache.getElement(body);
 
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       const KinematicsCacheElement<Scalar>& parent_element =
           cache.getElement(*body.get_parent());
       const DrakeJoint& joint = body.getJoint();
@@ -825,7 +827,7 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
     // N.B. Reverse iteration.
     for (auto it = bodies.rbegin(); it != bodies.rend(); ++it) {
       const RigidBody& body = **it;
-      if (body.hasParent()) {
+      if (body.has_mobilizer_joint()) {
         const auto& element = cache.getElement(body);
         auto& parent_element = cache.getElement(*body.get_parent());
         parent_element.crb_in_world += element.crb_in_world;
@@ -850,7 +852,7 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
   int gradient_row_start = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       const auto& element = cache.getElement(body);
       const DrakeJoint& joint = body.getJoint();
       int ncols_joint =
@@ -887,7 +889,7 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
   ret.setZero();
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       if (is_part_of_model_instances(body, model_instance_id_set)) {
         const auto& element = cache.getElement(body);
         ret.noalias() += element.inertia_in_world *
@@ -1094,12 +1096,12 @@ int RigidBodyTree::parseBodyOrFrameID(const int body_or_frame_id) const {
 std::vector<int> RigidBodyTree::FindAncestorBodies(
     int body_index) const {
   // Verifies that body_index is valid. Aborts if it is invalid.
-  DRAKE_ABORT_UNLESS(body_index >= 0 &&
+  DRAKE_DEMAND(body_index >= 0 &&
                      body_index < static_cast<int>(bodies.size()));
 
   std::vector<int> ancestor_body_list;
   const RigidBody* current_body = bodies[body_index].get();
-  while (current_body->hasParent()) {
+  while (current_body->has_mobilizer_joint()) {
     ancestor_body_list.push_back(current_body->get_parent()->get_body_index());
     current_body = current_body->get_parent();
   }
@@ -1347,7 +1349,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 
   for (size_t i = 0; i < bodies.size(); ++i) {
     RigidBody& body_i = *bodies[i];
-    if (body_i.hasParent()) {
+    if (body_i.has_mobilizer_joint()) {
       const auto& element_i = cache.getElement(body_i);
       int v_start_i = body_i.get_velocity_start_index();
       int nv_i = body_i.getJoint().getNumVelocities();
@@ -1360,7 +1362,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 
       // Hij
       const RigidBody* body_j(body_i.get_parent());
-      while (body_j->hasParent()) {
+      while (body_j->has_mobilizer_joint()) {
         const auto& element_j = cache.getElement(*body_j);
         int v_start_j = body_j->get_velocity_start_index();
         int nv_j = body_j->getJoint().getNumVelocities();
@@ -1405,7 +1407,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
   for (size_t i = 0; i < bodies.size(); ++i) {
     RigidBody& body = *bodies[i];
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       const auto& element = cache.getElement(body);
 
       TwistVector<Scalar> spatial_accel = root_accel;
@@ -1437,7 +1439,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
   for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; --i) {
     RigidBody& body = *bodies[i];
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       const auto& element = cache.getElement(body);
       const auto& net_wrenches_const = net_wrenches;  // eliminates the need for
                                                       // another explicit
@@ -1466,7 +1468,7 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree::frictionTorques(
 
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    if (body.hasParent()) {
+    if (body.has_mobilizer_joint()) {
       const DrakeJoint& joint = body.getJoint();
       int nv_joint = joint.getNumVelocities();
       int v_start_joint = body.get_velocity_start_index();
@@ -1881,7 +1883,7 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
 std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
     int model_instance_id) const {
   // Verifies that parameter parent_body_index is valid.
-  DRAKE_ABORT_UNLESS(parent_body_index >= 0 &&
+  DRAKE_DEMAND(parent_body_index >= 0 &&
                      parent_body_index < get_number_of_bodies());
 
   // Obtains a reference to the parent body.
@@ -1925,7 +1927,7 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   // `true` or `false` in vector `name_match` based on whether the body's parent
   // joint's name matches @p joint_name.
   for (size_t i = 0; i < bodies.size(); ++i) {
-    if (bodies[i]->hasParent()) {
+    if (bodies[i]->has_mobilizer_joint()) {
       // Obtains the name of the rigid body's parent joint and then converts it
       // to be lower case.
       std::string current_joint_name = bodies[i]->getJoint().getName();
@@ -1986,7 +1988,7 @@ int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
 }
 
 const RigidBody& RigidBodyTree::get_body(int body_index) const {
-  DRAKE_ABORT_UNLESS(body_index >= 0 &&
+  DRAKE_DEMAND(body_index >= 0 &&
                      body_index < get_number_of_bodies());
   return *bodies[body_index].get();
 }
@@ -2141,98 +2143,10 @@ void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   bodies.push_back(std::move(body));
 }
 
-int RigidBodyTree::AddFloatingJoint(
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    const std::vector<int>& link_indices,
-    const std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    const PoseMap* pose_map) {
-  std::string floating_joint_name;
-  RigidBody* weld_to_body{nullptr};
-  Eigen::Isometry3d transform_to_world;
-
-  if (weld_to_frame == nullptr) {
-    // If weld_to_frame is not specified, weld the newly added model(s) to the
-    // world with zero offset.
-    weld_to_body = bodies[0].get();
-    floating_joint_name = "base";
-    transform_to_world = Eigen::Isometry3d::Identity();
-  } else {
-    // If weld_to_frame is specified and the model is being welded to the world,
-    // ensure the "body" variable within weld_to_frame is nullptr. Then, only
-    // use the transform_to_body variable within weld_to_frame to initialize
-    // the robot at the desired location in the world.
-    if (weld_to_frame->get_name()
-          == std::string(RigidBodyTree::kWorldName)) {
-      if (!weld_to_frame->has_as_rigid_body(nullptr)) {
-        throw std::runtime_error(
-            "RigidBodyTree::AddFloatingJoint: "
-            "Attempted to weld robot to the world while specifying a body "
-            "link!");
-      }
-      weld_to_body = bodies[0].get();  // the world's body
-      floating_joint_name = "base";
-    } else {
-      weld_to_body = weld_to_frame->get_mutable_rigid_body();
-      floating_joint_name = "weld";
-    }
-    transform_to_world = weld_to_frame->get_transform_to_body();
-  }
-
-  int num_floating_joints_added = 0;
-
-  for (auto i : link_indices) {
-    if (bodies[i]->get_parent() == nullptr) {
-      // The following code connects the parent-less link to the rigid body tree
-      // using a floating joint.
-      bodies[i]->set_parent(weld_to_body);
-
-      Eigen::Isometry3d transform_to_model = Eigen::Isometry3d::Identity();
-      if (pose_map != nullptr &&
-          pose_map->find(bodies[i]->get_name()) != pose_map->end())
-        transform_to_model = pose_map->at(bodies[i]->get_name());
-
-      switch (floating_base_type) {
-        case DrakeJoint::FIXED: {
-          std::unique_ptr<DrakeJoint> joint(new FixedJoint(
-              floating_joint_name, transform_to_world * transform_to_model));
-          bodies[i]->setJoint(move(joint));
-          num_floating_joints_added++;
-        } break;
-        case DrakeJoint::ROLLPITCHYAW: {
-          std::unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
-              floating_joint_name, transform_to_world * transform_to_model));
-          bodies[i]->setJoint(move(joint));
-          num_floating_joints_added++;
-        } break;
-        case DrakeJoint::QUATERNION: {
-          std::unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
-              floating_joint_name, transform_to_world * transform_to_model));
-          bodies[i]->setJoint(move(joint));
-          num_floating_joints_added++;
-        } break;
-        default:
-          throw std::runtime_error("unknown floating base type");
-      }
-    }
-  }
-
-  if (num_floating_joints_added == 0) {
-    throw std::runtime_error(
-        "No root links found (every link in the rigid body model has a joint "
-        "connecting it to some other joint).  You're about to loop "
-        "indefinitely in the compile() method.  Still need to handle this "
-        "case.");
-    // could handle it by disconnecting one of the internal nodes, making that a
-    // loop joint, and connecting the new free joint to the world
-  }
-
-  return num_floating_joints_added;
-}
-
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string, const std::string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   drake::parsers::urdf::AddModelInstanceFromUrdfString(
@@ -2245,7 +2159,7 @@ void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string,
     std::map<std::string, std::string>& package_map,
     const std::string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::urdf::AddModelInstanceFromUrdfString(
       xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
@@ -2255,7 +2169,7 @@ void RigidBodyTree::addRobotFromURDFString(
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDF(
     const std::string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
@@ -2266,7 +2180,7 @@ void RigidBodyTree::addRobotFromURDF(
 void RigidBodyTree::addRobotFromURDF(
     const std::string& filename,
     std::map<std::string, std::string>& package_map,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       filename, package_map, floating_base_type, weld_to_frame, this);
@@ -2275,7 +2189,7 @@ void RigidBodyTree::addRobotFromURDF(
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromSDF(
     const std::string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::sdf::AddModelInstancesFromSdfFile(filename,
       floating_base_type, weld_to_frame, this);

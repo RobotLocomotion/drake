@@ -1,16 +1,14 @@
 # Source files used to build drakeSystemFramework.
 set(sources
-  basic_state_and_output_vector.cc
-  basic_state_vector.cc
   basic_vector.cc
   cache.cc
-  context_base.cc
   context.cc
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
   examples/controlled_spring_mass_system.cc
   examples/spring_mass_system.cc
+  leaf_context.cc
   leaf_system.cc
   primitives/adder.cc
   primitives/constant_value_source.cc
@@ -23,7 +21,6 @@ set(sources
   state.cc
   state_subvector.cc
   state_supervector.cc
-  state_vector.cc
   system.cc
   system_input.cc
   system_output.cc
@@ -41,21 +38,17 @@ set(sources
 # System2 framework template implementations have been moved into .cc files
 # using explicit instantiation, tighten this list.
 set(installed_headers
-  basic_state_and_output_vector.h
-  basic_state_vector.h
   basic_vector.h
   cache.h
   context.h
-  context_base.h
   diagram.h
   diagram_builder.h
   diagram_context.h
-  leaf_state_vector.h
+  leaf_context.h
   leaf_system.h
   state.h
   state_subvector.h
   state_supervector.h
-  state_vector.h
   system.h
   system_input.h
   system_output.h

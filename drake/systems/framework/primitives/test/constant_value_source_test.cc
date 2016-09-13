@@ -32,7 +32,7 @@ class ConstantValueSourceTest : public ::testing::Test {
   }
 
   std::unique_ptr<System<double>> source_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };

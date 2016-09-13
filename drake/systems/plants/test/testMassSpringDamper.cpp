@@ -3,22 +3,20 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
-
-using Eigen::Matrix;
-using std::make_shared;
-using drake::GetDrakePath;
-using drake::RigidBodySystem;
-using drake::toEigen;
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace test {
+
+using std::make_shared;
+
+using Eigen::Matrix;
 
 GTEST_TEST(testMassSpringDamper, AllTests) {
   auto sys = make_shared<RigidBodySystem>();
   sys->AddModelInstanceFromFile(
       GetDrakePath() + "/systems/plants/test/MassSpringDamper.urdf",
-      DrakeJoint::FIXED);
+      drake::systems::plants::joints::kFixed);
 
   double mass = 1.0, k = 10.0, b = 1.0;
   Matrix<double, 2, 1> xdot_desired;

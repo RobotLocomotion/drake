@@ -7,6 +7,7 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/feedback_system.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/util/drakeAppUtil.h"
 
 using namespace std;
@@ -37,7 +38,7 @@ int main(int argc, char* argv[]) {
   auto c = MakeTimeInvariantLqrSystem(*quad, xG, uG, Q, R);
   auto v = std::make_shared<BotVisualizer<QuadrotorState> >(
       lcm, GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-      DrakeJoint::ROLLPITCHYAW);
+      drake::systems::plants::joints::kRollPitchYaw);
 
   auto sys = cascade(feedback(quad, c), v);
 

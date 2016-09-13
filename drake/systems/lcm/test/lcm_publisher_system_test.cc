@@ -77,7 +77,7 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
   // Instantiates a receiver of lcmt_drake_signal messages.
   MessageSubscriber subscriber(channel_name, lcm);
 
-  std::unique_ptr<ContextBase<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
 
   // Verifies that the context has one input port.
@@ -86,12 +86,12 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
   // Instantiates a BasicVector with known state. This is the basic vector that
   // we want the LcmPublisherSystem to publish as a drake::lcmt_drake_signal
   // message.
-  std::unique_ptr<VectorBase<double>> vector_base(
+  std::unique_ptr<BasicVector<double>> vec(
       new BasicVector<double>(kDim));
 
   {
     Eigen::VectorBlock<VectorX<double>> vector_value =
-        vector_base->get_mutable_value();
+        vec->get_mutable_value();
 
     for (int ii = 0; ii < kDim; ++ii) {
       vector_value[ii] = ii;
@@ -103,7 +103,7 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
   // created by the LcmPublisherSystem since we do not have write access to its
   // input vector.
   std::unique_ptr<InputPort> input_port(
-      new FreestandingInputPort(std::move(vector_base)));
+      new FreestandingInputPort(std::move(vec)));
 
   context->SetInputPort(kPortNumber, std::move(input_port));
 

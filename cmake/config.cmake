@@ -91,10 +91,10 @@ function(drake_setup_java_for_matlab)
         message(WARNING
           "Could not determine MATLAB JVM version because MATLAB log file was not created")
       endif()
+    else()
+      message(WARNING
+        "Could not determine MATLAB JVM version because MATLAB exited with nonzero result ${_result}")
     endif()
-  else()
-    message(WARNING
-      "Could not determine MATLAB JVM version because MATLAB exited with nonzero result ${_result}")
   endif()
 endfunction()
 

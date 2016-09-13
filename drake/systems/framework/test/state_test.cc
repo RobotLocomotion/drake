@@ -5,9 +5,8 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
-#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/state_vector.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -18,27 +17,22 @@ constexpr int kVelocityLength = 1;
 constexpr int kMiscLength = 1;
 constexpr int kLength = kPositionLength + kVelocityLength + kMiscLength;
 
-std::unique_ptr<StateVector<int>> MakeStateVector() {
-  std::unique_ptr<VectorBase<int>> vec;
-  vec.reset(new BasicVector<int>(kLength));
-  vec->get_mutable_value() << 1, 2, 3, 4;
-
-  std::unique_ptr<StateVector<int>> state_vector(
-      new BasicStateVector<int>(std::move(vec)));
-  return state_vector;
+std::unique_ptr<VectorBase<int>> MakeSomeVector() {
+  return BasicVector<int>::Make({1, 2, 3, 4});
 }
 
 class ContinuousStateTest : public ::testing::Test {
  protected:
   void SetUp() override {
     continuous_state_.reset(new ContinuousState<int>(
-        MakeStateVector(), kPositionLength, kVelocityLength, kMiscLength));
+        MakeSomeVector(), kPositionLength, kVelocityLength, kMiscLength));
   }
 
   std::unique_ptr<ContinuousState<int>> continuous_state_;
 };
 
 TEST_F(ContinuousStateTest, Access) {
+  EXPECT_EQ(kLength, continuous_state_->get_state().size());
   EXPECT_EQ(kPositionLength,
             continuous_state_->get_generalized_position().size());
   EXPECT_EQ(1, continuous_state_->get_generalized_position().GetAtIndex(0));
@@ -75,10 +69,10 @@ TEST_F(ContinuousStateTest, OutOfBoundsAccess) {
 // Tests that std::out_of_range is thrown if the component dimensions do not
 // sum to the state vector dimension.
 TEST_F(ContinuousStateTest, OutOfBoundsConstruction) {
-  EXPECT_THROW(continuous_state_.reset(
-                   new ContinuousState<int>(MakeStateVector(), kPositionLength,
-                                            kVelocityLength, kMiscLength + 1)),
-               std::out_of_range);
+  EXPECT_THROW(
+      continuous_state_.reset(new ContinuousState<int>(
+          MakeSomeVector(), kPositionLength, kVelocityLength, kMiscLength + 1)),
+      std::out_of_range);
 }
 
 // Tests that std::logic_error is thrown if there are more velocity than
@@ -86,7 +80,7 @@ TEST_F(ContinuousStateTest, OutOfBoundsConstruction) {
 TEST_F(ContinuousStateTest, MoreVelocityThanPositionVariables) {
   EXPECT_THROW(
       continuous_state_.reset(new ContinuousState<int>(
-          MakeStateVector(), 1 /* num_q */, 2 /* num_v */, kMiscLength + 1)),
+          MakeSomeVector(), 1 /* num_q */, 2 /* num_v */, kMiscLength + 1)),
       std::out_of_range);
 }
 

@@ -38,9 +38,9 @@ class PidControlledSpringMassSystem : public Diagram<T> {
 
   ~PidControlledSpringMassSystem() override {}
 
-  void set_position(ContextBase<T>* context, const T& position) const;
+  void set_position(Context<T>* context, const T& position) const;
 
-  void set_velocity(ContextBase<T>* context, const T& position) const;
+  void set_velocity(Context<T>* context, const T& position) const;
 
   const SpringMassSystem& get_plant() const { return *plant_.get(); }
 
@@ -49,7 +49,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
 
   /// Sets @p context to a default state in which the integral of the
   /// controller is zero.
-  void SetDefaultState(ContextBase<T>* context) const;
+  void SetDefaultState(Context<T>* context) const;
 
  private:
   std::unique_ptr<SpringMassSystem> plant_;

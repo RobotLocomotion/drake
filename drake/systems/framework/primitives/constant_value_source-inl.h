@@ -11,7 +11,7 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {
@@ -25,14 +25,14 @@ ConstantValueSource<T>::ConstantValueSource(
 
 template <typename T>
 std::unique_ptr<SystemOutput<T>> ConstantValueSource<T>::AllocateOutput(
-    const ContextBase<T>& context) const {
+    const Context<T>& context) const {
   std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
   output->add_port(source_value_->Clone());
   return std::unique_ptr<SystemOutput<T>>(output.release());
 }
 
 template <typename T>
-void ConstantValueSource<T>::EvalOutput(const ContextBase<T>& context,
+void ConstantValueSource<T>::EvalOutput(const Context<T>& context,
                                         SystemOutput<T>* output) const {
   DRAKE_ASSERT(output->get_num_ports() == 1);
   AbstractValue* output_data = output->GetMutableData(0);

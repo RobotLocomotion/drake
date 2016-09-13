@@ -74,7 +74,6 @@ cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization toob
 cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32;WITH_MOSEK" OFF)
 cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-cmake_dependent_option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 
 ###########################################
 # External Projects that are OFF by default
@@ -88,6 +87,7 @@ if(NOT WIN32) # many of these might work on win32 with little or no work... they
   option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
   option(WITH_OCTOMAP "provides oct-tree data structures")
   option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
+  option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 endif()
 
 # Option to skip building drake proper via the superbuild. This allows the
@@ -106,11 +106,8 @@ endif()
 # BEGIN external projects
 
 # External projects in order of dependencies; 'trivial' ones first
-drake_add_external(avl PUBLIC)
 drake_add_external(bertini)
-drake_add_external(bullet PUBLIC CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
-drake_add_external(gflags PUBLIC CMAKE)
 drake_add_external(gloptipoly)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC)
@@ -120,16 +117,57 @@ drake_add_external(sedumi)
 drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE)
-drake_add_external(swig_matlab PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
-drake_add_external(xfoil PUBLIC)
 drake_add_external(yalmip PUBLIC)
+
+# avl
+# The Ninja generator does not support Fortran.
+drake_add_external(avl PUBLIC CMAKE GENERATOR "Unix Makefiles")
+
+# bullet
+if(WIN32)
+  set(BULLET_EXTRA_CMAKE_ARGS -DUSE_MSVC_RUNTIME_LIBRARY_DLL=ON)
+else()
+  set(BULLET_EXTRA_CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
+endif()
+
+drake_add_external(bullet PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_BULLET2_DEMOS=OFF
+    -DBUILD_CPU_DEMOS=OFF
+    -DBUILD_EXTRAS=OFF
+    -DBUILD_OPENGL3_DEMOS=OFF
+    -DBUILD_UNIT_TESTS=OFF
+    -DCMAKE_DEBUG_POSTFIX=
+    -DCMAKE_MINSIZEREL_POSTFIX=
+    -DCMAKE_RELWITHDEBINFO_POSTFIX=
+    -DINSTALL_LIBS=ON
+    -DPKGCONFIG_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/lib/pkgconfig
+    -DUSE_DOUBLE_PRECISION=ON
+    ${BULLET_EXTRA_CMAKE_ARGS})
 
 # cmake
 drake_add_external(cmake PUBLIC ALWAYS
   BUILD_COMMAND :
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/cmake)
 
+# dreal
+drake_add_external(dreal PUBLIC CMAKE
+  CMAKE_ARGS -DUSE_NLOPT=OFF
+  SOURCE_SUBDIR src)
+
+# gflags
+if(WIN32)
+  # We can't figure out how to get gflags shared libraries working on Windows
+  # (see #3345), so here we build it with static libraries only.  Code that
+  # lives in Drake's shared libraries must be conditionalized to avoid using
+  # gflags on Windows.
+  drake_add_external(gflags PUBLIC CMAKE)
+else()
+  drake_add_external(gflags PUBLIC CMAKE
+    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
+endif()
+  
 # googletest
 drake_add_external(googletest PUBLIC CMAKE
   CMAKE_ARGS
@@ -168,10 +206,13 @@ drake_add_external(nlopt PUBLIC
     --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt
   INSTALL_COMMAND ${MAKE_COMMAND} install)
 
-# dreal
-drake_add_external(dreal PUBLIC CMAKE
-  CMAKE_ARGS -DUSE_NLOPT=OFF
-  SOURCE_SUBDIR src)
+# swig_matlab
+drake_add_external(swig_matlab PUBLIC
+  PATCH_COMMAND ./autogen.sh
+  CONFIGURE_COMMAND ./configure
+    --prefix=${CMAKE_INSTALL_PREFIX}
+    --with-matlab
+  INSTALL_COMMAND ${MAKE_COMMAND} install)
 
 # textbook
 drake_add_external(textbook PUBLIC
@@ -243,6 +284,10 @@ drake_add_external(director PUBLIC CMAKE
 drake_add_external(signalscope PUBLIC
   DEPENDS director)
 
+# xfoil
+# The Ninja generator does not support Fortran.
+drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
+
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
 # any dependencies used by MATLAB have been installed.
@@ -304,6 +349,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     swigmake
     yalmip
     yaml_cpp
+    xfoil
 )
 
 # END external projects

@@ -77,7 +77,7 @@ time.
 Code formatter settings
 =======================
 
-1. Make sure you have installed ``clang-format`` (see :code_style_tools:)
+1. Make sure you have installed ``clang-format`` (see :doc:`code_style_tools`)
 2. Go to File > Preferences > Tools > External Tools
 3. Add an entry for clang-format with
 

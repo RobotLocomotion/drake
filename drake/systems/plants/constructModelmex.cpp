@@ -121,7 +121,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       if (parent_ind >= 0) b->set_parent(model->bodies[parent_ind].get());
     }
 
-    if (b->hasParent()) {
+    if (b->has_mobilizer_joint()) {
       string joint_name =
           mxGetStdString(mxGetPropertySafe(pBodies, i, "jointname"));
       // mexPrintf("adding joint %s\n", joint_name.c_str());
@@ -262,7 +262,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       }
       // NOTE: the following should not be necessary since the same thing is
       // being done in RigidBodyTree::compile, which is called below.
-      //      if (!model->bodies[i]->hasParent()) {
+      //      if (!model->bodies[i]->has_mobilizer_joint()) {
       //        model->updateCollisionElements(model->bodies[i], cache);  //
       //        update static objects only once - right here on load
       //      }

@@ -12,6 +12,7 @@ namespace systems {
 /// The input to this system directly feeds through to its output.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @ingroup systems
 template <typename T>
 class Demultiplexer : public LeafSystem<T> {
  public:
@@ -23,7 +24,7 @@ class Demultiplexer : public LeafSystem<T> {
 
   /// Sets the i-th output port to the value of the i-th component of the input
   /// port.
-  void EvalOutput(const ContextBase<T>& context,
+  void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 };
 

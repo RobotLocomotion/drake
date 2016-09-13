@@ -6,7 +6,7 @@
 
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
@@ -60,7 +60,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
 
   std::string get_name() const override;
 
-  void EvalOutput(const ContextBase<double>& context,
+  void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override;
 
   /**
@@ -78,7 +78,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
   void SetMessage(std::vector<uint8_t> message_bytes);
 
  protected:
-  std::unique_ptr<VectorBase<double>> AllocateOutputVector(
+  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const SystemPortDescriptor<double>& descriptor) const override;
 
  private:

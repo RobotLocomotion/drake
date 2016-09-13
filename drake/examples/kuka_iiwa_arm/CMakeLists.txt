@@ -4,7 +4,7 @@ if(lcm_FOUND)
     drakeKukaIiwaArm
     drakeRBSystem
     drakeLCMSystem)
-  add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
+  drake_add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
 
   add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES
           iiwa_simulation.cc)

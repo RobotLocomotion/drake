@@ -4,20 +4,21 @@
 #include <string>
 
 #include "drake/drakeSystemFramework_export.h"
-#include "drake/systems/framework/basic_state_and_output_vector.h"
-#include "drake/systems/framework/context.h"
-#include "drake/systems/framework/state_vector.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
 /// The state of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters and meters/s.
+
 class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
-    : public BasicStateAndOutputVector<double> {
+    : public BasicVector<double> {
  public:
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
@@ -70,7 +71,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
   SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
                    bool system_is_forced = false);
 
-  using MyContext = ContextBase<double>;
+  using MyContext = Context<double>;
   using MyContinuousState = ContinuousState<double>;
   using MyOutput = SystemOutput<double>;
 
@@ -100,15 +101,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
     double external_force = 0;
     DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
     if (system_is_forced_) {
-      const VectorBase<double>* input =
-          context.get_vector_input(0);
-      // TODO(amcastro-tri): Add VectorBase::component(int idx) on
-      // VectorBase.
-      // refactor get_vector_input --> get_input_vector?
-      // So that the line below would simply read:
-      // external_force = context.get_input_vector(0).component(0)
-      // and becomes a one liner.
-      external_force = input->get_value().x();
+      external_force = context.get_vector_input(0)->GetAtIndex(0);
     }
     return external_force;
   }

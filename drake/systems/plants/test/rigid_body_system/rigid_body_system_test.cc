@@ -5,15 +5,12 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/common/drake_path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace systems {
 namespace plants {
-namespace test {
-namespace rigid_body_system {
 namespace {
-
-using drake::RigidBodySystem;
 
 // Tests the ability to load a URDF as part of the world of a rigid body system.
 GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
@@ -26,7 +23,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   rigid_body_sys->AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/rigid_body_system/world.urdf",
-      DrakeJoint::FIXED);
+      drake::systems::plants::joints::kFixed);
 
   // Verifies that the number of states, inputs, and outputs are all zero.
   EXPECT_EQ(rigid_body_sys->getNumStates(), 0u);
@@ -78,7 +75,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   rigid_body_sys->AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf",
-      DrakeJoint::QUATERNION, weld_to_frame);
+      drake::systems::plants::joints::kQuaternion, weld_to_frame);
 
   // Checks that the rigid body system has the correct number of states. The
   // rigid body system has 36 positions + 32 velocities = 68 states.
@@ -213,8 +210,6 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
 }
 
 }  // namespace
-}  // namespace rigid_body_system
-}  // namespace test
 }  // namespace plants
 }  // namespace systems
 }  // namespace drake

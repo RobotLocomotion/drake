@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/drakeRBM_export.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -34,7 +35,7 @@ namespace sdf {
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     const std::string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
 
 /**
@@ -60,7 +61,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const std::string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
@@ -84,7 +85,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstancesFromSdfString(
     const std::string& sdf_string,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 

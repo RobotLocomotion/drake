@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/integrator.h"
 #include "drake/systems/framework/system.h"
@@ -27,13 +28,11 @@ class DiagramContextTest : public ::testing::Test {
     adder0_->set_name("adder0");
     adder1_.reset(new Adder<double>(2 /* inputs */, 1 /* length */));
     adder1_->set_name("adder1");
-    adder2_.reset(new Adder<double>(2 /* inputs */, 1 /* length */));
-    adder2_->set_name("adder2");
 
     integrator0_.reset(new Integrator<double>(1 /* length */));
     integrator1_.reset(new Integrator<double>(1 /* length */));
 
-    context_.reset(new DiagramContext<double>());
+    context_.reset(new DiagramContext<double>(kNumSystems));
     context_->set_time(kTime);
 
     AddSystem(*adder0_, 0);
@@ -71,21 +70,22 @@ class DiagramContextTest : public ::testing::Test {
   std::unique_ptr<DiagramContext<double>> context_;
   std::unique_ptr<Adder<double>> adder0_;
   std::unique_ptr<Adder<double>> adder1_;
-  std::unique_ptr<Adder<double>> adder2_;
   std::unique_ptr<Integrator<double>> integrator0_;
   std::unique_ptr<Integrator<double>> integrator1_;
 };
 
-// Tests that systems do not have outputs or contexts in the DiagramContext
-// until they are added as constituent systems.
-TEST_F(DiagramContextTest, AddAndRetrieveConstituents) {
-  EXPECT_EQ(nullptr, context_->GetSubsystemOutput(4));
-  EXPECT_EQ(nullptr, context_->GetSubsystemContext(4));
+// Tests that subsystems have outputs and contexts in the DiagramContext.
+TEST_F(DiagramContextTest, RetrieveConstituents) {
+  // All of the subsystems should be leaf Systems.
+  for (int i = 0; i < kNumSystems; ++i) {
+    auto context = dynamic_cast<const LeafContext<double>*>(
+        context_->GetSubsystemContext(i));
+    EXPECT_TRUE(context != nullptr);
 
-  AddSystem(*adder2_, 4 /* index */);
-
-  EXPECT_NE(nullptr, context_->GetSubsystemOutput(4));
-  EXPECT_NE(nullptr, context_->GetSubsystemContext(4));
+    auto output = dynamic_cast<const LeafSystemOutput<double>*>(
+        context_->GetSubsystemOutput(i));
+    EXPECT_TRUE(output != nullptr);
+  }
 }
 
 // Tests that the time writes through to the subsystem contexts.
@@ -149,7 +149,7 @@ TEST_F(DiagramContextTest, Clone) {
 
   std::unique_ptr<DiagramContext<double>> clone(
       dynamic_cast<DiagramContext<double>*>(context_->Clone().release()));
-  ASSERT_NE(nullptr, clone);
+  ASSERT_TRUE(clone != nullptr);
 
   // Verify that the time was copied.
   EXPECT_EQ(kTime, clone->get_time());

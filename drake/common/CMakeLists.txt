@@ -47,6 +47,9 @@ set(private_headers
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
 target_link_libraries(drakeCommon threads)
+if(NOT WIN32)
+  target_link_libraries(drakeCommon gflags)
+endif()
 
 # Install all externally-visible headers.
 drake_install_headers(${installed_headers})

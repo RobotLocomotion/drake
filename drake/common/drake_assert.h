@@ -40,8 +40,8 @@
 /// Evaluates @p condition and iff the value is false will ::abort() the
 /// program with a message showing at least the condition text, function name,
 /// file, and line.
-#define DRAKE_ABORT_UNLESS(condition)
-/// Like @p DRAKE_ABORT_UNLESS(false), except that the meaningless "false"
+#define DRAKE_DEMAND(condition)
+/// Like @p DRAKE_DEMAND(false), except that the meaningless "false"
 /// condition test is not included in the message.
 #define DRAKE_ABORT()
 /// Like @p DRAKE_ABORT(), with the addition of literal message text.
@@ -78,7 +78,7 @@ void Abort(const char* condition, const char* func, const char* file, int line);
 #define DRAKE_ABORT()                                           \
   ::drake::detail::Abort(nullptr, __func__, __FILE__, __LINE__)
 
-#define DRAKE_ABORT_UNLESS(condition)                                   \
+#define DRAKE_DEMAND(condition)                                   \
   do {                                                                  \
     static_assert(                                                      \
         std::is_convertible<decltype(condition), bool>::value,          \
@@ -93,7 +93,7 @@ void Abort(const char* condition, const char* func, const char* file, int line);
 
 #ifdef DRAKE_ASSERT_IS_ARMED
 // Assertions are enabled.
-# define DRAKE_ASSERT(condition) DRAKE_ABORT_UNLESS(condition)
+# define DRAKE_ASSERT(condition) DRAKE_DEMAND(condition)
 # define DRAKE_ASSERT_VOID(expression) do {                     \
     static_assert(                                              \
         std::is_convertible<decltype(expression), void>::value, \

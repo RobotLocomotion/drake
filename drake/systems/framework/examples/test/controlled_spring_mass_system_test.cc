@@ -38,7 +38,7 @@ class DiagramTest : public ::testing::Test {
   }
 
   std::unique_ptr<PidControlledSpringMassSystem<double>> model_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
@@ -84,21 +84,21 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
   ASSERT_EQ(2, derivatives->get_misc_continuous_state().size());
 
   // The derivatives of plant.
-  const ContinuousState<double>& plant_xcdot =
+  const ContinuousState<double>* plant_xcdot =
       model_->GetSubsystemDerivatives(*derivatives, &model_->get_plant());
   // Position derivative.
-  EXPECT_EQ(v0, plant_xcdot.get_state().GetAtIndex(0));
+  EXPECT_EQ(v0, plant_xcdot->get_state().GetAtIndex(0));
 
   // Acceleration.
   const double error = x0 - x_target;
   const double error_rate = v0;  // target velocity is zero.
   const double pid_actuation = Kp * error +  Kd * error_rate;
   EXPECT_EQ((-kSpring * x0 - pid_actuation) / kMass,
-            plant_xcdot.get_state().GetAtIndex(1));
+            plant_xcdot->get_state().GetAtIndex(1));
 
   // Work.
   EXPECT_EQ(model_->get_plant().EvalConservativePower(*context_),
-            plant_xcdot.get_state().GetAtIndex(2));
+            plant_xcdot->get_state().GetAtIndex(2));
 }
 
 }  // namespace

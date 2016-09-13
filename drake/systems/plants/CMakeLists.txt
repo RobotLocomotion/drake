@@ -13,6 +13,7 @@ pods_install_pkg_config_file(drake-xml-util
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   parser_model_instance_id_table.cc
+  parser_common.cc
   parser_sdf.cc
   parser_urdf.cc
   RigidBodyTree.cpp
@@ -22,7 +23,8 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   rigid_body_collision_element.cc
   rigid_body_frame.cc
   rigid_body_loop.cc)
-target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
+target_link_libraries(drakeRBM
+        drakeCollision drakeCommon drakeJoints drakeUtil drakeXMLUtil)
 pods_install_libraries(drakeRBM)
 drake_install_headers(
   ConstraintWrappers.h
@@ -37,6 +39,7 @@ drake_install_headers(
   RigidBody.h
   RigidBodyTree.h
   parser_model_instance_id_table.h
+  parser_common.h
   parser_sdf.h
   parser_urdf.h
   rigid_body_loop.h

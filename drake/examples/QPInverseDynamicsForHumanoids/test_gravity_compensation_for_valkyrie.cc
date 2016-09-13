@@ -1,5 +1,6 @@
 #include "drake/common/drake_path.h"
-#include "qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {
   // Make controller.
@@ -57,7 +58,8 @@ int main() {
       std::string(
           "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
   HumanoidStatus robot_status(
-      std::make_unique<RigidBodyTree>(urdf, DrakeJoint::ROLLPITCHYAW));
+      std::make_unique<RigidBodyTree>(urdf,
+          drake::systems::plants::joints::kRollPitchYaw));
 
   // Sets state and does kinematics.
   VectorXd q(robot_status.robot().number_of_positions());

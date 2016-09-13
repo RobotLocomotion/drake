@@ -1,7 +1,7 @@
 #include "ros/ros.h"
 
-#include "drake/examples/Cars/car_simulation.h"
-#include "drake/examples/Cars/gen/driving_command.h"
+#include "drake/automotive/car_simulation.h"
+#include "drake/automotive/gen/driving_command.h"
 #include "drake/ros/systems/ros_tf_publisher.h"
 #include "drake/ros/systems/ros_vehicle_system.h"
 #include "drake/ros/systems/ros_sensor_publisher_joint_state.h"
@@ -25,10 +25,10 @@ namespace ros {
 namespace cars {
 namespace {
 
-using drake::examples::cars::CreateRigidBodySystem;
-using drake::examples::cars::CreateVehicleSystem;
-using drake::examples::cars::GetCarSimulationDefaultOptions;
-using drake::examples::cars::ParseDuration;
+using drake::cars::CreateRigidBodySystem;
+using drake::cars::CreateVehicleSystem;
+using drake::cars::GetCarSimulationDefaultOptions;
+using drake::cars::ParseDuration;
 
 using drake::ros::systems::DrakeRosTfPublisher;
 using drake::ros::systems::run_ros_vehicle_sim;

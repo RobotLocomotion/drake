@@ -74,7 +74,7 @@ class Simulator {
   used as the initial condition for the simulation; otherwise the %Simulator
   will obtain a default Context from `system`. **/
   explicit Simulator(const System<T>& system,
-                     std::unique_ptr<ContextBase<T>> context = nullptr);
+                     std::unique_ptr<Context<T>> context = nullptr);
 
   /** Prepares the %Simulator for a simulation. This requires determining the
   integrator type, processing the options requested by the caller, and choosing
@@ -160,13 +160,13 @@ class Simulator {
   /** Returns a const reference to the internally-maintained Context holding the
   most recent step in the trajectory. This is suitable for publishing or
   extracting information about this trajectory step. **/
-  const ContextBase<T>& get_context() const { return *context_; }
+  const Context<T>& get_context() const { return *context_; }
 
   /** Returns a mutable pointer to the internally-maintained Context holding the
   most recent step in the trajectory. This is suitable for use in updates,
   sampling operations, event handlers, and constraint projection. You can
   also modify this prior to calling Initialize() to set initial conditions. **/
-  ContextBase<T>* get_mutable_context() { return context_.get(); }
+  Context<T>* get_mutable_context() { return context_.get(); }
 
   /** Replace the internally-maintained Context with a different one. The
   current Context is deleted. This is useful for supplying a new set of initial
@@ -178,7 +178,7 @@ class Simulator {
 
   /** Transfer ownership of this %Simulator's internal Context to the caller.
   The %Simulator will no longer contain a Context. **/
-  std::unique_ptr<ContextBase<T>> release_context() {
+  std::unique_ptr<Context<T>> release_context() {
     return std::move(context_);
     initialization_done_ = false;
   }
@@ -257,7 +257,7 @@ class Simulator {
   static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
 
   const System<T>& system_;                  // Just a reference; not owned.
-  std::unique_ptr<ContextBase<T>> context_;  // The trajectory Context.
+  std::unique_ptr<Context<T>> context_;  // The trajectory Context.
 
   // TODO(sherm1) These are pre-allocated temporaries for use by Integrators;
   // move them to the Integrator classes when those exist. The actual number
@@ -304,7 +304,7 @@ extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<AutoDiffXd>;
 
 template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
-                        std::unique_ptr<ContextBase<T>> context)
+                        std::unique_ptr<Context<T>> context)
     : system_(system), context_(std::move(context)) {
   if (!context_) context_ = system_.CreateDefaultContext();
 
@@ -342,7 +342,7 @@ void Simulator<T>::StepTo(const T& final_time) {
   DRAKE_THROW_UNLESS(final_time >= context_->get_time());
 
   // Find the continuous state xc within the Context, just once.
-  StateVector<T>* xc =
+  VectorBase<T>* xc =
       context_->get_mutable_state()->continuous_state->get_mutable_state();
 
   // TODO(sherm1) Invoke selected integrator.

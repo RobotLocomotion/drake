@@ -41,7 +41,7 @@ class GainTest : public ::testing::Test {
 
   const double kGain_{2.0};
   std::unique_ptr<System<double>> gain_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input0_;
   std::unique_ptr<BasicVector<double>> input1_;

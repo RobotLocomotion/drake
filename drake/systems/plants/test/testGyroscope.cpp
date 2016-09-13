@@ -3,21 +3,19 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
-
-using Eigen::Vector3d;
-using Eigen::Vector4d;
-using Eigen::VectorXd;
-using std::shared_ptr;
-using std::make_shared;
-using drake::GetDrakePath;
-using drake::RigidBodySystem;
-using drake::RigidBodyGyroscope;
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace systems {
 namespace plants {
 namespace {
+
+using std::make_shared;
+using std::shared_ptr;
+
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
 
 Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys,
                             Vector3d const& ang_vel) {
@@ -30,7 +28,8 @@ Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys,
 }
 
 GTEST_TEST(testGyroscope, AllTests) {
-  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
+  drake::systems::plants::joints::FloatingBaseType floating_base_type =
+      drake::systems::plants::joints::kQuaternion;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",

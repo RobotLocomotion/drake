@@ -1,6 +1,6 @@
 #include "drake/systems/framework/examples/spring_mass_system.h"
 
-#include "drake/systems/framework/basic_state_vector.h"
+#include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace systems {
@@ -11,7 +11,7 @@ constexpr int kStateSize = 3;  // position, velocity, power integral
 
 SpringMassStateVector::SpringMassStateVector(double initial_position,
                                              double initial_velocity)
-    : BasicStateAndOutputVector<double>(kStateSize) {
+    : BasicVector<double>(kStateSize) {
   set_position(initial_position);
   set_velocity(initial_velocity);
   set_conservative_work(0);
@@ -86,11 +86,11 @@ double SpringMassSystem::EvalNonConservativePower(const MyContext&) const {
 std::unique_ptr<ContinuousState<double>>
 SpringMassSystem::AllocateContinuousState() const {
   return std::make_unique<ContinuousState<double>>(
-      std::make_unique<BasicStateVector<double>>(3), 1, 1, 1);
+      std::make_unique<BasicVector<double>>(3), 1, 1, 1);
 }
 
 // Assign the state to the output.
-void SpringMassSystem::EvalOutput(const ContextBase<double>& context,
+void SpringMassSystem::EvalOutput(const Context<double>& context,
                                   SystemOutput<double>* output) const {
   // TODO(david-german-tri): Cache the output of this function.
   this->GetMutableOutputVector(output, 0) =
@@ -99,7 +99,7 @@ void SpringMassSystem::EvalOutput(const ContextBase<double>& context,
 
 // Compute the actual physics.
 void SpringMassSystem::EvalTimeDerivatives(
-    const ContextBase<double>& context,
+    const Context<double>& context,
     ContinuousState<double>* derivatives) const {
   DRAKE_ASSERT_VOID(CheckValidContext(context));
 

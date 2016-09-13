@@ -1,5 +1,2 @@
-if(LONG_RUNNING_TESTS)
-# DISABLED due to #3149.
-#  add_matlab_test(NAME examples/Strandbeest/runPassiveDownhill COMMAND runPassiveDownhill PROPERTIES TIMEOUT 4500)
-  add_matlab_test(NAME examples/Strandbeest/runWithMotor COMMAND runWithMotor PROPERTIES TIMEOUT 4500)
-endif()
+# drake_add_matlab_test(NAME examples/Strandbeest/runPassiveDownhill COMMAND runPassiveDownhill SIZE enormous)  # FIXME: see #3149
+drake_add_matlab_test(NAME examples/Strandbeest/runWithMotor COMMAND runWithMotor SIZE enormous)

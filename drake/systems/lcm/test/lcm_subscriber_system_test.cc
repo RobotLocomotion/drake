@@ -5,7 +5,6 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/systems/framework/basic_state_and_output_vector.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
@@ -84,7 +83,7 @@ void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
   MessagePublisher publisher(channel_name, lcm);
   publisher.Start();
 
-  std::unique_ptr<ContextBase<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
 
   // Start the LCM recieve thread after all objects it can potentially use
@@ -210,9 +209,9 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
  public:
   // An output vector type that tests that subscribers permit non-default
   // types.
-  class CustomVector : public BasicStateAndOutputVector<double> {
+  class CustomVector : public BasicVector<double> {
    public:
-    CustomVector() : BasicStateAndOutputVector<double>(kDim) {}
+    CustomVector() : BasicVector<double>(kDim) {}
     void SetName(int index, std::string name) { names_.at(index) = name; }
     std::string GetName(int index) const { return names_.at(index); }
    private:
@@ -221,7 +220,7 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
 
   CustomDrakeSignalTranslator() : LcmAndVectorBaseTranslator(kDim) {}
 
-  std::unique_ptr<VectorBase<double>> AllocateOutputVector() const override {
+  std::unique_ptr<BasicVector<double>> AllocateOutputVector() const override {
     return std::make_unique<CustomVector>();
   }
 
