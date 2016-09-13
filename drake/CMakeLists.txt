@@ -5,6 +5,7 @@ cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
+include(../cmake/test.cmake)
 
 drake_setup_platform()
 
@@ -26,7 +27,6 @@ endif()
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
-option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random seed" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -45,7 +45,7 @@ include(../cmake/pods.cmake)
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
-  pods_install_headers(${ARGV} DESTINATION drake/${rel_path})
+  install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
 endfunction()
 
 # set up automatic export header generation
@@ -147,61 +147,6 @@ if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
     find_package(Matlab COMPONENTS MAIN_PROGRAM REQUIRED)
   endif()
 endif()
-
-# add ctest for a MATLAB string
-# add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
-#   [CONFIGURATIONS <config>...]
-#   [WORKING_DIRECTORY <dir>]
-#   [PROPERTIES <prop1> <value1> ...]
-#   [REQUIRES <package1> <package2> ...])
-# note: default working directory is CMAKE_CURRENT_SOURCE_DIR
-# note: properties are set internally using set_tests_properties (<testname> PROPERTIES <prop1> <value1> ...)
-# note: packages in REQUIRES must write a file addpath_<package>.m to CMAKE_INSTALL_PREFIX/matlab
-# or define WITH_<package> or <package>_FOUND.
-function(add_matlab_test)
-  # no matlab no tests
-  if(NOT MATLAB_FOUND)
-    return()
-  endif()
-  set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
-  set(multiValueArgs PROPERTIES REQUIRES OPTIONAL)
-  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-  if(parsed_args_REQUIRES)
-    foreach(require ${parsed_args_REQUIRES})
-      string(TOUPPER ${require} requireUpper)
-      if(NOT WITH_${requireUpper} AND NOT ${require}_FOUND AND NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m")
-        message(STATUS "Not running ${parsed_args_NAME} because ${require} was not installed.")
-        return()
-      endif()
-    endforeach()
-  endif()
-
-  string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in MATLAB
-  if(NOT parsed_args_WORKING_DIRECTORY)
-    set(parsed_args_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  endif()
-
-  set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
-  set(additional_paths "${CMAKE_INSTALL_PREFIX}/matlab;${parsed_args_WORKING_DIRECTORY};")
-  set(cmd_to_run_before_test "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
-  set(custom_Matlab_test_command "try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
-
-  if(RANDOMIZE_MATLAB_TESTS)
-    set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
-  endif()
-
-  matlab_add_unit_test(NAME ${parsed_args_NAME}
-    ADDITIONAL_PATH ${additional_paths}
-    UNITTEST_PRECOMMAND ${cmd_to_run_before_test}
-    CUSTOM_TEST_COMMAND \"${custom_Matlab_test_command}\"
-    WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY}
-    TIMEOUT -1) # use an infinite timeout and rely on add_test ctest timeout
-
-  if(parsed_args_PROPERTIES)
-    set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
-  endif()
-endfunction()
 
 enable_testing()
 include(CTest)
@@ -363,11 +308,9 @@ else()
 endif()
 
 if(MATLAB_FOUND)
-  # DISABLED due to #3149.
-  # add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
-  #   COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
-  #   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
-  #   PROPERTIES TIMEOUT 300)
+  drake_add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
+    COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot SIZE large)
 endif()
 
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)

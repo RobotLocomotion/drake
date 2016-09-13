@@ -99,35 +99,6 @@ macro(shell_path var)
 endmacro()
 
 
-# pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
-#
-# Install a (list) of header files.
-#
-# Header files will all be installed to include/<subdir_name>
-#
-# example:
-#   add_library(perception detector.h sensor.h)
-#   pods_install_headers(detector.h sensor.h DESTINATION perception)
-#
-function(pods_install_headers)
-    list(GET ARGV -2 checkword)
-    if(NOT checkword STREQUAL DESTINATION)
-        message(FATAL_ERROR "pods_install_headers missing DESTINATION parameter")
-    endif()
-
-    list(GET ARGV -1 dest_dir)
-    list(REMOVE_AT ARGV -1)
-    list(REMOVE_AT ARGV -1)
-    #copy the headers to the INCLUDE_OUTPUT_PATH (${CMAKE_BINARY_DIR}/include)
-    foreach(header ${ARGV})
-        get_filename_component(_header_name ${header} NAME)
-        configure_file(${header} ${INCLUDE_OUTPUT_PATH}/${dest_dir}/${_header_name} COPYONLY)
-    endforeach(header)
-    #mark them to be installed
-    install(FILES ${ARGV} DESTINATION include/${dest_dir})
-
-endfunction(pods_install_headers)
-
 # pods_install_executables(<executable1> ...)
 #
 # Install a (list) of executables to bin/
@@ -671,7 +642,6 @@ macro(pods_config_search_paths)
       #set where files should be output locally
       set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
       set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-      set(INCLUDE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/include)
       foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
         string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
         set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${LIBRARY_OUTPUT_PATH} )

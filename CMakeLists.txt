@@ -110,7 +110,6 @@ drake_add_external(avl PUBLIC)
 drake_add_external(bertini)
 drake_add_external(bullet PUBLIC CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
-drake_add_external(gflags PUBLIC CMAKE)
 drake_add_external(gloptipoly)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC)
@@ -134,6 +133,18 @@ drake_add_external(dreal PUBLIC CMAKE
   CMAKE_ARGS -DUSE_NLOPT=OFF
   SOURCE_SUBDIR src)
 
+# gflags
+if(WIN32)
+  # We can't figure out how to get gflags shared libraries working on Windows
+  # (see #3345), so here we build it with static libraries only.  Code that
+  # lives in Drake's shared libraries must be conditionalized to avoid using
+  # gflags on Windows.
+  drake_add_external(gflags PUBLIC CMAKE)
+else()
+  drake_add_external(gflags PUBLIC CMAKE
+    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
+endif()
+  
 # googletest
 drake_add_external(googletest PUBLIC CMAKE
   CMAKE_ARGS

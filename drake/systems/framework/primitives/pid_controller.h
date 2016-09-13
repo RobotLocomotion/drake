@@ -23,6 +23,8 @@ namespace systems {
 /// of the error signal when the derivative constant is non-zero.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @ingroup systems
+
 template <typename T>
 class PidController : public Diagram<T> {
  public:

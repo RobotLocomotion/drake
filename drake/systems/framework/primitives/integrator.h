@@ -19,6 +19,8 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
+/// @ingroup systems
+
 template <typename T>
 class Integrator : public LeafSystem<T> {
  public:

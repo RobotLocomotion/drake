@@ -22,6 +22,7 @@ namespace systems {
 /// To use other specific scalar types see gain-inl.h.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @ingroup systems
 template <typename T>
 class Gain : public LeafSystem<T> {
  public:

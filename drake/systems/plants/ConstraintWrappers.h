@@ -8,7 +8,7 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"

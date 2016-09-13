@@ -9,7 +9,6 @@
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/nlopt_solver.h"
-#include "drake/solvers/optimization.h"
 #include "drake/solvers/snopt_solver.h"
 
 using Eigen::Dynamic;
@@ -61,8 +60,8 @@ struct Unique {
 };
 // TODO(naveenoid) : tests need to be purged of Random initializations.
 
-GTEST_TEST(testOptimizationProblem, testAddFunction) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, testAddFunction) {
+  MathematicalProgram prog;
   prog.AddContinuousVariables(1);
 
   Movable movable;
@@ -78,7 +77,7 @@ GTEST_TEST(testOptimizationProblem, testAddFunction) {
   prog.AddCost(std::unique_ptr<Unique>(new Unique));
 }
 
-void CheckSolverType(OptimizationProblem& prog,
+void CheckSolverType(MathematicalProgram& prog,
                      std::string desired_solver_name) {
   std::string solver_name;
   int solver_result;
@@ -86,7 +85,7 @@ void CheckSolverType(OptimizationProblem& prog,
   EXPECT_EQ(solver_name, desired_solver_name);
 }
 
-void RunNonlinearProgram(OptimizationProblem& prog,
+void RunNonlinearProgram(MathematicalProgram& prog,
                          std::function<void(void)> test_func) {
   IpoptSolver ipopt_solver;
   NloptSolver nlopt_solver;
@@ -110,8 +109,8 @@ void RunNonlinearProgram(OptimizationProblem& prog,
   }
 }
 
-GTEST_TEST(testOptimizationProblem, trivialLinearSystem) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
+  MathematicalProgram prog;
 
   // First, add four variables set equal by four equations
   // to equal a random vector
@@ -168,8 +167,8 @@ GTEST_TEST(testOptimizationProblem, trivialLinearSystem) {
   });
 }
 
-GTEST_TEST(testOptimizationProblem, trivialLinearEquality) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
+  MathematicalProgram prog;
 
   auto vars = prog.AddContinuousVariables(2);
 
@@ -201,8 +200,8 @@ class TestProblem1Cost {
   }
 };
 
-GTEST_TEST(testOptimizationProblem, testProblem1) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, testProblem1) {
+  MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(5);
   prog.AddCost(TestProblem1Cost());
   VectorXd constraint(5);
@@ -228,8 +227,8 @@ GTEST_TEST(testOptimizationProblem, testProblem1) {
 
 // This test is identical to testProblem1 above but the cost is
 // framed as a QP instead.
-GTEST_TEST(testOptimizationProblem, testProblem1AsQP) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
+  MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(5);
 
   Eigen::MatrixXd Q = -100 * Eigen::Matrix<double, 5, 5>::Identity();
@@ -277,8 +276,8 @@ class TestProblem2Cost {
   }
 };
 
-GTEST_TEST(testOptimizationProblem, testProblem2) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, testProblem2) {
+  MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(6);
   prog.AddCost(TestProblem2Cost());
   VectorXd constraint1(6), constraint2(6);
@@ -312,8 +311,8 @@ GTEST_TEST(testOptimizationProblem, testProblem2) {
 
 // This test is identical to testProblem2 above but the cost is
 // framed as a QP instead.
-GTEST_TEST(testOptimizationProblem, testProblem2AsQP) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
+  MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(6);
   MatrixXd Q = -100.0 * MatrixXd::Identity(6, 6);
   Q(5, 5) = 0.0;
@@ -402,8 +401,8 @@ class LowerBoundTestConstraint : public Constraint {
   int i2_;
 };
 
-GTEST_TEST(testOptimizationProblem, lowerBoundTest) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, lowerBoundTest) {
+  MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(6);
   prog.AddCost(LowerBoundTestCost());
   std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
@@ -471,8 +470,8 @@ class SixHumpCamelCost {
   }
 };
 
-GTEST_TEST(testOptimizationProblem, sixHumpCamel) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
+  MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
   auto cost = prog.AddCost(SixHumpCamelCost());
 
@@ -536,8 +535,8 @@ class GloptipolyConstrainedExampleConstraint
  * Which is from section 3.5 in
  *   Handbook of Test Problems in Local and Global Optimization
  */
-GTEST_TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
+  MathematicalProgram prog;
 
   // This test is run twice on different collections of continuous
   // variables to make sure that the solvers correctly handle mapping
@@ -590,8 +589,8 @@ GTEST_TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
  * Test that the Eval() method of LinearComplementarityConstraint correctly
  * returns the slack.
  */
-GTEST_TEST(testOptimizationProblem, simpleLCPConstraintEval) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
+  MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
 
   // clang-format off
@@ -616,12 +615,12 @@ GTEST_TEST(testOptimizationProblem, simpleLCPConstraintEval) {
 /** Simple linear complementarity problem example.
  * @brief a hand-created LCP easily solved.
  *
- * Note: This test is meant to test that OptimizationProblem.Solve() works in
+ * Note: This test is meant to test that MathematicalProgram.Solve() works in
  * this case; tests of the correctness of the Moby LCP solver itself live in
  * testMobyLCP.
  */
-GTEST_TEST(testOptimizationProblem, simpleLCP) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, simpleLCP) {
+  MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
 
   // clang-format off
@@ -643,8 +642,8 @@ GTEST_TEST(testOptimizationProblem, simpleLCP) {
  * @brief Just two copies of the simpleLCP example, to make sure that the
  * write-through of LCP results to the solution vector works correctly.
  */
-GTEST_TEST(testOptimizationProblem, multiLCP) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, multiLCP) {
+  MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
 
   // clang-format off
@@ -671,9 +670,9 @@ GTEST_TEST(testOptimizationProblem, multiLCP) {
 /**
  * Test that linear polynomial constraints get turned into linear constraints.
  */
-GTEST_TEST(testOptimizationProblem, linearPolynomialConstraint) {
+GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   const Polynomiald x("x");
-  OptimizationProblem problem;
+  MathematicalProgram problem;
   static const double kEpsilon = 1e-7;
   const auto x_var = problem.AddContinuousVariables(1);
   const std::vector<Polynomiald::VarType> var_mapping = {
@@ -701,7 +700,7 @@ GTEST_TEST(testOptimizationProblem, linearPolynomialConstraint) {
 #endif
 
 /** Simple test of polynomial constraints. */
-GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
+GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   static const double kInf = std::numeric_limits<double>::infinity();
   // Generic constraints in nlopt require a very generous epsilon.
   static const double kEpsilon = 1e-4;
@@ -709,7 +708,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   // Given a degenerate polynomial, get the trivial solution.
   {
     const Polynomiald x("x");
-    OptimizationProblem problem;
+    MathematicalProgram problem;
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
       x.GetSimpleVariable()};
@@ -727,7 +726,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   {
     const Polynomiald x("x");
     const Polynomiald poly = (x - 1) * (x - 1);
-    OptimizationProblem problem;
+    MathematicalProgram problem;
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
       x.GetSimpleVariable()};
@@ -745,7 +744,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const Polynomiald x("x");
     const Polynomiald y("y");
     const Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
-    OptimizationProblem problem;
+    MathematicalProgram problem;
     const auto xy_var = problem.AddContinuousVariables(2);
     const std::vector<Polynomiald::VarType> var_mapping = {
       x.GetSimpleVariable(), y.GetSimpleVariable()};
@@ -768,7 +767,7 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     // constrain x < 0 and EXPECT that the solver finds the negative one.)
     const Polynomiald x("x");
     const Polynomiald poly = x * x * x * x - x * x + 0.2;
-    OptimizationProblem problem;
+    MathematicalProgram problem;
     const auto x_var = problem.AddContinuousVariables(1);
     problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
     const std::vector<Polynomiald::VarType> var_mapping = {
@@ -797,8 +796,8 @@ GTEST_TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
  * different variable views. All fall under the
  * umbrella of the Equality Constrained QP Solver.
  */
-GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
-  OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
+  MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
   MatrixXd Q(2, 2);
   Q << 1.0, 0.0,
@@ -855,8 +854,8 @@ GTEST_TEST(testOptimizationProblem, testUnconstrainedQPDispatch) {
  *     with (2*x1 - x3 = 0). Resulting solution should be
  *     (x1=0.5, x2=0.5, x3=1.0)
  */
-GTEST_TEST(testOptimizationProblem, testLinearlyConstrainedQPDispatch) {
-OptimizationProblem prog;
+GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
+MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
   MatrixXd Q(2, 2);
   Q << 1, 0.0,
