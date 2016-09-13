@@ -13,8 +13,8 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include "drake/examples/Cars/car_simulation.h"
-#include "drake/examples/Cars/trajectory_car.h"
+#include "drake/automotive/car_simulation.h"
+#include "drake/automotive/trajectory_car.h"
 
 namespace drake {
 namespace cars {

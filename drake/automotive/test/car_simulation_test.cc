@@ -1,8 +1,8 @@
-#include "drake/examples/Cars/car_simulation.h"
+#include "drake/automotive/car_simulation.h"
 
 #include "gtest/gtest.h"
 
-#include "drake/examples/Cars/car_simulation.h"
+#include "drake/automotive/car_simulation.h"
 
 namespace drake {
 namespace cars {

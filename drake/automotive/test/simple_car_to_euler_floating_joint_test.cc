@@ -1,4 +1,4 @@
-#include "drake/examples/Cars/simple_car_to_euler_floating_joint.h"
+#include "drake/automotive/simple_car_to_euler_floating_joint.h"
 
 #include <memory>
 

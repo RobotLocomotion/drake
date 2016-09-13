@@ -2,9 +2,9 @@
 
 #include <stdexcept>
 
+#include "drake/automotive/curve2.h"
+#include "drake/automotive/system1_cars_vectors.h"
 #include "drake/drakeCars_export.h"
-#include "drake/examples/Cars/curve2.h"
-#include "drake/examples/Cars/system1_cars_vectors.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

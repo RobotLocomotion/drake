@@ -1,11 +1,11 @@
-#include "drake/examples/Cars/gen/simple_car_state_translator.h"
+#include "drake/automotive/gen/simple_car_state_translator.h"
 
 #include <cstdint>
 #include <vector>
 
 #include "gtest/gtest.h"
 
-#include "drake/examples/Cars/gen/simple_car_state.h"
+#include "drake/automotive/gen/simple_car_state.h"
 
 namespace drake {
 namespace cars {

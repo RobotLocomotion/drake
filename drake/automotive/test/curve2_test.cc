@@ -1,4 +1,4 @@
-#include "drake/examples/Cars/curve2.h"
+#include "drake/automotive/curve2.h"
 
 #include <stdexcept>
 #include <vector>

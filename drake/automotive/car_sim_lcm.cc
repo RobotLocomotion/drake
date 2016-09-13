@@ -1,4 +1,4 @@
-#include "drake/examples/Cars/car_simulation.h"
+#include "drake/automotive/car_simulation.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"

@@ -1,4 +1,4 @@
-#include "drake/examples/Cars/simple_car-inl.h"
+#include "drake/automotive/simple_car-inl.h"
 
 /// @file
 /// Separate test program, so that we can use the -inl file.

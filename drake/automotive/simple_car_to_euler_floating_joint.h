@@ -1,7 +1,7 @@
 #pragma once
 
-#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
-#include "drake/examples/Cars/gen/simple_car_state.h"
+#include "drake/automotive/gen/euler_floating_joint_state.h"
+#include "drake/automotive/gen/simple_car_state.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

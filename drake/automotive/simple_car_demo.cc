@@ -1,13 +1,13 @@
-#include "drake/examples/Cars/simple_car.h"
+#include "drake/automotive/simple_car.h"
 
 #include <memory>
 
+#include "drake/automotive/gen/driving_command_translator.h"
+#include "drake/automotive/gen/euler_floating_joint_state_translator.h"
+#include "drake/automotive/gen/simple_car_state_translator.h"
+#include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
-#include "drake/examples/Cars/gen/driving_command_translator.h"
-#include "drake/examples/Cars/gen/euler_floating_joint_state_translator.h"
-#include "drake/examples/Cars/gen/simple_car_state_translator.h"
-#include "drake/examples/Cars/simple_car_to_euler_floating_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"

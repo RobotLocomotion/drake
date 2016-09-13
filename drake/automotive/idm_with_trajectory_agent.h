@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/examples/Cars/gen/idm_with_trajectory_agent_state.h"
+#include "drake/automotive/gen/idm_with_trajectory_agent_state.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

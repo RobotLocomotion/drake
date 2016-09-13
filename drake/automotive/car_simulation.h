@@ -5,9 +5,9 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/system1_cars_vectors.h"
+#include "drake/automotive/trajectory_car.h"
 #include "drake/drakeCars_export.h"
-#include "drake/examples/Cars/system1_cars_vectors.h"
-#include "drake/examples/Cars/trajectory_car.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"

@@ -1,4 +1,4 @@
-#include "drake/examples/Cars/idm_with_trajectory_agent-inl.h"
+#include "drake/automotive/idm_with_trajectory_agent-inl.h"
 
 /// @file
 /// Separate test program, so that we can use the -inl file.

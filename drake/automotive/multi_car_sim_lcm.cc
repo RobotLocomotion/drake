@@ -1,6 +1,6 @@
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
-#include "drake/examples/Cars/car_simulation.h"
+#include "drake/automotive/car_simulation.h"
 #include "drake/common/drake_path.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
