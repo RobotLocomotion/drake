@@ -22,9 +22,6 @@
 [submodule "externals/libbot"]
 	path = externals/libbot
 	url = https://github.com/RobotLocomotion/libbot.git
-[submodule "externals/bullet"]
-	path = externals/bullet
-	url = https://github.com/RobotLocomotion/bullet-pod.git
 [submodule "externals/spotless"]
 	path = externals/spotless
 	url = https://github.com/RobotLocomotion/spotless-pod.git
@@ -103,3 +100,6 @@
 	path = externals/dreal
 	url = https://github.com/dreal/dreal3.git
 	ignore = untracked
+[submodule "externals/bullet"]
+	path = externals/bullet
+	url = https://github.com/RobotLocomotion/bullet3.git
