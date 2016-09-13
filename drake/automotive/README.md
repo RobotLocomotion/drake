@@ -18,7 +18,7 @@ middleware.
 To run the Drake Visualizer, open a terminal and execute the following commands:
 
 ```
-$ cd [drake-distro]/drake/examples/Cars
+$ cd [drake-distro]/drake/automotive
 $ ../../../build/install/bin/drake-visualizer
 ```
 
@@ -47,7 +47,7 @@ $ apt-get install python-pygame
 Then execute:
 
 ```
-$ cd [drake-distro]/drake/examples/Cars
+$ cd [drake-distro]/drake/automotive
 $ python steering_command_driver.py
 ```
 
@@ -64,7 +64,7 @@ will be added that integrates both LCM-based components and ROS-based components
 To start the simulation, open a new terminal and execute the following:
 
 ```
-$ cd [drake-distro]/drake/examples/Cars
+$ cd [drake-distro]/drake/automotive
 $ ../../../build/drake/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1.sdf
 ```
 
@@ -94,7 +94,7 @@ If you are unable to run the Steering Command Driver, you can generate simple
 throttle and steering commands using the command line:
 
 ```
-$ cd [drake-distro]/drake/examples/Cars
+$ cd [drake-distro]/drake/automotive
 $ python steering_command_driver.py --mode=one-time --throttle=[throttle_value] --steering-angle=[steering_value]
 ```
 where the values in square brackets should be replaced with desired values.
@@ -102,7 +102,7 @@ where the values in square brackets should be replaced with desired values.
 For example:
 
 ```
-$ cd [drake-distro]/drake/examples/Cars
+$ cd [drake-distro]/drake/automotive
 $ python steering_command_driver.py --mode=one-time --throttle=1.0 --steering-angle=0.4
 ```
 
@@ -129,7 +129,7 @@ fails.  Fix and test the demo script on OS X.
 
 Run:
 ```
-$ drake-distro/drake/examples/Cars/simple_car_demo.sh
+$ drake-distro/drake/automotive/simple_car_demo.sh
 ```
 
 Ensure that the (very small) `pygame` window has focus, then use your
@@ -149,7 +149,7 @@ fails.  Fix and test the demo script on OS X.
 
 Run:
 ```
-$ drake-distro/drake/examples/Cars/run_demo_multi_car.sh [N]
+$ drake-distro/drake/automotive/run_demo_multi_car.sh [N]
 ```
 
 This will start the demo with N cars; if N is not supplied, the
