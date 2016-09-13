@@ -24,6 +24,10 @@ if(CMAKE_NINJA_LINK_POOL_SIZE GREATER 0)
   set(CMAKE_JOB_POOL_LINK link_pool)
 endif()
 
+# Disable finding out-of-tree packages in the registry.
+set(CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY ON)
+set(CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY ON)
+
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
