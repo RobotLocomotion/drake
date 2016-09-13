@@ -1,4 +1,4 @@
-#include "drake/examples/Cars/idm_with_trajectory_agent.h"
+#include "drake/automotive/idm_with_trajectory_agent.h"
 
 #include <cmath>
 #include <memory>

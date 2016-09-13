@@ -1,11 +1,11 @@
-#include "drake/examples/Cars/trajectory_car.h"
+#include "drake/automotive/trajectory_car.h"
 
 #include <stdexcept>
 #include <vector>
 
 #include "gtest/gtest.h"
 
-#include "drake/examples/Cars/curve2.h"
+#include "drake/automotive/curve2.h"
 
 namespace drake {
 namespace cars {

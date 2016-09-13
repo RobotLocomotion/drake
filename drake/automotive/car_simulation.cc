@@ -1,9 +1,9 @@
-#include "drake/examples/Cars/car_simulation.h"
+#include "drake/automotive/car_simulation.h"
 
 #include <cstdlib>
 
-#include "drake/examples/Cars/curve2.h"
-#include "drake/examples/Cars/trajectory_car.h"
+#include "drake/automotive/curve2.h"
+#include "drake/automotive/trajectory_car.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 

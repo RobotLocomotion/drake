@@ -1,7 +1,7 @@
 #include "ros/ros.h"
 
-#include "drake/examples/Cars/car_simulation.h"
-#include "drake/examples/Cars/gen/driving_command.h"
+#include "drake/automotive/car_simulation.h"
+#include "drake/automotive/gen/driving_command.h"
 #include "drake/ros/systems/ros_tf_publisher.h"
 #include "drake/ros/systems/ros_vehicle_system.h"
 #include "drake/ros/systems/ros_sensor_publisher_joint_state.h"
