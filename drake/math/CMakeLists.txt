@@ -7,6 +7,7 @@ set(sources
   expmap.cc
   gradient.cc
   quaternion.cc
+  random_rotation.cc
   roll_pitch_yaw.cc
   rotation_matrix.cc)
 
@@ -20,6 +21,7 @@ set(installed_headers
   expmap.h
   gradient.h
   quaternion.h
+  random_rotation.h
   roll_pitch_yaw.h
   rotation_matrix.h)
 
