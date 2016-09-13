@@ -1,5 +1,6 @@
 #include <gflags/gflags.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
@@ -67,6 +68,7 @@ int main(int argc, char* argv[]) {
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
   if (FLAGS_add_flat_terrain) {
+    SPDLOG_TRACE(drake::log(), "adding flat terrain");
     double box_width = 1000;
     double box_depth = 10;
     DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
