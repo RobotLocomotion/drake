@@ -4,7 +4,7 @@
 
 me=$(readlink -f $0)
 mydir=$(dirname $me)
-drake=$(dirname $(dirname $mydir))
+drake=$(dirname $mydir)
 
 CLANG_FORMAT=${CLANG_FORMAT:-clang-format-3.6}
 
