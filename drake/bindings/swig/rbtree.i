@@ -37,9 +37,9 @@
 
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::Vector3d)
-%eigen_typemaps(Eigen::Matrix<double, SPACE_DIMENSION, 1>)
+%eigen_typemaps(Eigen::Matrix<double, drake::kSpaceDimension, 1>)
 %eigen_typemaps(Eigen::Matrix3Xd)
-%eigen_typemaps(Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic>)
+%eigen_typemaps(Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::MatrixXd)
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::VectorXi)
@@ -48,8 +48,8 @@
 %template(KinematicsCache_d) KinematicsCache<double>;
 %template(KinematicsCache_adVectorDynamic) KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> >;
 %template(KinematicsCache_adVectorMax73) KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > >;
-%template(AutoDiff3XDynamic) AutoDiffWrapper<Eigen::VectorXd, SPACE_DIMENSION, Eigen::Dynamic>;
-%template(AutoDiff3XMax73) AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, SPACE_DIMENSION, Eigen::Dynamic>;
+%template(AutoDiff3XDynamic) AutoDiffWrapper<Eigen::VectorXd, drake::kSpaceDimension, Eigen::Dynamic>;
+%template(AutoDiff3XMax73) AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, drake::kSpaceDimension, Eigen::Dynamic>;
 
 // unique_ptr confuses SWIG, so we'll ignore it for now
 %ignore RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint);
@@ -102,29 +102,29 @@
     return $self->doKinematics(q, v);
   }
 
-  Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> transformPoints(
-      const KinematicsCache<double> &cache, const Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
+  Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> transformPoints(
+      const KinematicsCache<double> &cache, const Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
   {
     return $self->transformPoints(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
   }
 
-  AutoDiffWrapper<Eigen::VectorXd, SPACE_DIMENSION, Eigen::Dynamic> transformPoints(
-      const KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> > &cache, const Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
+  AutoDiffWrapper<Eigen::VectorXd, drake::kSpaceDimension, Eigen::Dynamic> transformPoints(
+      const KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> > &cache, const Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
   {
     return $self->transformPoints(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
   }
 
-  AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, SPACE_DIMENSION, Eigen::Dynamic> transformPoints(
-      const KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > > &cache, const Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
+  AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, drake::kSpaceDimension, Eigen::Dynamic> transformPoints(
+      const KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > > &cache, const Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
   {
     return $self->transformPoints(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
   }
 
-  Eigen::Matrix<double, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<double> &cache, const std::set<int> &model_instance_id = default_model_instance_id_set) const {
+  Eigen::Matrix<double, drake::kSpaceDimension, 1> centerOfMass(KinematicsCache<double> &cache, const std::set<int> &model_instance_id = default_model_instance_id_set) const {
     return $self->centerOfMass(cache, model_instance_id);
   }
 
-  Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<double>& cache, const std::set<int>& model_instance_ids = default_model_instance_id_set, bool in_terms_of_qdot = false) const {
+  Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<double>& cache, const std::set<int>& model_instance_ids = default_model_instance_id_set, bool in_terms_of_qdot = false) const {
     return $self->centerOfMassJacobian(cache, model_instance_ids, in_terms_of_qdot);
   }
 
