@@ -106,7 +106,6 @@ endif()
 # BEGIN external projects
 
 # External projects in order of dependencies; 'trivial' ones first
-drake_add_external(avl PUBLIC CMAKE)
 drake_add_external(bertini)
 drake_add_external(bullet PUBLIC CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
@@ -120,8 +119,11 @@ drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
-drake_add_external(xfoil PUBLIC CMAKE)
 drake_add_external(yalmip PUBLIC)
+
+# avl
+# The Ninja generator does not support Fortran.
+drake_add_external(avl PUBLIC CMAKE GENERATOR "Unix Makefiles")
 
 # cmake
 drake_add_external(cmake PUBLIC ALWAYS
@@ -260,6 +262,10 @@ drake_add_external(director PUBLIC CMAKE
 # signalscope
 drake_add_external(signalscope PUBLIC
   DEPENDS director)
+
+# xfoil
+# The Ninja generator does not support Fortran.
+drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
 
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
