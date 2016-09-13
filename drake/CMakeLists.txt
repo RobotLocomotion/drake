@@ -48,6 +48,10 @@ function(drake_install_headers)
   install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
 endfunction()
 
+# Disable finding out-of-tree packages in the registry.
+set(CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY ON)
+set(CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY ON)
+
 # set up automatic export header generation
 # export headers will be installed to build/include/drake, but are created in ${PROJECT_BINARY_DIR}/exports/drake
 # This means that export headers can be included as drake/bla_export.h
