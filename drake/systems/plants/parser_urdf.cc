@@ -77,7 +77,7 @@ void ParseInertial(RigidBody* body, XMLElement* node) {
     parseScalarAttribute(inertia, "izz", I(2, 2));
   }
 
-  body->set_spatial_inertia(transformSpatialInertia(T, I));
+  body->set_spatial_inertia(drake::math::transformSpatialInertia(T, I));
 }
 
 // Adds a material to the supplied material map. If the material is already

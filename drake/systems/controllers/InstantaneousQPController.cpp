@@ -23,6 +23,9 @@ const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
 using namespace Eigen;
 
+using drake::math::angleDiff;
+using drake::math::transformSpatialForce;
+
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.07
 
 #define MU_VERY_SMALL 0.001

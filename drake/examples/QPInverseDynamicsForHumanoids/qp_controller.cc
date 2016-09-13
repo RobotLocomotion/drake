@@ -4,6 +4,7 @@
 #include "qp_controller.h"
 
 using namespace drake::solvers;
+using drake::math::transformSpatialForce;
 
 // TODO(siyuan.feng@tri.global): some version of this should go to
 // optimization.h

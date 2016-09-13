@@ -2,8 +2,8 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/quaternion.h"
 #include "drake/math/geometry.h"
+#include "drake/math/quaternion.h"
 #include "drake/systems/plants/joints/DrakeJointImpl.h"
 
 class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
@@ -82,7 +82,8 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
                                    drake::kQuaternionSize,
                                    1>::type dquattildedquat;
     drake::math::normalizeVec(quat, quattilde, &dquattildedquat);
-    auto RTransposeM = (R.transpose() * drake::math::quatdot2angularvelMatrix(quat)).eval();
+    auto RTransposeM =
+        (R.transpose() * drake::math::quatdot2angularvelMatrix(quat)).eval();
     qdot_to_v.template block<3, 3>(0, 0).setZero();
     qdot_to_v.template block<3, 4>(0, 3).noalias() =
         RTransposeM * dquattildedquat;

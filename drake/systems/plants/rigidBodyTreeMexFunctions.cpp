@@ -1,7 +1,7 @@
 #include "drake/systems/plants/rigidBodyTreeMexFunctions.h"
 
-#include <typeinfo>
 #include <Eigen/Sparse>
+#include <typeinfo>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
@@ -129,7 +129,7 @@ forwardJacDotTimesVTemp(const RigidBodyTree& tree,
     return Jtransdot_times_v;
   } else {
     Matrix<Scalar, Dynamic, 1> Jrotdot_times_v(
-        rotationRepresentationSize(rotation_type));
+        drake::math::rotationRepresentationSize(rotation_type));
     if (rotation_type == 1) {
       Jrotdot_times_v = tree.relativeRollPitchYawJacobianDotTimesV(
           cache, current_body_or_frame_ind, new_body_or_frame_ind);
@@ -141,7 +141,9 @@ forwardJacDotTimesVTemp(const RigidBodyTree& tree,
     }
 
     Matrix<Scalar, Dynamic, 1> Jdot_times_v(
-        (3 + rotationRepresentationSize(rotation_type)) * points.cols(), 1);
+        (3 + drake::math::rotationRepresentationSize(rotation_type)) *
+            points.cols(),
+        1);
 
     int row_start = 0;
     for (int i = 0; i < points.cols(); i++) {
@@ -177,7 +179,8 @@ Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinTemp(
     const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind,
     int new_body_or_frame_ind, int rotation_type) {
   Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime> ret(
-      3 + rotationRepresentationSize(rotation_type), points.cols());
+      3 + drake::math::rotationRepresentationSize(rotation_type),
+      points.cols());
   ret.template topRows<3>() = tree.transformPoints(
       cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
   if (rotation_type == 1) {
@@ -223,7 +226,7 @@ Matrix<Scalar, Dynamic, Dynamic> forwardKinJacobianTemp(
     return Jtrans;
   } else {
     Matrix<Scalar, Dynamic, Dynamic> Jrot(
-        rotationRepresentationSize(rotation_type), Jtrans.cols());
+        drake::math::rotationRepresentationSize(rotation_type), Jtrans.cols());
     if (rotation_type == 1)
       Jrot = tree.relativeRollPitchYawJacobian(cache, current_body_or_frame_ind,
                                                new_body_or_frame_ind,

@@ -8,11 +8,11 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_common.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/xmlUtil.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
@@ -69,7 +69,8 @@ void ParseSdfInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     parseScalarValue(inertia, "izz", I(2, 2));
   }
 
-  body->set_spatial_inertia(transformSpatialInertia(T_link.inverse() * T, I));
+  body->set_spatial_inertia(
+      drake::math::transformSpatialInertia(T_link.inverse() * T, I));
 }
 
 bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
@@ -146,9 +147,11 @@ bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
     string resolved_filename = resolveFilename(uri, package_map, root_dir);
 
     if (resolved_filename.empty()) {
-      throw runtime_error(std::string(__FILE__) + ": " + __func__ +
+      throw runtime_error(
+          std::string(__FILE__) + ": " + __func__ +
           ": ERROR: Mesh file name could not be resolved from the "
-          "provided uri \"" + uri + "\".");
+          "provided uri \"" +
+          uri + "\".");
     }
     DrakeShapes::Mesh mesh(uri, resolved_filename);
 
@@ -686,8 +689,9 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
   if (model_instance_id_table != nullptr &&
       model_instance_id_table->find(model_name) !=
           model_instance_id_table->end()) {
-    throw std::runtime_error("Model named \"" + model_name + "\" already "
-        "exists in model_instance_id_table.");
+    throw std::runtime_error("Model named \"" + model_name +
+                             "\" already "
+                             "exists in model_instance_id_table.");
   }
 
   // Obtains and adds a new model instance ID into model_instance_id_table.
@@ -705,8 +709,8 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
        link_node = link_node->NextSiblingElement("link")) {
     int index;
-    if (ParseSdfLink(tree, model_name, link_node, package_map,
-                     pose_map, root_dir, &index, model_instance_id)) {
+    if (ParseSdfLink(tree, model_name, link_node, package_map, pose_map,
+                     root_dir, &index, model_instance_id)) {
       link_indices.push_back(index);
     }
   }
@@ -744,13 +748,13 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
     // from model world to Drake's world.
     weld_to_frame->set_transform_to_body(
         weld_to_frame->get_transform_to_body() *
-            transform_model_root_to_model_world);
+        transform_model_root_to_model_world);
   }
 
   // Adds the floating joint that connects the newly added robot model to the
   // rest of the rigid body tree.
-  AddFloatingJoint(floating_base_type, link_indices, weld_to_frame,
-                   &pose_map, tree);
+  AddFloatingJoint(floating_base_type, link_indices, weld_to_frame, &pose_map,
+                   tree);
 }
 
 void ParseWorld(RigidBodyTree* model, XMLElement* node,
@@ -766,9 +770,9 @@ void ParseWorld(RigidBodyTree* model, XMLElement* node,
 }
 
 ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
-    PackageMap& package_map, const string& root_dir,
-    const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+                              PackageMap& package_map, const string& root_dir,
+                              const FloatingBaseType floating_base_type,
+                              std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   populatePackageMap(package_map);
 
   XMLElement* node = xml_doc->FirstChildElement("sdf");
@@ -781,8 +785,7 @@ ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
   ModelInstanceIdTable model_instance_id_table;
 
   // Loads the world if it is defined.
-  XMLElement* world_node =
-      node->FirstChildElement(RigidBodyTree::kWorldName);
+  XMLElement* world_node = node->FirstChildElement(RigidBodyTree::kWorldName);
   if (world_node) {
     // If we have more than one world, it is ambiguous which one the user
     // wishes to use.
@@ -809,20 +812,17 @@ ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
 }  // namespace
 
 ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
-    const string& filename,
-    const FloatingBaseType floating_base_type,
+    const string& filename, const FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
   return AddModelInstancesFromSdfFile(filename, floating_base_type,
-      nullptr /* weld_to_frame */, tree);
+                                      nullptr /* weld_to_frame */, tree);
 }
 
 ModelInstanceIdTable AddModelInstancesFromSdfFile(
-    const string& filename,
-    const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree) {
+    const string& filename, const FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
 
@@ -843,14 +843,12 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
   }
 
   return ParseSdf(tree, &xml_doc, package_map, root_dir, floating_base_type,
-           weld_to_frame);
+                  weld_to_frame);
 }
 
 ModelInstanceIdTable AddModelInstancesFromSdfString(
-    const string& sdf_string,
-    const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree) {
+    const string& sdf_string, const FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_ABORT_UNLESS(tree);
 
@@ -867,10 +865,9 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
   string root_dir = ".";
 
   return ParseSdf(tree, &xml_doc, package_map, root_dir, floating_base_type,
-      weld_to_frame);
+                  weld_to_frame);
 }
 
 }  // namespace sdf
 }  // namespace parsers
 }  // namespace drake
-

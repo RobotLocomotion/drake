@@ -29,7 +29,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   auto dT = drake::math::dHomogTrans(T, S, qdot_to_v).eval();
   auto dTInv = drake::math::dHomogTransInv(T, dT).eval();
   auto dAdT = drake::math::dTransformSpatialMotion(T, X, dT, dX).eval();
-  auto dAdTInv_transpose = drake::math::dTransformSpatialForce(T, X, dT, dX).eval();
+  auto dAdTInv_transpose =
+      drake::math::dTransformSpatialForce(T, X, dT, dX).eval();
 
   Vector4d x_norm;
   Gradient<Vector4d, 4, 1>::type dx_norm;
