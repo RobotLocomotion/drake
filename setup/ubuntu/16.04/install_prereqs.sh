@@ -29,6 +29,7 @@ flex \
 g++-5 \
 g++-5-multilib \
 gdb \
+gfortran \
 gfortran-5 \
 git \
 graphviz \
