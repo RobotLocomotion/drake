@@ -172,10 +172,10 @@ Additional Rules
 * Rules for assertions:
 
   * Never use ``assert()`` from ``<cassert>``.
-  * Use ``DRAKE_ASSERT`` for assertions that are only compiled and checked
+  * Use ``DRAKE_ASSERT(`` *condition* ``)`` to compile and assert only
     in debug builds.
-  * Use ``DRAKE_DEMAND(`` *condition* ``)`` for assertions that will
-    never be disabled, even in release mode.
+  * Use ``DRAKE_DEMAND(`` *condition* ``)`` to assert in any kind of
+    build (including release).
   * When checking for nonnullness, either ``DRAKE_DEMAND(ptr)`` or
     ``DRAKE_DEMAND(ptr != nullptr)`` is allowed; use whichever seems
     clearer in context.
