@@ -106,7 +106,7 @@ endif()
 # BEGIN external projects
 
 # External projects in order of dependencies; 'trivial' ones first
-drake_add_external(avl PUBLIC)
+drake_add_external(avl PUBLIC CMAKE)
 drake_add_external(bertini)
 drake_add_external(bullet PUBLIC CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
@@ -120,7 +120,7 @@ drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
-drake_add_external(xfoil PUBLIC)
+drake_add_external(xfoil PUBLIC CMAKE)
 drake_add_external(yalmip PUBLIC)
 
 # cmake
