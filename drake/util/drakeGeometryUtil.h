@@ -5,8 +5,8 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <cstring>
 #include <cmath>
+#include <cstring>
 #include <random>
 
 #include "drake/common/constants.h"
@@ -14,6 +14,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/drakeGeometryUtil_export.h"
+#include "drake/math/cross_product.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeGradientUtil.h"
@@ -127,9 +128,10 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
 
   typename DerivedDR::Index nq = dR.cols();
   typedef typename DerivedR::Scalar Scalar;
-  typedef typename drake::math::Gradient<
-      Eigen::Matrix<Scalar, drake::kRpySize, 1>,
-      DerivedDR::ColsAtCompileTime>::type ReturnType;
+  typedef
+      typename drake::math::Gradient<Eigen::Matrix<Scalar, drake::kRpySize, 1>,
+                                     DerivedDR::ColsAtCompileTime>::type
+          ReturnType;
   ReturnType drpy(drake::kRpySize, nq);
 
   auto dR11_dq =
@@ -280,24 +282,10 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
  * cross product related
  */
 template <typename Derived>
+DRAKE_DEPRECATED("Use drake::math::VectorToSkewSymmetric instead.")
 Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(
     const Eigen::MatrixBase<Derived>& p) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>,
-                                           drake::kSpaceDimension);
-  Eigen::Matrix<typename Derived::Scalar, 3, 3> ret;
-  ret << 0.0, -p(2), p(1), p(2), 0.0, -p(0), -p(1), p(0), 0.0;
-  return ret;
-}
-
-template <typename DerivedA, typename DerivedB>
-Eigen::Matrix<typename DerivedA::Scalar, 3, Eigen::Dynamic> dcrossProduct(
-    const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b,
-    const typename drake::math::Gradient<DerivedA, Eigen::Dynamic>::type& da,
-    const typename drake::math::Gradient<DerivedB, Eigen::Dynamic>::type& db) {
-  Eigen::Matrix<typename DerivedA::Scalar, 3, Eigen::Dynamic> ret(3, da.cols());
-  ret.noalias() = da.colwise().cross(b);
-  ret.noalias() -= db.colwise().cross(a);
-  return ret;
+  return drake::math::VectorToSkewSymmetric(p);
 }
 
 /*
@@ -388,13 +376,12 @@ void angularvel2rpydotMatrix(
 template <typename DerivedRPY, typename DerivedE>
 void rpydot2angularvelMatrix(
     const Eigen::MatrixBase<DerivedRPY>& rpy, Eigen::MatrixBase<DerivedE>& E,
-    typename drake::math::Gradient<DerivedE, drake::kRpySize, 1>::type*
-        dE = nullptr) {
+    typename drake::math::Gradient<DerivedE, drake::kRpySize, 1>::type* dE =
+        nullptr) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
                                            drake::kRpySize);
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedE>,
-                                           drake::kSpaceDimension,
-                                           drake::kRpySize);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(
+      Eigen::MatrixBase<DerivedE>, drake::kSpaceDimension, drake::kRpySize);
   typedef typename DerivedRPY::Scalar Scalar;
   Scalar p = rpy(1);
   Scalar y = rpy(2);
@@ -430,8 +417,8 @@ void rpydot2angularvel(
     const Eigen::MatrixBase<DerivedRPY>& rpy,
     const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
     Eigen::MatrixBase<DerivedOMEGA>& omega,
-    typename drake::math::Gradient<DerivedOMEGA, drake::kRpySize,
-                                   1>::type* domega = nullptr) {
+    typename drake::math::Gradient<DerivedOMEGA, drake::kRpySize, 1>::type*
+        domega = nullptr) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
                                            drake::kRpySize);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>,
@@ -456,7 +443,8 @@ void rpydot2angularvel(
 template <typename Derived>
 struct TransformSpatial {
   typedef typename Eigen::Matrix<typename Derived::Scalar, drake::kTwistSize,
-                                 Derived::ColsAtCompileTime> type;
+                                 Derived::ColsAtCompileTime>
+      type;
 };
 
 template <typename DerivedM>
@@ -464,7 +452,8 @@ typename TransformSpatial<DerivedM>::type transformSpatialMotion(
     const Eigen::Transform<typename DerivedM::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedM>& M) {
   Eigen::Matrix<typename DerivedM::Scalar, drake::kTwistSize,
-                DerivedM::ColsAtCompileTime> ret(drake::kTwistSize, M.cols());
+                DerivedM::ColsAtCompileTime>
+      ret(drake::kTwistSize, M.cols());
   ret.template topRows<3>().noalias() = T.linear() * M.template topRows<3>();
   ret.template bottomRows<3>().noalias() =
       -ret.template topRows<3>().colwise().cross(T.translation());
@@ -528,7 +517,8 @@ typename TransformSpatial<DerivedF>::type transformSpatialForce(
     const Eigen::Transform<typename DerivedF::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedF>& F) {
   Eigen::Matrix<typename DerivedF::Scalar, drake::kTwistSize,
-                DerivedF::ColsAtCompileTime> ret(drake::kTwistSize, F.cols());
+                DerivedF::ColsAtCompileTime>
+      ret(drake::kTwistSize, F.cols());
   ret.template bottomRows<3>().noalias() =
       T.linear() * F.template bottomRows<3>().eval();
   ret.template topRows<3>() =
@@ -669,7 +659,8 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     }
     J_new.noalias() += R * J.template selfadjointView<Lower>() * R.transpose();
 
-    I_new.template topRightCorner<3, 3>() = vectorToSkewSymmetric(c_new);
+    I_new.template topRightCorner<3, 3>() =
+        drake::math::VectorToSkewSymmetric(c_new);
     I_new.template bottomLeftCorner<3, 3>() =
         -I_new.template topRightCorner<3, 3>();
     I_new.template bottomRightCorner<3, 3>() =
@@ -769,7 +760,8 @@ template <typename DerivedQdotToV>
 struct DHomogTrans {
   typedef typename Eigen::Matrix<typename DerivedQdotToV::Scalar,
                                  drake::kHomogeneousTransform,
-                                 DerivedQdotToV::ColsAtCompileTime> type;
+                                 DerivedQdotToV::ColsAtCompileTime>
+      type;
 };
 
 template <typename DerivedS, typename DerivedQdotToV>
