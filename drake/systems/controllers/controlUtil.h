@@ -24,7 +24,7 @@ typedef struct _support_state_element {
   bool support_logic_map[4];
   Eigen::Vector4d support_surface;  // 4-vector describing a support surface:
                                     // [v; b] such that v' * [x;y;z] + b == 0
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 } SupportStateElement;
 
 struct DrakeRobotState {
@@ -106,7 +106,7 @@ DRAKECONTROLUTIL_EXPORT void evaluateXYZExpmapCubicSpline(
 struct RobotJointIndexMap {
   Eigen::VectorXi drake_to_robot;
   Eigen::VectorXi robot_to_drake;
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct JointNames {

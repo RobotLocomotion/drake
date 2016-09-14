@@ -85,7 +85,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     debug.reset(new QPControllerDebugData());
   }
 
-  std::map<Side, ForceTorqueMeasurement> foot_force_torque_measurements;
+  drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>
+      foot_force_torque_measurements;
   if (nrhs > 5) {
     const mxArray* mex_foot_force_torque_measurements = prhs[narg++];
     if (!mxIsEmpty(mex_foot_force_torque_measurements)) {

@@ -2,6 +2,8 @@
 
 #include <map>
 #include <fstream>
+
+#include "drake/common/eigen_stl_types.h"
 #include "yaml-cpp/yaml.h"
 #include "drake/systems/controllers/QPCommon.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -19,9 +21,9 @@ DRAKEYAMLUTIL_EXPORT YAML::Node get(
 
 DRAKEYAMLUTIL_EXPORT QPControllerParams loadSingleParamSet(
   const YAML::Node& config, const RigidBodyTree& robot);
-DRAKEYAMLUTIL_EXPORT std::map<std::string, QPControllerParams> loadAllParamSets(
+DRAKEYAMLUTIL_EXPORT drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree& robot);
-DRAKEYAMLUTIL_EXPORT std::map<std::string, QPControllerParams> loadAllParamSets(
+DRAKEYAMLUTIL_EXPORT drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree& robot,
     std::ofstream& debug_output_file);
 DRAKEYAMLUTIL_EXPORT RobotPropertyCache parseKinematicTreeMetadata(

@@ -323,9 +323,9 @@ QPControllerParams loadSingleParamSet(const YAML::Node& config,
   return params;
 }
 
-std::map<std::string, QPControllerParams> loadAllParamSetsFromExpandedConfig(
+drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSetsFromExpandedConfig(
     YAML::Node config, const RigidBodyTree& robot) {
-  auto param_sets = std::map<std::string, QPControllerParams>();
+  drake::eigen_aligned_std_map<std::string, QPControllerParams> param_sets;
   for (auto config_it = config.begin(); config_it != config.end();
        ++config_it) {
     std::cout << "loading param set: " << config_it->first << std::endl;
@@ -336,13 +336,13 @@ std::map<std::string, QPControllerParams> loadAllParamSetsFromExpandedConfig(
   return param_sets;
 }
 
-std::map<std::string, QPControllerParams> loadAllParamSets(
+drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree& robot) {
   config = expandDefaults(config);
   return loadAllParamSetsFromExpandedConfig(config, robot);
 }
 
-std::map<std::string, QPControllerParams> loadAllParamSets(
+drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree& robot,
     std::ofstream& debug_output_file) {
   config = expandDefaults(config);
