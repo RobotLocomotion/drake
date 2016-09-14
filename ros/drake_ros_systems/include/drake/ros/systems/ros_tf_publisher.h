@@ -294,7 +294,7 @@ class DrakeRosTfPublisher {
   bool PublishTfForRigidBody(const RigidBody* rigid_body) {
     // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
     // that represents the world.
-    if (!rigid_body->has_mobilizer_joint()) return false;
+    if (!rigid_body->has_parent_body()) return false;
     return true;
   }
 
