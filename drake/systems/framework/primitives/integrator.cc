@@ -56,7 +56,7 @@ template <typename T>
 void Integrator<T>::EvalTimeDerivatives(const Context<T>& context,
                                         ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-  const BasicVector<T>* input = context.get_vector_input(0);
+  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
   derivatives->get_mutable_state()->SetFromVector(input->get_value());
 }
 
