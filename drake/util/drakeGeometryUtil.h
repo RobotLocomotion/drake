@@ -33,19 +33,6 @@ const int RotmatSize = drake::kSpaceDimension * drake::kSpaceDimension;
 
 DRAKEGEOMETRYUTIL_EXPORT double angleDiff(double phi1, double phi2);
 
-DRAKE_DEPRECATED("Use drake::math::uniformlyRandomAxisAngle instead.")
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d uniformlyRandomAxisAngle(
-    std::default_random_engine& generator);
-DRAKE_DEPRECATED("Use drake::math::uniformlyRandomQuat instead.")
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d uniformlyRandomQuat(
-    std::default_random_engine& generator);
-DRAKE_DEPRECATED("Use drake::math::uniformlyRandomRotmat instead.")
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix3d uniformlyRandomRotmat(
-    std::default_random_engine& generator);
-DRAKE_DEPRECATED("Use drake::math::uniformlyRandomRPY instead.")
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector3d uniformlyRandomRPY(
-    std::default_random_engine& generator);
-
 // NOTE: not reshaping second derivative to Matlab geval output format!
 template <typename Derived>
 void normalizeVec(
@@ -276,16 +263,6 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
     }
   }
   return dq;
-}
-
-/*
- * cross product related
- */
-template <typename Derived>
-DRAKE_DEPRECATED("Use drake::math::VectorToSkewSymmetric instead.")
-Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(
-    const Eigen::MatrixBase<Derived>& p) {
-  return drake::math::VectorToSkewSymmetric(p);
 }
 
 /*
