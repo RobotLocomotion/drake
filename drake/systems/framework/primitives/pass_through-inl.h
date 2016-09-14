@@ -36,7 +36,7 @@ void PassThrough<T>::EvalOutput(const Context<T>& context,
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
   System<T>::GetMutableOutputVector(output, 0) =
-      System<T>::get_input_vector(context, 0);
+      System<T>::EvalEigenVectorInput(context, 0);
 }
 
 }  // namespace systems
