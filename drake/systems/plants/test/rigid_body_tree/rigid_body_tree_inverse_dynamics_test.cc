@@ -113,9 +113,11 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
     KinematicsCache<Scalar> kinematics_cache_coriolis(tree_rpy_->bodies);
     kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
     tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
-    eigen_aligned_unordered_map<const RigidBody*, TwistVector<Scalar>> f_ext;
+
+    const RigidBodyTree::BodyToWrenchMap<Scalar> no_external_wrenches;
     auto coriolis_term = tree_rpy_->inverseDynamics(
-        kinematics_cache_coriolis, f_ext, qdd.cast<Scalar>().eval(), true);
+        kinematics_cache_coriolis, no_external_wrenches,
+        qdd.cast<Scalar>().eval(), true);
     coriolis_term -= tree_rpy_->frictionTorques(qd_arg);
     return coriolis_term;
   };
@@ -161,8 +163,9 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
       KinematicsCache<Scalar> kinematics_cache_2(tree->bodies);
       kinematics_cache_2.initialize(q.cast<Scalar>(), v.cast<Scalar>());
       tree->doKinematics(kinematics_cache_2, true);
-      eigen_aligned_unordered_map<const RigidBody*, TwistVector<Scalar>> f_ext;
-      return tree->inverseDynamics(kinematics_cache_2, f_ext, vd_arg);
+      const RigidBodyTree::BodyToWrenchMap<Scalar> no_external_wrenches;
+      return tree->inverseDynamics(kinematics_cache_2, no_external_wrenches,
+                                   vd_arg);
     };
     auto mass_matrix_from_inverse_dynamics =
         autoDiffToGradientMatrix(jacobian<kChunkSize>(vd_to_mass_matrix, vd));
@@ -197,9 +200,9 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   KinematicsCache<double> kinematics_cache(tree->bodies);
   kinematics_cache.initialize(q);
   tree->doKinematics(kinematics_cache);
-  eigen_aligned_unordered_map<const RigidBody*, TwistVector<double>> f_ext;
+  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
   auto gravitational_forces =
-      tree->dynamicsBiasTerm(kinematics_cache, f_ext, false);
+      tree->dynamicsBiasTerm(kinematics_cache, no_external_wrenches, false);
 
   // Compute the vector gradient of potential energy.
 
@@ -271,7 +274,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto q = tree.getRandomConfiguration(generator);
   auto v = VectorXd::Random(tree.number_of_velocities()).eval();
   auto vd = VectorXd::Random(tree.number_of_velocities()).eval();
-  eigen_aligned_unordered_map<const RigidBody*, TwistVector<double>> f_ext;
+  RigidBodyTree::BodyToWrenchMap<double> external_wrenches;
 
   KinematicsCache<double> kinematics_cache(tree.bodies);
   kinematics_cache.initialize(q, v);
@@ -292,7 +295,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   for (const auto& body_ptr : tree.bodies) {
     if (body_ptr->has_mobilizer_joint()) {
       auto wrench_body = Vector6<double>::Random().eval();
-      f_ext[body_ptr.get()] = wrench_body;
+      external_wrenches[body_ptr.get()] = wrench_body;
       auto body_to_world = tree.relativeTransform(kinematics_cache, world_index,
                                                   body_ptr->get_body_index());
       auto wrench_world = transformSpatialForce(body_to_world, wrench_body);
@@ -301,7 +304,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   }
 
   // Compute wrench across floating joint W_f, add to total wrench.
-  auto tau = tree.inverseDynamics(kinematics_cache, f_ext, vd);
+  auto tau = tree.inverseDynamics(kinematics_cache, external_wrenches, vd);
   auto& floating_body_ptr = tree.bodies[1];
   int floating_joint_start_index =
       floating_body_ptr->get_velocity_start_index();

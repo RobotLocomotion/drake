@@ -163,13 +163,15 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   auto H = tree_->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
 
-  // f_ext here has zero size but is a required argument in dynamicsBiasTerm.
-  // TODO(amcastro-tri): f_ext should be made an optional parameter
+  // There are no external wrenches, but it is a required argument in
+  // dynamicsBiasTerm.
+  // TODO(amcastro-tri): external_wrenches should be made an optional parameter
   // of dynamicsBiasTerm().
-  eigen_aligned_unordered_map<const RigidBody*, Vector6<T>> f_ext;
+  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
   // right_hand_side is the right hand side of the system's equations:
   // [H, -J^T] * [vdot; f] = -right_hand_side.
-  VectorX<T> right_hand_side = tree_->dynamicsBiasTerm(kinsol, f_ext);
+  VectorX<T> right_hand_side = tree_->dynamicsBiasTerm(kinsol,
+                                                       no_external_wrenches);
   if (num_actuators > 0) right_hand_side -= tree_->B * u;
 
   // Applies joint limit forces.
