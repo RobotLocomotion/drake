@@ -12,15 +12,18 @@
 #include <utility>
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <unordered_map>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/eigen_stl_types.h"
 #include "drake/drakeUtil_export.h"
 
 template <typename Key, typename T>
-using eigen_aligned_unordered_map =
-    std::unordered_map<Key, T, std::hash<Key>, std::equal_to<Key>,
-                       Eigen::aligned_allocator<std::pair<Key const, T> > >;
+using eigen_aligned_unordered_map
+#ifndef _MSC_VER
+    DRAKE_DEPRECATED("Use drake::eigen_aligned_std_unordered_map")
+#endif
+    = drake::eigen_aligned_std_unordered_map<Key, T>;
 
 template <typename Derived>
 inline void sizecheck(const Eigen::MatrixBase<Derived>& mat, size_t rows,
