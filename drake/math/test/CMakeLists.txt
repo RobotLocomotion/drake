@@ -13,3 +13,7 @@ drake_add_test(NAME rotation_conversion_test COMMAND rotation_conversion_test)
 add_executable(cross_product_test cross_product_test.cc)
 target_link_libraries(cross_product_test ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME cross_product_test COMMAND cross_product_test)
+
+add_executable(normalize_vector_test normalize_vector_test.cc)
+target_link_libraries(normalize_vector_test ${GTEST_BOTH_LIBRARIES})
+drake_add_test(NAME normalize_vector_test COMMAND normalize_vector_test)
