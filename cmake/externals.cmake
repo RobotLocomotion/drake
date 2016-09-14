@@ -387,7 +387,7 @@ function(drake_add_external PROJECT)
 
     # Add external to download dependencies
     add_dependencies(download-all ${PROJECT}-update)
-  elseif(_ext_GENERATOR STREQUAL "Ninja" AND CMAKE_VERSION VERSION_LESS 3.7)
+  elseif(CMAKE_GENERATOR STREQUAL "Ninja" AND CMAKE_VERSION VERSION_LESS 3.7)
     # Due to a quirk of how the CMake Ninja generator computes dependencies,
     # all targets that contain a submodule update command, or depend on a
     # target that does, need to depend on the submodule-sync target, or the
