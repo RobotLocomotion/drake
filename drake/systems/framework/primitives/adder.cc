@@ -34,7 +34,7 @@ void Adder<T>::EvalOutput(const Context<T>& context,
   // Sum each input port into the output, after checking that it has the
   // expected length.
   for (int i = 0; i < context.get_num_input_ports(); i++) {
-    const BasicVector<T>* input_vector = context.get_vector_input(i);
+    const BasicVector<T>* input_vector = this->EvalVectorInput(context, i);
     output_vector->get_mutable_value() += input_vector->get_value();
   }
 }
