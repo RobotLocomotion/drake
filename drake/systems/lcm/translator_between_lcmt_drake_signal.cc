@@ -26,23 +26,23 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
   if (status < 0) {
     throw runtime_error(
       "drake::systems::lcm::TranslatorBetweenLcmtDrakeSignal: "
-          "TranslateLcmToBasicVector: ERROR: Failed to decode LCM message, the "
-              "status is " + std::to_string(status) + ".");
+      "TranslateLcmToBasicVector: ERROR: Failed to decode LCM message, the "
+      "status is " + std::to_string(status) + ".");
   }
 
-  // Verifies that the size of the LCM message matches the size of the basic
-  // vector. Throws an exception if the sizes do not match.
+  // Verifies that the LCM message and vector_base both have the same size.
+  // Throws an exception if the sizes do not match.
   if (message.dim != vector_base->size()) {
     throw runtime_error(
       "drake::systems::lcm::TranslatorBetweenLcmtDrakeSignal: "
-      "TranslateLcmToBasicVector: ERROR: Size of LCM message (" +
+      "TranslateLcmToVectorBase: ERROR: The LCM message's size (" +
       std::to_string(message.dim) +
-      ") is not equal to the size of the vector vector (" +
+      ") is not equal to vector_base's size (" +
       std::to_string(vector_base->size()) + ").");
   }
 
-  // Saves the values in from the LCM message into the basic vector.
-  // Assumes that the order of the values in both vectors are identical.
+  // Saves the values from the LCM message into the vector_base.
+  // Assumes that the order of the values are identical in both.
   for (int ii = 0; ii < message.dim; ++ii) {
     vector_base->SetAtIndex(ii, message.val[ii]);
   }
@@ -54,17 +54,17 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateVectorBaseToLcm(
   DRAKE_ASSERT(vector_base.size() == get_vector_size());
   DRAKE_ASSERT(lcm_message_bytes != nullptr);
 
-  // Instantiates and initializes a LCM message capturing the state of
-  // parameter vector_base.
+  // Instantiates and initializes an LCM message with the state of vector_base.
   drake::lcmt_drake_signal message;
   message.dim = vector_base.size();
   message.val.resize(message.dim);
   message.coord.resize(message.dim);
 
-  for (int ii = 0; ii < message.dim; ++ii) {
-    message.val[ii] = vector_base.GetAtIndex(ii);
+  for (int i = 0; i < message.dim; ++i) {
+    message.val[i] = vector_base.GetAtIndex(i);
   }
 
+  // Serializes the LCM message into a vector of bytes.
   const int lcm_message_length = message.getEncodedSize();
   lcm_message_bytes->resize(lcm_message_length);
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
