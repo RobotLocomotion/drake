@@ -19,7 +19,7 @@ trap clean EXIT
 
 me=$(readlink -f $0)
 mydir=$(dirname $0)
-DRAKE=$(readlink -f $mydir/../..)
+DRAKE=$(readlink -f $mydir/..)
 DRAKE_DIST=$(readlink -f $DRAKE/..)
 DRAKE_DIST_BUILD=${DRAKE_DIST_BUILD:-$DRAKE_DIST/build}
 if ! [ -d $DRAKE_DIST_BUILD/install/bin ]; then
@@ -27,8 +27,16 @@ if ! [ -d $DRAKE_DIST_BUILD/install/bin ]; then
     exit 1
 fi
 
+function bot_spy_that_actually_works {
+    JAR_DIR=${DRAKE_DIST_BUILD}/install/share/java
+    CLASSPATH=$(echo ${JAR_DIR}/*.jar | sed -e 's# #:#g'):${CLASSPATH}
+    java -cp "${CLASSPATH}" lcm.spy.Spy
+}
+
 $DRAKE_DIST_BUILD/install/bin/lcm-logger &
-$DRAKE_DIST_BUILD/install/bin/bot-spy &
+# TODO(#3231) Use this shell script once it works again.
+# $DRAKE_DIST_BUILD/install/bin/bot-spy &
+bot_spy_that_actually_works &
 $DRAKE_DIST_BUILD/install/bin/drake-visualizer &
 sleep 1  # Wait, to be sure drake-visualizer sees the load_robot message.
 $DRAKE_DIST_BUILD/drake/bin/simple_car_demo &
