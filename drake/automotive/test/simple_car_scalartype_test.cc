@@ -30,7 +30,7 @@ MST tan(const MST&) { return MST{}; }
 }  // namespace
 
 namespace drake {
-namespace cars {
+namespace automotive {
 template class DRAKECARS_EXPORT SimpleCar<MST>;
 namespace {
 
@@ -42,5 +42,5 @@ GTEST_TEST(SimpleCarScalarTypeTest, CompileTest) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

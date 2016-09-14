@@ -6,7 +6,7 @@
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// SimpleCar -- model an idealized response to driving commands, neglecting
 /// all physics.
@@ -111,5 +111,5 @@ class SimpleCar : public systems::LeafSystem<T> {
   const SimpleCar1 wrapped_;
 };
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

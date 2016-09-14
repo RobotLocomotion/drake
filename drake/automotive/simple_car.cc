@@ -3,7 +3,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 const double kInchToMeter = 0.0254;
 const double kDegToRadian = 0.0174532925199;
@@ -40,5 +40,5 @@ DRAKE_INSTANTIATE(drake::TaylorVarXd)
 
 #undef DRAKE_INSTANTIATE
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

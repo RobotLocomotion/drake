@@ -19,7 +19,7 @@ namespace ros {
 namespace systems {
 
 bool decode(const ackermann_msgs::AckermannDriveStamped& msg,
-            drake::cars::DrivingCommand<double>& x) {
+            drake::automotive::DrivingCommand<double>& x) {
   x.set_steering_angle(msg.drive.steering_angle);
   if (msg.drive.speed > 0) {
     x.set_throttle(msg.drive.speed);

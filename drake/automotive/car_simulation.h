@@ -16,7 +16,7 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /**
  * Prints the usage instructions to std::cout.
@@ -159,5 +159,5 @@ SimulationOptions GetCarSimulationDefaultOptions();
 DRAKECARS_EXPORT
 Eigen::VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys);
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

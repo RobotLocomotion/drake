@@ -4,7 +4,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// IdmWithTrajectoryAgent -- model a car using IDM[1], following an idealized
 /// agent car that is decelerating. The implementation here follows closely the
@@ -42,5 +42,5 @@ class IdmWithTrajectoryAgent : public systems::LeafSystem<T> {
       const systems::SystemPortDescriptor<T>& descriptor) const override;
 };
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

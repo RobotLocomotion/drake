@@ -32,7 +32,7 @@ MST operator*(double, const MST&) { return MST{}; }
 }  // namespace
 
 namespace drake {
-namespace cars {
+namespace automotive {
 template class DRAKECARS_EXPORT IdmWithTrajectoryAgent<MST>;
 namespace {
 
@@ -44,5 +44,5 @@ GTEST_TEST(IdmWithTrajectoryAgentScalarTypeTest, CompileTest) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
