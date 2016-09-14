@@ -16,13 +16,19 @@ Unreleased: changes on master, not yet released
 [//]: # "New functionality or APIs."
 ### Added
 
- - [#2602][] Added `DRAKE_ASSERT` and `DRAKE_ABORT_UNLESS` macros to replace
+ - [#2602][] Added `DRAKE_ASSERT` and `DRAKE_DEMAND` macros to replace
  built-in `assert()` macro.
  - [#2621][] Added `DRAKE_DEPRECATED` macro for portable deprecation.
 
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#3276][] The `measure::execution()` function has been replaced by `MeasureExecutionTime()`.
+ - [#3246][] Replaced `RigidBody::hasParent()` with `RigidBody::has_mobilizer_joint()`.
+ - [#3191][] All matlab solvers code moved from solvers/ to matlab/solvers/.
+ - [#3183][] The gflags library is now a required dependency from the superbuild.
+ - [#3168][] Renamed `RigidBodyTree::findAncestorBodies()` to be `RigidBodyTree::FindAncestorBodies()`. Modified method to return the results rather than store them in a parameter.
+ - [#3157][] Renamed `RigidBodyTree::findJoint()` to be `RigidBodyTree::FindChildBodyOfJoint()` and `RigidBodyTree::findJointId()` to be `RigidBodyTree::FindIndexOfChildBodyOfJoint()`.
  - [#3115][] Modified SDF parser method names to be style guide compliant and more meaningful.
  - [#3078][] Changed `RigidBodyTree::kWorldLinkName` to be `RigidBodyTree::kWorldName`.
  - [#3056][] Renamed methods that add model instances to `RigidBodyTree` and `RigidBodySystem`.
@@ -31,7 +37,6 @@ Unreleased: changes on master, not yet released
  - [#3010][] All header file names under `solvers` are now spelled with lower case and underscore names.
  - [#2984][] Renamed and moved `Polynomial.h` and `TrigPoly.h` from `drake/util` to `drake/common` and into the `drakeCommon` library.
  - [#2963][] Rename RigidBody::CollisionElement to RigidBodyCollisionElement.
- - [#3010][] All header file names under `solvers` are now spelled with lower case and underscore names.
  - [#3003][] Made `RigidBodyFrame` member variables private. Added accessors.
  - [#2997][] Renamed drake/Path.h to drake/common/drake_path.h
  - [#2983][] Renamed namespace `Drake` to be `drake`.
@@ -129,3 +134,9 @@ Changes in version v0.9.11 and before are not provided.
 [#3056]: https://github.com/RobotLocomotion/drake/issues/3056
 [#3078]: https://github.com/RobotLocomotion/drake/issues/3078
 [#3115]: https://github.com/RobotLocomotion/drake/issues/3115
+[#3157]: https://github.com/RobotLocomotion/drake/issues/3157
+[#3168]: https://github.com/RobotLocomotion/drake/issues/3168
+[#3183]: https://github.com/RobotLocomotion/drake/issues/3183
+[#3191]: https://github.com/RobotLocomotion/drake/issues/3191
+[#3246]: https://github.com/RobotLocomotion/drake/issues/3246
+[#3276]: https://github.com/RobotLocomotion/drake/issues/3276

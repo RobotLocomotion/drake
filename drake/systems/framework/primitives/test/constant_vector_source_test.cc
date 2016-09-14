@@ -25,16 +25,14 @@ class ConstantVectorSourceTest : public ::testing::Test {
     input_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
-  // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-  // the input of the ConstantVectorSource system.
-  static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
+  static std::unique_ptr<FreestandingInputPort> MakeInput(
       std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort<double>>(std::move(data));
+    return make_unique<FreestandingInputPort>(std::move(data));
   }
 
   const Matrix<double, 2, 1, Eigen::DontAlign> kConstantVectorSource{2.0, 1.5};
-  std::unique_ptr<ConstantVectorSource<double>> source_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<System<double>> source_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
@@ -53,11 +51,10 @@ TEST_F(ConstantVectorSourceTest, OutputTest) {
   // auto& source_->get_output_vector(context, 0);
   // to directly get an Eigen expression.
   const BasicVector<double>* output_vector =
-      dynamic_cast<const BasicVector<double>*>(
-          output_->get_port(0).get_vector_data());
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, output_vector);
-  EXPECT_TRUE(kConstantVectorSource.isApprox(output_vector->get_value(),
-                                        Eigen::NumTraits<double>::epsilon()));
+  EXPECT_TRUE(kConstantVectorSource.isApprox(
+      output_vector->get_value(), Eigen::NumTraits<double>::epsilon()));
 }
 
 // Tests that inputs cannot be set for a ConstantVectorSource.

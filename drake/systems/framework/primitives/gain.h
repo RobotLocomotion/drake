@@ -16,11 +16,13 @@ namespace systems {
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 /// - AutoDiffXd
+///
 /// They are already available to link against in drakeSystemFramework.
 ///
 /// To use other specific scalar types see gain-inl.h.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @ingroup systems
 template <typename T>
 class Gain : public LeafSystem<T> {
  public:
@@ -30,11 +32,14 @@ class Gain : public LeafSystem<T> {
   /// @param length is the size of the signal to be processed.
   Gain(const T& k, int length);
 
+  /// Returns the gain constant.
+  const T& get_gain() const;
+
   /// Sets the output port value to the product of the gain and the input port
   /// value. The gain is specified in the constructor.
   /// If number of connected input or output ports differs from one or, the
   /// input ports are not of size length_, std::runtime_error will be thrown.
-  void EvalOutput(const ContextBase<T>& context,
+  void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 
  private:

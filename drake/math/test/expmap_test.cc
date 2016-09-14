@@ -3,9 +3,9 @@
 #include <unsupported/Eigen/AutoDiff>
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 using drake::math::initializeAutoDiff;
 using Eigen::AutoDiffScalar;
@@ -13,10 +13,6 @@ using Eigen::Matrix3d;
 using Eigen::Vector4d;
 
 namespace drake {
-
-using util::CompareMatrices;
-using util::MatrixCompareType;
-
 namespace math {
 namespace {
 
@@ -31,7 +27,7 @@ void ConvertQuaternionToExpmapAndBack(const Vector4d& quat) {
   auto quat_back = autoDiffToValueMatrix(quat_back_autodiff);
   auto quat_back_grad = autoDiffToGradientMatrix(quat_back_autodiff);
 
-  EXPECT_NEAR(std::abs((quat.transpose() * quat_back).value()), 1.0, 1e-8);
+  EXPECT_NEAR(std::abs(quat.dot(quat_back)), 1.0, 1e-8);
   Matrix3d identity = Matrix3d::Identity();
   EXPECT_TRUE(CompareMatrices((expmap_grad * quat_back_grad).eval(), identity,
                               1e-10, MatrixCompareType::absolute));

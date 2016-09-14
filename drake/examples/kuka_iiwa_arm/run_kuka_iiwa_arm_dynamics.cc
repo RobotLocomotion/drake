@@ -1,12 +1,12 @@
 #include <iostream>
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/examples/kuka_iiwa_arm/robot_state_tap.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/robot_state_tap.h"
 #include "drake/common/polynomial.h"
 #include "drake/util/drakeAppUtil.h"
 
@@ -110,8 +110,9 @@ int DoMain(int argc, char* argv[]) {
   for (int robot_state_index = 0, body_index = 0;
        body_index < static_cast<int>(bodies.size());
        ++body_index) {
-    // Skips rigid bodies without a parent (this includes the world link).
-    if (!bodies[body_index]->hasParent()) continue;
+    // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
+    // that represents the world.
+    if (!bodies[body_index]->has_mobilizer_joint()) continue;
 
     const DrakeJoint& joint = bodies[body_index]->getJoint();
     const Eigen::VectorXd& min_limit = joint.getJointLimitMin();

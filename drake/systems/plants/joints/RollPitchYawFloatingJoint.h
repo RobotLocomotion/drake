@@ -3,6 +3,7 @@
 #include "DrakeJointImpl.h"
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -128,21 +129,23 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
     Scalar cy = cos(yaw);
     Scalar sy = sin(yaw);
 
-    motion_subspace_dot_times_v.transpose() << -pitchd * yawd * cp,
-        rolld * yawd * cp * cr - pitchd * yawd * sp * sr - pitchd * rolld * sr,
-        -pitchd * rolld * cr - pitchd * yawd * cr * sp - rolld * yawd * cp * sr,
-        yd * (yawd * cp * cy - pitchd * sp * sy) -
-            xd * (pitchd * cy * sp + yawd * cp * sy) - pitchd * zd * cp,
-        zd * (rolld * cp * cr - pitchd * sp * sr) +
-            xd * (rolld * (sr * sy + cr * cy * sp) -
-                  yawd * (cr * cy + sp * sr * sy) + pitchd * cp * cy * sr) -
-            yd * (rolld * (cy * sr - cr * sp * sy) +
-                  yawd * (cr * sy - cy * sp * sr) - pitchd * cp * sr * sy),
-        xd * (rolld * (cr * sy - cy * sp * sr) +
-              yawd * (cy * sr - cr * sp * sy) + pitchd * cp * cr * cy) -
-            zd * (pitchd * cr * sp + rolld * cp * sr) +
-            yd * (yawd * (sr * sy + cr * cy * sp) -
-                  rolld * (cr * cy + sp * sr * sy) + pitchd * cp * cr * sy);
+    motion_subspace_dot_times_v[0] = -pitchd * yawd * cp;
+    motion_subspace_dot_times_v[1] = rolld * yawd * cp * cr - pitchd * yawd *
+      sp * sr - pitchd * rolld * sr;
+    motion_subspace_dot_times_v[2] = -pitchd * rolld * cr - pitchd * yawd *
+      cr * sp - rolld * yawd * cp * sr;
+    motion_subspace_dot_times_v[3] = yd * (yawd * cp * cy - pitchd * sp * sy) -
+      xd * (pitchd * cy * sp + yawd * cp * sy) - pitchd * zd * cp;
+    motion_subspace_dot_times_v[4] = zd * (rolld * cp * cr - pitchd * sp * sr) +
+      xd * (rolld * (sr * sy + cr * cy * sp) -
+        yawd * (cr * cy + sp * sr * sy) + pitchd * cp * cy * sr) -
+      yd * (rolld * (cy * sr - cr * sp * sy) +
+        yawd * (cr * sy - cy * sp * sr) - pitchd * cp * sr * sy);
+    motion_subspace_dot_times_v[5] = xd * (rolld * (cr * sy - cy * sp * sr) +
+      yawd * (cy * sr - cr * sp * sy) + pitchd * cp * cr * cy) -
+      zd * (pitchd * cr * sp + rolld * cp * sr) +
+      yd * (yawd * (sr * sy + cr * cy * sp) -
+        rolld * (cr * cy + sp * sr * sy) + pitchd * cp * cr * sy);
 
     if (dmotion_subspace_dot_times_vdq) {
       dmotion_subspace_dot_times_vdq->resize(motion_subspace_dot_times_v.rows(),
@@ -230,7 +233,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dqdot_to_v) const {
     qdot_to_v.setIdentity(get_num_velocities(), get_num_positions());
-    drake::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
+    drake::math::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
 
     if (dqdot_to_v) {
       dqdot_to_v->setZero(qdot_to_v.size(), get_num_positions());
@@ -245,7 +248,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {
     v_to_qdot.setIdentity(get_num_positions(), get_num_velocities());
-    drake::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
+    drake::math::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
 
     if (dv_to_qdot) {
       dv_to_qdot->setZero(v_to_qdot.size(), get_num_positions());

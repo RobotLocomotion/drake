@@ -39,41 +39,61 @@ endfunction()
 #------------------------------------------------------------------------------
 function(drake_setup_java_for_matlab)
   if(NOT MATLAB_JVM_VERSION)
-    # Set arguments for running matlab
+    # Set arguments for running MATLAB
     set(_args -nodesktop -nodisplay -nosplash)
+    set(_input_file /dev/null)
     if(WIN32)
       set(_args ${_args} -wait)
+      set(_input_file NUL)
     endif()
+    set(_logfile "${CMAKE_CURRENT_BINARY_DIR}/drake_setup_java_for_matlab.log")
 
     # Ask matlab for its JVM version
     execute_process(
-      COMMAND ${MATLAB_EXECUTABLE} ${_args} -r "version -java,quit"
+      COMMAND "${MATLAB_EXECUTABLE}" ${_args} -logfile "${_logfile}" -r "version -java,quit"
+      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+      TIMEOUT 450
       RESULT_VARIABLE _result
-      ERROR_VARIABLE _output
-      OUTPUT_VARIABLE _output
-      TIMEOUT 180)
+      OUTPUT_QUIET
+      INPUT_FILE ${_input_file})
 
-    # Test for a valid result
-    if(NOT _result AND _output MATCHES "Java ([0-9]+\\.[0-9]+)\\.[0-9_.]+")
-      set(MATLAB_JVM_VERSION ${CMAKE_MATCH_1} CACHE INTERNAL "")
-      set(_jdk_version "${Java_VERSION_MAJOR}.${Java_VERSION_MINOR}")
+    if(_result EQUAL 0)
+      if(EXISTS ${_logfile})
+        file(READ ${_logfile} _output)
 
-      # Compare against JDK version
-      if(NOT MATLAB_JVM_VERSION VERSION_EQUAL _jdk_version)
-        message(WARNING
-        "MATLAB JVM version (${MATLAB_JVM_VERSION}) does not match "
-        "installed Java Development Kit version (${_jdk_version})")
+        # Test for a valid result
+        if(_output MATCHES "Java ([0-9]+\\.[0-9]+)\\.([0-9_.]+)")
+          set(MATLAB_JVM_VERSION ${CMAKE_MATCH_1} CACHE INTERNAL "")
+          set(_jdk_version "${Java_VERSION_MAJOR}.${Java_VERSION_MINOR}")
 
-        # If JDK is newer, set build options to build Java code compatible
-        # with the matlab JVM
-        if(MATLAB_JVM_VERSION VERSION_LESS _jdk_version)
-          set(CMAKE_JAVA_COMPILE_FLAGS
-            -source ${MATLAB_JVM_VERSION} -target ${MATLAB_JVM_VERSION}
-            CACHE INTERNAL "")
+          # Compare against JDK version
+          if(MATLAB_JVM_VERSION VERSION_EQUAL _jdk_version)
+            message(STATUS
+              "The MATLAB JVM version is ${CMAKE_MATCH_1}.${CMAKE_MATCH_2}")
+          else()
+            message(WARNING
+              "MATLAB JVM version (${MATLAB_JVM_VERSION}) does not match "
+              "installed Java Development Kit version (${_jdk_version})")
+
+            # If JDK is newer, set build options to build Java code compatible
+            # with the MATLAB JVM
+            if(MATLAB_JVM_VERSION VERSION_LESS _jdk_version)
+              set(CMAKE_JAVA_COMPILE_FLAGS
+                -source ${MATLAB_JVM_VERSION} -target ${MATLAB_JVM_VERSION}
+                CACHE INTERNAL "")
+            endif()
+          endif()
+        else()
+          message(WARNING
+            "Could not determine MATLAB JVM version because regular expression was not matched")
         endif()
+      else()
+        message(WARNING
+          "Could not determine MATLAB JVM version because MATLAB log file was not created")
       endif()
     else()
-      message(WARNING "Could not determine MATLAB JVM version")
+      message(WARNING
+        "Could not determine MATLAB JVM version because MATLAB exited with nonzero result ${_result}")
     endif()
   endif()
 endfunction()
@@ -116,6 +136,22 @@ macro(drake_setup_java)
 endmacro()
 
 #------------------------------------------------------------------------------
+# Add local CMake modules to CMake search path.
+#------------------------------------------------------------------------------
+function(drake_setup_cmake BASE_PATH)
+  file(GLOB _versions RELATIVE ${BASE_PATH} "${BASE_PATH}/*/")
+  foreach(_version ${_versions})
+    if(IS_DIRECTORY "${BASE_PATH}/${_version}")
+      if(CMAKE_VERSION VERSION_LESS ${_version})
+        list(INSERT CMAKE_MODULE_PATH 0 "${BASE_PATH}/${_version}")
+      endif()
+    endif()
+  endforeach()
+  list(INSERT CMAKE_MODULE_PATH 0 ${BASE_PATH})
+  set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" PARENT_SCOPE)
+endfunction()
+
+#------------------------------------------------------------------------------
 # Set up basic platform properties for building Drake.
 #------------------------------------------------------------------------------
 macro(drake_setup_platform)
@@ -146,3 +182,9 @@ macro(drake_setup_superbuild)
   endif()
   message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 endmacro()
+
+###############################################################################
+
+# Set up local module paths; this needs to be done immediately as other helper
+# modules may need to include things from our local module set
+drake_setup_cmake(${CMAKE_CURRENT_LIST_DIR}/modules)

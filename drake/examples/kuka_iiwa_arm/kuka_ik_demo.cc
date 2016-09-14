@@ -2,32 +2,33 @@
 
 #include <lcm/lcm-cpp.hpp>
 
+#include "lcmtypes/drake/lcmt_iiwa_command.hpp"
+#include "lcmtypes/drake/lcmt_iiwa_status.hpp"
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/polynomial.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_status.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/vector.h"
-
-#include "lcmtypes/drake/lcmt_iiwa_command.hpp"
-#include "lcmtypes/drake/lcmt_iiwa_status.hpp"
-
-#include "iiwa_status.h"
-
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
-using Eigen::VectorXi;
-using drake::Vector1d;
-using Eigen::Vector2d;
-using Eigen::Vector3d;
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
+
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
+using Eigen::VectorXi;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+
+using drake::Vector1d;
 
 const char* kLcmCommandChannel = "IIWA_COMMAND";
 
@@ -63,19 +64,22 @@ class TrajectoryRunner {
       const auto traj_now = traj_.col(i);
 
       // Produce interpolating polynomials for each joint coordinate.
-      for (int row = 0; row < traj_.rows(); row++) {
-        Eigen::Vector2d coeffs(0, 0);
-        coeffs[0] = traj_now(row);
-        if (i != nT_ - 1) {
-          // Set the coefficient such that it will reach the value of
-          // the next timestep at the time when we advance to the next
-          // piece.  In the event that we're at the end of the
-          // trajectory, this will be left 0.
+      if (i != nT_ - 1) {
+        for (int row = 0; row < traj_.rows(); row++) {
+          Eigen::Vector2d coeffs(0, 0);
+          coeffs[0] = traj_now(row);
+
+          // Sets the coefficients for a linear polynomial within the interval
+          // of time t_[i] < t < t_[i+1] so that the entire piecewise polynomial
+          // is continuous at the time instances t_[i].
+          // PiecewisePolynomial<T>::value(T t) clamps t to be between t_[0] and
+          // t_[nT-1] so that for t > t_[nT-1] the piecewise polynomial always
+          // evaluates to the last trajectory instance, traj_.col(nT_-1).
           coeffs[1] = (traj_(row, i + 1) - coeffs[0]) / (t_[i + 1] - t_[i]);
+          poly_matrix(row) = PPPoly(coeffs);
         }
-        poly_matrix(row) = PPPoly(coeffs);
+        polys.push_back(poly_matrix);
       }
-      polys.push_back(poly_matrix);
       times.push_back(t_[i]);
     }
 
@@ -155,7 +159,7 @@ int do_main(int argc, const char* argv[]) {
 
   RigidBodyTree tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      DrakeJoint::FIXED);
+      drake::systems::plants::joints::kFixed);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).
@@ -193,10 +197,15 @@ int do_main(int argc, const char* argv[]) {
 
   // For part of the remaining time, constrain the second joint while
   // preserving the end effector constraint.
-  Eigen::VectorXi joint_idx_3(1);
-  joint_idx_3(0) = tree.findJoint("iiwa_joint_2")->get_position_start_index();
+  //
+  // Variable `joint_position_start_idx` below is a collection of offsets into
+  // the state vector referring to the positions of the joints to be
+  // constrained.
+  Eigen::VectorXi joint_position_start_idx(1);
+  joint_position_start_idx(0) = tree.FindChildBodyOfJoint("iiwa_joint_2")->
+      get_position_start_index();
   PostureConstraint pc3(&tree, Vector2d(6, 8));
-  pc3.setJointLimits(joint_idx_3, Vector1d(0.7), Vector1d(0.8));
+  pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
 
   const int kNumTimesteps = 5;

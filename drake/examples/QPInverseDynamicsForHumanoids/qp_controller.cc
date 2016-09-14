@@ -1,4 +1,4 @@
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/snopt_solver.h"
 
 #include "qp_controller.h"
@@ -6,7 +6,7 @@
 using namespace drake::solvers;
 
 // TODO(siyuan.feng@tri.global): some version of this should go to
-// optimization.h
+// mathematical_program.h
 static VectorXd VariableList2VectorXd(VariableList const& vlist) {
   size_t dim = 0;
   for (auto var : vlist) {
@@ -71,7 +71,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   int num_torque = num_vd - 6;
   int num_variable = num_vd + num_wrench;
 
-  OptimizationProblem prog;
+  MathematicalProgram prog;
   const DecisionVariableView vd = prog.AddContinuousVariables(num_vd, "vd");
   const DecisionVariableView lambda =
       prog.AddContinuousVariables(num_wrench, "lambda");

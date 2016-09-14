@@ -6,15 +6,20 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/drakeTrajectoryOptimization_export.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 namespace drake {
 namespace solvers {
 
 /**
- * DirectTrajectoryOptimization is a class for direct method approaches
- * to trajectory optimization.
+ * DirectTrajectoryOptimization is an abstract class for direct method
+ * approaches to trajectory optimization.
+ *
+ * Subclasses must implement the two abstract methods:
+ *  AddRunningCost()
+ * and
+ *  AddDynamicConstraint()
  *
  * This class assumes that there are a fixed number (N) time steps/samples, and
  * that the trajectory is discretized into timesteps h (N-1 of these), state x
@@ -23,36 +28,39 @@ namespace solvers {
  * To maintain nominal sparsity in the optimization programs, this
  * implementation assumes that all constraints and costs are
  * time-invariant.
- *
- * TODO(Lucy-tri) While this class can be instanced as a standalone
- * object, it's not very useful in that state and should generally be
- * used as a base class for other optimization approaches which can
- * define more interesting costs and constraints.  Consider making use
- * as a base class mandatory (possibly through a protected constructor
- * or pure virtual implementation of something which every derived
- * class ends up using, like AddRunningCost or AddDynamicConstraint).
  */
 class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
  public:
   /**
-   * Construct a DirectTrajectoryOptimization object.  The dimensions
-   * of the trajectory are established at construction, though other
-   * parameters (costs, bounds, constraints, etc) can be set before
-   * calling SolveTraj.
-   *
-   * @param num_inputs Number of inputs at each sample point.
-   * @param num_states Number of states at each sample point.
-   * @param num_time_samples Number of time samples.
-   * @param trajectory_time_lower_bound Bound on total time for
-   *        trajectory.
-   * @param trajectory_time_upper_bound Bound on total time for
-   *        trajectory.
+   * Adds a dynamic constraint to be applied to each pair of
+   * states/inputs.
    */
-  DirectTrajectoryOptimization(int num_inputs, int num_states,
-                               int num_time_samples,
-                               double trajectory_time_lower_bound,
-                               double trajectory_time_upper_bound);
-  // TODO(Lucy-tri) add param: time steps constant or independent.
+  virtual void AddDynamicConstraint(
+      const std::shared_ptr<Constraint>& constraint) = 0;
+
+  /**
+   * Adds an integrated cost to all time steps.
+   *
+   * @param constraint A constraint which expects a timestep, state,
+   * and input as the elements of x when Eval is invoked.
+   */
+  virtual void AddRunningCost(std::shared_ptr<Constraint> constraint) = 0;
+
+  /**
+   * Adds an integrated cost to all time steps.
+   *
+   * @param f A callable which meets the requirments of
+   * MathematicalProgram::AddCost().
+   */
+  template <typename F>
+  typename std::enable_if<
+      !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
+      std::shared_ptr<Constraint>>::type
+  AddRunningCostFunc(F&& f) {
+    auto c = MathematicalProgram::MakeCost(std::forward<F>(f));
+    AddRunningCost(c);
+    return c;
+  }
 
   /**
    * Add upper and lower bounds on the input values.  Calling this
@@ -110,14 +118,14 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * Add a cost to the initial state.
    *
    * @param f A callable which meets the requirments of
-   * OptimizationProblem::AddCost().
+   * MathematicalProgram::AddCost().
   */
   template <typename F>
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  AddInitialCost(F&& f) {
-    auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
+  AddInitialCostFunc(F&& f) {
+    auto c = MathematicalProgram::MakeCost(std::forward<F>(f));
     AddInitialCost(c);
     return c;
   }
@@ -135,14 +143,14 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * Add a cost to the final state and total time.
    *
    * @param f A callable which meets the requirments of
-   * OptimizationProblem::AddCost().
+   * MathematicalProgram::AddCost().
    */
   template <typename F>
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  AddFinalCost(F&& f) {
-    auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
+  AddFinalCostFunc(F&& f) {
+    auto c = MathematicalProgram::MakeCost(std::forward<F>(f));
     AddFinalCost(c);
     return c;
   }
@@ -194,6 +202,27 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
 
  protected:
   /**
+   * Construct a DirectTrajectoryOptimization object. The dimensions
+   * of the trajectory are established at construction, though other
+   * parameters (costs, bounds, constraints, etc) can be set before
+   * calling SolveTraj.
+   *
+   * @param num_inputs Number of inputs at each sample point.
+   * @param num_states Number of states at each sample point.
+   * @param num_time_samples Number of time samples.
+   * @param trajectory_time_lower_bound Bound on total time for
+   *        trajectory.
+   * @param trajectory_time_upper_bound Bound on total time for
+   *        trajectory.
+   */
+  DirectTrajectoryOptimization(int num_inputs, int num_states,
+                               int num_time_samples,
+                               double trajectory_time_lower_bound,
+                               double trajectory_time_upper_bound);
+  // TODO(Lucy-tri) add param to indicate whether time steps are constant or
+  // independent, and modify implementation to handle.
+
+  /**
    * Returns a vector containing the elapsed time at each knot point.
    */
   std::vector<double> GetTimeVector() const;
@@ -211,7 +240,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   int num_inputs() const { return num_inputs_; }
   int num_states() const { return num_states_; }
   int N() const { return N_; }
-  OptimizationProblem* opt_problem() { return &opt_problem_; }
+  MathematicalProgram* opt_problem() { return &opt_problem_; }
   const DecisionVariableView& h_vars() const { return h_vars_; }
   const DecisionVariableView& u_vars() const { return u_vars_; }
   const DecisionVariableView& x_vars() const { return x_vars_; }
@@ -239,7 +268,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   const int num_states_;
   const int N_;  // Number of time samples
 
-  OptimizationProblem opt_problem_;
+  MathematicalProgram opt_problem_;
   DecisionVariableView h_vars_;  // Time deltas between each
                                  // input/state sample.
   DecisionVariableView u_vars_;

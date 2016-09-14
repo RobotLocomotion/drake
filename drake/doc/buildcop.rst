@@ -121,20 +121,15 @@ This section is a quick-reference manual for the on-call build cop.
 
 Monitor the Build
 ^^^^^^^^^^^^^^^^^
-Check the `post-merge <https://drake-jenkins.csail.mit.edu/view/Continuous/>`_
-build dashboard in Jenkins at least once an hour during on-call hours. If any
-continuous builds turn yellow or red, you need to act.
+Check the `Continuous <https://drake-jenkins.csail.mit.edu/view/Continuous/>`_
+build dashboard in Jenkins at least once an hour during on-call hours. These
+builds run after every merge to Drake. Also check the
+`Nightly Production <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>`_
+build dashboard every morning. These builds are unusually resource-intensive,
+and therefore run just once per day.
 
-Also check the `nightly <https://drake-jenkins.csail.mit.edu/view/Nightly/>`_
-build dashboard every morning. We use nightlies as a staging ground for
-builds that have known issues, but also for production-ready builds that are
-unusually resource intensive. The following nightly builds are in the latter
-category, and therefore require build cop action if they fail:
-
-* mac-clang-nightly-matlab
-* mac-clang-nightly-matlab-open-source
-* mac-clang-ninja-nightly-matlab
-* mac-clang-ninja-nightly-matlab-open-source
+If any Continuous or Nightly Production builds turn yellow or red, you need
+to act.
 
 Respond to Breakage
 ^^^^^^^^^^^^^^^^^^^
@@ -171,7 +166,7 @@ PRs. Try to rule out some of those PRs by comparing their contents to the
 specifics of the failure. For any PRs you cannot rule out, create a rollback
 by clicking "Revert" in the GitHub UI. Use the
 :ref:`template message <revert_template>` to communicate  with the author, and
- proceed as specified in that message.
+proceed as specified in that message.
 
 :ref:`Manually schedule <run_specific_build>` the failing build as an
 experimental build on the rollback PR. If it passes, the odds are good that you

@@ -12,6 +12,7 @@ configure_file(drake_path.cc.in ${drake_path_cc})
 set(sources
   drake_assert.cc
   ${drake_path_cc}
+  drake_throw.cc
   functional_form.cc
   nice_type_name.cc
   polynomial.cc
@@ -25,6 +26,7 @@ set(installed_headers
   drake_assert.h
   drake_deprecated.h
   drake_path.h
+  drake_throw.h
   eigen_autodiff_types.h
   eigen_types.h
   functional_form.h
@@ -45,6 +47,9 @@ set(private_headers
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
 target_link_libraries(drakeCommon threads)
+if(NOT WIN32)
+  target_link_libraries(drakeCommon gflags)
+endif()
 
 # Install all externally-visible headers.
 drake_install_headers(${installed_headers})

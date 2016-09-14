@@ -1,6 +1,7 @@
 drake_install_headers(
   LQR.h
-  open_loop_trajectory_controller.h)
+  open_loop_trajectory_controller.h
+  simple_feedback_trajectory_controller.h)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
@@ -15,6 +16,7 @@ pods_find_pkg_config(gurobi)
 if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide drakeYAMLUtil lcm)
+  pods_use_pkg_config_packages(drakeQPCommon gurobi)
   pods_install_libraries(drakeQPCommon)
   drake_install_headers(QPCommon.h InstantaneousQPController.h)
   pods_install_pkg_config_file(drake-qp-common

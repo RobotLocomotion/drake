@@ -16,8 +16,6 @@ Make sure that the MATLAB executable is in your path.  (e.g., typing ``matlab`` 
 Getting Drake
 =============
 
-Drake is compliant with the `PODs <http://sourceforge.net/p/pods/home/Home/>`_ software development guidelines.  For convenience, we have created pods or wrapper pods for most of the prerequisites, externals, and solvers that you might want to use with Drake.  Some of these will require you to have access to the software licenses.
-
 Note: If you are using Windows, you will want to make sure that ``git`` is set to `handle cross-platform linefeed issues <https://git-scm.com/book/tr/v2/Customizing-Git-Git-Configuration#idp31554304>`_.  These options appear to be enabled by default in the cygwin installation of ``git``, but must be set manually on the native windows version.
 
 We recommend that you `setup SSH access to Github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_
@@ -79,14 +77,16 @@ where ``[key-number]`` is the number you were given when you obtained a license 
 Mandatory platform specific instructions
 ========================================
 
-Before running build, you will need to follow the instructions for your host system:
+Before running the build, you must follow some one-time platform-specific
+setup steps:
 
 .. toctree::
     :maxdepth: 1
 
     fedora
     homebrew
-    ubuntu
+    ubuntu_trusty
+    ubuntu_xenial
     windows
 
 .. _build_the_collection:

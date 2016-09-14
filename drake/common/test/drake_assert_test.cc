@@ -14,10 +14,10 @@ GTEST_TEST(DrakeAssertDeathTest, AbortTest) {
       "abort: failure at .*drake_assert_test.cc:.. in TestBody");
 }
 
-GTEST_TEST(DrakeAssertDeathTest, AbortUnlessTest) {
+GTEST_TEST(DrakeAssertDeathTest, DemandTest) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   ASSERT_DEATH(
-      { DRAKE_ABORT_UNLESS(false); },
+      { DRAKE_DEMAND(false); },
       "abort: failure at .*drake_assert_test.cc:.. in TestBody..:"
       " assertion 'false' failed");
 }
@@ -29,8 +29,9 @@ GTEST_TEST(DrakeAssertDeathTest, AssertSyntaxTest) {
   DRAKE_ASSERT(BoolConvertible());
 }
 
-// Only run this test if assertions are armed.
+// Only run these tests if assertions are armed.
 #ifdef DRAKE_ASSERT_IS_ARMED
+
 GTEST_TEST(DrakeAssertDeathTest, AssertFalseTest) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   ASSERT_DEATH(
@@ -38,6 +39,14 @@ GTEST_TEST(DrakeAssertDeathTest, AssertFalseTest) {
       R"(abort: failure at .*drake_assert_test.cc:.. in TestBody\(\): )"
       R"(assertion '\(2 \+ 2\) == 5' failed)");
 }
+
+GTEST_TEST(DrakeAssertDeathTest, AssertVoidTestArmed) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  ASSERT_DEATH(
+      { DRAKE_ASSERT_VOID(::abort()); },
+      R"()");
+}
+
 #endif  //  DRAKE_ASSERT_IS_ARMED
 
 }  // namespace

@@ -13,56 +13,30 @@
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {
 
 template <typename T>
-PassThrough<T>::PassThrough(int length) : length_(length) {
+PassThrough<T>::PassThrough(int length) {
   // TODO(amcastro-tri): remove the length parameter from the constructor once
   // #3109 supporting automatic lengths is resolved.
   this->DeclareInputPort(kVectorValued, length, kInheritedSampling);
+  // TODO(david-german-tri): Provide a way to infer the type.
   this->DeclareOutputPort(kVectorValued, length, kInheritedSampling);
 }
 
 template <typename T>
-void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
-                          SystemOutput<T>* output) const {
-  // TODO(amcastro-tri): replace hard-coded "1" with
-  // this->get_num_output_ports() after #3097 is merged.
-  DRAKE_ASSERT(output->get_num_ports() == 1);
-  VectorInterface<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
-  DRAKE_ASSERT(output_vector != nullptr);
-  DRAKE_ASSERT(output_vector->get_value().rows() == length_);
+void PassThrough<T>::EvalOutput(const Context<T>& context,
+                                SystemOutput<T>* output) const {
+  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  // Check that there are the expected number of input ports.
-  // TODO(amcastro-tri): replace hard-coded "1" with
-  // this->get_num_input_ports() after #3097 is merged.
-  if (context.get_num_input_ports() != 1) {
-    throw std::out_of_range("Expected only one input port, but had " +
-        std::to_string(context.get_num_input_ports()));
-  }
-
-  // There is only one input.
-  // TODO(amcastro-tri): Solve #3140 so that the next line reads:
-  // auto& input_vector = System<T>::get_input_vector(context, 0);
-  // where the return is an Eigen expression.
-  const VectorInterface<T>* input_vector = context.get_vector_input(0);
-
-  // Check the expected length.
-  if (input_vector == nullptr || input_vector->get_value().rows() != length_) {
-    throw std::out_of_range("Input port is nullptr or has incorrect size.");
-  }
-
-  // TODO(amcastro-tri): Solve #3140 so that we can readily access the Eigen
-  // vector like so:
-  // auto& output_vector = System<T>::get_output_vector(context, 0);
-  // where the return is an Eigen expression.
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
-  output_vector->get_mutable_value() = input_vector->get_value();
+  System<T>::GetMutableOutputVector(output, 0) =
+      System<T>::get_input_vector(context, 0);
 }
 
 }  // namespace systems

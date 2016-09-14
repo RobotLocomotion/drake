@@ -6,7 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {
@@ -20,26 +20,21 @@ Adder<T>::Adder(int num_inputs, int length) {
 }
 
 template <typename T>
-void Adder<T>::EvalOutput(const ContextBase<T>& context,
+void Adder<T>::EvalOutput(const Context<T>& context,
                           SystemOutput<T>* output) const {
-  // Check that the single output port has the correct length, then zero it.
-  // Checks on the output structure are assertions, not exceptions,
-  // since failures would reflect a bug in the Adder implementation, not
-  // user error setting up the system graph. They do not require unit test
-  // coverage, and should not run in release builds.
-  DRAKE_ASSERT(output->get_num_ports() == 1);
-  VectorInterface<T>* output_vector =
-      output->get_mutable_port(0)->GetMutableVectorData();
-  DRAKE_ASSERT(output_vector != nullptr);
-  const int n = output_vector->get_value().rows();
+  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
+
+  BasicVector<T>* output_vector = output->GetMutableVectorData(0);
+
+  // Zeroes the output.
+  const int n = static_cast<int>(output_vector->get_value().rows());
   output_vector->get_mutable_value() = VectorX<T>::Zero(n);
 
   // Sum each input port into the output, after checking that it has the
   // expected length.
   for (int i = 0; i < context.get_num_input_ports(); i++) {
-    const VectorInterface<T>* input_vector = context.get_vector_input(i);
-    DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->get_value().rows() == n);
+    const BasicVector<T>* input_vector = context.get_vector_input(i);
     output_vector->get_mutable_value() += input_vector->get_value();
   }
 }

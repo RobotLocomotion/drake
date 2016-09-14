@@ -1,0 +1,3 @@
+drake_add_matlab_test(NAME matlab/solvers/BMI/util/test/testReplaceBilinearProduct REQUIRES spotless COMMAND testReplaceBilinearProduct)
+drake_add_matlab_test(NAME matlab/solvers/BMI/util/test/testRotateVectorMatrix REQUIRES mosek spotless COMMAND testRotateVectorMatrix)
+drake_add_matlab_test(NAME matlab/solvers/BMI/util/test/testRotateVectorToAlign COMMAND testRotateVectorToAlign)

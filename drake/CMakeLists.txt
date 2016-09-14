@@ -5,6 +5,7 @@ cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
+include(../cmake/test.cmake)
 
 drake_setup_platform()
 
@@ -26,7 +27,6 @@ endif()
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
-option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random seed" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -41,11 +41,11 @@ endif()
 
 # set up pods
 set(POD_NAME drake)
-include(cmake/pods.cmake)
+include(../cmake/pods.cmake)
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
-  pods_install_headers(${ARGV} DESTINATION drake/${rel_path})
+  install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
 endfunction()
 
 # set up automatic export header generation
@@ -77,15 +77,31 @@ endfunction()
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
+if(NOT APPLE)
+  # The linker on OS X likes to hide the typeinfo for template classes unless
+  # they are explicitly instantiated and exported, which causes dynamic_cast to
+  # fail across library boundaries.
+  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+  set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
+  if(APPLE)
+    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_SHARED_LINKER_FLAGS}")
+    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_MODULE_LINKER_FLAGS}")
+    set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
+  else()
+    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_SHARED_LINKER_FLAGS}")
+    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_MODULE_LINKER_FLAGS}")
+    set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
+  endif()
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
   endif()
-  set(CXX_FLAGS_NO_ERROR_SHADOW "-Wno-error=shadow -Wno-shadow")
-  set(CXX_FLAGS_NO_SIGN_COMPARE "-Wno-sign-compare")
+  set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
+  set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
 elseif(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
   # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
@@ -112,12 +128,12 @@ elseif(MSVC)
 
   add_definitions(-D_USE_MATH_DEFINES) # to get math constants on MSVC (see https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx)
 
-  set(CXX_FLAGS_NO_ERROR_SHADOW "/wd4456 /wd4457")
-  set(CXX_FLAGS_NO_SIGN_COMPARE "/wd4018")
+  set(CXX_FLAGS_NO_ERROR_SHADOW /wd4456 /wd4457)
+  set(CXX_FLAGS_NO_SIGN_COMPARE /wd4018)
 endif()
 
 # set up matlab build
-include(cmake/mex.cmake)
+include(../cmake/mex.cmake)
 if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
   if(DISABLE_MATLAB)
     message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
@@ -132,59 +148,6 @@ if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
   endif()
 endif()
 
-# add ctest for a MATLAB string
-# add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
-#   [CONFIGURATIONS <config>...]
-#   [WORKING_DIRECTORY <dir>]
-#   [PROPERTIES <prop1> <value1> ...]
-#   [REQUIRES <package1> <package2> ...])
-# note: default working directory is CMAKE_CURRENT_SOURCE_DIR
-# note: properties are set internally using set_tests_properties (<testname> PROPERTIES <prop1> <value1> ...)
-# note: packages in REQUIRES must write a file addpath_<package>.m to CMAKE_INSTALL_PREFIX/matlab
-function(add_matlab_test)
-  # no matlab no tests
-  if(NOT MATLAB_FOUND)
-    return()
-  endif()
-  set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
-  set(multiValueArgs PROPERTIES REQUIRES)
-  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-  if(parsed_args_REQUIRES)
-    foreach(require ${parsed_args_REQUIRES})
-      if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m")
-        message(STATUS "Not running ${parsed_args_NAME} because ${require} was not installed.")
-        return()
-      endif()
-    endforeach()
-  endif()
-
-  string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in MATLAB
-  if(NOT parsed_args_WORKING_DIRECTORY)
-    set(parsed_args_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  endif()
-
-  set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
-  set(additional_paths "${CMAKE_INSTALL_PREFIX}/matlab;${parsed_args_WORKING_DIRECTORY};")
-  set(cmd_to_run_before_test "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
-  set(custom_Matlab_test_command "try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
-
-  if(RANDOMIZE_MATLAB_TESTS)
-    set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
-  endif()
-
-  matlab_add_unit_test(NAME ${parsed_args_NAME}
-    ADDITIONAL_PATH ${additional_paths}
-    UNITTEST_PRECOMMAND ${cmd_to_run_before_test}
-    CUSTOM_TEST_COMMAND \"${custom_Matlab_test_command}\"
-    WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY}
-    TIMEOUT -1) # use an infinite timeout and rely on add_test ctest timeout
-
-  if(parsed_args_PROPERTIES)
-    set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
-  endif()
-endfunction()
-
 enable_testing()
 include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
@@ -198,10 +161,12 @@ if(WIN32)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1")
 endif()
 
+find_package(gflags REQUIRED)
+
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)
 
-include(cmake/procman.cmake)  # helper script for writing procman files
+include(../cmake/procman.cmake)  # helper script for writing procman files
 
 # set up pseudo-target for threads
 find_package(Threads)
@@ -225,12 +190,20 @@ if(lcm_FOUND)
   # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
   execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
   if(NOT LCMGL_BUILD_DIR)
-    message(WARNING "\n\n----- WARNING: bot2-lcmgl not found")
+    message("
+  --------------------------------------------------------------------------------
+    *** IMPORTANT: bot2-lcmgl build directory not found. ***
+  --------------------------------------------------------------------------------
+    ")
   else()
     string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
     find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${LCMGL_BUILD_DIR}/share/java/")
     if(NOT LCMGL_JAR_FILE)
-      message(FATAL_ERROR "\n\n----- ERROR: bot2-lcmgl not found")
+      message(FATAL_ERROR "
+  --------------------------------------------------------------------------------
+    *** IMPORTANT: bot2-lcmgl JAR file not found. ***
+  --------------------------------------------------------------------------------
+      ")
     else()
       message(STATUS "Found bot2-lcmgl")
     endif()
@@ -257,7 +230,11 @@ else()
     set(eigen3_FOUND 1)
     include_directories(${EIGEN3_INCLUDE_DIR})
   else()
-    message(FATAL_ERROR "Could not find eigen, which is a required depedency")
+    message(FATAL_ERROR "
+  --------------------------------------------------------------------------------
+    *** IMPORTANT: REQUIRED dependency Eigen 3 not found. ***
+  --------------------------------------------------------------------------------
+    ")
   endif()
 endif()
 
@@ -273,16 +250,20 @@ add_subdirectory(common)
 add_subdirectory(math)
 add_subdirectory(util)
 add_subdirectory(solvers)
+if(MATLAB_FOUND)
+  add_subdirectory(matlab)
+endif()
 add_subdirectory(systems)
 add_subdirectory(thirdParty/bsd/GetFullPath)
 add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
+add_subdirectory(automotive)
 add_subdirectory(examples)
 add_subdirectory(bindings)
 add_subdirectory(regtests)
 
 # setup MATLAB pods-compliance
-include(cmake/matlab_pods.cmake)
+include(../cmake/matlab_pods.cmake)
 pods_configure_matlab_paths()
 
 message(STATUS "Writing path utilities to ${CMAKE_INSTALL_PREFIX}/matlab")
@@ -328,10 +309,9 @@ else()
 endif()
 
 if(MATLAB_FOUND)
-  add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
+  drake_add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
-    PROPERTIES TIMEOUT 300)
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot SIZE large)
 endif()
 
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)

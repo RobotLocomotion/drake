@@ -1,13 +1,13 @@
 #pragma once
 
 #include <memory>
-#include <string>
 
 #include <Eigen/Geometry>
-
-#include "robot_state_tap.h"
+#include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeKukaIiwaArm_export.h"
+#include "drake/systems/LinearSystem.h"
+#include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/simulation_options.h"
 
@@ -29,13 +29,32 @@ DRAKEKUKAIIWAARM_EXPORT
 std::shared_ptr<drake::RigidBodySystem> CreateKukaIiwaSystem();
 
 /**
+ * Creates a Bot Visualizer that can be cascaded with @p iiwa_system and
+ * publishes LCM visualization messages using @p lcm.
+ */
+DRAKEKUKAIIWAARM_EXPORT
+std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
+    CreateKukaIiwaVisualizer(
+    const std::shared_ptr<drake::RigidBodySystem> iiwa_system,
+    const std::shared_ptr<lcm::LCM> lcm);
+
+/**
+ * Returns a vector corresponding to an arbitrarily fixed initial
+ * state that can be used in demos and tests. This initial state
+ * corresponds to an arbitrary initial joint configuration and with the
+ * system at rest (0 velocities).
+ */
+DRAKEKUKAIIWAARM_EXPORT
+Eigen::VectorXd GenerateArbitraryIiwaInitialState();
+
+/**
  * Returns the simulation options for use by the Kuka IIWA simulation.
  */
 DRAKEKUKAIIWAARM_EXPORT
 drake::SimulationOptions SetupSimulation(double initial_step_size = 0.002);
 
-/*
- * Check for joint position and joint velocity limit violations.
+/**
+ * Checks for joint position and velocity limit violations.
  * `std::runtime_error` is thrown if any limits are violated.
  */
 DRAKEKUKAIIWAARM_EXPORT

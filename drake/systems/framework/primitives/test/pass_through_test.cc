@@ -21,75 +21,48 @@ namespace {
 // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
 // the input of the PassThrough system.
 template<class T>
-std::unique_ptr<FreestandingInputPort<T>> MakeInput(
+std::unique_ptr<FreestandingInputPort> MakeInput(
     std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort<T>>(std::move(data));
+  return make_unique<FreestandingInputPort>(std::move(data));
 }
 
 class PassThroughTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    buffer_ = make_unique<PassThrough<double>>(3 /* length */);
-    context_ = buffer_->CreateDefaultContext();
-    output_ = buffer_->AllocateOutput(*context_);
+    pass_through_ = make_unique<PassThrough<double>>(3 /* length */);
+    context_ = pass_through_->CreateDefaultContext();
+    output_ = pass_through_->AllocateOutput(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
-  std::unique_ptr<PassThrough<double>> buffer_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<System<double>> pass_through_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
 
 // Tests that the output of this system equals its input.
 TEST_F(PassThroughTest, VectorThroughPassThroughSystem) {
-  // Hook input of the expected size.
-  // TODO(amcastro-tri): Check with buffer_->get_num_input_ports() after #3097.
+  /// Checks that the number of input ports in the system and in the context
+  // are consistent.
   ASSERT_EQ(1, context_->get_num_input_ports());
+  ASSERT_EQ(1, pass_through_->get_num_input_ports());
   Eigen::Vector3d input_vector(1.0, 3.14, 2.18);
   input_->get_mutable_value() << input_vector;
 
+  // Hook input of the expected size.
   context_->SetInputPort(0, MakeInput(std::move(input_)));
 
-  buffer_->EvalOutput(*context_, output_.get());
+  pass_through_->EvalOutput(*context_, output_.get());
 
-  // TODO(amcastro-tri): Check with buffer_->get_num_output_ports() after #3097.
+  // Checks that the number of output ports in the system and in the
+  // output are consistent.
   ASSERT_EQ(1, output_->get_num_ports());
+  ASSERT_EQ(1, pass_through_->get_num_output_ports());
   const BasicVector<double>* output_vector =
-      dynamic_cast<const BasicVector<double>*>(
-          output_->get_port(0).get_vector_data());
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, output_vector);
   EXPECT_EQ(input_vector, output_vector->get_value());
-}
-
-// Tests that std::out_of_range is thrown when the wrong number of input ports
-// are connected.
-TEST_F(PassThroughTest, NoInputPorts) {
-  // No input ports are hooked up. PassThrough must have one input port.
-  // TODO(amcastro-tri): This will not be needed here when input/outputs are
-  // defined in the constructor.
-  // Connections sanity check will be performed by Diagram::Finalize().
-
-  // TODO(amcastro-tri): we must be able to ask buffer_->num_of_input_ports()
-  // and make the GTest with that.
-  EXPECT_THROW(buffer_->EvalOutput(*context_, output_.get()),
-               std::out_of_range);
-}
-
-// Tests that std::out_of_range is thrown when input ports of the wrong size
-// are connected.
-// TODO(amcastro-tri): when #3109 is resolved verify that input and output ports
-// are the same size even if their sizes were determined automatically.
-TEST_F(PassThroughTest, WrongSizeOfInputPorts) {
-  // Hook up input port, but of the wrong size.
-  // TODO(amcastro-tri): Check with buffer_->get_num_input_ports() after #3097.
-  ASSERT_EQ(1, context_->get_num_input_ports());
-  auto short_input = make_unique<BasicVector<double>>(2 /* length */);
-  short_input->get_mutable_value() << 4, 5;
-  context_->SetInputPort(0, MakeInput(std::move(short_input)));
-
-  EXPECT_THROW(buffer_->EvalOutput(*context_, output_.get()),
-               std::out_of_range);
 }
 
 // Tests that PassThrough allocates no state variables in the context_.

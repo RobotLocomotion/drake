@@ -22,9 +22,6 @@
 [submodule "externals/libbot"]
 	path = externals/libbot
 	url = https://github.com/RobotLocomotion/libbot.git
-[submodule "externals/bullet"]
-	path = externals/bullet
-	url = https://github.com/RobotLocomotion/bullet-pod.git
 [submodule "externals/spotless"]
 	path = externals/spotless
 	url = https://github.com/RobotLocomotion/spotless-pod.git
@@ -58,6 +55,7 @@
 [submodule "externals/bertini"]
 	path = externals/bertini
 	url = git@github.com:RobotLocomotion/bertini.git
+	ignore = untracked
 [submodule "externals/sedumi"]
 	path = externals/sedumi
 	url = git@github.com:RobotLocomotion/sedumi.git
@@ -75,7 +73,7 @@
 	url = https://github.com/rdeits/swigmake.git
 [submodule "externals/swig_matlab"]
 	path = externals/swig_matlab
-	url = https://github.com/rdeits/swig-matlab-pod.git
+	url = https://github.com/jaeandersson/swig.git
 [submodule "externals/yaml_cpp"]
 	path = externals/yaml_cpp
 	url = https://github.com/jbeder/yaml-cpp.git
@@ -91,7 +89,17 @@
 	ignore = untracked
 [submodule "externals/google_styleguide"]
 	path = externals/google_styleguide
-	url = https://github.com/google/styleguide.git
+	url = https://github.com/mwoehlke-kitware/styleguide.git
 [submodule "externals/spdlog"]
 	path = externals/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "externals/gflags"]
+	path = externals/gflags
+	url = https://github.com/gflags/gflags.git
+[submodule "externals/dreal"]
+	path = externals/dreal
+	url = https://github.com/dreal/dreal3.git
+	ignore = untracked
+[submodule "externals/bullet"]
+	path = externals/bullet
+	url = https://github.com/RobotLocomotion/bullet3.git

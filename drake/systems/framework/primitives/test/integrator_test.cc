@@ -34,18 +34,18 @@ class IntegratorTest : public ::testing::Test {
     xc->get_mutable_state()->SetFromVector(Eigen::VectorXd::Zero(kLength));
   }
 
-  static std::unique_ptr<FreestandingInputPort<double>> MakeInput(
+  static std::unique_ptr<FreestandingInputPort> MakeInput(
       std::unique_ptr<BasicVector<double>> data) {
-    return std::unique_ptr<FreestandingInputPort<double>>(
-        new FreestandingInputPort<double>(std::move(data)));
+    return std::unique_ptr<FreestandingInputPort>(
+        new FreestandingInputPort(std::move(data)));
   }
 
   ContinuousState<double>* continuous_state() {
     return context_->get_mutable_state()->continuous_state.get();
   }
 
-  std::unique_ptr<Integrator<double>> integrator_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<System<double>> integrator_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
@@ -78,8 +78,7 @@ TEST_F(IntegratorTest, Output) {
 
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_port =
-      dynamic_cast<const BasicVector<double>*>(
-          output_->get_port(0).get_vector_data());
+      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, output_port);
 
   Eigen::Vector3d expected;

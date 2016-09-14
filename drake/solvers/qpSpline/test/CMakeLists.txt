@@ -1,3 +1,4 @@
 add_executable(testSplineGeneration testSplineGeneration.cpp)
-target_link_libraries(testSplineGeneration drakeSplineGeneration)
-add_test(NAME testSplineGeneration COMMAND testSplineGeneration)
+target_link_libraries(
+  testSplineGeneration drakeSplineGeneration ${GTEST_BOTH_LIBRARIES})
+drake_add_test(NAME testSplineGeneration COMMAND testSplineGeneration)

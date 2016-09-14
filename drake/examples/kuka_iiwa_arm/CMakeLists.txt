@@ -4,7 +4,7 @@ if(lcm_FOUND)
     drakeKukaIiwaArm
     drakeRBSystem
     drakeLCMSystem)
-  add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
+  drake_add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
 
   add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES
           iiwa_simulation.cc)
@@ -34,6 +34,21 @@ if(lcm_FOUND)
     drakeRBM
     drakeLCMSystem)
 
+  add_executable(run_kuka_iiwa_gravity_compensated_torque_control
+          run_kuka_iiwa_gravity_compensated_torque_control.cc)
+  target_link_libraries(run_kuka_iiwa_gravity_compensated_torque_control
+          drakeKukaIiwaArm
+          drakeRBSystem
+          drakeLCMSystem
+          gflags)
+
+  add_executable(run_kuka_iiwa_gravity_compensated_position_control
+          run_kuka_iiwa_gravity_compensated_position_control.cc)
+  target_link_libraries(run_kuka_iiwa_gravity_compensated_position_control
+          drakeKukaIiwaArm
+          drakeRBSystem
+          drakeLCMSystem
+          gflags)
 endif()
 
 add_subdirectory(test)

@@ -1,7 +1,14 @@
 #include "yamlUtil.h"
 // #include <regex>
 
+#include "drake/systems/plants/joints/floating_base_types.h"
+
 using namespace std;
+
+using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::kFixed;
+using drake::systems::plants::joints::kQuaternion;
+using drake::systems::plants::joints::kRollPitchYaw;
 
 YAML::Node applyDefaults(const YAML::Node& node,
                          const YAML::Node& default_node) {
@@ -348,8 +355,8 @@ vector<int> findPositionIndices(const RigidBodyTree& robot,
   vector<int> position_indices;
   position_indices.reserve(joint_names.size());
   for (const auto& joint_name : joint_names) {
-    const RigidBody& body = *robot.findJoint(joint_name);
-    for (int i = 0; i < body.getJoint().get_num_positions(); i++) {
+    const RigidBody& body = *robot.FindChildBodyOfJoint(joint_name);
+    for (int i = 0; i < body.getJoint().get_num_positions(); ++i) {
       position_indices.push_back(body.get_position_start_index() + i);
     }
   }
@@ -376,8 +383,9 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
     ret.position_indices.legs[side] = findPositionIndices(
         robot, joint_group_names["legs"][side_id].as<vector<string>>());
     ret.position_indices.knees[side] =
-        robot.findJoint(joint_group_names["knees"][side_id].as<string>())
-            ->get_position_start_index();
+        robot.FindChildBodyOfJoint(
+            joint_group_names["knees"][side_id].as<string>())->
+                get_position_start_index();
     ret.position_indices.ankles[side] = findPositionIndices(
         robot, joint_group_names["ankles"][side_id].as<vector<string>>());
     ret.position_indices.arms[side] = findPositionIndices(
@@ -386,11 +394,11 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
   ret.position_indices.neck = findPositionIndices(
       robot, joint_group_names["neck"].as<vector<string>>());
   ret.position_indices.back_bkz =
-      robot.findJoint(joint_group_names["back_bkz"].as<string>())
-          ->get_position_start_index();
+      robot.FindChildBodyOfJoint(joint_group_names["back_bkz"].as<string>())->
+          get_position_start_index();
   ret.position_indices.back_bky =
-      robot.findJoint(joint_group_names["back_bky"].as<string>())
-          ->get_position_start_index();
+      robot.FindChildBodyOfJoint(joint_group_names["back_bky"].as<string>())->
+          get_position_start_index();
 
   return ret;
 }
@@ -413,15 +421,15 @@ JointNames parseRobotJointNames(const YAML::Node& joint_names,
 
 namespace YAML {
 template <>
-struct convert<DrakeJoint::FloatingBaseType> {
-  static bool decode(const Node& node, DrakeJoint::FloatingBaseType& rhs) {
+struct convert<FloatingBaseType> {
+  static bool decode(const Node& node, FloatingBaseType& rhs) {
     std::string joint_type = node.as<std::string>();
-    if (joint_type == "FIXED") {
-      rhs = DrakeJoint::FIXED;
-    } else if (joint_type == "ROLLPITCHYAW") {
-      rhs = DrakeJoint::ROLLPITCHYAW;
-    } else if (joint_type == "QUATERNION") {
-      rhs = DrakeJoint::QUATERNION;
+    if (joint_type == "kFixed") {
+      rhs = kFixed;
+    } else if (joint_type == "kRollPitchYaw") {
+      rhs = kRollPitchYaw;
+    } else if (joint_type == "kQuaternion") {
+      rhs = kQuaternion;
     } else {
       return false;
     }
@@ -444,9 +452,9 @@ struct convert<Attachment> {
     rhs.attach_to_frame = node["frame"].as<std::string>();
     rhs.urdf_filename = node["urdf"].as<std::string>();
     if (node["joint_type"]) {
-      rhs.joint_type = node["joint_type"].as<DrakeJoint::FloatingBaseType>();
+      rhs.joint_type = node["joint_type"].as<FloatingBaseType>();
     } else {
-      rhs.joint_type = DrakeJoint::FIXED;
+      rhs.joint_type = kFixed;
     }
     return true;
   }

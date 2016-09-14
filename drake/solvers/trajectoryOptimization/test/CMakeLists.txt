@@ -4,9 +4,6 @@ target_link_libraries(trajectory_optimization_test drakeTrajectoryOptimization
 # TODO(Lucy-tri) There is currently no non-linear solver on Windows: see
 # issues #2352, #2569.
 if(ipopt_FOUND OR nlopt_FOUND OR snopt_c_FOUND)
-  add_test(NAME trajectory_optimization_test COMMAND
+  drake_add_test(NAME trajectory_optimization_test COMMAND
     trajectory_optimization_test)
 endif()
-
-add_matlab_test(NAME solvers/trajectoryOptimization/test/contactImplicitBrick
-  COMMAND contactImplicitBrick PROPERTIES TIMEOUT 750)
