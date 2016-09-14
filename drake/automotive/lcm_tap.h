@@ -9,7 +9,7 @@
 #include "drake/systems/vector.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// Implements a Drake System (@see drake/systems/System.h) that
 /// publishes its input to LCM, but otherwise merely passes through
@@ -59,5 +59,5 @@ class LcmTap {
   const std::shared_ptr<lcm::LCM> lcm_;
 };
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

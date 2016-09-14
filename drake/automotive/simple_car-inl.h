@@ -16,7 +16,7 @@
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 template <typename ScalarType>
 SimpleCar1::StateVector<ScalarType> SimpleCar1::dynamics(
@@ -164,5 +164,5 @@ std::unique_ptr<systems::BasicVector<T>> SimpleCar<T>::AllocateOutputVector(
   return std::make_unique<SimpleCarState<T>>();
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

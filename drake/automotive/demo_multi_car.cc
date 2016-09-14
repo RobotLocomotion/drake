@@ -17,7 +17,7 @@
 #include "drake/automotive/trajectory_car.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 namespace {
 
 using drake::systems::plants::joints::kRollPitchYaw;
@@ -92,9 +92,9 @@ int DoMain(int argc, const char* argv[]) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::cars::DoMain(argc, argv);
+  return drake::automotive::DoMain(argc, argv);
 }

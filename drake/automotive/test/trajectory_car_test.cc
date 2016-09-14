@@ -8,7 +8,7 @@
 #include "drake/automotive/curve2.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 namespace {
 
 typedef Curve2<double> Curve2d;
@@ -109,5 +109,5 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

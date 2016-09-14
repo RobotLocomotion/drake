@@ -166,7 +166,7 @@ VECTOR_HH_PREAMBLE = """
 #include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 VECTOR_CLASS_BEGIN = """
@@ -189,7 +189,7 @@ VECTOR_CLASS_END = """
 """
 
 VECTOR_HH_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 
@@ -200,11 +200,11 @@ VECTOR_CC_PREAMBLE = """
 // See %(generator)s.
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 VECTOR_CC_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 
@@ -220,7 +220,7 @@ TRANSLATOR_HH_PREAMBLE = """
 #include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 TRANSLATOR_CLASS_DECL = """
@@ -245,7 +245,7 @@ class DRAKECARS_EXPORT %(camel)sTranslator
 """
 
 TRANSLATOR_HH_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 
@@ -260,11 +260,11 @@ TRANSLATOR_CC_PREAMBLE = """
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 TRANSLATOR_CC_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 

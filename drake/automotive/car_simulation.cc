@@ -8,7 +8,7 @@
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 using Eigen::Matrix;
 using Eigen::MatrixXd;
@@ -331,5 +331,5 @@ VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys) {
   return x0;
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

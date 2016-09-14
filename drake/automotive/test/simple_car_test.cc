@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 namespace {
 
 class SimpleCarTest : public ::testing::Test {
@@ -164,5 +164,5 @@ TEST_F(SimpleCarTest, Derivatives) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

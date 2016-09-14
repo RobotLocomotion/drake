@@ -10,7 +10,7 @@
 #include "drake/util/drakeAppUtil.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 namespace {
 
 using Eigen::VectorXd;
@@ -81,9 +81,9 @@ int do_main(int argc, const char* argv[]) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::cars::do_main(argc, argv);
+  return drake::automotive::do_main(argc, argv);
 }

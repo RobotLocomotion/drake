@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 namespace {
 
 GTEST_TEST(SimpleCarToEulerFloatingJointTest, BasicTest) {
@@ -39,5 +39,5 @@ GTEST_TEST(SimpleCarToEulerFloatingJointTest, BasicTest) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

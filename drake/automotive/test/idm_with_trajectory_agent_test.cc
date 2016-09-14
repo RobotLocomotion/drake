@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 namespace {
 
 class IdmWithTrajectoryAgentTest : public ::testing::Test {
@@ -91,5 +91,5 @@ TEST_F(IdmWithTrajectoryAgentTest, Derivatives) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
