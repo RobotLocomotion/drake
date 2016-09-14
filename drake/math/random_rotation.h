@@ -1,13 +1,12 @@
 #pragma once
 
-#include <Eigen/Dense>
-#include <cmath>
 #include <random>
+
+#include <Eigen/Dense>
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
 #include "drake/drakeMath_export.h"
-#include "drake/math/quaternion.h"
 
 namespace drake {
 namespace math {

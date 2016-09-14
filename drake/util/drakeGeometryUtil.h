@@ -759,7 +759,7 @@ drake::TwistMatrix<typename DerivedA::Scalar> dCrossSpatialForce(
 template <typename DerivedQdotToV>
 struct DHomogTrans {
   typedef typename Eigen::Matrix<typename DerivedQdotToV::Scalar,
-                                 drake::kHomogeneousTransform,
+                                 drake::kHomogeneousTransformSize,
                                  DerivedQdotToV::ColsAtCompileTime>
       type;
 };
@@ -774,7 +774,7 @@ typename DHomogTrans<DerivedQdotToV>::type dHomogTrans(
   typename DerivedQdotToV::Index nq = qdot_to_v.cols();
   auto qdot_to_twist = (S * qdot_to_v).eval();
 
-  const int numel = drake::kHomogeneousTransform;
+  const int numel = drake::kHomogeneousTransformSize;
   Eigen::Matrix<typename DerivedQdotToV::Scalar, numel, nq_at_compile_time> ret(
       numel, nq);
 
@@ -820,7 +820,7 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
   auto dinvT_R = transposeGrad(dR, R.rows());
   auto dinvT_p = (-R.transpose() * dp - matGradMult(dinvT_R, p)).eval();
 
-  const int numel = drake::kHomogeneousTransform;
+  const int numel = drake::kHomogeneousTransformSize;
   Eigen::Matrix<typename DerivedDT::Scalar, numel, DerivedDT::ColsAtCompileTime>
       ret(numel, nq);
   setSubMatrixGradient<Eigen::Dynamic>(ret, dinvT_R, rows, R_cols, T.Rows);

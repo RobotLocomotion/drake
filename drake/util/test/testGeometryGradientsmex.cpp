@@ -19,7 +19,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   int argnum = 0;
   Isometry3d T;
   memcpy(T.data(), mxGetPr(prhs[argnum++]),
-         sizeof(double) * drake::kHomogeneousTransform);
+         sizeof(double) * drake::kHomogeneousTransformSize);
   auto S = matlabToEigen<drake::kTwistSize, Eigen::Dynamic>(prhs[argnum++]);
   auto qdot_to_v =
       matlabToEigen<Eigen::Dynamic, Eigen::Dynamic>(prhs[argnum++]);

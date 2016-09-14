@@ -11,7 +11,7 @@ constexpr int kRpySize = 3;
 /// https://en.wikipedia.org/wiki/Screw_theory#Twist
 constexpr int kTwistSize = 6;
 
-constexpr int kHomogeneousTransform = 16;
+constexpr int kHomogeneousTransformSize = 16;
 
 const int kRotmatSize = kSpaceDimension * kSpaceDimension;
 }  // namespace drake

@@ -16,6 +16,8 @@ void SkewSymMatTestFun(const Vector3d& x) {
   auto x_skew_mat = VectorToSkewSymmetric(x);
   EXPECT_TRUE(CompareMatrices(x_skew_mat_expected, x_skew_mat, 1E-10,
                               MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x_skew_mat, -x_skew_mat.transpose(), 1E-10,
+                              MatrixCompareType::absolute));
 }
 
 GTEST_TEST(CrossProductTest, SkewSymMatTest) {
@@ -23,6 +25,7 @@ GTEST_TEST(CrossProductTest, SkewSymMatTest) {
   SkewSymMatTestFun(Vector3d(1.0, 0.0, 0.0));
   SkewSymMatTestFun(Vector3d(0.0, 1.0, 0.0));
   SkewSymMatTestFun(Vector3d(0.0, 0.0, 1.0));
+  SkewSymMatTestFun(Vector3d(1.0, 2.0, 3.0));
 }
 }  // namespace
 }  // namespace math
