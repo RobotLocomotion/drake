@@ -56,9 +56,6 @@ const RigidBody* RigidBody::get_parent() const { return parent_; }
 bool RigidBody::has_parent_body() const { return parent_ != nullptr; }
 
 // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-bool RigidBody::has_mobilizer_joint() const { return has_parent_body(); }
-
-// TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
 bool RigidBody::hasParent() const { return has_parent_body(); }
 
 void RigidBody::set_body_index(int body_index) { body_index_ = body_index; }
