@@ -16,7 +16,7 @@ const double Kd = 1.0;  // Controller's derivative constant.
 const double Ki = 1.0;  // Controller's integral constant.
 const double x_target = 1.0;  // The target position.
 
-class DiagramTest : public ::testing::Test {
+class SpringMassSystemTest : public ::testing::Test {
  protected:
   void SetUp() override {
     model_ =
@@ -43,7 +43,7 @@ class DiagramTest : public ::testing::Test {
 };
 
 // Tests that the diagram computes the correct sum.
-TEST_F(DiagramTest, EvalOutput) {
+TEST_F(SpringMassSystemTest, EvalOutput) {
   // Sets a non-zero initial condition.
   model_->set_position(context_.get(), 2.0);
   model_->set_velocity(context_.get(), -1.0);
@@ -61,7 +61,7 @@ TEST_F(DiagramTest, EvalOutput) {
   EXPECT_EQ(expected_output[2], output->get_value()[2]);
 }
 
-TEST_F(DiagramTest, EvalTimeDerivatives) {
+TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   std::unique_ptr<ContinuousState<double>> derivatives =
       model_->AllocateTimeDerivatives();
 
