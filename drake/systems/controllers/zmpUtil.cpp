@@ -1,6 +1,7 @@
 #include "drake/systems/controllers/zmpUtil.h"
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <iostream>
 
 #include "drake/common/drake_assert.h"
 
@@ -50,7 +51,16 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
     MatrixXd poly_coeffs = MatrixXd::Zero(nq, k);
 
     for (size_t x = 0; x < nq; x++) {
-      poly_coeffs.row(x) = poly_mat(x).GetCoefficients().transpose();
+      auto element_coeffs = poly_mat(x).GetCoefficients();
+
+      // note that the number of coefficients of poly_mat(x) may not be k due to
+      // erasure of zero coefficients. It should always be less than or equal to
+      // k though.
+      DRAKE_ASSERT(poly_coeffs.cols() >= element_coeffs.size());
+      poly_coeffs.row(x).setZero();
+      for (Index i = 0; i < element_coeffs.size(); i++) {
+        poly_coeffs.row(x)(i) = element_coeffs(i);
+      }
     }
 
     beta[j].col(k - 1) = -A2i * B2 * poly_coeffs.col(k - 1);
