@@ -29,7 +29,15 @@ if ! [ -d $DRAKE_DIST_BUILD/install/bin ]; then
     exit 1
 fi
 
-$DRAKE_DIST_BUILD/install/bin/bot-spy &
+function bot_spy_that_actually_works {
+    JAR_DIR=${DRAKE_DIST_BUILD}/install/share/java
+    CLASSPATH=$(echo ${JAR_DIR}/*.jar | sed -e 's# #:#g'):${CLASSPATH}
+    java -cp "${CLASSPATH}" lcm.spy.Spy
+}
+
+# TODO(#3231) Use this shell script once it works again.
+# $DRAKE_DIST_BUILD/install/bin/bot-spy &
+bot_spy_that_actually_works &
 $DRAKE_DIST_BUILD/install/bin/drake-visualizer &
 sleep 1  # Wait, to be sure drake-visualizer sees the load_robot message.
 $DRAKE_DIST_BUILD/drake/bin/demo_multi_car $1 &
