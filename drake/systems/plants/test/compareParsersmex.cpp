@@ -66,7 +66,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       RigidBody* b = matlab_model->FindChildBodyOfJoint(
           cpp_model->bodies[i]->getJoint().get_name());
       if (b == nullptr) continue;
-      for (int j = 0; j < b->getJoint().get_num_positions(); j++) {
+      for (int j = 0; j < b->getJoint().get_num_positions(); ++j) {
         P(cpp_model->bodies[i]->get_position_start_index() + j,
           b->get_position_start_index() + j) = 1.0;
       }

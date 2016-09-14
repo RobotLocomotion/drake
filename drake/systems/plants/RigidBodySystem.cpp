@@ -719,7 +719,7 @@ void ParseUrdfModel(RigidBodySystem& sys, XMLElement* node,
     const ModelInstanceIdTable& model_instance_id_table) {
 
   if (!node->Attribute("name"))
-    throw runtime_error("Error: your robot must have a name attribute");
+    throw runtime_error("Error: the model must have a name attribute");
   string model_name = node->Attribute("name");
 
   // Obtains the model instance ID. Throws an exception if the model instance ID
