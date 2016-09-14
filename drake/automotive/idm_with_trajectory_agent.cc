@@ -7,8 +7,9 @@ namespace automotive {
 
 // These instantiations must match the API documentation in
 // idm_with_trajectory_agent.h.
-template class DRAKECARS_EXPORT IdmWithTrajectoryAgent<double>;
-template class DRAKECARS_EXPORT IdmWithTrajectoryAgent<drake::TaylorVarXd>;
+template class DRAKEAUTOMOTIVE_EXPORT IdmWithTrajectoryAgent<double>;
+template class DRAKEAUTOMOTIVE_EXPORT
+IdmWithTrajectoryAgent<drake::TaylorVarXd>;
 
 }  // namespace automotive
 }  // namespace drake

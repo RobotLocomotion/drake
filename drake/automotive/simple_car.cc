@@ -22,17 +22,17 @@ const lcmt_simple_car_config_t SimpleCar1::kDefaultConfig = {
 
 // Explicitly instantiate all ScalarType-using definitions.
 #define DRAKE_INSTANTIATE(ScalarType)                           \
-template DRAKECARS_EXPORT                                       \
+template DRAKEAUTOMOTIVE_EXPORT                                       \
 SimpleCar1::StateVector<ScalarType> SimpleCar1::dynamics(       \
       const ScalarType&,                                        \
       const SimpleCar1::StateVector<ScalarType>&,               \
       const SimpleCar1::InputVector<ScalarType>&) const;        \
-template DRAKECARS_EXPORT                                       \
+template DRAKEAUTOMOTIVE_EXPORT                                       \
 SimpleCar1::OutputVector<ScalarType> SimpleCar1::output(        \
     const ScalarType&,                                          \
     const SimpleCar1::StateVector<ScalarType>&,                 \
     const SimpleCar1::InputVector<ScalarType>&) const;          \
-template class DRAKECARS_EXPORT SimpleCar<ScalarType>;
+template class DRAKEAUTOMOTIVE_EXPORT SimpleCar<ScalarType>;
 
 // These instantiations must match the API documentation in simple_car.h.
 DRAKE_INSTANTIATE(double)

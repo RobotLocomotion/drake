@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/automotive/system1_cars_vectors.h"
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
@@ -32,7 +32,7 @@ namespace automotive {
 ///
 /// output vector: same as state vector.
 ///
-class DRAKECARS_EXPORT SimpleCar1 {
+class DRAKEAUTOMOTIVE_EXPORT SimpleCar1 {
  public:
   static const drake::lcmt_simple_car_config_t kDefaultConfig;
 
@@ -51,7 +51,7 @@ class DRAKECARS_EXPORT SimpleCar1 {
   /// - double
   /// - drake::TaylorVarXd
   ///
-  /// They are already available to link against in libdrakeCars.
+  /// They are already available to link against in libdrakeAutomotive.
   ///
   /// To use other unusual ScalarType substitutions,
   /// see http://drake.mit.edu/cxx_inl.html.
