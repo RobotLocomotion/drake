@@ -19,7 +19,7 @@ trap clean EXIT
 
 me=$(readlink -f $0)
 mydir=$(dirname $0)
-DRAKE=$(readlink -f $mydir/../..)
+DRAKE=$(readlink -f $mydir/..)
 DRAKE_DIST=$(readlink -f $DRAKE/..)
 DRAKE_DIST_BUILD=${DRAKE_DIST_BUILD:-$DRAKE_DIST/build}
 if ! [ -d $DRAKE_DIST_BUILD/install/bin ]; then
