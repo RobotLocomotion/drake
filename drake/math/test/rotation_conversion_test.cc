@@ -9,6 +9,8 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/axis_angle.h"
+#include "drake/math/cross_product.h"
+#include "drake/math/normalize_vector.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -23,7 +25,92 @@ namespace drake {
 namespace math {
 namespace {
 
-class RotationConversionTest : public ::testing::Test {
+void AxisQuatFun(const Vector4d& a) {
+  auto q = axis2quat(a);
+  // Manually computes one quaternion corresponding to the axis-angle representation
+  Vector3d::PlainObject axis_normalized;
+  NormalizeVector(a.head<3>(), axis_normalized);
+  Vector4d q_expected;
+  q_expected(0) = std::cos(a(3)/2);
+  q_expected.tail<3>() = std::sin(a(3)/2) * axis_normalized;
+
+  EXPECT_TRUE(CompareMatrices(q_expected, q, 1E-10, MatrixCompareType::absolute)
+  || CompareMatrices(q_expected, -q, 1E-10, MatrixCompareType::absolute));
+}
+
+GTEST_TEST(RotationConversionTest, AxisQuat) {
+  // First tests the degenerate cases, when the rotation angle is zero
+  AxisQuatFun(Vector4d(1.0, 0.0, 0.0, 0.0));
+  AxisQuatFun(Vector4d(0.0, 1.0, 0.0, 0.0));
+  AxisQuatFun(Vector4d(0.0, 0.0, 1.0, 0.0));
+
+  // Now tests non-degenerate case
+  AxisQuatFun(Vector4d(0.5, 0.5, sqrt(2)/2, M_PI/3));
+  AxisQuatFun(Vector4d(-0.5, -0.5, -sqrt(2)/2, -M_PI/3));
+}
+
+void QuatAxisFun(const Vector4d& quat) {
+  auto a = quat2axis(quat);
+  EXPECT_NEAR(a.tail<3>().norm(), 1, 1E-6);
+  auto quat_expected = axis2quat(a);
+  EXPECT_TRUE(CompareMatrices(quat_expected, quat, 1E-10, MatrixCompareType::absolute)
+  || CompareMatrices(quat_expected, -quat, 1E-10, MatrixCompareType::absolute));
+}
+
+GTEST_TEST(RotationConversionTest, QuatAxis) {
+  // First tests the degenerate case, corresponding to no rotation
+  QuatAxisFun(Vector4d(1.0, 0.0, 0.0, 0.0));
+  QuatAxisFun(Vector4d(-1.0, 0.0, 0.0, 0.0));
+
+  // Second tests another degenerate case, corresponding to 180 degrees of rotation
+  QuatAxisFun(Vector4d(0.0, 1.0, 0.0, 0.0));
+  QuatAxisFun(Vector4d(0.0, 0.0, 1.0, 0.0));
+  QuatAxisFun(Vector4d(0.0, 0.0, 0.0, 1.0));
+
+  // Now tests non-degenerate case
+  QuatAxisFun(Vector4d(0.5, 0.5, 0.5, 0.5));
+  QuatAxisFun(Vector4d(sqrt(2)/2, 0.5, 1/sqrt(6), 1/sqrt(12)));
+}
+
+void AxisRotmatFun(const Vector4d &a) {
+  // Manually computes the rotation matrix from axis-angle representation, using
+  // Rodriguez's rotation formula
+  // https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+  auto axis_skew = VectorToSkewSymmetric(a.head<3>());
+  auto rotmat_expected = Matrix3d::Identity() + std::sin(a(3)) *axis_skew
+    + (1.0 - std::cos(a(3))) * axis_skew * axis_skew;
+  auto rotmat = axis2rotmat(a);
+  EXPECT_TRUE(CompareMatrices(rotmat, rotmat_expected, 1E-10, MatrixCompareType::absolute));
+}
+
+GTEST_TEST(RotationConversionTest, AxisRotmat) {
+  // First tests the degenerate case, corresponding to no rotation
+  AxisRotmatFun(Vector4d(1.0, 0.0, 0.0, 0.0));
+  AxisRotmatFun(Vector4d(0.0, 1.0, 0.0, 0.0));
+  AxisRotmatFun(Vector4d(0.0, 0.0, 1.0, 0.0));
+
+  // Now tests non-degenerate case
+  AxisRotmatFun(Vector4d(0.5, 0.5, sqrt(2)/2, M_PI/3));
+  AxisRotmatFun(Vector4d(-0.5, sqrt(2)/2, 0.5, -M_PI/4));
+}
+
+/*void QuatRotmatFun(const Vector4d& quat) {
+  // Computes the axis-angle representation, then converts to rotation matrix
+  auto rotmat_expected = axis2rotmat(quat2axis(quat));
+  auto rotmat = quat2rotmat(quat);
+  EXPECT_TRUE(CompareMatrices(rotmat_expected, rotmat, 1E-10, MatrixCompareType::absolute));
+}
+
+GTEST_TEST(RotationConversionTest, QuatRotmat) {
+  // First tests the degenerate case, corresponding to no rotation
+  QuatRotmatFun(Vector4d(1.0, 0.0, 0.0, 0.0));
+  QuatRotmatFun(Vector4d(-1.0, 0.0, 0.0, 0.0));
+
+  // Now tests non-degenerate cases
+  QuatRotmatFun(Vector4d(0.5, 0.5, 0.5, 0.5));
+  QuatRotmatFun(Vector4d(1/sqrt(2), 0.4, 1/sqrt(6), 1/sqrt(12)));
+}*/
+/*class RotationConversionTest : public ::testing::Test {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -98,7 +185,7 @@ TEST_F(RotationConversionTest, DRPYRotmat) {
       EXPECT_NEAR(dR(j, i), dR_num(j, i), 1e-3);
     }
   }
-}
+}*/
 
 }  // namespace
 }  // namespace math
