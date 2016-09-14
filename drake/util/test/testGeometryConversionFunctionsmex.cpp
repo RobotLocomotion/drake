@@ -3,6 +3,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rotation_conversion_gradient.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeMexUtil.h"
 
@@ -56,10 +57,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   dqd2omega = autoDiffToGradientMatrix(qd2omega_autodiff);
 
   auto R = drake::math::quat2rotmat(q);
-  auto dq2R = dquat2rotmat(q);
+  auto dq2R = drake::math::dquat2rotmat(q);
   Matrix<double, drake::kRotmatSize, Dynamic> dR = dq2R * dq;
-  auto drpydR = drotmat2rpy(R, dR);
-  auto dqdR = drotmat2quat(R, dR);
+  auto drpydR = drake::math::drotmat2rpy(R, dR);
+  auto dqdR = drake::math::drotmat2quat(R, dR);
 
   int outnum = 0;
   plhs[outnum++] = eigenToMatlab(omega2qd);
