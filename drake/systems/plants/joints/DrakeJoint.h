@@ -58,7 +58,6 @@
  */
 class DRAKEJOINTS_EXPORT DrakeJoint {
  public:
-
   /**
    * Defines the maximum number of position states a joint can have.
    */
