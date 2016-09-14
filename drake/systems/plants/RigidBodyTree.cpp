@@ -1382,19 +1382,19 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
     KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const*, TwistVector<Scalar>>&
-        f_ext,
+    const eigen_aligned_unordered_map<
+        RigidBody const*, TwistVector<Scalar>>& external_wrenches,
     bool include_velocity_terms) const {
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities_, 1);
   vd.setZero();
-  return inverseDynamics(cache, f_ext, vd, include_velocity_terms);
+  return inverseDynamics(cache, external_wrenches, vd, include_velocity_terms);
 }
 
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
     KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const*, TwistVector<Scalar>>&
-        f_ext,
+    const eigen_aligned_unordered_map<
+        RigidBody const*, TwistVector<Scalar>>& external_wrenches,
     const Matrix<Scalar, Eigen::Dynamic, 1>& vd,
     bool include_velocity_terms) const {
   cache.checkCachedKinematicsSettings(
@@ -1517,8 +1517,8 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
       // Subtract off any external wrench that may be acting on body (and
       // hence contributing to the achievement of the net wrench).
-      auto external_wrench_it = f_ext.find(&body);
-      if (external_wrench_it != f_ext.end()) {
+      auto external_wrench_it = external_wrenches.find(&body);
+      if (external_wrench_it != external_wrenches.end()) {
         const auto& external_wrench = external_wrench_it->second;
         const auto& body_to_world = cache_element.transform_to_world;
         net_wrench -= transformSpatialForce(body_to_world, external_wrench);
