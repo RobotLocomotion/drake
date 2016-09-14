@@ -37,7 +37,7 @@ void Gain<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  auto input_vector = System<T>::get_input_vector(context, 0);
+  auto input_vector = this->EvalEigenVectorInput(context, 0);
   System<T>::GetMutableOutputVector(output, 0) = gain_ * input_vector;
 }
 

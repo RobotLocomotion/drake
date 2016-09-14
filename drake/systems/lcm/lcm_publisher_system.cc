@@ -41,7 +41,7 @@ void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
 
   // Obtains the input vector.
   const VectorBase<double>* const input_vector =
-      context.get_vector_input(kPortIndex);
+      this->EvalVectorInput(context, kPortIndex);
 
   // Translates the input vector into LCM message bytes.
   std::vector<uint8_t> lcm_message;
