@@ -92,7 +92,7 @@ void SimpleCar<T>::EvalTimeDerivatives(
 
   // Obtain the input.
   const systems::VectorBase<T>* const vector_input =
-      context.get_vector_input(0);
+      this->EvalVectorInput(context, 0);
   DRAKE_ASSERT(vector_input);
   const DrivingCommand<T>* const input =
       dynamic_cast<const DrivingCommand<T>*>(vector_input);

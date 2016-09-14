@@ -10,6 +10,7 @@ set(sources
   examples/spring_mass_system.cc
   leaf_context.cc
   leaf_system.cc
+  input_port_evaluator_interface.cc
   output_port_listener_interface.cc
   primitives/adder.cc
   primitives/constant_value_source.cc
@@ -48,6 +49,7 @@ set(installed_headers
   diagram_context.h
   leaf_context.h
   leaf_system.h
+  input_port_evaluator_interface.h
   output_port_listener_interface.h
   state.h
   state_subvector.h

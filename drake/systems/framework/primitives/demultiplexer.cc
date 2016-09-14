@@ -21,7 +21,7 @@ void Demultiplexer<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
-  auto in_vector = System<T>::get_input_vector(context, 0);
+  auto in_vector = System<T>::EvalEigenVectorInput(context, 0);
   for (int iport = 0; iport < this->get_num_output_ports(); ++iport) {
     auto out_vector = System<T>::GetMutableOutputVector(output, iport);
     out_vector[0] = in_vector[iport];

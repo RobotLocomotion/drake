@@ -41,7 +41,9 @@ class ExampleDiagram : public Diagram<double> {
     adder2_->set_name("adder2");
 
     integrator0_ = builder.AddSystem<Integrator<double>>(size);
+    integrator0_->set_name("integrator0");
     integrator1_ = builder.AddSystem<Integrator<double>>(size);
+    integrator1_->set_name("integrator1");
 
     builder.Connect(adder0_->get_output_port(0), adder1_->get_input_port(0));
     builder.Connect(adder0_->get_output_port(0), adder2_->get_input_port(0));
@@ -76,6 +78,7 @@ class ExampleDiagram : public Diagram<double> {
   Integrator<double>* integrator0_ = nullptr;
   Integrator<double>* integrator1_ = nullptr;
 };
+
 
 class DiagramTest : public ::testing::Test {
  protected:
@@ -169,6 +172,7 @@ class DiagramTest : public ::testing::Test {
 TEST_F(DiagramTest, Topology) {
   ASSERT_EQ(kSize, diagram_->get_num_input_ports());
   for (const auto& descriptor : diagram_->get_input_ports()) {
+    EXPECT_EQ(diagram_.get(), descriptor.get_system());
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kInputPort, descriptor.get_face());
     EXPECT_EQ(kSize, descriptor.get_size());
@@ -177,6 +181,7 @@ TEST_F(DiagramTest, Topology) {
 
   ASSERT_EQ(kSize, diagram_->get_num_output_ports());
   for (const auto& descriptor : diagram_->get_output_ports()) {
+    EXPECT_EQ(diagram_.get(), descriptor.get_system());
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kOutputPort, descriptor.get_face());
     EXPECT_EQ(kSize, descriptor.get_size());
@@ -190,6 +195,11 @@ TEST_F(DiagramTest, Topology) {
 
   // The diagram has direct feedthrough.
   EXPECT_TRUE(diagram_->has_any_direct_feedthrough());
+}
+
+TEST_F(DiagramTest, Path) {
+  const std::string path = adder0()->GetPath();
+  EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!::adder0", path);
 }
 
 // Tests that the diagram computes the correct sum.
@@ -287,7 +297,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
   void SetUp() override {
     DiagramBuilder<double> builder;
     subdiagram0_ = builder.AddSystem<ExampleDiagram>(kSize);
+    subdiagram0_->set_name("subdiagram0");
     subdiagram1_ = builder.AddSystem<ExampleDiagram>(kSize);
+    subdiagram1_->set_name("subdiagram1");
 
     // Hook up the two diagrams in portwise series.
     for (int i = 0; i < 3; i++) {
@@ -298,6 +310,7 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     }
 
     diagram_ = builder.Build();
+    diagram_->set_name("DiagramOfDiagrams");
 
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
@@ -422,7 +435,7 @@ class PublishingSystem : public LeafSystem<double> {
  protected:
   void DoPublish(const Context<double>& context) const override {
     CheckValidContext(context);
-    callback_(context.get_vector_input(0)->get_value()[0]);
+    callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
 
  private:

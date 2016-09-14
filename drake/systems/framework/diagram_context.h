@@ -9,6 +9,7 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/state_supervector.h"
 #include "drake/systems/framework/system_input.h"
@@ -120,6 +121,7 @@ class DiagramContext : public Context<T> {
                  std::unique_ptr<SystemOutput<T>> output) {
     DRAKE_DEMAND(contexts_[index] == nullptr);
     DRAKE_DEMAND(outputs_[index] == nullptr);
+    context->set_parent(this);
     contexts_[index] = std::move(context);
     outputs_[index] = std::move(output);
   }
@@ -192,6 +194,7 @@ class DiagramContext : public Context<T> {
   /// Returns the context structure for a given constituent system @p index.
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
+  /// TODO(david-german-tri): Rename to get_subsystem_context.
   const Context<T>* GetSubsystemContext(SystemIndex index) const {
     const int num_contexts = static_cast<int>(contexts_.size());
     DRAKE_DEMAND(index >= 0 && index < num_contexts);
@@ -202,6 +205,7 @@ class DiagramContext : public Context<T> {
   /// Returns the context structure for a given subsystem @p index.
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
+  /// TODO(david-german-tri): Rename to get_mutable_subsystem_context.
   Context<T>* GetMutableSubsystemContext(SystemIndex index) {
     const int num_contexts = static_cast<int>(contexts_.size());
     DRAKE_DEMAND(index >= 0 && index < num_contexts);
@@ -223,6 +227,18 @@ class DiagramContext : public Context<T> {
     return static_cast<int>(input_ids_.size());
   }
 
+  /// Returns the input port at the given @p index, which of course belongs
+  /// to the subsystem whose input was exposed at that index.
+  const InputPort* GetInputPort(int index) const override {
+    if (index < 0 || index >= get_num_input_ports()) {
+      throw std::out_of_range("Input port out of range.");
+    }
+    const PortIdentifier& id = input_ids_[index];
+    SystemIndex system_index = id.first;
+    PortIndex port_index = id.second;
+    return GetSubsystemContext(system_index)->GetInputPort(port_index);
+  }
+
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
     if (index < 0 || index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
@@ -233,26 +249,6 @@ class DiagramContext : public Context<T> {
     GetMutableSubsystemContext(system_index)
         ->SetInputPort(port_index, std::move(port));
     // TODO(david-german-tri): Set invalidation callbacks.
-  }
-
-  const BasicVector<T>* get_vector_input(int index) const override {
-    if (index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    const PortIdentifier& id = input_ids_[index];
-    SystemIndex system_index = id.first;
-    PortIndex port_index = id.second;
-    return GetSubsystemContext(system_index)->get_vector_input(port_index);
-  }
-
-  const AbstractValue* get_abstract_input(int index) const override {
-    if (index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    const PortIdentifier& id = input_ids_[index];
-    SystemIndex system_index = id.first;
-    PortIndex port_index = id.second;
-    return GetSubsystemContext(system_index)->get_abstract_input(port_index);
   }
 
   const State<T>& get_state() const override { return state_; }
@@ -271,8 +267,7 @@ class DiagramContext : public Context<T> {
       DRAKE_DEMAND(outputs_[i] != nullptr);
       // When a leaf context is cloned, it will clone the data that currently
       // appears on each of its input ports into a FreestandingInputPort.
-      clone->contexts_[i] = contexts_[i]->Clone();
-      clone->outputs_[i] = outputs_[i]->Clone();
+      clone->AddSystem(i, contexts_[i]->Clone(), outputs_[i]->Clone());
     }
 
     // Build a superstate over the subsystem contexts.

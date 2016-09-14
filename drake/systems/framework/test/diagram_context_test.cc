@@ -67,6 +67,15 @@ class DiagramContextTest : public ::testing::Test {
         1, std::make_unique<FreestandingInputPort>(std::move(vec1)));
   }
 
+  // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
+  // connected to @p context at @p index.
+  static const BasicVector<double>* ReadVectorInputPort(
+      const Context<double>& context, int index) {
+    SystemPortDescriptor<double> descriptor(
+        nullptr, kInputPort, index, kVectorValued, 0, kInheritedSampling);
+    return context.EvalVectorInput(nullptr, descriptor);
+  }
+
   std::unique_ptr<DiagramContext<double>> context_;
   std::unique_ptr<Adder<double>> adder0_;
   std::unique_ptr<Adder<double>> adder1_;
@@ -131,15 +140,15 @@ TEST_F(DiagramContextTest, ConnectValid) {
 TEST_F(DiagramContextTest, SetAndGetInputPorts) {
   ASSERT_EQ(2, context_->get_num_input_ports());
   AttachInputPorts();
-  EXPECT_EQ(128, context_->get_vector_input(0)->get_value()[0]);
-  EXPECT_EQ(256, context_->get_vector_input(1)->get_value()[0]);
+  EXPECT_EQ(128, ReadVectorInputPort(*context_, 0)->get_value()[0]);
+  EXPECT_EQ(256, ReadVectorInputPort(*context_, 1)->get_value()[0]);
 }
 
 // Tests that an exception is thrown when setting or getting input ports that
 // don't exist.
 TEST_F(DiagramContextTest, InvalidInputPorts) {
   EXPECT_THROW(context_->SetInputPort(2, nullptr), std::out_of_range);
-  EXPECT_THROW(context_->get_vector_input(2), std::out_of_range);
+  EXPECT_THROW(ReadVectorInputPort(*context_, 2), std::out_of_range);
 }
 
 TEST_F(DiagramContextTest, Clone) {
@@ -164,17 +173,25 @@ TEST_F(DiagramContextTest, Clone) {
   // but are different pointers.
   EXPECT_EQ(2, clone->get_num_input_ports());
   for (int i = 0; i < 2; ++i) {
-    EXPECT_NE(context_->get_vector_input(i), clone->get_vector_input(i));
-    EXPECT_TRUE(CompareMatrices(context_->get_vector_input(i)->get_value(),
-                                clone->get_vector_input(i)->get_value(), 1e-8,
-                                MatrixCompareType::absolute));
+    const BasicVector<double>* orig_port = ReadVectorInputPort(*context_, i);
+    const BasicVector<double>* clone_port = ReadVectorInputPort(*clone, i);
+    EXPECT_NE(orig_port, clone_port);
+    EXPECT_TRUE(CompareMatrices(orig_port->get_value(), clone_port->get_value(),
+                                1e-8, MatrixCompareType::absolute));
   }
 
   // Verify that the graph structure was preserved: the VectorBase in
   // sys0 output port 0 should be pointer-equal to the VectorBase in
   // sys1 input port 1.
-  EXPECT_EQ(clone->GetSubsystemContext(1)->get_vector_input(1),
-            clone->GetSubsystemOutput(0)->get_vector_data(0));
+  //
+  // This assertion abuses the GetInputPort implementation detail to fish out
+  // a pointer to the input vector without triggering an evaluation.
+  // An evaluation is not possible in this test fixture because there is no
+  // Diagram for context_ that can be asked to eval the input.
+  auto sys1_context = clone->GetSubsystemContext(1);
+  auto sys0_output = clone->GetSubsystemOutput(0);
+  EXPECT_EQ(sys1_context->GetInputPort(1)->get_vector_data<double>(),
+            sys0_output->get_vector_data(0));
 }
 
 }  // namespace

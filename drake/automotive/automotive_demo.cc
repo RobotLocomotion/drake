@@ -45,7 +45,7 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
     DRAKE_DEMAND(sent_load_robot_);
 
     const systems::VectorBase<double>* const input_base =
-        context.get_vector_input(0);
+        this->EvalVectorInput(context, 0);
     DRAKE_DEMAND(input_base != nullptr);
     const EulerFloatingJointState<double>* const input =
         dynamic_cast<const EulerFloatingJointState<double>*>(input_base);
