@@ -8,7 +8,7 @@
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 std::unique_ptr<systems::BasicVector<double>>
 IdmWithTrajectoryAgentStateTranslator::AllocateOutputVector() const {
@@ -53,5 +53,5 @@ void IdmWithTrajectoryAgentStateTranslator::TranslateLcmToVectorBase(
   my_vector->set_a_a(message.a_a);
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

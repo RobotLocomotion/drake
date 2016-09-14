@@ -9,7 +9,7 @@
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /**
  * Translates between LCM message objects and VectorBase objects for the
@@ -30,5 +30,5 @@ class DRAKECARS_EXPORT DrivingCommandTranslator
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

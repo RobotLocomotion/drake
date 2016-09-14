@@ -13,7 +13,7 @@
 #include "lcmtypes/drake/lcmt_idm_with_trajectory_agent_state_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// Describes the row indices of a IdmWithTrajectoryAgentState.
 struct DRAKECARS_EXPORT IdmWithTrajectoryAgentStateIndices {
@@ -90,5 +90,5 @@ bool decode(const drake::lcmt_idm_with_trajectory_agent_state_t& msg,
   return true;
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

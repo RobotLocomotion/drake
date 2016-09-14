@@ -13,7 +13,7 @@
 #include "lcmtypes/drake/lcmt_euler_floating_joint_state_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// Describes the row indices of a EulerFloatingJointState.
 struct DRAKECARS_EXPORT EulerFloatingJointStateIndices {
@@ -94,5 +94,5 @@ bool decode(const drake::lcmt_euler_floating_joint_state_t& msg,
   return true;
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
