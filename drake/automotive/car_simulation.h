@@ -7,7 +7,7 @@
 
 #include "drake/automotive/system1_cars_vectors.h"
 #include "drake/automotive/trajectory_car.h"
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
@@ -21,7 +21,7 @@ namespace automotive {
 /**
  * Prints the usage instructions to std::cout.
  */
-DRAKECARS_EXPORT
+DRAKEAUTOMOTIVE_EXPORT
 void PrintUsageInstructions(const std::string& executable_name);
 
 /**
@@ -57,7 +57,7 @@ void PrintUsageInstructions(const std::string& executable_name);
  *
  * @return A shared pointer to a rigid body system.
  */
-DRAKECARS_EXPORT
+DRAKEAUTOMOTIVE_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
     int argc, const char* argv[], double* duration,
     drake::parsers::ModelInstanceIdTable* model_instance_id_table);
@@ -74,7 +74,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
  * @throws std::runtime_error if "--duration" exists in @p argv but is not
  * followed by a double value.
  */
-DRAKECARS_EXPORT
+DRAKEAUTOMOTIVE_EXPORT
 double ParseDuration(int argc, const char* argv[]);
 
 /**
@@ -82,7 +82,7 @@ double ParseDuration(int argc, const char* argv[]);
  *
  * @param[in] rigid_body_sys The rigid body system to modify.
  */
-DRAKECARS_EXPORT
+DRAKEAUTOMOTIVE_EXPORT
 void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
 
 /**
@@ -104,7 +104,7 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
  * axis. Note that regardless of how deep the terrain is, the top surface of the
  * terrain will be at Z = 0.
  */
-DRAKECARS_EXPORT
+DRAKEAUTOMOTIVE_EXPORT
 void AddFlatTerrainToWorld(
     const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
     double box_size = 1000, double box_depth = 10);
@@ -117,7 +117,7 @@ void AddFlatTerrainToWorld(
  * @param[in] rigid_body_sys The rigid body system.
  * @return The resulting vehicle system.
  */
-DRAKECARS_EXPORT
+DRAKEAUTOMOTIVE_EXPORT
 std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
@@ -129,14 +129,14 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
  *
  * @param index Selects which pre-programmed trajectory to use.
  */
-DRAKECARS_EXPORT
+DRAKEAUTOMOTIVE_EXPORT
 std::shared_ptr<TrajectoryCar1> CreateTrajectoryCarSystem(int index);
 
 /**
  * Creates a linear system to map NPC car state to the state vector of a
  * floating joint, allowing motion and steering in the x-y plane only.
  */
-DRAKECARS_EXPORT
+DRAKEAUTOMOTIVE_EXPORT
 std::shared_ptr<drake::AffineSystem<
   drake::NullVector, SimpleCarState1, EulerFloatingJointState1>>
 CreateSimpleCarVisualizationAdapter();
@@ -147,7 +147,7 @@ CreateSimpleCarVisualizationAdapter();
  *
  * @return The default car simulation options.
  */
-DRAKECARS_EXPORT
+DRAKEAUTOMOTIVE_EXPORT
 SimulationOptions GetCarSimulationDefaultOptions();
 
 /**
@@ -156,7 +156,7 @@ SimulationOptions GetCarSimulationDefaultOptions();
  * @param[in] rigid_body_sys The rigid body system being simulated.
  * @return The initial state of the system.
  */
-DRAKECARS_EXPORT
+DRAKEAUTOMOTIVE_EXPORT
 Eigen::VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys);
 
 }  // namespace automotive

@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 
 namespace {
 /// An expression of the minimal ScalarType (MST) concept for
@@ -33,7 +33,7 @@ MST operator*(double, const MST&) { return MST{}; }
 
 namespace drake {
 namespace automotive {
-template class DRAKECARS_EXPORT IdmWithTrajectoryAgent<MST>;
+template class DRAKEAUTOMOTIVE_EXPORT IdmWithTrajectoryAgent<MST>;
 namespace {
 
 GTEST_TEST(IdmWithTrajectoryAgentScalarTypeTest, CompileTest) {

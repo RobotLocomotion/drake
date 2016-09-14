@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 
 namespace {
 /// An expression of the minimal ScalarType (MST) concept for SimpleCar.
@@ -31,7 +31,7 @@ MST tan(const MST&) { return MST{}; }
 
 namespace drake {
 namespace automotive {
-template class DRAKECARS_EXPORT SimpleCar<MST>;
+template class DRAKEAUTOMOTIVE_EXPORT SimpleCar<MST>;
 namespace {
 
 GTEST_TEST(SimpleCarScalarTypeTest, CompileTest) {
