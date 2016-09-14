@@ -797,7 +797,7 @@ int InstantaneousQPController::setupAndSolveQP(
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_or_frame_name_to_id.at(body_wrench_data.body_name);
     auto f_ext_i =
-        Map<const drake::TwistVector<double>>(body_wrench_data.wrench);
+        Map<const drake::WrenchVector<double>>(body_wrench_data.wrench);
     external_wrenches.insert({robot->bodies[body_id].get(), f_ext_i});
   }
 

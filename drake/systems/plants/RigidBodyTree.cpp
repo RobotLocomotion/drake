@@ -26,9 +26,6 @@ using namespace Eigen;
 
 using drake::AutoDiffUpTo73d;
 using drake::AutoDiffXd;
-using drake::kQuaternionSize;
-using drake::kRpySize;
-using drake::kSpaceDimension;
 using drake::Matrix3X;
 using drake::Matrix4X;
 using drake::Matrix6X;
@@ -37,6 +34,10 @@ using drake::TwistMatrix;
 using drake::TwistVector;
 using drake::Vector3;
 using drake::VectorX;
+using drake::WrenchVector;
+using drake::kQuaternionSize;
+using drake::kRpySize;
+using drake::kSpaceDimension;
 using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
@@ -1383,7 +1384,7 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
     KinematicsCache<Scalar>& cache,
     const drake::eigen_aligned_std_unordered_map<
-        RigidBody const*, TwistVector<Scalar>>& external_wrenches,
+        RigidBody const*, WrenchVector<Scalar>>& external_wrenches,
     bool include_velocity_terms) const {
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities_, 1);
   vd.setZero();
@@ -1394,7 +1395,7 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
     KinematicsCache<Scalar>& cache,
     const drake::eigen_aligned_std_unordered_map<
-        RigidBody const*, TwistVector<Scalar>>& external_wrenches,
+        RigidBody const*, WrenchVector<Scalar>>& external_wrenches,
     const Matrix<Scalar, Eigen::Dynamic, 1>& vd,
     bool include_velocity_terms) const {
   cache.checkCachedKinematicsSettings(
@@ -2335,25 +2336,26 @@ template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree::dynamicsBiasTerm<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     unordered_map<
-        RigidBody const*, TwistVector<AutoDiffUpTo73d>, hash<RigidBody const*>,
+        RigidBody const*, WrenchVector<AutoDiffUpTo73d>, hash<RigidBody const*>,
         equal_to<RigidBody const*>,
-        Eigen::aligned_allocator<
-            pair<RigidBody const* const, TwistVector<AutoDiffUpTo73d>>>> const&,
+        Eigen::aligned_allocator<pair<RigidBody const* const,
+                                      WrenchVector<AutoDiffUpTo73d>>>> const&,
     bool) const;
 template DRAKERBM_EXPORT VectorX<AutoDiffXd>
 RigidBodyTree::dynamicsBiasTerm<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
-    unordered_map<RigidBody const*, TwistVector<AutoDiffXd>,
-                  hash<RigidBody const*>, equal_to<RigidBody const*>,
-                  Eigen::aligned_allocator<pair<
-                      RigidBody const* const, TwistVector<AutoDiffXd>>>> const&,
+    unordered_map<
+        RigidBody const*, WrenchVector<AutoDiffXd>, hash<RigidBody const*>,
+        equal_to<RigidBody const*>,
+        Eigen::aligned_allocator<
+            pair<RigidBody const* const, WrenchVector<AutoDiffXd>>>> const&,
     bool) const;
 template DRAKERBM_EXPORT VectorXd RigidBodyTree::dynamicsBiasTerm<double>(
     KinematicsCache<double>&,
-    unordered_map<RigidBody const*, TwistVector<double>, hash<RigidBody const*>,
-                  equal_to<RigidBody const*>,
+    unordered_map<RigidBody const*, WrenchVector<double>,
+                  hash<RigidBody const*>, equal_to<RigidBody const*>,
                   Eigen::aligned_allocator<pair<RigidBody const* const,
-                                                TwistVector<double>>>> const&,
+                                                WrenchVector<double>>>> const&,
     bool) const;
 
 // Explicit template instantiations for geometricJacobian.
@@ -2530,10 +2532,10 @@ RigidBodyTree::inverseDynamics<AutoDiffXd>(
     VectorX<AutoDiffXd> const&, bool) const;
 template DRAKERBM_EXPORT VectorX<double> RigidBodyTree::inverseDynamics<double>(
     KinematicsCache<double>&,
-    unordered_map<RigidBody const*, TwistVector<double>, hash<RigidBody const*>,
-                  equal_to<RigidBody const*>,
+    unordered_map<RigidBody const*, WrenchVector<double>,
+                  hash<RigidBody const*>, equal_to<RigidBody const*>,
                   Eigen::aligned_allocator<pair<RigidBody const* const,
-                                                TwistVector<double>>>> const&,
+                                                WrenchVector<double>>>> const&,
     VectorX<double> const&, bool) const;
 
 // Explicit template instantiations for jointLimitConstraints.

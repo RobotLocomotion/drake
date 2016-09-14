@@ -340,7 +340,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /// inverseDynamics and dynamicsBiasTerm.
   template <typename Scalar>
   using BodyToWrenchMap = drake::eigen_aligned_std_unordered_map<
-    RigidBody const*, drake::TwistVector<Scalar>>;
+    RigidBody const*, drake::WrenchVector<Scalar>>;
 #endif
 
   /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator
@@ -357,7 +357,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(
       KinematicsCache<Scalar>& cache,
       const drake::eigen_aligned_std_unordered_map<
-          RigidBody const*, drake::TwistVector<Scalar>>& external_wrenches,
+          RigidBody const*, drake::WrenchVector<Scalar>>& external_wrenches,
       bool include_velocity_terms = true) const;
 
   /** \brief Compute
@@ -391,7 +391,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(
       KinematicsCache<Scalar>& cache,
       const drake::eigen_aligned_std_unordered_map<
-          RigidBody const*, drake::TwistVector<Scalar>>& external_wrenches,
+          RigidBody const*, drake::WrenchVector<Scalar>>& external_wrenches,
       const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd,
       bool include_velocity_terms = true) const;
 
