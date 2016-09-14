@@ -4,11 +4,11 @@
 
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/system1_cars_vectors.h"
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// A car that follows a pre-established trajectory, neglecting all physics.
 ///
@@ -24,7 +24,7 @@ namespace cars {
 //    heading is defined around the +z axis, so positive-turn-left
 /// * velocity
 ///
-class DRAKECARS_EXPORT TrajectoryCar1 {
+class DRAKEAUTOMOTIVE_EXPORT TrajectoryCar1 {
  public:
   /// Constructs a TrajectoryCar system that traces the given @p curve,
   /// at the given constant @p speed, starting at the given @p start_time.
@@ -133,5 +133,5 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   const TrajectoryCar1 wrapped_;
 };
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

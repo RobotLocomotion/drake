@@ -22,13 +22,13 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace ros {
-namespace cars {
+namespace automotive {
 namespace {
 
-using drake::cars::CreateRigidBodySystem;
-using drake::cars::CreateVehicleSystem;
-using drake::cars::GetCarSimulationDefaultOptions;
-using drake::cars::ParseDuration;
+using drake::automotive::CreateRigidBodySystem;
+using drake::automotive::CreateVehicleSystem;
+using drake::automotive::GetCarSimulationDefaultOptions;
+using drake::automotive::ParseDuration;
 
 using drake::ros::systems::DrakeRosTfPublisher;
 using drake::ros::systems::run_ros_vehicle_sim;
@@ -112,10 +112,10 @@ int do_main(int argc, const char* argv[]) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace ros
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::ros::cars::do_main(argc, argv);
+  return drake::ros::automotive::do_main(argc, argv);
 }

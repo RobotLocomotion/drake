@@ -8,15 +8,15 @@
 
 #include <Eigen/Core>
 
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "lcmtypes/drake/lcmt_euler_floating_joint_state_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// Describes the row indices of a EulerFloatingJointState.
-struct DRAKECARS_EXPORT EulerFloatingJointStateIndices {
+struct DRAKEAUTOMOTIVE_EXPORT EulerFloatingJointStateIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 6;
 
@@ -94,5 +94,5 @@ bool decode(const drake::lcmt_euler_floating_joint_state_t& msg,
   return true;
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
