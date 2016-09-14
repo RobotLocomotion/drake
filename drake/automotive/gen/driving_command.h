@@ -8,7 +8,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
@@ -16,7 +16,7 @@ namespace drake {
 namespace automotive {
 
 /// Describes the row indices of a DrivingCommand.
-struct DRAKECARS_EXPORT DrivingCommandIndices {
+struct DRAKEAUTOMOTIVE_EXPORT DrivingCommandIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 3;
 
