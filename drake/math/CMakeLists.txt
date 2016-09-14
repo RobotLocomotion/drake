@@ -7,9 +7,11 @@ set(sources
   cylindrical.cc
   expmap.cc
   gradient.cc
+  normalize_vector.cc
   quaternion.cc
   random_rotation.cc
   roll_pitch_yaw.cc
+  rotation_conversion_gradient.cc
   rotation_matrix.cc)
 
 # Headers that should be installed with Drake so that they
@@ -22,9 +24,11 @@ set(installed_headers
   cylindrical.h
   expmap.h
   gradient.h
+  normalize_vector.h
   quaternion.h
   random_rotation.h
   roll_pitch_yaw.h
+  rotation_conversion_gradient.h
   rotation_matrix.h)
 
 # Headers that are needed by code here but should not
