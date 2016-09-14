@@ -23,32 +23,38 @@ class SpringMassSystemTest : public ::testing::Test {
         make_unique<PidControlledSpringMassSystem<double>>(
             kSpring, kMass, Kp, Ki, Kd, x_target);
 
-    context_ = model_->CreateDefaultContext();
-    output_ = model_->AllocateOutput(*context_);
+    model_context_ = model_->CreateDefaultContext();
+    output_ = model_->AllocateOutput(*model_context_);
 
     // Initialize to default conditions.
-    model_->SetDefaultState(context_.get());
+    model_->SetDefaultState(model_context_.get());
+
+    // Gets the plant context.
+    plant_context_ =
+        model_->GetMutableSubsystemContext(
+            model_context_.get(), &model_->get_plant());
   }
 
   // Returns the continuous state of the given @p system.
   ContinuousState<double>* GetMutableContinuousState(
       const System<double>* system) {
-    return model_->GetMutableSubsystemState(context_.get(), system)
+    return model_->GetMutableSubsystemState(model_context_.get(), system)
         ->continuous_state.get();
   }
 
   std::unique_ptr<PidControlledSpringMassSystem<double>> model_;
-  std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<Context<double>> model_context_;
+  Context<double>* plant_context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
 // Tests that the diagram computes the correct sum.
 TEST_F(SpringMassSystemTest, EvalOutput) {
   // Sets a non-zero initial condition.
-  model_->set_position(context_.get(), 2.0);
-  model_->set_velocity(context_.get(), -1.0);
+  model_->set_position(model_context_.get(), 2.0);
+  model_->set_velocity(model_context_.get(), -1.0);
 
-  model_->EvalOutput(*context_, output_.get());
+  model_->EvalOutput(*model_context_, output_.get());
 
   ASSERT_EQ(1, output_->get_num_ports());
   Eigen::Vector3d expected_output(2.0, -1.0, 0.0);
@@ -69,10 +75,10 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   const double v0 = -1.5;
 
   // Sets a non-zero initial condition.
-  model_->set_position(context_.get(), x0);
-  model_->set_velocity(context_.get(), v0);
+  model_->set_position(model_context_.get(), x0);
+  model_->set_velocity(model_context_.get(), v0);
 
-  model_->EvalTimeDerivatives(*context_, derivatives.get());
+  model_->EvalTimeDerivatives(*model_context_, derivatives.get());
 
   // The spring-mass plant has a state vector of size 3. One position, one
   // velocity and one misc state (energy). In addition, the model has an
@@ -86,6 +92,7 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   // The derivatives of plant.
   const ContinuousState<double>* plant_xcdot =
       model_->GetSubsystemDerivatives(*derivatives, &model_->get_plant());
+
   // Position derivative.
   EXPECT_EQ(v0, plant_xcdot->get_state().GetAtIndex(0));
 
@@ -97,7 +104,7 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
             plant_xcdot->get_state().GetAtIndex(1));
 
   // Work.
-  EXPECT_EQ(model_->get_plant().EvalConservativePower(*context_),
+  EXPECT_EQ(model_->get_plant().EvalConservativePower(*plant_context_),
             plant_xcdot->get_state().GetAtIndex(2));
 }
 

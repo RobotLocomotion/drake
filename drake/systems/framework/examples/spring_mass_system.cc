@@ -74,6 +74,7 @@ double SpringMassSystem::EvalKineticEnergy(const MyContext& context) const {
 }
 
 double SpringMassSystem::EvalConservativePower(const MyContext& context) const {
+  DRAKE_ASSERT_VOID(this->CheckValidContext(context));
   const double power_c = EvalSpringForce(context) * get_velocity(context);
   return power_c;
 }
