@@ -18,7 +18,7 @@ except ImportError:
 
 THIS_FILE = os.path.abspath(__file__)
 THIS_DIR = os.path.dirname(THIS_FILE)
-DRAKE_DIR = os.path.dirname(os.path.dirname(THIS_DIR))
+DRAKE_DIR = os.path.dirname(THIS_DIR)
 DRAKE_DIST_DIR = os.path.dirname(DRAKE_DIR)
 DRAKE_DIST_BUILD_DIR = os.getenv(
     'DRAKE_DIST_BUILD',
