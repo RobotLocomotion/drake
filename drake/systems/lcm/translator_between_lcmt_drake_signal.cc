@@ -43,8 +43,8 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
 
   // Saves the values from the LCM message into the vector_base.
   // Assumes that the order of the values are identical in both.
-  for (int ii = 0; ii < message.dim; ++ii) {
-    vector_base->SetAtIndex(ii, message.val[ii]);
+  for (int i = 0; i < message.dim; ++i) {
+    vector_base->SetAtIndex(i, message.val[i]);
   }
 }
 
