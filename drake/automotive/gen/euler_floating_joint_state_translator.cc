@@ -8,7 +8,7 @@
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 std::unique_ptr<systems::BasicVector<double>>
 EulerFloatingJointStateTranslator::AllocateOutputVector() const {
@@ -55,5 +55,5 @@ void EulerFloatingJointStateTranslator::TranslateLcmToVectorBase(
   my_vector->set_yaw(message.yaw);
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

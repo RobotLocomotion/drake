@@ -9,7 +9,7 @@
 #include "lcmtypes/drake/lcmt_euler_floating_joint_state_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /**
  * Translates between LCM message objects and VectorBase objects for the
@@ -31,5 +31,5 @@ class DRAKECARS_EXPORT EulerFloatingJointStateTranslator
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

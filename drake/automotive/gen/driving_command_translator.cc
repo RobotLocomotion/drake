@@ -8,7 +8,7 @@
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 std::unique_ptr<systems::BasicVector<double>>
 DrivingCommandTranslator::AllocateOutputVector() const {
@@ -47,5 +47,5 @@ void DrivingCommandTranslator::TranslateLcmToVectorBase(
   my_vector->set_brake(message.brake);
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
