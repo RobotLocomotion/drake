@@ -54,11 +54,13 @@ GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
     x0_rb.bottomRows(2));
     cout << "H_sdf = " << r_sdf.getRigidBodyTree()->massMatrix(kinsol_sdf) <<
     endl;
-    eigen_aligned_unordered_map<const RigidBody *, Matrix<double, 6, 1> > f_ext;
+    const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
     cout << "C_urdf = " <<
-    r_urdf.getRigidBodyTree()->dynamicsBiasTerm(kinsol_urdf, f_ext) << endl;
+    r_urdf.getRigidBodyTree()->dynamicsBiasTerm(
+        kinsol_urdf, no_external_wrenches) << endl;
     cout << "C_sdf = " <<
-    r_sdf.getRigidBodyTree()->dynamicsBiasTerm(kinsol_sdf, f_ext) << endl;
+    r_sdf.getRigidBodyTree()->dynamicsBiasTerm(
+        kinsol_sdf, no_external_wrenches) << endl;
     */
 
     auto xdot = toEigen(r.dynamics(0.0, x0, u0));

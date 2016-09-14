@@ -73,4 +73,8 @@ using TwistMatrix = Eigen::Matrix<Scalar, kTwistSize, Eigen::Dynamic>;
 template <typename Scalar>
 using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
 
+/// A column vector consisting of one wrench.
+template <typename Scalar>
+using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
+
 }  // namespace drake

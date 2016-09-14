@@ -791,19 +791,18 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   // handle external wrenches to compensate for
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-      f_ext;
+  RigidBodyTree::BodyToWrenchMap<double> external_wrenches;
   for (auto it = qp_input.body_wrench_data.begin();
        it != qp_input.body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_or_frame_name_to_id.at(body_wrench_data.body_name);
     auto f_ext_i =
-        Map<const drake::TwistVector<double>>(body_wrench_data.wrench);
-    f_ext.insert({robot->bodies[body_id].get(), f_ext_i});
+        Map<const drake::WrenchVector<double>>(body_wrench_data.wrench);
+    external_wrenches.insert({robot->bodies[body_id].get(), f_ext_i});
   }
 
   H = robot->massMatrix(cache);
-  C = robot->dynamicsBiasTerm(cache, f_ext);
+  C = robot->dynamicsBiasTerm(cache, external_wrenches);
 
   H_float = H.topRows(6);
   H_act = H.bottomRows(nu);
