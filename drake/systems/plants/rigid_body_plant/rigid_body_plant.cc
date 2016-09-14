@@ -177,7 +177,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // RBT::ComputeGeneralizedJointLimitForces(C)?
   {
     for (auto const& b : tree_->bodies) {
-      if (!b->hasParent()) continue;
+      if (!b->has_mobilizer_joint()) continue;
       auto const& joint = b->getJoint();
       // Only for single-axis joints.
       if (joint.getNumPositions() == 1 && joint.getNumVelocities() == 1) {
