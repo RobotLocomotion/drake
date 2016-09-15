@@ -6,7 +6,13 @@
 
 namespace drake {
 namespace math {
-// NOTE: not reshaping second derivative to Matlab geval output format!
+/** Computes the normalized vector, together with its gradient and second derivatives
+ * @param x A \p N x 1 vector to be normalized
+ * @param x_norm The normalized vector
+ * @param dx_norm A \p N x \p N matrix, dx_norm(i,j) is the partial derivative
+ * of x_norm(i) w.r.t x(j)
+ * @param ddx_norm
+ */
 template <typename Derived>
 void NormalizeVector(
     const Eigen::MatrixBase<Derived>& x, typename Derived::PlainObject& x_norm,
