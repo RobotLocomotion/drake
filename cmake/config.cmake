@@ -161,6 +161,7 @@ macro(drake_setup_platform)
   set(CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY ON)
   set(CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY ON)
 
+  # Ensure that find_package() searches in the install directory first.
   list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
 
   drake_setup_compiler()
