@@ -99,8 +99,13 @@ void InstantaneousQPController::loadConfigurationFromYAML(
     const std::string& control_config_filename) {
   YAML::Node control_config = YAML::LoadFile(control_config_filename);
   std::ofstream debug_file(control_config_filename + ".debug.yaml");
-  param_sets = loadAllParamSets(control_config["qp_controller_params"], *robot,
-                                debug_file);
+  // Important note: assigning the result of loadAllParamSets to a local
+  // variable before assigning to the param_sets field is to make it so that the
+  // copy assignment operator is used instead of the move assignment operator.
+  // See #2165 for details.
+  auto param_sets_local = loadAllParamSets(
+      control_config["qp_controller_params"], *robot, debug_file);
+  param_sets = param_sets_local;
   rpc = parseKinematicTreeMetadata(control_config["kinematic_tree_metadata"],
                                    *robot);
 }
