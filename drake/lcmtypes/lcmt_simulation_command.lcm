@@ -1,13 +1,13 @@
 package drake;
 
-struct lcmt_simulation_command
-{
+struct lcmt_simulation_command {
+  // The timestamp in milliseconds.
   int64_t timestamp;
 
   int8_t command_type;
 
   // enum for viewer command type
-  // ***** NOTE: only STOP works in matlab so far!! ***
+  // ***** NOTE: only STOP works in MATLAB so far!! ***
   const int8_t RUN        = 0;
   const int8_t PAUSE      = 1;
   const int8_t STOP       = 2;

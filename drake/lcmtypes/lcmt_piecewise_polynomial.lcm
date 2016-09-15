@@ -1,6 +1,7 @@
 package drake;
 
 struct lcmt_piecewise_polynomial {
+  // The timestamp in milliseconds.
   int64_t timestamp;
 
   int32_t num_breaks;

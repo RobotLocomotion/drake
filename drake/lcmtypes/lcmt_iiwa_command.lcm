@@ -14,5 +14,4 @@ struct lcmt_iiwa_command {
   // should be set to zero.
   int32_t num_torques;
   double joint_torque[num_torques];
-
 }
