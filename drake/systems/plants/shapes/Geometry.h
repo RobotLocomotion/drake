@@ -1,8 +1,9 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
-#include <Eigen/StdVector>
+#include <Eigen/Dense>
 
 #include "drake/drakeShapes_export.h"
 
@@ -17,10 +18,8 @@ enum DRAKESHAPES_EXPORT Shape {
   CAPSULE = 6
 };
 
-typedef std::vector<Eigen::Vector3d,
-                    Eigen::aligned_allocator<Eigen::Vector3d>> PointsVector;
-typedef std::vector<Eigen::Vector3i,
-                    Eigen::aligned_allocator<Eigen::Vector3i>> TrianglesVector;
+typedef std::vector<Eigen::Vector3d> PointsVector;
+typedef std::vector<Eigen::Vector3i> TrianglesVector;
 
 std::string ShapeToString(Shape ss);
 
