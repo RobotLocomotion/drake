@@ -1,8 +1,8 @@
 package drake;
 
 // Command a single set of joint states for the arm.
-struct lcmt_iiwa_command
-{
+struct lcmt_iiwa_command {
+  // The timestamp in milliseconds.
   int64_t timestamp;
 
   // Joint positions should always be sent.
