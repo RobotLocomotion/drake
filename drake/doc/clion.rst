@@ -89,9 +89,9 @@ Now you can run this (manually) on any file using Tools > External Tools in the 
 
 You can also set the coding style through the following steps
 
-1. Go to File > Settings > Code Style
+1. Go to File > Settings > Editor > Code Style
 2. On the right panel, Go to Default Options > Right margin (columns): Set it to 80
-3. Go to File > Settings > Code Style > C/C++
+3. Go to File > Settings > Editor > Code Style > C/C++
 4. On the right panel, choose Set from > Predefined Style > Google   
 
 
