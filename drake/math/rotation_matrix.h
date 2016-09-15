@@ -10,7 +10,15 @@
 
 namespace drake {
 namespace math {
-
+/** Computes one of the quaternion from a rotation matrix.
+ * The implementation is adapted from
+ * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+ * Notice that there are two quaternions corresponding to the same rotation,
+ * namely @p q and @p -q represent the same rotation.
+ * @param M A 3 x 3 rotation matrix.
+ * @return a 4 x 1 unit length vector, the quaternion corresponding to the
+ * rotation matrix
+ */
 template <typename Derived>
 Vector4<typename Derived::Scalar> rotmat2quat(
     const Eigen::MatrixBase<Derived>& M) {
@@ -72,8 +80,8 @@ Vector4<typename Derived::Scalar> rotmat2quat(
 }
 
 /** Computes the angle axis representation from a rotation matrix. Since our
- * rotmat2quat and quat2axis are both numerical stable (they handle all the
- * corner cases, and avoid calling acos), we will cal these two transform
+ * ::rotmat2quat and ::quat2axis are both numerical stable (they handle all the
+ * corner cases, and avoid calling acos), we will call these two transform
  * functions directly.
  * @param R  the 3 x 3 rotation matrix
  * @return the angle-axis representation, a 4 x 1 vector as [x;y;z;angle]. The
