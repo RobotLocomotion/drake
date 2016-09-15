@@ -1,7 +1,6 @@
 #include "drake/systems/controllers/zmpUtil.h"
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
-#include <iostream>
 
 #include "drake/common/drake_assert.h"
 
@@ -9,8 +8,8 @@ using namespace Eigen;
 using namespace std;
 
 ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
-    const TVLQRData &sys, const PiecewisePolynomial<double> &zmp_trajectory,
-    const Ref<const MatrixXd> &S) {
+    const TVLQRData& sys, const PiecewisePolynomial<double>& zmp_trajectory,
+    const Ref<const MatrixXd>& S) {
   size_t n = static_cast<size_t>(zmp_trajectory.getNumberOfSegments());
   int d = zmp_trajectory.getSegmentPolynomialDegree(0);
   int k = d + 1;
@@ -53,9 +52,9 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
     for (size_t x = 0; x < nq; x++) {
       auto element_coeffs = poly_mat(x).GetCoefficients();
 
-      // note that the number of coefficients of poly_mat(x) may not be k due to
+      // Note that the number of coefficients of poly_mat(x) may not be k due to
       // erasure of zero coefficients. It should always be less than or equal to
-      // k though.
+      // k though. See #2165.
       DRAKE_ASSERT(poly_coeffs.cols() >= element_coeffs.size());
       poly_coeffs.row(x).setZero();
       for (Index i = 0; i < element_coeffs.size(); i++) {
