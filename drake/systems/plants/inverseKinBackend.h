@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include <Eigen/StdVector>
 #include <Eigen/Dense>
 
 #include "drake/solvers/decision_variable.h"
