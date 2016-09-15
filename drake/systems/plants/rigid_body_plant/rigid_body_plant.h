@@ -3,18 +3,65 @@
 #include <memory>
 #include <string>
 
-#include "drake/drake_rbp_export.h"
-#include "drake/systems/framework/leaf_system.h"
+#include <Eigen/Geometry>
 
+#include "drake/drake_rbp_export.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-namespace tinyxml2 {
-class XMLElement;
-}
-
 namespace drake {
 namespace systems {
+
+/// The output poses from a RigidBodyPlant.
+/// The pose of a rigid body is represented as a quaternion for three
+/// dimensional orientation concatenated by a three dimensional vector for
+/// position both in the world's frame. Altogether these two representations
+/// form a seven-dimensional vector for each body, quanterion first followed by
+/// the position vector.
+/// The concatenation of the poses for all bodies in the RigidBodyPlant is
+/// placed into a single contiguous vector of scalars entries of size `7*Nb`
+/// with `Nb` the number of bodies.
+/// RbpPosesVector<T> offers a semantically richer representation of a simple
+/// BasicVector<T> that allows consumers of it to easily access for each body
+/// the quaternion representation of orientation as well as the 3D vector
+/// represenation of position.
+template <typename T>
+class DRAKE_RBP_EXPORT RbpPosesVector : public BasicVector<T> {
+ public:
+  // Constructs a poses vector for @p nbodies bodies.
+  // @param[in] nbodies the number of body poses.
+  explicit RbpPosesVector(int num_bodies);
+
+  ~RbpPosesVector() override;
+
+  int get_num_bodies() const;
+
+  /// Returns the quaternion representation of the three dimensional orientation
+  /// of body @p body_index in the world's frame.
+  Quaternion<T> get_body_orientation(int body_index);
+
+  /// Returns the three dimensional position of body @p body_index in world's
+  /// frame.
+  Vector3<T> get_body_position(int body_index);
+
+  /// Sets the quaternion representation of the three dimensional orientation
+  /// of body @p body_index in the world's frame.
+  /// @param[in] body_index The index of the body in the owning RigidBodyPlant.
+  /// @param[in] quaternion The quaternion representation of the body's pose.
+  void set_body_orientation(int body_index, const Quaternion<T>& quaternion);
+
+  /// Sets the three dimensional position of body @p body_index in world's
+  /// frame.
+  /// @param[in] body_index The index of the body in the owning RigidBodyPlant.
+  /// @param[in] position The three dimensional position of body @p body_index
+  /// in world's frame.
+  void set_body_position(int body_index, const Vector3<T>& position);
+
+ private:
+  RbpPosesVector* DoClone() const override;
+};
 
 /// This class provides a System interface around a multibody dynamics model
 /// of the world represented by a RigidBodyTree.
@@ -77,6 +124,9 @@ class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
   /// of the world.
   const RigidBodyTree& get_multibody_world() const;
 
+  /// Returns the number of bodies in the world.
+  int get_num_bodies() const;
+
   /// Returns the number of generalized coordinates of the model.
   int get_num_positions() const;
 
@@ -122,6 +172,11 @@ class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
   }
 
   // System<T> overrides.
+  /// Allocates an output port for the RigidBodyPlant state and an output port
+  /// for the rigid body poses of type RbpPosesVector<T>.
+  std::unique_ptr<SystemOutput<T>> AllocateOutput(
+      const Context<T>& context) const override;
+
   bool has_any_direct_feedthrough() const override;
   void EvalTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const override;
@@ -164,6 +219,14 @@ class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
   T friction_coefficient_{0};
 
   std::unique_ptr<const RigidBodyTree> tree_;
+
+  // This method instantiates a KinematicsCache and updates it to the current
+  // state of the system according to the context.
+  // TODO(amcastro-tri): Completely remove this method once System 2.0 caching
+  // is in place. Right now this method is only used not to repeat the same
+  // piece of code across different methods.
+  KinematicsCache<T> InstantiateKinematicsCache(
+      const Context<T> &context) const;
 };
 
 }  // namespace systems

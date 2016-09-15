@@ -1,5 +1,6 @@
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -11,14 +12,70 @@
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/common/eigen_autodiff_types.h"
 
+using std::make_unique;
 using std::move;
 using std::string;
+using std::unique_ptr;
 using std::vector;
 
 using drake::parsers::ModelInstanceIdTable;
 
 namespace drake {
 namespace systems {
+
+template <typename T>
+RbpPosesVector<T>::RbpPosesVector(int num_bodies) :
+    BasicVector<T>(7 * num_bodies) {}
+
+template <typename T>
+RbpPosesVector<T>::~RbpPosesVector() {}
+
+template <typename T>
+int RbpPosesVector<T>::get_num_bodies() const {
+  return this->size()/7;
+}
+
+// TODO(amcastro-tri): Output a quaternion map referencing the actual memory in
+// BasicVector. However this is not possible right now given that Drake does not
+// use the same memory layout as Eigen does. See issue #???? which needs to be
+// resolved before we can fix this todo.
+template <typename T>
+Quaternion<T> RbpPosesVector<T>::get_body_orientation(int body_index) {
+  const int body_start = 7 * body_index;
+  return Quaternion<T>(this->GetAtIndex(body_start + 3),
+                       this->GetAtIndex(body_start + 0),
+                       this->GetAtIndex(body_start + 1),
+                       this->GetAtIndex(body_start + 2));
+}
+
+template <typename T>
+Vector3<T> RbpPosesVector<T>::get_body_position(int body_index) {
+  const int body_start = 7 * body_index + 4;
+  return Vector3<T>(this->GetAtIndex(body_start + 0),
+                    this->GetAtIndex(body_start + 1),
+                    this->GetAtIndex(body_start + 2));
+}
+
+template <typename T>
+void RbpPosesVector<T>::set_body_orientation(int body_index,
+                                             const Quaternion<T>& q) {
+  const int body_start = 7 * body_index;
+  this->get_mutable_value().template segment<4>(body_start) = q.coeffs();
+}
+
+template <typename T>
+void RbpPosesVector<T>::set_body_position(int body_index,
+                                          const Vector3<T>& p) {
+  const int body_start = 7 * body_index + 4;
+  this->get_mutable_value().template segment<3>(body_start) = p;
+}
+
+template <typename T>
+RbpPosesVector<T>* RbpPosesVector<T>::DoClone() const {
+  auto poses = new RbpPosesVector<T>(get_num_bodies());
+  poses->get_mutable_value() = this->get_value();
+  return poses;
+}
 
 template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
@@ -31,6 +88,11 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
   // TODO(amcastro-tri): add separate output ports for each model_id.
   System<T>::DeclareOutputPort(
       kVectorValued, get_num_states(), kContinuousSampling);
+  // Declares an vector valued vector port for each rigid body pose.
+  // A semantically richer vector of type RbpPosesVector is allocated by the
+  // RigidBodyPlant<T>::AllocateOutput method.
+  System<T>::DeclareOutputPort(
+      kVectorValued, 7 * get_num_bodies(), kContinuousSampling);
 }
 
 template <typename T>
@@ -44,6 +106,11 @@ bool RigidBodyPlant<T>::has_any_direct_feedthrough() const {
 template <typename T>
 const RigidBodyTree& RigidBodyPlant<T>::get_multibody_world() const {
   return *tree_.get();
+}
+
+template <typename T>
+int RigidBodyPlant<T>::get_num_bodies() const {
+  return tree_->get_number_of_bodies();
 }
 
 template <typename T>
@@ -102,6 +169,27 @@ void RigidBodyPlant<T>::set_state_vector(
 }
 
 template <typename T>
+std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
+    const Context<T>& context) const {
+  auto output = make_unique<LeafSystemOutput<T>>();
+  // Allocates output for the RigidBodyPlant state (output port 0).
+  {
+    auto data = make_unique<BasicVector<T>>(get_num_states());
+    auto port = make_unique<OutputPort>(move(data));
+    output->get_mutable_ports()->push_back(move(port));
+  }
+
+  // Allocates output for the RigidBodyPlant poses (output port 1).
+  {
+    std::unique_ptr<BasicVector<T>> data(
+        new RbpPosesVector<T>(get_num_bodies()));
+    std::unique_ptr<OutputPort> port(new OutputPort(move(data)));
+    output->get_mutable_ports()->push_back(move(port));
+  }
+  return std::unique_ptr<SystemOutput<T>>(output.release());
+}
+
+template <typename T>
 std::unique_ptr<ContinuousState<T>>
 RigidBodyPlant<T>::AllocateContinuousState() const {
   // The state is second-order.
@@ -119,13 +207,52 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
+  // Evaluates port 0 to be the state of the system.
   BasicVector<T>* output_vector = output->GetMutableVectorData(0);
-
   // TODO(amcastro-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   output_vector->get_mutable_value() =
       context.get_continuous_state().CopyToVector();
+
+  // Evaluates port 1 to be the poses for each rigid body.
+  auto poses_vector =
+      dynamic_cast<RbpPosesVector<T>*>(output->GetMutableVectorData(1));
+  auto cache = InstantiateKinematicsCache(context);
+
+  for (int ibody = 0; ibody < get_num_bodies(); ++ibody) {
+    Isometry3<T> pose = tree_->relativeTransform(cache, 0, ibody);
+    Vector4<T> quat_vector = drake::math::rotmat2quat(pose.linear());
+    Vector3<T> position = pose.translation();
+    poses_vector->set_body_position(ibody, position);
+    poses_vector->set_body_orientation(ibody,
+        Quaternion<T>(
+            quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]));
+  }
 }
+
+template <typename T>
+KinematicsCache<T> RigidBodyPlant<T>::InstantiateKinematicsCache(
+    const Context<T> &context) const {
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
+
+  // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
+  // LeafSystems.
+  auto x = dynamic_cast<const BasicVector<T> &>(
+      context.get_state().continuous_state->get_state()).get_value();
+
+  const int nq = get_num_positions();
+  const int nv = get_num_velocities();
+
+  // TODO(amcastro-tri): we would like to compile here with `auto` instead of
+  // `VectorX<T>`. However it seems we get some sort of block from a block which
+  // is not instantiated in drakeRBM.
+  VectorX<T> q = x.topRows(nq);
+  VectorX<T> v = x.bottomRows(nv);
+  // TODO(amcastro-tri): place kinematics cache in the context so it can be
+  // reused.
+  return tree_->doKinematics(q, v);
+}
+
 
 template <typename T>
 void RigidBodyPlant<T>::EvalTimeDerivatives(
@@ -167,7 +294,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // dynamicsBiasTerm.
   // TODO(amcastro-tri): external_wrenches should be made an optional parameter
   // of dynamicsBiasTerm().
-  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  const RigidBodyTree::BodyToWrenchMap<T> no_external_wrenches;
   // right_hand_side is the right hand side of the system's equations:
   // [H, -J^T] * [vdot; f] = -right_hand_side.
   VectorX<T> right_hand_side = tree_->dynamicsBiasTerm(kinsol,

@@ -62,6 +62,10 @@ using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 template <typename Scalar>
 using Quaternion = Eigen::Quaternion<Scalar>;
 
+/// An Isometry templated on scalar type.
+template <typename Scalar>
+using Isometry3 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
+
 /// A column vector of dynamic size, up to a maximum of 73 elements.
 using VectorUpTo73d = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>;
 
