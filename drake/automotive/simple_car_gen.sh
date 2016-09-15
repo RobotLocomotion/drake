@@ -6,7 +6,7 @@ me=$(readlink -f $0)
 mydir=$(dirname $me)
 drake=$(dirname $mydir)
 
-CLANG_FORMAT=${CLANG_FORMAT:-clang-format-3.6}
+CLANG_FORMAT=${CLANG_FORMAT:-clang-format-3.7}
 
 # Call the code generator with common configuration.
 # @param1 title -- used to create class/type names
