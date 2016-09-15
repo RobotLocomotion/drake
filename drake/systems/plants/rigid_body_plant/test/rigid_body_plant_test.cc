@@ -24,7 +24,7 @@ using std::unique_ptr;
 namespace drake {
 namespace systems {
 namespace plants {
-namespace rigid_body_system {
+namespace rigid_body_plant {
 namespace test {
 namespace {
 

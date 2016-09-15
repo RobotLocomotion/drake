@@ -4,18 +4,18 @@
 // See drake/automotive/lcm_vector_gen.py.
 
 #include "drake/automotive/gen/euler_floating_joint_state.h"
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "lcmtypes/drake/lcmt_euler_floating_joint_state_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /**
  * Translates between LCM message objects and VectorBase objects for the
  * EulerFloatingJointState type.
  */
-class DRAKECARS_EXPORT EulerFloatingJointStateTranslator
+class DRAKEAUTOMOTIVE_EXPORT EulerFloatingJointStateTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   EulerFloatingJointStateTranslator()
@@ -31,5 +31,5 @@ class DRAKECARS_EXPORT EulerFloatingJointStateTranslator
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

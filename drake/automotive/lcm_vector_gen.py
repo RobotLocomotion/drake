@@ -14,7 +14,7 @@ def put(fileobj, text, newlines_after=0):
 
 INDICES_BEGIN = """
 /// Describes the row indices of a %(camel)s.
-struct DRAKECARS_EXPORT %(indices)s {
+struct DRAKEAUTOMOTIVE_EXPORT %(indices)s {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = %(nfields)d;
 
@@ -161,12 +161,12 @@ VECTOR_HH_PREAMBLE = """
 
 #include <Eigen/Core>
 
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 VECTOR_CLASS_BEGIN = """
@@ -189,7 +189,7 @@ VECTOR_CLASS_END = """
 """
 
 VECTOR_HH_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 
@@ -200,11 +200,11 @@ VECTOR_CC_PREAMBLE = """
 // See %(generator)s.
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 VECTOR_CC_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 
@@ -215,12 +215,12 @@ TRANSLATOR_HH_PREAMBLE = """
 // See %(generator)s.
 
 #include "drake/automotive/gen/%(snake)s.h"
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 TRANSLATOR_CLASS_DECL = """
@@ -228,7 +228,7 @@ TRANSLATOR_CLASS_DECL = """
  * Translates between LCM message objects and VectorBase objects for the
  * %(camel)s type.
  */
-class DRAKECARS_EXPORT %(camel)sTranslator
+class DRAKEAUTOMOTIVE_EXPORT %(camel)sTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   %(camel)sTranslator()
@@ -245,7 +245,7 @@ class DRAKECARS_EXPORT %(camel)sTranslator
 """
 
 TRANSLATOR_HH_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 
@@ -260,11 +260,11 @@ TRANSLATOR_CC_PREAMBLE = """
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 TRANSLATOR_CC_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 

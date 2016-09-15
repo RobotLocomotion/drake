@@ -4,12 +4,12 @@
 // See drake/automotive/lcm_vector_gen.py.
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 const int DrivingCommandIndices::kNumCoordinates;
 const int DrivingCommandIndices::kSteeringAngle;
 const int DrivingCommandIndices::kThrottle;
 const int DrivingCommandIndices::kBrake;
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

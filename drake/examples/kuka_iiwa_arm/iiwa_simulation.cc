@@ -126,7 +126,7 @@ void CheckLimitViolations(
        body_index < static_cast<int>(bodies.size()); ++body_index) {
     // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
     // that represents the world.
-    if (!bodies[body_index]->has_mobilizer_joint()) continue;
+    if (!bodies[body_index]->has_parent_body()) continue;
 
     const DrakeJoint& joint = bodies[body_index]->getJoint();
     const Eigen::VectorXd& min_limit = joint.getJointLimitMin();

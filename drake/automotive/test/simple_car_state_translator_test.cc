@@ -8,7 +8,7 @@
 #include "drake/automotive/gen/simple_car_state.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 namespace {
 
 GTEST_TEST(SimpleCarStateTranslatorTest, RoundtripTest) {
@@ -48,5 +48,5 @@ GTEST_TEST(SimpleCarStateTranslatorTest, RoundtripTest) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
