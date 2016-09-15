@@ -1,16 +1,10 @@
 #pragma once
 
-#include <memory>
-#include <set>
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
-
-#include <stdexcept>
 #include <bitset>
+#include <memory>
 
-#include "drake/systems/plants/collision/Element.h"
-#include "drake/systems/plants/collision/Model.h"
 #include "drake/drakeCollision_export.h"
+#include "drake/systems/plants/collision/Model.h"
 
 static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
 

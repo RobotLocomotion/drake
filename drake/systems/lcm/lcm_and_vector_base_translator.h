@@ -68,8 +68,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmAndVectorBaseTranslator {
    *
    * @param[in] vector_base The object to convert into an LCM message.
    *
-   * @param[in] time The current time. This value is typically stored in the
-   * drake::systems::Context.
+   * @param[in] time The current time in seconds. This value is typically
+   * obtained from drake::systems::Context::get_time().
    *
    * @param[out] lcm_message_bytes The LCM message bytes.
    * This pointer must not be `nullptr`.
