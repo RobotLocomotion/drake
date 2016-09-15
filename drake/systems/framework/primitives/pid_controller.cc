@@ -15,14 +15,15 @@ PidController<T>::PidController(
   DRAKE_ASSERT(Ki >= 0);
   DRAKE_ASSERT(Kd >= 0);
   DRAKE_ASSERT(length > 0);
-  pass_through_ = make_unique<PassThrough<T>>(length);
-  proportional_gain_ = make_unique<Gain<T>>(Kp /* gain */, length /* length */);
-  integral_gain_ = make_unique<Gain<T>>(Ki /* gain */, length /* length */);
-  derivative_gain_ = make_unique<Gain<T>>(Kd /* gain */, length /* length */);
-  integrator_ = make_unique<Integrator<T>>(length);
-  adder_ = make_unique<Adder<T>>(3 /* inputs */, length /* length */);
 
   DiagramBuilder<T> builder;
+  pass_through_ = builder.AddSystem(make_unique<PassThrough<T>>(length));
+  proportional_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kp, length));
+  integral_gain_ = builder.AddSystem(make_unique<Gain<T>>(Ki, length));
+  derivative_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kd, length));
+  integrator_ = builder.AddSystem(make_unique<Integrator<T>>(length));
+  adder_ = builder.AddSystem(make_unique<Adder<T>>(3 /* inputs */, length));
+
   // Input 0 connects to the proportional and integral components.
   builder.ExportInput(pass_through_->get_input_port(0));
   // Input 1 connects directly to the derivative component.
@@ -82,7 +83,7 @@ template <typename T>
 void PidController<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   Context<T>* integrator_context =
-      Diagram<T>::GetMutableSubsystemContext(context, integrator_.get());
+      Diagram<T>::GetMutableSubsystemContext(context, integrator_);
   integrator_->set_integral_value(integrator_context, value);
 }
 
