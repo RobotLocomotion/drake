@@ -1,12 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include <Eigen/Dense>
-#include <Eigen/StdVector>
 
-#include "Element.h"
+#include "drake/systems/plants/shapes/Element.h"
 
+#include "drake/common/eigen_stl_types.h"
 #include "drake/drakeShapes_export.h"
 
 namespace DrakeShapes {
@@ -36,6 +34,5 @@ class DRAKESHAPES_EXPORT VisualElement : public Element {
 
 // See http://eigen.tuxfamily.org/dox-devel/group__TopicStlContainers.html
 // for why this is necessary.
-typedef std::vector<VisualElement, Eigen::aligned_allocator<VisualElement> >
-    VectorOfVisualElements;
+typedef drake::eigen_aligned_std_vector<VisualElement> VectorOfVisualElements;
 }
