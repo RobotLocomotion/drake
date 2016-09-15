@@ -40,7 +40,7 @@ endfunction()
 # dependency.
 #------------------------------------------------------------------------------
 function(drake_system_dependency NAME)
-  string(REPLACE "\\" "\\\\" _args "${ARGN}")
+  string(REPLACE "\\" "\\\\\\" _args "${ARGN}")
   cmake_parse_arguments("_sd"
     "OPTIONAL"
     "REQUIRES;VERSION;DEPENDS"
@@ -52,7 +52,7 @@ function(drake_system_dependency NAME)
   endif()
 
   if(NOT _sd_OPTIONAL)
-    set(_else "(If OFF, the internal version will be used)")
+    set(_else "(if OFF, the internal version will be used)")
   endif()
   if(DEFINED _sd_DEPENDS)
     set(_sd_DEPENDS DEPENDS "${_sd_DEPENDS}")
@@ -61,8 +61,8 @@ function(drake_system_dependency NAME)
   drake_option(USE_SYSTEM_${NAME} OFF
     ${_sd_DEPENDS}
     "Use the system-provided"
-    ${_sd_UNPARSED_ARGUMENTS}
-    ${_else}
+    "${_sd_UNPARSED_ARGUMENTS}"
+    "${_else}"
     )
 
   set(HAVE_${NAME} FALSE PARENT_SCOPE)
