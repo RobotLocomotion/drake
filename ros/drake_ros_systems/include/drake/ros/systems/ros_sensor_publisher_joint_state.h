@@ -259,7 +259,7 @@ class SensorPublisherJointState {
     for (auto const& rigid_body : rigid_body_tree->bodies) {
       // Skips rigid bodies without a mobilizer joint. This includes the
       // RigidBody that represents the world.
-      if (!rigid_body->has_mobilizer_joint()) continue;
+      if (!rigid_body->has_parent_body()) continue;
 
       const DrakeJoint& joint = rigid_body->getJoint();
 

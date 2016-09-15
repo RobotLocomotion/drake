@@ -293,7 +293,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   // Set external wrenches, keep track of total wrench.
   Vector6<double> total_wrench_world = gravitational_wrench_world;
   for (const auto& body_ptr : tree.bodies) {
-    if (body_ptr->has_mobilizer_joint()) {
+    if (body_ptr->has_parent_body()) {
       auto wrench_body = Vector6<double>::Random().eval();
       external_wrenches[body_ptr.get()] = wrench_body;
       auto body_to_world = tree.relativeTransform(kinematics_cache, world_index,
