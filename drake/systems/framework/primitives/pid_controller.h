@@ -70,12 +70,12 @@ class PidController : public Diagram<T> {
   const SystemPortDescriptor<T>& get_error_derivative_port() const;
 
  private:
-  std::unique_ptr<Adder<T>> adder_;
-  std::unique_ptr<Integrator<T>> integrator_;
-  std::unique_ptr<PassThrough<T>> pass_through_;
-  std::unique_ptr<Gain<T>> proportional_gain_;
-  std::unique_ptr<Gain<T>> integral_gain_;
-  std::unique_ptr<Gain<T>> derivative_gain_;
+  Adder<T>* adder_ = nullptr;
+  Integrator<T>* integrator_ = nullptr;
+  PassThrough<T>* pass_through_ = nullptr;
+  Gain<T>* proportional_gain_ = nullptr;
+  Gain<T>* integral_gain_ = nullptr;
+  Gain<T>* derivative_gain_ = nullptr;
 };
 
 }  // namespace systems
