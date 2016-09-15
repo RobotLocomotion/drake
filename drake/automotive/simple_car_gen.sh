@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Generate the source files for LCM Vector concept classes used in SimpleCar.
+# Generates the source files for LCM Vector concept classes used in SimpleCar.
 
 me=$(readlink -f $0)
 mydir=$(dirname $me)
