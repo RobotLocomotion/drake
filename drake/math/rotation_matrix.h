@@ -4,25 +4,91 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace math {
 
+/** Adapts the code from
+http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle
+This code handles the normal non-degenerate case, and the two degenerate
+cases, when the rotation angle is either 0 or 180.
+@param R  the 3 x 3 rotation matrix
+@return the angle-axis representation, a 4 x 1 vector as [x;y;z;angle]. The
+axis [x;y;z] has unit length
+*/
 template <typename Derived>
 Vector4<typename Derived::Scalar> rotmat2axis(
     const Eigen::MatrixBase<Derived>& R) {
-  using std::acos;
-  using std::sin;
+  using std::sqrt;
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
-
-  typename Derived::Scalar theta = acos((R.trace() - 1.0) / 2.0);
   Eigen::Vector4d a;
-  if (theta > std::numeric_limits<typename Derived::Scalar>::epsilon()) {
+  typename Derived::Scalar epsilon_scalar = std::numeric_limits<typename Derived::Scalar>::epsilon();
+  if(std::abs(R(0, 1) - R(1, 0)) < epsilon_scalar
+      && std::abs(R(0, 2) - R(2, 0)) < epsilon_scalar
+      && std::abs(R(1, 2) - R(2, 1)) < epsilon_scalar) {
+    // Singularity found
+    // First checks for identity matrix
+    if(CompareMatrices(R, drake::Matrix3<typename Derived::Scalar>::Identity(), std::numeric_limits<typename Derived::Scalar>::epsilon(), MatrixCompareType::absolute)) {
+      a << 1.0, 0.0, 0.0, 0.0;
+    }
+    else {
+      // singularity is angle = 180
+      typename Derived::Scalar xx = (R(0, 0) + 1.0) / 2;
+      typename Derived::Scalar yy = (R(1, 1) + 1.0) / 2;
+      typename Derived::Scalar zz = (R(2, 2) + 1.0) / 2;
+      typename Derived::Scalar xy = (R(0, 1) + R(1, 0)) / 4;
+      typename Derived::Scalar xz = (R(0, 2) + R(2, 0)) / 4;
+      typename Derived::Scalar yz = (R(1, 2) + R(2, 1)) / 4;
+      typename Derived::Scalar x, y, z;
+      double sqrt_2 = std::sqrt(2);
+      if ((xx > yy) && (xx > zz)) {
+        // R(0, 0) is the largest diagonal entry
+        if (xx < epsilon_scalar) {
+          x = 0.0;
+          y = sqrt_2/2;
+          z = sqrt_2/2;
+        }
+        else {
+          x = std::sqrt(xx);
+          y = xy / x;
+          z = xz / x;
+        }
+      }
+      else if (yy > zz) {
+        // R(1, 1) is the largest diagonal entry
+        if(yy < epsilon_scalar) {
+          x = sqrt_2/2;
+          y = 0.0;
+          z = sqrt_2/2;
+        }
+        else {
+          y = std::sqrt(yy);
+          x = xy / y;
+          z = yz / y;
+        }
+      }
+      else {
+        // R(2,2) is the largest diagonal entry
+        if (zz < epsilon_scalar) {
+          x = sqrt_2/2;
+          y = sqrt_2/2;
+          z = 0;
+        }
+        else {
+          z = std::sqrt(zz);
+          x = xz / z;
+          y = yz / z;
+        }
+      }
+      a << x, y, z, M_PI;
+    }
+  }
+  else {
+    typename Derived::Scalar theta = acos((R.trace() - 1.0) / 2.0);
     a << R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1), theta;
     a.head<3>() *= 1.0 / (2.0 * sin(theta));
-  } else {
-    a << 1.0, 0.0, 0.0, 0.0;
   }
   return a;
 }

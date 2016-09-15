@@ -8,7 +8,9 @@
 
 namespace drake {
 namespace math {
-
+// We use an extrinsic rotation about axis x-y-z, or equivalently an intrinsic
+// rotation about axis z-y'-x''. The rotation matrix is
+// rotz(rpy(2)) * roty(rpy(1)) * rotx(rpy(0))
 template <typename Derived>
 Vector4<typename Derived::Scalar> rpy2quat(
     const Eigen::MatrixBase<Derived>& rpy) {
