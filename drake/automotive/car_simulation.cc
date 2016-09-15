@@ -278,7 +278,7 @@ Curve2<double> MakeCurve(double radius, double inset) {
 }
 }  // namespace anonymous
 
-std::shared_ptr<TrajectoryCar1> CreateTrajectoryCarSystem(int index) {
+std::unique_ptr<TrajectoryCar<double>> CreateTrajectoryCarSystem(int index) {
   // The possible curves to trace (lanes).
   const std::vector<Curve2<double>> curves{
     MakeCurve(40.0, 0.0),  // BR
@@ -290,7 +290,7 @@ std::shared_ptr<TrajectoryCar1> CreateTrajectoryCarSystem(int index) {
   const auto& curve = curves[index % curves.size()];
   const double start_time = (index / curves.size()) * 0.8;
   const double kSpeed = 8.0;
-  return std::make_shared<TrajectoryCar1>(curve, kSpeed, start_time);
+  return std::make_unique<TrajectoryCar<double>>(curve, kSpeed, start_time);
 }
 
 std::shared_ptr<
