@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/quaternion.h"
 
 namespace drake {
 namespace math {
