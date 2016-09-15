@@ -4,9 +4,6 @@
 [submodule "drake/doc/textbook"]
 	path = drake/doc/textbook
 	url = https://github.com/RussTedrake/underactuated.git
-[submodule "externals/eigen"]
-	path = externals/eigen
-	url = https://github.com/RobotLocomotion/eigen-pod.git
 [submodule "externals/googletest"]
 	path = externals/googletest
 	url = https://github.com/google/googletest.git
@@ -103,3 +100,6 @@
 [submodule "externals/bullet"]
 	path = externals/bullet
 	url = https://github.com/RobotLocomotion/bullet3.git
+[submodule "externals/eigen"]
+	path = externals/eigen
+	url = https://github.com/RobotLocomotion/eigen-mirror.git
