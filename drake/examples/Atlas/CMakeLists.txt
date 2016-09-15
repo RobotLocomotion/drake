@@ -25,18 +25,17 @@ drake_add_matlab_test(NAME examples/Atlas/runAtlasSagittalDynamics OPTIONAL bull
 drake_add_matlab_test(NAME examples/Atlas/runAtlasWalkingPlanning REQUIRES gurobi lcm libbot OPTIONAL bullet snopt COMMAND runAtlasWalkingPlanning)
 drake_add_matlab_test(NAME examples/Atlas/runCOMFixedPointSearch OPTIONAL bullet gurobi COMMAND runCOMFixedPointSearch)
 
-# Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
-# drake_add_matlab_test(NAME examples/Atlas/runDRCDoorTask REQUIRES iris mosek COMMAND runDRCDoorTask)
+drake_add_matlab_test(NAME examples/Atlas/runDRCDoorTask REQUIRES iris mosek COMMAND runDRCDoorTask)
 
 drake_add_matlab_test(NAME examples/Atlas/runRobotiqPDControl OPTIONAL bullet gurobi snopt COMMAND runRobotiqPDControl)
 
+drake_add_matlab_test(NAME examples/Atlas/runAtlasBalancingPerturb REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasBalancingPerturb)
+
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND UNIX AND NOT APPLE) # FIXME: see #3147.
-  drake_add_matlab_test(NAME examples/Atlas/runAtlasBalancingPerturb REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasBalancingPerturb)
   drake_add_matlab_test(NAME examples/Atlas/runAtlasManip REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasManip)
 endif()
 
-# Deactivated due to memory flakiness in instantaneousQP; see #2165, #2376.
-# drake_add_matlab_test(NAME examples/Atlas/runAtlasWalking REQUIRES gurobi lcm COMMAND runAtlasWalking)
+drake_add_matlab_test(NAME examples/Atlas/runAtlasWalking REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasWalking)
 
 # drake_add_matlab_test(NAME examples/Atlas/runAtlasBalancing REQUIRES gurobi COMMAND runAtlasBalancing)  # FIXME: see #2839
 # drake_add_matlab_test(NAME examples/Atlas/runAtlasBalancingWithContactSensor REQUIRES gurobi COMMAND runAtlasBalancingWithContactSensor)  # FIXME: see #2839
