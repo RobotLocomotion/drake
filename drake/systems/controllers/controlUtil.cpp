@@ -106,9 +106,8 @@ int contactPhi(const RigidBodyTree& r, const KinematicsCache<double>& cache,
 int contactConstraintsBV(
     const RigidBodyTree& r, const KinematicsCache<double>& cache, int nc,
     std::vector<double> support_mus,
-    drake::eigen_aligned_std_vector<SupportStateElement>& supp,
-    MatrixXd& B, MatrixXd& JB, MatrixXd& Jp, VectorXd& Jpdotv,
-    MatrixXd& normals) {
+    drake::eigen_aligned_std_vector<SupportStateElement>& supp, MatrixXd& B,
+    MatrixXd& JB, MatrixXd& Jp, VectorXd& Jpdotv, MatrixXd& normals) {
   int j, k = 0, nq = r.number_of_positions();
 
   B.resize(3, nc * 2 * m_surface_tangents);
@@ -246,8 +245,7 @@ bool isSupportElementActive(SupportStateElement* se,
 
 Matrix<bool, Dynamic, 1> getActiveSupportMask(
     const RigidBodyTree& r, VectorXd q, VectorXd qd,
-    drake::eigen_aligned_std_vector<SupportStateElement>&
-        available_supports,
+    drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_force_detected,
     double contact_threshold) {
   KinematicsCache<double> cache = r.doKinematics(q, qd);
@@ -297,8 +295,7 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(
 
 drake::eigen_aligned_std_vector<SupportStateElement> getActiveSupports(
     const RigidBodyTree& r, const VectorXd& q, const VectorXd& qd,
-    drake::eigen_aligned_std_vector<SupportStateElement>&
-        available_supports,
+    drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_force_detected,
     double contact_threshold) {
   Matrix<bool, Dynamic, 1> active_supp_mask = getActiveSupportMask(

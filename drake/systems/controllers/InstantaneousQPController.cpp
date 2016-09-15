@@ -386,11 +386,11 @@ double averageContactPointHeight(
   return average_contact_point_height;
 }
 
-Vector2d computeCoP(const RigidBodyTree& robot,
-                    const KinematicsCache<double>& cache,
-                    const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
-                        foot_force_torque_measurements,
-                    Vector3d point_on_contact_plane, Eigen::Vector3d normal) {
+Vector2d computeCoP(
+    const RigidBodyTree& robot, const KinematicsCache<double>& cache,
+    const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
+        foot_force_torque_measurements,
+    Vector3d point_on_contact_plane, Eigen::Vector3d normal) {
   std::vector<ForceTorqueMeasurement> force_torque_measurements;
   for (auto it = foot_force_torque_measurements.begin();
        it != foot_force_torque_measurements.end(); ++it) {
@@ -405,7 +405,7 @@ Vector2d computeCoP(const RigidBodyTree& robot,
 
 void InstantaneousQPController::estimateCoMBasedOnMeasuredZMP(
     const QPControllerParams& params,
-    drake::eigen_aligned_std_vector <SupportStateElement>& active_supports,
+    drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
     int num_contact_points,
     const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
         foot_force_torque_measurements,
@@ -649,9 +649,10 @@ int InstantaneousQPController::setupAndSolveQP(
   std::vector<SupportStateElement,
               Eigen::aligned_allocator<SupportStateElement>>
       available_supports = loadAvailableSupports(qp_input);
-  drake::eigen_aligned_std_vector<SupportStateElement> active_supports = getActiveSupports(*robot, robot_state.q, robot_state.qd,
-                                          available_supports, contact_detected,
-                                          params.contact_threshold);
+  drake::eigen_aligned_std_vector<SupportStateElement> active_supports =
+      getActiveSupports(*robot, robot_state.q, robot_state.qd,
+                        available_supports, contact_detected,
+                        params.contact_threshold);
 
   // // whole_body_data
   if (qp_input.whole_body_data.num_positions != nq)

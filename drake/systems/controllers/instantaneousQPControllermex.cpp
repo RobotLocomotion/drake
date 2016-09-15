@@ -13,8 +13,8 @@
 
 #include "InstantaneousQPController.h"
 
-#include <limits>
 #include <cmath>
+#include <limits>
 
 #include "drake/common/eigen_types.h"
 #include "drake/util/drakeMexUtil.h"
