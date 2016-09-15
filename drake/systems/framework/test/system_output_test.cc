@@ -6,12 +6,13 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
 
-class TestOutputPortListener : public OutputPortListenerInterface {
+class TestOutputPortListener : public detail::OutputPortListenerInterface {
  public:
   void Invalidate() override { invalidations_++; }
   void Disconnect() override { disconnections_++; }

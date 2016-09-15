@@ -8,29 +8,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
-
-/// OutputPortListenerInterface is an interface that consumers of an output
-/// port must satisfy to receive notifications when the value on that output
-/// port's version number is incremented.
-///
-/// This interface is a Drake-internal detail. Users should not implement it.
-/// TODO(david-german-tri): Consider moving to its own file.
-class DRAKESYSTEMFRAMEWORK_EXPORT OutputPortListenerInterface {
- public:
-  virtual ~OutputPortListenerInterface();
-
-  /// Invalidates any data that depends on the OutputPort. Called whenever
-  /// the OutputPort's version number is incremented.
-  virtual void Invalidate() = 0;
-
-  /// Notifies the consumer that the OutputPort is no longer valid and should
-  /// not be read.
-  virtual void Disconnect() = 0;
-};
 
 /// The OutputPort represents a data output from a System. Other Systems
 /// may depend on the OutputPort. When an OutputPort is deleted, it will
@@ -79,12 +61,12 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
 
   /// Registers @p dependent to receive invalidation notifications whenever this
   /// port's version number is incremented.
-  void add_dependent(OutputPortListenerInterface* dependent) {
+  void add_dependent(detail::OutputPortListenerInterface* dependent) {
     dependents_.insert(dependent);
   }
 
   /// Unregisters @p dependent from invalidation notifications.
-  void remove_dependent(OutputPortListenerInterface* dependent) {
+  void remove_dependent(detail::OutputPortListenerInterface* dependent) {
     dependents_.erase(dependent);
   }
 
@@ -129,7 +111,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
 
   // The list of consumers that should be notified when the value on this
   // output port changes.
-  std::set<OutputPortListenerInterface*> dependents_;
+  std::set<detail::OutputPortListenerInterface*> dependents_;
 
   int64_t version_ = 0;
 };
