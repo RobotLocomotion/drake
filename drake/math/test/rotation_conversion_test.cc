@@ -95,12 +95,12 @@ GTEST_TEST(RotationConversionTest, QuatAxis) {
   QuatAxisFun(Vector4d(0.0, 0.0, 0.0, 1.0));
 
   // Tests near-degenerate cases when the angle is close to 0.
-  QuatAxisFun(axis2quat(Vector4d(1, 0, 0, M_PI/10000)));
-  QuatAxisFun(axis2quat(Vector4d(1, 0, 0, -M_PI/10000)));
+  QuatAxisFun(axis2quat(Vector4d(1, 0, 0, 1E-6*M_PI)));
+  QuatAxisFun(axis2quat(Vector4d(1, 0, 0, -1E-6*M_PI)));
 
   // Tests near-degenerate cases when the angle is close to 180
-  QuatAxisFun(axis2quat(Vector4d(1, 0, 0, M_PI - M_PI/1000)));
-  QuatAxisFun(axis2quat(Vector4d(0.5, 0.5, 1/sqrt(2), M_PI + M_PI/1000)));
+  QuatAxisFun(axis2quat(Vector4d(1, 0, 0, M_PI - 1E-6*M_PI)));
+  QuatAxisFun(axis2quat(Vector4d(0.5, 0.5, 1/sqrt(2), M_PI + 1E-6*M_PI)));
 
   // Now tests non-degenerate case.
   QuatAxisFun(Vector4d(0.5, 0.5, 0.5, 0.5));
@@ -163,7 +163,9 @@ GTEST_TEST(RotationConversionTest, RotmatAxis) {
   RotmatAxisFun(R);
 
   // Tests the case when the angle is very small, close to degeneration
-  R = axis2rotmat(Vector4d(0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2), 0.001*M_PI));
+  R = axis2rotmat(Vector4d(0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2), 1E-6*M_PI));
+  RotmatAxisFun(R);
+  R = axis2rotmat(Vector4d(0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2), -1E-6*M_PI));
   RotmatAxisFun(R);
 
   // Tests the non-degenerate case
